@@ -119,7 +119,7 @@ static void log_callback_report(void *ptr, int level, const char *fmt, va_list v
 
 void init_dynload(void)
 {
-#ifdef _WIN32
+#if HAVE_SETDLLDIRECTORY
     /* Calling SetDllDirectory with the empty string (but not NULL) removes the
      * current working directory from the DLL search path as a security pre-caution. */
     SetDllDirectory("");
@@ -2039,7 +2039,7 @@ FILE *get_preset_file(char *filename, size_t filename_size,
         av_strlcpy(filename, preset_name, filename_size);
         f = fopen(filename, "r");
     } else {
-#ifdef _WIN32
+#if HAVE_GETMODULEHANDLE
         char datadir[MAX_PATH], *ls;
         base[2] = NULL;
 

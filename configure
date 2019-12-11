@@ -2194,6 +2194,7 @@ SYSTEM_FUNCS="
     getaddrinfo
     gethrtime
     getopt
+    GetModuleHandle
     GetProcessAffinityMask
     GetProcessMemoryInfo
     GetProcessTimes
@@ -2223,6 +2224,7 @@ SYSTEM_FUNCS="
     SecItemImport
     SetConsoleTextAttribute
     SetConsoleCtrlHandler
+    SetDllDirectory
     setmode
     setrlimit
     Sleep
@@ -6032,6 +6034,7 @@ check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers stdlib.h getenv
 check_func_headers sys/stat.h lstat
 
+check_func_headers windows.h GetModuleHandle
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -6040,6 +6043,7 @@ check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h PeekNamedPipe
 check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h SetConsoleCtrlHandler
+check_func_headers windows.h SetDllDirectory
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
