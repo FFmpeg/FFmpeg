@@ -1155,7 +1155,7 @@ static int FUNC(film_grain_params)(CodedBitstreamContext *ctx, RWContext *rw,
         return 0;
     }
 
-    fb(4, num_y_points);
+    fc(4, num_y_points, 0, 14);
     for (i = 0; i < current->num_y_points; i++) {
         fbs(8, point_y_value[i],   1, i);
         fbs(8, point_y_scaling[i], 1, i);
