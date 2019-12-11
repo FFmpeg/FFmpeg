@@ -53,7 +53,19 @@ static void test_fcmul_add(const float *src0, const float *src1, const float *sr
     call_ref(cdst, src1, src2, LEN);
     call_new(odst, src1, src2, LEN);
     for (i = 0; i <= LEN*2; i++) {
-        if (!float_near_abs_eps(cdst[i], odst[i], 6.2e-05)) {
+        int idx = i & ~1;
+        float cre = src2[idx];
+        float cim = src2[idx + 1];
+        float tre = src1[idx];
+        float tim = src1[idx + 1];
+        double t = fabs(src0[i]) +
+                   fabs(tre) + fabs(tim) + fabs(cre) + fabs(cim) +
+                   fabs(tre * cre) + fabs(tim * cim) +
+                   fabs(tre * cim) + fabs(tim * cre) +
+                   fabs(tre * cre - tim * cim) +
+                   fabs(tre * cim + tim * cre) +
+                   fabs(cdst[i]) + 1.0;
+        if (!float_near_abs_eps(cdst[i], odst[i], t * 2 * FLT_EPSILON)) {
             fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
                     i, cdst[i], odst[i], cdst[i] - odst[i]);
             fail();
