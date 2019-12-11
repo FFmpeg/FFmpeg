@@ -105,7 +105,7 @@ typedef struct AV1RawSequenceHeader {
     uint8_t use_128x128_superblock;
     uint8_t enable_filter_intra;
     uint8_t enable_intra_edge_filter;
-    uint8_t enable_intraintra_compound;
+    uint8_t enable_interintra_compound;
     uint8_t enable_masked_compound;
     uint8_t enable_warped_motion;
     uint8_t enable_dual_filter;

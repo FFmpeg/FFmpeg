@@ -268,7 +268,7 @@ static int FUNC(sequence_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(enable_intra_edge_filter);
 
     if (current->reduced_still_picture_header) {
-        infer(enable_intraintra_compound, 0);
+        infer(enable_interintra_compound, 0);
         infer(enable_masked_compound,     0);
         infer(enable_warped_motion,       0);
         infer(enable_dual_filter,         0);
@@ -281,7 +281,7 @@ static int FUNC(sequence_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(seq_force_integer_mv,
               AV1_SELECT_INTEGER_MV);
     } else {
-        flag(enable_intraintra_compound);
+        flag(enable_interintra_compound);
         flag(enable_masked_compound);
         flag(enable_warped_motion);
         flag(enable_dual_filter);

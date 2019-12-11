@@ -257,7 +257,7 @@ static int parse_sequence_header(AV1SequenceParameters *seq_params, const uint8_
     if (!reduced_still_picture_header) {
         int enable_order_hint, seq_force_screen_content_tools;
 
-        skip_bits(&gb, 4); // enable_intraintra_compound (1), enable_masked_compound (1)
+        skip_bits(&gb, 4); // enable_interintra_compound (1), enable_masked_compound (1)
                            // enable_warped_motion (1), enable_dual_filter (1)
 
         enable_order_hint = get_bits1(&gb);
