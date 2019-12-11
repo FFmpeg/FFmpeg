@@ -544,7 +544,10 @@ static int cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
         // Remove trailing zeroes.
         while (size > 0 && nal->data[size - 1] == 0)
             --size;
-        av_assert0(size > 0);
+        if (size == 0) {
+            av_log(ctx->log_ctx, AV_LOG_VERBOSE, "Discarding empty 0 NAL unit\n");
+            continue;
+        }
 
         data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!data)
