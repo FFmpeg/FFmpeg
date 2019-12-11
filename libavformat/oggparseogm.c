@@ -109,7 +109,6 @@ ogm_header(AVFormatContext *s, int idx)
                 size -= 52;
                 if (bytestream2_get_bytes_left(&p) < size)
                     return AVERROR_INVALIDDATA;
-                av_freep(&st->codecpar->extradata);
                 if ((ret = ff_alloc_extradata(st->codecpar, size)) < 0)
                     return ret;
                 bytestream2_get_buffer(&p, st->codecpar->extradata, st->codecpar->extradata_size);

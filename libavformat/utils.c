@@ -5480,7 +5480,6 @@ int ff_generate_avci_extradata(AVStream *st)
     if (!size)
         return 0;
 
-    av_freep(&st->codecpar->extradata);
     if ((ret = ff_alloc_extradata(st->codecpar, size)) < 0)
         return ret;
     memcpy(st->codecpar->extradata, data, size);

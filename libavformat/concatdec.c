@@ -171,10 +171,6 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
 
     if (st->codecpar->codec_id || !source_st->codecpar->codec_id) {
         if (st->codecpar->extradata_size < source_st->codecpar->extradata_size) {
-            if (st->codecpar->extradata) {
-                av_freep(&st->codecpar->extradata);
-                st->codecpar->extradata_size = 0;
-            }
             ret = ff_alloc_extradata(st->codecpar,
                                      source_st->codecpar->extradata_size);
             if (ret < 0)

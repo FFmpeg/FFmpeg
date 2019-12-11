@@ -1838,7 +1838,6 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codecpar->codec_id == AV_CODEC_ID_QDMC ||
         st->codecpar->codec_id == AV_CODEC_ID_SPEEX) {
         // pass all frma atom to codec, needed at least for QDMC and QDM2
-        av_freep(&st->codecpar->extradata);
         ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size);
         if (ret < 0)
             return ret;
@@ -1905,7 +1904,6 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_WARNING, "ignoring multiple glbl\n");
         return 0;
     }
-    av_freep(&st->codecpar->extradata);
     ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size);
     if (ret < 0)
         return ret;
@@ -1938,7 +1936,6 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
 
     avio_seek(pb, 6, SEEK_CUR);
-    av_freep(&st->codecpar->extradata);
     ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 7);
     if (ret < 0)
         return ret;
@@ -1966,7 +1963,6 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     avio_skip(pb, 40);
-    av_freep(&st->codecpar->extradata);
     ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 40);
     if (ret < 0)
         return ret;

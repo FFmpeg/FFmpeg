@@ -799,7 +799,6 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
     if (!size)
         return 0;
 
-    av_freep(&st->codecpar->extradata);
     if ((ret = ff_get_extradata(s, st->codecpar, s->pb, size)) < 0)
         return ret;
     st->internal->need_context_update = 1;

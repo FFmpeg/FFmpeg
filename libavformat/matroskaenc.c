@@ -2264,7 +2264,6 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
                 return ret;
             if (!output_sample_rate)
                 output_sample_rate = track->sample_rate; // Space is already reserved, so it's this or a void element.
-            av_freep(&par->extradata);
             ret = ff_alloc_extradata(par, side_data_size);
             if (ret < 0)
                 return ret;

@@ -113,7 +113,7 @@ static int parse_fmtp_config(AVCodecParameters *par, const char *value)
 {
     /* decode the hexa encoded parameter */
     int len = ff_hex_to_data(NULL, value), ret;
-    av_freep(&par->extradata);
+
     if ((ret = ff_alloc_extradata(par, len)) < 0)
         return ret;
     ff_hex_to_data(par->extradata, value);

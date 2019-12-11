@@ -135,7 +135,6 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             return AVERROR_INVALIDDATA;
         }
 
-        av_freep(&st->codecpar->extradata);
         if ((ret = ff_alloc_extradata(st->codecpar, ALAC_HEADER)) < 0)
             return ret;
 
@@ -175,10 +174,8 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             return AVERROR_PATCHWELCOME;
         }
         avio_skip(pb, size);
-    } else {
-        av_freep(&st->codecpar->extradata);
-        if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0)
-            return ret;
+    } else if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0) {
+        return ret;
     }
 
     return 0;

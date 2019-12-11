@@ -83,10 +83,6 @@ static int get_codec_data(AVFormatContext *s, AVIOContext *pb, AVStream *vst,
             avio_skip(pb, 6);
             size = PKTSIZE(avio_rl32(pb));
             if (vst && subtype == 'R') {
-                if (vst->codecpar->extradata) {
-                    av_freep(&vst->codecpar->extradata);
-                    vst->codecpar->extradata_size = 0;
-                }
                 if ((ret = ff_get_extradata(NULL, vst->codecpar, pb, size)) < 0)
                     return ret;
                 size = 0;

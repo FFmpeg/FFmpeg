@@ -770,7 +770,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                             st->codecpar->extradata_size =  size - 10 * 4;
                         if (st->codecpar->extradata) {
                             av_log(s, AV_LOG_WARNING, "New extradata in strf chunk, freeing previous one.\n");
-                            av_freep(&st->codecpar->extradata);
                         }
                         ret = ff_get_extradata(s, st->codecpar, pb,
                                                st->codecpar->extradata_size);
@@ -932,7 +931,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (size<(1<<30)) {
                     if (st->codecpar->extradata) {
                         av_log(s, AV_LOG_WARNING, "New extradata in strd chunk, freeing previous one.\n");
-                        av_freep(&st->codecpar->extradata);
                     }
                     if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0)
                         return ret;

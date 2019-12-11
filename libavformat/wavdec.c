@@ -220,7 +220,6 @@ static int wav_parse_xma2_tag(AVFormatContext *s, int64_t size, AVStream **st)
     avpriv_set_pts_info(*st, 64, 1, (*st)->codecpar->sample_rate);
 
     avio_seek(pb, -size, SEEK_CUR);
-    av_freep(&(*st)->codecpar->extradata);
     if ((ret = ff_get_extradata(s, (*st)->codecpar, pb, size)) < 0)
         return ret;
 
