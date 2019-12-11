@@ -268,8 +268,8 @@ typedef struct AV1RawFrameHeader {
     uint8_t  grain_scaling_minus_8;
     uint8_t  ar_coeff_lag;
     uint8_t  ar_coeffs_y_plus_128[24];
-    uint8_t  ar_coeffs_cb_plus_128[24];
-    uint8_t  ar_coeffs_cr_plus_128[24];
+    uint8_t  ar_coeffs_cb_plus_128[25];
+    uint8_t  ar_coeffs_cr_plus_128[25];
     uint8_t  ar_coeff_shift_minus_6;
     uint8_t  grain_scale_shift;
     uint8_t  cb_mult;
