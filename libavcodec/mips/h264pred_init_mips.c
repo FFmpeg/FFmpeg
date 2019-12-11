@@ -73,10 +73,7 @@ static av_cold void h264_pred_init_msa(H264PredContext *h, int codec_id,
 
         switch (codec_id) {
         case AV_CODEC_ID_SVQ3:
-            ;
-            break;
         case AV_CODEC_ID_RV40:
-            ;
             break;
         case AV_CODEC_ID_VP7:
         case AV_CODEC_ID_VP8:
