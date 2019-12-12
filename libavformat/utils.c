@@ -1021,7 +1021,8 @@ static int is_intra_only(enum AVCodecID id)
     const AVCodecDescriptor *d = avcodec_descriptor_get(id);
     if (!d)
         return 0;
-    if (d->type == AVMEDIA_TYPE_VIDEO && !(d->props & AV_CODEC_PROP_INTRA_ONLY))
+    if ((d->type == AVMEDIA_TYPE_VIDEO || d->type == AVMEDIA_TYPE_AUDIO) &&
+        !(d->props & AV_CODEC_PROP_INTRA_ONLY))
         return 0;
     return 1;
 }
