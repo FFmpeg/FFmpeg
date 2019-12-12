@@ -61,6 +61,8 @@ static int mlp_parse(AVCodecParserContext *s,
     int ret;
     int i, p = 0;
 
+    s->key_frame = 0;
+
     *poutbuf_size = 0;
     if (buf_size == 0)
         return 0;
@@ -136,6 +138,8 @@ static int mlp_parse(AVCodecParserContext *s,
          * access unit header and all the 2- or 4-byte substream headers. */
         // Only check when this isn't a sync frame - syncs have a checksum.
 
+        s->key_frame = 0;
+
         parity_bits = 0;
         for (i = -1; i < mp->num_substreams; i++) {
             parity_bits ^= buf[p++];
@@ -158,6 +162,8 @@ static int mlp_parse(AVCodecParserContext *s,
         init_get_bits(&gb, buf + 4, (buf_size - 4) << 3);
         if (ff_mlp_read_major_sync(avctx, &mh, &gb) < 0)
             goto lost_sync;
+
+        s->key_frame = 1;
 
         avctx->bits_per_raw_sample = mh.group1_bits;
         if (avctx->bits_per_raw_sample > 16)
