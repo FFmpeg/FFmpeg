@@ -1174,12 +1174,12 @@ static int FUNC(film_grain_params)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(num_cb_points, 0);
         infer(num_cr_points, 0);
     } else {
-        fb(4, num_cb_points);
+        fc(4, num_cb_points, 0, 10);
         for (i = 0; i < current->num_cb_points; i++) {
             fbs(8, point_cb_value[i],   1, i);
             fbs(8, point_cb_scaling[i], 1, i);
         }
-        fb(4, num_cr_points);
+        fc(4, num_cr_points, 0, 10);
         for (i = 0; i < current->num_cr_points; i++) {
             fbs(8, point_cr_value[i],   1, i);
             fbs(8, point_cr_scaling[i], 1, i);

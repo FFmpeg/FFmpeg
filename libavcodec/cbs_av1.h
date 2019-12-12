@@ -260,11 +260,11 @@ typedef struct AV1RawFrameHeader {
     uint8_t  point_y_scaling[14];
     uint8_t  chroma_scaling_from_luma;
     uint8_t  num_cb_points;
-    uint8_t  point_cb_value[16];
-    uint8_t  point_cb_scaling[16];
+    uint8_t  point_cb_value[10];
+    uint8_t  point_cb_scaling[10];
     uint8_t  num_cr_points;
-    uint8_t  point_cr_value[16];
-    uint8_t  point_cr_scaling[16];
+    uint8_t  point_cr_value[10];
+    uint8_t  point_cr_scaling[10];
     uint8_t  grain_scaling_minus_8;
     uint8_t  ar_coeff_lag;
     uint8_t  ar_coeffs_y_plus_128[24];
