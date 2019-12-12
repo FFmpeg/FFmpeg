@@ -170,6 +170,9 @@ static int cbs_av1_read_leb128(CodedBitstreamContext *ctx, GetBitContext *gbc,
             break;
     }
 
+    if (value > UINT32_MAX)
+        return AVERROR_INVALIDDATA;
+
     if (ctx->trace_enable)
         ff_cbs_trace_syntax_element(ctx, position, name, NULL, "", value);
 
