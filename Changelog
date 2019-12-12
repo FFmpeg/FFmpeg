@@ -27,6 +27,7 @@ version <next>:
 - axcorrelate filter
 - mvdv decoder
 - mvha decoder
+- MPEG-H 3D Audio support in mp4
 
 
 version 4.2:
