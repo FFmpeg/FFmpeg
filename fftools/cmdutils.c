@@ -182,7 +182,7 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
 
     first = 1;
     for (po = options; po->name; po++) {
-        char buf[64];
+        char buf[128];
 
         if (((po->flags & req_flags) != req_flags) ||
             (alt_flags && !(po->flags & alt_flags)) ||
