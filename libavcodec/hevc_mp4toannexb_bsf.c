@@ -152,8 +152,7 @@ static int hevc_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
         extra_size    = add_extradata * ctx->par_out->extradata_size;
         got_irap     |= is_irap;
 
-        if (SIZE_MAX - nalu_size < 4 ||
-            SIZE_MAX - 4 - nalu_size < extra_size) {
+        if (FFMIN(INT_MAX, SIZE_MAX) < 4ULL + nalu_size + extra_size) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
