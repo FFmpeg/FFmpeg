@@ -2493,6 +2493,7 @@ static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     mov_write_stts_tag(pb, track);
     if ((track->par->codec_type == AVMEDIA_TYPE_VIDEO ||
          track->par->codec_id == AV_CODEC_ID_TRUEHD ||
+         track->par->codec_id == AV_CODEC_ID_MPEGH_3D_AUDIO ||
          track->par->codec_tag == MKTAG('r','t','p',' ')) &&
         track->has_keyframes && track->has_keyframes < track->entry)
         mov_write_stss_tag(pb, track, MOV_SYNC_SAMPLE);
@@ -6875,6 +6876,7 @@ const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_DVD_SUBTITLE, MKTAG('m', 'p', '4', 's') },
     { AV_CODEC_ID_MOV_TEXT    , MKTAG('t', 'x', '3', 'g') },
     { AV_CODEC_ID_BIN_DATA    , MKTAG('g', 'p', 'm', 'd') },
+    { AV_CODEC_ID_MPEGH_3D_AUDIO, MKTAG('m', 'h', 'm', '1') },
     { AV_CODEC_ID_NONE        ,    0 },
 };
 
