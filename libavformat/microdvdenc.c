@@ -36,6 +36,7 @@ static int microdvd_write_header(struct AVFormatContext *s)
     if (par->extradata && par->extradata_size > 0) {
         avio_write(s->pb, "{DEFAULT}{}", 11);
         avio_write(s->pb, par->extradata, par->extradata_size);
+        avio_w8(s->pb, '\n');
         avio_flush(s->pb);
     }
 
