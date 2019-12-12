@@ -3016,6 +3016,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Sipro ACELP.KELVIN"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_MPEGH_3D_AUDIO,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "mpegh_3d_audio",
+        .long_name = NULL_IF_CONFIG_SMALL("MPEG-H 3D Audio"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {

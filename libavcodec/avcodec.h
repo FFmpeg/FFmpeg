@@ -656,6 +656,7 @@ enum AVCodecID {
     AV_CODEC_ID_ATRAC9,
     AV_CODEC_ID_HCOM,
     AV_CODEC_ID_ACELP_KELVIN,
+    AV_CODEC_ID_MPEGH_3D_AUDIO,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
