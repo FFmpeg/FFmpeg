@@ -34,10 +34,10 @@ FATE_CBS_AV1_SAMPLES =              \
     seq_hdr_op_param_info.ivf       \
     switch_frame.ivf
 
-$(foreach N,$(FATE_CBS_AV1_CONFORMANCE_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1-test-vectors/$(N),ivf)))
-$(foreach N,$(FATE_CBS_AV1_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1/$(N),ivf)))
+$(foreach N,$(FATE_CBS_AV1_CONFORMANCE_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1-test-vectors/$(N),rawvideo)))
+$(foreach N,$(FATE_CBS_AV1_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1/$(N),rawvideo)))
 
-FATE_CBS_AV1-$(call ALLYES, IVF_DEMUXER AV1_PARSER AV1_METADATA_BSF IVF_MUXER) = $(FATE_CBS_av1)
+FATE_CBS_AV1-$(call ALLYES, IVF_DEMUXER AV1_PARSER AV1_METADATA_BSF RAWVIDEO_MUXER) = $(FATE_CBS_av1)
 FATE_SAMPLES_AVCONV += $(FATE_CBS_AV1-yes)
 fate-cbs-av1: $(FATE_CBS_AV1-yes)
 
