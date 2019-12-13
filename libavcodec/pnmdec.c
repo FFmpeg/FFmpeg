@@ -143,7 +143,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                         v = (*s->bytestream++)&1;
                     } else {
                         /* read a sequence of digits */
-                        for (k = 0; k < 5 && c <= 9; k += 1) {
+                        for (k = 0; k < 6 && c <= 9; k += 1) {
                             v = 10*v + c;
                             c = (*s->bytestream++) - '0';
                         }
