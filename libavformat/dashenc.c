@@ -167,6 +167,7 @@ typedef struct DASHContext {
     const char *utc_timing_url;
     const char *method;
     const char *user_agent;
+    char *http_opts;
     int hls_playlist;
     int http_persistent;
     int master_playlist_created;
@@ -476,6 +477,8 @@ static void set_http_options(AVDictionary **options, DASHContext *c)
 {
     if (c->method)
         av_dict_set(options, "method", c->method, 0);
+    if (c->http_opts)
+        av_dict_parse_string(options, c->http_opts, "=", ",", 0);
     if (c->user_agent)
         av_dict_set(options, "user_agent", c->user_agent, 0);
     if (c->http_persistent)
@@ -2248,6 +2251,7 @@ static const AVOption options[] = {
     { "mpd_profile", "Set profiles. Elements and values used in the manifest may be constrained by them", OFFSET(profile), AV_OPT_TYPE_FLAGS, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
     { "dash", "MPEG-DASH ISO Base media file format live profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
     { "dvb_dash", "DVB-DASH profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DVB }, 0, UINT_MAX, E, "mpd_profile"},
+    { "http_opts", "HTTP protocol options", OFFSET(http_opts), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { NULL },
 };
 
