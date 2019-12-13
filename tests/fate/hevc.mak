@@ -226,9 +226,6 @@ $(foreach N,$(HEVC_SAMPLES_444_12BIT),$(eval $(call FATE_HEVC_TEST_444_12BIT,$(N
 fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync 0 -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
 FATE_HEVC += fate-hevc-paramchange-yuv420p-yuv420p10
 
-fate-hevc-paired-fields: CMD = probeframes -show_entries frame=interlaced_frame,top_field_first $(TARGET_SAMPLES)/hevc/paired_fields.hevc
-FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-paired-fields
-
 tests/data/hevc-mp4.mov: TAG = GEN
 tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
@@ -249,6 +246,9 @@ FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 FATE_HEVC-$(call DEMDEC, MOV, HEVC) += fate-hevc-extradata-reload
 
 fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -sws_flags bitexact
+
+fate-hevc-paired-fields: CMD = probeframes -show_entries frame=interlaced_frame,top_field_first $(TARGET_SAMPLES)/hevc/paired_fields.hevc
+FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-paired-fields
 
 fate-hevc-monochrome-crop: CMD = probeframes -show_entries frame=width,height:stream=width,height $(TARGET_SAMPLES)/hevc/hevc-monochrome.hevc
 FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-monochrome-crop
