@@ -189,6 +189,8 @@ typedef struct DASHContext {
     int write_prft;
     int64_t max_gop_size;
     int profile;
+    int64_t target_latency;
+    int target_latency_refid;
 } DASHContext;
 
 static struct codec_string {
@@ -1150,6 +1152,14 @@ static int write_manifest(AVFormatContext *s, int final)
         av_free(escaped);
     }
     avio_printf(out, "\t</ProgramInformation>\n");
+    if (!final && c->target_latency && c->target_latency_refid >= 0) {
+        avio_printf(out, "\t<ServiceDescription id=\"0\">\n");
+        avio_printf(out, "\t\t<Latency target=\"%"PRId64"\"", c->target_latency / 1000);
+        if (s->nb_streams > 1)
+            avio_printf(out, " referenceId=\"%d\"", c->target_latency_refid);
+        avio_printf(out, "/>\n");
+        avio_printf(out, "\t</ServiceDescription>\n");
+    }
 
     if (c->window_size && s->nb_streams > 0 && c->streams[0].nb_segments > 0 && !c->use_template) {
         OutputStream *os = &c->streams[0];
@@ -1318,6 +1328,11 @@ static int dash_init(AVFormatContext *s)
         c->ldash = 0;
     }
 
+    if (c->target_latency && !c->streaming) {
+        av_log(s, AV_LOG_WARNING, "Target latency option will be ignored as streaming is not enabled\n");
+        c->target_latency = 0;
+    }
+
     if (c->global_sidx && !c->single_file) {
         av_log(s, AV_LOG_WARNING, "Global SIDX option will be ignored as single_file is not enabled\n");
         c->global_sidx = 0;
@@ -1340,6 +1355,11 @@ static int dash_init(AVFormatContext *s)
     if (c->write_prft && !c->streaming) {
         av_log(s, AV_LOG_WARNING, "Producer Reference Time element option will be ignored as streaming is not enabled\n");
         c->write_prft = 0;
+    }
+
+    if (c->target_latency && !c->write_prft) {
+        av_log(s, AV_LOG_WARNING, "Target latency option will be ignored as Producer Reference Time element will not be written\n");
+        c->target_latency = 0;
     }
 
     av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
@@ -1600,6 +1620,7 @@ static int dash_init(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "no video stream and P-frame fragmentation set\n");
 
     c->nr_of_streams_flushed = 0;
+    c->target_latency_refid = -1;
 
     return 0;
 }
@@ -1966,8 +1987,11 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         int side_data_size;
         AVProducerReferenceTime *prft = (AVProducerReferenceTime *)av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT,
                                                                                            &side_data_size);
-        if (prft && side_data_size == sizeof(AVProducerReferenceTime) && !prft->flags)
+        if (prft && side_data_size == sizeof(AVProducerReferenceTime) && !prft->flags) {
             os->producer_reference_time = prft->wallclock;
+            if (c->target_latency_refid < 0)
+                c->target_latency_refid = pkt->stream_index;
+        }
         os->first_pts = pkt->pts;
     }
     os->last_pts = pkt->pts;
@@ -2252,6 +2276,7 @@ static const AVOption options[] = {
     { "dash", "MPEG-DASH ISO Base media file format live profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
     { "dvb_dash", "DVB-DASH profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DVB }, 0, UINT_MAX, E, "mpd_profile"},
     { "http_opts", "HTTP protocol options", OFFSET(http_opts), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "target_latency", "Set desired target latency for Low-latency dash", OFFSET(target_latency), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, E },
     { NULL },
 };
 
