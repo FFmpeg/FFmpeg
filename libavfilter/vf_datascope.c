@@ -35,6 +35,7 @@ typedef struct DatascopeContext {
     int ow, oh;
     int x, y;
     int mode;
+    int dformat;
     int axis;
     float opacity;
 
@@ -67,6 +68,9 @@ static const AVOption datascope_options[] = {
     {   "color2", NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mode" },
     { "axis",    "draw column/row numbers", OFFSET(axis), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "opacity", "set background opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
+    { "format", "set display number format", OFFSET(dformat), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "format" },
+    {   "hex",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "format" },
+    {   "dec",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "format" },
     { NULL }
 };
 
@@ -180,9 +184,10 @@ static int filter_color2(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int yoff = td->yoff;
     const int P = FFMAX(s->nb_planes, s->nb_comps);
     const int C = s->chars;
+    const int D = ((s->chars - s->dformat) >> 2) + s->dformat * 2;
     const int W = (outlink->w - xoff) / (C * 10);
     const int H = (outlink->h - yoff) / (P * 12);
-    const char *format[2] = {"%02X\n", "%04X\n"};
+    const char *format[4] = {"%02X\n", "%04X\n", "%03d\n", "%05d\n"};
     const int slice_start = (W * jobnr) / nb_jobs;
     const int slice_end = (W * (jobnr+1)) / nb_jobs;
     int x, y, p;
@@ -201,7 +206,7 @@ static int filter_color2(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             for (p = 0; p < P; p++) {
                 char text[256];
 
-                snprintf(text, sizeof(text), format[C>>2], value[p]);
+                snprintf(text, sizeof(text), format[D], value[p]);
                 draw_text(&s->draw, out, &reverse, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
@@ -222,9 +227,10 @@ static int filter_color(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int yoff = td->yoff;
     const int P = FFMAX(s->nb_planes, s->nb_comps);
     const int C = s->chars;
+    const int D = ((s->chars - s->dformat) >> 2) + s->dformat * 2;
     const int W = (outlink->w - xoff) / (C * 10);
     const int H = (outlink->h - yoff) / (P * 12);
-    const char *format[2] = {"%02X\n", "%04X\n"};
+    const char *format[4] = {"%02X\n", "%04X\n", "%03d\n", "%05d\n"};
     const int slice_start = (W * jobnr) / nb_jobs;
     const int slice_end = (W * (jobnr+1)) / nb_jobs;
     int x, y, p;
@@ -239,7 +245,7 @@ static int filter_color(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             for (p = 0; p < P; p++) {
                 char text[256];
 
-                snprintf(text, sizeof(text), format[C>>2], value[p]);
+                snprintf(text, sizeof(text), format[D], value[p]);
                 draw_text(&s->draw, out, &color, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
@@ -260,9 +266,10 @@ static int filter_mono(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int yoff = td->yoff;
     const int P = FFMAX(s->nb_planes, s->nb_comps);
     const int C = s->chars;
+    const int D = ((s->chars - s->dformat) >> 2) + s->dformat * 2;
     const int W = (outlink->w - xoff) / (C * 10);
     const int H = (outlink->h - yoff) / (P * 12);
-    const char *format[2] = {"%02X\n", "%04X\n"};
+    const char *format[4] = {"%02X\n", "%04X\n", "%03d\n", "%05d\n"};
     const int slice_start = (W * jobnr) / nb_jobs;
     const int slice_end = (W * (jobnr+1)) / nb_jobs;
     int x, y, p;
@@ -276,7 +283,7 @@ static int filter_mono(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             for (p = 0; p < P; p++) {
                 char text[256];
 
-                snprintf(text, sizeof(text), format[C>>2], value[p]);
+                snprintf(text, sizeof(text), format[D], value[p]);
                 draw_text(&s->draw, out, &s->white, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
@@ -360,7 +367,7 @@ static int config_input(AVFilterLink *inlink)
     ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, alpha} );
     ff_draw_color(&s->draw, &s->yellow, (uint8_t[]){ 255, 255, 0, 255} );
     ff_draw_color(&s->draw, &s->gray,   (uint8_t[]){ 77, 77, 77, 255} );
-    s->chars = (s->draw.desc->comp[0].depth + 7) / 8 * 2;
+    s->chars = (s->draw.desc->comp[0].depth + 7) / 8 * 2 + s->dformat;
     s->nb_comps = s->draw.desc->nb_components;
 
     switch (s->mode) {

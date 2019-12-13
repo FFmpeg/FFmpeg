@@ -8354,6 +8354,9 @@ Draw rows and columns numbers on left and top of video.
 
 @item opacity
 Set background opacity.
+
+@item format
+Set display number format. Can be @code{hex}, or @code{dec}. Default is @code{hex}.
 @end table
 
 @section dctdnoiz
