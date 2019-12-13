@@ -2761,10 +2761,28 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     return update_size(pb, pos);
 }
 
+static int64_t calc_pts_duration(MOVMuxContext *mov, MOVTrack *track)
+{
+    if (track->tag == MKTAG('t','m','c','d')) {
+        // tmcd tracks gets track_duration set in mov_write_moov_tag from
+        // another track's duration, while the end_pts may be left at zero.
+        // Calculate the pts duration for that track instead.
+        return av_rescale(calc_pts_duration(mov, &mov->tracks[track->src_track]),
+                          track->timescale, mov->tracks[track->src_track].timescale);
+    }
+    if (track->end_pts != AV_NOPTS_VALUE &&
+        track->start_dts != AV_NOPTS_VALUE &&
+        track->start_cts != AV_NOPTS_VALUE) {
+        return track->end_pts - (track->start_dts + track->start_cts);
+    }
+    return track->track_duration;
+}
+
 static int mov_write_mdhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
-    int version = track->track_duration < INT32_MAX ? 0 : 1;
+    int64_t duration = calc_pts_duration(mov, track);
+    int version = duration < INT32_MAX ? 0 : 1;
 
     if (track->mode == MODE_ISM)
         version = 1;
@@ -2786,7 +2804,7 @@ static int mov_write_mdhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     else if (!track->entry)
         (version == 1) ? avio_wb64(pb, 0) : avio_wb32(pb, 0);
     else
-        (version == 1) ? avio_wb64(pb, track->track_duration) : avio_wb32(pb, track->track_duration); /* duration */
+        (version == 1) ? avio_wb64(pb, duration) : avio_wb32(pb, duration); /* duration */
     avio_wb16(pb, track->language); /* language */
     avio_wb16(pb, 0); /* reserved (quality) */
 
@@ -2836,8 +2854,9 @@ static void write_matrix(AVIOContext *pb, int16_t a, int16_t b, int16_t c,
 static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, AVStream *st)
 {
-    int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
-                                      track->timescale, AV_ROUND_UP);
+    int64_t duration = av_rescale_rnd(calc_pts_duration(mov, track),
+                                      MOV_TIMESCALE, track->timescale,
+                                      AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
     int flags   = MOV_TKHD_FLAG_IN_MOVIE;
     int rotation = 0;
@@ -2983,8 +3002,9 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
-    int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
-                                      track->timescale, AV_ROUND_UP);
+    int64_t duration = av_rescale_rnd(calc_pts_duration(mov, track),
+                                      MOV_TIMESCALE, track->timescale,
+                                      AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
     int entry_size, entry_count, size;
     int64_t delay, start_ct = track->start_cts;
@@ -3270,7 +3290,8 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 
     for (i = 0; i < mov->nb_streams; i++) {
         if (mov->tracks[i].entry > 0 && mov->tracks[i].timescale) {
-            int64_t max_track_len_temp = av_rescale_rnd(mov->tracks[i].track_duration,
+            int64_t max_track_len_temp = av_rescale_rnd(
+                                                calc_pts_duration(mov, &mov->tracks[i]),
                                                 MOV_TIMESCALE,
                                                 mov->tracks[i].timescale,
                                                 AV_ROUND_UP);
