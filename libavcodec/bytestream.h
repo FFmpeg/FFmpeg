@@ -151,12 +151,12 @@ static av_always_inline void bytestream2_init_writer(PutByteContext *p,
     p->eof          = 0;
 }
 
-static av_always_inline unsigned int bytestream2_get_bytes_left(GetByteContext *g)
+static av_always_inline int bytestream2_get_bytes_left(GetByteContext *g)
 {
     return g->buffer_end - g->buffer;
 }
 
-static av_always_inline unsigned int bytestream2_get_bytes_left_p(PutByteContext *p)
+static av_always_inline int bytestream2_get_bytes_left_p(PutByteContext *p)
 {
     return p->buffer_end - p->buffer;
 }
