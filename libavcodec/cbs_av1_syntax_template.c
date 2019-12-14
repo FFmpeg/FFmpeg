@@ -1500,8 +1500,6 @@ static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
         else
             HEADER("Frame Header");
 
-        priv->seen_frame_header = 1;
-
 #ifdef READ
         start_pos = get_bits_count(rw);
 #else
