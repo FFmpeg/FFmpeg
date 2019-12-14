@@ -47,7 +47,7 @@ static int alloc_and_copy(AVPacket *out,
                           const uint8_t *in, uint32_t in_size, int ps)
 {
     uint32_t offset         = out->size;
-    uint8_t start_code_size = offset == 0 || ps ? 4 : 3;
+    uint8_t start_code_size = offset == 0 && sps_pps_size == 0 || ps ? 4 : 3;
     int err;
 
     err = av_grow_packet(out, sps_pps_size + in_size + start_code_size);
@@ -244,7 +244,7 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
         if (s->new_idr && unit_type == H264_NAL_IDR_SLICE && !s->idr_sps_seen && !s->idr_pps_seen) {
             if ((ret=alloc_and_copy(out,
                                ctx->par_out->extradata, ctx->par_out->extradata_size,
-                               buf, nal_size, 1)) < 0)
+                               buf, nal_size, 0)) < 0)
                 goto fail;
             s->new_idr = 0;
         /* if only SPS has been seen, also insert PPS */
@@ -255,7 +255,7 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
                     goto fail;
             } else if ((ret = alloc_and_copy(out,
                                         s->pps, s->pps_size,
-                                        buf, nal_size, 1)) < 0)
+                                        buf, nal_size, 0)) < 0)
                 goto fail;
         } else {
             if ((ret=alloc_and_copy(out, NULL, 0, buf, nal_size, unit_type == H264_NAL_SPS || unit_type == H264_NAL_PPS)) < 0)
