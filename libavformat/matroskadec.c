@@ -2613,6 +2613,14 @@ static int matroska_parse_tracks(AVFormatContext *s)
             ret = matroska_parse_flac(s, track, &extradata_offset);
             if (ret < 0)
                 return ret;
+        } else if (codec_id == AV_CODEC_ID_WAVPACK && track->codec_priv.size < 2) {
+            av_log(matroska->ctx, AV_LOG_INFO, "Assuming WavPack version 4.10 "
+                   "in absence of valid CodecPrivate.\n");
+            extradata_size = 2;
+            extradata = av_mallocz(2 + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!extradata)
+                return AVERROR(ENOMEM);
+            AV_WL16(extradata, 0x410);
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
             fourcc = AV_RL32(track->codec_priv.data);
         } else if (codec_id == AV_CODEC_ID_VP9 && track->codec_priv.size) {
@@ -3165,9 +3173,10 @@ static int matroska_parse_wavpack(MatroskaTrack *track, uint8_t *src,
     uint16_t ver;
     int ret, offset = 0;
 
-    if (srclen < 12 || track->stream->codecpar->extradata_size < 2)
+    if (srclen < 12)
         return AVERROR_INVALIDDATA;
 
+    av_assert1(track->stream->codecpar->extradata_size >= 2);
     ver = AV_RL16(track->stream->codecpar->extradata);
 
     samples = AV_RL32(src);
