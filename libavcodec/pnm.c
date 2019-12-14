@@ -117,6 +117,9 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
                 return AVERROR_INVALIDDATA;
             }
         }
+        if (!pnm_space(s->bytestream[-1]))
+            return AVERROR_INVALIDDATA;
+
         /* check that all tags are present */
         if (w <= 0 || h <= 0 || maxval <= 0 || maxval > UINT16_MAX || depth <= 0 || tuple_type[0] == '\0' ||
             av_image_check_size(w, h, 0, avctx) || s->bytestream >= s->bytestream_end)
@@ -197,6 +200,10 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         }
     }else
         s->maxval=1;
+
+    if (!pnm_space(s->bytestream[-1]))
+        return AVERROR_INVALIDDATA;
+
     /* more check if YUV420 */
     if (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_PLANAR) {
         if ((avctx->width & 1) != 0)
