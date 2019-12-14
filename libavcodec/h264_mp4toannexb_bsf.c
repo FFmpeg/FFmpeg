@@ -102,8 +102,8 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
         unit_size   = bytestream2_get_be16u(gb);
         total_size += unit_size + 4;
         av_assert1(total_size <= INT_MAX - padding);
-        if (bytestream2_get_bytes_left(gb) < unit_size) {
-            av_log(ctx, AV_LOG_ERROR, "Packet header is not contained in global extradata, "
+        if (bytestream2_get_bytes_left(gb) < unit_size + !sps_done) {
+            av_log(ctx, AV_LOG_ERROR, "Global extradata truncated, "
                    "corrupted stream or invalid MP4/AVCC bitstream\n");
             av_free(out);
             return AVERROR_INVALIDDATA;
@@ -154,7 +154,7 @@ static int h264_mp4toannexb_init(AVBSFContext *ctx)
         (extra_size >= 4 && AV_RB32(ctx->par_in->extradata) == 1)) {
         av_log(ctx, AV_LOG_VERBOSE,
                "The input looks like it is Annex B already\n");
-    } else if (extra_size >= 6) {
+    } else if (extra_size >= 7) {
         ret = h264_extradata_to_annexb(ctx, AV_INPUT_BUFFER_PADDING_SIZE);
         if (ret < 0)
             return ret;
