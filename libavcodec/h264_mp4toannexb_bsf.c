@@ -31,8 +31,10 @@
 #include "h264.h"
 
 typedef struct H264BSFContext {
-    int32_t  sps_offset;
-    int32_t  pps_offset;
+    uint8_t *sps;
+    uint8_t *pps;
+    int      sps_size;
+    int      pps_size;
     uint8_t  length_size;
     uint8_t  new_idr;
     uint8_t  idr_sps_seen;
@@ -72,12 +74,9 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
     GetByteContext ogb, *gb = &ogb;
     uint16_t unit_size;
     uint32_t total_size                 = 0;
-    uint8_t *out                        = NULL, unit_nb, sps_done = 0,
-             sps_seen                   = 0, pps_seen = 0;
+    uint8_t *out                        = NULL, unit_nb, sps_done = 0;
     static const uint8_t nalu_header[4] = { 0, 0, 0, 1 };
-    int length_size;
-
-    s->sps_offset = s->pps_offset = -1;
+    int length_size, pps_offset = 0;
 
     bytestream2_init(gb, ctx->par_in->extradata, ctx->par_in->extradata_size);
 
@@ -90,9 +89,6 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
     unit_nb = bytestream2_get_byteu(gb) & 0x1f; /* number of sps unit(s) */
     if (!unit_nb) {
         goto pps;
-    } else {
-        s->sps_offset = 0;
-        sps_seen = 1;
     }
 
     while (unit_nb--) {
@@ -115,25 +111,29 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
 pps:
         if (!unit_nb && !sps_done++) {
             unit_nb = bytestream2_get_byteu(gb); /* number of pps unit(s) */
-            if (unit_nb) {
-                s->pps_offset = total_size;
-                pps_seen = 1;
-            }
+            pps_offset = total_size;
         }
     }
 
     if (out)
         memset(out + total_size, 0, padding);
 
-    if (!sps_seen)
+    if (pps_offset) {
+        s->sps      = out;
+        s->sps_size = pps_offset;
+    } else {
         av_log(ctx, AV_LOG_WARNING,
                "Warning: SPS NALU missing or invalid. "
                "The resulting stream may not play.\n");
-
-    if (!pps_seen)
+    }
+    if (pps_offset < total_size) {
+        s->pps      = out + pps_offset;
+        s->pps_size = total_size - pps_offset;
+    } else {
         av_log(ctx, AV_LOG_WARNING,
                "Warning: PPS NALU missing or invalid. "
                "The resulting stream may not play.\n");
+    }
 
     av_freep(&ctx->par_out->extradata);
     ctx->par_out->extradata      = out;
@@ -220,12 +220,12 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
             s->idr_pps_seen = s->new_idr = 1;
             /* if SPS has not been seen yet, prepend the AVCC one to PPS */
             if (!s->idr_sps_seen) {
-                if (s->sps_offset == -1)
+                if (!s->sps_size)
                     av_log(ctx, AV_LOG_WARNING, "SPS not present in the stream, nor in AVCC, stream may be unreadable\n");
                 else {
                     if ((ret = alloc_and_copy(out,
-                                         ctx->par_out->extradata + s->sps_offset,
-                                         s->pps_offset != -1 ? s->pps_offset : ctx->par_out->extradata_size - s->sps_offset,
+                                         s->sps,
+                                         s->sps_size,
                                          buf, nal_size, 1)) < 0)
                         goto fail;
                     s->idr_sps_seen = 1;
@@ -249,12 +249,12 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
             s->new_idr = 0;
         /* if only SPS has been seen, also insert PPS */
         } else if (s->new_idr && unit_type == H264_NAL_IDR_SLICE && s->idr_sps_seen && !s->idr_pps_seen) {
-            if (s->pps_offset == -1) {
+            if (!s->pps_size) {
                 av_log(ctx, AV_LOG_WARNING, "PPS not present in the stream, nor in AVCC, stream may be unreadable\n");
                 if ((ret = alloc_and_copy(out, NULL, 0, buf, nal_size, 0)) < 0)
                     goto fail;
             } else if ((ret = alloc_and_copy(out,
-                                        ctx->par_out->extradata + s->pps_offset, ctx->par_out->extradata_size - s->pps_offset,
+                                        s->pps, s->pps_size,
                                         buf, nal_size, 1)) < 0)
                 goto fail;
         } else {
