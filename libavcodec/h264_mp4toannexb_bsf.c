@@ -171,7 +171,7 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
 
     AVPacket *in;
     uint8_t unit_type, new_idr, sps_seen, pps_seen;
-    int32_t nal_size;
+    uint32_t nal_size;
     const uint8_t *buf;
     const uint8_t *buf_end;
     uint8_t *out;
@@ -202,18 +202,23 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
         out_size = 0;
 
     do {
-        ret= AVERROR(EINVAL);
-        if (buf + s->length_size > buf_end)
-            goto fail;
-
+            /* possible overread ok due to padding */
         for (nal_size = 0, i = 0; i<s->length_size; i++)
             nal_size = (nal_size << 8) | buf[i];
 
         buf += s->length_size;
-        unit_type = *buf & 0x1f;
 
-        if (nal_size > buf_end - buf || nal_size < 0)
-            goto fail;
+            /* This check requires the cast as the right side might
+             * otherwise be promoted to an unsigned value. */
+            if ((int64_t)nal_size > buf_end - buf) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+
+            if (!nal_size)
+                continue;
+
+            unit_type = *buf & 0x1f;
 
         if (unit_type == H264_NAL_SPS)
                 sps_seen = new_idr = 1;
