@@ -43,26 +43,23 @@ typedef struct H264BSFContext {
 } H264BSFContext;
 
 static int alloc_and_copy(AVPacket *out,
-                          const uint8_t *sps_pps, uint32_t sps_pps_size,
                           const uint8_t *in, uint32_t in_size, int ps)
 {
     uint32_t offset         = out->size;
-    uint8_t start_code_size = offset == 0 && sps_pps_size == 0 || ps ? 4 : 3;
+    uint8_t start_code_size = ps < 0 ? 0 : offset == 0 || ps ? 4 : 3;
     int err;
 
-    err = av_grow_packet(out, sps_pps_size + in_size + start_code_size);
+    err = av_grow_packet(out, in_size + start_code_size);
     if (err < 0)
         return err;
 
-    if (sps_pps)
-        memcpy(out->data + offset, sps_pps, sps_pps_size);
-    memcpy(out->data + sps_pps_size + start_code_size + offset, in, in_size);
+    memcpy(out->data + start_code_size + offset, in, in_size);
     if (start_code_size == 4) {
-        AV_WB32(out->data + offset + sps_pps_size, 1);
-    } else {
-        (out->data + offset + sps_pps_size)[0] =
-        (out->data + offset + sps_pps_size)[1] = 0;
-        (out->data + offset + sps_pps_size)[2] = 1;
+        AV_WB32(out->data + offset, 1);
+    } else if (start_code_size) {
+        (out->data + offset)[0] =
+        (out->data + offset)[1] = 0;
+        (out->data + offset)[2] = 1;
     }
 
     return 0;
@@ -226,10 +223,9 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
                     if ((ret = alloc_and_copy(out,
                                          s->sps,
                                          s->sps_size,
-                                         buf, nal_size, 1)) < 0)
+                                         -1)) < 0)
                         goto fail;
                     s->idr_sps_seen = 1;
-                    goto next_nal;
                 }
             }
         }
@@ -242,32 +238,29 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
 
         /* prepend only to the first type 5 NAL unit of an IDR picture, if no sps/pps are already present */
         if (s->new_idr && unit_type == H264_NAL_IDR_SLICE && !s->idr_sps_seen && !s->idr_pps_seen) {
-            if ((ret=alloc_and_copy(out,
+            if (ctx->par_out->extradata && (ret=alloc_and_copy(out,
                                ctx->par_out->extradata, ctx->par_out->extradata_size,
-                               buf, nal_size, 0)) < 0)
+                               -1)) < 0)
                 goto fail;
             s->new_idr = 0;
         /* if only SPS has been seen, also insert PPS */
         } else if (s->new_idr && unit_type == H264_NAL_IDR_SLICE && s->idr_sps_seen && !s->idr_pps_seen) {
             if (!s->pps_size) {
                 av_log(ctx, AV_LOG_WARNING, "PPS not present in the stream, nor in AVCC, stream may be unreadable\n");
-                if ((ret = alloc_and_copy(out, NULL, 0, buf, nal_size, 0)) < 0)
-                    goto fail;
             } else if ((ret = alloc_and_copy(out,
                                         s->pps, s->pps_size,
-                                        buf, nal_size, 0)) < 0)
+                                        -1)) < 0)
                 goto fail;
-        } else {
-            if ((ret=alloc_and_copy(out, NULL, 0, buf, nal_size, unit_type == H264_NAL_SPS || unit_type == H264_NAL_PPS)) < 0)
+        }
+
+            if ((ret=alloc_and_copy(out, buf, nal_size, unit_type == H264_NAL_SPS || unit_type == H264_NAL_PPS)) < 0)
                 goto fail;
             if (!s->new_idr && unit_type == H264_NAL_SLICE) {
                 s->new_idr = 1;
                 s->idr_sps_seen = 0;
                 s->idr_pps_seen = 0;
             }
-        }
 
-next_nal:
         buf        += nal_size;
         cumul_size += nal_size + s->length_size;
     } while (cumul_size < buf_size);
