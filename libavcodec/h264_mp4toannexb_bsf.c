@@ -98,6 +98,7 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
     while (unit_nb--) {
         int err;
 
+        /* possible overread ok due to padding */
         unit_size   = bytestream2_get_be16u(gb);
         total_size += unit_size + 4;
         av_assert1(total_size <= INT_MAX - padding);
