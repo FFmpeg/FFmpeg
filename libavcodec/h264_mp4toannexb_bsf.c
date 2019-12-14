@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
@@ -68,7 +69,7 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
 {
     H264BSFContext *s = ctx->priv_data;
     uint16_t unit_size;
-    uint64_t total_size                 = 0;
+    uint32_t total_size                 = 0;
     uint8_t *out                        = NULL, unit_nb, sps_done = 0,
              sps_seen                   = 0, pps_seen = 0;
     const uint8_t *extradata            = ctx->par_in->extradata + 4;
@@ -91,12 +92,7 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
 
         unit_size   = AV_RB16(extradata);
         total_size += unit_size + 4;
-        if (total_size > INT_MAX - padding) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Too big extradata size, corrupted stream or invalid MP4/AVCC bitstream\n");
-            av_free(out);
-            return AVERROR(EINVAL);
-        }
+        av_assert1(total_size <= INT_MAX - padding);
         if (extradata + 2 + unit_size > ctx->par_in->extradata + ctx->par_in->extradata_size) {
             av_log(ctx, AV_LOG_ERROR, "Packet header is not contained in global extradata, "
                    "corrupted stream or invalid MP4/AVCC bitstream\n");
