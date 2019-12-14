@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "bsf.h"
+#include "bytestream.h"
 #include "h264.h"
 
 typedef struct H264BSFContext {
@@ -68,18 +69,25 @@ static int alloc_and_copy(AVPacket *out,
 static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
 {
     H264BSFContext *s = ctx->priv_data;
+    GetByteContext ogb, *gb = &ogb;
     uint16_t unit_size;
     uint32_t total_size                 = 0;
     uint8_t *out                        = NULL, unit_nb, sps_done = 0,
              sps_seen                   = 0, pps_seen = 0;
-    const uint8_t *extradata            = ctx->par_in->extradata + 4;
     static const uint8_t nalu_header[4] = { 0, 0, 0, 1 };
-    int length_size = (*extradata++ & 0x3) + 1; // retrieve length coded size
+    int length_size;
 
     s->sps_offset = s->pps_offset = -1;
 
+    bytestream2_init(gb, ctx->par_in->extradata, ctx->par_in->extradata_size);
+
+    bytestream2_skipu(gb, 4);
+
+    /* retrieve length coded size */
+    length_size = (bytestream2_get_byteu(gb) & 0x3) + 1;
+
     /* retrieve sps and pps unit(s) */
-    unit_nb = *extradata++ & 0x1f; /* number of sps unit(s) */
+    unit_nb = bytestream2_get_byteu(gb) & 0x1f; /* number of sps unit(s) */
     if (!unit_nb) {
         goto pps;
     } else {
@@ -90,10 +98,10 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
     while (unit_nb--) {
         int err;
 
-        unit_size   = AV_RB16(extradata);
+        unit_size   = bytestream2_get_be16u(gb);
         total_size += unit_size + 4;
         av_assert1(total_size <= INT_MAX - padding);
-        if (extradata + 2 + unit_size > ctx->par_in->extradata + ctx->par_in->extradata_size) {
+        if (gb->buffer + unit_size > gb->buffer_end) {
             av_log(ctx, AV_LOG_ERROR, "Packet header is not contained in global extradata, "
                    "corrupted stream or invalid MP4/AVCC bitstream\n");
             av_free(out);
@@ -102,11 +110,10 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
         if ((err = av_reallocp(&out, total_size + padding)) < 0)
             return err;
         memcpy(out + total_size - unit_size - 4, nalu_header, 4);
-        memcpy(out + total_size - unit_size, extradata + 2, unit_size);
-        extradata += 2 + unit_size;
+        bytestream2_get_bufferu(gb, out + total_size - unit_size, unit_size);
 pps:
         if (!unit_nb && !sps_done++) {
-            unit_nb = *extradata++; /* number of pps unit(s) */
+            unit_nb = bytestream2_get_byteu(gb); /* number of pps unit(s) */
             if (unit_nb) {
                 s->pps_offset = total_size;
                 pps_seen = 1;
