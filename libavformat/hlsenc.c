@@ -1640,6 +1640,8 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             if (c->use_localtime_mkdir) {
                 const char *dir;
                 char *fn_copy = av_strdup(oc->url);
+                if (!fn_copy)
+                    return AVERROR(ENOMEM);
                 dir = av_dirname(fn_copy);
                 if (ff_mkdir_p(dir) == -1 && errno != EEXIST) {
                     av_log(oc, AV_LOG_ERROR, "Could not create directory %s with use_localtime_mkdir\n", dir);
@@ -1806,6 +1808,8 @@ static int validate_name(int nb_vs, const char *fn)
     }
 
     fn_dup = av_strdup(fn);
+    if (!fn_dup)
+        return AVERROR(ENOMEM);
     filename = av_basename(fn);
     subdir_name = av_dirname(fn_dup);
 
@@ -2186,6 +2190,8 @@ static int update_master_pl_info(AVFormatContext *s)
     int ret = 0;
 
     fn1 = av_strdup(s->url);
+    if (!fn1)
+        return AVERROR(ENOMEM);
     dir = av_dirname(fn1);
 
     /**
@@ -2194,6 +2200,10 @@ static int update_master_pl_info(AVFormatContext *s)
      */
     if (dir && av_stristr(av_basename(dir), "%v")) {
         fn2 = av_strdup(dir);
+        if (!fn2) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         dir = av_dirname(fn2);
     }
 
@@ -2934,7 +2944,8 @@ static int hls_init(AVFormatContext *s)
                 if (hls->nb_varstreams > 1) {
                     if (av_stristr(vs->fmp4_init_filename, "%v")) {
                         av_freep(&vs->fmp4_init_filename);
-                        format_name(hls->fmp4_init_filename, &vs->fmp4_init_filename, i, vs->varname);
+                        ret = format_name(hls->fmp4_init_filename,
+                                          &vs->fmp4_init_filename, i, vs->varname);
                     } else {
                         ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
                     }
