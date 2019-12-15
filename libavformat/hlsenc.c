@@ -2878,13 +2878,6 @@ static int hls_init(AVFormatContext *s)
             goto fail;
         }
 
-        if (vs->has_subtitle) {
-            vs->vtt_oformat = av_guess_format("webvtt", NULL, NULL);
-            if (!vs->vtt_oformat) {
-                ret = AVERROR_MUXER_NOT_FOUND;
-                goto fail;
-            }
-        }
         if (hls->segment_filename) {
             ret = format_name(hls->segment_filename, &vs->basename, i, vs->varname);
             if (ret < 0)
@@ -2979,6 +2972,9 @@ static int hls_init(AVFormatContext *s)
             goto fail;
 
         if (vs->has_subtitle) {
+            vs->vtt_oformat = av_guess_format("webvtt", NULL, NULL);
+            if (!vs->vtt_oformat)
+                return AVERROR_MUXER_NOT_FOUND;
 
             if (hls->flags & HLS_SINGLE_FILE)
                 vtt_pattern = ".vtt";
