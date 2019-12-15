@@ -482,6 +482,7 @@ Developer options (useful when working on FFmpeg itself):
   --ignore-tests=TESTS     comma-separated list (without "fate-" prefix
                            in the name) of tests whose result is ignored
   --enable-linux-perf      enable Linux Performance Monitor API
+  --enable-gprof           Enable GNU GPROF profiling
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -3977,6 +3978,11 @@ for opt do
         ;;
         --enable-sdl)
             enable sdl2
+        ;;
+        --enable-gprof)
+            add_ldflags -pg
+            add_cflags -pg
+            add_cxxflags -pg
         ;;
         --enable-*=*|--disable-*=*)
             eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
