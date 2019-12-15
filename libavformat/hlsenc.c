@@ -2577,12 +2577,10 @@ static void hls_deinit(AVFormatContext *s)
         av_freep(&vs->basename);
         av_freep(&vs->base_output_dirname);
         av_freep(&vs->fmp4_init_filename);
-        if (vtt_oc) {
-            av_freep(&vs->vtt_basename);
-            av_freep(&vs->vtt_m3u8_name);
-            avformat_free_context(vtt_oc);
-        }
+        av_freep(&vs->vtt_basename);
+        av_freep(&vs->vtt_m3u8_name);
 
+        avformat_free_context(vtt_oc);
         avformat_free_context(vs->avf);
         if (hls->resend_init_file)
             av_freep(&vs->init_buffer);
