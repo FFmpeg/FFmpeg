@@ -54,6 +54,9 @@ static const char *const var_names[] = {
     "vsub",
     "ohsub",
     "ovsub",
+    "n",
+    "t",
+    "pos",
     "main_w",
     "main_h",
     "main_a",
@@ -61,6 +64,9 @@ static const char *const var_names[] = {
     "main_dar", "mdar",
     "main_hsub",
     "main_vsub",
+    "main_n",
+    "main_t",
+    "main_pos",
     NULL
 };
 
@@ -76,6 +82,9 @@ enum var_name {
     VAR_VSUB,
     VAR_OHSUB,
     VAR_OVSUB,
+    VAR_N,
+    VAR_T,
+    VAR_POS,
     VAR_S2R_MAIN_W,
     VAR_S2R_MAIN_H,
     VAR_S2R_MAIN_A,
@@ -83,6 +92,9 @@ enum var_name {
     VAR_S2R_MAIN_DAR, VAR_S2R_MDAR,
     VAR_S2R_MAIN_HSUB,
     VAR_S2R_MAIN_VSUB,
+    VAR_S2R_MAIN_N,
+    VAR_S2R_MAIN_T,
+    VAR_S2R_MAIN_POS,
     VARS_NB
 };
 
@@ -184,8 +196,22 @@ static int check_exprs(AVFilterContext *ctx)
          vars_w[VAR_S2R_MAIN_DAR]  || vars_h[VAR_S2R_MAIN_DAR]  ||
          vars_w[VAR_S2R_MDAR]      || vars_h[VAR_S2R_MDAR]      ||
          vars_w[VAR_S2R_MAIN_HSUB] || vars_h[VAR_S2R_MAIN_HSUB] ||
-         vars_w[VAR_S2R_MAIN_VSUB] || vars_h[VAR_S2R_MAIN_VSUB]) ) {
+         vars_w[VAR_S2R_MAIN_VSUB] || vars_h[VAR_S2R_MAIN_VSUB] ||
+         vars_w[VAR_S2R_MAIN_N]    || vars_h[VAR_S2R_MAIN_N]    ||
+         vars_w[VAR_S2R_MAIN_T]    || vars_h[VAR_S2R_MAIN_T]    ||
+         vars_w[VAR_S2R_MAIN_POS]  || vars_h[VAR_S2R_MAIN_POS]) ) {
         av_log(ctx, AV_LOG_ERROR, "Expressions with scale2ref variables are not valid in scale filter.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (scale->eval_mode == EVAL_MODE_INIT &&
+        (vars_w[VAR_N]            || vars_h[VAR_N]           ||
+         vars_w[VAR_T]            || vars_h[VAR_T]           ||
+         vars_w[VAR_POS]          || vars_h[VAR_POS]         ||
+         vars_w[VAR_S2R_MAIN_N]   || vars_h[VAR_S2R_MAIN_N]  ||
+         vars_w[VAR_S2R_MAIN_T]   || vars_h[VAR_S2R_MAIN_T]  ||
+         vars_w[VAR_S2R_MAIN_POS] || vars_h[VAR_S2R_MAIN_POS]) ) {
+        av_log(ctx, AV_LOG_ERROR, "Expressions with frame variables 'n', 't', 'pos' are not valid in init eval_mode.\n");
         return AVERROR(EINVAL);
     }
 
@@ -622,6 +648,8 @@ static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, s
                          out,out_stride);
 }
 
+#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
+
 static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
 {
     AVFilterContext *ctx = link->dst;
@@ -643,10 +671,20 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
                     in->sample_aspect_ratio.den != link->sample_aspect_ratio.den ||
                     in->sample_aspect_ratio.num != link->sample_aspect_ratio.num;
 
-    if (frame_changed ||
-        (scale->eval_mode == EVAL_MODE_FRAME &&
-         ctx->filter == &ff_vf_scale2ref) ) {
+    if (scale->eval_mode == EVAL_MODE_FRAME || frame_changed) {
         int ret;
+        unsigned vars_w[VARS_NB] = { 0 }, vars_h[VARS_NB] = { 0 };
+
+        av_expr_count_vars(scale->w_pexpr, vars_w, VARS_NB);
+        av_expr_count_vars(scale->h_pexpr, vars_h, VARS_NB);
+
+        if (scale->eval_mode == EVAL_MODE_FRAME &&
+            !frame_changed &&
+            ctx->filter != &ff_vf_scale2ref &&
+            !(vars_w[VAR_N] || vars_w[VAR_T] || vars_w[VAR_POS]) &&
+            !(vars_h[VAR_N] || vars_h[VAR_T] || vars_h[VAR_POS]) &&
+            scale->w && scale->h)
+            goto scale;
 
         if (scale->eval_mode == EVAL_MODE_INIT) {
             snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
@@ -663,6 +701,16 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
                 return ret;
         }
 
+        if (ctx->filter == &ff_vf_scale2ref) {
+            scale->var_values[VAR_S2R_MAIN_N] = link->frame_count_out;
+            scale->var_values[VAR_S2R_MAIN_T] = TS2T(in->pts, link->time_base);
+            scale->var_values[VAR_S2R_MAIN_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
+        } else {
+            scale->var_values[VAR_N] = link->frame_count_out;
+            scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
+            scale->var_values[VAR_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
+        }
+
         link->dst->inputs[0]->format = in->format;
         link->dst->inputs[0]->w      = in->width;
         link->dst->inputs[0]->h      = in->height;
@@ -674,6 +722,7 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
             return ret;
     }
 
+scale:
     if (!scale->sws) {
         *frame_out = in;
         return 0;
@@ -780,6 +829,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
 static int filter_frame_ref(AVFilterLink *link, AVFrame *in)
 {
+    ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[1];
     int frame_changed;
 
@@ -797,6 +847,12 @@ static int filter_frame_ref(AVFilterLink *link, AVFrame *in)
         link->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
 
         config_props_ref(outlink);
+    }
+
+    if (scale->eval_mode == EVAL_MODE_FRAME) {
+        scale->var_values[VAR_N] = link->frame_count_out;
+        scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
+        scale->var_values[VAR_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
     }
 
     return ff_filter_frame(outlink, in);
