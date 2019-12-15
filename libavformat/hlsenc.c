@@ -2404,11 +2404,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-        if (oc->url[0]) {
-            proto = avio_find_protocol_name(oc->url);
-            use_temp_file = proto && !strcmp(proto, "file") && (hls->flags & HLS_TEMP_FILE);
-        }
-
         if (hls->flags & HLS_SINGLE_FILE) {
             ret = flush_dynbuf(vs, &range_length);
             av_freep(&vs->temp_buffer);
@@ -2417,6 +2412,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             vs->size = range_length;
         } else {
+            if (oc->url[0]) {
+                proto = avio_find_protocol_name(oc->url);
+                use_temp_file = proto && !strcmp(proto, "file")
+                                      && (hls->flags & HLS_TEMP_FILE);
+            }
+
             if ((hls->max_seg_size > 0 && (vs->size >= hls->max_seg_size)) || !byterange_mode) {
                 AVDictionary *options = NULL;
                 char *filename = NULL;
@@ -2466,10 +2467,9 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_freep(&vs->temp_buffer);
                 av_freep(&filename);
             }
-        }
 
-        if (use_temp_file && !(hls->flags & HLS_SINGLE_FILE)) {
-            hls_rename_temp_file(s, oc);
+            if (use_temp_file)
+                hls_rename_temp_file(s, oc);
         }
 
         old_filename = av_strdup(oc->url);
