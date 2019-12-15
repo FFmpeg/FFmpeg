@@ -2829,6 +2829,15 @@ static int hls_init(AVFormatContext *s)
     }
 
     hls->recording_time = (hls->init_time ? hls->init_time : hls->time) * AV_TIME_BASE;
+
+        if (hls->flags & HLS_SPLIT_BY_TIME && hls->flags & HLS_INDEPENDENT_SEGMENTS) {
+            // Independent segments cannot be guaranteed when splitting by time
+            hls->flags &= ~HLS_INDEPENDENT_SEGMENTS;
+            av_log(s, AV_LOG_WARNING,
+                   "'split_by_time' and 'independent_segments' cannot be enabled together. "
+                   "Disabling 'independent_segments' flag\n");
+        }
+
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
 
@@ -2840,14 +2849,6 @@ static int hls_init(AVFormatContext *s)
         vs->start_pts      = AV_NOPTS_VALUE;
         vs->end_pts      = AV_NOPTS_VALUE;
         vs->current_segment_final_filename_fmt[0] = '\0';
-
-        if (hls->flags & HLS_SPLIT_BY_TIME && hls->flags & HLS_INDEPENDENT_SEGMENTS) {
-            // Independent segments cannot be guaranteed when splitting by time
-            hls->flags &= ~HLS_INDEPENDENT_SEGMENTS;
-            av_log(s, AV_LOG_WARNING,
-                   "'split_by_time' and 'independent_segments' cannot be enabled together. "
-                   "Disabling 'independent_segments' flag\n");
-        }
 
         if (hls->flags & HLS_PROGRAM_DATE_TIME) {
             time_t now0;
