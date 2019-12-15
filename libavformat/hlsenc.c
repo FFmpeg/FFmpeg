@@ -2553,8 +2553,9 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static void hls_free_variant_streams(struct HLSContext *hls)
+static void hls_deinit(AVFormatContext *s)
 {
+    HLSContext *hls = s->priv_data;
     int i = 0;
     AVFormatContext *vtt_oc = NULL;
     VariantStream *vs = NULL;
@@ -2586,6 +2587,20 @@ static void hls_free_variant_streams(struct HLSContext *hls)
         av_freep(&vs->baseurl);
         av_freep(&vs->varname);
     }
+
+    for (i = 0; i < hls->nb_ccstreams; i++) {
+        ClosedCaptionsStream *ccs = &hls->cc_streams[i];
+        av_freep(&ccs->ccgroup);
+        av_freep(&ccs->instreamid);
+        av_freep(&ccs->language);
+    }
+
+    ff_format_io_close(s, &hls->m3u8_out);
+    ff_format_io_close(s, &hls->sub_m3u8_out);
+    av_freep(&hls->key_basename);
+    av_freep(&hls->var_streams);
+    av_freep(&hls->cc_streams);
+    av_freep(&hls->master_m3u8_url);
 }
 
 static int hls_write_trailer(struct AVFormatContext *s)
@@ -2718,21 +2733,6 @@ failed:
         av_free(old_filename);
     }
 
-    hls_free_variant_streams(hls);
-
-    for (i = 0; i < hls->nb_ccstreams; i++) {
-        ClosedCaptionsStream *ccs = &hls->cc_streams[i];
-        av_freep(&ccs->ccgroup);
-        av_freep(&ccs->instreamid);
-        av_freep(&ccs->language);
-    }
-
-    ff_format_io_close(s, &hls->m3u8_out);
-    ff_format_io_close(s, &hls->sub_m3u8_out);
-    av_freep(&hls->key_basename);
-    av_freep(&hls->var_streams);
-    av_freep(&hls->cc_streams);
-    av_freep(&hls->master_m3u8_url);
     return 0;
 }
 
@@ -3026,20 +3026,6 @@ static int hls_init(AVFormatContext *s)
     }
 
 fail:
-    if (ret < 0) {
-        hls_free_variant_streams(hls);
-        for (i = 0; i < hls->nb_ccstreams; i++) {
-            ClosedCaptionsStream *ccs = &hls->cc_streams[i];
-            av_freep(&ccs->ccgroup);
-            av_freep(&ccs->instreamid);
-            av_freep(&ccs->language);
-        }
-        av_freep(&hls->key_basename);
-        av_freep(&hls->var_streams);
-        av_freep(&hls->cc_streams);
-        av_freep(&hls->master_m3u8_url);
-    }
-
     return ret;
 }
 
@@ -3137,5 +3123,6 @@ AVOutputFormat ff_hls_muxer = {
     .write_header   = hls_write_header,
     .write_packet   = hls_write_packet,
     .write_trailer  = hls_write_trailer,
+    .deinit         = hls_deinit,
     .priv_class     = &hls_class,
 };
