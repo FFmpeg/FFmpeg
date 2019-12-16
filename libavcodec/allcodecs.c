@@ -776,6 +776,7 @@ extern AVCodec ff_mpeg2_qsv_encoder;
 extern AVCodec ff_mpeg2_vaapi_encoder;
 extern AVCodec ff_mpeg4_cuvid_decoder;
 extern AVCodec ff_mpeg4_mediacodec_decoder;
+extern AVCodec ff_mpeg4_omx_encoder;
 extern AVCodec ff_mpeg4_v4l2m2m_encoder;
 extern AVCodec ff_vc1_cuvid_decoder;
 extern AVCodec ff_vp8_cuvid_decoder;
