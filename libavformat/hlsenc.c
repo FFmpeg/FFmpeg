@@ -2631,7 +2631,6 @@ failed:
         }
         ffio_free_dyn_buf(&oc->pb);
 
-        vs->avf = NULL;
         av_free(old_filename);
     }
 
