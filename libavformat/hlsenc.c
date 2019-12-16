@@ -1937,6 +1937,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
         while (keyval = av_strtok(varstr, ",", &saveptr2)) {
             varstr = NULL;
             if (av_strstart(keyval, "language:", &val)) {
+                av_free(vs->language);
                 vs->language = av_strdup(val);
                 if (!vs->language)
                     return AVERROR(ENOMEM);
@@ -1947,16 +1948,19 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
                 hls->has_default_key = 1;
                 continue;
             } else if (av_strstart(keyval, "name:", &val)) {
+                av_free(vs->varname);
                 vs->varname = av_strdup(val);
                 if (!vs->varname)
                     return AVERROR(ENOMEM);
                 continue;
             } else if (av_strstart(keyval, "agroup:", &val)) {
+                av_free(vs->agroup);
                 vs->agroup = av_strdup(val);
                 if (!vs->agroup)
                     return AVERROR(ENOMEM);
                 continue;
             } else if (av_strstart(keyval, "ccgroup:", &val)) {
+                av_free(vs->ccgroup);
                 vs->ccgroup = av_strdup(val);
                 if (!vs->ccgroup)
                     return AVERROR(ENOMEM);
@@ -2048,14 +2052,17 @@ static int parse_cc_stream_mapstring(AVFormatContext *s)
             ccstr = NULL;
 
             if (av_strstart(keyval, "ccgroup:", &val)) {
+                av_free(ccs->ccgroup);
                 ccs->ccgroup = av_strdup(val);
                 if (!ccs->ccgroup)
                     return AVERROR(ENOMEM);
             } else if (av_strstart(keyval, "instreamid:", &val)) {
+                av_free(ccs->instreamid);
                 ccs->instreamid = av_strdup(val);
                 if (!ccs->instreamid)
                     return AVERROR(ENOMEM);
             } else if (av_strstart(keyval, "language:", &val)) {
+                av_free(ccs->language);
                 ccs->language = av_strdup(val);
                 if (!ccs->language)
                     return AVERROR(ENOMEM);
