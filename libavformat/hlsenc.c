@@ -2737,7 +2737,7 @@ static int hls_init(AVFormatContext *s)
             char b[15];
             struct tm *p, tmbuf;
             if (!(p = localtime_r(&t, &tmbuf)))
-                return AVERROR(ENOMEM);
+                return AVERROR(errno);
             if (!strftime(b, sizeof(b), "%Y%m%d%H%M%S", p))
                 return AVERROR(ENOMEM);
             hls->start_sequence = strtoll(b, NULL, 10);
