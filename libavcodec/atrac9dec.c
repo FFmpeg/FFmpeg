@@ -223,8 +223,18 @@ static inline int parse_band_ext(ATRAC9Context *s, ATRAC9BlockData *b,
     b->channel[0].band_ext = get_bits(gb, 2);
     b->channel[0].band_ext = ext_band > 2 ? b->channel[0].band_ext : 4;
 
-    if (!get_bits(gb, 5))
+    if (!get_bits(gb, 5)) {
+        for (int i = 0; i <= stereo; i++) {
+            ATRAC9ChannelData *c = &b->channel[i];
+            const int count = at9_tab_band_ext_cnt[c->band_ext][ext_band];
+            for (int j = 0; j < count; j++) {
+                int len = at9_tab_band_ext_lengths[c->band_ext][ext_band][j];
+                c->band_ext_data[j] = av_clip_uintp2_c(c->band_ext_data[j], len);
+            }
+        }
+
         return 0;
+    }
 
     for (int i = 0; i <= stereo; i++) {
         ATRAC9ChannelData *c = &b->channel[i];
