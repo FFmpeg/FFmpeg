@@ -423,8 +423,8 @@ static int decode_inter_plane(AGMContext *s, GetBitContext *gb, int size,
                 int map = s->map[x];
 
                 if (orig_mv_x >= -32) {
-                    if (y * 8 + mv_y < 0 || y * 8 + mv_y >= h ||
-                        x * 8 + mv_x < 0 || x * 8 + mv_x >= w)
+                    if (y * 8 + mv_y < 0 || y * 8 + mv_y + 8 >= h ||
+                        x * 8 + mv_x < 0 || x * 8 + mv_x + 8 >= w)
                         return AVERROR_INVALIDDATA;
 
                     copy_block8(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
