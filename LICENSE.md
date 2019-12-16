@@ -35,7 +35,6 @@ Specifically, the GPL parts of FFmpeg are:
     - `vf_eq.c`
     - `vf_find_rect.c`
     - `vf_fspp.c`
-    - `vf_geq.c`
     - `vf_histeq.c`
     - `vf_hqdn3d.c`
     - `vf_kerndeint.c`
