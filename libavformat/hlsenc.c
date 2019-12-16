@@ -2241,7 +2241,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int use_temp_file = 0;
     uint8_t *buffer = NULL;
     VariantStream *vs = NULL;
-    AVDictionary *options = NULL;
     char *old_filename = NULL;
 
     for (i = 0; i < hls->nb_varstreams; i++) {
@@ -2343,11 +2342,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             use_temp_file = proto && !strcmp(proto, "file") && (hls->flags & HLS_TEMP_FILE);
         }
 
-        // look to rename the asset name
-        if (use_temp_file) {
-            av_dict_set(&options, "mpegts_flags", "resend_headers", 0);
-        }
-
         if (hls->flags & HLS_SINGLE_FILE) {
             ret = flush_dynbuf(vs, &range_length);
             av_freep(&vs->temp_buffer);
@@ -2356,8 +2350,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             vs->size = range_length;
         } else {
-            set_http_options(s, &options, hls);
             if ((hls->max_seg_size > 0 && (vs->size >= hls->max_seg_size)) || !byterange_mode) {
+                AVDictionary *options = NULL;
                 char *filename = NULL;
                 if (hls->key_info_file || hls->encrypt) {
                     av_dict_set(&options, "encryption_key", hls->key_string, 0);
@@ -2367,12 +2361,21 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                     filename = av_asprintf("%s", oc->url);
                 }
                 if (!filename) {
+                    av_dict_free(&options);
                     return AVERROR(ENOMEM);
                 }
+
+                // look to rename the asset name
+                if (use_temp_file)
+                    av_dict_set(&options, "mpegts_flags", "resend_headers", 0);
+
+                set_http_options(s, &options, hls);
+
                 ret = hlsenc_io_open(s, &vs->out, filename, &options);
                 if (ret < 0) {
                     av_log(s, hls->ignore_io_errors ? AV_LOG_WARNING : AV_LOG_ERROR,
                            "Failed to open file '%s'\n", filename);
+                    av_dict_free(&options);
                     return hls->ignore_io_errors ? 0 : ret;
                 }
                 if (hls->segment_type == SEGMENT_TYPE_FMP4) {
@@ -2380,6 +2383,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 }
                 ret = flush_dynbuf(vs, &range_length);
                 if (ret < 0) {
+                    av_dict_free(&options);
                     return ret;
                 }
                 ret = hlsenc_io_close(s, &vs->out, filename);
@@ -2391,6 +2395,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                     reflush_dynbuf(vs, &range_length);
                     ret = hlsenc_io_close(s, &vs->out, filename);
                 }
+                av_dict_free(&options);
                 av_freep(&vs->temp_buffer);
                 av_freep(&filename);
             }
