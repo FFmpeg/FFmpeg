@@ -2079,7 +2079,7 @@ static int parse_cc_stream_mapstring(AVFormatContext *s)
                 return AVERROR(EINVAL);
             }
         } else {
-            av_log(s, AV_LOG_ERROR, "Invalid instream ID %s, supported are CCn or SERIVICEn\n",
+            av_log(s, AV_LOG_ERROR, "Invalid instream ID %s, supported are CCn or SERVICEn\n",
                    ccs->instreamid);
             return AVERROR(EINVAL);
         }
