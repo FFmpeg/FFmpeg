@@ -1875,7 +1875,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
     VariantStream *vs;
     int stream_index, i, j;
     enum AVMediaType codec_type;
-    int nb_varstreams, nb_streams;
+    int nb_varstreams = 0, nb_streams;
     char *p, *q, *saveptr1, *saveptr2, *varstr, *keyval;
     const char *val;
 
@@ -1900,13 +1900,14 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
     q = p;
     while (av_strtok(q, " \t", &saveptr1)) {
         q = NULL;
-        hls->nb_varstreams++;
+        nb_varstreams++;
     }
     av_freep(&p);
 
-    hls->var_streams = av_mallocz(sizeof(*hls->var_streams) * hls->nb_varstreams);
+    hls->var_streams = av_mallocz(sizeof(*hls->var_streams) * nb_varstreams);
     if (!hls->var_streams)
         return AVERROR(ENOMEM);
+    hls->nb_varstreams = nb_varstreams;
 
     p = hls->var_stream_map;
     nb_varstreams = 0;
@@ -2011,7 +2012,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
 static int parse_cc_stream_mapstring(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
-    int nb_ccstreams;
+    int nb_ccstreams = 0;
     char *p, *q, *ccstr, *keyval;
     char *saveptr1 = NULL, *saveptr2 = NULL;
     const char *val;
@@ -2024,13 +2025,14 @@ static int parse_cc_stream_mapstring(AVFormatContext *s)
     q = p;
     while (av_strtok(q, " \t", &saveptr1)) {
         q = NULL;
-        hls->nb_ccstreams++;
+        nb_ccstreams++;
     }
     av_freep(&p);
 
-    hls->cc_streams = av_mallocz(sizeof(*hls->cc_streams) * hls->nb_ccstreams);
+    hls->cc_streams = av_mallocz(sizeof(*hls->cc_streams) * nb_ccstreams);
     if (!hls->cc_streams)
         return AVERROR(ENOMEM);
+    hls->nb_ccstreams = nb_ccstreams;
 
     p = hls->cc_stream_map;
     nb_ccstreams = 0;
@@ -2106,18 +2108,16 @@ static int update_variant_stream_info(AVFormatContext *s)
         return parse_variant_stream_mapstring(s);
     } else {
         //By default, a single variant stream with all the codec streams is created
-        hls->nb_varstreams = 1;
-        hls->var_streams = av_mallocz(sizeof(*hls->var_streams) *
-                                             hls->nb_varstreams);
+        hls->var_streams = av_mallocz(sizeof(*hls->var_streams));
         if (!hls->var_streams)
             return AVERROR(ENOMEM);
+        hls->nb_varstreams = 1;
 
         hls->var_streams[0].var_stream_idx = 0;
         hls->var_streams[0].nb_streams = s->nb_streams;
         hls->var_streams[0].streams = av_mallocz(sizeof(AVStream *) *
                                             hls->var_streams[0].nb_streams);
         if (!hls->var_streams[0].streams) {
-            av_freep(&hls->var_streams);
             return AVERROR(ENOMEM);
         }
 
@@ -2125,7 +2125,6 @@ static int update_variant_stream_info(AVFormatContext *s)
         if (hls->nb_ccstreams) {
             hls->var_streams[0].ccgroup = av_strdup(hls->cc_streams[0].ccgroup);
             if (!hls->var_streams[0].ccgroup) {
-                av_freep(&hls->var_streams);
                 return AVERROR(ENOMEM);
             }
         }
