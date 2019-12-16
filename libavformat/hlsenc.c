@@ -2811,7 +2811,7 @@ static int hls_init(AVFormatContext *s)
 
         if (vs->has_subtitle) {
             vs->vtt_oformat = av_guess_format("webvtt", NULL, NULL);
-            if (!vs->oformat) {
+            if (!vs->vtt_oformat) {
                 ret = AVERROR_MUXER_NOT_FOUND;
                 goto fail;
             }
