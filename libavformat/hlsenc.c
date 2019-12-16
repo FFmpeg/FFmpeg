@@ -835,18 +835,19 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
 
     vs->packets_written = 0;
     vs->init_range_length = 0;
-    set_http_options(s, &options, hls);
+
     if ((ret = avio_open_dyn_buf(&oc->pb)) < 0)
         return ret;
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
+        set_http_options(s, &options, hls);
         if (byterange_mode) {
             ret = hlsenc_io_open(s, &vs->out, vs->basename, &options);
         } else {
             ret = hlsenc_io_open(s, &vs->out, vs->base_output_dirname, &options);
         }
+        av_dict_free(&options);
     }
-    av_dict_free(&options);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", vs->fmp4_init_filename);
         return ret;
@@ -861,21 +862,23 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         }
     }
 
-    av_dict_copy(&options, hls->format_options, 0);
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
+        int remaining_options;
+
+        av_dict_copy(&options, hls->format_options, 0);
         av_dict_set(&options, "fflags", "-autobsf", 0);
         av_dict_set(&options, "movflags", "+frag_custom+dash+delay_moov", AV_DICT_APPEND);
         ret = avformat_init_output(oc, &options);
+        remaining_options = av_dict_count(options);
+        av_dict_free(&options);
         if (ret < 0)
             return ret;
-        if (av_dict_count(options)) {
+        if (remaining_options) {
             av_log(s, AV_LOG_ERROR, "Some of the provided format options in '%s' are not recognized\n", hls->format_options_str);
-            av_dict_free(&options);
             return AVERROR(EINVAL);
         }
     }
     avio_flush(oc->pb);
-    av_dict_free(&options);
     return 0;
 }
 
@@ -1650,8 +1653,6 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
     }
     vs->number++;
 
-    set_http_options(s, &options, c);
-
     proto = avio_find_protocol_name(oc->url);
     use_temp_file = proto && !strcmp(proto, "file") && (c->flags & HLS_TEMP_FILE);
 
@@ -1702,6 +1703,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             av_opt_set(oc->priv_data, "pat_period", period, 0);
         }
         if (c->flags & HLS_SINGLE_FILE) {
+            set_http_options(s, &options, c);
             if ((err = hlsenc_io_open(s, &vs->out, oc->url, &options)) < 0) {
                 if (c->ignore_io_errors)
                     err = 0;
