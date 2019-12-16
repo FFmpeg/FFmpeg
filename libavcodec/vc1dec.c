@@ -431,7 +431,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     v->output_height = avctx->height;
 
     if (!avctx->extradata_size || !avctx->extradata)
-        return -1;
+        return AVERROR_INVALIDDATA;
     v->s.avctx = avctx;
 
     if ((ret = ff_vc1_init_common(v)) < 0)
@@ -472,7 +472,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
         if (avctx->extradata_size < 16) {
             av_log(avctx, AV_LOG_ERROR, "Extradata size too small: %i\n", avctx->extradata_size);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         buf2  = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -508,7 +508,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         av_free(buf2);
         if (!seq_initialized || !ep_initialized) {
             av_log(avctx, AV_LOG_ERROR, "Incomplete extradata\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         v->res_sprite = (avctx->codec_id == AV_CODEC_ID_VC1IMAGE);
     }
@@ -577,7 +577,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             v->sprite_height > 1 << 14 ||
             v->output_width  > 1 << 14 ||
             v->output_height > 1 << 14) {
-            ret = -1;
+            ret = AVERROR_INVALIDDATA;
             goto error;
         }
 
