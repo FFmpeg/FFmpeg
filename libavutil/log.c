@@ -226,6 +226,8 @@ static const char *get_level_str(int level)
         return "quiet";
     case AV_LOG_DEBUG:
         return "debug";
+    case AV_LOG_TRACE:
+        return "trace";
     case AV_LOG_VERBOSE:
         return "verbose";
     case AV_LOG_INFO:
