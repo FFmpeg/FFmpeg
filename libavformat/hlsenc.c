@@ -2906,22 +2906,21 @@ static int hls_init(AVFormatContext *s)
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            vs->vtt_m3u8_name = av_malloc(vtt_basename_size);
-            if (!vs->vtt_m3u8_name ) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
             av_strlcpy(vs->vtt_basename, vs->m3u8_name, vtt_basename_size);
             p = strrchr(vs->vtt_basename, '.');
             if (p)
                 *p = '\0';
 
             if ( hls->subtitle_filename ) {
-                av_freep(&vs->vtt_m3u8_name);
                 ret = format_name(hls->subtitle_filename, &vs->vtt_m3u8_name, i, vs->varname);
                 if (ret < 0)
                     goto fail;
             } else {
+                vs->vtt_m3u8_name = av_malloc(vtt_basename_size);
+                if (!vs->vtt_m3u8_name) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
                 strcpy(vs->vtt_m3u8_name, vs->vtt_basename);
                 av_strlcat(vs->vtt_m3u8_name, "_vtt.m3u8", vtt_basename_size);
             }
