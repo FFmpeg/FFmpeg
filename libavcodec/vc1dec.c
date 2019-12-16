@@ -576,14 +576,21 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         if (v->sprite_width  > 1 << 14 ||
             v->sprite_height > 1 << 14 ||
             v->output_width  > 1 << 14 ||
-            v->output_height > 1 << 14) return -1;
+            v->output_height > 1 << 14) {
+            ret = -1;
+            goto error;
+        }
 
         if ((v->sprite_width&1) || (v->sprite_height&1)) {
             avpriv_request_sample(avctx, "odd sprites support");
-            return AVERROR_PATCHWELCOME;
+            ret = AVERROR_PATCHWELCOME;
+            goto error;
         }
     }
     return 0;
+error:
+    av_frame_free(&v->sprite_output_frame);
+    return ret;
 }
 
 /** Close a VC1/WMV3 decoder
