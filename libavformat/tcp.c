@@ -550,7 +550,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         // Socket descriptor already closed here. Safe to overwrite to client one.
         fd = ret;
     } else {
-        ret = av_application_on_tcp_will_open(s->app_ctx);
+        ret = av_application_on_tcp_will_open(s->app_ctx, cur_ai->ai_family);
         if (ret) {
             av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_WILL_TCP_OPEN");
             goto fail1;
@@ -736,7 +736,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         // Socket descriptor already closed here. Safe to overwrite to client one.
         fd = ret;
     } else {
-        ret = av_application_on_tcp_will_open(s->app_ctx);
+        ret = av_application_on_tcp_will_open(s->app_ctx, cur_ai->ai_family);
         if (ret) {
             av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_WILL_TCP_OPEN");
             goto fail1;

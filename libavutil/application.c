@@ -153,10 +153,18 @@ int  av_application_on_io_control(AVApplicationContext *h, int event_type, AVApp
     return 0;
 }
 
-int av_application_on_tcp_will_open(AVApplicationContext *h)
+int av_application_on_tcp_will_open(AVApplicationContext *h, int ai_family)
 {
     if (h && h->func_on_app_event) {
         AVAppTcpIOControl control = {0};
+
+        int wrap_family = WRAP_UNKNOWN_FAMILY;
+        if (ai_family == AF_INET) {
+            wrap_family = WRAP_INET_FAMILY;
+        } else if (ai_family == AF_INET6) {
+            wrap_family = WRAP_INET6_FAMILY;
+        }
+        control.family = wrap_family;
         return h->func_on_app_event(h, AVAPP_CTRL_WILL_TCP_OPEN, (void *)&control, sizeof(AVAppTcpIOControl));
     }
     return 0;
@@ -200,6 +208,13 @@ int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, A
             }
             break;
         }
+    }
+
+    control->family = WRAP_UNKNOWN_FAMILY;
+    if (so_family == AF_INET) {
+        control->family = WRAP_INET_FAMILY;
+    } else if (so_family == AF_INET6) {
+        control->family = WRAP_INET6_FAMILY;
     }
 
     return h->func_on_app_event(h, AVAPP_CTRL_DID_TCP_OPEN, (void *)control, sizeof(AVAppTcpIOControl));

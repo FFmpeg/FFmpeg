@@ -65,6 +65,10 @@
 #define DNS_TYPE_DNS_CACHE 2
 #define DNS_TYPE_HTTP_DNS 3
 
+#define WRAP_INET_FAMILY 2
+#define WRAP_INET6_FAMILY 10
+#define WRAP_UNKNOWN_FAMILY 0
+
 typedef struct AVAppDashStream
 {
     int audio_stream_nb;
@@ -152,22 +156,9 @@ typedef enum {
 
 typedef struct {
     void *opaque;
-    /*
-       @param: opaque 表示上下文。
-       @param: switch_serial 由ffplay控制，每一次切换画质该值自增。
-       @param: switch_point 单位ms，用于表示切换的时间点，由ffplay估算出来。
-       @param: vid aid 音视频清晰度id。
-       @return: 0 表示成功 <0 表示失败
-     */
+
     int (*switch_start)(void * opaque, int64_t switch_serial, int64_t switch_point, int vid, int aid);
 
-    /*
-       @param: opaque 表示上下文
-       @param: switch_serial 由ffplay控制，每一次切换画质该值自增。
-       @param: switch_mode 表示切音频、切视频、切音视频 3种情况返回给ffplay
-       @return: <0 表示失败  -EAGIN 表示正在切换中  >0 表示真正的switch point
-       例如 ffplay下发switch point是3s，dash返回的实际switch point是5s
-     */
     int64_t (*switch_wait_complete)(void * opaque, int64_t switch_serial, int *switch_mode);
 
     // update prop buffer_level audio_only;
@@ -260,7 +251,7 @@ void av_application_did_io_tcp_read(AVApplicationContext *h, void *obj, int byte
 
 int  av_application_on_io_control(AVApplicationContext *h, int event_type, AVAppIOControl *control);
 
-int av_application_on_tcp_will_open(AVApplicationContext *h);
+int av_application_on_tcp_will_open(AVApplicationContext *h, int ai_family);
 int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, AVAppTcpIOControl *control, int is_audio, int64_t duration);
 
 void av_application_on_async_statistic(AVApplicationContext *h, AVAppAsyncStatistic *statistic);
