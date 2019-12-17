@@ -867,6 +867,7 @@ static int dwt_plane(AVCodecContext *avctx, void *arg)
             for (x = 0; x < p->width; x++) {
                 buf[x] = pix[x] - s->diff_offset;
             }
+            memset(&buf[x], 0, (p->coef_stride - p->width)*sizeof(dwtcoef));
             buf += p->coef_stride;
             pix += pix_stride;
         }
@@ -876,6 +877,7 @@ static int dwt_plane(AVCodecContext *avctx, void *arg)
             for (x = 0; x < p->width; x++) {
                 buf[x] = pix[x] - s->diff_offset;
             }
+            memset(&buf[x], 0, (p->coef_stride - p->width)*sizeof(dwtcoef));
             buf += p->coef_stride;
             pix += pix_stride;
         }
