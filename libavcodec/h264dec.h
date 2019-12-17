@@ -832,8 +832,6 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
 
-int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
-                                const H2645NAL *nal);
 /**
  * Submit a slice for decoding.
  *
