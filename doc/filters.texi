@@ -15348,42 +15348,16 @@ Set the line to start scanning for EIA-608 data. Default is @code{0}.
 @item scan_max
 Set the line to end scanning for EIA-608 data. Default is @code{29}.
 
-@item mac
-Set minimal acceptable amplitude change for sync codes detection.
-Default is @code{0.2}. Allowed range is @code{[0.001 - 1]}.
-
 @item spw
 Set the ratio of width reserved for sync code detection.
-Default is @code{0.27}. Allowed range is @code{[0.01 - 0.7]}.
-
-@item mhd
-Set the max peaks height difference for sync code detection.
-Default is @code{0.1}. Allowed range is @code{[0.0 - 0.5]}.
-
-@item mpd
-Set max peaks period difference for sync code detection.
-Default is @code{0.1}. Allowed range is @code{[0.0 - 0.5]}.
-
-@item msd
-Set the first two max start code bits differences.
-Default is @code{0.02}. Allowed range is @code{[0.0 - 0.5]}.
-
-@item bhd
-Set the minimum ratio of bits height compared to 3rd start code bit.
-Default is @code{0.75}. Allowed range is @code{[0.01 - 1]}.
-
-@item th_w
-Set the white color threshold. Default is @code{0.35}. Allowed range is @code{[0.1 - 1]}.
-
-@item th_b
-Set the black color threshold. Default is @code{0.15}. Allowed range is @code{[0.0 - 0.5]}.
+Default is @code{0.27}. Allowed range is @code{[0.1 - 0.7]}.
 
 @item chp
 Enable checking the parity bit. In the event of a parity error, the filter will output
 @code{0x00} for that character. Default is false.
 
 @item lp
-Lowpass lines prior to further processing. Default is disabled.
+Lowpass lines prior to further processing. Default is enabled.
 @end table
 
 @subsection Examples
