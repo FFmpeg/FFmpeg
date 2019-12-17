@@ -467,7 +467,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
             dst_int32_t = (int32_t *)frame->extended_data[c];
             for (i = 0; i < n; i++) {
                 // extract low 20 bits and expand to 32 bits
-                *dst_int32_t++ =  (src[2]         << 28) |
+                *dst_int32_t++ =  ((uint32_t)src[2]<<28) |
                                   (src[1]         << 20) |
                                   (src[0]         << 12) |
                                  ((src[2] & 0x0F) <<  8) |
