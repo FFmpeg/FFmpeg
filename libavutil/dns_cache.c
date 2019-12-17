@@ -92,14 +92,23 @@ static DnsCacheEntry *new_dns_cache_entry(const char *uri, struct addrinfo *cur_
 
     memcpy(new_entry->res, cur_ai, sizeof(struct addrinfo));
 
-    new_entry->res->ai_addr = (struct sockaddr *) av_mallocz(sizeof(struct sockaddr));
+    if (new_entry->res->ai_family == AF_INET6) {
+        new_entry->res->ai_addr = (struct sockaddr_in6 *) av_mallocz(sizeof(struct sockaddr_in6));
+    } else {
+        new_entry->res->ai_addr = (struct sockaddr *) av_mallocz(sizeof(struct sockaddr));
+    }
     if (!new_entry->res->ai_addr) {
         av_freep(&new_entry->res);
         av_freep(&new_entry);
         goto fail;
     }
 
-    memcpy(new_entry->res->ai_addr, cur_ai->ai_addr, sizeof(struct sockaddr));
+    if (new_entry->res->ai_family == AF_INET6) {
+        memcpy(new_entry->res->ai_addr, cur_ai->ai_addr, sizeof(struct sockaddr_in6));
+    } else {
+        memcpy(new_entry->res->ai_addr, cur_ai->ai_addr, sizeof(struct sockaddr));
+    }
+
     new_entry->res->ai_canonname = NULL;
     new_entry->res->ai_next      = NULL;
     new_entry->ref_count         = 0;

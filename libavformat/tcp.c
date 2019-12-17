@@ -421,6 +421,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             remove_dns_cache_entry(uri);
         } else {
             dns_entry = get_dns_cache_reference(uri);
+            if (dns_entry && dns_entry->res && dns_entry->res->ai_family == AF_INET6 && !s->enable_ipv6) {
+                release_dns_cache_reference(uri, &dns_entry);
+                remove_dns_cache_entry(uri);
+                av_log(NULL, AV_LOG_INFO, "will delete dns cache entry because ipv6 fallback, uri = %s\n", uri);
+                dns_entry = NULL;
+            }
         }
     }
     av_application_on_dns_will_open(s->app_ctx, hostname);
@@ -573,7 +579,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
             } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
-                add_dns_cache_entry(uri, ai, s->dns_cache_timeout);
+                add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
                 av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
             }
             av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
