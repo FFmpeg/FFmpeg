@@ -310,6 +310,17 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = frame_rate;
     outlink->sample_aspect_ratio = sar;
 
+    for (i = 1; i < s->nb_inputs; i++) {
+        AVFilterLink *inlink = ctx->inputs[i];
+        if (outlink->frame_rate.num != inlink->frame_rate.num ||
+            outlink->frame_rate.den != inlink->frame_rate.den) {
+            av_log(ctx, AV_LOG_VERBOSE,
+                    "Video inputs have different frame rates, output will be VFR\n");
+            outlink->frame_rate = av_make_q(1, 0);
+            break;
+        }
+    }
+
     if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
 
