@@ -1893,7 +1893,7 @@ key=value pairs. For example, to specify temporal scalability parameters
 with @code{ffmpeg}:
 @example
 ffmpeg -i INPUT -c:v libvpx -ts-parameters ts_number_layers=3:\
-ts_target_bitrate=250000,500000,1000000:ts_rate_decimator=4,2,1:\
+ts_target_bitrate=250,500,1000:ts_rate_decimator=4,2,1:\
 ts_periodicity=4:ts_layer_id=0,2,1,2 OUTPUT
 @end example
 Below is a brief explanation of each of the parameters, please
@@ -1903,7 +1903,8 @@ details.
 @item ts_number_layers
 Number of temporal coding layers.
 @item ts_target_bitrate
-Target bitrate for each temporal layer.
+Target bitrate for each temporal layer (in kbps).
+(bitrate should be inclusive of the lower temporal layer).
 @item ts_rate_decimator
 Frame rate decimation factor for each temporal layer.
 @item ts_periodicity
