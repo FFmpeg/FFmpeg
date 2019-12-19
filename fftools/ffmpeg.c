@@ -3563,12 +3563,12 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             for (i = 0; i < ist->st->nb_side_data; i++) {
                 AVPacketSideData *sd = &ist->st->side_data[i];
                 if (sd->type != AV_PKT_DATA_CPB_PROPERTIES) {
-                uint8_t *dst = av_stream_new_side_data(ost->st, sd->type, sd->size);
-                if (!dst)
-                    return AVERROR(ENOMEM);
-                memcpy(dst, sd->data, sd->size);
-                if (ist->autorotate && sd->type == AV_PKT_DATA_DISPLAYMATRIX)
-                    av_display_rotation_set((uint32_t *)dst, 0);
+                    uint8_t *dst = av_stream_new_side_data(ost->st, sd->type, sd->size);
+                    if (!dst)
+                        return AVERROR(ENOMEM);
+                    memcpy(dst, sd->data, sd->size);
+                    if (ist->autorotate && sd->type == AV_PKT_DATA_DISPLAYMATRIX)
+                        av_display_rotation_set((uint32_t *)dst, 0);
                 }
             }
         }
