@@ -247,14 +247,14 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
     uint8_t *user_data;
     int e, build, i;
 
-    if (size < 16 || size >= INT_MAX - 16)
+    if (size < 16 || size >= INT_MAX - 1)
         return AVERROR_INVALIDDATA;
 
-    user_data = av_malloc(16 + size + 1);
+    user_data = av_malloc(size + 1);
     if (!user_data)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < size + 16; i++)
+    for (i = 0; i < size; i++)
         user_data[i] = get_bits(gb, 8);
 
     user_data[i] = 0;
