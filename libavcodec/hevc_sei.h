@@ -83,8 +83,7 @@ typedef struct HEVCSEIPictureTiming {
 } HEVCSEIPictureTiming;
 
 typedef struct HEVCSEIA53Caption {
-    int a53_caption_size;
-    uint8_t *a53_caption;
+    AVBufferRef *buf_ref;
 } HEVCSEIA53Caption;
 
 typedef struct HEVCSEIMasteringDisplay {
