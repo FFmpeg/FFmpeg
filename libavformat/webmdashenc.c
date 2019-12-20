@@ -488,11 +488,12 @@ static int parse_adaptation_sets(AVFormatContext *s)
             state = parsing_streams;
         } else if (state == parsing_streams) {
             struct AdaptationSet *as = &w->as[w->nb_as - 1];
+            int ret = av_reallocp_array(&as->streams, ++as->nb_streams,
+                                        sizeof(*as->streams));
+            if (ret < 0)
+                return ret;
             q = p;
             while (*q != '\0' && *q != ',' && *q != ' ') q++;
-            as->streams = av_realloc(as->streams, sizeof(*as->streams) * ++as->nb_streams);
-            if (as->streams == NULL)
-                return AVERROR(ENOMEM);
             as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
             if (as->streams[as->nb_streams - 1] < 0 ||
                 as->streams[as->nb_streams - 1] >= s->nb_streams) {
