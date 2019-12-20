@@ -327,10 +327,12 @@ static int ism_write_header(AVFormatContext *s)
         }
 
         os->ctx = ctx = avformat_alloc_context();
-        if (!ctx || ff_copy_whiteblacklists(ctx, s) < 0) {
+        if (!ctx) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        if ((ret = ff_copy_whiteblacklists(ctx, s)) < 0)
+            goto fail;
         ctx->oformat = oformat;
         ctx->interrupt_callback = s->interrupt_callback;
 
