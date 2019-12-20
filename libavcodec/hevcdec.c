@@ -3463,6 +3463,13 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         s->max_ra = INT_MAX;
     }
 
+    av_buffer_unref(&s->sei.a53_caption.buf_ref);
+    if (s0->sei.a53_caption.buf_ref) {
+        s->sei.a53_caption.buf_ref = av_buffer_ref(s0->sei.a53_caption.buf_ref);
+        if (!s->sei.a53_caption.buf_ref)
+            return AVERROR(ENOMEM);
+    }
+
     s->sei.frame_packing        = s0->sei.frame_packing;
     s->sei.display_orientation  = s0->sei.display_orientation;
     s->sei.mastering_display    = s0->sei.mastering_display;
