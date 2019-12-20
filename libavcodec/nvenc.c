@@ -2262,3 +2262,8 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     return 0;
 }
+
+av_cold void ff_nvenc_encode_flush(AVCodecContext *avctx)
+{
+    ff_nvenc_send_frame(avctx, NULL);
+}
