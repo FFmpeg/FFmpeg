@@ -939,21 +939,22 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_H264
 		                || par->codec_id == AV_CODEC_ID_MPEG4 || par->codec_id == AV_CODEC_ID_HEVC) {
 	            int side_size = 0;
-		            uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
-			            if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
-					                av_free(par->extradata);
-							            par->extradata = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
-								                if (!par->extradata) {
-											                par->extradata_size = 0;
-													                return AVERROR(ENOMEM);
-															            }
-										            memcpy(par->extradata, side, side_size);
-											                par->extradata_size = side_size;
-													            flv_write_codec_header(s, par, pkt->dts);
-														            } else {
-																                flv_write_codec_header(s, par, pkt->dts);
-																		        }
-				        }
+				uint8_t* side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
+				if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
+					av_free(par->extradata);
+					par->extradata = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
+					if (!par->extradata) {
+						par->extradata_size = 0;
+						return AVERROR(ENOMEM);
+					}
+					memcpy(par->extradata, side, side_size);
+					par->extradata_size = side_size;
+					flv_write_codec_header(s, par, pkt->dts);
+				}
+				else {
+					flv_write_codec_header(s, par, pkt->dts);
+				}
+	}
 
     if (flv->delay == AV_NOPTS_VALUE)
         flv->delay = -pkt->dts;

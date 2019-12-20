@@ -70,7 +70,7 @@ const AVClass ffurl_context_class = {
 };
 /*@}*/
 
-static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
+static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,//前面探测得到的
                                   const char *filename, int flags,
                                   const AVIOInterruptCB *int_cb)
 {
@@ -91,13 +91,13 @@ static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
                "Impossible to open the '%s' protocol for writing\n", up->name);
         return AVERROR(EIO);
     }
-    uc = av_mallocz(sizeof(URLContext) + strlen(filename) + 1);
+    uc = av_mallocz(sizeof(URLContext) + strlen(filename) + 1);//申请了放文件名字的空间
     if (!uc) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
     uc->av_class = &ffurl_context_class;
-    uc->filename = (char *)&uc[1];
+    uc->filename = (char *)&uc[1];//取申请面部分空间存储文件名
     strcpy(uc->filename, filename);
     uc->prot            = up;
     uc->flags           = flags;
