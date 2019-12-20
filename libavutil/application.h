@@ -50,7 +50,7 @@
 
 #define AVAPP_CTRL_WILL_CONCAT_SEGMENT_OPEN 0x20007 //AVAppIOControl
 #define AVAPP_CTRL_WILL_FILE_OPEN 0x20009 //AVAppIOControl
-
+#define AVAPP_CTRL_WILL_FILE_IO_OPEN  0x2000a //AVAppIOControl
 
 #define AVAPP_SWITCH_CTRL_UPDATE_STREAM 0x40012
 
@@ -85,10 +85,12 @@ typedef struct AVAppIOControl {
     size_t  size;
     char    url[4096];      /* in, out */
     int     segment_index;  /* in, default = 0 */
+    int     qn;   /**/
     int     retry_counter;  /* in */
 
     int     is_handled;     /* out, default = false */
     int     is_url_changed; /* out, default = false */
+    int64_t    file_size; /*out*/
     int     is_audio;
     int     http_code;
     int     error_code;
