@@ -236,8 +236,10 @@ This is a deprecated option to set the segment length in microseconds, use @var{
 @item seg_duration @var{duration}
 Set the segment length in seconds (fractional value can be set). The value is
 treated as average segment duration when @var{use_template} is enabled and
-@var{use_timeline} is disabled and as minimum segment duration for all the other
-use cases.
+@item frag_duration @var{duration}
+Set the length in seconds of fragments within segments (fractional value can be set).
+@item frag_type @var{type}
+Set the type of interval for fragmentation.
 @item window_size @var{size}
 Set the maximum number of segments kept in the manifest.
 @item extra_window_size @var{size}
@@ -278,9 +280,12 @@ To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be use
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
 
-Optional syntax is "id=x,descriptor=descriptor_string,streams=a,b,c id=y,streams=d,e" and so on, descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015.
+Optional syntax is "id=x,seg_duration=x,frag_duration=x,frag_type=type,descriptor=descriptor_string,streams=a,b,c id=y,seg_duration=y,frag_type=type,streams=d,e" and so on,
+descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015.
 For example, -adaptation_sets "id=0,descriptor=<SupplementalProperty schemeIdUri=\"urn:mpeg:dash:srd:2014\" value=\"0,0,0,1,1,2,2\"/>,streams=v".
 Please note that descriptor string should be a self-closing xml tag.
+seg_duration, frag_duration and frag_type override the global option values for each adaptation set.
+For example, -adaptation_sets "id=0,seg_duration=2,frag_duration=1,frag_type=duration,streams=v id=1,seg_duration=2,frag_type=none,streams=a"
 @item timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
 @item index_correction @var{index_correction}
@@ -326,8 +331,25 @@ This option will also try to comply with the above open spec, till Apple's spec 
 Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
 This is an experimental feature.
 
+@item ldash @var{ldash}
+Enable Low-latency Dash by constraining the presence and values of some elements.
+
 @item master_m3u8_publish_rate @var{master_m3u8_publish_rate}
 Publish master playlist repeatedly every after specified number of segment intervals.
+
+@item -write_prft @var{write_prft}
+Write Producer Reference Time elements on supported streams. This also enables writing
+prft boxes in the underlying muxer. Applicable only when the @var{utc_url} option is enabled.
+
+@item -mpd_profile @var{mpd_profile}
+Set one or more manifest profiles.
+
+@item -http_opts @var{http_opts}
+List of options to pass to the underlying HTTP protocol. Applicable only for HTTP output.
+
+@item -target_latency @var{target_latency}
+Set an intended target latency in seconds (fractional value can be set) for serving. Applicable only when @var{streaming} and @var{write_prft} options are enabled.
+This is an informative fields clients can use to measure the latency of the service.
 
 @end table
 
