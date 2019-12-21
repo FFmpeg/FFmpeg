@@ -5,8 +5,8 @@ version <next>:
 - v360 filter
 - Intel QSV-accelerated MJPEG decoding
 - Intel QSV-accelerated VP9 decoding
-- support for TrueHD in mp4
-- Supoort AMD AMF encoder on Linux (via Vulkan)
+- Support for TrueHD in mp4
+- Support AMD AMF encoder on Linux (via Vulkan)
 - IMM5 video decoder
 - ZeroMQ protocol
 - support Sipro ACELP.KELVIN decoding
