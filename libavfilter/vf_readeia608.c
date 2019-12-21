@@ -365,7 +365,7 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
 
         if (s->chp) {
             if (!(parity & 1)) {
-                byte[ch] = 0;
+                byte[ch] = 0x7F;
             }
         }
     }
