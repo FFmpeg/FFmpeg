@@ -386,7 +386,7 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
                ctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
-    if (ctx->block_align <= 0) {
+    if (ctx->block_align <= 0 || ctx->block_align > (1<<22)) {
         av_log(ctx, AV_LOG_ERROR, "Invalid block alignment %d.\n", ctx->block_align);
         return AVERROR_INVALIDDATA;
     }
