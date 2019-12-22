@@ -199,7 +199,6 @@ typedef struct HLSContext {
     int64_t max_seg_size; // every segment file max size
 
     char *baseurl;
-    char *format_options_str;
     char *vtt_format_options_str;
     char *subtitle_filename;
     AVDictionary *format_options;
@@ -853,15 +852,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         return ret;
     }
 
-    if (hls->format_options_str) {
-        ret = av_dict_parse_string(&hls->format_options, hls->format_options_str, "=", ":", 0);
-        if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n",
-                   hls->format_options_str);
-            return ret;
-        }
-    }
-
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         int remaining_options;
 
@@ -874,7 +864,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         if (ret < 0)
             return ret;
         if (remaining_options) {
-            av_log(s, AV_LOG_ERROR, "Some of the provided format options in '%s' are not recognized\n", hls->format_options_str);
+            av_log(s, AV_LOG_ERROR, "Some of the provided format options are not recognized\n");
             return AVERROR(EINVAL);
         }
     }
@@ -2778,13 +2768,6 @@ static int hls_init(AVFormatContext *s)
             time(&now0);
             vs->initial_prog_date_time = now0;
         }
-        if (hls->format_options_str) {
-            ret = av_dict_parse_string(&hls->format_options, hls->format_options_str, "=", ":", 0);
-            if (ret < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n", hls->format_options_str);
-                goto fail;
-            }
-        }
 
         for (j = 0; j < vs->nb_streams; j++) {
             vs->has_video += vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO;
@@ -2992,7 +2975,7 @@ static const AVOption options[] = {
     {"hls_init_time", "set segment length in seconds at init list",           OFFSET(init_time),    AV_OPT_TYPE_FLOAT,  {.dbl = 0},     0, FLT_MAX, E},
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_delete_threshold", "set number of unreferenced segments to keep before deleting",  OFFSET(hls_delete_threshold),    AV_OPT_TYPE_INT,    {.i64 = 1},     1, INT_MAX, E},
-    {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+    {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options), AV_OPT_TYPE_DICT, {.str = NULL},  0, 0,    E},
     {"hls_vtt_options","set hls vtt list of options for the container format used for hls", OFFSET(vtt_format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
 #if FF_API_HLS_WRAP
     {"hls_wrap",      "set number after which the index wraps (will be deprecated)",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
