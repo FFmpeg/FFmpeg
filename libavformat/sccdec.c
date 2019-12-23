@@ -139,7 +139,7 @@ try_again:
 
         sub->pos = current_pos;
         sub->pts = ts_start;
-        sub->duration = FFMAX(1200, ts_end - ts_start);
+        sub->duration = ts_end - ts_start;
         memmove(line, line2, sizeof(line));
         current_pos = next_pos;
         line2[0] = 0;
@@ -147,6 +147,7 @@ try_again:
 
     if (line[0]) {
         ts_start = ts_end;
+        ts_end += 1200;
         goto try_again;
     }
 
