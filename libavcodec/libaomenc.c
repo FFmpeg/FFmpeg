@@ -92,6 +92,7 @@ typedef struct AOMEncoderContext {
     int enable_cdef;
     int enable_global_motion;
     int enable_intrabc;
+    int enable_restoration;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -110,6 +111,7 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_SUPERBLOCK_SIZE]  = "AV1E_SET_SUPERBLOCK_SIZE",
     [AV1E_SET_TILE_COLUMNS]     = "AV1E_SET_TILE_COLUMNS",
     [AV1E_SET_TILE_ROWS]        = "AV1E_SET_TILE_ROWS",
+    [AV1E_SET_ENABLE_RESTORATION] = "AV1E_SET_ENABLE_RESTORATION",
 #ifdef AOM_CTRL_AV1E_SET_ROW_MT
     [AV1E_SET_ROW_MT]           = "AV1E_SET_ROW_MT",
 #endif
@@ -688,6 +690,9 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AOME_SET_ARNR_STRENGTH,    ctx->arnr_strength);
     if (ctx->enable_cdef >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_CDEF, ctx->enable_cdef);
+    if (ctx->enable_restoration >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_RESTORATION, ctx->enable_restoration);
+
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)
         codecctl_int(avctx, AOME_SET_CQ_LEVEL,          ctx->crf);
@@ -1084,6 +1089,7 @@ static const AVOption options[] = {
     { "enable-cdef",      "Enable CDEF filtering",                 OFFSET(enable_cdef),    AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-global-motion",  "Enable global motion",             OFFSET(enable_global_motion), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-intrabc",  "Enable intra block copy prediction mode", OFFSET(enable_intrabc), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-restoration", "Enable Loop Restoration filtering", OFFSET(enable_restoration), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { NULL },
 };
 

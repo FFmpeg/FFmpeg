@@ -1587,6 +1587,9 @@ Enable row based multi-threading. Disabled by default.
 Enable Constrained Directional Enhancement Filter. The libaom-av1
 encoder enables CDEF by default.
 
+@item enable-restoration (@emph{boolean})
+Enable Loop Restoration Filter. Default is true for libaom-av1.
+
 @item enable-global-motion (@emph{boolean})
 Enable the use of global motion for block prediction. Default is true.
 
