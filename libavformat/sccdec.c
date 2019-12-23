@@ -63,6 +63,7 @@ static int scc_read_header(AVFormatContext *s)
     SCCContext *scc = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     char line[4096], line2[4096];
+    int64_t ts_start, ts_end;
     int count = 0, ret = 0;
     ptrdiff_t len2, len;
     uint8_t out[4096];
@@ -81,7 +82,6 @@ static int scc_read_header(AVFormatContext *s)
         char *saveptr = NULL, *lline;
         int hh1, mm1, ss1, fs1, i;
         int hh2, mm2, ss2, fs2;
-        int64_t ts_start, ts_end;
         AVPacket *sub;
 
         if (count == 0) {
@@ -142,8 +142,10 @@ try_again:
         line2[0] = 0;
     }
 
-    if (line[0])
+    if (line[0]) {
+        ts_start = ts_end;
         goto try_again;
+    }
 
     ff_subtitles_queue_finalize(s, &scc->q);
 
