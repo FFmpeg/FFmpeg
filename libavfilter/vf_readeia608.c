@@ -325,7 +325,8 @@ static void extract_line(AVFilterContext *ctx, AVFrame *in, int w, int nb_line)
 
     bit_size /= 19.f;
     for (i = 1; i < 14; i++) {
-        if (s->code[i].size > bit_size * 1.5f) {
+        if (s->code[i].size > bit_size * 1.5f ||
+            s->code[i].size < bit_size * 0.2f) {
             return;
         }
     }
