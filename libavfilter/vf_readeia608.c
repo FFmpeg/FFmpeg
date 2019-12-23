@@ -40,6 +40,16 @@
 #define SYNC_MIN 12.f
 #define SYNC_MAX 15.f
 
+typedef struct LineItem {
+    int   input;
+    int   output;
+
+    float unfiltered;
+    float filtered;
+    float average;
+    float deviation;
+} LineItem;
+
 typedef struct CodeItem {
     uint8_t bit;
     int size;
@@ -57,13 +67,8 @@ typedef struct ReadEIA608Context {
 
     uint64_t histogram[256];
 
-    uint8_t *temp;
-    uint8_t *signal;
     CodeItem *code;
-    float *unfiltered;
-    float *filtered;
-    float *avg_filter;
-    float *std_filter;
+    LineItem *line;
 } ReadEIA608Context;
 
 #define OFFSET(x) offsetof(ReadEIA608Context, x)
@@ -114,26 +119,20 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    s->unfiltered = av_calloc(size, sizeof(*s->unfiltered));
-    s->filtered = av_calloc(size, sizeof(*s->filtered));
-    s->avg_filter = av_calloc(size, sizeof(*s->avg_filter));
-    s->std_filter = av_calloc(size, sizeof(*s->std_filter));
-    s->signal = av_calloc(size, sizeof(*s->signal));
+    s->line = av_calloc(size, sizeof(*s->line));
     s->code = av_calloc(size, sizeof(*s->code));
-    s->temp = av_calloc(size, sizeof(*s->temp));
-    if (!s->unfiltered || !s->filtered || !s->avg_filter ||
-        !s->std_filter || !s->signal || !s->code || !s->temp)
+    if (!s->line || !s->code)
         return AVERROR(ENOMEM);
 
     return 0;
 }
 
-static void build_histogram(ReadEIA608Context *s, const uint8_t *src, int len)
+static void build_histogram(ReadEIA608Context *s, const LineItem *line, int len)
 {
     memset(s->histogram, 0, sizeof(s->histogram));
 
-    for (int i = 0; i < len; i++)
-        s->histogram[src[i]]++;
+    for (int i = LAG; i < len + LAG; i++)
+        s->histogram[line[i].input]++;
 }
 
 static void find_black_and_white(ReadEIA608Context *s)
@@ -178,87 +177,86 @@ static void find_black_and_white(ReadEIA608Context *s)
     s->white = white;
 }
 
-static float meanf(float *data, int len)
+static float meanf(const LineItem *line, int len)
 {
     float sum = 0.0, mean = 0.0;
 
     for (int i = 0; i < len; i++)
-        sum += data[i];
+        sum += line[i].filtered;
 
     mean = sum / len;
 
     return mean;
 }
 
-static float stddevf(float *data, int len)
+static float stddevf(const LineItem *line, int len)
 {
-    float m = meanf(data, len);
+    float m = meanf(line, len);
     float standard_deviation = 0.f;
 
     for (int i = 0; i < len; i++)
-        standard_deviation += (data[i] - m) * (data[i] - m);
+        standard_deviation += (line[i].filtered - m) * (line[i].filtered - m);
 
     return sqrtf(standard_deviation / (len - 1));
 }
 
-static void thresholding(ReadEIA608Context *s, const uint8_t *y, uint8_t *signal,
-                         float *unfiltered, float *filtered, float *avg_filter, float *std_filter,
+static void thresholding(ReadEIA608Context *s, LineItem *line,
                          int lag, float threshold, float influence, int len)
 {
     for (int i = lag; i < len + lag; i++) {
-        unfiltered[i] = y[i - lag] / 255.f;
-        filtered[i] = unfiltered[i];
+        line[i].unfiltered = line[i].input / 255.f;
+        line[i].filtered = line[i].unfiltered;
     }
 
     for (int i = 0; i < lag; i++) {
-        unfiltered[i] = meanf(unfiltered, len * s->spw);
-        filtered[i] = unfiltered[i];
+        line[i].unfiltered = meanf(line, len * s->spw);
+        line[i].filtered = line[i].unfiltered;
     }
 
-    memset(signal, 0, len);
-
-    avg_filter[lag - 1] = meanf(unfiltered, lag);
-    std_filter[lag - 1] = stddevf(unfiltered, lag);
+    line[lag - 1].average   = meanf(line, lag);
+    line[lag - 1].deviation = stddevf(line, lag);
 
     for (int i = lag; i < len + lag; i++) {
-        if (fabsf(unfiltered[i] - avg_filter[i-1]) > threshold * std_filter[i-1]) {
-            if (unfiltered[i] > avg_filter[i-1]) {
-                signal[i - lag] = 255;
+        if (fabsf(line[i].unfiltered - line[i-1].average) > threshold * line[i-1].deviation) {
+            if (line[i].unfiltered > line[i-1].average) {
+                line[i].output = 255;
             } else {
-                signal[i - lag] = 0;
+                line[i].output = 0;
             }
-            filtered[i] = influence * unfiltered[i] + (1.f - influence) * filtered[i-1];
+
+            line[i].filtered = influence * line[i].unfiltered + (1.f - influence) * line[i-1].filtered;
         } else {
             int distance_from_black, distance_from_white;
 
-            distance_from_black = FFABS(y[i - lag] - s->black);
-            distance_from_white = FFABS(y[i - lag] - s->white);
+            distance_from_black = FFABS(line[i].input - s->black);
+            distance_from_white = FFABS(line[i].input - s->white);
 
-            signal[i - lag] = distance_from_black <= distance_from_white ? 0 : 255;
+            line[i].output = distance_from_black <= distance_from_white ? 0 : 255;
         }
-        avg_filter[i] = meanf(filtered + i - lag, lag);
-        std_filter[i] = stddevf(filtered + i - lag, lag);
+
+        line[i].average   = meanf(line + i - lag, lag);
+        line[i].deviation = stddevf(line + i - lag, lag);
     }
 }
 
-static int periods(const uint8_t *signal, CodeItem *code, int len)
+static int periods(const LineItem *line, CodeItem *code, int len)
 {
-    int hold = signal[0], cnt = 0;
-    int last = 0;
+    int hold = line[LAG].output, cnt = 0;
+    int last = LAG;
 
     memset(code, 0, len * sizeof(*code));
 
-    for (int i = 1; i < len; i++) {
-        if (signal[i] != hold) {
+    for (int i = LAG + 1; i < len + LAG; i++) {
+        if (line[i].output != hold) {
             code[cnt].size = i - last;
             code[cnt].bit = hold;
-            hold = signal[i];
+            hold = line[i].output;
             last = i;
             cnt++;
         }
     }
 
-    code[cnt].size = len - last;
+    code[cnt].size = LAG + len - last;
     code[cnt].bit = hold;
 
     return cnt + 1;
@@ -275,9 +273,10 @@ static void dump_code(AVFilterContext *ctx, int len, int item)
     av_log(ctx, AV_LOG_DEBUG, "\n");
 }
 
-static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in, int line)
+static void extract_line(AVFilterContext *ctx, AVFrame *in, int w, int nb_line)
 {
     ReadEIA608Context *s = ctx->priv;
+    LineItem *line = s->line;
     int i, j, ch, len;
     const uint8_t *src;
     uint8_t byte[2] = { 0 };
@@ -285,40 +284,38 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
     float bit_size = 0.f;
     int parity;
 
-    src = &in->data[0][line * in->linesize[0]];
-    if (s->lp) {
-        uint8_t *dst = s->temp;
-        int w = inlink->w - 1;
+    memset(line, 0, (w + LAG) * sizeof(*line));
 
-        for (i = 0; i < inlink->w; i++) {
+    src = &in->data[0][nb_line * in->linesize[0]];
+    if (s->lp) {
+        for (i = 0; i < w; i++) {
             int a = FFMAX(i - 3, 0);
             int b = FFMAX(i - 2, 0);
             int c = FFMAX(i - 1, 0);
-            int d = FFMIN(i + 3, w);
-            int e = FFMIN(i + 2, w);
-            int f = FFMIN(i + 1, w);
+            int d = FFMIN(i + 3, w-1);
+            int e = FFMIN(i + 2, w-1);
+            int f = FFMIN(i + 1, w-1);
 
-            dst[i] = (src[a] + src[b] + src[c] + src[i] + src[d] + src[e] + src[f] + 6) / 7;
+            line[LAG + i].input = (src[a] + src[b] + src[c] + src[i] + src[d] + src[e] + src[f] + 6) / 7;
         }
-
-        src = s->temp;
+    } else {
+        for (i = 0; i < w; i++) {
+            line[LAG + i].input = src[i];
+        }
     }
 
-    build_histogram(s, src, inlink->w);
+    build_histogram(s, line, w);
     find_black_and_white(s);
     if (s->white - s->black < 5)
         return;
 
-    thresholding(s, src, s->signal, s->unfiltered, s->filtered,
-                 s->avg_filter, s->std_filter,
-                 LAG, 1, 0, inlink->w);
-    //memcpy(&in->data[0][line * in->linesize[0]], s->signal, inlink->w);
-    len = periods(s->signal, s->code, inlink->w);
-    dump_code(ctx, len, line);
+    thresholding(s, line, LAG, 1, 0, w);
+    len = periods(line, s->code, w);
+    dump_code(ctx, len, nb_line);
     if (len < 15 ||
         s->code[14].bit != 0 ||
-        inlink->w / (float)s->code[14].size < SYNC_MIN ||
-        inlink->w / (float)s->code[14].size > SYNC_MAX) {
+        w / (float)s->code[14].size < SYNC_MIN ||
+        w / (float)s->code[14].size > SYNC_MAX) {
         return;
     }
 
@@ -383,7 +380,7 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
         av_dict_set(&in->metadata, key, value, 0);
 
         snprintf(key, sizeof(key), "lavfi.readeia608.%d.line", s->nb_found);
-        snprintf(value, sizeof(value), "%d", line);
+        snprintf(value, sizeof(value), "%d", nb_line);
         av_dict_set(&in->metadata, key, value, 0);
     }
 
@@ -399,7 +396,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->nb_found = 0;
     for (i = s->start; i <= s->end; i++)
-        extract_line(ctx, inlink, in, i);
+        extract_line(ctx, in, inlink->w, i);
 
     return ff_filter_frame(outlink, in);
 }
@@ -408,13 +405,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     ReadEIA608Context *s = ctx->priv;
 
-    av_freep(&s->temp);
     av_freep(&s->code);
-    av_freep(&s->signal);
-    av_freep(&s->unfiltered);
-    av_freep(&s->filtered);
-    av_freep(&s->avg_filter);
-    av_freep(&s->std_filter);
+    av_freep(&s->line);
 }
 
 static const AVFilterPad readeia608_inputs[] = {
