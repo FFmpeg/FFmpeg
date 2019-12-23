@@ -764,6 +764,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
     AVFormatContext *oc;
     AVFormatContext *vtt_oc = NULL;
     int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
+    int remaining_options;
     int i, ret;
 
     ret = avformat_alloc_output_context2(&vs->avf, vs->oformat, NULL, NULL);
@@ -852,21 +853,25 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         return ret;
     }
 
+    av_dict_copy(&options, hls->format_options, 0);
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-        int remaining_options;
-
-        av_dict_copy(&options, hls->format_options, 0);
         av_dict_set(&options, "fflags", "-autobsf", 0);
         av_dict_set(&options, "movflags", "+frag_custom+dash+delay_moov", AV_DICT_APPEND);
-        ret = avformat_init_output(oc, &options);
-        remaining_options = av_dict_count(options);
-        av_dict_free(&options);
-        if (ret < 0)
-            return ret;
-        if (remaining_options) {
-            av_log(s, AV_LOG_ERROR, "Some of the provided format options are not recognized\n");
-            return AVERROR(EINVAL);
-        }
+    } else {
+        /* We only require one PAT/PMT per segment. */
+        char period[21];
+        snprintf(period, sizeof(period), "%d", (INT_MAX / 2) - 1);
+        av_dict_set(&options, "sdt_period", period, 0);
+        av_dict_set(&options, "pat_period", period, 0);
+    }
+    ret = avformat_init_output(oc, &options);
+    remaining_options = av_dict_count(options);
+    av_dict_free(&options);
+    if (ret < 0)
+        return ret;
+    if (remaining_options) {
+        av_log(s, AV_LOG_ERROR, "Some of the provided format options are not recognized\n");
+        return AVERROR(EINVAL);
     }
     avio_flush(oc->pb);
     return 0;
@@ -1683,15 +1688,8 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
         }
     }
     if (c->segment_type != SEGMENT_TYPE_FMP4) {
-        /* We only require one PAT/PMT per segment. */
         if (oc->oformat->priv_class && oc->priv_data) {
-            char period[21];
-
-            snprintf(period, sizeof(period), "%d", (INT_MAX / 2) - 1);
-
             av_opt_set(oc->priv_data, "mpegts_flags", "resend_headers", 0);
-            av_opt_set(oc->priv_data, "sdt_period", period, 0);
-            av_opt_set(oc->priv_data, "pat_period", period, 0);
         }
         if (c->flags & HLS_SINGLE_FILE) {
             set_http_options(s, &options, c);
