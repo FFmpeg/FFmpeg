@@ -262,16 +262,16 @@ static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
     int i, j;
 
     for (int k = 0; k < 1 + 2 * (s->is_planar && s->is_rgb); k++) {
-    for (i = slice_start; i < slice_end; i++) {
-        uint8_t *p = frame->data[k] + i * frame->linesize[k];
-        for (j = 0; j < frame->width * s->bpp; j++) {
-            /* s->factor is using 16 lower-order bits for decimal
-             * places. 32768 = 1 << 15, it is an integer representation
-             * of 0.5 and is for rounding. */
-            *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
-            p++;
+        for (i = slice_start; i < slice_end; i++) {
+            uint8_t *p = frame->data[k] + i * frame->linesize[k];
+            for (j = 0; j < frame->width * s->bpp; j++) {
+                /* s->factor is using 16 lower-order bits for decimal
+                 * places. 32768 = 1 << 15, it is an integer representation
+                 * of 0.5 and is for rounding. */
+                *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
+                p++;
+            }
         }
-    }
     }
 
     return 0;
