@@ -121,7 +121,8 @@ static int config_input(AVFilterLink *inlink)
     s->signal = av_calloc(size, sizeof(*s->signal));
     s->code = av_calloc(size, sizeof(*s->code));
     s->temp = av_calloc(size, sizeof(*s->temp));
-    if (!s->temp)
+    if (!s->unfiltered || !s->filtered || !s->avg_filter ||
+        !s->std_filter || !s->signal || !s->code || !s->temp)
         return AVERROR(ENOMEM);
 
     return 0;
