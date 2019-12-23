@@ -861,8 +861,8 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         /* We only require one PAT/PMT per segment. */
         char period[21];
         snprintf(period, sizeof(period), "%d", (INT_MAX / 2) - 1);
-        av_dict_set(&options, "sdt_period", period, 0);
-        av_dict_set(&options, "pat_period", period, 0);
+        av_dict_set(&options, "sdt_period", period, AV_DICT_DONT_OVERWRITE);
+        av_dict_set(&options, "pat_period", period, AV_DICT_DONT_OVERWRITE);
     }
     ret = avformat_init_output(oc, &options);
     remaining_options = av_dict_count(options);
