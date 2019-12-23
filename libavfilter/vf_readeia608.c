@@ -37,8 +37,10 @@
 #include "video.h"
 
 #define LAG 25
-#define SYNC_MIN 12.f
-#define SYNC_MAX 15.f
+#define CLOCK_BITSIZE_MIN 0.2f
+#define CLOCK_BITSIZE_MAX 1.5f
+#define SYNC_BITSIZE_MIN 12.f
+#define SYNC_BITSIZE_MAX 15.f
 
 typedef struct LineItem {
     int   input;
@@ -314,8 +316,8 @@ static void extract_line(AVFilterContext *ctx, AVFrame *in, int w, int nb_line)
     dump_code(ctx, len, nb_line);
     if (len < 15 ||
         s->code[14].bit != 0 ||
-        w / (float)s->code[14].size < SYNC_MIN ||
-        w / (float)s->code[14].size > SYNC_MAX) {
+        w / (float)s->code[14].size < SYNC_BITSIZE_MIN ||
+        w / (float)s->code[14].size > SYNC_BITSIZE_MAX) {
         return;
     }
 
@@ -325,8 +327,8 @@ static void extract_line(AVFilterContext *ctx, AVFrame *in, int w, int nb_line)
 
     bit_size /= 19.f;
     for (i = 1; i < 14; i++) {
-        if (s->code[i].size > bit_size * 1.5f ||
-            s->code[i].size < bit_size * 0.2f) {
+        if (s->code[i].size / bit_size > CLOCK_BITSIZE_MAX ||
+            s->code[i].size / bit_size < CLOCK_BITSIZE_MIN) {
             return;
         }
     }
