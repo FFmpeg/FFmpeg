@@ -63,7 +63,7 @@ static int decode_mvdv(MidiVidContext *s, AVCodecContext *avctx, AVFrame *frame)
     if (intra_flag) {
         nb_blocks = (avctx->width / 2) * (avctx->height / 2);
     } else {
-        int skip_linesize;
+        int ret, skip_linesize;
 
         nb_blocks = bytestream2_get_le32(gb);
         skip_linesize = avctx->width >> 1;
@@ -73,7 +73,9 @@ static int decode_mvdv(MidiVidContext *s, AVCodecContext *avctx, AVFrame *frame)
         if (bytestream2_get_bytes_left(gb) < mask_size)
             return AVERROR_INVALIDDATA;
 
-        init_get_bits8(&mask, mask_start, mask_size);
+        ret = init_get_bits8(&mask, mask_start, mask_size);
+        if (ret < 0)
+            return ret;
         bytestream2_skip(gb, mask_size);
         skip = s->skip;
 
