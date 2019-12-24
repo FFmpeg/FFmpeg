@@ -227,13 +227,13 @@ int ff_decode_bsfs_init(AVCodecContext *avctx)
             goto fail;
         }
         s->bsfs = tmp;
-        s->nb_bsfs++;
 
-        ret = av_bsf_alloc(filter, &s->bsfs[s->nb_bsfs - 1]);
+        ret = av_bsf_alloc(filter, &s->bsfs[s->nb_bsfs]);
         if (ret < 0) {
             av_freep(&bsf);
             goto fail;
         }
+        s->nb_bsfs++;
 
         if (s->nb_bsfs == 1) {
             /* We do not currently have an API for passing the input timebase into decoders,
