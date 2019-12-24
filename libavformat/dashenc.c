@@ -142,7 +142,7 @@ typedef struct DASHContext {
     int streaming;
     int64_t timeout;
     int index_correction;
-    char *format_options_str;
+    AVDictionary *format_options;
     int global_sidx;
     SegmentType segment_type_option;  /* segment type as specified in options */
     int ignore_io_errors;
@@ -1303,11 +1303,7 @@ static int dash_init(AVFormatContext *s)
             return ret;
         os->init_start_pos = 0;
 
-        if (c->format_options_str) {
-            ret = av_dict_parse_string(&opts, c->format_options_str, "=", ":", 0);
-            if (ret < 0)
-                return ret;
-        }
+        av_dict_copy(&opts, c->format_options, 0);
 
         if (os->segment_type == SEGMENT_TYPE_MP4) {
             if (c->streaming)
@@ -1931,7 +1927,7 @@ static const AVOption options[] = {
     { "streaming", "Enable/Disable streaming mode of output. Each frame will be moof fragment", OFFSET(streaming), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "timeout", "set timeout for socket I/O operations", OFFSET(timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, .flags = E },
     { "index_correction", "Enable/Disable segment index correction logic", OFFSET(index_correction), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
-    { "format_options","set list of options for the container format (mp4/webm) used for dash", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, E},
+    { "format_options","set list of options for the container format (mp4/webm) used for dash", OFFSET(format_options), AV_OPT_TYPE_DICT, {.str = NULL},  0, 0, E},
     { "global_sidx", "Write global SIDX atom. Applicable only for single file, mp4 output, non-streaming mode", OFFSET(global_sidx), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "dash_segment_type", "set dash segment files type", OFFSET(segment_type_option), AV_OPT_TYPE_INT, {.i64 = SEGMENT_TYPE_AUTO }, 0, SEGMENT_TYPE_NB - 1, E, "segment_type"},
     { "auto", "select segment file format based on codec", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_AUTO }, 0, UINT_MAX,   E, "segment_type"},
