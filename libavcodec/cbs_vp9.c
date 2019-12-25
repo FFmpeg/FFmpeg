@@ -416,6 +416,9 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
     uint8_t superframe_header;
     int err;
 
+    if (frag->data_size == 0)
+        return AVERROR_INVALIDDATA;
+
     // Last byte in the packet.
     superframe_header = frag->data[frag->data_size - 1];
 
