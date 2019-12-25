@@ -43,6 +43,8 @@ TestContext AVOptions:
   -bool1             <boolean>    E......... set boolean value (default auto)
   -bool2             <boolean>    E......... set boolean value (default true)
   -bool3             <boolean>    E......... set boolean value (default false)
+  -dict1             <dictionary> E......... set dictionary value
+  -dict2             <dictionary> E......... set dictionary value (default "happy=':-)'")
 
 Testing av_opt_is_set_to_default()
 name:       num default:1 error:
@@ -70,6 +72,8 @@ name:       dbl default:0 error:
 name:     bool1 default:0 error:
 name:     bool2 default:0 error:
 name:     bool3 default:1 error:
+name:     dict1 default:1 error:
+name:     dict2 default:0 error:
 name:       num default:1 error:
 name:    toggle default:1 error:
 name:  rational default:1 error:
@@ -95,9 +99,11 @@ name:       dbl default:1 error:
 name:     bool1 default:1 error:
 name:     bool2 default:1 error:
 name:     bool3 default:1 error:
+name:     dict1 default:1 error:
+name:     dict2 default:1 error:
 
 Test av_opt_serialize()
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
 Setting entry with key 'num' to value '0'
 Setting entry with key 'toggle' to value '1'
 Setting entry with key 'rational' to value '1/1'
@@ -120,7 +126,9 @@ Setting entry with key 'dbl' to value '0.333333'
 Setting entry with key 'bool1' to value 'auto'
 Setting entry with key 'bool2' to value 'true'
 Setting entry with key 'bool3' to value 'false'
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false
+Setting entry with key 'dict1' to value ''
+Setting entry with key 'dict2' to value 'happy=\:-)'
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
 
 Testing av_set_options_string()
 Setting options string ''
@@ -341,6 +349,9 @@ OK    'bool1=true'
 Setting options string 'bool2=auto'
 Setting entry with key 'bool2' to value 'auto'
 OK    'bool2=auto'
+Setting options string 'dict1='happy=\:-):sad=\:-(''
+Setting entry with key 'dict1' to value 'happy=\:-):sad=\:-('
+OK    'dict1='happy=\:-):sad=\:-(''
 
 Testing av_opt_set_from_string()
 Setting options string ''

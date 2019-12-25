@@ -55,6 +55,8 @@ typedef struct TestContext {
     int bool1;
     int bool2;
     int bool3;
+    AVDictionary *dict1;
+    AVDictionary *dict2;
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)
@@ -89,6 +91,8 @@ static const AVOption test_options[]= {
     {"bool1",      "set boolean value",  OFFSET(bool1),          AV_OPT_TYPE_BOOL,           { .i64 = -1 },                    -1,         1, 1 },
     {"bool2",      "set boolean value",  OFFSET(bool2),          AV_OPT_TYPE_BOOL,           { .i64 = 1 },                     -1,         1, 1 },
     {"bool3",      "set boolean value",  OFFSET(bool3),          AV_OPT_TYPE_BOOL,           { .i64 = 0 },                      0,         1, 1 },
+    {"dict1",      "set dictionary value", OFFSET(dict1),        AV_OPT_TYPE_DICT,           { .str = NULL},                    0,         0, 1 },
+    {"dict2",      "set dictionary value", OFFSET(dict2),        AV_OPT_TYPE_DICT,           { .str = "happy=':-)'"},           0,         0, 1 },
     { NULL },
 };
 
@@ -256,6 +260,7 @@ int main(void)
             "dbl=101",
             "bool1=true",
             "bool2=auto",
+            "dict1='happy=\\:-):sad=\\:-('",
         };
 
         test_ctx.class = &test_class;
