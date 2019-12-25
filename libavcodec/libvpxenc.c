@@ -100,7 +100,7 @@ typedef struct VPxEncoderContext {
     int rc_undershoot_pct;
     int rc_overshoot_pct;
 
-    char *vp8_ts_parameters;
+    AVDictionary *vp8_ts_parameters;
 
     // VP9-only
     int lossless;
@@ -757,19 +757,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     enccfg.g_error_resilient = ctx->error_resilient || ctx->flags & VP8F_ERROR_RESILIENT;
 
-    if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && ctx->vp8_ts_parameters) {
-        AVDictionary *dict    = NULL;
+    if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8) {
         AVDictionaryEntry* en = NULL;
-
-        if (!av_dict_parse_string(&dict, ctx->vp8_ts_parameters, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                if (vp8_ts_param_parse(&enccfg, en->key, en->value) < 0)
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Error parsing option '%s = %s'.\n",
-                           en->key, en->value);
-            }
-
-            av_dict_free(&dict);
+        while ((en = av_dict_get(ctx->vp8_ts_parameters, "", en, AV_DICT_IGNORE_SUFFIX))) {
+            if (vp8_ts_param_parse(&enccfg, en->key, en->value) < 0)
+                av_log(avctx, AV_LOG_WARNING,
+                       "Error parsing option '%s = %s'.\n",
+                       en->key, en->value);
         }
     }
 
@@ -1462,7 +1456,7 @@ static const AVOption vp8_options[] = {
                          "frames (2-pass only)",                        OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1}, -1,  2, VE},
     { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
     { "ts-parameters",   "Temporal scaling configuration using a "
-                         ":-separated list of key=value parameters",    OFFSET(vp8_ts_parameters), AV_OPT_TYPE_STRING, {.str=NULL},  0,  0, VE},
+                         ":-separated list of key=value parameters",    OFFSET(vp8_ts_parameters), AV_OPT_TYPE_DICT, {.str=NULL},  0,  0, VE},
     LEGACY_OPTIONS
     { NULL }
 };
