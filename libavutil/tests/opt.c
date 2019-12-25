@@ -171,6 +171,47 @@ int main(void)
         av_opt_free(&test_ctx);
     }
 
+    printf("\nTesting av_opt_get/av_opt_set()\n");
+    {
+        TestContext test_ctx = { 0 };
+        TestContext test2_ctx = { 0 };
+        const AVOption *o = NULL;
+        test_ctx.class = &test_class;
+        test2_ctx.class = &test_class;
+
+        av_log_set_level(AV_LOG_QUIET);
+
+        av_opt_set_defaults(&test_ctx);
+
+        while (o = av_opt_next(&test_ctx, o)) {
+            char *value1 = NULL;
+            char *value2 = NULL;
+            int ret1 = AVERROR_BUG;
+            int ret2 = AVERROR_BUG;
+            int ret3 = AVERROR_BUG;
+
+            if (o->type == AV_OPT_TYPE_CONST)
+                continue;
+
+            ret1 = av_opt_get(&test_ctx, o->name, 0, (uint8_t **)&value1);
+            if (ret1 >= 0) {
+                ret2 = av_opt_set(&test2_ctx, o->name, value1, 0);
+                if (ret2 >= 0)
+                    ret3 = av_opt_get(&test2_ctx, o->name, 0, (uint8_t **)&value2);
+            }
+
+            printf("name: %-11s get: %-16s set: %-16s get: %-16s %s\n", o->name,
+                    ret1 >= 0 ? value1 : av_err2str(ret1),
+                    ret2 >= 0 ? "OK" : av_err2str(ret2),
+                    ret3 >= 0 ? value2 : av_err2str(ret3),
+                    ret1 >= 0 && ret2 >= 0 && ret3 >= 0 && !strcmp(value1, value2) ? "OK" : "Mismatch");
+            av_free(value1);
+            av_free(value2);
+        }
+        av_opt_free(&test_ctx);
+        av_opt_free(&test2_ctx);
+    }
+
     printf("\nTest av_opt_serialize()\n");
     {
         TestContext test_ctx = { 0 };
