@@ -95,7 +95,7 @@ typedef struct X264Context {
     int scenechange_threshold;
     int noise_reduction;
 
-    char *x264_params;
+    AVDictionary *x264_params;
 
     int nb_reordered_opaque, next_reordered_opaque;
     int64_t *reordered_opaque;
@@ -892,19 +892,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    if (x4->x264_params) {
-        AVDictionary *dict    = NULL;
+
+    {
         AVDictionaryEntry *en = NULL;
-
-        if (!av_dict_parse_string(&dict, x4->x264_params, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                if (x264_param_parse(&x4->params, en->key, en->value) < 0)
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Error parsing option '%s = %s'.\n",
-                            en->key, en->value);
-            }
-
-            av_dict_free(&dict);
+        while (en = av_dict_get(x4->x264_params, "", en, AV_DICT_IGNORE_SUFFIX)) {
+           if (x264_param_parse(&x4->params, en->key, en->value) < 0)
+               av_log(avctx, AV_LOG_WARNING,
+                      "Error parsing option '%s = %s'.\n",
+                       en->key, en->value);
         }
     }
 
@@ -1116,7 +1111,7 @@ static const AVOption options[] = {
     { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
     { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
 
-    { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
     { NULL },
 };
 
