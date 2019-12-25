@@ -141,8 +141,8 @@ typedef struct AudioParams {
 } AudioParams;
 
 typedef struct Clock {
-    double pts;           /* clock base */
-    double pts_drift;     /* clock base minus time at which we updated the clock */
+    double pts;           /* clock base */ //时间基准
+    double pts_drift;     /* clock base minus time at which we updated the clock *///时间基减去更新时钟的时间 
     double last_updated;
     double speed;
     int serial;           /* clock is based on a packet with this serial */
@@ -268,7 +268,7 @@ typedef struct VideoState {
     int rdft_bits;
     FFTSample *rdft_data;
     int xpos;
-    double last_vis_time;
+    double last_vis_time;//上一次显示的时间
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
     SDL_Texture *vid_texture;
@@ -344,7 +344,7 @@ static enum ShowMode show_mode = SHOW_MODE_NONE;
 static const char *audio_codec_name;
 static const char *subtitle_codec_name;
 static const char *video_codec_name;
-double rdftspeed = 0.02;
+double rdftspeed = 0.02;//20ms
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
 #if CONFIG_AVFILTER
@@ -600,12 +600,12 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
 
                 switch (d->avctx->codec_type) {
                     case AVMEDIA_TYPE_VIDEO:
-                        ret = avcodec_receive_frame(d->avctx, frame);
+                        ret = avcodec_receive_frame(d->avctx, frame);//获取解码后的数据，解码时间戳和显示时间戳
                         if (ret >= 0) {
                             if (decoder_reorder_pts == -1) {
                                 frame->pts = frame->best_effort_timestamp;
                             } else if (!decoder_reorder_pts) {
-                                frame->pts = frame->pkt_dts;
+                                frame->pts = frame->pkt_dts;//视频源里面带过来的显示时间戳
                             }
                         }
                         break;
@@ -727,7 +727,7 @@ static void frame_queue_signal(FrameQueue *f)
     SDL_UnlockMutex(f->mutex);
 }
 
-static Frame *frame_queue_peek(FrameQueue *f)
+static Frame *frame_queue_peek(FrameQueue *f)//获取当前显示的
 {
     return &f->queue[(f->rindex + f->rindex_shown) % f->max_size];
 }
@@ -737,7 +737,7 @@ static Frame *frame_queue_peek_next(FrameQueue *f)
     return &f->queue[(f->rindex + f->rindex_shown + 1) % f->max_size];
 }
 
-static Frame *frame_queue_peek_last(FrameQueue *f)
+static Frame *frame_queue_peek_last(FrameQueue *f)//获取上一次显示的
 {
     return &f->queue[f->rindex];
 }
@@ -774,7 +774,7 @@ static Frame *frame_queue_peek_readable(FrameQueue *f)
     return &f->queue[(f->rindex + f->rindex_shown) % f->max_size];
 }
 
-static void frame_queue_push(FrameQueue *f)
+static void frame_queue_push(FrameQueue *f)//只有size加了之后，读取地方才能取到
 {
     if (++f->windex == f->max_size)
         f->windex = 0;
@@ -784,7 +784,7 @@ static void frame_queue_push(FrameQueue *f)
     SDL_UnlockMutex(f->mutex);
 }
 
-static void frame_queue_next(FrameQueue *f)
+static void frame_queue_next(FrameQueue *f)//队列移除一个
 {
     if (f->keep_last && !f->rindex_shown) {
         f->rindex_shown = 1;
@@ -1370,7 +1370,7 @@ static void video_display(VideoState *is)
         video_image_display(is);
     SDL_RenderPresent(renderer);
 }
-
+/** 获取当前时钟 **/
 static double get_clock(Clock *c)
 {
     if (*c->queue_serial != c->serial)
@@ -1382,7 +1382,7 @@ static double get_clock(Clock *c)
         return c->pts_drift + time - (time - c->last_updated) * (1.0 - c->speed);
     }
 }
-
+/** 设置时钟 **/
 static void set_clock_at(Clock *c, double pts, int serial, double time)
 {
     c->pts = pts;
@@ -1390,19 +1390,19 @@ static void set_clock_at(Clock *c, double pts, int serial, double time)
     c->pts_drift = c->pts - time;
     c->serial = serial;
 }
-
+/** 设置时钟  内部调用set_clock_at()**/
 static void set_clock(Clock *c, double pts, int serial)
 {
     double time = av_gettime_relative() / 1000000.0;
     set_clock_at(c, pts, serial, time);
 }
-
+/** 设置时钟速度 **/
 static void set_clock_speed(Clock *c, double speed)
 {
     set_clock(c, get_clock(c), c->serial);
     c->speed = speed;
 }
-
+/** 初始化时钟 **/
 static void init_clock(Clock *c, int *queue_serial)
 {
     c->speed = 1.0;
@@ -1410,15 +1410,16 @@ static void init_clock(Clock *c, int *queue_serial)
     c->queue_serial = queue_serial;
     set_clock(c, NAN, -1);
 }
-
+/** 音/视频设置时钟的时候都回去跟外部时钟进行对比，防止丢帧或者丢包情况下时间差距比较大而进行的纠偏 **/
 static void sync_clock_to_slave(Clock *c, Clock *slave)
 {
     double clock = get_clock(c);
     double slave_clock = get_clock(slave);
+	//满足条件：外部时钟初始化了，clock未初始化或者时间偏差大于10ms预知
     if (!isnan(slave_clock) && (isnan(clock) || fabs(clock - slave_clock) > AV_NOSYNC_THRESHOLD))
         set_clock(c, slave_clock, slave->serial);
 }
-
+/** 获取做为基准的类型  音频 外部时钟 视频 **/
 static int get_master_sync_type(VideoState *is) {
     if (is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
         if (is->video_st)
@@ -1435,7 +1436,7 @@ static int get_master_sync_type(VideoState *is) {
     }
 }
 
-/* get the current master clock value */
+/* get the current master clock value *//** 获取主时间轴的时间 **/
 static double get_master_clock(VideoState *is)
 {
     double val;
@@ -1453,7 +1454,7 @@ static double get_master_clock(VideoState *is)
     }
     return val;
 }
-
+/** 检查外部时钟的速度 **/
 static void check_external_clock_speed(VideoState *is) {
    if (is->video_stream >= 0 && is->videoq.nb_packets <= EXTERNAL_CLOCK_MIN_FRAMES ||
        is->audio_stream >= 0 && is->audioq.nb_packets <= EXTERNAL_CLOCK_MIN_FRAMES) {
@@ -1574,7 +1575,7 @@ static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial
 static void video_refresh(void *opaque, double *remaining_time)
 {
     VideoState *is = opaque;
-    double time;
+    double time;//当前系统平台的时间，单位秒
 
     Frame *sp, *sp2;
 
@@ -1584,10 +1585,10 @@ static void video_refresh(void *opaque, double *remaining_time)
     if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st) {
         time = av_gettime_relative() / 1000000.0;
         if (is->force_refresh || is->last_vis_time + rdftspeed < time) {
-            video_display(is);
+            video_display(is);//rdftspeed = 20ms，两次显示实际值小于这个时间才显示
             is->last_vis_time = time;
         }
-        *remaining_time = FFMIN(*remaining_time, is->last_vis_time + rdftspeed - time);
+        *remaining_time = FFMIN(*remaining_time, is->last_vis_time + rdftspeed - time);//播放快了，下一个显示循环会休眠这个实际延迟显示
     }
 
     if (is->video_st) {
@@ -1614,24 +1615,25 @@ retry:
                 goto display;
 
             /* compute nominal last_duration */
-            last_duration = vp_duration(is, lastvp, vp);
-            delay = compute_target_delay(last_duration, is);
+            last_duration = vp_duration(is, lastvp, vp);//根据当前帧和上一帧的pts计算出来上一帧显示的持续时间
+            delay = compute_target_delay(last_duration, is);/** 计算当前帧需要显示的时间 **/
 
-            time= av_gettime_relative()/1000000.0;
-            if (time < is->frame_timer + delay) {
+            time= av_gettime_relative()/1000000.0;  /** 获取当前的时间 **/
+            if (time < is->frame_timer + delay) { /** 如果当前时间小于显示时间 则直接进行显示**/
                 *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
                 goto display;
             }
 
-            is->frame_timer += delay;
+            is->frame_timer += delay;/** 更新视频的基准时间 **/
             if (delay > 0 && time - is->frame_timer > AV_SYNC_THRESHOLD_MAX)
-                is->frame_timer = time;
+                is->frame_timer = time;/** 如果当前时间与基准时间偏差大于 AV_SYNC_THRESHOLD_MAX 则把视频基准时间设置为当前时间 **/
 
             SDL_LockMutex(is->pictq.mutex);
-            if (!isnan(vp->pts))
+            if (!isnan(vp->pts))  /** 更新视频时间轴 **/
                 update_video_pts(is, vp->pts, vp->pos, vp->serial);
             SDL_UnlockMutex(is->pictq.mutex);
 
+			/** 如果队列中有未显示的帧，如果开启了丢帧处理或者不是以视频为主时间轴，则进行丢帧处理 **/
             if (frame_queue_nb_remaining(&is->pictq) > 1) {
                 Frame *nextvp = frame_queue_peek_next(&is->pictq);
                 duration = vp_duration(is, vp, nextvp);
@@ -1768,7 +1770,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
         return -1;
 
     if (got_picture) {
-        double dpts = NAN;
+        double dpts = NAN;//显示时间
 
         if (frame->pts != AV_NOPTS_VALUE)
             dpts = av_q2d(is->video_st->time_base) * frame->pts;
@@ -1783,7 +1785,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
                     is->viddec.pkt_serial == is->vidclk.serial &&
                     is->videoq.nb_packets) {
                     is->frame_drops_early++;
-                    av_frame_unref(frame);
+                    av_frame_unref(frame);//这种情况丢弃当前帧
                     got_picture = 0;
                 }
             }
@@ -2278,7 +2280,7 @@ static void update_sample_display(VideoState *is, short *samples, int samples_si
 }
 
 /* return the wanted number of samples to get better sync if sync_type is video
- * or external master clock */
+ * or external master clock */ //如果同步类型为视频或外部主时钟，则返回所需的采样数来更好的同步。
 static int synchronize_audio(VideoState *is, int nb_samples)
 {
     int wanted_nb_samples = nb_samples;
@@ -2439,7 +2441,7 @@ static int audio_decode_frame(VideoState *is)
     return resampled_data_size;
 }
 
-/* prepare a new audio buffer */
+/* prepare a new audio buffer *///
 static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 {
     VideoState *is = opaque;
@@ -2477,7 +2479,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     }
     is->audio_write_buf_size = is->audio_buf_size - is->audio_buf_index;
     /* Let's assume the audio driver that is used by SDL has two periods. */
-    if (!isnan(is->audio_clock)) {
+    if (!isnan(is->audio_clock)) { //isnan(NAN)         = 1,音频的pts - 硬件缓冲区里剩下的时间设置到了音频的时钟里
         set_clock_at(&is->audclk, is->audio_clock - (double)(2 * is->audio_hw_buf_size + is->audio_write_buf_size) / is->audio_tgt.bytes_per_sec, is->audio_clock_serial, audio_callback_time / 1000000.0);
         sync_clock_to_slave(&is->extclk, &is->audclk);
     }
@@ -2684,7 +2686,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->video_st = ic->streams[stream_index];
 
         decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread);
-        if ((ret = decoder_start(&is->viddec, video_thread, "video_decoder", is)) < 0)
+        if ((ret = decoder_start(&is->viddec, video_thread, "video_decoder", is)) < 0)//开启视频解码线程
             goto out;
         is->queue_attachments_req = 1;
         break;
@@ -3213,12 +3215,12 @@ static void toggle_audio_display(VideoState *is)
     }
 }
 
-static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
+static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {//跑在主线程loop里面，主线程loop取队列中音视频送显示和播放
     double remaining_time = 0.0;
     SDL_PumpEvents();
     while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
         if (!cursor_hidden && av_gettime_relative() - cursor_last_shown > CURSOR_HIDE_DELAY) {
-            SDL_ShowCursor(0);
+            SDL_ShowCursor(0);//显示光标
             cursor_hidden = 1;
         }
         if (remaining_time > 0.0)

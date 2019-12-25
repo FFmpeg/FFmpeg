@@ -338,7 +338,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
         const char *name;
         enum AVCodecID id;
         enum AVMediaType type;
-    } fmt_id_type[] = {
+    } fmt_id_type[] = {//±‡¬Î∏Ò ΩÃΩ≤‚
         { "aac",       AV_CODEC_ID_AAC,        AVMEDIA_TYPE_AUDIO },
         { "ac3",       AV_CODEC_ID_AC3,        AVMEDIA_TYPE_AUDIO },
         { "aptx",      AV_CODEC_ID_APTX,       AVMEDIA_TYPE_AUDIO },

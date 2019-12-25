@@ -2248,7 +2248,7 @@ ff_const59 AVInputFormat *av_find_input_format(const char *short_name);
 ff_const59 AVInputFormat *av_probe_input_format(ff_const59 AVProbeData *pd, int is_opened);
 
 /**
- * Guess the file format.
+ * Guess the file format.  ∏¥”√∏Ò Ω
  *
  * @param pd        data to be probed
  * @param is_opened Whether the file is already opened; determines whether
