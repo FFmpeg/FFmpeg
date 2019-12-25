@@ -435,8 +435,6 @@ static int config_props(AVFilterLink *link)
 static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    AVFrame *frame;
-    int ret;
 
     if (c->eof)
         return AVERROR_EOF;
