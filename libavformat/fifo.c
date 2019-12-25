@@ -36,7 +36,6 @@ typedef struct FifoContext {
     AVFormatContext *avf;
 
     char *format;
-    char *format_options_str;
     AVDictionary *format_options;
 
     int queue_size;
@@ -490,16 +489,6 @@ static int fifo_init(AVFormatContext *avf)
         return AVERROR(EINVAL);
     }
 
-    if (fifo->format_options_str) {
-        ret = av_dict_parse_string(&fifo->format_options, fifo->format_options_str,
-                                   "=", ":", 0);
-        if (ret < 0) {
-            av_log(avf, AV_LOG_ERROR, "Could not parse format options list '%s'\n",
-                   fifo->format_options_str);
-            return ret;
-        }
-    }
-
     oformat = av_guess_format(fifo->format, avf->url, NULL);
     if (!oformat) {
         ret = AVERROR_MUXER_NOT_FOUND;
@@ -604,7 +593,6 @@ static void fifo_deinit(AVFormatContext *avf)
 {
     FifoContext *fifo = avf->priv_data;
 
-    av_dict_free(&fifo->format_options);
     avformat_free_context(fifo->avf);
     av_thread_message_queue_free(&fifo->queue);
     if (fifo->overflow_flag_lock_initialized)
@@ -619,8 +607,8 @@ static const AVOption options[] = {
         {"queue_size", "Size of fifo queue", OFFSET(queue_size),
          AV_OPT_TYPE_INT, {.i64 = FIFO_DEFAULT_QUEUE_SIZE}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
 
-        {"format_opts", "Options to be passed to underlying muxer", OFFSET(format_options_str),
-         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM},
+        {"format_opts", "Options to be passed to underlying muxer", OFFSET(format_options),
+         AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM},
 
         {"drop_pkts_on_overflow", "Drop packets on fifo queue overflow not to block encoder", OFFSET(drop_pkts_on_overflow),
          AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
