@@ -42,7 +42,7 @@ typedef struct librav1eContext {
     size_t pass_pos;
     int pass_size;
 
-    char *rav1e_opts;
+    AVDictionary *rav1e_opts;
     int quantizer;
     int speed;
     int tiles;
@@ -244,17 +244,12 @@ static av_cold int librav1e_encode_init(AVCodecContext *avctx)
          }
     }
 
-    if (ctx->rav1e_opts) {
-        AVDictionary *dict    = NULL;
+    {
         AVDictionaryEntry *en = NULL;
-
-        if (!av_dict_parse_string(&dict, ctx->rav1e_opts, "=", ":", 0)) {
-            while (en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX)) {
-                int parse_ret = rav1e_config_parse(cfg, en->key, en->value);
-                if (parse_ret < 0)
-                    av_log(avctx, AV_LOG_WARNING, "Invalid value for %s: %s.\n", en->key, en->value);
-            }
-            av_dict_free(&dict);
+        while ((en = av_dict_get(ctx->rav1e_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {
+            int parse_ret = rav1e_config_parse(cfg, en->key, en->value);
+            if (parse_ret < 0)
+                av_log(avctx, AV_LOG_WARNING, "Invalid value for %s: %s.\n", en->key, en->value);
         }
     }
 
@@ -538,7 +533,7 @@ static const AVOption options[] = {
     { "tiles", "number of tiles encode with", OFFSET(tiles), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT64_MAX, VE },
     { "tile-rows", "number of tiles rows to encode with", OFFSET(tile_rows), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT64_MAX, VE },
     { "tile-columns", "number of tiles columns to encode with", OFFSET(tile_cols), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT64_MAX, VE },
-    { "rav1e-params", "set the rav1e configuration using a :-separated list of key=value parameters", OFFSET(rav1e_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "rav1e-params", "set the rav1e configuration using a :-separated list of key=value parameters", OFFSET(rav1e_opts), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
     { NULL }
 };
 
