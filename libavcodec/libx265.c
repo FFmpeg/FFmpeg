@@ -47,7 +47,7 @@ typedef struct libx265Context {
     char *preset;
     char *tune;
     char *profile;
-    char *x265_opts;
+    AVDictionary *x265_opts;
 
     /**
      * If the encoder does not support ROI then warn the first time we
@@ -336,28 +336,23 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
             return ret;
     }
 
-    if (ctx->x265_opts) {
-        AVDictionary *dict    = NULL;
+    {
         AVDictionaryEntry *en = NULL;
+        while ((en = av_dict_get(ctx->x265_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {
+            int parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
 
-        if (!av_dict_parse_string(&dict, ctx->x265_opts, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                int parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
-
-                switch (parse_ret) {
-                case X265_PARAM_BAD_NAME:
-                    av_log(avctx, AV_LOG_WARNING,
-                          "Unknown option: %s.\n", en->key);
-                    break;
-                case X265_PARAM_BAD_VALUE:
-                    av_log(avctx, AV_LOG_WARNING,
-                          "Invalid value for %s: %s.\n", en->key, en->value);
-                    break;
-                default:
-                    break;
-                }
+            switch (parse_ret) {
+            case X265_PARAM_BAD_NAME:
+                av_log(avctx, AV_LOG_WARNING,
+                      "Unknown option: %s.\n", en->key);
+                break;
+            case X265_PARAM_BAD_VALUE:
+                av_log(avctx, AV_LOG_WARNING,
+                      "Invalid value for %s: %s.\n", en->key, en->value);
+                break;
+            default:
+                break;
             }
-            av_dict_free(&dict);
         }
     }
 
@@ -645,7 +640,7 @@ static const AVOption options[] = {
     { "preset",      "set the x265 preset",                                                         OFFSET(preset),    AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "profile",     "set the x265 profile",                                                        OFFSET(profile),   AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
-    { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_DICT,   { 0 }, 0, 0, VE },
     { NULL }
 };
 
