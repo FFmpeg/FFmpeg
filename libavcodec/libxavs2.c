@@ -48,7 +48,7 @@ typedef struct XAVS2EContext {
     int log_level;
 
     void *encoder;
-    char *xavs2_opts;
+    AVDictionary *xavs2_opts;
 
     xavs2_outpacket_t packet;
     xavs2_param_t *param;
@@ -92,16 +92,10 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
 
     xavs2_opt_set2("OpenGOP",  "%d", !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
 
-    if (cae->xavs2_opts) {
-        AVDictionary *dict    = NULL;
+    {
         AVDictionaryEntry *en = NULL;
-
-        if (!av_dict_parse_string(&dict, cae->xavs2_opts, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                xavs2_opt_set2(en->key, "%s", en->value);
-            }
-            av_dict_free(&dict);
-        }
+        while ((en = av_dict_get(cae->xavs2_opts, "", en, AV_DICT_IGNORE_SUFFIX)))
+            xavs2_opt_set2(en->key, "%s", en->value);
     }
 
     /* Rate control */
@@ -267,7 +261,7 @@ static const AVOption options[] = {
     { "min_qp"          ,   "min qp for rate control" ,                 OFFSET(min_qp)          , AV_OPT_TYPE_INT, {.i64 = 20 },  0,      63,  VE },
     { "speed_level"     ,   "Speed level, higher is better but slower", OFFSET(preset_level)    , AV_OPT_TYPE_INT, {.i64 =  0 },  0,       9,  VE },
     { "log_level"       ,   "log level: -1: none, 0: error, 1: warning, 2: info, 3: debug", OFFSET(log_level)    , AV_OPT_TYPE_INT, {.i64 =  0 },  -1,       3,  VE },
-    { "xavs2-params"    ,   "set the xavs2 configuration using a :-separated list of key=value parameters", OFFSET(xavs2_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "xavs2-params"    ,   "set the xavs2 configuration using a :-separated list of key=value parameters", OFFSET(xavs2_opts), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
     { NULL },
 };
 
