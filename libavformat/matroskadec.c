@@ -1545,7 +1545,7 @@ static int matroska_probe(const AVProbeData *p)
 }
 
 static MatroskaTrack *matroska_find_track_by_num(MatroskaDemuxContext *matroska,
-                                                 int num)
+                                                 uint64_t num)
 {
     MatroskaTrack *tracks = matroska->tracks.elem;
     int i;
@@ -1554,7 +1554,7 @@ static MatroskaTrack *matroska_find_track_by_num(MatroskaDemuxContext *matroska,
         if (tracks[i].num == num)
             return &tracks[i];
 
-    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid track number %d\n", num);
+    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid track number %"PRIu64"\n", num);
     return NULL;
 }
 
