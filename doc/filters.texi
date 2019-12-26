@@ -11694,6 +11694,7 @@ the histogram. Possible values are @code{none}, @code{weak} or
 @code{strong}. It defaults to @code{none}.
 @end table
 
+@anchor{histogram}
 @section histogram
 
 Compute and draw a color distribution histogram for the input video.
@@ -17744,6 +17745,55 @@ PAL output (25i):
 16.67p: 33
 16p: 33333334
 @end example
+
+@section thistogram
+
+Compute and draw a color distribution histogram for the input video across time.
+
+Unlike @ref{histogram} video filter which only shows histogram of single input frame
+at certain time, this filter shows also past histograms of number of frames defined
+by @code{width} option.
+
+The computed histogram is a representation of the color component
+distribution in an image.
+
+The filter accepts the following options:
+
+@table @option
+@item width, w
+Set width of single color component output. Default value is @code{0}.
+Value of @code{0} means width will be picked from input video.
+This also set number of passed histograms to keep.
+Allowed range is [0, 8192].
+
+@item display_mode, d
+Set display mode.
+It accepts the following values:
+@table @samp
+@item stack
+Per color component graphs are placed below each other.
+
+@item parade
+Per color component graphs are placed side by side.
+
+@item overlay
+Presents information identical to that in the @code{parade}, except
+that the graphs representing color components are superimposed directly
+over one another.
+@end table
+Default is @code{stack}.
+
+@item levels_mode, m
+Set mode. Can be either @code{linear}, or @code{logarithmic}.
+Default is @code{linear}.
+
+@item components, c
+Set what color components to display.
+Default is @code{7}.
+
+@item bgopacity, b
+Set background opacity. Default is @code{0.5}.
+@end table
 
 @section threshold
 

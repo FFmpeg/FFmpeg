@@ -382,6 +382,7 @@ extern AVFilter ff_vf_swaprect;
 extern AVFilter ff_vf_swapuv;
 extern AVFilter ff_vf_tblend;
 extern AVFilter ff_vf_telecine;
+extern AVFilter ff_vf_thistogram;
 extern AVFilter ff_vf_threshold;
 extern AVFilter ff_vf_thumbnail;
 extern AVFilter ff_vf_thumbnail_cuda;

@@ -28,6 +28,7 @@ version <next>:
 - mvdv decoder
 - mvha decoder
 - MPEG-H 3D Audio support in mp4
+- thistogram filter
 
 
 version 4.2:
