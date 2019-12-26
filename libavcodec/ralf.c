@@ -60,7 +60,7 @@ typedef struct RALFContext {
     int     filter_bits;     ///< filter precision for the current channel data
     int32_t filter[64];
 
-    int     bias[2];         ///< a constant value added to channel data after filtering
+    unsigned bias[2];        ///< a constant value added to channel data after filtering
 
     int num_blocks;          ///< number of blocks inside the frame
     int sample_offset;
