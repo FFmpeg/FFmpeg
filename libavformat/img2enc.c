@@ -35,7 +35,6 @@
 typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
     int img_number;
-    int is_pipe;
     int split_planes;       /**< use independent file for each Y, U, V plane */
     char path[1024];
     char tmp[4][1024];
@@ -54,12 +53,6 @@ static int write_header(AVFormatContext *s)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
 
     av_strlcpy(img->path, s->url, sizeof(img->path));
-
-    /* find format */
-    if (s->oformat->flags & AVFMT_NOFILE)
-        img->is_pipe = 0;
-    else
-        img->is_pipe = 1;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_GIF) {
         img->muxer = "gif";
@@ -113,6 +106,21 @@ static int write_muxed_file(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
     return 0;
 }
 
+static int write_packet_pipe(AVFormatContext *s, AVPacket *pkt)
+{
+    VideoMuxData *img = s->priv_data;
+    if (img->muxer) {
+        int ret = write_muxed_file(s, s->pb, pkt);
+        if (ret < 0)
+            return ret;
+    } else {
+        avio_write(s->pb, pkt->data, pkt->size);
+        avio_flush(s->pb);
+    }
+    img->img_number++;
+    return 0;
+}
+
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
@@ -123,7 +131,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i;
     int nb_renames = 0;
 
-    if (!img->is_pipe) {
+    {
         if (img->update) {
             av_strlcpy(filename, img->path, sizeof(filename));
         } else if (img->use_strftime) {
@@ -164,8 +172,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         if (img->use_rename)
             nb_renames = i + 1;
-    } else {
-        pb[0] = s->pb;
     }
 
     if (img->split_planes) {
@@ -192,7 +198,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[0], pkt->data, pkt->size);
     }
     avio_flush(pb[0]);
-    if (!img->is_pipe) {
+    {
         ff_format_io_close(s, &pb[0]);
         for (i = 0; i < nb_renames; i++) {
             int ret = ff_rename(img->tmp[i], img->target[i], s);
@@ -257,7 +263,7 @@ AVOutputFormat ff_image2pipe_muxer = {
     .priv_data_size = sizeof(VideoMuxData),
     .video_codec    = AV_CODEC_ID_MJPEG,
     .write_header   = write_header,
-    .write_packet   = write_packet,
+    .write_packet   = write_packet_pipe,
     .query_codec    = query_codec,
     .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS
 };
