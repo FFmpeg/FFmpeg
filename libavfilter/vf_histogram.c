@@ -257,8 +257,8 @@ static int config_output(AVFilterLink *outlink)
         outlink->w = s->width * FFMAX(ncomp * (s->display_mode == 1), 1);
         outlink->h = s->histogram_size * FFMAX(ncomp * (s->display_mode == 2), 1);
     } else {
-    outlink->w = s->histogram_size * FFMAX(ncomp * (s->display_mode == 1), 1);
-    outlink->h = (s->level_height + s->scale_height) * FFMAX(ncomp * (s->display_mode == 2), 1);
+        outlink->w = s->histogram_size * FFMAX(ncomp * (s->display_mode == 1), 1);
+        outlink->h = (s->level_height + s->scale_height) * FFMAX(ncomp * (s->display_mode == 2), 1);
     }
 
     s->odesc = av_pix_fmt_desc_get(outlink->format);
@@ -277,33 +277,33 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int i, j, k, l, m;
 
     if (!s->thistogram || !out) {
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
-    s->out = out;
-
-    for (k = 0; k < 4 && out->data[k]; k++) {
-        const int is_chroma = (k == 1 || k == 2);
-        const int dst_h = AV_CEIL_RSHIFT(outlink->h, (is_chroma ? s->odesc->log2_chroma_h : 0));
-        const int dst_w = AV_CEIL_RSHIFT(outlink->w, (is_chroma ? s->odesc->log2_chroma_w : 0));
-
-        if (s->histogram_size <= 256) {
-            for (i = 0; i < dst_h ; i++)
-                memset(out->data[s->odesc->comp[k].plane] +
-                       i * out->linesize[s->odesc->comp[k].plane],
-                       s->bg_color[k], dst_w);
-        } else {
-            const int mult = s->mult;
-
-            for (i = 0; i < dst_h ; i++)
-                for (j = 0; j < dst_w; j++)
-                    AV_WN16(out->data[s->odesc->comp[k].plane] +
-                        i * out->linesize[s->odesc->comp[k].plane] + j * 2,
-                        s->bg_color[k] * mult);
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
         }
-    }
+        s->out = out;
+
+        for (k = 0; k < 4 && out->data[k]; k++) {
+            const int is_chroma = (k == 1 || k == 2);
+            const int dst_h = AV_CEIL_RSHIFT(outlink->h, (is_chroma ? s->odesc->log2_chroma_h : 0));
+            const int dst_w = AV_CEIL_RSHIFT(outlink->w, (is_chroma ? s->odesc->log2_chroma_w : 0));
+
+            if (s->histogram_size <= 256) {
+                for (i = 0; i < dst_h ; i++)
+                    memset(out->data[s->odesc->comp[k].plane] +
+                           i * out->linesize[s->odesc->comp[k].plane],
+                           s->bg_color[k], dst_w);
+            } else {
+                const int mult = s->mult;
+
+                for (i = 0; i < dst_h ; i++)
+                    for (j = 0; j < dst_w; j++)
+                        AV_WN16(out->data[s->odesc->comp[k].plane] +
+                            i * out->linesize[s->odesc->comp[k].plane] + j * 2,
+                            s->bg_color[k] * mult);
+            }
+        }
     }
 
     for (m = 0, k = 0; k < s->ncomp; k++) {
@@ -321,8 +321,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             starty = m * s->histogram_size * (s->display_mode == 2);
             startx = m++ * s->width * (s->display_mode == 1);
         } else {
-        startx = m * s->histogram_size * (s->display_mode == 1);
-        starty = m++ * (s->level_height + s->scale_height) * (s->display_mode == 2);
+            startx = m * s->histogram_size * (s->display_mode == 1);
+            starty = m++ * (s->level_height + s->scale_height) * (s->display_mode == 2);
         }
 
         if (s->histogram_size <= 256) {
@@ -360,40 +360,40 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 }
             }
         } else {
-        for (i = 0; i < s->histogram_size; i++) {
-            int col_height;
+            for (i = 0; i < s->histogram_size; i++) {
+                int col_height;
 
-            if (s->levels_mode)
-                col_height = lrint(s->level_height * (1. - (log2(s->histogram[i] + 1) / max_hval_log)));
-            else
-                col_height = s->level_height - (s->histogram[i] * (int64_t)s->level_height + max_hval - 1) / max_hval;
+                if (s->levels_mode)
+                    col_height = lrint(s->level_height * (1. - (log2(s->histogram[i] + 1) / max_hval_log)));
+                else
+                    col_height = s->level_height - (s->histogram[i] * (int64_t)s->level_height + max_hval - 1) / max_hval;
 
-            if (s->histogram_size <= 256) {
-                for (j = s->level_height - 1; j >= col_height; j--) {
-                    if (s->display_mode) {
-                        for (l = 0; l < s->dncomp; l++)
-                            out->data[l][(j + starty) * out->linesize[l] + startx + i] = s->fg_color[l];
-                    } else {
-                        out->data[p][(j + starty) * out->linesize[p] + startx + i] = 255;
+                if (s->histogram_size <= 256) {
+                    for (j = s->level_height - 1; j >= col_height; j--) {
+                        if (s->display_mode) {
+                            for (l = 0; l < s->dncomp; l++)
+                                out->data[l][(j + starty) * out->linesize[l] + startx + i] = s->fg_color[l];
+                        } else {
+                            out->data[p][(j + starty) * out->linesize[p] + startx + i] = 255;
+                        }
                     }
-                }
-                for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
-                    out->data[p][(j + starty) * out->linesize[p] + startx + i] = i;
-            } else {
-                const int mult = s->mult;
+                    for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
+                        out->data[p][(j + starty) * out->linesize[p] + startx + i] = i;
+                } else {
+                    const int mult = s->mult;
 
-                for (j = s->level_height - 1; j >= col_height; j--) {
-                    if (s->display_mode) {
-                        for (l = 0; l < s->dncomp; l++)
-                            AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, s->fg_color[l] * mult);
-                    } else {
-                        AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, 255 * mult);
+                    for (j = s->level_height - 1; j >= col_height; j--) {
+                        if (s->display_mode) {
+                            for (l = 0; l < s->dncomp; l++)
+                                AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, s->fg_color[l] * mult);
+                        } else {
+                            AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, 255 * mult);
+                        }
                     }
+                    for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
+                        AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, i);
                 }
-                for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
-                    AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, i);
             }
-        }
         }
 
         memset(s->histogram, 0, s->histogram_size * sizeof(unsigned));
