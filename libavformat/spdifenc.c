@@ -482,12 +482,11 @@ static int spdif_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int spdif_write_trailer(AVFormatContext *s)
+static void spdif_deinit(AVFormatContext *s)
 {
     IEC61937Context *ctx = s->priv_data;
     av_freep(&ctx->buffer);
     av_freep(&ctx->hd_buf);
-    return 0;
 }
 
 static av_always_inline void spdif_put_16(IEC61937Context *ctx,
@@ -560,7 +559,7 @@ AVOutputFormat ff_spdif_muxer = {
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = spdif_write_header,
     .write_packet      = spdif_write_packet,
-    .write_trailer     = spdif_write_trailer,
+    .deinit            = spdif_deinit,
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class        = &spdif_class,
 };
