@@ -78,6 +78,41 @@ static int write_header(AVFormatContext *s)
     return 0;
 }
 
+static int write_muxed_file(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
+{
+    VideoMuxData *img = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    AVStream *st;
+    AVPacket pkt2 = {0};
+    AVFormatContext *fmt = NULL;
+    int ret;
+
+    /* URL is not used directly as we are overriding the IO context later. */
+    ret = avformat_alloc_output_context2(&fmt, NULL, img->muxer, s->url);
+    if (ret < 0)
+        return ret;
+    st = avformat_new_stream(fmt, NULL);
+    if (!st) {
+        avformat_free_context(fmt);
+        return AVERROR(ENOMEM);
+    }
+    st->id = pkt->stream_index;
+
+    fmt->pb = pb;
+    if ((ret = av_packet_ref(&pkt2, pkt))                      < 0 ||
+        (ret = avcodec_parameters_copy(st->codecpar, par))     < 0 ||
+        (ret = avformat_write_header(fmt, NULL))               < 0 ||
+        (ret = av_interleaved_write_frame(fmt, &pkt2))         < 0 ||
+        (ret = av_write_trailer(fmt))                          < 0) {
+        av_packet_unref(&pkt2);
+        avformat_free_context(fmt);
+        return ret;
+    }
+    av_packet_unref(&pkt2);
+    avformat_free_context(fmt);
+    return 0;
+}
+
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
@@ -85,7 +120,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     char filename[1024];
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
-    int i;
+    int ret, i;
     int nb_renames = 0;
 
     if (!img->is_pipe) {
@@ -150,35 +185,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             ff_format_io_close(s, &pb[3]);
         }
     } else if (img->muxer) {
-        int ret;
-        AVStream *st;
-        AVPacket pkt2 = {0};
-        AVFormatContext *fmt = NULL;
-
-        av_assert0(!img->split_planes);
-
-        ret = avformat_alloc_output_context2(&fmt, NULL, img->muxer, s->url);
+        ret = write_muxed_file(s, pb[0], pkt);
         if (ret < 0)
             return ret;
-        st = avformat_new_stream(fmt, NULL);
-        if (!st) {
-            avformat_free_context(fmt);
-            return AVERROR(ENOMEM);
-        }
-        st->id = pkt->stream_index;
-
-        fmt->pb = pb[0];
-        if ((ret = av_packet_ref(&pkt2, pkt))                             < 0 ||
-            (ret = avcodec_parameters_copy(st->codecpar, s->streams[0]->codecpar)) < 0 ||
-            (ret = avformat_write_header(fmt, NULL))                      < 0 ||
-            (ret = av_interleaved_write_frame(fmt, &pkt2))                < 0 ||
-            (ret = av_write_trailer(fmt))                                 < 0) {
-            av_packet_unref(&pkt2);
-            avformat_free_context(fmt);
-            return ret;
-        }
-        av_packet_unref(&pkt2);
-        avformat_free_context(fmt);
     } else {
         avio_write(pb[0], pkt->data, pkt->size);
     }
