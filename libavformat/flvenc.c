@@ -992,7 +992,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (size + flags_size >= 1<<24) {
         av_log(s, AV_LOG_ERROR, "Too large packet with size %u >= %u\n",
                size + flags_size, 1<<24);
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     avio_wb24(pb, size + flags_size);
