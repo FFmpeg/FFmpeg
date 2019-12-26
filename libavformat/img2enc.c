@@ -124,7 +124,7 @@ static int write_packet_pipe(AVFormatContext *s, AVPacket *pkt)
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
-    AVIOContext *pb[4];
+    AVIOContext *pb[4] = {0};
     char filename[1024];
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
@@ -162,7 +162,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         av_strlcpy(img->target[i], filename, sizeof(img->target[i]));
         if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, NULL) < 0) {
             av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp[i] : filename);
-            return AVERROR(EIO);
+            ret = AVERROR(EIO);
+            goto fail;
         }
 
         if (!img->split_planes || i+1 >= desc->nb_components)
@@ -191,7 +192,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (img->muxer) {
         ret = write_muxed_file(s, pb[0], pkt);
         if (ret < 0)
-            return ret;
+            goto fail;
     } else {
         avio_write(pb[0], pkt->data, pkt->size);
     }
@@ -205,6 +206,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     img->img_number++;
     return 0;
+
+fail:
+    for (i = 0; i < FF_ARRAY_ELEMS(pb); i++)
+        if (pb[i])
+            ff_format_io_close(s, &pb[i]);
+    return ret;
 }
 
 static int query_codec(enum AVCodecID id, int std_compliance)
