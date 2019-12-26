@@ -92,18 +92,16 @@ static int write_muxed_file(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
     st->id = pkt->stream_index;
 
     fmt->pb = pb;
+
     if ((ret = av_packet_ref(&pkt2, pkt))                      < 0 ||
         (ret = avcodec_parameters_copy(st->codecpar, par))     < 0 ||
         (ret = avformat_write_header(fmt, NULL))               < 0 ||
         (ret = av_interleaved_write_frame(fmt, &pkt2))         < 0 ||
-        (ret = av_write_trailer(fmt))                          < 0) {
-        av_packet_unref(&pkt2);
-        avformat_free_context(fmt);
-        return ret;
-    }
+        (ret = av_write_trailer(fmt))) {}
+
     av_packet_unref(&pkt2);
     avformat_free_context(fmt);
-    return 0;
+    return ret;
 }
 
 static int write_packet_pipe(AVFormatContext *s, AVPacket *pkt)
