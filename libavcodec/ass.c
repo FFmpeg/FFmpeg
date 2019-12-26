@@ -105,7 +105,7 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     char *ass_str;
     AVSubtitleRect **rects;
 
-    rects = av_realloc_array(sub->rects, (sub->num_rects+1), sizeof(*sub->rects));
+    rects = av_realloc_array(sub->rects, sub->num_rects+1, sizeof(*sub->rects));
     if (!rects)
         return AVERROR(ENOMEM);
     sub->rects = rects;
