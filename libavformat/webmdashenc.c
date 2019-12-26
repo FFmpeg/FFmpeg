@@ -550,12 +550,6 @@ static int webm_dash_manifest_write_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-static int webm_dash_manifest_write_trailer(AVFormatContext *s)
-{
-    free_adaptation_sets(s);
-    return 0;
-}
-
 #define OFFSET(x) offsetof(WebMDashMuxContext, x)
 static const AVOption options[] = {
     { "adaptation_sets", "Adaptation sets. Syntax: id=0,streams=0,1,2 id=1,streams=3,4 and so on", OFFSET(adaptation_sets), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
@@ -585,7 +579,6 @@ AVOutputFormat ff_webm_dash_manifest_muxer = {
     .priv_data_size    = sizeof(WebMDashMuxContext),
     .write_header      = webm_dash_manifest_write_header,
     .write_packet      = webm_dash_manifest_write_packet,
-    .write_trailer     = webm_dash_manifest_write_trailer,
     .priv_class        = &webm_dash_class,
 };
 #endif
