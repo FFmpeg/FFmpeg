@@ -131,48 +131,46 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i;
     int nb_renames = 0;
 
-    {
-        if (img->update) {
-            av_strlcpy(filename, img->path, sizeof(filename));
-        } else if (img->use_strftime) {
-            time_t now0;
-            struct tm *tm, tmpbuf;
-            time(&now0);
-            tm = localtime_r(&now0, &tmpbuf);
-            if (!strftime(filename, sizeof(filename), img->path, tm)) {
-                av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
-                return AVERROR(EINVAL);
-            }
-        } else if (img->frame_pts) {
-            if (av_get_frame_filename2(filename, sizeof(filename), img->path, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
-                av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
-                return AVERROR(EINVAL);
-            }
-        } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
-                                          img->img_number,
-                                          AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
-                   img->img_number > 1) {
-            av_log(s, AV_LOG_ERROR,
-                   "Could not get frame filename number %d from pattern '%s'. "
-                   "Use '-frames:v 1' for a single image, or '-update' option, or use a pattern such as %%03d within the filename.\n",
-                   img->img_number, img->path);
+    if (img->update) {
+        av_strlcpy(filename, img->path, sizeof(filename));
+    } else if (img->use_strftime) {
+        time_t now0;
+        struct tm *tm, tmpbuf;
+        time(&now0);
+        tm = localtime_r(&now0, &tmpbuf);
+        if (!strftime(filename, sizeof(filename), img->path, tm)) {
+            av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
             return AVERROR(EINVAL);
         }
-        for (i = 0; i < 4; i++) {
-            snprintf(img->tmp[i], sizeof(img->tmp[i]), "%s.tmp", filename);
-            av_strlcpy(img->target[i], filename, sizeof(img->target[i]));
-            if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp[i] : filename);
-                return AVERROR(EIO);
-            }
-
-            if (!img->split_planes || i+1 >= desc->nb_components)
-                break;
-            filename[strlen(filename) - 1] = "UVAx"[i];
+    } else if (img->frame_pts) {
+        if (av_get_frame_filename2(filename, sizeof(filename), img->path, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+            av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
+            return AVERROR(EINVAL);
         }
-        if (img->use_rename)
-            nb_renames = i + 1;
+    } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
+                                      img->img_number,
+                                      AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
+               img->img_number > 1) {
+        av_log(s, AV_LOG_ERROR,
+               "Could not get frame filename number %d from pattern '%s'. "
+               "Use '-frames:v 1' for a single image, or '-update' option, or use a pattern such as %%03d within the filename.\n",
+               img->img_number, img->path);
+        return AVERROR(EINVAL);
     }
+    for (i = 0; i < 4; i++) {
+        snprintf(img->tmp[i], sizeof(img->tmp[i]), "%s.tmp", filename);
+        av_strlcpy(img->target[i], filename, sizeof(img->target[i]));
+        if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, NULL) < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp[i] : filename);
+            return AVERROR(EIO);
+        }
+
+        if (!img->split_planes || i+1 >= desc->nb_components)
+            break;
+        filename[strlen(filename) - 1] = "UVAx"[i];
+    }
+    if (img->use_rename)
+        nb_renames = i + 1;
 
     if (img->split_planes) {
         int ysize = par->width * par->height;
@@ -198,13 +196,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[0], pkt->data, pkt->size);
     }
     avio_flush(pb[0]);
-    {
-        ff_format_io_close(s, &pb[0]);
-        for (i = 0; i < nb_renames; i++) {
-            int ret = ff_rename(img->tmp[i], img->target[i], s);
-            if (ret < 0)
-                return ret;
-        }
+    ff_format_io_close(s, &pb[0]);
+    for (i = 0; i < nb_renames; i++) {
+        int ret = ff_rename(img->tmp[i], img->target[i], s);
+        if (ret < 0)
+            return ret;
     }
 
     img->img_number++;
