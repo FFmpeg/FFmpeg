@@ -141,7 +141,7 @@ static void bwf_write_bext_chunk(AVFormatContext *s)
     ff_end_tag(s->pb, bext);
 }
 
-static av_cold void peak_free_buffers(AVFormatContext *s)
+static av_cold void wav_deinit(AVFormatContext *s)
 {
     WAVMuxContext *wav = s->priv_data;
 
@@ -185,7 +185,6 @@ static av_cold int peak_init_writer(AVFormatContext *s)
 
 nomem:
     av_log(s, AV_LOG_ERROR, "Out of memory\n");
-    peak_free_buffers(s);
     return AVERROR(ENOMEM);
 }
 
@@ -485,9 +484,6 @@ static int wav_write_trailer(AVFormatContext *s)
         }
     }
 
-    if (wav->write_peak)
-        peak_free_buffers(s);
-
     return ret;
 }
 
@@ -527,6 +523,7 @@ AVOutputFormat ff_wav_muxer = {
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
+    .deinit            = wav_deinit,
     .flags             = AVFMT_TS_NONSTRICT,
     .codec_tag         = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
     .priv_class        = &wav_muxer_class,
