@@ -12188,6 +12188,10 @@ Default value is @code{none}.
 Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code{0}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section inflate
 
 Apply inflate effect to the video.
