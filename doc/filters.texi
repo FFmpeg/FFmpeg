@@ -9070,8 +9070,8 @@ ffmpeg -i INPUT -f lavfi -i nullsrc=hd720,geq='r=128+80*(sin(sqrt((X-W/2)*(X-W/2
 
 @section dnn_processing
 
-Do image processing with deep neural networks. Currently only AVFrame with RGB24
-and BGR24 are supported, more formats will be added later.
+Do image processing with deep neural networks. It works together with another filter
+which converts the pixel format of the Frame to what the dnn network requires.
 
 The filter accepts the following options:
 
@@ -9106,11 +9106,16 @@ Set the input name of the dnn network.
 @item output
 Set the output name of the dnn network.
 
-@item fmt
-Set the pixel format for the Frame. Allowed values are @code{AV_PIX_FMT_RGB24}, and @code{AV_PIX_FMT_BGR24}.
-Default value is @code{AV_PIX_FMT_RGB24}.
-
 @end table
+
+@itemize
+@item
+Halve the red channle of the frame with format rgb24:
+@example
+ffmpeg -i input.jpg -vf format=rgb24,dnn_processing=model=halve_first_channel.model:input=dnn_in:output=dnn_out:dnn_backend=native out.native.png
+@end example
+
+@end itemize
 
 @section drawbox
 

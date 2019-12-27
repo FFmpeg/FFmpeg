@@ -37,7 +37,6 @@ typedef struct DnnProcessingContext {
 
     char *model_filename;
     DNNBackendType backend_type;
-    enum AVPixelFormat fmt;
     char *model_inputname;
     char *model_outputname;
 
@@ -60,7 +59,6 @@ static const AVOption dnn_processing_options[] = {
     { "model",       "path to model file",         OFFSET(model_filename),   AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { "input",       "input name of the model",    OFFSET(model_inputname),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { "output",      "output name of the model",   OFFSET(model_outputname), AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
-    { "fmt",         "AVPixelFormat of the frame", OFFSET(fmt),              AV_OPT_TYPE_PIXEL_FMT, { .i64=AV_PIX_FMT_RGB24 }, AV_PIX_FMT_NONE, AV_PIX_FMT_NB - 1, FLAGS },
     { NULL }
 };
 
@@ -69,23 +67,6 @@ AVFILTER_DEFINE_CLASS(dnn_processing);
 static av_cold int init(AVFilterContext *context)
 {
     DnnProcessingContext *ctx = context->priv;
-    int supported = 0;
-    // as the first step, only rgb24 and bgr24 are supported
-    const enum AVPixelFormat supported_pixel_fmts[] = {
-        AV_PIX_FMT_RGB24,
-        AV_PIX_FMT_BGR24,
-    };
-    for (int i = 0; i < sizeof(supported_pixel_fmts) / sizeof(enum AVPixelFormat); ++i) {
-        if (supported_pixel_fmts[i] == ctx->fmt) {
-            supported = 1;
-            break;
-        }
-    }
-    if (!supported) {
-        av_log(context, AV_LOG_ERROR, "pixel fmt %s not supported yet\n",
-                                       av_get_pix_fmt_name(ctx->fmt));
-        return AVERROR(AVERROR_INVALIDDATA);
-    }
 
     if (!ctx->model_filename) {
         av_log(ctx, AV_LOG_ERROR, "model file for network is not specified\n");
@@ -121,14 +102,52 @@ static av_cold int init(AVFilterContext *context)
 
 static int query_formats(AVFilterContext *context)
 {
-    AVFilterFormats *formats;
-    DnnProcessingContext *ctx = context->priv;
-    enum AVPixelFormat pixel_fmts[2];
-    pixel_fmts[0] = ctx->fmt;
-    pixel_fmts[1] = AV_PIX_FMT_NONE;
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_NONE
+    };
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    return ff_set_common_formats(context, fmts_list);
+}
 
-    formats = ff_make_format_list(pixel_fmts);
-    return ff_set_common_formats(context, formats);
+static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLink *inlink)
+{
+    AVFilterContext *ctx   = inlink->dst;
+    enum AVPixelFormat fmt = inlink->format;
+
+    // the design is to add explicit scale filter before this filter
+    if (model_input->height != -1 && model_input->height != inlink->h) {
+        av_log(ctx, AV_LOG_ERROR, "the model requires frame height %d but got %d\n",
+                                   model_input->height, inlink->h);
+        return AVERROR(EIO);
+    }
+    if (model_input->width != -1 && model_input->width != inlink->w) {
+        av_log(ctx, AV_LOG_ERROR, "the model requires frame width %d but got %d\n",
+                                   model_input->width, inlink->w);
+        return AVERROR(EIO);
+    }
+
+    switch (fmt) {
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
+        if (model_input->channels != 3) {
+            av_log(ctx, AV_LOG_ERROR, "the frame's input format %s does not match "
+                                       "the model input channels %d\n",
+                                       av_get_pix_fmt_name(fmt),
+                                       model_input->channels);
+            return AVERROR(EIO);
+        }
+        if (model_input->dt != DNN_FLOAT && model_input->dt != DNN_UINT8) {
+            av_log(ctx, AV_LOG_ERROR, "only support dnn models with input data type as float32 and uint8.\n");
+            return AVERROR(EIO);
+        }
+        break;
+    default:
+        av_log(ctx, AV_LOG_ERROR, "%s not supported.\n", av_get_pix_fmt_name(fmt));
+        return AVERROR(EIO);
+    }
+
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -137,6 +156,7 @@ static int config_input(AVFilterLink *inlink)
     DnnProcessingContext *ctx = context->priv;
     DNNReturnType result;
     DNNData model_input;
+    int check;
 
     result = ctx->model->get_input(ctx->model->model, &model_input, ctx->model_inputname);
     if (result != DNN_SUCCESS) {
@@ -144,26 +164,9 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EIO);
     }
 
-    // the design is to add explicit scale filter before this filter
-    if (model_input.height != -1 && model_input.height != inlink->h) {
-        av_log(ctx, AV_LOG_ERROR, "the model requires frame height %d but got %d\n",
-                                   model_input.height, inlink->h);
-        return AVERROR(EIO);
-    }
-    if (model_input.width != -1 && model_input.width != inlink->w) {
-        av_log(ctx, AV_LOG_ERROR, "the model requires frame width %d but got %d\n",
-                                   model_input.width, inlink->w);
-        return AVERROR(EIO);
-    }
-
-    if (model_input.channels != 3) {
-        av_log(ctx, AV_LOG_ERROR, "the model requires input channels %d\n",
-                                   model_input.channels);
-        return AVERROR(EIO);
-    }
-    if (model_input.dt != DNN_FLOAT && model_input.dt != DNN_UINT8) {
-        av_log(ctx, AV_LOG_ERROR, "only support dnn models with input data type as float32 and uint8.\n");
-        return AVERROR(EIO);
+    check = check_modelinput_inlink(&model_input, inlink);
+    if (check != 0) {
+        return check;
     }
 
     ctx->input.width    = inlink->w;
