@@ -9115,6 +9115,12 @@ Halve the red channle of the frame with format rgb24:
 ffmpeg -i input.jpg -vf format=rgb24,dnn_processing=model=halve_first_channel.model:input=dnn_in:output=dnn_out:dnn_backend=native out.native.png
 @end example
 
+@item
+Halve the pixel value of the frame with format gray32f:
+@example
+ffmpeg -i input.jpg -vf format=grayf32,dnn_processing=model=halve_gray_float.model:input=dnn_in:output=dnn_out:dnn_backend=native -y out.native.png
+@end example
+
 @end itemize
 
 @section drawbox
