@@ -892,7 +892,8 @@ static void flush_packet(AVFormatContext *s)
 
     avio_write(s->pb, asf->packet_buf, s->packet_size - packet_hdr_size);
 
-    avio_flush(s->pb);
+    avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
+
     asf->nb_packets++;
     asf->packet_nb_payloads     = 0;
     asf->packet_timestamp_start = -1;

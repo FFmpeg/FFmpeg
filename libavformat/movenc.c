@@ -5152,7 +5152,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         if (mov->flags & FF_MOV_FLAG_DELAY_MOOV) {
             if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
                 mov->reserved_header_pos = avio_tell(s->pb);
-            avio_flush(s->pb);
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
             mov->moov_written = 1;
             return 0;
         }
@@ -5176,7 +5176,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             mov->tracks[i].entry = 0;
             mov->tracks[i].end_reliable = 0;
         }
-        avio_flush(s->pb);
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
         return 0;
     }
 
@@ -5241,7 +5241,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         }
 
         if (write_moof) {
-            avio_flush(s->pb);
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 
             mov_write_moof_tag(s->pb, mov, moof_tracks, mdat_size);
             mov->fragments++;
@@ -5273,7 +5273,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
     mov->mdat_size = 0;
 
-    avio_flush(s->pb);
+    avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
     return 0;
 }
 

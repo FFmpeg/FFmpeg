@@ -928,7 +928,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
     for (i = 0; i < zero_trail_bytes; i++)
         avio_w8(ctx->pb, 0x00);
 
-    avio_flush(ctx->pb);
+    avio_write_marker(ctx->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 
     s->packet_number++;
 
@@ -957,7 +957,7 @@ static void put_vcd_padding_sector(AVFormatContext *ctx)
 
     s->vcd_padding_bytes_written += s->packet_size;
 
-    avio_flush(ctx->pb);
+    avio_write_marker(ctx->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 
     /* increasing the packet number is correct. The SCR of the following packs
      * is calculated from the packet_number and it has to include the padding

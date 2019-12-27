@@ -1936,7 +1936,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     }
 
     if(key)
-        avio_flush(pb);
+        avio_write_marker(pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 
     return 0;
 }

@@ -2235,7 +2235,7 @@ static void mkv_end_cluster(AVFormatContext *s)
 
     end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv);
     mkv->cluster_pos = -1;
-    avio_flush(s->pb);
+    avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 }
 
 static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
