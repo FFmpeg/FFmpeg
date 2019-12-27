@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -44,6 +45,7 @@ typedef struct VideoMuxData {
     int frame_pts;
     const char *muxer;
     int use_rename;
+    AVDictionary *protocol_opts;
 } VideoMuxData;
 
 static int write_header(AVFormatContext *s)
@@ -132,6 +134,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
     int ret, i;
     int nb_renames = 0;
+    AVDictionary *options = NULL;
 
     if (img->update) {
         av_strlcpy(filename, img->path, sizeof(filename));
@@ -160,11 +163,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
     for (i = 0; i < 4; i++) {
+        av_dict_copy(&options, img->protocol_opts, 0);
         snprintf(img->tmp[i], sizeof(img->tmp[i]), "%s.tmp", filename);
         av_strlcpy(img->target[i], filename, sizeof(img->target[i]));
-        if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, NULL) < 0) {
+        if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, &options) < 0) {
             av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp[i] : filename);
             ret = AVERROR(EIO);
+            goto fail;
+        }
+        if (options) {
+            av_log(s, AV_LOG_ERROR, "Could not recognize some protocol options\n");
+            ret = AVERROR(EINVAL);
             goto fail;
         }
 
@@ -210,6 +219,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 
 fail:
+    av_dict_free(&options);
     for (i = 0; i < FF_ARRAY_ELEMS(pb); i++)
         if (pb[i])
             ff_format_io_close(s, &pb[i]);
@@ -235,6 +245,7 @@ static const AVOption muxoptions[] = {
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { "frame_pts",    "use current frame pts for filename", OFFSET(frame_pts),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
+    { "protocol_opts", "specify protocol options for the opened files", OFFSET(protocol_opts), AV_OPT_TYPE_DICT, {0}, 0, 0, ENC },
     { NULL },
 };
 

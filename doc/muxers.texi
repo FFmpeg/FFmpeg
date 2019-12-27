@@ -1215,6 +1215,11 @@ overwritten with new images. Default value is 0.
 @item strftime
 If set to 1, expand the filename with date and time information from
 @code{strftime()}. Default value is 0.
+
+@item protocol_opts @var{options_list}
+Set protocol options as a :-separated list of key=value parameters. Values
+containing the @code{:} special character must be escaped.
+
 @end table
 
 @subsection Examples
@@ -1255,6 +1260,12 @@ ffmpeg -f v4l2 -r 1 -i /dev/video0 -f image2 -strftime 1 "%Y-%m-%d_%H-%M-%S.jpg"
 You can set the file name with current frame's PTS:
 @example
 ffmpeg -f v4l2 -r 1 -i /dev/video0 -copyts -f image2 -frame_pts true %d.jpg"
+@end example
+
+A more complex example is to publish contents of your desktop directly to a
+WebDAV server every second:
+@example
+ffmpeg -f x11grab -framerate 1 -i :0.0 -q:v 6 -update 1 -protocol_opts method=PUT http://example.com/desktop.jpg
 @end example
 
 @section matroska
