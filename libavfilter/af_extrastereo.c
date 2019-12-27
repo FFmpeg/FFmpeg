@@ -31,7 +31,7 @@ typedef struct ExtraStereoContext {
 } ExtraStereoContext;
 
 #define OFFSET(x) offsetof(ExtraStereoContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption extrastereo_options[] = {
     { "m", "set the difference coefficient", OFFSET(mult), AV_OPT_TYPE_FLOAT, {.dbl=2.5}, -10, 10, A },
@@ -129,4 +129,5 @@ AVFilter ff_af_extrastereo = {
     .inputs         = inputs,
     .outputs        = outputs,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = ff_filter_process_command,
 };

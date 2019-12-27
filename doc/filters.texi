@@ -3558,6 +3558,10 @@ Sets the difference coefficient (default: 2.5). 0.0 means mono sound
 Enable clipping. By default is enabled.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section firequalizer
 Apply FIR Equalization using arbitrary frequency response.
 
