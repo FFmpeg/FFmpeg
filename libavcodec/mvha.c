@@ -161,6 +161,9 @@ static int decode_frame(AVCodecContext *avctx,
     type = AV_RB32(avpkt->data);
     size = AV_RL32(avpkt->data + 4);
 
+    if (size < 1 || size >= avpkt->size)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
