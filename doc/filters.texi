@@ -19335,6 +19335,10 @@ If @code{intensity} is negative and this is set to 1, colors will change,
 otherwise colors will be less saturated, more towards gray.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @anchor{vignette}
 @section vignette
 
