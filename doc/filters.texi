@@ -5171,6 +5171,10 @@ channels. Default is 0.3.
 Set level of input signal of original channel. Default is 0.8.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options except @code{delay} as @ref{commands}.
+
 @section superequalizer
 Apply 18 band equalizer.
 
