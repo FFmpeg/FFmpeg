@@ -8632,6 +8632,10 @@ Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section deflicker
 
 Remove temporal frame luminance variations.
@@ -8972,6 +8976,10 @@ Flags to local 3x3 coordinates maps like this:
     4   5
     6 7 8
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section displace
 
@@ -10120,6 +10128,10 @@ Flags to local 3x3 coordinates maps like this:
     4   5
     6 7 8
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section extractplanes
 
@@ -12185,6 +12197,10 @@ It accepts the following options:
 Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section interlace
 

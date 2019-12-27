@@ -353,7 +353,7 @@ static const AVFilterPad neighbor_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(NContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 #define DEFINE_NEIGHBOR_FILTER(name_, description_)          \
 AVFILTER_DEFINE_CLASS(name_);                                \
@@ -368,6 +368,7 @@ AVFilter ff_vf_##name_ = {                                   \
     .outputs       = neighbor_outputs,                       \
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC| \
                      AVFILTER_FLAG_SLICE_THREADS,            \
+    .process_command = ff_filter_process_command,            \
 }
 
 #if CONFIG_EROSION_FILTER
