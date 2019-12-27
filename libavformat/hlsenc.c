@@ -459,7 +459,6 @@ static int flush_dynbuf(VariantStream *vs, int *range_length)
 
     // flush
     av_write_frame(ctx, NULL);
-    avio_flush(ctx->pb);
 
     // write out to file
     *range_length = avio_close_dyn_buf(ctx->pb, &vs->temp_buffer);
@@ -2548,7 +2547,6 @@ static int hls_write_trailer(struct AVFormatContext *s)
             if (!vs->init_range_length) {
                 uint8_t *buffer = NULL;
                 av_write_frame(oc, NULL); /* Flush any buffered data */
-                avio_flush(oc->pb);
 
                 range_length = avio_close_dyn_buf(oc->pb, &buffer);
                 avio_write(vs->out, buffer, range_length);
