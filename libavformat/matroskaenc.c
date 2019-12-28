@@ -183,7 +183,7 @@ typedef struct MatroskaMuxContext {
 
 static int ebml_id_size(uint32_t id)
 {
-    return (av_log2(id + 1) - 1) / 7 + 1;
+    return (av_log2(id) + 7U) / 8;
 }
 
 static void put_ebml_id(AVIOContext *pb, uint32_t id)
