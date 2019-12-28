@@ -18945,6 +18945,7 @@ Set vectorscope mode.
 It accepts the following values:
 @table @samp
 @item gray
+@item tint
 Gray values are displayed on graph, higher brightness means more pixels have
 same component color value on location in graph. This is the default mode.
 
@@ -19048,6 +19049,11 @@ Set what kind of colorspace to use when drawing graticule.
 @item 709
 @end table
 Default is auto.
+
+@item tint0, t0
+@item tint1, t1
+Set color tint for gray/tint vectorscope mode. By default both options are zero.
+This means no tint, and output will remain gray.
 @end table
 
 @anchor{vidstabdetect}

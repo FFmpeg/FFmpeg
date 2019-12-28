@@ -38,7 +38,7 @@ enum GraticuleType {
 };
 
 enum VectorscopeMode {
-    GRAY,
+    TINT,
     COLOR,
     COLOR2,
     COLOR3,
@@ -53,6 +53,7 @@ typedef struct VectorscopeContext {
     int intensity;
     float fintensity;
     uint16_t bg_color[4];
+    float ftint[2];
     int planewidth[4];
     int planeheight[4];
     int hsub, vsub;
@@ -67,6 +68,7 @@ typedef struct VectorscopeContext {
     float bgopacity;
     float lthreshold;
     float hthreshold;
+    int tint[2];
     int tmin;
     int tmax;
     int flags;
@@ -87,7 +89,8 @@ typedef struct VectorscopeContext {
 static const AVOption vectorscope_options[] = {
     { "mode", "set vectorscope mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, MODE_NB-1, FLAGS, "mode"},
     { "m",    "set vectorscope mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, MODE_NB-1, FLAGS, "mode"},
-    {   "gray",   0, 0, AV_OPT_TYPE_CONST, {.i64=GRAY},   0, 0, FLAGS, "mode" },
+    {   "gray",   0, 0, AV_OPT_TYPE_CONST, {.i64=TINT},   0, 0, FLAGS, "mode" },
+    {   "tint",   0, 0, AV_OPT_TYPE_CONST, {.i64=TINT},   0, 0, FLAGS, "mode" },
     {   "color",  0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},  0, 0, FLAGS, "mode" },
     {   "color2", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR2}, 0, 0, FLAGS, "mode" },
     {   "color3", 0, 0, AV_OPT_TYPE_CONST, {.i64=COLOR3}, 0, 0, FLAGS, "mode" },
@@ -127,6 +130,10 @@ static const AVOption vectorscope_options[] = {
     {   "auto",       0, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "colorspace" },
     {   "601",        0, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "colorspace" },
     {   "709",        0, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "colorspace" },
+    { "tint0", "set 1st tint", OFFSET(ftint[0]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "t0",    "set 1st tint", OFFSET(ftint[0]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "tint1", "set 2nd tint", OFFSET(ftint[1]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "t1",    "set 2nd tint", OFFSET(ftint[1]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
     { NULL }
 };
 
@@ -442,7 +449,7 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
     switch (s->mode) {
     case COLOR:
     case COLOR5:
-    case GRAY:
+    case TINT:
         if (s->is_yuv) {
             for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
@@ -581,7 +588,17 @@ static void vectorscope16(VectorscopeContext *s, AVFrame *in, AVFrame *out, int 
         }
     }
 
-    if (s->mode == COLOR) {
+    if (s->mode == TINT && (s->tint[0] != mid ||
+                            s->tint[1] != mid)) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                if (dpd[i * dlinesize + j]) {
+                    dst[1][i * dlinesize + j] = s->tint[0];
+                    dst[2][i * dlinesize + j] = s->tint[1];
+                }
+            }
+        }
+    } else if (s->mode == COLOR) {
         for (i = 0; i < out->height; i++) {
             for (j = 0; j < out->width; j++) {
                 if (!dpd[i * dlinesize + j]) {
@@ -636,7 +653,7 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
     switch (s->mode) {
     case COLOR5:
     case COLOR:
-    case GRAY:
+    case TINT:
         if (s->is_yuv) {
             for (i = 0; i < h; i++) {
                 const int iwx = i * slinesizex;
@@ -775,7 +792,17 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
         }
     }
 
-    if (s->mode == COLOR) {
+    if (s->mode == TINT && (s->tint[0] != 128 ||
+                            s->tint[1] != 128)) {
+        for (i = 0; i < out->height; i++) {
+            for (j = 0; j < out->width; j++) {
+                if (dpd[i * dlinesize + j]) {
+                    dst[1][i * dlinesize + j] = s->tint[0];
+                    dst[2][i * dlinesize + j] = s->tint[1];
+                }
+            }
+        }
+    } else if (s->mode == COLOR) {
         for (i = 0; i < out->height; i++) {
             for (j = 0; j < out->width; j++) {
                 if (!dpd[i * out->linesize[pd] + j]) {
@@ -1483,9 +1510,9 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    if (s->mode == GRAY && s->is_yuv)
+    if (s->mode == TINT && s->is_yuv) {
         s->pd = 0;
-    else {
+    } else {
         if ((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1))
             s->pd = 0;
         else if ((s->x == 0 && s->y == 2) || (s->x == 2 && s->y == 0))
@@ -1519,6 +1546,9 @@ static int config_input(AVFilterLink *inlink)
 
     s->bg_color[3] = s->bgopacity * (s->size - 1);
 
+    s->tint[0] = .5f * (s->ftint[0] + 1.f) * (s->size - 1);
+    s->tint[1] = .5f * (s->ftint[1] + 1.f) * (s->size - 1);
+
     switch (inlink->format) {
     case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRP10:
@@ -1531,8 +1561,8 @@ static int config_input(AVFilterLink *inlink)
         break;
     default:
         s->bg_color[0] = 0;
-        s->bg_color[1] = s->size / 2 - 1;
-        s->bg_color[2] = s->size / 2 - 1;
+        s->bg_color[1] = s->size / 2;
+        s->bg_color[2] = s->size / 2;
     }
 
     s->hsub = desc->log2_chroma_w;
