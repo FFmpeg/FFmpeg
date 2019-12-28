@@ -19689,6 +19689,12 @@ Default is digital.
 
 @item bgopacity, b
 Set background opacity.
+
+@item tint0, t0
+@item tint1, t1
+Set tint for output.
+Only used with lowpass filter and when display is not overlay and input
+pixel formats are not RGB.
 @end table
 
 @section weave, doubleweave

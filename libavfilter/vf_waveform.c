@@ -112,6 +112,8 @@ typedef struct WaveformContext {
     GraticuleLines *glines;
     int            nb_glines;
     int            rgb;
+    float          ftint[2];
+    int            tint[2];
 
     int (*waveform_slice)(AVFilterContext *ctx, void *arg,
                           int jobnr, int nb_jobs);
@@ -179,6 +181,10 @@ static const AVOption waveform_options[] = {
         { "ire",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=IRE},        0, 0, FLAGS, "scale" },
     { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
+    { "tint0", "set 1st tint", OFFSET(ftint[0]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "t0",    "set 1st tint", OFFSET(ftint[0]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "tint1", "set 2nd tint", OFFSET(ftint[1]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "t1",    "set 2nd tint", OFFSET(ftint[1]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
     { NULL }
 };
 
@@ -678,10 +684,11 @@ static av_always_inline void lowpass16(WaveformContext *s,
                                        int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
+    const int dplane = (s->rgb || s->display == OVERLAY) ? plane : 0;
     const int shift_w = s->shift_w[component];
     const int shift_h = s->shift_h[component];
     const int src_linesize = in->linesize[plane] / 2;
-    const int dst_linesize = out->linesize[plane] / 2;
+    const int dst_linesize = out->linesize[dplane] / 2;
     const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
     const int limit = s->max - 1;
     const int max = limit - intensity;
@@ -693,7 +700,7 @@ static av_always_inline void lowpass16(WaveformContext *s,
     const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     const int step = column ? 1 << shift_w : 1 << shift_h;
     const uint16_t *src_data = (const uint16_t *)in->data[plane] + sliceh_start * src_linesize;
-    uint16_t *dst_data = (uint16_t *)out->data[plane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+    uint16_t *dst_data = (uint16_t *)out->data[dplane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
     uint16_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint16_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
     const uint16_t *p;
@@ -730,6 +737,56 @@ static av_always_inline void lowpass16(WaveformContext *s,
         src_data += src_linesize;
         dst_data += dst_linesize * step;
     }
+
+    if (s->display != OVERLAY && column && !s->rgb) {
+        const int mult = s->max / 256;
+        const int bg = s->bg_color[0] * mult;
+        const int t0 = s->tint[0];
+        const int t1 = s->tint[1];
+        uint16_t *dst0, *dst1;
+        const uint16_t *src;
+        int x;
+
+        src  = (const uint16_t *)(out->data[0]) + offset_y * dst_linesize + offset_x;
+        dst0 = (uint16_t *)(out->data[1]) + offset_y * dst_linesize + offset_x;
+        dst1 = (uint16_t *)(out->data[2]) + offset_y * dst_linesize + offset_x;
+        for (y = 0; y < s->max; y++) {
+            for (x = slicew_start * step; x < slicew_end * step; x++) {
+                if (src[x] != bg) {
+                    dst0[x] = t0;
+                    dst1[x] = t1;
+                }
+            }
+
+            src  += dst_linesize;
+            dst0 += dst_linesize;
+            dst1 += dst_linesize;
+        }
+    } else if (s->display != OVERLAY && !s->rgb) {
+        const int mult = s->max / 256;
+        const int bg = s->bg_color[0] * mult;
+        const int t0 = s->tint[0];
+        const int t1 = s->tint[1];
+        uint16_t *dst0, *dst1;
+        const uint16_t *src;
+        int x;
+
+        src  = (const uint16_t *)out->data[0] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        dst0 = (uint16_t *)(out->data[1]) + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        dst1 = (uint16_t *)(out->data[2]) + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        for (y = sliceh_start * step; y < sliceh_end * step; y++) {
+            for (x = 0; x < s->max; x++) {
+                if (src[x] != bg) {
+                    dst0[x] = t0;
+                    dst1[x] = t1;
+                }
+            }
+
+            src  += dst_linesize;
+            dst0 += dst_linesize;
+            dst1 += dst_linesize;
+        }
+    }
 }
 
 #define LOWPASS16_FUNC(name, column, mirror)        \
@@ -765,10 +822,11 @@ static av_always_inline void lowpass(WaveformContext *s,
                                      int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
+    const int dplane = (s->rgb || s->display == OVERLAY) ? plane : 0;
     const int shift_w = s->shift_w[component];
     const int shift_h = s->shift_h[component];
     const int src_linesize = in->linesize[plane];
-    const int dst_linesize = out->linesize[plane];
+    const int dst_linesize = out->linesize[dplane];
     const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
     const int max = 255 - intensity;
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
@@ -779,7 +837,7 @@ static av_always_inline void lowpass(WaveformContext *s,
     const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     const int step = column ? 1 << shift_w : 1 << shift_h;
     const uint8_t *src_data = in->data[plane] + sliceh_start * src_linesize;
-    uint8_t *dst_data = out->data[plane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+    uint8_t *dst_data = out->data[dplane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
     uint8_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint8_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
     const uint8_t *p;
@@ -794,48 +852,76 @@ static av_always_inline void lowpass(WaveformContext *s,
 
         for (p = src_data + slicew_start; p < src_data_end; p++) {
             uint8_t *target;
+            int i = 0;
+
             if (column) {
-                target = dst + dst_signed_linesize * *p;
-                dst += step;
-                update(target, max, intensity);
+                do {
+                    target = dst++ + dst_signed_linesize * *p;
+                    update(target, max, intensity);
+                } while (++i < step);
             } else {
                 uint8_t *row = dst_data;
-                if (mirror)
-                    target = row - *p - 1;
-                else
-                    target = row + *p;
-                update(target, max, intensity);
-                row += dst_linesize;
+                do {
+                    if (mirror)
+                        target = row - *p - 1;
+                    else
+                        target = row + *p;
+                    update(target, max, intensity);
+                    row += dst_linesize;
+                } while (++i < step);
             }
         }
         src_data += src_linesize;
         dst_data += dst_linesize * step;
     }
 
-    if (column && step > 1) {
+    if (s->display != OVERLAY && column && !s->rgb) {
+        const int bg = s->bg_color[0];
         const int dst_h = 256;
-        uint8_t *dst;
-        int x, z;
+        const int t0 = s->tint[0];
+        const int t1 = s->tint[1];
+        uint8_t *dst0, *dst1;
+        const uint8_t *src;
+        int x;
 
-        dst = out->data[plane] + offset_y * dst_linesize + offset_x;
+        src  = out->data[0] + offset_y * dst_linesize + offset_x;
+        dst0 = out->data[1] + offset_y * dst_linesize + offset_x;
+        dst1 = out->data[2] + offset_y * dst_linesize + offset_x;
         for (y = 0; y < dst_h; y++) {
-            for (x = slicew_start * step; x < slicew_end * step; x+=step) {
-                for (z = 1; z < step; z++) {
-                    dst[x + z] = dst[x];
+            for (x = slicew_start * step; x < slicew_end * step; x++) {
+                if (src[x] != bg) {
+                    dst0[x] = t0;
+                    dst1[x] = t1;
                 }
             }
-            dst += dst_linesize;
-        }
-    } else if (step > 1) {
-        const int dst_w = 256;
-        uint8_t *dst;
-        int z;
 
-        dst = out->data[plane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
-        for (y = sliceh_start * step; y < sliceh_end * step; y+=step) {
-            for (z = 1; z < step; z++)
-                memcpy(dst + dst_linesize * z, dst, dst_w);
-            dst += dst_linesize * step;
+            src  += dst_linesize;
+            dst0 += dst_linesize;
+            dst1 += dst_linesize;
+        }
+    } else if (s->display != OVERLAY && !s->rgb) {
+        const int bg = s->bg_color[0];
+        const int dst_w = 256;
+        const int t0 = s->tint[0];
+        const int t1 = s->tint[1];
+        uint8_t *dst0, *dst1;
+        const uint8_t *src;
+        int x;
+
+        src  = out->data[0] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        dst0 = out->data[1] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        dst1 = out->data[2] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        for (y = sliceh_start * step; y < sliceh_end * step; y++) {
+            for (x = 0; x < dst_w; x++) {
+                if (src[x] != bg) {
+                    dst0[x] = t0;
+                    dst1[x] = t1;
+                }
+            }
+
+            src  += dst_linesize;
+            dst0 += dst_linesize;
+            dst1 += dst_linesize;
         }
     }
 }
@@ -3198,6 +3284,9 @@ static int config_input(AVFilterLink *inlink)
 
     s->size = s->size << (s->bits - 8);
 
+    s->tint[0] = .5f * (s->ftint[0] + 1.f) * (s->size - 1);
+    s->tint[1] = .5f * (s->ftint[1] + 1.f) * (s->size - 1);
+
     switch (inlink->format) {
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
@@ -3334,10 +3423,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             td.offset_x = offset_x;
             ctx->internal->execute(ctx, s->waveform_slice, &td, NULL, ff_filter_get_nb_threads(ctx));
             switch (s->filter) {
+            case LOWPASS:
+                if (s->bits <= 8)
+                    envelope(s, out, plane, s->rgb || s->display == OVERLAY ? plane : 0, s->mode ? offset_x : offset_y);
+                else
+                    envelope16(s, out, plane, s->rgb || s->display == OVERLAY ? plane : 0, s->mode ? offset_x : offset_y);
+                break;
             case ACOLOR:
             case CHROMA:
             case COLOR:
-            case LOWPASS:
                 if (s->bits <= 8)
                     envelope(s, out, plane, plane, s->mode ? offset_x : offset_y);
                 else
