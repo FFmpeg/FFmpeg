@@ -1,6 +1,11 @@
 FATE_MATROSKA-$(call ALLYES, MATROSKA_DEMUXER ZLIB) += fate-matroska-prores-zlib
 fate-matroska-prores-zlib: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/prores_zlib.mkv -c:v copy
 
+# This tests that the matroska demuxer correctly adds the icpf header atom
+# upon demuxing; it also tests bz2 decompression and unknown-length cluster.
+FATE_MATROSKA-$(call ALLYES, MATROSKA_DEMUXER BZLIB) += fate-matroska-prores-header-insertion-bz2
+fate-matroska-prores-header-insertion-bz2: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/prores_bz2.mkv -map 0 -c copy
+
 # This tests that the matroska demuxer supports modifying the colorspace
 # properties in remuxing (-c:v copy)
 # It also tests automatic insertion of the vp9_superframe bitstream filter
