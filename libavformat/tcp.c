@@ -453,7 +453,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             } else {
                 ret = AVERROR_DNS_ERROR;
             }
-            av_application_on_dns_did_open(s->app_ctx, hostname, NULL, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp,  ret);
+            av_application_on_dns_did_open(s->app_ctx, hostname, NULL, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp, WRAP_UNKNOWN_FAMILY,  ret);
             return ret;
         }
 
@@ -507,12 +507,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         av_log(NULL, AV_LOG_INFO, "cur ipv4 c_ipaddr = %s\n", c_ipaddr);
     }
     if (dns_entry) {
-        av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_DNS_CACHE, dns_time, s->dash_audio_tcp, 0);
+        av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_DNS_CACHE, dns_time, s->dash_audio_tcp, cur_ai->ai_family, 0);
     } else {
         if (strstr(uri, c_ipaddr)) {
-            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_NO_USE, dns_time, s->dash_audio_tcp, 0);
+            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_NO_USE, dns_time, s->dash_audio_tcp, cur_ai->ai_family, 0);
         } else {
-            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp, 0);
+            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp, cur_ai->ai_family, 0);
         }
     }
 
@@ -567,14 +567,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             if (ret == AVERROR(ETIMEDOUT)) {
                 ret = AVERROR_TCP_CONNECT_TIMEOUT;
             }
-            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, (av_gettime() - tcp_time) / 1000))
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, (av_gettime() - tcp_time) / 1000))
                 goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
             else
                 goto fail;
         } else {
-            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, (av_gettime() - tcp_time) / 1000);
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, (av_gettime() - tcp_time) / 1000);
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
@@ -751,7 +751,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         if ((ret = ff_sendto(fd, http_request, strlen(http_request), FAST_OPEN_FLAG,
                  cur_ai->ai_addr, cur_ai->ai_addrlen, s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
             s->fastopen_success = 0;
-            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, 0))
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, 0))
                 goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
@@ -763,7 +763,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
             } else {
                 s->fastopen_success = 1;
             }
-            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, 0);
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, 0);
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;

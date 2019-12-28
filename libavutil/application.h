@@ -178,6 +178,7 @@ typedef struct AVAppDnsEvent
     int  dns_type;
     int  is_audio;
     int  error_code;
+    int  family;
 } AVAppDnsEvent;
 
 typedef struct{
@@ -254,12 +255,12 @@ void av_application_did_io_tcp_read(AVApplicationContext *h, void *obj, int byte
 int  av_application_on_io_control(AVApplicationContext *h, int event_type, AVAppIOControl *control);
 
 int av_application_on_tcp_will_open(AVApplicationContext *h, int ai_family);
-int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, AVAppTcpIOControl *control, int is_audio, int64_t duration);
+int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, AVAppTcpIOControl *control, int is_audio, int ai_family, int64_t duration);
 
 void av_application_on_async_statistic(AVApplicationContext *h, AVAppAsyncStatistic *statistic);
 void av_application_on_async_read_speed(AVApplicationContext *h, AVAppAsyncReadSpeed *speed);
 void av_application_on_dns_will_open(AVApplicationContext *h, char *hostname);
-void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int dns_type, int64_t dns_time, int is_audio, int error_code);
+void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int dns_type, int64_t dns_time, int is_audio, int ai_family, int error_code);
 
 void av_application_on_url_changed(AVApplicationContext *h,int url_change_count,int is_audio);
 void av_application_on_ijk_find_stream_info(AVApplicationContext *h, int64_t duration, int is_audio);

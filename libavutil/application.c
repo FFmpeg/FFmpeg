@@ -171,7 +171,7 @@ int av_application_on_tcp_will_open(AVApplicationContext *h, int ai_family)
 }
 
 // only callback returns error
-int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, AVAppTcpIOControl *control, int is_audio, int64_t duration)
+int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, AVAppTcpIOControl *control, int is_audio, int ai_family, int64_t duration)
 {
     struct sockaddr_storage so_stg;
     int       ret = 0;
@@ -179,12 +179,35 @@ int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, A
     int       so_family;
     char      *so_ip_name = control->ip;
 
-    if (!h || !h->func_on_app_event || fd <= 0)
+
+    if (!h || !h->func_on_app_event)
         return 0;
 
+    control->family = WRAP_UNKNOWN_FAMILY;
+    if (ai_family == AF_INET) {
+        control->family = WRAP_INET_FAMILY;
+    } else if (ai_family == AF_INET6) {
+        control->family = WRAP_INET6_FAMILY;
+    }
+
+    if (fd <= 0) {
+        control->error = error;
+        control->fd = fd;
+        control->is_audio = is_audio;
+        control->duration = duration;
+        return h->func_on_app_event(h, AVAPP_CTRL_DID_TCP_OPEN, (void *)control, sizeof(AVAppTcpIOControl));
+    }
+
     ret = getpeername(fd, (struct sockaddr *)&so_stg, &so_len);
-    if (ret)
-        return 0;
+
+    if (ret) {
+        control->error = error;
+        control->fd = fd;
+        control->is_audio = is_audio;
+        control->duration = duration;
+        return h->func_on_app_event(h, AVAPP_CTRL_DID_TCP_OPEN, (void *)control, sizeof(AVAppTcpIOControl));
+    }
+
     control->error = error;
     control->fd = fd;
     control->is_audio = is_audio;
@@ -265,7 +288,7 @@ void av_application_on_dns_will_open(AVApplicationContext *h, char *hostname) {
     }
 }
 
-void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int dns_type, int64_t dns_time, int is_audio, int error_code) {
+void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int dns_type, int64_t dns_time, int is_audio, int ai_family, int error_code) {
     if (h && h->func_on_app_event) {
         AVAppDnsEvent event = {0};
         if (hostname != NULL && ip != NULL) {
@@ -275,7 +298,14 @@ void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, cha
             event.dns_time = dns_time;
             event.is_audio = is_audio;
         }
+        int wrap_family = WRAP_UNKNOWN_FAMILY;
+        if (ai_family == AF_INET) {
+            wrap_family = WRAP_INET_FAMILY;
+        } else if (ai_family == AF_INET6) {
+            wrap_family = WRAP_INET6_FAMILY;
+        }
         event.error_code = error_code;
+        event.family = wrap_family;
         h->func_on_app_event(h, AVAPP_EVENT_DID_DNS_OPEN, (void *)&event, sizeof(AVAppDnsEvent));
     }
 }
