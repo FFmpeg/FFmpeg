@@ -74,7 +74,7 @@ static int ff_qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame, A
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
-        return AVERROR(ENOMEM);
+        return AVERROR(EINVAL);
     }
 
     frame->linesize[1] = frame->linesize[0];
