@@ -11452,6 +11452,10 @@ red/green/blue component. Return 0 if there is no such component.
 Return the value of the pixel at location (@var{x},@var{y}) of the alpha
 plane. Return 0 if there is no such plane.
 
+@item psum(x,y), lumsum(x, y), cbsum(x,y), crsum(x,y), rsum(x,y), gsum(x,y), bsum(x,y), alphasum(x,y)
+Sum of sample values in the rectangle from (0,0) to (x,y), this allows obtaining
+sums of samples within a rectangle. See the functions without the sum postfix.
+
 @item interpolation
 Set one of interpolation methods:
 @table @option
