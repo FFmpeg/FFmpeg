@@ -99,9 +99,11 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     int ret;
 
     if (q->gpu_copy == MFX_GPUCOPY_ON &&
-        !(q->iopattern & MFX_IOPATTERN_OUT_SYSTEM_MEMORY))
+        !(q->iopattern & MFX_IOPATTERN_OUT_SYSTEM_MEMORY)) {
         av_log(avctx, AV_LOG_WARNING, "GPU-accelerated memory copy "
-                        "only works in MFX_IOPATTERN_OUT_SYSTEM_MEMORY.\n");
+                        "only works in system memory mode.\n");
+        q->gpu_copy = MFX_GPUCOPY_OFF;
+    }
     if (session) {
         q->session = session;
     } else if (hw_frames_ref) {
