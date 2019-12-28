@@ -19003,6 +19003,7 @@ Set what kind of graticule to draw.
 @item none
 @item green
 @item color
+@item invert
 @end table
 
 @item opacity, o

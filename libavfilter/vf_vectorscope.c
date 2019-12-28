@@ -33,6 +33,7 @@ enum GraticuleType {
     GRAT_NONE,
     GRAT_GREEN,
     GRAT_COLOR,
+    GRAT_INVERT,
     NB_GRATICULES
 };
 
@@ -107,6 +108,7 @@ static const AVOption vectorscope_options[] = {
     {   "none",         0, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_NONE},  0, 0, FLAGS, "graticule" },
     {   "green",        0, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_GREEN}, 0, 0, FLAGS, "graticule" },
     {   "color",        0, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_COLOR}, 0, 0, FLAGS, "graticule" },
+    {   "invert",       0, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_INVERT},0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS},
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS},
     { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=4}, 0, 7, FLAGS, "flags"},
@@ -877,6 +879,28 @@ static void draw_dots(uint8_t *dst, int L, int v, float o)
     dst[-l + 2] = dst[-l + 2] * f + V;
 }
 
+static void draw_idots(uint8_t *dst, int L, float o)
+{
+    const float f = 1. - o;
+    int l = L * 2;
+
+    dst[ l - 3] = dst[ l - 3] * f + (255 - dst[ l - 3]) * o;
+    dst[ l + 3] = dst[ l + 3] * f + (255 - dst[ l + 3]) * o;
+    dst[-l - 3] = dst[-l - 3] * f + (255 - dst[-l - 3]) * o;
+    dst[-l + 3] = dst[-l + 3] * f + (255 - dst[-l + 3]) * o;
+
+    l += L;
+
+    dst[ l - 3] = dst[ l - 3] * f + (255 - dst[ l - 3]) * o;
+    dst[ l + 3] = dst[ l + 3] * f + (255 - dst[ l + 3]) * o;
+    dst[ l - 2] = dst[ l - 2] * f + (255 - dst[ l - 2]) * o;
+    dst[ l + 2] = dst[ l + 2] * f + (255 - dst[ l + 2]) * o;
+    dst[-l - 3] = dst[-l - 3] * f + (255 - dst[-l - 3]) * o;
+    dst[-l + 3] = dst[-l + 3] * f + (255 - dst[-l + 3]) * o;
+    dst[-l - 2] = dst[-l - 2] * f + (255 - dst[-l - 2]) * o;
+    dst[-l + 2] = dst[-l + 2] * f + (255 - dst[-l + 2]) * o;
+}
+
 static void draw_dots16(uint16_t *dst, int L, int v, float o)
 {
     const float f = 1. - o;
@@ -900,8 +924,81 @@ static void draw_dots16(uint16_t *dst, int L, int v, float o)
     dst[-l + 2] = dst[-l + 2] * f + V;
 }
 
+static void draw_idots16(uint16_t *dst, int L, int v, float o)
+{
+    const float f = 1. - o;
+    int l = L * 2;
+
+    dst[ l - 3] = dst[ l - 3] * f + (v - dst[ l - 3]) * o;
+    dst[ l + 3] = dst[ l + 3] * f + (v - dst[ l + 3]) * o;
+    dst[-l - 3] = dst[-l - 3] * f + (v - dst[-l - 3]) * o;
+    dst[-l + 3] = dst[-l + 3] * f + (v - dst[-l + 3]) * o;
+
+    l += L;
+
+    dst[ l - 3] = dst[ l - 3] * f + (v - dst[ l - 3]) * o;
+    dst[ l + 3] = dst[ l + 3] * f + (v - dst[ l + 3]) * o;
+    dst[ l - 2] = dst[ l - 2] * f + (v - dst[ l - 2]) * o;
+    dst[ l + 2] = dst[ l + 2] * f + (v - dst[ l + 2]) * o;
+    dst[-l - 3] = dst[-l - 3] * f + (v - dst[-l - 3]) * o;
+    dst[-l + 3] = dst[-l + 3] * f + (v - dst[-l + 3]) * o;
+    dst[-l - 2] = dst[-l - 2] * f + (v - dst[-l - 2]) * o;
+    dst[-l + 2] = dst[-l + 2] * f + (v - dst[-l + 2]) * o;
+}
+
 static void none_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
 {
+}
+
+static void draw_ihtext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+
+            uint8_t *p = out->data[plane] + y * out->linesize[plane] + (x + i * 8);
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + (255 - p[0]) * o1;
+                    p++;
+                }
+                p += out->linesize[plane] - 8;
+            }
+        }
+    }
+}
+
+static void draw_ihtext16(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint16_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            uint16_t *p = (uint16_t *)(out->data[plane] + y * out->linesize[plane]) + (x + i * 8);
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + (v - p[0]) * o1;
+                    p++;
+                }
+                p += out->linesize[plane] / 2 - 8;
+            }
+        }
+    }
 }
 
 static void draw_htext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
@@ -1208,6 +1305,123 @@ static void green_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, i
     }
 }
 
+static void invert_graticule16(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+    const int max = s->size - 1;
+    const float o = s->opacity;
+    int i;
+
+    for (i = 0; i < 12; i++) {
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        draw_idots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, max, o);
+        draw_idots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, max, o);
+        draw_idots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, max, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    if (s->flags & 1) {
+        int x = positions[P][12][X];
+        int y = positions[P][12][Y];
+
+        draw_idots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, max, o);
+        draw_idots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, max, o);
+        draw_idots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, max, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    if (s->flags & 2) {
+        int x = positions[P][13][X];
+        int y = positions[P][13][Y];
+
+        draw_idots16((uint16_t *)(out->data[D] + y * out->linesize[D] + x * 2), out->linesize[D] / 2, max, o);
+        draw_idots16((uint16_t *)(out->data[X] + y * out->linesize[X] + x * 2), out->linesize[X] / 2, max, o);
+        draw_idots16((uint16_t *)(out->data[Y] + y * out->linesize[Y] + x * 2), out->linesize[Y] / 2, max, o);
+        if (out->data[3])
+            draw_dots16((uint16_t *)(out->data[3] + y * out->linesize[3] + x * 2), out->linesize[3] / 2, max, o);
+    }
+
+    for (i = 0; i < 6 && s->flags & 4; i++) {
+        uint16_t color[4] = { max, max, max, max };
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        if (x > max / 2)
+            x += 8;
+        else
+            x -= 14;
+        if (y > max / 2)
+            y += 8;
+        else
+            y -= 14;
+
+        x = av_clip(x, 0, out->width - 9);
+        y = av_clip(y, 0, out->height - 9);
+        draw_ihtext16(out, x, y, o, 1. - o, positions_name[i], color);
+    }
+}
+
+static void invert_graticule(VectorscopeContext *s, AVFrame *out, int X, int Y, int D, int P)
+{
+    const float o = s->opacity;
+    int i;
+
+    for (i = 0; i < 12; i++) {
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        draw_idots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], o);
+        draw_idots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], o);
+        draw_idots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], o);
+        if (out->data[3])
+            draw_idots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], o);
+    }
+
+    if (s->flags & 1) {
+        int x = positions[P][12][X];
+        int y = positions[P][12][Y];
+
+        draw_idots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], o);
+        draw_idots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], o);
+        draw_idots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], o);
+        if (out->data[3])
+            draw_idots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], o);
+    }
+
+    if (s->flags & 2) {
+        int x = positions[P][13][X];
+        int y = positions[P][13][Y];
+
+        draw_idots(out->data[D] + y * out->linesize[D] + x, out->linesize[D], o);
+        draw_idots(out->data[X] + y * out->linesize[X] + x, out->linesize[X], o);
+        draw_idots(out->data[Y] + y * out->linesize[Y] + x, out->linesize[Y], o);
+        if (out->data[3])
+            draw_idots(out->data[3] + y * out->linesize[3] + x, out->linesize[3], o);
+    }
+
+    for (i = 0; i < 6 && s->flags & 4; i++) {
+        uint8_t color[4] = { 255, 255, 255, 255 };
+        int x = positions[P][i][X];
+        int y = positions[P][i][Y];
+
+        if (x > 128)
+            x += 8;
+        else
+            x -= 14;
+        if (y > 128)
+            y += 8;
+        else
+            y -= 14;
+
+        x = av_clip(x, 0, out->width - 9);
+        y = av_clip(y, 0, out->height - 9);
+        draw_ihtext(out, x, y, o, 1. - o, positions_name[i], color);
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
@@ -1292,11 +1506,15 @@ static int config_input(AVFilterLink *inlink)
             s->graticulef = green_graticule;
         else if (s->graticule == GRAT_COLOR)
             s->graticulef = color_graticule;
+        else if (s->graticule == GRAT_INVERT)
+            s->graticulef = invert_graticule;
     } else if (s->is_yuv) {
         if (s->graticule == GRAT_GREEN)
             s->graticulef = green_graticule16;
         else if (s->graticule == GRAT_COLOR)
             s->graticulef = color_graticule16;
+        else if (s->graticule == GRAT_INVERT)
+            s->graticulef = invert_graticule16;
     }
 
     s->bg_color[3] = s->bgopacity * (s->size - 1);
