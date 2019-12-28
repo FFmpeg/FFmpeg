@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
+#define MAX_NB_THREADS 32
 #define NB_PLANES 4
 
 enum InterpolationMethods {
@@ -46,7 +47,7 @@ enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_
 
 typedef struct GEQContext {
     const AVClass *class;
-    AVExpr *e[NB_PLANES];       ///< expressions for each plane
+    AVExpr *e[NB_PLANES][MAX_NB_THREADS]; ///< expressions for each plane and thread
     char *expr_str[4+3];        ///< expression strings for each plane
     AVFrame *picref;            ///< current input buffer
     uint8_t *dst;               ///< reference pointer to the 8bits output
@@ -288,12 +289,14 @@ static av_cold int geq_init(AVFilterContext *ctx)
             NULL };
         int counter[10] = {0};
 
-        ret = av_expr_parse(&geq->e[plane], geq->expr_str[plane < 3 && geq->is_rgb ? plane+4 : plane], var_names,
-                            NULL, NULL, func2_names, func2, 0, ctx);
-        if (ret < 0)
-            break;
+        for (int i = 0; i < MAX_NB_THREADS; i++) {
+            ret = av_expr_parse(&geq->e[plane][i], geq->expr_str[plane < 3 && geq->is_rgb ? plane+4 : plane], var_names,
+                                NULL, NULL, func2_names, func2, 0, ctx);
+            if (ret < 0)
+                goto end;
+        }
 
-        av_expr_count_func(geq->e[plane], counter, FF_ARRAY_ELEMS(counter), 2);
+        av_expr_count_func(geq->e[plane][0], counter, FF_ARRAY_ELEMS(counter), 2);
         geq->needs_sum[plane] = counter[5] + counter[6] + counter[7] + counter[8] + counter[9];
     }
 
@@ -391,7 +394,7 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 
             for (x = 0; x < width; x++) {
                 values[VAR_X] = x;
-                ptr[x] = av_expr_eval(geq->e[plane], values, geq);
+                ptr[x] = av_expr_eval(geq->e[plane][jobnr], values, geq);
             }
             ptr += linesize;
         }
@@ -401,7 +404,7 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
             values[VAR_Y] = y;
             for (x = 0; x < width; x++) {
                 values[VAR_X] = x;
-                ptr16[x] = av_expr_eval(geq->e[plane], values, geq);
+                ptr16[x] = av_expr_eval(geq->e[plane][jobnr], values, geq);
             }
             ptr16 += linesize/2;
         }
@@ -414,7 +417,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     int plane;
     AVFilterContext *ctx = inlink->dst;
-    const int nb_threads = ff_filter_get_nb_threads(ctx);
+    const int nb_threads = FFMIN(MAX_NB_THREADS, ff_filter_get_nb_threads(ctx));
     GEQContext *geq = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
@@ -464,8 +467,9 @@ static av_cold void geq_uninit(AVFilterContext *ctx)
     int i;
     GEQContext *geq = ctx->priv;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(geq->e); i++)
-        av_expr_free(geq->e[i]);
+    for (i = 0; i < NB_PLANES; i++)
+        for (int j = 0; j < MAX_NB_THREADS; j++)
+            av_expr_free(geq->e[i][j]);
     for (i = 0; i < NB_PLANES; i++)
         av_freep(&geq->pixel_sums);
 }

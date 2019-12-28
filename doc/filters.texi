@@ -11468,6 +11468,11 @@ Default is bilinear.
 For functions, if @var{x} and @var{y} are outside the area, the value will be
 automatically clipped to the closer edge.
 
+Please note that this filter can use multiple threads in which case each slice
+will have its own expression state. If you want to use only a single expression
+state because your expressions depend on previous state then you should limit
+the number of filter threads to 1.
+
 @subsection Examples
 
 @itemize
