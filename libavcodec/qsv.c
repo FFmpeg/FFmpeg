@@ -72,58 +72,6 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
     return AVERROR(ENOSYS);
 }
 
-
-static const struct {
-    enum AVCodecID codec_id;
-    int codec_profile;
-    int mfx_profile;
-} qsv_profile_map[] = {
-#define MAP(c, p, v) { AV_CODEC_ID_ ## c, FF_PROFILE_ ## p, MFX_PROFILE_ ## v }
-    MAP(MPEG2VIDEO,  MPEG2_SIMPLE,    MPEG2_SIMPLE ),
-    MAP(MPEG2VIDEO,  MPEG2_MAIN,      MPEG2_MAIN   ),
-    MAP(MPEG2VIDEO,  MPEG2_HIGH,      MPEG2_HIGH   ),
-
-    MAP(H264,        H264_BASELINE,   AVC_BASELINE ),
-    MAP(H264,        H264_CONSTRAINED_BASELINE, AVC_BASELINE),
-#if QSV_VERSION_ATLEAST(1, 3)
-    MAP(H264,        H264_EXTENDED,   AVC_EXTENDED ),
-#endif
-    MAP(H264,        H264_MAIN,       AVC_MAIN     ),
-    MAP(H264,        H264_HIGH,       AVC_HIGH     ),
-    MAP(H264,        H264_HIGH_422,   AVC_HIGH_422 ),
-
-#if QSV_VERSION_ATLEAST(1, 8)
-    MAP(HEVC,        HEVC_MAIN,       HEVC_MAIN    ),
-    MAP(HEVC,        HEVC_MAIN_10,    HEVC_MAIN10  ),
-    MAP(HEVC,        HEVC_MAIN_STILL_PICTURE,    HEVC_MAINSP ),
-#endif
-#if QSV_VERSION_ATLEAST(1, 16)
-    MAP(HEVC,        HEVC_REXT,       HEVC_REXT    ),
-#endif
-
-    MAP(VC1,         VC1_SIMPLE,      VC1_SIMPLE   ),
-    MAP(VC1,         VC1_MAIN,        VC1_MAIN     ),
-    MAP(VC1,         VC1_COMPLEX,     VC1_ADVANCED ),
-    MAP(VC1,         VC1_ADVANCED,    VC1_ADVANCED ),
-#undef MAP
-};
-
-int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile)
-{
-    int i;
-    if (profile == FF_PROFILE_UNKNOWN)
-        return MFX_PROFILE_UNKNOWN;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(qsv_profile_map); i++) {
-        if (qsv_profile_map[i].codec_id != codec_id)
-            continue;
-        if (qsv_profile_map[i].codec_profile == profile)
-            return qsv_profile_map[i].mfx_profile;
-    }
-
-    return MFX_PROFILE_UNKNOWN;
-}
-
 int ff_qsv_level_to_mfx(enum AVCodecID codec_id, int level)
 {
     if (level == FF_LEVEL_UNKNOWN)
