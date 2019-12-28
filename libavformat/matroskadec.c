@@ -1599,6 +1599,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
 #if CONFIG_LZO
     case MATROSKA_TRACK_ENCODING_COMP_LZO:
         do {
+            int insize = isize;
             olen       = pkt_size *= 3;
             newpktdata = av_realloc(pkt_data, pkt_size + AV_LZO_OUTPUT_PADDING
                                                        + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -1607,7 +1608,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
                 goto failed;
             }
             pkt_data = newpktdata;
-            result   = av_lzo1x_decode(pkt_data, &olen, data, &isize);
+            result   = av_lzo1x_decode(pkt_data, &olen, data, &insize);
         } while (result == AV_LZO_OUTPUT_FULL && pkt_size < 10000000);
         if (result) {
             result = AVERROR_INVALIDDATA;
