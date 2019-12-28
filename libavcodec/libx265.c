@@ -482,6 +482,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     x265_picture x265pic_out = { 0 };
     x265_nal *nal;
     uint8_t *dst;
+    int pict_type;
     int payload = 0;
     int nnal;
     int ret;
@@ -541,20 +542,23 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt->pts = x265pic_out.pts;
     pkt->dts = x265pic_out.dts;
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
     switch (x265pic_out.sliceType) {
     case X265_TYPE_IDR:
     case X265_TYPE_I:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+        pict_type = AV_PICTURE_TYPE_I;
         break;
     case X265_TYPE_P:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
+        pict_type = AV_PICTURE_TYPE_P;
         break;
     case X265_TYPE_B:
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
+    case X265_TYPE_BREF:
+        pict_type = AV_PICTURE_TYPE_B;
         break;
     }
+
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->coded_frame->pict_type = pict_type;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -564,6 +568,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (x265pic_out.frameData.sliceType == 'b')
 #endif
         pkt->flags |= AV_PKT_FLAG_DISPOSABLE;
+
+    ff_side_data_set_encoder_stats(pkt, x265pic_out.frameData.qp * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     *got_packet = 1;
     return 0;
