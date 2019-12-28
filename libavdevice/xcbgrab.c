@@ -70,7 +70,6 @@ typedef struct XCBGrabContext {
     int region_border;
     int centered;
 
-    const char *video_size;
     const char *framerate;
 
     int has_shm;
@@ -85,7 +84,7 @@ static const AVOption options[] = {
     { "y", "Initial y coordinate.", OFFSET(y), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
     { "grab_x", "Initial x coordinate.", OFFSET(x), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
     { "grab_y", "Initial y coordinate.", OFFSET(y), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = "vga" }, 0, 0, D },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL }, 0, 0, D },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "ntsc" }, 0, 0, D },
     { "draw_mouse", "Draw the mouse pointer.", OFFSET(draw_mouse), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, D },
     { "follow_mouse", "Move the grabbing region when the mouse pointer reaches within specified amount of pixels to the edge of region.",
@@ -555,10 +554,6 @@ static int create_stream(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    ret = av_parse_video_size(&c->width, &c->height, c->video_size);
-    if (ret < 0)
-        return ret;
-
     ret = av_parse_video_rate(&st->avg_frame_rate, c->framerate);
     if (ret < 0)
         return ret;
@@ -569,6 +564,11 @@ static int create_stream(AVFormatContext *s)
     geo = xcb_get_geometry_reply(c->conn, gc, NULL);
     if (!geo)
         return AVERROR_EXTERNAL;
+
+    if (!c->width || !c->height) {
+        c->width = geo->width;
+        c->height = geo->height;
+    }
 
     if (c->x + c->width > geo->width ||
         c->y + c->height > geo->height) {

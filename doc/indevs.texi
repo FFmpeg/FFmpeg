@@ -1532,7 +1532,7 @@ ffmpeg -f x11grab -follow_mouse centered -show_region 1 -framerate 25 -video_siz
 @end example
 
 @item video_size
-Set the video frame size. Default value is @code{vga}.
+Set the video frame size. Default is the full desktop.
 
 @item grab_x
 @item grab_y
