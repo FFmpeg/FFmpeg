@@ -375,8 +375,6 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int slice_start = (height *  jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr+1)) / nb_jobs;
     int x, y;
-    uint8_t *ptr;
-    uint16_t *ptr16;
 
     double values[VAR_VARS_NB];
     values[VAR_W] = geq->values[VAR_W];
@@ -387,8 +385,8 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     values[VAR_T] = geq->values[VAR_T];
 
     if (geq->bps == 8) {
+        uint8_t *ptr = geq->dst + linesize * slice_start;
         for (y = slice_start; y < slice_end; y++) {
-            ptr = geq->dst + linesize * y;
             values[VAR_Y] = y;
 
             for (x = 0; x < width; x++) {
@@ -397,15 +395,15 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
             }
             ptr += linesize;
         }
-    }
-    else {
+    } else {
+        uint16_t *ptr16 = geq->dst16 + (linesize/2) * slice_start;
         for (y = slice_start; y < slice_end; y++) {
-            ptr16 = geq->dst16 + (linesize/2) * y;
             values[VAR_Y] = y;
             for (x = 0; x < width; x++) {
                 values[VAR_X] = x;
                 ptr16[x] = av_expr_eval(geq->e[plane], values, geq);
             }
+            ptr16 += linesize/2;
         }
     }
 
