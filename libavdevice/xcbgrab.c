@@ -57,6 +57,7 @@ typedef struct XCBGrabContext {
 #endif
     int64_t time_frame;
     AVRational time_base;
+    int64_t frame_duration;
 
     int x, y;
     int width, height;
@@ -195,13 +196,12 @@ static int xcbgrab_frame(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static void wait_frame(AVFormatContext *s, AVPacket *pkt)
+static int64_t wait_frame(AVFormatContext *s, AVPacket *pkt)
 {
     XCBGrabContext *c = s->priv_data;
     int64_t curtime, delay;
-    int64_t frame_time = av_rescale_q(1, c->time_base, AV_TIME_BASE_Q);
 
-    c->time_frame += frame_time;
+    c->time_frame += c->frame_duration;
 
     for (;;) {
         curtime = av_gettime();
@@ -211,7 +211,7 @@ static void wait_frame(AVFormatContext *s, AVPacket *pkt)
         av_usleep(delay);
     }
 
-    pkt->pts = curtime;
+    return curtime;
 }
 
 #if CONFIG_LIBXCB_SHM
@@ -418,8 +418,9 @@ static int xcbgrab_read_packet(AVFormatContext *s, AVPacket *pkt)
     xcb_query_pointer_reply_t *p  = NULL;
     xcb_get_geometry_reply_t *geo = NULL;
     int ret = 0;
+    int64_t pts;
 
-    wait_frame(s, pkt);
+    pts = wait_frame(s, pkt);
 
     if (c->follow_mouse || c->draw_mouse) {
         pc  = xcb_query_pointer(c->conn, c->screen->root);
@@ -442,6 +443,8 @@ static int xcbgrab_read_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
     if (!c->has_shm)
         ret = xcbgrab_frame(s, pkt);
+    pkt->dts = pkt->pts = pts;
+    pkt->duration = c->frame_duration;
 
 #if CONFIG_LIBXCB_XFIXES
     if (ret >= 0 && c->draw_mouse && p->same_screen)
@@ -581,6 +584,7 @@ static int create_stream(AVFormatContext *s)
 
     c->time_base  = (AVRational){ st->avg_frame_rate.den,
                                   st->avg_frame_rate.num };
+    c->frame_duration = av_rescale_q(1, c->time_base, AV_TIME_BASE_Q);
     c->time_frame = av_gettime();
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
