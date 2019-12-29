@@ -213,6 +213,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         ctx->channels                           = (unsigned)bytestream2_get_le32(&gbc) % FF_SANE_NB_CHANNELS;
         ctx->block_align                        = bytestream2_get_le32(&gbc) & 0x7FFFFFFF;
         ctx->codec_tag                          = bytestream2_get_le32(&gbc);
+        if (c->codec_tags) {
+            int n;
+            for (n = 0; c->codec_tags[n] != FF_CODEC_TAGS_END; n++);
+            ctx->codec_tag = c->codec_tags[ctx->codec_tag % n];
+        }
         keyframes                               = bytestream2_get_le64(&gbc);
         ctx->request_channel_layout             = bytestream2_get_le64(&gbc);
 
