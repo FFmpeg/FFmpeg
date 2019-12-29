@@ -2456,7 +2456,6 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
-    int64_t currentpos;
     int ret;
 
     // check if we have an audio packet cached
@@ -2479,11 +2478,14 @@ static int mkv_write_trailer(AVFormatContext *s)
 
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
-        int64_t ret64;
+        int64_t endpos, ret64;
+
+        endpos = avio_tell(pb);
 
         if (mkv->cues.num_entries) {
             AVIOContext *cues;
             uint64_t size;
+            int64_t cuespos = endpos;
             int length_size = 0;
 
             ret = start_ebml_master_crc32(&cues, mkv);
@@ -2510,7 +2512,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                     ffio_free_dyn_buf(&cues);
                     goto after_cues;
                 } else {
-                    currentpos = avio_tell(pb);
+                    cuespos = mkv->cues_pos;
                     if ((ret64 = avio_seek(pb, mkv->cues_pos, SEEK_SET)) < 0) {
                         ffio_free_dyn_buf(&cues);
                         return ret64;
@@ -2526,18 +2528,16 @@ static int mkv_write_trailer(AVFormatContext *s)
                     }
                 }
             }
-            mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, avio_tell(pb));
+            mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, cuespos);
             end_ebml_master_crc32(pb, &cues, mkv, MATROSKA_ID_CUES, length_size);
             if (mkv->reserve_cues_space) {
                 if (size < mkv->reserve_cues_space)
                     put_ebml_void(pb, mkv->reserve_cues_space - size);
-                avio_seek(pb, currentpos, SEEK_SET);
-            }
+            } else
+                endpos = avio_tell(pb);
         }
 
     after_cues:
-        currentpos = avio_tell(pb);
-
         ret = mkv_write_seekhead(pb, mkv, 1, mkv->info_pos);
         if (ret < 0)
             return ret;
@@ -2583,7 +2583,7 @@ static int mkv_write_trailer(AVFormatContext *s)
             end_ebml_master_crc32(pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS, 0);
         }
 
-        avio_seek(pb, currentpos, SEEK_SET);
+        avio_seek(pb, endpos, SEEK_SET);
     }
 
     if (!mkv->is_live) {
