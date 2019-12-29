@@ -436,30 +436,31 @@ static void mkv_add_seekhead_entry(MatroskaMuxContext *mkv, uint32_t elementid,
 }
 
 /**
- * Write the SeekHead to the file at the location reserved for it.
+ * Write the SeekHead to the file at the location reserved for it
+ * and seek back to the initial position. When error_on_seek_failure
+ * is not set, failure to seek to the position designated for the
+ * SeekHead is not considered an error; failure to seek back afterwards
+ * is always an error.
  *
- * @return The file offset where the seekhead was written,
- * -1 if an error occurred.
+ * @return 0 on success, < 0 on error.
  */
-static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
+static int mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv,
+                              int error_on_seek_failure)
 {
     AVIOContext *dyn_cp;
     mkv_seekhead *seekhead = &mkv->seekhead;
     ebml_master seekentry;
-    int64_t currentpos, remaining;
-    int i;
+    int64_t currentpos, remaining, ret64;
+    int i, ret;
 
     currentpos = avio_tell(pb);
 
-        if (avio_seek(pb, seekhead->filepos, SEEK_SET) < 0) {
-            currentpos = -1;
-            goto fail;
-        }
+    if ((ret64 = avio_seek(pb, seekhead->filepos, SEEK_SET)) < 0)
+        return error_on_seek_failure ? ret64 : 0;
 
-    if (start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_SEEKHEAD) < 0) {
-        currentpos = -1;
-        goto fail;
-    }
+    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_SEEKHEAD);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < seekhead->num_entries; i++) {
         mkv_seekhead_entry *entry = &seekhead->entries[i];
@@ -477,13 +478,11 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
 
     remaining = seekhead->filepos + seekhead->reserved_size - avio_tell(pb);
         put_ebml_void(pb, remaining);
-        avio_seek(pb, currentpos, SEEK_SET);
 
-        currentpos = seekhead->filepos;
+    if ((ret64 = avio_seek(pb, currentpos, SEEK_SET)) < 0)
+        return ret64;
 
-fail:
-
-    return currentpos;
+    return 0;
 }
 
 static mkv_cues *mkv_start_cues(int64_t segment_offset)
@@ -1927,8 +1926,11 @@ static int mkv_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-        mkv_write_seekhead(pb, mkv);
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+        ret = mkv_write_seekhead(pb, mkv, 0);
+        if (ret < 0)
+            return ret;
+    }
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
     if (!mkv->cues) {
@@ -2537,7 +2539,9 @@ static int mkv_write_trailer(AVFormatContext *s)
             mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, cuespos);
         }
 
-        mkv_write_seekhead(pb, mkv);
+        ret = mkv_write_seekhead(pb, mkv, 1);
+        if (ret < 0)
+            return ret;
 
         // update the duration
         av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
