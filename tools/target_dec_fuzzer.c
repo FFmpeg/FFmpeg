@@ -110,7 +110,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                           const AVPacket *avpkt) = NULL;
     AVCodecParserContext *parser = NULL;
     uint64_t keyframes = 0;
-
+    AVDictionary *opts = NULL;
 
     if (!c) {
 #ifdef FFMPEG_DECODER
@@ -216,6 +216,19 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
         ctx->idct_algo                          = bytestream2_get_byte(&gbc) % 25;
 
+        if (flags & 0x20) {
+            switch (ctx->codec_id) {
+            case AV_CODEC_ID_AC3:
+            case AV_CODEC_ID_EAC3:
+                av_dict_set_int(&opts, "cons_noisegen", bytestream2_get_byte(&gbc) & 1, 0);
+                av_dict_set_int(&opts, "heavy_compr",   bytestream2_get_byte(&gbc) & 1, 0);
+                av_dict_set_int(&opts, "target_level",  (int)(bytestream2_get_byte(&gbc) % 32) - 31, 0);
+                av_dict_set_int(&opts, "dmix_mode",     (int)(bytestream2_get_byte(&gbc) %  4) -  1, 0);
+                break;
+            }
+        }
+
+
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ctx->extradata) {
@@ -228,11 +241,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             ctx->width = ctx->height = 0;
     }
 
-    int res = avcodec_open2(ctx, c, NULL);
+    int res = avcodec_open2(ctx, c, &opts);
     if (res < 0) {
         avcodec_free_context(&ctx);
         av_free(parser_avctx);
         av_parser_close(parser);
+        av_dict_free(&opts);
         return 0; // Failure of avcodec_open2() does not imply that a issue was found
     }
     parser_avctx->codec_id = ctx->codec_id;
@@ -337,5 +351,6 @@ maximums_reached:
     avcodec_free_context(&parser_avctx);
     av_parser_close(parser);
     av_packet_unref(&parsepkt);
+    av_dict_free(&opts);
     return 0;
 }
