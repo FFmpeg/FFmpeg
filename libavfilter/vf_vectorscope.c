@@ -781,8 +781,8 @@ static void vectorscope8(VectorscopeContext *s, AVFrame *in, AVFrame *out, int p
             for (j = 0; j < out->width; j++) {
                 const int pos = i * dlinesize + j;
                 if (dpd[pos]) {
-                    dpx[pos] = av_clip(dpd[pos] + dpd[pos] * s->ftint[0], 0, 255);
-                    dpy[pos] = av_clip(dpd[pos] + dpd[pos] * s->ftint[1], 0, 255);
+                    dpx[pos] = av_clip_uint8(dpd[pos] + dpd[pos] * s->ftint[0]);
+                    dpy[pos] = av_clip_uint8(dpd[pos] + dpd[pos] * s->ftint[1]);
                 }
             }
         }
