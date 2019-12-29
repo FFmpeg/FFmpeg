@@ -2123,6 +2123,10 @@ static void mkv_end_cluster(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
 
     end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv, MATROSKA_ID_CLUSTER, 0, 1);
+    if (!mkv->have_video) {
+        for (unsigned i = 0; i < s->nb_streams; i++)
+            mkv->tracks[i].has_cue = 0;
+    }
     mkv->cluster_pos = -1;
     avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 }
@@ -2225,7 +2229,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_cue)
+static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb;
@@ -2271,10 +2275,12 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
         ret = mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe);
         if (ret < 0)
             return ret;
-        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && (par->codec_type == AVMEDIA_TYPE_VIDEO && keyframe || add_cue)) {
+        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && keyframe &&
+            (par->codec_type == AVMEDIA_TYPE_VIDEO || !mkv->have_video && !track->has_cue)) {
             ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
                                    mkv->cluster_pos, relative_packet_pos, -1);
             if (ret < 0) return ret;
+            track->has_cue = 1;
         }
     } else {
         if (par->codec_id == AV_CODEC_ID_WEBVTT) {
@@ -2340,8 +2346,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         // on seeing key frames.
         start_new_cluster = keyframe;
     } else if (mkv->is_dash && codec_type == AVMEDIA_TYPE_AUDIO &&
-               (mkv->cluster_pos == -1 ||
-                cluster_time > mkv->cluster_time_limit)) {
+               cluster_time > mkv->cluster_time_limit) {
         // For DASH audio, we create a Cluster based on cluster_time_limit
         start_new_cluster = 1;
     } else if (!mkv->is_dash &&
@@ -2365,9 +2370,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
-        // for DASH audio, a CuePoint has to be added when there is a new cluster.
-        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt,
-                                        mkv->is_dash ? start_new_cluster : 0);
+        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
         av_packet_unref(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR,
@@ -2382,7 +2385,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (pkt->size > 0)
             ret = av_packet_ref(&mkv->cur_audio_pkt, pkt);
     } else
-        ret = mkv_write_packet_internal(s, pkt, 0);
+        ret = mkv_write_packet_internal(s, pkt);
     return ret;
 }
 
@@ -2410,7 +2413,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
-        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt, 0);
+        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Could not write cached audio packet ret:%d\n", ret);
