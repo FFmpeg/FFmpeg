@@ -69,6 +69,12 @@
  */
 #define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
 
+/**
+ * AVCodec.codec_tags termination value
+ */
+#define FF_CODEC_TAGS_END -1
+
+
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
 #else

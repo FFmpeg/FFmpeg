@@ -3644,6 +3644,11 @@ typedef struct AVCodec {
      * The user can only access this field via avcodec_get_hw_config().
      */
     const struct AVCodecHWConfigInternal **hw_configs;
+
+    /**
+     * List of supported codec_tags, terminated by FF_CODEC_TAGS_END.
+     */
+    const uint32_t *codec_tags;
 } AVCodec;
 
 #if FF_API_CODEC_GET_SET
