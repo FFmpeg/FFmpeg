@@ -224,6 +224,16 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
         avio_w8(pb, (uint8_t)(num >> i * 8));
 }
 
+/**
+ * Write a (random) UID with fixed size to make the output more deterministic
+ */
+static void put_ebml_uid(AVIOContext *pb, uint32_t elementid, uint64_t uid)
+{
+    put_ebml_id(pb, elementid);
+    put_ebml_num(pb, 8, 0);
+    avio_wb64(pb, uid);
+}
+
 static void put_ebml_uint(AVIOContext *pb, uint32_t elementid, uint64_t val)
 {
     int i, bytes = 1;
@@ -1102,7 +1112,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
     put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER,
                    mkv->is_dash ? mkv->dash_track_number : i + 1);
-    put_ebml_uint (pb, MATROSKA_ID_TRACKUID, mkv->tracks[i].uid);
+    put_ebml_uid  (pb, MATROSKA_ID_TRACKUID, mkv->tracks[i].uid);
     put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
 
     if ((tag = av_dict_get(st->metadata, "title", NULL, 0)))
@@ -1483,7 +1493,7 @@ static int mkv_write_tag_targets(AVFormatContext *s, uint32_t elementid,
     *tag    = start_ebml_master(pb, MATROSKA_ID_TAG,        0);
     targets = start_ebml_master(pb, MATROSKA_ID_TAGTARGETS, 0);
     if (elementid)
-        put_ebml_uint(pb, elementid, uid);
+        put_ebml_uid(pb, elementid, uid);
     end_ebml_master(pb, targets);
     return 0;
 }
@@ -1682,7 +1692,7 @@ static int mkv_write_attachments(AVFormatContext *s)
 
         put_ebml_string(dyn_cp, MATROSKA_ID_FILEMIMETYPE, mimetype);
         put_ebml_binary(dyn_cp, MATROSKA_ID_FILEDATA, st->codecpar->extradata, st->codecpar->extradata_size);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_FILEUID, track->uid);
+        put_ebml_uid(dyn_cp, MATROSKA_ID_FILEUID, track->uid);
         end_ebml_master(dyn_cp, attached_file);
     }
     end_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_ATTACHMENTS, 0, 0);
