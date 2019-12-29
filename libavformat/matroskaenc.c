@@ -2418,7 +2418,7 @@ static int mkv_reformat_av1(MatroskaMuxContext *mkv, AVIOContext *pb,
 }
 
 static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
-                           uint32_t blockid, const AVPacket *pkt, int keyframe)
+                           const AVPacket *pkt, int keyframe, uint64_t duration)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
@@ -2428,10 +2428,10 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     int err = 0, offset = 0, size = pkt->size;
     int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
     uint64_t additional_id;
+    uint32_t blockid = MATROSKA_ID_SIMPLEBLOCK;
     int64_t discard_padding = 0;
     unsigned track_number = track->track_num;
     ebml_master block_group, block_additions, block_more;
-    int blockgroup_already_opened = blockid == MATROSKA_ID_BLOCK;
 
     ts += track->ts_offset;
 
@@ -2466,7 +2466,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     side_data = av_packet_get_side_data(pkt,
                                         AV_PKT_DATA_SKIP_SAMPLES,
                                         &side_data_size);
-    if (side_data && side_data_size >= 10 && !blockgroup_already_opened) {
+    if (side_data && side_data_size >= 10) {
         discard_padding = av_rescale_q(AV_RL32(side_data + 4),
                                        (AVRational){1, par->sample_rate},
                                        (AVRational){1, 1000000000});
@@ -2477,8 +2477,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                                         &side_data_size);
     if (side_data) {
         // Only the Codec-specific BlockMore (id == 1) is currently supported.
-        if (side_data_size < 8 || (additional_id = AV_RB64(side_data)) != 1 ||
-            blockgroup_already_opened) {
+        if (side_data_size < 8 || (additional_id = AV_RB64(side_data)) != 1) {
             side_data_size = 0;
         } else {
             side_data      += 8;
@@ -2486,7 +2485,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         }
     }
 
-    if (side_data_size || discard_padding) {
+    if (side_data_size || discard_padding || duration) {
         block_group = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, 0);
         blockid = MATROSKA_ID_BLOCK;
     }
@@ -2501,6 +2500,9 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     } else {
     avio_write(pb, data + offset, size);
     }
+
+    if (duration)
+        put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
 
     if (blockid == MATROSKA_ID_BLOCK && !keyframe)
         put_ebml_sint(pb, MATROSKA_ID_BLOCKREFERENCE, track->last_timestamp - ts);
@@ -2520,7 +2522,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         end_ebml_master(pb, block_more);
         end_ebml_master(pb, block_additions);
     }
-    if (side_data_size || discard_padding)
+    if (blockid == MATROSKA_ID_BLOCK)
         end_ebml_master(pb, block_group);
 
     return 0;
@@ -2697,8 +2699,11 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
     AVIOContext *pb;
     AVCodecParameters *par  = s->streams[pkt->stream_index]->codecpar;
     mkv_track *track        = &mkv->tracks[pkt->stream_index];
-    int keyframe            = !!(pkt->flags & AV_PKT_FLAG_KEY);
-    int64_t duration        = pkt->duration;
+    int is_sub              = par->codec_type == AVMEDIA_TYPE_SUBTITLE;
+    /* All subtitle blocks are considered to be keyframes. */
+    int keyframe            = is_sub || !!(pkt->flags & AV_PKT_FLAG_KEY);
+    int64_t duration        = FFMAX(pkt->duration, 0);
+    int64_t write_duration  = is_sub ? duration : 0;
     int ret;
     int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
     int64_t relative_packet_pos;
@@ -2735,9 +2740,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
 
     relative_packet_pos = avio_tell(pb);
 
-    if (par->codec_type != AVMEDIA_TYPE_SUBTITLE ||
-        (par->codec_id != AV_CODEC_ID_WEBVTT && duration <= 0)) {
-        ret = mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe);
+    if (par->codec_id != AV_CODEC_ID_WEBVTT) {
+        ret = mkv_write_block(s, pb, pkt, keyframe, write_duration);
         if (ret < 0)
             return ret;
         if (keyframe && IS_SEEKABLE(s->pb, mkv) &&
@@ -2745,26 +2749,16 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
              par->codec_type == AVMEDIA_TYPE_SUBTITLE ||
              !mkv->have_video && !track->has_cue)) {
             ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
-                                   mkv->cluster_pos, relative_packet_pos, 0);
+                                   mkv->cluster_pos, relative_packet_pos,
+                                   write_duration);
             if (ret < 0)
                 return ret;
             track->has_cue = 1;
         }
     } else {
-        if (par->codec_id == AV_CODEC_ID_WEBVTT) {
             ret = mkv_write_vtt_blocks(s, pb, pkt);
             if (ret < 0)
                 return ret;
-        } else {
-            ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
-                                                       mkv_blockgroup_size(pkt->size,
-                                                                           track->track_num_size));
-
-            /* All subtitle blocks are considered to be keyframes. */
-            mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 1);
-            put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
-            end_ebml_master(pb, blockgroup);
-        }
 
         if (IS_SEEKABLE(s->pb, mkv)) {
             ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
