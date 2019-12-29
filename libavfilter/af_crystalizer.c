@@ -212,7 +212,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->filter((void **)out->extended_data, (void **)s->prev->extended_data, (const void **)in->extended_data,
-              in->nb_samples, in->channels, s->mult, s->clip);
+              in->nb_samples, in->channels, ctx->is_disabled ? 0.f : s->mult, s->clip);
 
     if (out != in)
         av_frame_free(&in);
@@ -254,4 +254,5 @@ AVFilter ff_af_crystalizer = {
     .uninit         = uninit,
     .inputs         = inputs,
     .outputs        = outputs,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
