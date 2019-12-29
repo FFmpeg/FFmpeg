@@ -34,7 +34,7 @@ typedef struct CrystalizerContext {
 } CrystalizerContext;
 
 #define OFFSET(x) offsetof(CrystalizerContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption crystalizer_options[] = {
     { "i", "set intensity",    OFFSET(mult), AV_OPT_TYPE_FLOAT, {.dbl=2.0}, 0, 10, A },
@@ -255,4 +255,5 @@ AVFilter ff_af_crystalizer = {
     .inputs         = inputs,
     .outputs        = outputs,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .process_command = ff_filter_process_command,
 };
