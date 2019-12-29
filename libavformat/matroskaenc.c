@@ -57,6 +57,10 @@
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/internal.h"
 
+/* Level 1 elements we create a SeekHead entry for:
+ * Info, Tracks, Chapters, Attachments, Tags and Cues */
+#define MAX_SEEKHEAD_ENTRIES 6
+
 typedef struct ebml_master {
     int64_t         pos;                ///< absolute offset in the containing AVIOContext where the master's elements start
     int             sizebytes;          ///< how many bytes were reserved for the size
@@ -69,11 +73,9 @@ typedef struct mkv_seekhead_entry {
 
 typedef struct mkv_seekhead {
     int64_t                 filepos;
-    int64_t                 segment_offset;     ///< the file offset to the beginning of the segment
-    int                     reserved_size;      ///< -1 if appending to file
-    int                     max_entries;
-    mkv_seekhead_entry      *entries;
+    mkv_seekhead_entry      entries[MAX_SEEKHEAD_ENTRIES];
     int                     num_entries;
+    int                     reserved_size;
 } mkv_seekhead;
 
 typedef struct mkv_cuepoint {
@@ -136,7 +138,7 @@ typedef struct MatroskaMuxContext {
     int64_t         cluster_pts;
     int64_t         duration_offset;
     int64_t         duration;
-    mkv_seekhead    *seekhead;
+    mkv_seekhead    seekhead;
     mkv_cues        *cues;
     mkv_track       *tracks;
     mkv_attachments *attachments;
@@ -396,10 +398,6 @@ static void mkv_deinit(AVFormatContext *s)
     ffio_free_dyn_buf(&mkv->tracks_bc);
     ffio_free_dyn_buf(&mkv->tags_bc);
 
-    if (mkv->seekhead) {
-        av_freep(&mkv->seekhead->entries);
-        av_freep(&mkv->seekhead);
-    }
     if (mkv->cues) {
         av_freep(&mkv->cues->entries);
         av_freep(&mkv->cues);
@@ -412,61 +410,33 @@ static void mkv_deinit(AVFormatContext *s)
 }
 
 /**
- * Initialize a mkv_seekhead element to be ready to index level 1 Matroska
- * elements. If a maximum number of elements is specified, enough space
- * will be reserved at the current file location to write a seek head of
- * that size.
- *
- * @param segment_offset The absolute offset to the position in the file
- *                       where the segment begins.
- * @param numelements The maximum number of elements that will be indexed
- *                    by this seek head, 0 if unlimited.
+ * Initialize the SeekHead element to be ready to index level 1 Matroska
+ * elements. Enough space to write MAX_SEEKHEAD_ENTRIES SeekHead entries
+ * will be reserved at the current file location.
  */
-static mkv_seekhead *mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset,
-                                        int numelements)
+static void mkv_start_seekhead(MatroskaMuxContext *mkv, AVIOContext *pb)
 {
-    mkv_seekhead *new_seekhead = av_mallocz(sizeof(mkv_seekhead));
-    if (!new_seekhead)
-        return NULL;
-
-    new_seekhead->segment_offset = segment_offset;
-
-    if (numelements > 0) {
-        new_seekhead->filepos = avio_tell(pb);
-        // 21 bytes max for a seek entry, 10 bytes max for the SeekHead ID
-        // and size, 6 bytes for a CRC32 element, and 3 bytes to guarantee
-        // that an EBML void element will fit afterwards
-        new_seekhead->reserved_size = numelements * MAX_SEEKENTRY_SIZE + 19;
-        new_seekhead->max_entries   = numelements;
-        put_ebml_void(pb, new_seekhead->reserved_size);
-    }
-    return new_seekhead;
+    mkv->seekhead.filepos = avio_tell(pb);
+    // 21 bytes max for a Seek entry, 6 bytes max for the SeekHead ID
+    // and size, 6 bytes for a CRC32 element, and 2 bytes to guarantee
+    // that an EBML void element will fit afterwards
+    mkv->seekhead.reserved_size = MAX_SEEKHEAD_ENTRIES * MAX_SEEKENTRY_SIZE + 14;
+    put_ebml_void(pb, mkv->seekhead.reserved_size);
 }
 
-static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, uint32_t elementid, uint64_t filepos)
+static void mkv_add_seekhead_entry(MatroskaMuxContext *mkv, uint32_t elementid,
+                                   uint64_t filepos)
 {
-    mkv_seekhead_entry *entries = seekhead->entries;
+    mkv_seekhead *seekhead = &mkv->seekhead;
 
-    // don't store more elements than we reserved space for
-    if (seekhead->max_entries > 0 && seekhead->max_entries <= seekhead->num_entries)
-        return -1;
-
-    entries = av_realloc_array(entries, seekhead->num_entries + 1, sizeof(mkv_seekhead_entry));
-    if (!entries)
-        return AVERROR(ENOMEM);
-    seekhead->entries = entries;
+    av_assert1(seekhead->num_entries < MAX_SEEKHEAD_ENTRIES);
 
     seekhead->entries[seekhead->num_entries].elementid    = elementid;
-    seekhead->entries[seekhead->num_entries++].segmentpos = filepos - seekhead->segment_offset;
-
-    return 0;
+    seekhead->entries[seekhead->num_entries++].segmentpos = filepos - mkv->segment_offset;
 }
 
 /**
- * Write the seek head to the file and free it. If a maximum number of
- * elements was specified to mkv_start_seekhead(), the seek head will
- * be written at the location reserved for it. Otherwise, it is written
- * at the current location in the file.
+ * Write the SeekHead to the file at the location reserved for it.
  *
  * @return The file offset where the seekhead was written,
  * -1 if an error occurred.
@@ -474,19 +444,17 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, uint32_t elementid, ui
 static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
 {
     AVIOContext *dyn_cp;
-    mkv_seekhead *seekhead = mkv->seekhead;
+    mkv_seekhead *seekhead = &mkv->seekhead;
     ebml_master seekentry;
-    int64_t currentpos;
+    int64_t currentpos, remaining;
     int i;
 
     currentpos = avio_tell(pb);
 
-    if (seekhead->reserved_size > 0) {
         if (avio_seek(pb, seekhead->filepos, SEEK_SET) < 0) {
             currentpos = -1;
             goto fail;
         }
-    }
 
     if (start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_SEEKHEAD) < 0) {
         currentpos = -1;
@@ -507,16 +475,13 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
     }
     end_ebml_master_crc32(pb, &dyn_cp, mkv);
 
-    if (seekhead->reserved_size > 0) {
-        uint64_t remaining = seekhead->filepos + seekhead->reserved_size - avio_tell(pb);
+    remaining = seekhead->filepos + seekhead->reserved_size - avio_tell(pb);
         put_ebml_void(pb, remaining);
         avio_seek(pb, currentpos, SEEK_SET);
 
         currentpos = seekhead->filepos;
-    }
+
 fail:
-    av_freep(&mkv->seekhead->entries);
-    av_freep(&mkv->seekhead);
 
     return currentpos;
 }
@@ -1429,9 +1394,7 @@ static int mkv_write_tracks(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int i, ret, default_stream_exists = 0;
 
-    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_TRACKS, avio_tell(pb));
-    if (ret < 0)
-        return ret;
+    mkv_add_seekhead_entry(mkv, MATROSKA_ID_TRACKS, avio_tell(pb));
 
     ret = start_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, MATROSKA_ID_TRACKS);
     if (ret < 0)
@@ -1466,8 +1429,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     if (!s->nb_chapters || mkv->wrote_chapters)
         return 0;
 
-    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_CHAPTERS, avio_tell(pb));
-    if (ret < 0) return ret;
+    mkv_add_seekhead_entry(mkv, MATROSKA_ID_CHAPTERS, avio_tell(pb));
 
     ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_CHAPTERS);
     if (ret < 0) return ret;
@@ -1556,8 +1518,7 @@ static int mkv_write_tag_targets(AVFormatContext *s, uint32_t elementid,
     int ret;
 
     if (!mkv->tags_bc) {
-        ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_TAGS, avio_tell(s->pb));
-        if (ret < 0) return ret;
+        mkv_add_seekhead_entry(mkv, MATROSKA_ID_TAGS, avio_tell(s->pb));
 
         ret = start_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS);
         if (ret < 0)
@@ -1727,8 +1688,7 @@ static int mkv_write_attachments(AVFormatContext *s)
 
     av_lfg_init(&c, av_get_random_seed());
 
-    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
-    if (ret < 0) return ret;
+    mkv_add_seekhead_entry(mkv, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
 
     ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_ATTACHMENTS);
     if (ret < 0) return ret;
@@ -1877,16 +1837,10 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->segment_offset = avio_tell(pb);
 
     // we write a seek head at the beginning to point to all other level
-    // one elements, which aren't more than 10 elements as we write only one
-    // of every other currently defined level 1 element
-    mkv->seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 10);
-    if (!mkv->seekhead) {
-        return AVERROR(ENOMEM);
-    }
+    // one elements (except Clusters).
+    mkv_start_seekhead(mkv, pb);
 
-    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_INFO, avio_tell(pb));
-    if (ret < 0)
-        return ret;
+    mkv_add_seekhead_entry(mkv, MATROSKA_ID_INFO, avio_tell(pb));
 
     ret = start_ebml_master_crc32(pb, &mkv->info_bc, mkv, MATROSKA_ID_INFO);
     if (ret < 0)
@@ -2580,10 +2534,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                 cuespos = mkv_write_cues(s, mkv->cues, mkv->tracks, s->nb_streams);
             }
 
-            ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_CUES,
-                                         cuespos);
-            if (ret < 0)
-                return ret;
+            mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, cuespos);
         }
 
         mkv_write_seekhead(pb, mkv);
