@@ -204,6 +204,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         if (flags & 0x10)
             ctx->flags2 |= AV_CODEC_FLAG2_FAST;
 
+        if (flags & 0x40)
+            av_force_cpu_flags(0);
 
         extradata_size = bytestream2_get_le32(&gbc);
 
