@@ -484,4 +484,12 @@ AVCodec ff_hap_decoder = {
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
+    .codec_tags     = (const uint32_t []){
+        MKTAG('H','a','p','1'),
+        MKTAG('H','a','p','5'),
+        MKTAG('H','a','p','Y'),
+        MKTAG('H','a','p','A'),
+        MKTAG('H','a','p','M'),
+        FF_CODEC_TAGS_END,
+    },
 };
