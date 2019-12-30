@@ -500,23 +500,15 @@ static int mkv_add_cuepoint(MatroskaMuxContext *mkv, int stream, int tracknum, i
     return 0;
 }
 
-static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tracks, int num_tracks)
+static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp,
+                             mkv_cues *cues, mkv_track *tracks, int num_tracks)
 {
-    MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *dyn_cp, *pb = s->pb, *cuepoint;
-    int64_t currentpos;
+    AVIOContext *cuepoint;
     int ret;
 
-    currentpos = avio_tell(pb);
-    ret = start_ebml_master_crc32(&dyn_cp, mkv);
+    ret = avio_open_dyn_buf(&cuepoint);
     if (ret < 0)
         return ret;
-
-    ret = avio_open_dyn_buf(&cuepoint);
-    if (ret < 0) {
-        ffio_free_dyn_buf(&dyn_cp);
-        return ret;
-    }
 
     for (mkv_cuepoint *entry = cues->entries, *end = entry + cues->num_entries;
          entry < end;) {
@@ -535,7 +527,7 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
             int idx = entry->stream_idx;
 
             av_assert0(idx >= 0 && idx < num_tracks);
-            if (tracks[idx].has_cue && s->streams[idx]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
+            if (tracks[idx].has_cue && streams[idx]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
                 continue;
             tracks[idx].has_cue = 1;
             track_positions = start_ebml_master(cuepoint, MATROSKA_ID_CUETRACKPOSITION, MAX_CUETRACKPOS_SIZE);
@@ -551,9 +543,8 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
         ffio_reset_dyn_buf(cuepoint);
     }
     ffio_free_dyn_buf(&cuepoint);
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_CUES);
 
-    return currentpos;
+    return 0;
 }
 
 static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecParameters *par)
@@ -2464,7 +2455,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
-    int64_t currentpos, cuespos;
+    int64_t currentpos;
     int ret;
 
     // check if we have an audio packet cached
@@ -2487,35 +2478,52 @@ static int mkv_write_trailer(AVFormatContext *s)
 
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+        int64_t ret64;
+
         if (mkv->cues.num_entries) {
-            if (mkv->reserve_cues_space) {
-                int64_t cues_end;
+            AVIOContext *cues;
+            uint64_t size;
 
-                currentpos = avio_tell(pb);
-                avio_seek(pb, mkv->cues_pos, SEEK_SET);
+            ret = start_ebml_master_crc32(&cues, mkv);
+            if (ret < 0)
+                return ret;
 
-                cuespos  = mkv_write_cues(s, &mkv->cues, mkv->tracks, s->nb_streams);
-                cues_end = avio_tell(pb);
-                if (cues_end > cuespos + mkv->reserve_cues_space) {
-                    av_log(s, AV_LOG_ERROR,
-                           "Insufficient space reserved for cues: %d "
-                           "(needed: %" PRId64 ").\n",
-                           mkv->reserve_cues_space, cues_end - cuespos);
-                    return AVERROR(EINVAL);
-                }
-
-                if (cues_end < cuespos + mkv->reserve_cues_space)
-                    put_ebml_void(pb, mkv->reserve_cues_space -
-                                  (cues_end - cuespos));
-
-                avio_seek(pb, currentpos, SEEK_SET);
-            } else {
-                cuespos = mkv_write_cues(s, &mkv->cues, mkv->tracks, s->nb_streams);
+            ret = mkv_assemble_cues(s->streams, cues, &mkv->cues,
+                                    mkv->tracks, s->nb_streams);
+            if (ret < 0) {
+                ffio_free_dyn_buf(&cues);
+                return ret;
             }
 
-            mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, cuespos);
+            if (mkv->reserve_cues_space) {
+                size  = avio_tell(cues);
+                size += 4 + ebml_num_size(size);
+                if (mkv->reserve_cues_space < size) {
+                    av_log(s, AV_LOG_WARNING,
+                           "Insufficient space reserved for Cues: "
+                           "%d < %"PRIu64". No Cues will be output.\n",
+                           mkv->reserve_cues_space, size);
+                    mkv->reserve_cues_space = -1;
+                    ffio_free_dyn_buf(&cues);
+                    goto after_cues;
+                } else {
+                    currentpos = avio_tell(pb);
+                    if ((ret64 = avio_seek(pb, mkv->cues_pos, SEEK_SET)) < 0) {
+                        ffio_free_dyn_buf(&cues);
+                        return ret64;
+                    }
+                }
+            }
+            mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, avio_tell(pb));
+            end_ebml_master_crc32(pb, &cues, mkv, MATROSKA_ID_CUES);
+            if (mkv->reserve_cues_space) {
+                if (size < mkv->reserve_cues_space)
+                    put_ebml_void(pb, mkv->reserve_cues_space - size);
+                avio_seek(pb, currentpos, SEEK_SET);
+            }
         }
 
+    after_cues:
         currentpos = avio_tell(pb);
 
         ret = mkv_write_seekhead(pb, mkv, 1, mkv->info_pos);
@@ -2570,7 +2578,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         end_ebml_master(pb, mkv->segment);
     }
 
-    return 0;
+    return mkv->reserve_cues_space < 0 ? AVERROR(EINVAL) : 0;
 }
 
 static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
