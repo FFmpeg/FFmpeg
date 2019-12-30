@@ -1510,7 +1510,7 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
 
 enum AVCodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be)
 {
-    static const enum AVCodecID map[AV_SAMPLE_FMT_NB][2] = {
+    static const enum AVCodecID map[][2] = {
         [AV_SAMPLE_FMT_U8  ] = { AV_CODEC_ID_PCM_U8,    AV_CODEC_ID_PCM_U8    },
         [AV_SAMPLE_FMT_S16 ] = { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_S16BE },
         [AV_SAMPLE_FMT_S32 ] = { AV_CODEC_ID_PCM_S32LE, AV_CODEC_ID_PCM_S32BE },
@@ -1523,7 +1523,7 @@ enum AVCodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be)
         [AV_SAMPLE_FMT_FLTP] = { AV_CODEC_ID_PCM_F32LE, AV_CODEC_ID_PCM_F32BE },
         [AV_SAMPLE_FMT_DBLP] = { AV_CODEC_ID_PCM_F64LE, AV_CODEC_ID_PCM_F64BE },
     };
-    if (fmt < 0 || fmt >= AV_SAMPLE_FMT_NB)
+    if (fmt < 0 || fmt >= FF_ARRAY_ELEMS(map))
         return AV_CODEC_ID_NONE;
     if (be < 0 || be > 1)
         be = AV_NE(1, 0);
