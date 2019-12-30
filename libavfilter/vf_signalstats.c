@@ -50,6 +50,7 @@ typedef struct SignalstatsContext {
     int nb_jobs;
     int *jobs_rets;
 
+    int maxsize;    // history stats array size
     int *histy, *histu, *histv, *histsat;
 
     AVFrame *frame_sat;
@@ -166,11 +167,12 @@ static int config_output(AVFilterLink *outlink)
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth;
+    s->maxsize = 1 << s->depth;
     if (s->depth > 8) {
-        s->histy = av_malloc_array(1 << s->depth, sizeof(*s->histy));
-        s->histu = av_malloc_array(1 << s->depth, sizeof(*s->histu));
-        s->histv = av_malloc_array(1 << s->depth, sizeof(*s->histv));
-        s->histsat = av_malloc_array(1 << s->depth, sizeof(*s->histsat));
+        s->histy = av_malloc_array(s->maxsize, sizeof(*s->histy));
+        s->histu = av_malloc_array(s->maxsize, sizeof(*s->histu));
+        s->histv = av_malloc_array(s->maxsize, sizeof(*s->histv));
+        s->histsat = av_malloc_array(s->maxsize, sizeof(*s->histsat));
 
         if (!s->histy || !s->histu || !s->histv || !s->histsat)
             return AVERROR(ENOMEM);
@@ -823,7 +825,7 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
                            NULL, FFMIN(s->chromah, ff_filter_get_nb_threads(ctx)));
 
     // Calculate luma histogram and difference with previous frame or field.
-    memset(s->histy, 0, (1 << s->depth) * sizeof(*s->histy));
+    memset(s->histy, 0, s->maxsize * sizeof(*s->histy));
     for (j = 0; j < link->h; j++) {
         for (i = 0; i < link->w; i++) {
             const int yuv = AV_RN16(in->data[0] + w + i * 2);
@@ -837,9 +839,9 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     }
 
     // Calculate chroma histogram and difference with previous frame or field.
-    memset(s->histu, 0, (1 << s->depth) * sizeof(*s->histu));
-    memset(s->histv, 0, (1 << s->depth) * sizeof(*s->histv));
-    memset(s->histsat, 0, (1 << s->depth) * sizeof(*s->histsat));
+    memset(s->histu, 0, s->maxsize * sizeof(*s->histu));
+    memset(s->histv, 0, s->maxsize * sizeof(*s->histv));
+    memset(s->histsat, 0, s->maxsize * sizeof(*s->histsat));
     for (j = 0; j < s->chromah; j++) {
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = AV_RN16(in->data[1] + cw + i * 2);
@@ -884,7 +886,7 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     chighp = lrint(s->cfs * 90 / 100.);
 
     accy = accu = accv = accsat = 0;
-    for (fil = 0; fil < 1 << s->depth; fil++) {
+    for (fil = 0; fil < s->maxsize; fil++) {
         if (miny   < 0 && histy[fil])   miny = fil;
         if (minu   < 0 && histu[fil])   minu = fil;
         if (minv   < 0 && histv[fil])   minv = fil;
