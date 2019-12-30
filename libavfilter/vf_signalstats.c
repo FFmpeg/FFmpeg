@@ -157,7 +157,7 @@ static AVFrame *alloc_frame(enum AVPixelFormat pixfmt, int w, int h)
     return frame;
 }
 
-static int config_props(AVFilterLink *outlink)
+static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     SignalstatsContext *s = ctx->priv;
@@ -1004,7 +1004,7 @@ static const AVFilterPad signalstats_inputs[] = {
 static const AVFilterPad signalstats_outputs[] = {
     {
         .name           = "default",
-        .config_props   = config_props,
+        .config_props   = config_output,
         .type           = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
