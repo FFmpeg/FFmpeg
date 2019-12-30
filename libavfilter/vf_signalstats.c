@@ -168,13 +168,13 @@ static int config_output(AVFilterLink *outlink)
     s->vsub = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth;
     s->maxsize = 1 << s->depth;
-        s->histy = av_malloc_array(s->maxsize, sizeof(*s->histy));
-        s->histu = av_malloc_array(s->maxsize, sizeof(*s->histu));
-        s->histv = av_malloc_array(s->maxsize, sizeof(*s->histv));
-        s->histsat = av_malloc_array(s->maxsize, sizeof(*s->histsat));
+    s->histy = av_malloc_array(s->maxsize, sizeof(*s->histy));
+    s->histu = av_malloc_array(s->maxsize, sizeof(*s->histu));
+    s->histv = av_malloc_array(s->maxsize, sizeof(*s->histv));
+    s->histsat = av_malloc_array(s->maxsize, sizeof(*s->histsat));
 
-        if (!s->histy || !s->histu || !s->histv || !s->histsat)
-            return AVERROR(ENOMEM);
+    if (!s->histy || !s->histu || !s->histv || !s->histsat)
+        return AVERROR(ENOMEM);
 
     outlink->w = inlink->w;
     outlink->h = inlink->h;
