@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
@@ -32,6 +33,7 @@
 typedef struct HistogramContext {
     const AVClass *class;               ///< AVClass context for log and options purpose
     int            thistogram;
+    int            envelope;
     unsigned       histogram[256*256];
     int            histogram_size;
     int            width;
@@ -41,6 +43,8 @@ typedef struct HistogramContext {
     int            dncomp;
     uint8_t        bg_color[4];
     uint8_t        fg_color[4];
+    uint8_t        envelope_rgba[4];
+    uint8_t        envelope_color[4];
     int            level_height;
     int            scale_height;
     int            display_mode;
@@ -219,12 +223,17 @@ static int config_input(AVFilterLink *inlink)
         memcpy(s->bg_color, black_gbrp_color, 4);
         memcpy(s->fg_color, white_gbrp_color, 4);
         s->start[0] = s->start[1] = s->start[2] = s->start[3] = 0;
+        memcpy(s->envelope_color, s->envelope_rgba, 4);
         break;
     default:
         memcpy(s->bg_color, black_yuva_color, 4);
         memcpy(s->fg_color, white_yuva_color, 4);
         s->start[0] = s->start[3] = 0;
         s->start[1] = s->start[2] = s->histogram_size / 2;
+        s->envelope_color[0] = RGB_TO_Y_BT709(s->envelope_rgba[0], s->envelope_rgba[1], s->envelope_rgba[2]);
+        s->envelope_color[1] = RGB_TO_U_BT709(s->envelope_rgba[0], s->envelope_rgba[1], s->envelope_rgba[2], 0);
+        s->envelope_color[2] = RGB_TO_V_BT709(s->envelope_rgba[0], s->envelope_rgba[1], s->envelope_rgba[2], 0);
+        s->envelope_color[3] = s->envelope_rgba[3];
     }
 
     s->fg_color[3] = s->fgopacity * 255;
@@ -345,9 +354,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         max_hval_log = log2(max_hval + 1);
 
         if (s->thistogram) {
+            int minh = s->histogram_size - 1, maxh = 0;
+
             for (int i = 0; i < s->histogram_size; i++) {
                 int idx = s->histogram_size - i - 1;
                 int value = s->start[p];
+
+                if (s->envelope && s->histogram[idx]) {
+                    minh = FFMIN(minh, i);
+                    maxh = FFMAX(maxh, i);
+                }
 
                 if (s->levels_mode)
                     value += lrint(max_value * (log2(s->histogram[idx] + 1) / max_hval_log));
@@ -358,6 +374,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     s->out->data[p][(i + starty) * s->out->linesize[p] + startx + s->x_pos] = value;
                 } else {
                     AV_WN16(s->out->data[p] + (i + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, value);
+                }
+            }
+
+            if (s->envelope) {
+                if (s->histogram_size <= 256) {
+                    s->out->data[0][(minh + starty) * s->out->linesize[p] + startx + s->x_pos] = s->envelope_color[0];
+                    s->out->data[0][(maxh + starty) * s->out->linesize[p] + startx + s->x_pos] = s->envelope_color[0];
+                    if (s->dncomp >= 3) {
+                        s->out->data[1][(minh + starty) * s->out->linesize[p] + startx + s->x_pos] = s->envelope_color[1];
+                        s->out->data[2][(minh + starty) * s->out->linesize[p] + startx + s->x_pos] = s->envelope_color[2];
+                        s->out->data[1][(maxh + starty) * s->out->linesize[p] + startx + s->x_pos] = s->envelope_color[1];
+                        s->out->data[2][(maxh + starty) * s->out->linesize[p] + startx + s->x_pos] = s->envelope_color[2];
+                    }
+                } else {
+                    const int mult = s->mult;
+
+                    AV_WN16(s->out->data[0] + (minh + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, s->envelope_color[0] * mult);
+                    AV_WN16(s->out->data[0] + (maxh + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, s->envelope_color[0] * mult);
+                    if (s->dncomp >= 3) {
+                        AV_WN16(s->out->data[1] + (minh + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, s->envelope_color[1] * mult);
+                        AV_WN16(s->out->data[2] + (minh + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, s->envelope_color[2] * mult);
+                        AV_WN16(s->out->data[1] + (maxh + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, s->envelope_color[1] * mult);
+                        AV_WN16(s->out->data[2] + (maxh + starty) * s->out->linesize[p] + startx * 2 + s->x_pos * 2, s->envelope_color[2] * mult);
+                    }
                 }
             }
         } else {
@@ -455,8 +495,12 @@ static const AVOption thistogram_options[] = {
     { "width", "set width", OFFSET(width), AV_OPT_TYPE_INT, {.i64=0}, 0, 8192, FLAGS},
     { "w",     "set width", OFFSET(width), AV_OPT_TYPE_INT, {.i64=0}, 0, 8192, FLAGS},
     COMMON_OPTIONS
-    { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
-    { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
+    { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1, FLAGS},
+    { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1, FLAGS},
+    { "envelope", "display envelope", OFFSET(envelope), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "e",        "display envelope", OFFSET(envelope), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "ecolor", "set envelope color", OFFSET(envelope_rgba), AV_OPT_TYPE_COLOR, {.str="gold"}, 0, 0, FLAGS },
+    { "ec",     "set envelope color", OFFSET(envelope_rgba), AV_OPT_TYPE_COLOR, {.str="gold"}, 0, 0, FLAGS },
     { NULL }
 };
 

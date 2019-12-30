@@ -17792,7 +17792,13 @@ Set what color components to display.
 Default is @code{7}.
 
 @item bgopacity, b
-Set background opacity. Default is @code{0.5}.
+Set background opacity. Default is @code{0.9}.
+
+@item envelope, e
+Show envelope. Default is disabled.
+
+@item ecolor, ec
+Set envelope color. Default is @code{gold}.
 @end table
 
 @section threshold
