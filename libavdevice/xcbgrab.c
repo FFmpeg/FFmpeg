@@ -487,7 +487,7 @@ static xcb_screen_t *get_screen(const xcb_setup_t *setup, int screen_num)
 }
 
 static int pixfmt_from_pixmap_format(AVFormatContext *s, int depth,
-                                     int *pix_fmt)
+                                     int *pix_fmt, int *bpp)
 {
     XCBGrabContext *c        = s->priv_data;
     const xcb_setup_t *setup = xcb_get_setup(c->conn);
@@ -525,14 +525,7 @@ static int pixfmt_from_pixmap_format(AVFormatContext *s, int depth,
         }
 
         if (*pix_fmt) {
-            c->bpp        = fmt->bits_per_pixel;
-            c->frame_size = c->width * c->height * fmt->bits_per_pixel / 8;
-#if CONFIG_LIBXCB_SHM
-            c->shm_pool = av_buffer_pool_init2(c->frame_size + AV_INPUT_BUFFER_PADDING_SIZE,
-                                               c->conn, allocate_shm_buffer, NULL);
-            if (!c->shm_pool)
-                return AVERROR(ENOMEM);
-#endif
+            *bpp        = fmt->bits_per_pixel;
             return 0;
         }
 
@@ -592,9 +585,18 @@ static int create_stream(AVFormatContext *s)
     st->codecpar->width      = c->width;
     st->codecpar->height     = c->height;
 
-    ret = pixfmt_from_pixmap_format(s, geo->depth, &st->codecpar->format);
-
+    ret = pixfmt_from_pixmap_format(s, geo->depth, &st->codecpar->format, &c->bpp);
     free(geo);
+    if (ret < 0)
+        return ret;
+
+    c->frame_size = c->width * c->height * c->bpp / 8;
+#if CONFIG_LIBXCB_SHM
+    c->shm_pool = av_buffer_pool_init2(c->frame_size + AV_INPUT_BUFFER_PADDING_SIZE,
+                                           c->conn, allocate_shm_buffer, NULL);
+    if (!c->shm_pool)
+        return AVERROR(ENOMEM);
+#endif
 
     return ret;
 }
