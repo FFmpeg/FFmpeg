@@ -168,7 +168,6 @@ static int config_output(AVFilterLink *outlink)
     s->vsub = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth;
     s->maxsize = 1 << s->depth;
-    if (s->depth > 8) {
         s->histy = av_malloc_array(s->maxsize, sizeof(*s->histy));
         s->histu = av_malloc_array(s->maxsize, sizeof(*s->histu));
         s->histv = av_malloc_array(s->maxsize, sizeof(*s->histv));
@@ -176,7 +175,6 @@ static int config_output(AVFilterLink *outlink)
 
         if (!s->histy || !s->histu || !s->histv || !s->histsat)
             return AVERROR(ENOMEM);
-    }
 
     outlink->w = inlink->w;
     outlink->h = inlink->h;
@@ -464,8 +462,6 @@ static const struct {
     {NULL}
 };
 
-#define DEPTH 256
-
 static int compute_sat_hue_metrics8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     int i, j;
@@ -559,11 +555,11 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
         pw = 0, cpw = 0; // prev
     int fil;
     char metabuf[128];
-    unsigned int histy[DEPTH] = {0},
-                 histu[DEPTH] = {0},
-                 histv[DEPTH] = {0},
+    unsigned int *histy = s->histy,
+                 *histu = s->histu,
+                 *histv = s->histv,
                  histhue[360] = {0},
-                 histsat[DEPTH] = {0}; // limited to 8 bit data.
+                 *histsat = s->histsat;
     int miny  = -1, minu  = -1, minv  = -1;
     int maxy  = -1, maxu  = -1, maxv  = -1;
     int lowy  = -1, lowu  = -1, lowv  = -1;
@@ -607,6 +603,7 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
                            NULL, FFMIN(s->chromah, ff_filter_get_nb_threads(ctx)));
 
     // Calculate luma histogram and difference with previous frame or field.
+    memset(s->histy, 0, s->maxsize * sizeof(*s->histy));
     for (j = 0; j < link->h; j++) {
         for (i = 0; i < link->w; i++) {
             const int yuv = in->data[0][w + i];
@@ -620,6 +617,9 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     }
 
     // Calculate chroma histogram and difference with previous frame or field.
+    memset(s->histu, 0, s->maxsize * sizeof(*s->histu));
+    memset(s->histv, 0, s->maxsize * sizeof(*s->histv));
+    memset(s->histsat, 0, s->maxsize * sizeof(*s->histsat));
     for (j = 0; j < s->chromah; j++) {
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = in->data[1][cw+i];
@@ -664,7 +664,7 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     chighp = lrint(s->cfs * 90 / 100.);
 
     accy = accu = accv = accsat = 0;
-    for (fil = 0; fil < DEPTH; fil++) {
+    for (fil = 0; fil < s->maxsize; fil++) {
         if (miny   < 0 && histy[fil])   miny = fil;
         if (minu   < 0 && histu[fil])   minu = fil;
         if (minv   < 0 && histv[fil])   minv = fil;
