@@ -88,7 +88,6 @@ typedef struct mkv_cuepoint {
 } mkv_cuepoint;
 
 typedef struct mkv_cues {
-    int64_t         segment_offset;
     mkv_cuepoint    *entries;
     int             num_entries;
 } mkv_cues;
@@ -139,7 +138,7 @@ typedef struct MatroskaMuxContext {
     int64_t         duration_offset;
     int64_t         duration;
     mkv_seekhead    seekhead;
-    mkv_cues        *cues;
+    mkv_cues        cues;
     mkv_track       *tracks;
     mkv_attachments *attachments;
 
@@ -398,10 +397,7 @@ static void mkv_deinit(AVFormatContext *s)
     ffio_free_dyn_buf(&mkv->tracks_bc);
     ffio_free_dyn_buf(&mkv->tags_bc);
 
-    if (mkv->cues) {
-        av_freep(&mkv->cues->entries);
-        av_freep(&mkv->cues);
-    }
+    av_freep(&mkv->cues.entries);
     if (mkv->attachments) {
         av_freep(&mkv->attachments->entries);
         av_freep(&mkv->attachments);
@@ -483,19 +479,10 @@ static int mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv,
     return 0;
 }
 
-static mkv_cues *mkv_start_cues(int64_t segment_offset)
-{
-    mkv_cues *cues = av_mallocz(sizeof(mkv_cues));
-    if (!cues)
-        return NULL;
-
-    cues->segment_offset = segment_offset;
-    return cues;
-}
-
-static int mkv_add_cuepoint(mkv_cues *cues, int stream, int tracknum, int64_t ts,
+static int mkv_add_cuepoint(MatroskaMuxContext *mkv, int stream, int tracknum, int64_t ts,
                             int64_t cluster_pos, int64_t relative_pos, int64_t duration)
 {
+    mkv_cues *cues = &mkv->cues;
     mkv_cuepoint *entries = cues->entries;
 
     if (ts < 0)
@@ -509,7 +496,7 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int tracknum, int64_t ts
     cues->entries[cues->num_entries].pts           = ts;
     cues->entries[cues->num_entries].stream_idx    = stream;
     cues->entries[cues->num_entries].tracknum      = tracknum;
-    cues->entries[cues->num_entries].cluster_pos   = cluster_pos - cues->segment_offset;
+    cues->entries[cues->num_entries].cluster_pos   = cluster_pos - mkv->segment_offset;
     cues->entries[cues->num_entries].relative_pos  = relative_pos;
     cues->entries[cues->num_entries++].duration    = duration;
 
@@ -1930,11 +1917,6 @@ static int mkv_write_header(AVFormatContext *s)
             return ret;
     }
 
-    mkv->cues = mkv_start_cues(mkv->segment_offset);
-    if (!mkv->cues) {
-        return AVERROR(ENOMEM);
-    }
-
     if (s->metadata_header_padding > 0) {
         if (s->metadata_header_padding == 1)
             s->metadata_header_padding++;
@@ -2353,7 +2335,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
         if (ret < 0)
             return ret;
         if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && (par->codec_type == AVMEDIA_TYPE_VIDEO && keyframe || add_cue)) {
-            ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, tracknum, ts, mkv->cluster_pos, relative_packet_pos, -1);
+            ret = mkv_add_cuepoint(mkv, pkt->stream_index, tracknum, ts,
+                                   mkv->cluster_pos, relative_packet_pos, -1);
             if (ret < 0) return ret;
         }
     } else {
@@ -2378,7 +2361,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
-            ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, tracknum, ts,
+            ret = mkv_add_cuepoint(mkv, pkt->stream_index, tracknum, ts,
                                    mkv->cluster_pos, relative_packet_pos, duration);
             if (ret < 0)
                 return ret;
@@ -2508,14 +2491,14 @@ static int mkv_write_trailer(AVFormatContext *s)
 
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
-        if (mkv->cues->num_entries) {
+        if (mkv->cues.num_entries) {
             if (mkv->reserve_cues_space) {
                 int64_t cues_end;
 
                 currentpos = avio_tell(pb);
                 avio_seek(pb, mkv->cues_pos, SEEK_SET);
 
-                cuespos  = mkv_write_cues(s, mkv->cues, mkv->tracks, s->nb_streams);
+                cuespos  = mkv_write_cues(s, &mkv->cues, mkv->tracks, s->nb_streams);
                 cues_end = avio_tell(pb);
                 if (cues_end > cuespos + mkv->reserve_cues_space) {
                     av_log(s, AV_LOG_ERROR,
@@ -2531,7 +2514,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
                 avio_seek(pb, currentpos, SEEK_SET);
             } else {
-                cuespos = mkv_write_cues(s, mkv->cues, mkv->tracks, s->nb_streams);
+                cuespos = mkv_write_cues(s, &mkv->cues, mkv->tracks, s->nb_streams);
             }
 
             mkv_add_seekhead_entry(mkv, MATROSKA_ID_CUES, cuespos);
