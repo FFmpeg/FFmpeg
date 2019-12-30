@@ -21209,9 +21209,9 @@ Specify the frame rate expected for the video stream.
 The sample (pixel) aspect ratio of the input video.
 
 @item sws_param
-Specify the optional parameters to be used for the scale filter which
-is automatically inserted when an input change is detected in the
-input size or format.
+This option is deprecated and ignored. Prepend @code{sws_flags=@var{flags};}
+to the filtergraph description to specify swscale flags for automatically
+inserted scalers. See @ref{Filtergraph syntax}.
 
 @item hw_frames_ctx
 When using a hardware pixel format, this should be a reference to an
@@ -21236,7 +21236,7 @@ buffer=size=320x240:pixfmt=6:time_base=1/24:pixel_aspect=1/1
 Alternatively, the options can be specified as a flat string, but this
 syntax is deprecated:
 
-@var{width}:@var{height}:@var{pix_fmt}:@var{time_base.num}:@var{time_base.den}:@var{pixel_aspect.num}:@var{pixel_aspect.den}[:@var{sws_param}]
+@var{width}:@var{height}:@var{pix_fmt}:@var{time_base.num}:@var{time_base.den}:@var{pixel_aspect.num}:@var{pixel_aspect.den}
 
 @section cellauto
 
