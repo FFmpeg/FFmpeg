@@ -450,7 +450,6 @@ static int mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv,
 {
     AVIOContext *dyn_cp;
     mkv_seekhead *seekhead = &mkv->seekhead;
-    ebml_master seekentry;
     int64_t remaining, ret64;
     int i, ret;
 
@@ -463,8 +462,8 @@ static int mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv,
 
     for (i = 0; i < seekhead->num_entries; i++) {
         mkv_seekhead_entry *entry = &seekhead->entries[i];
-
-        seekentry = start_ebml_master(dyn_cp, MATROSKA_ID_SEEKENTRY, MAX_SEEKENTRY_SIZE);
+        ebml_master seekentry = start_ebml_master(dyn_cp, MATROSKA_ID_SEEKENTRY,
+                                                  MAX_SEEKENTRY_SIZE);
 
         put_ebml_id(dyn_cp, MATROSKA_ID_SEEKID);
         put_ebml_num(dyn_cp, ebml_id_size(entry->elementid), 0);
@@ -476,7 +475,7 @@ static int mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv,
     end_ebml_master_crc32(pb, &dyn_cp, mkv);
 
     remaining = seekhead->filepos + seekhead->reserved_size - avio_tell(pb);
-        put_ebml_void(pb, remaining);
+    put_ebml_void(pb, remaining);
 
     if ((ret64 = avio_seek(pb, destpos, SEEK_SET)) < 0)
         return ret64;
