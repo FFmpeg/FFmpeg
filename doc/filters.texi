@@ -11219,6 +11219,25 @@ specified value) or as a difference ratio between 0 and 1. Default is -60dB, or
 Set freeze duration until notification (default is 2 seconds).
 @end table
 
+@section freezeframes
+
+Freeze video frames.
+
+This filter freezes video frames using frame from 2nd input.
+
+The filter accepts the following options:
+
+@table @option
+@item first
+Set number of first frame from which to start freeze.
+
+@item last
+Set number of last frame from which to end freeze.
+
+@item replace
+Set number of frame from 2nd input which will be used instead of replaced frames.
+@end table
+
 @anchor{frei0r}
 @section frei0r
 

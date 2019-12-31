@@ -29,6 +29,7 @@ version <next>:
 - mvha decoder
 - MPEG-H 3D Audio support in mp4
 - thistogram filter
+- freezeframes filter
 
 
 version 4.2:
