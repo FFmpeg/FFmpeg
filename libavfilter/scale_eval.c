@@ -54,46 +54,6 @@ enum var_name {
     VARS_NB
 };
 
-/**
- * This must be kept in sync with var_names so that it is always a
- * complete list of var_names with the scale2ref specific names
- * appended. scale2ref values must appear in the order they appear
- * in the var_name_scale2ref enum but also be below all of the
- * non-scale2ref specific values.
- */
-static const char *const var_names_scale2ref[] = {
-    "in_w",   "iw",
-    "in_h",   "ih",
-    "out_w",  "ow",
-    "out_h",  "oh",
-    "a",
-    "sar",
-    "dar",
-    "hsub",
-    "vsub",
-    "ohsub",
-    "ovsub",
-    "main_w",
-    "main_h",
-    "main_a",
-    "main_sar",
-    "main_dar", "mdar",
-    "main_hsub",
-    "main_vsub",
-    NULL
-};
-
-enum var_name_scale2ref {
-    VAR_S2R_MAIN_W,
-    VAR_S2R_MAIN_H,
-    VAR_S2R_MAIN_A,
-    VAR_S2R_MAIN_SAR,
-    VAR_S2R_MAIN_DAR, VAR_S2R_MDAR,
-    VAR_S2R_MAIN_HSUB,
-    VAR_S2R_MAIN_VSUB,
-    VARS_S2R_NB
-};
-
 int ff_scale_eval_dimensions(void *log_ctx,
     const char *w_expr, const char *h_expr,
     AVFilterLink *inlink, AVFilterLink *outlink,
@@ -104,16 +64,7 @@ int ff_scale_eval_dimensions(void *log_ctx,
     const char *expr;
     int eval_w, eval_h;
     int ret;
-    const char scale2ref = outlink->src->nb_inputs == 2 && outlink->src->inputs[1] == inlink;
-    double var_values[VARS_NB + VARS_S2R_NB], res;
-    const AVPixFmtDescriptor *main_desc;
-    const AVFilterLink *main_link;
-    const char *const *names = scale2ref ? var_names_scale2ref : var_names;
-
-    if (scale2ref) {
-        main_link = outlink->src->inputs[0];
-        main_desc = av_pix_fmt_desc_get(main_link->format);
-    }
+    double var_values[VARS_NB], res;
 
     var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
@@ -128,32 +79,20 @@ int ff_scale_eval_dimensions(void *log_ctx,
     var_values[VAR_OHSUB] = 1 << out_desc->log2_chroma_w;
     var_values[VAR_OVSUB] = 1 << out_desc->log2_chroma_h;
 
-    if (scale2ref) {
-        var_values[VARS_NB + VAR_S2R_MAIN_W] = main_link->w;
-        var_values[VARS_NB + VAR_S2R_MAIN_H] = main_link->h;
-        var_values[VARS_NB + VAR_S2R_MAIN_A] = (double) main_link->w / main_link->h;
-        var_values[VARS_NB + VAR_S2R_MAIN_SAR] = main_link->sample_aspect_ratio.num ?
-            (double) main_link->sample_aspect_ratio.num / main_link->sample_aspect_ratio.den : 1;
-        var_values[VARS_NB + VAR_S2R_MAIN_DAR] = var_values[VARS_NB + VAR_S2R_MDAR] =
-            var_values[VARS_NB + VAR_S2R_MAIN_A] * var_values[VARS_NB + VAR_S2R_MAIN_SAR];
-        var_values[VARS_NB + VAR_S2R_MAIN_HSUB] = 1 << main_desc->log2_chroma_w;
-        var_values[VARS_NB + VAR_S2R_MAIN_VSUB] = 1 << main_desc->log2_chroma_h;
-    }
-
     /* evaluate width and height */
     av_expr_parse_and_eval(&res, (expr = w_expr),
-                           names, var_values,
+                           var_names, var_values,
                            NULL, NULL, NULL, NULL, NULL, 0, log_ctx);
     eval_w = var_values[VAR_OUT_W] = var_values[VAR_OW] = (int) res == 0 ? inlink->w : (int) res;
 
     if ((ret = av_expr_parse_and_eval(&res, (expr = h_expr),
-                                      names, var_values,
+                                      var_names, var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
         goto fail;
     eval_h = var_values[VAR_OUT_H] = var_values[VAR_OH] = (int) res == 0 ? inlink->h : (int) res;
     /* evaluate again the width, as it may depend on the output height */
     if ((ret = av_expr_parse_and_eval(&res, (expr = w_expr),
-                                      names, var_values,
+                                      var_names, var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
         goto fail;
     eval_w = (int) res == 0 ? inlink->w : (int) res;

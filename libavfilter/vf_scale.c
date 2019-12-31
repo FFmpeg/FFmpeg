@@ -32,6 +32,7 @@
 #include "scale_eval.h"
 #include "video.h"
 #include "libavutil/avstring.h"
+#include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -40,6 +41,76 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
+
+static const char *const var_names[] = {
+    "in_w",   "iw",
+    "in_h",   "ih",
+    "out_w",  "ow",
+    "out_h",  "oh",
+    "a",
+    "sar",
+    "dar",
+    "hsub",
+    "vsub",
+    "ohsub",
+    "ovsub",
+    NULL
+};
+
+enum var_name {
+    VAR_IN_W,   VAR_IW,
+    VAR_IN_H,   VAR_IH,
+    VAR_OUT_W,  VAR_OW,
+    VAR_OUT_H,  VAR_OH,
+    VAR_A,
+    VAR_SAR,
+    VAR_DAR,
+    VAR_HSUB,
+    VAR_VSUB,
+    VAR_OHSUB,
+    VAR_OVSUB,
+    VARS_NB
+};
+
+/**
+ * This must be kept in sync with var_names so that it is always a
+ * complete list of var_names with the scale2ref specific names
+ * appended. scale2ref values must appear in the order they appear
+ * in the var_name_scale2ref enum but also be below all of the
+ * non-scale2ref specific values.
+ */
+static const char *const var_names_scale2ref[] = {
+    "in_w",   "iw",
+    "in_h",   "ih",
+    "out_w",  "ow",
+    "out_h",  "oh",
+    "a",
+    "sar",
+    "dar",
+    "hsub",
+    "vsub",
+    "ohsub",
+    "ovsub",
+    "main_w",
+    "main_h",
+    "main_a",
+    "main_sar",
+    "main_dar", "mdar",
+    "main_hsub",
+    "main_vsub",
+    NULL
+};
+
+enum var_name_scale2ref {
+    VAR_S2R_MAIN_W,
+    VAR_S2R_MAIN_H,
+    VAR_S2R_MAIN_A,
+    VAR_S2R_MAIN_SAR,
+    VAR_S2R_MAIN_DAR, VAR_S2R_MDAR,
+    VAR_S2R_MAIN_HSUB,
+    VAR_S2R_MAIN_VSUB,
+    VARS_S2R_NB
+};
 
 enum EvalMode {
     EVAL_MODE_INIT,
@@ -72,6 +143,10 @@ typedef struct ScaleContext {
 
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
+    AVExpr *w_pexpr;
+    AVExpr *h_pexpr;
+    double var_values[VARS_NB + VARS_S2R_NB];
+
     char *flags_str;
 
     char *in_color_matrix;
@@ -95,6 +170,59 @@ typedef struct ScaleContext {
 } ScaleContext;
 
 AVFilter ff_vf_scale2ref;
+
+static int config_props(AVFilterLink *outlink);
+
+static int scale_parse_expr(AVFilterContext *ctx, char *str_expr, AVExpr **pexpr_ptr, const char *var, const char *args)
+{
+    ScaleContext *scale = ctx->priv;
+    int ret, is_inited = 0;
+    char *old_str_expr = NULL;
+    AVExpr *old_pexpr = NULL;
+    const char scale2ref = ctx->filter == &ff_vf_scale2ref;
+    const char *const *names = scale2ref ? var_names_scale2ref : var_names;
+
+    if (str_expr) {
+        old_str_expr = av_strdup(str_expr);
+        if (!old_str_expr)
+            return AVERROR(ENOMEM);
+        av_opt_set(scale, var, args, 0);
+    }
+
+    if (*pexpr_ptr) {
+        old_pexpr = *pexpr_ptr;
+        *pexpr_ptr = NULL;
+        is_inited = 1;
+    }
+
+    ret = av_expr_parse(pexpr_ptr, args, names,
+                        NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Cannot parse expression for %s: '%s'\n", var, args);
+        goto revert;
+    }
+
+    if (is_inited && (ret = config_props(ctx->outputs[0])) < 0)
+        goto revert;
+
+    av_expr_free(old_pexpr);
+    old_pexpr = NULL;
+    av_freep(&old_str_expr);
+
+    return 0;
+
+revert:
+    av_expr_free(*pexpr_ptr);
+    *pexpr_ptr = NULL;
+    if (old_str_expr) {
+        av_opt_set(scale, var, old_str_expr, 0);
+        av_free(old_str_expr);
+    }
+    if (old_pexpr)
+        *pexpr_ptr = old_pexpr;
+
+    return ret;
+}
 
 static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 {
@@ -127,6 +255,14 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
     if (!scale->h_expr)
         av_opt_set(scale, "h", "ih", 0);
 
+    ret = scale_parse_expr(ctx, NULL, &scale->w_pexpr, "width", scale->w_expr);
+    if (ret < 0)
+        return ret;
+
+    ret = scale_parse_expr(ctx, NULL, &scale->h_pexpr, "height", scale->h_expr);
+    if (ret < 0)
+        return ret;
+
     av_log(ctx, AV_LOG_VERBOSE, "w:%s h:%s flags:'%s' interl:%d\n",
            scale->w_expr, scale->h_expr, (char *)av_x_if_null(scale->flags_str, ""), scale->interlaced);
 
@@ -149,6 +285,9 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     ScaleContext *scale = ctx->priv;
+    av_expr_free(scale->w_pexpr);
+    av_expr_free(scale->h_pexpr);
+    scale->w_pexpr = scale->h_pexpr = NULL;
     sws_freeContext(scale->sws);
     sws_freeContext(scale->isws[0]);
     sws_freeContext(scale->isws[1]);
@@ -218,6 +357,81 @@ static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
     return sws_getCoefficients(colorspace);
 }
 
+static int scale_eval_dimensions(AVFilterContext *ctx)
+{
+    ScaleContext *scale = ctx->priv;
+    const char scale2ref = ctx->filter == &ff_vf_scale2ref;
+    const AVFilterLink *inlink = scale2ref ? ctx->inputs[1] : ctx->inputs[0];
+    const AVFilterLink *outlink = ctx->outputs[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
+    char *expr;
+    int eval_w, eval_h;
+    int ret;
+    double res;
+    const AVPixFmtDescriptor *main_desc;
+    const AVFilterLink *main_link;
+
+    if (scale2ref) {
+        main_link = ctx->inputs[0];
+        main_desc = av_pix_fmt_desc_get(main_link->format);
+    }
+
+    scale->var_values[VAR_IN_W]  = scale->var_values[VAR_IW] = inlink->w;
+    scale->var_values[VAR_IN_H]  = scale->var_values[VAR_IH] = inlink->h;
+    scale->var_values[VAR_OUT_W] = scale->var_values[VAR_OW] = NAN;
+    scale->var_values[VAR_OUT_H] = scale->var_values[VAR_OH] = NAN;
+    scale->var_values[VAR_A]     = (double) inlink->w / inlink->h;
+    scale->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
+        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+    scale->var_values[VAR_DAR]   = scale->var_values[VAR_A] * scale->var_values[VAR_SAR];
+    scale->var_values[VAR_HSUB]  = 1 << desc->log2_chroma_w;
+    scale->var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
+    scale->var_values[VAR_OHSUB] = 1 << out_desc->log2_chroma_w;
+    scale->var_values[VAR_OVSUB] = 1 << out_desc->log2_chroma_h;
+
+    if (scale2ref) {
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_W] = main_link->w;
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_H] = main_link->h;
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_A] = (double) main_link->w / main_link->h;
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_SAR] = main_link->sample_aspect_ratio.num ?
+            (double) main_link->sample_aspect_ratio.num / main_link->sample_aspect_ratio.den : 1;
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_DAR] = scale->var_values[VARS_NB + VAR_S2R_MDAR] =
+            scale->var_values[VARS_NB + VAR_S2R_MAIN_A] * scale->var_values[VARS_NB + VAR_S2R_MAIN_SAR];
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_HSUB] = 1 << main_desc->log2_chroma_w;
+        scale->var_values[VARS_NB + VAR_S2R_MAIN_VSUB] = 1 << main_desc->log2_chroma_h;
+    }
+
+    res = av_expr_eval(scale->w_pexpr, scale->var_values, NULL);
+    eval_w = scale->var_values[VAR_OUT_W] = scale->var_values[VAR_OW] = (int) res == 0 ? inlink->w : (int) res;
+
+    res = av_expr_eval(scale->h_pexpr, scale->var_values, NULL);
+    if (isnan(res)) {
+        expr = scale->h_expr;
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+    eval_h = scale->var_values[VAR_OUT_H] = scale->var_values[VAR_OH] = (int) res == 0 ? inlink->h : (int) res;
+
+    res = av_expr_eval(scale->w_pexpr, scale->var_values, NULL);
+    if (isnan(res)) {
+        expr = scale->w_expr;
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+    eval_w = scale->var_values[VAR_OUT_W] = scale->var_values[VAR_OW] = (int) res == 0 ? inlink->w : (int) res;
+
+    scale->w = eval_w;
+    scale->h = eval_h;
+
+    return 0;
+
+fail:
+    av_log(ctx, AV_LOG_ERROR,
+           "Error when evaluating the expression '%s'.\n", expr);
+    return ret;
+}
+
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -228,26 +442,23 @@ static int config_props(AVFilterLink *outlink)
     enum AVPixelFormat outfmt = outlink->format;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     ScaleContext *scale = ctx->priv;
-    int w, h;
     int ret;
 
-    if ((ret = ff_scale_eval_dimensions(ctx,
-                                        scale->w_expr, scale->h_expr,
-                                        inlink, outlink,
-                                        &w, &h)) < 0)
+    if ((ret = scale_eval_dimensions(ctx)) < 0)
         goto fail;
 
-    ff_scale_adjust_dimensions(inlink, &w, &h,
+    ff_scale_adjust_dimensions(inlink, &scale->w, &scale->h,
                                scale->force_original_aspect_ratio,
                                scale->force_divisible_by);
 
-    if (w > INT_MAX || h > INT_MAX ||
-        (h * inlink->w) > INT_MAX  ||
-        (w * inlink->h) > INT_MAX)
+    if (scale->w > INT_MAX ||
+        scale->h > INT_MAX ||
+        (scale->h * inlink->w) > INT_MAX ||
+        (scale->w * inlink->h) > INT_MAX)
         av_log(ctx, AV_LOG_ERROR, "Rescaled value for width or height is too big.\n");
 
-    outlink->w = w;
-    outlink->h = h;
+    outlink->w = scale->w;
+    outlink->h = scale->h;
 
     /* TODO: make algorithm configurable */
 
@@ -421,6 +632,14 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
             av_opt_set(scale, "w", buf, 0);
             snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
             av_opt_set(scale, "h", buf, 0);
+
+            ret = scale_parse_expr(ctx, NULL, &scale->w_pexpr, "width", scale->w_expr);
+            if (ret < 0)
+                return ret;
+
+            ret = scale_parse_expr(ctx, NULL, &scale->h_pexpr, "height", scale->h_expr);
+            if (ret < 0)
+                return ret;
         }
 
         link->dst->inputs[0]->format = in->format;
@@ -566,22 +785,23 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     ScaleContext *scale = ctx->priv;
-    int ret;
+    char *str_expr;
+    AVExpr **pexpr_ptr;
+    int ret, w, h;
 
-    if (   !strcmp(cmd, "width")  || !strcmp(cmd, "w")
-        || !strcmp(cmd, "height") || !strcmp(cmd, "h")) {
+    w = !strcmp(cmd, "width")  || !strcmp(cmd, "w");
+    h = !strcmp(cmd, "height")  || !strcmp(cmd, "h");
 
-        int old_w = scale->w;
-        int old_h = scale->h;
-        AVFilterLink *outlink = ctx->outputs[0];
+    if (w || h) {
+        str_expr = w ? scale->w_expr : scale->h_expr;
+        pexpr_ptr = w ? &scale->w_pexpr : &scale->h_pexpr;
 
-        av_opt_set(scale, cmd, args, 0);
-        if ((ret = config_props(outlink)) < 0) {
-            scale->w = old_w;
-            scale->h = old_h;
-        }
+        ret = scale_parse_expr(ctx, str_expr, pexpr_ptr, cmd, args);
     } else
         ret = AVERROR(ENOSYS);
+
+    if (ret < 0)
+        av_log(ctx, AV_LOG_ERROR, "Failed to process command. Continuing with existing parameters.\n");
 
     return ret;
 }
