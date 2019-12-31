@@ -54,6 +54,13 @@ static const char *const var_names[] = {
     "vsub",
     "ohsub",
     "ovsub",
+    "main_w",
+    "main_h",
+    "main_a",
+    "main_sar",
+    "main_dar", "mdar",
+    "main_hsub",
+    "main_vsub",
     NULL
 };
 
@@ -69,39 +76,6 @@ enum var_name {
     VAR_VSUB,
     VAR_OHSUB,
     VAR_OVSUB,
-    VARS_NB
-};
-
-/**
- * This must be kept in sync with var_names so that it is always a
- * complete list of var_names with the scale2ref specific names
- * appended. scale2ref values must appear in the order they appear
- * in the var_name_scale2ref enum but also be below all of the
- * non-scale2ref specific values.
- */
-static const char *const var_names_scale2ref[] = {
-    "in_w",   "iw",
-    "in_h",   "ih",
-    "out_w",  "ow",
-    "out_h",  "oh",
-    "a",
-    "sar",
-    "dar",
-    "hsub",
-    "vsub",
-    "ohsub",
-    "ovsub",
-    "main_w",
-    "main_h",
-    "main_a",
-    "main_sar",
-    "main_dar", "mdar",
-    "main_hsub",
-    "main_vsub",
-    NULL
-};
-
-enum var_name_scale2ref {
     VAR_S2R_MAIN_W,
     VAR_S2R_MAIN_H,
     VAR_S2R_MAIN_A,
@@ -109,7 +83,7 @@ enum var_name_scale2ref {
     VAR_S2R_MAIN_DAR, VAR_S2R_MDAR,
     VAR_S2R_MAIN_HSUB,
     VAR_S2R_MAIN_VSUB,
-    VARS_S2R_NB
+    VARS_NB
 };
 
 enum EvalMode {
@@ -145,7 +119,7 @@ typedef struct ScaleContext {
     char *h_expr;               ///< height expression string
     AVExpr *w_pexpr;
     AVExpr *h_pexpr;
-    double var_values[VARS_NB + VARS_S2R_NB];
+    double var_values[VARS_NB];
 
     char *flags_str;
 
@@ -173,14 +147,57 @@ AVFilter ff_vf_scale2ref;
 
 static int config_props(AVFilterLink *outlink);
 
+static int check_exprs(AVFilterContext *ctx)
+{
+    ScaleContext *scale = ctx->priv;
+    unsigned vars_w[VARS_NB] = { 0 }, vars_h[VARS_NB] = { 0 };
+
+    if (!scale->w_pexpr && !scale->h_pexpr)
+        return AVERROR(EINVAL);
+
+    if (scale->w_pexpr)
+        av_expr_count_vars(scale->w_pexpr, vars_w, VARS_NB);
+    if (scale->h_pexpr)
+        av_expr_count_vars(scale->h_pexpr, vars_h, VARS_NB);
+
+    if (vars_w[VAR_OUT_W] || vars_w[VAR_OW]) {
+        av_log(ctx, AV_LOG_ERROR, "Width expression cannot be self-referencing: '%s'.\n", scale->w_expr);
+        return AVERROR(EINVAL);
+    }
+
+    if (vars_h[VAR_OUT_H] || vars_h[VAR_OH]) {
+        av_log(ctx, AV_LOG_ERROR, "Height expression cannot be self-referencing: '%s'.\n", scale->h_expr);
+        return AVERROR(EINVAL);
+    }
+
+    if ((vars_w[VAR_OUT_H] || vars_w[VAR_OH]) &&
+        (vars_h[VAR_OUT_W] || vars_h[VAR_OW])) {
+        av_log(ctx, AV_LOG_ERROR, "Circular expressions invalid for width '%s' and height '%s'.\n", scale->w_expr, scale->h_expr);
+        return AVERROR(EINVAL);
+    }
+
+    if (ctx->filter != &ff_vf_scale2ref &&
+        (vars_w[VAR_S2R_MAIN_W]    || vars_h[VAR_S2R_MAIN_W]    ||
+         vars_w[VAR_S2R_MAIN_H]    || vars_h[VAR_S2R_MAIN_H]    ||
+         vars_w[VAR_S2R_MAIN_A]    || vars_h[VAR_S2R_MAIN_A]    ||
+         vars_w[VAR_S2R_MAIN_SAR]  || vars_h[VAR_S2R_MAIN_SAR]  ||
+         vars_w[VAR_S2R_MAIN_DAR]  || vars_h[VAR_S2R_MAIN_DAR]  ||
+         vars_w[VAR_S2R_MDAR]      || vars_h[VAR_S2R_MDAR]      ||
+         vars_w[VAR_S2R_MAIN_HSUB] || vars_h[VAR_S2R_MAIN_HSUB] ||
+         vars_w[VAR_S2R_MAIN_VSUB] || vars_h[VAR_S2R_MAIN_VSUB]) ) {
+        av_log(ctx, AV_LOG_ERROR, "Expressions with scale2ref variables are not valid in scale filter.\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static int scale_parse_expr(AVFilterContext *ctx, char *str_expr, AVExpr **pexpr_ptr, const char *var, const char *args)
 {
     ScaleContext *scale = ctx->priv;
     int ret, is_inited = 0;
     char *old_str_expr = NULL;
     AVExpr *old_pexpr = NULL;
-    const char scale2ref = ctx->filter == &ff_vf_scale2ref;
-    const char *const *names = scale2ref ? var_names_scale2ref : var_names;
 
     if (str_expr) {
         old_str_expr = av_strdup(str_expr);
@@ -195,12 +212,16 @@ static int scale_parse_expr(AVFilterContext *ctx, char *str_expr, AVExpr **pexpr
         is_inited = 1;
     }
 
-    ret = av_expr_parse(pexpr_ptr, args, names,
+    ret = av_expr_parse(pexpr_ptr, args, var_names,
                         NULL, NULL, NULL, NULL, 0, ctx);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Cannot parse expression for %s: '%s'\n", var, args);
         goto revert;
     }
+
+    ret = check_exprs(ctx);
+    if (ret < 0)
+        goto revert;
 
     if (is_inited && (ret = config_props(ctx->outputs[0])) < 0)
         goto revert;
@@ -391,15 +412,15 @@ static int scale_eval_dimensions(AVFilterContext *ctx)
     scale->var_values[VAR_OVSUB] = 1 << out_desc->log2_chroma_h;
 
     if (scale2ref) {
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_W] = main_link->w;
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_H] = main_link->h;
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_A] = (double) main_link->w / main_link->h;
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_SAR] = main_link->sample_aspect_ratio.num ?
+        scale->var_values[VAR_S2R_MAIN_W] = main_link->w;
+        scale->var_values[VAR_S2R_MAIN_H] = main_link->h;
+        scale->var_values[VAR_S2R_MAIN_A] = (double) main_link->w / main_link->h;
+        scale->var_values[VAR_S2R_MAIN_SAR] = main_link->sample_aspect_ratio.num ?
             (double) main_link->sample_aspect_ratio.num / main_link->sample_aspect_ratio.den : 1;
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_DAR] = scale->var_values[VARS_NB + VAR_S2R_MDAR] =
-            scale->var_values[VARS_NB + VAR_S2R_MAIN_A] * scale->var_values[VARS_NB + VAR_S2R_MAIN_SAR];
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_HSUB] = 1 << main_desc->log2_chroma_w;
-        scale->var_values[VARS_NB + VAR_S2R_MAIN_VSUB] = 1 << main_desc->log2_chroma_h;
+        scale->var_values[VAR_S2R_MAIN_DAR] = scale->var_values[VAR_S2R_MDAR] =
+            scale->var_values[VAR_S2R_MAIN_A] * scale->var_values[VAR_S2R_MAIN_SAR];
+        scale->var_values[VAR_S2R_MAIN_HSUB] = 1 << main_desc->log2_chroma_w;
+        scale->var_values[VAR_S2R_MAIN_VSUB] = 1 << main_desc->log2_chroma_h;
     }
 
     res = av_expr_eval(scale->w_pexpr, scale->var_values, NULL);
