@@ -1559,7 +1559,9 @@ static int mkv_write_tag_targets(AVFormatContext *s, uint32_t elementid,
         ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_TAGS, avio_tell(s->pb));
         if (ret < 0) return ret;
 
-        start_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS);
+        ret = start_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS);
+        if (ret < 0)
+            return ret;
     }
     pb = mkv->tags_bc;
 
@@ -1655,7 +1657,10 @@ static int mkv_write_tags(AVFormatContext *s)
             if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
                 continue;
 
-            mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &tag_target);
+            ret = mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID,
+                                        i + 1, &tag_target);
+            if (ret < 0)
+                return ret;
             pb = mkv->tags_bc;
 
             tag = start_ebml_master(pb, MATROSKA_ID_SIMPLETAG, 0);
