@@ -944,7 +944,6 @@ static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStre
 static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
                                       AVStream *st)
 {
-    AVIOContext b;
     ebml_master projection;
     int side_data_size = 0;
     uint8_t private[20];
@@ -974,26 +973,24 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
                       MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
         break;
     case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
-        ffio_init_context(&b, private, 20, 1, NULL, NULL, NULL, NULL);
         put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
                       MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
-        avio_wb32(&b, 0); // version + flags
-        avio_wb32(&b, spherical->bound_top);
-        avio_wb32(&b, spherical->bound_bottom);
-        avio_wb32(&b, spherical->bound_left);
-        avio_wb32(&b, spherical->bound_right);
+        AV_WB32(private,      0); // version + flags
+        AV_WB32(private +  4, spherical->bound_top);
+        AV_WB32(private +  8, spherical->bound_bottom);
+        AV_WB32(private + 12, spherical->bound_left);
+        AV_WB32(private + 16, spherical->bound_right);
         put_ebml_binary(pb, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
-                        private, avio_tell(&b));
+                        private, 20);
         break;
     case AV_SPHERICAL_CUBEMAP:
-        ffio_init_context(&b, private, 12, 1, NULL, NULL, NULL, NULL);
         put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
                       MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP);
-        avio_wb32(&b, 0); // version + flags
-        avio_wb32(&b, 0); // layout
-        avio_wb32(&b, spherical->padding);
+        AV_WB32(private,     0); // version + flags
+        AV_WB32(private + 4, 0); // layout
+        AV_WB32(private + 8, spherical->padding);
         put_ebml_binary(pb, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
-                        private, avio_tell(&b));
+                        private, 12);
         break;
     default:
         av_assert0(0);
