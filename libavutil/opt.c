@@ -452,8 +452,10 @@ static int set_string_dict(void *obj, const AVOption *o, const char *val, uint8_
 
     if (val) {
         int ret = av_dict_parse_string(&options, val, "=", ":", 0);
-        if (ret < 0)
+        if (ret < 0) {
+            av_dict_free(&options);
             return ret;
+        }
     }
 
     av_dict_free((AVDictionary **)dst);
@@ -2006,8 +2008,10 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         AVDictionaryEntry *en1 = NULL;
         AVDictionaryEntry *en2 = NULL;
         ret = av_dict_parse_string(&dict1, o->default_val.str, "=", ":", 0);
-        if (ret < 0)
+        if (ret < 0) {
+            av_dict_free(&dict1);
             return ret;
+        }
         do {
             en1 = av_dict_get(dict1, "", en1, AV_DICT_IGNORE_SUFFIX);
             en2 = av_dict_get(dict2, "", en2, AV_DICT_IGNORE_SUFFIX);
