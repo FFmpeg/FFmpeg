@@ -945,10 +945,8 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
                                       AVStream *st)
 {
     AVIOContext b;
-    AVIOContext *dyn_cp;
+    ebml_master projection;
     int side_data_size = 0;
-    int ret, projection_size;
-    uint8_t *projection_ptr;
     uint8_t private[20];
 
     const AVSphericalMapping *spherical =
@@ -958,62 +956,60 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
     if (!side_data_size)
         return 0;
 
-    ret = avio_open_dyn_buf(&dyn_cp);
-    if (ret < 0)
-        return ret;
+    if (spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR      &&
+        spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR_TILE &&
+        spherical->projection != AV_SPHERICAL_CUBEMAP) {
+        av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
+        return 0;
+    }
+
+    // Maximally 4 8-byte elements with id-length 2 + 1 byte length field
+    // and the private data of the AV_SPHERICAL_EQUIRECTANGULAR_TILE case
+    projection = start_ebml_master(pb, MATROSKA_ID_VIDEOPROJECTION,
+                                   4 * (2 + 1 + 8) + (2 + 1 + 20));
 
     switch (spherical->projection) {
     case AV_SPHERICAL_EQUIRECTANGULAR:
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
                       MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
         break;
     case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
         ffio_init_context(&b, private, 20, 1, NULL, NULL, NULL, NULL);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
                       MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
         avio_wb32(&b, 0); // version + flags
         avio_wb32(&b, spherical->bound_top);
         avio_wb32(&b, spherical->bound_bottom);
         avio_wb32(&b, spherical->bound_left);
         avio_wb32(&b, spherical->bound_right);
-        put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
+        put_ebml_binary(pb, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
                         private, avio_tell(&b));
         break;
     case AV_SPHERICAL_CUBEMAP:
         ffio_init_context(&b, private, 12, 1, NULL, NULL, NULL, NULL);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
                       MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP);
         avio_wb32(&b, 0); // version + flags
         avio_wb32(&b, 0); // layout
         avio_wb32(&b, spherical->padding);
-        put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
+        put_ebml_binary(pb, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
                         private, avio_tell(&b));
         break;
     default:
-        av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
-        goto end;
+        av_assert0(0);
     }
 
     if (spherical->yaw)
-        put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,
+        put_ebml_float(pb, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,
                        (double) spherical->yaw   / (1 << 16));
     if (spherical->pitch)
-        put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH,
+        put_ebml_float(pb, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH,
                        (double) spherical->pitch / (1 << 16));
     if (spherical->roll)
-        put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,
+        put_ebml_float(pb, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,
                        (double) spherical->roll  / (1 << 16));
 
-end:
-    projection_size = avio_close_dyn_buf(dyn_cp, &projection_ptr);
-    if (projection_size) {
-        ebml_master projection = start_ebml_master(pb,
-                                                   MATROSKA_ID_VIDEOPROJECTION,
-                                                   projection_size);
-        avio_write(pb, projection_ptr, projection_size);
-        end_ebml_master(pb, projection);
-    }
-    av_freep(&projection_ptr);
+    end_ebml_master(pb, projection);
 
     return 0;
 }
