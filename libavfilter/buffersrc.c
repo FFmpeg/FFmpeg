@@ -240,10 +240,8 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
     }
 
     ret = ff_filter_frame(ctx->outputs[0], copy);
-    if (ret < 0) {
-        av_frame_free(&copy);
+    if (ret < 0)
         return ret;
-    }
 
     if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
         ret = push_frame(ctx->graph);
