@@ -517,8 +517,8 @@ static int bsf_parse_single(const char *str, AVBSFList *bsf_lst)
 
     ret = av_bsf_list_append2(bsf_lst, bsf_name, &bsf_options);
 
-    av_dict_free(&bsf_options);
 end:
+    av_dict_free(&bsf_options);
     av_free(buf);
     return ret;
 }
