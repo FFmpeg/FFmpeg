@@ -110,8 +110,8 @@ static av_cold int init(AVFilterContext *ctx)
     DynamicAudioNormalizerContext *s = ctx->priv;
 
     if (!(s->filter_size & 1)) {
-        av_log(ctx, AV_LOG_ERROR, "filter size %d is invalid. Must be an odd value.\n", s->filter_size);
-        return AVERROR(EINVAL);
+        av_log(ctx, AV_LOG_WARNING, "filter size %d is invalid. Changing to an odd value.\n", s->filter_size);
+        s->filter_size |= 1;
     }
 
     return 0;
