@@ -110,8 +110,8 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
                            entry->key, entry->value);
                 }
             }
-            av_dict_free(&dict);
         }
+        av_dict_free(&dict);
     }
 
     ctx->encoder = enc = api->encoder_open(cfg);
