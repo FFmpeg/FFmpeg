@@ -218,7 +218,7 @@ static int ebml_num_size(uint64_t num)
  * Write a number in EBML variable length format.
  *
  * @param bytes The number of bytes that need to be used to write the number.
- *              If zero, any number of bytes can be used.
+ *              If zero, the minimal number of bytes will be used.
  */
 static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
 {
@@ -228,10 +228,9 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
     av_assert0(num < (1ULL << 56) - 1);
 
     if (bytes == 0)
-        // don't care how many bytes are used, so use the min
         bytes = needed_bytes;
-    // the bytes needed to write the given size would exceed the bytes
-    // that we need to use, so write unknown size. This shouldn't happen.
+    // The bytes needed to write the given size must not exceed
+    // the bytes that we ought to use.
     av_assert0(bytes >= needed_bytes);
 
     num |= 1ULL << bytes * 7;
