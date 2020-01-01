@@ -456,6 +456,17 @@ nanosecond precision.
 @item video_size
 Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.
+@item export_path_metadata
+If set to 1, will add two extra fields to the metadata found in input, making them
+also available for other filters (see @var{drawtext} filter for examples). Default
+value is 0. The extra fields are described below:
+@table @option
+@item lavf.image2dec.source_path
+Corresponds to the full path to the input file being read.
+@item lavf.image2dec.source_basename
+Corresponds to the name of the file being read.
+@end table
+
 @end table
 
 @subsection Examples

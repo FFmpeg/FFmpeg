@@ -374,6 +374,33 @@ int ff_img_read_header(AVFormatContext *s1)
     return 0;
 }
 
+/**
+ * Add this frame's source path and basename to packet's sidedata
+ * as a dictionary, so it can be used by filters like 'drawtext'.
+ */
+static int add_filename_as_pkt_side_data(char *filename, AVPacket *pkt) {
+    uint8_t* metadata;
+    int metadata_len;
+    AVDictionary *d = NULL;
+    char *packed_metadata = NULL;
+
+    av_dict_set(&d, "lavf.image2dec.source_path", filename, 0);
+    av_dict_set(&d, "lavf.image2dec.source_basename", av_basename(filename), 0);
+
+    packed_metadata = av_packet_pack_dictionary(d, &metadata_len);
+    av_dict_free(&d);
+    if (!packed_metadata)
+        return AVERROR(ENOMEM);
+    if (!(metadata = av_packet_new_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, metadata_len))) {
+        av_freep(&packed_metadata);
+        return AVERROR(ENOMEM);
+    }
+    memcpy(metadata, packed_metadata, metadata_len);
+    av_freep(&packed_metadata);
+
+    return 0;
+}
+
 int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoDemuxData *s = s1->priv_data;
@@ -486,6 +513,17 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     if (s->is_pipe)
         pkt->pos = avio_tell(f[0]);
 
+    /*
+     * export_path_metadata must be explicitly enabled via
+     * command line options for path metadata to be exported
+     * as packet side_data.
+     */
+    if (!s->is_pipe && s->export_path_metadata == 1) {
+        res = add_filename_as_pkt_side_data(filename, pkt);
+        if (res < 0)
+            goto fail;
+    }
+
     pkt->size = 0;
     for (i = 0; i < 3; i++) {
         if (f[i]) {
@@ -585,6 +623,7 @@ const AVOption ff_img_options[] = {
     { "none", "none",                   0, AV_OPT_TYPE_CONST,    {.i64 = 0   }, 0, 2,       DEC, "ts_type" },
     { "sec",  "second precision",       0, AV_OPT_TYPE_CONST,    {.i64 = 1   }, 0, 2,       DEC, "ts_type" },
     { "ns",   "nano second precision",  0, AV_OPT_TYPE_CONST,    {.i64 = 2   }, 0, 2,       DEC, "ts_type" },
+    { "export_path_metadata", "enable metadata containing input path information", OFFSET(export_path_metadata), AV_OPT_TYPE_BOOL,   {.i64 = 0   }, 0, 1,       DEC }, \
     COMMON_OPTIONS
 };
 

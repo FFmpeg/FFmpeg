@@ -9932,6 +9932,15 @@ drawtext=fontfile=FreeSans.ttf:text=DOG:fontsize=24:x=10:y=20+24-max_glyph_a,
 drawtext=fontfile=FreeSans.ttf:text=cow:fontsize=24:x=80:y=20+24-max_glyph_a
 @end example
 
+@item
+Plot special @var{lavf.image2dec.source_basename} metadata onto each frame if
+such metadata exists. Otherwise, plot the string "NA". Note that image2 demuxer
+must have option @option{-export_path_metadata 1} for the special metadata fields
+to be available for filters.
+@example
+drawtext="fontsize=20:fontcolor=white:fontfile=FreeSans.ttf:text='%@{metadata\:lavf.image2dec.source_basename\:NA@}':x=10:y=10"
+@end example
+
 @end itemize
 
 For more information about libfreetype, check:
