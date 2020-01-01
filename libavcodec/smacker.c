@@ -398,6 +398,8 @@ static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *la
     int v;
 
     while(*table & SMK_NODE) {
+        if (get_bits_left(gb) < 1)
+            return AVERROR_INVALIDDATA;
         if(get_bits1(gb))
             table += (*table) & (~SMK_NODE);
         table++;
@@ -462,6 +464,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         uint16_t pix;
 
         type = smk_get_code(&gb, smk->type_tbl, smk->type_last);
+        if (type < 0)
+            return type;
         run = block_runs[(type >> 2) & 0x3F];
         switch(type & 3){
         case SMK_BLK_MONO:
