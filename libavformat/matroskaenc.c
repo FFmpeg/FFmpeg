@@ -2163,9 +2163,9 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         av_free(data);
 
     if (blockid == MATROSKA_ID_BLOCK && !keyframe) {
-        put_ebml_sint(pb, MATROSKA_ID_BLOCKREFERENCE, track->last_timestamp);
+        put_ebml_sint(pb, MATROSKA_ID_BLOCKREFERENCE, track->last_timestamp - ts);
     }
-    track->last_timestamp = ts - mkv->cluster_pts;
+    track->last_timestamp = ts;
 
     if (discard_padding) {
         put_ebml_sint(pb, MATROSKA_ID_DISCARDPADDING, discard_padding);
