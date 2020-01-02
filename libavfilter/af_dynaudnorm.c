@@ -686,10 +686,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         ret = ff_filter_frame(outlink, out);
     }
 
-    av_frame_make_writable(in);
-    cqueue_enqueue(s->is_enabled, !ctx->is_disabled);
-    analyze_frame(s, in);
-    ff_bufqueue_add(ctx, &s->queue, in);
+    if (!s->eof) {
+        av_frame_make_writable(in);
+        cqueue_enqueue(s->is_enabled, !ctx->is_disabled);
+        analyze_frame(s, in);
+        ff_bufqueue_add(ctx, &s->queue, in);
+    } else {
+        av_frame_free(&in);
+    }
 
     return ret;
 }
