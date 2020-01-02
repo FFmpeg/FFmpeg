@@ -3367,10 +3367,6 @@ static int init_output_stream_encode(OutputStream *ost)
             av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
                                        "Please consider specifying a lower framerate, a different muxer or -vsync 2\n");
         }
-        for (j = 0; j < ost->forced_kf_count; j++)
-            ost->forced_kf_pts[j] = av_rescale_q(ost->forced_kf_pts[j],
-                                                 AV_TIME_BASE_Q,
-                                                 enc_ctx->time_base);
 
         enc_ctx->width  = av_buffersink_get_w(ost->filter->filter);
         enc_ctx->height = av_buffersink_get_h(ost->filter->filter);
