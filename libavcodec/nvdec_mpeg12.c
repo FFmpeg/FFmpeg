@@ -50,6 +50,10 @@ static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer
         .FrameHeightInMbs  = (cur_frame->height + 15) / 16,
         .CurrPicIdx        = cf->idx,
 
+        .field_pic_flag    = s->picture_structure != PICT_FRAME,
+        .bottom_field_flag = s->picture_structure == PICT_BOTTOM_FIELD,
+        .second_field      = s->picture_structure != PICT_FRAME && !s->first_field,
+
         .intra_pic_flag    = s->pict_type == AV_PICTURE_TYPE_I,
         .ref_pic_flag      = s->pict_type == AV_PICTURE_TYPE_I ||
                              s->pict_type == AV_PICTURE_TYPE_P,
