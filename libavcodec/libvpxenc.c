@@ -1041,8 +1041,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
                 if (size < 0)
                     return size;
             } else {
-                struct FrameListData *cx_frame =
-                    av_malloc(sizeof(struct FrameListData));
+                struct FrameListData *cx_frame = av_malloc(sizeof(*cx_frame));
 
                 if (!cx_frame) {
                     av_log(avctx, AV_LOG_ERROR,
