@@ -332,13 +332,17 @@ static int extract_header(AVCodecContext *const avctx,
             int i, count = FFMIN(palette_size / 3, 1 << s->ham);
             int ham_count;
             const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
+            int extra_space = 1;
+
+            if (avctx->codec_tag == MKTAG('P', 'B', 'M', ' ') && s->ham == 4)
+                extra_space = 4;
 
             s->ham_buf = av_malloc((s->planesize * 8) + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!s->ham_buf)
                 return AVERROR(ENOMEM);
 
             ham_count = 8 * (1 << s->ham);
-            s->ham_palbuf = av_malloc((ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
+            s->ham_palbuf = av_malloc(extra_space * (ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!s->ham_palbuf) {
                 av_freep(&s->ham_buf);
                 return AVERROR(ENOMEM);
