@@ -1266,7 +1266,8 @@ static void do_video_out(OutputFile *of,
             ost->forced_keyframes_expr_const_values[FKF_N] += 1;
         } else if (   ost->forced_keyframes
                    && !strncmp(ost->forced_keyframes, "source", 6)
-                   && in_picture->key_frame==1) {
+                   && in_picture->key_frame==1
+                   && !i) {
             forced_keyframe = 1;
         }
 
