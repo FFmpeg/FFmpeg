@@ -154,7 +154,7 @@ static int parse_lfe_24(DCALbrDecoder *s)
     step_i = get_bits(&s->gb, 8);
     if (step_i > step_max) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid LFE step size index\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     step = ff_dca_lfe_step_size_24[step_i];
@@ -208,7 +208,7 @@ static int parse_lfe_16(DCALbrDecoder *s)
     step_i = get_bits(&s->gb, 8);
     if (step_i > step_max) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid LFE step size index\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     step = ff_dca_lfe_step_size_16[step_i];
@@ -246,14 +246,17 @@ static int parse_lfe_16(DCALbrDecoder *s)
 
 static int parse_lfe_chunk(DCALbrDecoder *s, LBRChunk *chunk)
 {
+    int ret;
+
     if (!(s->flags & LBR_FLAG_LFE_PRESENT))
         return 0;
 
     if (!chunk->len)
         return 0;
 
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
+    ret = init_get_bits8(&s->gb, chunk->data, chunk->len);
+    if (ret < 0)
+        return ret;
 
     // Determine bit depth from chunk size
     if (chunk->len >= 52)
@@ -262,7 +265,7 @@ static int parse_lfe_chunk(DCALbrDecoder *s, LBRChunk *chunk)
         return parse_lfe_16(s);
 
     av_log(s->avctx, AV_LOG_ERROR, "LFE chunk too short\n");
-    return -1;
+    return AVERROR_INVALIDDATA;
 }
 
 static inline int parse_vlc(GetBitContext *s, VLC *vlc, int max_depth)
@@ -291,13 +294,13 @@ static int parse_tonal(DCALbrDecoder *s, int group)
         for (freq = 1;; freq++) {
             if (get_bits_left(&s->gb) < 1) {
                 av_log(s->avctx, AV_LOG_ERROR, "Tonal group chunk too short\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             diff = parse_vlc(&s->gb, &ff_dca_vlc_tnl_grp[group], 2);
             if (diff >= FF_ARRAY_ELEMS(ff_dca_fst_amp)) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid tonal frequency diff\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             diff = get_bitsz(&s->gb, diff >> 2) + ff_dca_fst_amp[diff];
@@ -307,7 +310,7 @@ static int parse_tonal(DCALbrDecoder *s, int group)
             freq += diff - 2;
             if (freq >> (5 - group) > s->nsubbands * 4 - 6) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid spectral line offset\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             // Main channel
@@ -358,19 +361,21 @@ static int parse_tonal(DCALbrDecoder *s, int group)
 
 static int parse_tonal_chunk(DCALbrDecoder *s, LBRChunk *chunk)
 {
-    int sb, group;
+    int sb, group, ret;
 
     if (!chunk->len)
         return 0;
 
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
+    ret = init_get_bits8(&s->gb, chunk->data, chunk->len);
+
+    if (ret < 0)
+        return ret;
 
     // Scale factors
     if (chunk->id == LBR_CHUNK_SCF || chunk->id == LBR_CHUNK_TONAL_SCF) {
         if (get_bits_left(&s->gb) < 36) {
             av_log(s->avctx, AV_LOG_ERROR, "Tonal scale factor chunk too short\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         for (sb = 0; sb < 6; sb++)
             s->tonal_scf[sb] = get_bits(&s->gb, 6);
@@ -378,20 +383,25 @@ static int parse_tonal_chunk(DCALbrDecoder *s, LBRChunk *chunk)
 
     // Tonal groups
     if (chunk->id == LBR_CHUNK_TONAL || chunk->id == LBR_CHUNK_TONAL_SCF)
-        for (group = 0; group < 5; group++)
-            if (parse_tonal(s, group) < 0)
-                return -1;
+        for (group = 0; group < 5; group++) {
+            ret = parse_tonal(s, group);
+            if (ret < 0)
+                return ret;
+        }
 
     return 0;
 }
 
 static int parse_tonal_group(DCALbrDecoder *s, LBRChunk *chunk)
 {
+    int ret;
+
     if (!chunk->len)
         return 0;
 
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
+    ret = init_get_bits8(&s->gb, chunk->data, chunk->len);
+    if (ret < 0)
+        return ret;
 
     return parse_tonal(s, chunk->id);
 }
@@ -404,7 +414,7 @@ static int ensure_bits(GetBitContext *s, int n)
 {
     int left = get_bits_left(s);
     if (left < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (left < n) {
         skip_bits_long(s, left);
         return 1;
@@ -433,7 +443,7 @@ static int parse_scale_factors(DCALbrDecoder *s, uint8_t *scf)
         dist = parse_vlc(&s->gb, &ff_dca_vlc_rsd_apprx, 1) + 1;
         if (dist > 7 - sf) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid scale factor distance\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (ensure_bits(&s->gb, 20))
@@ -498,22 +508,26 @@ static int parse_st_code(GetBitContext *s, int min_v)
 
 static int parse_grid_1_chunk(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch2)
 {
-    int ch, sb, sf, nsubbands;
+    int ch, sb, sf, nsubbands, ret;
 
     if (!chunk->len)
         return 0;
 
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
+    ret = init_get_bits8(&s->gb, chunk->data, chunk->len);
+    if (ret < 0)
+        return ret;
 
     // Scale factors
     nsubbands = ff_dca_scf_to_grid_1[s->nsubbands - 1] + 1;
     for (sb = 2; sb < nsubbands; sb++) {
-        if (parse_scale_factors(s, s->grid_1_scf[ch1][sb]) < 0)
-            return -1;
-        if (ch1 != ch2 && ff_dca_grid_1_to_scf[sb] < s->min_mono_subband
-            && parse_scale_factors(s, s->grid_1_scf[ch2][sb]) < 0)
-            return -1;
+        ret = parse_scale_factors(s, s->grid_1_scf[ch1][sb]);
+        if (ret < 0)
+            return ret;
+        if (ch1 != ch2 && ff_dca_grid_1_to_scf[sb] < s->min_mono_subband) {
+            ret = parse_scale_factors(s, s->grid_1_scf[ch2][sb]);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     if (get_bits_left(&s->gb) < 1)
@@ -532,7 +546,7 @@ static int parse_grid_1_chunk(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch
 
     if (get_bits_left(&s->gb) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "First grid chunk too short\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     // Stereo image for partial mono mode
@@ -562,14 +576,16 @@ static int parse_grid_1_chunk(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch
 
 static int parse_grid_1_sec_ch(DCALbrDecoder *s, int ch2)
 {
-    int sb, nsubbands;
+    int sb, nsubbands, ret;
 
     // Scale factors
     nsubbands = ff_dca_scf_to_grid_1[s->nsubbands - 1] + 1;
     for (sb = 2; sb < nsubbands; sb++) {
-        if (ff_dca_grid_1_to_scf[sb] >= s->min_mono_subband
-            && parse_scale_factors(s, s->grid_1_scf[ch2][sb]) < 0)
-            return -1;
+        if (ff_dca_grid_1_to_scf[sb] >= s->min_mono_subband) {
+            ret = parse_scale_factors(s, s->grid_1_scf[ch2][sb]);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     // Average values for third grid
@@ -709,7 +725,7 @@ static int parse_ts(DCALbrDecoder *s, int ch1, int ch2,
             s->sb_indices[sb] = sb_reorder;
         }
         if (sb_reorder >= s->nsubbands)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         // Third grid scale factors
         if (sb == 12) {
@@ -731,7 +747,7 @@ static int parse_ts(DCALbrDecoder *s, int ch1, int ch2,
 
         quant_level = s->quant_levels[ch1 / 2][sb];
         if (!quant_level)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         // Time samples for one or both channels
         if (sb < s->max_mono_subband && sb_reorder >= s->min_mono_subband) {
@@ -792,13 +808,14 @@ static int parse_lpc(DCALbrDecoder *s, int ch1, int ch2, int start_sb, int end_s
 static int parse_high_res_grid(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch2)
 {
     int quant_levels[DCA_LBR_SUBBANDS];
-    int sb, ch, ol, st, max_sb, profile;
+    int sb, ch, ol, st, max_sb, profile, ret;
 
     if (!chunk->len)
         return 0;
 
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
+    ret = init_get_bits8(&s->gb, chunk->data, chunk->len);
+    if (ret < 0)
+        return ret;
 
     // Quantizer profile
     profile = get_bits(&s->gb, 8);
@@ -832,18 +849,20 @@ static int parse_high_res_grid(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int c
         s->quant_levels[ch1 / 2][sb] = quant_levels[sb];
 
     // LPC for the first two subbands
-    if (parse_lpc(s, ch1, ch2, 0, 2) < 0)
-        return -1;
+    ret = parse_lpc(s, ch1, ch2, 0, 2);
+    if (ret < 0)
+        return ret;
 
     // Time-samples for the first two subbands of main channel
-    if (parse_ts(s, ch1, ch2, 0, 2, 0) < 0)
-        return -1;
+    ret = parse_ts(s, ch1, ch2, 0, 2, 0);
+    if (ret < 0)
+        return ret;
 
     // First two bands of the first grid
     for (sb = 0; sb < 2; sb++)
         for (ch = ch1; ch <= ch2; ch++)
-            if (parse_scale_factors(s, s->grid_1_scf[ch][sb]) < 0)
-                return -1;
+            if ((ret = parse_scale_factors(s, s->grid_1_scf[ch][sb])) < 0)
+                return ret;
 
     return 0;
 }
@@ -892,39 +911,42 @@ static int parse_grid_2(DCALbrDecoder *s, int ch1, int ch2,
 
 static int parse_ts1_chunk(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch2)
 {
+    int ret;
     if (!chunk->len)
         return 0;
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
-    if (parse_lpc(s, ch1, ch2, 2, 3) < 0)
-        return -1;
-    if (parse_ts(s, ch1, ch2, 2, 4, 0) < 0)
-        return -1;
-    if (parse_grid_2(s, ch1, ch2, 0, 1, 0) < 0)
-        return -1;
-    if (parse_ts(s, ch1, ch2, 4, 6, 0) < 0)
-        return -1;
+    if ((ret = init_get_bits8(&s->gb, chunk->data, chunk->len)) < 0)
+        return ret;
+    if ((ret = parse_lpc(s, ch1, ch2, 2, 3)) < 0)
+        return ret;
+    if ((ret = parse_ts(s, ch1, ch2, 2, 4, 0)) < 0)
+        return ret;
+    if ((ret = parse_grid_2(s, ch1, ch2, 0, 1, 0)) < 0)
+        return ret;
+    if ((ret = parse_ts(s, ch1, ch2, 4, 6, 0)) < 0)
+        return ret;
     return 0;
 }
 
 static int parse_ts2_chunk(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch2)
 {
+    int ret;
+
     if (!chunk->len)
         return 0;
-    if (init_get_bits8(&s->gb, chunk->data, chunk->len) < 0)
-        return -1;
-    if (parse_grid_2(s, ch1, ch2, 1, 3, 0) < 0)
-        return -1;
-    if (parse_ts(s, ch1, ch2, 6, s->max_mono_subband, 0) < 0)
-        return -1;
+    if ((ret = init_get_bits8(&s->gb, chunk->data, chunk->len)) < 0)
+        return ret;
+    if ((ret = parse_grid_2(s, ch1, ch2, 1, 3, 0)) < 0)
+        return ret;
+    if ((ret = parse_ts(s, ch1, ch2, 6, s->max_mono_subband, 0)) < 0)
+        return ret;
     if (ch1 != ch2) {
-        if (parse_grid_1_sec_ch(s, ch2) < 0)
-            return -1;
-        if (parse_grid_2(s, ch1, ch2, 0, 3, 1) < 0)
-            return -1;
+        if ((ret = parse_grid_1_sec_ch(s, ch2)) < 0)
+            return ret;
+        if ((ret = parse_grid_2(s, ch1, ch2, 0, 3, 1)) < 0)
+            return ret;
     }
-    if (parse_ts(s, ch1, ch2, s->min_mono_subband, s->nsubbands, 1) < 0)
-        return -1;
+    if ((ret = parse_ts(s, ch1, ch2, s->min_mono_subband, s->nsubbands, 1)) < 0)
+        return ret;
     return 0;
 }
 
@@ -932,11 +954,13 @@ static int init_sample_rate(DCALbrDecoder *s)
 {
     double scale = (-1.0 / (1 << 17)) * sqrt(1 << (2 - s->limited_range));
     int i, br_per_ch = s->bit_rate_scaled / s->nchannels_total;
+    int ret;
 
     ff_mdct_end(&s->imdct);
 
-    if (ff_mdct_init(&s->imdct, s->freq_range + 6, 1, scale) < 0)
-        return -1;
+    ret = ff_mdct_init(&s->imdct, s->freq_range + 6, 1, scale);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < 32 << s->freq_range; i++)
         s->window[i] = ff_dca_long_window[i << (2 - s->freq_range)];
@@ -975,7 +999,7 @@ static int alloc_sample_buffer(DCALbrDecoder *s)
     // Reallocate time sample buffer
     av_fast_mallocz(&s->ts_buffer, &s->ts_size, nsamples * sizeof(float));
     if (!s->ts_buffer)
-        return -1;
+        return AVERROR(ENOMEM);
 
     ptr = s->ts_buffer + DCA_LBR_TIME_HISTORY;
     for (ch = 0; ch < s->nchannels; ch++) {
@@ -1796,7 +1820,7 @@ av_cold int ff_dca_lbr_init(DCALbrDecoder *s)
     init_tables();
 
     if (!(s->fdsp = avpriv_float_dsp_alloc(0)))
-        return -1;
+        return AVERROR(ENOMEM);
 
     s->lbr_rand = 1;
     return 0;
