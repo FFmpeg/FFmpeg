@@ -154,7 +154,6 @@ static int tta_write_trailer(AVFormatContext *s)
     tta_queue_flush(s);
 
     ff_ape_write_tag(s);
-    avio_flush(s->pb);
 
     return 0;
 }

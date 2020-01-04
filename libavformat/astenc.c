@@ -178,7 +178,6 @@ static int ast_write_trailer(AVFormatContext *s)
         }
 
         avio_seek(pb, file_size, SEEK_SET);
-        avio_flush(pb);
     }
     return 0;
 }

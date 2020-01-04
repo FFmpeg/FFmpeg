@@ -263,8 +263,6 @@ static int aiff_write_trailer(AVFormatContext *s)
         file_size = avio_tell(pb);
         avio_seek(pb, aiff->form, SEEK_SET);
         avio_wb32(pb, file_size - aiff->form - 4);
-
-        avio_flush(pb);
     }
 
     return ret;

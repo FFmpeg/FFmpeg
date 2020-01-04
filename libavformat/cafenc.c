@@ -258,7 +258,6 @@ static int caf_write_trailer(AVFormatContext *s)
             avio_write(pb, caf->pkt_sizes, caf->size_entries_used);
             caf->size_buffer_size = 0;
         }
-        avio_flush(pb);
     }
     av_freep(&caf->pkt_sizes);
     return 0;

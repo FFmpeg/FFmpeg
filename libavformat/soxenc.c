@@ -99,8 +99,6 @@ static int sox_write_trailer(AVFormatContext *s)
         } else
             avio_wb64(pb, num_samples);
         avio_seek(pb, file_size, SEEK_SET);
-
-        avio_flush(pb);
     }
 
     return 0;

@@ -1244,7 +1244,6 @@ static int mpeg_mux_end(AVFormatContext *ctx)
      * it as it is usually not needed by decoders and because it
      * complicates MPEG stream concatenation. */
     // avio_wb32(ctx->pb, ISO_11172_END_CODE);
-    // avio_flush(ctx->pb);
 
     for (i = 0; i < ctx->nb_streams; i++) {
         stream = ctx->streams[i]->priv_data;

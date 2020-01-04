@@ -171,8 +171,6 @@ static int mmf_write_trailer(AVFormatContext *s)
         avio_write(pb, "\x00\x00\x00\x00", 4);
 
         avio_seek(pb, pos, SEEK_SET);
-
-        avio_flush(pb);
     }
     return 0;
 }

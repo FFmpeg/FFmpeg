@@ -478,7 +478,6 @@ static int wav_write_trailer(AVFormatContext *s)
             avio_wl32(pb, -1);
 
             avio_seek(pb, file_size, SEEK_SET);
-            avio_flush(pb);
         }
     }
 
@@ -605,7 +604,6 @@ static int w64_write_trailer(AVFormatContext *s)
         }
 
         avio_seek(pb, file_size, SEEK_SET);
-        avio_flush(pb);
     }
 
     return 0;
