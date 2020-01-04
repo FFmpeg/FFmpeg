@@ -591,7 +591,6 @@ static void update_odml_entry(AVFormatContext *s, int stream_index, int64_t ix, 
     int64_t pos;
     int au_byterate, au_ssize, au_scale;
 
-    avio_flush(pb);
     pos = avio_tell(pb);
 
     /* Updating one entry in the AVI OpenDML master index */

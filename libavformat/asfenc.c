@@ -1130,7 +1130,6 @@ static int asf_write_trailer(AVFormatContext *s)
             return ret;
         asf_write_index(s, asf->index_ptr, asf->maximum_packet, asf->next_start_sec);
     }
-    avio_flush(s->pb);
 
     if (asf->is_streamed || !(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         put_chunk(s, 0x4524, 0, 0); /* end of stream */

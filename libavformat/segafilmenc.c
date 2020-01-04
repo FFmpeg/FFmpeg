@@ -362,8 +362,6 @@ static int film_write_header(AVFormatContext *format_context)
 
     avio_wb32(pb, film->packet_count);
 
-    avio_flush(pb);
-
     /* Finally, write out each packet's data to the header */
     packet = film->start;
     while (packet != NULL) {

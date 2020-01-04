@@ -863,13 +863,11 @@ static int gxf_write_trailer(AVFormatContext *s)
         return ret;
     gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
-    avio_flush(pb);
     /* update duration in all map packets */
     for (i = 1; i < gxf->map_offsets_nb; i++) {
         avio_seek(pb, gxf->map_offsets[i], SEEK_SET);
         if ((ret = gxf_write_map_packet(s, 1)) < 0)
             return ret;
-        avio_flush(pb);
     }
 
     avio_seek(pb, end, SEEK_SET);
