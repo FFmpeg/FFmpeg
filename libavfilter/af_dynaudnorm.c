@@ -37,6 +37,11 @@
 #include "filters.h"
 #include "internal.h"
 
+typedef struct local_gain {
+    double max_gain;
+    double threshold;
+} local_gain;
+
 typedef struct cqueue {
     double *elements;
     int size;
@@ -60,6 +65,7 @@ typedef struct DynamicAudioNormalizerContext {
     double max_amplification;
     double target_rms;
     double compress_factor;
+    double threshold;
     double *prev_amplification_factor;
     double *dc_correction_value;
     double *compress_threshold;
@@ -73,6 +79,7 @@ typedef struct DynamicAudioNormalizerContext {
     cqueue **gain_history_original;
     cqueue **gain_history_minimum;
     cqueue **gain_history_smoothed;
+    cqueue **threshold_history;
 
     cqueue *is_enabled;
 } DynamicAudioNormalizerContext;
@@ -99,6 +106,8 @@ static const AVOption dynaudnorm_options[] = {
     { "b",           "set alternative boundary mode",    OFFSET(alt_boundary_mode), AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
     { "compress",    "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
     { "s",           "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
+    { "threshold",   "set the threshold value",          OFFSET(threshold),         AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
+    { "t",           "set the threshold value",          OFFSET(threshold),         AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
     { NULL }
 };
 
@@ -286,11 +295,14 @@ static av_cold void uninit(AVFilterContext *ctx)
             cqueue_free(s->gain_history_minimum[c]);
         if (s->gain_history_smoothed)
             cqueue_free(s->gain_history_smoothed[c]);
+        if (s->threshold_history)
+            cqueue_free(s->threshold_history[c]);
     }
 
     av_freep(&s->gain_history_original);
     av_freep(&s->gain_history_minimum);
     av_freep(&s->gain_history_smoothed);
+    av_freep(&s->threshold_history);
 
     cqueue_free(s->is_enabled);
     s->is_enabled = NULL;
@@ -320,12 +332,14 @@ static int config_input(AVFilterLink *inlink)
     s->gain_history_original = av_calloc(inlink->channels, sizeof(*s->gain_history_original));
     s->gain_history_minimum = av_calloc(inlink->channels, sizeof(*s->gain_history_minimum));
     s->gain_history_smoothed = av_calloc(inlink->channels, sizeof(*s->gain_history_smoothed));
+    s->threshold_history = av_calloc(inlink->channels, sizeof(*s->threshold_history));
     s->weights = av_malloc_array(s->filter_size, sizeof(*s->weights));
     s->is_enabled = cqueue_create(s->filter_size);
     if (!s->prev_amplification_factor || !s->dc_correction_value ||
         !s->compress_threshold || !s->fade_factors[0] || !s->fade_factors[1] ||
         !s->gain_history_original || !s->gain_history_minimum ||
-        !s->gain_history_smoothed || !s->is_enabled || !s->weights)
+        !s->gain_history_smoothed || !s->threshold_history ||
+        !s->is_enabled || !s->weights)
         return AVERROR(ENOMEM);
 
     for (c = 0; c < inlink->channels; c++) {
@@ -334,9 +348,10 @@ static int config_input(AVFilterLink *inlink)
         s->gain_history_original[c] = cqueue_create(s->filter_size);
         s->gain_history_minimum[c]  = cqueue_create(s->filter_size);
         s->gain_history_smoothed[c] = cqueue_create(s->filter_size);
+        s->threshold_history[c]     = cqueue_create(s->filter_size);
 
         if (!s->gain_history_original[c] || !s->gain_history_minimum[c] ||
-            !s->gain_history_smoothed[c])
+            !s->gain_history_smoothed[c] || !s->threshold_history[c])
             return AVERROR(ENOMEM);
     }
 
@@ -414,12 +429,18 @@ static double compute_frame_rms(AVFrame *frame, int channel)
     return FFMAX(sqrt(rms_value), DBL_EPSILON);
 }
 
-static double get_max_local_gain(DynamicAudioNormalizerContext *s, AVFrame *frame,
-                                 int channel)
+static local_gain get_max_local_gain(DynamicAudioNormalizerContext *s, AVFrame *frame,
+                                     int channel)
 {
-    const double maximum_gain = s->peak_value / find_peak_magnitude(frame, channel);
+    const double peak_magnitude = find_peak_magnitude(frame, channel);
+    const double maximum_gain = s->peak_value / peak_magnitude;
     const double rms_gain = s->target_rms > DBL_EPSILON ? (s->target_rms / compute_frame_rms(frame, channel)) : DBL_MAX;
-    return bound(s->max_amplification, FFMIN(maximum_gain, rms_gain));
+    local_gain gain;
+
+    gain.threshold = peak_magnitude > s->threshold;
+    gain.max_gain  = bound(s->max_amplification, FFMIN(maximum_gain, rms_gain));
+
+    return gain;
 }
 
 static double minimum_filter(cqueue *q)
@@ -434,34 +455,40 @@ static double minimum_filter(cqueue *q)
     return min;
 }
 
-static double gaussian_filter(DynamicAudioNormalizerContext *s, cqueue *q)
+static double gaussian_filter(DynamicAudioNormalizerContext *s, cqueue *q, cqueue *tq)
 {
-    double result = 0.0;
+    double result = 0.0, tsum = 0.0;
     int i;
 
     for (i = 0; i < cqueue_size(q); i++) {
-        result += cqueue_peek(q, i) * s->weights[i];
+        tsum += cqueue_peek(tq, i) * s->weights[i];
+        result += cqueue_peek(q, i) * s->weights[i] * cqueue_peek(tq, i);
     }
+
+    if (tsum == 0.0)
+        result = 1.0;
 
     return result;
 }
 
 static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
-                                double current_gain_factor)
+                                local_gain gain)
 {
     if (cqueue_empty(s->gain_history_original[channel]) ||
         cqueue_empty(s->gain_history_minimum[channel])) {
         const int pre_fill_size = s->filter_size / 2;
-        const double initial_value = s->alt_boundary_mode ? current_gain_factor : 1.0;
+        const double initial_value = s->alt_boundary_mode ? gain.max_gain : 1.0;
 
         s->prev_amplification_factor[channel] = initial_value;
 
         while (cqueue_size(s->gain_history_original[channel]) < pre_fill_size) {
             cqueue_enqueue(s->gain_history_original[channel], initial_value);
+            cqueue_enqueue(s->threshold_history[channel], gain.threshold);
         }
     }
 
-    cqueue_enqueue(s->gain_history_original[channel], current_gain_factor);
+    cqueue_enqueue(s->gain_history_original[channel], gain.max_gain);
+    cqueue_enqueue(s->threshold_history[channel], gain.threshold);
 
     while (cqueue_size(s->gain_history_original[channel]) >= s->filter_size) {
         double minimum;
@@ -489,12 +516,13 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
     while (cqueue_size(s->gain_history_minimum[channel]) >= s->filter_size) {
         double smoothed;
         av_assert0(cqueue_size(s->gain_history_minimum[channel]) == s->filter_size);
-        smoothed = gaussian_filter(s, s->gain_history_minimum[channel]);
+        smoothed = gaussian_filter(s, s->gain_history_minimum[channel], s->threshold_history[channel]);
         smoothed = FFMIN(smoothed, cqueue_peek(s->gain_history_minimum[channel], s->filter_size / 2));
 
         cqueue_enqueue(s->gain_history_smoothed[channel], smoothed);
 
         cqueue_pop(s->gain_history_minimum[channel]);
+        cqueue_pop(s->threshold_history[channel]);
     }
 }
 
@@ -632,11 +660,11 @@ static void analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
     }
 
     if (s->channels_coupled) {
-        const double current_gain_factor = get_max_local_gain(s, frame, -1);
+        const local_gain gain = get_max_local_gain(s, frame, -1);
         int c;
 
         for (c = 0; c < s->channels; c++)
-            update_gain_history(s, c, current_gain_factor);
+            update_gain_history(s, c, gain);
     } else {
         int c;
 
