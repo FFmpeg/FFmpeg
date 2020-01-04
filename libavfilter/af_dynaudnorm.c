@@ -477,7 +477,7 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
     if (cqueue_empty(s->gain_history_original[channel]) ||
         cqueue_empty(s->gain_history_minimum[channel])) {
         const int pre_fill_size = s->filter_size / 2;
-        const double initial_value = s->alt_boundary_mode ? gain.max_gain : 1.0;
+        const double initial_value = s->alt_boundary_mode ? gain.max_gain : s->peak_value;
 
         s->prev_amplification_factor[channel] = initial_value;
 
