@@ -768,8 +768,6 @@ static int nut_write_header(AVFormatContext *s)
     if (s->avoid_negative_ts < 0)
         s->avoid_negative_ts = 1;
 
-    avio_flush(bc);
-
     return 0;
 }
 

@@ -199,9 +199,6 @@ static int aiff_write_header(AVFormatContext *s)
     avpriv_set_pts_info(s->streams[aiff->audio_stream_idx], 64, 1,
                         s->streams[aiff->audio_stream_idx]->codecpar->sample_rate);
 
-    /* Data is starting here */
-    avio_flush(pb);
-
     return 0;
 }
 

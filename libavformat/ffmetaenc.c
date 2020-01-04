@@ -54,7 +54,6 @@ static int write_header(AVFormatContext *s)
     avio_write(s->pb, ID_STRING, sizeof(ID_STRING) - 1);
     avio_w8(s->pb, '1');          // version
     avio_w8(s->pb, '\n');
-    avio_flush(s->pb);
     return 0;
 }
 

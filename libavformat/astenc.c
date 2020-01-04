@@ -101,8 +101,6 @@ static int ast_write_header(AVFormatContext *s)
     avio_wb64(pb, 0);
     avio_wb32(pb, 0);
 
-    avio_flush(pb);
-
     return 0;
 }
 

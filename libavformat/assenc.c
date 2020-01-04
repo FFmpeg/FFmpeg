@@ -77,7 +77,6 @@ static int write_header(AVFormatContext *s)
             avio_printf(s->pb, "[Events]\r\nFormat: %s, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
                         ass->ssa_mode ? "Marked" : "Layer");
     }
-    avio_flush(s->pb);
 
     return 0;
 }

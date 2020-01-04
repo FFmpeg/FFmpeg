@@ -580,8 +580,6 @@ static int avi_write_header(AVFormatContext *s)
     avi->movi_list = ff_start_tag(pb, "LIST");
     ffio_wfourcc(pb, "movi");
 
-    avio_flush(pb);
-
     return 0;
 }
 

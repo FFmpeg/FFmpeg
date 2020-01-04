@@ -45,7 +45,6 @@ int ff_framehash_write_header(AVFormatContext *s)
             avio_printf(s->pb, "#sar %d: %d/%d\n", i, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
             break;
         }
-        avio_flush(s->pb);
     }
     return 0;
 }

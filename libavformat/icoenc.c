@@ -106,8 +106,6 @@ static int ico_write_header(AVFormatContext *s)
     if (!ico->images)
         return AVERROR(ENOMEM);
 
-    avio_flush(pb);
-
     return 0;
 }
 

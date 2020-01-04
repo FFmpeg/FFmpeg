@@ -801,8 +801,6 @@ static int asf_write_header(AVFormatContext *s)
         return -1;
     }
 
-    avio_flush(s->pb);
-
     asf->packet_nb_payloads     = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end   = -1;

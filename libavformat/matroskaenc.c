@@ -2000,8 +2000,6 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->cur_audio_pkt.size = 0;
     mkv->cluster_pos = -1;
 
-    avio_flush(pb);
-
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {

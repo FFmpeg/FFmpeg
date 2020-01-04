@@ -123,8 +123,6 @@ static int mmf_write_header(AVFormatContext *s)
 
     avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codecpar->sample_rate);
 
-    avio_flush(pb);
-
     return 0;
 }
 

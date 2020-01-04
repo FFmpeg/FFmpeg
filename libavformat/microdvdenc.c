@@ -37,7 +37,6 @@ static int microdvd_write_header(struct AVFormatContext *s)
         avio_write(s->pb, "{DEFAULT}{}", 11);
         avio_write(s->pb, par->extradata, par->extradata_size);
         avio_w8(s->pb, '\n');
-        avio_flush(s->pb);
     }
 
     avpriv_set_pts_info(s->streams[0], 64, framerate.num, framerate.den);

@@ -34,7 +34,6 @@ static int mpjpeg_write_header(AVFormatContext *s)
 {
     MPJPEGContext *mpj = s->priv_data;
     avio_printf(s->pb, "--%s\r\n", mpj->boundary_tag);
-    avio_flush(s->pb);
     return 0;
 }
 

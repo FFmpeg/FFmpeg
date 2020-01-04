@@ -361,8 +361,6 @@ static int wav_write_header(AVFormatContext *s)
         wav->data = ff_start_tag(pb, "data");
     }
 
-    avio_flush(pb);
-
     return 0;
 }
 

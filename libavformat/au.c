@@ -311,7 +311,6 @@ static int au_write_header(AVFormatContext *s)
     } else {
         avio_wb64(pb, 0); /* annotation field */
     }
-    avio_flush(pb);
 
     return 0;
 }

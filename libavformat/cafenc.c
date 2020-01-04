@@ -203,7 +203,6 @@ static int caf_write_header(AVFormatContext *s)
     avio_wb64(pb, -1);        //< mChunkSize
     avio_wb32(pb, 0);         //< mEditCount
 
-    avio_flush(pb);
     return 0;
 }
 

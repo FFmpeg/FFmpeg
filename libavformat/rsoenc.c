@@ -60,8 +60,6 @@ static int rso_write_header(AVFormatContext *s)
     avio_wb16(pb, par->sample_rate);
     avio_wb16(pb, 0x0000);           /* play mode ? (0x0000 = don't loop) */
 
-    avio_flush(pb);
-
     return 0;
 }
 

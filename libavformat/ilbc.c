@@ -49,7 +49,6 @@ static int ilbc_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Unsupported mode\n");
         return AVERROR(EINVAL);
     }
-    avio_flush(pb);
     return 0;
 }
 

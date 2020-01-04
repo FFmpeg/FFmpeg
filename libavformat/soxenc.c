@@ -80,8 +80,6 @@ static int sox_write_header(AVFormatContext *s)
 
     ffio_fill(pb, 0, comment_size - comment_len);
 
-    avio_flush(pb);
-
     return 0;
 }
 

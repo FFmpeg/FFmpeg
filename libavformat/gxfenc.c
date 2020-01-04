@@ -834,7 +834,6 @@ static int gxf_write_header(AVFormatContext *s)
 
     gxf->packet_count = 3;
 
-    avio_flush(pb);
     return 0;
 }
 

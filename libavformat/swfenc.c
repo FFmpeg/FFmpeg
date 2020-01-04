@@ -337,7 +337,6 @@ static int swf_write_header(AVFormatContext *s)
         put_swf_end_tag(s);
     }
 
-    avio_flush(s->pb);
     return 0;
 }
 
