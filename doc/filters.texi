@@ -3440,7 +3440,7 @@ In general, smaller parameters result in stronger compression, and vice versa.
 Values below 3.0 are not recommended, because audible distortion may appear.
 
 @item threshold, t
-Set the target threshold value. This specifies the loweset permissible
+Set the target threshold value. This specifies the lowest permissible
 magnitude level for the audio input which will be normalized.
 If input frame volume is above this value frame will be normalized.
 Otherwise frame may not be normalized at all. The default value is set
