@@ -118,7 +118,6 @@ static int write_packet_pipe(AVFormatContext *s, AVPacket *pkt)
             return ret;
     } else {
         avio_write(s->pb, pkt->data, pkt->size);
-        avio_flush(s->pb);
     }
     img->img_number++;
     return 0;

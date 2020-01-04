@@ -324,7 +324,6 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     }
 
     avio_printf(s->pb, "\n");
-    avio_flush(s->pb);
     return 0;
 }
 
