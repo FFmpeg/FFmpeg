@@ -691,8 +691,11 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
             ret = AVERROR_INVALIDDATA;
             break;
         }
-        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE)) {
+            avsubtitle_free(data);
+            *data_size = 0;
             return ret;
+        }
 
         buf += segment_length;
     }
