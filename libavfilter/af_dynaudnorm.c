@@ -701,7 +701,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     DynamicAudioNormalizerContext *s = ctx->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     int ret = 1;
 
     if (!cqueue_empty(s->gain_history_smoothed[0])) {
