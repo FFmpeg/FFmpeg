@@ -3448,6 +3448,10 @@ to 0, which means all input frames will be normalized.
 This option is mostly useful if digital noise is not wanted to be amplified.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section earwax
 
 Make audio easier to listen to on headphones.
