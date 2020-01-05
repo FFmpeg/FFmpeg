@@ -5538,6 +5538,11 @@ Pre-amplification gain in dB to apply to the selected replaygain gain.
 
 Default value for @var{replaygain_preamp} is 0.0.
 
+@item replaygain_noclip
+Prevent clipping by limiting the gain applied.
+
+Default value for @var{replaygain_noclip} is 1.
+
 @item eval
 Set when the volume expression is evaluated.
 
@@ -5597,11 +5602,6 @@ The command accepts the same syntax of the corresponding option.
 
 If the specified expression is not valid, it is kept at its current
 value.
-@item replaygain_noclip
-Prevent clipping by limiting the gain applied.
-
-Default value for @var{replaygain_noclip} is 1.
-
 @end table
 
 @subsection Examples
