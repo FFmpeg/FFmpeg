@@ -320,6 +320,7 @@ static int config_input(AVFilterLink *inlink)
 
     uninit(ctx);
 
+    s->channels = inlink->channels;
     s->frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
     av_log(ctx, AV_LOG_DEBUG, "frame len %d\n", s->frame_len);
 
@@ -357,8 +358,6 @@ static int config_input(AVFilterLink *inlink)
 
     precalculate_fade_factors(s->fade_factors, s->frame_len);
     init_gaussian_filter(s);
-
-    s->channels = inlink->channels;
 
     return 0;
 }
