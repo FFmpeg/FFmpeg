@@ -36,6 +36,7 @@ version <next>:
 - xfade_opencl filter
 - afirsrc audio filter source
 - pad_opencl filter
+- CDToons video decoder
 
 
 version 4.2:
