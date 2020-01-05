@@ -583,9 +583,7 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
     dashenc_io_close(s, &c->m3u8_out, temp_filename_hls);
 
     if (use_rename)
-        if (avpriv_io_move(temp_filename_hls, filename_hls) < 0) {
-            av_log(os->ctx, AV_LOG_WARNING, "renaming file %s to %s failed\n\n", temp_filename_hls, filename_hls);
-        }
+        ff_rename(temp_filename_hls, filename_hls, os->ctx);
 }
 
 static int flush_init_segment(AVFormatContext *s, OutputStream *os)
@@ -1186,7 +1184,7 @@ static int write_manifest(AVFormatContext *s, int final)
     dashenc_io_close(s, &c->mpd_out, temp_filename);
 
     if (use_rename) {
-        if ((ret = avpriv_io_move(temp_filename, s->url)) < 0)
+        if ((ret = ff_rename(temp_filename, s->url, s)) < 0)
             return ret;
     }
 
@@ -1268,7 +1266,7 @@ static int write_manifest(AVFormatContext *s, int final)
         }
         dashenc_io_close(s, &c->m3u8_out, temp_filename);
         if (use_rename)
-            if ((ret = avpriv_io_move(temp_filename, filename_hls)) < 0)
+            if ((ret = ff_rename(temp_filename, filename_hls, s)) < 0)
                 return ret;
         c->master_playlist_created = 1;
     }
@@ -1875,7 +1873,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             dashenc_io_close(s, &os->out, os->temp_path);
 
             if (use_rename) {
-                ret = avpriv_io_move(os->temp_path, os->full_path);
+                ret = ff_rename(os->temp_path, os->full_path, os->ctx);
                 if (ret < 0)
                     break;
             }
