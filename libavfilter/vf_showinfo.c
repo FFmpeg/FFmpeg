@@ -24,6 +24,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/bswap.h"
 #include "libavutil/adler32.h"
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
@@ -202,7 +203,7 @@ static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
     av_log(ctx, AV_LOG_INFO, "\n");
 }
 
-static void update_sample_stats(const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
+static void update_sample_stats_8(const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
 {
     int i;
 
@@ -210,6 +211,30 @@ static void update_sample_stats(const uint8_t *src, int len, int64_t *sum, int64
         *sum += src[i];
         *sum2 += src[i] * src[i];
     }
+}
+
+static void update_sample_stats_16(int be, const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
+{
+    const uint16_t *src1 = (const uint16_t *)src;
+    int i;
+
+    for (i = 0; i < len / 2; i++) {
+        if ((HAVE_BIGENDIAN && !be) || (!HAVE_BIGENDIAN && be)) {
+            *sum += av_bswap16(src1[i]);
+            *sum2 += av_bswap16(src1[i]) * av_bswap16(src1[i]);
+        } else {
+            *sum += src1[i];
+            *sum2 += src1[i] * src1[i];
+        }
+    }
+}
+
+static void update_sample_stats(int depth, int be, const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
+{
+    if (depth <= 8)
+        update_sample_stats_8(src, len, sum, sum2);
+    else
+        update_sample_stats_16(be, src, len, sum, sum2);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -220,12 +245,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     uint32_t plane_checksum[4] = {0}, checksum = 0;
     int64_t sum[4] = {0}, sum2[4] = {0};
     int32_t pixelcount[4] = {0};
+    int bitdepth = desc->comp[0].depth;
+    int be = desc->flags & AV_PIX_FMT_FLAG_BE;
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; plane < 4 && s->calculate_checksums && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
+        int width = linesize >> (bitdepth > 8);
 
         if (linesize < 0)
             return linesize;
@@ -234,8 +262,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             plane_checksum[plane] = av_adler32_update(plane_checksum[plane], data, linesize);
             checksum = av_adler32_update(checksum, data, linesize);
 
-            update_sample_stats(data, linesize, sum+plane, sum2+plane);
-            pixelcount[plane] += linesize;
+            update_sample_stats(bitdepth, be, data, linesize, sum+plane, sum2+plane);
+            pixelcount[plane] += width;
             data += frame->linesize[plane];
         }
     }
