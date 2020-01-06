@@ -16317,6 +16317,19 @@ Scale a logo to 1/10th the height of a video, while preserving its display aspec
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item width, w
+@item height, h
+Set the output video dimension expression.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+@end table
+
 @section scroll
 Scroll input video horizontally and/or vertically by constant speed.
 
