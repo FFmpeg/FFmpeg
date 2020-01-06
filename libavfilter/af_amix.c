@@ -182,7 +182,7 @@ typedef struct MixContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption amix_options[] = {
     { "inputs", "Number of inputs.",
-            OFFSET(nb_inputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, 1024, A|F },
+            OFFSET(nb_inputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, INT16_MAX, A|F },
     { "duration", "How to determine the end-of-stream.",
             OFFSET(duration_mode), AV_OPT_TYPE_INT, { .i64 = DURATION_LONGEST }, 0,  2, A|F, "duration" },
         { "longest",  "Duration of longest input.",  0, AV_OPT_TYPE_CONST, { .i64 = DURATION_LONGEST  }, 0, 0, A|F, "duration" },
