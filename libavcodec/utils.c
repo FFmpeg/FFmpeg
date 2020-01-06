@@ -1444,7 +1444,7 @@ const char *avcodec_configuration(void)
 const char *avcodec_license(void)
 {
 #define LICENSE_PREFIX "libavcodec license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 int av_get_exact_bits_per_sample(enum AVCodecID codec_id)

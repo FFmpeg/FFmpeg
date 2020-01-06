@@ -77,7 +77,7 @@ const char *avformat_configuration(void)
 const char *avformat_license(void)
 {
 #define LICENSE_PREFIX "libavformat license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 int ff_lock_avformat(void)

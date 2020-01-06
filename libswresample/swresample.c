@@ -46,7 +46,7 @@ const char *swresample_configuration(void)
 const char *swresample_license(void)
 {
 #define LICENSE_PREFIX "libswresample license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){

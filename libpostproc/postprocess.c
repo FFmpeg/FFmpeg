@@ -108,7 +108,7 @@ const char *postproc_configuration(void)
 const char *postproc_license(void)
 {
 #define LICENSE_PREFIX "libpostproc license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 #define GET_MODE_BUFFER_SIZE 500
