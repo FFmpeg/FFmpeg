@@ -278,7 +278,7 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
 
     err = av_frame_copy_props(output_frame, input_frame);
     if (err < 0)
-        return err;
+        goto fail;
 
     if (ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
         output_frame->color_primaries = ctx->color_primaries;
