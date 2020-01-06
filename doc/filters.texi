@@ -16737,6 +16737,15 @@ The Adler-32 checksum (printed in hexadecimal) of all the planes of the input fr
 @item plane_checksum
 The Adler-32 checksum (printed in hexadecimal) of each plane of the input frame,
 expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]".
+
+@item mean
+The mean value of pixels in each plane of the input frame, expressed in the form
+"[@var{mean0} @var{mean1} @var{mean2} @var{mean3}]".
+
+@item stdev
+The standard deviation of pixel values in each plane of the input frame, expressed
+in the form "[@var{stdev0} @var{stdev1} @var{stdev2} @var{stdev3}]".
+
 @end table
 
 @section showpalette
