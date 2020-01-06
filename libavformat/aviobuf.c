@@ -42,15 +42,10 @@
  */
 #define SHORT_SEEK_THRESHOLD 4096
 
-typedef struct AVIOInternal {
-    URLContext *h;
-} AVIOInternal;
-
 static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
-    AVIOInternal *internal = s->opaque;
-    return prev ? NULL : internal->h;
+    return prev ? NULL : s->opaque;
 }
 
 static const AVClass *ff_avio_child_class_next(const AVClass *prev)
@@ -940,49 +935,8 @@ uint64_t ffio_read_varlen(AVIOContext *bc){
     return val;
 }
 
-static int io_read_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    AVIOInternal *internal = opaque;
-    return ffurl_read(internal->h, buf, buf_size);
-}
-
-static int io_write_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    AVIOInternal *internal = opaque;
-    return ffurl_write(internal->h, buf, buf_size);
-}
-
-static int64_t io_seek(void *opaque, int64_t offset, int whence)
-{
-    AVIOInternal *internal = opaque;
-    return ffurl_seek(internal->h, offset, whence);
-}
-
-static int io_short_seek(void *opaque)
-{
-    AVIOInternal *internal = opaque;
-    return ffurl_get_short_seek(internal->h);
-}
-
-static int io_read_pause(void *opaque, int pause)
-{
-    AVIOInternal *internal = opaque;
-    if (!internal->h->prot->url_read_pause)
-        return AVERROR(ENOSYS);
-    return internal->h->prot->url_read_pause(internal->h, pause);
-}
-
-static int64_t io_read_seek(void *opaque, int stream_index, int64_t timestamp, int flags)
-{
-    AVIOInternal *internal = opaque;
-    if (!internal->h->prot->url_read_seek)
-        return AVERROR(ENOSYS);
-    return internal->h->prot->url_read_seek(internal->h, stream_index, timestamp, flags);
-}
-
 int ffio_fdopen(AVIOContext **s, URLContext *h)
 {
-    AVIOInternal *internal = NULL;
     uint8_t *buffer = NULL;
     int buffer_size, max_packet_size;
 
@@ -996,14 +950,10 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     if (!buffer)
         return AVERROR(ENOMEM);
 
-    internal = av_mallocz(sizeof(*internal));
-    if (!internal)
-        goto fail;
-
-    internal->h = h;
-
-    *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE,
-                            internal, io_read_packet, io_write_packet, io_seek);
+    *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
+                            (int (*)(void *, uint8_t *, int))  ffurl_read,
+                            (int (*)(void *, uint8_t *, int))  ffurl_write,
+                            (int64_t (*)(void *, int64_t, int))ffurl_seek);
     if (!*s)
         goto fail;
 
@@ -1023,30 +973,28 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     (*s)->max_packet_size = max_packet_size;
     (*s)->min_packet_size = h->min_packet_size;
     if(h->prot) {
-        (*s)->read_pause = io_read_pause;
-        (*s)->read_seek  = io_read_seek;
+        (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
+        (*s)->read_seek  =
+            (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
 
         if (h->prot->url_read_seek)
             (*s)->seekable |= AVIO_SEEKABLE_TIME;
     }
-    (*s)->short_seek_get = io_short_seek;
+    (*s)->short_seek_get = (int (*)(void *))ffurl_get_short_seek;
     (*s)->av_class = &ff_avio_class;
     return 0;
 fail:
-    av_freep(&internal);
     av_freep(&buffer);
     return AVERROR(ENOMEM);
 }
 
 URLContext* ffio_geturlcontext(AVIOContext *s)
 {
-    AVIOInternal *internal;
     if (!s)
         return NULL;
 
-    internal = s->opaque;
-    if (internal && s->read_packet == io_read_packet)
-        return internal->h;
+    if (s->opaque && s->read_packet == (int (*)(void *, uint8_t *, int))ffurl_read)
+        return s->opaque;
     else
         return NULL;
 }
@@ -1218,17 +1166,15 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
 
 int avio_close(AVIOContext *s)
 {
-    AVIOInternal *internal;
     URLContext *h;
 
     if (!s)
         return 0;
 
     avio_flush(s);
-    internal = s->opaque;
-    h        = internal->h;
+    h         = s->opaque;
+    s->opaque = NULL;
 
-    av_freep(&s->opaque);
     av_freep(&s->buffer);
     if (s->write_flag)
         av_log(s, AV_LOG_VERBOSE, "Statistics: %d seeks, %d writeouts\n", s->seek_count, s->writeout_count);
@@ -1320,8 +1266,7 @@ int avio_read_to_bprint(AVIOContext *h, AVBPrint *pb, size_t max_size)
 int avio_accept(AVIOContext *s, AVIOContext **c)
 {
     int ret;
-    AVIOInternal *internal = s->opaque;
-    URLContext *sc = internal->h;
+    URLContext *sc = s->opaque;
     URLContext *cc = NULL;
     ret = ffurl_accept(sc, &cc);
     if (ret < 0)
@@ -1331,8 +1276,7 @@ int avio_accept(AVIOContext *s, AVIOContext **c)
 
 int avio_handshake(AVIOContext *c)
 {
-    AVIOInternal *internal = c->opaque;
-    URLContext *cc = internal->h;
+    URLContext *cc = c->opaque;
     return ffurl_handshake(cc);
 }
 
