@@ -35,16 +35,15 @@ static int vdpau_vp9_start_frame(AVCodecContext *avctx,
 {
     VP9Context *s = avctx->priv_data;
     VP9SharedContext *h = &(s->s);
-    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
-    if (!pixdesc) {
-        return AV_PIX_FMT_NONE;
-    }
-
     VP9Frame pic = h->frames[CUR_FRAME];
     struct vdpau_picture_context *pic_ctx = pic.hwaccel_picture_private;
     int i;
 
     VdpPictureInfoVP9 *info = &pic_ctx->info.vp9;
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
+    if (!pixdesc) {
+        return AV_PIX_FMT_NONE;
+    }
 
     info->width = avctx->width;
     info->height = avctx->height;
