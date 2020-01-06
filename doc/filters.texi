@@ -3213,6 +3213,10 @@ Sets the intensity of effect (default: 2.0). Must be in range between 0.0
 Enable clipping. By default is enabled.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section dcshift
 Apply a DC shift to the audio.
 
