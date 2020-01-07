@@ -1207,10 +1207,6 @@ static int dash_init(AVFormatContext *s)
         dict_copy_entry(&as->metadata, s->streams[i]->metadata, "language");
         dict_copy_entry(&as->metadata, s->streams[i]->metadata, "role");
 
-        ctx = avformat_alloc_context();
-        if (!ctx)
-            return AVERROR(ENOMEM);
-
         if (c->init_seg_name) {
             os->init_seg_name = av_strireplace(c->init_seg_name, "$ext$", os->extension_name);
             if (!os->init_seg_name)
@@ -1243,10 +1239,13 @@ static int dash_init(AVFormatContext *s)
             }
         }
 
+        os->ctx = ctx = avformat_alloc_context();
+        if (!ctx)
+            return AVERROR(ENOMEM);
+
         ctx->oformat = av_guess_format(os->format_name, NULL, NULL);
         if (!ctx->oformat)
             return AVERROR_MUXER_NOT_FOUND;
-        os->ctx = ctx;
         ctx->interrupt_callback    = s->interrupt_callback;
         ctx->opaque                = s->opaque;
         ctx->io_close              = s->io_close;
