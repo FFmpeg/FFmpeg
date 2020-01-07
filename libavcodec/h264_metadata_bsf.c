@@ -381,7 +381,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
             } else {
                 goto invalid_user_data;
             }
-            if (i & 1)
+            if (j & 1)
                 udu->uuid_iso_iec_11578[j / 2] |= v;
             else
                 udu->uuid_iso_iec_11578[j / 2] = v << 4;
