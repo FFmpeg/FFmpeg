@@ -993,8 +993,10 @@ static int read_header(AVFormatContext *s)
     }
 
     ret = parse_chunks(s, SEEK_TO_DATA, 0, 0);
-    if (ret < 0)
+    if (ret < 0) {
+        wtvfile_close(wtv->pb);
         return ret;
+    }
     avio_seek(wtv->pb, -32, SEEK_CUR);
 
     timeline_pos = avio_tell(s->pb); // save before opening another file
