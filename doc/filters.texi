@@ -22731,6 +22731,9 @@ plain filename any writable url can be specified. Filename ``-'' is a shorthand
 for standard output. If @code{file} option is not set, output is written to the log
 with AV_LOG_INFO loglevel.
 
+@item direct
+Reduces buffering in print mode when output is written to a URL set using @var{file}.
+
 @end table
 
 @subsection Examples
