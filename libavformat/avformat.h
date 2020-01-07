@@ -715,8 +715,7 @@ typedef struct AVInputFormat {
      * AVFMTCTX_NOHEADER is used and only in the calling thread (not in a
      * background thread).
      * @return 0 on success, < 0 on error.
-     *         When returning an error, pkt must not have been allocated
-     *         or must be freed before returning
+     *         Upon returning an error, pkt must be unreferenced by the caller.
      */
     int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
 
