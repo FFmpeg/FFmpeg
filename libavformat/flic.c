@@ -215,10 +215,9 @@ static int flic_read_packet(AVFormatContext *s,
         magic = AV_RL16(&preamble[4]);
 
         if (((magic == FLIC_CHUNK_MAGIC_1) || (magic == FLIC_CHUNK_MAGIC_2)) && size > FLIC_PREAMBLE_SIZE) {
-            if (av_new_packet(pkt, size)) {
-                ret = AVERROR(EIO);
-                break;
-            }
+            if ((ret = av_new_packet(pkt, size)) < 0)
+                return ret;
+
             pkt->stream_index = flic->video_stream_index;
             pkt->pts = flic->frame_number++;
             pkt->pos = avio_tell(pb);
@@ -231,10 +230,8 @@ static int flic_read_packet(AVFormatContext *s,
             }
             packet_read = 1;
         } else if (magic == FLIC_TFTD_CHUNK_AUDIO) {
-            if (av_new_packet(pkt, size)) {
-                ret = AVERROR(EIO);
-                break;
-            }
+            if ((ret = av_new_packet(pkt, size)) < 0)
+                return ret;
 
             /* skip useless 10B sub-header (yes, it's not accounted for in the chunk header) */
             avio_skip(pb, 10);

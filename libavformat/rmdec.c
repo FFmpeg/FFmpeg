@@ -781,8 +781,8 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
             return -1;
         }
         rm->remaining_len -= len;
-        if(av_new_packet(pkt, len + 9) < 0)
-            return AVERROR(EIO);
+        if ((ret = av_new_packet(pkt, len + 9)) < 0)
+            return ret;
         pkt->data[0] = 0;
         AV_WL32(pkt->data + 1, 1);
         AV_WL32(pkt->data + 5, 0);
@@ -804,8 +804,8 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         vst->slices = ((hdr & 0x3F) << 1) + 1;
         vst->videobufsize = len2 + 8*vst->slices + 1;
         av_packet_unref(&vst->pkt); //FIXME this should be output.
-        if(av_new_packet(&vst->pkt, vst->videobufsize) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(&vst->pkt, vst->videobufsize)) < 0)
+            return ret;
         memset(vst->pkt.data, 0, vst->pkt.size);
         vst->videobufpos = 8*vst->slices + 1;
         vst->cur_slice = 0;
