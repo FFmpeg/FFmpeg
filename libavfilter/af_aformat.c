@@ -50,8 +50,11 @@ typedef struct AFormatContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption aformat_options[] = {
     { "sample_fmts",     "A '|'-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A|F },
+    { "f",               "A '|'-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A|F },
     { "sample_rates",    "A '|'-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A|F },
+    { "r",               "A '|'-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A|F },
     { "channel_layouts", "A '|'-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A|F },
+    { "cl",              "A '|'-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A|F },
     { NULL }
 };
 

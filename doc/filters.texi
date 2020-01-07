@@ -1285,13 +1285,13 @@ negotiate the most appropriate format to minimize conversions.
 It accepts the following parameters:
 @table @option
 
-@item sample_fmts
+@item sample_fmts, f
 A '|'-separated list of requested sample formats.
 
-@item sample_rates
+@item sample_rates, r
 A '|'-separated list of requested sample rates.
 
-@item channel_layouts
+@item channel_layouts, cl
 A '|'-separated list of requested channel layouts.
 
 See @ref{channel layout syntax,,the Channel Layout section in the ffmpeg-utils(1) manual,ffmpeg-utils}
