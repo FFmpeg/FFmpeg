@@ -273,32 +273,28 @@ restart:
     }
 
     if ((ret = av_get_packet(pb, pkt, vivo->length)) < 0)
-        goto fail;
+        return ret;
 
     // get next packet header
     if ((ret = vivo_get_packet_header(s)) < 0)
-        goto fail;
+        return ret;
 
     while (vivo->sequence == old_sequence &&
            (((vivo->type - 1) >> 1) == ((old_type - 1) >> 1))) {
         if (avio_feof(pb)) {
-            ret = AVERROR_EOF;
-            break;
+            return AVERROR_EOF;
         }
 
         if ((ret = av_append_packet(pb, pkt, vivo->length)) < 0)
-            break;
+            return ret;
 
         // get next packet header
         if ((ret = vivo_get_packet_header(s)) < 0)
-            break;
+            return ret;
     }
 
     pkt->stream_index = stream_index;
 
-fail:
-    if (ret < 0)
-        av_packet_unref(pkt);
     return ret;
 }
 

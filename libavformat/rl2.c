@@ -256,7 +256,6 @@ static int rl2_read_packet(AVFormatContext *s,
     /** fill the packet */
     ret = av_get_packet(pb, pkt, sample->size);
     if(ret != sample->size){
-        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
 

@@ -259,14 +259,12 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     dss_sp_byte_swap(ctx, pkt->data, ctx->dss_sp_buf);
 
     if (ctx->dss_sp_swap_byte < 0) {
-        ret = AVERROR(EAGAIN);
-        goto error_eof;
+        return AVERROR(EAGAIN);
     }
 
     return pkt->size;
 
 error_eof:
-    av_packet_unref(pkt);
     return ret < 0 ? ret : AVERROR_EOF;
 }
 
@@ -308,7 +306,6 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = avio_read(s->pb, pkt->data + offset,
                         size2 - offset);
         if (ret < size2 - offset) {
-            av_packet_unref(pkt);
             return ret < 0 ? ret : AVERROR_EOF;
         }
 
@@ -318,7 +315,6 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = avio_read(s->pb, pkt->data + offset, size - offset);
     if (ret < size - offset) {
-        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR_EOF;
     }
 

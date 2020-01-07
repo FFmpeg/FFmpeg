@@ -7890,7 +7890,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = cenc_filter(mov, st, sc, pkt, current_index);
     if (ret < 0) {
-        av_packet_unref(pkt);
         return ret;
     }
 

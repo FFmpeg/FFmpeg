@@ -284,7 +284,6 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt)
             memcpy(pkt->data, hdr, copyhdrsize);
             ret = avio_read(pb, pkt->data + copyhdrsize, size);
             if (ret < 0) {
-                av_packet_unref(pkt);
                 return ret;
             }
             if (ret < size)

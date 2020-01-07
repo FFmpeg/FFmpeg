@@ -62,7 +62,6 @@ static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < GSM_BLOCK_SIZE) {
-        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
     pkt->duration = 1;

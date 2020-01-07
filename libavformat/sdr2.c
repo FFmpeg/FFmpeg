@@ -95,7 +95,6 @@ static int sdr2_read_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(pkt->data, header, 24);
         ret = avio_read(s->pb, pkt->data + 24, next - 52);
         if (ret < 0) {
-            av_packet_unref(pkt);
             return ret;
         }
         av_shrink_packet(pkt, ret + 24);

@@ -3133,7 +3133,6 @@ static int mpegts_raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = read_packet(s, pkt->data, ts->raw_packet_size, &data);
     pkt->pos = avio_tell(s->pb);
     if (ret < 0) {
-        av_packet_unref(pkt);
         return ret;
     }
     if (data != pkt->data)

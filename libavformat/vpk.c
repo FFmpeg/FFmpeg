@@ -93,9 +93,7 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = avio_read(s->pb, pkt->data + i * size, size);
             avio_skip(s->pb, skip);
             if (ret != size) {
-                av_packet_unref(pkt);
-                ret = AVERROR(EIO);
-                break;
+                return AVERROR(EIO);
             }
         }
         pkt->stream_index = 0;

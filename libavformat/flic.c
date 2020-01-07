@@ -225,7 +225,6 @@ static int flic_read_packet(AVFormatContext *s,
             ret = avio_read(pb, pkt->data + FLIC_PREAMBLE_SIZE,
                 size - FLIC_PREAMBLE_SIZE);
             if (ret != size - FLIC_PREAMBLE_SIZE) {
-                av_packet_unref(pkt);
                 ret = AVERROR(EIO);
             }
             packet_read = 1;
@@ -241,8 +240,8 @@ static int flic_read_packet(AVFormatContext *s,
             ret = avio_read(pb, pkt->data, size);
 
             if (ret != size) {
-                av_packet_unref(pkt);
                 ret = AVERROR(EIO);
+                break;
             }
 
             packet_read = 1;

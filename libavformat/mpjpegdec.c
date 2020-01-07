@@ -359,8 +359,6 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* error or EOF occurred */
         if (ret == AVERROR_EOF) {
             ret = pkt->size > 0 ? pkt->size : AVERROR_EOF;
-        } else {
-            av_packet_unref(pkt);
         }
     }
 

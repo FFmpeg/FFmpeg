@@ -314,7 +314,6 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
     else if (ret != s->packet_size - Y4M_FRAME_MAGIC_LEN) {
-        av_packet_unref(pkt);
         return s->pb->eof_reached ? AVERROR_EOF : AVERROR(EIO);
     }
     pkt->stream_index = 0;

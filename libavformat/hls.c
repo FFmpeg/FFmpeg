@@ -2225,7 +2225,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ist->codecpar->codec_id != st->codecpar->codec_id) {
             ret = set_stream_info_from_input_stream(st, pls, ist);
             if (ret < 0) {
-                av_packet_unref(pkt);
                 return ret;
             }
         }
