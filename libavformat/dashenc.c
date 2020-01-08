@@ -80,7 +80,7 @@ typedef struct Segment {
 } Segment;
 
 typedef struct AdaptationSet {
-    char id[10];
+    int id;
     char *descriptor;
     int64_t seg_duration;
     int64_t frag_duration;
@@ -802,7 +802,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
     AVDictionaryEntry *lang, *role;
     int i;
 
-    avio_printf(out, "\t\t<AdaptationSet id=\"%s\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
+    avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
                 as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
     if (as->media_type == AVMEDIA_TYPE_VIDEO && as->max_frame_rate.num && !as->ambiguous_frame_rate && av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0)
         avio_printf(out, " maxFrameRate=\"%d/%d\"", as->max_frame_rate.num, as->max_frame_rate.den);
@@ -929,7 +929,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
         for (i = 0; i < s->nb_streams; i++) {
             if ((ret = add_adaptation_set(s, &as, s->streams[i]->codecpar->codec_type)) < 0)
                 return ret;
-            snprintf(as->id, sizeof(as->id), "%d", i);
+            as->id = i;
 
             c->streams[i].as_idx = c->nb_as;
             ++as->nb_streams;
@@ -950,12 +950,20 @@ static int parse_adaptation_sets(AVFormatContext *s)
             p++;
             continue;
         } else if (state == new_set && av_strstart(p, "id=", &p)) {
+            char id_str[10], *end_str;
+
+            n = strcspn(p, ",");
+            snprintf(id_str, sizeof(id_str), "%.*s", n, p);
+
+            i = strtol(id_str, &end_str, 10);
+            if (id_str == end_str || i < 0 || i > c->nb_as) {
+                av_log(s, AV_LOG_ERROR, "\"%s\" is not a valid value for an AdaptationSet id\n", id_str);
+                return AVERROR(EINVAL);
+            }
 
             if ((ret = add_adaptation_set(s, &as, AVMEDIA_TYPE_UNKNOWN)) < 0)
                 return ret;
-
-            n = strcspn(p, ",");
-            snprintf(as->id, sizeof(as->id), "%.*s", n, p);
+            as->id = i;
 
             p += n;
             if (*p)
