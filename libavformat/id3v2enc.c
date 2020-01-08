@@ -268,15 +268,15 @@ static int write_ctoc(AVFormatContext *s, ID3v2EncContext *id3, int enc)
     if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
         return ret;
 
-    id3->len += avio_put_str(dyn_bc, "toc");
+    avio_put_str(dyn_bc, "toc");
     avio_w8(dyn_bc, 0x03);
     avio_w8(dyn_bc, s->nb_chapters);
     for (int i = 0; i < s->nb_chapters; i++) {
         snprintf(name, 122, "ch%d", i);
-        id3->len += avio_put_str(dyn_bc, name);
+        avio_put_str(dyn_bc, name);
     }
     len = avio_get_dyn_buf(dyn_bc, &dyn_buf);
-    id3->len += 16 + ID3v2_HEADER_SIZE;
+    id3->len += len + ID3v2_HEADER_SIZE;
 
     avio_wb32(s->pb, MKBETAG('C', 'T', 'O', 'C'));
     avio_wb32(s->pb, len);
