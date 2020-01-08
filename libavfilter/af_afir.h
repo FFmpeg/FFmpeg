@@ -87,7 +87,8 @@ typedef struct AudioFIRContext {
     AudioFIRSegment seg[1024];
     int nb_segments;
 
-    AVFrame *in[2];
+    AVFrame *in;
+    AVFrame *ir[32];
     AVFrame *video;
     int min_part_size;
     int64_t pts;

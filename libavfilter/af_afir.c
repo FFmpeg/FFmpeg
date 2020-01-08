@@ -59,7 +59,7 @@ static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t le
 static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
 {
     AudioFIRContext *s = ctx->priv;
-    const float *in = (const float *)s->in[0]->extended_data[ch] + offset;
+    const float *in = (const float *)s->in->extended_data[ch] + offset;
     float *block, *buf, *ptr = (float *)out->extended_data[ch] + offset;
     const int nb_samples = FFMIN(s->min_part_size, out->nb_samples - offset);
     int n, i, j;
@@ -175,7 +175,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
 
     if (s->pts == AV_NOPTS_VALUE)
         s->pts = in->pts;
-    s->in[0] = in;
+    s->in = in;
     ctx->internal->execute(ctx, fir_channels, out, NULL, FFMIN(outlink->channels,
                                                                ff_filter_get_nb_threads(ctx)));
 
@@ -184,7 +184,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
         s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     av_frame_free(&in);
-    s->in[0] = NULL;
+    s->in = NULL;
 
     return ff_filter_frame(outlink, out);
 }
@@ -255,9 +255,9 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     if (!mag || !phase || !delay)
         goto end;
 
-    channel = av_clip(s->ir_channel, 0, s->in[1]->channels - 1);
+    channel = av_clip(s->ir_channel, 0, s->ir[0]->channels - 1);
     for (i = 0; i < s->w; i++) {
-        const float *src = (const float *)s->in[1]->extended_data[channel];
+        const float *src = (const float *)s->ir[0]->extended_data[channel];
         double w = i * M_PI / (s->w - 1);
         double div, real_num = 0., imag_num = 0., real = 0., imag = 0.;
 
@@ -404,7 +404,7 @@ static int convert_coeffs(AVFilterContext *ctx)
         part_size = FFMIN(part_size, max_part_size);
     }
 
-    ret = ff_inlink_consume_samples(ctx->inputs[1], s->nb_taps, s->nb_taps, &s->in[1]);
+    ret = ff_inlink_consume_samples(ctx->inputs[1], s->nb_taps, s->nb_taps, &s->ir[0]);
     if (ret < 0)
         return ret;
     if (ret == 0)
@@ -421,7 +421,7 @@ static int convert_coeffs(AVFilterContext *ctx)
         break;
     case 0:
         for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+            float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
 
             for (i = 0; i < s->nb_taps; i++)
                 power += FFABS(time[i]);
@@ -430,7 +430,7 @@ static int convert_coeffs(AVFilterContext *ctx)
         break;
     case 1:
         for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+            float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
 
             for (i = 0; i < s->nb_taps; i++)
                 power += time[i];
@@ -439,7 +439,7 @@ static int convert_coeffs(AVFilterContext *ctx)
         break;
     case 2:
         for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+            float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
 
             for (i = 0; i < s->nb_taps; i++)
                 power += time[i] * time[i];
@@ -453,7 +453,7 @@ static int convert_coeffs(AVFilterContext *ctx)
     s->gain = FFMIN(s->gain * s->ir_gain, 1.f);
     av_log(ctx, AV_LOG_DEBUG, "power %f, gain %f\n", power, s->gain);
     for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-        float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+        float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
 
         s->fdsp->vector_fmul_scalar(time, time, s->gain, FFALIGN(s->nb_taps, 4));
     }
@@ -462,7 +462,7 @@ static int convert_coeffs(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_DEBUG, "nb_segments: %d\n", s->nb_segments);
 
     for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-        float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+        float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
         int toffset = 0;
 
         for (i = FFMAX(1, s->length * s->nb_taps); i < s->nb_taps; i++)
@@ -510,7 +510,7 @@ static int convert_coeffs(AVFilterContext *ctx)
         }
     }
 
-    av_frame_free(&s->in[1]);
+    av_frame_free(&s->ir[0]);
     s->have_coeffs = 1;
 
     return 0;
@@ -727,7 +727,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     av_freep(&s->fdsp);
-    av_frame_free(&s->in[1]);
+    av_frame_free(&s->ir[0]);
 
     for (int i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
