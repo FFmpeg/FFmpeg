@@ -26,6 +26,7 @@
 #include "libavutil/avassert.h"
 #include "os_support.h"
 #include "avformat.h"
+#include "internal.h"
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
@@ -664,4 +665,18 @@ int ff_check_interrupt(AVIOInterruptCB *cb)
     if (cb && cb->callback)
         return cb->callback(cb->opaque);
     return 0;
+}
+
+int ff_rename(const char *oldpath, const char *newpath, void *logctx)
+{
+    int ret = 0;
+    if (rename(oldpath, newpath) == -1) {
+        ret = AVERROR(errno);
+        if (logctx) {
+            char err[AV_ERROR_MAX_STRING_SIZE] = {0};
+            av_make_error_string(err, AV_ERROR_MAX_STRING_SIZE, ret);
+            av_log(logctx, AV_LOG_ERROR, "failed to rename file %s to %s: %s\n", oldpath, newpath, err);
+        }
+    }
+    return ret;
 }
