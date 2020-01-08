@@ -6361,7 +6361,7 @@ enabled libx264           && { check_pkg_config libx264 x264 "stdint.h x264.h" x
                              require_cpp_condition libx264 x264.h "X264_BUILD >= 118" &&
                              check_cpp_condition libx262 x264.h "X264_MPEG2"
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
-                             require_cpp_condition libx265 x265.h "X265_BUILD >= 68"
+                             require_cpp_condition libx265 x265.h "X265_BUILD >= 70"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
 enabled libxavs2          && require_pkg_config libxavs2 "xavs2 >= 1.3.0" "stdint.h xavs2.h" xavs2_api_get
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
