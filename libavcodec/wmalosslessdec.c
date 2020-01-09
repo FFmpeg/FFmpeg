@@ -532,7 +532,8 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
         i++;
     }
     for (; i < tile_size; i++) {
-        int quo = 0, rem, rem_bits, residue;
+        int rem, rem_bits;
+        unsigned quo = 0, residue;
         while(get_bits1(&s->gb)) {
             quo++;
             if (get_bits_left(&s->gb) <= 0)
@@ -771,7 +772,7 @@ static void revert_cdlms ## bits (WmallDecodeCtx *s, int ch, \
                                                         s->cdlms[ch][ilms].recent, \
                                                         FFALIGN(s->cdlms[ch][ilms].order, ROUND), \
                                                         WMASIGN(residue)); \
-            input = residue + (pred >> s->cdlms[ch][ilms].scaling); \
+            input = residue + (unsigned)(pred >> s->cdlms[ch][ilms].scaling); \
             lms_update ## bits(s, ch, ilms, input); \
             s->channel_residues[ch][icoef] = input; \
         } \
