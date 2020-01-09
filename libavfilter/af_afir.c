@@ -56,6 +56,13 @@ static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t le
     sum[2 * n] += t[2 * n] * c[2 * n];
 }
 
+static void direct(const float *in, const FFTComplex *ir, int len, float *out)
+{
+    for (int n = 0; n < len; n++)
+        for (int m = 0; m <= n; m++)
+            out[n] += ir[m].re * in[n - m];
+}
+
 static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
 {
     AudioFIRContext *s = ctx->priv;
@@ -70,8 +77,13 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
         float *dst = (float *)seg->output->extended_data[ch];
         float *sum = (float *)seg->sum->extended_data[ch];
 
-        s->fdsp->vector_fmul_scalar(src + seg->input_offset, in, s->dry_gain, FFALIGN(nb_samples, 4));
-        emms_c();
+        if (s->min_part_size >= 8) {
+            s->fdsp->vector_fmul_scalar(src + seg->input_offset, in, s->dry_gain, FFALIGN(nb_samples, 4));
+            emms_c();
+        } else {
+            for (n = 0; n < nb_samples; n++)
+                src[seg->input_offset + n] = in[n] * s->dry_gain;
+        }
 
         seg->output_offset[ch] += s->min_part_size;
         if (seg->output_offset[ch] == seg->part_size) {
@@ -80,6 +92,32 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
             memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
 
             dst += seg->output_offset[ch];
+            for (n = 0; n < nb_samples; n++) {
+                ptr[n] += dst[n];
+            }
+            continue;
+        }
+
+        if (seg->part_size < 8) {
+            memset(dst, 0, sizeof(*dst) * seg->part_size * seg->nb_partitions);
+
+            j = seg->part_index[ch];
+
+            for (i = 0; i < seg->nb_partitions; i++) {
+                const int coffset = j * seg->coeff_size;
+                const FFTComplex *coeff = (const FFTComplex *)seg->coeff->extended_data[ch * !s->one2many] + coffset;
+
+                direct(src, coeff, nb_samples, dst);
+
+                if (j == 0)
+                    j = seg->nb_partitions;
+                j--;
+            }
+
+            seg->part_index[ch] = (seg->part_index[ch] + 1) % seg->nb_partitions;
+
+            memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
+
             for (n = 0; n < nb_samples; n++) {
                 ptr[n] += dst[n];
             }
@@ -132,8 +170,13 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
         }
     }
 
-    s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 4));
-    emms_c();
+    if (s->min_part_size >= 8) {
+        s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 4));
+        emms_c();
+    } else {
+        for (n = 0; n < nb_samples; n++)
+            ptr[n] *= s->wet_gain;
+    }
 
     return 0;
 }
@@ -350,7 +393,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     if (!seg->part_index || !seg->output_offset)
         return AVERROR(ENOMEM);
 
-    for (int ch = 0; ch < ctx->inputs[0]->channels; ch++) {
+    for (int ch = 0; ch < ctx->inputs[0]->channels && part_size >= 8; ch++) {
         seg->rdft[ch]  = av_rdft_init(av_log2(2 * part_size), DFT_R2C);
         seg->irdft[ch] = av_rdft_init(av_log2(2 * part_size), IDFT_C2R);
         if (!seg->rdft[ch] || !seg->irdft[ch])
@@ -482,6 +525,14 @@ static int convert_coeffs(AVFilterContext *ctx)
                 const int coffset = i * seg->coeff_size;
                 const int remaining = s->nb_taps - toffset;
                 const int size = remaining >= seg->part_size ? seg->part_size : remaining;
+
+                if (size < 8) {
+                    for (n = 0; n < size; n++)
+                        coeff[coffset + n].re = time[toffset + n];
+
+                    toffset += size;
+                    continue;
+                }
 
                 memset(block, 0, sizeof(*block) * seg->fft_length);
                 memcpy(block, time + toffset, size * sizeof(*block));
@@ -842,7 +893,7 @@ static const AVOption afir_options[] = {
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
     { "size",   "set video size",    OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
     { "rate",   "set video rate",    OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
-    { "minp",   "set min partition size", OFFSET(minp),  AV_OPT_TYPE_INT,   {.i64=8192}, 8, 32768, AF },
+    { "minp",   "set min partition size", OFFSET(minp),  AV_OPT_TYPE_INT,   {.i64=8192}, 1, 32768, AF },
     { "maxp",   "set max partition size", OFFSET(maxp),  AV_OPT_TYPE_INT,   {.i64=8192}, 8, 32768, AF },
     { NULL }
 };

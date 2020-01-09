@@ -1257,7 +1257,7 @@ Set video stream frame rate. This option is used only when @var{response} is ena
 
 @item minp
 Set minimal partition size used for convolution. Default is @var{8192}.
-Allowed range is from @var{8} to @var{32768}.
+Allowed range is from @var{1} to @var{32768}.
 Lower values decreases latency at cost of higher CPU usage.
 
 @item maxp
