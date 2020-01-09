@@ -551,6 +551,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     int codec_init_ok = 0;
     AVDictionary *tmp = NULL;
     const AVPixFmtDescriptor *pixdesc;
+    AVCodecInternal *avci;
 
     if (avcodec_is_open(avctx))
         return 0;
@@ -575,55 +576,56 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     ff_lock_avcodec(avctx, codec);
 
-    avctx->internal = av_mallocz(sizeof(*avctx->internal));
-    if (!avctx->internal) {
+    avci = av_mallocz(sizeof(*avci));
+    if (!avci) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
+    avctx->internal = avci;
 
-    avctx->internal->pool = av_mallocz(sizeof(*avctx->internal->pool));
-    if (!avctx->internal->pool) {
+    avci->pool = av_mallocz(sizeof(*avci->pool));
+    if (!avci->pool) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->to_free = av_frame_alloc();
-    if (!avctx->internal->to_free) {
+    avci->to_free = av_frame_alloc();
+    if (!avci->to_free) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->compat_decode_frame = av_frame_alloc();
-    if (!avctx->internal->compat_decode_frame) {
+    avci->compat_decode_frame = av_frame_alloc();
+    if (!avci->compat_decode_frame) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->buffer_frame = av_frame_alloc();
-    if (!avctx->internal->buffer_frame) {
+    avci->buffer_frame = av_frame_alloc();
+    if (!avci->buffer_frame) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->buffer_pkt = av_packet_alloc();
-    if (!avctx->internal->buffer_pkt) {
+    avci->buffer_pkt = av_packet_alloc();
+    if (!avci->buffer_pkt) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->ds.in_pkt = av_packet_alloc();
-    if (!avctx->internal->ds.in_pkt) {
+    avci->ds.in_pkt = av_packet_alloc();
+    if (!avci->ds.in_pkt) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->last_pkt_props = av_packet_alloc();
-    if (!avctx->internal->last_pkt_props) {
+    avci->last_pkt_props = av_packet_alloc();
+    if (!avci->last_pkt_props) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
 
-    avctx->internal->skip_samples_multiplier = 1;
+    avci->skip_samples_multiplier = 1;
 
     if (codec->priv_data_size > 0) {
         if (!avctx->priv_data) {
@@ -755,7 +757,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
 
     if (HAVE_THREADS
-        && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
+        && !(avci->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
         ret = ff_thread_init(avctx);
         if (ret < 0) {
             goto free_and_end;
@@ -947,7 +949,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                "gray decoding requested but not enabled at configuration time\n");
 
     if (   avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME)
-        || avctx->internal->frame_thread_encoder)) {
+        || avci->frame_thread_encoder)) {
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
             goto free_and_end;
@@ -1045,7 +1047,7 @@ free_and_end:
          (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
         avctx->codec->close(avctx);
 
-    if (HAVE_THREADS && avctx->internal->thread_ctx)
+    if (HAVE_THREADS && avci->thread_ctx)
         ff_thread_free(avctx);
 
     if (codec->priv_class && codec->priv_data_size)
@@ -1061,19 +1063,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     av_freep(&avctx->subtitle_header);
-    if (avctx->internal) {
-        av_frame_free(&avctx->internal->to_free);
-        av_frame_free(&avctx->internal->compat_decode_frame);
-        av_frame_free(&avctx->internal->buffer_frame);
-        av_packet_free(&avctx->internal->buffer_pkt);
-        av_packet_free(&avctx->internal->last_pkt_props);
+    if (avci) {
+        av_frame_free(&avci->to_free);
+        av_frame_free(&avci->compat_decode_frame);
+        av_frame_free(&avci->buffer_frame);
+        av_packet_free(&avci->buffer_pkt);
+        av_packet_free(&avci->last_pkt_props);
 
-        av_packet_free(&avctx->internal->ds.in_pkt);
+        av_packet_free(&avci->ds.in_pkt);
         ff_decode_bsfs_uninit(avctx);
 
-        av_freep(&avctx->internal->pool);
+        av_freep(&avci->pool);
     }
-    av_freep(&avctx->internal);
+    av_freep(&avci);
+    avctx->internal = NULL;
     avctx->codec = NULL;
     goto end;
 }
