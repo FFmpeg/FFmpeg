@@ -1183,7 +1183,7 @@ afftfilt="real='hypot(re,im)*cos((random(0)*2-1)*2*3.14)':imag='hypot(re,im)*sin
 @anchor{afir}
 @section afir
 
-Apply an arbitrary Frequency Impulse Response filter.
+Apply an arbitrary Finite Impulse Response filter.
 
 This filter is designed for applying long FIR filters,
 up to 60 seconds long.
@@ -1192,10 +1192,10 @@ It can be used as component for digital crossover filters,
 room equalization, cross talk cancellation, wavefield synthesis,
 auralization, ambiophonics, ambisonics and spatialization.
 
-This filter uses the second stream as FIR coefficients.
-If the second stream holds a single channel, it will be used
+This filter uses the streams higher than first one as FIR coefficients.
+If the non-first stream holds a single channel, it will be used
 for all input channels in the first stream, otherwise
-the number of channels in the second stream must be same as
+the number of channels in the non-first stream must be same as
 the number of channels in the first stream.
 
 It accepts the following parameters:
@@ -1264,6 +1264,15 @@ Lower values decreases latency at cost of higher CPU usage.
 Set maximal partition size used for convolution. Default is @var{8192}.
 Allowed range is from @var{8} to @var{32768}.
 Lower values may increase CPU usage.
+
+@item nbirs
+Set number of input impulse responses streams which will be switchable at runtime.
+Allowed range is from @var{1} to @var{32}. Default is @var{1}.
+
+@item ir
+Set IR stream which will be used for convolution, starting from @var{0}, should always be
+lower than supplied value by @code{nbirs} option. Default is @var{0}.
+This option can be changed at runtime via @ref{commands}.
 @end table
 
 @subsection Examples

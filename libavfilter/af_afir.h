@@ -74,10 +74,12 @@ typedef struct AudioFIRContext {
     int ir_channel;
     int minp;
     int maxp;
+    int nb_irs;
+    int selir;
 
     float gain;
 
-    int eof_coeffs;
+    int eof_coeffs[32];
     int have_coeffs;
     int nb_taps;
     int nb_channels;

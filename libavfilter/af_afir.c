@@ -25,6 +25,7 @@
 
 #include <float.h>
 
+#include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intreadwrite.h"
@@ -298,9 +299,9 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     if (!mag || !phase || !delay)
         goto end;
 
-    channel = av_clip(s->ir_channel, 0, s->ir[0]->channels - 1);
+    channel = av_clip(s->ir_channel, 0, s->ir[s->selir]->channels - 1);
     for (i = 0; i < s->w; i++) {
-        const float *src = (const float *)s->ir[0]->extended_data[channel];
+        const float *src = (const float *)s->ir[s->selir]->extended_data[channel];
         double w = i * M_PI / (s->w - 1);
         double div, real_num = 0., imag_num = 0., real = 0., imag = 0.;
 
@@ -403,7 +404,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     seg->sum    = ff_get_audio_buffer(ctx->inputs[0], seg->fft_length);
     seg->block  = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions * seg->block_size);
     seg->buffer = ff_get_audio_buffer(ctx->inputs[0], seg->part_size);
-    seg->coeff  = ff_get_audio_buffer(ctx->inputs[1], seg->nb_partitions * seg->coeff_size * 2);
+    seg->coeff  = ff_get_audio_buffer(ctx->inputs[1 + s->selir], seg->nb_partitions * seg->coeff_size * 2);
     seg->input  = ff_get_audio_buffer(ctx->inputs[0], seg->input_size);
     seg->output = ff_get_audio_buffer(ctx->inputs[0], seg->part_size);
     if (!seg->buffer || !seg->sum || !seg->block || !seg->coeff || !seg->input || !seg->output)
@@ -412,79 +413,116 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     return 0;
 }
 
+static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
+{
+    AudioFIRContext *s = ctx->priv;
+
+    if (seg->rdft) {
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            av_rdft_end(seg->rdft[ch]);
+        }
+    }
+    av_freep(&seg->rdft);
+
+    if (seg->irdft) {
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            av_rdft_end(seg->irdft[ch]);
+        }
+    }
+    av_freep(&seg->irdft);
+
+    av_freep(&seg->output_offset);
+    av_freep(&seg->part_index);
+
+    av_frame_free(&seg->block);
+    av_frame_free(&seg->sum);
+    av_frame_free(&seg->buffer);
+    av_frame_free(&seg->coeff);
+    av_frame_free(&seg->input);
+    av_frame_free(&seg->output);
+    seg->input_size = 0;
+}
+
 static int convert_coeffs(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
-    int left, offset = 0, part_size, max_part_size;
-    int ret, i, ch, n;
+    int ret, i, ch, n, cur_nb_taps;
     float power = 0;
 
-    s->nb_taps = ff_inlink_queued_samples(ctx->inputs[1]);
-    if (s->nb_taps <= 0)
-        return AVERROR(EINVAL);
+    if (!s->nb_taps) {
+        int part_size, max_part_size;
+        int left, offset = 0;
 
-    if (s->minp > s->maxp) {
-        s->maxp = s->minp;
+        s->nb_taps = ff_inlink_queued_samples(ctx->inputs[1 + s->selir]);
+        if (s->nb_taps <= 0)
+            return AVERROR(EINVAL);
+
+        if (s->minp > s->maxp) {
+            s->maxp = s->minp;
+        }
+
+        left = s->nb_taps;
+        part_size = 1 << av_log2(s->minp);
+        max_part_size = 1 << av_log2(s->maxp);
+
+        s->min_part_size = part_size;
+
+        for (i = 0; left > 0; i++) {
+            int step = part_size == max_part_size ? INT_MAX : 1 + (i == 0);
+            int nb_partitions = FFMIN(step, (left + part_size - 1) / part_size);
+
+            s->nb_segments = i + 1;
+            ret = init_segment(ctx, &s->seg[i], offset, nb_partitions, part_size);
+            if (ret < 0)
+                return ret;
+            offset += nb_partitions * part_size;
+            left -= nb_partitions * part_size;
+            part_size *= 2;
+            part_size = FFMIN(part_size, max_part_size);
+        }
     }
 
-    left = s->nb_taps;
-    part_size = 1 << av_log2(s->minp);
-    max_part_size = 1 << av_log2(s->maxp);
-
-    s->min_part_size = part_size;
-
-    for (i = 0; left > 0; i++) {
-        int step = part_size == max_part_size ? INT_MAX : 1 + (i == 0);
-        int nb_partitions = FFMIN(step, (left + part_size - 1) / part_size);
-
-        s->nb_segments = i + 1;
-        ret = init_segment(ctx, &s->seg[i], offset, nb_partitions, part_size);
+    if (!s->ir[s->selir]) {
+        ret = ff_inlink_consume_samples(ctx->inputs[1 + s->selir], s->nb_taps, s->nb_taps, &s->ir[s->selir]);
         if (ret < 0)
             return ret;
-        offset += nb_partitions * part_size;
-        left -= nb_partitions * part_size;
-        part_size *= 2;
-        part_size = FFMIN(part_size, max_part_size);
+        if (ret == 0)
+            return AVERROR_BUG;
     }
-
-    ret = ff_inlink_consume_samples(ctx->inputs[1], s->nb_taps, s->nb_taps, &s->ir[0]);
-    if (ret < 0)
-        return ret;
-    if (ret == 0)
-        return AVERROR_BUG;
 
     if (s->response)
         draw_response(ctx, s->video);
 
     s->gain = 1;
+    cur_nb_taps = s->ir[s->selir]->nb_samples;
 
     switch (s->gtype) {
     case -1:
         /* nothing to do */
         break;
     case 0:
-        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-            float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
+        for (ch = 0; ch < ctx->inputs[1 + s->selir]->channels; ch++) {
+            float *time = (float *)s->ir[s->selir]->extended_data[!s->one2many * ch];
 
-            for (i = 0; i < s->nb_taps; i++)
+            for (i = 0; i < cur_nb_taps; i++)
                 power += FFABS(time[i]);
         }
-        s->gain = ctx->inputs[1]->channels / power;
+        s->gain = ctx->inputs[1 + s->selir]->channels / power;
         break;
     case 1:
-        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-            float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
+        for (ch = 0; ch < ctx->inputs[1 + s->selir]->channels; ch++) {
+            float *time = (float *)s->ir[s->selir]->extended_data[!s->one2many * ch];
 
-            for (i = 0; i < s->nb_taps; i++)
+            for (i = 0; i < cur_nb_taps; i++)
                 power += time[i];
         }
-        s->gain = ctx->inputs[1]->channels / power;
+        s->gain = ctx->inputs[1 + s->selir]->channels / power;
         break;
     case 2:
-        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-            float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
+        for (ch = 0; ch < ctx->inputs[1 + s->selir]->channels; ch++) {
+            float *time = (float *)s->ir[s->selir]->extended_data[!s->one2many * ch];
 
-            for (i = 0; i < s->nb_taps; i++)
+            for (i = 0; i < cur_nb_taps; i++)
                 power += time[i] * time[i];
         }
         s->gain = sqrtf(ch / power);
@@ -495,17 +533,17 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     s->gain = FFMIN(s->gain * s->ir_gain, 1.f);
     av_log(ctx, AV_LOG_DEBUG, "power %f, gain %f\n", power, s->gain);
-    for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-        float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
+    for (ch = 0; ch < ctx->inputs[1 + s->selir]->channels; ch++) {
+        float *time = (float *)s->ir[s->selir]->extended_data[!s->one2many * ch];
 
-        s->fdsp->vector_fmul_scalar(time, time, s->gain, FFALIGN(s->nb_taps, 4));
+        s->fdsp->vector_fmul_scalar(time, time, s->gain, FFALIGN(cur_nb_taps, 4));
     }
 
-    av_log(ctx, AV_LOG_DEBUG, "nb_taps: %d\n", s->nb_taps);
+    av_log(ctx, AV_LOG_DEBUG, "nb_taps: %d\n", cur_nb_taps);
     av_log(ctx, AV_LOG_DEBUG, "nb_segments: %d\n", s->nb_segments);
 
-    for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-        float *time = (float *)s->ir[0]->extended_data[!s->one2many * ch];
+    for (ch = 0; ch < ctx->inputs[1 + s->selir]->channels; ch++) {
+        float *time = (float *)s->ir[s->selir]->extended_data[!s->one2many * ch];
         int toffset = 0;
 
         for (i = FFMAX(1, s->length * s->nb_taps); i < s->nb_taps; i++)
@@ -561,7 +599,6 @@ static int convert_coeffs(AVFilterContext *ctx)
         }
     }
 
-    av_frame_free(&s->ir[0]);
     s->have_coeffs = 1;
 
     return 0;
@@ -594,26 +631,26 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
     if (s->response)
         FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[1], ctx);
-    if (!s->eof_coeffs) {
+    if (!s->eof_coeffs[s->selir]) {
         AVFrame *ir = NULL;
 
-        ret = check_ir(ctx->inputs[1], ir);
+        ret = check_ir(ctx->inputs[1 + s->selir], ir);
         if (ret < 0)
             return ret;
 
-        if (ff_outlink_get_status(ctx->inputs[1]) == AVERROR_EOF)
-            s->eof_coeffs = 1;
+        if (ff_outlink_get_status(ctx->inputs[1 + s->selir]) == AVERROR_EOF)
+            s->eof_coeffs[s->selir] = 1;
 
-        if (!s->eof_coeffs) {
+        if (!s->eof_coeffs[s->selir]) {
             if (ff_outlink_frame_wanted(ctx->outputs[0]))
-                ff_inlink_request_frame(ctx->inputs[1]);
+                ff_inlink_request_frame(ctx->inputs[1 + s->selir]);
             else if (s->response && ff_outlink_frame_wanted(ctx->outputs[1]))
-                ff_inlink_request_frame(ctx->inputs[1]);
+                ff_inlink_request_frame(ctx->inputs[1 + s->selir]);
             return 0;
         }
     }
 
-    if (!s->have_coeffs && s->eof_coeffs) {
+    if (!s->have_coeffs && s->eof_coeffs[s->selir]) {
         ret = convert_coeffs(ctx);
         if (ret < 0)
             return ret;
@@ -709,8 +746,10 @@ static int query_formats(AVFilterContext *ctx)
             return ret;
         if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts)) < 0)
             return ret;
-        if ((ret = ff_channel_layouts_ref(mono, &ctx->inputs[1]->out_channel_layouts)) < 0)
-            return ret;
+        for (int i = 1; i < ctx->nb_inputs; i++) {
+            if ((ret = ff_channel_layouts_ref(mono, &ctx->inputs[i]->out_channel_layouts)) < 0)
+                return ret;
+        }
     }
 
     formats = ff_make_format_list(sample_fmts);
@@ -726,47 +765,17 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AudioFIRContext *s = ctx->priv;
 
-    s->one2many = ctx->inputs[1]->channels == 1;
+    s->one2many = ctx->inputs[1 + s->selir]->channels == 1;
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
     outlink->channel_layout = ctx->inputs[0]->channel_layout;
     outlink->channels = ctx->inputs[0]->channels;
 
     s->nb_channels = outlink->channels;
-    s->nb_coef_channels = ctx->inputs[1]->channels;
+    s->nb_coef_channels = ctx->inputs[1 + s->selir]->channels;
     s->pts = AV_NOPTS_VALUE;
 
     return 0;
-}
-
-static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
-{
-    AudioFIRContext *s = ctx->priv;
-
-    if (seg->rdft) {
-        for (int ch = 0; ch < s->nb_channels; ch++) {
-            av_rdft_end(seg->rdft[ch]);
-        }
-    }
-    av_freep(&seg->rdft);
-
-    if (seg->irdft) {
-        for (int ch = 0; ch < s->nb_channels; ch++) {
-            av_rdft_end(seg->irdft[ch]);
-        }
-    }
-    av_freep(&seg->irdft);
-
-    av_freep(&seg->output_offset);
-    av_freep(&seg->part_index);
-
-    av_frame_free(&seg->block);
-    av_frame_free(&seg->sum);
-    av_frame_free(&seg->buffer);
-    av_frame_free(&seg->coeff);
-    av_frame_free(&seg->input);
-    av_frame_free(&seg->output);
-    seg->input_size = 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -778,7 +787,13 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     av_freep(&s->fdsp);
-    av_frame_free(&s->ir[0]);
+
+    for (int i = 0; i < s->nb_irs; i++) {
+        av_frame_free(&s->ir[i]);
+    }
+
+    for (int i = 0; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
 
     for (int i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
@@ -818,7 +833,37 @@ static av_cold int init(AVFilterContext *ctx)
     AVFilterPad pad, vpad;
     int ret;
 
-    pad = (AVFilterPad){
+    pad = (AVFilterPad) {
+        .name = av_strdup("main"),
+        .type = AVMEDIA_TYPE_AUDIO,
+    };
+
+    if (!pad.name)
+        return AVERROR(ENOMEM);
+
+    ret = ff_insert_inpad(ctx, 0, &pad);
+    if (ret < 0) {
+        av_freep(&pad.name);
+        return ret;
+    }
+
+    for (int n = 0; n < s->nb_irs; n++) {
+        pad = (AVFilterPad) {
+            .name = av_asprintf("ir%d", n),
+            .type = AVMEDIA_TYPE_AUDIO,
+        };
+
+        if (!pad.name)
+            return AVERROR(ENOMEM);
+
+        ret = ff_insert_inpad(ctx, n + 1, &pad);
+        if (ret < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
+    }
+
+    pad = (AVFilterPad) {
         .name          = av_strdup("default"),
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
@@ -860,18 +905,31 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVFilterPad afir_inputs[] = {
-    {
-        .name = "main",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },{
-        .name = "ir",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-    { NULL }
-};
+static int process_command(AVFilterContext *ctx,
+                           const char *cmd,
+                           const char *arg,
+                           char *res,
+                           int res_len,
+                           int flags)
+{
+    AudioFIRContext *s = ctx->priv;
+    int prev_ir = s->selir;
+    int ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    s->selir = FFMIN(s->nb_irs - 1, s->selir);
+
+    if (prev_ir != s->selir) {
+        s->have_coeffs = 0;
+    }
+
+    return 0;
+}
 
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AFR AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 #define VF AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 #define OFFSET(x) offsetof(AudioFIRContext, x)
 
@@ -895,6 +953,8 @@ static const AVOption afir_options[] = {
     { "rate",   "set video rate",    OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
     { "minp",   "set min partition size", OFFSET(minp),  AV_OPT_TYPE_INT,   {.i64=8192}, 1, 32768, AF },
     { "maxp",   "set max partition size", OFFSET(maxp),  AV_OPT_TYPE_INT,   {.i64=8192}, 8, 32768, AF },
+    { "nbirs",  "set number of input IRs",OFFSET(nb_irs),AV_OPT_TYPE_INT,   {.i64=1},    1,    32, AF },
+    { "ir",     "select IR",              OFFSET(selir), AV_OPT_TYPE_INT,   {.i64=0},    0,    31, AFR },
     { NULL }
 };
 
@@ -902,14 +962,15 @@ AVFILTER_DEFINE_CLASS(afir);
 
 AVFilter ff_af_afir = {
     .name          = "afir",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Finite Impulse Response filter with supplied coefficients in 2nd stream."),
+    .description   = NULL_IF_CONFIG_SMALL("Apply Finite Impulse Response filter with supplied coefficients in additional stream(s)."),
     .priv_size     = sizeof(AudioFIRContext),
     .priv_class    = &afir_class,
     .query_formats = query_formats,
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = afir_inputs,
-    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+    .process_command = process_command,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS  |
+                     AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                      AVFILTER_FLAG_SLICE_THREADS,
 };
