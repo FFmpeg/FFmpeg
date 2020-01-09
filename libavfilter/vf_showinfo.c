@@ -221,10 +221,10 @@ static void update_sample_stats_16(int be, const uint8_t *src, int len, int64_t 
     for (i = 0; i < len / 2; i++) {
         if ((HAVE_BIGENDIAN && !be) || (!HAVE_BIGENDIAN && be)) {
             *sum += av_bswap16(src1[i]);
-            *sum2 += av_bswap16(src1[i]) * av_bswap16(src1[i]);
+            *sum2 += (uint32_t)av_bswap16(src1[i]) * (uint32_t)av_bswap16(src1[i]);
         } else {
             *sum += src1[i];
-            *sum2 += src1[i] * src1[i];
+            *sum2 += (uint32_t)src1[i] * (uint32_t)src1[i];
         }
     }
 }
