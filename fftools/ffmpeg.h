@@ -118,7 +118,7 @@ typedef struct OptionsContext {
     /* input options */
     int64_t input_ts_offset;
     int loop;
-    int rate_emu;
+    int rate_emu;//Ö¡ÂÊÄ£Äâ
     int accurate_seek;
     int thread_queue_size;
 

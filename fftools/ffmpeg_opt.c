@@ -1206,7 +1206,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
     f->nb_streams = ic->nb_streams;
-    f->rate_emu   = o->rate_emu;
+    f->rate_emu   = o->rate_emu;//
     f->accurate_seek = o->accurate_seek;
     f->loop = o->loop;
     f->duration = 0;

@@ -1555,9 +1555,10 @@ static double compute_target_delay(double delay, VideoState *is)
     return delay;
 }
 
+//
 static double vp_duration(VideoState *is, Frame *vp, Frame *nextvp) {
     if (vp->serial == nextvp->serial) {
-        double duration = nextvp->pts - vp->pts;
+        double duration = nextvp->pts - vp->pts;//两帧显示时间持续之差
         if (isnan(duration) || duration <= 0 || duration > is->max_frame_duration)
             return vp->duration;
         else
@@ -1611,8 +1612,8 @@ retry:
                 goto retry;
             }
 
-            if (lastvp->serial != vp->serial)
-                is->frame_timer = av_gettime_relative() / 1000000.0;
+            if (lastvp->serial != vp->serial)//当前帧和上一帧serial不一样
+                is->frame_timer = av_gettime_relative() / 1000000.0;//设置基准时间为当前时间
 
             if (is->paused)
                 goto display;
@@ -2287,7 +2288,7 @@ static void update_sample_display(VideoState *is, short *samples, int samples_si
 static int synchronize_audio(VideoState *is, int nb_samples)
 {
     int wanted_nb_samples = nb_samples;
-
+	//如果不是以音频作为主时钟，尝试丢帧和插帧去修正时钟
     /* if not master, then we try to remove or add samples to correct the clock */
     if (get_master_sync_type(is) != AV_SYNC_AUDIO_MASTER) {
         double diff, avg_diff;
