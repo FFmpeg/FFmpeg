@@ -93,6 +93,7 @@ typedef struct AdaptationSet {
     int max_width, max_height;
     int nb_streams;
     AVRational par;
+    int trick_idx;
 } AdaptationSet;
 
 typedef struct OutputStream {
@@ -135,6 +136,7 @@ typedef struct OutputStream {
     int frag_type;
     int64_t gop_size;
     AVRational sar;
+    int coding_dependency;
 } OutputStream;
 
 typedef struct DASHContext {
@@ -819,6 +821,8 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
 
     if (!final && c->ldash && as->max_frag_duration)
         avio_printf(out, "\t\t\t<Resync dT=\"%"PRId64"\" type=\"0\"/>\n", as->max_frag_duration);
+    if (as->trick_idx >= 0)
+        avio_printf(out, "\t\t\t<EssentialProperty id=\"%d\" schemeIdUri=\"http://dashif.org/guidelines/trickmode\" value=\"%d\"/>\n", as->id, as->trick_idx);
     role = av_dict_get(as->metadata, "role", NULL, 0);
     if (role)
         avio_printf(out, "\t\t\t<Role schemeIdUri=\"urn:mpeg:dash:role:2011\" value=\"%s\"/>\n", role->value);
@@ -846,6 +850,13 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
             avio_printf(out, " sar=\"%d:%d\"", os->sar.num, os->sar.den);
             if (st->avg_frame_rate.num && av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0)
                 avio_printf(out, " frameRate=\"%d/%d\"", st->avg_frame_rate.num, st->avg_frame_rate.den);
+            if (as->trick_idx >= 0) {
+                AdaptationSet *tas = &c->as[as->trick_idx];
+                if (!as->ambiguous_frame_rate && !tas->ambiguous_frame_rate)
+                    avio_printf(out, " maxPlayoutRate=\"%d\"", FFMAX((int)av_q2d(av_div_q(tas->min_frame_rate, as->min_frame_rate)), 1));
+            }
+            if (!os->coding_dependency)
+                avio_printf(out, " codingDependency=\"false\"");
             avio_printf(out, ">\n");
         } else {
             avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"audio/%s\" codecs=\"%s\"%s audioSamplingRate=\"%d\">\n",
@@ -889,6 +900,7 @@ static int add_adaptation_set(AVFormatContext *s, AdaptationSet **as, enum AVMed
     memset(*as, 0, sizeof(**as));
     (*as)->media_type = type;
     (*as)->frag_type = -1;
+    (*as)->trick_idx = -1;
 
     return 0;
 }
@@ -939,7 +951,8 @@ static int parse_adaptation_sets(AVFormatContext *s)
 
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     // option id=0,descriptor=descriptor_str,streams=0,1,2 and so on
-    // option id=0,seg_duration=2.5,frag_duration=0.5,streams=0,1,2 and so on
+    // option id=0,seg_duration=2.5,frag_duration=0.5,streams=0,1,2
+    //        id=1,trick_id=0,seg_duration=10,frag_type=none,streams=3 and so on
     // descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015
     // descriptor_str should be a self-closing xml tag.
     // seg_duration and frag_duration have the same syntax as the global options of
@@ -1028,6 +1041,20 @@ static int parse_adaptation_sets(AVFormatContext *s)
             if (*p)
                 p++;
             state = parse_default;
+        } else if ((state != new_set) && av_strstart(p, "trick_id=", &p)) {
+            char trick_id_str[10], *end_str;
+
+            n = strcspn(p, ",");
+            snprintf(trick_id_str, sizeof(trick_id_str), "%.*s", n, p);
+            p += n;
+
+            as->trick_idx = strtol(trick_id_str, &end_str, 10);
+            if (trick_id_str == end_str || as->trick_idx < 0)
+                return AVERROR(EINVAL);
+
+            if (*p)
+                p++;
+            state = parse_default;
         } else if ((state != new_set) && av_strstart(p, "streams=", &p)) { //descriptor and durations are optional
             state = parsing_streams;
         } else if (state == parsing_streams) {
@@ -1086,6 +1113,22 @@ end:
             return AVERROR(EINVAL);
         }
     }
+
+    // check references for trick mode AdaptationSet
+    for (i = 0; i < c->nb_as; i++) {
+        as = &c->as[i];
+        if (as->trick_idx < 0)
+            continue;
+        for (n = 0; n < c->nb_as; n++) {
+            if (c->as[n].id == as->trick_idx)
+                break;
+        }
+        if (n >= c->nb_as) {
+            av_log(s, AV_LOG_ERROR, "reference AdaptationSet id \"%d\" not found for trick mode AdaptationSet id \"%d\"\n", as->trick_idx, as->id);
+            return AVERROR(EINVAL);
+        }
+    }
+
     return 0;
 }
 
@@ -1476,7 +1519,8 @@ static int dash_init(AVFormatContext *s)
                 return ret;
             // We only want to parse frame headers
             os->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-        }
+        } else
+            os->coding_dependency = 1;
 
         if (c->single_file) {
             if (os->single_file_name)
@@ -2014,6 +2058,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!os->availability_time_offset &&
         ((os->frag_type == FRAG_TYPE_DURATION && os->seg_duration != os->frag_duration) ||
          (os->frag_type == FRAG_TYPE_EVERY_FRAME && pkt->duration))) {
+        AdaptationSet *as = &c->as[os->as_idx - 1];
         int64_t frame_duration = 0;
 
         switch (os->frag_type) {
@@ -2036,6 +2081,19 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         elapsed_duration = pkt->pts - os->start_pts;
         seg_end_duration = os->seg_duration;
+    }
+
+    if (os->parser &&
+        (os->frag_type == FRAG_TYPE_PFRAMES ||
+         as->trick_idx >= 0)) {
+        // Parse the packets only in scenarios where it's needed
+        uint8_t *data;
+        int size;
+        av_parser_parse2(os->parser, os->parser_avctx,
+                         &data, &size, pkt->data, pkt->size,
+                         pkt->pts, pkt->dts, pkt->pos);
+
+        os->coding_dependency |= os->parser->pict_type != AV_PICTURE_TYPE_I;
     }
 
     if (pkt->flags & AV_PKT_FLAG_KEY && os->packets_written &&
@@ -2085,14 +2143,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         os->frag_type == FRAG_TYPE_PFRAMES &&
         os->packets_written) {
-        uint8_t *data;
-        int size;
-
         av_assert0(os->parser);
-        av_parser_parse2(os->parser, os->parser_avctx,
-                         &data, &size, pkt->data, pkt->size,
-                         pkt->pts, pkt->dts, pkt->pos);
-
         if ((os->parser->pict_type == AV_PICTURE_TYPE_P &&
              st->codecpar->video_delay &&
              !(os->last_flags & AV_PKT_FLAG_KEY)) ||
@@ -2111,7 +2162,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (pkt->flags & AV_PKT_FLAG_KEY && (os->packets_written || os->nb_segments) && !os->gop_size) {
+    if (pkt->flags & AV_PKT_FLAG_KEY && (os->packets_written || os->nb_segments) && !os->gop_size && as->trick_idx < 0) {
         os->gop_size = os->last_duration + av_rescale_q(os->total_pkt_duration, st->time_base, AV_TIME_BASE_Q);
         c->max_gop_size = FFMAX(c->max_gop_size, os->gop_size);
     }

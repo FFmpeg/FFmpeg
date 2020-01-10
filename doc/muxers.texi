@@ -286,6 +286,8 @@ For example, -adaptation_sets "id=0,descriptor=<SupplementalProperty schemeIdUri
 Please note that descriptor string should be a self-closing xml tag.
 seg_duration, frag_duration and frag_type override the global option values for each adaptation set.
 For example, -adaptation_sets "id=0,seg_duration=2,frag_duration=1,frag_type=duration,streams=v id=1,seg_duration=2,frag_type=none,streams=a"
+type_id marks an adaptation set as containing streams meant to be used for Trick Mode for the referenced adaptation set.
+For example, -adaptation_sets "id=0,seg_duration=2,frag_type=none,streams=0 id=1,seg_duration=10,frag_type=none,trick_id=0,streams=1"
 @item timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
 @item index_correction @var{index_correction}
