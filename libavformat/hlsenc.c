@@ -1234,7 +1234,7 @@ static const char* get_relative_url(const char *master_url, const char *media_ur
     if (!p) p = strrchr(master_url, '\\');
 
     if (p) {
-        base_len = p + 1 - master_url;
+        base_len = p - master_url;
         if (av_strncasecmp(master_url, media_url, base_len)) {
             av_log(NULL, AV_LOG_WARNING, "Unable to find relative url\n");
             return NULL;
