@@ -1456,7 +1456,7 @@ static double get_master_clock(VideoState *is)
     }
     return val;
 }
-/** 检查外部时钟的速度 **/
+/** 检查外部时钟的速率并设置速率 **/
 static void check_external_clock_speed(VideoState *is) {
    if (is->video_stream >= 0 && is->videoq.nb_packets <= EXTERNAL_CLOCK_MIN_FRAMES ||
        is->audio_stream >= 0 && is->audioq.nb_packets <= EXTERNAL_CLOCK_MIN_FRAMES) {
@@ -1585,10 +1585,11 @@ static void video_refresh(void *opaque, double *remaining_time)
         check_external_clock_speed(is);
 
     if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st) {
+		//有音频流
         time = av_gettime_relative() / 1000000.0;
         if (is->force_refresh || is->last_vis_time + rdftspeed < time) {
             video_display(is);//rdftspeed = 20ms，两次显示实际值小于这个时间才显示
-            is->last_vis_time = time;
+            is->last_vis_time = time;//重设上一次显示的时间
         }
         *remaining_time = FFMIN(*remaining_time, is->last_vis_time + rdftspeed - time);//播放快了，下一个显示循环会休眠这个实际延迟显示
     }
@@ -1605,8 +1606,8 @@ retry:
             lastvp = frame_queue_peek_last(&is->pictq);
             vp = frame_queue_peek(&is->pictq);
 
-            if (vp->serial != is->videoq.serial) {
-                frame_queue_next(&is->pictq);
+            if (vp->serial != is->videoq.serial) {//在**read_thread由packet_queue_put_private累加
+                frame_queue_next(&is->pictq);//还没明白执行此步骤的原因
                 goto retry;
             }
 
@@ -2208,7 +2209,7 @@ static int video_thread(void *arg)
             tb = av_buffersink_get_time_base(filt_out);
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
-            pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
+            pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);//计算显示时间戳   tb：输入视频流中的时间基
             ret = queue_picture(is, frame, pts, duration, frame->pkt_pos, is->viddec.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
@@ -3222,7 +3223,8 @@ static void toggle_audio_display(VideoState *is)
 static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {//跑在主线程loop里面，主线程loop取队列中音视频送显示和播放
     double remaining_time = 0.0;
     SDL_PumpEvents();
-    while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+	//SDL_PeepEvents 返回值小于0说明出错了， 大于0说明有事件需要处理，这两种情况终止循环，=0时刷新视频
+    while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {//
         if (!cursor_hidden && av_gettime_relative() - cursor_last_shown > CURSOR_HIDE_DELAY) {
             SDL_ShowCursor(0);//显示光标
             cursor_hidden = 1;
