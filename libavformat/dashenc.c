@@ -1845,7 +1845,7 @@ static void dashenc_delete_file(AVFormatContext *s, char *filename) {
         av_dict_free(&http_opts);
         ff_format_io_close(s, &out);
     } else {
-        int res = avpriv_io_delete(filename);
+        int res = ffurl_delete(filename);
         if (res < 0) {
             char errbuf[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(res, errbuf, sizeof(errbuf));

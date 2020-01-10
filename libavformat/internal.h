@@ -792,7 +792,7 @@ int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *a
 int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src);
 
 /**
- * Wrap avpriv_io_move and log if error happens.
+ * Wrap ffurl_move() and log if error happens.
  *
  * @param url_src source path
  * @param url_dst destination path

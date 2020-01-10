@@ -375,25 +375,6 @@ const char *avio_find_protocol_name(const char *url);
 int avio_check(const char *url, int flags);
 
 /**
- * Move or rename a resource.
- *
- * @note url_src and url_dst should share the same protocol and authority.
- *
- * @param url_src url to resource to be moved
- * @param url_dst new url to resource if the operation succeeded
- * @return >=0 on success or negative on error.
- */
-int avpriv_io_move(const char *url_src, const char *url_dst);
-
-/**
- * Delete a resource.
- *
- * @param url resource to be deleted.
- * @return >=0 on success or negative on error.
- */
-int avpriv_io_delete(const char *url);
-
-/**
  * Open directory for reading.
  *
  * @param s       directory read context. Pointer to a NULL pointer must be passed.
