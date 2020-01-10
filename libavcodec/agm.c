@@ -1242,6 +1242,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->dct = avctx->codec_tag != MKTAG('A', 'G', 'M', '4') &&
              avctx->codec_tag != MKTAG('A', 'G', 'M', '5');
 
+    if (!s->rgb && !s->dct) {
+        if ((avctx->width & 1) || (avctx->height & 1))
+            return AVERROR_INVALIDDATA;
+    }
+
     avctx->idct_algo = FF_IDCT_SIMPLE;
     ff_idctdsp_init(&s->idsp, avctx);
     ff_init_scantable(s->idsp.idct_permutation, &s->scantable, ff_zigzag_direct);
