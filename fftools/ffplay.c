@@ -121,7 +121,7 @@ typedef struct PacketQueue {
     int size;
     int64_t duration;
     int abort_request;
-    int serial;
+    int serial;//初始化为0，后面累加
     SDL_mutex *mutex;
     SDL_cond *cond;
 } PacketQueue;
@@ -143,7 +143,7 @@ typedef struct AudioParams {
 typedef struct Clock {
     double pts;           /* clock base */ //时间基准
     double pts_drift;     /* clock base minus time at which we updated the clock *///时间基减去更新时钟的时间 
-    double last_updated;
+    double last_updated;//执行set_clock_at函数时获取的时间戳
     double speed;
     int serial;           /* clock is based on a packet with this serial */
     int paused;
@@ -214,7 +214,7 @@ typedef struct VideoState {
     int64_t seek_rel;
     int read_pause_return;
     AVFormatContext *ic;
-    int realtime;
+    int realtime;//rtps rtp rtmp是实时视频
 
     Clock audclk;
     Clock vidclk;
@@ -233,7 +233,7 @@ typedef struct VideoState {
     int av_sync_type;
 
     double audio_clock;
-    int audio_clock_serial;
+    int audio_clock_serial;//初始化时钟后设置为了-1
     double audio_diff_cum; /* used for AV difference average computation */
     double audio_diff_avg_coef;
     double audio_diff_threshold;
@@ -1380,20 +1380,22 @@ static double get_clock(Clock *c)
     } else {
         double time = av_gettime_relative() / 1000000.0;
         return c->pts_drift + time - (time - c->last_updated) * (1.0 - c->speed);
+		//speed = 1时，相当于返回：c->pts_drift + time
+		//                                          NAN-当前时间
     }
 }
-/** 设置时钟 **/
+/** 设置时钟 **/                           //初始化时 prs=NAN, serial=-1
 static void set_clock_at(Clock *c, double pts, int serial, double time)
 {
     c->pts = pts;
     c->last_updated = time;
-    c->pts_drift = c->pts - time;
+    c->pts_drift = c->pts - time; //初始化设置为：NAN-当前时间
     c->serial = serial;
 }
 /** 设置时钟  内部调用set_clock_at()**/
 static void set_clock(Clock *c, double pts, int serial)
 {
-    double time = av_gettime_relative() / 1000000.0;
+    double time = av_gettime_relative() / 1000000.0;//
     set_clock_at(c, pts, serial, time);
 }
 /** 设置时钟速度 **/
@@ -1407,15 +1409,15 @@ static void init_clock(Clock *c, int *queue_serial)
 {
     c->speed = 1.0;
     c->paused = 0;
-    c->queue_serial = queue_serial;
+    c->queue_serial = queue_serial;//初始化的时候设置为0
     set_clock(c, NAN, -1);
 }
 /** 音/视频设置时钟的时候都回去跟外部时钟进行对比，防止丢帧或者丢包情况下时间差距比较大而进行的纠偏 **/
 static void sync_clock_to_slave(Clock *c, Clock *slave)
 {
     double clock = get_clock(c);
-    double slave_clock = get_clock(slave);
-	//满足条件：外部时钟初始化了，clock未初始化或者时间偏差大于10ms预知
+    double slave_clock = get_clock(slave);//初始化的时候设置为NAN
+	//满足条件：slave已经非初始化状态 并且（clock是初始化状态 或者 时间偏差大于10ms阈值）
     if (!isnan(slave_clock) && (isnan(clock) || fabs(clock - slave_clock) > AV_NOSYNC_THRESHOLD))
         set_clock(c, slave_clock, slave->serial);
 }
@@ -2938,6 +2940,7 @@ static int read_thread(void *arg)
             continue;
         }
 #endif
+		//快进快退代码
         if (is->seek_req) {
             int64_t seek_target = is->seek_pos;
             int64_t seek_min    = is->seek_rel > 0 ? seek_target - is->seek_rel + 2: INT64_MIN;
@@ -3007,7 +3010,7 @@ static int read_thread(void *arg)
                 goto fail;
             }
         }
-        ret = av_read_frame(ic, pkt);
+        ret = av_read_frame(ic, pkt);//读取音视频帧
         if (ret < 0) {
             if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) {
                 if (is->video_stream >= 0)
@@ -3028,6 +3031,7 @@ static int read_thread(void *arg)
             is->eof = 0;
         }
         /* check if packet is in play range specified by user, then queue, otherwise discard */
+		//stream_start_time设置为：第一帧时间戳
         stream_start_time = ic->streams[pkt->stream_index]->start_time;
         pkt_ts = pkt->pts == AV_NOPTS_VALUE ? pkt->dts : pkt->pts;
         pkt_in_play_range = duration == AV_NOPTS_VALUE ||
@@ -3324,7 +3328,7 @@ static void event_loop(VideoState *cur_stream)
                     toggle_audio_display(cur_stream);
                 }
 #else
-                toggle_audio_display(cur_stream);
+                toggle_audio_display(cur_stream);//触发
 #endif
                 break;
             case SDLK_PAGEUP:
@@ -3352,7 +3356,7 @@ static void event_loop(VideoState *cur_stream)
                 goto do_seek;
             case SDLK_DOWN:
                 incr = -60.0;
-            do_seek:
+            do_seek://快进快退
                     if (seek_by_bytes) {
                         pos = -1;
                         if (pos < 0 && cur_stream->video_stream >= 0)

@@ -714,7 +714,7 @@ static void force_codec_ids(AVFormatContext *s, AVStream *st)
     }
 }
 
-static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
+static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)//编码格式探测
 {
     if (st->request_probe>0) {
         AVProbeData *pd = &st->probe_data;
@@ -845,7 +845,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (pktl) {
             st = s->streams[pktl->pkt.stream_index];
-            if (s->internal->raw_packet_buffer_remaining_size <= 0)
+            if (s->internal->raw_packet_buffer_remaining_size <= 0)//只探测一次
                 if ((err = probe_codec(s, st, NULL)) < 0)
                     return err;
             if (st->request_probe <= 0) {
@@ -870,7 +870,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->probe_packets || st->request_probe > 0)
-                    if ((err = probe_codec(s, st, NULL)) < 0)
+                    if ((err = probe_codec(s, st, NULL)) < 0)//探测每路输入流的编码格式
                         return err;
                 av_assert0(st->request_probe <= 0);
             }
@@ -3806,7 +3806,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         /* NOTE: A new stream can be added there if no header in file
          * (AVFMTCTX_NOHEADER). */
-        ret = read_frame_internal(ic, &pkt1);
+        ret = read_frame_internal(ic, &pkt1);//里面会探测编码格式
         if (ret == AVERROR(EAGAIN))
             continue;
 

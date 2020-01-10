@@ -4010,7 +4010,7 @@ static int check_keyboard_interaction(int64_t cur_time)
     return 0;
 }
 
-#if HAVE_THREADS
+//#if HAVE_THREADS
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
@@ -4113,13 +4113,13 @@ static int init_input_threads(void)
     return 0;
 }
 
-static int get_input_packet_mt(InputFile *f, AVPacket *pkt)
+static int get_input_packet_mt(InputFile *f, AVPacket *pkt)//获取输入线程读取文件放在队列中的packet
 {
     return av_thread_message_queue_recv(f->in_thread_queue, pkt,
                                         f->non_blocking ?
                                         AV_THREAD_MESSAGE_NONBLOCK : 0);
 }
-#endif
+//#endif
 
 static int get_input_packet(InputFile *f, AVPacket *pkt)
 {

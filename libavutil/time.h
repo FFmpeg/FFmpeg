@@ -29,6 +29,7 @@
 int64_t av_gettime(void);
 
 /**
+ * 时间戳单位：微妙
  * Get the current time in microseconds since some unspecified starting point.
  * On platforms that support it, the time comes from a monotonic clock
  * This property makes this time source ideal for measuring relative time.

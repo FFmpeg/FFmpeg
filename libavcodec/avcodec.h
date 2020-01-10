@@ -1481,7 +1481,7 @@ typedef struct AVPacket {
     int64_t dts;
     uint8_t *data;
     int   size;
-    int   stream_index;
+    int   stream_index;//流的索引，比如 0：视频 1：音频 2： 字幕
     /**
      * A combination of AV_PKT_FLAG values
      */
