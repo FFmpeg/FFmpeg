@@ -444,7 +444,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 {
     SPPContext *s = ctx->priv;
 
-    if (!strcmp(cmd, "level")) {
+    if (!strcmp(cmd, "level") || !strcmp(cmd, "quality")) {
         if (!strcmp(args, "max"))
             s->log2_count = MAX_LEVEL;
         else

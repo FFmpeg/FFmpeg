@@ -17290,6 +17290,15 @@ option may cause flicker since the B-Frames have often larger QP. Default is
 @code{0} (not enabled).
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item level
+@item quality
+Same as quality option. And the command accepts the @code{max} same as the @code{6}.
+@end table
+
 @section sr
 
 Scale the input by applying one of the super-resolution methods based on
