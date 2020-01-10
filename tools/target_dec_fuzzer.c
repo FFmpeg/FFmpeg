@@ -93,7 +93,7 @@ const uint32_t maxiteration = 8096;
 const uint64_t maxpixels_per_frame = 4096 * 4096;
 uint64_t maxpixels;
 
-const uint64_t maxsamples_per_frame = 256*1024*32;
+uint64_t maxsamples_per_frame = 256*1024*32;
 uint64_t maxsamples;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
@@ -132,6 +132,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
     case AVMEDIA_TYPE_VIDEO   : decode_handler = avcodec_decode_video2; break;
     case AVMEDIA_TYPE_SUBTITLE: decode_handler = subtitle_handler     ; break;
+    }
+    switch (c->id) {
+    case AV_CODEC_ID_APE:       maxsamples_per_frame /= 256; break;
     }
     maxpixels = maxpixels_per_frame * maxiteration;
     maxsamples = maxsamples_per_frame * maxiteration;
