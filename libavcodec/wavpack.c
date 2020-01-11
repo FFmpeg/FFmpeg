@@ -1114,9 +1114,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         avctx->bits_per_raw_sample = ((frame_flags & 0x03) + 1) << 3;
     }
 
-    while (buf_size > 0) {
-        if (buf_size <= WV_HEADER_SIZE)
-            break;
+    while (buf_size > WV_HEADER_SIZE) {
         frame_size = AV_RL32(buf + 4) - 12;
         buf       += 20;
         buf_size  -= 20;
