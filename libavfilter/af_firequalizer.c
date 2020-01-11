@@ -112,10 +112,11 @@ typedef struct FIREqualizerContext {
 
 #define OFFSET(x) offsetof(FIREqualizerContext, x)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption firequalizer_options[] = {
-    { "gain", "set gain curve", OFFSET(gain), AV_OPT_TYPE_STRING, { .str = "gain_interpolate(f)" }, 0, 0, FLAGS },
-    { "gain_entry", "set gain entry", OFFSET(gain_entry), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
+    { "gain", "set gain curve", OFFSET(gain), AV_OPT_TYPE_STRING, { .str = "gain_interpolate(f)" }, 0, 0, TFLAGS },
+    { "gain_entry", "set gain entry", OFFSET(gain_entry), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, TFLAGS },
     { "delay", "set delay", OFFSET(delay), AV_OPT_TYPE_DOUBLE, { .dbl = 0.01 }, 0.0, 1e10, FLAGS },
     { "accuracy", "set accuracy", OFFSET(accuracy), AV_OPT_TYPE_DOUBLE, { .dbl = 5.0 }, 0.0, 1e10, FLAGS },
     { "wfunc", "set window function", OFFSET(wfunc), AV_OPT_TYPE_INT, { .i64 = WFUNC_HANN }, 0, NB_WFUNC-1, FLAGS, "wfunc" },
