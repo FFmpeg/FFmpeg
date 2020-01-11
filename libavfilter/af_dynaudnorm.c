@@ -521,10 +521,11 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
     }
 
     while (cqueue_size(s->gain_history_minimum[channel]) >= s->filter_size) {
-        double smoothed;
+        double smoothed, limit;
 
         smoothed = gaussian_filter(s, s->gain_history_minimum[channel], s->threshold_history[channel]);
-        smoothed = FFMIN(smoothed, cqueue_peek(s->gain_history_minimum[channel], s->filter_size / 2));
+        limit    = cqueue_peek(s->gain_history_original[channel], 0);
+        smoothed = FFMIN(smoothed, limit);
 
         cqueue_enqueue(s->gain_history_smoothed[channel], smoothed);
 
