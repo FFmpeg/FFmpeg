@@ -814,7 +814,7 @@ following image formats are supported:
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
 @item AV1                    @tab  E  @tab  E
-    @tab Supported through external libraries libaom and libdav1d
+    @tab Supported through external libraries libaom, libdav1d and librav1e
 @item Avid 1:1 10-bit RGB Packer  @tab  X  @tab  X
     @tab fourcc: AVrp
 @item AVS (Audio Video Standard) video  @tab     @tab  X
