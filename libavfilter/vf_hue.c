@@ -86,7 +86,7 @@ typedef struct HueContext {
 } HueContext;
 
 #define OFFSET(x) offsetof(HueContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption hue_options[] = {
     { "h", "set the hue angle degrees expression", OFFSET(hue_deg_expr), AV_OPT_TYPE_STRING,
       { .str = NULL }, .flags = FLAGS },
