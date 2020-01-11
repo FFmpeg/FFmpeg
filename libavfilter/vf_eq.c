@@ -353,24 +353,24 @@ static const AVFilterPad eq_outputs[] = {
 
 #define OFFSET(x) offsetof(EQContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
-
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption eq_options[] = {
     { "contrast",     "set the contrast adjustment, negative values give a negative image",
-        OFFSET(contrast_expr),     AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(contrast_expr),     AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "brightness",   "set the brightness adjustment",
-        OFFSET(brightness_expr),   AV_OPT_TYPE_STRING, {.str = "0.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(brightness_expr),   AV_OPT_TYPE_STRING, {.str = "0.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "saturation",   "set the saturation adjustment",
-        OFFSET(saturation_expr),   AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(saturation_expr),   AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "gamma",        "set the initial gamma value",
-        OFFSET(gamma_expr),        AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_expr),        AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "gamma_r",      "gamma value for red",
-        OFFSET(gamma_r_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_r_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "gamma_g",      "gamma value for green",
-        OFFSET(gamma_g_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_g_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "gamma_b",      "gamma value for blue",
-        OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "gamma_weight", "set the gamma weight which reduces the effect of gamma on bright areas",
-        OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, TFLAGS },
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
