@@ -123,7 +123,14 @@ static int zmq_proto_open(URLContext *h, const char *uri, int flags)
             return AVERROR_EXTERNAL;
         }
 
-        zmq_setsockopt(s->socket, ZMQ_SUBSCRIBE, "", 0);
+        ret = zmq_setsockopt(s->socket, ZMQ_SUBSCRIBE, "", 0);
+        if (ret == -1) {
+            av_log(h, AV_LOG_ERROR, "Error occured during zmq_setsockopt(): %s\n", ZMQ_STRERROR);
+            zmq_close(s->socket);
+            zmq_ctx_term(s->context);
+            return AVERROR_EXTERNAL;
+        }
+
         ret = zmq_connect(s->socket, uri);
         if (ret == -1) {
             av_log(h, AV_LOG_ERROR, "Error occured during zmq_connect(): %s\n", ZMQ_STRERROR);
