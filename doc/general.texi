@@ -819,6 +819,8 @@ following image formats are supported:
     @tab fourcc: AVrp
 @item AVS (Audio Video Standard) video  @tab     @tab  X
     @tab Video encoding used by the Creature Shock game.
+@item AVS2-P2/IEEE1857.4     @tab  E  @tab  E
+    @tab Supported through external libraries libxavs2 and libdavs2
 @item AYUV                   @tab  X  @tab  X
     @tab Microsoft uncompressed packed 4:4:4:4
 @item Beam Software VB       @tab     @tab  X
