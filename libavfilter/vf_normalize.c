@@ -166,6 +166,47 @@ static void process(NormalizeContext *s, AVFrame *in, AVFrame *out)
     }
 }
 
+static void find_min_max_planar(NormalizeContext *s, AVFrame *in, NormalizeLocal min[3], NormalizeLocal max[3])
+{
+    min[0].in = max[0].in = in->data[2][0];
+    min[1].in = max[1].in = in->data[0][0];
+    min[2].in = max[2].in = in->data[1][0];
+    for (int y = 0; y < in->height; y++) {
+        uint8_t *inrp = in->data[2] + y * in->linesize[2];
+        uint8_t *ingp = in->data[0] + y * in->linesize[0];
+        uint8_t *inbp = in->data[1] + y * in->linesize[1];
+        for (int x = 0; x < in->width; x++) {
+            min[0].in = FFMIN(min[0].in, inrp[x]);
+            max[0].in = FFMAX(max[0].in, inrp[x]);
+            min[1].in = FFMIN(min[1].in, ingp[x]);
+            max[1].in = FFMAX(max[1].in, ingp[x]);
+            min[2].in = FFMIN(min[2].in, inbp[x]);
+            max[2].in = FFMAX(max[2].in, inbp[x]);
+        }
+    }
+}
+
+static void process_planar(NormalizeContext *s, AVFrame *in, AVFrame *out)
+{
+    for (int y = 0; y < in->height; y++) {
+        uint8_t *inrp = in->data[2] + y * in->linesize[2];
+        uint8_t *ingp = in->data[0] + y * in->linesize[0];
+        uint8_t *inbp = in->data[1] + y * in->linesize[1];
+        uint8_t *inap = in->data[3] + y * in->linesize[3];
+        uint8_t *outrp = out->data[2] + y * out->linesize[2];
+        uint8_t *outgp = out->data[0] + y * out->linesize[0];
+        uint8_t *outbp = out->data[1] + y * out->linesize[1];
+        uint8_t *outap = out->data[3] + y * out->linesize[3];
+        for (int x = 0; x < in->width; x++) {
+            outrp[x] = s->lut[0][inrp[x]];
+            outgp[x] = s->lut[1][ingp[x]];
+            outbp[x] = s->lut[2][inbp[x]];
+            if (s->num_components == 4)
+                outap[x] = inap[x];
+        }
+    }
+}
+
 // This function is the main guts of the filter. Normalizes the input frame
 // into the output frame. The frames are known to have the same dimensions
 // and pixel format.
@@ -283,6 +324,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB0,
         AV_PIX_FMT_0BGR,
         AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_NONE
     };
     // According to filter_design.txt, using ff_set_common_formats() this way
@@ -302,7 +345,7 @@ static int config_input(AVFilterLink *inlink)
     NormalizeContext *s = inlink->dst->priv;
     // Store offsets to R,G,B,A bytes respectively in each pixel
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int c;
+    int c, planar;
 
     ff_fill_rgba_map(s->co, inlink->format);
     s->num_components = desc->nb_components;
@@ -325,8 +368,10 @@ static int config_input(AVFilterLink *inlink)
         s->max[c].history = s->history_mem + (c*2+1) * s->history_len;
     }
 
-    s->find_min_max = find_min_max;
-    s->process = process;
+    planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+
+    s->find_min_max = planar ? find_min_max_planar : find_min_max;
+    s->process = planar? process_planar : process;
 
     return 0;
 }
