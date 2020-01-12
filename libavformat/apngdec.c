@@ -127,7 +127,7 @@ static int append_extradata(AVCodecParameters *par, AVIOContext *pb, int len)
     int new_size, ret;
     uint8_t *new_extradata;
 
-    if (previous_size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - len)
+    if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - previous_size)
         return AVERROR_INVALIDDATA;
 
     new_size = previous_size + len;
@@ -208,7 +208,7 @@ static int apng_read_header(AVFormatContext *s)
             goto fail;
 
         len = avio_rb32(pb);
-        if (len > 0x7fffffff) {
+        if (len > INT_MAX - 12) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
