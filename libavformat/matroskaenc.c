@@ -288,21 +288,22 @@ static void put_ebml_string(AVIOContext *pb, uint32_t elementid,
  *
  * @param size The number of bytes to reserve, which must be at least 2.
  */
-static void put_ebml_void(AVIOContext *pb, uint64_t size)
+static void put_ebml_void(AVIOContext *pb, int size)
 {
-    int64_t currentpos = avio_tell(pb);
-
     av_assert0(size >= 2);
 
     put_ebml_id(pb, EBML_ID_VOID);
     // we need to subtract the length needed to store the size from the
     // size we need to reserve so 2 cases, we use 8 bytes to store the
     // size if possible, 1 byte otherwise
-    if (size < 10)
-        put_ebml_num(pb, size - 2, 0);
-    else
-        put_ebml_num(pb, size - 9, 8);
-    ffio_fill(pb, 0, currentpos + size - avio_tell(pb));
+    if (size < 10) {
+        size -= 2;
+        put_ebml_num(pb, size, 0);
+    } else {
+        size -= 9;
+        put_ebml_num(pb, size, 8);
+    }
+    ffio_fill(pb, 0, size);
 }
 
 static ebml_master start_ebml_master(AVIOContext *pb, uint32_t elementid,
