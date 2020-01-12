@@ -113,6 +113,9 @@ typedef struct NormalizeContext {
     uint8_t *history_mem;       // Single allocation for above history entries
 
     uint8_t lut[3][256];    // Lookup table
+
+    void (*find_min_max)(struct NormalizeContext *s, AVFrame *in, NormalizeLocal min[3], NormalizeLocal max[3]);
+    void (*process)(struct NormalizeContext *s, AVFrame *in, AVFrame *out);
 } NormalizeContext;
 
 #define OFFSET(x) offsetof(NormalizeContext, x)
@@ -130,6 +133,39 @@ static const AVOption normalize_options[] = {
 
 AVFILTER_DEFINE_CLASS(normalize);
 
+static void find_min_max(NormalizeContext *s, AVFrame *in, NormalizeLocal min[3], NormalizeLocal max[3])
+{
+    for (int c = 0; c < 3; c++)
+        min[c].in = max[c].in = in->data[0][s->co[c]];
+    for (int y = 0; y < in->height; y++) {
+        uint8_t *inp = in->data[0] + y * in->linesize[0];
+        for (int x = 0; x < in->width; x++) {
+            for (int c = 0; c < 3; c++) {
+                min[c].in = FFMIN(min[c].in, inp[s->co[c]]);
+                max[c].in = FFMAX(max[c].in, inp[s->co[c]]);
+            }
+            inp += s->step;
+        }
+    }
+}
+
+static void process(NormalizeContext *s, AVFrame *in, AVFrame *out)
+{
+    for (int y = 0; y < in->height; y++) {
+        uint8_t *inp = in->data[0] + y * in->linesize[0];
+        uint8_t *outp = out->data[0] + y * out->linesize[0];
+        for (int x = 0; x < in->width; x++) {
+            for (int c = 0; c < 3; c++)
+                outp[s->co[c]] = s->lut[c][inp[s->co[c]]];
+            if (s->num_components == 4)
+                // Copy alpha as-is.
+                outp[s->co[3]] = inp[s->co[3]];
+            inp += s->step;
+            outp += s->step;
+        }
+    }
+}
+
 // This function is the main guts of the filter. Normalizes the input frame
 // into the output frame. The frames are known to have the same dimensions
 // and pixel format.
@@ -140,22 +176,11 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
 
     float rgb_min_smoothed; // Min input range for linked normalization
     float rgb_max_smoothed; // Max input range for linked normalization
-    int x, y, c;
+    int c;
 
     // First, scan the input frame to find, for each channel, the minimum
     // (min.in) and maximum (max.in) values present in the channel.
-    for (c = 0; c < 3; c++)
-        min[c].in = max[c].in = in->data[0][s->co[c]];
-    for (y = 0; y < in->height; y++) {
-        uint8_t *inp = in->data[0] + y * in->linesize[0];
-        for (x = 0; x < in->width; x++) {
-            for (c = 0; c < 3; c++) {
-                min[c].in = FFMIN(min[c].in, inp[s->co[c]]);
-                max[c].in = FFMAX(max[c].in, inp[s->co[c]]);
-            }
-            inp += s->step;
-        }
-    }
+    s->find_min_max(s, in, min, max);
 
     // Next, for each channel, push min.in and max.in into their respective
     // histories, to determine the min.smoothed and max.smoothed for this frame.
@@ -233,19 +258,7 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
     }
 
     // Finally, process the pixels of the input frame using the lookup tables.
-    for (y = 0; y < in->height; y++) {
-        uint8_t *inp = in->data[0] + y * in->linesize[0];
-        uint8_t *outp = out->data[0] + y * out->linesize[0];
-        for (x = 0; x < in->width; x++) {
-            for (c = 0; c < 3; c++)
-                outp[s->co[c]] = s->lut[c][inp[s->co[c]]];
-            if (s->num_components == 4)
-                // Copy alpha as-is.
-                outp[s->co[3]] = inp[s->co[3]];
-            inp += s->step;
-            outp += s->step;
-        }
-    }
+    s->process(s, in, out);
 
     s->frame_num++;
 }
@@ -311,6 +324,10 @@ static int config_input(AVFilterLink *inlink)
         s->min[c].history = s->history_mem + (c*2)   * s->history_len;
         s->max[c].history = s->history_mem + (c*2+1) * s->history_len;
     }
+
+    s->find_min_max = find_min_max;
+    s->process = process;
+
     return 0;
 }
 
