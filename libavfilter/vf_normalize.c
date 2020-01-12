@@ -112,6 +112,7 @@ typedef struct NormalizeContext {
     NormalizeHistory min[3], max[3];           // Min and max for each channel in {R,G,B}.
     uint8_t *history_mem;       // Single allocation for above history entries
 
+    uint8_t lut[3][256];    // Lookup table
 } NormalizeContext;
 
 #define OFFSET(x) offsetof(NormalizeContext, x)
@@ -139,7 +140,6 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
 
     float rgb_min_smoothed; // Min input range for linked normalization
     float rgb_max_smoothed; // Max input range for linked normalization
-    uint8_t lut[3][256];    // Lookup table
     int x, y, c;
 
     // First, scan the input frame to find, for each channel, the minimum
@@ -216,7 +216,7 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
         if (min[c].smoothed == max[c].smoothed) {
             // There is no dynamic range to expand. No mapping for this channel.
             for (in_val = min[c].in; in_val <= max[c].in; in_val++)
-                lut[c][in_val] = min[c].out;
+                s->lut[c][in_val] = min[c].out;
         } else {
             // We must set lookup values for all values in the original input
             // range [min.in,max.in]. Since the original input range may be
@@ -227,7 +227,7 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
                 int out_val = (in_val - min[c].smoothed) * scale + min[c].out + 0.5f;
                 out_val = FFMAX(out_val, 0);
                 out_val = FFMIN(out_val, 255);
-                lut[c][in_val] = out_val;
+                s->lut[c][in_val] = out_val;
             }
         }
     }
@@ -238,7 +238,7 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
         uint8_t *outp = out->data[0] + y * out->linesize[0];
         for (x = 0; x < in->width; x++) {
             for (c = 0; c < 3; c++)
-                outp[s->co[c]] = lut[c][inp[s->co[c]]];
+                outp[s->co[c]] = s->lut[c][inp[s->co[c]]];
             if (s->num_components == 4)
                 // Copy alpha as-is.
                 outp[s->co[3]] = inp[s->co[3]];
