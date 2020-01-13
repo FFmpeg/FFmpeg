@@ -217,7 +217,7 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
 static av_cold int v4l2_decode_close(AVCodecContext *avctx)
 {
     V4L2m2mPriv *priv = avctx->priv_data;
-    V4L2m2mContext* s = priv->context;
+    V4L2m2mContext *s = priv->context;
     av_packet_unref(&s->buf_pkt);
     return ff_v4l2_m2m_codec_end(priv);
 }

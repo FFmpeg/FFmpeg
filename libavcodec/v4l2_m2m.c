@@ -60,7 +60,7 @@ static inline int v4l2_mplane_video(struct v4l2_capability *cap)
     return 0;
 }
 
-static int v4l2_prepare_contexts(V4L2m2mContext* s, int probe)
+static int v4l2_prepare_contexts(V4L2m2mContext *s, int probe)
 {
     struct v4l2_capability cap;
     void *log_ctx = s->avctx;
@@ -97,7 +97,7 @@ static int v4l2_prepare_contexts(V4L2m2mContext* s, int probe)
     return AVERROR(EINVAL);
 }
 
-static int v4l2_probe_driver(V4L2m2mContext* s)
+static int v4l2_probe_driver(V4L2m2mContext *s)
 {
     void *log_ctx = s->avctx;
     int ret;
@@ -133,7 +133,7 @@ done:
     return ret;
 }
 
-static int v4l2_configure_contexts(V4L2m2mContext* s)
+static int v4l2_configure_contexts(V4L2m2mContext *s)
 {
     void *log_ctx = s->avctx;
     int ret;
@@ -202,7 +202,7 @@ error:
  *                  V4L2 M2M Interface
  *
  ******************************************************************************/
-int ff_v4l2_m2m_codec_reinit(V4L2m2mContext* s)
+int ff_v4l2_m2m_codec_reinit(V4L2m2mContext *s)
 {
     void *log_ctx = s->avctx;
     int ret;
@@ -335,7 +335,7 @@ static void v4l2_m2m_destroy_context(void *opaque, uint8_t *context)
 
 int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
 {
-    V4L2m2mContext* s = priv->context;
+    V4L2m2mContext *s = priv->context;
     int ret;
 
     ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
