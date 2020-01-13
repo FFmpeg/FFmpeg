@@ -176,7 +176,7 @@ static int v4l2_configure_contexts(V4L2m2mContext* s)
     }
 
     /* decoder's buffers need to be updated at a later stage */
-    if (!s->avctx || !av_codec_is_decoder(s->avctx->codec)) {
+    if (s->avctx && !av_codec_is_decoder(s->avctx->codec)) {
         ret = ff_v4l2_context_init(&s->capture);
         if (ret) {
             av_log(log_ctx, AV_LOG_ERROR, "no v4l2 capture context's buffers\n");
@@ -307,7 +307,7 @@ int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *s)
     }
 
     /* decoder's buffers need to be updated at a later stage */
-    if (!s->avctx || !av_codec_is_decoder(s->avctx->codec)) {
+    if (s->avctx && !av_codec_is_decoder(s->avctx->codec)) {
         ret = ff_v4l2_context_init(&s->capture);
         if (ret) {
             av_log(log_ctx, AV_LOG_ERROR, "no v4l2 capture context's buffers\n");

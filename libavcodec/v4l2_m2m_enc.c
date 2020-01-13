@@ -312,12 +312,12 @@ static av_cold int v4l2_encode_init(AVCodecContext *avctx)
     capture->av_codec_id = avctx->codec_id;
     capture->av_pix_fmt = AV_PIX_FMT_NONE;
 
+    s->avctx = avctx;
     ret = ff_v4l2_m2m_codec_init(priv);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "can't configure encoder\n");
         return ret;
     }
-    s->avctx = avctx;
 
     if (V4L2_TYPE_IS_MULTIPLANAR(output->type))
         v4l2_fmt_output = output->format.fmt.pix_mp.pixelformat;
