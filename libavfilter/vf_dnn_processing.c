@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "avfilter.h"
 #include "dnn_interface.h"
 #include "formats.h"
@@ -231,6 +232,8 @@ static int config_output(AVFilterLink *outlink)
 
 static int copy_from_frame_to_dnn(DNNData *dnn_input, const AVFrame *frame)
 {
+    int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
+
     switch (frame->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
@@ -244,42 +247,17 @@ static int copy_from_frame_to_dnn(DNNData *dnn_input, const AVFrame *frame)
                 }
             }
         } else {
-            uint8_t *dnn_input_data = dnn_input->data;
             av_assert0(dnn_input->dt == DNN_UINT8);
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width * 3; j++) {
-                    int k = i * frame->linesize[0] + j;
-                    int t = i * frame->width * 3 + j;
-                    dnn_input_data[t] = frame->data[0][k];
-                }
-            }
+            av_image_copy_plane(dnn_input->data, bytewidth,
+                                frame->data[0], frame->linesize[0],
+                                bytewidth, frame->height);
         }
         return 0;
     case AV_PIX_FMT_GRAY8:
-        {
-            uint8_t *dnn_input_data = dnn_input->data;
-            av_assert0(dnn_input->dt == DNN_UINT8);
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width; j++) {
-                    int k = i * frame->linesize[0] + j;
-                    int t = i * frame->width + j;
-                    dnn_input_data[t] = frame->data[0][k];
-                }
-            }
-        }
-        return 0;
     case AV_PIX_FMT_GRAYF32:
-        {
-            float *dnn_input_data = dnn_input->data;
-            av_assert0(dnn_input->dt == DNN_FLOAT);
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width; j++) {
-                    int k = i * frame->linesize[0] + j * sizeof(float);
-                    int t = i * frame->width + j;
-                    dnn_input_data[t] = *(float*)(frame->data[0] + k);
-                }
-            }
-        }
+        av_image_copy_plane(dnn_input->data, bytewidth,
+                            frame->data[0], frame->linesize[0],
+                            bytewidth, frame->height);
         return 0;
     default:
         return AVERROR(EIO);
@@ -290,6 +268,8 @@ static int copy_from_frame_to_dnn(DNNData *dnn_input, const AVFrame *frame)
 
 static int copy_from_dnn_to_frame(AVFrame *frame, const DNNData *dnn_output)
 {
+    int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
+
     switch (frame->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
@@ -303,42 +283,25 @@ static int copy_from_dnn_to_frame(AVFrame *frame, const DNNData *dnn_output)
                 }
             }
         } else {
-            uint8_t *dnn_output_data = dnn_output->data;
             av_assert0(dnn_output->dt == DNN_UINT8);
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width * 3; j++) {
-                    int k = i * frame->linesize[0] + j;
-                    int t = i * frame->width * 3 + j;
-                    frame->data[0][k] = dnn_output_data[t];
-                }
-            }
+            av_image_copy_plane(frame->data[0], frame->linesize[0],
+                                dnn_output->data, bytewidth,
+                                bytewidth, frame->height);
         }
         return 0;
     case AV_PIX_FMT_GRAY8:
-        {
-            uint8_t *dnn_output_data = dnn_output->data;
-            av_assert0(dnn_output->dt == DNN_UINT8);
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width; j++) {
-                    int k = i * frame->linesize[0] + j;
-                    int t = i * frame->width + j;
-                    frame->data[0][k] = dnn_output_data[t];
-                }
-            }
-        }
+        // it is possible that data type of dnn output is float32,
+        // need to add support for such case when needed.
+        av_assert0(dnn_output->dt == DNN_UINT8);
+        av_image_copy_plane(frame->data[0], frame->linesize[0],
+                            dnn_output->data, bytewidth,
+                            bytewidth, frame->height);
         return 0;
     case AV_PIX_FMT_GRAYF32:
-        {
-            float *dnn_output_data = dnn_output->data;
-            av_assert0(dnn_output->dt == DNN_FLOAT);
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width; j++) {
-                    int k = i * frame->linesize[0] + j * sizeof(float);
-                    int t = i * frame->width + j;
-                    *(float*)(frame->data[0] + k) = dnn_output_data[t];
-                }
-            }
-        }
+        av_assert0(dnn_output->dt == DNN_FLOAT);
+        av_image_copy_plane(frame->data[0], frame->linesize[0],
+                            dnn_output->data, bytewidth,
+                            bytewidth, frame->height);
         return 0;
     default:
         return AVERROR(EIO);
