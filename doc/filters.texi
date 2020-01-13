@@ -5985,7 +5985,7 @@ results in noise with an infinite length.
 
 @item color, colour, c
 Specify the color of noise. Available noise colors are white, pink, brown,
-blue and violet. Default color is white.
+blue, violet and velvet. Default color is white.
 
 @item seed, s
 Specify a value used to seed the PRNG.
