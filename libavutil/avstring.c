@@ -258,15 +258,17 @@ char *av_strireplace(const char *str, const char *from, const char *to)
 const char *av_basename(const char *path)
 {
     char *p;
+#if HAVE_DOS_PATHS
+    char *q, *d;
+#endif
 
     if (!path || *path == '\0')
         return ".";
 
     p = strrchr(path, '/');
 #if HAVE_DOS_PATHS
-    char *q = strrchr(path, '\\');
-    char *d = strchr(path, ':');
-
+    q = strrchr(path, '\\');
+    d = strchr(path, ':');
     p = FFMAX3(p, q, d);
 #endif
 
