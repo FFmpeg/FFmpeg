@@ -207,7 +207,7 @@ static int v4l2_handle_event(V4L2Context *ctx)
         ret = ff_v4l2_m2m_codec_full_reinit(s);
         if (ret) {
             av_log(logger(ctx), AV_LOG_ERROR, "v4l2_m2m_codec_full_reinit\n");
-            return -EINVAL;
+            return AVERROR(EINVAL);
         }
         goto reinit_run;
     }
@@ -221,7 +221,7 @@ static int v4l2_handle_event(V4L2Context *ctx)
         ret = ff_v4l2_m2m_codec_reinit(s);
         if (ret) {
             av_log(logger(ctx), AV_LOG_ERROR, "v4l2_m2m_codec_reinit\n");
-            return -EINVAL;
+            return AVERROR(EINVAL);
         }
         goto reinit_run;
     }
