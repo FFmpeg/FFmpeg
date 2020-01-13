@@ -50,7 +50,7 @@ static inline V4L2m2mContext *ctx_to_m2mctx(V4L2Context *ctx)
 
 static inline AVClass *logger(V4L2Context *ctx)
 {
-    return ctx_to_m2mctx(ctx)->priv;
+    return ctx_to_m2mctx(ctx)->avctx;
 }
 
 static inline unsigned int v4l2_get_width(struct v4l2_format *fmt)
