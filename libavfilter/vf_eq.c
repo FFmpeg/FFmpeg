@@ -390,5 +390,5 @@ AVFilter ff_vf_eq = {
     .query_formats   = query_formats,
     .init            = initialize,
     .uninit          = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
