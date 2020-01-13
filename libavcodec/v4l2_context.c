@@ -278,7 +278,7 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
 {
     struct v4l2_plane planes[VIDEO_MAX_PLANES];
     struct v4l2_buffer buf = { 0 };
-    V4L2Buffer* avbuf = NULL;
+    V4L2Buffer *avbuf;
     struct pollfd pfd = {
         .events =  POLLIN | POLLRDNORM | POLLPRI | POLLOUT | POLLWRNORM, /* default blocking capture */
         .fd = ctx_to_m2mctx(ctx)->fd,
@@ -604,7 +604,7 @@ int ff_v4l2_context_enqueue_packet(V4L2Context* ctx, const AVPacket* pkt)
 
 int ff_v4l2_context_dequeue_frame(V4L2Context* ctx, AVFrame* frame, int timeout)
 {
-    V4L2Buffer* avbuf = NULL;
+    V4L2Buffer *avbuf;
 
     /*
      * timeout=-1 blocks until:
@@ -624,7 +624,7 @@ int ff_v4l2_context_dequeue_frame(V4L2Context* ctx, AVFrame* frame, int timeout)
 
 int ff_v4l2_context_dequeue_packet(V4L2Context* ctx, AVPacket* pkt)
 {
-    V4L2Buffer* avbuf = NULL;
+    V4L2Buffer *avbuf;
 
     /*
      * blocks until:
