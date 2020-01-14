@@ -183,11 +183,11 @@ static int film_init(AVFormatContext *format_context)
             }
             film->video_index = i;
         }
+    }
 
-        if (film->video_index == -1) {
-            av_log(format_context, AV_LOG_ERROR, "No video stream present.\n");
-            return AVERROR(EINVAL);
-        }
+    if (film->video_index == -1) {
+        av_log(format_context, AV_LOG_ERROR, "No video stream present.\n");
+        return AVERROR(EINVAL);
     }
 
     if (audio != NULL && get_audio_codec_id(audio->codecpar->codec_id) < 0) {
