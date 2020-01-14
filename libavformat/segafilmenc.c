@@ -292,15 +292,9 @@ static int film_write_header(AVFormatContext *format_context)
 
     if (film->audio_index > -1)
         audio = format_context->streams[film->audio_index];
-    if (film->video_index > -1)
-        video = format_context->streams[film->video_index];
 
     if (audio != NULL) {
         audio_codec = get_audio_codec_id(audio->codecpar->codec_id);
-        if (audio_codec < 0) {
-            av_log(format_context, AV_LOG_ERROR, "Incompatible audio stream format.\n");
-            return AVERROR(EINVAL);
-        }
     }
 
     /* First, write the FILM header; this is very simple */
@@ -316,6 +310,8 @@ static int film_write_header(AVFormatContext *format_context)
     /* Next write the FDSC (file description) chunk */
     ffio_wfourcc(pb, "FDSC");
     avio_wb32(pb, 0x20); /* Size of FDSC chunk */
+
+    video = format_context->streams[film->video_index];
 
     /* The only two supported codecs; raw video is rare */
     switch (video->codecpar->codec_id) {
