@@ -189,6 +189,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->channels < 0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid number of channels %d\n",
+               avctx->channels);
+        return AVERROR_INVALIDDATA;
+    } else if (avctx->channels > WMALL_MAX_CHANNELS) {
+        avpriv_request_sample(avctx,
+                              "More than %d channels", WMALL_MAX_CHANNELS);
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->max_frame_size = MAX_FRAMESIZE * avctx->channels;
     s->frame_data = av_mallocz(s->max_frame_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!s->frame_data)
@@ -265,16 +275,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         for (mask = 1; mask < 16; mask <<= 1)
             if (channel_mask & mask)
                 ++s->lfe_channel;
-    }
-
-    if (s->num_channels < 0) {
-        av_log(avctx, AV_LOG_ERROR, "invalid number of channels %"PRId8"\n",
-               s->num_channels);
-        return AVERROR_INVALIDDATA;
-    } else if (s->num_channels > WMALL_MAX_CHANNELS) {
-        avpriv_request_sample(avctx,
-                              "More than %d channels", WMALL_MAX_CHANNELS);
-        return AVERROR_PATCHWELCOME;
     }
 
     s->frame = av_frame_alloc();
