@@ -163,6 +163,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int w = s->w;
     int c, y, n, p, bin;
     uint64_t acmax = 1;
+    AVFrame *clone;
 
     if (!s->out || s->out->width  != outlink->w ||
                    s->out->height != outlink->h) {
@@ -363,7 +364,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->ypos = H;
     }
 
-    return ff_filter_frame(outlink, av_frame_clone(s->out));
+    clone = av_frame_clone(s->out);
+    if (!clone)
+        return AVERROR(ENOMEM);
+
+    return ff_filter_frame(outlink, clone);
 }
 
 static int activate(AVFilterContext *ctx)
