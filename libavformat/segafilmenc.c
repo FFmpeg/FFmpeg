@@ -45,7 +45,6 @@ typedef struct FILMPacket {
 } FILMPacket;
 
 typedef struct FILMOutputContext {
-    const AVClass *class;
     int audio_index;
     int video_index;
     int64_t stab_pos;
@@ -377,12 +376,6 @@ static int film_write_header(AVFormatContext *format_context)
     return 0;
 }
 
-static const AVClass film_muxer_class = {
-    .class_name     = "Sega FILM muxer",
-    .item_name      = av_default_item_name,
-    .version        = LIBAVUTIL_VERSION_INT,
-};
-
 AVOutputFormat ff_segafilm_muxer = {
     .name           = "film_cpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
@@ -393,5 +386,4 @@ AVOutputFormat ff_segafilm_muxer = {
     .init           = film_init,
     .write_trailer  = film_write_header,
     .write_packet   = film_write_packet,
-    .priv_class     = &film_muxer_class,
 };
