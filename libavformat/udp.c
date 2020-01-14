@@ -71,6 +71,7 @@
 #endif
 
 #define UDP_TX_BUF_SIZE 32768
+#define UDP_RX_BUF_SIZE 393216
 #define UDP_MAX_PKT_SIZE 65536
 #define UDP_HEADER_SIZE 8
 
@@ -636,7 +637,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     is_output = !(flags & AVIO_FLAG_READ);
     if (s->buffer_size < 0)
-        s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
+        s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_RX_BUF_SIZE;
 
     if (s->sources) {
         if (ff_ip_parse_sources(h, s->sources, &s->filters) < 0)
