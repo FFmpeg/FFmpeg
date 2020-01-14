@@ -214,7 +214,7 @@ static int get_sockaddr(AVFormatContext *s,
     return 0;
 }
 
-#if CONFIG_RTPDEC
+//#if CONFIG_RTPDEC
 static void init_rtp_handler(const RTPDynamicProtocolHandler *handler,
                              RTSPStream *rtsp_st, AVStream *st)
 {
@@ -733,7 +733,7 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
 
     return 0;
 }
-#endif /* CONFIG_RTPDEC */
+//#endif /* CONFIG_RTPDEC */
 
 void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets)
 {
@@ -864,7 +864,7 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     return 0;
 }
 
-#if CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER
+//#if CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER
 static void rtsp_parse_range(int *min_ptr, int *max_ptr, const char **pp)
 {
     const char *q;
@@ -1950,9 +1950,9 @@ redirect:
     ff_network_close();
     return err;
 }
-#endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
+//#endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
 
-#if CONFIG_RTPDEC
+//#if CONFIG_RTPDEC
 static int parse_rtsp_message(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
@@ -2295,9 +2295,9 @@ end:
 
     return ret;
 }
-#endif /* CONFIG_RTPDEC */
+//#endif /* CONFIG_RTPDEC */
 
-#if CONFIG_SDP_DEMUXER
+//#if CONFIG_SDP_DEMUXER
 static int sdp_probe(const AVProbeData *p1)
 {
     const char *p = p1->buf, *p_end = p1->buf + p1->buf_size;
@@ -2434,9 +2434,9 @@ AVInputFormat ff_sdp_demuxer = {
     .read_close     = sdp_read_close,
     .priv_class     = &sdp_demuxer_class,
 };
-#endif /* CONFIG_SDP_DEMUXER */
+//#endif /* CONFIG_SDP_DEMUXER */
 
-#if CONFIG_RTP_DEMUXER
+//#if CONFIG_RTP_DEMUXER
 static int rtp_probe(const AVProbeData *p)
 {
     if (av_strstart(p->filename, "rtp:", NULL))
@@ -2560,4 +2560,4 @@ AVInputFormat ff_rtp_demuxer = {
     .flags          = AVFMT_NOFILE,
     .priv_class     = &rtp_demuxer_class,
 };
-#endif /* CONFIG_RTP_DEMUXER */
+//#endif /* CONFIG_RTP_DEMUXER */

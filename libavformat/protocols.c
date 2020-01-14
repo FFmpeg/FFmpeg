@@ -118,7 +118,7 @@ const URLProtocol **ffurl_get_protocols(const char *whitelist,
         return NULL;
 
     for (i = 0; url_protocols[i]; i++) {
-        const URLProtocol *up = url_protocols[i];
+        const URLProtocol *up = url_protocols[i];//执行./configure的时候生成的
 
         if (whitelist && *whitelist && !av_match_name(up->name, whitelist))
             continue;

@@ -1525,6 +1525,9 @@ static void step_to_next_frame(VideoState *is)
     is->step = 1;
 }
 
+// 根据视频时钟与同步时钟(如音频时钟)的差值，校正delay值，使视频时钟追赶或等待同步时钟
+// 输入参数delay是上一帧播放时长，即上一帧播放后应延时多长时间后再播放当前帧，通过调节此值来调节当前帧播放快慢
+// 返回值delay是将输入参数delay经校正后得到的值
 static double compute_target_delay(double delay, VideoState *is)
 {
     double sync_threshold, diff = 0;
@@ -1533,19 +1536,24 @@ static double compute_target_delay(double delay, VideoState *is)
     if (get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER) {
         /* if video is slave, we try to correct big delays by
            duplicating or deleting a frame */
+		   // 视频时钟与同步时钟(如音频时钟)的差异，时钟值是上一帧pts值(实为：上一帧pts + 上一帧至今流逝的时间差)
         diff = get_clock(&is->vidclk) - get_master_clock(is);
-
+		// delay是上一帧播放时长：当前帧(待播放的帧)播放时间与上一帧播放时间差理论值
+		// diff是视频时钟与同步时钟的差值
         /* skip or repeat frame. We take into account the
            delay to compute the threshold. I still don't know
            if it is the best guess */
+		   // 若delay < AV_SYNC_THRESHOLD_MIN，则同步域值为AV_SYNC_THRESHOLD_MIN
+		   // 若delay > AV_SYNC_THRESHOLD_MAX，则同步域值为AV_SYNC_THRESHOLD_MAX
+		   // 若AV_SYNC_THRESHOLD_MIN < delay < AV_SYNC_THRESHOLD_MAX，则同步域值为delay
         sync_threshold = FFMAX(AV_SYNC_THRESHOLD_MIN, FFMIN(AV_SYNC_THRESHOLD_MAX, delay));
         if (!isnan(diff) && fabs(diff) < is->max_frame_duration) {
-            if (diff <= -sync_threshold)
-                delay = FFMAX(0, delay + diff);
-            else if (diff >= sync_threshold && delay > AV_SYNC_FRAMEDUP_THRESHOLD)
-                delay = delay + diff;
-            else if (diff >= sync_threshold)
-                delay = 2 * delay;
+            if (diff <= -sync_threshold)// 视频时钟落后于同步时钟，且超过同步域值
+                delay = FFMAX(0, delay + diff); // 当前帧播放时刻落后于同步时钟(delay+diff<0)则delay=0(视频追赶，立即播放)，否则delay=delay+diff
+            else if (diff >= sync_threshold && delay > AV_SYNC_FRAMEDUP_THRESHOLD)// 视频时钟超前于同步时钟，且超过同步域值，但上一帧播放时长超长
+                delay = delay + diff;// 仅仅校正为delay=delay+diff，主要是AV_SYNC_FRAMEDUP_THRESHOLD参数的作用，不作同步补偿
+            else if (diff >= sync_threshold) // 视频时钟超前于同步时钟，且超过同步域值
+                delay = 2 * delay;// 视频播放要放慢脚步，delay扩大至2倍
         }
     }
 
@@ -1585,6 +1593,7 @@ static void video_refresh(void *opaque, double *remaining_time)
     if (!is->paused && get_master_sync_type(is) == AV_SYNC_EXTERNAL_CLOCK && is->realtime)
         check_external_clock_speed(is);
 
+	// 音频波形图显示
     if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st) {
 		//有音频流
         time = av_gettime_relative() / 1000000.0;
@@ -1595,59 +1604,68 @@ static void video_refresh(void *opaque, double *remaining_time)
         *remaining_time = FFMIN(*remaining_time, is->last_vis_time + rdftspeed - time);//播放快了，下一个显示循环会休眠这个实际延迟显示
     }
 
+	// 视频播放
     if (is->video_st) {
 retry:
-        if (frame_queue_nb_remaining(&is->pictq) == 0) {
+        if (frame_queue_nb_remaining(&is->pictq) == 0) {// 所有帧已显示
             // nothing to do, no picture to display in the queue
-        } else {
+        } else {                                                             // 有未显示帧
             double last_duration, duration, delay;
             Frame *vp, *lastvp;
 
             /* dequeue the picture */
-            lastvp = frame_queue_peek_last(&is->pictq);
-            vp = frame_queue_peek(&is->pictq);
+            lastvp = frame_queue_peek_last(&is->pictq); // 上一帧：上次已显示的帧
+            vp = frame_queue_peek(&is->pictq);  // 当前帧：当前待显示的帧
 
             if (vp->serial != is->videoq.serial) {//在**read_thread由packet_queue_put_private累加
                 frame_queue_next(&is->pictq);//还没明白执行此步骤的原因
                 goto retry;
             }
-
+			// lastvp和vp不是同一播放序列(一个seek会开始一个新播放序列)，将frame_timer更新为当前时间
             if (lastvp->serial != vp->serial)//当前帧和上一帧serial不一样
                 is->frame_timer = av_gettime_relative() / 1000000.0;//设置基准时间为当前时间
 
-            if (is->paused)
+            if (is->paused)// 暂停处理：不停播放上一帧图像
                 goto display;
 
             /* compute nominal last_duration */
+			 // 上一帧播放时长：vp->pts - lastvp->pts
             last_duration = vp_duration(is, lastvp, vp);//根据当前帧和上一帧的pts计算出来上一帧显示的持续时间
+			// 根据视频时钟和同步时钟的差值，计算delay值
             delay = compute_target_delay(last_duration, is);/** 计算当前帧需要显示的时间 **/
 
             time= av_gettime_relative()/1000000.0;  /** 获取当前的时间 **/
-            if (time < is->frame_timer + delay) { /** 如果当前时间小于显示时间 则直接进行显示**/
+			// 当前帧播放时刻(is->frame_timer+delay)大于当前时刻(time)，表示播放时刻未到
+            if (time < is->frame_timer + delay) {
+				// 播放时刻未到，则更新刷新时间remaining_time为当前时刻到下一播放时刻的时间差
                 *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
+				// 播放时刻未到，则不更新rindex，把上一帧再lastvp再播放一遍
                 goto display;
             }
-
+			// 更新frame_timer值
             is->frame_timer += delay;/** 更新视频的基准时间 **/
+			// 校正frame_timer值：若frame_timer落后于当前系统时间太久(超过最大同步域值)，则更新为当前系统时间
             if (delay > 0 && time - is->frame_timer > AV_SYNC_THRESHOLD_MAX)
                 is->frame_timer = time;/** 如果当前时间与基准时间偏差大于 AV_SYNC_THRESHOLD_MAX 则把视频基准时间设置为当前时间 **/
 
             SDL_LockMutex(is->pictq.mutex);
             if (!isnan(vp->pts))  /** 更新视频时间轴 **/
-                update_video_pts(is, vp->pts, vp->pos, vp->serial);
+                update_video_pts(is, vp->pts, vp->pos, vp->serial);// 更新视频时钟：时间戳、时钟时间
             SDL_UnlockMutex(is->pictq.mutex);
 
 			/** 如果队列中有未显示的帧，如果开启了丢帧处理或者不是以视频为主时间轴，则进行丢帧处理 **/
-            if (frame_queue_nb_remaining(&is->pictq) > 1) {
-                Frame *nextvp = frame_queue_peek_next(&is->pictq);
-                duration = vp_duration(is, vp, nextvp);
+			// 是否要丢弃未能及时播放的视频帧
+            if (frame_queue_nb_remaining(&is->pictq) > 1) {// 队列中未显示帧数>1(只有一帧则不考虑丢帧)
+                Frame *nextvp = frame_queue_peek_next(&is->pictq); // 下一帧：下一待显示的帧
+                duration = vp_duration(is, vp, nextvp);// 当前帧vp播放时长 = nextvp->pts - vp->pts
+				 // 1. 非步进模式；2. 丢帧策略生效；3. 当前帧vp未能及时播放，即下一帧播放时刻(is->frame_timer+duration)小于当前系统时刻(time)
                 if(!is->step && (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
-                    is->frame_drops_late++;
-                    frame_queue_next(&is->pictq);
+                    is->frame_drops_late++;// framedrop丢帧处理有两处：1) packet入队列前，2) frame未及时显示(此处)
+                    frame_queue_next(&is->pictq); // 删除上一帧已显示帧，即删除lastvp，读指针加1(从lastvp更新到vp)
                     goto retry;
                 }
             }
-
+			// 字幕播放
             if (is->subtitle_st) {
                     while (frame_queue_nb_remaining(&is->subpq) > 0) {
                         sp = frame_queue_peek(&is->subpq);
@@ -1681,7 +1699,7 @@ retry:
                         }
                     }
             }
-
+			// 删除当前读指针元素，读指针+1。若未丢帧，读指针从lastvp更新到vp；若有丢帧，读指针从vp更新到nextvp
             frame_queue_next(&is->pictq);
             is->force_refresh = 1;
 
@@ -1691,10 +1709,10 @@ retry:
 display:
         /* display picture */
         if (!display_disable && is->force_refresh && is->show_mode == SHOW_MODE_VIDEO && is->pictq.rindex_shown)
-            video_display(is);
+            video_display(is);// 取出当前帧vp(若有丢帧是nextvp)进行播放
     }
     is->force_refresh = 0;
-    if (show_status) {
+    if (show_status) { // 更新显示播放状态
         static int64_t last_time;
         int64_t cur_time;
         int aqsize, vqsize, sqsize;
@@ -2428,7 +2446,7 @@ static int audio_decode_frame(VideoState *is)
 
     audio_clock0 = is->audio_clock;
     /* update the audio clock with the pts */
-    if (!isnan(af->pts))
+    if (!isnan(af->pts))//                                                    计算出来是播放时长？
         is->audio_clock = af->pts + (double) af->frame->nb_samples / af->frame->sample_rate;
     else
         is->audio_clock = NAN;

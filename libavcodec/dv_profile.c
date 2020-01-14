@@ -70,6 +70,7 @@ static const uint8_t block_sizes_dv100[8] = {
     80, 80, 80, 80, 80, 80, 64, 64,
 };
 
+//定义了时间基
 static const AVDVProfile dv_profiles[] = {
     { .dsf                = 0,
       .video_stype        = 0x0,

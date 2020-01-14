@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
-
+//初始化时时间戳设置为无效值
 void av_init_packet(AVPacket *pkt)
 {
     pkt->pts                  = AV_NOPTS_VALUE;

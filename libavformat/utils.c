@@ -98,7 +98,7 @@ static int is_relative(int64_t ts) {
 
 /**
  * Wrap a given time stamp, if there is an indication for an overflow
- *
+ *如果时间戳预测溢出，则修改时间戳在一个范围内
  * @param st stream
  * @param timestamp the time stamp to wrap
  * @return resulting time stamp
@@ -855,7 +855,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return 0;
             }
         }
-
+		//AVInputFormat  每种格式都是对应的读取方法
         ret = s->iformat->read_packet(s, pkt);
         if (ret < 0) {
             av_packet_unref(pkt);
@@ -897,6 +897,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         st = s->streams[pkt->stream_index];
 
+		//取得第一个dts，开始时间，当前dts
         if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
             // correct first time stamps to negative values
             if (!is_relative(st->first_dts))
@@ -907,7 +908,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
                 st->cur_dts = wrap_timestamp(st, st->cur_dts);
         }
 
-        pkt->dts = wrap_timestamp(st, pkt->dts);
+        pkt->dts = wrap_timestamp(st, pkt->dts);//处理溢出
         pkt->pts = wrap_timestamp(st, pkt->pts);
 
         force_codec_ids(s, st);
