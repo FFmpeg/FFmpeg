@@ -181,6 +181,17 @@ static int film_init(AVFormatContext *format_context)
                 av_log(format_context, AV_LOG_ERROR, "Sega FILM allows a maximum of one video stream.\n");
                 return AVERROR(EINVAL);
             }
+            if (st->codecpar->codec_id != AV_CODEC_ID_CINEPAK &&
+                st->codecpar->codec_id != AV_CODEC_ID_RAWVIDEO) {
+                av_log(format_context, AV_LOG_ERROR,
+                       "Incompatible video stream format.\n");
+                return AVERROR(EINVAL);
+            }
+            if (st->codecpar->format != AV_PIX_FMT_RGB24) {
+                av_log(format_context, AV_LOG_ERROR,
+                       "Pixel format must be rgb24.\n");
+                return AVERROR(EINVAL);
+            }
             film->video_index = i;
         }
     }
@@ -293,11 +304,6 @@ static int film_write_header(AVFormatContext *format_context)
         }
     }
 
-    if (video->codecpar->format != AV_PIX_FMT_RGB24) {
-        av_log(format_context, AV_LOG_ERROR, "Pixel format must be rgb24.\n");
-        return AVERROR(EINVAL);
-    }
-
     /* First, write the FILM header; this is very simple */
 
     ffio_wfourcc(pb, "FILM");
@@ -320,9 +326,6 @@ static int film_write_header(AVFormatContext *format_context)
     case AV_CODEC_ID_RAWVIDEO:
         ffio_wfourcc(pb, "raw ");
         break;
-    default:
-        av_log(format_context, AV_LOG_ERROR, "Incompatible video stream format.\n");
-        return AVERROR(EINVAL);
     }
 
     avio_wb32(pb, video->codecpar->height);
