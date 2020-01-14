@@ -1365,6 +1365,8 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         s->xpos = 0;
     if (!s->single_pic && (s->sliding != FULLFRAME || s->xpos == 0)) {
         if (s->old_pts < outpicref->pts) {
+            AVFrame *clone;
+
             if (s->legend) {
                 char *units = get_time(ctx, insamples->pts /(float)inlink->sample_rate, x);
                 if (!units)
@@ -1393,7 +1395,10 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 av_free(units);
             }
             s->old_pts = outpicref->pts;
-            ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
+            clone = av_frame_clone(s->outpicref);
+            if (!clone)
+                return AVERROR(ENOMEM);
+            ret = ff_filter_frame(outlink, clone);
             if (ret < 0)
                 return ret;
             return 0;
