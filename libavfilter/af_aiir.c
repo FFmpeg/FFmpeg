@@ -1037,8 +1037,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int64_t new_pts = av_rescale_q(out->pts, ctx->inputs[0]->time_base, outlink->time_base);
 
         if (new_pts > old_pts) {
+            AVFrame *clone;
+
             s->video->pts = new_pts;
-            ret = ff_filter_frame(outlink, av_frame_clone(s->video));
+            clone = av_frame_clone(s->video);
+            if (!clone)
+                return AVERROR(ENOMEM);
+            ret = ff_filter_frame(outlink, clone);
             if (ret < 0)
                 return ret;
         }
