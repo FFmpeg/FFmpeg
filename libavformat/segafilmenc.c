@@ -360,8 +360,21 @@ static int film_write_header(AVFormatContext *format_context)
         packet = packet->next;
         av_freep(&prev);
     }
+    film->start = film->last = NULL;
 
     return 0;
+}
+
+static void film_deinit(AVFormatContext *format_context)
+{
+    FILMOutputContext *film = format_context->priv_data;
+    FILMPacket *packet = film->start;
+    while (packet != NULL) {
+        FILMPacket *next = packet->next;
+        av_free(packet);
+        packet = next;
+    }
+    film->start = film->last = NULL;
 }
 
 AVOutputFormat ff_segafilm_muxer = {
@@ -374,4 +387,5 @@ AVOutputFormat ff_segafilm_muxer = {
     .init           = film_init,
     .write_trailer  = film_write_header,
     .write_packet   = film_write_packet,
+    .deinit         = film_deinit,
 };
