@@ -670,8 +670,12 @@ static int activate(AVFilterContext *ctx)
         int64_t new_pts = av_rescale_q(s->pts, ctx->inputs[0]->time_base, ctx->outputs[1]->time_base);
 
         if (ff_outlink_frame_wanted(ctx->outputs[1]) && old_pts < new_pts) {
+            AVFrame *clone;
             s->video->pts = new_pts;
-            return ff_filter_frame(ctx->outputs[1], av_frame_clone(s->video));
+            clone = av_frame_clone(s->video);
+            if (!clone)
+                return AVERROR(ENOMEM);
+            return ff_filter_frame(ctx->outputs[1], clone);
         }
     }
 
