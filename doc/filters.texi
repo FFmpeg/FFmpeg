@@ -9321,6 +9321,9 @@ Set size of graph video. For the syntax of this option, check the
 @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 The default value is @code{900x256}.
 
+@item rate, r
+Set the output frame rate. Default value is @code{25}.
+
 The foreground color expressions can use the following variables:
 @table @option
 @item MIN

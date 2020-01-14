@@ -40,6 +40,7 @@ typedef struct DrawGraphContext {
     int           mode;
     int           slide;
     int           w, h;
+    AVRational    frame_rate;
 
     AVFrame       *out;
     int           x;
@@ -48,6 +49,7 @@ typedef struct DrawGraphContext {
     float         *values[4];
     int           values_size[4];
     int           nb_values;
+    int64_t       prev_pts;
 } DrawGraphContext;
 
 #define OFFSET(x) offsetof(DrawGraphContext, x)
@@ -77,6 +79,8 @@ static const AVOption drawgraph_options[] = {
         {"picture", "display graph in single frame", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "slide"},
     { "size", "set graph size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="900x256"}, 0, 0, FLAGS },
     { "s", "set graph size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="900x256"}, 0, 0, FLAGS },
+    { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
+    { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
     { NULL }
 };
 
@@ -159,6 +163,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVDictionary *metadata;
     AVDictionaryEntry *e;
     AVFrame *out = s->out;
+    AVFrame *clone = NULL;
+    int64_t in_pts, out_pts;
     int i;
 
     if (s->slide == 4 && s->nb_values >= s->values_size[0] / sizeof(float)) {
@@ -309,12 +315,24 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->nb_values++;
     s->x++;
 
+    in_pts = in->pts;
+
     av_frame_free(&in);
 
     if (s->slide == 4)
         return 0;
 
-    return ff_filter_frame(outlink, av_frame_clone(s->out));
+    out_pts = av_rescale_q(in_pts, inlink->time_base, outlink->time_base);
+
+    if (out_pts == s->prev_pts)
+        return 0;
+
+    clone = av_frame_clone(s->out);
+    if (!clone)
+        return AVERROR(ENOMEM);
+
+    clone->pts = s->prev_pts = out_pts;
+    return ff_filter_frame(outlink, clone);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -406,6 +424,9 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
+    outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
+    s->prev_pts = AV_NOPTS_VALUE;
 
     return 0;
 }
