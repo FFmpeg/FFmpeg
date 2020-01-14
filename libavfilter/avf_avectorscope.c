@@ -238,6 +238,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AudioVectorScopeContext *s = ctx->priv;
     const int hw = s->hw;
     const int hh = s->hh;
+    AVFrame *clone;
     unsigned x, y;
     unsigned prev_x = s->prev_x, prev_y = s->prev_y;
     double zoom = s->zoom;
@@ -360,7 +361,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     s->prev_x = x, s->prev_y = y;
     av_frame_free(&insamples);
 
-    return ff_filter_frame(outlink, av_frame_clone(s->outpicref));
+    clone = av_frame_clone(s->outpicref);
+    if (!clone)
+        return AVERROR(ENOMEM);
+
+    return ff_filter_frame(outlink, clone);
 }
 
 static int activate(AVFilterContext *ctx)
