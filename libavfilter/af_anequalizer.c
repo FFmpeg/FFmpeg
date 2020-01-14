@@ -733,13 +733,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
 
     if (s->draw_curves) {
+        AVFrame *clone;
+
         const int64_t pts = buf->pts +
             av_rescale_q(buf->nb_samples, (AVRational){ 1, inlink->sample_rate },
                          outlink->time_base);
         int ret;
 
         s->video->pts = pts;
-        ret = ff_filter_frame(ctx->outputs[1], av_frame_clone(s->video));
+        clone = av_frame_clone(s->video);
+        if (!clone)
+            return AVERROR(ENOMEM);
+        ret = ff_filter_frame(ctx->outputs[1], clone);
         if (ret < 0)
             return ret;
     }
