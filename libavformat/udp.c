@@ -861,7 +861,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         } else {
             av_log(h, AV_LOG_DEBUG, "end receive buffer size reported is %d\n", tmp);
             if(tmp < s->buffer_size)
-                av_log(h, AV_LOG_WARNING, "attempted to set receive buffer to size %d but it only ended up set as %d", s->buffer_size, tmp);
+                av_log(h, AV_LOG_WARNING, "attempted to set receive buffer to size %d but it only ended up set as %d\n", s->buffer_size, tmp);
         }
 
         /* make the socket non-blocking */
