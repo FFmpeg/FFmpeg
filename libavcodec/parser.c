@@ -117,6 +117,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove, int fuzzy)
     }
 }
 
+//AVCodecParserContext是AVStream的成员
 int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size,
@@ -162,7 +163,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
         s->last_pos        = s->pos;
         ff_fetch_timestamp(s, 0, 0, 0);
     }
-    /* WARNING: the returned index can be negative */
+    /* WARNING: the returned index can be negative *///调用对应编码格式的解析方法，比如h264的
     index = s->parser->parser_parse(s, avctx, (const uint8_t **) poutbuf,
                                     poutbuf_size, buf, buf_size);
     av_assert0(index > -0x20000000); // The API does not allow returning AVERROR codes

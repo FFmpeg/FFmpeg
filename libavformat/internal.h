@@ -83,7 +83,7 @@ struct AVFormatInternal {
      * Raw packets from the demuxer, prior to parsing and decoding.
      * This buffer is used for buffering packets until the codec can
      * be identified, as parsing cannot be done without knowing the
-     * codec.
+     * codec.//编码格式未知的情况下使用
      */
     struct AVPacketList *raw_packet_buffer;
     struct AVPacketList *raw_packet_buffer_end;

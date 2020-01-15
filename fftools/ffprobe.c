@@ -3584,7 +3584,7 @@ int main(int argc, char **argv)
 #endif
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     register_exit(ffprobe_cleanup);
-
+	av_log_set_level(AV_LOG_DEBUG);
     options = real_options;
     parse_loglevel(argc, argv, options);
     avformat_network_init();

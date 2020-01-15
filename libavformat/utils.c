@@ -772,7 +772,7 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
     AVProgram *first_program;
 
     if (ref == AV_NOPTS_VALUE)
-        ref = pkt->pts;
+        ref = pkt->pts;//pts可能是无效值
     if (st->pts_wrap_reference != AV_NOPTS_VALUE || st->pts_wrap_bits >= 63 || ref == AV_NOPTS_VALUE || !s->correct_ts_overflow)
         return 0;
     ref &= (1LL << st->pts_wrap_bits)-1;
@@ -840,7 +840,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
     av_init_packet(pkt);
 
     for (;;) {
-        AVPacketList *pktl = s->internal->raw_packet_buffer;
+        AVPacketList *pktl = s->internal->raw_packet_buffer;//原始包缓存
         const AVPacket *pkt1;
 
         if (pktl) {
@@ -856,7 +856,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 		//AVInputFormat  每种格式都是对应的读取方法
-        ret = s->iformat->read_packet(s, pkt);
+        ret = s->iformat->read_packet(s, pkt);//调用AVInputFormat的read_packet()方法
         if (ret < 0) {
             av_packet_unref(pkt);
 
@@ -876,7 +876,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             continue;
         }
-
+		av_log(s, AV_LOG_INFO, "s->iformat->read_packet: pts:%s, dts:%s\n",
+			 av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         err = av_packet_make_refcounted(pkt);
         if (err < 0) {
             av_packet_unref(pkt);
@@ -897,11 +898,11 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         st = s->streams[pkt->stream_index];
 
-		//取得第一个dts，开始时间，当前dts
+		// 里面没有修改pkt的时间戳                                                     //默认值：AV_PTS_WRAP_IGNORE 此处不执行
         if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
             // correct first time stamps to negative values
             if (!is_relative(st->first_dts))
-                st->first_dts = wrap_timestamp(st, st->first_dts);
+                st->first_dts = wrap_timestamp(st, st->first_dts);//取得第一个dts，开始时间，当前dts
             if (!is_relative(st->start_time))
                 st->start_time = wrap_timestamp(st, st->start_time);
             if (!is_relative(st->cur_dts))
@@ -914,13 +915,13 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         force_codec_ids(s, st);
 
         /* TODO: audio: time filter; video: frame reordering (pts != dts) */
-        if (s->use_wallclock_as_timestamps)
+        if (s->use_wallclock_as_timestamps)//默认值为0，此处不执行
             pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
 
         if (!pktl && st->request_probe <= 0)
             return ret;
 
-        err = ff_packet_list_put(&s->internal->raw_packet_buffer,
+        err = ff_packet_list_put(&s->internal->raw_packet_buffer,//循环读取输入流后，数据放到原始包链表缓冲
                                  &s->internal->raw_packet_buffer_end,
                                  pkt, 0);
         if (err < 0) {
@@ -1059,6 +1060,7 @@ static int64_t select_from_pts_buffer(AVStream *st, int64_t *pts_buffer, int64_t
                        st->codecpar->codec_id != AV_CODEC_ID_HEVC;
 
     if(!onein_oneout) {
+		//对h264 h265处理
         int delay = st->internal->avctx->has_b_frames;
         int i;
 
@@ -1234,6 +1236,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
         st->cur_dts = cur_dts;
 }
 
+//处理时间戳，B帧的时间戳
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt,
                                int64_t next_dts, int64_t next_pts)
@@ -1241,13 +1244,16 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
     AVRational duration;
-    int onein_oneout = st->codecpar->codec_id != AV_CODEC_ID_H264 &&
+    int onein_oneout = st->codecpar->codec_id != AV_CODEC_ID_H264 &&//排除单进单出，h264 h265
                        st->codecpar->codec_id != AV_CODEC_ID_HEVC;
 
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
 
+	//如果是视频&&有效的解码时间戳 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && pkt->dts != AV_NOPTS_VALUE) {
+		//如果是视频&& 如果显示时间戳等于解码时间戳&& 有效的解码时间戳
+		//last_dts_for_order_check初始化时是无效值
         if (pkt->dts == pkt->pts && st->last_dts_for_order_check != AV_NOPTS_VALUE) {
             if (st->last_dts_for_order_check <= pkt->dts) {
                 st->dts_ordered++;
@@ -1272,10 +1278,11 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if ((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts = AV_NOPTS_VALUE;
 
+	//如果有B帧，pict_type = AV_PICTURE_TYPE_B只看到有一个地方赋值这个
     if (pc && pc->pict_type == AV_PICTURE_TYPE_B
         && !st->internal->avctx->has_b_frames)
         //FIXME Set low_delay = 0 when has_b_frames = 1
-        st->internal->avctx->has_b_frames = 1;
+        st->internal->avctx->has_b_frames = 1;//只有这里设置为1
 
     /* do we have a video B-frame ? */
     delay = st->internal->avctx->has_b_frames;
@@ -1287,27 +1294,27 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pc && pc->pict_type != AV_PICTURE_TYPE_B)
         presentation_delayed = 1;
 
-    if (pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&
-        st->pts_wrap_bits < 63 &&
-        pkt->dts - (1LL << (st->pts_wrap_bits - 1)) > pkt->pts) {
+    if (pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&//时间戳都有效
+        st->pts_wrap_bits < 63 &&//显示时间戳位数小于63，设置时间基的时候设置，裸流是64，rtsp:32
+        pkt->dts - (1LL << (st->pts_wrap_bits - 1)) > pkt->pts) {//解码时间戳减去一个值小于显示时间戳
         if (is_relative(st->cur_dts) || pkt->dts - (1LL<<(st->pts_wrap_bits - 1)) > st->cur_dts) {
-            pkt->dts -= 1LL << st->pts_wrap_bits;
+            pkt->dts -= 1LL << st->pts_wrap_bits;//调整时间戳
         } else
-            pkt->pts += 1LL << st->pts_wrap_bits;
+            pkt->pts += 1LL << st->pts_wrap_bits;//调整时间戳
     }
 
     /* Some MPEG-2 in MPEG-PS lack dts (issue #171 / input_file.mpg).
      * We take the conservative approach and discard both.
      * Note: If this is misbehaving for an H.264 file, then possibly
      * presentation_delayed is not set correctly. */
-    if (delay == 1 && pkt->dts == pkt->pts &&
+    if (delay == 1 && pkt->dts == pkt->pts &&//略过，一般情况不会执行这里
         pkt->dts != AV_NOPTS_VALUE && presentation_delayed) {
         av_log(s, AV_LOG_DEBUG, "invalid dts/pts combination %"PRIi64"\n", pkt->dts);
         if (    strcmp(s->iformat->name, "mov,mp4,m4a,3gp,3g2,mj2")
              && strcmp(s->iformat->name, "flv")) // otherwise we discard correct timestamps for vc1-wmapro.ism
             pkt->dts = AV_NOPTS_VALUE;
     }
-
+	//计算显示时长
     duration = av_mul_q((AVRational) {pkt->duration, 1}, st->time_base);
     if (pkt->duration <= 0) {
         ff_compute_frame_duration(s, &num, &den, st, pc, pkt);
@@ -1324,7 +1331,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         update_initial_durations(s, st, pkt->stream_index, pkt->duration);
 
     /* Correct timestamps with byte offset if demuxers only have timestamps
-     * on packet boundaries */
+     * on packet boundaries *///绝大多数need_parsing都没设置为：AVSTREAM_PARSE_TIMESTAMPS
     if (pc && st->need_parsing == AVSTREAM_PARSE_TIMESTAMPS && pkt->size) {
         /* this will estimate bitrate based on this frame's duration and size */
         offset = av_rescale(pc->offset, pkt->duration, pkt->size);
@@ -1345,8 +1352,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%"PRId64" delay:%d onein_oneout:%d\n",
             presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts),
             pkt->stream_index, pc, pkt->duration, delay, onein_oneout);
-
-    /* Interpolate PTS and DTS if they are not present. We skip H264
+	//篡改
+    /* Interpolate PTS and DTS if they are not present. We skip H264 H265
      * currently because delay and has_b_frames are not reliably set. */
     if ((delay == 0 || (delay == 1 && pc)) &&
         onein_oneout) {
@@ -1401,12 +1408,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
 
         if(has_decode_delay_been_guessed(st))
-            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
+            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);//处理
     }
     // We skipped it above so we try here.
     if (!onein_oneout)
         // This should happen on the first packet
-        update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);
+        update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);//H264 H265会执行此步
     if (pkt->dts > st->cur_dts)
         st->cur_dts = pkt->dts;
 
@@ -1454,18 +1461,18 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
     int size      = pkt->size;
     int ret = 0, got_output = flush;
 
-    if (size || flush) {
-        av_init_packet(&out_pkt);
+    if (size || flush) {//flush = 1;
+        av_init_packet(&out_pkt);//执行这里
     } else if (st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         // preserve 0-size sync packets
         compute_pkt_fields(s, st, st->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
     }
-
+	//循环解析出完整的一帧裸流
     while (size > 0 || (flush && got_output)) {
         int len;
         int64_t next_pts = pkt->pts;
         int64_t next_dts = pkt->dts;
-
+		//解析
         len = av_parser_parse2(st->parser, st->internal->avctx,
                                &out_pkt.data, &out_pkt.size, data, size,
                                pkt->pts, pkt->dts, pkt->pos);
@@ -1504,7 +1511,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
             pkt->side_data_elems    = 0;
         }
 
-        /* set the duration */
+        /* set the duration */ //修改显示时长
         out_pkt.duration = (st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) ? pkt->duration : 0;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->internal->avctx->sample_rate > 0) {
@@ -1515,7 +1522,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
                                      AV_ROUND_DOWN);
             }
         }
-
+		//设置属性值
         out_pkt.stream_index = st->index;
         out_pkt.pts          = st->parser->pts;
         out_pkt.dts          = st->parser->dts;
@@ -1535,7 +1542,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
 
         compute_pkt_fields(s, st, st->parser, &out_pkt, next_dts, next_pts);
 
-        ret = ff_packet_list_put(&s->internal->parse_queue,
+        ret = ff_packet_list_put(&s->internal->parse_queue,//放到解析链表缓存起来
                                  &s->internal->parse_queue_end,
                                  &out_pkt, 0);
         if (ret < 0) {
@@ -1579,19 +1586,19 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i, got_packet = 0;
     AVDictionary *metadata = NULL;
-
+	//如果没有读取到，会重新读
     while (!got_packet && !s->internal->parse_queue) {
         AVStream *st;
 
-        /* read next packet */
-        ret = ff_read_packet(s, pkt);
+        /* read next packet *///
+        ret = ff_read_packet(s, pkt);//从相应的AVInputFormat读取数据，读取的应该是一帧完整的裸流
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
                 return ret;
             /* flush the parsers */
             for (i = 0; i < s->nb_streams; i++) {
-                st = s->streams[i];
-                if (st->parser && st->need_parsing)
+                st = s->streams[i];//如果媒体频流需要使用AVCodecParser，则调用parse_packet()解析相应的AVPacket。
+                if (st->parser && st->need_parsing)//需要解析
                     parse_packet(s, pkt, st->index, 1);
             }
             /* all remaining packets are now in parse_queue =>
@@ -1784,9 +1791,9 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (!genpts) {
         ret = s->internal->packet_buffer
-              ? ff_packet_list_get(&s->internal->packet_buffer,
+              ? ff_packet_list_get(&s->internal->packet_buffer,//从包缓存中取包
                                         &s->internal->packet_buffer_end, pkt)
-              : read_frame_internal(s, pkt);
+			: read_frame_internal(s, pkt);//一般情况下会调用read_frame_internal(s, pkt),直接返回
         if (ret < 0)
             return ret;
         goto return_packet;

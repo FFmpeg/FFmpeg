@@ -870,19 +870,20 @@ typedef struct AVStreamInternal AVStreamInternal;
  * sizeof(AVStream) must not be used outside libav*.
  */
 typedef struct AVStream {
+	//在AVFormatContext中的索引，这个数字是自动生成的，可以通过这个数字从AVFormatContext::streams表中索引到该流。
     int index;    /**< stream index in AVFormatContext */
     /**
      * Format-specific stream ID.
      * decoding: set by libavformat
      * encoding: set by the user, replaced by libavformat if left unset
      */
-    int id;
+    int id;//流的标识，依赖于具体的容器格式。解码：由libavformat设置。编码：由用户设置，如果未设置则由libavformat替换。
 #if FF_API_LAVF_AVCTX
     /**
      * @deprecated use the codecpar struct instead
      */
     attribute_deprecated
-    AVCodecContext *codec;
+    AVCodecContext *codec;//指向该流对应的AVCodecContext结构，调用avformat_open_input时生成。
 #endif
     void *priv_data;
 
@@ -898,7 +899,7 @@ typedef struct AVStream {
      *           written into the file (which may or may not be related to the
      *           user-provided one, depending on the format).
      */
-    AVRational time_base;
+    AVRational time_base;//这是表示帧时间戳的基本时间单位（以秒为单位）。该流中媒体数据的pts和dts都将以这个时间基准为粒度。
 
     /**
      * Decoding: pts of the first frame of the stream in presentation order, in stream time base.
@@ -908,7 +909,7 @@ typedef struct AVStream {
      * @note The ASF header does NOT contain a correct start_time the ASF
      * demuxer must NOT set this.
      */
-    int64_t start_time;
+    int64_t start_time;//流的起始时间，以流的时间基准为单位。如需设置，100％确保你设置它的值真的是第一帧的pts。
 
     /**
      * Decoding: duration of the stream, in stream time base.
@@ -918,12 +919,12 @@ typedef struct AVStream {
      * Encoding: May be set by the caller before avformat_write_header() to
      * provide a hint to the muxer about the estimated duration.
      */
-    int64_t duration;
+    int64_t duration;//解码：流的持续时间。如果源文件未指定持续时间，但指定了比特率，则将根据比特率和文件大小估计该值。
 
-    int64_t nb_frames;                 ///< number of frames in this stream if known or 0
+    int64_t nb_frames;  //此流中的帧数（如果已知）或0。               ///< number of frames in this stream if known or 0
 
     int disposition; /**< AV_DISPOSITION_* bit field */
-
+	//选择哪些数据包可以随意丢弃，不需要去demux。
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
     /**
@@ -931,9 +932,9 @@ typedef struct AVStream {
      * - encoding: Set by user.
      * - decoding: Set by libavformat.
      */
-    AVRational sample_aspect_ratio;
+    AVRational sample_aspect_ratio;//样本长宽比（如果未知，则为0）。
 
-    AVDictionary *metadata;
+    AVDictionary *metadata;//元数据信息。
 
     /**
      * Average framerate
@@ -941,7 +942,7 @@ typedef struct AVStream {
      * - demuxing: May be set by libavformat when creating the stream or in
      *             avformat_find_stream_info().
      * - muxing: May be set by the caller before avformat_write_header().
-     */
+     *///平均帧速率。解封装：可以在创建流时设置为libavformat，也可以在avformat_find_stream_info（）中设置。封装：可以由调用者在avformat_write_header（）之前设置。
     AVRational avg_frame_rate;
 
     /**
@@ -951,7 +952,7 @@ typedef struct AVStream {
      * decoding: set by libavformat, must not be modified by the caller.
      * encoding: unused
      */
-    AVPacket attached_pic;
+    AVPacket attached_pic;//附带的图片。比如说一些MP3，AAC音频文件附带的专辑封面。
 
     /**
      * An array of side data that applies to the whole stream (i.e. the
@@ -1060,7 +1061,7 @@ typedef struct AVStream {
         int     fps_last_dts_idx;
 
     } *info;
-
+	//显示时间的位数
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 
     // Timestamp generation support:
@@ -1079,12 +1080,12 @@ typedef struct AVStream {
     /**
      * Number of packets to buffer for codec probing
      */
-    int probe_packets;
+    int probe_packets;//编解码器用于probe的包的个数。
 
     /**
      * Number of frames that have been demuxed during avformat_find_stream_info()
      */
-    int codec_info_nb_frames;
+    int codec_info_nb_frames;//在av_find_stream_info（）期间已经解封装的帧数。
 
     /* av_read_frame() support */
     enum AVStreamParseType need_parsing;
@@ -1127,17 +1128,17 @@ typedef struct AVStream {
      * rest -> perform probing with request_probe being the minimum score to accept.
      * NOT PART OF PUBLIC API
      */
-    int request_probe;
+    int request_probe;//流探测状态，1表示探测完成，0表示没有探测请求，rest 执行探测。
     /**
      * Indicates that everything up to the next keyframe
      * should be discarded.
      */
-    int skip_to_keyframe;
+    int skip_to_keyframe;//表示应丢弃直到下一个关键帧的所有内容。
 
     /**
      * Number of samples to skip at the start of the frame decoded from the next packet.
      */
-    int skip_samples;
+    int skip_samples;//在从下一个数据包解码的帧开始时要跳过的采样数。
 
     /**
      * If not 0, the number of samples that should be skipped from the start of
@@ -1146,7 +1147,7 @@ typedef struct AVStream {
      * Intended for use with formats such as mp3 with ad-hoc gapless audio
      * support.
      */
-    int64_t start_skip_samples;
+    int64_t start_skip_samples;//如果不是0，则应该从流的开始跳过的采样的数目。
 
     /**
      * If not 0, the first audio sample that should be discarded from the stream.
@@ -1154,7 +1155,7 @@ typedef struct AVStream {
      * avoided for broken by design formats such as mp3 with ad-hoc gapless
      * audio support.
      */
-    int64_t first_discard_sample;
+    int64_t first_discard_sample;//如果不是0，则应该从流中丢弃第一个音频样本。
 
     /**
      * The sample after last sample that is intended to be discarded after
@@ -1201,14 +1202,14 @@ typedef struct AVStream {
      * Internal data to generate dts from pts
      */
     int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
-    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
+    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];//内部数据，从pts生成dts。
 
     /**
      * Internal data to analyze DTS and detect faulty mpeg streams
      */
     int64_t last_dts_for_order_check;
     uint8_t dts_ordered;
-    uint8_t dts_misordered;
+    uint8_t dts_misordered;//内部数据，用于分析dts和检测故障mpeg流。
 
     /**
      * Internal data to inject global side data
@@ -1220,7 +1221,7 @@ typedef struct AVStream {
      * - encoding: unused
      * - decoding: Set by libavformat to calculate sample_aspect_ratio internally
      */
-    AVRational display_aspect_ratio;
+    AVRational display_aspect_ratio;//显示宽高比。
 
     /**
      * An opaque field for libavformat internal usage.

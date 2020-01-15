@@ -1016,7 +1016,7 @@ retry:
     orig_size =
     size = avio_rb24(s->pb);
     flv->sum_flv_tag_size += size + 11;
-    dts  = avio_rb24(s->pb);
+	dts = avio_rb24(s->pb);//ÏÔÊ¾Ê±¼ä´Á
     dts |= (unsigned)avio_r8(s->pb) << 24;
     av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
     if (avio_feof(s->pb))

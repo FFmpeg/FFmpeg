@@ -5285,6 +5285,7 @@ typedef struct AVCodecParserContext {
     int format;
 } AVCodecParserContext;
 
+//用于解析裸流数据
 typedef struct AVCodecParser {
     int codec_ids[5]; /* several codec IDs are permitted */
     int priv_data_size;

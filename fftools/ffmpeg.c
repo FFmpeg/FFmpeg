@@ -4844,7 +4844,7 @@ int main(int argc, char **argv)
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
-
+	av_log_set_level(AV_LOG_DEBUG);
     if(argc>1 && !strcmp(argv[1], "-d")){
         run_as_daemon=1;
         av_log_set_callback(log_callback_null);
