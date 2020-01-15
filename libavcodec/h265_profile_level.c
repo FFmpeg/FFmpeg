@@ -188,7 +188,7 @@ const H265LevelDescriptor *ff_h265_guess_level(const H265RawProfileTierLevel *pt
         profile = NULL;
     if (!profile) {
         // Default to using multiplication factors for Main profile.
-        profile = &h265_profiles[3];
+        profile = &h265_profiles[4];
     }
 
     pic_size = width * height;
