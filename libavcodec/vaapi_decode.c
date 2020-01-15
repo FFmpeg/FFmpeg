@@ -386,6 +386,8 @@ static const struct {
 #if VA_CHECK_VERSION(0, 37, 0)
     MAP(HEVC,        HEVC_MAIN,       HEVCMain    ),
     MAP(HEVC,        HEVC_MAIN_10,    HEVCMain10  ),
+    MAP(HEVC,        HEVC_MAIN_STILL_PICTURE,
+                                      HEVCMain    ),
 #endif
 #if VA_CHECK_VERSION(1, 2, 0)
     MAP(HEVC,        HEVC_REXT,       None,
