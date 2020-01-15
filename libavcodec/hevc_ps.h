@@ -177,11 +177,22 @@ typedef struct PTLCommon {
     uint8_t tier_flag;
     uint8_t profile_idc;
     uint8_t profile_compatibility_flag[32];
-    uint8_t level_idc;
     uint8_t progressive_source_flag;
     uint8_t interlaced_source_flag;
     uint8_t non_packed_constraint_flag;
     uint8_t frame_only_constraint_flag;
+    uint8_t max_12bit_constraint_flag;
+    uint8_t max_10bit_constraint_flag;
+    uint8_t max_8bit_constraint_flag;
+    uint8_t max_422chroma_constraint_flag;
+    uint8_t max_420chroma_constraint_flag;
+    uint8_t max_monochrome_constraint_flag;
+    uint8_t intra_constraint_flag;
+    uint8_t one_picture_only_constraint_flag;
+    uint8_t lower_bit_rate_constraint_flag;
+    uint8_t max_14bit_constraint_flag;
+    uint8_t inbld_flag;
+    uint8_t level_idc;
 } PTLCommon;
 
 typedef struct PTL {
