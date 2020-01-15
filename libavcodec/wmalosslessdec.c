@@ -192,7 +192,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     av_assert0(avctx->channels >= 0);
     if (avctx->channels > WMALL_MAX_CHANNELS) {
         avpriv_request_sample(avctx,
-                              "More than %d channels", WMALL_MAX_CHANNELS);
+                              "More than " AV_STRINGIFY(WMALL_MAX_CHANNELS) " channels");
         return AVERROR_PATCHWELCOME;
     }
 
