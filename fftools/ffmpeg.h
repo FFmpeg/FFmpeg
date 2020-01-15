@@ -54,7 +54,7 @@
 #define VSYNC_DROP        0xff
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
-#define HAVE_THREADS
+//#define HAVE_THREADS
 
 enum HWAccelID {
     HWACCEL_NONE = 0,
