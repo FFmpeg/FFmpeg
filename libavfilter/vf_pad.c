@@ -178,14 +178,14 @@ static int config_input(AVFilterLink *inlink)
     if (s->y < 0 || s->y + inlink->h > s->h)
         s->y = var_values[VAR_Y] = (s->h - inlink->h) / 2;
 
+    s->w    = ff_draw_round_to_sub(&s->draw, 0, -1, s->w);
+    s->h    = ff_draw_round_to_sub(&s->draw, 1, -1, s->h);
     /* sanity check params */
-    if (s->w < 0 || s->h < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Negative values are not acceptable.\n");
+    if (s->w < inlink->w || s->h < inlink->h) {
+        av_log(ctx, AV_LOG_ERROR, "Padded dimensions cannot be smaller than input dimensions.\n");
         return AVERROR(EINVAL);
     }
 
-    s->w    = ff_draw_round_to_sub(&s->draw, 0, -1, s->w);
-    s->h    = ff_draw_round_to_sub(&s->draw, 1, -1, s->h);
     s->x    = ff_draw_round_to_sub(&s->draw, 0, -1, s->x);
     s->y    = ff_draw_round_to_sub(&s->draw, 1, -1, s->y);
     s->in_w = ff_draw_round_to_sub(&s->draw, 0, -1, inlink->w);
