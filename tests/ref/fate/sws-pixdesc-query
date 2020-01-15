@@ -59,6 +59,8 @@ isNBPS:
   p010le
   xyz12be
   xyz12le
+  y210be
+  y210le
   yuv420p10be
   yuv420p10le
   yuv420p12be
@@ -140,6 +142,7 @@ isBE:
   rgb565be
   rgba64be
   xyz12be
+  y210be
   ya16be
   yuv420p10be
   yuv420p12be
@@ -188,6 +191,8 @@ isYUV:
   uyyvyy411
   xyz12be
   xyz12le
+  y210be
+  y210le
   ya16be
   ya16le
   ya8
@@ -686,6 +691,8 @@ Packed:
   uyyvyy411
   xyz12be
   xyz12le
+  y210be
+  y210le
   ya16be
   ya16le
   ya8
