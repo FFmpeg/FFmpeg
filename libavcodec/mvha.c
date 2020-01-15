@@ -233,6 +233,8 @@ static int decode_frame(AVCodecContext *avctx,
 
             dst = frame->data[p] + (avctx->height - 1) * frame->linesize[p];
             for (int y = 0; y < avctx->height; y++) {
+                if (get_bits_left(gb) < width)
+                    return AVERROR_INVALIDDATA;
                 for (int x = 0; x < width; x++) {
                     int v = get_vlc2(gb, s->vlc.table, s->vlc.bits, 3);
 
