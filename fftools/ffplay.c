@@ -603,7 +603,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                     case AVMEDIA_TYPE_VIDEO:
                         ret = avcodec_receive_frame(d->avctx, frame);//获取解码后的数据，解码时间戳和显示时间戳
                         if (ret >= 0) {
-							av_log(frame, AV_LOG_DEBUG, "  ffplay decoder_decode_frame 001: pts:%s, dts:%s,pkt_pts:%s, pkt_dts:%s\n", av_ts2str(frame->pts), av_ts2str(frame->pts),
+							av_log(NULL, AV_LOG_DEBUG, "  ffplay decoder_decode_frame 001: pts:%s, dts:%s,pkt_pts:%s, pkt_dts:%s\n", av_ts2str(frame->pts), av_ts2str(frame->pts),
 								av_ts2str(frame->pkt_pts), av_ts2str(frame->pkt_dts));
 
                             if (decoder_reorder_pts == -1) {
@@ -3036,7 +3036,7 @@ static int read_thread(void *arg)
             }
         }
         ret = av_read_frame(ic, pkt);//读取音视频帧
-		av_log(ic, AV_LOG_DEBUG, "ffplay  av_read_frame 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "ffplay  av_read_frame 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (ret < 0) {
             if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) {
                 if (is->video_stream >= 0)
