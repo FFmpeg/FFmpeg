@@ -876,8 +876,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             continue;
         }
-		av_log(s, AV_LOG_INFO, "s->iformat->read_packet: pts:%s, dts:%s\n",
-			 av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(s, AV_LOG_DEBUG, "s->iformat->read_packet: pts:%s, dts:%s\n",
+			 av_ts2str(pkt->pts), av_ts2str(pkt->dts));//这里打印裸流文件的为没有有效值
         err = av_packet_make_refcounted(pkt);
         if (err < 0) {
             av_packet_unref(pkt);
@@ -908,10 +908,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!is_relative(st->cur_dts))
                 st->cur_dts = wrap_timestamp(st, st->cur_dts);
         }
-
+		av_log(st, AV_LOG_DEBUG, "wrap_timestamp 1: pts:%s, dts:%s\n",av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         pkt->dts = wrap_timestamp(st, pkt->dts);//处理溢出
         pkt->pts = wrap_timestamp(st, pkt->pts);
-
+		av_log(st, AV_LOG_DEBUG, "wrap_timestamp 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         force_codec_ids(s, st);
 
         /* TODO: audio: time filter; video: frame reordering (pts != dts) */
@@ -1249,7 +1249,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
-
+	av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 1 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 	//如果是视频&&有效的解码时间戳 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && pkt->dts != AV_NOPTS_VALUE) {
 		//如果是视频&& 如果显示时间戳等于解码时间戳&& 有效的解码时间戳
@@ -1269,12 +1269,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 st->dts_misordered >>= 1;
             }
         }
-
+		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 2 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         st->last_dts_for_order_check = pkt->dts;
         if (st->dts_ordered < 8*st->dts_misordered && pkt->dts == pkt->pts)
             pkt->dts = AV_NOPTS_VALUE;
     }
-
+	av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     if ((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts = AV_NOPTS_VALUE;
 
@@ -1327,8 +1327,10 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
     }
 
-    if (pkt->duration > 0 && (s->internal->packet_buffer || s->internal->parse_queue))
+	if (pkt->duration > 0 && (s->internal->packet_buffer || s->internal->parse_queue)) {
+		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         update_initial_durations(s, st, pkt->stream_index, pkt->duration);
+	}
 
     /* Correct timestamps with byte offset if demuxers only have timestamps
      * on packet boundaries *///绝大多数need_parsing都没设置为：AVSTREAM_PARSE_TIMESTAMPS
@@ -1357,6 +1359,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
      * currently because delay and has_b_frames are not reliably set. */
     if ((delay == 0 || (delay == 1 && pc)) &&
         onein_oneout) {
+		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 4 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (presentation_delayed) {
             /* DTS = decompression timestamp */
             /* PTS = presentation timestamp */
@@ -1599,6 +1602,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];//如果媒体频流需要使用AVCodecParser，则调用parse_packet()解析相应的AVPacket。
                 if (st->parser && st->need_parsing)//需要解析
+					av_log(s, AV_LOG_DEBUG, "parse_packet 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
                     parse_packet(s, pkt, st->index, 1);
             }
             /* all remaining packets are now in parse_queue =>
@@ -1641,7 +1645,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
             st->internal->need_context_update = 0;
         }
-
+		av_log(s, AV_LOG_DEBUG, "read_frame_internal 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (pkt->pts != AV_NOPTS_VALUE &&
             pkt->dts != AV_NOPTS_VALUE &&
             pkt->pts < pkt->dts) {
@@ -1678,7 +1682,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (!st->need_parsing || !st->parser) {
             /* no parsing needed: we just output the packet as is */
+			av_log(s, AV_LOG_DEBUG, "read_frame_internal 2: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             compute_pkt_fields(s, st, NULL, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
+			av_log(s, AV_LOG_DEBUG, "read_frame_internal 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
                 (pkt->flags & AV_PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
                 ff_reduce_index(s, st->index);
