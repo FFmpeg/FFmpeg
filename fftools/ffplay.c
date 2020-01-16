@@ -603,6 +603,9 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                     case AVMEDIA_TYPE_VIDEO:
                         ret = avcodec_receive_frame(d->avctx, frame);//获取解码后的数据，解码时间戳和显示时间戳
                         if (ret >= 0) {
+							av_log(frame, AV_LOG_DEBUG, "  ffplay decoder_decode_frame 001: pts:%s, dts:%s,pkt_pts:%s, pkt_dts:%s\n", av_ts2str(frame->pts), av_ts2str(frame->dts),
+								av_ts2str(frame->pkt_pts), av_ts2str(frame->pkt_dts));
+
                             if (decoder_reorder_pts == -1) {
                                 frame->pts = frame->best_effort_timestamp;
                             } else if (!decoder_reorder_pts) {
@@ -666,6 +669,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                     ret = got_frame ? 0 : (pkt.data ? AVERROR(EAGAIN) : AVERROR_EOF);
                 }
             } else {
+				av_log(NULL, AV_LOG_DEBUG, "  ffplay avcodec_send_packet 001: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts),
                 if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
