@@ -1803,7 +1803,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
             dpts = av_q2d(is->video_st->time_base) * frame->pts;
 
         frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
-
+		av_log(NULL, AV_LOG_DEBUG, "ffplay  get_video_frame 001: dpts:%s\n", av_ts2str(dpts));
         if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
             if (frame->pts != AV_NOPTS_VALUE) {
                 double diff = dpts - get_master_clock(is);
@@ -2233,7 +2233,10 @@ static int video_thread(void *arg)
             tb = av_buffersink_get_time_base(filt_out);
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
+			av_log(NULL, AV_LOG_DEBUG, "ffplay  video_thread 001: frame->pts:%s, frame->pts:%s\n", av_ts2str(frame->pts), av_ts2str(frame->pts));
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);//计算显示时间戳   tb：输入视频流中的时间基
+			av_log(NULL, AV_LOG_DEBUG, "ffplay  video_thread 002: pts:%s\n", av_ts2str(pts));
+
             ret = queue_picture(is, frame, pts, duration, frame->pkt_pos, is->viddec.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
