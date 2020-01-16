@@ -669,7 +669,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                     ret = got_frame ? 0 : (pkt.data ? AVERROR(EAGAIN) : AVERROR_EOF);
                 }
             } else {
-				av_log(NULL, AV_LOG_DEBUG, "  ffplay avcodec_send_packet 001: pts:%s, dts:%s\n", av_ts2str(pkt.pts), av_ts2str(pkt.dts),
+				av_log(NULL, AV_LOG_DEBUG, "  ffplay avcodec_send_packet 001: pts:%s, dts:%s\n", av_ts2str(pkt.pts), av_ts2str(pkt.dts));
                 if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
