@@ -1124,6 +1124,7 @@ static void update_dts_from_pts(AVFormatContext *s, int stream_index,
                 FFSWAP(int64_t, pts_buffer[i], pts_buffer[i + 1]);
 
             pkt_buffer->pkt.dts = select_from_pts_buffer(st, pts_buffer, pkt_buffer->pkt.dts);
+			av_log(s, AV_LOG_DEBUG, "update_dts_from_pts 1 pts:%s, dts:%s\n", av_ts2str(pkt_buffer->pkt.pts), av_ts2str(pkt_buffer->pkt.dts));
         }
     }
 }
@@ -1166,8 +1167,9 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
                 st->start_time += av_rescale_q(st->skip_samples, (AVRational){1, st->codecpar->sample_rate}, st->time_base);
         }
     }
-
+	av_log(s, AV_LOG_DEBUG, "update_initial_timestamps 2 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     if (has_decode_delay_been_guessed(st)) {
+		av_log(s, AV_LOG_DEBUG, "update_initial_timestamps 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         update_dts_from_pts(s, stream_index, pktl);
     }
 
@@ -1301,6 +1303,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts -= 1LL << st->pts_wrap_bits;//调整时间戳
         } else
             pkt->pts += 1LL << st->pts_wrap_bits;//调整时间戳
+		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 4 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     }
 
     /* Some MPEG-2 in MPEG-PS lack dts (issue #171 / input_file.mpg).
