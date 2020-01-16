@@ -1167,9 +1167,9 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
                 st->start_time += av_rescale_q(st->skip_samples, (AVRational){1, st->codecpar->sample_rate}, st->time_base);
         }
     }
-	av_log(s, AV_LOG_DEBUG, "update_initial_timestamps 2 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+	av_log(NULL, AV_LOG_DEBUG, "update_initial_timestamps 2 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     if (has_decode_delay_been_guessed(st)) {
-		av_log(s, AV_LOG_DEBUG, "update_initial_timestamps 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "update_initial_timestamps 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         update_dts_from_pts(s, stream_index, pktl);
     }
 
@@ -1251,7 +1251,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
-	av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 1 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+	av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 1 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 	//如果是视频&&有效的解码时间戳 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && pkt->dts != AV_NOPTS_VALUE) {
 		//如果是视频&& 如果显示时间戳等于解码时间戳&& 有效的解码时间戳
@@ -1271,12 +1271,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 st->dts_misordered >>= 1;
             }
         }
-		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 2 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 2 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         st->last_dts_for_order_check = pkt->dts;
         if (st->dts_ordered < 8*st->dts_misordered && pkt->dts == pkt->pts)
             pkt->dts = AV_NOPTS_VALUE;
     }
-	av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+	av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     if ((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts = AV_NOPTS_VALUE;
 
@@ -1303,7 +1303,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts -= 1LL << st->pts_wrap_bits;//调整时间戳
         } else
             pkt->pts += 1LL << st->pts_wrap_bits;//调整时间戳
-		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 4 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 4 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     }
 
     /* Some MPEG-2 in MPEG-PS lack dts (issue #171 / input_file.mpg).
@@ -1331,7 +1331,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     }
 
 	if (pkt->duration > 0 && (s->internal->packet_buffer || s->internal->parse_queue)) {
-		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         update_initial_durations(s, st, pkt->stream_index, pkt->duration);
 	}
 
@@ -1362,7 +1362,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
      * currently because delay and has_b_frames are not reliably set. */
     if ((delay == 0 || (delay == 1 && pc)) &&
         onein_oneout) {
-		av_log(s, AV_LOG_DEBUG, "compute_pkt_fields 4 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 4 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (presentation_delayed) {
             /* DTS = decompression timestamp */
             /* PTS = presentation timestamp */
@@ -1605,7 +1605,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];//如果媒体频流需要使用AVCodecParser，则调用parse_packet()解析相应的AVPacket。
                 if (st->parser && st->need_parsing)//需要解析
-					av_log(s, AV_LOG_DEBUG, "parse_packet 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+					av_log(NULL, AV_LOG_DEBUG, "parse_packet 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
                     parse_packet(s, pkt, st->index, 1);
             }
             /* all remaining packets are now in parse_queue =>
@@ -1618,7 +1618,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         /* update context if required */
         if (st->internal->need_context_update) {
             if (avcodec_is_open(st->internal->avctx)) {
-                av_log(s, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
+                av_log(NULL, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
                 avcodec_close(st->internal->avctx);
                 st->info->found_decoder = 0;
             }
@@ -1648,7 +1648,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
             st->internal->need_context_update = 0;
         }
-		av_log(s, AV_LOG_DEBUG, "read_frame_internal 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "read_frame_internal 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (pkt->pts != AV_NOPTS_VALUE &&
             pkt->dts != AV_NOPTS_VALUE &&
             pkt->pts < pkt->dts) {
@@ -1685,9 +1685,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (!st->need_parsing || !st->parser) {
             /* no parsing needed: we just output the packet as is */
-			av_log(s, AV_LOG_DEBUG, "read_frame_internal 2: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+			av_log(NULL, AV_LOG_DEBUG, "read_frame_internal 2: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             compute_pkt_fields(s, st, NULL, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
-			av_log(s, AV_LOG_DEBUG, "read_frame_internal 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+			av_log(NULL, AV_LOG_DEBUG, "read_frame_internal 3 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
                 (pkt->flags & AV_PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
                 ff_reduce_index(s, st->index);
@@ -1833,7 +1833,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                             last_dts = pktl->pkt.dts;
                         }
                     }
-					av_log(st, AV_LOG_DEBUG, "  av_read_frame 003: pts:%s, dts:%s\n", av_ts2str(pktl->pkt.pts), av_ts2str(pktl->pkt.dts));
+					av_log(NULL, AV_LOG_DEBUG, "  av_read_frame 003: pts:%s, dts:%s\n", av_ts2str(pktl->pkt.pts), av_ts2str(pktl->pkt.dts));
                     pktl = pktl->next;
                 }
                 if (eof && next_pkt->pts == AV_NOPTS_VALUE && last_dts != AV_NOPTS_VALUE) {
