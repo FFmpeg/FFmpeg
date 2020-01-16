@@ -212,7 +212,7 @@ static int film_init(AVFormatContext *format_context)
 static int shift_data(AVFormatContext *format_context, int64_t shift_size)
 {
     int ret = 0;
-    int64_t pos, pos_end = avio_tell(format_context->pb);
+    int64_t pos, pos_end;
     uint8_t *buf, *read_buf[2];
     int read_buf_id = 0;
     int read_size[2];

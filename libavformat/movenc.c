@@ -6720,7 +6720,7 @@ static int shift_data(AVFormatContext *s)
 {
     int ret = 0, moov_size;
     MOVMuxContext *mov = s->priv_data;
-    int64_t pos, pos_end = avio_tell(s->pb);
+    int64_t pos, pos_end;
     uint8_t *buf, *read_buf[2];
     int read_buf_id = 0;
     int read_size[2];
