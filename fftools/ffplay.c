@@ -44,6 +44,7 @@
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libavutil/opt.h"
+#include "libavutil/tim	estamp.h"
 #include "libavcodec/avfft.h"
 #include "libswresample/swresample.h"
 
