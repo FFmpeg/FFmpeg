@@ -87,6 +87,7 @@ static const AVOption v360_options[] = {
     {      "ball", "ball",                                       0, AV_OPT_TYPE_CONST,  {.i64=BALL},            0,                   0, FLAGS, "out" },
     {    "hammer", "hammer",                                     0, AV_OPT_TYPE_CONST,  {.i64=HAMMER},          0,                   0, FLAGS, "out" },
     {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "out" },
+    {   "fisheye", "fisheye",                                    0, AV_OPT_TYPE_CONST,  {.i64=FISHEYE},         0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -2106,6 +2107,50 @@ static void flat_to_xyz(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing fisheye output format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_fisheye_out(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->flat_range[0] = FFMIN(s->h_fov, 359.f) / 180.f;
+    s->flat_range[1] = FFMIN(s->v_fov, 359.f) / 180.f;
+
+    return 0;
+}
+
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in fisheye format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void fisheye_to_xyz(const V360Context *s,
+                           int i, int j, int width, int height,
+                           float *vec)
+{
+    const float uf = s->flat_range[0] * ((2.f * i) / width  - 1.f);
+    const float vf = s->flat_range[1] * ((2.f * j) / height - 1.f);
+
+    const float phi   = -atan2f(vf, uf);
+    const float theta = -M_PI_2 * (1.f - hypotf(uf, vf));
+
+    vec[0] = cosf(theta) * cosf(phi);
+    vec[1] = cosf(theta) * sinf(phi);
+    vec[2] = sinf(theta);
+
+    normalize_vector(vec);
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in dual fisheye format.
  *
  * @param s filter private context
@@ -2641,8 +2686,9 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 9.f * 8.f;
         break;
+    case FISHEYE:
     case FLAT:
-        av_log(ctx, AV_LOG_ERROR, "Flat format is not accepted as input.\n");
+        av_log(ctx, AV_LOG_ERROR, "Supplied format is not accepted as input.\n");
         return AVERROR(EINVAL);
     case DUAL_FISHEYE:
         s->in_transform = xyz_to_dfisheye;
@@ -2772,6 +2818,12 @@ static int config_output(AVFilterLink *outlink)
         s->out_transform = sinusoidal_to_xyz;
         prepare_out = NULL;
         w = roundf(wf);
+        h = roundf(hf);
+        break;
+    case FISHEYE:
+        s->out_transform = fisheye_to_xyz;
+        prepare_out = prepare_fisheye_out;
+        w = roundf(wf * 0.5f);
         h = roundf(hf);
         break;
     default:

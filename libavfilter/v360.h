@@ -43,6 +43,7 @@ enum Projections {
     BALL,
     HAMMER,
     SINUSOIDAL,
+    FISHEYE,
     NB_PROJECTIONS,
 };
 
