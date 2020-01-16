@@ -154,10 +154,12 @@ static int libsrt_neterrno(URLContext *h)
 
 static int libsrt_socket_nonblock(int socket, int enable)
 {
-    int ret = srt_setsockopt(socket, 0, SRTO_SNDSYN, &enable, sizeof(enable));
+    int ret, blocking = enable ? 0 : 1;
+    /* Setting SRTO_{SND,RCV}SYN options to 1 enable blocking mode, setting them to 0 enable non-blocking mode. */
+    ret = srt_setsockopt(socket, 0, SRTO_SNDSYN, &blocking, sizeof(blocking));
     if (ret < 0)
         return ret;
-    return srt_setsockopt(socket, 0, SRTO_RCVSYN, &enable, sizeof(enable));
+    return srt_setsockopt(socket, 0, SRTO_RCVSYN, &blocking, sizeof(blocking));
 }
 
 static int libsrt_network_wait_fd(URLContext *h, int eid, int fd, int write)
