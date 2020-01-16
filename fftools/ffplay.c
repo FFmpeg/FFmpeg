@@ -3031,6 +3031,7 @@ static int read_thread(void *arg)
             }
         }
         ret = av_read_frame(ic, pkt);//¶ÁÈ¡ÒôÊÓÆµÖ¡
+		av_log(st, AV_LOG_DEBUG, "ffplay  av_read_frame 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (ret < 0) {
             if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) {
                 if (is->video_stream >= 0)
