@@ -233,6 +233,27 @@ typedef struct AVClass {
  */
 void av_log(void *avcl, int level, const char *fmt, ...) av_printf_format(3, 4);
 
+/**
+ * Send the specified message to the log once with the initial_level and then with
+ * the subsequent_level. By default, all logging messages are sent to
+ * stderr. This behavior can be altered by setting a different logging callback
+ * function.
+ * @see av_log
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ *        pointer to an AVClass struct or NULL if general log.
+ * @param initial_level importance level of the message expressed using a @ref
+ *        lavu_log_constants "Logging Constant" for the first occurance.
+ * @param subsequent_level importance level of the message expressed using a @ref
+ *        lavu_log_constants "Logging Constant" after the first occurance.
+ * @param fmt The format string (printf-compatible) that specifies how
+ *        subsequent arguments are converted to output.
+ * @param state a variable to keep trak of if a message has already been printed
+ *        this must be initialized to 0 before the first use. The same state
+ *        must not be accessed by 2 Threads simultaneously.
+ */
+void av_log_once(void* avcl, int initial_level, int subsequent_level, int *state, const char *fmt, ...) av_printf_format(5, 6);
+
 
 /**
  * Send the specified message to the log if the level is less than or equal

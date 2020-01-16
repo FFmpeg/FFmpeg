@@ -412,6 +412,15 @@ void av_log(void* avcl, int level, const char *fmt, ...)
     va_end(vl);
 }
 
+void av_log_once(void* avcl, int initial_level, int subsequent_level, int *state, const char *fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    av_vlog(avcl, *state ? subsequent_level : initial_level, fmt, vl);
+    va_end(vl);
+    *state = 1;
+}
+
 void av_vlog(void* avcl, int level, const char *fmt, va_list vl)
 {
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;

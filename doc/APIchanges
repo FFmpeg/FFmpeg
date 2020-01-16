@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-02-12 - xxxxxxxxxx - lavu 56.40.100 - log.h
+  Add av_log_once().
+
 2020-02-04 - xxxxxxxxxx - lavu 56.39.100 - hwcontext.h
   Add AV_PIX_FMT_VULKAN
   Add AV_HWDEVICE_TYPE_VULKAN and implementation.
