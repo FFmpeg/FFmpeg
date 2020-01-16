@@ -1654,6 +1654,7 @@ retry:
                 is->frame_timer = time;/** 如果当前时间与基准时间偏差大于 AV_SYNC_THRESHOLD_MAX 则把视频基准时间设置为当前时间 **/
 
             SDL_LockMutex(is->pictq.mutex);
+			av_log(NULL, AV_LOG_DEBUG, "video_refresh 1: pts:%s, last_duration pts:%s\n", av_ts2str(vp->pts), av_ts2str(lastvp->pts));
             if (!isnan(vp->pts))  /** 更新视频时间轴 **/
                 update_video_pts(is, vp->pts, vp->pos, vp->serial);// 更新视频时钟：时间戳、时钟时间
             SDL_UnlockMutex(is->pictq.mutex);
