@@ -88,6 +88,7 @@ static const AVOption v360_options[] = {
     {    "hammer", "hammer",                                     0, AV_OPT_TYPE_CONST,  {.i64=HAMMER},          0,                   0, FLAGS, "out" },
     {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "out" },
     {   "fisheye", "fisheye",                                    0, AV_OPT_TYPE_CONST,  {.i64=FISHEYE},         0,                   0, FLAGS, "out" },
+    {   "pannini", "pannini",                                    0, AV_OPT_TYPE_CONST,  {.i64=PANNINI},         0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -2151,6 +2152,38 @@ static void fisheye_to_xyz(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in pannini format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void pannini_to_xyz(const V360Context *s,
+                           int i, int j, int width, int height,
+                           float *vec)
+{
+    const float uf = ((2.f * i) / width  - 1.f);
+    const float vf = ((2.f * j) / height - 1.f);
+
+    const float d = s->h_fov;
+    float k = uf * uf / ((d + 1.f) * (d + 1.f));
+    float dscr = k * k * d * d - (k + 1) * (k * d * d - 1.f);
+    float clon = (-k * d + sqrtf(dscr)) / (k + 1.f);
+    float S = (d + 1.f) / (d + clon);
+    float lon = -(M_PI + atan2f(uf, S * clon));
+    float lat = -atan2f(vf, S);
+
+    vec[0] = sinf(lon) * cosf(lat);
+    vec[1] = sinf(lat);
+    vec[2] = cosf(lon) * cosf(lat);
+
+    normalize_vector(vec);
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in dual fisheye format.
  *
  * @param s filter private context
@@ -2686,6 +2719,7 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 9.f * 8.f;
         break;
+    case PANNINI:
     case FISHEYE:
     case FLAT:
         av_log(ctx, AV_LOG_ERROR, "Supplied format is not accepted as input.\n");
@@ -2824,6 +2858,12 @@ static int config_output(AVFilterLink *outlink)
         s->out_transform = fisheye_to_xyz;
         prepare_out = prepare_fisheye_out;
         w = roundf(wf * 0.5f);
+        h = roundf(hf);
+        break;
+    case PANNINI:
+        s->out_transform = pannini_to_xyz;
+        prepare_out = prepare_fisheye_out;
+        w = roundf(wf);
         h = roundf(hf);
         break;
     default:
