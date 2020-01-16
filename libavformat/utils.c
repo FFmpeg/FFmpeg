@@ -876,7 +876,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             continue;
         }
-		av_log(s, AV_LOG_DEBUG, "s->iformat->read_packet: pts:%s, dts:%s\n",
+		av_log(NULL, AV_LOG_DEBUG, "s->iformat->read_packet: pts:%s, dts:%s\n",
 			 av_ts2str(pkt->pts), av_ts2str(pkt->dts));//这里打印裸流文件的为没有有效值
         err = av_packet_make_refcounted(pkt);
         if (err < 0) {
@@ -908,10 +908,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!is_relative(st->cur_dts))
                 st->cur_dts = wrap_timestamp(st, st->cur_dts);
         }
-		av_log(st, AV_LOG_DEBUG, "wrap_timestamp 1: pts:%s, dts:%s\n",av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "wrap_timestamp 1: pts:%s, dts:%s\n",av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         pkt->dts = wrap_timestamp(st, pkt->dts);//处理溢出
         pkt->pts = wrap_timestamp(st, pkt->pts);
-		av_log(st, AV_LOG_DEBUG, "wrap_timestamp 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "wrap_timestamp 1: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         force_codec_ids(s, st);
 
         /* TODO: audio: time filter; video: frame reordering (pts != dts) */
