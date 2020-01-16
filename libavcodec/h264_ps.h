@@ -144,6 +144,8 @@ typedef struct H264ParamSets {
     /* currently active parameters sets */
     const PPS *pps;
     const SPS *sps;
+
+    int overread_warning_printed[2];
 } H264ParamSets;
 
 /**

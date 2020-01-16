@@ -579,7 +579,8 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     if (get_bits_left(gb) < 0) {
-        av_log(avctx, ignore_truncation ? AV_LOG_WARNING : AV_LOG_ERROR,
+        av_log_once(avctx, ignore_truncation ? AV_LOG_WARNING : AV_LOG_ERROR, AV_LOG_DEBUG,
+                    &ps->overread_warning_printed[sps->vui_parameters_present_flag],
                "Overread %s by %d bits\n", sps->vui_parameters_present_flag ? "VUI" : "SPS", -get_bits_left(gb));
         if (!ignore_truncation)
             goto fail;
