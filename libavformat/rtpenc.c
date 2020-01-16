@@ -124,7 +124,7 @@ static int rtp_write_header(AVFormatContext *s1)
     if (!s->ssrc)
         s->ssrc = av_get_random_seed();
     s->first_packet = 1;
-    s->first_rtcp_ntp_time = ff_ntp_time(av_gettime());
+    s->first_rtcp_ntp_time = ff_ntp_time();
     if (s1->start_time_realtime != 0  &&  s1->start_time_realtime != AV_NOPTS_VALUE)
         /* Round the NTP time to whole milliseconds. */
         s->first_rtcp_ntp_time = (s1->start_time_realtime / 1000) * 1000 +
@@ -526,9 +526,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;
     if ((s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
-                            (ff_ntp_time(av_gettime()) - s->last_rtcp_ntp_time > 5000000))) &&
+                            (ff_ntp_time() - s->last_rtcp_ntp_time > 5000000))) &&
         !(s->flags & FF_RTP_FLAG_SKIP_RTCP)) {
-        rtcp_send_sr(s1, ff_ntp_time(av_gettime()), 0);
+        rtcp_send_sr(s1, ff_ntp_time(), 0);
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
     }
@@ -642,7 +642,7 @@ static int rtp_write_trailer(AVFormatContext *s1)
     /* If the caller closes and recreates ->pb, this might actually
      * be NULL here even if it was successfully allocated at the start. */
     if (s1->pb && (s->flags & FF_RTP_FLAG_SEND_BYE))
-        rtcp_send_sr(s1, ff_ntp_time(av_gettime()), 1);
+        rtcp_send_sr(s1, ff_ntp_time(), 1);
     av_freep(&s->buf);
 
     return 0;

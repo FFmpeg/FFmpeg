@@ -4657,10 +4657,12 @@ static int mov_write_prft_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
 
     if (mov->write_prft == MOV_PRFT_SRC_WALLCLOCK) {
         if (first_track->cluster[0].prft.wallclock) {
-            ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time(first_track->cluster[0].prft.wallclock));
+            /* Round the NTP time to whole milliseconds. */
+            ntp_ts = ff_get_formatted_ntp_time((first_track->cluster[0].prft.wallclock / 1000) * 1000 +
+                                               NTP_OFFSET_US);
             flags = first_track->cluster[0].prft.flags;
         } else
-            ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time(av_gettime()));
+            ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time());
     } else if (mov->write_prft == MOV_PRFT_SRC_PTS) {
         pts_us = av_rescale_q(first_track->cluster[0].pts,
                               first_track->st->time_base, AV_TIME_BASE_Q);
