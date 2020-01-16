@@ -46,6 +46,7 @@
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
+#include "libavutil/timestamp.h"
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/mpegaudiodecheader.h"
@@ -7799,6 +7800,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         ret = av_get_packet(sc->pb, pkt, sample->size);
+		av_log(NULL, AV_LOG_DEBUG, "  mov_read_packet 001: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (ret < 0) {
             if (should_retry(sc->pb, ret)) {
                 mov_current_sample_dec(sc);
@@ -7834,6 +7836,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
+	av_log(NULL, AV_LOG_DEBUG, "  mov_read_packet 002: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     if (sample->flags & AVINDEX_DISCARD_FRAME) {
         pkt->flags |= AV_PKT_FLAG_DISCARD;
     }
@@ -7854,6 +7857,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->duration = next_dts - pkt->dts;
         pkt->pts = pkt->dts;
     }
+	av_log(NULL, AV_LOG_DEBUG, "  mov_read_packet 002: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     if (st->discard == AVDISCARD_ALL)
         goto retry;
     if (sc->sdtp_data && sc->current_sample <= sc->sdtp_count) {

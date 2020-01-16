@@ -876,8 +876,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             continue;
         }
-		av_log(NULL, AV_LOG_DEBUG, "s->iformat->read_packet: pts:%s, dts:%s\n",
-			 av_ts2str(pkt->pts), av_ts2str(pkt->dts));//这里打印裸流文件的为没有有效值
+		av_log(NULL, AV_LOG_DEBUG, "s->iformat->read_packet:packetType: %s ,index : %s,pts:%s, dts:%s,, \n",
+			 pkt->stream_index ?"audio": "video", av_ts2str(pkt->stream_index),av_ts2str(pkt->pts), av_ts2str(pkt->dts));//这里打印裸流文件的为没有有效值
         err = av_packet_make_refcounted(pkt);
         if (err < 0) {
             av_packet_unref(pkt);
