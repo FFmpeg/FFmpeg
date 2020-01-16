@@ -1803,7 +1803,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
               ? ff_packet_list_get(&s->internal->packet_buffer,//从包缓存中取包
                                         &s->internal->packet_buffer_end, pkt)
 			: read_frame_internal(s, pkt);//一般情况下会调用read_frame_internal(s, pkt),直接返回
-		av_log(st, AV_LOG_DEBUG, "  av_read_frame 001: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "  av_read_frame 001: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
         if (ret < 0)
             return ret;
         goto return_packet;
@@ -1858,7 +1858,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
         }
 
         ret = read_frame_internal(s, pkt);
-		av_log(st, AV_LOG_DEBUG, "  av_read_frame  002: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+		av_log(NULL, AV_LOG_DEBUG, "  av_read_frame  002: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 
         if (ret < 0) {
             if (pktl && ret != AVERROR(EAGAIN)) {
@@ -1878,7 +1878,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     }
 
 return_packet:
-	av_log(st, AV_LOG_DEBUG, "  av_read_frame return_packet 001: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+	av_log(NULL, AV_LOG_DEBUG, "  av_read_frame return_packet 001: pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     st = s->streams[pkt->stream_index];
     if ((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & AV_PKT_FLAG_KEY) {
         ff_reduce_index(s, st->index);
