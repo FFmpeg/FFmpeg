@@ -54,6 +54,7 @@ enum InterpMethod {
     BILINEAR,
     BICUBIC,
     LANCZOS,
+    SPLINE16,
     NB_INTERP_METHODS,
 };
 

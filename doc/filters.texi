@@ -19024,6 +19024,9 @@ Bicubic interpolation.
 @item lanc
 @item lanczos
 Lanczos interpolation.
+@item sp16
+@item spline16
+Spline16 interpolation.
 @end table
 
 Default value is @b{@samp{line}}.

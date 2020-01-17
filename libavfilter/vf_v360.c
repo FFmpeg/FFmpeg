@@ -99,6 +99,8 @@ static const AVOption v360_options[] = {
     {     "cubic", "bicubic interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=BICUBIC},         0,                   0, FLAGS, "interp" },
     {      "lanc", "lanczos interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=LANCZOS},         0,                   0, FLAGS, "interp" },
     {   "lanczos", "lanczos interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=LANCZOS},         0,                   0, FLAGS, "interp" },
+    {      "sp16", "spline16 interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=SPLINE16},        0,                   0, FLAGS, "interp" },
+    {  "spline16", "spline16 interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=SPLINE16},        0,                   0, FLAGS, "interp" },
     {         "w", "output width",                   OFFSET(width), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "w"},
     {         "h", "output height",                 OFFSET(height), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "h"},
     { "in_stereo", "input stereo format",        OFFSET(in_stereo), AV_OPT_TYPE_INT,    {.i64=STEREO_2D},       0,    NB_STEREO_FMTS-1, FLAGS, "stereo" },
@@ -314,6 +316,7 @@ void ff_v360_init(V360Context *s, int depth)
         break;
     case BICUBIC:
     case LANCZOS:
+    case SPLINE16:
         s->remap_line = depth <= 8 ? remap4_8bit_line_c : remap4_16bit_line_c;
         break;
     }
@@ -456,6 +459,48 @@ static void lanczos_kernel(float du, float dv, const XYRemap *rmap,
 
     calculate_lanczos_coeffs(du, du_coeffs);
     calculate_lanczos_coeffs(dv, dv_coeffs);
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            u[i * 4 + j] = rmap->u[i][j];
+            v[i * 4 + j] = rmap->v[i][j];
+            ker[i * 4 + j] = lrintf(du_coeffs[j] * dv_coeffs[i] * 16385.f);
+        }
+    }
+}
+
+/**
+ * Calculate 1-dimensional spline16 coefficients.
+ *
+ * @param t relative coordinate
+ * @param coeffs coefficients
+ */
+static void calculate_spline16_coeffs(float t, float *coeffs)
+{
+    coeffs[0] = ((-1.f / 3.f * t + 0.8f) * t - 7.f / 15.f) * t;
+    coeffs[1] = ((t - 9.f / 5.f) * t - 0.2f) * t + 1.f;
+    coeffs[2] = ((6.f / 5.f - t) * t + 0.8f) * t;
+    coeffs[3] = ((1.f / 3.f * t - 0.2f) * t - 2.f / 15.f) * t;
+}
+
+/**
+ * Calculate kernel for spline16 interpolation.
+ *
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ * @param rmap calculated 4x4 window
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
+ */
+static void spline16_kernel(float du, float dv, const XYRemap *rmap,
+                            uint16_t *u, uint16_t *v, int16_t *ker)
+{
+    float du_coeffs[4];
+    float dv_coeffs[4];
+
+    calculate_spline16_coeffs(du, du_coeffs);
+    calculate_spline16_coeffs(dv, dv_coeffs);
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -2676,6 +2721,13 @@ static int config_output(AVFilterLink *outlink)
         break;
     case LANCZOS:
         s->calculate_kernel = lanczos_kernel;
+        s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
+        s->elements = 4 * 4;
+        sizeof_uv = sizeof(uint16_t) * s->elements;
+        sizeof_ker = sizeof(uint16_t) * s->elements;
+        break;
+    case SPLINE16:
+        s->calculate_kernel = spline16_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
         sizeof_uv = sizeof(uint16_t) * s->elements;
