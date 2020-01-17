@@ -1091,7 +1091,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     ebml_master subinfo, track;
     int native_id = 0;
     int qt_id = 0;
-    int bit_depth = av_get_bits_per_sample(par->codec_id);
+    int bit_depth;
     int sample_rate = par->sample_rate;
     int output_sample_rate = 0;
     int display_width_div = 1;
@@ -1102,17 +1102,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (par->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
         mkv->have_attachments = 1;
         return 0;
-    }
-
-    if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
-        if (!bit_depth && par->codec_id != AV_CODEC_ID_ADPCM_G726) {
-            if (par->bits_per_raw_sample)
-                bit_depth = par->bits_per_raw_sample;
-            else
-                bit_depth = av_get_bytes_per_sample(par->format) << 3;
-        }
-        if (!bit_depth)
-            bit_depth = par->bits_per_coded_sample;
     }
 
     if (par->codec_id == AV_CODEC_ID_AAC) {
@@ -1199,24 +1188,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 return AVERROR(EINVAL);
             }
         }
-    }
-
-    if (par->codec_type == AVMEDIA_TYPE_AUDIO && par->initial_padding && par->codec_id == AV_CODEC_ID_OPUS) {
-        int64_t codecdelay = av_rescale_q(par->initial_padding,
-                                          (AVRational){ 1, 48000 },
-                                          (AVRational){ 1, 1000000000 });
-        if (codecdelay < 0) {
-            av_log(s, AV_LOG_ERROR, "Initial padding is invalid\n");
-            return AVERROR(EINVAL);
-        }
-//         mkv->tracks[i].ts_offset = av_rescale_q(par->initial_padding,
-//                                                 (AVRational){ 1, par->sample_rate },
-//                                                 st->time_base);
-
-        put_ebml_uint(pb, MATROSKA_ID_CODECDELAY, codecdelay);
-    }
-    if (par->codec_id == AV_CODEC_ID_OPUS) {
-        put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
     }
 
     switch (par->codec_type) {
@@ -1312,6 +1283,24 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         break;
 
     case AVMEDIA_TYPE_AUDIO:
+        if (par->initial_padding && par->codec_id == AV_CODEC_ID_OPUS) {
+        int64_t codecdelay = av_rescale_q(par->initial_padding,
+                                          (AVRational){ 1, 48000 },
+                                          (AVRational){ 1, 1000000000 });
+        if (codecdelay < 0) {
+            av_log(s, AV_LOG_ERROR, "Initial padding is invalid\n");
+            return AVERROR(EINVAL);
+        }
+//         mkv->tracks[i].ts_offset = av_rescale_q(par->initial_padding,
+//                                                 (AVRational){ 1, par->sample_rate },
+//                                                 st->time_base);
+
+        put_ebml_uint(pb, MATROSKA_ID_CODECDELAY, codecdelay);
+    }
+    if (par->codec_id == AV_CODEC_ID_OPUS) {
+        put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
+    }
+
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
         if (!native_id)
@@ -1325,6 +1314,16 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, sample_rate);
         if (output_sample_rate)
             put_ebml_float(pb, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, output_sample_rate);
+
+        bit_depth = av_get_bits_per_sample(par->codec_id);
+        if (!bit_depth && par->codec_id != AV_CODEC_ID_ADPCM_G726) {
+            if (par->bits_per_raw_sample)
+                bit_depth = par->bits_per_raw_sample;
+            else
+                bit_depth = av_get_bytes_per_sample(par->format) << 3;
+        }
+        if (!bit_depth)
+            bit_depth = par->bits_per_coded_sample;
         if (bit_depth)
             put_ebml_uint(pb, MATROSKA_ID_AUDIOBITDEPTH, bit_depth);
         end_ebml_master(pb, subinfo);
