@@ -89,6 +89,7 @@ static const AVOption v360_options[] = {
     {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "out" },
     {   "fisheye", "fisheye",                                    0, AV_OPT_TYPE_CONST,  {.i64=FISHEYE},         0,                   0, FLAGS, "out" },
     {   "pannini", "pannini",                                    0, AV_OPT_TYPE_CONST,  {.i64=PANNINI},         0,                   0, FLAGS, "out" },
+    {"cylindrical", "cylindrical",                               0, AV_OPT_TYPE_CONST,  {.i64=CYLINDRICAL},     0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -2118,8 +2119,8 @@ static int prepare_fisheye_out(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
 
-    s->flat_range[0] = FFMIN(s->h_fov, 359.f) / 180.f;
-    s->flat_range[1] = FFMIN(s->v_fov, 359.f) / 180.f;
+    s->flat_range[0] = s->h_fov / 180.f;
+    s->flat_range[1] = s->v_fov / 180.f;
 
     return 0;
 }
@@ -2179,6 +2180,55 @@ static void pannini_to_xyz(const V360Context *s,
     vec[0] = sinf(lon) * cosf(lat);
     vec[1] = sinf(lat);
     vec[2] = cosf(lon) * cosf(lat);
+
+    normalize_vector(vec);
+}
+
+/**
+ * Prepare data for processing cylindrical output format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_cylindrical_out(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->flat_range[0] = M_PI * s->h_fov / 360.f;
+    s->flat_range[1] = tanf(0.5f * s->v_fov * M_PI / 180.f);
+
+    return 0;
+}
+
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in cylindrical format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void cylindrical_to_xyz(const V360Context *s,
+                               int i, int j, int width, int height,
+                               float *vec)
+{
+    const float uf = s->flat_range[0] * ((2.f * i) / width  - 1.f);
+    const float vf = s->flat_range[1] * ((2.f * j) / height - 1.f);
+
+    const float phi   = uf;
+    const float theta = atanf(vf);
+
+    const float sin_phi   = sinf(phi);
+    const float cos_phi   = cosf(phi);
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+
+    vec[0] =  cos_theta * sin_phi;
+    vec[1] = -sin_theta;
+    vec[2] = -cos_theta * cos_phi;
 
     normalize_vector(vec);
 }
@@ -2719,6 +2769,7 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 9.f * 8.f;
         break;
+    case CYLINDRICAL:
     case PANNINI:
     case FISHEYE:
     case FLAT:
@@ -2862,9 +2913,15 @@ static int config_output(AVFilterLink *outlink)
         break;
     case PANNINI:
         s->out_transform = pannini_to_xyz;
-        prepare_out = prepare_fisheye_out;
+        prepare_out = NULL;
         w = roundf(wf);
         h = roundf(hf);
+        break;
+    case CYLINDRICAL:
+        s->out_transform = cylindrical_to_xyz;
+        prepare_out = prepare_cylindrical_out;
+        w = roundf(wf);
+        h = roundf(hf * 0.5f);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");

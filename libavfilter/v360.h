@@ -45,6 +45,7 @@ enum Projections {
     SINUSOIDAL,
     FISHEYE,
     PANNINI,
+    CYLINDRICAL,
     NB_PROJECTIONS,
 };
 
