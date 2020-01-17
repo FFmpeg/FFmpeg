@@ -304,7 +304,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVDictionary **metadata = &frame->metadata;
     AVDictionaryEntry *e;
 
-    if (!*metadata)
+    if (!*metadata && s->mode != METADATA_ADD)
         return ff_filter_frame(outlink, frame);
 
     e = av_dict_get(*metadata, !s->key ? "" : s->key, NULL,
