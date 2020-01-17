@@ -799,7 +799,7 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
              * the packet is left with pts == AV_NOPTS_VALUE */
             timestamp = RTP_NOTS_VALUE;
             rv        = s->handler->parse_packet(s->ic, s->dynamic_protocol_context,
-                                                 s->st, pkt, &timestamp, NULL, 0, 0,
+                                                 s->st, pkt, &timestamp, NULL, 0, 0,//timestamp h264 h
                                                  flags);
             finalize_packet(s, pkt, timestamp);
             return rv;
