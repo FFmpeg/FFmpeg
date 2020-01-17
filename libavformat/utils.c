@@ -1135,7 +1135,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     AVStream *st       = s->streams[stream_index];
     AVPacketList *pktl = s->internal->packet_buffer ? s->internal->packet_buffer : s->internal->parse_queue;
     AVPacketList *pktl_it;
-
+	av_log(NULL, AV_LOG_DEBUG, "update_initial_timestamps 1 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     uint64_t shift;
 
     if (st->first_dts != AV_NOPTS_VALUE ||
@@ -1372,6 +1372,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->cur_dts;
 
+			av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 5 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+
             /* This is tricky: the dts must be incremented by the duration
              * of the frame we are displaying, i.e. the last I- or P-frame. */
             if (st->last_IP_duration == 0 && (uint64_t)pkt->duration <= INT32_MAX)
@@ -1389,6 +1391,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             if ((uint64_t)pkt->duration <= INT32_MAX)
                 st->last_IP_duration = pkt->duration;
             st->last_IP_pts      = pkt->pts;
+
+			av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 6 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             /* Cannot compute PTS if not present (we can compute it only
              * by knowing the future. */
         } else if (pkt->pts != AV_NOPTS_VALUE ||
@@ -1398,11 +1402,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             /* presentation is not delayed : PTS and DTS are the same */
             if (pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = pkt->dts;
+			av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 7 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             update_initial_timestamps(s, pkt->stream_index, pkt->pts,
                                       pkt->pts, pkt);
+			av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 8 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             if (pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
+			av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 9 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
             if (pkt->pts != AV_NOPTS_VALUE && duration.num >= 0)
                 st->cur_dts = av_add_stable(st->time_base, pkt->pts, duration, 1);
         }
@@ -1415,11 +1422,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
         if(has_decode_delay_been_guessed(st))
             pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);//处理
+		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 10 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     }
     // We skipped it above so we try here.
-    if (!onein_oneout)
+	if (!onein_oneout) {
         // This should happen on the first packet
         update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);//H264 H265会执行此步
+		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 11 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+	}
     if (pkt->dts > st->cur_dts)
         st->cur_dts = pkt->dts;
 
