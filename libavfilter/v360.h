@@ -169,8 +169,8 @@ typedef struct V360Context {
 
     int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
-    void (*remap_line)(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
-                       const uint16_t *u, const uint16_t *v, const int16_t *ker);
+    void (*remap_line)(uint8_t *dst, int width, const uint8_t *const src, ptrdiff_t in_linesize,
+                       const uint16_t *const u, const uint16_t *const v, const int16_t *const ker);
 } V360Context;
 
 void ff_v360_init(V360Context *s, int depth);

@@ -208,18 +208,19 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-#define DEFINE_REMAP1_LINE(bits, div)                                                           \
-static void remap1_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *src,              \
-                                      ptrdiff_t in_linesize,                                    \
-                                      const uint16_t *u, const uint16_t *v, const int16_t *ker) \
-{                                                                                               \
-    const uint##bits##_t *s = (const uint##bits##_t *)src;                                      \
-    uint##bits##_t *d = (uint##bits##_t *)dst;                                                  \
-                                                                                                \
-    in_linesize /= div;                                                                         \
-                                                                                                \
-    for (int x = 0; x < width; x++)                                                             \
-        d[x] = s[v[x] * in_linesize + u[x]];                                                    \
+#define DEFINE_REMAP1_LINE(bits, div)                                                    \
+static void remap1_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *const src, \
+                                      ptrdiff_t in_linesize,                             \
+                                      const uint16_t *const u, const uint16_t *const v,  \
+                                      const int16_t *const ker)                          \
+{                                                                                        \
+    const uint##bits##_t *const s = (const uint##bits##_t *const)src;                    \
+    uint##bits##_t *d = (uint##bits##_t *)dst;                                           \
+                                                                                         \
+    in_linesize /= div;                                                                  \
+                                                                                         \
+    for (int x = 0; x < width; x++)                                                      \
+        d[x] = s[v[x] * in_linesize + u[x]];                                             \
 }
 
 DEFINE_REMAP1_LINE( 8, 1)
@@ -248,7 +249,8 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int in_offset_h = stereo ? s->in_offset_h[plane] : 0;                                    \
             const int out_offset_w = stereo ? s->out_offset_w[plane] : 0;                                  \
             const int out_offset_h = stereo ? s->out_offset_h[plane] : 0;                                  \
-            const uint8_t *src = in->data[plane] + in_offset_h * in_linesize + in_offset_w * (bits >> 3);  \
+            const uint8_t *const src = in->data[plane] +                                                   \
+                                                   in_offset_h * in_linesize + in_offset_w * (bits >> 3);  \
             uint8_t *dst = out->data[plane] + out_offset_h * out_linesize + out_offset_w * (bits >> 3);    \
             const int width = s->pr_width[plane];                                                          \
             const int height = s->pr_height[plane];                                                        \
@@ -258,9 +260,9 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
                                                                                                            \
             for (int y = slice_start; y < slice_end; y++) {                                                \
                 const unsigned map = s->map[plane];                                                        \
-                const uint16_t *u = s->u[map] + y * uv_linesize * ws * ws;                                 \
-                const uint16_t *v = s->v[map] + y * uv_linesize * ws * ws;                                 \
-                const int16_t *ker = s->ker[map] + y * uv_linesize * ws * ws;                              \
+                const uint16_t *const u = s->u[map] + y * uv_linesize * ws * ws;                           \
+                const uint16_t *const v = s->v[map] + y * uv_linesize * ws * ws;                           \
+                const int16_t *const ker = s->ker[map] + y * uv_linesize * ws * ws;                        \
                                                                                                            \
                 s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                 \
             }                                                                                              \
@@ -277,30 +279,31 @@ DEFINE_REMAP(1, 16)
 DEFINE_REMAP(2, 16)
 DEFINE_REMAP(4, 16)
 
-#define DEFINE_REMAP_LINE(ws, bits, div)                                                                   \
-static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *src,                    \
-                                           ptrdiff_t in_linesize,                                          \
-                                           const uint16_t *u, const uint16_t *v, const int16_t *ker)       \
-{                                                                                                          \
-    const uint##bits##_t *s = (const uint##bits##_t *)src;                                                 \
-    uint##bits##_t *d = (uint##bits##_t *)dst;                                                             \
-                                                                                                           \
-    in_linesize /= div;                                                                                    \
-                                                                                                           \
-    for (int x = 0; x < width; x++) {                                                                      \
-        const uint16_t *uu = u + x * ws * ws;                                                              \
-        const uint16_t *vv = v + x * ws * ws;                                                              \
-        const int16_t *kker = ker + x * ws * ws;                                                           \
-        int tmp = 0;                                                                                       \
-                                                                                                           \
-        for (int i = 0; i < ws; i++) {                                                                     \
-            for (int j = 0; j < ws; j++) {                                                                 \
-                tmp += kker[i * ws + j] * s[vv[i * ws + j] * in_linesize + uu[i * ws + j]];                \
-            }                                                                                              \
-        }                                                                                                  \
-                                                                                                           \
-        d[x] = av_clip_uint##bits(tmp >> 14);                                                              \
-    }                                                                                                      \
+#define DEFINE_REMAP_LINE(ws, bits, div)                                                      \
+static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *const src, \
+                                           ptrdiff_t in_linesize,                             \
+                                           const uint16_t *const u, const uint16_t *const v,  \
+                                           const int16_t *const ker)                          \
+{                                                                                             \
+    const uint##bits##_t *const s = (const uint##bits##_t *const)src;                         \
+    uint##bits##_t *d = (uint##bits##_t *)dst;                                                \
+                                                                                              \
+    in_linesize /= div;                                                                       \
+                                                                                              \
+    for (int x = 0; x < width; x++) {                                                         \
+        const uint16_t *const uu = u + x * ws * ws;                                           \
+        const uint16_t *const vv = v + x * ws * ws;                                           \
+        const int16_t *const kker = ker + x * ws * ws;                                        \
+        int tmp = 0;                                                                          \
+                                                                                              \
+        for (int i = 0; i < ws; i++) {                                                        \
+            for (int j = 0; j < ws; j++) {                                                    \
+                tmp += kker[i * ws + j] * s[vv[i * ws + j] * in_linesize + uu[i * ws + j]];   \
+            }                                                                                 \
+        }                                                                                     \
+                                                                                              \
+        d[x] = av_clip_uint##bits(tmp >> 14);                                                 \
+    }                                                                                         \
 }
 
 DEFINE_REMAP_LINE(2,  8, 1)
