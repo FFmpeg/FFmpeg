@@ -400,6 +400,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         }
 
         memcpy(avctx->extradata, nal[0].payload, avctx->extradata_size);
+        memset(avctx->extradata + avctx->extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
     return 0;
