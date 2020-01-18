@@ -58,6 +58,12 @@
  * Info, Tracks, Chapters, Attachments, Tags and Cues */
 #define MAX_SEEKHEAD_ENTRIES 6
 
+enum {
+    DEFAULT_MODE_INFER,
+    DEFAULT_MODE_INFER_NO_SUBS,
+    DEFAULT_MODE_PASSTHROUGH,
+};
+
 typedef struct ebml_master {
     int64_t         pos;                ///< absolute offset in the containing AVIOContext where the master's elements start
     int             sizebytes;          ///< how many bytes were reserved for the size
@@ -144,6 +150,7 @@ typedef struct MatroskaMuxContext {
     int wrote_chapters;
 
     int allow_raw_vfw;
+    int default_mode;
 
     uint32_t segment_uid[4];
 } MatroskaMuxContext;
@@ -1102,7 +1109,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
 
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                            AVStream *st, mkv_track *track, AVIOContext *pb,
-                           int default_stream_exists)
+                           int is_default)
 {
     AVCodecParameters *par = st->codecpar;
     ebml_master subinfo, track_master;
@@ -1140,8 +1147,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     // The default value for TRACKFLAGDEFAULT is 1, so add element
     // if we need to clear it.
-    if (default_stream_exists && !(st->disposition & AV_DISPOSITION_DEFAULT))
-        put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, !!(st->disposition & AV_DISPOSITION_DEFAULT));
+    if (!is_default)
+        put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, 0);
 
     if (st->disposition & AV_DISPOSITION_FORCED)
         put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGFORCED, 1);
@@ -1371,7 +1378,7 @@ static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
-    int i, ret, default_stream_exists = 0;
+    int i, ret, video_default_idx, audio_default_idx, subtitle_default_idx;
 
     if (mkv->nb_attachments == s->nb_streams)
         return 0;
@@ -1382,14 +1389,43 @@ static int mkv_write_tracks(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        default_stream_exists |= st->disposition & AV_DISPOSITION_DEFAULT;
+    if (mkv->default_mode != DEFAULT_MODE_PASSTHROUGH) {
+        int video_idx, audio_idx, subtitle_idx;
+
+        video_idx    = video_default_idx    =
+        audio_idx    = audio_default_idx    =
+        subtitle_idx = subtitle_default_idx = -1;
+
+        for (i = s->nb_streams - 1; i >= 0; i--) {
+            AVStream *st = s->streams[i];
+
+            switch (st->codecpar->codec_type) {
+#define CASE(type, variable)                                  \
+            case AVMEDIA_TYPE_ ## type:                       \
+                variable ## _idx = i;                         \
+                if (st->disposition & AV_DISPOSITION_DEFAULT) \
+                    variable ## _default_idx = i;             \
+                break;
+            CASE(VIDEO,    video)
+            CASE(AUDIO,    audio)
+            CASE(SUBTITLE, subtitle)
+#undef CASE
+            }
+        }
+
+        video_default_idx = FFMAX(video_default_idx, video_idx);
+        audio_default_idx = FFMAX(audio_default_idx, audio_idx);
+        if (mkv->default_mode != DEFAULT_MODE_INFER_NO_SUBS)
+            subtitle_default_idx = FFMAX(subtitle_default_idx, subtitle_idx);
     }
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        int is_default = mkv->default_mode == DEFAULT_MODE_PASSTHROUGH ?
+                             st->disposition & AV_DISPOSITION_DEFAULT  :
+                             i == video_default_idx || i == audio_default_idx ||
+                             i == subtitle_default_idx;
         ret = mkv_write_track(s, mkv, st, &mkv->tracks[i],
-                              mkv->tracks_bc, default_stream_exists);
+                              mkv->tracks_bc, is_default);
         if (ret < 0)
             return ret;
     }
@@ -2722,6 +2758,10 @@ static const AVOption options[] = {
     { "live", "Write files assuming it is a live stream.", OFFSET(is_live), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "allow_raw_vfw", "allow RAW VFW mode", OFFSET(allow_raw_vfw), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "write_crc32", "write a CRC32 element inside every Level 1 element", OFFSET(write_crc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+    { "default_mode", "Controls how a track's FlagDefault is inferred", OFFSET(default_mode), AV_OPT_TYPE_INT, { .i64 = DEFAULT_MODE_INFER }, DEFAULT_MODE_INFER, DEFAULT_MODE_PASSTHROUGH, FLAGS, "default_mode" },
+    { "infer", "For each track type, mark the first track of disposition default as default; if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER }, 0, 0, FLAGS, "default_mode" },
+    { "infer_no_subs", "For each track type, mark the first track of disposition default as default; for audio and video: if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER_NO_SUBS }, 0, 0, FLAGS, "default_mode" },
+    { "passthrough", "Use the disposition flag as-is", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_PASSTHROUGH }, 0, 0, FLAGS, "default_mode" },
     { NULL },
 };
 

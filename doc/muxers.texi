@@ -1384,6 +1384,25 @@ A safe size for most use cases should be about 50kB per hour of video.
 
 Note that cues are only written if the output is seekable and this option will
 have no effect if it is not.
+@item default_mode
+This option controls how the FlagDefault of the output tracks will be set.
+It influences which tracks players should play by default. The default mode
+is @samp{infer}.
+@table @samp
+@item infer
+In this mode, for each type of track (audio, video or subtitle), if there is
+a track with disposition default of this type, then the first such track
+(i.e. the one with the lowest index) will be marked as default; if no such
+track exists, the first track of this type will be marked as default instead
+(if existing). This ensures that the default flag is set in a sensible way even
+if the input originated from containers that lack the concept of default tracks.
+@item infer_no_subs
+This mode is the same as infer except that if no subtitle track with
+disposition default exists, no subtitle track will be marked as default.
+@item passthrough
+In this mode the FlagDefault is set if and only if the AV_DISPOSITION_DEFAULT
+flag is set in the disposition of the corresponding stream.
+@end table
 @end table
 
 @anchor{md5}
