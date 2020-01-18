@@ -17323,9 +17323,9 @@ option may cause flicker since the B-Frames have often larger QP. Default is
 
 This filter supports the following commands:
 @table @option
-@item level
-@item quality
-Same as quality option. And the command accepts the @code{max} same as the @code{6}.
+@item quality, level
+Set quality level. The value @code{max} can be used to set the maximum level,
+currently @code{6}.
 @end table
 
 @section sr
