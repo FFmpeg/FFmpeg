@@ -817,8 +817,11 @@ static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
             pred >>= scaling;
             s->channel_residues[ich][i] += (unsigned)pred;
         }
-        for (j = 0; j < order; j++)
-            prevvalues[j] = s->channel_residues[ich][tile_size - j - 1];
+        for (j = order - 1; j >= 0; j--)
+            if (tile_size <= j) {
+                prevvalues[j] = prevvalues[j - tile_size];
+            }else
+                prevvalues[j] = s->channel_residues[ich][tile_size - j - 1];
     }
 }
 
