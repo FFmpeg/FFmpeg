@@ -1187,6 +1187,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                 is_segment = 0;
                 new_start_pos = avio_tell(vs->avf->pb);
                 vs->size = new_start_pos - vs->start_pos;
+                vs->initial_prog_date_time -= vs->duration; // this is a previously existing segment
                 ret = hls_append_segment(s, hls, vs, vs->duration, vs->start_pos, vs->size);
                 if (ret < 0)
                     goto fail;
