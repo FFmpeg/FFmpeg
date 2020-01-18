@@ -2215,12 +2215,12 @@ static void pannini_to_xyz(const V360Context *s,
     const float vf = ((2.f * j) / height - 1.f);
 
     const float d = s->h_fov;
-    float k = uf * uf / ((d + 1.f) * (d + 1.f));
-    float dscr = k * k * d * d - (k + 1) * (k * d * d - 1.f);
-    float clon = (-k * d + sqrtf(dscr)) / (k + 1.f);
-    float S = (d + 1.f) / (d + clon);
-    float lon = -(M_PI + atan2f(uf, S * clon));
-    float lat = -atan2f(vf, S);
+    const float k = uf * uf / ((d + 1.f) * (d + 1.f));
+    const float dscr = k * k * d * d - (k + 1.f) * (k * d * d - 1.f);
+    const float clon = (-k * d + sqrtf(dscr)) / (k + 1.f);
+    const float S = (d + 1.f) / (d + clon);
+    const float lon = -(M_PI + atan2f(uf, S * clon));
+    const float lat = -atan2f(vf, S);
 
     vec[0] = sinf(lon) * cosf(lat);
     vec[1] = sinf(lat);
@@ -2516,7 +2516,7 @@ static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3]
 {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            float sum = 0;
+            float sum = 0.f;
 
             for (int k = 0; k < 3; k++)
                 sum += a[i][k] * b[k][j];
@@ -3046,9 +3046,8 @@ static int config_output(AVFilterLink *outlink)
         s->map[0] = s->map[1] = s->map[2] = s->map[3] = 0;
     } else {
         s->nb_allocated = 2;
-        s->map[0] = 0;
+        s->map[0] = s->map[3] = 0;
         s->map[1] = s->map[2] = 1;
-        s->map[3] = 0;
     }
 
     for (int i = 0; i < s->nb_allocated; i++)
