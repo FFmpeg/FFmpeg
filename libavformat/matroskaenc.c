@@ -1081,11 +1081,11 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
 }
 
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
-                           int i, AVIOContext *pb, int default_stream_exists)
+                           AVStream *st, mkv_track *track, AVIOContext *pb,
+                           int default_stream_exists)
 {
-    AVStream *st = s->streams[i];
     AVCodecParameters *par = st->codecpar;
-    ebml_master subinfo, track;
+    ebml_master subinfo, track_master;
     int native_id = 0;
     int qt_id = 0;
     int bit_depth;
@@ -1108,9 +1108,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             return ret;
     }
 
-    track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
-    put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER, mkv->tracks[i].track_num);
-    put_ebml_uid  (pb, MATROSKA_ID_TRACKUID, mkv->tracks[i].uid);
+    track_master = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
+    put_ebml_uint(pb, MATROSKA_ID_TRACKNUMBER, track->track_num);
+    put_ebml_uid (pb, MATROSKA_ID_TRACKUID,    track->uid);
     put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
 
     if ((tag = av_dict_get(st->metadata, "title", NULL, 0)))
@@ -1207,7 +1207,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         else if (!native_id) {
             // if there is no mkv-specific codec ID, use VFW mode
             put_ebml_string(pb, MATROSKA_ID_CODECID, "V_MS/VFW/FOURCC");
-            mkv->tracks[i].write_dts = 1;
+            track->write_dts = 1;
             s->internal->avoid_negative_ts_use_pts = 0;
         }
 
@@ -1283,9 +1283,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 av_log(s, AV_LOG_ERROR, "Initial padding is invalid\n");
                 return AVERROR(EINVAL);
             }
-//            mkv->tracks[i].ts_offset = av_rescale_q(par->initial_padding,
-//                                                    (AVRational){ 1, par->sample_rate },
-//                                                    st->time_base);
+//            track->ts_offset = av_rescale_q(par->initial_padding,
+//                                            (AVRational){ 1, par->sample_rate },
+//                                            st->time_base);
 
             put_ebml_uint(pb, MATROSKA_ID_CODECDELAY, codecdelay);
         }
@@ -1301,7 +1301,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO, 0);
         put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , par->channels);
 
-        mkv->tracks[i].sample_rate_offset = avio_tell(pb);
+        track->sample_rate_offset = avio_tell(pb);
         put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, sample_rate);
         if (output_sample_rate)
             put_ebml_float(pb, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, output_sample_rate);
@@ -1337,13 +1337,13 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (mkv->mode != MODE_WEBM || par->codec_id != AV_CODEC_ID_WEBVTT) {
-        mkv->tracks[i].codecpriv_offset = avio_tell(pb);
+        track->codecpriv_offset = avio_tell(pb);
         ret = mkv_write_codecprivate(s, pb, par, native_id, qt_id);
         if (ret < 0)
             return ret;
     }
 
-    end_ebml_master(pb, track);
+    end_ebml_master(pb, track_master);
 
     return 0;
 }
@@ -1365,7 +1365,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         default_stream_exists |= st->disposition & AV_DISPOSITION_DEFAULT;
     }
     for (i = 0; i < s->nb_streams; i++) {
-        ret = mkv_write_track(s, mkv, i, mkv->tracks_bc, default_stream_exists);
+        AVStream *st = s->streams[i];
+        ret = mkv_write_track(s, mkv, st, &mkv->tracks[i],
+                              mkv->tracks_bc, default_stream_exists);
         if (ret < 0)
             return ret;
     }
