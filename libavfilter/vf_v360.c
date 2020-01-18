@@ -90,6 +90,7 @@ static const AVOption v360_options[] = {
     {   "fisheye", "fisheye",                                    0, AV_OPT_TYPE_CONST,  {.i64=FISHEYE},         0,                   0, FLAGS, "out" },
     {   "pannini", "pannini",                                    0, AV_OPT_TYPE_CONST,  {.i64=PANNINI},         0,                   0, FLAGS, "out" },
     {"cylindrical", "cylindrical",                               0, AV_OPT_TYPE_CONST,  {.i64=CYLINDRICAL},     0,                   0, FLAGS, "out" },
+    {"perspective", "perspective",                               0, AV_OPT_TYPE_CONST,  {.i64=PERSPECTIVE},     0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -2335,6 +2336,51 @@ static void cylindrical_to_xyz(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in perspective format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void perspective_to_xyz(const V360Context *s,
+                               int i, int j, int width, int height,
+                               float *vec)
+{
+    const float uf = ((2.f * i) / width  - 1.f);
+    const float vf = ((2.f * j) / height - 1.f);
+    const float rh = hypotf(uf, vf);
+    const float sinzz = 1.f - rh * rh;
+    const float h = 1.f + s->v_fov;
+    const float sinz = (h - sqrtf(sinzz)) / (h / rh + rh / h);
+    const float sinz2 = sinz * sinz;
+
+    if (sinz2 <= 1.f) {
+        const float cosz = sqrtf(1.f - sinz2);
+
+        const float theta = asinf(cosz);
+        const float phi   = atan2f(uf, vf);
+
+        const float sin_phi   = sinf(phi);
+        const float cos_phi   = cosf(phi);
+        const float sin_theta = sinf(theta);
+        const float cos_theta = cosf(theta);
+
+        vec[0] =  cos_theta * sin_phi;
+        vec[1] =  sin_theta;
+        vec[2] = -cos_theta * cos_phi;
+    } else {
+        vec[0] =  0.f;
+        vec[1] = -1.f;
+        vec[2] =  0.f;
+    }
+
+    normalize_vector(vec);
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in dual fisheye format.
  *
  * @param s filter private context
@@ -2884,6 +2930,7 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 9.f * 8.f;
         break;
+    case PERSPECTIVE:
     case CYLINDRICAL:
     case PANNINI:
     case FISHEYE:
@@ -3037,6 +3084,12 @@ static int config_output(AVFilterLink *outlink)
         prepare_out = prepare_cylindrical_out;
         w = roundf(wf);
         h = roundf(hf * 0.5f);
+        break;
+    case PERSPECTIVE:
+        s->out_transform = perspective_to_xyz;
+        prepare_out = NULL;
+        w = roundf(wf / 2.f);
+        h = roundf(hf);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
