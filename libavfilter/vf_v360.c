@@ -242,6 +242,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
                                                                                                            \
     for (int stereo = 0; stereo < 1 + s->out_stereo > STEREO_2D; stereo++) {                               \
         for (int plane = 0; plane < s->nb_planes; plane++) {                                               \
+            const unsigned map = s->map[plane];                                                            \
             const int in_linesize  = in->linesize[plane];                                                  \
             const int out_linesize = out->linesize[plane];                                                 \
             const int uv_linesize = s->uv_linesize[plane];                                                 \
@@ -259,7 +260,6 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
                                                                                                            \
             for (int y = slice_start; y < slice_end; y++) {                                                \
-                const unsigned map = s->map[plane];                                                        \
                 const uint16_t *const u = s->u[map] + y * uv_linesize * ws * ws;                           \
                 const uint16_t *const v = s->v[map] + y * uv_linesize * ws * ws;                           \
                 const int16_t *const ker = s->ker[map] + y * uv_linesize * ws * ws;                        \
