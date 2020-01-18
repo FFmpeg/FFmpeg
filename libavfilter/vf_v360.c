@@ -101,6 +101,8 @@ static const AVOption v360_options[] = {
     {   "lanczos", "lanczos interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=LANCZOS},         0,                   0, FLAGS, "interp" },
     {      "sp16", "spline16 interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=SPLINE16},        0,                   0, FLAGS, "interp" },
     {  "spline16", "spline16 interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=SPLINE16},        0,                   0, FLAGS, "interp" },
+    {     "gauss", "gaussian interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=GAUSSIAN},        0,                   0, FLAGS, "interp" },
+    {  "gaussian", "gaussian interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=GAUSSIAN},        0,                   0, FLAGS, "interp" },
     {         "w", "output width",                   OFFSET(width), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "w"},
     {         "h", "output height",                 OFFSET(height), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "h"},
     { "in_stereo", "input stereo format",        OFFSET(in_stereo), AV_OPT_TYPE_INT,    {.i64=STEREO_2D},       0,    NB_STEREO_FMTS-1, FLAGS, "stereo" },
@@ -317,6 +319,7 @@ void ff_v360_init(V360Context *s, int depth)
     case BICUBIC:
     case LANCZOS:
     case SPLINE16:
+    case GAUSSIAN:
         s->remap_line = depth <= 8 ? remap4_8bit_line_c : remap4_16bit_line_c;
         break;
     }
@@ -501,6 +504,59 @@ static void spline16_kernel(float du, float dv, const XYRemap *rmap,
 
     calculate_spline16_coeffs(du, du_coeffs);
     calculate_spline16_coeffs(dv, dv_coeffs);
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            u[i * 4 + j] = rmap->u[i][j];
+            v[i * 4 + j] = rmap->v[i][j];
+            ker[i * 4 + j] = lrintf(du_coeffs[j] * dv_coeffs[i] * 16385.f);
+        }
+    }
+}
+
+/**
+ * Calculate 1-dimensional gaussian coefficients.
+ *
+ * @param t relative coordinate
+ * @param coeffs coefficients
+ */
+static void calculate_gaussian_coeffs(float t, float *coeffs)
+{
+    float sum = 0.f;
+
+    for (int i = 0; i < 4; i++) {
+        const float x = t - (i - 1);
+        if (x == 0.f) {
+            coeffs[i] = 1.f;
+        } else {
+            coeffs[i] = expf(-2.f * x * x) * expf(-x * x / 2.f);
+        }
+        sum += coeffs[i];
+    }
+
+    for (int i = 0; i < 4; i++) {
+        coeffs[i] /= sum;
+    }
+}
+
+/**
+ * Calculate kernel for gaussian interpolation.
+ *
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ * @param rmap calculated 4x4 window
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
+ */
+static void gaussian_kernel(float du, float dv, const XYRemap *rmap,
+                            uint16_t *u, uint16_t *v, int16_t *ker)
+{
+    float du_coeffs[4];
+    float dv_coeffs[4];
+
+    calculate_gaussian_coeffs(du, du_coeffs);
+    calculate_gaussian_coeffs(dv, dv_coeffs);
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -2728,6 +2784,13 @@ static int config_output(AVFilterLink *outlink)
         break;
     case SPLINE16:
         s->calculate_kernel = spline16_kernel;
+        s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
+        s->elements = 4 * 4;
+        sizeof_uv = sizeof(uint16_t) * s->elements;
+        sizeof_ker = sizeof(uint16_t) * s->elements;
+        break;
+    case GAUSSIAN:
+        s->calculate_kernel = gaussian_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
         sizeof_uv = sizeof(uint16_t) * s->elements;
