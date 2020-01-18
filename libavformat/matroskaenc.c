@@ -159,6 +159,8 @@ typedef struct MatroskaMuxContext {
     int wrote_chapters;
 
     int allow_raw_vfw;
+
+    uint32_t segment_uid[4];
 } MatroskaMuxContext;
 
 /** 2 bytes * 7 for EBML IDs, 7 1-byte EBML lengths, 6 1-byte uint,
@@ -1819,15 +1821,7 @@ static int mkv_write_header(AVFormatContext *s)
             put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
 
         if (mkv->mode != MODE_WEBM) {
-            uint32_t segment_uid[4];
-            AVLFG lfg;
-
-            av_lfg_init(&lfg, av_get_random_seed());
-
-            for (i = 0; i < 4; i++)
-                segment_uid[i] = av_lfg_get(&lfg);
-
-            put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
+            put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, mkv->segment_uid, 16);
         }
     } else {
         const char *ident = "Lavf";
@@ -2659,8 +2653,13 @@ static int mkv_init(struct AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
 
-    if (!(s->flags & AVFMT_FLAG_BITEXACT))
+    if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
         av_lfg_init(&c, av_get_random_seed());
+
+        // Calculate the SegmentUID now in order not to waste our random seed.
+        for (i = 0; i < 4; i++)
+            mkv->segment_uid[i] = av_lfg_get(&c);
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         mkv_track *track = &mkv->tracks[i];
