@@ -642,13 +642,14 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
     int len;
     AVIOContext *pb;
     uint8_t key[KEYSIZE];
+    char * key_basename_source = (hls->master_m3u8_url) ? hls->master_m3u8_url : s->url;
 
-    len = strlen(s->url) + 4 + 1;
+    len = strlen(key_basename_source) + 4 + 1;
     hls->key_basename = av_mallocz(len);
     if (!hls->key_basename)
         return AVERROR(ENOMEM);
 
-    av_strlcpy(hls->key_basename, s->url, len);
+    av_strlcpy(hls->key_basename, key_basename_source, len);
     av_strlcat(hls->key_basename, ".key", len);
 
     if (hls->key_url) {
