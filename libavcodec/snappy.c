@@ -39,6 +39,8 @@ static int64_t bytestream2_get_levarint(GetByteContext *gb)
 
     do {
         tmp = bytestream2_get_byte(gb);
+        if (shift > 31 || ((tmp & 127LL) << shift) > INT_MAX)
+            return AVERROR_INVALIDDATA;
         val |= (tmp & 127) << shift;
         shift += 7;
     } while (tmp & 128);
