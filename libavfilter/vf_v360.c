@@ -211,7 +211,7 @@ static int query_formats(AVFilterContext *ctx)
 #define DEFINE_REMAP1_LINE(bits, div)                                                    \
 static void remap1_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *const src, \
                                       ptrdiff_t in_linesize,                             \
-                                      const uint16_t *const u, const uint16_t *const v,  \
+                                      const int16_t *const u, const int16_t *const v,    \
                                       const int16_t *const ker)                          \
 {                                                                                        \
     const uint##bits##_t *const s = (const uint##bits##_t *const)src;                    \
@@ -260,8 +260,8 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
                                                                                                            \
             for (int y = slice_start; y < slice_end; y++) {                                                \
-                const uint16_t *const u = s->u[map] + y * uv_linesize * ws * ws;                           \
-                const uint16_t *const v = s->v[map] + y * uv_linesize * ws * ws;                           \
+                const int16_t *const u = s->u[map] + y * uv_linesize * ws * ws;                            \
+                const int16_t *const v = s->v[map] + y * uv_linesize * ws * ws;                            \
                 const int16_t *const ker = s->ker[map] + y * uv_linesize * ws * ws;                        \
                                                                                                            \
                 s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                 \
@@ -282,7 +282,7 @@ DEFINE_REMAP(4, 16)
 #define DEFINE_REMAP_LINE(ws, bits, div)                                                      \
 static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *const src, \
                                            ptrdiff_t in_linesize,                             \
-                                           const uint16_t *const u, const uint16_t *const v,  \
+                                           const int16_t *const u, const int16_t *const v,    \
                                            const int16_t *const ker)                          \
 {                                                                                             \
     const uint##bits##_t *const s = (const uint##bits##_t *const)src;                         \
@@ -291,8 +291,8 @@ static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_
     in_linesize /= div;                                                                       \
                                                                                               \
     for (int x = 0; x < width; x++) {                                                         \
-        const uint16_t *const uu = u + x * ws * ws;                                           \
-        const uint16_t *const vv = v + x * ws * ws;                                           \
+        const int16_t *const uu = u + x * ws * ws;                                            \
+        const int16_t *const vv = v + x * ws * ws;                                            \
         const int16_t *const kker = ker + x * ws * ws;                                        \
         int tmp = 0;                                                                          \
                                                                                               \
@@ -343,7 +343,7 @@ void ff_v360_init(V360Context *s, int depth)
  * @param ker ker remap data
  */
 static void nearest_kernel(float du, float dv, const XYRemap *rmap,
-                           uint16_t *u, uint16_t *v, int16_t *ker)
+                           int16_t *u, int16_t *v, int16_t *ker)
 {
     const int i = roundf(dv) + 1;
     const int j = roundf(du) + 1;
@@ -363,7 +363,7 @@ static void nearest_kernel(float du, float dv, const XYRemap *rmap,
  * @param ker ker remap data
  */
 static void bilinear_kernel(float du, float dv, const XYRemap *rmap,
-                            uint16_t *u, uint16_t *v, int16_t *ker)
+                            int16_t *u, int16_t *v, int16_t *ker)
 {
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
@@ -406,7 +406,7 @@ static inline void calculate_bicubic_coeffs(float t, float *coeffs)
  * @param ker ker remap data
  */
 static void bicubic_kernel(float du, float dv, const XYRemap *rmap,
-                           uint16_t *u, uint16_t *v, int16_t *ker)
+                           int16_t *u, int16_t *v, int16_t *ker)
 {
     float du_coeffs[4];
     float dv_coeffs[4];
@@ -459,7 +459,7 @@ static inline void calculate_lanczos_coeffs(float t, float *coeffs)
  * @param ker ker remap data
  */
 static void lanczos_kernel(float du, float dv, const XYRemap *rmap,
-                           uint16_t *u, uint16_t *v, int16_t *ker)
+                           int16_t *u, int16_t *v, int16_t *ker)
 {
     float du_coeffs[4];
     float dv_coeffs[4];
@@ -501,7 +501,7 @@ static void calculate_spline16_coeffs(float t, float *coeffs)
  * @param ker ker remap data
  */
 static void spline16_kernel(float du, float dv, const XYRemap *rmap,
-                            uint16_t *u, uint16_t *v, int16_t *ker)
+                            int16_t *u, int16_t *v, int16_t *ker)
 {
     float du_coeffs[4];
     float dv_coeffs[4];
@@ -554,7 +554,7 @@ static void calculate_gaussian_coeffs(float t, float *coeffs)
  * @param ker ker remap data
  */
 static void gaussian_kernel(float du, float dv, const XYRemap *rmap,
-                            uint16_t *u, uint16_t *v, int16_t *ker)
+                            int16_t *u, int16_t *v, int16_t *ker)
 {
     float du_coeffs[4];
     float dv_coeffs[4];
@@ -1212,7 +1212,7 @@ static void cube3x2_to_xyz(const V360Context *s,
  */
 static void xyz_to_cube3x2(const V360Context *s,
                            const float *vec, int width, int height,
-                           uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_width  / 3.f) : 1.f - s->in_pad;
     const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_height / 2.f) : 1.f - s->in_pad;
@@ -1363,7 +1363,7 @@ static void cube6x1_to_xyz(const V360Context *s,
  */
 static void xyz_to_cube1x6(const V360Context *s,
                            const float *vec, int width, int height,
-                           uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float scalew = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / s->in_width : 1.f - s->in_pad;
     const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_height / 6.f) : 1.f - s->in_pad;
@@ -1441,7 +1441,7 @@ static void xyz_to_cube1x6(const V360Context *s,
  */
 static void xyz_to_cube6x1(const V360Context *s,
                            const float *vec, int width, int height,
-                           uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_width / 6.f)   : 1.f - s->in_pad;
     const float scaleh = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / s->in_height : 1.f - s->in_pad;
@@ -1588,7 +1588,7 @@ static void stereographic_to_xyz(const V360Context *s,
  */
 static void xyz_to_stereographic(const V360Context *s,
                                  const float *vec, int width, int height,
-                                 uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                                 int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float x = av_clipf(vec[0] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[0];
     const float y = av_clipf(vec[2] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[1];
@@ -1625,7 +1625,7 @@ static void xyz_to_stereographic(const V360Context *s,
  */
 static void xyz_to_equirect(const V360Context *s,
                             const float *vec, int width, int height,
-                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
     const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
@@ -1662,7 +1662,7 @@ static void xyz_to_equirect(const V360Context *s,
  */
 static void xyz_to_mercator(const V360Context *s,
                             const float *vec, int width, int height,
-                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
     const float theta = -vec[1] * s->input_mirror_modifier[1];
@@ -1727,7 +1727,7 @@ static void mercator_to_xyz(const V360Context *s,
  */
 static void xyz_to_ball(const V360Context *s,
                         const float *vec, int width, int height,
-                        uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                        int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float l = hypotf(vec[0], vec[1]);
     const float r = sqrtf(1.f + vec[2]) / M_SQRT2;
@@ -1833,7 +1833,7 @@ static void hammer_to_xyz(const V360Context *s,
  */
 static void xyz_to_hammer(const V360Context *s,
                           const float *vec, int width, int height,
-                          uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                          int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float theta = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
 
@@ -1902,7 +1902,7 @@ static void sinusoidal_to_xyz(const V360Context *s,
  */
 static void xyz_to_sinusoidal(const V360Context *s,
                               const float *vec, int width, int height,
-                              uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                              int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0] * cosf(theta);
@@ -2128,7 +2128,7 @@ static void eac_to_xyz(const V360Context *s,
  */
 static void xyz_to_eac(const V360Context *s,
                        const float *vec, int width, int height,
-                       uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                       int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float pixel_pad = 2;
     const float u_pad = pixel_pad / width;
@@ -2436,7 +2436,7 @@ static void dfisheye_to_xyz(const V360Context *s,
  */
 static void xyz_to_dfisheye(const V360Context *s,
                             const float *vec, int width, int height,
-                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float scale = 1.f - s->in_pad;
 
@@ -2558,7 +2558,7 @@ static void barrel_to_xyz(const V360Context *s,
  */
 static void xyz_to_barrel(const V360Context *s,
                           const float *vec, int width, int height,
-                          uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+                          int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float scale = 0.99f;
 
@@ -2757,8 +2757,8 @@ static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobn
 
         for (int j = slice_start; j < slice_end; j++) {
             for (int i = 0; i < width; i++) {
-                uint16_t *u = s->u[p] + (j * uv_linesize + i) * s->elements;
-                uint16_t *v = s->v[p] + (j * uv_linesize + i) * s->elements;
+                int16_t *u = s->u[p] + (j * uv_linesize + i) * s->elements;
+                int16_t *v = s->v[p] + (j * uv_linesize + i) * s->elements;
                 int16_t *ker = s->ker[p] + (j * uv_linesize + i) * s->elements;
 
                 if (s->out_transpose)
@@ -2807,43 +2807,43 @@ static int config_output(AVFilterLink *outlink)
         s->calculate_kernel = nearest_kernel;
         s->remap_slice = depth <= 8 ? remap1_8bit_slice : remap1_16bit_slice;
         s->elements = 1;
-        sizeof_uv = sizeof(uint16_t) * s->elements;
+        sizeof_uv = sizeof(int16_t) * s->elements;
         sizeof_ker = 0;
         break;
     case BILINEAR:
         s->calculate_kernel = bilinear_kernel;
         s->remap_slice = depth <= 8 ? remap2_8bit_slice : remap2_16bit_slice;
         s->elements = 2 * 2;
-        sizeof_uv = sizeof(uint16_t) * s->elements;
-        sizeof_ker = sizeof(uint16_t) * s->elements;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
         break;
     case BICUBIC:
         s->calculate_kernel = bicubic_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
-        sizeof_uv = sizeof(uint16_t) * s->elements;
-        sizeof_ker = sizeof(uint16_t) * s->elements;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
         break;
     case LANCZOS:
         s->calculate_kernel = lanczos_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
-        sizeof_uv = sizeof(uint16_t) * s->elements;
-        sizeof_ker = sizeof(uint16_t) * s->elements;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
         break;
     case SPLINE16:
         s->calculate_kernel = spline16_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
-        sizeof_uv = sizeof(uint16_t) * s->elements;
-        sizeof_ker = sizeof(uint16_t) * s->elements;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
         break;
     case GAUSSIAN:
         s->calculate_kernel = gaussian_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
-        sizeof_uv = sizeof(uint16_t) * s->elements;
-        sizeof_ker = sizeof(uint16_t) * s->elements;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
         break;
     default:
         av_assert0(0);

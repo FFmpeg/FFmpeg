@@ -96,8 +96,8 @@ enum RotationOrder {
 };
 
 typedef struct XYRemap {
-    uint16_t u[4][4];
-    uint16_t v[4][4];
+    int16_t u[4][4];
+    int16_t v[4][4];
     float ker[4][4];
 } XYRemap;
 
@@ -152,25 +152,25 @@ typedef struct V360Context {
     int nb_allocated;
     int elements;
 
-    uint16_t *u[2], *v[2];
+    int16_t *u[2], *v[2];
     int16_t *ker[2];
     unsigned map[4];
 
     void (*in_transform)(const struct V360Context *s,
                          const float *vec, int width, int height,
-                         uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv);
+                         int16_t us[4][4], int16_t vs[4][4], float *du, float *dv);
 
     void (*out_transform)(const struct V360Context *s,
                           int i, int j, int width, int height,
                           float *vec);
 
     void (*calculate_kernel)(float du, float dv, const XYRemap *rmap,
-                             uint16_t *u, uint16_t *v, int16_t *ker);
+                             int16_t *u, int16_t *v, int16_t *ker);
 
     int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
     void (*remap_line)(uint8_t *dst, int width, const uint8_t *const src, ptrdiff_t in_linesize,
-                       const uint16_t *const u, const uint16_t *const v, const int16_t *const ker);
+                       const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 } V360Context;
 
 void ff_v360_init(V360Context *s, int depth);

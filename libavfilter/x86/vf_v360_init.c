@@ -24,19 +24,19 @@
 #include "libavfilter/v360.h"
 
 void ff_remap1_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
-                              const uint16_t *u, const uint16_t *v, const int16_t *ker);
+                              const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
 void ff_remap2_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
-                              const uint16_t *u, const uint16_t *v, const int16_t *ker);
+                              const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
 void ff_remap4_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
-                              const uint16_t *u, const uint16_t *v, const int16_t *ker);
+                              const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
 void ff_remap1_16bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
-                               const uint16_t *u, const uint16_t *v, const int16_t *ker);
+                               const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
 void ff_remap2_16bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
-                              const uint16_t *u, const uint16_t *v, const int16_t *ker);
+                               const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
 av_cold void ff_v360_init_x86(V360Context *s, int depth)
 {
