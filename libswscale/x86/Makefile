@@ -12,3 +12,4 @@ X86ASM-OBJS                     += x86/input.o                          \
                                    x86/output.o                         \
                                    x86/scale.o                          \
                                    x86/rgb_2_rgb.o                      \
+                                   x86/yuv_2_rgb.o                      \
