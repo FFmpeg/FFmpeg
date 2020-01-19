@@ -345,8 +345,8 @@ void ff_v360_init(V360Context *s, int depth)
 static void nearest_kernel(float du, float dv, const XYRemap *rmap,
                            int16_t *u, int16_t *v, int16_t *ker)
 {
-    const int i = roundf(dv) + 1;
-    const int j = roundf(du) + 1;
+    const int i = lrintf(dv) + 1;
+    const int j = lrintf(du) + 1;
 
     u[0] = rmap->u[i][j];
     v[0] = rmap->v[i][j];
@@ -1277,8 +1277,8 @@ static void xyz_to_cube3x2(const V360Context *s,
                 new_ewi = ceilf(ew * (u_face + 1)) - u_shift;
                 new_ehi = ceilf(eh * (v_face + 1)) - v_shift;
 
-                new_ui = av_clip(roundf(0.5f * new_ewi * (uf + 1.f)), 0, new_ewi - 1);
-                new_vi = av_clip(roundf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
+                new_ui = av_clip(lrintf(0.5f * new_ewi * (uf + 1.f)), 0, new_ewi - 1);
+                new_vi = av_clip(lrintf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
             }
 
             us[i + 1][j + 1] = u_shift + new_ui;
@@ -1417,8 +1417,8 @@ static void xyz_to_cube1x6(const V360Context *s,
                 v_shift = ceilf(eh * face);
                 new_ehi = ceilf(eh * (face + 1)) - v_shift;
 
-                new_ui = av_clip(roundf(0.5f *     ewi * (uf + 1.f)), 0,     ewi - 1);
-                new_vi = av_clip(roundf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
+                new_ui = av_clip(lrintf(0.5f *     ewi * (uf + 1.f)), 0,     ewi - 1);
+                new_vi = av_clip(lrintf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
             }
 
             us[i + 1][j + 1] =           new_ui;
@@ -1495,8 +1495,8 @@ static void xyz_to_cube6x1(const V360Context *s,
                 u_shift = ceilf(ew * face);
                 new_ewi = ceilf(ew * (face + 1)) - u_shift;
 
-                new_ui = av_clip(roundf(0.5f * new_ewi * (uf + 1.f)), 0, new_ewi - 1);
-                new_vi = av_clip(roundf(0.5f *     ehi * (vf + 1.f)), 0,     ehi - 1);
+                new_ui = av_clip(lrintf(0.5f * new_ewi * (uf + 1.f)), 0, new_ewi - 1);
+                new_vi = av_clip(lrintf(0.5f *     ehi * (vf + 1.f)), 0,     ehi - 1);
             }
 
             us[i + 1][j + 1] = u_shift + new_ui;
@@ -2995,104 +2995,104 @@ static int config_output(AVFilterLink *outlink)
     case EQUIRECTANGULAR:
         s->out_transform = equirect_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf);
+        w = lrintf(wf);
+        h = lrintf(hf);
         break;
     case CUBEMAP_3_2:
         s->out_transform = cube3x2_to_xyz;
         prepare_out = prepare_cube_out;
-        w = roundf(wf / 4.f * 3.f);
-        h = roundf(hf);
+        w = lrintf(wf / 4.f * 3.f);
+        h = lrintf(hf);
         break;
     case CUBEMAP_1_6:
         s->out_transform = cube1x6_to_xyz;
         prepare_out = prepare_cube_out;
-        w = roundf(wf / 4.f);
-        h = roundf(hf * 3.f);
+        w = lrintf(wf / 4.f);
+        h = lrintf(hf * 3.f);
         break;
     case CUBEMAP_6_1:
         s->out_transform = cube6x1_to_xyz;
         prepare_out = prepare_cube_out;
-        w = roundf(wf / 2.f * 3.f);
-        h = roundf(hf / 2.f);
+        w = lrintf(wf / 2.f * 3.f);
+        h = lrintf(hf / 2.f);
         break;
     case EQUIANGULAR:
         s->out_transform = eac_to_xyz;
         prepare_out = prepare_eac_out;
-        w = roundf(wf);
-        h = roundf(hf / 8.f * 9.f);
+        w = lrintf(wf);
+        h = lrintf(hf / 8.f * 9.f);
         break;
     case FLAT:
         s->out_transform = flat_to_xyz;
         prepare_out = prepare_flat_out;
-        w = roundf(wf);
-        h = roundf(hf);
+        w = lrintf(wf);
+        h = lrintf(hf);
         break;
     case DUAL_FISHEYE:
         s->out_transform = dfisheye_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf);
+        w = lrintf(wf);
+        h = lrintf(hf);
         break;
     case BARREL:
         s->out_transform = barrel_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf / 4.f * 5.f);
-        h = roundf(hf);
+        w = lrintf(wf / 4.f * 5.f);
+        h = lrintf(hf);
         break;
     case STEREOGRAPHIC:
         s->out_transform = stereographic_to_xyz;
         prepare_out = prepare_stereographic_out;
-        w = roundf(wf);
-        h = roundf(hf * 2.f);
+        w = lrintf(wf);
+        h = lrintf(hf * 2.f);
         break;
     case MERCATOR:
         s->out_transform = mercator_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf * 2.f);
+        w = lrintf(wf);
+        h = lrintf(hf * 2.f);
         break;
     case BALL:
         s->out_transform = ball_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf * 2.f);
+        w = lrintf(wf);
+        h = lrintf(hf * 2.f);
         break;
     case HAMMER:
         s->out_transform = hammer_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf);
+        w = lrintf(wf);
+        h = lrintf(hf);
         break;
     case SINUSOIDAL:
         s->out_transform = sinusoidal_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf);
+        w = lrintf(wf);
+        h = lrintf(hf);
         break;
     case FISHEYE:
         s->out_transform = fisheye_to_xyz;
         prepare_out = prepare_fisheye_out;
-        w = roundf(wf * 0.5f);
-        h = roundf(hf);
+        w = lrintf(wf * 0.5f);
+        h = lrintf(hf);
         break;
     case PANNINI:
         s->out_transform = pannini_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf);
-        h = roundf(hf);
+        w = lrintf(wf);
+        h = lrintf(hf);
         break;
     case CYLINDRICAL:
         s->out_transform = cylindrical_to_xyz;
         prepare_out = prepare_cylindrical_out;
-        w = roundf(wf);
-        h = roundf(hf * 0.5f);
+        w = lrintf(wf);
+        h = lrintf(hf * 0.5f);
         break;
     case PERSPECTIVE:
         s->out_transform = perspective_to_xyz;
         prepare_out = NULL;
-        w = roundf(wf / 2.f);
-        h = roundf(hf);
+        w = lrintf(wf / 2.f);
+        h = lrintf(hf);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
