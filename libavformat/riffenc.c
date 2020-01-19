@@ -242,6 +242,15 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par,
     avio_wl32(pb, pal_avi ? 1 << par->bits_per_coded_sample : 0);
     avio_wl32(pb, 0);
 
+	if (par->bits_per_coded_sample == 8) {
+		for(int i=0; i<256; i++) {
+			avio_w8(pb,i);
+			avio_w8(pb,i);
+			avio_w8(pb,i);
+			avio_w8(pb,0);
+		}
+	}
+
     if (!ignore_extradata) {
         if (par->extradata_size) {
             avio_write(pb, par->extradata, extradata_size);
