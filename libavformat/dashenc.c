@@ -662,8 +662,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
                 avio_printf(out, "availabilityTimeOffset=\"%.3f\" ",
                             os->availability_time_offset);
         }
-        if (c->ldash && !final && os->frag_type != FRAG_TYPE_NONE &&
-            (os->frag_type != FRAG_TYPE_DURATION || os->frag_duration != os->seg_duration))
+        if (c->streaming && os->availability_time_offset && !final)
             avio_printf(out, "availabilityTimeComplete=\"false\" ");
 
         avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\"", os->init_seg_name, os->media_seg_name, c->use_timeline ? start_number : 1);
