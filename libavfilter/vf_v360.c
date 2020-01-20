@@ -61,6 +61,9 @@ static const AVOption v360_options[] = {
     {      "c6x1", "cubemap 6x1",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "in" },
     {       "eac", "equi-angular cubemap",                       0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "in" },
     {  "dfisheye", "dual fisheye",                               0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0, FLAGS, "in" },
+    {      "flat", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "in" },
+    {"rectilinear", "regular video",                             0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "in" },
+    {  "gnomonic", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "in" },
     {    "barrel", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
     {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
     {      "c1x6", "cubemap 1x6",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "in" },
@@ -133,6 +136,9 @@ static const AVOption v360_options[] = {
     {   "iv_flip", "flip in video vertically",     OFFSET(iv_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "iv_flip"},
     {  "in_trans", "transpose video input",   OFFSET(in_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "in_transpose"},
     { "out_trans", "transpose video output", OFFSET(out_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "out_transpose"},
+    {    "ih_fov", "input horizontal field of view",OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},     0.00001f,               360.f, FLAGS, "ih_fov"},
+    {    "iv_fov", "input vertical field of view",  OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl=45.f},     0.00001f,               360.f, FLAGS, "iv_fov"},
+    {    "id_fov", "input diagonal field of view",  OFFSET(id_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f, FLAGS, "id_fov"},
     { NULL }
 };
 
@@ -1649,6 +1655,68 @@ static void xyz_to_equirect(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing flat input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_flat_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = tanf(0.5f * s->ih_fov * M_PI / 180.f);
+    s->iflat_range[1] = tanf(0.5f * s->iv_fov * M_PI / 180.f);
+
+    return 0;
+}
+
+/**
+ * Calculate frame position in flat format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_flat(const V360Context *s,
+                        const float *vec, int width, int height,
+                        int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    const float theta = acosf(vec[2]);
+    const float r = tanf(theta);
+    const float rr = fabsf(r) < 1e+6f ? r : hypotf(width, height);
+    const float zf = -vec[2];
+    const float h = hypotf(vec[0], vec[1]);
+    const float c = h <= 1e-6f ? 1.f : rr / h;
+    float uf = -vec[0] * c / s->iflat_range[0] * s->input_mirror_modifier[0];
+    float vf =  vec[1] * c / s->iflat_range[1] * s->input_mirror_modifier[1];
+    int visible, ui, vi;
+
+    uf = zf >= 0.f ? (uf + 1.f) * width  / 2.f : 0.f;
+    vf = zf >= 0.f ? (vf + 1.f) * height / 2.f : 0.f;
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    visible = vi >= 0 && vi < height && ui >= 0 && ui < width;
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
+            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+        }
+    }
+}
+
+/**
  * Calculate frame position in mercator format for corresponding 3D coordinates on sphere.
  *
  * @param s filter private context
@@ -2899,6 +2967,9 @@ static int config_output(AVFilterLink *outlink)
     s->in_width = s->inplanewidth[0];
     s->in_height = s->inplaneheight[0];
 
+    if (s->id_fov > 0.f)
+        fov_from_dfov(s->id_fov, w, h, &s->ih_fov, &s->iv_fov);
+
     if (s->in_transpose)
         FFSWAP(int, s->in_width, s->in_height);
 
@@ -2933,11 +3004,16 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 9.f * 8.f;
         break;
+    case FLAT:
+        s->in_transform = xyz_to_flat;
+        err = prepare_flat_in(ctx);
+        wf = w;
+        hf = h;
+        break;
     case PERSPECTIVE:
     case CYLINDRICAL:
     case PANNINI:
     case FISHEYE:
-    case FLAT:
         av_log(ctx, AV_LOG_ERROR, "Supplied format is not accepted as input.\n");
         return AVERROR(EINVAL);
     case DUAL_FISHEYE:

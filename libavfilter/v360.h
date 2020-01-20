@@ -130,7 +130,9 @@ typedef struct V360Context {
     int in_transpose, out_transpose;
 
     float h_fov, v_fov, d_fov;
+    float ih_fov, iv_fov, id_fov;
     float flat_range[2];
+    float iflat_range[2];
 
     float rot_mat[3][3];
 
