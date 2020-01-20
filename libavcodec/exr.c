@@ -41,6 +41,7 @@
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/color_utils.h"
 
@@ -1399,24 +1400,24 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 }
 
                 if (layer_match) { /* only search channel if the layer match is valid */
-                    if (!strcmp(ch_gb.buffer, "R") ||
-                        !strcmp(ch_gb.buffer, "X") ||
-                        !strcmp(ch_gb.buffer, "U")) {
+                    if (!av_strcasecmp(ch_gb.buffer, "R") ||
+                        !av_strcasecmp(ch_gb.buffer, "X") ||
+                        !av_strcasecmp(ch_gb.buffer, "U")) {
                         channel_index = 0;
                         s->is_luma = 0;
-                    } else if (!strcmp(ch_gb.buffer, "G") ||
-                               !strcmp(ch_gb.buffer, "V")) {
+                    } else if (!av_strcasecmp(ch_gb.buffer, "G") ||
+                               !av_strcasecmp(ch_gb.buffer, "V")) {
                         channel_index = 1;
                         s->is_luma = 0;
-                    } else if (!strcmp(ch_gb.buffer, "Y")) {
+                    } else if (!av_strcasecmp(ch_gb.buffer, "Y")) {
                         channel_index = 1;
                         s->is_luma = 1;
-                    } else if (!strcmp(ch_gb.buffer, "B") ||
-                               !strcmp(ch_gb.buffer, "Z") ||
-                               !strcmp(ch_gb.buffer, "W")){
+                    } else if (!av_strcasecmp(ch_gb.buffer, "B") ||
+                               !av_strcasecmp(ch_gb.buffer, "Z") ||
+                               !av_strcasecmp(ch_gb.buffer, "W")){
                                channel_index = 2;
                         s->is_luma = 0;
-                    } else if (!strcmp(ch_gb.buffer, "A")) {
+                    } else if (!av_strcasecmp(ch_gb.buffer, "A")) {
                         channel_index = 3;
                     } else {
                         av_log(s->avctx, AV_LOG_WARNING,
