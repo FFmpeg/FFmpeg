@@ -2716,18 +2716,18 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
     return 0;
 }
 
-static void fov_from_dfov(V360Context *s, float w, float h)
+static void fov_from_dfov(float d_fov, float w, float h, float *h_fov, float *v_fov)
 {
-    const float da = tanf(0.5 * FFMIN(s->d_fov, 359.f) * M_PI / 180.f);
+    const float da = tanf(0.5 * FFMIN(d_fov, 359.f) * M_PI / 180.f);
     const float d = hypotf(w, h);
 
-    s->h_fov = atan2f(da * w, d) * 360.f / M_PI;
-    s->v_fov = atan2f(da * h, d) * 360.f / M_PI;
+    *h_fov = atan2f(da * w, d) * 360.f / M_PI;
+    *v_fov = atan2f(da * h, d) * 360.f / M_PI;
 
-    if (s->h_fov < 0.f)
-        s->h_fov += 360.f;
-    if (s->v_fov < 0.f)
-        s->v_fov += 360.f;
+    if (*h_fov < 0.f)
+        *h_fov += 360.f;
+    if (*v_fov < 0.f)
+        *v_fov += 360.f;
 }
 
 static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDescriptor *desc)
@@ -3115,7 +3115,7 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (s->d_fov > 0.f)
-        fov_from_dfov(s, w, h);
+        fov_from_dfov(s->d_fov, w, h, &s->h_fov, &s->v_fov);
 
     if (prepare_out) {
         err = prepare_out(ctx);
