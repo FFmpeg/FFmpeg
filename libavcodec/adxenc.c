@@ -48,7 +48,7 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     s2 = prev->s2;
     for (i = 0, j = 0; j < 32; i += channels, j++) {
         s0 = wav[i];
-        d = ((s0 << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
+        d = s0 + ((-c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS);
         if (max < d)
             max = d;
         if (min > d)
@@ -79,13 +79,13 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     s1 = prev->s1;
     s2 = prev->s2;
     for (i = 0, j = 0; j < 32; i += channels, j++) {
-        d = ((wav[i] << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
+        d = wav[i] + ((-c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS);
 
         d = av_clip_intp2(ROUNDED_DIV(d, scale), 3);
 
         put_sbits(&pb, 4, d);
 
-        s0 = ((d << COEFF_BITS) * scale + c->coeff[0] * s1 + c->coeff[1] * s2) >> COEFF_BITS;
+        s0 = d * scale + ((c->coeff[0] * s1 + c->coeff[1] * s2) >> COEFF_BITS);
         s2 = s1;
         s1 = s0;
     }
