@@ -72,6 +72,7 @@ static const AVOption v360_options[] = {
     {      "ball", "ball",                                       0, AV_OPT_TYPE_CONST,  {.i64=BALL},            0,                   0, FLAGS, "in" },
     {    "hammer", "hammer",                                     0, AV_OPT_TYPE_CONST,  {.i64=HAMMER},          0,                   0, FLAGS, "in" },
     {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "in" },
+    {"cylindrical", "cylindrical",                               0, AV_OPT_TYPE_CONST,  {.i64=CYLINDRICAL},     0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -2407,6 +2408,64 @@ static void cylindrical_to_xyz(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing cylindrical input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_cylindrical_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = M_PI * s->ih_fov / 360.f;
+    s->iflat_range[1] = tanf(0.5f * s->iv_fov * M_PI / 180.f);
+
+    return 0;
+}
+
+/**
+ * Calculate frame position in cylindrical format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_cylindrical(const V360Context *s,
+                               const float *vec, int width, int height,
+                               int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0] / s->iflat_range[0];
+    const float theta = atan2f(-vec[1], hypotf(vec[0], vec[2])) * s->input_mirror_modifier[1] / s->iflat_range[1];
+    int visible, ui, vi;
+    float uf, vf;
+
+    uf = (phi + 1.f) * (width - 1) / 2.f;
+    vf = (tanf(theta) + 1.f) * height / 2.f;
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    visible = vi >= 0 && vi < height && ui >= 0 && ui < width &&
+              theta <=  M_PI * s->iv_fov / 180.f &&
+              theta >= -M_PI * s->iv_fov / 180.f;
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
+            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+        }
+    }
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in perspective format.
  *
  * @param s filter private context
@@ -3011,7 +3070,6 @@ static int config_output(AVFilterLink *outlink)
         hf = h;
         break;
     case PERSPECTIVE:
-    case CYLINDRICAL:
     case PANNINI:
     case FISHEYE:
         av_log(ctx, AV_LOG_ERROR, "Supplied format is not accepted as input.\n");
@@ -3057,6 +3115,12 @@ static int config_output(AVFilterLink *outlink)
         err = 0;
         wf = w;
         hf = h;
+        break;
+    case CYLINDRICAL:
+        s->in_transform = xyz_to_cylindrical;
+        err = prepare_cylindrical_in(ctx);
+        wf = w;
+        hf = h * 2.f;
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");

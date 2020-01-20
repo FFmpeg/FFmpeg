@@ -19011,6 +19011,13 @@ Format specific options:
 Set horizontal/vertical/diagonal field of view. Values in degrees.
 
 If diagonal field of view is set it overrides horizontal and vertical field of view.
+
+@item ih_fov
+@item iv_fov
+@item id_fov
+Set input horizontal/vertical/diagonal field of view. Values in degrees.
+
+If diagonal field of view is set it overrides horizontal and vertical field of view.
 @end table
 
 @item perspective
