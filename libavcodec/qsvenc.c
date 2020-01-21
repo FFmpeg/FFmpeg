@@ -470,6 +470,12 @@ static int init_video_param_jpeg(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.Quality              = av_clip(avctx->global_quality, 1, 100);
     q->param.mfx.RestartInterval      = 0;
 
+    q->width_align = 16;
+    q->height_align = 16;
+
+    q->param.mfx.FrameInfo.Width = FFALIGN(avctx->width, q->width_align);
+    q->param.mfx.FrameInfo.Height = FFALIGN(avctx->height, q->height_align);
+
     return 0;
 }
 
