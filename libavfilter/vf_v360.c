@@ -1582,6 +1582,23 @@ static void stereographic_to_xyz(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing stereographic input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_stereographic_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = tanf(FFMIN(s->ih_fov, 359.f) * M_PI / 720.f);
+    s->iflat_range[1] = tanf(FFMIN(s->iv_fov, 359.f) * M_PI / 720.f);
+
+    return 0;
+}
+
+/**
  * Calculate frame position in stereographic format for corresponding 3D coordinates on sphere.
  *
  * @param s filter private context
@@ -1597,23 +1614,25 @@ static void xyz_to_stereographic(const V360Context *s,
                                  const float *vec, int width, int height,
                                  int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float x = av_clipf(vec[0] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[0];
-    const float y = av_clipf(vec[2] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[1];
+    const float x = vec[0] / (1.f - vec[1]) / s->iflat_range[0] * s->input_mirror_modifier[0];
+    const float y = vec[2] / (1.f - vec[1]) / s->iflat_range[1] * s->input_mirror_modifier[1];
     float uf, vf;
-    int ui, vi;
+    int visible, ui, vi;
 
     uf = (x + 1.f) * width  / 2.f;
     vf = (y + 1.f) * height / 2.f;
     ui = floorf(uf);
     vi = floorf(vf);
 
-    *du = uf - ui;
-    *dv = vf - vi;
+    visible = isfinite(x) && isfinite(y) && vi >= 0 && vi < height && ui >= 0 && ui < width;
+
+    *du = visible ? uf - ui : 0.f;
+    *dv = visible ? vf - vi : 0.f;
 
     for (int i = -1; i < 3; i++) {
         for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(ui + j, 0, width - 1);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
+            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
         }
     }
 }
@@ -3088,7 +3107,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     case STEREOGRAPHIC:
         s->in_transform = xyz_to_stereographic;
-        err = 0;
+        err = prepare_stereographic_in(ctx);
         wf = w;
         hf = h / 2.f;
         break;
