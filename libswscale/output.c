@@ -2093,7 +2093,7 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
     if (uvalpha < 2048) {
         int A = 0; //init to silence warning
         for (i = 0; i < dstW; i++) {
-            int Y = buf0[i] << 2;
+            int Y = buf0[i] * 4;
             int U = (ubuf0[i] - (128<<7)) * 4;
             int V = (vbuf0[i] - (128<<7)) * 4;
 
@@ -2110,9 +2110,9 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         int A = 0; //init to silence warning
         for (i = 0; i < dstW; i++) {
-            int Y = buf0[i] << 2;
-            int U = (ubuf0[i] + ubuf1[i] - (128<<8)) << 1;
-            int V = (vbuf0[i] + vbuf1[i] - (128<<8)) << 1;
+            int Y = buf0[i] * 4;
+            int U = (ubuf0[i] + ubuf1[i] - (128<<8)) * 2;
+            int V = (vbuf0[i] + vbuf1[i] - (128<<8)) * 2;
 
             if (hasAlpha) {
                 A = (abuf0[i] + 64) >> 7;
