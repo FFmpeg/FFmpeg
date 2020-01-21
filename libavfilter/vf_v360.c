@@ -72,6 +72,7 @@ static const AVOption v360_options[] = {
     {      "ball", "ball",                                       0, AV_OPT_TYPE_CONST,  {.i64=BALL},            0,                   0, FLAGS, "in" },
     {    "hammer", "hammer",                                     0, AV_OPT_TYPE_CONST,  {.i64=HAMMER},          0,                   0, FLAGS, "in" },
     {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "in" },
+    {   "fisheye", "fisheye",                                    0, AV_OPT_TYPE_CONST,  {.i64=FISHEYE},         0,                   0, FLAGS, "in" },
     {"cylindrical", "cylindrical",                               0, AV_OPT_TYPE_CONST,  {.i64=CYLINDRICAL},     0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -2346,6 +2347,64 @@ static void fisheye_to_xyz(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing fisheye input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_fisheye_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = s->ih_fov / 180.f;
+    s->iflat_range[1] = s->iv_fov / 180.f;
+
+    return 0;
+}
+
+/**
+ * Calculate frame position in fisheye format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_fisheye(const V360Context *s,
+                           const float *vec, int width, int height,
+                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    const float h     = hypotf(vec[0], vec[1]);
+    const float lh    = h > 0.f ? h : 1.f;
+    const float theta = acosf(fabsf(vec[2])) / M_PI;
+
+    const float uf = (theta * ( vec[0] / lh) * s->input_mirror_modifier[0] / s->iflat_range[0] + 0.5f) * width;
+    const float vf = (theta * (-vec[1] / lh) * s->input_mirror_modifier[1] / s->iflat_range[1] + 0.5f) * height;
+
+    int visible, ui, vi;
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    visible = vec[2] < 0.f;
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
+            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+        }
+    }
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in pannini format.
  *
  * @param s filter private context
@@ -3090,7 +3149,6 @@ static int config_output(AVFilterLink *outlink)
         break;
     case PERSPECTIVE:
     case PANNINI:
-    case FISHEYE:
         av_log(ctx, AV_LOG_ERROR, "Supplied format is not accepted as input.\n");
         return AVERROR(EINVAL);
     case DUAL_FISHEYE:
@@ -3133,6 +3191,12 @@ static int config_output(AVFilterLink *outlink)
         s->in_transform = xyz_to_sinusoidal;
         err = 0;
         wf = w;
+        hf = h;
+        break;
+    case FISHEYE:
+        s->in_transform = xyz_to_fisheye;
+        err = prepare_fisheye_in(ctx);
+        wf = w * 2;
         hf = h;
         break;
     case CYLINDRICAL:
