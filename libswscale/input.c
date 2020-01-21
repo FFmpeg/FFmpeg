@@ -286,8 +286,8 @@ static av_always_inline void rgb16_32ToUV_c_template(int16_t *dstU,
                                                      int gsh, int bsh, int S,
                                                      int32_t *rgb2yuv)
 {
-    const int ru       = rgb2yuv[RU_IDX] << rsh, gu = rgb2yuv[GU_IDX] << gsh, bu = rgb2yuv[BU_IDX] << bsh,
-              rv       = rgb2yuv[RV_IDX] << rsh, gv = rgb2yuv[GV_IDX] << gsh, bv = rgb2yuv[BV_IDX] << bsh;
+    const int ru       = rgb2yuv[RU_IDX] * (1 << rsh), gu = rgb2yuv[GU_IDX] * (1 << gsh), bu = rgb2yuv[BU_IDX] * (1 << bsh),
+              rv       = rgb2yuv[RV_IDX] * (1 << rsh), gv = rgb2yuv[GV_IDX] * (1 << gsh), bv = rgb2yuv[BV_IDX] * (1 << bsh);
     const unsigned rnd = (256u<<((S)-1)) + (1<<(S-7));
     int i;
 
@@ -314,8 +314,8 @@ static av_always_inline void rgb16_32ToUV_half_c_template(int16_t *dstU,
                                                           int gsh, int bsh, int S,
                                                           int32_t *rgb2yuv)
 {
-    const int ru       = rgb2yuv[RU_IDX] << rsh, gu = rgb2yuv[GU_IDX] << gsh, bu = rgb2yuv[BU_IDX] << bsh,
-              rv       = rgb2yuv[RV_IDX] << rsh, gv = rgb2yuv[GV_IDX] << gsh, bv = rgb2yuv[BV_IDX] << bsh,
+    const int ru       = rgb2yuv[RU_IDX] * (1 << rsh), gu = rgb2yuv[GU_IDX] * (1 << gsh), bu = rgb2yuv[BU_IDX] * (1 << bsh),
+              rv       = rgb2yuv[RV_IDX] * (1 << rsh), gv = rgb2yuv[GV_IDX] * (1 << gsh), bv = rgb2yuv[BV_IDX] * (1 << bsh),
               maskgx   = ~(maskr | maskb);
     const unsigned rnd = (256U<<(S)) + (1<<(S-6));
     int i;
