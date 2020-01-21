@@ -19001,7 +19001,7 @@ Set pannini parameter.
 @end table
 
 @item cylindrical
-Cylindrical projection. @i{(output only)}
+Cylindrical projection.
 
 Format specific options:
 @table @option
