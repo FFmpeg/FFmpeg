@@ -525,6 +525,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             av_freep(&s->passphrase);
             s->passphrase = av_strndup(buf, strlen(buf));
         }
+#if SRT_VERSION_VALUE >= 0x010302
         if (av_find_info_tag(buf, sizeof(buf), "enforced_encryption", p)) {
             s->enforced_encryption = strtol(buf, NULL, 10);
         }
@@ -534,6 +535,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "kmpreannounce", p)) {
             s->kmpreannounce = strtol(buf, NULL, 10);
         }
+#endif
         if (av_find_info_tag(buf, sizeof(buf), "mss", p)) {
             s->mss = strtol(buf, NULL, 10);
         }
