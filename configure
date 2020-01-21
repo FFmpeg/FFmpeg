@@ -2201,6 +2201,7 @@ SYSTEM_FUNCS="
     GetProcessMemoryInfo
     GetProcessTimes
     getrusage
+    GetStdHandle
     GetSystemTimeAsFileTime
     gettimeofday
     glob
@@ -6040,6 +6041,7 @@ check_func_headers sys/stat.h lstat
 check_func_headers windows.h GetModuleHandle
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
+check_func_headers windows.h GetStdHandle
 check_func_headers windows.h GetSystemTimeAsFileTime
 check_func_headers windows.h LoadLibrary
 check_func_headers windows.h MapViewOfFile
