@@ -413,8 +413,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         srcStride[2] =
         srcStride[3] = srcStride[0];
     }
-    srcStride[1] <<= c->vChrDrop;
-    srcStride[2] <<= c->vChrDrop;
+    srcStride[1] *= 1 << c->vChrDrop;
+    srcStride[2] *= 1 << c->vChrDrop;
 
     DEBUG_BUFFERS("swscale() %p[%d] %p[%d] %p[%d] %p[%d] -> %p[%d] %p[%d] %p[%d] %p[%d]\n",
                   src[0], srcStride[0], src[1], srcStride[1],
