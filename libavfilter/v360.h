@@ -47,6 +47,7 @@ enum Projections {
     PANNINI,
     CYLINDRICAL,
     PERSPECTIVE,
+    TETRAHEDRON,
     NB_PROJECTIONS,
 };
 

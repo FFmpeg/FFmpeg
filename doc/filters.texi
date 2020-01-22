@@ -19043,6 +19043,8 @@ Format specific options:
 Set perspective parameter.
 @end table
 
+@item tetrahedron
+Tetrahedron projection.
 @end table
 
 @item interp
