@@ -2173,24 +2173,16 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
         break;
     case AV_CODEC_ID_FLAC:
         if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
-            AVCodecParameters *codecpriv_par;
+            uint8_t *old_extradata = par->extradata;
             if (side_data_size != par->extradata_size) {
                 av_log(s, AV_LOG_ERROR, "Invalid FLAC STREAMINFO metadata for output stream %d\n",
                        pkt->stream_index);
                 return AVERROR(EINVAL);
             }
-            codecpriv_par = avcodec_parameters_alloc();
-            if (!codecpriv_par)
-                return AVERROR(ENOMEM);
-            ret = avcodec_parameters_copy(codecpriv_par, par);
-            if (ret < 0) {
-                avcodec_parameters_free(&codecpriv_par);
-                return ret;
-            }
-            memcpy(codecpriv_par->extradata, side_data, side_data_size);
+            par->extradata = side_data;
             avio_seek(mkv->tracks_bc, track->codecpriv_offset, SEEK_SET);
-            mkv_write_codecprivate(s, mkv->tracks_bc, codecpriv_par, 1, 0);
-            avcodec_parameters_free(&codecpriv_par);
+            mkv_write_codecprivate(s, mkv->tracks_bc, par, 1, 0);
+            par->extradata = old_extradata;
         }
         break;
     // FIXME: Remove the following once libaom starts propagating extradata during init()
