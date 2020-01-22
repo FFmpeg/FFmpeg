@@ -21,9 +21,11 @@
 #include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "framesync.h"
@@ -44,6 +46,12 @@ typedef struct StackContext {
     int is_vertical;
     int is_horizontal;
     int nb_planes;
+    uint8_t fillcolor[4];
+    char *fillcolor_str;
+    int fillcolor_enable;
+
+    FFDrawContext draw;
+    FFDrawColor color;
 
     StackItem *items;
     AVFrame **frames;
@@ -53,7 +61,12 @@ typedef struct StackContext {
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *pix_fmts = NULL;
+    StackContext *s = ctx->priv;
     int fmt, ret;
+
+    if (s->fillcolor_enable) {
+        return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    }
 
     for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
@@ -87,6 +100,12 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     if (!strcmp(ctx->filter->name, "xstack")) {
+        if (strcmp(s->fillcolor_str, "none") &&
+            av_parse_color(s->fillcolor, s->fillcolor_str, -1, ctx) >= 0) {
+            s->fillcolor_enable = 1;
+        } else {
+            s->fillcolor_enable = 0;
+        }
         if (!s->layout) {
             if (s->nb_inputs == 2) {
                 s->layout = av_strdup("0_0|w0_0");
@@ -158,6 +177,10 @@ static int process_frame(FFFrameSync *fs)
         return AVERROR(ENOMEM);
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
     out->sample_aspect_ratio = outlink->sample_aspect_ratio;
+
+    if (s->fillcolor_enable)
+        ff_fill_rectangle(&s->draw, &s->color, out->data, out->linesize,
+                          0, 0, outlink->w, outlink->h);
 
     ctx->internal->execute(ctx, process_slice, out, NULL, FFMIN(s->nb_inputs, ff_filter_get_nb_threads(ctx)));
 
@@ -233,6 +256,11 @@ static int config_output(AVFilterLink *outlink)
         char *arg2, *p2, *saveptr2 = NULL;
         char *arg3, *p3, *saveptr3 = NULL;
         int inw, inh, size;
+
+        if (s->fillcolor_enable) {
+            ff_draw_init(&s->draw, ctx->inputs[0]->format, 0);
+            ff_draw_color(&s->draw, &s->color, s->fillcolor);
+        }
 
         for (i = 0; i < s->nb_inputs; i++) {
             AVFilterLink *inlink = ctx->inputs[i];
@@ -425,6 +453,7 @@ static const AVOption xstack_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=2}, 2, INT_MAX, .flags = FLAGS },
     { "layout", "set custom layout", OFFSET(layout), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, .flags = FLAGS },
     { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
+    { "fill",  "set the color for unused pixels", OFFSET(fillcolor_str), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = FLAGS },
     { NULL },
 };
 

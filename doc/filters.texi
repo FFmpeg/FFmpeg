@@ -20062,6 +20062,10 @@ a layout must be set by the user.
 @item shortest
 If set to 1, force the output to terminate when the shortest input
 terminates. Default value is 0.
+
+@item fill
+If set to valid color, all unused pixels will be filled with that color.
+By default fill is set to none, so it is disabled.
 @end table
 
 @subsection Examples
