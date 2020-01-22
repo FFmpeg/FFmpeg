@@ -2545,7 +2545,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, MATROSKA_ID_TRACKS, 0, 0);
 
         // update stream durations
-        if (!mkv->is_live) {
+        if (mkv->tags_bc) {
             int i;
             for (i = 0; i < s->nb_streams; ++i) {
                 AVStream *st = s->streams[i];
@@ -2567,8 +2567,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                     put_ebml_binary(mkv->tags_bc, MATROSKA_ID_TAGSTRING, duration_string, 20);
                 }
             }
-        }
-        if (mkv->tags_bc && !mkv->is_live) {
+
             avio_seek(pb, mkv->tags_pos, SEEK_SET);
             end_ebml_master_crc32(pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS, 0, 0);
         }
