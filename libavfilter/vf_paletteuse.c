@@ -152,9 +152,10 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static av_always_inline int dither_color(uint32_t px, int er, int eg, int eb, int scale, int shift)
+static av_always_inline uint32_t dither_color(uint32_t px, int er, int eg,
+                                              int eb, int scale, int shift)
 {
-    return av_clip_uint8( px >> 24                                      ) << 24
+    return                px >> 24                                        << 24
          | av_clip_uint8((px >> 16 & 0xff) + ((er * scale) / (1<<shift))) << 16
          | av_clip_uint8((px >>  8 & 0xff) + ((eg * scale) / (1<<shift))) <<  8
          | av_clip_uint8((px       & 0xff) + ((eb * scale) / (1<<shift)));
