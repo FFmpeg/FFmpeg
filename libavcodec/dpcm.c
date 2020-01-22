@@ -367,7 +367,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         while (output_samples < samples_end) {
             uint8_t n = bytestream2_get_byteu(&gb);
 
-            *output_samples++ = s->sample[idx] += s->array[n];
+            *output_samples++ = s->sample[idx] += (unsigned)s->array[n];
             idx ^= 1;
         }
         }
