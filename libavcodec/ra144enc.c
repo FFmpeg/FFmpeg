@@ -477,8 +477,8 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                       LPC_ORDER, 16, lpc_coefs, shift, FF_LPC_TYPE_LEVINSON,
                       0, ORDER_METHOD_EST, 0, 12, 0);
     for (i = 0; i < LPC_ORDER; i++)
-        block_coefs[NBLOCKS - 1][i] = -(lpc_coefs[LPC_ORDER - 1][i] <<
-                                        (12 - shift[LPC_ORDER - 1]));
+        block_coefs[NBLOCKS - 1][i] = -lpc_coefs[LPC_ORDER - 1][i]
+                                       * (1 << (12 - shift[LPC_ORDER - 1]));
 
     /**
      * TODO: apply perceptual weighting of the input speech through bandwidth
