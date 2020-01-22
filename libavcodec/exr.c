@@ -1183,7 +1183,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         const uint8_t * a;
         const uint8_t *rgb[3];
 
-        for (c = 0; c < rgb_channel_count; c++){
+        for (c = 0; c < rgb_channel_count; c++) {
             rgb[c] = channel_buffer[c];
         }
 
@@ -1414,8 +1414,8 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                         s->is_luma = 1;
                     } else if (!av_strcasecmp(ch_gb.buffer, "B") ||
                                !av_strcasecmp(ch_gb.buffer, "Z") ||
-                               !av_strcasecmp(ch_gb.buffer, "W")){
-                               channel_index = 2;
+                               !av_strcasecmp(ch_gb.buffer, "W")) {
+                        channel_index = 2;
                         s->is_luma = 0;
                     } else if (!av_strcasecmp(ch_gb.buffer, "A")) {
                         channel_index = 3;
@@ -1495,7 +1495,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 
             /* Check if all channels are set with an offset or if the channels
              * are causing an overflow  */
-            if (!s->is_luma){/* if we expected to have at least 3 channels */
+            if (!s->is_luma) {/* if we expected to have at least 3 channels */
                 if (FFMIN3(s->channel_offsets[0],
                            s->channel_offsets[1],
                            s->channel_offsets[2]) < 0) {
@@ -1596,7 +1596,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             s->tile_attr.level_mode = tileLevel & 0x0f;
             s->tile_attr.level_round = (tileLevel >> 4) & 0x0f;
 
-            if (s->tile_attr.level_mode >= EXR_TILE_LEVEL_UNKNOWN){
+            if (s->tile_attr.level_mode >= EXR_TILE_LEVEL_UNKNOWN) {
                 avpriv_report_missing_feature(s->avctx, "Tile level mode %d",
                                               s->tile_attr.level_mode);
                 ret = AVERROR_PATCHWELCOME;
