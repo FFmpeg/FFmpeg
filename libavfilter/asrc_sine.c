@@ -247,7 +247,7 @@ static int request_frame(AVFilterLink *outlink)
         samples[i] = sine->sin[sine->phi >> (32 - LOG_PERIOD)];
         sine->phi += sine->dphi;
         if (sine->beep_index < sine->beep_length) {
-            samples[i] += sine->sin[sine->phi_beep >> (32 - LOG_PERIOD)] << 1;
+            samples[i] += sine->sin[sine->phi_beep >> (32 - LOG_PERIOD)] * 2;
             sine->phi_beep += sine->dphi_beep;
         }
         if (++sine->beep_index == sine->beep_period)
