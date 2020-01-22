@@ -2332,6 +2332,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
+    if (mkv->cluster_pos != -1) {
     if (mkv->tracks[pkt->stream_index].write_dts)
         cluster_time = pkt->dts - mkv->cluster_pts;
     else
@@ -2359,8 +2360,9 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         start_new_cluster = 0;
     }
 
-    if (mkv->cluster_pos != -1 && start_new_cluster) {
+    if (start_new_cluster) {
         mkv_end_cluster(s);
+    }
     }
 
     if (!mkv->cluster_pos)
