@@ -2379,22 +2379,23 @@ static void xyz_to_fisheye(const V360Context *s,
                            const float *vec, int width, int height,
                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float h     = hypotf(vec[0], vec[1]);
-    const float lh    = h > 0.f ? h : 1.f;
-    const float theta = acosf(fabsf(vec[2])) / M_PI;
+    const float phi   = -atan2f(hypotf(vec[0], vec[1]), -vec[2]) / M_PI;
+    const float theta = -atan2f(vec[0], vec[1]);
 
-    const float uf = (theta * ( vec[0] / lh) * s->input_mirror_modifier[0] / s->iflat_range[0] + 0.5f) * width;
-    const float vf = (theta * (-vec[1] / lh) * s->input_mirror_modifier[1] / s->iflat_range[1] + 0.5f) * height;
+    float uf = sinf(theta) * phi * s->input_mirror_modifier[0] / s->iflat_range[0];
+    float vf = cosf(theta) * phi * s->input_mirror_modifier[1] / s->iflat_range[1];
 
-    int visible, ui, vi;
+    const int visible = hypotf(uf, vf) <= 0.5f;
+    int ui, vi;
+
+    uf = (uf + 0.5f) * width;
+    vf = (vf + 0.5f) * height;
 
     ui = floorf(uf);
     vi = floorf(vf);
 
-    visible = vec[2] < 0.f;
-
-    *du = uf - ui;
-    *dv = vf - vi;
+    *du = visible ? uf - ui : 0.f;
+    *dv = visible ? vf - vi : 0.f;
 
     for (int i = -1; i < 3; i++) {
         for (int j = -1; j < 3; j++) {
