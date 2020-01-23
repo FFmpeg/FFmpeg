@@ -157,8 +157,8 @@ static int no_sub_motion_search(MpegEncContext * s,
                                   int src_index, int ref_index,
                                   int size, int h)
 {
-    (*mx_ptr)<<=1;
-    (*my_ptr)<<=1;
+    (*mx_ptr) *= 2;
+    (*my_ptr) *= 2;
     return dmin;
 }
 
