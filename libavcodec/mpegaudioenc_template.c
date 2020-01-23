@@ -701,7 +701,7 @@ static void encode_frame(MpegAudioContext *s,
 
                                 /* normalize to P bits */
                                 if (shift < 0)
-                                    q1 = sample << (-shift);
+                                    q1 = sample * (1 << -shift);
                                 else
                                     q1 = sample >> shift;
                                 q1 = (q1 * mult) >> P;
