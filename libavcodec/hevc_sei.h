@@ -59,6 +59,11 @@ typedef enum {
     HEVC_SEI_TYPE_ALPHA_CHANNEL_INFO                   = 165,
 } HEVC_SEI_Type;
 
+typedef enum {
+        HEVC_SEI_PIC_STRUCT_FRAME_DOUBLING = 7,
+        HEVC_SEI_PIC_STRUCT_FRAME_TRIPLING = 8
+} HEVC_SEI_PicStructType;
+
 typedef struct HEVCSEIPictureHash {
     uint8_t       md5[3][16];
     uint8_t is_md5;

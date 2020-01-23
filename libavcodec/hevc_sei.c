@@ -144,6 +144,12 @@ static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb, const HEVCPa
         } else if (pic_struct == 1 || pic_struct == 9 || pic_struct == 11) {
             av_log(logctx, AV_LOG_DEBUG, "TOP Field\n");
             h->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;
+        } else if (pic_struct == 7) {
+            av_log(logctx, AV_LOG_DEBUG, "Frame/Field Doubling\n");
+            h->picture_struct = HEVC_SEI_PIC_STRUCT_FRAME_DOUBLING;
+        } else if (pic_struct == 8) {
+            av_log(logctx, AV_LOG_DEBUG, "Frame/Field Tripling\n");
+            h->picture_struct = HEVC_SEI_PIC_STRUCT_FRAME_TRIPLING;
         }
         get_bits(gb, 2);                   // source_scan_type
         get_bits(gb, 1);                   // duplicate_flag

@@ -235,6 +235,11 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         case HEVC_NAL_RADL_R:
         case HEVC_NAL_RASL_N:
         case HEVC_NAL_RASL_R:
+            if (ctx->sei.picture_timing.picture_struct == HEVC_SEI_PIC_STRUCT_FRAME_DOUBLING) {
+                s->repeat_pict = 1;
+            } else if (ctx->sei.picture_timing.picture_struct == HEVC_SEI_PIC_STRUCT_FRAME_TRIPLING) {
+                s->repeat_pict = 2;
+            }
             ret = hevc_parse_slice_header(s, nal, avctx);
             if (ret)
                 return ret;
