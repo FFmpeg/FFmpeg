@@ -33,6 +33,7 @@ version <next>:
 - Argonaut Games ADPCM decoder
 - Argonaut Games ASF demuxer
 - xfade video filter
+- xfade_opencl filter
 
 
 version 4.2:
