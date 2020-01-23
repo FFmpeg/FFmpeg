@@ -66,8 +66,8 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
  * @param size size of the input data buffer. The size of the resulting output
                data buffer will be written here
  *
- * @return the amount of bytes written in case of success, a negative AVERROR
- *         code in case of failure. On failure, out and size are unchanged
+ * @return 0 in case of success, a negative AVERROR code in case of failure.
+ *         On failure, out and size are unchanged
  */
 int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size);
 

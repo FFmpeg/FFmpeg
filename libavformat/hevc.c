@@ -1062,7 +1062,7 @@ int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
 
     *size = avio_close_dyn_buf(pb, buf_out);
 
-    return ret;
+    return 0;
 }
 
 int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,

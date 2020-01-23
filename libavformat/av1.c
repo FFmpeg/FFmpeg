@@ -76,7 +76,7 @@ int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size)
     av_freep(out);
     *size = avio_close_dyn_buf(pb, out);
 
-    return ret;
+    return 0;
 }
 
 static inline void uvlc(GetBitContext *gb)
