@@ -5461,8 +5461,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /* from x264 or from bytestream H.264 */
         /* NAL reformatting needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
-            ff_avc_parse_nal_units_buf(pkt->data, &reformatted_data,
-                                       &size);
+            ret = ff_avc_parse_nal_units_buf(pkt->data, &reformatted_data,
+                                             &size);
+            if (ret < 0)
+                return ret;
             avio_write(pb, reformatted_data, size);
         } else {
             if (trk->cenc.aes_ctr) {
@@ -5479,14 +5481,19 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                (AV_RB24(trk->vos_data) == 1 || AV_RB32(trk->vos_data) == 1)) {
         /* extradata is Annex B, assume the bitstream is too and convert it */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
-            ff_hevc_annexb2mp4_buf(pkt->data, &reformatted_data, &size, 0, NULL);
+            ret = ff_hevc_annexb2mp4_buf(pkt->data, &reformatted_data,
+                                         &size, 0, NULL);
+            if (ret < 0)
+                return ret;
             avio_write(pb, reformatted_data, size);
         } else {
             size = ff_hevc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
         }
     } else if (par->codec_id == AV_CODEC_ID_AV1) {
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
-            ff_av1_filter_obus_buf(pkt->data, &reformatted_data, &size);
+            ret = ff_av1_filter_obus_buf(pkt->data, &reformatted_data, &size);
+            if (ret < 0)
+                return ret;
             avio_write(pb, reformatted_data, size);
         } else {
             size = ff_av1_filter_obus(pb, pkt->data, pkt->size);
