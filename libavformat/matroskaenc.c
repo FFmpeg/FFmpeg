@@ -2103,16 +2103,17 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
            "at offset %" PRId64 ". TrackNumber %d, keyframe %d\n",
            pkt->size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
            mkv->cluster_pos, track_number, keyframe != 0);
+
     if (par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 &&
-        (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
+        (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
         err = ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
-    else if (par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6 &&
-             (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
+    } else if (par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6 &&
+               (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
         /* extradata is Annex B, assume the bitstream is too and convert it */
         err = ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
-    else if (par->codec_id == AV_CODEC_ID_AV1)
+    } else if (par->codec_id == AV_CODEC_ID_AV1) {
         err = ff_av1_filter_obus_buf(pkt->data, &data, &size);
-    else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
+    } else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
         err = mkv_strip_wavpack(pkt->data, &data, &size);
     } else
         data = pkt->data;
@@ -2133,7 +2134,6 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     side_data = av_packet_get_side_data(pkt,
                                         AV_PKT_DATA_SKIP_SAMPLES,
                                         &side_data_size);
-
     if (side_data && side_data_size >= 10) {
         discard_padding = av_rescale_q(AV_RL32(side_data + 4),
                                        (AVRational){1, par->sample_rate},
