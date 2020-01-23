@@ -60,13 +60,13 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
  * If filter_ps is non-zero, any HEVC parameter sets found in the input will be
  * discarded, and *ps_count will be set to the number of discarded PS NAL units.
  *
- * On output, *size holds the size (in bytes) of the output data buffer.
+ * On success, *size holds the size (in bytes) of the output data buffer.
  *
  * @param buf_in address of the buffer holding the input data
  * @param size address of the variable holding the size (in bytes) of the input
- *        buffer (on input) and of the output buffer (on output)
- * @param buf_out address of the variable holding the address of the output
- *        buffer
+ *        buffer (on input) and of the output buffer (on success)
+ * @param buf_out on success, address of the variable holding the address of
+ *        the output buffer
  * @param filter_ps whether to write parameter set NAL units to the output (0)
  *        or to discard them (non-zero)
  * @param ps_count address of the variable where the number of discarded
