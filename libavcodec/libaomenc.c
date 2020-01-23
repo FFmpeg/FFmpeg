@@ -93,6 +93,7 @@ typedef struct AOMEncoderContext {
     int enable_global_motion;
     int enable_intrabc;
     int enable_restoration;
+    int usage;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -550,6 +551,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     enccfg.g_timebase.den = avctx->time_base.den;
     enccfg.g_threads      =
         FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
+
+    enccfg.g_usage        = ctx->usage;
 
     if (ctx->lag_in_frames >= 0)
         enccfg.g_lag_in_frames = ctx->lag_in_frames;
@@ -1090,6 +1093,9 @@ static const AVOption options[] = {
     { "enable-global-motion",  "Enable global motion",             OFFSET(enable_global_motion), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-intrabc",  "Enable intra block copy prediction mode", OFFSET(enable_intrabc), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-restoration", "Enable Loop Restoration filtering", OFFSET(enable_restoration), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "usage",           "Quality and compression efficiency vs speed tradeof", OFFSET(usage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "usage"},
+    { "good",            "Good quality",      0, AV_OPT_TYPE_CONST, {.i64 = 0 /* AOM_USAGE_GOOD_QUALITY */}, 0, 0, VE, "usage"},
+    { "realtime",        "Realtime encoding", 0, AV_OPT_TYPE_CONST, {.i64 = 1 /* AOM_USAGE_REALTIME */},     0, 0, VE, "usage"},
     { NULL },
 };
 
