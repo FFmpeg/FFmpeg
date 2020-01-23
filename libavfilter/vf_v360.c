@@ -2647,13 +2647,13 @@ static void xyz_to_tetrahedron(const V360Context *s,
     y =  vec[1] / d;
     z = -vec[2] / d;
 
-    vf = 0.5f - y * 0.5f;
+    vf = 0.5f - y * 0.5f * s->input_mirror_modifier[1];
 
     if ((x + y >= 0.f &&  y + z >= 0.f && -z - x <= 0.f) ||
         (x + y <= 0.f && -y + z >= 0.f &&  z - x >= 0.f)) {
-        uf = 0.25f * x + 0.25f;
+        uf = 0.25f * x * s->input_mirror_modifier[0] + 0.25f;
     }  else {
-        uf = 0.75f - 0.25f * x;
+        uf = 0.75f - 0.25f * x * s->input_mirror_modifier[0];
     }
 
     uf *= width;
