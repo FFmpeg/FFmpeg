@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavcodec/av1.h"
 #include "libavcodec/av1_parse.h"
@@ -48,7 +49,8 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
         case AV1_OBU_PADDING:
             break;
         default:
-            avio_write(pb, buf, len);
+            if (pb)
+                avio_write(pb, buf, len);
             size += len;
             break;
         }
@@ -58,23 +60,31 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
     return size;
 }
 
-int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size)
+int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out, int *size)
 {
-    AVIOContext *pb;
-    int ret;
+    AVIOContext pb;
+    uint8_t *buf;
+    int len, ret;
 
-    ret = avio_open_dyn_buf(&pb);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_av1_filter_obus(pb, buf, *size);
+    len = ret = ff_av1_filter_obus(NULL, in, *size);
     if (ret < 0) {
-        ffio_free_dyn_buf(&pb);
         return ret;
     }
 
+    buf = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    ffio_init_context(&pb, buf, len, 1, NULL, NULL, NULL, NULL);
+
+    ret = ff_av1_filter_obus(&pb, in, *size);
+    av_assert1(ret == len);
+
+    memset(buf + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
     av_freep(out);
-    *size = avio_close_dyn_buf(pb, out);
+    *out  = buf;
+    *size = len;
 
     return 0;
 }

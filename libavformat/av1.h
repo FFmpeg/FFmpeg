@@ -61,7 +61,7 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
  *
  * @param pb pointer to the AVIOContext where the filtered bitstream shall be
  *           written
- * @param buf input data buffer
+ * @param in input data buffer
  * @param out pointer to pointer that will hold the allocated data buffer
  * @param size size of the input data buffer. The size of the resulting output
                data buffer will be written here
@@ -69,7 +69,7 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
  * @return 0 in case of success, a negative AVERROR code in case of failure.
  *         On failure, out and size are unchanged
  */
-int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size);
+int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out, int *size);
 
 /**
  * Parses a Sequence Header from the the provided buffer.
