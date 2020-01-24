@@ -1699,7 +1699,7 @@ static inline void codebook_bits(MLPEncodeContext *ctx,
     offset_min = FFMAX(min, HUFF_OFFSET_MIN);
     offset_max = FFMIN(max, HUFF_OFFSET_MAX);
 
-    for (;;) {
+    while (offset <= offset_max && offset >= offset_min) {
         BestOffset temp_bo;
 
         codebook_bits_offset(ctx, channel, codebook,
@@ -1718,12 +1718,8 @@ static inline void codebook_bits(MLPEncodeContext *ctx,
 
         if (direction) {
             offset = temp_bo.max + 1;
-            if (offset > offset_max)
-                break;
         } else {
             offset = temp_bo.min - 1;
-            if (offset < offset_min)
-                break;
         }
     }
 }
