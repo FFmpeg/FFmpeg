@@ -2112,7 +2112,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         /* extradata is Annex B, assume the bitstream is too and convert it */
         err = ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
     } else if (par->codec_id == AV_CODEC_ID_AV1) {
-        err = ff_av1_filter_obus_buf(pkt->data, &data, &size);
+        err = ff_av1_filter_obus_buf(pkt->data, &data, &size, &offset);
     } else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
         err = mkv_strip_wavpack(pkt->data, &data, &size);
     } else

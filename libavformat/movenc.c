@@ -5374,7 +5374,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecParameters *par = trk->par;
     AVProducerReferenceTime *prft;
     unsigned int samples_in_chunk = 0;
-    int size = pkt->size, ret = 0;
+    int size = pkt->size, ret = 0, offset = 0;
     int prft_size;
     uint8_t *reformatted_data = NULL;
 
@@ -5491,7 +5491,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     } else if (par->codec_id == AV_CODEC_ID_AV1) {
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
-            ret = ff_av1_filter_obus_buf(pkt->data, &reformatted_data, &size);
+            ret = ff_av1_filter_obus_buf(pkt->data, &reformatted_data,
+                                         &size, &offset);
             if (ret < 0)
                 return ret;
             avio_write(pb, reformatted_data, size);
@@ -5667,12 +5668,14 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
         ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
-                                 reformatted_data, size);
+                                 reformatted_data ? reformatted_data + offset
+                                                  : NULL, size);
 
 end:
 err:
 
-    av_free(reformatted_data);
+    if (pkt->data != reformatted_data)
+        av_free(reformatted_data);
     return ret;
 }
 
