@@ -73,6 +73,7 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
  *        parameter set NAL units shall be written, may be NULL
  * @return 0 in case of success, a negative value corresponding to an AVERROR
  *         code in case of failure
+ * @note *buf_out will be treated as uninitialized on input and won't be freed.
  */
 int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
                            int *size, int filter_ps, int *ps_count);

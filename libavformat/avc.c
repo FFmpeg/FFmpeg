@@ -101,7 +101,6 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 
     ff_avc_parse_nal_units(pb, buf_in, *size);
 
-    av_freep(buf);
     *size = avio_close_dyn_buf(pb, buf);
     return 0;
 }
@@ -109,7 +108,7 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
     AVIOContext *sps_pb = NULL, *pps_pb = NULL, *sps_ext_pb = NULL;
-    uint8_t *buf = NULL, *end, *start = NULL;
+    uint8_t *buf, *end, *start;
     uint8_t *sps, *pps, *sps_ext;
     uint32_t sps_size = 0, pps_size = 0, sps_ext_size = 0;
     int ret, nb_sps = 0, nb_pps = 0, nb_sps_ext = 0;

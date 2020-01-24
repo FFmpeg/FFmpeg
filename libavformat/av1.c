@@ -82,7 +82,6 @@ int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out, int *size)
 
     memset(buf + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    av_freep(out);
     *out  = buf;
     *size = len;
 
