@@ -1799,20 +1799,20 @@ static void determine_bits(MLPEncodeContext *ctx)
 
 /** Applies the filter to the current samples, and saves the residual back
  *  into the samples buffer. If the filter is too bad and overflows the
- *  maximum amount of bits allowed (16 or 24), the samples buffer is left as is and
+ *  maximum amount of bits allowed (24), the samples buffer is left as is and
  *  the function returns -1.
  */
 static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
 {
     FilterParams *fp[NUM_FILTERS] = { &ctx->cur_channel_params[channel].filter_params[FIR],
                                       &ctx->cur_channel_params[channel].filter_params[IIR], };
-    int32_t *filter_state_buffer[NUM_FILTERS];
+    int32_t *filter_state_buffer[NUM_FILTERS] = { NULL };
     int32_t mask = MSB_MASK(ctx->cur_decoding_params->quant_step_size[channel]);
     int32_t *sample_buffer = ctx->sample_buffer + channel;
     unsigned int number_of_samples = ctx->number_of_samples;
     unsigned int filter_shift = fp[FIR]->shift;
     int filter;
-    int i;
+    int i, ret = 0;
 
     for (i = 0; i < NUM_FILTERS; i++) {
         unsigned int size = ctx->number_of_samples;
@@ -1835,7 +1835,7 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         int32_t sample = *sample_buffer;
         unsigned int order;
         int64_t accum = 0;
-        int32_t residual;
+        int64_t residual;
 
         for (filter = 0; filter < NUM_FILTERS; filter++) {
             int32_t *fcoeff = ctx->cur_channel_params[channel].coeff[filter];
@@ -1847,11 +1847,13 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         accum  >>= filter_shift;
         residual = sample - (accum & mask);
 
-        if (residual < SAMPLE_MIN(ctx->wordlength) || residual > SAMPLE_MAX(ctx->wordlength))
-            return -1;
+        if (residual < SAMPLE_MIN(24) || residual > SAMPLE_MAX(24)) {
+            ret = -1;
+            goto free_and_return;
+        }
 
         filter_state_buffer[FIR][i] = sample;
-        filter_state_buffer[IIR][i] = residual;
+        filter_state_buffer[IIR][i] = (int32_t) residual;
 
         sample_buffer += ctx->num_channels;
     }
@@ -1863,11 +1865,12 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         sample_buffer += ctx->num_channels;
     }
 
+free_and_return:
     for (i = 0; i < NUM_FILTERS; i++) {
         av_freep(&filter_state_buffer[i]);
     }
 
-    return 0;
+    return ret;
 }
 
 static void apply_filters(MLPEncodeContext *ctx)
@@ -2198,9 +2201,6 @@ static void process_major_frame(MLPEncodeContext *ctx)
     ctx->number_of_samples = ctx->major_frame_size;
 
     for (substr = 0; substr < ctx->num_substreams; substr++) {
-        RestartHeader *rh = ctx->cur_restart_header;
-        unsigned int channel;
-
         ctx->cur_restart_header = &ctx->restart_header[substr];
 
         ctx->cur_decoding_params = &ctx->major_decoding_params[1][substr];
@@ -2209,8 +2209,7 @@ static void process_major_frame(MLPEncodeContext *ctx)
         generate_2_noise_channels(ctx);
         rematrix_channels        (ctx);
 
-        for (channel = rh->min_channel; channel <= rh->max_channel; channel++)
-            apply_filter(ctx, channel);
+        apply_filters(ctx);
     }
 }
 
