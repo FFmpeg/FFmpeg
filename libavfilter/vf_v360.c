@@ -3006,18 +3006,33 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
     return 0;
 }
 
-static void fov_from_dfov(float d_fov, float w, float h, float *h_fov, float *v_fov)
+static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fov, float *v_fov)
 {
-    const float da = tanf(0.5 * FFMIN(d_fov, 359.f) * M_PI / 180.f);
-    const float d = hypotf(w, h);
+    switch (format) {
+    case FISHEYE:
+        {
+            const float d = 0.5f * hypotf(w, h);
 
-    *h_fov = atan2f(da * w, d) * 360.f / M_PI;
-    *v_fov = atan2f(da * h, d) * 360.f / M_PI;
+            *h_fov = d / h * d_fov;
+            *v_fov = d / w * d_fov;
+        }
+        break;
+    case FLAT:
+    default:
+        {
+            const float da = tanf(0.5 * FFMIN(d_fov, 359.f) * M_PI / 180.f);
+            const float d = hypotf(w, h);
 
-    if (*h_fov < 0.f)
-        *h_fov += 360.f;
-    if (*v_fov < 0.f)
-        *v_fov += 360.f;
+            *h_fov = atan2f(da * w, d) * 360.f / M_PI;
+            *v_fov = atan2f(da * h, d) * 360.f / M_PI;
+
+            if (*h_fov < 0.f)
+                *h_fov += 360.f;
+            if (*v_fov < 0.f)
+                *v_fov += 360.f;
+        }
+        break;
+    }
 }
 
 static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDescriptor *desc)
@@ -3190,7 +3205,7 @@ static int config_output(AVFilterLink *outlink)
     s->in_height = s->inplaneheight[0];
 
     if (s->id_fov > 0.f)
-        fov_from_dfov(s->id_fov, w, h, &s->ih_fov, &s->iv_fov);
+        fov_from_dfov(s->in, s->id_fov, w, h, &s->ih_fov, &s->iv_fov);
 
     if (s->in_transpose)
         FFSWAP(int, s->in_width, s->in_height);
@@ -3435,7 +3450,7 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (s->d_fov > 0.f)
-        fov_from_dfov(s->d_fov, w, h, &s->h_fov, &s->v_fov);
+        fov_from_dfov(s->out, s->d_fov, w, h, &s->h_fov, &s->v_fov);
 
     if (prepare_out) {
         err = prepare_out(ctx);
