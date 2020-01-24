@@ -59,15 +59,13 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
  * Filter out AV1 OBUs not meant to be present in ISOBMFF sample data and write
  * the resulting bitstream to a newly allocated data buffer.
  *
- * @param pb pointer to the AVIOContext where the filtered bitstream shall be
- *           written
  * @param in input data buffer
  * @param out pointer to pointer that will hold the allocated data buffer
  * @param size size of the input data buffer. The size of the resulting output
-               data buffer will be written here
+ *             data buffer will be written here
  *
  * @return 0 in case of success, a negative AVERROR code in case of failure.
- *         On failure, out and size are unchanged
+ *         On failure, *out and *size are unchanged
  * @note *out will be treated as unintialized on input and will not be freed.
  */
 int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out, int *size);
