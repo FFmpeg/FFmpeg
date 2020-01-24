@@ -94,8 +94,8 @@ typedef struct BestOffset {
     int16_t max;
 } BestOffset;
 
-#define HUFF_OFFSET_MIN    -16384
-#define HUFF_OFFSET_MAX     16383
+#define HUFF_OFFSET_MIN    (-16384)
+#define HUFF_OFFSET_MAX    ( 16383)
 
 /** Number of possible codebooks (counting "no codebooks") */
 #define NUM_CODEBOOKS       4
@@ -808,7 +808,7 @@ static void write_major_sync(MLPEncodeContext *ctx, uint8_t *buf, int buf_size)
 static void write_restart_header(MLPEncodeContext *ctx, PutBitContext *pb)
 {
     RestartHeader *rh = ctx->cur_restart_header;
-    int32_t lossless_check = xor_32_to_8(rh->lossless_check_data);
+    uint8_t lossless_check = xor_32_to_8(rh->lossless_check_data);
     unsigned int start_count = put_bits_count(pb);
     PutBitContext tmpb;
     uint8_t checksum;
@@ -1017,12 +1017,10 @@ static void write_block_data(MLPEncodeContext *ctx, PutBitContext *pb)
         codebook_index  [ch] = cp->codebook  - 1;
         sign_huff_offset[ch] = cp->huff_offset;
 
-        sign_shift = lsb_bits[ch] - 1;
+        sign_shift = lsb_bits[ch] + (cp->codebook ? 2 - cp->codebook : -1);
 
-        if (cp->codebook > 0) {
+        if (cp->codebook > 0)
             sign_huff_offset[ch] -= 7 << lsb_bits[ch];
-            sign_shift += 3 - cp->codebook;
-        }
 
         /* Unsign if needed. */
         if (sign_shift >= 0)
@@ -1032,7 +1030,6 @@ static void write_block_data(MLPEncodeContext *ctx, PutBitContext *pb)
     for (i = 0; i < dp->blocksize; i++) {
         for (ch = rh->min_channel; ch <= rh->max_channel; ch++) {
             int32_t sample = *sample_buffer++ >> dp->quant_step_size[ch];
-
             sample -= sign_huff_offset[ch];
 
             if (codebook_index[ch] >= 0) {
@@ -1252,7 +1249,7 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
                 uint32_t abs_sample;
                 int32_t sample;
 
-                sample = is24 ? *samples_32++ >> 8 : *samples_16++ << 8;
+                sample = is24 ? *samples_32++ >> 8 : *samples_16++ * 256U;
 
                 /* TODO Find out if number_sbits can be used for negative values. */
                 abs_sample = FFABS(sample);
@@ -1795,7 +1792,7 @@ static void determine_bits(MLPEncodeContext *ctx)
 #define SAMPLE_MAX(bitdepth) ((1 << (bitdepth - 1)) - 1)
 #define SAMPLE_MIN(bitdepth) (~SAMPLE_MAX(bitdepth))
 
-#define MSB_MASK(bits)  (-1u << bits)
+#define MSB_MASK(bits)  (-(1u << (bits)))
 
 /** Applies the filter to the current samples, and saves the residual back
  *  into the samples buffer. If the filter is too bad and overflows the
@@ -1899,8 +1896,8 @@ static void generate_2_noise_channels(MLPEncodeContext *ctx)
 
     for (i = 0; i < ctx->number_of_samples; i++) {
         uint16_t seed_shr7 = seed >> 7;
-        *sample_buffer++ = ((int8_t)(seed >> 15)) << rh->noise_shift;
-        *sample_buffer++ = ((int8_t) seed_shr7)   << rh->noise_shift;
+        *sample_buffer++ = ((int8_t)(seed >> 15)) * (1 << rh->noise_shift);
+        *sample_buffer++ = ((int8_t) seed_shr7)   * (1 << rh->noise_shift);
 
         seed = (seed << 16) ^ seed_shr7 ^ (seed_shr7 << 5);
 
@@ -2071,9 +2068,9 @@ static void set_best_codebook(MLPEncodeContext *ctx)
             best_codebook = *best_path++ - ZERO_PATH;
             cur_bo = &ctx->best_offset[index][channel][best_codebook];
 
-            cp->huff_offset = cur_bo->offset;
-            cp->huff_lsbs   = cur_bo->lsb_bits + dp->quant_step_size[channel];
-            cp->codebook    = best_codebook;
+            cp->huff_offset      = cur_bo->offset;
+            cp->huff_lsbs        = cur_bo->lsb_bits + dp->quant_step_size[channel];
+            cp->codebook         = best_codebook;
         }
     }
 }
@@ -2275,7 +2272,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (restart_frame) {
         set_major_params(ctx);
         if (ctx->min_restart_interval != ctx->max_restart_interval)
-        process_major_frame(ctx);
+            process_major_frame(ctx);
     }
 
     if (ctx->min_restart_interval == ctx->max_restart_interval)
