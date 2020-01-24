@@ -235,7 +235,14 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Adaptive MB interlace flag in an unsupported profile.\n");
 
-    ctx->act = buf[0x2C] & 7;
+    switch ((buf[0x2C] >> 1) & 3) {
+    case 0: frame->colorspace = AVCOL_SPC_BT709;       break;
+    case 1: frame->colorspace = AVCOL_SPC_BT2020_NCL;  break;
+    case 2: frame->colorspace = AVCOL_SPC_BT2020_CL;   break;
+    case 3: frame->colorspace = AVCOL_SPC_UNSPECIFIED; break;
+    }
+
+    ctx->act = buf[0x2C] & 1;
     if (ctx->act && ctx->cid_table->cid != 1256 && ctx->cid_table->cid != 1270)
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Adaptive color transform in an unsupported profile.\n");
