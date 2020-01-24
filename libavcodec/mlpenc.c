@@ -1,6 +1,7 @@
 /**
  * MLP encoder
  * Copyright (c) 2008 Ramiro Polla
+ * Copyright (c) 2016-2019 Jai Luthra
  *
  * This file is part of FFmpeg.
  *
@@ -1562,7 +1563,7 @@ static void no_codebook_bits_offset(MLPEncodeContext *ctx,
                                     BestOffset *bo)
 {
     DecodingParams *dp = ctx->cur_decoding_params;
-    int32_t unsign;
+    int32_t unsign = 0;
     int lsb_bits;
 
     min -= offset;
@@ -1572,7 +1573,8 @@ static void no_codebook_bits_offset(MLPEncodeContext *ctx,
 
     lsb_bits += !!lsb_bits;
 
-    unsign = 1 << (lsb_bits - 1);
+    if (lsb_bits > 0)
+        unsign = 1 << (lsb_bits - 1);
 
     bo->offset   = offset;
     bo->lsb_bits = lsb_bits;
@@ -1591,7 +1593,7 @@ static void no_codebook_bits(MLPEncodeContext *ctx,
 {
     DecodingParams *dp = ctx->cur_decoding_params;
     int16_t offset;
-    int32_t unsign;
+    int32_t unsign = 0;
     uint32_t diff;
     int lsb_bits;
 
@@ -1607,7 +1609,8 @@ static void no_codebook_bits(MLPEncodeContext *ctx,
 
     lsb_bits = number_sbits(diff) - 1;
 
-    unsign = 1 << (lsb_bits - 1);
+    if (lsb_bits > 0)
+        unsign = 1 << (lsb_bits - 1);
 
     /* If all samples are the same (lsb_bits == 0), offset must be
      * adjusted because of sign_shift. */
