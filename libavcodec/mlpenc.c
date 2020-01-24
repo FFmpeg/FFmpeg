@@ -466,7 +466,7 @@ static void default_decoding_params(MLPEncodeContext *ctx,
  */
 static int inline number_sbits(int number)
 {
-    if (number < 0)
+    if (number < -1)
         number++;
 
     return av_log2(FFABS(number)) + 1 + !!number;
