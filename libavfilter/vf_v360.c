@@ -1766,7 +1766,7 @@ static int xyz_to_flat(const V360Context *s,
     ui = floorf(uf);
     vi = floorf(vf);
 
-    visible = vi >= 0 && vi < height && ui >= 0 && ui < width;
+    visible = vi >= 0 && vi < height && ui >= 0 && ui < width && zf >= 0.f;
 
     *du = uf - ui;
     *dv = vf - vi;
