@@ -106,6 +106,7 @@ typedef struct V360Context {
     const AVClass *class;
     int in, out;
     int interp;
+    int alpha;
     int width, height;
     char *in_forder;
     char *out_forder;
@@ -154,18 +155,21 @@ typedef struct V360Context {
     int nb_planes;
     int nb_allocated;
     int elements;
+    int mask_size;
+    int max_value;
 
     int16_t *u[2], *v[2];
     int16_t *ker[2];
+    uint8_t *mask;
     unsigned map[4];
 
-    void (*in_transform)(const struct V360Context *s,
-                         const float *vec, int width, int height,
-                         int16_t us[4][4], int16_t vs[4][4], float *du, float *dv);
+    int (*in_transform)(const struct V360Context *s,
+                        const float *vec, int width, int height,
+                        int16_t us[4][4], int16_t vs[4][4], float *du, float *dv);
 
-    void (*out_transform)(const struct V360Context *s,
-                          int i, int j, int width, int height,
-                          float *vec);
+    int (*out_transform)(const struct V360Context *s,
+                         int i, int j, int width, int height,
+                         float *vec);
 
     void (*calculate_kernel)(float du, float dv, const XYRemap *rmap,
                              int16_t *u, int16_t *v, int16_t *ker);
