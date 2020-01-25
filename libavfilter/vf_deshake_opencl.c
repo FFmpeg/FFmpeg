@@ -1128,7 +1128,7 @@ static int deshake_opencl_init(AVFilterContext *avctx)
     AVFilterLink *inlink = avctx->inputs[0];
     // Pointer to the host-side pattern buffer to be initialized and then copied
     // to the GPU
-    PointPair *pattern_host;
+    PointPair *pattern_host = NULL;
     cl_int cle;
     int err;
     cl_ulong8 zeroed_ulong8;
@@ -1348,8 +1348,7 @@ static int deshake_opencl_init(AVFilterContext *avctx)
     return 0;
 
 fail:
-    if (!pattern_host)
-        av_freep(&pattern_host);
+    av_freep(&pattern_host);
     return err;
 }
 
