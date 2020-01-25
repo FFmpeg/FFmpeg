@@ -285,7 +285,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int slice_start = (height *  jobnr     ) / nb_jobs;                                      \
             const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
                                                                                                            \
-            for (int y = slice_start; y < slice_end; y++) {                                                \
+            for (int y = slice_start; y < slice_end && !mask; y++) {                                       \
                 const int16_t *const u = s->u[map] + y * uv_linesize * ws * ws;                            \
                 const int16_t *const v = s->v[map] + y * uv_linesize * ws * ws;                            \
                 const int16_t *const ker = s->ker[map] + y * uv_linesize * ws * ws;                        \
