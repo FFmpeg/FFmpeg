@@ -554,16 +554,6 @@ static void mxf_write_metadata_key(AVIOContext *pb, unsigned int value)
     avio_wb24(pb, value);
 }
 
-static void mxf_free(AVFormatContext *s)
-{
-    int i;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        av_freep(&st->priv_data);
-    }
-}
-
 static const MXFCodecUL *mxf_get_data_definition_ul(int type)
 {
     const MXFCodecUL *uls = ff_mxf_data_definition_uls;
@@ -3028,8 +3018,6 @@ end:
     av_freep(&mxf->body_partition_offset);
     av_freep(&mxf->timecode_track->priv_data);
     av_freep(&mxf->timecode_track);
-
-    mxf_free(s);
 
     return err < 0 ? err : 0;
 }
