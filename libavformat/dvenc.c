@@ -364,10 +364,6 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
 
     for (i=0; i < c->n_ast; i++) {
         if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc_array(100, MAX_AUDIO_FRAME_SIZE))) {
-            while (i > 0) {
-                i--;
-                av_fifo_freep(&c->audio_data[i]);
-            }
             goto bail_out;
         }
     }
@@ -376,13 +372,6 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
 
 bail_out:
     return NULL;
-}
-
-static void dv_delete_mux(DVMuxContext *c)
-{
-    int i;
-    for (i=0; i < c->n_ast; i++)
-        av_fifo_freep(&c->audio_data[i]);
 }
 
 static int dv_write_header(AVFormatContext *s)
@@ -432,10 +421,12 @@ static int dv_write_packet(struct AVFormatContext *s, AVPacket *pkt)
  * Currently we simply drop the last frame. I don't know whether this
  * is the best strategy of all
  */
-static int dv_write_trailer(struct AVFormatContext *s)
+static void dv_deinit(AVFormatContext *s)
 {
-    dv_delete_mux(s->priv_data);
-    return 0;
+    DVMuxContext *c = s->priv_data;
+
+    for (int i = 0; i < c->n_ast; i++)
+        av_fifo_freep(&c->audio_data[i]);
 }
 
 AVOutputFormat ff_dv_muxer = {
@@ -447,5 +438,5 @@ AVOutputFormat ff_dv_muxer = {
     .video_codec       = AV_CODEC_ID_DVVIDEO,
     .write_header      = dv_write_header,
     .write_packet      = dv_write_packet,
-    .write_trailer     = dv_write_trailer,
+    .deinit            = dv_deinit,
 };
