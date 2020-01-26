@@ -5934,10 +5934,10 @@ EOF
             elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
         esac
 
-        check_x86asm avx512_external "vmovdqa32 [eax]{k1}{z}, zmm0"
-        check_x86asm avx2_external   "vextracti128 xmm0, ymm0, 0"
-        check_x86asm xop_external    "vpmacsdd xmm0, xmm1, xmm2, xmm3"
-        check_x86asm fma4_external   "vfmaddps ymm0, ymm1, ymm2, ymm3"
+        enabled avx512 && check_x86asm avx512_external "vmovdqa32 [eax]{k1}{z}, zmm0"
+        enabled avx2   && check_x86asm avx2_external   "vextracti128 xmm0, ymm0, 0"
+        enabled xop    && check_x86asm xop_external    "vpmacsdd xmm0, xmm1, xmm2, xmm3"
+        enabled fma4   && check_x86asm fma4_external   "vfmaddps ymm0, ymm1, ymm2, ymm3"
         check_x86asm cpunop          "CPU amdnop"
     fi
 
