@@ -31,6 +31,7 @@ version <next>:
 - thistogram filter
 - freezeframes filter
 - Argonaut Games ADPCM decoder
+- Argonaut Games ASF demuxer
 
 
 version 4.2:
