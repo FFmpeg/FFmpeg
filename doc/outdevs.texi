@@ -329,6 +329,8 @@ ffmpeg  -i INPUT -f pulse "stream name"
 
 SDL (Simple DirectMedia Layer) output device.
 
+"sdl2" can be used as alias for "sdl".
+
 This output device allows one to show a video stream in an SDL
 window. Only one SDL window is allowed per application, so you can
 have only one instance of this output device in an application.
