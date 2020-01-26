@@ -2142,9 +2142,13 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                                         AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                         &side_data_size);
     if (side_data) {
-        additional_id = AV_RB64(side_data);
-        side_data += 8;
-        side_data_size -= 8;
+        if (side_data_size < 8) {
+            side_data_size = 0;
+        } else {
+            additional_id   = AV_RB64(side_data);
+            side_data      += 8;
+            side_data_size -= 8;
+        }
     }
 
     if ((side_data_size && additional_id == 1) || discard_padding) {
