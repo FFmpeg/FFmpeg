@@ -22,7 +22,6 @@
  * @todo switch to dualinput
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"
@@ -169,7 +168,6 @@ static float search(FOCContext *foc, int pass, int maxpass, int xmin, int xmax, 
     for (y = ymin; y <= ymax; y++) {
         for (x = xmin; x <= xmax; x++) {
             float score = compare(foc->haystack_frame[pass], foc->needle_frame[pass], x, y);
-            av_assert0(score != 0);
             if (score < best_score) {
                 best_score = score;
                 *best_x = x;
