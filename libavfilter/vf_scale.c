@@ -184,8 +184,7 @@ static int check_exprs(AVFilterContext *ctx)
 
     if ((vars_w[VAR_OUT_H] || vars_w[VAR_OH]) &&
         (vars_h[VAR_OUT_W] || vars_h[VAR_OW])) {
-        av_log(ctx, AV_LOG_ERROR, "Circular expressions invalid for width '%s' and height '%s'.\n", scale->w_expr, scale->h_expr);
-        return AVERROR(EINVAL);
+        av_log(ctx, AV_LOG_WARNING, "Circular references detected for width '%s' and height '%s' - possibly invalid.\n", scale->w_expr, scale->h_expr);
     }
 
     if (ctx->filter != &ff_vf_scale2ref &&
