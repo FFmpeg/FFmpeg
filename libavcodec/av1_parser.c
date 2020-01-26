@@ -160,6 +160,11 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         }
         av_assert2(ctx->format != AV_PIX_FMT_NONE);
 
+        avctx->colorspace = (enum AVColorSpace) color->matrix_coefficients;
+        avctx->color_primaries = (enum AVColorPrimaries) color->color_primaries;
+        avctx->color_trc = (enum AVColorTransferCharacteristic) color->transfer_characteristics;
+        avctx->color_range = color->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
         if (ctx->width != avctx->width || ctx->height != avctx->height) {
             ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
             if (ret < 0)
