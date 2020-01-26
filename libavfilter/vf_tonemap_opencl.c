@@ -542,7 +542,7 @@ static const AVFilterPad tonemap_opencl_outputs[] = {
 
 AVFilter ff_vf_tonemap_opencl = {
     .name           = "tonemap_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("perform HDR to SDR conversion with tonemapping"),
+    .description    = NULL_IF_CONFIG_SMALL("Perform HDR to SDR conversion with tonemapping."),
     .priv_size      = sizeof(TonemapOpenCLContext),
     .priv_class     = &tonemap_opencl_class,
     .init           = &ff_opencl_filter_init,
