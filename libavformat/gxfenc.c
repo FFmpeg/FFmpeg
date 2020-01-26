@@ -853,8 +853,6 @@ static int gxf_write_trailer(AVFormatContext *s)
     int i;
     int ret;
 
-    ff_audio_interleave_close(s);
-
     gxf_write_eos_packet(pb);
     end = avio_tell(pb);
     avio_seek(pb, 0, SEEK_SET);
@@ -872,10 +870,17 @@ static int gxf_write_trailer(AVFormatContext *s)
 
     avio_seek(pb, end, SEEK_SET);
 
+    return 0;
+}
+
+static void gxf_deinit(AVFormatContext *s)
+{
+    GXFContext *gxf = s->priv_data;
+
+    ff_audio_interleave_close(s);
+
     av_freep(&gxf->flt_entries);
     av_freep(&gxf->map_offsets);
-
-    return 0;
 }
 
 static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int size)
@@ -1025,5 +1030,6 @@ AVOutputFormat ff_gxf_muxer = {
     .write_header      = gxf_write_header,
     .write_packet      = gxf_write_packet,
     .write_trailer     = gxf_write_trailer,
+    .deinit            = gxf_deinit,
     .interleave_packet = gxf_interleave_packet,
 };
