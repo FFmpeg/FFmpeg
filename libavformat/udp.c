@@ -1069,8 +1069,17 @@ static int udp_close(URLContext *h)
     if (s->thread_started) {
         int ret;
         // Cancel only read, as write has been signaled as success to the user
-        if (h->flags & AVIO_FLAG_READ)
+        if (h->flags & AVIO_FLAG_READ) {
+#ifdef _WIN32
+            /* recvfrom() is not a cancellation point for win32, so we shutdown
+             * the socket and abort pending IO, subsequent recvfrom() calls
+             * will fail with WSAESHUTDOWN causing the thread to exit. */
+            shutdown(s->udp_fd, SD_RECEIVE);
+            CancelIoEx((HANDLE)(SOCKET)s->udp_fd, NULL);
+#else
             pthread_cancel(s->circular_buffer_thread);
+#endif
+        }
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
