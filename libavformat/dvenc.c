@@ -305,9 +305,6 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
     if (s->nb_streams > 5)
         return NULL;
 
-    c->n_ast  = 0;
-    c->ast[0] = c->ast[1] = c->ast[2] = c->ast[3] = NULL;
-
     /* We have to sort out where audio and where video stream is */
     for (i=0; i<s->nb_streams; i++) {
         switch (s->streams[i]->codecpar->codec_type) {
