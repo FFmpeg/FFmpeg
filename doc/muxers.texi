@@ -1506,13 +1506,6 @@ point on IIS with this muxer. Example:
 ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
 @end example
 
-@subsection Audible AAX
-
-Audible AAX files are encrypted M4B files, and they can be decrypted by specifying a 4 byte activation secret.
-@example
-ffmpeg -activation_bytes 1CEB00DA -i test.aax -vn -c:a copy output.mp4
-@end example
-
 @section mp3
 
 The MP3 muxer writes a raw MP3 stream with the following optional features:
