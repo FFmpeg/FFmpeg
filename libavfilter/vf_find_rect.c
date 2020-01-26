@@ -159,7 +159,7 @@ static float search(FOCContext *foc, int pass, int maxpass, int xmin, int xmax, 
 
     if (pass + 1 <= maxpass) {
         int sub_x, sub_y;
-        search(foc, pass+1, maxpass, xmin>>1, (xmax+1)>>1, ymin>>1, (ymax+1)>>1, &sub_x, &sub_y, 1.0);
+        search(foc, pass+1, maxpass, xmin>>1, (xmax+1)>>1, ymin>>1, (ymax+1)>>1, &sub_x, &sub_y, 2.0);
         xmin = FFMAX(xmin, 2*sub_x - 4);
         xmax = FFMIN(xmax, 2*sub_x + 4);
         ymin = FFMAX(ymin, 2*sub_y - 4);
@@ -198,7 +198,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                         FFMIN(foc->xmax, foc->last_x + 8),
                         FFMAX(foc->ymin, foc->last_y - 8),
                         FFMIN(foc->ymax, foc->last_y + 8),
-                        &best_x, &best_y, 1.0);
+                        &best_x, &best_y, 2.0);
 
     best_score = search(foc, 0, foc->mipmaps - 1, foc->xmin, foc->xmax, foc->ymin, foc->ymax,
                         &best_x, &best_y, best_score);
