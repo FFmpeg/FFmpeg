@@ -2960,13 +2960,12 @@ static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int i, err = 0;
+    int i, err;
 
     if (!mxf->header_written ||
         (s->oformat == &ff_mxf_opatom_muxer && !mxf->body_partition_offset)) {
         /* reason could be invalid options/not supported codec/out of memory */
-        err = AVERROR_UNKNOWN;
-        goto end;
+        return AVERROR_UNKNOWN;
     }
 
     mxf->duration = mxf->last_indexed_edit_unit + mxf->edit_units_count;
@@ -2975,10 +2974,10 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf->footer_partition_offset = avio_tell(pb);
     if (mxf->edit_unit_byte_count && s->oformat != &ff_mxf_opatom_muxer) { // no need to repeat index
         if ((err = mxf_write_partition(s, 0, 0, footer_partition_key, 0)) < 0)
-            goto end;
+            return err;
     } else {
         if ((err = mxf_write_partition(s, 0, 2, footer_partition_key, 0)) < 0)
-            goto end;
+            return err;
         mxf_write_klv_fill(s);
         mxf_write_index_table_segment(s);
     }
@@ -2991,18 +2990,18 @@ static int mxf_write_footer(AVFormatContext *s)
             /* rewrite body partition to update lengths */
             avio_seek(pb, mxf->body_partition_offset[0], SEEK_SET);
             if ((err = mxf_write_opatom_body_partition(s)) < 0)
-                goto end;
+                return err;
         }
 
         avio_seek(pb, 0, SEEK_SET);
         if (mxf->edit_unit_byte_count && s->oformat != &ff_mxf_opatom_muxer) {
             if ((err = mxf_write_partition(s, 1, 2, header_closed_partition_key, 1)) < 0)
-                goto end;
+                return err;
             mxf_write_klv_fill(s);
             mxf_write_index_table_segment(s);
         } else {
             if ((err = mxf_write_partition(s, 0, 0, header_closed_partition_key, 1)) < 0)
-                goto end;
+                return err;
         }
         // update footer partition offset
         for (i = 0; i < mxf->body_partitions_count; i++) {
@@ -3011,15 +3010,21 @@ static int mxf_write_footer(AVFormatContext *s)
         }
     }
 
-end:
+    return 0;
+}
+
+static void mxf_deinit(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+
     ff_audio_interleave_close(s);
 
     av_freep(&mxf->index_entries);
     av_freep(&mxf->body_partition_offset);
-    av_freep(&mxf->timecode_track->priv_data);
-    av_freep(&mxf->timecode_track);
-
-    return err < 0 ? err : 0;
+    if (mxf->timecode_track) {
+        av_freep(&mxf->timecode_track->priv_data);
+        av_freep(&mxf->timecode_track);
+    }
 }
 
 static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
@@ -3170,6 +3175,7 @@ AVOutputFormat ff_mxf_muxer = {
     .write_header      = mxf_write_header,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
+    .deinit            = mxf_deinit,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
     .priv_class        = &mxf_muxer_class,
@@ -3185,6 +3191,7 @@ AVOutputFormat ff_mxf_d10_muxer = {
     .write_header      = mxf_write_header,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
+    .deinit            = mxf_deinit,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
     .priv_class        = &mxf_d10_muxer_class,
@@ -3201,6 +3208,7 @@ AVOutputFormat ff_mxf_opatom_muxer = {
     .write_header      = mxf_write_header,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
+    .deinit            = mxf_deinit,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
     .priv_class        = &mxf_opatom_muxer_class,
