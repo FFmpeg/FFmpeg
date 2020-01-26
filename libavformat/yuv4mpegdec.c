@@ -53,10 +53,14 @@ static int yuv4_read_header(AVFormatContext *s)
             break;
         }
     }
-    if (i == MAX_YUV4_HEADER)
-        return -1;
-    if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC)))
-        return -1;
+    if (i == MAX_YUV4_HEADER) {
+        av_log(s, AV_LOG_ERROR, "Header too large.\n");
+        return AVERROR(EINVAL);
+    }
+    if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC))) {
+        av_log(s, AV_LOG_ERROR, "Invalid magic number for yuv4mpeg.\n");
+        return AVERROR(EINVAL);
+    }
 
     header_end = &header[i + 1]; // Include space
     for (tokstart = &header[strlen(Y4M_MAGIC) + 1];
