@@ -2776,7 +2776,7 @@ static void print_sdp(void)
         if (avio_open2(&sdp_pb, sdp_filename, AVIO_FLAG_WRITE, &int_cb, NULL) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", sdp_filename);
         } else {
-            avio_printf(sdp_pb, "SDP:\n%s", sdp);
+            avio_print(sdp_pb, sdp);
             avio_closep(&sdp_pb);
             av_freep(&sdp_filename);
         }
