@@ -12,6 +12,7 @@
  * EA ADPCM XAS decoder by Peter Ross (pross@xvid.org)
  * MAXIS EA ADPCM decoder by Robert Marston (rmarston@gmail.com)
  * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
+ * Argonaut Games ADPCM decoder by Zane van Iperen (zane@zanevaniperen.com)
  *
  * This file is part of FFmpeg.
  *
@@ -148,6 +149,10 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         if (avctx->extradata && avctx->extradata_size >= 2)
             c->vqa_version = AV_RL16(avctx->extradata);
         break;
+    case AV_CODEC_ID_ADPCM_ARGO:
+        if (avctx->bits_per_coded_sample != 4)
+            return AVERROR_INVALIDDATA;
+        break;
     default:
         break;
     }
@@ -169,6 +174,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_DTK:
         case AV_CODEC_ID_ADPCM_PSX:
         case AV_CODEC_ID_ADPCM_MTAF:
+        case AV_CODEC_ID_ADPCM_ARGO:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -546,6 +552,11 @@ static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_
     }
 }
 
+static inline int16_t adpcm_argo_expand_nibble(int nibble, int shift, int16_t prev0, int16_t prev1)
+{
+    return ((8 * prev0) - (4 * prev1) + (nibble * (1 << shift))) >> 2;
+}
+
 /**
  * Get the number of samples that will be decoded from the packet.
  * In one case, this is actually the maximum number of samples possible to
@@ -583,6 +594,11 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         if (buf_size < 34 * ch)
             return 0;
         nb_samples = 64;
+        break;
+    case AV_CODEC_ID_ADPCM_ARGO:
+        if (buf_size < 17 * ch)
+            return 0;
+        nb_samples = 32;
         break;
     /* simple 4-bit adpcm */
     case AV_CODEC_ID_ADPCM_CT:
@@ -1770,7 +1786,57 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         break;
+    case AV_CODEC_ID_ADPCM_ARGO:
+        /*
+         * The format of each block:
+         *   uint8_t left_control;
+         *   uint4_t left_samples[nb_samples];
+         *   ---- and if stereo ----
+         *   uint8_t right_control;
+         *   uint4_t right_samples[nb_samples];
+         *
+         * Format of the control byte:
+         * MSB [SSSSDRRR] LSB
+         *   S = (Shift Amount - 2)
+         *   D = Decoder flag.
+         *   R = Reserved
+         *
+         * Each block relies on the previous two samples of each channel.
+         * They should be 0 initially.
+         */
+        for (channel = 0; channel < avctx->channels; channel++) {
+            int control, shift, sample, nibble;
 
+            samples = samples_p[channel];
+            cs = c->status + channel;
+
+            /* Get the control byte and decode the samples, 2 at a time. */
+            control = bytestream2_get_byteu(&gb);
+            shift = (control >> 4) + 2;
+
+            for (n = 0; n < nb_samples / 2; n++) {
+                sample = bytestream2_get_byteu(&gb);
+
+                nibble = sign_extend(sample >> 4, 4);
+                if (control & 0x04)
+                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample2);
+                else
+                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample1);
+
+                cs->sample2 = cs->sample1;
+                cs->sample1 = *samples++;
+
+                nibble = sign_extend(sample >> 0, 4);
+                if (control & 0x04)
+                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample2);
+                else
+                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample1);
+
+                cs->sample2 = cs->sample1;
+                cs->sample1 = *samples++;
+            }
+        }
+        break;
     default:
         av_assert0(0); // unsupported codec_id should not happen
     }
@@ -1824,6 +1890,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_4XM,         sample_fmts_s16p, adpcm_4xm,       
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_AFC,         sample_fmts_s16p, adpcm_afc,         "ADPCM Nintendo Gamecube AFC");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_AGM,         sample_fmts_s16,  adpcm_agm,         "ADPCM AmuseGraphics Movie");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_AICA,        sample_fmts_s16p, adpcm_aica,        "ADPCM Yamaha AICA");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_ARGO,        sample_fmts_s16p, adpcm_argo,        "ADPCM Argonaut Games");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_CT,          sample_fmts_s16,  adpcm_ct,          "ADPCM Creative Technology");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_DTK,         sample_fmts_s16p, adpcm_dtk,         "ADPCM Nintendo Gamecube DTK");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA,          sample_fmts_s16,  adpcm_ea,          "ADPCM Electronic Arts");
