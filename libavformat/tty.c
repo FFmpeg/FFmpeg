@@ -34,6 +34,13 @@
 #include "internal.h"
 #include "sauce.h"
 
+static int isansicode(int x)
+{
+    return x == 0x1B || x == 0x0A || x == 0x0D || (x >= 0x20 && x < 0x7f);
+}
+
+static const char tty_extensions[31] = "ans,art,asc,diz,ice,nfo,txt,vt";
+
 typedef struct TtyDemuxContext {
     AVClass *class;
     int chars_per_frame;
@@ -41,6 +48,17 @@ typedef struct TtyDemuxContext {
     int width, height; /**< Set by a private option. */
     AVRational framerate; /**< Set by a private option. */
 } TtyDemuxContext;
+
+static int read_probe(const AVProbeData *p)
+{
+    int cnt = 0;
+
+    for (int i = 0; i < p->buf_size; i++)
+        cnt += !!isansicode(p->buf[i]);
+
+    return (cnt * 100LL / p->buf_size) * (cnt > 400) *
+        !!av_match_ext(p->filename, tty_extensions);
+}
 
 /**
  * Parse EFI header
@@ -153,8 +171,9 @@ AVInputFormat ff_tty_demuxer = {
     .name           = "tty",
     .long_name      = NULL_IF_CONFIG_SMALL("Tele-typewriter"),
     .priv_data_size = sizeof(TtyDemuxContext),
+    .read_probe     = read_probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .extensions     = "ans,art,asc,diz,ice,nfo,txt,vt",
+    .extensions     = tty_extensions,
     .priv_class     = &tty_demuxer_class,
 };
