@@ -1327,8 +1327,10 @@ static int update_frag_index(MOVContext *c, int64_t offset)
 
     for (i = 0; i < c->fc->nb_streams; i++) {
         // Avoid building frag index if streams lack track id.
-        if (c->fc->streams[i]->id < 0)
+        if (c->fc->streams[i]->id < 0) {
+            av_free(frag_stream_info);
             return AVERROR_INVALIDDATA;
+        }
 
         frag_stream_info[i].id = c->fc->streams[i]->id;
         frag_stream_info[i].sidx_pts = AV_NOPTS_VALUE;
