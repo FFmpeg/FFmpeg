@@ -227,10 +227,11 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
 
     for (i = *len, work_len = 2 * 2 * 8; i > 1; work_len <<= 1, i >>= 1);
 
-    work = av_calloc(work_len + 2, sizeof(*work));    /* +2: (UN)PACK */
-    pi_wraps = av_calloc(((work_len + 2) / 2), sizeof(*pi_wraps));
-    if (!work || !pi_wraps)
+    /* The first part is for work (+2 for (UN)PACK), the latter for pi_wraps. */
+    work = av_calloc((work_len + 2) + (work_len / 2 + 1), sizeof(float));
+    if (!work)
         return AVERROR(ENOMEM);
+    pi_wraps = &work[work_len + 2];
 
     memcpy(work, *h, *len * sizeof(*work));
 
@@ -240,7 +241,6 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
     s->rdft  = av_rdft_init(av_log2(work_len), DFT_R2C);
     s->irdft = av_rdft_init(av_log2(work_len), IDFT_C2R);
     if (!s->rdft || !s->irdft) {
-        av_free(pi_wraps);
         av_free(work);
         return AVERROR(ENOMEM);
     }
@@ -323,7 +323,6 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
         *len = end - begin;
         *h = av_realloc_f(*h, *len, sizeof(**h));
         if (!*h) {
-            av_free(pi_wraps);
             av_free(work);
             return AVERROR(ENOMEM);
         }
@@ -338,7 +337,6 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
            work_len, pi_wraps[work_len >> 1] / M_PI, peak, peak_imp_sum, imp_peak,
            work[imp_peak], *len, *post_len, 100.f - 100.f * *post_len / (*len - 1));
 
-    av_free(pi_wraps);
     av_free(work);
 
     return 0;
