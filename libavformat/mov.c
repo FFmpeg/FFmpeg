@@ -6329,8 +6329,10 @@ static int mov_read_pssh(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (version > 0) {
         kid_count = avio_rb32(pb);
-        if (kid_count >= INT_MAX / sizeof(*key_ids))
-            return AVERROR(ENOMEM);
+        if (kid_count >= INT_MAX / sizeof(*key_ids)) {
+            ret = AVERROR(ENOMEM);
+            goto finish;
+        }
 
         for (unsigned int i = 0; i < kid_count && !pb->eof_reached; i++) {
             unsigned int min_kid_count = FFMIN(FFMAX(i + 1, 1024), kid_count);
