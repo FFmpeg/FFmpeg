@@ -903,7 +903,6 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        av_frame_free(&in);
         *outf = NULL;
         return AVERROR(ENOMEM);
     }
@@ -916,7 +915,6 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
     if (av_frame_ref(s->last_in, in) < 0 ||
         av_frame_ref(s->last_out, out) < 0 ||
         av_frame_make_writable(s->last_in) < 0) {
-        av_frame_free(&in);
         av_frame_free(&out);
         *outf = NULL;
         return AVERROR(ENOMEM);
@@ -934,7 +932,6 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
     memcpy(out->data[1], s->palette, AVPALETTE_SIZE);
     if (s->calc_mean_err)
         debug_mean_error(s, in, out, inlink->frame_count_out);
-    av_frame_free(&in);
     *outf = out;
     return 0;
 }
@@ -1023,20 +1020,17 @@ static int load_apply_palette(FFFrameSync *fs)
     if (ret < 0)
         return ret;
     if (!master || !second) {
-        ret = AVERROR_BUG;
-        goto error;
+        av_frame_free(&master);
+        return AVERROR_BUG;
     }
     if (!s->palette_loaded) {
         load_palette(s, second);
     }
     ret = apply_palette(inlink, master, &out);
-    if (ret < 0)
-        goto error;
-    return ff_filter_frame(ctx->outputs[0], out);
-
-error:
     av_frame_free(&master);
-    return ret;
+    if (ret < 0)
+        return ret;
+    return ff_filter_frame(ctx->outputs[0], out);
 }
 
 #define DEFINE_SET_FRAME(color_search, name, value)                             \
