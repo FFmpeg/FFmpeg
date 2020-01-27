@@ -912,12 +912,12 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
                           s->last_out, out, &x, &y, &w, &h);
     av_frame_unref(s->last_in);
     av_frame_unref(s->last_out);
-    if (av_frame_ref(s->last_in, in) < 0 ||
-        av_frame_ref(s->last_out, out) < 0 ||
-        av_frame_make_writable(s->last_in) < 0) {
+    if ((ret = av_frame_ref(s->last_in, in))       < 0 ||
+        (ret = av_frame_ref(s->last_out, out))     < 0 ||
+        (ret = av_frame_make_writable(s->last_in)) < 0) {
         av_frame_free(&out);
         *outf = NULL;
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
     ff_dlog(ctx, "%dx%d rect: (%d;%d) -> (%d,%d) [area:%dx%d]\n",
