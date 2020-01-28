@@ -222,6 +222,9 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
         }
     }
 
+    if (scale_factor > 23)
+        return AVERROR_INVALIDDATA;
+
     rac->scale = scale_factor;
 
     /* Fill probability array with cumulative probability for each symbol. */
