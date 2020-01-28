@@ -124,7 +124,10 @@ static void check_color_terminal(void)
 {
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
     CONSOLE_SCREEN_BUFFER_INFO con_info;
+    DWORD dummy;
     con = GetStdHandle(STD_ERROR_HANDLE);
+    if (con != INVALID_HANDLE_VALUE && !GetConsoleMode(con, &dummy))
+        con = INVALID_HANDLE_VALUE;
     use_color = (con != INVALID_HANDLE_VALUE) && !getenv("AV_LOG_FORCE_NOCOLOR");
     if (use_color) {
         GetConsoleScreenBufferInfo(con, &con_info);
