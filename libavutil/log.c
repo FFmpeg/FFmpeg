@@ -143,25 +143,8 @@ static void check_color_terminal(void)
 #endif
 }
 
-static void colored_fputs(int level, int tint, const char *str)
+static void ansi_fputs(int level, int tint, const char *str, int local_use_color)
 {
-    int local_use_color;
-    if (!*str)
-        return;
-
-    if (use_color < 0)
-        check_color_terminal();
-
-    if (level == AV_LOG_INFO/8) local_use_color = 0;
-    else                        local_use_color = use_color;
-
-#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
-    if (local_use_color)
-        SetConsoleTextAttribute(con, background | color[level]);
-    fputs(str, stderr);
-    if (local_use_color)
-        SetConsoleTextAttribute(con, attr_orig);
-#else
     if (local_use_color == 1) {
         fprintf(stderr,
                 "\033[%"PRIu32";3%"PRIu32"m%s\033[0m",
@@ -182,6 +165,28 @@ static void colored_fputs(int level, int tint, const char *str)
                 str);
     } else
         fputs(str, stderr);
+}
+
+static void colored_fputs(int level, int tint, const char *str)
+{
+    int local_use_color;
+    if (!*str)
+        return;
+
+    if (use_color < 0)
+        check_color_terminal();
+
+    if (level == AV_LOG_INFO/8) local_use_color = 0;
+    else                        local_use_color = use_color;
+
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
+    if (local_use_color)
+        SetConsoleTextAttribute(con, background | color[level]);
+    fputs(str, stderr);
+    if (local_use_color)
+        SetConsoleTextAttribute(con, attr_orig);
+#else
+    ansi_fputs(level, tint, str, local_use_color);
 #endif
 
 }
