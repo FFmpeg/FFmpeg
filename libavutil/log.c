@@ -122,28 +122,37 @@ static int use_color = -1;
 
 static void check_color_terminal(void)
 {
+    char *term = getenv("TERM");
+
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
     CONSOLE_SCREEN_BUFFER_INFO con_info;
     DWORD dummy;
     con = GetStdHandle(STD_ERROR_HANDLE);
     if (con != INVALID_HANDLE_VALUE && !GetConsoleMode(con, &dummy))
         con = INVALID_HANDLE_VALUE;
-    use_color = (con != INVALID_HANDLE_VALUE) && !getenv("AV_LOG_FORCE_NOCOLOR");
-    if (use_color) {
+    if (con != INVALID_HANDLE_VALUE) {
         GetConsoleScreenBufferInfo(con, &con_info);
         attr_orig  = con_info.wAttributes;
         background = attr_orig & 0xF0;
     }
-#elif HAVE_ISATTY
-    char *term = getenv("TERM");
-    use_color = !getenv("AV_LOG_FORCE_NOCOLOR") &&
-                (getenv("TERM") && isatty(2) || getenv("AV_LOG_FORCE_COLOR"));
-    if (   getenv("AV_LOG_FORCE_256COLOR")
-        || (term && strstr(term, "256color")))
-        use_color *= 256;
-#else
-    use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR");
 #endif
+
+    if (getenv("AV_LOG_FORCE_NOCOLOR")) {
+        use_color = 0;
+    } else if (getenv("AV_LOG_FORCE_COLOR")) {
+        use_color = 1;
+    } else {
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
+        use_color = (con != INVALID_HANDLE_VALUE);
+#elif HAVE_ISATTY
+        use_color = (term && isatty(2));
+#else
+        use_color = 0;
+#endif
+    }
+
+    if (getenv("AV_LOG_FORCE_256COLOR") || term && strstr(term, "256color"))
+        use_color *= 256;
 }
 
 static void ansi_fputs(int level, int tint, const char *str, int local_use_color)
@@ -183,11 +192,15 @@ static void colored_fputs(int level, int tint, const char *str)
     else                        local_use_color = use_color;
 
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
-    if (local_use_color)
-        SetConsoleTextAttribute(con, background | color[level]);
-    fputs(str, stderr);
-    if (local_use_color)
-        SetConsoleTextAttribute(con, attr_orig);
+    if (con != INVALID_HANDLE_VALUE) {
+        if (local_use_color)
+            SetConsoleTextAttribute(con, background | color[level]);
+        fputs(str, stderr);
+        if (local_use_color)
+            SetConsoleTextAttribute(con, attr_orig);
+    } else {
+        ansi_fputs(level, tint, str, local_use_color);
+    }
 #else
     ansi_fputs(level, tint, str, local_use_color);
 #endif
