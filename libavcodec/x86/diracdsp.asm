@@ -294,8 +294,9 @@ cglobal dequant_subband_32, 7, 7, 4, src, dst, stride, qf, qs, tot_v, tot_h
 
     add    srcq, mmsize
     add    dstq, mmsize
-    sub    tot_hd, 4
+    sub    tot_hq, 4
     jg     .loop_h
+    lea    srcq, [srcq + 4*tot_hq]
 
     add    r3, strideq
     dec    tot_vd
