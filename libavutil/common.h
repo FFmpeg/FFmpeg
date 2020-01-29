@@ -389,7 +389,7 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
         if ((val & 0xc0) == 0x80 || val >= 0xFE)\
             ERROR\
         while (val & top) {\
-            int tmp= (GET_BYTE) - 128;\
+            unsigned int tmp = (GET_BYTE) - 128;\
             if(tmp>>6)\
                 ERROR\
             val= (val<<6) + tmp;\
