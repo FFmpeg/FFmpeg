@@ -255,6 +255,8 @@ typedef struct AC3EncodeContext {
     uint8_t *ref_bap     [AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< bit allocation pointers (bap)
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
 
+    int warned_alternate_bitstream;
+
     /* fixed vs. float function pointers */
     void (*mdct_end)(struct AC3EncodeContext *s);
     int  (*mdct_init)(struct AC3EncodeContext *s);
