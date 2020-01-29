@@ -80,7 +80,8 @@ static int nist_read_header(AVFormatContext *s)
 
             avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
-            st->codecpar->block_align = st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
+            st->codecpar->block_align = st->codecpar->bits_per_coded_sample *
+                                        st->codecpar->ch_layout.nb_channels / 8;
 
             if (avio_tell(s->pb) > header_size)
                 return AVERROR_INVALIDDATA;
@@ -89,8 +90,8 @@ static int nist_read_header(AVFormatContext *s)
 
             return 0;
         } else if (!memcmp(buffer, "channel_count", 13)) {
-            sscanf(buffer, "%*s %*s %u", &st->codecpar->channels);
-            if (st->codecpar->channels <= 0 || st->codecpar->channels > INT16_MAX)
+            sscanf(buffer, "%*s %*s %u", &st->codecpar->ch_layout.nb_channels);
+            if (st->codecpar->ch_layout.nb_channels <= 0 || st->codecpar->ch_layout.nb_channels > INT16_MAX)
                 return AVERROR_INVALIDDATA;
         } else if (!memcmp(buffer, "sample_byte_format", 18)) {
             sscanf(buffer, "%*s %*s %31s", format);
