@@ -96,11 +96,9 @@ int ff_argo_asf_fill_stream(AVFormatContext *s, AVStream *st, const ArgoASFFileH
     st->codecpar->format                    = AV_SAMPLE_FMT_S16P;
 
     if (ckhdr->flags & ASF_CF_STEREO) {
-        st->codecpar->channel_layout        = AV_CH_LAYOUT_STEREO;
-        st->codecpar->channels              = 2;
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     } else {
-        st->codecpar->channel_layout        = AV_CH_LAYOUT_MONO;
-        st->codecpar->channels              = 1;
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     }
 
     /* v1.1 files (FX Fighter) are all marked as 44100, but are actually 22050. */
@@ -121,11 +119,11 @@ int ff_argo_asf_fill_stream(AVFormatContext *s, AVStream *st, const ArgoASFFileH
      * (nchannel control bytes) + ((bytes_per_channel) * nchannel)
      * For mono, this is 17. For stereo, this is 34.
      */
-    st->codecpar->block_align           = st->codecpar->channels +
+    st->codecpar->block_align           = st->codecpar->ch_layout.nb_channels +
                                           (ckhdr->num_samples / 2) *
-                                          st->codecpar->channels;
+                                          st->codecpar->ch_layout.nb_channels;
 
-    st->codecpar->bit_rate              = st->codecpar->channels *
+    st->codecpar->bit_rate              = st->codecpar->ch_layout.nb_channels *
                                           st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample;
 
@@ -305,12 +303,12 @@ static int argo_asf_write_init(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (par->channels > 2) {
+    if (par->ch_layout.nb_channels > 2) {
         av_log(s, AV_LOG_ERROR, "ASF files only support up to 2 channels\n");
         return AVERROR(EINVAL);
     }
 
-    if (par->block_align != 17 * par->channels)
+    if (par->block_align != 17 * par->ch_layout.nb_channels)
         return AVERROR(EINVAL);
 
     if (par->sample_rate > UINT16_MAX) {
@@ -392,7 +390,7 @@ static int argo_asf_write_header(AVFormatContext *s)
     chdr.unk2          = ~0;
     chdr.flags         = ASF_CF_BITS_PER_SAMPLE | ASF_CF_ALWAYS1;
 
-    if (par->channels == 2)
+    if (par->ch_layout.nb_channels == 2)
         chdr.flags |= ASF_CF_STEREO;
 
     argo_asf_write_file_header(&fhdr, s->pb);

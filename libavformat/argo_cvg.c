@@ -182,8 +182,7 @@ static int argo_cvg_read_header(AVFormatContext *s)
         break;
     }
 
-    par->channels               = 1;
-    par->channel_layout         = AV_CH_LAYOUT_MONO;
+    par->ch_layout              = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     par->bits_per_coded_sample  = 4;
     par->block_align            = ARGO_CVG_BLOCK_ALIGN;
@@ -275,7 +274,7 @@ static int argo_cvg_write_init(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (par->channels != 1) {
+    if (par->ch_layout.nb_channels != 1) {
         av_log(s, AV_LOG_ERROR, "CVG files only support 1 channel\n");
         return AVERROR(EINVAL);
     }
