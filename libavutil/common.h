@@ -373,7 +373,9 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
  * @param GET_BYTE Expression reading one byte from the input.
  *                 Evaluated up to 7 times (4 for the currently
  *                 assigned Unicode range).  With a memory buffer
- *                 input, this could be *ptr++.
+ *                 input, this could be *ptr++, or if you want to make sure
+ *                 that *ptr stops at the end of a NULL terminated string then
+ *                 *ptr ? *ptr++ : 0
  * @param ERROR    Expression to be evaluated on invalid input,
  *                 typically a goto statement.
  *
