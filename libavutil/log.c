@@ -120,6 +120,31 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
 #endif
 static int use_color = -1;
 
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
+static void win_console_puts(const char *str)
+{
+    const uint8_t *q = str;
+    uint16_t line[LINE_SZ];
+
+    while (*q) {
+        uint16_t *buf = line;
+        DWORD nb_chars = 0;
+        DWORD written;
+
+        while (*q && nb_chars < LINE_SZ - 1) {
+            uint32_t ch;
+            uint16_t tmp;
+
+            GET_UTF8(ch, *q ? *q++ : 0, ch = 0xfffd; goto continue_on_invalid;)
+continue_on_invalid:
+            PUT_UTF16(ch, tmp, *buf++ = tmp; nb_chars++;)
+        }
+
+        WriteConsoleW(con, line, nb_chars, &written, NULL);
+    }
+}
+#endif
+
 static void check_color_terminal(void)
 {
     char *term = getenv("TERM");
@@ -195,7 +220,7 @@ static void colored_fputs(int level, int tint, const char *str)
     if (con != INVALID_HANDLE_VALUE) {
         if (local_use_color)
             SetConsoleTextAttribute(con, background | color[level]);
-        fputs(str, stderr);
+        win_console_puts(str);
         if (local_use_color)
             SetConsoleTextAttribute(con, attr_orig);
     } else {
