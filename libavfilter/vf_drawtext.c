@@ -1225,7 +1225,7 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     for (i = 0, p = text; *p; i++) {
         FT_Bitmap bitmap;
         Glyph dummy = { 0 };
-        GET_UTF8(code, *p++, code = 0xfffd; goto continue_on_invalid;);
+        GET_UTF8(code, *p ? *p++ : 0, code = 0xfffd; goto continue_on_invalid;);
 continue_on_invalid:
 
         /* skip new line chars, just go to new line */
@@ -1364,7 +1364,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     /* load and cache glyphs */
     for (i = 0, p = text; *p; i++) {
-        GET_UTF8(code, *p++, code = 0xfffd; goto continue_on_invalid;);
+        GET_UTF8(code, *p ? *p++ : 0, code = 0xfffd; goto continue_on_invalid;);
 continue_on_invalid:
 
         /* get glyph */
@@ -1388,7 +1388,7 @@ continue_on_invalid:
     /* compute and save position for each glyph */
     glyph = NULL;
     for (i = 0, p = text; *p; i++) {
-        GET_UTF8(code, *p++, code = 0xfffd; goto continue_on_invalid2;);
+        GET_UTF8(code, *p ? *p++ : 0, code = 0xfffd; goto continue_on_invalid2;);
 continue_on_invalid2:
 
         /* skip the \n in the sequence \r\n */
