@@ -322,7 +322,9 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         x4->pic.i_pts  = frame->pts;
 
         x4->reordered_opaque[x4->next_reordered_opaque].reordered_opaque = frame->reordered_opaque;
-        x4->reordered_opaque[x4->next_reordered_opaque].wallclock = av_gettime();
+        x4->reordered_opaque[x4->next_reordered_opaque].wallclock = wallclock;
+        if (ctx->export_side_data & AV_CODEC_EXPORT_DATA_PRFT)
+            x4->reordered_opaque[x4->next_reordered_opaque].wallclock = av_gettime();
         x4->pic.opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
         x4->next_reordered_opaque++;
         x4->next_reordered_opaque %= x4->nb_reordered_opaque;
