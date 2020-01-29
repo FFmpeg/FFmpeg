@@ -408,11 +408,11 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
  *                  typically a goto statement.
  */
 #define GET_UTF16(val, GET_16BIT, ERROR)\
-    val = GET_16BIT;\
+    val = (GET_16BIT);\
     {\
         unsigned int hi = val - 0xD800;\
         if (hi < 0x800) {\
-            val = GET_16BIT - 0xDC00;\
+            val = (GET_16BIT) - 0xDC00;\
             if (val > 0x3FFU || hi > 0x3FFU)\
                 ERROR\
             val += (hi<<10) + 0x10000;\
