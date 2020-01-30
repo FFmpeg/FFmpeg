@@ -45,6 +45,7 @@ enum XFadeTransitions {
     DISTANCE,
     FADEBLACK,
     FADEWHITE,
+    RADIAL,
     NB_TRANSITIONS,
 };
 
@@ -141,6 +142,7 @@ static const AVOption xfade_options[] = {
     {   "distance",   "distance transition",    0, AV_OPT_TYPE_CONST, {.i64=DISTANCE},   0, 0, FLAGS, "transition" },
     {   "fadeblack",  "fadeblack transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEBLACK},  0, 0, FLAGS, "transition" },
     {   "fadewhite",  "fadewhite transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEWHITE},  0, 0, FLAGS, "transition" },
+    {   "radial",     "radial transition",      0, AV_OPT_TYPE_CONST, {.i64=RADIAL},     0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -649,6 +651,34 @@ static void fadewhite##name##_transition(AVFilterContext *ctx,                  
 FADEWHITE_TRANSITION(8, uint8_t, 1)
 FADEWHITE_TRANSITION(16, uint16_t, 2)
 
+#define RADIAL_TRANSITION(name, type, div)                                           \
+static void radial##name##_transition(AVFilterContext *ctx,                          \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const int height = out->height;                                                  \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = atan2f(x - width / 2, y - height / 2) -             \
+                                 (progress - 0.5f) * (M_PI * 2.5f);                  \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+RADIAL_TRANSITION(8, uint8_t, 1)
+RADIAL_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -754,6 +784,7 @@ static int config_output(AVFilterLink *outlink)
     case DISTANCE:   s->transitionf = s->depth <= 8 ? distance8_transition   : distance16_transition;   break;
     case FADEBLACK:  s->transitionf = s->depth <= 8 ? fadeblack8_transition  : fadeblack16_transition;  break;
     case FADEWHITE:  s->transitionf = s->depth <= 8 ? fadewhite8_transition  : fadewhite16_transition;  break;
+    case RADIAL:     s->transitionf = s->depth <= 8 ? radial8_transition     : radial16_transition;     break;
     }
 
     if (s->transition == CUSTOM) {

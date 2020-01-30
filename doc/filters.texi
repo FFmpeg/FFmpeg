@@ -20060,6 +20060,7 @@ Set one of available transition effects:
 @item distance
 @item fadeblack
 @item fadewhite
+@item radial
 @end table
 Default transition effect is fade.
 
