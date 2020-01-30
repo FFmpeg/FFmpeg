@@ -1872,8 +1872,14 @@ static void show_help_demuxer(const char *name)
 
 static void show_help_protocol(const char *name)
 {
-    const AVClass *proto_class = avio_protocol_get_class(name);
+    const AVClass *proto_class;
 
+    if (!name) {
+        av_log(NULL, AV_LOG_ERROR, "No protocol name specified.\n");
+        return;
+    }
+
+    proto_class = avio_protocol_get_class(name);
     if (!proto_class) {
         av_log(NULL, AV_LOG_ERROR, "Unknown protocol '%s'.\n", name);
         return;
