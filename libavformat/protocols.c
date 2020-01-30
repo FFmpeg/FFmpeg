@@ -107,6 +107,16 @@ const char *avio_enum_protocols(void **opaque, int output)
     return avio_enum_protocols(opaque, output);
 }
 
+const AVClass *avio_protocol_get_class(const char *name)
+{
+    int i = 0;
+    for (i = 0; url_protocols[i]; i++) {
+        if (!strcmp(url_protocols[i]->name, name))
+            return url_protocols[i]->priv_data_class;
+    }
+    return NULL;
+}
+
 const URLProtocol **ffurl_get_protocols(const char *whitelist,
                                         const char *blacklist)
 {

@@ -808,6 +808,13 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 const char *avio_enum_protocols(void **opaque, int output);
 
 /**
+ * Get AVClass by names of available protocols.
+ *
+ * @return A AVClass of input protocol name or NULL
+ */
+const AVClass *avio_protocol_get_class(const char *name);
+
+/**
  * Pause and resume playing - only meaningful if using a network streaming
  * protocol (e.g. MMS).
  *
