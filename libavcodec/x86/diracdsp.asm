@@ -274,7 +274,7 @@ cglobal dequant_subband_32, 7, 7, 4, src, dst, stride, qf, qs, tot_v, tot_h
     movd   m3, qsd
     SPLATD m2
     SPLATD m3
-    mov    r4, tot_hq
+    mov    r4d, tot_hd
     mov    r3, dstq
 
     .loop_v:
