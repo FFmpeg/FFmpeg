@@ -1883,7 +1883,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                                                                   st->time_base,
                                                                   AV_TIME_BASE_Q));
 
-        if (!os->muxer_overhead)
+        if (!os->muxer_overhead && os->max_pts > os->start_pts)
             os->muxer_overhead = ((int64_t) (range_length - os->total_pkt_size) *
                                   8 * AV_TIME_BASE) /
                                  av_rescale_q(os->max_pts - os->start_pts,
