@@ -20073,8 +20073,8 @@ Set cross fade duration in seconds.
 Default duration is 1 second.
 
 @item offset
-Set cross fade start relative to first input stream.
-Default offset it 0.
+Set cross fade start relative to first input stream in seconds.
+Default offset is 0.
 
 @item expr
 Set expression for custom transition effect.
@@ -20117,6 +20117,17 @@ Return the value of the pixel at location (@var{x},@var{y}) of the
 first/second/third/fourth component of second input.
 @end table
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Cross fade from one input video to another input video, with fade transition and duration of transition
+of 2 seconds starting at offset of 5 seconds:
+@example
+ffmpeg -i first.mp4 -i second.mp4 -filter_complex xfade=transition=fade:duration=2:offset=5 output.mp4
+@end example
+@end itemize
 
 @section xstack
 Stack video inputs into custom layout.
