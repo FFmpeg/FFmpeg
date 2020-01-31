@@ -142,7 +142,7 @@ static int idct_row(short *in, const int *const tab, int rnd)
 #define TAN3  0xAB0E
 #define SQRT2 0x5A82
 
-#define MULT(c, x, n)  (((c) * (x)) >> (n))
+#define MULT(c, x, n)  ((unsigned)((int)((c) * (unsigned)(x)) >> (n)))
 // 12b version => #define MULT(c,x, n)  ((((c) >> 3) * (x)) >> ((n) - 3))
 // 12b zero-testing version:
 
