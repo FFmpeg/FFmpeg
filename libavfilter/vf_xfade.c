@@ -46,6 +46,10 @@ enum XFadeTransitions {
     FADEBLACK,
     FADEWHITE,
     RADIAL,
+    SMOOTHLEFT,
+    SMOOTHRIGHT,
+    SMOOTHUP,
+    SMOOTHDOWN,
     NB_TRANSITIONS,
 };
 
@@ -143,6 +147,10 @@ static const AVOption xfade_options[] = {
     {   "fadeblack",  "fadeblack transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEBLACK},  0, 0, FLAGS, "transition" },
     {   "fadewhite",  "fadewhite transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEWHITE},  0, 0, FLAGS, "transition" },
     {   "radial",     "radial transition",      0, AV_OPT_TYPE_CONST, {.i64=RADIAL},     0, 0, FLAGS, "transition" },
+    {   "smoothleft", "smoothleft transition",  0, AV_OPT_TYPE_CONST, {.i64=SMOOTHLEFT}, 0, 0, FLAGS, "transition" },
+    {   "smoothright","smoothright transition", 0, AV_OPT_TYPE_CONST, {.i64=SMOOTHRIGHT},0, 0, FLAGS, "transition" },
+    {   "smoothup",   "smoothup transition",    0, AV_OPT_TYPE_CONST, {.i64=SMOOTHUP},   0, 0, FLAGS, "transition" },
+    {   "smoothdown", "smoothdown transition",  0, AV_OPT_TYPE_CONST, {.i64=SMOOTHDOWN}, 0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -679,6 +687,116 @@ static void radial##name##_transition(AVFilterContext *ctx,                     
 RADIAL_TRANSITION(8, uint8_t, 1)
 RADIAL_TRANSITION(16, uint16_t, 2)
 
+#define SMOOTHLEFT_TRANSITION(name, type, div)                                       \
+static void smoothleft##name##_transition(AVFilterContext *ctx,                      \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = 1.f + x / w - progress * 2.f;                       \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+SMOOTHLEFT_TRANSITION(8, uint8_t, 1)
+SMOOTHLEFT_TRANSITION(16, uint16_t, 2)
+
+#define SMOOTHRIGHT_TRANSITION(name, type, div)                                      \
+static void smoothright##name##_transition(AVFilterContext *ctx,                     \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = 1.f + (w - 1 - x) / w - progress * 2.f;             \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+SMOOTHRIGHT_TRANSITION(8, uint8_t, 1)
+SMOOTHRIGHT_TRANSITION(16, uint16_t, 2)
+
+#define SMOOTHUP_TRANSITION(name, type, div)                                         \
+static void smoothup##name##_transition(AVFilterContext *ctx,                        \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        const float smooth = 1.f + y / h - progress * 2.f;                           \
+        for (int x = 0; x < width; x++) {                                            \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+SMOOTHUP_TRANSITION(8, uint8_t, 1)
+SMOOTHUP_TRANSITION(16, uint16_t, 2)
+
+#define SMOOTHDOWN_TRANSITION(name, type, div)                                       \
+static void smoothdown##name##_transition(AVFilterContext *ctx,                      \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        const float smooth = 1.f + (h - 1 - y) / h - progress * 2.f;                 \
+        for (int x = 0; x < width; x++) {                                            \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+SMOOTHDOWN_TRANSITION(8, uint8_t, 1)
+SMOOTHDOWN_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -785,6 +903,10 @@ static int config_output(AVFilterLink *outlink)
     case FADEBLACK:  s->transitionf = s->depth <= 8 ? fadeblack8_transition  : fadeblack16_transition;  break;
     case FADEWHITE:  s->transitionf = s->depth <= 8 ? fadewhite8_transition  : fadewhite16_transition;  break;
     case RADIAL:     s->transitionf = s->depth <= 8 ? radial8_transition     : radial16_transition;     break;
+    case SMOOTHLEFT: s->transitionf = s->depth <= 8 ? smoothleft8_transition : smoothleft16_transition; break;
+    case SMOOTHRIGHT:s->transitionf = s->depth <= 8 ? smoothright8_transition: smoothright16_transition;break;
+    case SMOOTHUP:   s->transitionf = s->depth <= 8 ? smoothup8_transition   : smoothup16_transition;   break;
+    case SMOOTHDOWN: s->transitionf = s->depth <= 8 ? smoothdown8_transition : smoothdown16_transition; break;
     }
 
     if (s->transition == CUSTOM) {

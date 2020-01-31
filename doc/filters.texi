@@ -20065,6 +20065,10 @@ Set one of available transition effects:
 @item fadeblack
 @item fadewhite
 @item radial
+@item smoothleft
+@item smoothright
+@item smoothup
+@item smoothdown
 @end table
 Default transition effect is fade.
 
