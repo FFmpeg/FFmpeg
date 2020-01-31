@@ -34,6 +34,7 @@ version <next>:
 - Argonaut Games ASF demuxer
 - xfade video filter
 - xfade_opencl filter
+- afirsrc audio filter source
 
 
 version 4.2:

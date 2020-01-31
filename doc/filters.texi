@@ -5857,6 +5857,44 @@ aevalsrc="0.1*sin(2*PI*(360-2.5/2)*t) | 0.1*sin(2*PI*(360+2.5/2)*t)"
 
 @end itemize
 
+@section afirsrc
+
+Generate a FIR coefficients using frequency sampling method.
+
+The resulting stream can be used with @ref{afir} filter for filtering the audio signal.
+
+The filter accepts the following options:
+
+@table @option
+@item taps, t
+Set number of filter coefficents in output audio stream.
+Default value is 1025.
+
+@item frequency, f
+Set frequency points from where magnitude and phase are set.
+This must be in non decreasing order, and first element must be 0, while last element
+must be 1. Elements are separated by white spaces.
+
+@item magnitude, m
+Set magnitude value for every frequency point set by @option{frequency}.
+Number of values must be same as number of frequency points.
+Values are separated by white spaces.
+
+@item phase, p
+Set phase value for every frequency point set by @option{frequency}.
+Number of values must be same as number of frequency points.
+Values are separated by white spaces.
+
+@item sample_rate, r
+Set sample rate, default is 44100.
+
+@item nb_samples, n
+Set number of samples per each frame. Default is 1024.
+
+@item win_func, w
+Set window function. Default is blackman.
+@end table
+
 @section anullsrc
 
 The null audio source, return unprocessed audio frames. It is mainly useful
