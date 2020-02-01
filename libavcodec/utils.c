@@ -556,11 +556,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (avcodec_is_open(avctx))
         return 0;
 
-    if ((!codec && !avctx->codec)) {
+    if (!codec && !avctx->codec) {
         av_log(avctx, AV_LOG_ERROR, "No codec provided to avcodec_open2()\n");
         return AVERROR(EINVAL);
     }
-    if ((codec && avctx->codec && codec != avctx->codec)) {
+    if (codec && avctx->codec && codec != avctx->codec) {
         av_log(avctx, AV_LOG_ERROR, "This AVCodecContext was allocated for %s, "
                                     "but %s passed to avcodec_open2()\n", avctx->codec->name, codec->name);
         return AVERROR(EINVAL);
