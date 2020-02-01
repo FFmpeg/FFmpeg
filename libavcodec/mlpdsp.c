@@ -79,7 +79,7 @@ void ff_mlp_rematrix_channel(int32_t *samples,
 
         if (matrix_noise_shift) {
             index &= access_unit_size_pow2 - 1;
-            accum += noise_buffer[index] << (matrix_noise_shift + 7);
+            accum += noise_buffer[index] * (1 << (matrix_noise_shift + 7));
             index += index2;
         }
 
