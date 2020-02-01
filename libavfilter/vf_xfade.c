@@ -24,7 +24,6 @@
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
 #include "formats.h"
-#include "framesync.h"
 #include "internal.h"
 #include "filters.h"
 #include "video.h"
