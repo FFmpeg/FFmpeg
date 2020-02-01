@@ -552,9 +552,21 @@ static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_
     }
 }
 
-static inline int16_t adpcm_argo_expand_nibble(int nibble, int shift, int16_t prev0, int16_t prev1)
+static inline int16_t adpcm_argo_expand_nibble(ADPCMChannelStatus *cs, int nibble, int control, int shift)
 {
-    return ((8 * prev0) - (4 * prev1) + (nibble * (1 << shift))) >> 2;
+    int sample = nibble * (1 << shift);
+
+    if (control & 0x04)
+        sample += (8 * cs->sample1) - (4 * cs->sample2);
+    else
+        sample += 4 * cs->sample1;
+
+    sample = av_clip_int16(sample >> 2);
+
+    cs->sample2 = cs->sample1;
+    cs->sample1 = sample;
+
+    return sample;
 }
 
 /**
@@ -1805,7 +1817,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
          * They should be 0 initially.
          */
         for (channel = 0; channel < avctx->channels; channel++) {
-            int control, shift, sample, nibble;
+            int control, shift;
 
             samples = samples_p[channel];
             cs = c->status + channel;
@@ -1815,25 +1827,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             shift = (control >> 4) + 2;
 
             for (n = 0; n < nb_samples / 2; n++) {
-                sample = bytestream2_get_byteu(&gb);
-
-                nibble = sign_extend(sample >> 4, 4);
-                if (control & 0x04)
-                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample2);
-                else
-                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample1);
-
-                cs->sample2 = cs->sample1;
-                cs->sample1 = *samples++;
-
-                nibble = sign_extend(sample >> 0, 4);
-                if (control & 0x04)
-                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample2);
-                else
-                    *samples = adpcm_argo_expand_nibble(nibble, shift, cs->sample1, cs->sample1);
-
-                cs->sample2 = cs->sample1;
-                cs->sample1 = *samples++;
+                int sample = bytestream2_get_byteu(&gb);
+                *samples++ = adpcm_argo_expand_nibble(cs, sign_extend(sample >> 4, 4), control, shift);
+                *samples++ = adpcm_argo_expand_nibble(cs, sign_extend(sample >> 0, 4), control, shift);
             }
         }
         break;
