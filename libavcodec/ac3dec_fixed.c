@@ -110,28 +110,14 @@ static void scale_coefs (
       mul <<= shift;
       for (i=0; i<len; i+=8) {
 
-          temp = src[i] * mul;
-          temp1 = src[i+1] * mul;
-          temp2 = src[i+2] * mul;
-
-          dst[i] = temp;
-          temp3 = src[i+3] * mul;
-
-          dst[i+1] = temp1;
-          temp4 = src[i + 4] * mul;
-          dst[i+2] = temp2;
-
-          temp5 = src[i+5] * mul;
-          dst[i+3] = temp3;
-          temp6 = src[i+6] * mul;
-
-          dst[i+4] = temp4;
-          temp7 = src[i+7] * mul;
-
-          dst[i+5] = temp5;
-          dst[i+6] = temp6;
-          dst[i+7] = temp7;
-
+          dst[i]   = src[i  ] * mul;
+          dst[i+1] = src[i+1] * mul;
+          dst[i+2] = src[i+2] * mul;
+          dst[i+3] = src[i+3] * mul;
+          dst[i+4] = src[i+4] * mul;
+          dst[i+5] = src[i+5] * mul;
+          dst[i+6] = src[i+6] * mul;
+          dst[i+7] = src[i+7] * mul;
       }
     }
 }
