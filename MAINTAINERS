@@ -451,7 +451,7 @@ Muxers/Demuxers:
   mpegtsenc.c                           Baptiste Coudurier
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
-  mxf*                                  Baptiste Coudurier
+  mxf*                                  Baptiste Coudurier, Tomas Härdin
   nistspheredec.c                       Paul B Mahol
   nsvdec.c                              Francois Revol
   nut*                                  Michael Niedermayer
