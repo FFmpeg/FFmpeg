@@ -4,6 +4,7 @@ stream=0, decode=0
     bt=4000000
     flags=0x00000000
     flags2=0x00000000
+    export_side_data=0x00000000
     time_base=0/1
     g=12
     ar=0
@@ -146,6 +147,7 @@ stream=0, decode=1
     bt=4000000
     flags=0x00000000
     flags2=0x00000000
+    export_side_data=0x00000000
     time_base=0/1
     g=12
     ar=0

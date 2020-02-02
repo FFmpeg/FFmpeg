@@ -211,7 +211,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
 #if FF_API_DEBUG_MV
         avctx->debug_mv ||
 #endif
-        (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS)) {
+        (avctx->export_side_data & AV_CODEC_EXPORT_DATA_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
 

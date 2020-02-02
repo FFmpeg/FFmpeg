@@ -788,6 +788,15 @@ Do not skip samples and export skip information as frame side data.
 Do not reset ASS ReadOrder field on flush.
 @end table
 
+@item export_side_data @var{flags} (@emph{decoding/encoding,audio,video,subtitles})
+
+Possible values:
+@table @samp
+@item mvs
+Export motion vectors into frame side-data (see @code{AV_FRAME_DATA_MOTION_VECTORS})
+for codecs that support it. See also @file{doc/examples/export_mvs.c}.
+@end table
+
 @item error @var{integer} (@emph{encoding,video})
 
 @item qns @var{integer} (@emph{encoding,video})

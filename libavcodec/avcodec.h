@@ -1103,6 +1103,14 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE (1 << 20)
 
+/* Exported side data.
+   These flags can be passed in AVCodecContext.export_side_data before initialization.
+*/
+/**
+ * Export motion vectors through frame side data
+ */
+#define AV_CODEC_EXPORT_DATA_MVS         (1 << 0)
+
 /**
  * Pan Scan area.
  * This specifies the area which should be displayed.
@@ -3400,6 +3408,16 @@ typedef struct AVCodecContext {
      * - encoding: set by user
      */
     int64_t max_samples;
+
+    /**
+     * Bit set of AV_CODEC_EXPORT_DATA_* flags, which affects the kind of
+     * metadata exported in frame, packet, or coded stream side data by
+     * decoders and encoders.
+     *
+     * - decoding: set by user
+     * - encoding: set by user
+     */
+    int export_side_data;
 } AVCodecContext;
 
 #if FF_API_CODEC_GET_SET

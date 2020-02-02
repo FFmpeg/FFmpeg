@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-02-21 - xxxxxxxxxx - lavc 58.73.100 - avcodec.h
+  Add AVCodecContext.export_side_data and AV_CODEC_EXPORT_DATA_MVS.
+
 2020-02-13 - xxxxxxxxxx - lavu 56.41.100 - tx.h
   Add AV_TX_INT32_FFT and AV_TX_INT32_MDCT
 

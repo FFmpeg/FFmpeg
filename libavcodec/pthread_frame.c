@@ -334,6 +334,7 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
 
     dst->slice_flags = src->slice_flags;
     dst->flags2      = src->flags2;
+    dst->export_side_data = src->export_side_data;
 
     copy_fields(skip_loop_filter, subtitle_header);
 
