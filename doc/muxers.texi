@@ -345,7 +345,8 @@ prft boxes in the underlying muxer. Applicable only when the @var{utc_url} optio
 Set one or more manifest profiles.
 
 @item -http_opts @var{http_opts}
-List of options to pass to the underlying HTTP protocol. Applicable only for HTTP output.
+A :-separated list of key=value options to pass to the underlying HTTP
+protocol. Applicable only for HTTP output.
 
 @item -target_latency @var{target_latency}
 Set an intended target latency in seconds (fractional value can be set) for serving. Applicable only when @var{streaming} and @var{write_prft} options are enabled.
