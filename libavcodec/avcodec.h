@@ -1110,6 +1110,10 @@ typedef struct RcOverride{
  * Export motion vectors through frame side data
  */
 #define AV_CODEC_EXPORT_DATA_MVS         (1 << 0)
+/**
+ * Export encoder Producer Reference Time through packet side data
+ */
+#define AV_CODEC_EXPORT_DATA_PRFT        (1 << 1)
 
 /**
  * Pan Scan area.
@@ -1430,7 +1434,9 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_AFD,
 
     /**
-     * Producer Reference Time data corresponding to the AVProducerReferenceTime struct.
+     * Producer Reference Time data corresponding to the AVProducerReferenceTime struct,
+     * usually exported by some encoders (on demand through the prft flag set in the
+     * AVCodecContext export_side_data field).
      */
     AV_PKT_DATA_PRFT,
 

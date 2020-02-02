@@ -795,6 +795,9 @@ Possible values:
 @item mvs
 Export motion vectors into frame side-data (see @code{AV_FRAME_DATA_MOTION_VECTORS})
 for codecs that support it. See also @file{doc/examples/export_mvs.c}.
+@item prft
+Export encoder Producer Reference Time into packet side-data (see @code{AV_PKT_DATA_PRFT})
+for codecs that support it.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})
