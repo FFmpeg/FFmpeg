@@ -156,6 +156,8 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->size = av_get_packet(avctx->pb, pkt, n);
     if (pkt->size < 0)
         return pkt->size;
+    pkt->stream_index = 0;
+    pkt->pts = pkt->pos / n;
     pkt->flags |= AV_PKT_FLAG_KEY;
     return 0;
 }
@@ -185,4 +187,5 @@ AVInputFormat ff_tty_demuxer = {
     .read_packet    = read_packet,
     .extensions     = tty_extensions,
     .priv_class     = &tty_demuxer_class,
+    .flags          = AVFMT_GENERIC_INDEX,
 };
