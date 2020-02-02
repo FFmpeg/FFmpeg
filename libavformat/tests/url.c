@@ -24,7 +24,7 @@ static void test(const char *base, const char *rel)
 {
     char buf[200], buf2[200];
     ff_make_absolute_url(buf, sizeof(buf), base, rel);
-    printf("%s\n", buf);
+    printf("%50s %-20s => %s\n", base, rel, buf);
     if (base) {
         /* Test in-buffer replacement */
         snprintf(buf2, sizeof(buf2), "%s", base);
@@ -38,6 +38,7 @@ static void test(const char *base, const char *rel)
 
 int main(void)
 {
+    printf("Testing ff_make_absolute_url:\n");
     test(NULL, "baz");
     test("/foo/bar", "baz");
     test("/foo/bar", "../baz");
