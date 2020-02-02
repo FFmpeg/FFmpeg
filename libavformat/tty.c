@@ -56,7 +56,13 @@ static int read_probe(const AVProbeData *p)
     if (!p->buf_size)
         return 0;
 
-    for (int i = 0; i < p->buf_size; i++)
+    for (int i = 0; i < 8 && i < p->buf_size; i++)
+        cnt += !!isansicode(p->buf[i]);
+
+    if (cnt != 8)
+        return 0;
+
+    for (int i = 8; i < p->buf_size; i++)
         cnt += !!isansicode(p->buf[i]);
 
     return (cnt * 100LL / p->buf_size) * (cnt > 400) *
