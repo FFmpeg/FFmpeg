@@ -15030,136 +15030,6 @@ Set value which will be multiplied with filtered result.
 Set value which will be added to filtered result.
 @end table
 
-@anchor{program_opencl}
-@section program_opencl
-
-Filter video using an OpenCL program.
-
-@table @option
-
-@item source
-OpenCL program source file.
-
-@item kernel
-Kernel name in program.
-
-@item inputs
-Number of inputs to the filter.  Defaults to 1.
-
-@item size, s
-Size of output frames.  Defaults to the same as the first input.
-
-@end table
-
-The program source file must contain a kernel function with the given name,
-which will be run once for each plane of the output.  Each run on a plane
-gets enqueued as a separate 2D global NDRange with one work-item for each
-pixel to be generated.  The global ID offset for each work-item is therefore
-the coordinates of a pixel in the destination image.
-
-The kernel function needs to take the following arguments:
-@itemize
-@item
-Destination image, @var{__write_only image2d_t}.
-
-This image will become the output; the kernel should write all of it.
-@item
-Frame index, @var{unsigned int}.
-
-This is a counter starting from zero and increasing by one for each frame.
-@item
-Source images, @var{__read_only image2d_t}.
-
-These are the most recent images on each input.  The kernel may read from
-them to generate the output, but they can't be written to.
-@end itemize
-
-Example programs:
-
-@itemize
-@item
-Copy the input to the output (output must be the same size as the input).
-@verbatim
-__kernel void copy(__write_only image2d_t destination,
-                   unsigned int index,
-                   __read_only  image2d_t source)
-{
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE;
-
-    int2 location = (int2)(get_global_id(0), get_global_id(1));
-
-    float4 value = read_imagef(source, sampler, location);
-
-    write_imagef(destination, location, value);
-}
-@end verbatim
-
-@item
-Apply a simple transformation, rotating the input by an amount increasing
-with the index counter.  Pixel values are linearly interpolated by the
-sampler, and the output need not have the same dimensions as the input.
-@verbatim
-__kernel void rotate_image(__write_only image2d_t dst,
-                           unsigned int index,
-                           __read_only  image2d_t src)
-{
-    const sampler_t sampler = (CLK_NORMALIZED_COORDS_FALSE |
-                               CLK_FILTER_LINEAR);
-
-    float angle = (float)index / 100.0f;
-
-    float2 dst_dim = convert_float2(get_image_dim(dst));
-    float2 src_dim = convert_float2(get_image_dim(src));
-
-    float2 dst_cen = dst_dim / 2.0f;
-    float2 src_cen = src_dim / 2.0f;
-
-    int2   dst_loc = (int2)(get_global_id(0), get_global_id(1));
-
-    float2 dst_pos = convert_float2(dst_loc) - dst_cen;
-    float2 src_pos = {
-        cos(angle) * dst_pos.x - sin(angle) * dst_pos.y,
-        sin(angle) * dst_pos.x + cos(angle) * dst_pos.y
-    };
-    src_pos = src_pos * src_dim / dst_dim;
-
-    float2 src_loc = src_pos + src_cen;
-
-    if (src_loc.x < 0.0f      || src_loc.y < 0.0f ||
-        src_loc.x > src_dim.x || src_loc.y > src_dim.y)
-        write_imagef(dst, dst_loc, 0.5f);
-    else
-        write_imagef(dst, dst_loc, read_imagef(src, sampler, src_loc));
-}
-@end verbatim
-
-@item
-Blend two inputs together, with the amount of each input used varying
-with the index counter.
-@verbatim
-__kernel void blend_images(__write_only image2d_t dst,
-                           unsigned int index,
-                           __read_only  image2d_t src1,
-                           __read_only  image2d_t src2)
-{
-    const sampler_t sampler = (CLK_NORMALIZED_COORDS_FALSE |
-                               CLK_FILTER_LINEAR);
-
-    float blend = (cos((float)index / 50.0f) + 1.0f) / 2.0f;
-
-    int2  dst_loc = (int2)(get_global_id(0), get_global_id(1));
-    int2 src1_loc = dst_loc * get_image_dim(src1) / get_image_dim(dst);
-    int2 src2_loc = dst_loc * get_image_dim(src2) / get_image_dim(dst);
-
-    float4 val1 = read_imagef(src1, sampler, src1_loc);
-    float4 val2 = read_imagef(src2, sampler, src2_loc);
-
-    write_imagef(dst, dst_loc, val1 * blend + val2 * (1.0f - blend));
-}
-@end verbatim
-
-@end itemize
-
 @section pseudocolor
 
 Alter frame colors in video with pseudocolors.
@@ -20027,21 +19897,6 @@ Set the scaling dimension: @code{2} for @code{2xBR}, @code{3} for
 Default is @code{3}.
 @end table
 
-@section xmedian
-Pick median pixels from several input videos.
-
-The filter accepts the following options:
-
-@table @option
-@item inputs
-Set number of inputs.
-Default is 3. Allowed range is from 3 to 255.
-If number of inputs is even number, than result will be mean value between two median values.
-
-@item planes
-Set which planes to filter. Default value is @code{15}, by which all planes are processed.
-@end table
-
 @section xfade
 
 Apply cross fade from one input video stream to another input video stream.
@@ -20137,6 +19992,21 @@ of 2 seconds starting at offset of 5 seconds:
 ffmpeg -i first.mp4 -i second.mp4 -filter_complex xfade=transition=fade:duration=2:offset=5 output.mp4
 @end example
 @end itemize
+
+@section xmedian
+Pick median pixels from several input videos.
+
+The filter accepts the following options:
+
+@table @option
+@item inputs
+Set number of inputs.
+Default is 3. Allowed range is from 3 to 255.
+If number of inputs is even number, than result will be mean value between two median values.
+
+@item planes
+Set which planes to filter. Default value is @code{15}, by which all planes are processed.
+@end table
 
 @section xstack
 Stack video inputs into custom layout.
@@ -20915,6 +20785,39 @@ For the alpha plane, a 3x3 box radius will be run 7 times.
 @end example
 @end itemize
 
+@section colorkey_opencl
+RGB colorspace color keying.
+
+The filter accepts the following options:
+
+@table @option
+@item color
+The color which will be replaced with transparency.
+
+@item similarity
+Similarity percentage with the key color.
+
+0.01 matches only the exact key color, while 1.0 matches everything.
+
+@item blend
+Blend percentage.
+
+0.0 makes pixels either fully transparent, or not transparent at all.
+
+Higher values result in semi-transparent pixels, with a higher transparency
+the more similar the pixels color is to the key color.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Make every semi-green pixel in the input transparent with some slight blending:
+@example
+-i INPUT -vf "hwupload, colorkey_opencl=green:0.3:0.1, hwdownload" OUTPUT
+@end example
+@end itemize
+
 @section convolution_opencl
 
 Apply convolution of 3x3, 5x5, 7x7 matrix.
@@ -20988,45 +20891,6 @@ Apply emboss:
 @end example
 @end itemize
 
-@section dilation_opencl
-
-Apply dilation effect to the video.
-
-This filter replaces the pixel by the local(3x3) maximum.
-
-It accepts the following options:
-
-@table @option
-@item threshold0
-@item threshold1
-@item threshold2
-@item threshold3
-Limit the maximum change for each plane. Range is @code{[0, 65535]} and default value is @code{65535}.
-If @code{0}, plane will remain unchanged.
-
-@item coordinates
-Flag which specifies the pixel to refer to.
-Range is @code{[0, 255]} and default value is @code{255}, i.e. all eight pixels are used.
-
-Flags to local 3x3 coordinates region centered on @code{x}:
-
-    1 2 3
-
-    4 x 5
-
-    6 7 8
-@end table
-
-@subsection Example
-
-@itemize
-@item
-Apply dilation filter with threshold0 set to 30, threshold1 set 40, threshold2 set to 50 and coordinates set to 231, setting each pixel of the output to the local maximum between pixels: 1, 2, 3, 6, 7, 8 of the 3x3 region centered on it in the input. If the difference between input pixel and local maximum is more then threshold of the corresponding plane, output pixel will be set to input pixel + threshold of corresponding plane.
-@example
--i INPUT -vf "hwupload, dilation_opencl=30:40:50:coordinates=231, hwdownload" OUTPUT
-@end example
-@end itemize
-
 @section erosion_opencl
 
 Apply erosion effect to the video.
@@ -21063,39 +20927,6 @@ Flags to local 3x3 coordinates region centered on @code{x}:
 Apply erosion filter with threshold0 set to 30, threshold1 set 40, threshold2 set to 50 and coordinates set to 231, setting each pixel of the output to the local minimum between pixels: 1, 2, 3, 6, 7, 8 of the 3x3 region centered on it in the input. If the difference between input pixel and local minimum is more then threshold of the corresponding plane, output pixel will be set to input pixel - threshold of corresponding plane.
 @example
 -i INPUT -vf "hwupload, erosion_opencl=30:40:50:coordinates=231, hwdownload" OUTPUT
-@end example
-@end itemize
-
-@section colorkey_opencl
-RGB colorspace color keying.
-
-The filter accepts the following options:
-
-@table @option
-@item color
-The color which will be replaced with transparency.
-
-@item similarity
-Similarity percentage with the key color.
-
-0.01 matches only the exact key color, while 1.0 matches everything.
-
-@item blend
-Blend percentage.
-
-0.0 makes pixels either fully transparent, or not transparent at all.
-
-Higher values result in semi-transparent pixels, with a higher transparency
-the more similar the pixels color is to the key color.
-@end table
-
-@subsection Examples
-
-@itemize
-@item
-Make every semi-green pixel in the input transparent with some slight blending:
-@example
--i INPUT -vf "hwupload, colorkey_opencl=green:0.3:0.1, hwdownload" OUTPUT
 @end example
 @end itemize
 
@@ -21168,6 +20999,45 @@ Stabilize a video with debugging (both in console and in rendered video):
 @end example
 @end itemize
 
+@section dilation_opencl
+
+Apply dilation effect to the video.
+
+This filter replaces the pixel by the local(3x3) maximum.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Limit the maximum change for each plane. Range is @code{[0, 65535]} and default value is @code{65535}.
+If @code{0}, plane will remain unchanged.
+
+@item coordinates
+Flag which specifies the pixel to refer to.
+Range is @code{[0, 255]} and default value is @code{255}, i.e. all eight pixels are used.
+
+Flags to local 3x3 coordinates region centered on @code{x}:
+
+    1 2 3
+
+    4 x 5
+
+    6 7 8
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply dilation filter with threshold0 set to 30, threshold1 set 40, threshold2 set to 50 and coordinates set to 231, setting each pixel of the output to the local maximum between pixels: 1, 2, 3, 6, 7, 8 of the 3x3 region centered on it in the input. If the difference between input pixel and local maximum is more then threshold of the corresponding plane, output pixel will be set to input pixel + threshold of corresponding plane.
+@example
+-i INPUT -vf "hwupload, dilation_opencl=30:40:50:coordinates=231, hwdownload" OUTPUT
+@end example
+@end itemize
+
 @section nlmeans_opencl
 
 Non-local Means denoise filter through OpenCL, this filter accepts same options as @ref{nlmeans}.
@@ -21236,6 +21106,136 @@ Apply the Prewitt operator with scale set to 2 and delta set to 10.
 @example
 -i INPUT -vf "hwupload, prewitt_opencl=scale=2:delta=10, hwdownload" OUTPUT
 @end example
+@end itemize
+
+@anchor{program_opencl}
+@section program_opencl
+
+Filter video using an OpenCL program.
+
+@table @option
+
+@item source
+OpenCL program source file.
+
+@item kernel
+Kernel name in program.
+
+@item inputs
+Number of inputs to the filter.  Defaults to 1.
+
+@item size, s
+Size of output frames.  Defaults to the same as the first input.
+
+@end table
+
+The program source file must contain a kernel function with the given name,
+which will be run once for each plane of the output.  Each run on a plane
+gets enqueued as a separate 2D global NDRange with one work-item for each
+pixel to be generated.  The global ID offset for each work-item is therefore
+the coordinates of a pixel in the destination image.
+
+The kernel function needs to take the following arguments:
+@itemize
+@item
+Destination image, @var{__write_only image2d_t}.
+
+This image will become the output; the kernel should write all of it.
+@item
+Frame index, @var{unsigned int}.
+
+This is a counter starting from zero and increasing by one for each frame.
+@item
+Source images, @var{__read_only image2d_t}.
+
+These are the most recent images on each input.  The kernel may read from
+them to generate the output, but they can't be written to.
+@end itemize
+
+Example programs:
+
+@itemize
+@item
+Copy the input to the output (output must be the same size as the input).
+@verbatim
+__kernel void copy(__write_only image2d_t destination,
+                   unsigned int index,
+                   __read_only  image2d_t source)
+{
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE;
+
+    int2 location = (int2)(get_global_id(0), get_global_id(1));
+
+    float4 value = read_imagef(source, sampler, location);
+
+    write_imagef(destination, location, value);
+}
+@end verbatim
+
+@item
+Apply a simple transformation, rotating the input by an amount increasing
+with the index counter.  Pixel values are linearly interpolated by the
+sampler, and the output need not have the same dimensions as the input.
+@verbatim
+__kernel void rotate_image(__write_only image2d_t dst,
+                           unsigned int index,
+                           __read_only  image2d_t src)
+{
+    const sampler_t sampler = (CLK_NORMALIZED_COORDS_FALSE |
+                               CLK_FILTER_LINEAR);
+
+    float angle = (float)index / 100.0f;
+
+    float2 dst_dim = convert_float2(get_image_dim(dst));
+    float2 src_dim = convert_float2(get_image_dim(src));
+
+    float2 dst_cen = dst_dim / 2.0f;
+    float2 src_cen = src_dim / 2.0f;
+
+    int2   dst_loc = (int2)(get_global_id(0), get_global_id(1));
+
+    float2 dst_pos = convert_float2(dst_loc) - dst_cen;
+    float2 src_pos = {
+        cos(angle) * dst_pos.x - sin(angle) * dst_pos.y,
+        sin(angle) * dst_pos.x + cos(angle) * dst_pos.y
+    };
+    src_pos = src_pos * src_dim / dst_dim;
+
+    float2 src_loc = src_pos + src_cen;
+
+    if (src_loc.x < 0.0f      || src_loc.y < 0.0f ||
+        src_loc.x > src_dim.x || src_loc.y > src_dim.y)
+        write_imagef(dst, dst_loc, 0.5f);
+    else
+        write_imagef(dst, dst_loc, read_imagef(src, sampler, src_loc));
+}
+@end verbatim
+
+@item
+Blend two inputs together, with the amount of each input used varying
+with the index counter.
+@verbatim
+__kernel void blend_images(__write_only image2d_t dst,
+                           unsigned int index,
+                           __read_only  image2d_t src1,
+                           __read_only  image2d_t src2)
+{
+    const sampler_t sampler = (CLK_NORMALIZED_COORDS_FALSE |
+                               CLK_FILTER_LINEAR);
+
+    float blend = (cos((float)index / 50.0f) + 1.0f) / 2.0f;
+
+    int2  dst_loc = (int2)(get_global_id(0), get_global_id(1));
+    int2 src1_loc = dst_loc * get_image_dim(src1) / get_image_dim(dst);
+    int2 src2_loc = dst_loc * get_image_dim(src2) / get_image_dim(dst);
+
+    float4 val1 = read_imagef(src1, sampler, src1_loc);
+    float4 val2 = read_imagef(src2, sampler, src2_loc);
+
+    write_imagef(dst, dst_loc, val1 * blend + val2 * (1.0f - blend));
+}
+@end verbatim
+
 @end itemize
 
 @section roberts_opencl
