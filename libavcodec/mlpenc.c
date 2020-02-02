@@ -987,6 +987,9 @@ static void write_decoding_params(MLPEncodeContext *ctx, PutBitContext *pb,
                     put_bits(pb, 1, 0);
                 }
             }
+            if (cp->codebook > 0 && cp->huff_lsbs > 24) {
+                av_log(ctx->avctx, AV_LOG_ERROR, "Invalid Huff LSBs\n");
+            }
 
             put_bits(pb, 2, cp->codebook );
             put_bits(pb, 5, cp->huff_lsbs);
