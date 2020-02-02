@@ -87,11 +87,11 @@ typedef struct {
 } DecodingParams;
 
 typedef struct BestOffset {
-    int16_t offset;
+    int32_t offset;
     int bitcount;
     int lsb_bits;
-    int16_t min;
-    int16_t max;
+    int32_t min;
+    int32_t max;
 } BestOffset;
 
 #define HUFF_OFFSET_MIN    (-16384)
@@ -1249,7 +1249,7 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
                 uint32_t abs_sample;
                 int32_t sample;
 
-                sample = is24 ? *samples_32++ >> 8 : *samples_16++ * 256U;
+                sample = is24 ? *samples_32++ >> 8 : *samples_16++ * 256;
 
                 /* TODO Find out if number_sbits can be used for negative values. */
                 abs_sample = FFABS(sample);
@@ -1792,7 +1792,7 @@ static void determine_bits(MLPEncodeContext *ctx)
 #define SAMPLE_MAX(bitdepth) ((1 << (bitdepth - 1)) - 1)
 #define SAMPLE_MIN(bitdepth) (~SAMPLE_MAX(bitdepth))
 
-#define MSB_MASK(bits)  (-(1u << (bits)))
+#define MSB_MASK(bits)  (-(int)(1u << (bits)))
 
 /** Applies the filter to the current samples, and saves the residual back
  *  into the samples buffer. If the filter is too bad and overflows the
