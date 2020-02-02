@@ -21460,7 +21460,7 @@ To enable compilation of these filters you need to configure FFmpeg with
 
 To use vaapi filters, you need to setup the vaapi device correctly. For more information, please read @url{https://trac.ffmpeg.org/wiki/Hardware/VAAPI}
 
-@section tonemap_vappi
+@section tonemap_vaapi
 
 Perform HDR(High Dynamic Range) to SDR(Standard Dynamic Range) conversion with tone-mapping.
 It maps the dynamic range of HDR10 content to the SDR content.
