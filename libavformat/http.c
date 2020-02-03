@@ -190,6 +190,7 @@ void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 {
     const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
+    char *hashmark;
     char hostname[1024], hoststr[1024], proto[10];
     char auth[1024], proxyauth[1024] = "";
     char path1[MAX_URL_SIZE];
@@ -214,6 +215,10 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     }
     if (port < 0)
         port = 80;
+
+    hashmark = strchr(path1, '#');
+    if (hashmark)
+        *hashmark = '\0';
 
     if (path1[0] == '\0')
         path = "/";
