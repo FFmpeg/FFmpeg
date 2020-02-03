@@ -283,6 +283,7 @@ OBJS-$(CONFIG_DST_DECODER)             += dstdec.o dsd.o
 OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o
 OBJS-$(CONFIG_DVBSUB_ENCODER)          += dvbsub.o
 OBJS-$(CONFIG_DVDSUB_DECODER)          += dvdsubdec.o
+OBJS-$(CONFIG_DVDSUB_DECODER)          += dvdsub.o
 OBJS-$(CONFIG_DVDSUB_ENCODER)          += dvdsubenc.o
 OBJS-$(CONFIG_DVAUDIO_DECODER)         += dvaudiodec.o
 OBJS-$(CONFIG_DVVIDEO_DECODER)         += dvdec.o dv.o dvdata.o
