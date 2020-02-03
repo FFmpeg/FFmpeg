@@ -144,7 +144,7 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     }
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, ctx->quality);
     // Maximum Reference Frames
-    if (avctx->refs != 0) {
+    if (avctx->refs != -1) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_MAX_NUM_REFRAMES, avctx->refs);
     }
     // Aspect Ratio
