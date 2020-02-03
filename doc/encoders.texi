@@ -3211,6 +3211,14 @@ and they can also be used in Matroska files.
 @subsection Options
 
 @table @option
+@item palette
+Specify the global palette used by the bitmaps.
+
+The format for this option is a string containing 16 24-bits hexadecimal
+numbers (without 0x prefix) separated by commas, for example @code{0d00ee,
+ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
+7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
+
 @item even_rows_fix
 When set to 1, enable a work-around that makes the number of pixel rows
 even in all subtitles.  This fixes a problem with some players that

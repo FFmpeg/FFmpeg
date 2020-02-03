@@ -29,6 +29,7 @@
 typedef struct {
     AVClass *class;
     uint32_t global_palette[16];
+    char *palette_str;
     int even_rows_fix;
 } DVDSubtitleContext;
 
@@ -436,7 +437,11 @@ static int dvdsub_init(AVCodecContext *avctx)
     int i, ret;
 
     av_assert0(sizeof(dvdc->global_palette) == sizeof(default_palette));
-    memcpy(dvdc->global_palette, default_palette, sizeof(dvdc->global_palette));
+    if (dvdc->palette_str) {
+        ff_dvdsub_parse_palette(dvdc->global_palette, dvdc->palette_str);
+    } else {
+        memcpy(dvdc->global_palette, default_palette, sizeof(dvdc->global_palette));
+    }
 
     av_bprint_init(&extradata, 0, AV_BPRINT_SIZE_AUTOMATIC);
     if (avctx->width && avctx->height)
@@ -467,6 +472,7 @@ static int dvdsub_encode(AVCodecContext *avctx,
 #define OFFSET(x) offsetof(DVDSubtitleContext, x)
 #define SE AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    {"palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SE },
     {"even_rows_fix", "Make number of rows even (workaround for some players)", OFFSET(even_rows_fix), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, SE},
     { NULL },
 };
