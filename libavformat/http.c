@@ -193,7 +193,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     char *hashmark;
     char hostname[1024], hoststr[1024], proto[10];
     char auth[1024], proxyauth[1024] = "";
-    char path1[MAX_URL_SIZE];
+    char path1[MAX_URL_SIZE], sanitized_path[MAX_URL_SIZE];
     char buf[1024], urlbuf[MAX_URL_SIZE];
     int port, use_proxy, err, location_changed = 0;
     HTTPContext *s = h->priv_data;
@@ -220,10 +220,14 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     if (hashmark)
         *hashmark = '\0';
 
-    if (path1[0] == '\0')
+    if (path1[0] == '\0') {
         path = "/";
-    else
+    } else if (path1[0] == '?') {
+        snprintf(sanitized_path, sizeof(sanitized_path), "/%s", path1);
+        path = sanitized_path;
+    } else {
         path = path1;
+    }
     local_path = path;
     if (use_proxy) {
         /* Reassemble the request URL without auth string - we don't
