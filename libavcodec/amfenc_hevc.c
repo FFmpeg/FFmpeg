@@ -136,7 +136,7 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_TIER, ctx->tier);
 
     profile_level = avctx->level;
-    if (profile_level == 0) {
+    if (profile_level == FF_LEVEL_UNKNOWN) {
         profile_level = ctx->level;
     }
     if (profile_level != 0) {
