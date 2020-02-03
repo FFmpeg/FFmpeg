@@ -75,6 +75,7 @@ int main(void)
     test2("https://1l-lh.a.net/i/1LIVE_HDS@179577/master.m3u8");
     test2("ftp://u:p%2B%2F2@ftp.pbt.com/ExportHD.mpg");
     test2("https://key.dns.com?key_id=2&model_id=12345&&access_key=");
+    test2("http://example.com#tag");
 
     return 0;
 }
