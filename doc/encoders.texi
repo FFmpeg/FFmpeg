@@ -1888,8 +1888,6 @@ Enable error resiliency features.
 Increase sharpness at the expense of lower PSNR.
 The valid range is [0, 7].
 
-@item VP8-specific options
-@table @option
 @item ts-parameters
 Sets the temporal scalability configuration using a :-separated list of
 key=value pairs. For example, to specify temporal scalability parameters
@@ -1897,7 +1895,7 @@ with @code{ffmpeg}:
 @example
 ffmpeg -i INPUT -c:v libvpx -ts-parameters ts_number_layers=3:\
 ts_target_bitrate=250,500,1000:ts_rate_decimator=4,2,1:\
-ts_periodicity=4:ts_layer_id=0,2,1,2 OUTPUT
+ts_periodicity=4:ts_layer_id=0,2,1,2:ts_layering_mode=3 OUTPUT
 @end example
 Below is a brief explanation of each of the parameters, please
 refer to @code{struct vpx_codec_enc_cfg} in @code{vpx/vpx_encoder.h} for more
@@ -1914,6 +1912,20 @@ Frame rate decimation factor for each temporal layer.
 Length of the sequence defining frame temporal layer membership.
 @item ts_layer_id
 Template defining the membership of frames to temporal layers.
+@item ts_layering_mode
+(optional) Selecting the temporal structure from a set of pre-defined temporal layering modes.
+Currently supports the following options.
+@table @option
+@item 0
+No temporal layering flags are provided internally,
+relies on flags being passed in using metadata in AVFrame.
+@item 2
+Two temporal layers. 0-1...
+@item 3
+Three temporal layers. 0-2-1-2...; with single reference frame.
+@item 4
+Same as option "3", except there is a dependency between
+the two temporal layer 2 frames within the temporal period.
 @end table
 @end table
 
