@@ -978,6 +978,9 @@ static int xfade_activate(AVFilterContext *ctx)
         ret = ff_inlink_consume_frame(ctx->inputs[1], &in);
         if (ret < 0) {
             return ret;
+        } else if (ret > 0) {
+            in->pts = (in->pts - s->last_pts) + s->pts;
+            return ff_filter_frame(outlink, in);
         } else if (ff_inlink_acknowledge_status(ctx->inputs[1], &status, &pts)) {
             ff_outlink_set_status(outlink, status, s->pts);
             return 0;
@@ -986,9 +989,6 @@ static int xfade_activate(AVFilterContext *ctx)
                 ff_inlink_request_frame(ctx->inputs[1]);
                 return 0;
             }
-        } else {
-            in->pts = (in->pts - s->last_pts) + s->pts;
-            return ff_filter_frame(outlink, in);
         }
     }
 
