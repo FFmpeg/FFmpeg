@@ -88,5 +88,11 @@ fate-adpcm-vima: CMD = framecrc -i $(TARGET_SAMPLES)/smush/ronin_part.znm -vn
 FATE_ADPCM-$(call DEMDEC, STR, ADPCM_XA) += fate-adpcm-xa
 fate-adpcm-xa: CMD = framecrc -i $(TARGET_SAMPLES)/psx-str/abc000_cut.str -vn
 
+FATE_ADPCM-$(call DEMDEC, ARGO_ASF, ADPCM_ARGO) += fate-adpcm-argo-mono
+fate-adpcm-argo-mono: CMD = md5 -i $(TARGET_SAMPLES)/argo-asf/PWIN22M.ASF -f s16le
+
+FATE_ADPCM-$(call DEMDEC, ARGO_ASF, ADPCM_ARGO) += fate-adpcm-argo-stereo
+fate-adpcm-argo-stereo: CMD = md5 -i $(TARGET_SAMPLES)/argo-asf/CBK2_cut.asf -f s16le
+
 FATE_SAMPLES_AVCONV += $(FATE_ADPCM-yes)
 fate-adpcm: $(FATE_ADPCM-yes)
