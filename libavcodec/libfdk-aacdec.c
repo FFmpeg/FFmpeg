@@ -76,8 +76,8 @@ static const AVOption fdk_aac_dec_options[] = {
                      OFFSET(drc_boost),      AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 127, AD, NULL    },
     { "drc_cut",   "Dynamic Range Control: attenuation factor, where [0] is none and [127] is max compression",
                      OFFSET(drc_cut),        AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 127, AD, NULL    },
-    { "drc_level", "Dynamic Range Control: reference level, quantized to 0.25dB steps where [0] is 0dB and [127] is -31.75dB",
-                     OFFSET(drc_level),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 127, AD, NULL    },
+    { "drc_level", "Dynamic Range Control: reference level, quantized to 0.25dB steps where [0] is 0dB and [127] is -31.75dB, -1 for auto, and -2 for disabled",
+                     OFFSET(drc_level),      AV_OPT_TYPE_INT,   { .i64 = -1},  -2, 127, AD, NULL    },
     { "drc_heavy", "Dynamic Range Control: heavy compression, where [1] is on (RF mode) and [0] is off",
                      OFFSET(drc_heavy),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
@@ -299,6 +299,12 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
     }
 
     if (s->drc_level != -1) {
+        // This option defaults to -1, i.e. not calling
+        // aacDecoder_SetParam(AAC_DRC_REFERENCE_LEVEL) at all, which defaults
+        // to the level from DRC metadata, if available. The user can set
+        // -drc_level -2, which calls aacDecoder_SetParam(
+        // AAC_DRC_REFERENCE_LEVEL) with a negative value, which then
+        // explicitly disables the feature.
         if (aacDecoder_SetParam(s->handle, AAC_DRC_REFERENCE_LEVEL, s->drc_level) != AAC_DEC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set DRC reference level in the decoder\n");
             return AVERROR_UNKNOWN;
