@@ -19929,6 +19929,8 @@ Set one of available transition effects:
 @item smoothright
 @item smoothup
 @item smoothdown
+@item circleopen
+@item circleclose
 @end table
 Default transition effect is fade.
 
