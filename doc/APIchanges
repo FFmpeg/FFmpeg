@@ -15,7 +15,7 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2020-ww-xx - xxxxxxxxxx - lavu yy.yy.yyy - hwcontext.h
+2020-ww-xx - xxxxxxxxxx - lavu 56.39.100 - hwcontext.h
   Add AV_PIX_FMT_VULKAN
   Add AV_HWDEVICE_TYPE_VULKAN and implementation.
 
