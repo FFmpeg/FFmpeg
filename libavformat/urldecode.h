@@ -26,10 +26,11 @@
  * in that case the original string is duplicated.
  *
  * @param url a string to be decoded.
+ * @param decode_plus_sign if nonzero plus sign is decoded to space
  * @return new string with the URL decoded or NULL if decoding failed.
  * Note that the returned string should be explicitly freed when not
  * used anymore.
  */
-char *ff_urldecode(const char *url);
+char *ff_urldecode(const char *url, int decode_plus_sign);
 
 #endif /* AVFORMAT_URLDECODE_H */
