@@ -81,7 +81,8 @@ static const AVOption fdk_aac_dec_options[] = {
     { "drc_heavy", "Dynamic Range Control: heavy compression, where [1] is on (RF mode) and [0] is off",
                      OFFSET(drc_heavy),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
-    { "level_limit", "Signal level limiting", OFFSET(level_limit), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, 1, AD },
+    { "level_limit", "Signal level limiting",
+                     OFFSET(level_limit),    AV_OPT_TYPE_BOOL,  { .i64 = -1 }, -1, 1, AD },
 #endif
 #if FDKDEC_VER_AT_LEAST(3, 0) // 3.0.0
     { "drc_effect","Dynamic Range Control: effect type, where e.g. [0] is none and [6] is general",
@@ -312,6 +313,7 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
     }
 
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+    // Setting this parameter to -1 enables the auto behaviour in the library.
     if (aacDecoder_SetParam(s->handle, AAC_PCM_LIMITER_ENABLE, s->level_limit) != AAC_DEC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set in signal level limiting in the decoder\n");
         return AVERROR_UNKNOWN;
