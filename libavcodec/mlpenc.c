@@ -2373,6 +2373,7 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
     av_freep(&ctx->decoding_params);
     av_freep(&ctx->channel_params);
     av_freep(&ctx->frame_size);
+    av_freep(&ctx->max_output_bits);
     ff_af_queue_close(&ctx->afq);
 
     return 0;
