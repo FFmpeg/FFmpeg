@@ -57,6 +57,7 @@ typedef struct FDKAACDecContext {
     int drc_effect;
     int drc_cut;
     int level_limit;
+    int output_delay;
 } FDKAACDecContext;
 
 
@@ -115,6 +116,9 @@ static int get_stream_info(AVCodecContext *avctx)
     }
     avctx->sample_rate = info->sampleRate;
     avctx->frame_size  = info->frameSize;
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+    s->output_delay    = info->outputDelay;
+#endif
 
     for (i = 0; i < info->numChannels; i++) {
         AUDIO_CHANNEL_TYPE ctype = info->pChannelType[i];
@@ -366,6 +370,11 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         goto end;
+
+    if (frame->pts != AV_NOPTS_VALUE)
+        frame->pts -= av_rescale_q(s->output_delay,
+                                   (AVRational){1, avctx->sample_rate},
+                                   avctx->time_base);
 
     memcpy(frame->extended_data[0], s->decoder_buffer,
            avctx->channels * avctx->frame_size *
