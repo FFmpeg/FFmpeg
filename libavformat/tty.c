@@ -53,6 +53,9 @@ static int read_probe(const AVProbeData *p)
 {
     int cnt = 0;
 
+    if (!p->buf_size)
+        return 0;
+
     for (int i = 0; i < p->buf_size; i++)
         cnt += !!isansicode(p->buf[i]);
 
