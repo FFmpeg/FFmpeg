@@ -24,6 +24,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
+#include "urldecode.h"
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
 
@@ -658,7 +659,7 @@ static int ftp_connect(URLContext *h, const char *url)
 {
     char proto[10], path[MAX_URL_SIZE], credentials[MAX_URL_SIZE], hostname[MAX_URL_SIZE];
     const char *tok_user = NULL, *tok_pass = NULL;
-    char *end = NULL, *newpath = NULL;
+    char *newpath = NULL;
     int err;
     FTPContext *s = h->priv_data;
 
@@ -675,21 +676,28 @@ static int ftp_connect(URLContext *h, const char *url)
                  path, sizeof(path),
                  url);
 
-    tok_user = av_strtok(credentials, ":", &end);
-    tok_pass = av_strtok(end, ":", &end);
-    if (!tok_user) {
+    if (!*credentials) {
         if (!s->option_user) {
             tok_user = "anonymous";
             tok_pass = av_x_if_null(s->anonymous_password, "nopassword");
         } else {
             tok_user = s->option_user;
+            tok_pass = s->option_password;
         }
+        s->user = av_strdup(tok_user);
+        s->password = av_strdup(tok_pass);
+    } else {
+        char *pass = strchr(credentials, ':');
+        if (pass) {
+            *pass++ = '\0';
+            tok_pass = pass;
+            s->password = ff_urldecode(pass, 0);
+        } else {
+            tok_pass = s->option_password;
+            s->password = av_strdup(tok_pass);
+        }
+        s->user = ff_urldecode(credentials, 0);
     }
-    if (!tok_pass) {
-        tok_pass = s->option_password;
-    }
-    s->user = av_strdup(tok_user);
-    s->password = av_strdup(tok_pass);
     s->hostname = av_strdup(hostname);
     if (!s->hostname || !s->user || (tok_pass && !s->password)) {
         return AVERROR(ENOMEM);
