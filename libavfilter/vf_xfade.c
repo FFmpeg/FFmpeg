@@ -53,6 +53,8 @@ enum XFadeTransitions {
     CIRCLECLOSE,
     VERTOPEN,
     VERTCLOSE,
+    HORZOPEN,
+    HORZCLOSE,
     NB_TRANSITIONS,
 };
 
@@ -158,6 +160,8 @@ static const AVOption xfade_options[] = {
     {   "circleclose","circleclose transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLECLOSE},0, 0, FLAGS, "transition" },
     {   "vertopen",   "vert open transition",   0, AV_OPT_TYPE_CONST, {.i64=VERTOPEN},   0, 0, FLAGS, "transition" },
     {   "vertclose",  "vert close transition",  0, AV_OPT_TYPE_CONST, {.i64=VERTCLOSE},  0, 0, FLAGS, "transition" },
+    {   "horzopen",   "horz open transition",   0, AV_OPT_TYPE_CONST, {.i64=HORZOPEN},   0, 0, FLAGS, "transition" },
+    {   "horzclose",  "horz close transition",  0, AV_OPT_TYPE_CONST, {.i64=HORZCLOSE},  0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -916,6 +920,60 @@ static void vertclose##name##_transition(AVFilterContext *ctx,                  
 VERTCLOSE_TRANSITION(8, uint8_t, 1)
 VERTCLOSE_TRANSITION(16, uint16_t, 2)
 
+#define HORZOPEN_TRANSITION(name, type, div)                                         \
+static void horzopen##name##_transition(AVFilterContext *ctx,                        \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float h2 = out->height / 2;                                                \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        const float smooth = 2.f - fabsf((y - h2) / h2) - progress * 2.f;            \
+        for (int x = 0; x < width; x++) {                                            \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+HORZOPEN_TRANSITION(8, uint8_t, 1)
+HORZOPEN_TRANSITION(16, uint16_t, 2)
+
+#define HORZCLOSE_TRANSITION(name, type, div)                                        \
+static void horzclose##name##_transition(AVFilterContext *ctx,                       \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float h2 = out->height / 2;                                                \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        const float smooth = 1.f + fabsf((y - h2) / h2) - progress * 2.f;            \
+        for (int x = 0; x < width; x++) {                                            \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+HORZCLOSE_TRANSITION(8, uint8_t, 1)
+HORZCLOSE_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1030,6 +1088,8 @@ static int config_output(AVFilterLink *outlink)
     case CIRCLECLOSE:s->transitionf = s->depth <= 8 ? circleclose8_transition: circleclose16_transition;break;
     case VERTOPEN:   s->transitionf = s->depth <= 8 ? vertopen8_transition   : vertopen16_transition;   break;
     case VERTCLOSE:  s->transitionf = s->depth <= 8 ? vertclose8_transition  : vertclose16_transition;  break;
+    case HORZOPEN:   s->transitionf = s->depth <= 8 ? horzopen8_transition   : horzopen16_transition;   break;
+    case HORZCLOSE:  s->transitionf = s->depth <= 8 ? horzclose8_transition  : horzclose16_transition;  break;
     }
 
     if (s->transition == CUSTOM) {
