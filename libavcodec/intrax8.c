@@ -801,6 +801,8 @@ int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
     for (w->mb_y = 0; w->mb_y < w->mb_height * 2; w->mb_y++) {
         x8_init_block_index(w, w->frame);
         mb_xy = (w->mb_y >> 1) * (w->mb_width + 1);
+        if (get_bits_left(gb) < 1)
+            goto error;
         for (w->mb_x = 0; w->mb_x < w->mb_width * 2; w->mb_x++) {
             x8_get_prediction(w);
             if (x8_setup_spatial_predictor(w, 0))
