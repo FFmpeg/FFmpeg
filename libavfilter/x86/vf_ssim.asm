@@ -255,6 +255,6 @@ cglobal ssim_end_line, 3, 3, 7, sum0, sum1, w
     addpd             m0, m4
 %if ARCH_X86_32
     movsd            r0m, m0
-    fld             r0mp
+    fld        qword r0m
 %endif
     RET
