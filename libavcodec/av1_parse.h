@@ -146,7 +146,9 @@ static inline int get_obu_bit_length(const uint8_t *buf, int size, int type)
     int v;
 
     /* There are no trailing bits on these */
-    if (type == AV1_OBU_TILE_GROUP || type == AV1_OBU_FRAME) {
+    if (type == AV1_OBU_TILE_GROUP ||
+        type == AV1_OBU_TILE_LIST ||
+        type == AV1_OBU_FRAME) {
         if (size > INT_MAX / 8)
             return AVERROR(ERANGE);
         else
