@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
 #include "libavutil/parseutils.h"
@@ -246,10 +248,14 @@ static int ftp_auth(FTPContext *s)
     static const int user_codes[] = {331, 230, 0};
     static const int pass_codes[] = {230, 0};
 
+    if (strpbrk(s->user, "\r\n"))
+        return AVERROR(EINVAL);
     snprintf(buf, sizeof(buf), "USER %s\r\n", s->user);
     err = ftp_send_command(s, buf, user_codes, NULL);
     if (err == 331) {
         if (s->password) {
+            if (strpbrk(s->password, "\r\n"))
+                return AVERROR(EINVAL);
             snprintf(buf, sizeof(buf), "PASS %s\r\n", s->password);
             err = ftp_send_command(s, buf, pass_codes, NULL);
         } else
