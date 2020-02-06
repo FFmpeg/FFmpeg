@@ -16,21 +16,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_OPENCL_SOURCE_H
-#define AVFILTER_OPENCL_SOURCE_H
+const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
+                          CLK_FILTER_NEAREST;
 
-extern const char *ff_opencl_source_avgblur;
-extern const char *ff_opencl_source_colorkey;
-extern const char *ff_opencl_source_colorspace_common;
-extern const char *ff_opencl_source_convolution;
-extern const char *ff_opencl_source_deshake;
-extern const char *ff_opencl_source_neighbor;
-extern const char *ff_opencl_source_nlmeans;
-extern const char *ff_opencl_source_overlay;
-extern const char *ff_opencl_source_pad;
-extern const char *ff_opencl_source_tonemap;
-extern const char *ff_opencl_source_transpose;
-extern const char *ff_opencl_source_unsharp;
-extern const char *ff_opencl_source_xfade;
-
-#endif /* AVFILTER_OPENCL_SOURCE_H */
+__kernel void pad (
+    __read_only  image2d_t src,
+    __write_only image2d_t dst,
+    float4 color,
+    int2 xy)
+{
+    int2 size_src = get_image_dim(src);
+    int2 loc = (int2)(get_global_id(0), get_global_id(1));
+    int2 src_pos = (int2)(get_global_id(0) - xy.x, get_global_id(1) - xy.y);
+    float4 pixel = loc.x >= size_src.x + xy.x ||
+                   loc.y >= size_src.y + xy.y ||
+                   loc.x < xy.x ||
+                   loc.y < xy.y ? color : read_imagef(src, sampler, src_pos);
+    write_imagef(dst, loc, pixel);
+}

@@ -35,6 +35,7 @@ version <next>:
 - xfade video filter
 - xfade_opencl filter
 - afirsrc audio filter source
+- pad_opencl filter
 
 
 version 4.2:
