@@ -39,7 +39,8 @@ typedef enum {
     DOWNLOADING,
     UPLOADING,
     LISTING_DIR,
-    DISCONNECTED
+    DISCONNECTED,
+    ENDOFFILE,
 } FTPState;
 
 typedef enum {
@@ -231,7 +232,6 @@ static int ftp_send_command(FTPContext *s, const char *command,
 static void ftp_close_data_connection(FTPContext *s)
 {
     ffurl_closep(&s->conn_data);
-    s->position = 0;
     s->state = DISCONNECTED;
 }
 
@@ -740,8 +740,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     if (ftp_restart(s, 0) < 0) {
         h->is_streamed = 1;
     } else {
-        if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
-            h->is_streamed = 1;
+        ftp_file_size(s);
         if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
             h->is_streamed = 1;
     }
@@ -758,7 +757,7 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
 {
     FTPContext *s = h->priv_data;
     int err;
-    int64_t new_pos, fake_pos;
+    int64_t new_pos;
 
     ff_dlog(h, "ftp protocol seek %"PRId64" %d\n", pos, whence);
 
@@ -788,11 +787,10 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EINVAL);
     }
 
-    fake_pos = s->filesize != -1 ? FFMIN(new_pos, s->filesize) : new_pos;
-    if (fake_pos != s->position) {
+    if (new_pos != s->position) {
         if ((err = ftp_abort(h)) < 0)
             return err;
-        s->position = fake_pos;
+        s->position = new_pos;
     }
     return new_pos;
 }
@@ -804,16 +802,13 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
 
     ff_dlog(h, "ftp protocol read %d bytes\n", size);
   retry:
+    if (s->state == ENDOFFILE)
+        return AVERROR_EOF;
     if (s->state == DISCONNECTED) {
-        /* optimization */
-        if (s->position >= s->filesize)
-            return AVERROR_EOF;
         if ((err = ftp_connect_data_connection(h)) < 0)
             return err;
     }
     if (s->state == READY) {
-        if (s->position >= s->filesize)
-            return AVERROR_EOF;
         if ((err = ftp_retrieve(s)) < 0)
             return err;
     }
@@ -821,27 +816,28 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
         read = ffurl_read(s->conn_data, buf, size);
         if (read >= 0) {
             s->position += read;
-            if (s->position >= s->filesize) {
-                /* server will terminate, but keep current position to avoid madness */
-                /* save position to restart from it */
-                int64_t pos = s->position;
-                if (ftp_abort(h) < 0) {
-                    s->position = pos;
-                    return AVERROR(EIO);
-                }
-                s->position = pos;
-            }
+            s->filesize = FFMAX(s->filesize, s->position);
         }
-        if (read <= 0 && s->position < s->filesize && !h->is_streamed) {
+        if (read == AVERROR_EOF) {
+           static const int retr_codes[] = {226, 250, 425, 426, 451, 0};
+           char *response = NULL;
+           err = ftp_status(s, &response, retr_codes);
+           if (err == 226) {
+               ftp_close_data_connection(s);
+               av_freep(&response);
+               s->state = ENDOFFILE;
+               return AVERROR_EOF;
+           }
+           /* 250 is not allowed, any other status means some kind of error */
+           av_log(h, AV_LOG_ERROR, "FTP transfer failed: %s\n", response ? response : (err < 0 ? av_err2str(err) : "?"));
+           av_freep(&response);
+           read = AVERROR(EIO);
+        }
+        if (read <= 0 && !h->is_streamed) {
             /* Server closed connection. Probably due to inactivity */
-            int64_t pos = s->position;
             av_log(h, AV_LOG_INFO, "Reconnect to FTP server.\n");
             if ((err = ftp_abort(h)) < 0)
                 return err;
-            if ((err = ftp_seek(h, pos, SEEK_SET)) < 0) {
-                av_log(h, AV_LOG_ERROR, "Position cannot be restored.\n");
-                return err;
-            }
             if (!retry_done) {
                 retry_done = 1;
                 goto retry;
