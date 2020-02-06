@@ -609,6 +609,7 @@ extern AVCodec ff_adpcm_ima_oki_decoder;
 extern AVCodec ff_adpcm_ima_qt_encoder;
 extern AVCodec ff_adpcm_ima_qt_decoder;
 extern AVCodec ff_adpcm_ima_rad_decoder;
+extern AVCodec ff_adpcm_ima_ssi_decoder;
 extern AVCodec ff_adpcm_ima_smjpeg_decoder;
 extern AVCodec ff_adpcm_ima_wav_encoder;
 extern AVCodec ff_adpcm_ima_wav_decoder;
