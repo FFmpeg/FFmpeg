@@ -513,6 +513,7 @@ OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h
+SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h
 
 OBJS-$(CONFIG_LIBGLSLANG)                    += glslang.o
 
