@@ -227,6 +227,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         GetByteContext gbc;
         int extradata_size;
         int flags;
+        int64_t flags64;
+
         size -= 1024;
         bytestream2_init(&gbc, data + size, 1024);
         ctx->width                              = bytestream2_get_le32(&gbc);
@@ -283,6 +285,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
         }
 
+        flags64 = bytestream2_get_le64(&gbc);
+        if (flags64 &1)
+            ctx->debug |= FF_DEBUG_SKIP;
+        if (flags64 &2)
+            ctx->debug |= FF_DEBUG_QP;
+        if (flags64 &4)
+            ctx->debug |= FF_DEBUG_MB_TYPE;
 
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
