@@ -246,6 +246,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         }
         if ((flags & 0x10) && c->id != AV_CODEC_ID_H264)
             ctx->flags2 |= AV_CODEC_FLAG2_FAST;
+        if (flags & 0x80)
+            ctx->flags2 |= AV_CODEC_FLAG2_EXPORT_MVS;
 
         if (flags & 0x40)
             av_force_cpu_flags(0);
