@@ -303,6 +303,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         return 0; // Failure of avcodec_open2() does not imply that a issue was found
     }
     parser_avctx->codec_id = ctx->codec_id;
+    parser_avctx->extradata_size = ctx->extradata_size;
+    parser_avctx->extradata      = av_memdup(ctx->extradata, ctx->extradata_size);
+
 
     int got_frame;
     AVFrame *frame = av_frame_alloc();
