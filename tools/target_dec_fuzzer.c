@@ -266,6 +266,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
         ctx->idct_algo                          = bytestream2_get_byte(&gbc) % 25;
         flushpattern                            = bytestream2_get_le64(&gbc);
+        ctx->skip_frame                         = bytestream2_get_byte(&gbc) - 254 + AVDISCARD_ALL;
+
 
         if (flags & 0x20) {
             switch (ctx->codec_id) {
