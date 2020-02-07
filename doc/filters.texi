@@ -19985,6 +19985,7 @@ Set one of available transition effects:
 @item horzopen
 @item horzclose
 @item dissolve
+@item pixelize
 @end table
 Default transition effect is fade.
 

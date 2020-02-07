@@ -56,6 +56,7 @@ enum XFadeTransitions {
     HORZOPEN,
     HORZCLOSE,
     DISSOLVE,
+    PIXELIZE,
     NB_TRANSITIONS,
 };
 
@@ -164,6 +165,7 @@ static const AVOption xfade_options[] = {
     {   "horzopen",   "horz open transition",   0, AV_OPT_TYPE_CONST, {.i64=HORZOPEN},   0, 0, FLAGS, "transition" },
     {   "horzclose",  "horz close transition",  0, AV_OPT_TYPE_CONST, {.i64=HORZCLOSE},  0, 0, FLAGS, "transition" },
     {   "dissolve",   "dissolve transition",    0, AV_OPT_TYPE_CONST, {.i64=DISSOLVE},   0, 0, FLAGS, "transition" },
+    {   "pixelize",   "pixelize transition",    0, AV_OPT_TYPE_CONST, {.i64=PIXELIZE},   0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1009,6 +1011,38 @@ static void dissolve##name##_transition(AVFilterContext *ctx,                   
 DISSOLVE_TRANSITION(8, uint8_t, 1)
 DISSOLVE_TRANSITION(16, uint16_t, 2)
 
+#define PIXELIZE_TRANSITION(name, type, div)                                         \
+static void pixelize##name##_transition(AVFilterContext *ctx,                        \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int w = out->width;                                                        \
+    const int h = out->height;                                                       \
+    const float d = fminf(progress, 1.f - progress);                                 \
+    const float dist = ceilf(d * 50.f) / 50.f;                                       \
+    const float sqx = 2.f * dist * FFMIN(w, h) / 20.f;                               \
+    const float sqy = 2.f * dist * FFMIN(w, h) / 20.f;                               \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < w; x++) {                                                \
+            int sx = dist > 0.f ? FFMIN((floorf(x / sqx) + .5f) * sqx, w - 1) : x;   \
+            int sy = dist > 0.f ? FFMIN((floorf(y / sqy) + .5f) * sqy, h - 1) : y;   \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + sy * a->linesize[p]);  \
+                const type *xf1 = (const type *)(b->data[p] + sy * b->linesize[p]);  \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf0[sx], xf1[sx], progress);                            \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+PIXELIZE_TRANSITION(8, uint8_t, 1)
+PIXELIZE_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1125,7 +1159,8 @@ static int config_output(AVFilterLink *outlink)
     case VERTCLOSE:  s->transitionf = s->depth <= 8 ? vertclose8_transition  : vertclose16_transition;  break;
     case HORZOPEN:   s->transitionf = s->depth <= 8 ? horzopen8_transition   : horzopen16_transition;   break;
     case HORZCLOSE:  s->transitionf = s->depth <= 8 ? horzclose8_transition  : horzclose16_transition;  break;
-    case DISSOLVE:   s->transitionf = s->depth <= 8 ? dissolve8_transition   : dissolve16_transition;  break;
+    case DISSOLVE:   s->transitionf = s->depth <= 8 ? dissolve8_transition   : dissolve16_transition;   break;
+    case PIXELIZE:   s->transitionf = s->depth <= 8 ? pixelize8_transition   : pixelize16_transition;   break;
     }
 
     if (s->transition == CUSTOM) {
