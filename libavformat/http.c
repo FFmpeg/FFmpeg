@@ -27,6 +27,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/parseutils.h"
@@ -1184,13 +1185,13 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 {
     HTTPContext *s = h->priv_data;
     int post, err;
-    char headers[HTTP_HEADERS_SIZE] = "";
+    AVBPrint request;
     char *authstr = NULL, *proxyauthstr = NULL;
     uint64_t off = s->off;
-    int len = 0;
     const char *method;
     int send_expect_100 = 0;
-    int ret;
+
+    av_bprint_init_for_buffer(&request, s->buffer, sizeof(s->buffer));
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
@@ -1233,95 +1234,71 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
         s->user_agent = av_strdup(s->user_agent_deprecated);
     }
 #endif
+
+    av_bprintf(&request, "%s %s HTTP/1.1\r\n", method, path);
+    if (post && s->chunked_post)
+        av_bprintf(&request, "Transfer-Encoding: chunked\r\n");
     /* set default headers if needed */
     if (!has_header(s->headers, "\r\nUser-Agent: "))
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "User-Agent: %s\r\n", s->user_agent);
+        av_bprintf(&request, "User-Agent: %s\r\n", s->user_agent);
     if (s->referer) {
         /* set default headers if needed */
         if (!has_header(s->headers, "\r\nReferer: "))
-            len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "Referer: %s\r\n", s->referer);
+            av_bprintf(&request, "Referer: %s\r\n", s->referer);
     }
     if (!has_header(s->headers, "\r\nAccept: "))
-        len += av_strlcpy(headers + len, "Accept: */*\r\n",
-                          sizeof(headers) - len);
+        av_bprintf(&request, "Accept: */*\r\n");
     // Note: we send this on purpose even when s->off is 0 when we're probing,
     // since it allows us to detect more reliably if a (non-conforming)
     // server supports seeking by analysing the reply headers.
     if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable == -1)) {
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Range: bytes=%"PRIu64"-", s->off);
+        av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
         if (s->end_off)
-            len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "%"PRId64, s->end_off - 1);
-        len += av_strlcpy(headers + len, "\r\n",
-                          sizeof(headers) - len);
+            av_bprintf(&request, "%"PRId64, s->end_off - 1);
+        av_bprintf(&request, "\r\n");
     }
     if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Expect: 100-continue\r\n");
+        av_bprintf(&request, "Expect: 100-continue\r\n");
 
-    if (!has_header(s->headers, "\r\nConnection: ")) {
-        if (s->multiple_requests)
-            len += av_strlcpy(headers + len, "Connection: keep-alive\r\n",
-                              sizeof(headers) - len);
-        else
-            len += av_strlcpy(headers + len, "Connection: close\r\n",
-                              sizeof(headers) - len);
-    }
+    if (!has_header(s->headers, "\r\nConnection: "))
+        av_bprintf(&request, "Connection: %s\r\n", s->multiple_requests ? "keep-alive" : "close");
 
     if (!has_header(s->headers, "\r\nHost: "))
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Host: %s\r\n", hoststr);
+        av_bprintf(&request, "Host: %s\r\n", hoststr);
     if (!has_header(s->headers, "\r\nContent-Length: ") && s->post_data)
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Content-Length: %d\r\n", s->post_datalen);
+        av_bprintf(&request, "Content-Length: %d\r\n", s->post_datalen);
 
     if (!has_header(s->headers, "\r\nContent-Type: ") && s->content_type)
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Content-Type: %s\r\n", s->content_type);
+        av_bprintf(&request, "Content-Type: %s\r\n", s->content_type);
     if (!has_header(s->headers, "\r\nCookie: ") && s->cookies) {
         char *cookies = NULL;
         if (!get_cookies(s, &cookies, path, hoststr) && cookies) {
-            len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "Cookie: %s\r\n", cookies);
+            av_bprintf(&request, "Cookie: %s\r\n", cookies);
             av_free(cookies);
         }
     }
     if (!has_header(s->headers, "\r\nIcy-MetaData: ") && s->icy)
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Icy-MetaData: %d\r\n", 1);
+        av_bprintf(&request, "Icy-MetaData: 1\r\n");
 
     /* now add in custom headers */
     if (s->headers)
-        av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
+        av_bprintf(&request, "%s", s->headers);
 
-    ret = snprintf(s->buffer, sizeof(s->buffer),
-             "%s %s HTTP/1.1\r\n"
-             "%s"
-             "%s"
-             "%s"
-             "%s%s"
-             "\r\n",
-             method,
-             path,
-             post && s->chunked_post ? "Transfer-Encoding: chunked\r\n" : "",
-             headers,
-             authstr ? authstr : "",
-             proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
+    if (authstr)
+        av_bprintf(&request, "%s", authstr);
+    if (proxyauthstr)
+        av_bprintf(&request, "Proxy-%s", proxyauthstr);
+    av_bprintf(&request, "\r\n");
 
-    av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+    av_log(h, AV_LOG_DEBUG, "request: %s\n", request.str);
 
-    if (strlen(headers) + 1 == sizeof(headers) ||
-        ret >= sizeof(s->buffer)) {
+    if (!av_bprint_is_complete(&request)) {
         av_log(h, AV_LOG_ERROR, "overlong headers\n");
         err = AVERROR(EINVAL);
         goto done;
     }
 
-
-    if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
+    if ((err = ffurl_write(s->hd, request.str, request.len)) < 0)
         goto done;
 
     if (s->post_data)
