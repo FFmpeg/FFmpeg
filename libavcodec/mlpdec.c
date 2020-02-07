@@ -266,7 +266,7 @@ static inline int read_huff_channels(MLPDecodeContext *m, GetBitContext *gbp,
             return AVERROR_INVALIDDATA;
 
         if (lsb_bits > 0)
-            result = (result << lsb_bits) + get_bits(gbp, lsb_bits);
+            result = (result << lsb_bits) + get_bits_long(gbp, lsb_bits);
 
         result  += cp->sign_huff_offset;
         result *= 1 << quant_step_size;
