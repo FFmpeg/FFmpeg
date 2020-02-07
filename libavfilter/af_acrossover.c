@@ -303,6 +303,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
 fail:
+    for (i = 0; i < ctx->nb_outputs; i++)
+        av_frame_free(&frames[i]);
     av_frame_free(&in);
     s->input_frame = NULL;
 
