@@ -19984,6 +19984,7 @@ Set one of available transition effects:
 @item vertclose
 @item horzopen
 @item horzclose
+@item dissolve
 @end table
 Default transition effect is fade.
 

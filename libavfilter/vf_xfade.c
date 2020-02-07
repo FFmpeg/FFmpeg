@@ -55,6 +55,7 @@ enum XFadeTransitions {
     VERTCLOSE,
     HORZOPEN,
     HORZCLOSE,
+    DISSOLVE,
     NB_TRANSITIONS,
 };
 
@@ -162,6 +163,7 @@ static const AVOption xfade_options[] = {
     {   "vertclose",  "vert close transition",  0, AV_OPT_TYPE_CONST, {.i64=VERTCLOSE},  0, 0, FLAGS, "transition" },
     {   "horzopen",   "horz open transition",   0, AV_OPT_TYPE_CONST, {.i64=HORZOPEN},   0, 0, FLAGS, "transition" },
     {   "horzclose",  "horz close transition",  0, AV_OPT_TYPE_CONST, {.i64=HORZCLOSE},  0, 0, FLAGS, "transition" },
+    {   "dissolve",   "dissolve transition",    0, AV_OPT_TYPE_CONST, {.i64=DISSOLVE},   0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -974,6 +976,39 @@ static void horzclose##name##_transition(AVFilterContext *ctx,                  
 HORZCLOSE_TRANSITION(8, uint8_t, 1)
 HORZCLOSE_TRANSITION(16, uint16_t, 2)
 
+static float frand(int x, int y)
+{
+    const float r = sinf(x * 12.9898f + y * 78.233f) * 43758.545f;
+
+    return r - floorf(r);
+}
+
+#define DISSOLVE_TRANSITION(name, type, div)                                         \
+static void dissolve##name##_transition(AVFilterContext *ctx,                        \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = frand(x, y) * 2.f + progress * 2.f - 1.5f;          \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = smooth >= 0.5f ? xf0[x] : xf1[x];                           \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+DISSOLVE_TRANSITION(8, uint8_t, 1)
+DISSOLVE_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1090,6 +1125,7 @@ static int config_output(AVFilterLink *outlink)
     case VERTCLOSE:  s->transitionf = s->depth <= 8 ? vertclose8_transition  : vertclose16_transition;  break;
     case HORZOPEN:   s->transitionf = s->depth <= 8 ? horzopen8_transition   : horzopen16_transition;   break;
     case HORZCLOSE:  s->transitionf = s->depth <= 8 ? horzclose8_transition  : horzclose16_transition;  break;
+    case DISSOLVE:   s->transitionf = s->depth <= 8 ? dissolve8_transition   : dissolve16_transition;  break;
     }
 
     if (s->transition == CUSTOM) {
