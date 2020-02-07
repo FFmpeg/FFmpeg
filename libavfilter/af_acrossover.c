@@ -60,6 +60,9 @@ typedef struct AudioCrossoverContext {
     float *splits;
 
     CrossoverChannel *xover;
+
+    AVFrame *input_frame;
+    AVFrame *frames[MAX_BANDS];
 } AudioCrossoverContext;
 
 #define OFFSET(x) offsetof(AudioCrossoverContext, x)
@@ -230,32 +233,20 @@ static double biquad_process(BiquadContext *b, double in)
     return out;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    AVFilterContext *ctx = inlink->dst;
     AudioCrossoverContext *s = ctx->priv;
-    AVFrame *frames[MAX_BANDS] = { NULL };
-    int i, f, ch, band, ret = 0;
+    AVFrame *in = s->input_frame;
+    AVFrame **frames = s->frames;
+    const int start = (in->channels * jobnr) / nb_jobs;
+    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+    int f, band;
 
-    for (i = 0; i < ctx->nb_outputs; i++) {
-        frames[i] = ff_get_audio_buffer(ctx->outputs[i], in->nb_samples);
-
-        if (!frames[i]) {
-            ret = AVERROR(ENOMEM);
-            break;
-        }
-
-        frames[i]->pts = in->pts;
-    }
-
-    if (ret < 0)
-        goto fail;
-
-    for (ch = 0; ch < inlink->channels; ch++) {
+    for (int ch = start; ch < end; ch++) {
         const double *src = (const double *)in->extended_data[ch];
         CrossoverChannel *xover = &s->xover[ch];
 
-        for (i = 0; i < in->nb_samples; i++) {
+        for (int i = 0; i < in->nb_samples; i++) {
             double sample = src[i], lo, hi;
 
             for (band = 0; band < ctx->nb_outputs; band++) {
@@ -276,14 +267,44 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AudioCrossoverContext *s = ctx->priv;
+    AVFrame **frames = s->frames;
+    int i, ret = 0;
+
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        frames[i] = ff_get_audio_buffer(ctx->outputs[i], in->nb_samples);
+
+        if (!frames[i]) {
+            ret = AVERROR(ENOMEM);
+            break;
+        }
+
+        frames[i]->pts = in->pts;
+    }
+
+    if (ret < 0)
+        goto fail;
+
+    s->input_frame = in;
+    ctx->internal->execute(ctx, filter_channels, NULL, NULL, FFMIN(inlink->channels,
+                                                                   ff_filter_get_nb_threads(ctx)));
+
     for (i = 0; i < ctx->nb_outputs; i++) {
         ret = ff_filter_frame(ctx->outputs[i], frames[i]);
+        frames[i] = NULL;
         if (ret < 0)
             break;
     }
 
 fail:
     av_frame_free(&in);
+    s->input_frame = NULL;
 
     return ret;
 }
@@ -320,5 +341,6 @@ AVFilter ff_af_acrossover = {
     .query_formats  = query_formats,
     .inputs         = inputs,
     .outputs        = NULL,
-    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+                      AVFILTER_FLAG_SLICE_THREADS,
 };
