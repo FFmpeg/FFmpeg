@@ -813,6 +813,7 @@ extern AVCodec ff_vp9_qsv_encoder;
 #if CONFIG_OSSFUZZ
 AVCodec * codec_list[] = {
     NULL,
+    NULL,
     NULL
 };
 #else
