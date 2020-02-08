@@ -35,7 +35,7 @@ typedef struct AVComplexDouble {
 enum AVTXType {
     /**
      * Standard complex to complex FFT with sample data type AVComplexFloat.
-     * Scaling currently unsupported
+     * Output is not 1/len normalized. Scaling currently unsupported.
      */
     AV_TX_FLOAT_FFT = 0,
     /**
