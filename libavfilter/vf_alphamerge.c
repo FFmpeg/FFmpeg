@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
 #include "drawutils.h"
@@ -154,7 +155,8 @@ static int activate(AVFilterContext *ctx)
     }
 
     if (s->main_frame && s->alpha_frame) {
-        draw_frame(ctx, s->main_frame, s->alpha_frame);
+        if (!ctx->is_disabled)
+            draw_frame(ctx, s->main_frame, s->alpha_frame);
         ret = ff_filter_frame(outlink, s->main_frame);
         av_frame_free(&s->alpha_frame);
         s->main_frame = NULL;
@@ -203,13 +205,21 @@ static const AVFilterPad alphamerge_outputs[] = {
     { NULL }
 };
 
+static const AVOption alphamerge_options[] = {
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(alphamerge);
+
 AVFilter ff_vf_alphamerge = {
     .name           = "alphamerge",
     .description    = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
                       "input into the alpha channel of the first input."),
     .priv_size      = sizeof(AlphaMergeContext),
+    .priv_class     = &alphamerge_class,
     .query_formats  = query_formats,
     .inputs         = alphamerge_inputs,
     .outputs        = alphamerge_outputs,
     .activate       = activate,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
