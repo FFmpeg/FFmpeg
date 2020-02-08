@@ -573,13 +573,16 @@ static int decode_raw_intra_rgb(AVCodecContext *avctx, GetByteContext *gbyte, AV
     uint8_t *dst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
     uint8_t r = 0, g = 0, b = 0;
 
+    if (bytestream2_get_bytes_left(gbyte) < 3 * avctx->width * avctx->height)
+        return AVERROR_INVALIDDATA;
+
     for (int y = 0; y < avctx->height; y++) {
         for (int x = 0; x < avctx->width; x++) {
-            dst[x*3+0] = bytestream2_get_byte(gbyte) + r;
+            dst[x*3+0] = bytestream2_get_byteu(gbyte) + r;
             r = dst[x*3+0];
-            dst[x*3+1] = bytestream2_get_byte(gbyte) + g;
+            dst[x*3+1] = bytestream2_get_byteu(gbyte) + g;
             g = dst[x*3+1];
-            dst[x*3+2] = bytestream2_get_byte(gbyte) + b;
+            dst[x*3+2] = bytestream2_get_byteu(gbyte) + b;
             b = dst[x*3+2];
         }
         dst -= frame->linesize[0];
