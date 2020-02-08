@@ -1179,6 +1179,37 @@ static int http_read_header(URLContext *h, int *new_location)
     return err;
 }
 
+/**
+ * Escape unsafe characters in path in order to pass them safely to the HTTP
+ * request. Insipred by the algorithm in GNU wget:
+ * - escape "%" characters not followed by two hex digits
+ * - escape all "unsafe" characters except which are also "reserved"
+ * - pass through everything else
+ */
+static void bprint_escaped_path(AVBPrint *bp, const char *path)
+{
+#define NEEDS_ESCAPE(ch) \
+    ((ch) <= ' ' || (ch) >= '\x7f' || \
+     (ch) == '"' || (ch) == '%' || (ch) == '<' || (ch) == '>' || (ch) == '\\' || \
+     (ch) == '^' || (ch) == '`' || (ch) == '{' || (ch) == '}' || (ch) == '|')
+    while (*path) {
+        char buf[1024];
+        char *q = buf;
+        while (*path && q - buf < sizeof(buf) - 4) {
+            if (path[0] == '%' && av_isxdigit(path[1]) && av_isxdigit(path[2])) {
+                *q++ = *path++;
+                *q++ = *path++;
+                *q++ = *path++;
+            } else if (NEEDS_ESCAPE(*path)) {
+                q += snprintf(q, 4, "%%%02X", (uint8_t)*path++);
+            } else {
+                *q++ = *path++;
+            }
+        }
+        av_bprint_append_data(bp, buf, q - buf);
+    }
+}
+
 static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth, int *new_location)
@@ -1235,7 +1266,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     }
 #endif
 
-    av_bprintf(&request, "%s %s HTTP/1.1\r\n", method, path);
+    av_bprintf(&request, "%s ", method);
+    bprint_escaped_path(&request, path);
+    av_bprintf(&request, " HTTP/1.1\r\n");
+
     if (post && s->chunked_post)
         av_bprintf(&request, "Transfer-Encoding: chunked\r\n");
     /* set default headers if needed */
