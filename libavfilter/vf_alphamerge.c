@@ -38,6 +38,8 @@
 enum { Y, U, V, A };
 
 typedef struct AlphaMergeContext {
+    const AVClass *class;
+
     int is_packed_rgb;
     uint8_t rgba_map[4];
     AVFrame *main_frame;
