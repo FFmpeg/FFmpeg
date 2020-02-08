@@ -32,6 +32,10 @@ typedef struct AVComplexDouble {
     double re, im;
 } AVComplexDouble;
 
+typedef struct AVComplexInt32 {
+    int32_t re, im;
+} AVComplexInt32;
+
 enum AVTXType {
     /**
      * Standard complex to complex FFT with sample data type AVComplexFloat.
@@ -51,6 +55,15 @@ enum AVTXType {
      * Same as AV_TX_FLOAT_MDCT with data and scale type of double.
      */
     AV_TX_DOUBLE_MDCT = 3,
+    /**
+     * Same as AV_TX_FLOAT_FFT with a data type of AVComplexInt32.
+     */
+    AV_TX_INT32_FFT = 4,
+    /**
+     * Same as AV_TX_FLOAT_MDCT with data type of int32_t and scale type of float.
+     * Only scale values less than or equal to 1.0 are supported.
+     */
+    AV_TX_INT32_MDCT = 5,
 };
 
 /**

@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-02-13 - xxxxxxxxxx - lavu 56.41.100 - tx.h
+  Add AV_TX_INT32_FFT and AV_TX_INT32_MDCT
+
 2020-02-12 - xxxxxxxxxx - lavu 56.40.100 - log.h
   Add av_log_once().
 
