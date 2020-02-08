@@ -178,12 +178,8 @@ static void maskedclamp##name(const uint8_t *bbsrc, uint8_t *ddst,              
     type *dst = (type *)ddst;                                                     \
                                                                                   \
     for (int x = 0; x < w; x++) {                                                 \
-        if (bsrc[x] < darksrc[x] - undershoot)                                    \
-            dst[x] = darksrc[x] - undershoot;                                     \
-        else if (bsrc[x] > brightsrc[x] + overshoot)                              \
-            dst[x] = brightsrc[x] + overshoot;                                    \
-        else                                                                      \
-            dst[x] = bsrc[x];                                                     \
+        dst[x] = FFMAX(bsrc[x], darksrc[x] - undershoot);                         \
+        dst[x] = FFMIN(dst[x], brightsrc[x] + overshoot);                         \
     }                                                                             \
 }
 
