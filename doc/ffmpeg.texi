@@ -1029,6 +1029,20 @@ Choose the GPU device on the second platform supporting the @emph{cl_khr_fp16}
 extension.
 @end table
 
+@item vulkan
+If @var{device} is an integer, it selects the device by its index in a
+system-dependent list of devices.  If @var{device} is any other string, it
+selects the first device with a name containing that string as a substring.
+
+Examples:
+@table @emph
+@item -init_hw_device vulkan:1
+Choose the second device on the system.
+
+@item -init_hw_device vulkan:RADV
+Choose the first device with a name containing the string @emph{RADV}.
+@end table
+
 @end table
 
 @item -init_hw_device @var{type}[=@var{name}]@@@var{source}
