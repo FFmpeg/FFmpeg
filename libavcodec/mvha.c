@@ -256,12 +256,14 @@ static int decode_frame(AVCodecContext *avctx,
 
         dst = frame->data[p] + (avctx->height - 1) * frame->linesize[p];
         s->llviddsp.add_left_pred(dst, dst, width, 0);
-        dst -= stride;
-        lefttop = left = dst[0];
-        for (int y = 1; y < avctx->height; y++) {
-            s->llviddsp.add_median_pred(dst, dst + stride, dst, width, &left, &lefttop);
-            lefttop = left = dst[0];
+        if (avctx->height > 1) {
             dst -= stride;
+            lefttop = left = dst[0];
+            for (int y = 1; y < avctx->height; y++) {
+                s->llviddsp.add_median_pred(dst, dst + stride, dst, width, &left, &lefttop);
+                lefttop = left = dst[0];
+                dst -= stride;
+            }
         }
     }
 
