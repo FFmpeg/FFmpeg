@@ -313,7 +313,8 @@ static int activate(AVFilterContext *ctx)
                                                FFMIN(s->planeheight[2],
                                                ff_filter_get_nb_threads(ctx)));
                     }
-                }
+                } else
+                    av_frame_free(&out);
             } else if (!out) {
                 ret = AVERROR(ENOMEM);
             }
