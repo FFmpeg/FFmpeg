@@ -46,7 +46,7 @@ typedef struct ASoftClipContext {
 } ASoftClipContext;
 
 #define OFFSET(x) offsetof(ASoftClipContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption asoftclip_options[] = {
     { "type", "set softclip type", OFFSET(type), AV_OPT_TYPE_INT,    {.i64=0},          0, NB_TYPES-1, A, "types" },
@@ -313,6 +313,7 @@ AVFilter ff_af_asoftclip = {
     .priv_class     = &asoftclip_class,
     .inputs         = inputs,
     .outputs        = outputs,
+    .process_command = ff_filter_process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                       AVFILTER_FLAG_SLICE_THREADS,
 };

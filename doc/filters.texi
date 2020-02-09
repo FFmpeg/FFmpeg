@@ -2257,6 +2257,10 @@ It accepts the following values:
 Set additional parameter which controls sigmoid function.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section asr
 Automatic Speech Recognition
 
