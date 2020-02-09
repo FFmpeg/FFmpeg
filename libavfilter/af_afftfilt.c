@@ -40,6 +40,7 @@ typedef struct AFFTFiltContext {
     FFTComplex **fft_data;
     FFTComplex **fft_temp;
     int nb_exprs;
+    int channels;
     int window_size;
     AVExpr **real;
     AVExpr **imag;
@@ -129,6 +130,7 @@ static int config_input(AVFilterLink *inlink)
     char *args;
     const char *last_expr = "1";
 
+    s->channels = inlink->channels;
     s->pts  = AV_NOPTS_VALUE;
     s->fft_bits = av_log2(s->fft_size);
     s->fft  = av_fft_init(s->fft_bits, 0);
@@ -435,7 +437,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_fft_end(s->fft);
     av_fft_end(s->ifft);
 
-    for (i = 0; i < s->nb_exprs; i++) {
+    for (i = 0; i < s->channels; i++) {
         if (s->fft_data)
             av_freep(&s->fft_data[i]);
         if (s->fft_temp)
