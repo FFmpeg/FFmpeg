@@ -126,6 +126,8 @@ static int decode_mvdv(MidiVidContext *s, AVCodecContext *avctx, AVFrame *frame)
                 idx9bits--;
                 idx = bytestream2_get_byte(gb) | (((idx9val >> (7 - idx9bits)) & 1) << 8);
             }
+            if (idx >= nb_vectors)
+                return AVERROR_INVALIDDATA;
 
             dsty[x  +frame->linesize[0]] = vec[idx * 12 + 0];
             dsty[x+1+frame->linesize[0]] = vec[idx * 12 + 3];
