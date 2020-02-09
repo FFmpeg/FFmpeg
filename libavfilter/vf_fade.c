@@ -221,8 +221,8 @@ static av_always_inline void filter_rgb_planar(FadeContext *s, const AVFrame *fr
         uint8_t *pa = frame->data[3] + i * frame->linesize[3];
         for (j = 0; j < frame->width; j++) {
 #define INTERPP(c_name, c_idx) av_clip_uint8(((c[c_idx]<<16) + ((int)c_name - (int)c[c_idx]) * s->factor + (1<<15)) >> 16)
-            pr[j] = INTERPP(pr[j], 1);
-            pg[j] = INTERPP(pg[j], 0);
+            pr[j] = INTERPP(pr[j], 0);
+            pg[j] = INTERPP(pg[j], 1);
             pb[j] = INTERPP(pb[j], 2);
             if (do_alpha)
                 pa[j] = INTERPP(pa[j], 3);
