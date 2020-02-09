@@ -163,7 +163,7 @@ typedef struct WmallDecodeCtx {
     int transient_pos[WMALL_MAX_CHANNELS];
     int seekable_tile;
 
-    int ave_sum[WMALL_MAX_CHANNELS];
+    unsigned ave_sum[WMALL_MAX_CHANNELS];
 
     int channel_residues[WMALL_MAX_CHANNELS][WMALL_BLOCK_MAX_SIZE];
 
