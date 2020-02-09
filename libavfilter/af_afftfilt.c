@@ -176,13 +176,13 @@ static int config_input(AVFilterLink *inlink)
         ret = av_expr_parse(&s->real[ch], arg ? arg : last_expr, var_names,
                             NULL, NULL, func2_names, func2, 0, ctx);
         if (ret < 0)
-            break;
+            goto fail;
         if (arg)
             last_expr = arg;
         s->nb_exprs++;
     }
 
-    av_free(args);
+    av_freep(&args);
 
     args = av_strdup(s->img_str ? s->img_str : s->real_str);
     if (!args)
@@ -196,12 +196,12 @@ static int config_input(AVFilterLink *inlink)
         ret = av_expr_parse(&s->imag[ch], arg ? arg : last_expr, var_names,
                             NULL, NULL, func2_names, func2, 0, ctx);
         if (ret < 0)
-            break;
+            goto fail;
         if (arg)
             last_expr = arg;
     }
 
-    av_free(args);
+    av_freep(&args);
 
     s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, s->window_size);
     if (!s->fifo)
@@ -222,6 +222,9 @@ static int config_input(AVFilterLink *inlink)
     s->buffer = ff_get_audio_buffer(inlink, s->window_size * 2);
     if (!s->buffer)
         return AVERROR(ENOMEM);
+
+fail:
+    av_freep(&args);
 
     return ret;
 }
