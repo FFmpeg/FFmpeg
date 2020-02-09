@@ -57,6 +57,10 @@ enum XFadeTransitions {
     HORZCLOSE,
     DISSOLVE,
     PIXELIZE,
+    DIAGTL,
+    DIAGTR,
+    DIAGBL,
+    DIAGBR,
     NB_TRANSITIONS,
 };
 
@@ -166,6 +170,10 @@ static const AVOption xfade_options[] = {
     {   "horzclose",  "horz close transition",  0, AV_OPT_TYPE_CONST, {.i64=HORZCLOSE},  0, 0, FLAGS, "transition" },
     {   "dissolve",   "dissolve transition",    0, AV_OPT_TYPE_CONST, {.i64=DISSOLVE},   0, 0, FLAGS, "transition" },
     {   "pixelize",   "pixelize transition",    0, AV_OPT_TYPE_CONST, {.i64=PIXELIZE},   0, 0, FLAGS, "transition" },
+    {   "diagtl",     "diag tl transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGTL},     0, 0, FLAGS, "transition" },
+    {   "diagtr",     "diag tr transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGTR},     0, 0, FLAGS, "transition" },
+    {   "diagbl",     "diag bl transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGBL},     0, 0, FLAGS, "transition" },
+    {   "diagbr",     "diag br transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGBR},     0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1043,6 +1051,123 @@ static void pixelize##name##_transition(AVFilterContext *ctx,                   
 PIXELIZE_TRANSITION(8, uint8_t, 1)
 PIXELIZE_TRANSITION(16, uint16_t, 2)
 
+#define DIAGTL_TRANSITION(name, type, div)                                           \
+static void diagtl##name##_transition(AVFilterContext *ctx,                          \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = 1.f + x / w * y / h - progress * 2.f;               \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+DIAGTL_TRANSITION(8, uint8_t, 1)
+DIAGTL_TRANSITION(16, uint16_t, 2)
+
+#define DIAGTR_TRANSITION(name, type, div)                                           \
+static void diagtr##name##_transition(AVFilterContext *ctx,                          \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = 1.f + (w - 1 - x) / w * y / h - progress * 2.f;     \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+DIAGTR_TRANSITION(8, uint8_t, 1)
+DIAGTR_TRANSITION(16, uint16_t, 2)
+
+#define DIAGBL_TRANSITION(name, type, div)                                           \
+static void diagbl##name##_transition(AVFilterContext *ctx,                          \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = 1.f + x / w * (h - 1 - y) / h - progress * 2.f;     \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+DIAGBL_TRANSITION(8, uint8_t, 1)
+DIAGBL_TRANSITION(16, uint16_t, 2)
+
+#define DIAGBR_TRANSITION(name, type, div)                                           \
+static void diagbr##name##_transition(AVFilterContext *ctx,                          \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = 1.f + (w - 1 - x) / w * (h - 1 - y) / h -           \
+                                 progress * 2.f;                                     \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f, 1.f, smooth));          \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+DIAGBR_TRANSITION(8, uint8_t, 1)
+DIAGBR_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1161,6 +1286,10 @@ static int config_output(AVFilterLink *outlink)
     case HORZCLOSE:  s->transitionf = s->depth <= 8 ? horzclose8_transition  : horzclose16_transition;  break;
     case DISSOLVE:   s->transitionf = s->depth <= 8 ? dissolve8_transition   : dissolve16_transition;   break;
     case PIXELIZE:   s->transitionf = s->depth <= 8 ? pixelize8_transition   : pixelize16_transition;   break;
+    case DIAGTL:     s->transitionf = s->depth <= 8 ? diagtl8_transition     : diagtl16_transition;     break;
+    case DIAGTR:     s->transitionf = s->depth <= 8 ? diagtr8_transition     : diagtr16_transition;     break;
+    case DIAGBL:     s->transitionf = s->depth <= 8 ? diagbl8_transition     : diagbl16_transition;     break;
+    case DIAGBR:     s->transitionf = s->depth <= 8 ? diagbr8_transition     : diagbr16_transition;     break;
     }
 
     if (s->transition == CUSTOM) {

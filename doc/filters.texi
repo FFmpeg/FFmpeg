@@ -19990,6 +19990,10 @@ Set one of available transition effects:
 @item horzclose
 @item dissolve
 @item pixelize
+@item diagtl
+@item diagtr
+@item diagbl
+@item diagbr
 @end table
 Default transition effect is fade.
 
