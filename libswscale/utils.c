@@ -1502,6 +1502,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         ff_free_filters(c2);
         if (ff_init_filters(c2) < 0) {
             sws_freeContext(c2);
+            c->cascaded_context[1] = NULL;
             return -1;
         }
 
