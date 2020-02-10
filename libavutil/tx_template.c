@@ -567,7 +567,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     CHECK_FACTOR(n, 15, len)
     CHECK_FACTOR(n,  5, len)
     CHECK_FACTOR(n,  3, len)
-#undef CHECK_NPTWO_FACTOR
+#undef CHECK_FACTOR
 
     /* len must be a power of two now */
     if (!(len & (len - 1)) && len >= 4 && len <= max_ptwo) {
