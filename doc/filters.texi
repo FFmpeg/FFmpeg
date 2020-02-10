@@ -6996,6 +6996,21 @@ Only deinterlace frames marked as interlaced.
 The default value is @code{all}.
 @end table
 
+@section cas
+
+Apply Contrast Adaptive Sharpen filter to video stream.
+
+The filter accepts the following options:
+
+@table @option
+@item strength
+Set the sharpening strength. Default value is 0.
+
+@item planes
+Set planes to filter. Default value is to filter all
+planes except alpha plane.
+@end table
+
 @section chromahold
 Remove all color information for all colors except for certain one.
 

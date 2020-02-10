@@ -168,6 +168,7 @@ extern AVFilter ff_vf_bm3d;
 extern AVFilter ff_vf_boxblur;
 extern AVFilter ff_vf_boxblur_opencl;
 extern AVFilter ff_vf_bwdif;
+extern AVFilter ff_vf_cas;
 extern AVFilter ff_vf_chromahold;
 extern AVFilter ff_vf_chromakey;
 extern AVFilter ff_vf_chromashift;
