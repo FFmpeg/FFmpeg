@@ -263,6 +263,7 @@ AVCodec ff_eac3_encoder = {
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class      = &eac3enc_class,
+    .supported_samplerates = ff_ac3_sample_rate_tab,
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ac3_defaults,
 };
