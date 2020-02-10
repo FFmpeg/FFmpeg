@@ -160,8 +160,8 @@ static av_always_inline void NAME(FFTComplex *out, FFTComplex *in,              
     BF(t[3].im, t[2].re, in[2].re, in[3].re);                                                     \
     BF(t[3].re, t[2].im, in[2].im, in[3].im);                                                     \
                                                                                                   \
-    out[D0*stride].re = in[0].re + in[1].re + in[2].re + in[3].re + in[4].re;                     \
-    out[D0*stride].im = in[0].im + in[1].im + in[2].im + in[3].im + in[4].im;                     \
+    out[D0*stride].re = in[0].re + t[0].re + t[2].re;                                             \
+    out[D0*stride].im = in[0].im + t[0].im + t[2].im;                                             \
                                                                                                   \
     SMUL(t[4].re, t[0].re, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].re, t[0].re); \
     SMUL(t[4].im, t[0].im, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].im, t[0].im); \
