@@ -338,6 +338,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     height = get_bits(&s->gb, 16);
     width  = get_bits(&s->gb, 16);
+    if (width == 512) {
+      width = 2560;
+    }
+    if (width == 0) {
+      width = 2048;
+    }
+    if (width == 544) {
+      width = 2592;
+    }
 
     // HACK for odd_height.mov
     if (s->interlaced && s->width == width && s->height == height + 1)
