@@ -162,7 +162,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
     ThumbContext *s = ctx->priv;
-    for (i = 0; i < s->n_frames && s->frames[i].buf; i++)
+    for (i = 0; i < s->n_frames && s->frames && s->frames[i].buf; i++)
         av_frame_free(&s->frames[i].buf);
     av_freep(&s->frames);
 }
