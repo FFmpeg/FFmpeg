@@ -157,7 +157,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (pkt->size < 0)
         return pkt->size;
     pkt->stream_index = 0;
-    pkt->pts = pkt->pos / n;
+    pkt->pts = pkt->pos / s->chars_per_frame;
     pkt->flags |= AV_PKT_FLAG_KEY;
     return 0;
 }
