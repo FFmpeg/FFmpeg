@@ -1918,7 +1918,17 @@ Currently supports the following options.
 @table @option
 @item 0
 No temporal layering flags are provided internally,
-relies on flags being passed in using metadata in AVFrame.
+relies on flags being passed in using @code{metadata} field in @code{AVFrame}
+with following keys.
+@table @option
+@item vp8-flags
+Sets the flags passed into the encoder to indicate the referencing scheme for
+the current frame.
+Refer to function @code{vpx_codec_encode} in @code{vpx/vpx_encoder.h} for more
+details.
+@item temporal_id
+Explicitly sets the temporal id of the current frame to encode.
+@end table
 @item 2
 Two temporal layers. 0-1...
 @item 3

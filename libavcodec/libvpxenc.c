@@ -1519,10 +1519,21 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= VPX_EFLAG_FORCE_KF;
-        if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && frame->metadata) {
+        if (frame->metadata) {
             AVDictionaryEntry* en = av_dict_get(frame->metadata, "vp8-flags", NULL, 0);
             if (en) {
                 flags |= strtoul(en->value, NULL, 10);
+            }
+
+            memset(&layer_id, 0, sizeof(layer_id));
+
+            en = av_dict_get(frame->metadata, "temporal_id", NULL, 0);
+            if (en) {
+                layer_id.temporal_layer_id = strtoul(en->value, NULL, 10);
+#ifdef VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT
+                layer_id.temporal_layer_id_per_spatial[0] = layer_id.temporal_layer_id;
+#endif
+                layer_id_valid = 1;
             }
         }
 
