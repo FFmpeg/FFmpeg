@@ -234,4 +234,5 @@ AVFilter ff_vf_thumbnail = {
     .inputs        = thumbnail_inputs,
     .outputs       = thumbnail_outputs,
     .priv_class    = &thumbnail_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
