@@ -7479,6 +7479,10 @@ colorlevels=romin=0.5:gomin=0.5:bomin=0.5
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section colormatrix
 
 Convert color matrix.
