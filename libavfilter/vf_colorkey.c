@@ -199,7 +199,7 @@ static const AVFilterPad colorkey_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(ColorkeyContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 #if CONFIG_COLORKEY_FILTER
 
@@ -222,6 +222,7 @@ AVFilter ff_vf_colorkey = {
     .inputs        = colorkey_inputs,
     .outputs       = colorkey_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
 
 #endif /* CONFIG_COLORKEY_FILTER */
@@ -246,6 +247,7 @@ AVFilter ff_vf_colorhold = {
     .inputs        = colorkey_inputs,
     .outputs       = colorkey_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
 
 #endif /* CONFIG_COLORHOLD_FILTER */
