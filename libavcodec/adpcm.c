@@ -1575,8 +1575,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 int byte = bytestream2_get_byteu(&gb);
                 int index = (byte >> 4) & 7;
                 unsigned int exp = byte & 0x0F;
-                int factor1 = table[ch][index * 2];
-                int factor2 = table[ch][index * 2 + 1];
+                int64_t factor1 = table[ch][index * 2];
+                int64_t factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
                 for (n = 0; n < 14 && (i * 14 + n < nb_samples); n++) {
