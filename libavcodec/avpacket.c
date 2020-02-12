@@ -128,7 +128,8 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
                 return AVERROR(ENOMEM);
         }
 
-        if (new_size + data_offset > pkt->buf->size) {
+        if (new_size + data_offset > pkt->buf->size ||
+            !av_buffer_is_writable(pkt->buf)) {
             int ret = av_buffer_realloc(&pkt->buf, new_size + data_offset);
             if (ret < 0) {
                 pkt->data = old_data;
