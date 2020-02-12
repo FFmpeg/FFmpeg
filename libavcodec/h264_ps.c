@@ -794,7 +794,9 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     pps->slice_group_count = get_ue_golomb(gb) + 1;
     if (pps->slice_group_count > 1) {
         pps->mb_slice_group_map_type = get_ue_golomb(gb);
-        av_log(avctx, AV_LOG_ERROR, "FMO not supported\n");
+        avpriv_report_missing_feature(avctx, "FMO");
+        ret = AVERROR_PATCHWELCOME;
+        goto fail;
     }
     pps->ref_count[0] = get_ue_golomb(gb) + 1;
     pps->ref_count[1] = get_ue_golomb(gb) + 1;
