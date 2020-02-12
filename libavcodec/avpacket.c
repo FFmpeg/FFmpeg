@@ -615,6 +615,7 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
         return ret;
 
     if (!src->buf) {
+        dst->buf = NULL;
         ret = packet_alloc(&dst->buf, src->size);
         if (ret < 0)
             goto fail;

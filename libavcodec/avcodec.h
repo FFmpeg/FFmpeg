@@ -4648,7 +4648,7 @@ void av_packet_free_side_data(AVPacket *pkt);
  *
  * @see av_packet_unref
  *
- * @param dst Destination packet
+ * @param dst Destination packet. Will be completely overwritten.
  * @param src Source packet
  *
  * @return 0 on success, a negative AVERROR on error.
