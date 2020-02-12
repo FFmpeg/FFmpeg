@@ -13289,6 +13289,11 @@ Set which planes to process. Default is @code{15}, which is all available planes
 Set vertical radius size. Default value is @code{0}.
 Allowed range is integer from 0 to 127.
 If it is 0, value will be picked from horizontal @code{radius} option.
+
+@item percentile
+Set median percentile. Default value is @code{0.5}.
+Default value of @code{0.5} will pick always median values, while @code{0} will pick
+minimum values, and @code{1} maximum values.
 @end table
 
 @subsection Commands

@@ -60,6 +60,7 @@ static const AVOption median_options[] = {
     { "radius", "set median radius",    OFFSET(radius), AV_OPT_TYPE_INT,   {.i64=1},     1,  127, FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=0xF},   0,  0xF, FLAGS },
     { "radiusV", "set median vertical radius", OFFSET(radiusV), AV_OPT_TYPE_INT, {.i64=0},0, 127, FLAGS },
+    { "percentile", "set median percentile", OFFSET(percentile), AV_OPT_TYPE_FLOAT, {.dbl=.5}, 0., 1., FLAGS },
     { NULL }
 };
 
@@ -127,7 +128,7 @@ static void check_params(MedianContext *s, AVFilterLink *inlink)
         }
     }
 
-    s->t = 2 * s->radius * s->radiusV + 2 * s->radius;
+    s->t = (2 * s->radius * s->radiusV + s->radiusV + s->radius) * 2.f * s->percentile;
 }
 
 static int config_input(AVFilterLink *inlink)
