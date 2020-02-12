@@ -36,8 +36,10 @@ typedef struct XMedianContext {
     const AVPixFmtDescriptor *desc;
     int nb_inputs;
     int planes;
+    float percentile;
 
     int radius;
+    int index;
     int depth;
     int max;
     int nb_planes;
@@ -94,6 +96,10 @@ static av_cold int init(AVFilterContext *ctx)
     int ret;
 
     s->radius = s->nb_inputs / 2;
+    if (s->nb_inputs & 1)
+        s->index = s->radius * 2.f * s->percentile;
+    else
+        s->index = av_clip(s->radius * 2.f * s->percentile, 1, s->nb_inputs - 1);
     s->frames = av_calloc(s->nb_inputs, sizeof(*s->frames));
     if (!s->frames)
         return AVERROR(ENOMEM);
@@ -134,6 +140,7 @@ static int median_frames16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVFrame *out = td->out;
     const int nb_inputs = s->nb_inputs;
     const int radius = s->radius;
+    const int index = s->index;
     int values[256];
 
     for (int p = 0; p < s->nb_planes; p++) {
@@ -143,8 +150,8 @@ static int median_frames16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 
         if (!((1 << p) & s->planes)) {
             av_image_copy_plane((uint8_t *)dst, out->linesize[p],
-                                in[0]->data[p] + slice_start * in[radius]->linesize[p],
-                                in[0]->linesize[p],
+                                in[radius]->data[p] + slice_start * in[radius]->linesize[p],
+                                in[radius]->linesize[p],
                                 s->linesize[p], slice_end - slice_start);
             continue;
         }
@@ -157,10 +164,10 @@ static int median_frames16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
                 }
 
                 AV_QSORT(values, nb_inputs, int, comparei);
-                if (radius & 1)
-                    dst[x] = values[radius];
+                if (nb_inputs & 1)
+                    dst[x] = values[index];
                 else
-                    dst[x] = (values[radius] + values[radius - 1]) >> 1;
+                    dst[x] = (values[index] + values[index - 1]) >> 1;
             }
 
             dst += out->linesize[p] / 2;
@@ -178,6 +185,7 @@ static int median_frames8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     AVFrame *out = td->out;
     const int nb_inputs = s->nb_inputs;
     const int radius = s->radius;
+    const int index = s->index;
     int values[256];
 
     for (int p = 0; p < s->nb_planes; p++) {
@@ -187,8 +195,8 @@ static int median_frames8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 
         if (!((1 << p) & s->planes)) {
             av_image_copy_plane(dst, out->linesize[p],
-                                in[0]->data[p] + slice_start * in[0]->linesize[p],
-                                in[0]->linesize[p],
+                                in[radius]->data[p] + slice_start * in[radius]->linesize[p],
+                                in[radius]->linesize[p],
                                 s->linesize[p], slice_end - slice_start);
             continue;
         }
@@ -199,10 +207,10 @@ static int median_frames8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                     values[i] = in[i]->data[p][y * in[i]->linesize[p] + x];
 
                 AV_QSORT(values, nb_inputs, int, comparei);
-                if (radius & 1)
-                    dst[x] = values[radius];
+                if (nb_inputs & 1)
+                    dst[x] = values[index];
                 else
-                    dst[x] = (values[radius] + values[radius - 1]) >> 1;
+                    dst[x] = (values[index] + values[index - 1]) >> 1;
             }
 
             dst += out->linesize[p];
@@ -328,6 +336,7 @@ static int activate(AVFilterContext *ctx)
 static const AVOption xmedian_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3},  3, 255, .flags = FLAGS },
     { "planes", "set planes to filter", OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=15}, 0,  15, .flags = FLAGS },
+    { "percentile", "set percentile",   OFFSET(percentile),AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1, .flags = FLAGS },
     { NULL },
 };
 
