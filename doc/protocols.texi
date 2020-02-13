@@ -1347,7 +1347,7 @@ Set UDP receive buffer size, expressed in bytes.
 @item send_buffer_size=@var{bytes}
 Set UDP send buffer size, expressed in bytes.
 
-@item rw_timeout
+@item timeout
 Set raise error timeout for read/write optations.
 
 This option is only relevant in read mode:

@@ -96,7 +96,7 @@ typedef struct SRTContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define OFFSET(x) offsetof(SRTContext, x)
 static const AVOption libsrt_options[] = {
-    { "rw_timeout",     "Timeout of socket I/O operations",                                     OFFSET(rw_timeout),       AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
+    { "timeout",        "Timeout of socket I/O operations",                                     OFFSET(rw_timeout),       AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
     { "listen_timeout", "Connection awaiting timeout",                                          OFFSET(listen_timeout),   AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
     { "send_buffer_size", "Socket send buffer size (in bytes)",                                 OFFSET(send_buffer_size), AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, INT_MAX,   .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",                              OFFSET(recv_buffer_size), AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, INT_MAX,   .flags = D|E },
