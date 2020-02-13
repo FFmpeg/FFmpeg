@@ -250,34 +250,19 @@ static int libsrt_listen_connect(int eid, int fd, const struct sockaddr *addr, s
     if (libsrt_socket_nonblock(fd, 1) < 0)
         av_log(h, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
 
-    while ((ret = srt_connect(fd, addr, addrlen))) {
-        ret = libsrt_neterrno(h);
-        switch (ret) {
-        case AVERROR(EINTR):
-            if (ff_check_interrupt(&h->interrupt_callback))
-                return AVERROR_EXIT;
-            continue;
-        case AVERROR(EINPROGRESS):
-        case AVERROR(EAGAIN):
-            ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
-            if (ret < 0)
-                return ret;
-            ret = srt_getlasterror(NULL);
-            srt_clearlasterror();
-            if (ret != 0) {
-                char buf[128];
-                ret = AVERROR(ret);
-                av_strerror(ret, buf, sizeof(buf));
-                if (will_try_next)
-                    av_log(h, AV_LOG_WARNING,
-                           "Connection to %s failed (%s), trying next address\n",
-                           h->filename, buf);
-                else
-                    av_log(h, AV_LOG_ERROR, "Connection to %s failed: %s\n",
-                           h->filename, buf);
-            }
-        default:
-            return ret;
+    ret = srt_connect(fd, addr, addrlen);
+    if (ret < 0)
+        return libsrt_neterrno(h);
+
+    ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
+    if (ret < 0) {
+        if (will_try_next) {
+            av_log(h, AV_LOG_WARNING,
+                   "Connection to %s failed (%s), trying next address\n",
+                   h->filename, av_err2str(ret));
+        } else {
+            av_log(h, AV_LOG_ERROR, "Connection to %s failed: %s\n",
+                   h->filename, av_err2str(ret));
         }
     }
     return ret;
