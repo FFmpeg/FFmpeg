@@ -1156,7 +1156,10 @@ static int FUNC(film_grain_params)(CodedBitstreamContext *ctx, RWContext *rw,
 
     fc(4, num_y_points, 0, 14);
     for (i = 0; i < current->num_y_points; i++) {
-        fbs(8, point_y_value[i],   1, i);
+        fcs(8, point_y_value[i],
+            i ? current->point_y_value[i - 1] + 1 : 0,
+            MAX_UINT_BITS(8) - (current->num_y_points - i - 1),
+            1, i);
         fbs(8, point_y_scaling[i], 1, i);
     }
 
@@ -1175,12 +1178,18 @@ static int FUNC(film_grain_params)(CodedBitstreamContext *ctx, RWContext *rw,
     } else {
         fc(4, num_cb_points, 0, 10);
         for (i = 0; i < current->num_cb_points; i++) {
-            fbs(8, point_cb_value[i],   1, i);
+            fcs(8, point_cb_value[i],
+                i ? current->point_cb_value[i - 1] + 1 : 0,
+                MAX_UINT_BITS(8) - (current->num_cb_points - i - 1),
+                1, i);
             fbs(8, point_cb_scaling[i], 1, i);
         }
         fc(4, num_cr_points, 0, 10);
         for (i = 0; i < current->num_cr_points; i++) {
-            fbs(8, point_cr_value[i],   1, i);
+            fcs(8, point_cr_value[i],
+                i ? current->point_cr_value[i - 1] + 1 : 0,
+                MAX_UINT_BITS(8) - (current->num_cr_points - i - 1),
+                1, i);
             fbs(8, point_cr_scaling[i], 1, i);
         }
     }
