@@ -210,7 +210,7 @@ static int libsrt_network_wait_fd_timeout(URLContext *h, int eid, int fd, int wr
     }
 }
 
-static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t addrlen, URLContext *h, int timeout)
+static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t addrlen, URLContext *h, int64_t timeout)
 {
     int ret;
     int reuse = 1;
@@ -243,7 +243,7 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
     return ret;
 }
 
-static int libsrt_listen_connect(int eid, int fd, const struct sockaddr *addr, socklen_t addrlen, int timeout, URLContext *h, int will_try_next)
+static int libsrt_listen_connect(int eid, int fd, const struct sockaddr *addr, socklen_t addrlen, int64_t timeout, URLContext *h, int will_try_next)
 {
     int ret;
 
@@ -447,7 +447,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     }
     if (s->mode == SRT_MODE_LISTENER) {
         // multi-client
-        if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, open_timeout / 1000)) < 0)
+        if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, open_timeout)) < 0)
             goto fail1;
         fd = ret;
     } else {
@@ -458,7 +458,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
         }
 
         if ((ret = libsrt_listen_connect(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                          open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
+                                          open_timeout, h, !!cur_ai->ai_next)) < 0) {
             if (ret == AVERROR_EXIT)
                 goto fail1;
             else
