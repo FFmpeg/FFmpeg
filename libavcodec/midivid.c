@@ -59,16 +59,17 @@ static int decode_mvdv(MidiVidContext *s, AVCodecContext *avctx, AVFrame *frame)
     uint32_t nb_blocks;
 
     nb_vectors = bytestream2_get_le16(gb);
-    intra_flag = bytestream2_get_le16(gb);
+    intra_flag = !!bytestream2_get_le16(gb);
     if (intra_flag) {
         nb_blocks = (avctx->width / 2) * (avctx->height / 2);
     } else {
-        int ret, skip_linesize;
+        int ret, skip_linesize, padding;
 
         nb_blocks = bytestream2_get_le32(gb);
         skip_linesize = avctx->width >> 1;
         mask_start = gb->buffer_start + bytestream2_tell(gb);
-        mask_size = (avctx->width >> 5) * (avctx->height >> 2);
+        mask_size = (FFALIGN(avctx->width, 32) >> 2) * (avctx->height >> 2) >> 3;
+        padding = (FFALIGN(avctx->width, 32) - avctx->width) >> 2;
 
         if (bytestream2_get_bytes_left(gb) < mask_size)
             return AVERROR_INVALIDDATA;
@@ -88,6 +89,7 @@ static int decode_mvdv(MidiVidContext *s, AVCodecContext *avctx, AVFrame *frame)
                 skip[(y*2+1)*skip_linesize + x*2  ] = flag;
                 skip[(y*2+1)*skip_linesize + x*2+1] = flag;
             }
+            skip_bits_long(&mask, padding);
         }
     }
 
@@ -96,10 +98,10 @@ static int decode_mvdv(MidiVidContext *s, AVCodecContext *avctx, AVFrame *frame)
         return AVERROR_INVALIDDATA;
     bytestream2_skip(gb, nb_vectors * 12);
     if (nb_vectors > 256) {
-        if (bytestream2_get_bytes_left(gb) < (nb_blocks + 7) / 8)
+        if (bytestream2_get_bytes_left(gb) < (nb_blocks + 7 * !intra_flag) / 8)
             return AVERROR_INVALIDDATA;
-        bytestream2_init(&idx9, gb->buffer_start + bytestream2_tell(gb), (nb_blocks + 7) / 8);
-        bytestream2_skip(gb, (nb_blocks + 7) / 8);
+        bytestream2_init(&idx9, gb->buffer_start + bytestream2_tell(gb), (nb_blocks + 7 * !intra_flag) / 8);
+        bytestream2_skip(gb, (nb_blocks + 7 * !intra_flag) / 8);
     }
 
     skip = s->skip;
