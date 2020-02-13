@@ -238,6 +238,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     MidiVidContext *s = avctx->priv_data;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 
+    if (avctx->width & 3 || avctx->height & 3)
+        ret = AVERROR_INVALIDDATA;
+
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid image size %dx%d.\n",
                avctx->width, avctx->height);
