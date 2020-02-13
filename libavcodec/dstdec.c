@@ -86,6 +86,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (DST_SAMPLES_PER_FRAME(avctx->sample_rate) & 7) {
+        return AVERROR_PATCHWELCOME;
+    }
+
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
     for (i = 0; i < avctx->channels; i++)
