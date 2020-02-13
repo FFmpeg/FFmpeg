@@ -27,6 +27,7 @@
 #define COMPAT_OS2THREADS_H
 
 #define INCL_DOS
+#define INCL_DOSERRORS
 #include <os2.h>
 
 #undef __STRICT_ANSI__          /* for _beginthread() */
