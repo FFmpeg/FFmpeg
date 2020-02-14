@@ -15485,6 +15485,11 @@ Xmap and Ymap input video streams are 16bit depth, single channel.
 @item format
 Specify pixel format of output from this filter. Can be @code{color} or @code{gray}.
 Default is @code{color}.
+
+@item fill
+Specify the color of the unmapped pixels. For the syntax of this option,
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils
+manual,ffmpeg-utils}. Default color is @code{black}.
 @end table
 
 @section removegrain
