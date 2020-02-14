@@ -491,14 +491,6 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
             bytestream_get_buffer(&src, samples, n * sample_size);
         }
         break;
-    case AV_CODEC_ID_PCM_ZORK:
-        for (; n > 0; n--) {
-            int v = *src++;
-            if (v < 128)
-                v = 128 - v;
-            *samples++ = v;
-        }
-        break;
     case AV_CODEC_ID_PCM_ALAW:
     case AV_CODEC_ID_PCM_MULAW:
     case AV_CODEC_ID_PCM_VIDC:
@@ -626,7 +618,6 @@ PCM_CODEC  (PCM_U24BE,        AV_SAMPLE_FMT_S32, pcm_u24be,        "PCM unsigned
 PCM_CODEC  (PCM_U24LE,        AV_SAMPLE_FMT_S32, pcm_u24le,        "PCM unsigned 24-bit little-endian");
 PCM_CODEC  (PCM_U32BE,        AV_SAMPLE_FMT_S32, pcm_u32be,        "PCM unsigned 32-bit big-endian");
 PCM_CODEC  (PCM_U32LE,        AV_SAMPLE_FMT_S32, pcm_u32le,        "PCM unsigned 32-bit little-endian");
-PCM_DECODER(PCM_ZORK,         AV_SAMPLE_FMT_U8,  pcm_zork,         "PCM Zork");
 PCM_CODEC  (PCM_S64BE,        AV_SAMPLE_FMT_S64, pcm_s64be,        "PCM signed 64-bit big-endian");
 PCM_CODEC  (PCM_S64LE,        AV_SAMPLE_FMT_S64, pcm_s64le,        "PCM signed 64-bit little-endian");
 PCM_CODEC  (PCM_VIDC,         AV_SAMPLE_FMT_S16, pcm_vidc,         "PCM Archimedes VIDC");

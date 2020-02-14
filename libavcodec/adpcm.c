@@ -83,6 +83,10 @@ static const int8_t swf_index_tables[4][16] = {
     /*5*/ { -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, 4, 6, 8, 10, 13, 16 }
 };
 
+static const int8_t zork_index_table[8] = {
+    -1, -1, -1, 1, 4, 7, 10, 12,
+};
+
 /* end of tables */
 
 typedef struct ADPCMDecodeContext {
@@ -152,6 +156,10 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
         if (avctx->bits_per_coded_sample != 4)
+            return AVERROR_INVALIDDATA;
+        break;
+    case AV_CODEC_ID_ADPCM_ZORK:
+        if (avctx->bits_per_coded_sample != 8)
             return AVERROR_INVALIDDATA;
         break;
     default:
@@ -414,6 +422,41 @@ static inline int16_t adpcm_mtaf_expand_nibble(ADPCMChannelStatus *c, uint8_t ni
     c->step += ff_adpcm_index_table[nibble];
     c->step = av_clip_uintp2(c->step, 5);
     return c->predictor;
+}
+
+static inline int16_t adpcm_zork_expand_nibble(ADPCMChannelStatus *c, uint8_t nibble)
+{
+    int16_t index = c->step_index;
+    uint32_t lookup_sample = ff_adpcm_step_table[index];
+    int32_t sample = 0;
+
+    if (nibble & 0x40)
+        sample += lookup_sample;
+    if (nibble & 0x20)
+        sample += lookup_sample >> 1;
+    if (nibble & 0x10)
+        sample += lookup_sample >> 2;
+    if (nibble & 0x08)
+        sample += lookup_sample >> 3;
+    if (nibble & 0x04)
+        sample += lookup_sample >> 4;
+    if (nibble & 0x02)
+        sample += lookup_sample >> 5;
+    if (nibble & 0x01)
+        sample += lookup_sample >> 6;
+    if (nibble & 0x80)
+        sample = -sample;
+
+    sample += c->predictor;
+    sample = av_clip_int16(sample);
+
+    index += zork_index_table[(nibble >> 4) & 7];
+    index = av_clip(index, 0, 88);
+
+    c->predictor = sample;
+    c->step_index = index;
+
+    return sample;
 }
 
 static int xa_decode(AVCodecContext *avctx, int16_t *out0, int16_t *out1,
@@ -779,6 +822,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_DTK:
     case AV_CODEC_ID_ADPCM_PSX:
         nb_samples = buf_size / (16 * ch) * 28;
+        break;
+    case AV_CODEC_ID_ADPCM_ZORK:
+        nb_samples = buf_size / ch;
         break;
     }
 
@@ -1842,6 +1888,19 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         break;
+    case AV_CODEC_ID_ADPCM_ZORK:
+        if (!c->has_status) {
+            for (channel = 0; channel < avctx->channels; channel++) {
+                c->status[channel].predictor  = 0;
+                c->status[channel].step_index = 0;
+            }
+            c->has_status = 1;
+        }
+        for (n = 0; n < nb_samples * avctx->channels; n++) {
+            int v = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_zork_expand_nibble(&c->status[n % avctx->channels], v);
+        }
+        break;
     default:
         av_assert0(0); // unsupported codec_id should not happen
     }
@@ -1930,3 +1989,4 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP_LE,      sample_fmts_s16p, adpcm_thp_le,    
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP,         sample_fmts_s16p, adpcm_thp,         "ADPCM Nintendo THP");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_XA,          sample_fmts_s16p, adpcm_xa,          "ADPCM CDROM XA");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_YAMAHA,      sample_fmts_s16,  adpcm_yamaha,      "ADPCM Yamaha");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_ZORK,        sample_fmts_s16,  adpcm_zork,        "ADPCM Zork");

@@ -566,7 +566,6 @@ extern AVCodec ff_pcm_u32le_encoder;
 extern AVCodec ff_pcm_u32le_decoder;
 extern AVCodec ff_pcm_vidc_encoder;
 extern AVCodec ff_pcm_vidc_decoder;
-extern AVCodec ff_pcm_zork_decoder;
 
 /* DPCM codecs */
 extern AVCodec ff_gremlin_dpcm_decoder;
@@ -630,6 +629,7 @@ extern AVCodec ff_adpcm_vima_decoder;
 extern AVCodec ff_adpcm_xa_decoder;
 extern AVCodec ff_adpcm_yamaha_encoder;
 extern AVCodec ff_adpcm_yamaha_decoder;
+extern AVCodec ff_adpcm_zork_decoder;
 
 /* subtitles */
 extern AVCodec ff_ssa_encoder;

@@ -202,7 +202,7 @@ enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps)
         id = ff_get_pcm_codec_id(bps, 1, 0,  0);
 
     if (id == AV_CODEC_ID_ADPCM_IMA_WAV && bps == 8)
-        id = AV_CODEC_ID_PCM_ZORK;
+        id = AV_CODEC_ID_ADPCM_ZORK;
     return id;
 }
 

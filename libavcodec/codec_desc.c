@@ -1876,13 +1876,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_ZORK,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_zork",
-        .long_name = NULL_IF_CONFIG_SMALL("PCM Zork"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-    },
-    {
         .id        = AV_CODEC_ID_PCM_S16LE_PLANAR,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "pcm_s16le_planar",
@@ -2316,6 +2309,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "adpcm_ima_ssi",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Simon & Schuster Interactive"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_ADPCM_ZORK,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_zork",
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM Zork"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 

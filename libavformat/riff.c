@@ -516,7 +516,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_ADPCM_IMA_OKI,   0x0010 },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   0x0011 },
     /* must come after adpcm_ima_wav in this list */
-    { AV_CODEC_ID_PCM_ZORK,        0x0011 },
+    { AV_CODEC_ID_ADPCM_ZORK,      0x0011 },
     { AV_CODEC_ID_ADPCM_IMA_OKI,   0x0017 },
     { AV_CODEC_ID_ADPCM_YAMAHA,    0x0020 },
     { AV_CODEC_ID_TRUESPEECH,      0x0022 },
