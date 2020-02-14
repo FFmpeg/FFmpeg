@@ -249,9 +249,6 @@ static int libsrt_listen_connect(int eid, int fd, const struct sockaddr *addr, s
 {
     int ret;
 
-    if (libsrt_socket_nonblock(fd, 1) < 0)
-        av_log(h, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
-
     ret = srt_connect(fd, addr, addrlen);
     if (ret < 0)
         return libsrt_neterrno(h);
@@ -432,6 +429,9 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     if (s->send_buffer_size > 0) {
         srt_setsockopt(fd, SOL_SOCKET, SRTO_UDP_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
     }
+    if (libsrt_socket_nonblock(fd, 1) < 0)
+        av_log(h, AV_LOG_DEBUG, "libsrt_socket_nonblock failed\n");
+
     if (s->mode == SRT_MODE_LISTENER) {
         // multi-client
         if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, open_timeout)) < 0)
