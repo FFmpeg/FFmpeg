@@ -44,6 +44,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 
+#define ZIMG_ALIGNMENT 32
+
 static const char *const var_names[] = {
     "in_w",   "iw",
     "in_h",   "ih",
@@ -502,6 +504,44 @@ static int graph_build(zimg_filter_graph **graph, zimg_graph_builder_params *par
     return 0;
 }
 
+static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame)
+{
+    AVFrame *aligned = NULL;
+    int ret = 0, plane;
+
+    /* Realign any unaligned input frame. */
+    for (plane = 0; plane < 3; plane++) {
+        int p = desc->comp[plane].plane;
+        if ((uintptr_t)(*frame)->data[p] % ZIMG_ALIGNMENT || (*frame)->linesize[p] % ZIMG_ALIGNMENT) {
+            if (!(aligned = av_frame_alloc())) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            aligned->format = (*frame)->format;
+            aligned->width  = (*frame)->width;
+            aligned->height = (*frame)->height;
+
+            if ((ret = av_frame_get_buffer(aligned, ZIMG_ALIGNMENT)) < 0)
+                goto fail;
+
+            if ((ret = av_frame_copy(aligned, *frame)) < 0)
+                goto fail;
+
+            if ((ret = av_frame_copy_props(aligned, *frame)) < 0)
+                goto fail;
+
+            av_frame_free(frame);
+            *frame = aligned;
+            return 0;
+        }
+    }
+
+fail:
+    av_frame_free(&aligned);
+    return ret;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     ZScaleContext *s = link->dst->priv;
@@ -512,12 +552,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     zimg_image_buffer dst_buf = { ZIMG_API_VERSION };
     char buf[32];
     int ret = 0, plane;
-    AVFrame *out;
+    AVFrame *out = NULL;
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
+    if ((ret = realign_frame(desc, &in)) < 0)
+        goto fail;
+
+    if (!(out = ff_get_video_buffer(outlink, outlink->w, outlink->h))) {
+        ret =  AVERROR(ENOMEM);
+        goto fail;
     }
 
     av_frame_copy_props(out, in);
@@ -546,11 +588,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         link->dst->inputs[0]->w      = in->width;
         link->dst->inputs[0]->h      = in->height;
 
-        if ((ret = config_props(outlink)) < 0) {
-            av_frame_free(&in);
-            av_frame_free(&out);
-            return ret;
-        }
+        if ((ret = config_props(outlink)) < 0)
+            goto fail;
 
         zimg_image_format_default(&s->src_format, ZIMG_API_VERSION);
         zimg_image_format_default(&s->dst_format, ZIMG_API_VERSION);
