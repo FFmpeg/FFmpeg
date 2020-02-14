@@ -47,8 +47,6 @@ typedef void FFTComplex;
 
 #if defined(TX_FLOAT) || defined(TX_DOUBLE)
 
-#define MUL(x, y) ((x)*(y))
-
 #define CMUL(dre, dim, are, aim, bre, bim) do {                                \
         (dre) = (are) * (bre) - (aim) * (bim);                                 \
         (dim) = (are) * (bim) + (aim) * (bre);                                 \
@@ -64,8 +62,6 @@ typedef void FFTComplex;
 #define FOLD(a, b) ((a) + (b))
 
 #elif defined(TX_INT32)
-
-#define MUL(x, y) ((int32_t)(((int64_t)(x) * (int64_t)(y) + 0x40000000) >> 31))
 
 /* Properly rounds the result */
 #define CMUL(dre, dim, are, aim, bre, bim) do {                                \

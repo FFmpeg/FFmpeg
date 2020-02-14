@@ -131,6 +131,9 @@ static av_always_inline void fft3(FFTComplex *out, FFTComplex *in,
                                   ptrdiff_t stride)
 {
     FFTComplex tmp[2];
+#ifdef TX_INT32
+    int64_t mtmp[4];
+#endif
 
     BF(tmp[0].re, tmp[1].im, in[1].im, in[2].im);
     BF(tmp[0].im, tmp[1].re, in[1].re, in[2].re);
@@ -138,15 +141,25 @@ static av_always_inline void fft3(FFTComplex *out, FFTComplex *in,
     out[0*stride].re = in[0].re + tmp[1].re;
     out[0*stride].im = in[0].im + tmp[1].im;
 
-    tmp[0].re = MUL(TX_NAME(ff_cos_53)[0].re, tmp[0].re);
-    tmp[0].im = MUL(TX_NAME(ff_cos_53)[0].im, tmp[0].im);
-    tmp[1].re = MUL(TX_NAME(ff_cos_53)[1].re, tmp[1].re);
-    tmp[1].im = MUL(TX_NAME(ff_cos_53)[1].re, tmp[1].im);
-
+#ifdef TX_INT32
+    mtmp[0] = (int64_t)TX_NAME(ff_cos_53)[0].re * tmp[0].re;
+    mtmp[1] = (int64_t)TX_NAME(ff_cos_53)[0].im * tmp[0].im;
+    mtmp[2] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].re;
+    mtmp[3] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].im;
+    out[1*stride].re = in[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
+    out[1*stride].im = in[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
+    out[2*stride].re = in[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
+    out[2*stride].im = in[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
+#else
+    tmp[0].re = TX_NAME(ff_cos_53)[0].re * tmp[0].re;
+    tmp[0].im = TX_NAME(ff_cos_53)[0].im * tmp[0].im;
+    tmp[1].re = TX_NAME(ff_cos_53)[1].re * tmp[1].re;
+    tmp[1].im = TX_NAME(ff_cos_53)[1].re * tmp[1].im;
     out[1*stride].re = in[0].re - tmp[1].re + tmp[0].re;
     out[1*stride].im = in[0].im - tmp[1].im - tmp[0].im;
     out[2*stride].re = in[0].re - tmp[1].re - tmp[0].re;
     out[2*stride].im = in[0].im - tmp[1].im + tmp[0].im;
+#endif
 }
 
 #define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                                       \
