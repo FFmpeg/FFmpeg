@@ -227,14 +227,9 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
     if (ret)
         return libsrt_neterrno(h);
 
-    while ((ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback))) {
-        switch (ret) {
-        case AVERROR(ETIMEDOUT):
-            continue;
-        default:
-            return ret;
-        }
-    }
+    ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
+    if (ret < 0)
+        return ret;
 
     ret = srt_accept(fd, NULL, NULL);
     if (ret < 0)
@@ -434,7 +429,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
 
     if (s->mode == SRT_MODE_LISTENER) {
         // multi-client
-        if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, open_timeout)) < 0)
+        if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, s->listen_timeout)) < 0)
             goto fail1;
         fd = ret;
     } else {
