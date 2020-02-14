@@ -164,16 +164,17 @@ static int libsrt_socket_nonblock(int socket, int enable)
 
 static int libsrt_network_wait_fd(URLContext *h, int eid, int fd, int write)
 {
-    int ret, len = 1;
-    int modes = write ? SRT_EPOLL_OUT : SRT_EPOLL_IN;
+    int ret, len = 1, errlen = 1;
+    int modes = SRT_EPOLL_ERR | (write ? SRT_EPOLL_OUT : SRT_EPOLL_IN);
     SRTSOCKET ready[1];
+    SRTSOCKET error[1];
 
     if (srt_epoll_add_usock(eid, fd, &modes) < 0)
         return libsrt_neterrno(h);
     if (write) {
-        ret = srt_epoll_wait(eid, 0, 0, ready, &len, POLLING_TIME, 0, 0, 0, 0);
+        ret = srt_epoll_wait(eid, error, &errlen, ready, &len, POLLING_TIME, 0, 0, 0, 0);
     } else {
-        ret = srt_epoll_wait(eid, ready, &len, 0, 0, POLLING_TIME, 0, 0, 0, 0);
+        ret = srt_epoll_wait(eid, ready, &len, error, &errlen, POLLING_TIME, 0, 0, 0, 0);
     }
     if (ret < 0) {
         if (srt_getlasterror(NULL) == SRT_ETIMEOUT)
@@ -181,7 +182,7 @@ static int libsrt_network_wait_fd(URLContext *h, int eid, int fd, int write)
         else
             ret = libsrt_neterrno(h);
     } else {
-        ret = 0;
+        ret = errlen ? AVERROR(EIO) : 0;
     }
     if (srt_epoll_remove_usock(eid, fd) < 0)
         return libsrt_neterrno(h);
