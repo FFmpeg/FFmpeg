@@ -145,11 +145,12 @@ static const AVOption libsrt_options[] = {
 
 static int libsrt_neterrno(URLContext *h)
 {
-    int err = srt_getlasterror(NULL);
-    av_log(h, AV_LOG_ERROR, "%s\n", srt_getlasterror_str());
-    if (err == SRT_EASYNCRCV)
+    int os_errno;
+    int err = srt_getlasterror(&os_errno);
+    if (err == SRT_EASYNCRCV || err == SRT_EASYNCSND)
         return AVERROR(EAGAIN);
-    return AVERROR_UNKNOWN;
+    av_log(h, AV_LOG_ERROR, "%s\n", srt_getlasterror_str());
+    return os_errno ? AVERROR(os_errno) : AVERROR_UNKNOWN;
 }
 
 static int libsrt_socket_nonblock(int socket, int enable)
