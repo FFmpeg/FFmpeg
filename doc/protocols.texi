@@ -1348,11 +1348,9 @@ Set UDP receive buffer size, expressed in bytes.
 Set UDP send buffer size, expressed in bytes.
 
 @item timeout
-Set raise error timeout for read/write optations.
-
-This option is only relevant in read mode:
-if no data arrived in more than this time
-interval, raise error.
+Set raise error timeouts for read, write and connect operations. Note that the
+SRT library has internal timeouts which can be controlled separately, the
+value set here is only a cap on those.
 
 @item tlpktdrop=@var{1|0}
 Too-late Packet Drop. When enabled on receiver, it skips
