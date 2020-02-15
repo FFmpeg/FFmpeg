@@ -1858,6 +1858,8 @@ again:
     }
 
     if (is_dng) {
+        int bps;
+
         if (s->white_level == 0)
             s->white_level = (1 << s->bpp) - 1; /* Default value as per the spec */
 
@@ -1866,6 +1868,12 @@ again:
                 s->black_level, s->white_level);
             return AVERROR_INVALIDDATA;
         }
+
+        if (s->bpp % s->bppcount)
+            return AVERROR_INVALIDDATA;
+        bps = s->bpp / s->bppcount;
+        if (bps < 8 || bps > 32)
+            return AVERROR_INVALIDDATA;
     }
 
     if (!s->is_tiled && !s->strippos && !s->stripoff) {
