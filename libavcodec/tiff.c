@@ -1874,6 +1874,8 @@ again:
         bps = s->bpp / s->bppcount;
         if (bps < 8 || bps > 32)
             return AVERROR_INVALIDDATA;
+        if (s->planar)
+            return AVERROR_PATCHWELCOME;
     }
 
     if (!s->is_tiled && !s->strippos && !s->stripoff) {
