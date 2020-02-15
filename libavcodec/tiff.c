@@ -704,18 +704,20 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
 
             /* Color processing for DNG images with uncompressed strips (non-tiled) */
             if (is_dng) {
-                int is_u16, pixel_size_bytes, pixel_size_bits;
+                int is_u16, pixel_size_bytes, pixel_size_bits, elements;
 
                 is_u16 = (s->bpp > 8);
                 pixel_size_bits = (is_u16 ? 16 : 8);
                 pixel_size_bytes = (is_u16 ? sizeof(uint16_t) : sizeof(uint8_t));
 
+                elements = width / pixel_size_bytes * pixel_size_bits / s->bpp * s->bppcount; // need to account for [1, 16] bpp
+                av_assert0 (elements * pixel_size_bytes <= FFABS(stride));
                 dng_blit(s,
                          dst,
                          0, // no stride, only 1 line
                          dst,
                          0, // no stride, only 1 line
-                         width / pixel_size_bytes * pixel_size_bits / s->bpp * s->bppcount, // need to account for [1, 16] bpp
+                         elements,
                          1,
                          0, // single-component variation is only preset in JPEG-encoded DNGs
                          is_u16);
