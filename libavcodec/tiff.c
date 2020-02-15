@@ -589,7 +589,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
         av_assert0(s->bpp == 24);
     }
     if (s->is_bayer) {
-        width = (s->bpp * s->width + 7) >> 3;
+        av_assert0(width == (s->bpp * s->width + 7) >> 3);
     }
     if (p->format == AV_PIX_FMT_GRAY12) {
         av_fast_padded_malloc(&s->yuv_line, &s->yuv_line_size, width);
