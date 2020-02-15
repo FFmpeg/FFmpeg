@@ -437,7 +437,7 @@ static void abgrToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
     int16_t *dst = (int16_t *)_dst;
     int i;
     for (i=0; i<width; i++) {
-        dst[i]= src[4*i]<<6;
+        dst[i]= src[4*i]<<6 | src[4*i]>>2;
     }
 }
 
@@ -446,7 +446,7 @@ static void rgbaToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
     int16_t *dst = (int16_t *)_dst;
     int i;
     for (i=0; i<width; i++) {
-        dst[i]= src[4*i+3]<<6;
+        dst[i]= src[4*i+3]<<6 | src[4*i+3]>>2;
     }
 }
 
@@ -457,7 +457,7 @@ static void palToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, 
     for (i=0; i<width; i++) {
         int d= src[i];
 
-        dst[i]= (pal[d] >> 24)<<6;
+        dst[i]= (pal[d] >> 24)<<6 | pal[d]>>26;
     }
 }
 
