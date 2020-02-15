@@ -1521,11 +1521,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!avi->non_interleaved && st->nb_index_entries>1 && avi->index_loaded>1) {
             int64_t dts= av_rescale_q(pkt->dts, st->time_base, AV_TIME_BASE_Q);
 
-            if (avi->dts_max - dts > 2*AV_TIME_BASE) {
+            if (avi->dts_max < dts) {
+                avi->dts_max = dts;
+            } else if (avi->dts_max - (uint64_t)dts > 2*AV_TIME_BASE) {
                 avi->non_interleaved= 1;
                 av_log(s, AV_LOG_INFO, "Switching to NI mode, due to poor interleaving\n");
-            }else if (avi->dts_max < dts)
-                avi->dts_max = dts;
+            }
         }
 
         return 0;
