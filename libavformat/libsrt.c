@@ -361,7 +361,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     int ret;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
-    int open_timeout = 5000000;
+    int open_timeout = 0;
     int eid;
 
     eid = srt_epoll_create();
