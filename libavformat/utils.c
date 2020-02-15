@@ -4455,15 +4455,17 @@ void avformat_free_context(AVFormatContext *s)
     if (s->oformat && s->oformat->priv_class && s->priv_data)
         av_opt_free(s->priv_data);
 
-    for (i = s->nb_streams - 1; i >= 0; i--)
-        ff_free_stream(s, s->streams[i]);
+    for (i = 0; i < s->nb_streams; i++)
+        free_stream(&s->streams[i]);
+    s->nb_streams = 0;
 
-
-    for (i = s->nb_programs - 1; i >= 0; i--) {
+    for (i = 0; i < s->nb_programs; i++) {
         av_dict_free(&s->programs[i]->metadata);
         av_freep(&s->programs[i]->stream_index);
         av_freep(&s->programs[i]);
     }
+    s->nb_programs = 0;
+
     av_freep(&s->programs);
     av_freep(&s->priv_data);
     while (s->nb_chapters--) {
