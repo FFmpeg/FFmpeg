@@ -1518,8 +1518,7 @@ static int dash_init(AVFormatContext *s)
                 return ret;
             // We only want to parse frame headers
             os->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-        } else
-            os->coding_dependency = 1;
+        }
 
         if (c->single_file) {
             if (os->single_file_name)
@@ -1573,6 +1572,9 @@ static int dash_init(AVFormatContext *s)
                 av_log(s, AV_LOG_WARNING, "frag_type set to P-Frame reordering, but no parser found for stream %d\n", i);
             os->frag_type = c->streaming ? FRAG_TYPE_EVERY_FRAME : FRAG_TYPE_NONE;
         }
+        if (os->frag_type != FRAG_TYPE_PFRAMES && as->trick_idx < 0)
+            // Set this now if a parser isn't used
+            os->coding_dependency = 1;
 
         if (os->segment_type == SEGMENT_TYPE_MP4) {
             if (c->streaming)
