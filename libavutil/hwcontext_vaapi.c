@@ -1631,6 +1631,7 @@ static int vaapi_device_derive(AVHWDeviceContext *ctx,
         AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
         VADisplay *display;
         VAAPIDevicePriv *priv;
+        int fd;
 
         if (src_hwctx->fd < 0) {
             av_log(ctx, AV_LOG_ERROR, "DRM instance requires an associated "
@@ -1638,17 +1639,56 @@ static int vaapi_device_derive(AVHWDeviceContext *ctx,
             return AVERROR(EINVAL);
         }
 
+#if CONFIG_LIBDRM
+        {
+            int node_type = drmGetNodeTypeFromFd(src_hwctx->fd);
+            char *render_node;
+            if (node_type < 0) {
+                av_log(ctx, AV_LOG_ERROR, "DRM instance fd does not appear "
+                       "to refer to a DRM device.\n");
+                return AVERROR(EINVAL);
+            }
+            if (node_type == DRM_NODE_RENDER) {
+                fd = src_hwctx->fd;
+            } else {
+                render_node = drmGetRenderDeviceNameFromFd(src_hwctx->fd);
+                if (!render_node) {
+                    av_log(ctx, AV_LOG_ERROR, "Failed to find a render node "
+                           "matching the DRM device.\n");
+                    return AVERROR(ENODEV);
+                }
+                fd = open(render_node, O_RDWR);
+                if (fd < 0) {
+                    av_log(ctx, AV_LOG_ERROR, "Failed to open render node %s"
+                           "matching the DRM device.\n", render_node);
+                    free(render_node);
+                    return AVERROR(errno);
+                }
+                av_log(ctx, AV_LOG_VERBOSE, "Using render node %s in place "
+                       "of non-render DRM device.\n", render_node);
+                free(render_node);
+            }
+        }
+#else
+        fd = src_hwctx->fd;
+#endif
+
         priv = av_mallocz(sizeof(*priv));
         if (!priv)
             return AVERROR(ENOMEM);
 
-        // Inherits the fd from the source context, which will close it.
-        priv->drm_fd = -1;
+        if (fd == src_hwctx->fd) {
+            // The fd is inherited from the source context and we are holding
+            // a reference to that, we don't want to close it from here.
+            priv->drm_fd = -1;
+        } else {
+            priv->drm_fd = fd;
+        }
 
         ctx->user_opaque = priv;
         ctx->free        = &vaapi_device_free;
 
-        display = vaGetDisplayDRM(src_hwctx->fd);
+        display = vaGetDisplayDRM(fd);
         if (!display) {
             av_log(ctx, AV_LOG_ERROR, "Failed to open a VA display from "
                    "DRM device.\n");
