@@ -2062,7 +2062,7 @@ yuv2gbrp16_full_X_c(SwsContext *c, const int16_t *lumFilter,
             A = -0x40000000;
 
             for (j = 0; j < lumFilterSize; j++)
-                A += alpSrc[j][i] * lumFilter[j];
+                A += alpSrc[j][i] * (unsigned)lumFilter[j];
 
             A >>= 1;
             A += 0x20002000;
