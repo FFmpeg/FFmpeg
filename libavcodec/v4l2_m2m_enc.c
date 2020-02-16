@@ -83,7 +83,7 @@ static inline int v4l2_get_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed i
 
     ret = ioctl(s->fd, VIDIOC_G_EXT_CTRLS, &ctrls);
     if (ret < 0) {
-        av_log(s->avctx, AV_LOG_WARNING, "Failed to set %s\n", name);
+        av_log(s->avctx, AV_LOG_WARNING, "Failed to get %s\n", name);
         return ret;
     }
 
