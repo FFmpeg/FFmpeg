@@ -818,7 +818,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
         avio_printf(out, " lang=\"%s\"", lang->value);
     avio_printf(out, ">\n");
 
-    if (!final && c->ldash && as->max_frag_duration)
+    if (!final && c->ldash && as->max_frag_duration && !(c->profile & MPD_PROFILE_DVB))
         avio_printf(out, "\t\t\t<Resync dT=\"%"PRId64"\" type=\"0\"/>\n", as->max_frag_duration);
     if (as->trick_idx >= 0)
         avio_printf(out, "\t\t\t<EssentialProperty id=\"%d\" schemeIdUri=\"http://dashif.org/guidelines/trickmode\" value=\"%d\"/>\n", as->id, as->trick_idx);
@@ -869,7 +869,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
             avio_printf(out, "\t\t\t\t\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
             avio_printf(out, "\t\t\t\t</ProducerReferenceTime>\n");
         }
-        if (!final && c->ldash && os->gop_size && os->frag_type != FRAG_TYPE_NONE &&
+        if (!final && c->ldash && os->gop_size && os->frag_type != FRAG_TYPE_NONE && !(c->profile & MPD_PROFILE_DVB) &&
             (os->frag_type != FRAG_TYPE_DURATION || os->frag_duration != os->seg_duration))
             avio_printf(out, "\t\t\t\t<Resync dT=\"%"PRId64"\" type=\"1\"/>\n", os->gop_size);
         output_segment_list(os, out, s, i, final);
