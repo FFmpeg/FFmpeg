@@ -588,6 +588,10 @@ static av_cold int opengl_read_limits(AVFormatContext *h)
 
     version = glGetString(GL_VERSION);
     extensions = glGetString(GL_EXTENSIONS);
+    if (!version || !extensions) {
+        av_log(h, AV_LOG_ERROR, "No OpenGL context initialized for the current thread\n");
+        return AVERROR(ENOSYS);
+    }
 
     av_log(h, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
     sscanf(version, "%d.%d", &major, &minor);
