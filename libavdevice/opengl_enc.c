@@ -568,8 +568,9 @@ static void opengl_make_ortho(float matrix[16], float left, float right,
     matrix[15] = 1.0f;
 }
 
-static av_cold int opengl_read_limits(OpenGLContext *opengl)
+static av_cold int opengl_read_limits(AVFormatContext *h)
 {
+    OpenGLContext *opengl = h->priv_data;
     static const struct{
         const char *extension;
         int major;
@@ -588,16 +589,16 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     version = glGetString(GL_VERSION);
     extensions = glGetString(GL_EXTENSIONS);
 
-    av_log(opengl, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
+    av_log(h, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
     sscanf(version, "%d.%d", &major, &minor);
 
     for (i = 0; required_extensions[i].extension; i++) {
         if (major < required_extensions[i].major &&
             (major == required_extensions[i].major && minor < required_extensions[i].minor) &&
             !strstr(extensions, required_extensions[i].extension)) {
-            av_log(opengl, AV_LOG_ERROR, "Required extension %s is not supported.\n",
+            av_log(h, AV_LOG_ERROR, "Required extension %s is not supported.\n",
                    required_extensions[i].extension);
-            av_log(opengl, AV_LOG_DEBUG, "Supported extensions are: %s\n", extensions);
+            av_log(h, AV_LOG_DEBUG, "Supported extensions are: %s\n", extensions);
             return AVERROR(ENOSYS);
         }
     }
@@ -610,10 +611,10 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     opengl->unpack_subimage = 1;
 #endif
 
-    av_log(opengl, AV_LOG_DEBUG, "Non Power of 2 textures support: %s\n", opengl->non_pow_2_textures ? "Yes" : "No");
-    av_log(opengl, AV_LOG_DEBUG, "Unpack Subimage extension support: %s\n", opengl->unpack_subimage ? "Yes" : "No");
-    av_log(opengl, AV_LOG_DEBUG, "Max texture size: %dx%d\n", opengl->max_texture_size, opengl->max_texture_size);
-    av_log(opengl, AV_LOG_DEBUG, "Max viewport size: %dx%d\n",
+    av_log(h, AV_LOG_DEBUG, "Non Power of 2 textures support: %s\n", opengl->non_pow_2_textures ? "Yes" : "No");
+    av_log(h, AV_LOG_DEBUG, "Unpack Subimage extension support: %s\n", opengl->unpack_subimage ? "Yes" : "No");
+    av_log(h, AV_LOG_DEBUG, "Max texture size: %dx%d\n", opengl->max_texture_size, opengl->max_texture_size);
+    av_log(h, AV_LOG_DEBUG, "Max viewport size: %dx%d\n",
            opengl->max_viewport_width, opengl->max_viewport_height);
 
     OPENGL_ERROR_CHECK(opengl);
@@ -1074,7 +1075,7 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     if ((ret = opengl_create_window(h)))
         goto fail;
 
-    if ((ret = opengl_read_limits(opengl)) < 0)
+    if ((ret = opengl_read_limits(h)) < 0)
         goto fail;
 
     if (opengl->width > opengl->max_texture_size || opengl->height > opengl->max_texture_size) {
