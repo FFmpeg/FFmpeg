@@ -1404,6 +1404,10 @@ static int dash_init(AVFormatContext *s)
         c->write_prft = 0;
     }
 
+    if (c->ldash && !c->write_prft) {
+        av_log(s, AV_LOG_WARNING, "Low Latency mode enabled without Producer Reference Time element option! Resulting manifest may not be complaint\n");
+    }
+
     if (c->target_latency && !c->write_prft) {
         av_log(s, AV_LOG_WARNING, "Target latency option will be ignored as Producer Reference Time element will not be written\n");
         c->target_latency = 0;
