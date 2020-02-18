@@ -43,6 +43,9 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int i, j;
     int ret;
 
+    if (avpkt->size < 88)
+        return AVERROR_INVALIDDATA;
+
     ff_texturedsp_init(&dxtc);
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
