@@ -34,6 +34,7 @@
 
 #define ATTR_BOLD         0x01  /**< Bold/Bright-foreground (mode 1) */
 #define ATTR_FAINT        0x02  /**< Faint (mode 2) */
+#define ATTR_ITALICS      0x04  /**< Italics (mode 3) */
 #define ATTR_UNDERLINE    0x08  /**< Underline (mode 4) */
 #define ATTR_BLINK        0x10  /**< Blink/Bright-background (mode 5) */
 #define ATTR_REVERSE      0x40  /**< Reverse (mode 7) */
@@ -308,7 +309,7 @@ static int execute_code(AVCodecContext * avctx, int c)
                 s->attributes = 0;
                 s->fg = DEFAULT_FG_COLOR;
                 s->bg = DEFAULT_BG_COLOR;
-            } else if (m == 1 || m == 2 || m == 4 || m == 5 || m == 7 || m == 8) {
+            } else if (m == 1 || m == 2 || m == 3 || m == 4 || m == 5 || m == 7 || m == 8) {
                 s->attributes |= 1 << (m - 1);
             } else if (m >= 30 && m <= 37) {
                 s->fg = ansi_to_cga[m - 30];
