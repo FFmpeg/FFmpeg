@@ -1394,6 +1394,12 @@ static int dash_init(AVFormatContext *s)
         c->frag_type = FRAG_TYPE_EVERY_FRAME;
     }
 
+    if (c->write_prft < 0) {
+        c->write_prft = c->ldash;
+        if (c->ldash)
+            av_log(s, AV_LOG_INFO, "Enabling Producer Reference Time element for Low Latency mode\n");
+    }
+
     if (c->write_prft && !c->utc_timing_url) {
         av_log(s, AV_LOG_WARNING, "Producer Reference Time element option will be ignored as utc_timing_url is not set\n");
         c->write_prft = 0;
@@ -2352,7 +2358,7 @@ static const AVOption options[] = {
     { "lhls", "Enable Low-latency HLS(Experimental). Adds #EXT-X-PREFETCH tag with current segment's URI", OFFSET(lhls), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "ldash", "Enable Low-latency dash. Constrains the value of a few elements", OFFSET(ldash), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "master_m3u8_publish_rate", "Publish master playlist every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
-    { "write_prft", "Write producer reference time element", OFFSET(write_prft), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
+    { "write_prft", "Write producer reference time element", OFFSET(write_prft), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, E},
     { "mpd_profile", "Set profiles. Elements and values used in the manifest may be constrained by them", OFFSET(profile), AV_OPT_TYPE_FLAGS, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
     { "dash", "MPEG-DASH ISO Base media file format live profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
     { "dvb_dash", "DVB-DASH profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DVB }, 0, UINT_MAX, E, "mpd_profile"},
