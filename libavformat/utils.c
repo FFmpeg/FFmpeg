@@ -1416,12 +1416,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     }
 
     if (pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY) {
-        st->pts_buffer[0] = pkt->pts;
+        st->pts_buffer[0] = pkt->pts;//对pts做排序
         for (i = 0; i<delay && st->pts_buffer[i] > st->pts_buffer[i + 1]; i++)
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
 
         if(has_decode_delay_been_guessed(st))
-            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);//处理
+            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);//从这里面选择一个pts设置给dts
 		av_log(NULL, AV_LOG_DEBUG, "compute_pkt_fields 10 pts:%s, dts:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     }
     // We skipped it above so we try here.

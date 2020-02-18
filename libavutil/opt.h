@@ -298,7 +298,7 @@ typedef struct AVOption {
      * options and corresponding named constants share the same
      * unit. May be NULL.
      */
-    const char *unit;
+    const char *unit;//标记属于哪个option的，比如srt的mode，option中有：caller listener  rendezvous
 } AVOption;
 
 /**

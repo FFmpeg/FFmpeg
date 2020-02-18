@@ -312,7 +312,7 @@ typedef struct OptionGroup {
     const OptionGroupDef *group_def;
     const char *arg;
 
-    Option *opts;
+    Option *opts;//指向了一个option数组
     int  nb_opts;
 
     AVDictionary *codec_opts;
@@ -334,9 +334,9 @@ typedef struct OptionGroupList {
 } OptionGroupList;
 
 typedef struct OptionParseContext {
-    OptionGroup global_opts;
+    OptionGroup global_opts;//全局参数
 
-    OptionGroupList *groups;
+    OptionGroupList *groups;//输入输出参数列表：0输出，1输入
     int           nb_groups;
 
     /* parsing state */
