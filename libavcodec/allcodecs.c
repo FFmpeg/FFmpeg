@@ -217,6 +217,7 @@ extern AVCodec ff_msvideo1_encoder;
 extern AVCodec ff_msvideo1_decoder;
 extern AVCodec ff_mszh_decoder;
 extern AVCodec ff_mts2_decoder;
+extern AVCodec ff_mv30_decoder;
 extern AVCodec ff_mvc1_decoder;
 extern AVCodec ff_mvc2_decoder;
 extern AVCodec ff_mvdv_decoder;
