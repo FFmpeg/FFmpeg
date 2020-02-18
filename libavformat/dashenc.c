@@ -1911,12 +1911,8 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                 continue;
         }
 
-        if (!c->single_file) {
-            if (os->segment_type == SEGMENT_TYPE_MP4 && !os->written_len)
-                write_styp(os->ctx->pb);
-        } else {
+        if (c->single_file)
             snprintf(os->full_path, sizeof(os->full_path), "%s%s", c->dirname, os->initfile);
-        }
 
         ret = flush_dynbuf(c, os, &range_length);
         if (ret < 0)
@@ -2188,6 +2184,8 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         AVDictionary *opts = NULL;
         const char *proto = avio_find_protocol_name(s->url);
         int use_rename = proto && !strcmp(proto, "file");
+        if (os->segment_type == SEGMENT_TYPE_MP4)
+            write_styp(os->ctx->pb);
         os->filename[0] = os->full_path[0] = os->temp_path[0] = '\0';
         ff_dash_fill_tmpl_params(os->filename, sizeof(os->filename),
                                  os->media_seg_name, pkt->stream_index,
@@ -2212,8 +2210,6 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->streaming && os->segment_type == SEGMENT_TYPE_MP4) {
         int len = 0;
         uint8_t *buf = NULL;
-        if (!os->written_len)
-            write_styp(os->ctx->pb);
         avio_flush(os->ctx->pb);
         len = avio_get_dyn_buf (os->ctx->pb, &buf);
         if (os->out) {
