@@ -128,7 +128,7 @@ typedef struct OutputStream {
     char full_path[1024];
     char temp_path[1024];
     double availability_time_offset;
-    int64_t producer_reference_time;
+    AVProducerReferenceTime producer_reference_time;
     char producer_reference_time_str[100];
     int total_pkt_size;
     int64_t total_pkt_duration;
@@ -864,8 +864,8 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
                 s->streams[i]->codecpar->channels);
         }
         if (!final && c->write_prft && os->producer_reference_time_str[0]) {
-            avio_printf(out, "\t\t\t\t<ProducerReferenceTime id=\"%d\" inband=\"true\" type=\"encoder\" wallclockTime=\"%s\" presentationTime=\"%"PRId64"\">\n",
-                        i, os->producer_reference_time_str, c->presentation_time_offset);
+            avio_printf(out, "\t\t\t\t<ProducerReferenceTime id=\"%d\" inband=\"true\" type=\"%s\" wallclockTime=\"%s\" presentationTime=\"%"PRId64"\">\n",
+                        i, os->producer_reference_time.flags ? "captured" : "encoder", os->producer_reference_time_str, c->presentation_time_offset);
             avio_printf(out, "\t\t\t\t\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
             avio_printf(out, "\t\t\t\t</ProducerReferenceTime>\n");
         }
@@ -2002,6 +2002,32 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     return ret;
 }
 
+static int dash_parse_prft(DASHContext *c, AVPacket *pkt)
+{
+    OutputStream *os = &c->streams[pkt->stream_index];
+    AVProducerReferenceTime *prft;
+    int side_data_size;
+
+    prft = (AVProducerReferenceTime *)av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT, &side_data_size);
+    if (!prft || side_data_size != sizeof(AVProducerReferenceTime) || (prft->flags && prft->flags != 24)) {
+        // No encoder generated or user provided capture time AVProducerReferenceTime side data. Instead
+        // of letting the mov muxer generate one, do it here so we can also use it for the manifest.
+        prft = (AVProducerReferenceTime *)av_packet_new_side_data(pkt, AV_PKT_DATA_PRFT,
+                                                                  sizeof(AVProducerReferenceTime));
+        if (!prft)
+            return AVERROR(ENOMEM);
+        prft->wallclock = av_gettime();
+        prft->flags = 24;
+    }
+    if (os->first_pts == AV_NOPTS_VALUE) {
+        os->producer_reference_time = *prft;
+        if (c->target_latency_refid < 0)
+            c->target_latency_refid = pkt->stream_index;
+    }
+
+    return 0;
+}
+
 static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DASHContext *c = s->priv_data;
@@ -2033,15 +2059,13 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->dts  = 0;
     }
 
+    if (c->write_prft) {
+        ret = dash_parse_prft(c, pkt);
+        if (ret < 0)
+            return ret;
+    }
+
     if (os->first_pts == AV_NOPTS_VALUE) {
-        int side_data_size;
-        AVProducerReferenceTime *prft = (AVProducerReferenceTime *)av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT,
-                                                                                           &side_data_size);
-        if (prft && side_data_size == sizeof(AVProducerReferenceTime) && !prft->flags) {
-            os->producer_reference_time = prft->wallclock;
-            if (c->target_latency_refid < 0)
-                c->target_latency_refid = pkt->stream_index;
-        }
         os->first_pts = pkt->pts;
     }
     os->last_pts = pkt->pts;
@@ -2118,10 +2142,10 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         }
 
-        if (c->write_prft && os->producer_reference_time && !os->producer_reference_time_str[0])
+        if (c->write_prft && os->producer_reference_time.wallclock && !os->producer_reference_time_str[0])
             format_date(os->producer_reference_time_str,
                         sizeof(os->producer_reference_time_str),
-                        os->producer_reference_time);
+                        os->producer_reference_time.wallclock);
 
         if ((ret = dash_flush(s, 0, pkt->stream_index)) < 0)
             return ret;
