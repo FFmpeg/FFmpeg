@@ -1758,6 +1758,7 @@ static int decode_frame(AVCodecContext *avctx,
     GetByteContext stripdata;
     int retry_for_subifd, retry_for_page;
     int is_dng;
+    int has_tile_bits, has_strip_bits;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -1882,6 +1883,14 @@ again:
 
     if (!s->is_tiled && !s->strippos && !s->stripoff) {
         av_log(avctx, AV_LOG_ERROR, "Image data is missing\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    has_tile_bits  = s->is_tiled || s->tile_byte_counts_offset || s->tile_offsets_offset || s->tile_width || s->tile_length || s->tile_count;
+    has_strip_bits = s->strippos || s->strips || s->stripoff || s->rps || s->sot || s->sstype || s->stripsize || s->stripsizesoff;
+
+    if (has_tile_bits && has_strip_bits) {
+        av_log(avctx, AV_LOG_ERROR, "Tiled TIFF is not allowed to strip\n");
         return AVERROR_INVALIDDATA;
     }
 
