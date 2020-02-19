@@ -2361,7 +2361,8 @@ static int dash_probe(const AVProbeData *p)
     if (av_stristr(p->buf, "dash:profile:isoff-on-demand:2011") ||
         av_stristr(p->buf, "dash:profile:isoff-live:2011") ||
         av_stristr(p->buf, "dash:profile:isoff-live:2012") ||
-        av_stristr(p->buf, "dash:profile:isoff-main:2011")) {
+        av_stristr(p->buf, "dash:profile:isoff-main:2011") ||
+        av_stristr(p->buf, "3GPP:PSS:profile:DASH1")) {
         return AVPROBE_SCORE_MAX;
     }
     if (av_stristr(p->buf, "dash:profile")) {
