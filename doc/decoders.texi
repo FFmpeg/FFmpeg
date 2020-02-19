@@ -316,6 +316,11 @@ List of teletext page numbers to decode. Pages that do not match the specified
 list are dropped. You may use the special @code{*} string to match all pages,
 or @code{subtitle} to match all subtitle pages.
 Default value is *.
+@item txt_default_region
+Set default G0 character set used for decoding, a value between 0 and 80 (see
+ETS 300 706, Section 15, Table 32). Default value is -1, which does not
+override the libzvbi default. This option is needed for some legacy level 1.0
+transmissions which cannot signal the proper charset.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
 @item txt_format
