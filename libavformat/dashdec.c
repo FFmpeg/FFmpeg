@@ -2376,7 +2376,7 @@ static int dash_probe(const AVProbeData *p)
 static const AVOption dash_options[] = {
     {"allowed_extensions", "List of file extensions that dash is allowed to access",
         OFFSET(allowed_extensions), AV_OPT_TYPE_STRING,
-        {.str = "aac,m4a,m4s,m4v,mov,mp4,webm"},
+        {.str = "aac,m4a,m4s,m4v,mov,mp4,webm,ts"},
         INT_MIN, INT_MAX, FLAGS},
     {NULL}
 };
