@@ -435,9 +435,9 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
     if (AV_RB24(pkt->data + 4) == 0xf8726f) {
         /* major sync unit, fetch sample rate */
         if (pkt->data[7] == 0xba)
-            ratebits = pkt->data[8] >> 8;
+            ratebits = pkt->data[8] >> 4;
         else if (pkt->data[7] == 0xbb)
-            ratebits = pkt->data[9] >> 8;
+            ratebits = pkt->data[9] >> 4;
         else
             return AVERROR_INVALIDDATA;
 
