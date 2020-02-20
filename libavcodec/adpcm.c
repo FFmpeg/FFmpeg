@@ -14,6 +14,7 @@
  * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
  * Argonaut Games ADPCM decoder by Zane van Iperen (zane@zanevaniperen.com)
  * Simon & Schuster Interactive ADPCM decoder by Zane van Iperen (zane@zanevaniperen.com)
+ * Ubisoft ADPCM decoder by Zane van Iperen (zane@zanevaniperen.com)
  *
  * This file is part of FFmpeg.
  *
@@ -148,6 +149,14 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         if (avctx->extradata && avctx->extradata_size >= 8) {
             c->status[0].predictor = av_clip_intp2(AV_RL32(avctx->extradata    ), 18);
             c->status[1].predictor = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
+        }
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_APM:
+        if (avctx->extradata && avctx->extradata_size >= 16) {
+            c->status[0].predictor  = AV_RL32(avctx->extradata +  0);
+            c->status[0].step_index = AV_RL32(avctx->extradata +  4);
+            c->status[1].predictor  = AV_RL32(avctx->extradata +  8);
+            c->status[1].step_index = AV_RL32(avctx->extradata + 12);
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -665,6 +674,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_YAMAHA:
     case AV_CODEC_ID_ADPCM_AICA:
     case AV_CODEC_ID_ADPCM_IMA_SSI:
+    case AV_CODEC_ID_ADPCM_IMA_APM:
         nb_samples = buf_size * 2 / ch;
         break;
     }
@@ -1225,6 +1235,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_qt_expand_nibble(&c->status[0],  v >> 4  , 3);
             *samples++ = adpcm_ima_qt_expand_nibble(&c->status[st], v & 0x0F, 3);
+        }
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_APM:
+        for (n = nb_samples / 2; n > 0; n--) {
+            for (channel = 0; channel < avctx->channels; channel++) {
+                int v = bytestream2_get_byteu(&gb);
+                *samples++  = adpcm_ima_qt_expand_nibble(&c->status[channel], v >> 4  , 3);
+                samples[st] = adpcm_ima_qt_expand_nibble(&c->status[channel], v & 0x0F, 3);
+            }
+            samples += avctx->channels;
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_OKI:
@@ -1965,6 +1985,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_R3,       sample_fmts_s16p, adpcm_ea_r3,     
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_XAS,      sample_fmts_s16p, adpcm_ea_xas,      "ADPCM Electronic Arts XAS");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_AMV,     sample_fmts_s16,  adpcm_ima_amv,     "ADPCM IMA AMV");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_APC,     sample_fmts_s16,  adpcm_ima_apc,     "ADPCM IMA CRYO APC");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_APM,     sample_fmts_s16,  adpcm_ima_apm,     "ADPCM IMA Ubisoft APM");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DAT4,    sample_fmts_s16,  adpcm_ima_dat4,    "ADPCM IMA Eurocom DAT4");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK3,     sample_fmts_s16,  adpcm_ima_dk3,     "ADPCM IMA Duck DK3");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK4,     sample_fmts_s16,  adpcm_ima_dk4,     "ADPCM IMA Duck DK4");
