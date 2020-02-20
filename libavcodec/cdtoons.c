@@ -82,9 +82,11 @@ static int cdtoons_render_sprite(AVCodecContext *avctx, const uint8_t *data,
     for (int y = 0; y < height; y++) {
         /* one scanline at a time, size is provided */
         data      = next_line;
-        if (data > end - 2)
+        if (end - data < 2)
             return 1;
         line_size = bytestream_get_be16(&data);
+        if (end - data < line_size)
+            return 1;
         next_line = data + line_size;
         if (dst_y + y < 0)
             continue;
@@ -94,7 +96,7 @@ static int cdtoons_render_sprite(AVCodecContext *avctx, const uint8_t *data,
         to_skip = skip;
         x       = 0;
         while (x < width - skip) {
-            int raw, size;
+            int raw, size, step;
             uint8_t val;
 
             if (data >= end)
@@ -108,20 +110,22 @@ static int cdtoons_render_sprite(AVCodecContext *avctx, const uint8_t *data,
             if (to_skip >= size) {
                 to_skip -= size;
                 if (raw) {
-                    data += size;
+                    step = size;
                 } else {
-                    data += 1;
+                    step = 1;
                 }
-                if (data > next_line)
+                if (next_line - data < step)
                     return 1;
+                data += step;
                 continue;
             } else if (to_skip) {
                 size -= to_skip;
-                if (raw)
+                if (raw) {
+                    if (next_line - data < to_skip)
+                        return 1;
                     data += to_skip;
+                }
                 to_skip = 0;
-                if (data > next_line)
-                    return 1;
             }
 
             if (x + size >= width - skip)
@@ -129,10 +133,10 @@ static int cdtoons_render_sprite(AVCodecContext *avctx, const uint8_t *data,
 
             /* either raw data, or a run of a single color */
             if (raw) {
+                if (next_line - data < size)
+                    return 1;
                 memcpy(dest + x, data, size);
                 data += size;
-                if (data > next_line)
-                    return 1;
             } else {
                 uint8_t color = bytestream_get_byte(&data);
                 /* ignore transparent runs */
