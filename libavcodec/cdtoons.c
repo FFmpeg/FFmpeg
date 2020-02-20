@@ -269,7 +269,7 @@ static int cdtoons_decode_frame(AVCodecContext *avctx, void *data,
                 diff_size  = bytestream_get_be32(&buf);
                 width      = bytestream_get_be16(&buf);
                 height     = bytestream_get_be16(&buf);
-                if (diff_size < 4 || diff_size - 4 > eod - buf) {
+                if (diff_size < 8 || diff_size - 4 > eod - buf) {
                     av_log(avctx, AV_LOG_WARNING, "Ran (seriously) out of data for Diff frame data.\n");
                     return AVERROR_INVALIDDATA;
                 }
