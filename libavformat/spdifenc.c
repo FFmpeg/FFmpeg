@@ -69,10 +69,10 @@ typedef struct IEC61937Context {
     int use_preamble;               ///< preamble enabled (disabled for exactly pre-padded DTS)
     int extra_bswap;                ///< extra bswap for payload (for LE DTS => standard BE DTS)
 
-    uint8_t *hd_buf;                ///< allocated buffer to concatenate hd audio frames
-    int hd_buf_size;                ///< size of the hd audio buffer
-    int hd_buf_count;               ///< number of frames in the hd audio buffer
-    int hd_buf_filled;              ///< amount of bytes in the hd audio buffer
+    uint8_t *hd_buf[1];             ///< allocated buffer to concatenate hd audio frames
+    int hd_buf_size;                ///< size of the hd audio buffer (eac3, dts4)
+    int hd_buf_count;               ///< number of frames in the hd audio buffer (eac3, truehd)
+    int hd_buf_filled;              ///< amount of bytes in the hd audio buffer (eac3)
 
     int dtshd_skip;                 ///< counter used for skipping DTS-HD frames
 
@@ -122,11 +122,11 @@ static int spdif_header_eac3(AVFormatContext *s, AVPacket *pkt)
     if (bsid > 10 && (pkt->data[4] & 0xc0) != 0xc0) /* fscod */
         repeat = eac3_repeat[(pkt->data[4] & 0x30) >> 4]; /* numblkscod */
 
-    ctx->hd_buf = av_fast_realloc(ctx->hd_buf, &ctx->hd_buf_size, ctx->hd_buf_filled + pkt->size);
-    if (!ctx->hd_buf)
+    ctx->hd_buf[0] = av_fast_realloc(ctx->hd_buf[0], &ctx->hd_buf_size, ctx->hd_buf_filled + pkt->size);
+    if (!ctx->hd_buf[0])
         return AVERROR(ENOMEM);
 
-    memcpy(&ctx->hd_buf[ctx->hd_buf_filled], pkt->data, pkt->size);
+    memcpy(&ctx->hd_buf[0][ctx->hd_buf_filled], pkt->data, pkt->size);
 
     ctx->hd_buf_filled += pkt->size;
     if (++ctx->hd_buf_count < repeat){
@@ -135,7 +135,7 @@ static int spdif_header_eac3(AVFormatContext *s, AVPacket *pkt)
     }
     ctx->data_type   = IEC61937_EAC3;
     ctx->pkt_offset  = 24576;
-    ctx->out_buf     = ctx->hd_buf;
+    ctx->out_buf     = ctx->hd_buf[0];
     ctx->out_bytes   = ctx->hd_buf_filled;
     ctx->length_code = ctx->hd_buf_filled;
 
@@ -228,15 +228,15 @@ static int spdif_header_dts4(AVFormatContext *s, AVPacket *pkt, int core_size,
      * with some receivers, but the exact requirement is unconfirmed. */
     ctx->length_code = FFALIGN(ctx->out_bytes + 0x8, 0x10) - 0x8;
 
-    av_fast_malloc(&ctx->hd_buf, &ctx->hd_buf_size, ctx->out_bytes);
-    if (!ctx->hd_buf)
+    av_fast_malloc(&ctx->hd_buf[0], &ctx->hd_buf_size, ctx->out_bytes);
+    if (!ctx->hd_buf[0])
         return AVERROR(ENOMEM);
 
-    ctx->out_buf = ctx->hd_buf;
+    ctx->out_buf = ctx->hd_buf[0];
 
-    memcpy(ctx->hd_buf, dtshd_start_code, sizeof(dtshd_start_code));
-    AV_WB16(ctx->hd_buf + sizeof(dtshd_start_code), pkt_size);
-    memcpy(ctx->hd_buf + sizeof(dtshd_start_code) + 2, pkt->data, pkt_size);
+    memcpy(ctx->hd_buf[0], dtshd_start_code, sizeof(dtshd_start_code));
+    AV_WB16(ctx->hd_buf[0] + sizeof(dtshd_start_code), pkt_size);
+    memcpy(ctx->hd_buf[0] + sizeof(dtshd_start_code) + 2, pkt->data, pkt_size);
 
     return 0;
 }
@@ -403,12 +403,12 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
     if (!ctx->hd_buf_count) {
         static const char mat_start_code[20] = { 0x07, 0x9E, 0x00, 0x03, 0x84, 0x01, 0x01, 0x01, 0x80, 0x00, 0x56, 0xA5, 0x3B, 0xF4, 0x81, 0x83, 0x49, 0x80, 0x77, 0xE0 };
         mat_code_length = sizeof(mat_start_code) + BURST_HEADER_SIZE;
-        memcpy(ctx->hd_buf, mat_start_code, sizeof(mat_start_code));
+        memcpy(ctx->hd_buf[0], mat_start_code, sizeof(mat_start_code));
 
     } else if (ctx->hd_buf_count == 12) {
         static const char mat_middle_code[12] = { 0xC3, 0xC1, 0x42, 0x49, 0x3B, 0xFA, 0x82, 0x83, 0x49, 0x80, 0x77, 0xE0 };
         mat_code_length = sizeof(mat_middle_code) + MAT_MIDDLE_CODE_OFFSET;
-        memcpy(&ctx->hd_buf[12 * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + MAT_MIDDLE_CODE_OFFSET],
+        memcpy(&ctx->hd_buf[0][12 * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + MAT_MIDDLE_CODE_OFFSET],
                mat_middle_code, sizeof(mat_middle_code));
     }
 
@@ -420,26 +420,26 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_PATCHWELCOME;
     }
 
-    memcpy(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length],
+    memcpy(&ctx->hd_buf[0][ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length],
            pkt->data, pkt->size);
     if (ctx->hd_buf_count < 23) {
-        memset(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length + pkt->size],
+        memset(&ctx->hd_buf[0][ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length + pkt->size],
                0, TRUEHD_FRAME_OFFSET - pkt->size - mat_code_length);
     } else {
         size_t padding = MAT_FRAME_SIZE - (ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + pkt->size);
-        memset(&ctx->hd_buf[MAT_FRAME_SIZE - padding], 0, padding);
+        memset(&ctx->hd_buf[0][MAT_FRAME_SIZE - padding], 0, padding);
     }
 
     if (++ctx->hd_buf_count < 24){
         ctx->pkt_offset = 0;
         return 0;
     }
-    memcpy(&ctx->hd_buf[MAT_FRAME_SIZE - sizeof(mat_end_code)], mat_end_code, sizeof(mat_end_code));
+    memcpy(&ctx->hd_buf[0][MAT_FRAME_SIZE - sizeof(mat_end_code)], mat_end_code, sizeof(mat_end_code));
     ctx->hd_buf_count = 0;
 
     ctx->data_type   = IEC61937_TRUEHD;
     ctx->pkt_offset  = 61440;
-    ctx->out_buf     = ctx->hd_buf;
+    ctx->out_buf     = ctx->hd_buf[0];
     ctx->out_bytes   = MAT_FRAME_SIZE;
     ctx->length_code = MAT_FRAME_SIZE;
     return 0;
@@ -470,8 +470,8 @@ static int spdif_write_header(AVFormatContext *s)
     case AV_CODEC_ID_TRUEHD:
     case AV_CODEC_ID_MLP:
         ctx->header_info = spdif_header_truehd;
-        ctx->hd_buf = av_malloc(MAT_FRAME_SIZE);
-        if (!ctx->hd_buf)
+        ctx->hd_buf[0] = av_malloc(MAT_FRAME_SIZE);
+        if (!ctx->hd_buf[0])
             return AVERROR(ENOMEM);
         break;
     default:
@@ -486,7 +486,7 @@ static void spdif_deinit(AVFormatContext *s)
 {
     IEC61937Context *ctx = s->priv_data;
     av_freep(&ctx->buffer);
-    av_freep(&ctx->hd_buf);
+    av_freep(&ctx->hd_buf[0]);
 }
 
 static av_always_inline void spdif_put_16(IEC61937Context *ctx,
