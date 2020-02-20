@@ -32,6 +32,7 @@
 #include "dnn_interface.h"
 #include "formats.h"
 #include "internal.h"
+#include "libswscale/swscale.h"
 
 typedef struct DnnProcessingContext {
     const AVClass *class;
@@ -47,6 +48,9 @@ typedef struct DnnProcessingContext {
     // input & output of the model at execution time
     DNNData input;
     DNNData output;
+
+    struct SwsContext *sws_gray8_to_grayf32;
+    struct SwsContext *sws_grayf32_to_gray8;
 } DnnProcessingContext;
 
 #define OFFSET(x) offsetof(DnnProcessingContext, x)
@@ -211,6 +215,45 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static int prepare_sws_context(AVFilterLink *outlink)
+{
+    AVFilterContext *context = outlink->src;
+    DnnProcessingContext *ctx = context->priv;
+    AVFilterLink *inlink = context->inputs[0];
+    enum AVPixelFormat fmt = inlink->format;
+    DNNDataType input_dt  = ctx->input.dt;
+    DNNDataType output_dt = ctx->output.dt;
+
+    switch (fmt) {
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
+        if (input_dt == DNN_FLOAT) {
+            ctx->sws_gray8_to_grayf32 = sws_getContext(inlink->w * 3,
+                                                       inlink->h,
+                                                       AV_PIX_FMT_GRAY8,
+                                                       inlink->w * 3,
+                                                       inlink->h,
+                                                       AV_PIX_FMT_GRAYF32,
+                                                       0, NULL, NULL, NULL);
+        }
+        if (output_dt == DNN_FLOAT) {
+            ctx->sws_grayf32_to_gray8 = sws_getContext(outlink->w * 3,
+                                                       outlink->h,
+                                                       AV_PIX_FMT_GRAYF32,
+                                                       outlink->w * 3,
+                                                       outlink->h,
+                                                       AV_PIX_FMT_GRAY8,
+                                                       0, NULL, NULL, NULL);
+        }
+        return 0;
+    default:
+        //do nothing
+        break;
+    }
+
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *context = outlink->src;
@@ -227,25 +270,23 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = ctx->output.width;
     outlink->h = ctx->output.height;
 
+    prepare_sws_context(outlink);
+
     return 0;
 }
 
-static int copy_from_frame_to_dnn(DNNData *dnn_input, const AVFrame *frame)
+static int copy_from_frame_to_dnn(DnnProcessingContext *ctx, const AVFrame *frame)
 {
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
+    DNNData *dnn_input = &ctx->input;
 
     switch (frame->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
         if (dnn_input->dt == DNN_FLOAT) {
-            float *dnn_input_data = dnn_input->data;
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width * 3; j++) {
-                    int k = i * frame->linesize[0] + j;
-                    int t = i * frame->width * 3 + j;
-                    dnn_input_data[t] = frame->data[0][k] / 255.0f;
-                }
-            }
+            sws_scale(ctx->sws_gray8_to_grayf32, (const uint8_t **)frame->data, frame->linesize,
+                      0, frame->height, (uint8_t * const*)(&dnn_input->data),
+                      (const int [4]){frame->linesize[0] * sizeof(float), 0, 0, 0});
         } else {
             av_assert0(dnn_input->dt == DNN_UINT8);
             av_image_copy_plane(dnn_input->data, bytewidth,
@@ -266,22 +307,19 @@ static int copy_from_frame_to_dnn(DNNData *dnn_input, const AVFrame *frame)
     return 0;
 }
 
-static int copy_from_dnn_to_frame(AVFrame *frame, const DNNData *dnn_output)
+static int copy_from_dnn_to_frame(DnnProcessingContext *ctx, AVFrame *frame)
 {
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
+    DNNData *dnn_output = &ctx->output;
 
     switch (frame->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
         if (dnn_output->dt == DNN_FLOAT) {
-            float *dnn_output_data = dnn_output->data;
-            for (int i = 0; i < frame->height; i++) {
-                for(int j = 0; j < frame->width * 3; j++) {
-                    int k = i * frame->linesize[0] + j;
-                    int t = i * frame->width * 3 + j;
-                    frame->data[0][k] = av_clip_uintp2((int)(dnn_output_data[t] * 255.0f), 8);
-                }
-            }
+            sws_scale(ctx->sws_grayf32_to_gray8, (const uint8_t *[4]){(const uint8_t *)dnn_output->data, 0, 0, 0},
+                      (const int[4]){frame->linesize[0] * sizeof(float), 0, 0, 0},
+                      0, frame->height, (uint8_t * const*)frame->data, frame->linesize);
+
         } else {
             av_assert0(dnn_output->dt == DNN_UINT8);
             av_image_copy_plane(frame->data[0], frame->linesize[0],
@@ -318,7 +356,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     DNNReturnType dnn_result;
     AVFrame *out;
 
-    copy_from_frame_to_dnn(&ctx->input, in);
+    copy_from_frame_to_dnn(ctx, in);
 
     dnn_result = (ctx->dnn_module->execute_model)(ctx->model, &ctx->output, 1);
     if (dnn_result != DNN_SUCCESS){
@@ -334,7 +372,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_copy_props(out, in);
-    copy_from_dnn_to_frame(out, &ctx->output);
+    copy_from_dnn_to_frame(ctx, out);
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
@@ -342,6 +380,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DnnProcessingContext *context = ctx->priv;
+
+    sws_freeContext(context->sws_gray8_to_grayf32);
+    sws_freeContext(context->sws_grayf32_to_gray8);
 
     if (context->dnn_module)
         (context->dnn_module->free_model)(&context->model);
