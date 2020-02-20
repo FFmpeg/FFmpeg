@@ -38,6 +38,8 @@ version <next>:
 - pad_opencl filter
 - CDToons video decoder
 - siren audio decoder
+- Rayman 2 ADPCM decoder
+- Rayman 2 APM demuxer
 
 
 version 4.2:
