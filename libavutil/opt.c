@@ -47,7 +47,7 @@ const AVOption *av_opt_next(const void *obj, const AVOption *last)
     const AVClass *class;
     if (!obj)
         return NULL;
-    class = *(const AVClass**)obj;
+    class = *(const AVClass**)obj;//传递的是AVFormatContext，AVFormatContext第一个成员AVClass  av_class,所有这里能强制转换
     if (!last && class && class->option && class->option[0].name)
         return class->option;
     if (last && last[1].name)

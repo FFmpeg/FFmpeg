@@ -315,9 +315,9 @@ typedef struct OptionGroup {
     Option *opts;//指向了一个option数组
     int  nb_opts;
 
-    AVDictionary *codec_opts;
-    AVDictionary *format_opts;
-    AVDictionary *resample_opts;
+    AVDictionary *codec_opts;//编解码相关参数
+    AVDictionary *format_opts;//封装格式相关参数
+    AVDictionary *resample_opts;//重采样相关参数
     AVDictionary *sws_dict;
     AVDictionary *swr_opts;
 } OptionGroup;

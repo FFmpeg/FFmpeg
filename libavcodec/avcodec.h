@@ -1462,7 +1462,7 @@ typedef struct AVPacket {
      * stored.
      * May be NULL, then the packet data is not reference-counted.
      */
-    AVBufferRef *buf;
+    AVBufferRef *buf;//不为NULL时，packet data有引用计数
     /**
      * Presentation timestamp in AVStream->time_base units; the time at which
      * the decompressed packet will be presented to the user.
@@ -1490,7 +1490,7 @@ typedef struct AVPacket {
      * Additional packet data that can be provided by the container.
      * Packet can contain several types of side information.
      */
-    AVPacketSideData *side_data;
+    AVPacketSideData *side_data;//一维数组，可以存储多个sideData
     int side_data_elems;
 
     /**
@@ -1617,7 +1617,7 @@ typedef struct AVCodecContext {
      * - decoding: Set by user, may be overwritten by libavcodec
      *             if this info is available in the stream
      */
-    int64_t bit_rate;
+    int64_t bit_rate;//平均比特率
 
     /**
      * number of bits the bitstream is allowed to diverge from the reference.
@@ -1668,7 +1668,7 @@ typedef struct AVCodecContext {
      * - encoding: Set/allocated/freed by libavcodec.
      * - decoding: Set/allocated/freed by user.
      */
-    uint8_t *extradata;
+    uint8_t *extradata;//针对特定编码器包含的附加信息（例如对于H.264解码器来说，存储SPS，PPS等）
     int extradata_size;
 
     /**
@@ -1690,7 +1690,7 @@ typedef struct AVCodecContext {
      * - decoding: the use of this field for decoding is deprecated.
      *             Use framerate instead.
      */
-    AVRational time_base;
+    AVRational time_base;//根据该参数，可以把PTS转化为实际的时间（单位为秒s）
 
     /**
      * For some codecs, the time base is closer to the field rate than the frame rate.
@@ -1740,7 +1740,7 @@ typedef struct AVCodecContext {
      *             to be set by the caller. During decoding, the decoder may
      *             overwrite those values as required while parsing the data.
      */
-    int width, height;
+    int width, height;//如果是视频的话，代表宽和高
 
     /**
      * Bitstream width / height, may be different from width/height e.g. when
@@ -1777,7 +1777,7 @@ typedef struct AVCodecContext {
      * - decoding: Set by user if known, overridden by libavcodec while
      *             parsing the data.
      */
-    enum AVPixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;//像素格式
 
     /**
      * If non NULL, 'draw_horiz_band' is called by the libavcodec
@@ -2227,15 +2227,15 @@ typedef struct AVCodecContext {
     enum AVFieldOrder field_order;
 
     /* audio only */
-    int sample_rate; ///< samples per second
-    int channels;    ///< number of audio channels
+    int sample_rate; ///< samples per second//采样率（音频）
+    int channels;    ///< number of audio channels//声道数（音频）
 
     /**
      * audio sample format
      * - encoding: Set by user.
      * - decoding: Set by libavcodec.
      */
-    enum AVSampleFormat sample_fmt;  ///< sample format
+    enum AVSampleFormat sample_fmt;  ///< sample format //采样格式
 
     /* The following data should not be initialized. */
     /**
@@ -3954,7 +3954,7 @@ typedef struct AVSubtitle {
 
 /**
  * This struct describes the properties of an encoded stream.
- *
+ *描述已经编码流的编码信息
  * sizeof(AVCodecParameters) is not a part of the public ABI, this struct must
  * be allocated with avcodec_parameters_alloc() and freed with
  * avcodec_parameters_free().
@@ -4043,7 +4043,7 @@ typedef struct AVCodecParameters {
      * When the aspect ratio is unknown / undefined, the numerator should be
      * set to 0 (the denominator may have any value).
      */
-    AVRational sample_aspect_ratio;
+    AVRational sample_aspect_ratio;//宽高比
 
     /**
      * Video only. The order of the fields in interlaced video.

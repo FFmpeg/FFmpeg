@@ -2111,7 +2111,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
 
     return 0;
 }
-
+//复制AVCodecParameters中参数到AVCodecContext
 int avcodec_parameters_to_context(AVCodecContext *codec,
                                   const AVCodecParameters *par)
 {

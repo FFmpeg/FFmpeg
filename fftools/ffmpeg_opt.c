@@ -65,7 +65,7 @@
             outvar = o->name[i].u.type;\
     }\
 }
-
+//硬件加速参数
 const HWAccel hwaccels[] = {
 #if CONFIG_VIDEOTOOLBOX
     { "videotoolbox", videotoolbox_init, HWACCEL_VIDEOTOOLBOX, AV_PIX_FMT_VIDEOTOOLBOX },
@@ -776,13 +776,13 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
 
-        ist->dec_ctx = avcodec_alloc_context3(ist->dec);
+        ist->dec_ctx = avcodec_alloc_context3(ist->dec);//根据解码器创建解码AVCodecContext
         if (!ist->dec_ctx) {
             av_log(NULL, AV_LOG_ERROR, "Error allocating the decoder context.\n");
             exit_program(1);
         }
 
-        ret = avcodec_parameters_to_context(ist->dec_ctx, par);
+        ret = avcodec_parameters_to_context(ist->dec_ctx, par);//复制参数
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error initializing the decoder context.\n");
             exit_program(1);
@@ -808,7 +808,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             // avformat_find_stream_info() doesn't set this for us anymore.
             ist->dec_ctx->framerate = st->avg_frame_rate;
 
-            MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
+            MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);//获取命令设置的帧率
             if (framerate && av_parse_video_rate(&ist->framerate,
                                                  framerate) < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error parsing framerate %s.\n",
@@ -819,7 +819,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             ist->top_field_first = -1;
             MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 
-            MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);
+            MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);//解析命令行硬件加速参数
             if (hwaccel) {
                 // The NVDEC hwaccels use a CUDA device, so remap the name here.
                 if (!strcmp(hwaccel, "nvdec"))
@@ -1026,7 +1026,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     }
 
     if (o->format) {
-        if (!(file_iformat = av_find_input_format(o->format))) {
+        if (!(file_iformat = av_find_input_format(o->format))) {//查找封装格式
             av_log(NULL, AV_LOG_FATAL, "Unknown input format: '%s'\n", o->format);
             exit_program(1);
         }
@@ -1073,12 +1073,14 @@ static int open_input_file(OptionsContext *o, const char *filename)
     if (o->nb_frame_pix_fmts)
         av_dict_set(&o->g->format_opts, "pixel_format", o->frame_pix_fmts[o->nb_frame_pix_fmts - 1].u.str, 0);
 
-    MATCH_PER_TYPE_OPT(codec_names, str,    video_codec_name, ic, "v");
+	//SpecifierOpt *codec_names;  //解析命令行设置的编码器名字
+	//./ffmpeg -y -vsync 0 -hwaccel cuvid -c:v h264_cuvid -i ./video-h265.mkv -vf scale_cuda = 1280:720 - c : a copy - c : v h264_nvenc - b : v 5M . / video - h265 - 1.mp4
+	MATCH_PER_TYPE_OPT(codec_names, str,    video_codec_name, ic, "v");
     MATCH_PER_TYPE_OPT(codec_names, str,    audio_codec_name, ic, "a");
     MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, ic, "s");
     MATCH_PER_TYPE_OPT(codec_names, str,     data_codec_name, ic, "d");
 
-    if (video_codec_name)
+    if (video_codec_name)//如果命令行设置了编码器名字参数，查找对应的编码器
         ic->video_codec    = find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0);
     if (audio_codec_name)
         ic->audio_codec    = find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0);
@@ -1086,7 +1088,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
         ic->subtitle_codec = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0);
     if (data_codec_name)
         ic->data_codec     = find_codec_or_die(data_codec_name    , AVMEDIA_TYPE_DATA    , 0);
-
+	//获取对应编码器ID
     ic->video_codec_id     = video_codec_name    ? ic->video_codec->id    : AV_CODEC_ID_NONE;
     ic->audio_codec_id     = audio_codec_name    ? ic->audio_codec->id    : AV_CODEC_ID_NONE;
     ic->subtitle_codec_id  = subtitle_codec_name ? ic->subtitle_codec->id : AV_CODEC_ID_NONE;
@@ -1101,7 +1103,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
         av_dict_set(&o->g->format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
     }
-    /* open the input file with generic avformat function */
+    /* open the input file with generic avformat function */ //使用封装格式参数打开输入文件
     err = avformat_open_input(&ic, filename, file_iformat, &o->g->format_opts);
     if (err < 0) {
         print_error(filename, err);
@@ -1116,7 +1118,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
 
     /* apply forced codec ids */
     for (i = 0; i < ic->nb_streams; i++)
-        choose_decoder(o, ic, ic->streams[i]);
+        choose_decoder(o, ic, ic->streams[i]);//返回值没有处理，没起作用
 
     if (find_stream_info) {
         AVDictionary **opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
@@ -1124,7 +1126,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
 
         /* If not enough info to get the stream parameters, we decode the
            first frames to get it. (used in mpeg case for example) */
-        ret = avformat_find_stream_info(ic, opts);
+        ret = avformat_find_stream_info(ic, opts);//如果没有足够信息获取流参数，就解码第一帧来获取
 
         for (i = 0; i < orig_nb_streams; i++)
             av_dict_free(&opts[i]);
@@ -1163,7 +1165,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     if (!o->seek_timestamp && ic->start_time != AV_NOPTS_VALUE)
         timestamp += ic->start_time;
 
-    /* if seeking requested, we execute it */
+    /* if seeking requested, we execute it */ //一般只对本地文件有效
     if (o->start_time != AV_NOPTS_VALUE) {
         int64_t seek_timestamp = timestamp;
 
@@ -1198,7 +1200,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     if (!f)
         exit_program(1);
     input_files[nb_input_files - 1] = f;
-
+	//缓存输入文件信息
     f->ctx        = ic;
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
@@ -1367,7 +1369,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (oc->nb_streams - 1 < o->nb_streamid_map)
         st->id = o->streamid_map[oc->nb_streams - 1];
 
-    GROW_ARRAY(output_streams, nb_output_streams);
+    GROW_ARRAY(output_streams, nb_output_streams);//增加输出流数组
     if (!(ost = av_mallocz(sizeof(*ost))))
         exit_program(1);
     output_streams[nb_output_streams - 1] = ost;
@@ -1385,14 +1387,14 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         exit_program(1);
     }
 
-    ost->enc_ctx = avcodec_alloc_context3(ost->enc);
+    ost->enc_ctx = avcodec_alloc_context3(ost->enc);//创建编码的AVCodecContext
     if (!ost->enc_ctx) {
         av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
         exit_program(1);
     }
     ost->enc_ctx->codec_type = type;
 
-    ost->ref_par = avcodec_parameters_alloc();
+    ost->ref_par = avcodec_parameters_alloc();//分配默认参数
     if (!ost->ref_par) {
         av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding parameters.\n");
         exit_program(1);
@@ -1401,9 +1403,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (ost->enc) {
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL, *preset = NULL;
-
+		//从命令行输入参数获取输出流的编码器参数
         ost->encoder_opts  = filter_codec_opts(o->g->codec_opts, ost->enc->id, oc, st, ost->enc);
-
+		//从命令行输入参数获取输出流的preset参数
         MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
         if (preset && (!(ret = get_preset_file_2(preset, ost->enc->name, &s)))) {
             do  {
@@ -1435,7 +1437,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     if (o->bitexact)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
-
+	//从命令行输入参数获取输出流的time_base参数
     MATCH_PER_STREAM_OPT(time_bases, str, time_base, oc, st);
     if (time_base) {
         AVRational q;
@@ -1458,7 +1460,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         ost->enc_timebase = q;
     }
 
-    ost->max_frames = INT64_MAX;
+    ost->max_frames = INT64_MAX;//从命令行输入参数获取输出流的max_frames参数
     MATCH_PER_STREAM_OPT(max_frames, i64, ost->max_frames, oc, st);
     for (i = 0; i<o->nb_max_frames; i++) {
         char *p = o->max_frames[i].specifier;
@@ -1471,7 +1473,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->copy_prior_start = -1;
     MATCH_PER_STREAM_OPT(copy_prior_start, i, ost->copy_prior_start, oc ,st);
 
-    MATCH_PER_STREAM_OPT(bitstream_filters, str, bsfs, oc, st);
+    MATCH_PER_STREAM_OPT(bitstream_filters, str, bsfs, oc, st);//显示可用的流滤镜
     while (bsfs && *bsfs) {
         const AVBitStreamFilter *filter;
         char *bsf, *bsf_options_str, *bsf_name;
@@ -1521,7 +1523,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         if (*bsfs)
             bsfs++;
     }
-
+	//从命令行输入参数获取输出流的codec_tag参数
     MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, oc, st);
     if (codec_tag) {
         uint32_t tag = strtol(codec_tag, &next, 0);
@@ -1650,6 +1652,9 @@ static void check_streamcopy_filters(OptionsContext *o, AVFormatContext *oc,
     }
 }
 
+/*
+* source_index ：输入流的流ID
+*/
 static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
 {
     AVStream *st;
@@ -1660,7 +1665,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO, source_index);
     st  = ost->st;
     video_enc = ost->enc_ctx;
-
+	//获取命令行帧率参数
     MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
     if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
@@ -2192,7 +2197,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
         char *subtitle_codec_name = NULL;
         /* pick the "best" stream of each type */
 
-        /* video: highest resolution */
+        /* video: highest resolution */ //获取最高分辨率的视频流，创建对应的输出流
         if (!o->video_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_VIDEO) != AV_CODEC_ID_NONE) {
             int area = 0, idx = -1;
             int qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
@@ -2278,7 +2283,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
                     new_data_stream(o, oc, i);
             }
         }
-    } else {
+    } else {//使用map映射关系创建对应的输出流
         for (i = 0; i < o->nb_stream_maps; i++) {
             StreamMap *map = &o->stream_maps[i];
 
@@ -2452,6 +2457,7 @@ loop_end:
     }
     av_dict_free(&unused_opts);
 
+	//设置解码器需要的标志，创建简单的滤镜
     /* set the decoding_needed flags and create simple filtergraphs */
     for (i = of->ost_index; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -2568,7 +2574,7 @@ loop_end:
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
-    /* copy metadata */
+    /* copy metadata *///复制元数据信息
     for (i = 0; i < o->nb_metadata_map; i++) {
         char *p;
         int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
@@ -2582,7 +2588,7 @@ loop_end:
                       input_files[in_file_index]->ctx : NULL, o);
     }
 
-    /* copy chapters */
+    /* copy chapters */ //复制章节
     if (o->chapters_input_file >= nb_input_files) {
         if (o->chapters_input_file == INT_MAX) {
             /* copy chapters from the first input file that has them*/
@@ -2602,7 +2608,7 @@ loop_end:
         copy_chapters(input_files[o->chapters_input_file], of,
                       !o->metadata_chapters_manual);
 
-    /* copy global metadata by default */
+    /* copy global metadata by default */ //复制默认的元数据
     if (!o->metadata_global_manual && nb_input_files){
         av_dict_copy(&oc->metadata, input_files[0]->ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
@@ -2622,7 +2628,7 @@ loop_end:
             }
         }
 
-    /* process manually set programs */
+    /* process manually set programs *///处理节目信息
     for (i = 0; i < o->nb_program; i++) {
         const char *p = o->program[i].u.str;
         int progid = i+1;
@@ -2688,7 +2694,7 @@ loop_end:
         }
     }
 
-    /* process manually set metadata */
+    /* process manually set metadata *///处理人工设置元数据
     for (i = 0; i < o->nb_metadata; i++) {
         AVDictionary **m;
         char type, *val;
