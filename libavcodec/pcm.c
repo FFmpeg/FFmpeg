@@ -473,7 +473,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
                                  ((src[2] & 0x0F) <<  8) |
                                    src[1];
                 // extract high 20 bits and expand to 32 bits
-                *dst_int32_t++ =  (src[4]         << 24) |
+                *dst_int32_t++ =  ((uint32_t)src[4]<<24) |
                                   (src[3]         << 16) |
                                  ((src[2] & 0xF0) <<  8) |
                                   (src[4]         <<  4) |
