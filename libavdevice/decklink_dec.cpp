@@ -983,7 +983,7 @@ av_cold int ff_decklink_read_close(AVFormatContext *avctx)
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
-    if (ctx->capture_started) {
+    if (ctx->dli) {
         ctx->dli->StopStreams();
         ctx->dli->DisableVideoInput();
         ctx->dli->DisableAudioInput();
