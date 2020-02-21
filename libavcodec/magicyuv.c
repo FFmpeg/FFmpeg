@@ -677,6 +677,17 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->interlaced) {
+        if ((s->slice_height >> s->vshift[1]) < 2) {
+            av_log(avctx, AV_LOG_ERROR, "impossible slice height\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if ((avctx->coded_height % s->slice_height) && ((avctx->coded_height % s->slice_height) >> s->vshift[1]) < 2) {
+            av_log(avctx, AV_LOG_ERROR, "impossible height\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     for (i = 0; i < s->planes; i++) {
         av_fast_malloc(&s->slices[i], &s->slices_size[i], s->nb_slices * sizeof(Slice));
         if (!s->slices[i])
