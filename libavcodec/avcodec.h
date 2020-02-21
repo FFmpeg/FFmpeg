@@ -1194,7 +1194,15 @@ typedef struct AVCPBProperties {
     uint64_t vbv_delay;
 } AVCPBProperties;
 
+/**
+ * This structure supplies correlation between a packet timestamp and a wall clock
+ * production time. The definition follows the Producer Reference Time ('prft')
+ * as defined in ISO/IEC 14496-12
+ */
 typedef struct AVProducerReferenceTime {
+    /**
+     * A UTC timestamp, in microseconds, since Unix epoch (e.g, av_gettime()).
+     */
     int64_t wallclock;
     int flags;
 } AVProducerReferenceTime;
