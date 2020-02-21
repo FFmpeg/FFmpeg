@@ -176,40 +176,12 @@ static int config_props(AVFilterLink *inlink)
         sr_context->sws_slice_h = inlink->h;
     } else {
         if (inlink->format != AV_PIX_FMT_GRAY8){
-            sws_src_h = sr_context->input.height;
-            sws_src_w = sr_context->input.width;
-            sws_dst_h = sr_context->output.height;
-            sws_dst_w = sr_context->output.width;
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+            sws_src_h = AV_CEIL_RSHIFT(sr_context->input.height, desc->log2_chroma_h);
+            sws_src_w = AV_CEIL_RSHIFT(sr_context->input.width, desc->log2_chroma_w);
+            sws_dst_h = AV_CEIL_RSHIFT(sr_context->output.height, desc->log2_chroma_h);
+            sws_dst_w = AV_CEIL_RSHIFT(sr_context->output.width, desc->log2_chroma_w);
 
-            switch (inlink->format){
-            case AV_PIX_FMT_YUV420P:
-                sws_src_h = AV_CEIL_RSHIFT(sws_src_h, 1);
-                sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 1);
-                sws_dst_h = AV_CEIL_RSHIFT(sws_dst_h, 1);
-                sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 1);
-                break;
-            case AV_PIX_FMT_YUV422P:
-                sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 1);
-                sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 1);
-                break;
-            case AV_PIX_FMT_YUV444P:
-                break;
-            case AV_PIX_FMT_YUV410P:
-                sws_src_h = AV_CEIL_RSHIFT(sws_src_h, 2);
-                sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 2);
-                sws_dst_h = AV_CEIL_RSHIFT(sws_dst_h, 2);
-                sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
-                break;
-            case AV_PIX_FMT_YUV411P:
-                sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 2);
-                sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
-                break;
-            default:
-                av_log(context, AV_LOG_ERROR,
-                       "could not create SwsContext for scaling for given input pixel format: %s\n",
-                       av_get_pix_fmt_name(inlink->format));
-                return AVERROR(EIO);
-            }
             sr_context->sws_contexts[0] = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
                                                          sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8,
                                                          SWS_BICUBIC, NULL, NULL, NULL);
