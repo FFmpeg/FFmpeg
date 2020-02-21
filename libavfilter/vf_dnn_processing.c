@@ -51,6 +51,8 @@ typedef struct DnnProcessingContext {
 
     struct SwsContext *sws_gray8_to_grayf32;
     struct SwsContext *sws_grayf32_to_gray8;
+    struct SwsContext *sws_uv_scale;
+    int sws_uv_height;
 } DnnProcessingContext;
 
 #define OFFSET(x) offsetof(DnnProcessingContext, x)
@@ -274,6 +276,18 @@ static int prepare_sws_context(AVFilterLink *outlink)
                                                    outlink->h,
                                                    AV_PIX_FMT_GRAY8,
                                                    0, NULL, NULL, NULL);
+
+        if (inlink->w != outlink->w || inlink->h != outlink->h) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+            int sws_src_h = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+            int sws_src_w = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+            int sws_dst_h = AV_CEIL_RSHIFT(outlink->h, desc->log2_chroma_h);
+            int sws_dst_w = AV_CEIL_RSHIFT(outlink->w, desc->log2_chroma_w);
+            ctx->sws_uv_scale = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
+                                               sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8,
+                                               SWS_BICUBIC, NULL, NULL, NULL);
+            ctx->sws_uv_height = sws_src_h;
+        }
         return 0;
     default:
         //do nothing
@@ -404,13 +418,21 @@ static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
 
 static int copy_uv_planes(DnnProcessingContext *ctx, AVFrame *out, const AVFrame *in)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->format);
-    int uv_height = AV_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
-    for (int i = 1; i < 3; ++i) {
-        int bytewidth = av_image_get_linesize(in->format, in->width, i);
-        av_image_copy_plane(out->data[i], out->linesize[i],
-                            in->data[i], in->linesize[i],
-                            bytewidth, uv_height);
+    if (!ctx->sws_uv_scale) {
+        av_assert0(in->height == out->height && in->width == out->width);
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->format);
+        int uv_height = AV_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
+        for (int i = 1; i < 3; ++i) {
+            int bytewidth = av_image_get_linesize(in->format, in->width, i);
+            av_image_copy_plane(out->data[i], out->linesize[i],
+                                in->data[i], in->linesize[i],
+                                bytewidth, uv_height);
+        }
+    } else {
+        sws_scale(ctx->sws_uv_scale, (const uint8_t **)(in->data + 1), in->linesize + 1,
+                  0, ctx->sws_uv_height, out->data + 1, out->linesize + 1);
+        sws_scale(ctx->sws_uv_scale, (const uint8_t **)(in->data + 2), in->linesize + 2,
+                  0, ctx->sws_uv_height, out->data + 2, out->linesize + 2);
     }
 
     return 0;
@@ -455,6 +477,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     sws_freeContext(context->sws_gray8_to_grayf32);
     sws_freeContext(context->sws_grayf32_to_gray8);
+    sws_freeContext(context->sws_uv_scale);
 
     if (context->dnn_module)
         (context->dnn_module->free_model)(&context->model);

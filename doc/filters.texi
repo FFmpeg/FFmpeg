@@ -9156,6 +9156,7 @@ ffmpeg -i INPUT -f lavfi -i nullsrc=hd720,geq='r=128+80*(sin(sqrt((X-W/2)*(X-W/2
 @end example
 @end itemize
 
+@anchor{dnn_processing}
 @section dnn_processing
 
 Do image processing with deep neural networks. It works together with another filter
@@ -9215,6 +9216,12 @@ ffmpeg -i input.jpg -vf format=grayf32,dnn_processing=model=halve_gray_float.mod
 Handle the Y channel with srcnn.pb (see @ref{sr} filter) for frame with yuv420p (planar YUV formats supported):
 @example
 ./ffmpeg -i 480p.jpg -vf format=yuv420p,scale=w=iw*2:h=ih*2,dnn_processing=dnn_backend=tensorflow:model=srcnn.pb:input=x:output=y -y srcnn.jpg
+@end example
+
+@item
+Handle the Y channel with espcn.pb (see @ref{sr} filter), which changes frame size, for format yuv420p (planar YUV formats supported):
+@example
+./ffmpeg -i 480p.jpg -vf format=yuv420p,dnn_processing=dnn_backend=tensorflow:model=espcn.pb:input=x:output=y -y tmp.espcn.jpg
 @end example
 
 @end itemize
@@ -17373,6 +17380,8 @@ Set scale factor for SRCNN model. Allowed values are @code{2}, @code{3} and @cod
 Default value is @code{2}. Scale factor is necessary for SRCNN model, because it accepts
 input upscaled using bicubic upscaling with proper scale factor.
 @end table
+
+This feature can also be finished with @ref{dnn_processing} filter.
 
 @section ssim
 
