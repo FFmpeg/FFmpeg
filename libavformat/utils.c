@@ -635,15 +635,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->metadata = s->internal->id3v2_meta;
         s->internal->id3v2_meta = NULL;
     } else if (s->internal->id3v2_meta) {
-        int level = AV_LOG_WARNING;
-        if (s->error_recognition & AV_EF_COMPLIANT)
-            level = AV_LOG_ERROR;
-        av_log(s, level, "Discarding ID3 tags because more suitable tags were found.\n");
+        av_log(s, AV_LOG_WARNING, "Discarding ID3 tags because more suitable tags were found.\n");
         av_dict_free(&s->internal->id3v2_meta);
-        if (s->error_recognition & AV_EF_EXPLODE) {
-            ret = AVERROR_INVALIDDATA;
-            goto close;
-        }
     }
 
     if (id3v2_extra_meta) {
