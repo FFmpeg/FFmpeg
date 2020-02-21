@@ -9196,6 +9196,8 @@ Set the output name of the dnn network.
 
 @end table
 
+@subsection Examples
+
 @itemize
 @item
 Halve the red channle of the frame with format rgb24:
@@ -9207,6 +9209,12 @@ ffmpeg -i input.jpg -vf format=rgb24,dnn_processing=model=halve_first_channel.mo
 Halve the pixel value of the frame with format gray32f:
 @example
 ffmpeg -i input.jpg -vf format=grayf32,dnn_processing=model=halve_gray_float.model:input=dnn_in:output=dnn_out:dnn_backend=native -y out.native.png
+@end example
+
+@item
+Handle the Y channel with srcnn.pb (see @ref{sr} filter) for frame with yuv420p (planar YUV formats supported):
+@example
+./ffmpeg -i 480p.jpg -vf format=yuv420p,scale=w=iw*2:h=ih*2,dnn_processing=dnn_backend=tensorflow:model=srcnn.pb:input=x:output=y -y srcnn.jpg
 @end example
 
 @end itemize
@@ -17311,6 +17319,7 @@ Set quality level. The value @code{max} can be used to set the maximum level,
 currently @code{6}.
 @end table
 
+@anchor{sr}
 @section sr
 
 Scale the input by applying one of the super-resolution methods based on

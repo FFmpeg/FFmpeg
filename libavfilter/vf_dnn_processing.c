@@ -110,6 +110,8 @@ static int query_formats(AVFilterContext *context)
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAYF32,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -163,6 +165,11 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
         }
         return 0;
     case AV_PIX_FMT_GRAYF32:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
         if (model_input->channels != 1) {
             LOG_FORMAT_CHANNEL_MISMATCH();
             return AVERROR(EIO);
@@ -246,6 +253,28 @@ static int prepare_sws_context(AVFilterLink *outlink)
                                                        0, NULL, NULL, NULL);
         }
         return 0;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+        av_assert0(input_dt == DNN_FLOAT);
+        av_assert0(output_dt == DNN_FLOAT);
+        ctx->sws_gray8_to_grayf32 = sws_getContext(inlink->w,
+                                                   inlink->h,
+                                                   AV_PIX_FMT_GRAY8,
+                                                   inlink->w,
+                                                   inlink->h,
+                                                   AV_PIX_FMT_GRAYF32,
+                                                   0, NULL, NULL, NULL);
+        ctx->sws_grayf32_to_gray8 = sws_getContext(outlink->w,
+                                                   outlink->h,
+                                                   AV_PIX_FMT_GRAYF32,
+                                                   outlink->w,
+                                                   outlink->h,
+                                                   AV_PIX_FMT_GRAY8,
+                                                   0, NULL, NULL, NULL);
+        return 0;
     default:
         //do nothing
         break;
@@ -300,6 +329,15 @@ static int copy_from_frame_to_dnn(DnnProcessingContext *ctx, const AVFrame *fram
                             frame->data[0], frame->linesize[0],
                             bytewidth, frame->height);
         return 0;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+        sws_scale(ctx->sws_gray8_to_grayf32, (const uint8_t **)frame->data, frame->linesize,
+                  0, frame->height, (uint8_t * const*)(&dnn_input->data),
+                  (const int [4]){frame->width * sizeof(float), 0, 0, 0});
+        return 0;
     default:
         return AVERROR(EIO);
     }
@@ -341,8 +379,38 @@ static int copy_from_dnn_to_frame(DnnProcessingContext *ctx, AVFrame *frame)
                             dnn_output->data, bytewidth,
                             bytewidth, frame->height);
         return 0;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+        sws_scale(ctx->sws_grayf32_to_gray8, (const uint8_t *[4]){(const uint8_t *)dnn_output->data, 0, 0, 0},
+                  (const int[4]){frame->width * sizeof(float), 0, 0, 0},
+                  0, frame->height, (uint8_t * const*)frame->data, frame->linesize);
+        return 0;
     default:
         return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components == 3;
+}
+
+static int copy_uv_planes(DnnProcessingContext *ctx, AVFrame *out, const AVFrame *in)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->format);
+    int uv_height = AV_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
+    for (int i = 1; i < 3; ++i) {
+        int bytewidth = av_image_get_linesize(in->format, in->width, i);
+        av_image_copy_plane(out->data[i], out->linesize[i],
+                            in->data[i], in->linesize[i],
+                            bytewidth, uv_height);
     }
 
     return 0;
@@ -373,6 +441,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     av_frame_copy_props(out, in);
     copy_from_dnn_to_frame(ctx, out);
+
+    if (isPlanarYUV(in->format))
+        copy_uv_planes(ctx, out, in);
+
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
