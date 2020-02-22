@@ -586,6 +586,11 @@ static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
     return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
+static int get_k(int ksum)
+{
+    return av_log2(ksum) + !!ksum;
+}
+
 static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
                               int32_t *out, APERice *rice, int blockstodecode)
 {
@@ -597,22 +602,31 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
         out[i] = get_rice_ook(&ctx->gb, 10);
         rice->ksum += out[i];
     }
-    rice->k = av_log2(rice->ksum / 10) + 1;
+
+    if (blockstodecode <= 5)
+        goto end;
+
+    rice->k = get_k(rice->ksum / 10);
     if (rice->k >= 24)
         return;
     for (; i < FFMIN(blockstodecode, 64); i++) {
         out[i] = get_rice_ook(&ctx->gb, rice->k);
         rice->ksum += out[i];
-        rice->k = av_log2(rice->ksum / ((i + 1) * 2)) + 1;
+        rice->k = get_k(rice->ksum / ((i + 1) * 2));
         if (rice->k >= 24)
             return;
     }
+
+    if (blockstodecode <= 64)
+        goto end;
+
+    rice->k = get_k(rice->ksum >> 7);
     ksummax = 1 << rice->k + 7;
     ksummin = rice->k ? (1 << rice->k + 6) : 0;
     for (; i < blockstodecode; i++) {
         if (get_bits_left(&ctx->gb) < 1) {
             ctx->error = 1;
-            return ;
+            return;
         }
         out[i] = get_rice_ook(&ctx->gb, rice->k);
         rice->ksum += out[i] - (unsigned)out[i - 64];
@@ -630,6 +644,7 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
         }
     }
 
+end:
     for (i = 0; i < blockstodecode; i++)
         out[i] = ((out[i] >> 1) ^ ((out[i] & 1) - 1)) + 1;
 }
