@@ -100,5 +100,11 @@ fate-adpcm-ima-ssi-mono: CMD = md5 -i $(TARGET_SAMPLES)/kvag/mull1_cut.vag -f s1
 FATE_ADPCM-$(call DEMDEC, KVAG, ADPCM_IMA_SSI) += fate-adpcm-ima-ssi-stereo
 fate-adpcm-ima-ssi-stereo: CMD = md5 -i $(TARGET_SAMPLES)/kvag/credits_cut.vag -f s16le
 
+FATE_ADPCM-$(call DEMDEC, APM, ADPCM_IMA_APM) += fate-adpcm-ima-apm-mono
+fate-adpcm-ima-apm-mono: CMD = md5 -i $(TARGET_SAMPLES)/apm/outro1.apm -f s16le
+
+FATE_ADPCM-$(call DEMDEC, APM, ADPCM_IMA_APM) += fate-adpcm-ima-apm-stereo
+fate-adpcm-ima-apm-stereo: CMD = md5 -i $(TARGET_SAMPLES)/apm/AS01.apm -f s16le
+
 FATE_SAMPLES_AVCONV += $(FATE_ADPCM-yes)
 fate-adpcm: $(FATE_ADPCM-yes)
