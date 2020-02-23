@@ -5305,6 +5305,7 @@ case $target_os in
         ;;
     openbsd|bitrig)
         disable symver
+        enable section_data_rel_ro
         striptype=""
         SHFLAGS='-shared'
         SLIB_INSTALL_NAME='$(SLIBNAME).$(LIBMAJOR).$(LIBMINOR)'
