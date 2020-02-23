@@ -2777,7 +2777,7 @@ static int dfisheye_to_xyz(const V360Context *s,
     const float m = i >= ew ? -1.f : 1.f;
 
     const float uf = ((2.f * ei) / ew - 1.f) * scale;
-    const float vf = ((2.f *  j) / eh - 1.f) * scale;
+    const float vf = ((2.f * j + 1.f) / eh - 1.f) * scale;
 
     const float h     = hypotf(uf, vf);
     const float lh    = h > 0.f ? h : 1.f;
