@@ -1561,8 +1561,8 @@ static int equirect_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float phi   = ((2.f * i) / width  - 1.f) * M_PI;
-    const float theta = ((2.f * j) / height - 1.f) * M_PI_2;
+    const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * M_PI;
+    const float theta = ((2.f * j + 0.5f) / height - 1.f) * M_PI_2;
 
     const float sin_phi   = sinf(phi);
     const float cos_phi   = cosf(phi);
