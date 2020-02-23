@@ -363,6 +363,12 @@ static int mv_read_header(AVFormatContext *avctx)
         if ((ret = read_table(avctx, NULL, parse_global_var)) < 0)
             return ret;
 
+        if (mv->nb_audio_tracks < 0  || mv->nb_video_tracks < 0 ||
+           (mv->nb_audio_tracks == 0 && mv->nb_video_tracks == 0)) {
+            av_log(avctx, AV_LOG_ERROR, "Stream count is invalid.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if (mv->nb_audio_tracks > 1) {
             avpriv_request_sample(avctx, "Multiple audio streams support");
             return AVERROR_PATCHWELCOME;
