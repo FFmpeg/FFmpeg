@@ -2401,7 +2401,7 @@ static int fisheye_to_xyz(const V360Context *s,
                           float *vec)
 {
     const float uf = s->flat_range[0] * ((2.f * i) / width  - 1.f);
-    const float vf = s->flat_range[1] * ((2.f * j) / height - 1.f);
+    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / height - 1.f);
 
     const float phi   = -atan2f(vf, uf);
     const float theta = -M_PI_2 * (1.f - hypotf(uf, vf));
