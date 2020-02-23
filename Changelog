@@ -36,6 +36,8 @@ version <next>:
 - xfade_opencl filter
 - afirsrc audio filter source
 - pad_opencl filter
+- Simon & Schuster Interactive ADPCM decoder
+- Real War KVAG demuxer
 - CDToons video decoder
 - siren audio decoder
 - Rayman 2 ADPCM decoder
