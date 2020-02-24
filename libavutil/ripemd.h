@@ -28,6 +28,7 @@
 #ifndef AVUTIL_RIPEMD_H
 #define AVUTIL_RIPEMD_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "attributes.h"
