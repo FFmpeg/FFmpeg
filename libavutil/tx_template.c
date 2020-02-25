@@ -286,6 +286,14 @@ static void fft##n(FFTComplex *z)\
     pass(z,TX_NAME(ff_cos_##n),n4/2);\
 }
 
+static void fft2(FFTComplex *z)
+{
+    FFTComplex tmp;
+    BF(tmp.re, z[0].re, z[0].re, z[1].re);
+    BF(tmp.im, z[0].im, z[0].im, z[1].im);
+    z[1] = tmp;
+}
+
 static void fft4(FFTComplex *z)
 {
     FFTSample t1, t2, t3, t4, t5, t6, t7, t8;
@@ -347,8 +355,8 @@ DECL_FFT(65536,32768,16384)
 DECL_FFT(131072,65536,32768)
 
 static void (* const fft_dispatch[])(FFTComplex*) = {
-    fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512, fft1024,
-    fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
+    NULL, fft2, fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512,
+    fft1024, fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
 };
 
 #define DECL_COMP_FFT(N)                                                       \
@@ -359,7 +367,7 @@ static void compound_fft_##N##xM(AVTXContext *s, void *_out,                   \
     FFTComplex *in = _in;                                                      \
     FFTComplex *out = _out;                                                    \
     FFTComplex fft##N##in[N];                                                  \
-    void (*fftp)(FFTComplex *z) = fft_dispatch[av_log2(m) - 2];                \
+    void (*fftp)(FFTComplex *z) = fft_dispatch[av_log2(m)];                    \
                                                                                \
     for (int i = 0; i < m; i++) {                                              \
         for (int j = 0; j < N; j++)                                            \
@@ -383,7 +391,7 @@ static void monolithic_fft(AVTXContext *s, void *_out, void *_in,
 {
     FFTComplex *in = _in;
     FFTComplex *out = _out;
-    int m = s->m, mb = av_log2(m) - 2;
+    int m = s->m, mb = av_log2(m);
     for (int i = 0; i < m; i++)
         out[s->revtab[i]] = in[i];
     fft_dispatch[mb](out);
@@ -398,7 +406,7 @@ static void compound_imdct_##N##xM(AVTXContext *s, void *_dst, void *_src,     \
     const int m = s->m, len8 = N*m >> 1;                                       \
     const int *in_map = s->pfatab, *out_map = in_map + N*m;                    \
     const FFTSample *src = _src, *in1, *in2;                                   \
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];                 \
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];                     \
                                                                                \
     stride /= sizeof(*src); /* To convert it from bytes */                     \
     in1 = src;                                                                 \
@@ -439,7 +447,7 @@ static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
     FFTComplex *exp = s->exptab, tmp, fft##N##in[N];                           \
     const int m = s->m, len4 = N*m, len3 = len4 * 3, len8 = len4 >> 1;         \
     const int *in_map = s->pfatab, *out_map = in_map + N*m;                    \
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];                 \
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];                     \
                                                                                \
     stride /= sizeof(*dst);                                                    \
                                                                                \
@@ -485,7 +493,7 @@ static void monolithic_imdct(AVTXContext *s, void *_dst, void *_src,
     FFTComplex *z = _dst, *exp = s->exptab;
     const int m = s->m, len8 = m >> 1;
     const FFTSample *src = _src, *in1, *in2;
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];
 
     stride /= sizeof(*src);
     in1 = src;
@@ -514,7 +522,7 @@ static void monolithic_mdct(AVTXContext *s, void *_dst, void *_src,
     FFTSample *src = _src, *dst = _dst;
     FFTComplex *exp = s->exptab, tmp, *z = _dst;
     const int m = s->m, len4 = m, len3 = len4 * 3, len8 = len4 >> 1;
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];
 
     stride /= sizeof(*dst);
 
@@ -567,7 +575,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
                                  const void *scale, uint64_t flags)
 {
     const int is_mdct = ff_tx_type_is_mdct(type);
-    int err, n = 1, m = 1, max_ptwo = 1 << (FF_ARRAY_ELEMS(fft_dispatch) + 1);
+    int err, n = 1, m = 1, max_ptwo = 1 << (FF_ARRAY_ELEMS(fft_dispatch) - 1);
 
     if (is_mdct)
         len >>= 1;
@@ -583,7 +591,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
 #undef CHECK_FACTOR
 
     /* len must be a power of two now */
-    if (!(len & (len - 1)) && len >= 4 && len <= max_ptwo) {
+    if (!(len & (len - 1)) && len >= 2 && len <= max_ptwo) {
         m = len;
         len = 1;
     }
