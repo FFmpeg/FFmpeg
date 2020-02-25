@@ -3271,16 +3271,22 @@ static int config_output(AVFilterLink *outlink)
         int rorder;
 
         if (c == '\0') {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Incomplete rorder option. Direction for all 3 rotation orders should be specified.\n");
-            return AVERROR(EINVAL);
+            av_log(ctx, AV_LOG_WARNING,
+                   "Incomplete rorder option. Direction for all 3 rotation orders should be specified. Switching to default rorder.\n");
+            s->rotation_order[0] = YAW;
+            s->rotation_order[1] = PITCH;
+            s->rotation_order[2] = ROLL;
+            break;
         }
 
         rorder = get_rorder(c);
         if (rorder == -1) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Incorrect rotation order symbol '%c' in rorder option.\n", c);
-            return AVERROR(EINVAL);
+            av_log(ctx, AV_LOG_WARNING,
+                   "Incorrect rotation order symbol '%c' in rorder option. Switching to default rorder.\n", c);
+            s->rotation_order[0] = YAW;
+            s->rotation_order[1] = PITCH;
+            s->rotation_order[2] = ROLL;
+            break;
         }
 
         s->rotation_order[order] = rorder;
