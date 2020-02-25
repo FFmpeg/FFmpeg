@@ -19130,6 +19130,10 @@ v360=eac:equirect:in_stereo=sbs:in_trans=1:ih_flip=1:out_stereo=tb
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports subset of above options as @ref{commands}.
+
 @section vaguedenoiser
 
 Apply a wavelet based denoiser.
