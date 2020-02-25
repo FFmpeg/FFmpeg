@@ -6608,7 +6608,8 @@ The threshold below which a pixel value is considered black; it defaults to
 
 @end table
 
-@section blend, tblend
+@anchor{blend}
+@section blend
 
 Blend two video frames into each other.
 
@@ -17816,6 +17817,11 @@ the position in the file of the input frame, NAN if unknown
 
 @section swapuv
 Swap U & V plane.
+
+@section tblend
+Blend successive video frames.
+
+See @ref{blend}
 
 @section telecine
 
