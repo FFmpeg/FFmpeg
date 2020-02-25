@@ -590,7 +590,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 
         for (j = 0; j < MAX_THREADS; j++) {
             av_fft_end(s->fft[i][j]);
+            s->fft[i][j] = NULL;
             av_fft_end(s->ifft[i][j]);
+            s->ifft[i][j] = NULL;
         }
     }
 
