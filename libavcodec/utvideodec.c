@@ -890,6 +890,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
         break;
+    case AV_PIX_FMT_YUV420P10:
+        for (i = 0; i < 3; i++) {
+            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], frame.f->linesize[i] / 2,
+                                 avctx->width >> !!i, avctx->height >> !!i,
+                                 plane_start[i], plane_start[i + 1] - 1024, c->frame_pred == PRED_LEFT);
+            if (ret)
+                return ret;
+        }
+        break;
     case AV_PIX_FMT_YUV422P10:
         for (i = 0; i < 3; i++) {
             ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], frame.f->linesize[i] / 2,
@@ -947,6 +956,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         c->planes      = 3;
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         avctx->colorspace = AVCOL_SPC_BT470BG;
+        break;
+    case MKTAG('U', 'Q', 'Y', '0'):
+        c->planes      = 3;
+        c->pro         = 1;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
         break;
     case MKTAG('U', 'Q', 'Y', '2'):
         c->planes      = 3;
