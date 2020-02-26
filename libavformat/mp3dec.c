@@ -87,20 +87,26 @@ static int mp3_read_probe(const AVProbeData *p)
         for (framesizes = frames = 0; buf2 < end; frames++) {
             MPADecodeHeader h;
             int header_emu = 0;
+            int available;
 
             header = AV_RB32(buf2);
             ret = avpriv_mpegaudio_decode_header(&h, header);
-            if (ret != 0 || end - buf2 < h.frame_size)
+            if (ret != 0)
                 break;
 
-            for (buf3 = buf2 + 4; buf3 < buf2 + h.frame_size; buf3++) {
+            available = FFMIN(h.frame_size, end - buf2);
+            for (buf3 = buf2 + 4; buf3 < buf2 + available; buf3++) {
                 uint32_t next_sync = AV_RB32(buf3);
                 header_emu += (next_sync & MP3_MASK) == (header & MP3_MASK);
             }
             if (header_emu > 2)
                 break;
-            buf2 += h.frame_size;
             framesizes += h.frame_size;
+            if (available < h.frame_size) {
+                frames++;
+                break;
+            }
+            buf2 += h.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
         max_framesizes = FFMAX(max_framesizes, framesizes);
