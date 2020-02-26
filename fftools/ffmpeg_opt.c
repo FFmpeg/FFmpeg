@@ -3264,8 +3264,8 @@ enum OptGroup {
 };
 
 static const OptionGroupDef groups[] = {
-    [GROUP_OUTFILE] = { "output url",  NULL, OPT_OUTPUT },
-    [GROUP_INFILE]  = { "input url",   "i",  OPT_INPUT },
+    [GROUP_OUTFILE] = { "output url",  NULL, OPT_OUTPUT },//输出文件
+    [GROUP_INFILE]  = { "input url",   "i",  OPT_INPUT },//输入文件
 };
 
 static int open_files(OptionGroupList *l, const char *inout,
@@ -3309,7 +3309,7 @@ int ffmpeg_parse_options(int argc, char **argv)
 
     memset(&octx, 0, sizeof(octx));
 
-    /* split the commandline into an internal representation */
+    /* split the commandline into an internal representation *///命令行参数转化成
     ret = split_commandline(&octx, argc, argv, options, groups,
                             FF_ARRAY_ELEMS(groups));
     if (ret < 0) {

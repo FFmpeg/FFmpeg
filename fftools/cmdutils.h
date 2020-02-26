@@ -156,7 +156,7 @@ typedef struct SpecifierOpt {
 } SpecifierOpt;
 
 typedef struct OptionDef {
-    const char *name;
+    const char *name; 
     int flags;
 #define HAS_ARG    0x0001
 #define OPT_BOOL   0x0002
@@ -295,12 +295,12 @@ typedef struct Option {
 
 typedef struct OptionGroupDef {
     /**< group name */
-    const char *name;
+    const char *name; //组名:
     /**
      * Option to be used as group separator. Can be NULL for groups which
      * are terminated by a non-option argument (e.g. ffmpeg output files)
      */
-    const char *sep;
+    const char *sep;//输入参数：i, 输出参数和全局参数：NULL
     /**
      * Option flags that must be set on each option that is
      * applied to this group
@@ -329,8 +329,8 @@ typedef struct OptionGroup {
 typedef struct OptionGroupList {
     const OptionGroupDef *group_def;
 
-    OptionGroup *groups;
-    int       nb_groups;
+    OptionGroup *groups;//输入源参数数组
+    int       nb_groups;//代表输入源的数据
 } OptionGroupList;
 
 typedef struct OptionParseContext {

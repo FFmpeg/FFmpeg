@@ -558,7 +558,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     if (s->pb) // must be before any goto fail
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
-
+	//通过此方法把键值对参数转移到AVFormatContext->AVClass->AVOption中
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
 

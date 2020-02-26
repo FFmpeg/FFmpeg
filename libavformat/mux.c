@@ -594,7 +594,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den * st->codec->ticks_per_frame, den * (int64_t)st->time_base.num);
         }
     }
-
+	//如果没有pts，有dts，pts设置成dts
     if (pkt->pts == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && delay == 0)
         pkt->pts = pkt->dts;
 
@@ -1326,7 +1326,7 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
 
     local_pkt = *pkt;
     local_pkt.stream_index = dst_stream;
-
+	//时间戳重源时间戳转换成rtsp流定义的时间戳
     av_packet_rescale_ts(&local_pkt,
                          src->streams[pkt->stream_index]->time_base,
                          dst->streams[dst_stream]->time_base);
