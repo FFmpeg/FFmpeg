@@ -342,6 +342,8 @@ Publish master playlist repeatedly every after specified number of segment inter
 @item -write_prft @var{write_prft}
 Write Producer Reference Time elements on supported streams. This also enables writing
 prft boxes in the underlying muxer. Applicable only when the @var{utc_url} option is enabled.
+It's set to auto by default, in which case the muxer will attempt to enable it only in modes
+that require it.
 
 @item -mpd_profile @var{mpd_profile}
 Set one or more manifest profiles.
