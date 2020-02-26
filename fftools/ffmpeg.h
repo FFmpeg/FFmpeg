@@ -93,7 +93,7 @@ typedef struct {
     int ofile_idx, ostream_idx;               // output
 } AudioChannelMap;
 
-typedef struct - {
+typedef struct OptionsContext {
     OptionGroup *g;//持有命令行参数
 
     /* input/output options */
@@ -231,7 +231,7 @@ typedef struct - {
     int        nb_time_bases;
     SpecifierOpt *enc_time_bases;
     int        nb_enc_time_bases;
-} -;
+} OptionsContext;
 
 typedef struct InputFilter {
     AVFilterContext    *filter;
