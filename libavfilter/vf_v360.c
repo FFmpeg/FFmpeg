@@ -99,6 +99,7 @@ static const AVOption v360_options[] = {
     {"cylindrical", "cylindrical",                               0, AV_OPT_TYPE_CONST,  {.i64=CYLINDRICAL},     0,                   0, FLAGS, "out" },
     {"perspective", "perspective",                               0, AV_OPT_TYPE_CONST,  {.i64=PERSPECTIVE},     0,                   0, FLAGS, "out" },
     {"tetrahedron", "tetrahedron",                               0, AV_OPT_TYPE_CONST,  {.i64=TETRAHEDRON},     0,                   0, FLAGS, "out" },
+    {"barrelsplit", "barrel split facebook's 360 format",        0, AV_OPT_TYPE_CONST,  {.i64=BARREL_SPLIT},    0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -2997,6 +2998,93 @@ static int xyz_to_barrel(const V360Context *s,
     return 1;
 }
 
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in barrel split facebook's format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static int barrelsplit_to_xyz(const V360Context *s,
+                              int i, int j, int width, int height,
+                              float *vec)
+{
+    const float scale = 1.01f;
+    const float x = (i + 0.5f) / width;
+    const float y = (j + 0.5f) / height;
+    float l_x, l_y, l_z;
+
+    if (x <= 2.f / 3.f) {
+        const float back = floorf(y * 2.f);
+
+        const float phi   = ((3.f / 2.f * x - 0.5f) * scale - back + 1.f) * M_PI;
+        const float theta = (y - 0.25f - 0.5f * back) * scale * M_PI;
+
+        const float sin_phi   = sinf(phi);
+        const float cos_phi   = cosf(phi);
+        const float sin_theta = sinf(theta);
+        const float cos_theta = cosf(theta);
+
+        l_x = -cos_theta * sin_phi;
+        l_y = -sin_theta;
+        l_z =  cos_theta * cos_phi;
+    } else {
+        const int face = floorf(y * 4.f);
+        float uf, vf;
+
+        uf = x * 3.f - 2.f;
+        uf = (uf - 0.5f) * scale + 0.5f;
+
+        switch (face) {
+        case 0:
+            vf = y * 2.f;
+            uf = 1.f - uf;
+            vf = (0.5f - vf) * scale;
+
+            l_x =  0.5f - uf;
+            l_y =  0.5f;
+            l_z = -0.5f + vf;
+            break;
+        case 1:
+            vf = y * 2.f;
+            uf = 1.f - uf;
+            vf = 1.f - (vf - 0.5f) * scale;
+
+            l_x =  0.5f - uf;
+            l_y = -0.5f;
+            l_z =  0.5f - vf;
+            break;
+        case 2:
+            vf = y * 2.f - 0.5f;
+            vf = 1.f - (1.f - vf) * scale;
+
+            l_x =  0.5f - uf;
+            l_y =  0.5f;
+            l_z = -0.5f + vf;
+            break;
+        case 3:
+            vf = y * 2.f - 1.5f;
+            vf = vf * scale;
+
+            l_x =  0.5f - uf;
+            l_y = -0.5f;
+            l_z =  0.5f - vf;
+            break;
+        }
+    }
+
+    vec[0] = l_x;
+    vec[1] = l_y;
+    vec[2] = l_z;
+
+    normalize_vector(vec);
+
+    return 1;
+}
+
 static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
 {
     for (int i = 0; i < 3; i++) {
@@ -3368,6 +3456,7 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h;
         break;
+    case BARREL_SPLIT:
     case PERSPECTIVE:
     case PANNINI:
         av_log(ctx, AV_LOG_ERROR, "Supplied format is not accepted as input.\n");
@@ -3548,6 +3637,12 @@ static int config_output(AVFilterLink *outlink)
         s->out_transform = tetrahedron_to_xyz;
         prepare_out = NULL;
         w = lrintf(wf);
+        h = lrintf(hf);
+        break;
+    case BARREL_SPLIT:
+        s->out_transform = barrelsplit_to_xyz;
+        prepare_out = NULL;
+        w = lrintf(wf / 4.f * 3.f);
         h = lrintf(hf);
         break;
     default:

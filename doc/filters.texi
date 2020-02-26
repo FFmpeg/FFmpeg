@@ -18932,7 +18932,8 @@ Default value is @b{@samp{0}}.
 
 @item barrel
 @item fb
-Facebook's 360 format.
+@item barrelsplit
+Facebook's 360 formats.
 
 @item sg
 Stereographic format.
