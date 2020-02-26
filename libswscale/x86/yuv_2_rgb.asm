@@ -139,7 +139,7 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     VBROADCASTSD vr_coff,  [pointer_c_ditherq + 4  * 8]
 %endif
 %endif
-    mova m_y, [py_2indexq + 2 * indexq]
+    movu m_y, [py_2indexq + 2 * indexq]
     movh m_u, [pu_indexq  +     indexq]
     movh m_v, [pv_indexq  +     indexq]
 .loop0:
@@ -347,7 +347,7 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
 %endif ; PACK RGB15/16
 %endif ; PACK RGB15/16/32
 
-mova m_y, [py_2indexq + 2 * indexq + 8 * time_num]
+movu m_y, [py_2indexq + 2 * indexq + 8 * time_num]
 movh m_v, [pv_indexq  +     indexq + 4 * time_num]
 movh m_u, [pu_indexq  +     indexq + 4 * time_num]
 add imageq, 8 * depth * time_num
