@@ -1397,7 +1397,7 @@ static int dash_init(AVFormatContext *s)
     if (c->write_prft < 0) {
         c->write_prft = c->ldash;
         if (c->ldash)
-            av_log(s, AV_LOG_INFO, "Enabling Producer Reference Time element for Low Latency mode\n");
+            av_log(s, AV_LOG_VERBOSE, "Enabling Producer Reference Time element for Low Latency mode\n");
     }
 
     if (c->write_prft && !c->utc_timing_url) {
