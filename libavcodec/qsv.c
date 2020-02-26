@@ -219,10 +219,12 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
         return AV_PIX_FMT_P010;
 #if CONFIG_VAAPI
     case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUYV422:
         *fourcc = MFX_FOURCC_YUY2;
         return AV_PIX_FMT_YUYV422;
 #if QSV_VERSION_ATLEAST(1, 27)
     case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_Y210:
         *fourcc = MFX_FOURCC_Y210;
         return AV_PIX_FMT_Y210;
 #endif
