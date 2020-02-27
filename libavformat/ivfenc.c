@@ -80,7 +80,7 @@ static int ivf_write_trailer(AVFormatContext *s)
     IVFEncContext *ctx = s->priv_data;
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && ctx->frame_cnt > 1) {
-        size_t end = avio_tell(pb);
+        int64_t end = avio_tell(pb);
 
         avio_seek(pb, 24, SEEK_SET);
         // overwrite the "length" field (duration)
