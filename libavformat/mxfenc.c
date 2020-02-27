@@ -1747,7 +1747,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             avio_wb32(pb, KAG_SIZE); // system item size including klv fill
         } else { // audio or data track
             if (!audio_frame_size) {
-                audio_frame_size = sc->aic.samples[0]*sc->aic.sample_size;
+                audio_frame_size = sc->frame_size;
                 audio_frame_size += klv_fill_size(audio_frame_size);
             }
             avio_w8(pb, 1);
@@ -2650,10 +2650,7 @@ static int mxf_write_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     mxf->timecode_track->index = -1;
 
-    if (!spf)
-        spf = ff_mxf_get_samples_per_frame(s, (AVRational){ 1, 25 });
-
-    if (ff_audio_interleave_init(s, spf->samples_per_frame, mxf->time_base) < 0)
+    if (ff_audio_interleave_init(s, 0, av_inv_q(mxf->tc.rate)) < 0)
         return -1;
 
     return 0;

@@ -29,14 +29,15 @@
 typedef struct AudioInterleaveContext {
     AVFifoBuffer *fifo;
     unsigned fifo_size;           ///< size of currently allocated FIFO
+    int64_t n;                    ///< number of generated packets
+    int64_t nb_samples;           ///< number of generated samples
     uint64_t dts;                 ///< current dts
     int sample_size;              ///< size of one sample all channels included
-    const int *samples_per_frame; ///< must be 0-terminated
-    const int *samples;           ///< current samples per frame, pointer to samples_per_frame
+    int samples_per_frame;        ///< samples per frame if fixed, 0 otherwise
     AVRational time_base;         ///< time base of output audio packets
 } AudioInterleaveContext;
 
-int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_frame, AVRational time_base);
+int ff_audio_interleave_init(AVFormatContext *s, const int samples_per_frame, AVRational time_base);
 void ff_audio_interleave_close(AVFormatContext *s);
 
 /**

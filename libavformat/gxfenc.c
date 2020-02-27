@@ -663,7 +663,7 @@ static int gxf_write_umf_packet(AVFormatContext *s)
     return updatePacketSize(pb, pos);
 }
 
-static const int GXF_samples_per_frame[] = { 32768, 0 };
+static const int GXF_samples_per_frame = 32768;
 
 static void gxf_init_timecode_track(GXFStreamContext *sc, GXFStreamContext *vsc)
 {
