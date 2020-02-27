@@ -92,6 +92,7 @@
  *     compressed data in an AVPacket.
  *   - For encoding, call avcodec_send_frame() to give the encoder an AVFrame
  *     containing uncompressed audio or video.
+ *
  *   In both cases, it is recommended that AVPackets and AVFrames are
  *   refcounted, or libavcodec might have to copy the input data. (libavformat
  *   always returns refcounted AVPackets, and av_frame_get_buffer() allocates
@@ -102,6 +103,7 @@
  *     an AVFrame containing uncompressed audio or video data.
  *   - For encoding, call avcodec_receive_packet(). On success, it will return
  *     an AVPacket with a compressed frame.
+ *
  *   Repeat this call until it returns AVERROR(EAGAIN) or an error. The
  *   AVERROR(EAGAIN) return value means that new input data is required to
  *   return new output. In this case, continue with sending input. For each
