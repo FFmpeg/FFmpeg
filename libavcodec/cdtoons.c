@@ -61,7 +61,7 @@ static int cdtoons_render_sprite(AVCodecContext *avctx, const uint8_t *data,
 {
     CDToonsContext *c = avctx->priv_data;
     const uint8_t *next_line = data;
-    const uint8_t *end = data + data_size;;
+    const uint8_t *end = data + data_size;
     uint16_t line_size;
     uint8_t *dest;
     int skip = 0, to_skip, x;
