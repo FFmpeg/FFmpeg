@@ -23666,6 +23666,29 @@ The command is sent when the current frame timestamp leaves the
 specified interval. In other words, the command is sent when the
 previous frame timestamp was in the given interval, and the
 current is not.
+
+@item expr
+The command @var{ARG} is interpreted as expression and result of
+expression is passed as @var{ARG}.
+
+The expression is evaluated through the eval API and can contain the following
+constants:
+
+@table @option
+@item POS
+Original position in the file of the frame, or undefined if undefined
+for the current frame.
+
+@item PTS
+The presentation timestamp in input.
+
+@item N
+The count of the input frame for video or audio, starting from 0.
+
+@item T
+The time in seconds of the current frame.
+@end table
+
 @end table
 
 If @var{FLAGS} is not specified, a default value of @code{[enter]} is
