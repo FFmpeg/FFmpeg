@@ -59,6 +59,11 @@ enum MXFFrameLayout {
     SegmentedFrame,
 };
 
+typedef struct MXFContentPackageRate {
+    int rate;
+    AVRational tb;
+} MXFContentPackageRate;
+
 typedef struct KLVPacket {
     UID key;
     int64_t offset;

@@ -131,25 +131,25 @@ int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *
     return -1;
 }
 
-static const AVRational mxf_time_base[] = {
-    { 1001, 24000 },
-    { 1, 24},
-    { 1001, 30000 },
-    { 1001, 60000 },
-    { 1, 25 },
-    { 1, 50 },
-    { 1, 60 },
-    { 0, 0}
-};
-
-static const int mxf_content_package_rates[] = {
-    3, 2, 7, 13, 4, 10, 12,
+/**
+ * See SMPTE 326M-2000 Section 7.2 Content package rate
+ * MXFContentPackageRate->rate is bits b5..b0.
+ */
+static const MXFContentPackageRate mxf_content_package_rates[] = {
+    {  2, { 1,    24    } },
+    {  3, { 1001, 24000 } },
+    {  4, { 1,    25    } },
+    {  7, { 1001, 30000 } },
+    { 10, { 1,    50    } },
+    { 12, { 1,    60    } },
+    { 13, { 1001, 60000 } },
+    {0}
 };
 
 int ff_mxf_get_content_package_rate(AVRational time_base)
 {
-    for (int i = 0; mxf_time_base[i].num; i++)
-        if (!av_cmp_q(time_base, mxf_time_base[i]))
-            return mxf_content_package_rates[i];
+    for (int i = 0; mxf_content_package_rates[i].rate; i++)
+        if (!av_cmp_q(time_base, mxf_content_package_rates[i].tb))
+            return mxf_content_package_rates[i].rate;
     return 0;
 }
