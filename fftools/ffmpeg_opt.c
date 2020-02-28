@@ -3275,6 +3275,7 @@ static int open_files(OptionGroupList *l, const char *inout,
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error parsing options for %s file "
                    "%s.\n", inout, g->arg);
+            uninit_options(&o);
             return ret;
         }
 
