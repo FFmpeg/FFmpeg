@@ -2020,7 +2020,6 @@ static int mxf_parse_prores_frame(AVFormatContext *s, AVStream *st, AVPacket *pk
     if (mxf->header_written)
         return 1;
 
-    sc->codec_ul = NULL;
     profile = st->codecpar->profile;
     for (i = 0; i < FF_ARRAY_ELEMS(mxf_prores_codec_uls); i++) {
         if (profile == mxf_prores_codec_uls[i].profile) {
@@ -2028,7 +2027,7 @@ static int mxf_parse_prores_frame(AVFormatContext *s, AVStream *st, AVPacket *pk
             break;
         }
     }
-    if (!sc->codec_ul)
+    if (i == FF_ARRAY_ELEMS(mxf_prores_codec_uls))
         return 0;
 
     sc->frame_size = pkt->size;
@@ -2074,7 +2073,6 @@ static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
     if (pkt->size < 43)
         return 0;
 
-    sc->codec_ul = NULL;
     cid = AV_RB32(pkt->data + 0x28);
     for (i = 0; i < FF_ARRAY_ELEMS(mxf_dnxhd_codec_uls); i++) {
         if (cid == mxf_dnxhd_codec_uls[i].cid) {
@@ -2082,7 +2080,7 @@ static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
             break;
         }
     }
-    if (!sc->codec_ul)
+    if (i == FF_ARRAY_ELEMS(mxf_dnxhd_codec_uls))
         return 0;
 
     sc->component_depth = 0;
@@ -2245,6 +2243,7 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     const uint8_t *buf = pkt->data;
     const uint8_t *buf_end = pkt->data + pkt->size;
     const uint8_t *nal_end;
+    const UID *codec_ul = NULL;
     uint32_t state = -1;
     int extra_size = 512; // support AVC Intra files without SPS/PPS header
     int i, frame_size, slice_type, has_sps = 0, intra_only = 0, ret;
@@ -2315,12 +2314,11 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
 
     if (!has_sps)
         sc->interlaced = st->codecpar->field_order != AV_FIELD_PROGRESSIVE ? 1 : 0;
-    sc->codec_ul = NULL;
     frame_size = pkt->size + extra_size;
 
     for (i = 0; i < FF_ARRAY_ELEMS(mxf_h264_codec_uls); i++) {
         if (frame_size == mxf_h264_codec_uls[i].frame_size && sc->interlaced == mxf_h264_codec_uls[i].interlaced) {
-            sc->codec_ul = &mxf_h264_codec_uls[i].uid;
+            codec_ul = &mxf_h264_codec_uls[i].uid;
             sc->component_depth = 10; // AVC Intra is always 10 Bit
             sc->aspect_ratio = (AVRational){ 16, 9 }; // 16:9 is mandatory for broadcast HD
             st->codecpar->profile = mxf_h264_codec_uls[i].profile;
@@ -2334,17 +2332,18 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
                    mxf_h264_codec_uls[i].profile == sps->profile_idc &&
                    (mxf_h264_codec_uls[i].intra_only < 0 ||
                     mxf_h264_codec_uls[i].intra_only == intra_only)) {
-            sc->codec_ul = &mxf_h264_codec_uls[i].uid;
+            codec_ul = &mxf_h264_codec_uls[i].uid;
             st->codecpar->profile = sps->profile_idc;
             st->codecpar->level = sps->level_idc;
             // continue to check for avc intra
         }
     }
 
-    if (!sc->codec_ul) {
+    if (!codec_ul) {
         av_log(s, AV_LOG_ERROR, "h264 profile not supported\n");
         return 0;
     }
+    sc->codec_ul = codec_ul;
 
     return 1;
 }
@@ -2441,9 +2440,13 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             }
         }
     }
-    if (s->oformat != &ff_mxf_d10_muxer)
-        sc->codec_ul = mxf_get_mpeg2_codec_ul(st->codecpar);
-    return !!sc->codec_ul;
+    if (s->oformat != &ff_mxf_d10_muxer) {
+        const UID *codec_ul = mxf_get_mpeg2_codec_ul(st->codecpar);
+        if (!codec_ul)
+            return 0;
+        sc->codec_ul = codec_ul;
+    }
+    return 1;
 }
 
 static uint64_t mxf_parse_timestamp(int64_t timestamp64)
