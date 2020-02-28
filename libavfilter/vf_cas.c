@@ -58,7 +58,7 @@ static int cas_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
         const int linesize = out->linesize[p];
         const int in_linesize = in->linesize[p];
         const int w = s->planewidth[p];
-        const int w1 = w - 1;;
+        const int w1 = w - 1;
         const int h = s->planeheight[p];
         const int h1 = h - 1;
         uint8_t *dst = out->data[p] + slice_start * linesize;
@@ -125,7 +125,7 @@ static int cas_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs
         const int linesize = out->linesize[p] / 2;
         const int in_linesize = in->linesize[p] / 2;
         const int w = s->planewidth[p];
-        const int w1 = w - 1;;
+        const int w1 = w - 1;
         const int h = s->planeheight[p];
         const int h1 = h - 1;
         uint16_t *dst = (uint16_t *)out->data[p] + slice_start * linesize;
