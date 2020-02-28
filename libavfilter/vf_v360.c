@@ -1279,10 +1279,10 @@ static int xyz_to_cube3x2(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            int new_ui = ui + j;
-            int new_vi = vi + i;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            int new_ui = ui + j - 1;
+            int new_vi = vi + i - 1;
             int u_shift, v_shift;
             int new_ewi, new_ehi;
 
@@ -1316,8 +1316,8 @@ static int xyz_to_cube3x2(const V360Context *s,
                 new_vi = av_clip(lrintf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
             }
 
-            us[i + 1][j + 1] = u_shift + new_ui;
-            vs[i + 1][j + 1] = v_shift + new_vi;
+            us[i][j] = u_shift + new_ui;
+            vs[i][j] = v_shift + new_vi;
         }
     }
 
@@ -1432,10 +1432,10 @@ static int xyz_to_cube1x6(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            int new_ui = ui + j;
-            int new_vi = vi + i;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            int new_ui = ui + j - 1;
+            int new_vi = vi + i - 1;
             int v_shift;
             int new_ehi;
 
@@ -1462,8 +1462,8 @@ static int xyz_to_cube1x6(const V360Context *s,
                 new_vi = av_clip(lrintf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
             }
 
-            us[i + 1][j + 1] =           new_ui;
-            vs[i + 1][j + 1] = v_shift + new_vi;
+            us[i][j] =           new_ui;
+            vs[i][j] = v_shift + new_vi;
         }
     }
 
@@ -1512,10 +1512,10 @@ static int xyz_to_cube6x1(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            int new_ui = ui + j;
-            int new_vi = vi + i;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            int new_ui = ui + j - 1;
+            int new_vi = vi + i - 1;
             int u_shift;
             int new_ewi;
 
@@ -1542,8 +1542,8 @@ static int xyz_to_cube6x1(const V360Context *s,
                 new_vi = av_clip(lrintf(0.5f *     ehi * (vf + 1.f)), 0,     ehi - 1);
             }
 
-            us[i + 1][j + 1] = u_shift + new_ui;
-            vs[i + 1][j + 1] =           new_vi;
+            us[i][j] = u_shift + new_ui;
+            vs[i][j] =           new_vi;
         }
     }
 
@@ -1671,10 +1671,10 @@ static int xyz_to_stereographic(const V360Context *s,
     *du = visible ? uf - ui : 0.f;
     *dv = visible ? vf - vi : 0.f;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
-            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = visible ? av_clip(ui + j - 1, 0, width  - 1) : 0;
+            vs[i][j] = visible ? av_clip(vi + i - 1, 0, height - 1) : 0;
         }
     }
 
@@ -1710,10 +1710,10 @@ static int xyz_to_equirect(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = mod(ui + j, width);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = mod(ui + j - 1, width);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -1774,10 +1774,10 @@ static int xyz_to_flat(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
-            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = visible ? av_clip(ui + j - 1, 0, width  - 1) : 0;
+            vs[i][j] = visible ? av_clip(vi + i - 1, 0, height - 1) : 0;
         }
     }
 
@@ -1813,10 +1813,10 @@ static int xyz_to_mercator(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -1883,10 +1883,10 @@ static int xyz_to_ball(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -1998,10 +1998,10 @@ static int xyz_to_hammer(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -2068,10 +2068,10 @@ static int xyz_to_sinusoidal(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -2319,10 +2319,10 @@ static int xyz_to_eac(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -2469,10 +2469,10 @@ static int xyz_to_fisheye(const V360Context *s,
     *du = visible ? uf - ui : 0.f;
     *dv = visible ? vf - vi : 0.f;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
-            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = visible ? av_clip(ui + j - 1, 0, width  - 1) : 0;
+            vs[i][j] = visible ? av_clip(vi + i - 1, 0, height - 1) : 0;
         }
     }
 
@@ -2614,10 +2614,10 @@ static int xyz_to_cylindrical(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = visible ? av_clip(ui + j, 0, width  - 1) : 0;
-            vs[i + 1][j + 1] = visible ? av_clip(vi + i, 0, height - 1) : 0;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = visible ? av_clip(ui + j - 1, 0, width  - 1) : 0;
+            vs[i][j] = visible ? av_clip(vi + i - 1, 0, height - 1) : 0;
         }
     }
 
@@ -2747,10 +2747,10 @@ static int xyz_to_tetrahedron(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = mod(ui + j, width);
-            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = mod(ui + j - 1, width);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
@@ -2842,10 +2842,10 @@ static int xyz_to_dfisheye(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = av_clip(u_shift + ui + j, 0, width  - 1);
-            vs[i + 1][j + 1] = av_clip(          vi + i, 0, height - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(u_shift + ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(          vi + i - 1, 0, height - 1);
         }
     }
 
@@ -2989,10 +2989,10 @@ static int xyz_to_barrel(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = u_shift + av_clip(ui + j, 0, ew - 1);
-            vs[i + 1][j + 1] = v_shift + av_clip(vi + i, 0, eh - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = u_shift + av_clip(ui + j - 1, 0, ew - 1);
+            vs[i][j] = v_shift + av_clip(vi + i - 1, 0, eh - 1);
         }
     }
 
@@ -3088,10 +3088,10 @@ static int xyz_to_barrelsplit(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (int i = -1; i < 3; i++) {
-        for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = u_shift + av_clip(ui + j, 0, ew - 1);
-            vs[i + 1][j + 1] = v_shift + av_clip(vi + i, 0, eh - 1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = u_shift + av_clip(ui + j - 1, 0, ew - 1);
+            vs[i][j] = v_shift + av_clip(vi + i - 1, 0, eh - 1);
         }
     }
 
