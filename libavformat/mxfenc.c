@@ -2425,7 +2425,6 @@ static int mxf_write_header(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     int i, ret;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
-    const MXFSamplesPerFrame *spf = NULL;
     int64_t timestamp = 0;
 
     if (!s->nb_streams)
@@ -2479,15 +2478,14 @@ static int mxf_write_header(AVFormatContext *s)
             case AVCHROMA_LOC_CENTER:  sc->color_siting = 3; break;
             }
 
-            mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
-            spf = ff_mxf_get_samples_per_frame(s, tbc);
-            if (!spf) {
+            mxf->content_package_rate = ff_mxf_get_content_package_rate(tbc);
+            if (!mxf->content_package_rate) {
                 av_log(s, AV_LOG_ERROR, "Unsupported video frame rate %d/%d\n",
                        tbc.den, tbc.num);
                 return AVERROR(EINVAL);
             }
-            mxf->content_package_rate = ff_mxf_get_content_package_rate(tbc);
-            mxf->time_base = spf->time_base;
+            mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
+            mxf->time_base = tbc;
             rate = av_inv_q(mxf->time_base);
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if((ret = mxf_init_timecode(s, st, rate)) < 0)
@@ -2552,7 +2550,7 @@ static int mxf_write_header(AVFormatContext *s)
                 }
                 sc->index = INDEX_D10_AUDIO;
                 sc->container_ul = ((MXFStreamContext*)s->streams[0]->priv_data)->container_ul;
-                sc->frame_size = 4 + 8 * spf[0].samples_per_frame[0] * 4;
+                sc->frame_size = 4 + 8 * av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) * 4;
             } else if (s->oformat == &ff_mxf_opatom_muxer) {
                 AVRational tbc = av_inv_q(mxf->audio_edit_rate);
 
@@ -2566,14 +2564,13 @@ static int mxf_write_header(AVFormatContext *s)
                     return AVERROR(EINVAL);
                 }
 
-                spf = ff_mxf_get_samples_per_frame(s, tbc);
-                if (!spf) {
+                if (!ff_mxf_get_content_package_rate(tbc)) {
                     av_log(s, AV_LOG_ERROR, "Unsupported timecode frame rate %d/%d\n", tbc.den, tbc.num);
                     return AVERROR(EINVAL);
                 }
 
                 mxf->time_base = st->time_base;
-                if((ret = mxf_init_timecode(s, st, av_inv_q(spf->time_base))) < 0)
+                if((ret = mxf_init_timecode(s, st, av_inv_q(tbc))) < 0)
                     return ret;
 
                 mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
@@ -2581,8 +2578,9 @@ static int mxf_write_header(AVFormatContext *s)
                 sc->index = INDEX_WAV;
             } else {
                 mxf->slice_count = 1;
-                sc->frame_size = (st->codecpar->channels * spf[0].samples_per_frame[0] *
-                                  av_get_bits_per_sample(st->codecpar->codec_id)) / 8;
+                sc->frame_size = st->codecpar->channels *
+                                 av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) *
+                                 av_get_bits_per_sample(st->codecpar->codec_id) / 8;
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             AVDictionaryEntry *e = av_dict_get(st->metadata, "data_type", NULL, 0);
