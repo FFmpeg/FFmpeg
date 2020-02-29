@@ -623,6 +623,39 @@ static inline int mod(int a, int b)
 }
 
 /**
+ * Reflect y operation.
+ *
+ * @param y input vertical position
+ * @param h input height
+ */
+static inline int reflecty(int y, int h)
+{
+    if (y < 0) {
+        return -y;
+    } else if (y >= h) {
+        return 2 * h - 1 - y;
+    }
+
+    return y;
+}
+
+/**
+ * Reflect x operation.
+ *
+ * @param x input horizontal position
+ * @param y input vertical position
+ * @param w input width
+ * @param h input height
+ */
+static inline int reflectx(int x, int y, int w, int h)
+{
+    if (y < 0 || y >= h)
+        return w - 1 - x;
+
+    return mod(x, w);
+}
+
+/**
  * Convert char to corresponding direction.
  * Used for cubemap options.
  */
@@ -2746,8 +2779,8 @@ static int xyz_to_tetrahedron(const V360Context *s,
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            us[i][j] = mod(ui + j - 1, width);
-            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
+            us[i][j] = reflectx(ui + j - 1, vi + i - 1, width, height);
+            vs[i][j] = reflecty(vi + i - 1, height);
         }
     }
 
