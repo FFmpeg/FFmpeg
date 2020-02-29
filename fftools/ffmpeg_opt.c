@@ -44,16 +44,80 @@
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
+#define SPECIFIER_OPT_FMT_str  "%s"
+#define SPECIFIER_OPT_FMT_i    "%i"
+#define SPECIFIER_OPT_FMT_i64  "%"PRId64"d"
+#define SPECIFIER_OPT_FMT_ui64 "%"PRIu64"d"
+#define SPECIFIER_OPT_FMT_f    "%f"
+#define SPECIFIER_OPT_FMT_dbl  "%lf"
+
+static const char *opt_name_codec_names[]               = {"c", "codec", "acodec", "vcodec", "scodec", "dcodec", NULL};
+static const char *opt_name_audio_channels[]            = {"ac", NULL};
+static const char *opt_name_audio_sample_rate[]         = {"ar", NULL};
+static const char *opt_name_frame_rates[]               = {"r", NULL};
+static const char *opt_name_frame_sizes[]               = {"s", NULL};
+static const char *opt_name_frame_pix_fmts[]            = {"pix_fmt", NULL};
+static const char *opt_name_ts_scale[]                  = {"itsscale", NULL};
+static const char *opt_name_hwaccels[]                  = {"hwaccel", NULL};
+static const char *opt_name_hwaccel_devices[]           = {"hwaccel_device", NULL};
+static const char *opt_name_hwaccel_output_formats[]    = {"hwaccel_output_format", NULL};
+static const char *opt_name_autorotate[]                = {"autorotate", NULL};
+static const char *opt_name_max_frames[]                = {"frames", "aframes", "vframes", "dframes", NULL};
+static const char *opt_name_bitstream_filters[]         = {"bsf", "absf", "vbsf", NULL};
+static const char *opt_name_codec_tags[]                = {"tag", "atag", "vtag", "stag", NULL};
+static const char *opt_name_sample_fmts[]               = {"sample_fmt", NULL};
+static const char *opt_name_qscale[]                    = {"q", "qscale", NULL};
+static const char *opt_name_forced_key_frames[]         = {"forced_key_frames", NULL};
+static const char *opt_name_force_fps[]                 = {"force_fps", NULL};
+static const char *opt_name_frame_aspect_ratios[]       = {"aspect", NULL};
+static const char *opt_name_rc_overrides[]              = {"rc_override", NULL};
+static const char *opt_name_intra_matrices[]            = {"intra_matrix", NULL};
+static const char *opt_name_inter_matrices[]            = {"inter_matrix", NULL};
+static const char *opt_name_chroma_intra_matrices[]     = {"chroma_intra_matrix", NULL};
+static const char *opt_name_top_field_first[]           = {"top", NULL};
+static const char *opt_name_presets[]                   = {"pre", "apre", "vpre", "spre", NULL};
+static const char *opt_name_copy_initial_nonkeyframes[] = {"copyinkfr", NULL};
+static const char *opt_name_copy_prior_start[]          = {"copypriorss", NULL};
+static const char *opt_name_filters[]                   = {"filter", "af", "vf", NULL};
+static const char *opt_name_filter_scripts[]            = {"filter_script", NULL};
+static const char *opt_name_reinit_filters[]            = {"reinit_filter", NULL};
+static const char *opt_name_fix_sub_duration[]          = {"fix_sub_duration", NULL};
+static const char *opt_name_canvas_sizes[]              = {"canvas_size", NULL};
+static const char *opt_name_pass[]                      = {"pass", NULL};
+static const char *opt_name_passlogfiles[]              = {"passlogfile", NULL};
+static const char *opt_name_max_muxing_queue_size[]     = {"max_muxing_queue_size", NULL};
+static const char *opt_name_guess_layout_max[]          = {"guess_layout_max", NULL};
+static const char *opt_name_apad[]                      = {"apad", NULL};
+static const char *opt_name_discard[]                   = {"discard", NULL};
+static const char *opt_name_disposition[]               = {"disposition", NULL};
+static const char *opt_name_time_bases[]                = {"time_base", NULL};
+static const char *opt_name_enc_time_bases[]            = {"enc_time_base", NULL};
+
+#define WARN_MULTIPLE_OPT_USAGE(name, type, so, st)\
+{\
+    char namestr[128] = "";\
+    const char *spec = so->specifier && so->specifier[0] ? so->specifier : "";\
+    for (i = 0; opt_name_##name[i]; i++)\
+        av_strlcatf(namestr, sizeof(namestr), "-%s%s", opt_name_##name[i], opt_name_##name[i+1] ? (opt_name_##name[i+2] ? ", " : " or ") : "");\
+    av_log(NULL, AV_LOG_WARNING, "Multiple %s options specified for stream %d, only the last option '-%s%s%s "SPECIFIER_OPT_FMT_##type"' will be used.\n",\
+           namestr, st->index, opt_name_##name[0], spec[0] ? ":" : "", spec, so->u.type);\
+}
+
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
 {\
-    int i, ret;\
+    int i, ret, matches = 0;\
+    SpecifierOpt *so;\
     for (i = 0; i < o->nb_ ## name; i++) {\
         char *spec = o->name[i].specifier;\
-        if ((ret = check_stream_specifier(fmtctx, st, spec)) > 0)\
+        if ((ret = check_stream_specifier(fmtctx, st, spec)) > 0) {\
             outvar = o->name[i].u.type;\
-        else if (ret < 0)\
+            so = &o->name[i];\
+            matches++;\
+        } else if (ret < 0)\
             exit_program(1);\
     }\
+    if (matches > 1)\
+       WARN_MULTIPLE_OPT_USAGE(name, type, so, st);\
 }
 
 #define MATCH_PER_TYPE_OPT(name, type, outvar, fmtctx, mediatype)\
