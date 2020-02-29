@@ -53,19 +53,23 @@ typedef struct WebMChunkContext {
     char *http_method;
     uint64_t duration_written;
     int64_t prev_pts;
-    ff_const59 AVOutputFormat *oformat;
     AVFormatContext *avf;
 } WebMChunkContext;
 
 static int chunk_mux_init(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
+    ff_const59 AVOutputFormat *oformat;
     AVFormatContext *oc;
     AVStream *st, *ost = s->streams[0];
     AVDictionary *dict = NULL;
     int ret;
 
-    ret = avformat_alloc_output_context2(&wc->avf, wc->oformat, NULL, NULL);
+    oformat = av_guess_format("webm", s->url, "video/webm");
+    if (!oformat)
+        return AVERROR_MUXER_NOT_FOUND;
+
+    ret = avformat_alloc_output_context2(&wc->avf, oformat, NULL, NULL);
     if (ret < 0)
         return ret;
     oc = wc->avf;
@@ -156,9 +160,6 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
 
     wc->chunk_index = wc->chunk_start_index;
-    wc->oformat = av_guess_format("webm", s->url, "video/webm");
-    if (!wc->oformat)
-        return AVERROR_MUXER_NOT_FOUND;
     wc->prev_pts = AV_NOPTS_VALUE;
 
     ret = chunk_mux_init(s);
