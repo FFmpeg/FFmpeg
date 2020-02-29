@@ -2484,11 +2484,12 @@ static int xyz_to_fisheye(const V360Context *s,
                           const float *vec, int width, int height,
                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float phi   = -atan2f(hypotf(vec[0], vec[1]), -vec[2]) / M_PI;
-    const float theta = -atan2f(vec[0], vec[1]);
+    const float h   = hypotf(vec[0], vec[1]);
+    const float lh  = h > 0.f ? h : 1.f;
+    const float phi = atan2f(h, -vec[2]) / M_PI;
 
-    float uf = sinf(theta) * phi * s->input_mirror_modifier[0] / s->iflat_range[0];
-    float vf = cosf(theta) * phi * s->input_mirror_modifier[1] / s->iflat_range[1];
+    float uf =  vec[0] / lh * phi * s->input_mirror_modifier[0] / s->iflat_range[0];
+    float vf = -vec[1] / lh * phi * s->input_mirror_modifier[1] / s->iflat_range[1];
 
     const int visible = hypotf(uf, vf) <= 0.5f;
     int ui, vi;
