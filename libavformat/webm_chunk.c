@@ -61,6 +61,8 @@ static int chunk_mux_init(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc;
+    AVStream *st, *ost = s->streams[0];
+    AVDictionary *dict = NULL;
     int ret;
 
     ret = avformat_alloc_output_context2(&wc->avf, wc->oformat, NULL, NULL);
@@ -72,17 +74,42 @@ static int chunk_mux_init(AVFormatContext *s)
     oc->max_delay          = s->max_delay;
     oc->flags                 = s->flags;
     oc->strict_std_compliance = s->strict_std_compliance;
+    oc->avoid_negative_ts     = s->avoid_negative_ts;
 
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
-    *(const AVClass**)oc->priv_data = oc->oformat->priv_class;
-    av_opt_set_defaults(oc->priv_data);
-    av_opt_set_int(oc->priv_data, "dash", 1, 0);
-    av_opt_set_int(oc->priv_data, "cluster_time_limit", wc->chunk_duration, 0);
-    av_opt_set_int(oc->priv_data, "live", 1, 0);
+    if (!(st = avformat_new_stream(oc, NULL)))
+        return AVERROR(ENOMEM);
 
-    oc->streams = s->streams;
-    oc->nb_streams = s->nb_streams;
+    if ((ret = avcodec_parameters_copy(st->codecpar, ost->codecpar)) < 0 ||
+        (ret = av_dict_copy(&st->metadata, ost->metadata, 0))        < 0)
+        return ret;
+
+    st->sample_aspect_ratio = ost->sample_aspect_ratio;
+    st->disposition         = ost->disposition;
+    avpriv_set_pts_info(st, ost->pts_wrap_bits, ost->time_base.num,
+                                                ost->time_base.den);
+
+    av_dict_set_int(&dict, "dash", 1, 0);
+    av_dict_set_int(&dict, "cluster_time_limit", wc->chunk_duration, 0);
+    av_dict_set_int(&dict, "live", 1, 0);
+
+    ret = avformat_init_output(oc, &dict);
+    av_dict_free(&dict);
+    if (ret < 0)
+        return ret;
+
+    // Copy the timing info back to the original stream
+    // so that the timestamps of the packets are directly usable
+    avpriv_set_pts_info(ost, st->pts_wrap_bits, st->time_base.num,
+                                                st->time_base.den);
+
+    // This ensures that the timestamps will already be properly shifted
+    // when the packets arrive here, so we don't need to shift again.
+    s->avoid_negative_ts  = oc->avoid_negative_ts;
+    s->internal->avoid_negative_ts_use_pts =
+        oc->internal->avoid_negative_ts_use_pts;
+    oc->avoid_negative_ts = 0;
 
     return 0;
 }
@@ -119,7 +146,6 @@ static int webm_chunk_write_header(AVFormatContext *s)
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = NULL;
     int ret;
-    int i;
     AVDictionary *options = NULL;
     char oc_filename[MAX_FILENAME_SIZE];
     char *oc_url;
@@ -152,14 +178,10 @@ static int webm_chunk_write_header(AVFormatContext *s)
         return ret;
 
     oc->pb->seekable = 0;
-    ret = oc->oformat->write_header(oc);
+    ret = avformat_write_header(oc, NULL);
     ff_format_io_close(s, &oc->pb);
     if (ret < 0)
         return ret;
-    for (i = 0; i < s->nb_streams; i++) {
-        // ms precision is the de-facto standard timescale for mkv files.
-        avpriv_set_pts_info(s->streams[i], 64, 1, 1000);
-    }
     return 0;
 }
 
@@ -192,7 +214,7 @@ static int chunk_end(AVFormatContext *s, int flush)
 
     if (flush)
         // Flush the cluster in WebM muxer.
-        oc->oformat->write_packet(oc, NULL);
+        av_write_frame(oc, NULL);
     buffer_size = avio_close_dyn_buf(oc->pb, &buffer);
     oc->pb = NULL;
     ret = get_chunk_filename(s, 0, filename);
@@ -239,9 +261,8 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    ret = oc->oformat->write_packet(oc, pkt);
-
-    return ret;
+    // We only have one stream, so use the non-interleaving av_write_frame.
+    return av_write_frame(oc, pkt);
 }
 
 static int webm_chunk_write_trailer(AVFormatContext *s)
@@ -255,11 +276,9 @@ static int webm_chunk_write_trailer(AVFormatContext *s)
         if (ret < 0)
             goto fail;
     }
-    oc->oformat->write_trailer(oc);
+    av_write_trailer(oc);
     ret = chunk_end(s, 0);
 fail:
-    oc->streams = NULL;
-    oc->nb_streams = 0;
     avformat_free_context(oc);
     return ret;
 }
