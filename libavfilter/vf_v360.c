@@ -640,6 +640,22 @@ static inline int reflecty(int y, int h)
 }
 
 /**
+ * Reflect x operation for equirect.
+ *
+ * @param x input horizontal position
+ * @param y input vertical position
+ * @param w input width
+ * @param h input height
+ */
+static inline int ereflectx(int x, int y, int w, int h)
+{
+    if (y < 0 || y >= h)
+        x += w / 2;
+
+    return mod(x, w);
+}
+
+/**
  * Reflect x operation.
  *
  * @param x input horizontal position
@@ -1745,8 +1761,8 @@ static int xyz_to_equirect(const V360Context *s,
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            us[i][j] = mod(ui + j - 1, width);
-            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
+            us[i][j] = ereflectx(ui + j - 1, vi + i - 1, width, height);
+            vs[i][j] = reflecty(vi + i - 1, height);
         }
     }
 
