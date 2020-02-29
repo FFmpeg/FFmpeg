@@ -55,7 +55,7 @@ typedef struct WebMChunkContext {
     AVFormatContext *avf;
 } WebMChunkContext;
 
-static int chunk_mux_init(AVFormatContext *s)
+static int webm_chunk_init(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
     ff_const59 AVOutputFormat *oformat;
@@ -64,10 +64,16 @@ static int chunk_mux_init(AVFormatContext *s)
     AVDictionary *dict = NULL;
     int ret;
 
+    // DASH Streams can only have one track per file.
+    if (s->nb_streams != 1)
+        return AVERROR(EINVAL);
+
     if (!wc->header_filename) {
         av_log(s, AV_LOG_ERROR, "No header filename provided\n");
         return AVERROR(EINVAL);
     }
+
+    wc->prev_pts = AV_NOPTS_VALUE;
 
     oformat = av_guess_format("webm", s->url, "video/webm");
     if (!oformat)
@@ -144,19 +150,10 @@ static int get_chunk_filename(AVFormatContext *s, char filename[MAX_FILENAME_SIZ
 static int webm_chunk_write_header(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
-    AVFormatContext *oc = NULL;
+    AVFormatContext *oc = wc->avf;
     int ret;
     AVDictionary *options = NULL;
 
-    // DASH Streams can only have either one track per file.
-    if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
-
-    wc->prev_pts = AV_NOPTS_VALUE;
-
-    ret = chunk_mux_init(s);
-    if (ret < 0)
-        return ret;
-    oc = wc->avf;
     if (wc->http_method)
         av_dict_set(&options, "method", wc->http_method, 0);
     ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &options);
@@ -295,6 +292,7 @@ AVOutputFormat ff_webm_chunk_muxer = {
     .flags          = AVFMT_NOFILE | AVFMT_GLOBALHEADER | AVFMT_NEEDNUMBER |
                       AVFMT_TS_NONSTRICT,
     .priv_data_size = sizeof(WebMChunkContext),
+    .init           = webm_chunk_init,
     .write_header   = webm_chunk_write_header,
     .write_packet   = webm_chunk_write_packet,
     .write_trailer  = webm_chunk_write_trailer,
