@@ -3790,7 +3790,15 @@ static int config_output(AVFilterLink *outlink)
     }
 
     // Override resolution with user values if specified
-    if (s->width > 0 && s->height > 0) {
+    if (s->width > 0 && s->height <= 0 && s->h_fov > 0.f && s->v_fov > 0.f &&
+        s->out == FLAT && s->d_fov == 0.f) {
+        w = s->width;
+        h = w / tanf(s->h_fov * M_PI / 360.f) * tanf(s->v_fov * M_PI / 360.f);
+    } else if (s->width <= 0 && s->height > 0 && s->h_fov > 0.f && s->v_fov > 0.f &&
+        s->out == FLAT && s->d_fov == 0.f) {
+        h = s->height;
+        w = h / tanf(s->v_fov * M_PI / 360.f) * tanf(s->h_fov * M_PI / 360.f);
+    } else if (s->width > 0 && s->height > 0) {
         w = s->width;
         h = s->height;
     } else if (s->width > 0 || s->height > 0) {
