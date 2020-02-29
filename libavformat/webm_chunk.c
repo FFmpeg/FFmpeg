@@ -70,6 +70,9 @@ static int chunk_mux_init(AVFormatContext *s)
 
     oc->interrupt_callback = s->interrupt_callback;
     oc->max_delay          = s->max_delay;
+    oc->flags                 = s->flags;
+    oc->strict_std_compliance = s->strict_std_compliance;
+
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     *(const AVClass**)oc->priv_data = oc->oformat->priv_class;
