@@ -1610,8 +1610,8 @@ static int stereographic_to_xyz(const V360Context *s,
                                 int i, int j, int width, int height,
                                 float *vec)
 {
-    const float x = ((2.f * i) / width  - 1.f) * s->flat_range[0];
-    const float y = ((2.f * j) / height - 1.f) * s->flat_range[1];
+    const float x = ((2.f * i + 1.f) / width  - 1.f) * s->flat_range[0];
+    const float y = ((2.f * j + 1.f) / height - 1.f) * s->flat_range[1];
     const float xy = x * x + y * y;
 
     vec[0] = 2.f * x / (1.f + xy);
@@ -1837,8 +1837,8 @@ static int mercator_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float phi = ((2.f * i) / width - 1.f) * M_PI + M_PI_2;
-    const float y   = ((2.f * j) / height - 1.f) * M_PI;
+    const float phi = ((2.f * i + 1.f) / width  - 1.f) * M_PI + M_PI_2;
+    const float y   = ((2.f * j + 1.f) / height - 1.f) * M_PI;
     const float div = expf(2.f * y) + 1.f;
 
     const float sin_phi   = sinf(phi);
@@ -1907,8 +1907,8 @@ static int ball_to_xyz(const V360Context *s,
                        int i, int j, int width, int height,
                        float *vec)
 {
-    const float x = (2.f * i) / width  - 1.f;
-    const float y = (2.f * j) / height - 1.f;
+    const float x = (2.f * i + 1.f) / width  - 1.f;
+    const float y = (2.f * j + 1.f) / height - 1.f;
     const float l = hypotf(x, y);
 
     if (l <= 1.f) {
@@ -1941,8 +1941,8 @@ static int hammer_to_xyz(const V360Context *s,
                          int i, int j, int width, int height,
                          float *vec)
 {
-    const float x = ((2.f * i) / width  - 1.f);
-    const float y = ((2.f * j) / height - 1.f);
+    const float x = ((2.f * i + 1.f) / width  - 1.f);
+    const float y = ((2.f * j + 1.f) / height - 1.f);
 
     const float xx = x * x;
     const float yy = y * y;
@@ -2022,8 +2022,8 @@ static int sinusoidal_to_xyz(const V360Context *s,
                              int i, int j, int width, int height,
                              float *vec)
 {
-    const float theta = ((2.f * j) / height - 1.f) * M_PI_2;
-    const float phi   = ((2.f * i) / width  - 1.f) * M_PI / cosf(theta);
+    const float theta = ((2.f * j + 1.f) / height - 1.f) * M_PI_2;
+    const float phi   = ((2.f * i + 1.f) / width  - 1.f) * M_PI / cosf(theta);
 
     const float sin_phi   = sinf(phi);
     const float cos_phi   = cosf(phi);
@@ -2360,8 +2360,8 @@ static int flat_to_xyz(const V360Context *s,
                        int i, int j, int width, int height,
                        float *vec)
 {
-    const float l_x =  s->flat_range[0] * (2.f * i / width  - 1.f);
-    const float l_y = -s->flat_range[1] * (2.f * j / height - 1.f);
+    const float l_x =  s->flat_range[0] * ((2.f * i + 0.5f) / width  - 1.f);
+    const float l_y = -s->flat_range[1] * ((2.f * j + 0.5f) / height - 1.f);
 
     vec[0] =  l_x;
     vec[1] =  l_y;
@@ -2493,8 +2493,8 @@ static int pannini_to_xyz(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec)
 {
-    const float uf = ((2.f * i) / width  - 1.f);
-    const float vf = ((2.f * j) / height - 1.f);
+    const float uf = ((2.f * i + 1.f) / width  - 1.f);
+    const float vf = ((2.f * j + 1.f) / height - 1.f);
 
     const float d = s->h_fov;
     const float k = uf * uf / ((d + 1.f) * (d + 1.f));
@@ -2544,8 +2544,8 @@ static int cylindrical_to_xyz(const V360Context *s,
                               int i, int j, int width, int height,
                               float *vec)
 {
-    const float uf = s->flat_range[0] * ((2.f * i) / width  - 1.f);
-    const float vf = s->flat_range[1] * ((2.f * j) / height - 1.f);
+    const float uf = s->flat_range[0] * ((2.f * i + 1.f) / width  - 1.f);
+    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / height - 1.f);
 
     const float phi   = uf;
     const float theta = atanf(vf);
@@ -2638,8 +2638,8 @@ static int perspective_to_xyz(const V360Context *s,
                               int i, int j, int width, int height,
                               float *vec)
 {
-    const float uf = ((2.f * i) / width  - 1.f);
-    const float vf = ((2.f * j) / height - 1.f);
+    const float uf = ((2.f * i + 1.f) / width  - 1.f);
+    const float vf = ((2.f * j + 1.f) / height - 1.f);
     const float rh = hypotf(uf, vf);
     const float sinzz = 1.f - rh * rh;
     const float h = 1.f + s->v_fov;
