@@ -87,25 +87,24 @@ static int chunk_mux_init(AVFormatContext *s)
 static int get_chunk_filename(AVFormatContext *s, int is_header, char filename[MAX_FILENAME_SIZE])
 {
     WebMChunkContext *wc = s->priv_data;
-    AVFormatContext *oc = wc->avf;
     if (!filename) {
         return AVERROR(EINVAL);
     }
     if (is_header) {
         int len;
         if (!wc->header_filename) {
-            av_log(oc, AV_LOG_ERROR, "No header filename provided\n");
+            av_log(s, AV_LOG_ERROR, "No header filename provided\n");
             return AVERROR(EINVAL);
         }
         len = av_strlcpy(filename, wc->header_filename, MAX_FILENAME_SIZE);
         if (len >= MAX_FILENAME_SIZE) {
-            av_log(oc, AV_LOG_ERROR, "Header filename too long\n");
+            av_log(s, AV_LOG_ERROR, "Header filename too long\n");
             return AVERROR(EINVAL);
         }
     } else {
         if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
                                   s->url, wc->chunk_index - 1) < 0) {
-            av_log(oc, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->url);
+            av_log(s, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->url);
             return AVERROR(EINVAL);
         }
     }
