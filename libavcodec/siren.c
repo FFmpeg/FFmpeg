@@ -428,6 +428,7 @@ static int decode_envelope(SirenContext *s, GetBitContext *gb,
                            int *absolute_region_power_index, int esf_adjustment)
 {
     absolute_region_power_index[0] = (int)get_bits(gb, 5) - esf_adjustment;
+    absolute_region_power_index[0] = av_clip(absolute_region_power_index[0], -24, 39);
     decoder_standard_deviation[0] = s->standard_deviation[absolute_region_power_index[0] + 24];
 
     for (int i = 1; i < number_of_regions; i++) {
@@ -437,7 +438,7 @@ static int decode_envelope(SirenContext *s, GetBitContext *gb,
             index = differential_decoder_tree[i - 1][index][get_bits1(gb)];
         } while (index > 0);
 
-        absolute_region_power_index[i] = absolute_region_power_index[i - 1] - index - 12;
+        absolute_region_power_index[i] = av_clip(absolute_region_power_index[i - 1] - index - 12, -24, 39);
         decoder_standard_deviation[i] = s->standard_deviation[absolute_region_power_index[i] + 24];
     }
 
@@ -500,6 +501,8 @@ static int categorize_regions(int number_of_regions, int number_of_available_bit
                     }
                 }
             }
+            if (raw_value == -99)
+                return AVERROR_INVALIDDATA;
             *min_rate_ptr++ = raw_min_idx;
             min +=
                 expected_bits_table[min_rate_categories[raw_min_idx] + 1] -
@@ -518,6 +521,8 @@ static int categorize_regions(int number_of_regions, int number_of_available_bit
                     }
                 }
             }
+            if (raw_value == 99)
+                return AVERROR_INVALIDDATA;
 
             *--max_rate_ptr = raw_max_idx;
             max += expected_bits_table[max_rate_categories[raw_max_idx] - 1] -
@@ -684,9 +689,11 @@ static int siren_decode(AVCodecContext *avctx, void *data,
 
     rate_control = get_bits(gb, 4);
 
-    categorize_regions(s->number_of_regions, get_bits_left(gb),
-                       s->absolute_region_power_index, s->power_categories,
-                       s->category_balance);
+    ret = categorize_regions(s->number_of_regions, get_bits_left(gb),
+                             s->absolute_region_power_index, s->power_categories,
+                             s->category_balance);
+    if (ret < 0)
+        return ret;
 
     for (int i = 0; i < rate_control; i++)
         s->power_categories[s->category_balance[i]]++;
