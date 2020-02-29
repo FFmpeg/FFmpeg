@@ -1750,8 +1750,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
     MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
     MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
-    if (o->nb_filters > 1)
-        av_log(NULL, AV_LOG_ERROR, "Only '-vf %s' read, ignoring remaining -vf options: Use ',' to separate filters\n", ost->filters);
 
     if (!ost->stream_copy) {
         const char *p = NULL;
@@ -1933,8 +1931,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
 
     MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
     MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
-    if (o->nb_filters > 1)
-        av_log(NULL, AV_LOG_ERROR, "Only '-af %s' read, ignoring remaining -af options: Use ',' to separate filters\n", ost->filters);
 
     if (!ost->stream_copy) {
         char *sample_fmt = NULL;
