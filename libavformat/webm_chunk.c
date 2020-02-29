@@ -258,13 +258,22 @@ static int webm_chunk_write_trailer(AVFormatContext *s)
     if (!oc->pb) {
         ret = chunk_start(s);
         if (ret < 0)
-            goto fail;
+            return ret;
     }
     av_write_trailer(oc);
-    ret = chunk_end(s, 0);
-fail:
-    avformat_free_context(oc);
-    return ret;
+    return chunk_end(s, 0);
+}
+
+static void webm_chunk_deinit(AVFormatContext *s)
+{
+    WebMChunkContext *wc = s->priv_data;
+
+    if (!wc->avf)
+        return;
+
+    ffio_free_dyn_buf(&wc->avf->pb);
+    avformat_free_context(wc->avf);
+    wc->avf = NULL;
 }
 
 #define OFFSET(x) offsetof(WebMChunkContext, x)
@@ -296,6 +305,7 @@ AVOutputFormat ff_webm_chunk_muxer = {
     .write_header   = webm_chunk_write_header,
     .write_packet   = webm_chunk_write_packet,
     .write_trailer  = webm_chunk_write_trailer,
+    .deinit         = webm_chunk_deinit,
     .priv_class     = &webm_chunk_class,
 };
 #endif
