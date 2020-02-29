@@ -2713,17 +2713,14 @@ static int xyz_to_tetrahedron(const V360Context *s,
                               const float *vec, int width, int height,
                               int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    float d = 0.5f * (vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
-
-    const float d0 = (vec[0] * 0.5f + vec[1] * 0.5f + vec[2] *-0.5f) / d;
-    const float d1 = (vec[0] *-0.5f + vec[1] *-0.5f + vec[2] *-0.5f) / d;
-    const float d2 = (vec[0] * 0.5f + vec[1] *-0.5f + vec[2] * 0.5f) / d;
-    const float d3 = (vec[0] *-0.5f + vec[1] * 0.5f + vec[2] * 0.5f) / d;
+    const float d0 = vec[0] * 1.f + vec[1] * 1.f + vec[2] *-1.f;
+    const float d1 = vec[0] *-1.f + vec[1] *-1.f + vec[2] *-1.f;
+    const float d2 = vec[0] * 1.f + vec[1] *-1.f + vec[2] * 1.f;
+    const float d3 = vec[0] *-1.f + vec[1] * 1.f + vec[2] * 1.f;
+    const float d = FFMAX(d0, FFMAX3(d1, d2, d3));
 
     float uf, vf, x, y, z;
     int ui, vi;
-
-    d = FFMAX(d0, FFMAX3(d1, d2, d3));
 
     x =  vec[0] / d;
     y =  vec[1] / d;
