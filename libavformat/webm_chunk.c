@@ -46,7 +46,6 @@
 
 typedef struct WebMChunkContext {
     const AVClass *class;
-    int chunk_start_index;
     char *header_filename;
     int chunk_duration;
     int chunk_index;
@@ -152,7 +151,6 @@ static int webm_chunk_write_header(AVFormatContext *s)
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
 
-    wc->chunk_index = wc->chunk_start_index;
     wc->prev_pts = AV_NOPTS_VALUE;
 
     ret = chunk_mux_init(s);
@@ -274,7 +272,7 @@ fail:
 
 #define OFFSET(x) offsetof(WebMChunkContext, x)
 static const AVOption options[] = {
-    { "chunk_start_index",  "start index of the chunk", OFFSET(chunk_start_index), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "chunk_start_index",  "start index of the chunk", OFFSET(chunk_index), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "header", "filename of the header where the initialization data will be written", OFFSET(header_filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "audio_chunk_duration", "duration of each chunk in milliseconds", OFFSET(chunk_duration), AV_OPT_TYPE_INT, {.i64 = 5000}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "method", "set the HTTP method", OFFSET(http_method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
