@@ -12242,6 +12242,8 @@ this value filter algorithm for connecting components is activated.
 By default value is 0.
 @end table
 
+The @code{hysteresis} filter also supports the @ref{framesync} options.
+
 @section idet
 
 Detect video interlacing type.
@@ -13093,6 +13095,8 @@ set fourth pixel component expression, corresponds to the alpha component
 set output bit depth, only available for @code{lut2} filter. By default is 0,
 which means bit depth is automatically picked from first input format.
 @end table
+
+The @code{lut2} filter also supports the @ref{framesync} options.
 
 Each of them specifies the expression to use for computing the lookup table for
 the corresponding pixel component values.
@@ -21336,6 +21340,8 @@ Number of inputs to the filter.  Defaults to 1.
 Size of output frames.  Defaults to the same as the first input.
 
 @end table
+
+The @code{program_opencl} filter also supports the @ref{framesync} options.
 
 The program source file must contain a kernel function with the given name,
 which will be run once for each plane of the output.  Each run on a plane
