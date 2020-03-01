@@ -87,8 +87,8 @@ static int webm_chunk_init(AVFormatContext *s)
     ff_format_set_url(oc, wc->header_filename);
     wc->header_filename = NULL;
 
-    oc->interrupt_callback = s->interrupt_callback;
-    oc->max_delay          = s->max_delay;
+    oc->interrupt_callback    = s->interrupt_callback;
+    oc->max_delay             = s->max_delay;
     oc->flags                 = s->flags & ~AVFMT_FLAG_FLUSH_PACKETS;
     oc->strict_std_compliance = s->strict_std_compliance;
     oc->avoid_negative_ts     = s->avoid_negative_ts;
@@ -143,11 +143,11 @@ static int get_chunk_filename(AVFormatContext *s, char filename[MAX_FILENAME_SIZ
     if (!filename) {
         return AVERROR(EINVAL);
     }
-        if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
-                                  s->url, wc->chunk_index - 1) < 0) {
-            av_log(s, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->url);
-            return AVERROR(EINVAL);
-        }
+    if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
+                              s->url, wc->chunk_index - 1) < 0) {
+        av_log(s, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->url);
+        return AVERROR(EINVAL);
+    }
     return 0;
 }
 
