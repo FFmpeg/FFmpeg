@@ -95,7 +95,8 @@ static int webm_chunk_init(AVFormatContext *s)
 
     oc->flush_packets         = 0;
 
-    av_dict_copy(&oc->metadata, s->metadata, 0);
+    if ((ret = av_dict_copy(&oc->metadata, s->metadata, 0)) < 0)
+        return ret;
 
     if (!(st = avformat_new_stream(oc, NULL)))
         return AVERROR(ENOMEM);
@@ -109,11 +110,14 @@ static int webm_chunk_init(AVFormatContext *s)
     avpriv_set_pts_info(st, ost->pts_wrap_bits, ost->time_base.num,
                                                 ost->time_base.den);
 
-    av_dict_set_int(&dict, "dash", 1, 0);
-    av_dict_set_int(&dict, "cluster_time_limit", wc->chunk_duration, 0);
-    av_dict_set_int(&dict, "live", 1, 0);
+    if ((ret = av_dict_set_int(&dict, "dash", 1, 0))   < 0 ||
+        (ret = av_dict_set_int(&dict, "cluster_time_limit",
+                               wc->chunk_duration, 0)) < 0 ||
+        (ret = av_dict_set_int(&dict, "live", 1, 0))   < 0)
+        goto fail;
 
     ret = avformat_init_output(oc, &dict);
+fail:
     av_dict_free(&dict);
     if (ret < 0)
         return ret;
@@ -155,7 +159,8 @@ static int webm_chunk_write_header(AVFormatContext *s)
     AVDictionary *options = NULL;
 
     if (wc->http_method)
-        av_dict_set(&options, "method", wc->http_method, 0);
+        if ((ret = av_dict_set(&options, "method", wc->http_method, 0)) < 0)
+            return ret;
     ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &options);
     av_dict_free(&options);
     if (ret < 0)
@@ -205,14 +210,15 @@ static int chunk_end(AVFormatContext *s, int flush)
     if (ret < 0)
         goto fail;
     if (wc->http_method)
-        av_dict_set(&options, "method", wc->http_method, 0);
+        if ((ret = av_dict_set(&options, "method", wc->http_method, 0)) < 0)
+            goto fail;
     ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, &options);
+    av_dict_free(&options);
     if (ret < 0)
         goto fail;
     avio_write(pb, buffer, buffer_size);
     ff_format_io_close(s, &pb);
 fail:
-    av_dict_free(&options);
     av_free(buffer);
     return (ret < 0) ? ret : 0;
 }
@@ -260,7 +266,9 @@ static int webm_chunk_write_trailer(AVFormatContext *s)
         if (ret < 0)
             return ret;
     }
-    av_write_trailer(oc);
+    ret = av_write_trailer(oc);
+    if (ret < 0)
+        return ret;
     return chunk_end(s, 0);
 }
 
