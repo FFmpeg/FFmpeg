@@ -72,9 +72,11 @@ static int chunk_mux_init(AVFormatContext *s)
 
     oc->interrupt_callback = s->interrupt_callback;
     oc->max_delay          = s->max_delay;
-    oc->flags                 = s->flags;
+    oc->flags                 = s->flags & ~AVFMT_FLAG_FLUSH_PACKETS;
     oc->strict_std_compliance = s->strict_std_compliance;
     oc->avoid_negative_ts     = s->avoid_negative_ts;
+
+    oc->flush_packets         = 0;
 
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
