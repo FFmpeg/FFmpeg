@@ -2641,10 +2641,10 @@ static int xyz_to_cylindrical(const V360Context *s,
                               int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0] / s->iflat_range[0];
-    const float theta = atan2f(-vec[1], hypotf(vec[0], vec[2])) * s->input_mirror_modifier[1] / s->iflat_range[1];
+    const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
 
     const float uf = (phi + 1.f) * (width - 1) / 2.f;
-    const float vf = (tanf(theta) + 1.f) * height / 2.f;
+    const float vf = (tanf(theta) / s->iflat_range[1] + 1.f) * height / 2.f;
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
