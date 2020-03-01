@@ -70,8 +70,6 @@ typedef struct CuvidContext
     AVBufferRef *hwdevice;
     AVBufferRef *hwframe;
 
-    AVBSFContext *bsf;
-
     AVFifoBuffer *frame_queue;
 
     int deint_mode;
@@ -387,8 +385,6 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
     CUVIDSOURCEDATAPACKET cupkt;
-    AVPacket filter_packet = { 0 };
-    AVPacket filtered_packet = { 0 };
     int ret = 0, eret = 0, is_flush = ctx->decoder_flushing;
 
     av_log(avctx, AV_LOG_TRACE, "cuvid_decode_packet\n");
@@ -399,29 +395,8 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     if (cuvid_is_buffer_full(avctx) && avpkt && avpkt->size)
         return AVERROR(EAGAIN);
 
-    if (ctx->bsf && avpkt && avpkt->size) {
-        if ((ret = av_packet_ref(&filter_packet, avpkt)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "av_packet_ref failed\n");
-            return ret;
-        }
-
-        if ((ret = av_bsf_send_packet(ctx->bsf, &filter_packet)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "av_bsf_send_packet failed\n");
-            av_packet_unref(&filter_packet);
-            return ret;
-        }
-
-        if ((ret = av_bsf_receive_packet(ctx->bsf, &filtered_packet)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "av_bsf_receive_packet failed\n");
-            return ret;
-        }
-
-        avpkt = &filtered_packet;
-    }
-
     ret = CHECK_CU(ctx->cudl->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0) {
-        av_packet_unref(&filtered_packet);
         return ret;
     }
 
@@ -444,8 +419,6 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     }
 
     ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &cupkt));
-
-    av_packet_unref(&filtered_packet);
 
     if (ret < 0)
         goto error;
@@ -699,9 +672,6 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
 
     av_fifo_freep(&ctx->frame_queue);
 
-    if (ctx->bsf)
-        av_bsf_free(&ctx->bsf);
-
     if (ctx->cuparser)
         ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
 
@@ -823,7 +793,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     CUVIDSOURCEDATAPACKET seq_pkt;
     CUcontext cuda_ctx = NULL;
     CUcontext dummy;
-    const AVBitStreamFilter *bsf;
     int ret = 0;
 
     enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
@@ -976,28 +945,12 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    if (avctx->codec->id == AV_CODEC_ID_H264 || avctx->codec->id == AV_CODEC_ID_HEVC) {
-        if (avctx->codec->id == AV_CODEC_ID_H264)
-            bsf = av_bsf_get_by_name("h264_mp4toannexb");
-        else
-            bsf = av_bsf_get_by_name("hevc_mp4toannexb");
-
-        if (!bsf) {
-            ret = AVERROR_BSF_NOT_FOUND;
-            goto error;
-        }
-        if (ret = av_bsf_alloc(bsf, &ctx->bsf)) {
-            goto error;
-        }
-        if (((ret = avcodec_parameters_from_context(ctx->bsf->par_in, avctx)) < 0) || ((ret = av_bsf_init(ctx->bsf)) < 0)) {
-            av_bsf_free(&ctx->bsf);
-            goto error;
-        }
-
-        ctx->cuparse_ext.format.seqhdr_data_length = ctx->bsf->par_out->extradata_size;
+    if (avctx->codec->bsfs) {
+        const AVCodecParameters *par = avctx->internal->filter.bsfs[avctx->internal->filter.nb_bsfs - 1]->par_out;
+        ctx->cuparse_ext.format.seqhdr_data_length = par->extradata_size;
         memcpy(ctx->cuparse_ext.raw_seqhdr_data,
-               ctx->bsf->par_out->extradata,
-               FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), ctx->bsf->par_out->extradata_size));
+               par->extradata,
+               FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), par->extradata_size));
     } else if (avctx->extradata_size > 0) {
         ctx->cuparse_ext.format.seqhdr_data_length = avctx->extradata_size;
         memcpy(ctx->cuparse_ext.raw_seqhdr_data,
@@ -1142,7 +1095,7 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
     NULL
 };
 
-#define DEFINE_CUVID_CODEC(x, X) \
+#define DEFINE_CUVID_CODEC(x, X, bsf_name) \
     static const AVClass x##_cuvid_class = { \
         .class_name = #x "_cuvid", \
         .item_name = av_default_item_name, \
@@ -1161,6 +1114,7 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
         .decode         = cuvid_decode_frame, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
+        .bsfs           = bsf_name, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
@@ -1172,37 +1126,37 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
     };
 
 #if CONFIG_HEVC_CUVID_DECODER
-DEFINE_CUVID_CODEC(hevc, HEVC)
+DEFINE_CUVID_CODEC(hevc, HEVC, "hevc_mp4toannexb")
 #endif
 
 #if CONFIG_H264_CUVID_DECODER
-DEFINE_CUVID_CODEC(h264, H264)
+DEFINE_CUVID_CODEC(h264, H264, "h264_mp4toannexb")
 #endif
 
 #if CONFIG_MJPEG_CUVID_DECODER
-DEFINE_CUVID_CODEC(mjpeg, MJPEG)
+DEFINE_CUVID_CODEC(mjpeg, MJPEG, NULL)
 #endif
 
 #if CONFIG_MPEG1_CUVID_DECODER
-DEFINE_CUVID_CODEC(mpeg1, MPEG1VIDEO)
+DEFINE_CUVID_CODEC(mpeg1, MPEG1VIDEO, NULL)
 #endif
 
 #if CONFIG_MPEG2_CUVID_DECODER
-DEFINE_CUVID_CODEC(mpeg2, MPEG2VIDEO)
+DEFINE_CUVID_CODEC(mpeg2, MPEG2VIDEO, NULL)
 #endif
 
 #if CONFIG_MPEG4_CUVID_DECODER
-DEFINE_CUVID_CODEC(mpeg4, MPEG4)
+DEFINE_CUVID_CODEC(mpeg4, MPEG4, NULL)
 #endif
 
 #if CONFIG_VP8_CUVID_DECODER
-DEFINE_CUVID_CODEC(vp8, VP8)
+DEFINE_CUVID_CODEC(vp8, VP8, NULL)
 #endif
 
 #if CONFIG_VP9_CUVID_DECODER
-DEFINE_CUVID_CODEC(vp9, VP9)
+DEFINE_CUVID_CODEC(vp9, VP9, NULL)
 #endif
 
 #if CONFIG_VC1_CUVID_DECODER
-DEFINE_CUVID_CODEC(vc1, VC1)
+DEFINE_CUVID_CODEC(vc1, VC1, NULL)
 #endif
