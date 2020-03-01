@@ -1,7 +1,4 @@
 /*
- * Copyright (C) 2016 Open Broadcast Systems Ltd.
- * Author        2016 Rostislav Pehlivanov <rpehlivanov@obe.tv>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -21,232 +18,1114 @@
 
 #include "dirac_vlc.h"
 
-#define LUT_SIZE   (1 << LUT_BITS)
-#define RSIZE_BITS (CHAR_BIT*sizeof(residual))
+enum {
+    /* Next byte contains an exactly aligned start to a new symbol (even bit) */
+    STATE_START  = 0,
+    /* Next byte should end the current value on an odd bit */
+    STATE_FOLLOW = 256,
+    /* Byte is completely data and doesn't end nor start a value */
+    STATE_DATA   = 512,
+    /* Byte has the current value's sign bit and starts a new value */
+    STATE_SIGN   = 768,
+};
 
-#define CONVERT_TO_RESIDUE(a, b)                                               \
-    (((residual)(a)) << (RSIZE_BITS - (b)))
+/* Exactly 128 bits */
+typedef struct LUTState {
+    int16_t   val0;      /* Bits to which to add after applying preshift */
+    int16_t   val1;
+    int16_t   val2;
+    int16_t   val3;
+    int16_t   val4;
+    uint8_t   val0_bits; /* The size of val0 in bits */
+    int8_t    sign;      /* Sign of the current value (0 == zero the value) */
+    int8_t    num;       /* Number of values in this byte */
+    uint8_t   val;       /* Init value in case current value was terminated */
+    uint16_t  state;     /* Expected state for the next byte */
+} LUTState;
 
-#define INIT_RESIDUE(N)                                                        \
-    residual N = 0;                                                            \
-    av_unused int32_t N ## _bits  = 0
+const DECLARE_ALIGNED(32, LUTState, ff_dirac_golomb_lut)[1024] = {
+    { +16,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +17,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    {  +8,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    {  +8,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    { +18,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +19,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    {  +9,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    {  +9,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    {  +4,  0,  0,  0,  0, 3, +1, 1,  2, STATE_FOLLOW },
+    {  +4,  0,  0,  0,  0, 3, +1, 1,  3, STATE_FOLLOW },
+    {  +4,  0,  0,  0,  0, 3, +1, 2,  1,   STATE_DATA },
+    {  +4,  0,  0,  0,  0, 3, +1, 3,  0,  STATE_START },
+    {  +4,  0,  0,  0,  0, 3, -1, 1,  2, STATE_FOLLOW },
+    {  +4,  0,  0,  0,  0, 3, -1, 1,  3, STATE_FOLLOW },
+    {  +4,  0,  0,  0,  0, 3, -1, 2,  1,   STATE_DATA },
+    {  +4,  0,  0,  0,  0, 3, -1, 3,  0,  STATE_START },
+    { +20,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +21,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +10,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    { +10,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    { +22,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +23,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +11,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    { +11,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    {  +5,  0,  0,  0,  0, 3, +1, 1,  2, STATE_FOLLOW },
+    {  +5,  0,  0,  0,  0, 3, +1, 1,  3, STATE_FOLLOW },
+    {  +5,  0,  0,  0,  0, 3, +1, 2,  1,   STATE_DATA },
+    {  +5,  0,  0,  0,  0, 3, +1, 3,  0,  STATE_START },
+    {  +5,  0,  0,  0,  0, 3, -1, 1,  2, STATE_FOLLOW },
+    {  +5,  0,  0,  0,  0, 3, -1, 1,  3, STATE_FOLLOW },
+    {  +5,  0,  0,  0,  0, 3, -1, 2,  1,   STATE_DATA },
+    {  +5,  0,  0,  0,  0, 3, -1, 3,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  4, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  5, STATE_FOLLOW },
+    {  +2, +1,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +2, -1,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  6, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  7, STATE_FOLLOW },
+    {  +2, +2,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +2, -2,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  2,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  2,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  3,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  3,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, +1, 3,  2, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 3,  3, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 4,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 5,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  4, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  5, STATE_FOLLOW },
+    {  +2, +1,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +2, -1,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  6, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  7, STATE_FOLLOW },
+    {  +2, +2,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +2, -2,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  2,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  2,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  3,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  3,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, -1, 3,  2, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 3,  3, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 4,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 5,  0,  STATE_START },
+    { +24,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +25,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +12,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    { +12,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    { +26,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +27,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +13,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    { +13,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    {  +6,  0,  0,  0,  0, 3, +1, 1,  2, STATE_FOLLOW },
+    {  +6,  0,  0,  0,  0, 3, +1, 1,  3, STATE_FOLLOW },
+    {  +6,  0,  0,  0,  0, 3, +1, 2,  1,   STATE_DATA },
+    {  +6,  0,  0,  0,  0, 3, +1, 3,  0,  STATE_START },
+    {  +6,  0,  0,  0,  0, 3, -1, 1,  2, STATE_FOLLOW },
+    {  +6,  0,  0,  0,  0, 3, -1, 1,  3, STATE_FOLLOW },
+    {  +6,  0,  0,  0,  0, 3, -1, 2,  1,   STATE_DATA },
+    {  +6,  0,  0,  0,  0, 3, -1, 3,  0,  STATE_START },
+    { +28,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +29,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +14,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    { +14,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    { +30,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +31,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
+    { +15,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
+    { +15,  0,  0,  0,  0, 4, -1, 1,  0,  STATE_START },
+    {  +7,  0,  0,  0,  0, 3, +1, 1,  2, STATE_FOLLOW },
+    {  +7,  0,  0,  0,  0, 3, +1, 1,  3, STATE_FOLLOW },
+    {  +7,  0,  0,  0,  0, 3, +1, 2,  1,   STATE_DATA },
+    {  +7,  0,  0,  0,  0, 3, +1, 3,  0,  STATE_START },
+    {  +7,  0,  0,  0,  0, 3, -1, 1,  2, STATE_FOLLOW },
+    {  +7,  0,  0,  0,  0, 3, -1, 1,  3, STATE_FOLLOW },
+    {  +7,  0,  0,  0,  0, 3, -1, 2,  1,   STATE_DATA },
+    {  +7,  0,  0,  0,  0, 3, -1, 3,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  4, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  5, STATE_FOLLOW },
+    {  +3, +1,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +3, -1,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  6, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  7, STATE_FOLLOW },
+    {  +3, +2,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +3, -2,  0,  0,  0, 2, +1, 2,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  2,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  2,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  3,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  3,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, +1, 3,  2, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 3,  3, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 4,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 5,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  4, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  5, STATE_FOLLOW },
+    {  +3, +1,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +3, -1,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  6, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  7, STATE_FOLLOW },
+    {  +3, +2,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +3, -2,  0,  0,  0, 2, -1, 2,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  2,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  2,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  3,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  3,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, -1, 3,  2, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 3,  3, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 4,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 1,  8,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1,  8,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 1,  9,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1,  9,   STATE_SIGN },
+    {   0, +3,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, +3,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0, -3,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, -3,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 10,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 10,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 11,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 11,   STATE_SIGN },
+    {   0, +4,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, +4,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0, -4,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, -4,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0, +1,  0,  0,  0, 0,  0, 2,  2,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0,  0, 2,  2,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 0,  0, 2,  3,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0,  0, 2,  3,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 0,  0, 2,  2,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0,  0, 2,  2,   STATE_SIGN },
+    {   0, -1,  0,  0,  0, 0,  0, 2,  3,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0,  0, 2,  3,   STATE_SIGN },
+    {   0, -1,  0,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 12,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 12,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 13,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 13,   STATE_SIGN },
+    {   0, +5,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, +5,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0, -5,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, -5,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 14,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 14,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 15,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 1, 15,   STATE_SIGN },
+    {   0, +6,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, +6,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0, -6,  0,  0,  0, 0,  0, 2,  1,   STATE_DATA },
+    {   0, -6,  0,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0, +2,  0,  0,  0, 0,  0, 2,  2,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0,  0, 2,  2,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 0,  0, 2,  3,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0,  0, 2,  3,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 0,  0, 2,  2,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0,  0, 2,  2,   STATE_SIGN },
+    {   0, -2,  0,  0,  0, 0,  0, 2,  3,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0,  0, 2,  3,   STATE_SIGN },
+    {   0, -2,  0,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 2,  8, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 2,  9, STATE_FOLLOW },
+    {   0,  0, +3,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0, -3,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 2, 10, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 2, 11, STATE_FOLLOW },
+    {   0,  0, +4,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0, -4,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0, +1,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0, +1,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0,  0, -1,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0,  0, -1,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0, -1,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 2, 12, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 2, 13, STATE_FOLLOW },
+    {   0,  0, +5,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0, -5,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 2, 14, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 2, 15, STATE_FOLLOW },
+    {   0,  0, +6,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0, -6,  0,  0, 0,  0, 3,  0,  STATE_START },
+    {   0,  0, +2,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0, +2,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 0,  0, 3,  2, STATE_FOLLOW },
+    {   0,  0, -2,  0,  0, 0,  0, 3,  3, STATE_FOLLOW },
+    {   0,  0, -2,  0,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0, -2,  0,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  5,   STATE_SIGN },
+    {   0,  0,  0, +1,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0,  0, +1,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0, -1,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0,  0, -1,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 3,  7,   STATE_SIGN },
+    {   0,  0,  0, +2,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0,  0, +2,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0, -2,  0, 0,  0, 4,  1,   STATE_DATA },
+    {   0,  0,  0, -2,  0, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 4,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 4,  5, STATE_FOLLOW },
+    {   0,  0,  0,  0, +1, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0, -1, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 4,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 4,  7, STATE_FOLLOW },
+    {   0,  0,  0,  0, +2, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0, -2, 0,  0, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0,  0, 5,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 5,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 5,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 5,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0,  0, 6,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 6,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0,  0, 7,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0,  0, 8,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 2, +1, 1,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, +1, 1,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, +1, 2,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 2, -1, 1,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, -1, 1,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, -1, 2,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, -1, 3,  0,  STATE_START },
+    {  +4,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +5,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    {  +6,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +7,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 2, +1, 1,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, +1, 1,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, +1, 2,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, +1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 2, -1, 1,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, -1, 1,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, -1, 2,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  5, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  7, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, +1, 3,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 3,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 4,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  5, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  7, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, -1, 3,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 3,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 4,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 5,  0,  STATE_START },
+    {  +8,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +9,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +4,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +4,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    { +10,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    { +11,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +5,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +5,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  2, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  3, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 3,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  2, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  3, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 3,  0,  STATE_START },
+    { +12,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    { +13,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +6,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +6,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    { +14,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    { +15,  0,  0,  0,  0, 4, +1, 0,  0, STATE_FOLLOW },
+    {  +7,  0,  0,  0,  0, 3, +1, 1,  0,  STATE_START },
+    {  +7,  0,  0,  0,  0, 3, -1, 1,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  2, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  3, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 3,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  2, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  3, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  4, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  5, STATE_FOLLOW },
+    {  +1, +1,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {  +1, -1,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  6, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  7, STATE_FOLLOW },
+    {  +1, +2,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {  +1, -2,  0,  0,  0, 1, +1, 2,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  2,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  2,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  3,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  3,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, +1, 3,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 3,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 4,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 5,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  4, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  5, STATE_FOLLOW },
+    {  +1, +1,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {  +1, -1,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  6, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  7, STATE_FOLLOW },
+    {  +1, +2,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {  +1, -2,  0,  0,  0, 1, -1, 2,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  2,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  2,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  3,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  3,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, -1, 3,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 3,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 4,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1,  8, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 1,  9, STATE_FOLLOW },
+    {   0, +3,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0, -3,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 10, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 11, STATE_FOLLOW },
+    {   0, +4,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0, -4,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0, +1,  0,  0,  0, 0, +1, 2,  2, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, +1, 2,  3, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 0, +1, 2,  2, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, +1, 2,  3, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 12, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 13, STATE_FOLLOW },
+    {   0, +5,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0, -5,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 14, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 15, STATE_FOLLOW },
+    {   0, +6,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0, -6,  0,  0,  0, 0, +1, 2,  0,  STATE_START },
+    {   0, +2,  0,  0,  0, 0, +1, 2,  2, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, +1, 2,  3, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 0, +1, 2,  2, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, +1, 2,  3, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  5,   STATE_SIGN },
+    {   0,  0, +1,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0,  0, +1,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0,  0, -1,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  7,   STATE_SIGN },
+    {   0,  0, +2,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0,  0, +2,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 0, +1, 3,  1,   STATE_DATA },
+    {   0,  0, -2,  0,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  5, STATE_FOLLOW },
+    {   0,  0,  0, +1,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0, -1,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  7, STATE_FOLLOW },
+    {   0,  0,  0, +2,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0, -2,  0, 0, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 5,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 5,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 6,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 7,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1,  8, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 1,  9, STATE_FOLLOW },
+    {   0, +3,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0, -3,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 10, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 11, STATE_FOLLOW },
+    {   0, +4,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0, -4,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0, +1,  0,  0,  0, 0, -1, 2,  2, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, -1, 2,  3, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 0, -1, 2,  2, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, -1, 2,  3, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 12, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 13, STATE_FOLLOW },
+    {   0, +5,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0, -5,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 14, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 15, STATE_FOLLOW },
+    {   0, +6,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0, -6,  0,  0,  0, 0, -1, 2,  0,  STATE_START },
+    {   0, +2,  0,  0,  0, 0, -1, 2,  2, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, -1, 2,  3, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 0, -1, 2,  2, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, -1, 2,  3, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  5,   STATE_SIGN },
+    {   0,  0, +1,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0,  0, +1,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0,  0, -1,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  7,   STATE_SIGN },
+    {   0,  0, +2,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0,  0, +2,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 0, -1, 3,  1,   STATE_DATA },
+    {   0,  0, -2,  0,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  5, STATE_FOLLOW },
+    {   0,  0,  0, +1,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0, -1,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  7, STATE_FOLLOW },
+    {   0,  0,  0, +2,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0, -2,  0, 0, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 5,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 5,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 6,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 7,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 2, +1, 2,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, +1, 2,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, +1, 3,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, +1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 2, -1, 2,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, -1, 2,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 2, -1, 3,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 2, -1, 4,  0,  STATE_START },
+    {  +4,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +4,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +5,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +5,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    {  +6,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +6,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +7,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +7,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 2, +1, 2,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, +1, 2,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, +1, 3,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, +1, 4,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 2, -1, 2,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, -1, 2,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 2, -1, 3,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 2, -1, 4,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  5,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 1,  7,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  5, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 2,  7, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, +1, 3,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 3,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, +1, 3,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 3,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, +1, 4,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 4,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, +1, 5,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, +1, 6,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  5,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 1,  7,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  5, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 2,  7, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 1, -1, 3,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 3,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, -1, 3,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 3,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 1, -1, 4,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 4,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 1, -1, 5,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 1, -1, 6,  0,  STATE_START },
+    {  +8,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +8,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +9,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    {  +9,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +4,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +4,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +4,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +4,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    { +10,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    { +10,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    { +11,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    { +11,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +5,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +5,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +5,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +5,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  2, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 2,  3, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, +1, 3,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, +1, 4,  0,  STATE_START },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_SIGN },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  2, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 2,  3, STATE_FOLLOW },
+    {  +2,  0,  0,  0,  0, 2, -1, 3,  1,   STATE_DATA },
+    {  +2,  0,  0,  0,  0, 2, -1, 4,  0,  STATE_START },
+    { +12,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    { +12,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    { +13,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    { +13,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +6,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +6,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +6,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +6,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    { +14,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    { +14,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    { +15,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_DATA },
+    { +15,  0,  0,  0,  0, 4, +1, 0,  0,   STATE_SIGN },
+    {  +7,  0,  0,  0,  0, 3, +1, 1,  1,   STATE_DATA },
+    {  +7,  0,  0,  0,  0, 3, +1, 2,  0,  STATE_START },
+    {  +7,  0,  0,  0,  0, 3, -1, 1,  1,   STATE_DATA },
+    {  +7,  0,  0,  0,  0, 3, -1, 2,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  2,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 1,  3,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  2, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 2,  3, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, +1, 3,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, +1, 4,  0,  STATE_START },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  2,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 1,  3,   STATE_SIGN },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  2, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 2,  3, STATE_FOLLOW },
+    {  +3,  0,  0,  0,  0, 2, -1, 3,  1,   STATE_DATA },
+    {  +3,  0,  0,  0,  0, 2, -1, 4,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  4,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  4,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  5,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  5,   STATE_SIGN },
+    {  +1, +1,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {  +1, +1,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1, -1,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {  +1, -1,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  6,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  6,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  7,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 1,  7,   STATE_SIGN },
+    {  +1, +2,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {  +1, +2,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1, -2,  0,  0,  0, 1, +1, 2,  1,   STATE_DATA },
+    {  +1, -2,  0,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  4, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  5, STATE_FOLLOW },
+    {  +1,  0, +1,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1,  0, -1,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  6, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 2,  7, STATE_FOLLOW },
+    {  +1,  0, +2,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1,  0, -2,  0,  0, 1, +1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, +1, 3,  2,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 3,  2,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, +1, 3,  3,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 3,  3,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, +1, 4,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 4,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, +1, 5,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, +1, 6,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  4,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  4,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  5,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  5,   STATE_SIGN },
+    {  +1, +1,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {  +1, +1,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1, -1,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {  +1, -1,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  6,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  6,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  7,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 1,  7,   STATE_SIGN },
+    {  +1, +2,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {  +1, +2,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1, -2,  0,  0,  0, 1, -1, 2,  1,   STATE_DATA },
+    {  +1, -2,  0,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  4, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  5, STATE_FOLLOW },
+    {  +1,  0, +1,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1,  0, -1,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  6, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 2,  7, STATE_FOLLOW },
+    {  +1,  0, +2,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1,  0, -2,  0,  0, 1, -1, 3,  0,  STATE_START },
+    {  +1,  0,  0,  0,  0, 1, -1, 3,  2,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 3,  2,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, -1, 3,  3,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 3,  3,   STATE_SIGN },
+    {  +1,  0,  0,  0,  0, 1, -1, 4,  2, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 4,  3, STATE_FOLLOW },
+    {  +1,  0,  0,  0,  0, 1, -1, 5,  1,   STATE_DATA },
+    {  +1,  0,  0,  0,  0, 1, -1, 6,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1,  8,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1,  8,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 1,  9,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1,  9,   STATE_SIGN },
+    {   0, +3,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, +3,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0, -3,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, -3,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 10,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 10,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 11,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 11,   STATE_SIGN },
+    {   0, +4,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, +4,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0, -4,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, -4,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0, +1,  0,  0,  0, 0, +1, 2,  2,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, +1, 2,  2,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 0, +1, 2,  3,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, +1, 2,  3,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 0, +1, 2,  2,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, +1, 2,  2,   STATE_SIGN },
+    {   0, -1,  0,  0,  0, 0, +1, 2,  3,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, +1, 2,  3,   STATE_SIGN },
+    {   0, -1,  0,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 12,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 12,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 13,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 13,   STATE_SIGN },
+    {   0, +5,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, +5,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0, -5,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, -5,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 14,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 14,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 15,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 1, 15,   STATE_SIGN },
+    {   0, +6,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, +6,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0, -6,  0,  0,  0, 0, +1, 2,  1,   STATE_DATA },
+    {   0, -6,  0,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0, +2,  0,  0,  0, 0, +1, 2,  2,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, +1, 2,  2,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 0, +1, 2,  3,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, +1, 2,  3,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 0, +1, 2,  2,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, +1, 2,  2,   STATE_SIGN },
+    {   0, -2,  0,  0,  0, 0, +1, 2,  3,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, +1, 2,  3,   STATE_SIGN },
+    {   0, -2,  0,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  8, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 2,  9, STATE_FOLLOW },
+    {   0,  0, +3,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0, -3,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 2, 10, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 2, 11, STATE_FOLLOW },
+    {   0,  0, +4,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0, -4,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0, +1,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0, +1,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0,  0, -1,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0,  0, -1,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0, -1,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 2, 12, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 2, 13, STATE_FOLLOW },
+    {   0,  0, +5,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0, -5,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 2, 14, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 2, 15, STATE_FOLLOW },
+    {   0,  0, +6,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0, -6,  0,  0, 0, +1, 3,  0,  STATE_START },
+    {   0,  0, +2,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0, +2,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 0, +1, 3,  2, STATE_FOLLOW },
+    {   0,  0, -2,  0,  0, 0, +1, 3,  3, STATE_FOLLOW },
+    {   0,  0, -2,  0,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0, -2,  0,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  5,   STATE_SIGN },
+    {   0,  0,  0, +1,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, +1,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0, -1,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, -1,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 3,  7,   STATE_SIGN },
+    {   0,  0,  0, +2,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, +2,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0, -2,  0, 0, +1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, -2,  0, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  5, STATE_FOLLOW },
+    {   0,  0,  0,  0, +1, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0, -1, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 4,  7, STATE_FOLLOW },
+    {   0,  0,  0,  0, +2, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0, -2, 0, +1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, +1, 5,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 5,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 5,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 5,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, +1, 6,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 6,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, +1, 7,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, +1, 8,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1,  8,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1,  8,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 1,  9,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1,  9,   STATE_SIGN },
+    {   0, +3,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, +3,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0, -3,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, -3,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 10,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 10,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 11,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 11,   STATE_SIGN },
+    {   0, +4,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, +4,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0, -4,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, -4,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0, +1,  0,  0,  0, 0, -1, 2,  2,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, -1, 2,  2,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 0, -1, 2,  3,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, -1, 2,  3,   STATE_SIGN },
+    {   0, +1,  0,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0, +1,  0,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0, +1,  0,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0, -1,  0,  0,  0, 0, -1, 2,  2,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, -1, 2,  2,   STATE_SIGN },
+    {   0, -1,  0,  0,  0, 0, -1, 2,  3,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, -1, 2,  3,   STATE_SIGN },
+    {   0, -1,  0,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0, -1,  0,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0, -1,  0,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 12,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 12,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 13,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 13,   STATE_SIGN },
+    {   0, +5,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, +5,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0, -5,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, -5,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 14,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 14,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 15,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 1, 15,   STATE_SIGN },
+    {   0, +6,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, +6,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0, -6,  0,  0,  0, 0, -1, 2,  1,   STATE_DATA },
+    {   0, -6,  0,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0, +2,  0,  0,  0, 0, -1, 2,  2,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, -1, 2,  2,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 0, -1, 2,  3,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, -1, 2,  3,   STATE_SIGN },
+    {   0, +2,  0,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0, +2,  0,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0, +2,  0,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0, -2,  0,  0,  0, 0, -1, 2,  2,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, -1, 2,  2,   STATE_SIGN },
+    {   0, -2,  0,  0,  0, 0, -1, 2,  3,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, -1, 2,  3,   STATE_SIGN },
+    {   0, -2,  0,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0, -2,  0,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0, -2,  0,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  8, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 2,  9, STATE_FOLLOW },
+    {   0,  0, +3,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0, -3,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 2, 10, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 2, 11, STATE_FOLLOW },
+    {   0,  0, +4,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0, -4,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0, +1,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0,  0, +1,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0, +1,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0, -1,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0,  0, -1,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0,  0, -1,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0, -1,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 2, 12, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 2, 13, STATE_FOLLOW },
+    {   0,  0, +5,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0, -5,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 2, 14, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 2, 15, STATE_FOLLOW },
+    {   0,  0, +6,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0, -6,  0,  0, 0, -1, 3,  0,  STATE_START },
+    {   0,  0, +2,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0,  0, +2,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0, +2,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0, -2,  0,  0, 0, -1, 3,  2, STATE_FOLLOW },
+    {   0,  0, -2,  0,  0, 0, -1, 3,  3, STATE_FOLLOW },
+    {   0,  0, -2,  0,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0, -2,  0,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  4,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  4,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  5,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  5,   STATE_SIGN },
+    {   0,  0,  0, +1,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, +1,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0, -1,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, -1,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  6,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  6,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  7,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 3,  7,   STATE_SIGN },
+    {   0,  0,  0, +2,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, +2,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0, -2,  0, 0, -1, 4,  1,   STATE_DATA },
+    {   0,  0,  0, -2,  0, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  4, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  5, STATE_FOLLOW },
+    {   0,  0,  0,  0, +1, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0, -1, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  6, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 4,  7, STATE_FOLLOW },
+    {   0,  0,  0,  0, +2, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0, -2, 0, -1, 5,  0,  STATE_START },
+    {   0,  0,  0,  0,  0, 0, -1, 5,  2,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 5,  2,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 5,  3,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 5,  3,   STATE_SIGN },
+    {   0,  0,  0,  0,  0, 0, -1, 6,  2, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 6,  3, STATE_FOLLOW },
+    {   0,  0,  0,  0,  0, 0, -1, 7,  1,   STATE_DATA },
+    {   0,  0,  0,  0,  0, 0, -1, 8,  0,  STATE_START },
+};
 
-#define SET_RESIDUE(N, I, B)                                                   \
-    N          = CONVERT_TO_RESIDUE(I, B);                                     \
-    N ## _bits = B
+#define PROCESS_VALS                                   \
+    do {                                               \
+        val  <<= lut.val0_bits;                        \
+        val   |= lut.val0;                             \
+        dst[0] = (val - 1) * lut.sign;                 \
+        dst[1] = lut.val1;                             \
+        dst[2] = lut.val2;                             \
+        dst[3] = lut.val3;                             \
+        dst[4] = lut.val4;                             \
+        dst[5] = 0;                                    \
+        dst[6] = 0;                                    \
+        dst[7] = 0;                                    \
+        if (lut.num)                                   \
+            val = lut.val;                             \
+        dst += lut.num;                                \
+        if (dst >= last)                               \
+            return coeffs;                             \
+        lut = ff_dirac_golomb_lut[lut.state + *buf++]; \
+    } while (0)
 
-#define APPEND_RESIDUE(N, M)                                                   \
-    N          |= M >> (N ## _bits);                                           \
-    N ## _bits  = (N ## _bits + (M ## _bits)) & 0x3F
-
-int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
-                               int bytes, uint8_t *_dst, int coeffs)
+int ff_dirac_golomb_read_16bit(const uint8_t *buf, int bytes,
+                               uint8_t *_dst, int coeffs)
 {
-    int i, b, c_idx = 0;
-    int32_t *dst = (int32_t *)_dst;
-    DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
-    INIT_RESIDUE(res);
+    LUTState lut = ff_dirac_golomb_lut[*buf++];
+    int16_t *dst = (int16_t *)_dst, *last = dst + coeffs;
+    int16_t val = 0;
 
-    for (b = 1; b <= bytes; b++) {
-        future[0] = &lut_ctx[buf[b]];
-        future[1] = future[0] + 1*LUT_SIZE;
-        future[2] = future[0] + 2*LUT_SIZE;
-        future[3] = future[0] + 3*LUT_SIZE;
+    for (int i = 1; i < bytes; i++)
+        PROCESS_VALS;
 
-        if ((c_idx + 1) > coeffs)
-            return c_idx;
+    /* Reader needs to be flushed */
+    PROCESS_VALS;
 
-        /* res_bits is a hint for better branch prediction */
-        if (res_bits && l->sign) {
-            int32_t coeff = 1;
-            APPEND_RESIDUE(res, l->preamble);
-            for (i = 0; i < (res_bits >> 1) - 1; i++) {
-                coeff <<= 1;
-                coeff |= (res >> (RSIZE_BITS - 2*i - 2)) & 1;
-            }
-            dst[c_idx++] = l->sign * (coeff - 1);
-            res_bits = res = 0;
-        }
+    /* Still short of coeffs - try to guess and at least output what we have */
+    if (lut.state != STATE_START)
+        *dst++ = -((lut.state != STATE_SIGN ? (val << 1) | 1 : val) - 1);
 
-        memcpy(&dst[c_idx], l->ready, LUT_BITS*sizeof(int32_t));
-        c_idx += l->ready_num;
-
-        APPEND_RESIDUE(res, l->leftover);
-
-        l = future[l->need_s ? 3 : !res_bits ? 2 : res_bits & 1];
-    }
-
-    return c_idx;
+    return coeffs - (int)(last - dst);
 }
 
-int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
-                               int bytes, uint8_t *_dst, int coeffs)
+int ff_dirac_golomb_read_32bit(const uint8_t *buf, int bytes,
+                               uint8_t *_dst, int coeffs)
 {
-    int i, b, c_idx = 0;
-    int16_t *dst = (int16_t *)_dst;
-    DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
-    INIT_RESIDUE(res);
+    LUTState lut = ff_dirac_golomb_lut[*buf++];
+    int32_t *dst = (int32_t *)_dst, *last = dst + coeffs;
+    int32_t val = 0;
 
-    for (b = 1; b <= bytes; b++) {
-        future[0] = &lut_ctx[buf[b]];
-        future[1] = future[0] + 1*LUT_SIZE;
-        future[2] = future[0] + 2*LUT_SIZE;
-        future[3] = future[0] + 3*LUT_SIZE;
+    for (int i = 1; i < bytes; i++)
+        PROCESS_VALS;
 
-        if ((c_idx + 1) > coeffs)
-            return c_idx;
+    /* Reader needs to be flushed */
+    PROCESS_VALS;
 
-        if (res_bits && l->sign) {
-            int32_t coeff = 1;
-            APPEND_RESIDUE(res, l->preamble);
-            for (i = 0; i < (res_bits >> 1) - 1; i++) {
-                coeff <<= 1;
-                coeff |= (res >> (RSIZE_BITS - 2*i - 2)) & 1;
-            }
-            dst[c_idx++] = l->sign * (coeff - 1);
-            res_bits = res = 0;
-        }
+    /* Still short of coeffs - try to guess and at least output what we have */
+    if (lut.state != STATE_START)
+        *dst++ = -((lut.state != STATE_SIGN ? (val << 1) | 1 : val) - 1);
 
-        for (i = 0; i < LUT_BITS; i++)
-            dst[c_idx + i] = l->ready[i];
-        c_idx += l->ready_num;
-
-        APPEND_RESIDUE(res, l->leftover);
-
-        l = future[l->need_s ? 3 : !res_bits ? 2 : res_bits & 1];
-    }
-
-    return c_idx;
-}
-
-/* Searches for golomb codes in a residue */
-static inline void search_for_golomb(DiracGolombLUT *l, residual r, int bits)
-{
-    int r_count = RSIZE_BITS - 1;
-    int bits_start, bits_tot = bits, need_sign = 0;
-
-#define READ_BIT(N) (((N) >> (N ## _count--)) & 1)
-
-    while (1) {
-        int32_t coef = 1;
-        bits_start = (RSIZE_BITS - 1) - r_count;
-
-        while (1) {
-            if (!bits--)
-                goto leftover;
-            if (READ_BIT(r))
-                break;
-
-            coef <<= 1;
-
-            if (!bits--)
-                goto leftover;
-            coef |= READ_BIT(r);
-        }
-
-        l->ready[l->ready_num] = coef - 1;
-        if (l->ready[l->ready_num]) {
-            if (!bits--) {
-                need_sign = 1;
-                goto leftover;
-            }
-            l->ready[l->ready_num] *= READ_BIT(r) ? -1 : +1;
-        }
-        l->ready_num++;
-
-        if (!bits)
-            return;
-    }
-
-    leftover:
-        l->leftover      = r << bits_start;
-        l->leftover_bits = bits_tot - bits_start;
-        l->need_s        = need_sign;
-}
-
-/* Parity LUTs - even and odd bit end positions */
-static void generate_parity_lut(DiracGolombLUT *lut, int even)
-{
-    int idx;
-    for (idx = 0; idx < LUT_SIZE; idx++) {
-        DiracGolombLUT *l = &lut[idx];
-        int symbol_end_loc = -1;
-        uint32_t code;
-        int i;
-
-        INIT_RESIDUE(res);
-        SET_RESIDUE(res, idx, LUT_BITS);
-
-        for (i = 0; i < LUT_BITS; i++) {
-            const int cond = even ? (i & 1) : !(i & 1);
-            if (((res >> (RSIZE_BITS - i - 1)) & 1) && cond) {
-                symbol_end_loc = i + 2;
-                break;
-            }
-        }
-
-        if (symbol_end_loc < 0 || symbol_end_loc > LUT_BITS) {
-            l->preamble      = 0;
-            l->preamble_bits = 0;
-            l->leftover_bits = LUT_BITS;
-            l->leftover      = CONVERT_TO_RESIDUE(idx, l->leftover_bits);
-            if (even)
-                l->need_s    = idx & 1;
-            continue;
-        }
-
-        /* Gets bits 0 through to (symbol_end_loc - 1) inclusive */
-        code  = idx >> ((LUT_BITS - 1) - (symbol_end_loc - 1));
-        code &= ((1 << LUT_BITS) - 1) >> (LUT_BITS - symbol_end_loc);
-        l->preamble_bits = symbol_end_loc;
-        l->preamble      = CONVERT_TO_RESIDUE(code, l->preamble_bits);
-        l->sign = ((l->preamble >> (RSIZE_BITS - l->preamble_bits)) & 1) ? -1 : +1;
-
-        search_for_golomb(l, res << symbol_end_loc, LUT_BITS - symbol_end_loc);
-    }
-}
-
-/* Reset (off == 0) and needs-one-more-bit (off == 1) LUTs */
-static void generate_offset_lut(DiracGolombLUT *lut, int off)
-{
-    int idx;
-    for (idx = 0; idx < LUT_SIZE; idx++) {
-        DiracGolombLUT *l = &lut[idx];
-
-        INIT_RESIDUE(res);
-        SET_RESIDUE(res, idx, LUT_BITS);
-
-        l->preamble_bits = off;
-        if (off) {
-            l->preamble  = CONVERT_TO_RESIDUE(res >> (RSIZE_BITS - off), off);
-            l->sign      = ((l->preamble >> (RSIZE_BITS - l->preamble_bits)) & 1) ? -1 : +1;
-        } else {
-            l->preamble  = 0;
-            l->sign = 1;
-        }
-
-        search_for_golomb(l, res << off, LUT_BITS - off);
-    }
-}
-
-av_cold int ff_dirac_golomb_reader_init(DiracGolombLUT **lut_ctx)
-{
-    DiracGolombLUT *lut;
-
-    if (!(lut = av_calloc(4*LUT_SIZE, sizeof(DiracGolombLUT))))
-        return AVERROR(ENOMEM);
-
-    generate_parity_lut(&lut[0*LUT_SIZE], 0);
-    generate_parity_lut(&lut[1*LUT_SIZE], 1);
-    generate_offset_lut(&lut[2*LUT_SIZE], 0);
-    generate_offset_lut(&lut[3*LUT_SIZE], 1);
-
-    *lut_ctx = lut;
-
-    return 0;
-}
-
-av_cold void ff_dirac_golomb_reader_end(DiracGolombLUT **lut_ctx)
-{
-    av_freep(lut_ctx);
+    return coeffs - (int)(last - dst);
 }

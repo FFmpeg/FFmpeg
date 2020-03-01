@@ -136,7 +136,6 @@ typedef struct DiracContext {
     MpegvideoEncDSPContext mpvencdsp;
     VideoDSPContext vdsp;
     DiracDSPContext diracdsp;
-    DiracGolombLUT *reader_ctx;
     DiracVersionInfo version;
     GetBitContext gb;
     AVDiracSeqHeader seq;
@@ -395,7 +394,6 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
     s->threads_num_buf = -1;
     s->thread_buf_size = -1;
 
-    ff_dirac_golomb_reader_init(&s->reader_ctx);
     ff_diracdsp_init(&s->diracdsp);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_videodsp_init(&s->vdsp, 8);
@@ -427,8 +425,6 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
 {
     DiracContext *s = avctx->priv_data;
     int i;
-
-    ff_dirac_golomb_reader_end(&s->reader_ctx);
 
     dirac_decode_flush(avctx);
     for (i = 0; i < MAX_FRAMES; i++)
@@ -881,11 +877,11 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
         coef_num = subband_coeffs(s, slice->slice_x, slice->slice_y, i, coeffs_num);
 
         if (s->pshift)
-            coef_par = ff_dirac_golomb_read_32bit(s->reader_ctx, addr,
-                                                  length, tmp_buf, coef_num);
+            coef_par = ff_dirac_golomb_read_32bit(addr, length,
+                                                  tmp_buf, coef_num);
         else
-            coef_par = ff_dirac_golomb_read_16bit(s->reader_ctx, addr,
-                                                  length, tmp_buf, coef_num);
+            coef_par = ff_dirac_golomb_read_16bit(addr, length,
+                                                  tmp_buf, coef_num);
 
         if (coef_num > coef_par) {
             const int start_b = coef_par * (1 << (s->pshift + 1));
