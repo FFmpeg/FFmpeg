@@ -1707,15 +1707,14 @@ static int xyz_to_stereographic(const V360Context *s,
 {
     const float x = vec[0] / (1.f - vec[1]) / s->iflat_range[0] * s->input_mirror_modifier[0];
     const float y = vec[2] / (1.f - vec[1]) / s->iflat_range[1] * s->input_mirror_modifier[1];
-    float uf, vf;
-    int visible, ui, vi;
 
-    uf = (x + 1.f) * width  / 2.f;
-    vf = (y + 1.f) * height / 2.f;
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const float uf = (x + 1.f) * width  / 2.f;
+    const float vf = (y + 1.f) * height / 2.f;
 
-    visible = isfinite(x) && isfinite(y) && vi >= 0 && vi < height && ui >= 0 && ui < width;
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
+
+    const int visible = isfinite(x) && isfinite(y) && vi >= 0 && vi < height && ui >= 0 && ui < width;
 
     *du = visible ? uf - ui : 0.f;
     *dv = visible ? vf - vi : 0.f;
@@ -1748,13 +1747,12 @@ static int xyz_to_equirect(const V360Context *s,
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
     const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
-    float uf, vf;
-    int ui, vi;
 
-    uf = (phi   / M_PI   + 1.f) * width  / 2.f;
-    vf = (theta / M_PI_2 + 1.f) * height / 2.f;
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const float uf = (phi   / M_PI   + 1.f) * width  / 2.f;
+    const float vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
 
     *du = uf - ui;
     *dv = vf - vi;
@@ -1851,13 +1849,12 @@ static int xyz_to_mercator(const V360Context *s,
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
     const float theta = -vec[1] * s->input_mirror_modifier[1];
-    float uf, vf;
-    int ui, vi;
 
-    uf = (phi / M_PI + 1.f) * width / 2.f;
-    vf = (av_clipf(logf((1.f + theta) / (1.f - theta)) / (2.f * M_PI), -1.f, 1.f) + 1.f) * height / 2.f;
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const float uf = (phi / M_PI + 1.f) * width / 2.f;
+    const float vf = (av_clipf(logf((1.f + theta) / (1.f - theta)) / (2.f * M_PI), -1.f, 1.f) + 1.f) * height / 2.f;
+
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
 
     *du = uf - ui;
     *dv = vf - vi;
@@ -1920,14 +1917,12 @@ static int xyz_to_ball(const V360Context *s,
 {
     const float l = hypotf(vec[0], vec[1]);
     const float r = sqrtf(1.f + vec[2]) / M_SQRT2;
-    float uf, vf;
-    int ui, vi;
 
-    uf = (1.f + r * vec[0] * s->input_mirror_modifier[0] / (l > 0.f ? l : 1.f)) * width  * 0.5f;
-    vf = (1.f - r * vec[1] * s->input_mirror_modifier[1] / (l > 0.f ? l : 1.f)) * height * 0.5f;
+    const float uf = (1.f + r * vec[0] * s->input_mirror_modifier[0] / (l > 0.f ? l : 1.f)) * width  * 0.5f;
+    const float vf = (1.f - r * vec[1] * s->input_mirror_modifier[1] / (l > 0.f ? l : 1.f)) * height * 0.5f;
 
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
 
     *du = uf - ui;
     *dv = vf - vi;
@@ -2036,13 +2031,12 @@ static int xyz_to_hammer(const V360Context *s,
     const float z = sqrtf(1.f + sqrtf(1.f - vec[1] * vec[1]) * cosf(theta * 0.5f));
     const float x = sqrtf(1.f - vec[1] * vec[1]) * sinf(theta * 0.5f) / z;
     const float y = -vec[1] / z * s->input_mirror_modifier[1];
-    float uf, vf;
-    int ui, vi;
 
-    uf = (x + 1.f) * width  / 2.f;
-    vf = (y + 1.f) * height / 2.f;
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const float uf = (x + 1.f) * width  / 2.f;
+    const float vf = (y + 1.f) * height / 2.f;
+
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
 
     *du = uf - ui;
     *dv = vf - vi;
@@ -2106,13 +2100,12 @@ static int xyz_to_sinusoidal(const V360Context *s,
 {
     const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0] * cosf(theta);
-    float uf, vf;
-    int ui, vi;
 
-    uf = (phi   / M_PI   + 1.f) * width  / 2.f;
-    vf = (theta / M_PI_2 + 1.f) * height / 2.f;
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const float uf = (phi   / M_PI   + 1.f) * width  / 2.f;
+    const float vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
 
     *du = uf - ui;
     *dv = vf - vi;
@@ -2649,17 +2642,16 @@ static int xyz_to_cylindrical(const V360Context *s,
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0] / s->iflat_range[0];
     const float theta = atan2f(-vec[1], hypotf(vec[0], vec[2])) * s->input_mirror_modifier[1] / s->iflat_range[1];
-    int visible, ui, vi;
-    float uf, vf;
 
-    uf = (phi + 1.f) * (width - 1) / 2.f;
-    vf = (tanf(theta) + 1.f) * height / 2.f;
-    ui = floorf(uf);
-    vi = floorf(vf);
+    const float uf = (phi + 1.f) * (width - 1) / 2.f;
+    const float vf = (tanf(theta) + 1.f) * height / 2.f;
 
-    visible = vi >= 0 && vi < height && ui >= 0 && ui < width &&
-              theta <=  M_PI * s->iv_fov / 180.f &&
-              theta >= -M_PI * s->iv_fov / 180.f;
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
+
+    const int visible = vi >= 0 && vi < height && ui >= 0 && ui < width &&
+                        theta <=  M_PI * s->iv_fov / 180.f &&
+                        theta >= -M_PI * s->iv_fov / 180.f;
 
     *du = uf - ui;
     *dv = vf - vi;
