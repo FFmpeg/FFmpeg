@@ -1674,7 +1674,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                             scale = sign_extend(byte, 4);
                         }
 
-                        scale  = scale << 12;
+                        scale  = scale * (1 << 12);
                         sample = (int)((scale >> shift) + (c->status[channel].sample1 * xa_adpcm_table[filter][0] + c->status[channel].sample2 * xa_adpcm_table[filter][1]) / 64);
                     }
                     *samples++ = av_clip_int16(sample);
