@@ -63,6 +63,9 @@ typedef CONDITION_VARIABLE pthread_cond_t;
 #define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
 #define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
 
+#define PTHREAD_CANCEL_ENABLE 1
+#define PTHREAD_CANCEL_DISABLE 0
+
 static av_unused unsigned __stdcall attribute_align_arg win32thread_worker(void *arg)
 {
     pthread_t *h = (pthread_t*)arg;
@@ -177,6 +180,11 @@ static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
     WakeConditionVariable(cond);
+    return 0;
+}
+
+static inline int pthread_setcancelstate(int state, int *oldstate)
+{
     return 0;
 }
 

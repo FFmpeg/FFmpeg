@@ -61,8 +61,13 @@
 #define IPPROTO_UDPLITE                                  136
 #endif
 
+#if HAVE_W32THREADS
+#undef HAVE_PTHREAD_CANCEL
+#define HAVE_PTHREAD_CANCEL 1
+#endif
+
 #if HAVE_PTHREAD_CANCEL
-#include <pthread.h>
+#include "libavutil/thread.h"
 #endif
 
 #ifndef IPV6_ADD_MEMBERSHIP
