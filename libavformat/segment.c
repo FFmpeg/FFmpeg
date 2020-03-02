@@ -882,7 +882,6 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
                 goto calc_times;
             }
             memcpy(st->codecpar->extradata, pkt_extradata, pkt_extradata_size);
-            st->codecpar->extradata_size = pkt_extradata_size;
         }
     }
 
