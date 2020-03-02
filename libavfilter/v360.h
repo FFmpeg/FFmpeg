@@ -49,6 +49,7 @@ enum Projections {
     PERSPECTIVE,
     TETRAHEDRON,
     BARREL_SPLIT,
+    TSPYRAMID,
     NB_PROJECTIONS,
 };
 

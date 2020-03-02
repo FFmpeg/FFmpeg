@@ -101,6 +101,7 @@ static const AVOption v360_options[] = {
     {"perspective", "perspective",                               0, AV_OPT_TYPE_CONST,  {.i64=PERSPECTIVE},     0,                   0, FLAGS, "out" },
     {"tetrahedron", "tetrahedron",                               0, AV_OPT_TYPE_CONST,  {.i64=TETRAHEDRON},     0,                   0, FLAGS, "out" },
     {"barrelsplit", "barrel split facebook's 360 format",        0, AV_OPT_TYPE_CONST,  {.i64=BARREL_SPLIT},    0,                   0, FLAGS, "out" },
+    {       "tsp", "truncated square pyramid",                   0, AV_OPT_TYPE_CONST,  {.i64=TSPYRAMID},       0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -3227,6 +3228,64 @@ static int barrelsplit_to_xyz(const V360Context *s,
     return 1;
 }
 
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in tspyramid format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static int tspyramid_to_xyz(const V360Context *s,
+                            int i, int j, int width, int height,
+                            float *vec)
+{
+    const float x = (i + 0.5f) / width;
+    const float y = (j + 0.5f) / height;
+
+    if (x < 0.5f) {
+        vec[0] =   x * 4.f - 1.f;
+        vec[1] = -(y * 2.f - 1.f);
+        vec[2] = -1.f;
+    } else if (x >= 0.6875f && x < 0.8125f &&
+               y >= 0.375f  && y < 0.625f) {
+        vec[0] = -(x - 0.6875f) * 16.f + 1.f;
+        vec[1] = -(y - 0.375f) * 8.f + 1.f;
+        vec[2] = 1.f;
+    } else if (0.5f <= x && x < 0.6875f &&
+               ((0.f <= y && y < 0.375f && y >= 2.f * (x - 0.5f)) ||
+                (0.375f <= y && y < 0.625f) ||
+                (0.625f <= y && y < 1.f && y <= 2.f * (1.f - x)))) {
+        vec[0] =  1.f;
+        vec[1] = -2.f * (y - 2.f * x + 1.f) / (3.f - 4.f * x) + 1.f;
+        vec[2] =  2.f * (x - 0.5f) / 0.1875f - 1.f;
+    } else if (0.8125f <= x && x < 1.f &&
+               ((0.f <= y && y < 0.375f && x >= (1.f - y / 2.f)) ||
+                (0.375f <= y && y < 0.625f) ||
+                (0.625f <= y && y < 1.f && y <= (2.f * x - 1.f)))) {
+        vec[0] = -1.f;
+        vec[1] = -2.f * (y + 2.f * x - 2.f) / (4.f * x - 3.f) + 1.f;
+        vec[2] = -2.f * (x - 0.8125f) / 0.1875f + 1.f;
+    } else if (0.f <= y && y < 0.375f &&
+               ((0.5f <= x && x < 0.8125f && y < 2.f * (x - 0.5f)) ||
+                (0.6875f <= x && x < 0.8125f) ||
+                (0.8125f <= x && x < 1.f && x < (1.f - y / 2.f)))) {
+        vec[0] =  2.f * (1.f - x - 0.5f * y) / (0.5f - y) - 1.f;
+        vec[1] =  1.f;
+        vec[2] = -2.f * (0.375f - y) / 0.375f + 1.f;
+    } else {
+        vec[0] =  2.f * (0.5f - x + 0.5f * y) / (y - 0.5f) - 1.f;
+        vec[1] = -1.f;
+        vec[2] =  2.f * (1.f - y) / 0.375f - 1.f;
+    }
+
+    normalize_vector(vec);
+
+    return 1;
+}
+
 static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
 {
     for (int i = 0; i < 3; i++) {
@@ -3350,7 +3409,7 @@ static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fo
     case FLAT:
     default:
         {
-            const float da = tanf(0.5 * FFMIN(d_fov, 359.f) * M_PI / 180.f);
+            const float da = tanf(0.5f * FFMIN(d_fov, 359.f) * M_PI / 180.f);
             const float d = hypotf(w, h);
 
             *h_fov = atan2f(da * w, d) * 360.f / M_PI;
@@ -3790,6 +3849,12 @@ static int config_output(AVFilterLink *outlink)
         s->out_transform = barrelsplit_to_xyz;
         prepare_out = NULL;
         w = lrintf(wf / 4.f * 3.f);
+        h = lrintf(hf);
+        break;
+    case TSPYRAMID:
+        s->out_transform = tspyramid_to_xyz;
+        prepare_out = NULL;
+        w = lrintf(wf);
         h = lrintf(hf);
         break;
     default:
