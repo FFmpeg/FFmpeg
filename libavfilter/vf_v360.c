@@ -77,6 +77,7 @@ static const AVOption v360_options[] = {
     {"cylindrical", "cylindrical",                               0, AV_OPT_TYPE_CONST,  {.i64=CYLINDRICAL},     0,                   0, FLAGS, "in" },
     {"tetrahedron", "tetrahedron",                               0, AV_OPT_TYPE_CONST,  {.i64=TETRAHEDRON},     0,                   0, FLAGS, "in" },
     {"barrelsplit", "barrel split facebook's 360 format",        0, AV_OPT_TYPE_CONST,  {.i64=BARREL_SPLIT},    0,                   0, FLAGS, "in" },
+    {       "tsp", "truncated square pyramid",                   0, AV_OPT_TYPE_CONST,  {.i64=TSPYRAMID},       0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -3286,6 +3287,76 @@ static int tspyramid_to_xyz(const V360Context *s,
     return 1;
 }
 
+/**
+ * Calculate frame position in tspyramid format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static int xyz_to_tspyramid(const V360Context *s,
+                            const float *vec, int width, int height,
+                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    float uf, vf;
+    int ui, vi;
+    int face;
+
+    xyz_to_cube(s, vec, &uf, &vf, &face);
+
+    uf = (uf + 1.f) * 0.5f;
+    vf = (vf + 1.f) * 0.5f;
+
+    switch (face) {
+    case UP:
+        uf = 0.1875f * vf - 0.375f * uf * vf - 0.125f * uf + 0.8125f;
+        vf = 0.375f - 0.375f * vf;
+        break;
+    case FRONT:
+        uf = 0.5f * uf;
+        break;
+    case DOWN:
+        uf = 1.f - 0.1875f * vf - 0.5f * uf + 0.375f * uf * vf;
+        vf = 1.f - 0.375f * vf;
+        break;
+    case LEFT:
+        vf = 0.25f * vf + 0.75f * uf * vf - 0.375f * uf + 0.375f;
+        uf = 0.1875f * uf + 0.8125f;
+        break;
+    case RIGHT:
+        vf = 0.375f * uf - 0.75f * uf * vf + vf;
+        uf = 0.1875f * uf + 0.5f;
+        break;
+    case BACK:
+        uf = 0.125f * uf + 0.6875f;
+        vf = 0.25f * vf + 0.375f;
+        break;
+    }
+
+    uf *= width;
+    vf *= height;
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = reflectx(ui + j - 1, vi + i - 1, width, height);
+            vs[i][j] = reflecty(vi + i - 1, height);
+        }
+    }
+
+    return 1;
+}
+
 static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
 {
     for (int i = 0; i < 3; i++) {
@@ -3725,6 +3796,12 @@ static int config_output(AVFilterLink *outlink)
         s->in_transform = xyz_to_barrelsplit;
         err = 0;
         wf = w * 4.f / 3.f;
+        hf = h;
+        break;
+    case TSPYRAMID:
+        s->in_transform = xyz_to_tspyramid;
+        err = 0;
+        wf = w;
         hf = h;
         break;
     default:

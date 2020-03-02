@@ -19029,7 +19029,7 @@ Set perspective parameter.
 Tetrahedron projection.
 
 @item tsp
-Truncated square pyramid projection. @i{(output only)}
+Truncated square pyramid projection.
 
 @end table
 
