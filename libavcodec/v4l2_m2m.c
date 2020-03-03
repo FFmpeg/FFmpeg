@@ -358,7 +358,6 @@ int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
 {
     int ret = AVERROR(EINVAL);
     struct dirent *entry;
-    char node[PATH_MAX];
     DIR *dirp;
 
     V4L2m2mContext *s = priv->context;
@@ -372,9 +371,8 @@ int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
         if (strncmp(entry->d_name, "video", 5))
             continue;
 
-        snprintf(node, sizeof(node), "/dev/%s", entry->d_name);
-        av_log(s->avctx, AV_LOG_DEBUG, "probing device %s\n", node);
-        strncpy(s->devname, node, strlen(node) + 1);
+        snprintf(s->devname, sizeof(s->devname), "/dev/%s", entry->d_name);
+        av_log(s->avctx, AV_LOG_DEBUG, "probing device %s\n", s->devname);
         ret = v4l2_probe_driver(s);
         if (!ret)
             break;
@@ -389,7 +387,7 @@ int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
         return ret;
     }
 
-    av_log(s->avctx, AV_LOG_INFO, "Using device %s\n", node);
+    av_log(s->avctx, AV_LOG_INFO, "Using device %s\n", s->devname);
 
     return v4l2_configure_contexts(s);
 }
