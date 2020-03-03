@@ -403,8 +403,7 @@ static struct segment *new_init_section(struct playlist *pls,
                                         const char *url_base)
 {
     struct segment *sec;
-    char *ptr;
-    char tmp_str[MAX_URL_SIZE];
+    char tmp_str[MAX_URL_SIZE], *ptr = tmp_str;
 
     if (!info->uri[0])
         return NULL;
@@ -414,11 +413,11 @@ static struct segment *new_init_section(struct playlist *pls,
         return NULL;
 
     if (!av_strncasecmp(info->uri, "data:", 5)) {
-        strncpy(tmp_str, info->uri, strlen(info->uri));
+        ptr = info->uri;
     } else {
         ff_make_absolute_url(tmp_str, sizeof(tmp_str), url_base, info->uri);
     }
-    sec->url = av_strdup(tmp_str);
+    sec->url = av_strdup(ptr);
     if (!sec->url) {
         av_free(sec);
         return NULL;
