@@ -78,6 +78,8 @@ static const AVOption v360_options[] = {
     {"tetrahedron", "tetrahedron",                               0, AV_OPT_TYPE_CONST,  {.i64=TETRAHEDRON},     0,                   0, FLAGS, "in" },
     {"barrelsplit", "barrel split facebook's 360 format",        0, AV_OPT_TYPE_CONST,  {.i64=BARREL_SPLIT},    0,                   0, FLAGS, "in" },
     {       "tsp", "truncated square pyramid",                   0, AV_OPT_TYPE_CONST,  {.i64=TSPYRAMID},       0,                   0, FLAGS, "in" },
+    { "hequirect", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "in" },
+    {        "he", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -1798,6 +1800,46 @@ static int xyz_to_equirect(const V360Context *s,
     }
 
     return 1;
+}
+
+/**
+ * Calculate frame position in half equirectangular format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static int xyz_to_hequirect(const V360Context *s,
+                            const float *vec, int width, int height,
+                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
+    const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
+
+    const float uf = (phi   / M_PI_2 + 1.f) * width  / 2.f;
+    const float vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
+
+    const int visible = phi >= -M_PI_2 && phi <= M_PI_2;
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
+        }
+    }
+
+    return visible;
 }
 
 /**
@@ -3833,6 +3875,12 @@ static int config_output(AVFilterLink *outlink)
         s->in_transform = xyz_to_tspyramid;
         err = 0;
         wf = w;
+        hf = h;
+        break;
+    case HEQUIRECTANGULAR:
+        s->in_transform = xyz_to_hequirect;
+        err = 0;
+        wf = w * 2.f;
         hf = h;
         break;
     default:

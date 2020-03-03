@@ -19031,6 +19031,9 @@ Tetrahedron projection.
 @item tsp
 Truncated square pyramid projection.
 
+@item he
+@item hequirect
+Half equirectangular projection.
 @end table
 
 @item interp
