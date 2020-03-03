@@ -103,6 +103,8 @@ static const AVOption v360_options[] = {
     {"tetrahedron", "tetrahedron",                               0, AV_OPT_TYPE_CONST,  {.i64=TETRAHEDRON},     0,                   0, FLAGS, "out" },
     {"barrelsplit", "barrel split facebook's 360 format",        0, AV_OPT_TYPE_CONST,  {.i64=BARREL_SPLIT},    0,                   0, FLAGS, "out" },
     {       "tsp", "truncated square pyramid",                   0, AV_OPT_TYPE_CONST,  {.i64=TSPYRAMID},       0,                   0, FLAGS, "out" },
+    { "hequirect", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "out" },
+    {        "he", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1616,6 +1618,35 @@ static int equirect_to_xyz(const V360Context *s,
                            float *vec)
 {
     const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * M_PI;
+    const float theta = ((2.f * j + 0.5f) / height - 1.f) * M_PI_2;
+
+    const float sin_phi   = sinf(phi);
+    const float cos_phi   = cosf(phi);
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+
+    vec[0] =  cos_theta * sin_phi;
+    vec[1] = -sin_theta;
+    vec[2] = -cos_theta * cos_phi;
+
+    return 1;
+}
+
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in half equirectangular format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static int hequirect_to_xyz(const V360Context *s,
+                            int i, int j, int width, int height,
+                            float *vec)
+{
+    const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * M_PI_2;
     const float theta = ((2.f * j + 0.5f) / height - 1.f) * M_PI_2;
 
     const float sin_phi   = sinf(phi);
@@ -3932,6 +3963,12 @@ static int config_output(AVFilterLink *outlink)
         s->out_transform = tspyramid_to_xyz;
         prepare_out = NULL;
         w = lrintf(wf);
+        h = lrintf(hf);
+        break;
+    case HEQUIRECTANGULAR:
+        s->out_transform = hequirect_to_xyz;
+        prepare_out = NULL;
+        w = lrintf(wf / 2.f);
         h = lrintf(hf);
         break;
     default:

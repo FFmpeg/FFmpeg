@@ -50,6 +50,7 @@ enum Projections {
     TETRAHEDRON,
     BARREL_SPLIT,
     TSPYRAMID,
+    HEQUIRECTANGULAR,
     NB_PROJECTIONS,
 };
 
