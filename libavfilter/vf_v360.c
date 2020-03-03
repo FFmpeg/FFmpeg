@@ -1265,8 +1265,8 @@ static int cube3x2_to_xyz(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec)
 {
-    const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_width  / 3.f) : 1.f - s->out_pad;
-    const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_height / 2.f) : 1.f - s->out_pad;
+    const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (width  / 3.f) : 1.f - s->out_pad;
+    const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (height / 2.f) : 1.f - s->out_pad;
 
     const float ew = width  / 3.f;
     const float eh = height / 2.f;
@@ -1304,8 +1304,8 @@ static int xyz_to_cube3x2(const V360Context *s,
                           const float *vec, int width, int height,
                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_width  / 3.f) : 1.f - s->in_pad;
-    const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_height / 2.f) : 1.f - s->in_pad;
+    const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (width  / 3.f) : 1.f - s->in_pad;
+    const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (height / 2.f) : 1.f - s->in_pad;
     const float ew = width  / 3.f;
     const float eh = height / 2.f;
     float uf, vf;
@@ -1393,8 +1393,8 @@ static int cube1x6_to_xyz(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec)
 {
-    const float scalew = s->fout_pad > 0 ? 1.f - (float)(s->fout_pad) / s->out_width : 1.f - s->out_pad;
-    const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_height / 6.f) : 1.f - s->out_pad;
+    const float scalew = s->fout_pad > 0 ? 1.f - (float)(s->fout_pad) / width : 1.f - s->out_pad;
+    const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (height / 6.f) : 1.f - s->out_pad;
 
     const float ew = width;
     const float eh = height / 6.f;
@@ -1426,8 +1426,8 @@ static int cube6x1_to_xyz(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec)
 {
-    const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_width / 6.f)   : 1.f - s->out_pad;
-    const float scaleh = s->fout_pad > 0 ? 1.f - (float)(s->fout_pad) / s->out_height : 1.f - s->out_pad;
+    const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (width / 6.f)   : 1.f - s->out_pad;
+    const float scaleh = s->fout_pad > 0 ? 1.f - (float)(s->fout_pad) / height : 1.f - s->out_pad;
 
     const float ew = width / 6.f;
     const float eh = height;
@@ -1461,8 +1461,8 @@ static int xyz_to_cube1x6(const V360Context *s,
                           const float *vec, int width, int height,
                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float scalew = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / s->in_width : 1.f - s->in_pad;
-    const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_height / 6.f) : 1.f - s->in_pad;
+    const float scalew = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / width : 1.f - s->in_pad;
+    const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (height / 6.f) : 1.f - s->in_pad;
     const float eh = height / 6.f;
     const int ewi = width;
     float uf, vf;
@@ -1541,8 +1541,8 @@ static int xyz_to_cube6x1(const V360Context *s,
                           const float *vec, int width, int height,
                           int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_width / 6.f)   : 1.f - s->in_pad;
-    const float scaleh = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / s->in_height : 1.f - s->in_pad;
+    const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (width / 6.f)   : 1.f - s->in_pad;
+    const float scaleh = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / height : 1.f - s->in_pad;
     const float ew = width / 6.f;
     const int ehi = height;
     float uf, vf;
@@ -4060,12 +4060,6 @@ static int config_output(AVFilterLink *outlink)
     }
 
     set_dimensions(s->pr_width, s->pr_height, w, h, desc);
-
-    s->out_width = s->pr_width[0];
-    s->out_height = s->pr_height[0];
-
-    if (s->out_transpose)
-        FFSWAP(int, s->out_width, s->out_height);
 
     switch (s->out_stereo) {
     case STEREO_2D:
