@@ -3599,6 +3599,21 @@ static int extract_extradata(AVStream *st, const AVPacket *pkt)
     return 0;
 }
 
+static int add_coded_side_data(AVStream *st, AVCodecContext *avctx)
+{
+    int i;
+
+    for (i = 0; i < avctx->nb_coded_side_data; i++) {
+        const AVPacketSideData *sd_src = &avctx->coded_side_data[i];
+        uint8_t *dst_data;
+        dst_data = av_stream_new_side_data(st, sd_src->type, sd_src->size);
+        if (!dst_data)
+            return AVERROR(ENOMEM);
+        memcpy(dst_data, sd_src->data, sd_src->size);
+    }
+    return 0;
+}
+
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     int i, count = 0, ret = 0, j;
@@ -4136,6 +4151,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             int orig_w = st->codecpar->width;
             int orig_h = st->codecpar->height;
             ret = avcodec_parameters_from_context(st->codecpar, st->internal->avctx);
+            if (ret < 0)
+                goto find_stream_info_err;
+            ret = add_coded_side_data(st, st->internal->avctx);
             if (ret < 0)
                 goto find_stream_info_err;
 #if FF_API_LOWRES
