@@ -5047,7 +5047,7 @@ int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
  *      AVERROR(EINVAL):   codec not opened, refcounted_frames not set, it is a
  *                         decoder, or requires flush
  *      AVERROR(ENOMEM):   failed to add packet to internal queue, or similar
- *      other errors: legitimate decoding errors
+ *      other errors: legitimate encoding errors
  */
 int avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame);
 
@@ -5063,8 +5063,8 @@ int avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame);
  *                         must try to send input
  *      AVERROR_EOF:       the encoder has been fully flushed, and there will be
  *                         no more output packets
- *      AVERROR(EINVAL):   codec not opened, or it is an encoder
- *      other errors: legitimate decoding errors
+ *      AVERROR(EINVAL):   codec not opened, or it is a decoder
+ *      other errors: legitimate encoding errors
  */
 int avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt);
 
