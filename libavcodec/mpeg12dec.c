@@ -1399,6 +1399,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int horiz_size_ext, vert_size_ext;
     int bit_rate_ext;
+    AVCPBProperties *cpb_props;
 
     skip_bits(&s->gb, 1); /* profile and level esc*/
     s->avctx->profile       = get_bits(&s->gb, 3);
@@ -1429,6 +1430,12 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
 
     ff_dlog(s->avctx, "sequence extension\n");
     s->codec_id = s->avctx->codec_id = AV_CODEC_ID_MPEG2VIDEO;
+
+    if (cpb_props = ff_add_cpb_side_data(s->avctx)) {
+        cpb_props->buffer_size = s1->rc_buffer_size;
+        if (s->bit_rate != 0x3FFFF*400)
+            cpb_props->max_bitrate = s->bit_rate;
+    }
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG,
