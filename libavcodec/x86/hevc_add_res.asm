@@ -30,27 +30,26 @@ cextern pw_1023
 %macro ADD_RES_MMX_4_8 0
     mova              m0, [r1]
     mova              m2, [r1+8]
-    pxor              m1, m1
-    pxor              m3, m3
-    psubw             m1, m0
-    psubw             m3, m2
-    packuswb          m0, m2
-    packuswb          m1, m3
 
-    movd              m2, [r0]
+    movd              m1, [r0]
     movd              m3, [r0+r2]
-    punpckldq         m2, m3
-    paddusb           m0, m2
-    psubusb           m0, m1
+    punpcklbw         m1, m4
+    punpcklbw         m3, m4
+
+    paddsw            m0, m1
+    paddsw            m2, m3
+    packuswb          m0, m4
+    packuswb          m2, m4
+
     movd            [r0], m0
-    psrlq             m0, 32
-    movd         [r0+r2], m0
+    movd         [r0+r2], m2
 %endmacro
 
 
 INIT_MMX mmxext
 ; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_4_8, 3, 3, 6
+    pxor              m4, m4
     ADD_RES_MMX_4_8
     add               r1, 16
     lea               r0, [r0+r2*2]
