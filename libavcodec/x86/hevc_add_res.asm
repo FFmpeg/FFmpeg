@@ -84,34 +84,36 @@ cglobal hevc_add_residual_4_8, 3, 3, 6
 %endmacro
 
 %macro ADD_RES_SSE_16_32_8 3
-    mova             xm2, [r1+%1]
+    mova              m1, [%2]
+    mova              m2, m1
+    punpcklbw         m1, m0
+    punpckhbw         m2, m0
+    mova             xm5, [r1+%1]
     mova             xm6, [r1+%1+16]
 %if cpuflag(avx2)
-    vinserti128       m2, m2, [r1+%1+32], 1
+    vinserti128       m5, m5, [r1+%1+32], 1
     vinserti128       m6, m6, [r1+%1+48], 1
 %endif
-    psubw             m1, m0, m2
-    psubw             m5, m0, m6
-    packuswb          m2, m6
-    packuswb          m1, m5
+    paddsw            m1, m5
+    paddsw            m2, m6
 
-    mova             xm4, [r1+%1+mmsize*2]
+    mova              m3, [%3]
+    mova              m4, m3
+    punpcklbw         m3, m0
+    punpckhbw         m4, m0
+    mova             xm5, [r1+%1+mmsize*2]
     mova             xm6, [r1+%1+mmsize*2+16]
 %if cpuflag(avx2)
-    vinserti128       m4, m4, [r1+%1+96 ], 1
+    vinserti128       m5, m5, [r1+%1+96], 1
     vinserti128       m6, m6, [r1+%1+112], 1
 %endif
-    psubw             m3, m0, m4
-    psubw             m5, m0, m6
-    packuswb          m4, m6
-    packuswb          m3, m5
+    paddsw            m3, m5
+    paddsw            m4, m6
 
-    paddusb           m2, [%2]
-    paddusb           m4, [%3]
-    psubusb           m2, m1
-    psubusb           m4, m3
-    mova            [%2], m2
-    mova            [%3], m4
+    packuswb          m1, m2
+    packuswb          m3, m4
+    mova            [%2], m1
+    mova            [%3], m3
 %endmacro
 
 
