@@ -2413,8 +2413,12 @@ static int mxf_init_timecode(AVFormatContext *s, AVStream *st, AVRational tbc)
     AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
     if (!ff_mxf_get_content_package_rate(tbc)) {
-        av_log(s, AV_LOG_ERROR, "Unsupported frame rate %d/%d\n", tbc.den, tbc.num);
-        return AVERROR(EINVAL);
+        if (s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+            av_log(s, AV_LOG_ERROR, "Unsupported frame rate %d/%d. Set -strict option to 'unofficial' or lower in order to allow it!\n", tbc.den, tbc.num);
+            return AVERROR(EINVAL);
+        } else {
+            av_log(s, AV_LOG_WARNING, "Unofficial frame rate %d/%d.\n", tbc.den, tbc.num);
+        }
     }
 
     mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
