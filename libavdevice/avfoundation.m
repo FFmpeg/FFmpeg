@@ -88,7 +88,6 @@ typedef struct
     int64_t         first_pts;
     int64_t         first_audio_pts;
     pthread_mutex_t frame_lock;
-    pthread_cond_t  frame_wait_cond;
     id              avf_delegate;
     id              avf_audio_delegate;
 
@@ -130,6 +129,10 @@ typedef struct
     AVCaptureAudioDataOutput *audio_output;
     CMSampleBufferRef         current_frame;
     CMSampleBufferRef         current_audio_frame;
+
+    AVCaptureDevice          *observed_device;
+    AVCaptureDeviceTransportControlsPlaybackMode observed_mode;
+    int                      observed_quit;
 } AVFContext;
 
 static void lock_frames(AVFContext* ctx)
@@ -163,8 +166,48 @@ static void unlock_frames(AVFContext* ctx)
 {
     if (self = [super init]) {
         _context = context;
+
+        // start observing if a device is set for it
+        if (_context->observed_device) {
+            NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
+            NSKeyValueObservingOptions options = NSKeyValueObservingOptionNew;
+
+            [_context->observed_device addObserver: self
+                                        forKeyPath: keyPath
+                                           options: options
+                                           context: _context];
+        }
     }
     return self;
+}
+
+- (void)dealloc {
+    // stop observing if a device is set for it
+    NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
+    [_context->observed_device removeObserver: self forKeyPath: keyPath];
+    [super dealloc];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context {
+    if (context == _context) {
+        AVCaptureDeviceTransportControlsPlaybackMode mode =
+            [change[NSKeyValueChangeNewKey] integerValue];
+
+        if (mode != _context->observed_mode) {
+            if (mode == AVCaptureDeviceTransportControlsNotPlayingMode) {
+                _context->observed_quit = 1;
+            }
+            _context->observed_mode = mode;
+        }
+    } else {
+        [super observeValueForKeyPath: keyPath
+                             ofObject: object
+                               change: change
+                              context: context];
+    }
 }
 
 - (void)  captureOutput:(AVCaptureOutput *)captureOutput
@@ -178,8 +221,6 @@ static void unlock_frames(AVFContext* ctx)
     }
 
     _context->current_frame = (CMSampleBufferRef)CFRetain(videoFrame);
-
-    pthread_cond_signal(&_context->frame_wait_cond);
 
     unlock_frames(_context);
 
@@ -225,8 +266,6 @@ static void unlock_frames(AVFContext* ctx)
 
     _context->current_audio_frame = (CMSampleBufferRef)CFRetain(audioFrame);
 
-    pthread_cond_signal(&_context->frame_wait_cond);
-
     unlock_frames(_context);
 
     ++_context->audio_frames_captured;
@@ -253,7 +292,6 @@ static void destroy_context(AVFContext* ctx)
     av_freep(&ctx->audio_buffer);
 
     pthread_mutex_destroy(&ctx->frame_lock);
-    pthread_cond_destroy(&ctx->frame_wait_cond);
 
     if (ctx->current_frame) {
         CFRelease(ctx->current_frame);
@@ -499,6 +537,15 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
     }
     [ctx->video_output setAlwaysDiscardsLateVideoFrames:ctx->drop_late_frames];
 
+    // check for transport control support and set observer device if supported
+    int trans_ctrl = [video_device transportControlsSupported];
+    AVCaptureDeviceTransportControlsPlaybackMode trans_mode = [video_device transportControlsPlaybackMode];
+
+    if (trans_ctrl) {
+        ctx->observed_mode   = trans_mode;
+        ctx->observed_device = video_device;
+    }
+
     ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
 
     queue = dispatch_queue_create("avf_queue", NULL);
@@ -709,7 +756,6 @@ static int avf_read_header(AVFormatContext *s)
     ctx->first_audio_pts    = av_gettime();
 
     pthread_mutex_init(&ctx->frame_lock, NULL);
-    pthread_cond_init(&ctx->frame_wait_cond, NULL);
 
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     CGGetActiveDisplayList(0, NULL, &num_screens);
@@ -1110,7 +1156,12 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ctx->current_audio_frame = nil;
         } else {
             pkt->data = NULL;
-            pthread_cond_wait(&ctx->frame_wait_cond, &ctx->frame_lock);
+            unlock_frames(ctx);
+            if (ctx->observed_quit) {
+                return AVERROR_EOF;
+            } else {
+                return AVERROR(EAGAIN);
+            }
         }
 
         unlock_frames(ctx);
