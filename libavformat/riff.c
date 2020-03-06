@@ -497,6 +497,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
 
 const AVCodecTag ff_codec_bmp_tags_unofficial[] = {
     { AV_CODEC_ID_HEVC,         MKTAG('H', 'E', 'V', 'C') },
+    { AV_CODEC_ID_HEVC,         MKTAG('H', '2', '6', '5') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
