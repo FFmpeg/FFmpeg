@@ -126,6 +126,7 @@ typedef struct VariantStream {
     int has_video;
     int has_subtitle;
     int new_start;
+    int start_pts_from_audio;
     double dpp;           // duration per packet
     int64_t start_pts;
     int64_t end_pts;
@@ -2274,6 +2275,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (vs->start_pts == AV_NOPTS_VALUE) {
         vs->start_pts = pkt->pts;
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            vs->start_pts_from_audio = 1;
+    }
+    if (vs->start_pts_from_audio && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && vs->start_pts > pkt->pts) {
+        vs->start_pts = pkt->pts;
+        vs->start_pts_from_audio = 0;
     }
 
    if (vs->has_video) {
