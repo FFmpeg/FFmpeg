@@ -1858,7 +1858,7 @@ line. The following options are supported:
 
 @item pkt_size
 Forces the maximum packet size for sending/receiving data. The default value is
-32,768 bytes. On the server side, this sets the maximum size of sent packets
+131,072 bytes. On the server side, this sets the maximum size of sent packets
 via ZeroMQ. On the clients, it sets an internal buffer size for receiving
 packets. Note that pkt_size on the clients should be equal to or greater than
 pkt_size on the server. Otherwise the received message may be truncated causing
