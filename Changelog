@@ -45,6 +45,7 @@ version <next>:
 - cas video filter
 - High Voltage Software ADPCM decoder
 - LEGO Racers ALP (.tun & .pcm) demuxer
+- AMQP 0-9-1 protocol (RabbitMQ)
 
 
 version 4.2:

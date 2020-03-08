@@ -51,6 +51,66 @@ in microseconds.
 
 A description of the currently available protocols follows.
 
+@section amqp
+
+Advanced Message Queueing Protocol (AMQP) version 0-9-1 is a broker based
+publish-subscribe communication protocol.
+
+FFmpeg must be compiled with --enable-librabbitmq to support AMQP. A separate
+AMQP broker must also be run. An example open-source AMQP broker is RabbitMQ.
+
+After starting the broker, an FFmpeg client may stream data to the broker using
+the command:
+
+@example
+ffmpeg -re -i input -f mpegts amqp://[[user]:[password]@@]hostname[:port]
+@end example
+
+Where hostname and port (default is 5672) is the address of the broker. The
+client may also set a user/password for authentication. The default for both
+fields is "guest".
+
+Muliple subscribers may stream from the broker using the command:
+@example
+ffplay amqp://[[user]:[password]@@]hostname[:port]
+@end example
+
+In RabbitMQ all data published to the broker flows through a specific exchange,
+and each subscribing client has an assigned queue/buffer. When a packet arrives
+at an exchange, it may be copied to a client's queue depending on the exchange
+and routing_key fields.
+
+The following options are supported:
+
+@table @option
+
+@item exchange
+Sets the exchange to use on the broker. RabbitMQ has several predefined
+exchanges: "amq.direct" is the default exchange, where the publisher and
+subscriber must have a matching routing_key; "amq.fanout" is the same as a
+broadcast operation (i.e. the data is forwarded to all queues on the fanout
+exchange independent of the routing_key); and "amq.topic" is similar to
+"amq.direct", but allows for more complex pattern matching (refer to the RabbitMQ
+documentation).
+
+@item routing_key
+Sets the routing key. The default value is "amqp". The routing key is used on
+the "amq.direct" and "amq.topic" exchanges to decide whether packets are written
+to the queue of a subscriber.
+
+@item pkt_size
+Maximum size of each packet sent/received to the broker. Default is 131072.
+Minimum is 4096 and max is any large value (representable by an int). When
+receiving packets, this sets an internal buffer size in FFmpeg. It should be
+equal to or greater than the size of the published packets to the broker. Otherwise
+the received message may be truncated causing decoding errors.
+
+@item connection_timeout
+The timeout in seconds during the initial connection to the broker. The
+default value is rw_timeout, or 5 seconds if rw_timeout is not set.
+
+@end table
+
 @section async
 
 Asynchronous data filling wrapper for input stream.
