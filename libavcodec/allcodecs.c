@@ -599,6 +599,7 @@ extern AVCodec ff_adpcm_g726_decoder;
 extern AVCodec ff_adpcm_g726le_encoder;
 extern AVCodec ff_adpcm_g726le_decoder;
 extern AVCodec ff_adpcm_ima_amv_decoder;
+extern AVCodec ff_adpcm_ima_alp_decoder;
 extern AVCodec ff_adpcm_ima_apc_decoder;
 extern AVCodec ff_adpcm_ima_apm_decoder;
 extern AVCodec ff_adpcm_ima_dat4_decoder;

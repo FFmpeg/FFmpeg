@@ -43,6 +43,7 @@ version <next>:
 - Rayman 2 ADPCM decoder
 - Rayman 2 APM demuxer
 - cas video filter
+- High Voltage Software ADPCM decoder
 
 
 version 4.2:
