@@ -44,6 +44,7 @@ version <next>:
 - Rayman 2 APM demuxer
 - cas video filter
 - High Voltage Software ADPCM decoder
+- LEGO Racers ALP (.tun & .pcm) demuxer
 
 
 version 4.2:
