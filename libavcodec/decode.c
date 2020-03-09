@@ -736,7 +736,6 @@ static int compat_decode(AVCodecContext *avctx, AVFrame *frame,
     }
 
     *got_frame = 0;
-    avci->compat_decode = 1;
 
     if (avci->compat_decode_partial_size > 0 &&
         avci->compat_decode_partial_size != pkt->size) {

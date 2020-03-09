@@ -173,8 +173,6 @@ typedef struct AVCodecInternal {
     int buffer_pkt_valid; // encoding: packet without data can be valid
     AVFrame *buffer_frame;
     int draining_done;
-    /* set to 1 when the caller is using the old decoding API */
-    int compat_decode;
     int compat_decode_warned;
     /* this variable is set by the decoder internals to signal to the old
      * API compat wrappers the amount of data consumed from the last packet */
