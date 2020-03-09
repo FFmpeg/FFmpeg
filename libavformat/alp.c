@@ -51,7 +51,7 @@ static int alp_probe(const AVProbeData *p)
     if (strncmp("ADPCM", p->buf + 8, 6) != 0)
         return 0;
 
-    return AVPROBE_SCORE_EXTENSION + 1;
+    return AVPROBE_SCORE_MAX - 1;
 }
 
 static int alp_read_header(AVFormatContext *s)
