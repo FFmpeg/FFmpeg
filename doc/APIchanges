@@ -16,8 +16,11 @@ libavutil:     2017-10-21
 API changes, most recent first:
 
 2020-xx-xx - xxxxxxxxxx - lavu 56.45.100 - video_enc_params.h
+                          lavc 58.84.100 - avcodec.h
   Add a new API for exporting video encoding information.
   Replaces the deprecated API for exporting QP tables from decoders.
+  Add AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS to request this information from
+  decoders.
 
 2020-05-10 - xxxxxxxxxx - lavu 56.44.100 - hwcontext_vulkan.h
   Add enabled_inst_extensions, num_enabled_inst_extensions, enabled_dev_extensions

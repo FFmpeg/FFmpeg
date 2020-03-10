@@ -531,6 +531,11 @@ typedef struct RcOverride{
  * Export encoder Producer Reference Time through packet side data
  */
 #define AV_CODEC_EXPORT_DATA_PRFT        (1 << 1)
+/**
+ * Decoding only.
+ * Export the AVVideoEncParams structure through frame side data.
+ */
+#define AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS (1 << 2)
 
 /**
  * Pan Scan area.
