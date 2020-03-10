@@ -220,6 +220,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
 
     pic->alloc_mb_width  = mb_width;
     pic->alloc_mb_height = mb_height;
+    pic->alloc_mb_stride = mb_stride;
 
     return 0;
 }
@@ -346,6 +347,7 @@ int ff_update_picture_tables(Picture *dst, Picture *src)
 
     dst->alloc_mb_width  = src->alloc_mb_width;
     dst->alloc_mb_height = src->alloc_mb_height;
+    dst->alloc_mb_stride = src->alloc_mb_stride;
 
     return 0;
 }

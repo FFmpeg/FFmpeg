@@ -561,7 +561,7 @@ fate-filter-idet: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf idet
 FATE_FILTER_VSYNTH-$(CONFIG_PAD_FILTER) += fate-filter-pad
 fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 
-FATE_FILTER_PP = fate-filter-pp fate-filter-pp1 fate-filter-pp2 fate-filter-pp3 fate-filter-pp4 fate-filter-pp5 fate-filter-pp6
+#FATE_FILTER_PP = fate-filter-pp fate-filter-pp1 fate-filter-pp2 fate-filter-pp3 fate-filter-pp4 fate-filter-pp5 fate-filter-pp6
 FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += $(FATE_FILTER_PP)
 $(FATE_FILTER_PP): fate-vsynth1-mpeg4-qprd
 
@@ -573,11 +573,11 @@ fate-filter-pp4: CMD = video_filter "pp=be/ci"
 fate-filter-pp5: CMD = video_filter "pp=md"
 fate-filter-pp6: CMD = video_filter "pp=be/fd"
 
-FATE_FILTER_VSYNTH-$(CONFIG_PP7_FILTER) += fate-filter-pp7
+#FATE_FILTER_VSYNTH-$(CONFIG_PP7_FILTER) += fate-filter-pp7
 fate-filter-pp7: fate-vsynth1-mpeg4-qprd
 fate-filter-pp7: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "pp7"
 
-FATE_FILTER_VSYNTH-$(CONFIG_SPP_FILTER) += fate-filter-spp
+#FATE_FILTER_VSYNTH-$(CONFIG_SPP_FILTER) += fate-filter-spp
 fate-filter-spp: fate-vsynth1-mpeg4-qprd
 fate-filter-spp: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "spp=idct=simple:dct=int"
 

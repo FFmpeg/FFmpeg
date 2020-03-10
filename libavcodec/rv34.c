@@ -29,6 +29,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
+#include "libavutil/video_enc_params.h"
 
 #include "avcodec.h"
 #include "error_resilience.h"

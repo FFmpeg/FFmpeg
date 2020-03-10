@@ -55,6 +55,14 @@ enum AVVideoEncParamsType {
      *   as AVVideoBlockParams.qp_delta.
      */
     AV_VIDEO_ENC_PARAMS_H264,
+
+    /*
+     * MPEG-2-compatible quantizer.
+     *
+     * Summing the frame-level qp with the per-block delta_qp gives the
+     * resulting quantizer for the block.
+     */
+    AV_VIDEO_ENC_PARAMS_MPEG2,
 };
 
 /**
