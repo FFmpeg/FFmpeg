@@ -42,6 +42,19 @@ enum AVVideoEncParamsType {
      *   unsigned 8-bit.
      */
     AV_VIDEO_ENC_PARAMS_VP9,
+
+    /**
+     * H.264 stores:
+     * - in PPS (per-picture):
+     *   * initial QP_Y (luma) value, exported as AVVideoEncParams.qp
+     *   * delta(s) for chroma QP values (same for both, or each separately),
+     *     exported as in the corresponding entries in AVVideoEncParams.delta_qp
+     * - per-slice QP delta, not exported directly, added to the per-MB value
+     * - per-MB delta; not exported directly; the final per-MB quantizer
+     *   parameter - QP_Y - minus the value in AVVideoEncParams.qp is exported
+     *   as AVVideoBlockParams.qp_delta.
+     */
+    AV_VIDEO_ENC_PARAMS_H264,
 };
 
 /**

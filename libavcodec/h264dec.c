@@ -32,6 +32,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/video_enc_params.h"
+
 #include "internal.h"
 #include "bytestream.h"
 #include "cabac.h"
@@ -812,6 +814,40 @@ static int get_consumed_bytes(int pos, int buf_size)
     return pos;
 }
 
+static int h264_export_enc_params(AVFrame *f, H264Picture *p)
+{
+    AVVideoEncParams *par;
+    unsigned int nb_mb = p->mb_height * p->mb_width;
+    unsigned int x, y;
+
+    par = av_video_enc_params_create_side_data(f, AV_VIDEO_ENC_PARAMS_H264, nb_mb);
+    if (!par)
+        return AVERROR(ENOMEM);
+
+    par->qp = p->pps->init_qp;
+
+    par->delta_qp[1][0] = p->pps->chroma_qp_index_offset[0];
+    par->delta_qp[1][1] = p->pps->chroma_qp_index_offset[0];
+    par->delta_qp[2][0] = p->pps->chroma_qp_index_offset[1];
+    par->delta_qp[2][1] = p->pps->chroma_qp_index_offset[1];
+
+    for (y = 0; y < p->mb_height; y++)
+        for (x = 0; x < p->mb_width; x++) {
+            const unsigned int block_idx = y * p->mb_width + x;
+            const unsigned int     mb_xy = y * p->mb_stride + x;
+            AVVideoBlockParams *b = av_video_enc_params_block(par, block_idx);
+
+            b->src_x = x * 16;
+            b->src_y = y * 16;
+            b->w     = 16;
+            b->h     = 16;
+
+            b->delta_qp = p->qscale_table[mb_xy] - par->qp;
+        }
+
+    return 0;
+}
+
 static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 {
     AVFrame *src = srcp->f;
@@ -826,7 +862,16 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     if (srcp->sei_recovery_frame_cnt == 0)
         dst->key_frame = 1;
 
+    if (h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS) {
+        ret = h264_export_enc_params(dst, srcp);
+        if (ret < 0)
+            goto fail;
+    }
+
     return 0;
+fail:
+    av_frame_unref(dst);
+    return ret;
 }
 
 static int is_extra(const uint8_t *buf, int buf_size)

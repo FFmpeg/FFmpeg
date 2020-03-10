@@ -243,6 +243,15 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
         pic->ref_index[i]  = pic->ref_index_buf[i]->data;
     }
 
+    pic->pps_buf = av_buffer_ref(h->ps.pps_ref);
+    if (!pic->pps_buf)
+        goto fail;
+    pic->pps = (const PPS*)pic->pps_buf->data;
+
+    pic->mb_width  = h->mb_width;
+    pic->mb_height = h->mb_height;
+    pic->mb_stride = h->mb_stride;
+
     return 0;
 fail:
     ff_h264_unref_picture(h, pic);
