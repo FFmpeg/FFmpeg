@@ -3460,7 +3460,33 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
-    memcpy(((uint8_t*)s) + sizeof(MpegEncContext), ((uint8_t*)s1) + sizeof(MpegEncContext), sizeof(Mpeg4DecContext) - sizeof(MpegEncContext));
+    // copy all the necessary fields explicitly
+    s->time_increment_bits       = s1->time_increment_bits;
+    s->shape                     = s1->shape;
+    s->vol_sprite_usage          = s1->vol_sprite_usage;
+    s->sprite_brightness_change  = s1->sprite_brightness_change;
+    s->num_sprite_warping_points = s1->num_sprite_warping_points;
+    s->rvlc                      = s1->rvlc;
+    s->resync_marker             = s1->resync_marker;
+    s->t_frame                   = s1->t_frame;
+    s->new_pred                  = s1->new_pred;
+    s->enhancement_type          = s1->enhancement_type;
+    s->scalability               = s1->scalability;
+    s->use_intra_dc_vlc          = s1->use_intra_dc_vlc;
+    s->intra_dc_threshold        = s1->intra_dc_threshold;
+    s->divx_version              = s1->divx_version;
+    s->divx_build                = s1->divx_build;
+    s->xvid_build                = s1->xvid_build;
+    s->lavc_build                = s1->lavc_build;
+    s->showed_packed_warning     = s1->showed_packed_warning;
+    s->vol_control_parameters    = s1->vol_control_parameters;
+    s->cplx_estimation_trash_i   = s1->cplx_estimation_trash_i;
+    s->cplx_estimation_trash_p   = s1->cplx_estimation_trash_p;
+    s->cplx_estimation_trash_b   = s1->cplx_estimation_trash_b;
+    s->rgb                       = s1->rgb;
+
+    memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
+    memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
 
     if (CONFIG_MPEG4_DECODER && !init && s1->xvid_build >= 0)
         ff_xvid_idct_init(&s->m.idsp, dst);
