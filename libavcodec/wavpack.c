@@ -596,8 +596,8 @@ static int wv_unpack_dsd_fast(WavpackFrameContext *s, uint8_t *dst_left, uint8_t
     max_probability = bytestream2_get_byte(&s->gbyte);
 
     if (max_probability < 0xff) {
-        uint8_t *outptr = (uint8_t *) s->probabilities;
-        uint8_t *outend = outptr + sizeof (*s->probabilities) * history_bins;
+        uint8_t *outptr = (uint8_t *)s->probabilities;
+        uint8_t *outend = outptr + sizeof(*s->probabilities) * history_bins;
 
         while (outptr < outend && bytestream2_get_bytes_left(&s->gbyte)) {
             int code = bytestream2_get_byte(&s->gbyte);
@@ -618,9 +618,9 @@ static int wv_unpack_dsd_fast(WavpackFrameContext *s, uint8_t *dst_left, uint8_t
         if (outptr < outend ||
             (bytestream2_get_bytes_left(&s->gbyte) && bytestream2_get_byte(&s->gbyte)))
                 return AVERROR_INVALIDDATA;
-    } else if (bytestream2_get_bytes_left(&s->gbyte) > (int) sizeof (*s->probabilities) * history_bins) {
-        bytestream2_get_buffer(&s->gbyte, (uint8_t *) s->probabilities,
-            sizeof (*s->probabilities) * history_bins);
+    } else if (bytestream2_get_bytes_left(&s->gbyte) > (int)sizeof(*s->probabilities) * history_bins) {
+        bytestream2_get_buffer(&s->gbyte, (uint8_t *)s->probabilities,
+            sizeof(*s->probabilities) * history_bins);
     } else {
         return AVERROR_INVALIDDATA;
     }
@@ -1023,7 +1023,7 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     s->prev_frame.f = av_frame_alloc();
 
     // the DSD to PCM context is shared (and used serially) between all decoding threads
-    s->dsdctx = av_calloc(avctx->channels, sizeof (DSDContext));
+    s->dsdctx = av_calloc(avctx->channels, sizeof(DSDContext));
 
     if (!s->curr_frame.f || !s->prev_frame.f || !s->dsdctx)
         return AVERROR(ENOMEM);
@@ -1505,28 +1505,30 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
 
     if (s->stereo_in) {
         if (got_dsd) {
-            if (dsd_mode == 3)
+            if (dsd_mode == 3) {
                 ret = wv_unpack_dsd_high(s, samples_l, samples_r);
-            else if (dsd_mode == 1)
+            } else if (dsd_mode == 1) {
                 ret = wv_unpack_dsd_fast(s, samples_l, samples_r);
-            else
+            } else {
                 ret = wv_unpack_dsd_copy(s, samples_l, samples_r);
-        }
-        else
+            }
+        } else {
             ret = wv_unpack_stereo(s, &s->gb, samples_l, samples_r, avctx->sample_fmt);
+        }
         if (ret < 0)
             return ret;
     } else {
         if (got_dsd) {
-            if (dsd_mode == 3)
+            if (dsd_mode == 3) {
                 ret = wv_unpack_dsd_high(s, samples_l, NULL);
-            else if (dsd_mode == 1)
+            } else if (dsd_mode == 1) {
                 ret = wv_unpack_dsd_fast(s, samples_l, NULL);
-            else
+            } else {
                 ret = wv_unpack_dsd_copy(s, samples_l, NULL);
-        }
-        else
+            }
+        } else {
             ret = wv_unpack_mono(s, &s->gb, samples_l, avctx->sample_fmt);
+        }
         if (ret < 0)
             return ret;
 
@@ -1553,8 +1555,8 @@ static int dsd_channel(AVCodecContext *avctx, void *frmptr, int jobnr, int threa
     AVFrame *frame = frmptr;
 
     ff_dsd2pcm_translate (&s->dsdctx [jobnr], s->samples, 0,
-        (uint8_t *) frame->extended_data[jobnr], 4,
-        (float *) frame->extended_data[jobnr], 1);
+        (uint8_t *)frame->extended_data[jobnr], 4,
+        (float *)frame->extended_data[jobnr], 1);
 
     return 0;
 }
