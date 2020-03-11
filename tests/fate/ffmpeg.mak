@@ -65,6 +65,16 @@ fate-sub2video_basic: CMD = framecrc \
   -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:s:0]scale" \
   -c:v rawvideo
 
+# Time-limited run with a sample that doesn't require seeking and
+# contains samples within the initial period.
+FATE_SAMPLES_FFMPEG-$(call ALLYES, SUP_DEMUXER PGSSUB_DECODER AVFILTER) += fate-sub2video_time_limited
+fate-sub2video_time_limited: CMD = framecrc \
+  -i $(TARGET_SAMPLES)/sub/pgs_sub.sup \
+  -vsync passthrough -copyts \
+  -t 15 \
+  -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:s:0]scale" \
+  -c:v rawvideo
+
 FATE_FFMPEG-$(call ALLYES, PCM_S16LE_DEMUXER PCM_S16LE_MUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER) += fate-unknown_layout-pcm
 fate-unknown_layout-pcm: $(AREF)
 fate-unknown_layout-pcm: CMD = md5 \
