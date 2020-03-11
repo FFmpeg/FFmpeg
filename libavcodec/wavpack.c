@@ -987,6 +987,9 @@ static int init_thread_copy(AVCodecContext *avctx)
     s->curr_frame.f = av_frame_alloc();
     s->prev_frame.f = av_frame_alloc();
 
+    if (!s->curr_frame.f || !s->prev_frame.f)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
