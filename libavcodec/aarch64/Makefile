@@ -21,6 +21,7 @@ OBJS-$(CONFIG_VC1DSP)                   += aarch64/vc1dsp_init_aarch64.o
 OBJS-$(CONFIG_VORBIS_DECODER)           += aarch64/vorbisdsp_init.o
 OBJS-$(CONFIG_VP9_DECODER)              += aarch64/vp9dsp_init_10bpp_aarch64.o \
                                            aarch64/vp9dsp_init_12bpp_aarch64.o \
+                                           aarch64/vp9mc_aarch64.o             \
                                            aarch64/vp9dsp_init_aarch64.o
 
 # ARMv8 optimizations
