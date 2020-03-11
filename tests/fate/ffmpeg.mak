@@ -56,6 +56,15 @@ fate-sub2video: CMD = framecrc \
   -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:0]scale=720:480[v]\;[v][1:0]overlay[v2]" \
   -map "[v2]" -c:v rawvideo -map 1:s -c:s dvdsub
 
+# Very basic sub2video example, decode and convert to AVFrame with sub2video.
+# Attempt to not touch timestamps.
+FATE_SAMPLES_FFMPEG-$(call ALLYES, VOBSUB_DEMUXER DVDSUB_DECODER AVFILTER) += fate-sub2video_basic
+fate-sub2video_basic: CMD = framecrc \
+  -i $(TARGET_SAMPLES)/sub/vobsub.idx \
+  -vsync passthrough -copyts \
+  -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:s:0]scale" \
+  -c:v rawvideo
+
 FATE_FFMPEG-$(call ALLYES, PCM_S16LE_DEMUXER PCM_S16LE_MUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER) += fate-unknown_layout-pcm
 fate-unknown_layout-pcm: $(AREF)
 fate-unknown_layout-pcm: CMD = md5 \
