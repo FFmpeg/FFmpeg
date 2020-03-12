@@ -913,8 +913,6 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 #endif
 
     ret = write_packet(s, pkt);
-    if (ret >= 0 && s->pb && s->pb->error < 0)
-        ret = s->pb->error;
 
     if (ret >= 0)
         s->streams[pkt->stream_index]->nb_frames++;
@@ -1246,8 +1244,6 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
         if (ret < 0)
             return ret;
-        if(s->pb && s->pb->error)
-            return s->pb->error;
     }
 fail:
     av_packet_unref(pkt);
@@ -1273,8 +1269,6 @@ int av_write_trailer(AVFormatContext *s)
         av_packet_unref(&pkt);
 
         if (ret < 0)
-            goto fail;
-        if(s->pb && s->pb->error)
             goto fail;
     }
 
