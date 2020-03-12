@@ -1658,24 +1658,20 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     int err = 0;
     VkResult ret;
     AVVkFrame *f;
+    int bind_counts = 0;
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
     const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(hwfc->sw_format);
     const int has_modifiers = p->extensions & EXT_DRM_MODIFIER_FLAGS;
-    VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS];
-    VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS];
+    VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
+    VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { 0 };
+    VkBindImagePlaneMemoryInfo plane_info[AV_NUM_DATA_POINTERS] = { 0 };
     VkExternalMemoryHandleTypeFlagBits htype = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
 
     VK_LOAD_PFN(hwctx->inst, vkGetMemoryFdPropertiesKHR);
 
     for (int i = 0; i < desc->nb_layers; i++) {
-        if (desc->layers[i].nb_planes > 1) {
-            av_log(ctx, AV_LOG_ERROR, "Cannot import DMABUFS with more than 1 "
-                                      "plane per layer!\n");
-            return AVERROR(EINVAL);
-        }
-
         if (drm_to_vulkan_fmt(desc->layers[i].format) == VK_FORMAT_UNDEFINED) {
             av_log(ctx, AV_LOG_ERROR, "Unsupported DMABUF layer format %#08x!\n",
                    desc->layers[i].format);
@@ -1729,10 +1725,13 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                 VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
 
     for (int i = 0; i < desc->nb_layers; i++) {
+        const int planes = desc->layers[i].nb_planes;
+        const int signal_p = has_modifiers && (planes > 1);
+
         VkImageDrmFormatModifierExplicitCreateInfoEXT drm_info = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT,
             .drmFormatModifier = desc->objects[0].format_modifier,
-            .drmFormatModifierPlaneCount = desc->layers[i].nb_planes,
+            .drmFormatModifierPlaneCount = planes,
             .pPlaneLayouts = (const VkSubresourceLayout *)&plane_data,
         };
 
@@ -1759,7 +1758,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .extent.depth  = 1,
             .mipLevels     = 1,
             .arrayLayers   = 1,
-            .flags         = VK_IMAGE_CREATE_ALIAS_BIT,
+            .flags         = VK_IMAGE_CREATE_ALIAS_BIT | signal_p ? VK_IMAGE_CREATE_DISJOINT_BIT : 0x0,
             .tiling        = f->tiling,
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
             .usage         = DEFAULT_USAGE_FLAGS,
@@ -1767,7 +1766,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .samples       = VK_SAMPLE_COUNT_1_BIT,
         };
 
-        for (int j = 0; j < desc->layers[i].nb_planes; j++) {
+        for (int j = 0; j < planes; j++) {
             plane_data[j].offset     = desc->layers[i].planes[j].offset;
             plane_data[j].rowPitch   = desc->layers[i].planes[j].pitch;
             plane_data[j].size       = 0; /* The specs say so for all 3 */
@@ -1801,16 +1800,25 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         f->layout[i] = image_create_info.initialLayout;
         f->access[i] = 0x0;
 
-        /* TODO: Fix to support more than 1 plane per layer */
-        bind_info[i].sType  = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
-        bind_info[i].pNext  = NULL;
-        bind_info[i].image  = f->img[i];
-        bind_info[i].memory = f->mem[desc->layers[i].planes[0].object_index];
-        bind_info[i].memoryOffset = desc->layers[i].planes[0].offset;
+        for (int j = 0; j < planes; j++) {
+            VkImageAspectFlagBits aspect = j == 0 ? VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT :
+                                           j == 1 ? VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT :
+                                                    VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT;
+
+            plane_info[bind_counts].sType = VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO;
+            plane_info[bind_counts].planeAspect = aspect;
+
+            bind_info[bind_counts].sType  = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+            bind_info[bind_counts].pNext  = signal_p ? &plane_info[bind_counts] : NULL;
+            bind_info[bind_counts].image  = f->img[i];
+            bind_info[bind_counts].memory = f->mem[desc->layers[i].planes[j].object_index];
+            bind_info[bind_counts].memoryOffset = desc->layers[i].planes[j].offset;
+            bind_counts++;
+        }
     }
 
     /* Bind the allocated memory to the images */
-    ret = vkBindImageMemory2(hwctx->act_dev, desc->nb_layers, bind_info);
+    ret = vkBindImageMemory2(hwctx->act_dev, bind_counts, bind_info);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory: %s\n",
                vk_ret2str(ret));
