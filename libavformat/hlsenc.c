@@ -686,6 +686,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
     }
 
     if (!*hls->key_string) {
+        AVDictionary *options = NULL;
         if (!hls->key) {
             if ((ret = randomize(key, sizeof(key))) < 0) {
                 av_log(s, AV_LOG_ERROR, "Cannot generate a strong random key\n");
@@ -696,7 +697,10 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
         }
 
         ff_data_to_hex(hls->key_string, key, sizeof(key), 0);
-        if ((ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_WRITE, NULL)) < 0)
+        set_http_options(s, &options, hls);
+        ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_WRITE, &options);
+        av_dict_free(&options);
+        if (ret < 0)
             return ret;
         avio_seek(pb, 0, SEEK_CUR);
         avio_write(pb, key, KEYSIZE);
@@ -712,8 +716,12 @@ static int hls_encryption_start(AVFormatContext *s)
     int ret;
     AVIOContext *pb;
     uint8_t key[KEYSIZE];
+    AVDictionary *options = NULL;
 
-    if ((ret = s->io_open(s, &pb, hls->key_info_file, AVIO_FLAG_READ, NULL)) < 0) {
+    set_http_options(s, &options, hls);
+    ret = s->io_open(s, &pb, hls->key_info_file, AVIO_FLAG_READ, &options);
+    av_dict_free(&options);
+    if (ret < 0) {
         av_log(hls, AV_LOG_ERROR,
                "error opening key info file %s\n", hls->key_info_file);
         return ret;
@@ -740,7 +748,10 @@ static int hls_encryption_start(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_READ, NULL)) < 0) {
+    set_http_options(s, &options, hls);
+    ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_READ, &options);
+    av_dict_free(&options);
+    if (ret < 0) {
         av_log(hls, AV_LOG_ERROR, "error opening key file %s\n", hls->key_file);
         return ret;
     }
