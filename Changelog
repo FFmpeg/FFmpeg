@@ -46,6 +46,8 @@ version <next>:
 - High Voltage Software ADPCM decoder
 - LEGO Racers ALP (.tun & .pcm) demuxer
 - AMQP 0-9-1 protocol (RabbitMQ)
+- Vulkan support
+- avgblur_vulkan, overlay_vulkan, scale_vulkan and chromaber_vulkan filters
 
 
 version 4.2:
