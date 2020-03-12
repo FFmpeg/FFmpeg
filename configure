@@ -6246,6 +6246,7 @@ for func in $COMPLEX_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
+enabled avisynth          && require_headers "avisynth/avisynth_c.h"
 enabled cuda_nvcc         && { check_nvcc cuda_nvcc || die "ERROR: failed checking for nvcc."; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { require_headers DeckLinkAPI.h &&

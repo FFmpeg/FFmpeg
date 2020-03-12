@@ -1,6 +1,4 @@
 Files without standard license headers:
-compat/avisynth/windowsPorts/basicDataTypeConversions.h
-compat/avisynth/windowsPorts/windows2linux.h
 libavcodec/file_open.c
 libavcodec/ilbcdata.h
 libavcodec/ilbcdec.c
@@ -19,13 +17,6 @@ libswscale/log2_tab.c
 tools/uncoded_frame.c
 tools/yuvcmp.c
 Headers without standard inclusion guards:
-compat/avisynth/avisynth_c.h
-compat/avisynth/avs/capi.h
-compat/avisynth/avs/config.h
-compat/avisynth/avs/types.h
-compat/avisynth/avxsynth_c.h
-compat/avisynth/windowsPorts/basicDataTypeConversions.h
-compat/avisynth/windowsPorts/windows2linux.h
 compat/djgpp/math.h
 compat/float/float.h
 compat/float/limits.h
