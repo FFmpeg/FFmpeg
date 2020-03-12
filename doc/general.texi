@@ -50,16 +50,17 @@ This driver can be installed using amdgpu-pro-install script in official amd dri
 @section AviSynth
 
 FFmpeg can read AviSynth scripts as input. To enable support, pass
-@code{--enable-avisynth} to configure.  The correct headers are
-included in compat/avisynth/, which allows the user to enable support
-without needing to search for these headers themselves.
+@code{--enable-avisynth} to configure after installing the headers
+provided by @url{https://github.com/AviSynth/AviSynthPlus, AviSynth+}.
+AviSynth+ supplies a @code{GNUmakefile} to install only the headers,
+as CMake does not make header-only installs an easy task.
 
 For Windows, supported AviSynth variants are
 @url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
 @url{http://avisynth.nl/index.php/AviSynth+, AviSynth+ r1718 or higher} for 32-bit and 64-bit builds.
 
-For Linux and OS X, the supported AviSynth variant is
-@url{https://github.com/avxsynth/avxsynth, AvxSynth}.
+For Linux, macOS, and BSD, the only supported AviSynth variant is
+@url{https://github.com/AviSynth/AviSynthPlus, AviSynth+}, starting with version 3.5.
 
 @float NOTE
 In 2016, AviSynth+ added support for building with GCC. However, due to
@@ -77,10 +78,11 @@ GCC builds of AviSynth+ without any special flags.
 @end float
 
 @float NOTE
-AviSynth and AvxSynth are loaded dynamically.  Distributors can build FFmpeg
-with @code{--enable-avisynth}, and the binaries will work regardless of the
-end user having AviSynth or AvxSynth installed - they'll only need to be
-installed to use AviSynth scripts (obviously).
+AviSynth(+) is loaded dynamically.  Distributors can build FFmpeg
+with @code{--enable-avisynth}, and the binaries will work regardless
+of the end user having AviSynth installed.  If/when an end user
+would like to use AviSynth scripts, then they can install AviSynth(+)
+and FFmpeg will be able to find and use it to open scripts.
 @end float
 
 @section Chromaprint
