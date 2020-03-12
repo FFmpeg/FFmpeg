@@ -55,6 +55,7 @@ version <next>:
 - CRI HCA decoder
 - CRI HCA demuxer
 - overlay_cuda filter
+- switch from AvxSynth to AviSynth+ on Linux
 
 
 version 4.2:
