@@ -1643,7 +1643,6 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
-    const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(hwfc->sw_format);
     const int has_modifiers = p->extensions & EXT_DRM_MODIFIER_FLAGS;
     VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS];
@@ -1696,7 +1695,8 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
 
         req.memoryTypeBits = fdmp.memoryTypeBits;
 
-        err = alloc_mem(ctx, &req, 0x0, &idesc, &f->flags, &f->mem[i]);
+        err = alloc_mem(ctx, &req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        &idesc, &f->flags, &f->mem[i]);
         if (err)
             return err;
 
@@ -1789,7 +1789,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     }
 
     /* Bind the allocated memory to the images */
-    ret = vkBindImageMemory2(hwctx->act_dev, planes, bind_info);
+    ret = vkBindImageMemory2(hwctx->act_dev, desc->nb_layers, bind_info);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory: %s\n",
                vk_ret2str(ret));
@@ -1801,11 +1801,12 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     return 0;
 
 fail:
-    for (int i = 0; i < planes; i++) {
+    for (int i = 0; i < desc->nb_layers; i++) {
         vkDestroyImage(hwctx->act_dev, f->img[i], hwctx->alloc);
-        vkFreeMemory(hwctx->act_dev, f->mem[i], hwctx->alloc);
         vkDestroySemaphore(hwctx->act_dev, f->sem[i], hwctx->alloc);
     }
+    for (int i = 0; i < desc->nb_objects; i++)
+        vkFreeMemory(hwctx->act_dev, f->mem[i], hwctx->alloc);
 
     av_free(f);
 
