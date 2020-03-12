@@ -22,6 +22,7 @@
 *.ptx
 *.ptx.c
 *_g
+*.obj
 \#*
 .\#*
 /.config
@@ -37,3 +38,4 @@
 /src
 /mapfile
 /tools/python/__pycache__/
+/install

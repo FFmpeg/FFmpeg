@@ -342,10 +342,27 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
       width = 2560;
     }
     if (width == 0) {
-      width = 2048;
+      if (height == 112) {
+        width = 4096;
+      } else {
+        width = 2048;
+      }
     }
     if (width == 544) {
       width = 2592;
+    }
+    if (width == 1792) {
+      width = 3840;
+    }
+    if (width == 1952) {
+      width = 4000;
+    }
+
+    if (height == 112) {
+      height = 2160;
+    }
+    if (height == 952) {
+      height = 3000;
     }
 
     // HACK for odd_height.mov
