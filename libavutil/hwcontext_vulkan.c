@@ -2437,6 +2437,8 @@ static int transfer_image_buf(AVHWDeviceContext *ctx, AVVkFrame *frame,
     VkResult ret;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *s = ctx->internal->priv;
+
+    int bar_num = 0;
     VkPipelineStageFlagBits sem_wait_dst[AV_NUM_DATA_POINTERS];
 
     const int planes = av_pix_fmt_count_planes(pix_fmt);
@@ -2469,29 +2471,39 @@ static int transfer_image_buf(AVHWDeviceContext *ctx, AVVkFrame *frame,
 
     /* Change the image layout to something more optimal for transfers */
     for (int i = 0; i < planes; i++) {
-        img_bar[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        img_bar[i].srcAccessMask = 0x0;
-        img_bar[i].dstAccessMask = to_buf ? VK_ACCESS_TRANSFER_READ_BIT :
+        VkImageLayout new_layout = to_buf ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
+                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        VkAccessFlags new_access = to_buf ? VK_ACCESS_TRANSFER_READ_BIT :
                                             VK_ACCESS_TRANSFER_WRITE_BIT;
-        img_bar[i].oldLayout = frame->layout[i];
-        img_bar[i].newLayout = to_buf ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
-                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        img_bar[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        img_bar[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        img_bar[i].image = frame->img[i];
-        img_bar[i].subresourceRange.levelCount = 1;
-        img_bar[i].subresourceRange.layerCount = 1;
-        img_bar[i].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
         sem_wait_dst[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-        frame->layout[i] = img_bar[i].newLayout;
-        frame->access[i] = img_bar[i].dstAccessMask;
+        /* If the layout matches and we have read access skip the barrier */
+        if ((frame->layout[i] == new_layout) && (frame->access[i] & new_access))
+            continue;
+
+        img_bar[bar_num].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        img_bar[bar_num].srcAccessMask = 0x0;
+        img_bar[bar_num].dstAccessMask = new_access;
+        img_bar[bar_num].oldLayout = frame->layout[i];
+        img_bar[bar_num].newLayout = new_layout;
+        img_bar[bar_num].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        img_bar[bar_num].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        img_bar[bar_num].image = frame->img[i];
+        img_bar[bar_num].subresourceRange.levelCount = 1;
+        img_bar[bar_num].subresourceRange.layerCount = 1;
+        img_bar[bar_num].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        frame->layout[i] = img_bar[bar_num].newLayout;
+        frame->access[i] = img_bar[bar_num].dstAccessMask;
+
+        bar_num++;
     }
 
-    vkCmdPipelineBarrier(s->cmd.buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                         0, NULL, 0, NULL, planes, img_bar);
+    if (bar_num)
+        vkCmdPipelineBarrier(s->cmd.buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                             0, NULL, 0, NULL, bar_num, img_bar);
 
     /* Schedule a copy for each plane */
     for (int i = 0; i < planes; i++) {
