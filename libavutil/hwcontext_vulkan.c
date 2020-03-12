@@ -1699,15 +1699,16 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         VkImportMemoryFdInfoKHR idesc = {
             .sType      = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
             .handleType = htype,
-            .fd         = desc->objects[i].fd,
+            .fd         = dup(desc->objects[i].fd),
         };
 
         ret = pfn_vkGetMemoryFdPropertiesKHR(hwctx->act_dev, htype,
-                                             desc->objects[i].fd, &fdmp);
+                                             idesc.fd, &fdmp);
         if (ret != VK_SUCCESS) {
             av_log(hwfc, AV_LOG_ERROR, "Failed to get FD properties: %s\n",
                    vk_ret2str(ret));
             err = AVERROR_EXTERNAL;
+            close(idesc.fd);
             goto fail;
         }
 
@@ -1715,8 +1716,10 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
 
         err = alloc_mem(ctx, &req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         &idesc, &f->flags, &f->mem[i]);
-        if (err)
+        if (err) {
+            close(idesc.fd);
             return err;
+        }
 
         f->size[i] = desc->objects[i].size;
     }
