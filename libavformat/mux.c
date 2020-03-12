@@ -763,7 +763,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0) {
         pkt->pts = pts_backup;
         pkt->dts = dts_backup;
-    }
+    } else
+        s->streams[pkt->stream_index]->nb_frames++;
 
     return ret;
 }
@@ -912,11 +913,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return ret;
 #endif
 
-    ret = write_packet(s, pkt);
-
-    if (ret >= 0)
-        s->streams[pkt->stream_index]->nb_frames++;
-    return ret;
+    return write_packet(s, pkt);
 }
 
 #define CHUNK_START 0x1000
@@ -1237,8 +1234,6 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         ret = write_packet(s, &opkt);
-        if (ret >= 0)
-            s->streams[opkt.stream_index]->nb_frames++;
 
         av_packet_unref(&opkt);
 
@@ -1263,8 +1258,6 @@ int av_write_trailer(AVFormatContext *s)
             break;
 
         ret = write_packet(s, &pkt);
-        if (ret >= 0)
-            s->streams[pkt.stream_index]->nb_frames++;
 
         av_packet_unref(&pkt);
 
