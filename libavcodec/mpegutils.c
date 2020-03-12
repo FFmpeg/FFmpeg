@@ -34,6 +34,12 @@ static int add_mb(AVMotionVector *mb, uint32_t mb_type,
                   int motion_x, int motion_y, int motion_scale,
                   int direction)
 {
+    int src_x = dst_x + motion_x / motion_scale;
+    int src_y = dst_y + motion_y / motion_scale;
+
+    if (src_x == dst_x && src_y == dst_y) {
+        return 0;
+    }
     mb->w = IS_8X8(mb_type) || IS_8X16(mb_type) ? 8 : 16;
     mb->h = IS_8X8(mb_type) || IS_16X8(mb_type) ? 8 : 16;
     mb->motion_x = motion_x;
@@ -41,8 +47,8 @@ static int add_mb(AVMotionVector *mb, uint32_t mb_type,
     mb->motion_scale = motion_scale;
     mb->dst_x = dst_x;
     mb->dst_y = dst_y;
-    mb->src_x = dst_x + motion_x / motion_scale;
-    mb->src_y = dst_y + motion_y / motion_scale;
+    mb->src_x = src_x;
+    mb->src_y = src_y;
     mb->source = direction ? 1 : -1;
     mb->flags = 0; // XXX: does mb_type contain extra information that could be exported here?
     return 1;
