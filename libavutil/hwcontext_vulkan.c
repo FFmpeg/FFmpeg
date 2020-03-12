@@ -1139,12 +1139,19 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
     return 0;
 }
 
-static int prepare_frame(AVHWFramesContext *hwfc, AVVkFrame *frame)
+enum PrepMode {
+    PREP_MODE_WRITE,
+    PREP_MODE_RO_SHADER,
+};
+
+static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
+                         AVVkFrame *frame, enum PrepMode pmode)
 {
     VkResult ret;
+    VkImageLayout new_layout;
+    VkAccessFlags new_access;
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VulkanFramesPriv *s = hwfc->internal->priv;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
 
     VkImageMemoryBarrier img_bar[AV_NUM_DATA_POINTERS] = { 0 };
@@ -1157,13 +1164,24 @@ static int prepare_frame(AVHWFramesContext *hwfc, AVVkFrame *frame)
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount   = 1,
-        .pCommandBuffers      = &s->cmd.buf,
+        .pCommandBuffers      = &ectx->buf,
 
         .pSignalSemaphores    = frame->sem,
         .signalSemaphoreCount = planes,
     };
 
-    ret = vkBeginCommandBuffer(s->cmd.buf, &cmd_start);
+    switch (pmode) {
+    case PREP_MODE_WRITE:
+        new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case PREP_MODE_RO_SHADER:
+        new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        new_access = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+    }
+
+    ret = vkBeginCommandBuffer(ectx->buf, &cmd_start);
     if (ret != VK_SUCCESS)
         return AVERROR_EXTERNAL;
 
@@ -1173,9 +1191,9 @@ static int prepare_frame(AVHWFramesContext *hwfc, AVVkFrame *frame)
     for (int i = 0; i < planes; i++) {
         img_bar[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         img_bar[i].srcAccessMask = 0x0;
-        img_bar[i].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        img_bar[i].dstAccessMask = new_access;
         img_bar[i].oldLayout = frame->layout[i];
-        img_bar[i].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        img_bar[i].newLayout = new_layout;
         img_bar[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         img_bar[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         img_bar[i].image = frame->img[i];
@@ -1187,20 +1205,20 @@ static int prepare_frame(AVHWFramesContext *hwfc, AVVkFrame *frame)
         frame->access[i] = img_bar[i].dstAccessMask;
     }
 
-    vkCmdPipelineBarrier(s->cmd.buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    vkCmdPipelineBarrier(ectx->buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
                          0, NULL, 0, NULL, planes, img_bar);
 
-    ret = vkEndCommandBuffer(s->cmd.buf);
+    ret = vkEndCommandBuffer(ectx->buf);
     if (ret != VK_SUCCESS)
         return AVERROR_EXTERNAL;
 
-    ret = vkQueueSubmit(s->cmd.queue, 1, &s_info, s->cmd.fence);
+    ret = vkQueueSubmit(ectx->queue, 1, &s_info, ectx->fence);
     if (ret != VK_SUCCESS) {
         return AVERROR_EXTERNAL;
     } else {
-        vkWaitForFences(hwctx->act_dev, 1, &s->cmd.fence, VK_TRUE, UINT64_MAX);
-        vkResetFences(hwctx->act_dev, 1, &s->cmd.fence);
+        vkWaitForFences(hwctx->act_dev, 1, &ectx->fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(hwctx->act_dev, 1, &ectx->fence);
     }
 
     return 0;
@@ -1371,7 +1389,7 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, int size)
     if (err)
         goto fail;
 
-    err = prepare_frame(hwfc, f);
+    err = prepare_frame(hwfc, &p->cmd, f, PREP_MODE_WRITE);
     if (err)
         goto fail;
 
@@ -1775,7 +1793,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         /* We'd import a semaphore onto the one we created using
          * vkImportSemaphoreFdKHR but unfortunately neither DRM nor VAAPI
          * offer us anything we could import and sync with, so instead
-         * leave the semaphore unsignalled and enjoy the validation spam. */
+         * just signal the semaphore we created. */
 
         f->layout[i] = image_create_info.initialLayout;
         f->access[i] = 0x0;
@@ -1795,6 +1813,13 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
+
+    /* NOTE: This is completely uneccesary and unneeded once we can import
+     * semaphores from DRM. Otherwise we have to activate the semaphores.
+     * We're reusing the exec context that's also used for uploads/downloads. */
+    err = prepare_frame(hwfc, &p->cmd, f, PREP_MODE_RO_SHADER);
+    if (err)
+        goto fail;
 
     *frame = f;
 
