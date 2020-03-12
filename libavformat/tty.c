@@ -65,7 +65,7 @@ static int read_probe(const AVProbeData *p)
     for (int i = 8; i < p->buf_size; i++)
         cnt += !!isansicode(p->buf[i]);
 
-    return (cnt * 100LL / p->buf_size) * (cnt > 400) *
+    return (cnt * 99LL / p->buf_size) * (cnt > 400) *
         !!av_match_ext(p->filename, tty_extensions);
 }
 
