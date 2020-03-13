@@ -25,7 +25,6 @@
  */
 
 #include "libavutil/imgutils.h"
-#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "blockdsp.h"
 #define  UNCHECKED_BITSTREAM_READER 1
@@ -607,13 +606,11 @@ static int dnxhd_decode_row(AVCodecContext *avctx, void *data,
         return ret;
     }
     for (x = 0; x < ctx->mb_width; x++) {
-        //START_TIMER;
         int ret = dnxhd_decode_macroblock(ctx, row, data, x, rownb);
         if (ret < 0) {
             row->errors++;
             return ret;
         }
-        //STOP_TIMER("decode macroblock");
     }
 
     return 0;

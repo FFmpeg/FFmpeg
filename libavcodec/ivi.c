@@ -30,7 +30,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/timer.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
@@ -1124,8 +1123,6 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     ctx->switch_buffers(ctx);
 
-    //{ START_TIMER;
-
     if (ctx->is_nonnull_frame(ctx)) {
         ctx->buf_invalid[ctx->dst_buf] = 1;
         for (p = 0; p < 3; p++) {
@@ -1150,8 +1147,6 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
     if (ctx->buf_invalid[ctx->dst_buf])
         return -1;
-
-    //STOP_TIMER("decode_planes"); }
 
     if (!ctx->is_nonnull_frame(ctx))
         return buf_size;

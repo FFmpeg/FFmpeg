@@ -32,7 +32,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/motion_vector.h"
-#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "h264chroma.h"
@@ -469,7 +468,6 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
     MpegEncContext bak;
     int i, ret;
     // FIXME copy only needed parts
-    // START_TIMER
     backup_duplicate_context(&bak, dst);
     memcpy(dst, src, sizeof(MpegEncContext));
     backup_duplicate_context(dst, &bak);
@@ -487,8 +485,6 @@ int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
                "scratch buffers.\n");
         return ret;
     }
-    // STOP_TIMER("update_duplicate_context")
-    // about 10k cycles / 0.01 sec for  1000frames on 1ghz with 2 threads
     return 0;
 }
 

@@ -38,7 +38,6 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
-#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "dct.h"
 #include "idctdsp.h"
@@ -4262,7 +4261,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     return last_non_zero;
 }
 
-//#define REFINE_STATS 1
 static int16_t basis[64][64];
 
 static void build_basis(uint8_t *perm){
@@ -4301,15 +4299,6 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
     uint8_t * last_length;
     int lambda;
     int rle_index, run, q = 1, sum; //q is only used when s->mb_intra is true
-#ifdef REFINE_STATS
-static int count=0;
-static int after_last=0;
-static int to_zero=0;
-static int from_zero=0;
-static int raise=0;
-static int lower=0;
-static int messed_sign=0;
-#endif
 
     if(basis[0][0] == 0)
         build_basis(s->idsp.idct_permutation);
@@ -4353,16 +4342,11 @@ static int messed_sign=0;
     }
     last_non_zero = s->block_last_index[n];
 
-#ifdef REFINE_STATS
-{START_TIMER
-#endif
     dc += (1<<(RECON_SHIFT-1));
     for(i=0; i<64; i++){
         rem[i] = dc - (orig[i] << RECON_SHIFT); // FIXME use orig directly instead of copying to rem[]
     }
-#ifdef REFINE_STATS
-STOP_TIMER("memset rem[]")}
-#endif
+
     sum=0;
     for(i=0; i<64; i++){
         int one= 36;
@@ -4380,9 +4364,7 @@ STOP_TIMER("memset rem[]")}
         sum += w*w;
     }
     lambda= sum*(uint64_t)s->lambda2 >> (FF_LAMBDA_SHIFT - 6 + 6 + 6 + 6);
-#ifdef REFINE_STATS
-{START_TIMER
-#endif
+
     run=0;
     rle_index=0;
     for(i=start_i; i<=last_non_zero; i++){
@@ -4401,41 +4383,21 @@ STOP_TIMER("memset rem[]")}
             run++;
         }
     }
-#ifdef REFINE_STATS
-if(last_non_zero>0){
-STOP_TIMER("init rem[]")
-}
-}
 
-{START_TIMER
-#endif
     for(;;){
         int best_score = s->mpvencdsp.try_8x8basis(rem, weight, basis[0], 0);
         int best_coeff=0;
         int best_change=0;
         int run2, best_unquant_change=0, analyze_gradient;
-#ifdef REFINE_STATS
-{START_TIMER
-#endif
         analyze_gradient = last_non_zero > 2 || s->quantizer_noise_shaping >= 3;
 
         if(analyze_gradient){
-#ifdef REFINE_STATS
-{START_TIMER
-#endif
             for(i=0; i<64; i++){
                 int w= weight[i];
 
                 d1[i] = (rem[i]*w*w + (1<<(RECON_SHIFT+12-1)))>>(RECON_SHIFT+12);
             }
-#ifdef REFINE_STATS
-STOP_TIMER("rem*w*w")}
-{START_TIMER
-#endif
             s->fdsp.fdct(d1);
-#ifdef REFINE_STATS
-STOP_TIMER("dct")}
-#endif
         }
 
         if(start_i){
@@ -4597,9 +4559,6 @@ STOP_TIMER("dct")}
                 run++;
             }
         }
-#ifdef REFINE_STATS
-STOP_TIMER("iterative step")}
-#endif
 
         if(best_change){
             int j= perm_scantable[ best_coeff ];
@@ -4609,36 +4568,13 @@ STOP_TIMER("iterative step")}
             if(best_coeff > last_non_zero){
                 last_non_zero= best_coeff;
                 av_assert2(block[j]);
-#ifdef REFINE_STATS
-after_last++;
-#endif
             }else{
-#ifdef REFINE_STATS
-if(block[j]){
-    if(block[j] - best_change){
-        if(FFABS(block[j]) > FFABS(block[j] - best_change)){
-            raise++;
-        }else{
-            lower++;
-        }
-    }else{
-        from_zero++;
-    }
-}else{
-    to_zero++;
-}
-#endif
                 for(; last_non_zero>=start_i; last_non_zero--){
                     if(block[perm_scantable[last_non_zero]])
                         break;
                 }
             }
-#ifdef REFINE_STATS
-count++;
-if(256*256*256*64 % count == 0){
-    av_log(s->avctx, AV_LOG_DEBUG, "after_last:%d to_zero:%d from_zero:%d raise:%d lower:%d sign:%d xyp:%d/%d/%d\n", after_last, to_zero, from_zero, raise, lower, messed_sign, s->mb_x, s->mb_y, s->picture_number);
-}
-#endif
+
             run=0;
             rle_index=0;
             for(i=start_i; i<=last_non_zero; i++){
@@ -4658,12 +4594,6 @@ if(256*256*256*64 % count == 0){
             break;
         }
     }
-#ifdef REFINE_STATS
-if(last_non_zero>0){
-STOP_TIMER("iterative search")
-}
-}
-#endif
 
     return last_non_zero;
 }

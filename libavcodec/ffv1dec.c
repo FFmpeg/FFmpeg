@@ -30,7 +30,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/timer.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -138,7 +137,6 @@ static int decode_plane(FFV1Context *s, uint8_t *src,
         sample[1][-1] = sample[0][0];
         sample[0][w]  = sample[0][w - 1];
 
-// { START_TIMER
         if (s->avctx->bits_per_raw_sample <= 8) {
             int ret = decode_line(s, w, sample, plane_index, 8);
             if (ret < 0)
@@ -159,7 +157,6 @@ static int decode_plane(FFV1Context *s, uint8_t *src,
                 }
             }
         }
-// STOP_TIMER("decode-line") }
     }
     return 0;
 }

@@ -32,7 +32,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/stereo3d.h"
-#include "libavutil/timer.h"
 #include "internal.h"
 #include "bytestream.h"
 #include "cabac.h"

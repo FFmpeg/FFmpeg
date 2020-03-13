@@ -26,7 +26,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/timer.h"
 
 #include "avcodec.h"
 #include "blockdsp.h"
@@ -933,9 +932,8 @@ static int dnxhd_encode_thread(AVCodecContext *avctx, void *arg,
             int last_index = ctx->m.dct_quantize(&ctx->m, block,
                                                  ctx->is_444 ? (((i >> 1) % 3) < 1 ? 0 : 4): 4 & (2*i),
                                                  qscale, &overflow);
-            // START_TIMER;
+
             dnxhd_encode_block(ctx, block, last_index, n);
-            // STOP_TIMER("encode_block");
         }
     }
     if (put_bits_count(&ctx->m.pb) & 31)
