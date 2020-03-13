@@ -104,14 +104,14 @@ static void remove_sps(H264ParamSets *s, int id)
     av_buffer_unref(&s->sps_list[id]);
 }
 
-static inline int decode_hrd_parameters(GetBitContext *gb, AVCodecContext *avctx,
+static inline int decode_hrd_parameters(GetBitContext *gb, void *logctx,
                                         SPS *sps)
 {
     int cpb_count, i;
     cpb_count = get_ue_golomb_31(gb) + 1;
 
     if (cpb_count > 32U) {
-        av_log(avctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
+        av_log(logctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
         return AVERROR_INVALIDDATA;
     }
 
@@ -130,7 +130,7 @@ static inline int decode_hrd_parameters(GetBitContext *gb, AVCodecContext *avctx
     return 0;
 }
 
-static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx,
+static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
                                         SPS *sps)
 {
     int aspect_ratio_info_present_flag;
@@ -146,7 +146,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
         } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h264_pixel_aspect)) {
             sps->sar = ff_h264_pixel_aspect[aspect_ratio_idc];
         } else {
-            av_log(avctx, AV_LOG_ERROR, "illegal aspect ratio\n");
+            av_log(logctx, AV_LOG_ERROR, "illegal aspect ratio\n");
             return AVERROR_INVALIDDATA;
         }
     } else {
@@ -187,7 +187,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
         sps->chroma_location = AVCHROMA_LOC_LEFT;
 
     if (show_bits1(gb) && get_bits_left(gb) < 10) {
-        av_log(avctx, AV_LOG_WARNING, "Truncated VUI (%d)\n", get_bits_left(gb));
+        av_log(logctx, AV_LOG_WARNING, "Truncated VUI (%d)\n", get_bits_left(gb));
         return 0;
     }
 
@@ -196,7 +196,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
         unsigned num_units_in_tick = get_bits_long(gb, 32);
         unsigned time_scale        = get_bits_long(gb, 32);
         if (!num_units_in_tick || !time_scale) {
-            av_log(avctx, AV_LOG_ERROR,
+            av_log(logctx, AV_LOG_ERROR,
                    "time_scale/num_units_in_tick invalid or unsupported (%u/%u)\n",
                    time_scale, num_units_in_tick);
             sps->timing_info_present_flag = 0;
@@ -209,11 +209,11 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
 
     sps->nal_hrd_parameters_present_flag = get_bits1(gb);
     if (sps->nal_hrd_parameters_present_flag)
-        if (decode_hrd_parameters(gb, avctx, sps) < 0)
+        if (decode_hrd_parameters(gb, logctx, sps) < 0)
             return AVERROR_INVALIDDATA;
     sps->vcl_hrd_parameters_present_flag = get_bits1(gb);
     if (sps->vcl_hrd_parameters_present_flag)
-        if (decode_hrd_parameters(gb, avctx, sps) < 0)
+        if (decode_hrd_parameters(gb, logctx, sps) < 0)
             return AVERROR_INVALIDDATA;
     if (sps->nal_hrd_parameters_present_flag ||
         sps->vcl_hrd_parameters_present_flag)
@@ -238,7 +238,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
 
         if (sps->num_reorder_frames > 16U
             /* max_dec_frame_buffering || max_dec_frame_buffering > 16 */) {
-            av_log(avctx, AV_LOG_ERROR,
+            av_log(logctx, AV_LOG_ERROR,
                    "Clipping illegal num_reorder_frames %d\n",
                    sps->num_reorder_frames);
             sps->num_reorder_frames = 16;
