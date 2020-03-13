@@ -23711,6 +23711,15 @@ The count of the input frame for video or audio, starting from 0.
 
 @item T
 The time in seconds of the current frame.
+
+@item TS
+The start time in seconds of the current command interval.
+
+@item TE
+The end time in seconds of the current command interval.
+
+@item TI
+The interpolated time of the current command interval, TI = (T - TS) / (TE - TS).
 @end table
 
 @end table

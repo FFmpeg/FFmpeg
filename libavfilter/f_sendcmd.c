@@ -43,6 +43,9 @@ static const char *const var_names[] = {
     "T",     /* frame time in seconds */
     "POS",   /* original position in the file of the frame */
     "PTS",   /* frame pts */
+    "TS",    /* interval start time in seconds */
+    "TE",    /* interval end time in seconds */
+    "TI",    /* interval interpolated value: TI = (T - TS) / (TE - TS) */
     NULL
 };
 
@@ -51,6 +54,9 @@ enum var_name {
     VAR_T,
     VAR_POS,
     VAR_PTS,
+    VAR_TS,
+    VAR_TE,
+    VAR_TI,
     VAR_VARS_NB
 };
 
@@ -517,11 +523,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
                 if (cmd->flags & flags) {
                     if (cmd->flags & COMMAND_FLAG_EXPR) {
                         double var_values[VAR_VARS_NB], res;
+                        double start = TS2T(interval->start_ts, AV_TIME_BASE_Q);
+                        double end = TS2T(interval->end_ts, AV_TIME_BASE_Q);
+                        double current = TS2T(ref->pts, inlink->time_base);
 
                         var_values[VAR_N]   = inlink->frame_count_in;
                         var_values[VAR_POS] = ref->pkt_pos == -1 ? NAN : ref->pkt_pos;
                         var_values[VAR_PTS] = TS2D(ref->pts);
-                        var_values[VAR_T]   = TS2T(ref->pts, inlink->time_base);
+                        var_values[VAR_T]   = current;
+                        var_values[VAR_TS]  = start;
+                        var_values[VAR_TE]  = end;
+                        var_values[VAR_TI]  = (current - start) / (end - start);
 
                         if ((ret = av_expr_parse_and_eval(&res, cmd->arg, var_names, var_values,
                                                           NULL, NULL, NULL, NULL, NULL, 0, NULL)) < 0) {
