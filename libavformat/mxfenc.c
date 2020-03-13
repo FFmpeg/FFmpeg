@@ -72,10 +72,10 @@ typedef struct MXFLocalTagPair {
 } MXFLocalTagPair;
 
 typedef struct MXFIndexEntry {
-    uint8_t flags;
     uint64_t offset;
     unsigned slice_offset; ///< offset of audio slice
     uint16_t temporal_ref;
+    uint8_t flags;
 } MXFIndexEntry;
 
 typedef struct MXFStreamContext {
