@@ -608,6 +608,7 @@ extern AVCodec ff_adpcm_ima_dk4_decoder;
 extern AVCodec ff_adpcm_ima_ea_eacs_decoder;
 extern AVCodec ff_adpcm_ima_ea_sead_decoder;
 extern AVCodec ff_adpcm_ima_iss_decoder;
+extern AVCodec ff_adpcm_ima_mtf_decoder;
 extern AVCodec ff_adpcm_ima_oki_decoder;
 extern AVCodec ff_adpcm_ima_qt_encoder;
 extern AVCodec ff_adpcm_ima_qt_decoder;

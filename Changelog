@@ -48,6 +48,7 @@ version <next>:
 - AMQP 0-9-1 protocol (RabbitMQ)
 - Vulkan support
 - avgblur_vulkan, overlay_vulkan, scale_vulkan and chromaber_vulkan filters
+- ADPCM IMA MTF decoder
 
 
 version 4.2:
