@@ -198,6 +198,7 @@ OBJS-$(CONFIG_FRAMEHASH_MUXER)           += hashenc.o framehash.o
 OBJS-$(CONFIG_FRAMEMD5_MUXER)            += hashenc.o framehash.o
 OBJS-$(CONFIG_FRM_DEMUXER)               += frmdec.o
 OBJS-$(CONFIG_FSB_DEMUXER)               += fsb.o
+OBJS-$(CONFIG_FWSE_DEMUXER)              += fwse.o pcm.o
 OBJS-$(CONFIG_GIF_MUXER)                 += gif.o
 OBJS-$(CONFIG_GIF_DEMUXER)               += gifdec.o
 OBJS-$(CONFIG_GSM_DEMUXER)               += gsmdec.o

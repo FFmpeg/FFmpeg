@@ -156,6 +156,7 @@ extern AVOutputFormat ff_framehash_muxer;
 extern AVOutputFormat ff_framemd5_muxer;
 extern AVInputFormat  ff_frm_demuxer;
 extern AVInputFormat  ff_fsb_demuxer;
+extern AVInputFormat  ff_fwse_demuxer;
 extern AVInputFormat  ff_g722_demuxer;
 extern AVOutputFormat ff_g722_muxer;
 extern AVInputFormat  ff_g723_1_demuxer;
