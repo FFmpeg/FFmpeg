@@ -566,7 +566,7 @@ static void equalizer(EqualizatorFilter *f, double sample_rate)
 static int add_filter(AudioNEqualizerContext *s, AVFilterLink *inlink)
 {
     equalizer(&s->filters[s->nb_filters], inlink->sample_rate);
-    if (s->nb_filters >= s->nb_allocated) {
+    if (s->nb_filters >= s->nb_allocated - 1) {
         EqualizatorFilter *filters;
 
         filters = av_calloc(s->nb_allocated, 2 * sizeof(*s->filters));
