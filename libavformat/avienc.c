@@ -268,8 +268,8 @@ static int avi_write_header(AVFormatContext *s)
     int padding;
 
     if (s->nb_streams > AVI_MAX_STREAM_COUNT) {
-        av_log(s, AV_LOG_ERROR, "AVI does not support >%d streams\n",
-               AVI_MAX_STREAM_COUNT);
+        av_log(s, AV_LOG_ERROR, "AVI does not support "
+               ">"AV_STRINGIFY(AVI_MAX_STREAM_COUNT)" streams\n");
         return AVERROR(EINVAL);
     }
 
