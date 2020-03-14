@@ -703,12 +703,8 @@ static int nut_write_header(AVFormatContext *s)
     nut->chapter  = av_calloc(s->nb_chapters, sizeof(*nut->chapter));
     nut->time_base= av_calloc(s->nb_streams +
                               s->nb_chapters, sizeof(*nut->time_base));
-    if (!nut->stream || !nut->chapter || !nut->time_base) {
-        av_freep(&nut->stream);
-        av_freep(&nut->chapter);
-        av_freep(&nut->time_base);
+    if (!nut->stream || !nut->chapter || !nut->time_base)
         return AVERROR(ENOMEM);
-    }
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
