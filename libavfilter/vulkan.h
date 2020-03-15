@@ -175,6 +175,11 @@ void ff_vk_filter_uninit               (AVFilterContext *avctx);
 const char *ff_vk_ret2str(VkResult res);
 
 /**
+ * Returns 1 if the image is any sort of supported RGB
+ */
+int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);
+
+/**
  * Gets the glsl format string for a pixel format
  */
 const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt);

@@ -666,6 +666,18 @@ VkSampler *ff_vk_init_sampler(AVFilterContext *avctx, int unnorm_coords,
     return sampler;
 }
 
+int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
+{
+    if (pix_fmt == AV_PIX_FMT_ABGR   || pix_fmt == AV_PIX_FMT_BGRA   ||
+        pix_fmt == AV_PIX_FMT_RGBA   || pix_fmt == AV_PIX_FMT_RGB24  ||
+        pix_fmt == AV_PIX_FMT_BGR24  || pix_fmt == AV_PIX_FMT_RGB48  ||
+        pix_fmt == AV_PIX_FMT_RGBA64 || pix_fmt == AV_PIX_FMT_RGB565 ||
+        pix_fmt == AV_PIX_FMT_BGR565 || pix_fmt == AV_PIX_FMT_BGR0   ||
+        pix_fmt == AV_PIX_FMT_0BGR   || pix_fmt == AV_PIX_FMT_RGB0)
+        return 1;
+    return 0;
+}
+
 const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pixfmt);

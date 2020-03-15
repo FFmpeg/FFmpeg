@@ -20,6 +20,7 @@
 #include "vulkan.h"
 #include "scale_eval.h"
 #include "internal.h"
+#include "colorspace.h"
 
 #define CGROUPS (int [3]){ 32, 32, 1 }
 
@@ -36,22 +37,67 @@ typedef struct ScaleVulkanContext {
     int initialized;
     FFVkExecContext *exec;
     VulkanPipeline *pl;
+    FFVkBuffer params_buf;
 
     /* Shader updators, must be in the main filter struct */
     VkDescriptorImageInfo input_images[3];
     VkDescriptorImageInfo output_images[3];
+    VkDescriptorBufferInfo params_desc;
 
     enum ScalerFunc scaler;
-    char *output_format_string;
+    char *out_format_string;
+    enum AVColorRange out_range;
     char *w_expr;
     char *h_expr;
 } ScaleVulkanContext;
 
 static const char scale_bilinear[] = {
-    C(0, void scale_bilinear(int idx, ivec2 pos)                                )
+    C(0, vec4 scale_bilinear(int idx, ivec2 pos)                                )
     C(0, {                                                                      )
     C(1,     const vec2 npos = (vec2(pos) + 0.5f) / imageSize(output_img[idx]); )
-    C(1,     imageStore(output_img[idx], pos, texture(input_img[idx], npos));   )
+    C(1,     return texture(input_img[idx], npos);                              )
+    C(0, }                                                                      )
+};
+
+static const char rgb2yuv[] = {
+    C(0, vec4 rgb2yuv(vec4 src, int fullrange)                                  )
+    C(0, {                                                                      )
+    C(1,     src *= yuv_matrix;                                                 )
+    C(1,     if (fullrange == 1) {                                              )
+    C(2,         src += vec4(0.0, 0.5, 0.5, 0.0);                               )
+    C(1,     } else {                                                           )
+    C(2,         src *= vec4(219.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0, 1.0); )
+    C(2,         src += vec4(16.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0, 0.0);  )
+    C(1,     }                                                                  )
+    C(1,     return src;                                                        )
+    C(0, }                                                                      )
+};
+
+static const char write_nv12[] = {
+    C(0, void write_nv12(vec4 src, ivec2 pos)                                   )
+    C(0, {                                                                      )
+    C(1,     imageStore(output_img[0], pos, vec4(src.r, 0.0, 0.0, 0.0));        )
+    C(1,     pos /= ivec2(2);                                                   )
+    C(1,     imageStore(output_img[1], pos, vec4(src.g, src.b, 0.0, 0.0));      )
+    C(0, }                                                                      )
+};
+
+static const char write_420[] = {
+    C(0, void write_420(vec4 src, ivec2 pos)                                    )
+    C(0, {                                                                      )
+    C(1,     imageStore(output_img[0], pos, vec4(src.r, 0.0, 0.0, 0.0));        )
+    C(1,     pos /= ivec2(2);                                                   )
+    C(1,     imageStore(output_img[1], pos, vec4(src.g, 0.0, 0.0, 0.0));        )
+    C(1,     imageStore(output_img[2], pos, vec4(src.b, 0.0, 0.0, 0.0));        )
+    C(0, }                                                                      )
+};
+
+static const char write_444[] = {
+    C(0, void write_444(vec4 src, ivec2 pos)                                    )
+    C(0, {                                                                      )
+    C(1,     imageStore(output_img[0], pos, vec4(src.r, 0.0, 0.0, 0.0));        )
+    C(1,     imageStore(output_img[1], pos, vec4(src.g, 0.0, 0.0, 0.0));        )
+    C(1,     imageStore(output_img[2], pos, vec4(src.b, 0.0, 0.0, 0.0));        )
     C(0, }                                                                      )
 };
 
@@ -103,6 +149,16 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             },
         };
 
+        VulkanDescriptorSetBinding desc_b = {
+            .name        = "params",
+            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .mem_quali   = "readonly",
+            .mem_layout  = "std430",
+            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+            .updater     = &s->params_desc,
+            .buf_content = "mat4 yuv_matrix;",
+        };
+
         SPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "scale_compute",
                                              VK_SHADER_STAGE_COMPUTE_BIT);
         if (!shd)
@@ -110,33 +166,104 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         ff_vk_set_compute_shader_sizes(ctx, shd, CGROUPS);
 
-        RET(ff_vk_add_descriptor_set(ctx, s->pl, shd, desc_i, 2, 0)); /* set 0 */
+        RET(ff_vk_add_descriptor_set(ctx, s->pl, shd,  desc_i, 2, 0)); /* set 0 */
+        RET(ff_vk_add_descriptor_set(ctx, s->pl, shd, &desc_b, 1, 0)); /* set 0 */
 
-        GLSLD(   scale_bilinear                                               );
-        GLSLC(0, void main()                                                  );
-        GLSLC(0, {                                                            );
-        GLSLC(1,     ivec2 size;                                              );
-        GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);             );
+        GLSLD(   scale_bilinear                                                  );
 
-        for (int i = 0; i < desc_i[1].elems; i++) {
-            GLSLC(0,                                                          );
-            GLSLF(1,  size = imageSize(output_img[%i]);                     ,i);
-            GLSLC(1,  if (IS_WITHIN(pos, size))                               );
-            switch (s->scaler) {
-            case F_NEAREST:
-            case F_BILINEAR:
-                GLSLF(2, scale_bilinear(%i, pos);                           ,i);
-                break;
-            };
+        if (s->vkctx.output_format != s->vkctx.input_format) {
+            GLSLD(   rgb2yuv                                                     );
         }
 
-        GLSLC(0, }                                                            );
+        switch (s->vkctx.output_format) {
+        case AV_PIX_FMT_NV12:    GLSLD(write_nv12); break;
+        case AV_PIX_FMT_YUV420P: GLSLD( write_420); break;
+        case AV_PIX_FMT_YUV444P: GLSLD( write_444); break;
+        default: break;
+        }
+
+        GLSLC(0, void main()                                                     );
+        GLSLC(0, {                                                               );
+        GLSLC(1,     ivec2 size;                                                 );
+        GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);                );
+        GLSLC(0,                                                                 );
+
+        if (s->vkctx.output_format == s->vkctx.input_format) {
+            for (int i = 0; i < desc_i[1].elems; i++) {
+                GLSLF(1,  size = imageSize(output_img[%i]);                    ,i);
+                GLSLC(1,  if (IS_WITHIN(pos, size)) {                            );
+                switch (s->scaler) {
+                case F_NEAREST:
+                case F_BILINEAR:
+                    GLSLF(2, vec4 res = scale_bilinear(%i, pos);               ,i);
+                    GLSLF(2, imageStore(output_img[%i], pos, res);             ,i);
+                    break;
+                };
+                GLSLC(1, }                                                       );
+            }
+        } else {
+            GLSLC(1, vec4 res = scale_bilinear(0, pos);                          );
+            GLSLF(1, res = rgb2yuv(res, %i);    ,s->out_range == AVCOL_RANGE_JPEG);
+            switch (s->vkctx.output_format) {
+            case AV_PIX_FMT_NV12:    GLSLC(1, write_nv12(res, pos); ); break;
+            case AV_PIX_FMT_YUV420P: GLSLC(1,  write_420(res, pos); ); break;
+            case AV_PIX_FMT_YUV444P: GLSLC(1,  write_444(res, pos); ); break;
+            default: return AVERROR(EINVAL);
+            }
+        }
+
+        GLSLC(0, }                                                               );
 
         RET(ff_vk_compile_shader(ctx, shd, "main"));
     }
 
     RET(ff_vk_init_pipeline_layout(ctx, s->pl));
     RET(ff_vk_init_compute_pipeline(ctx, s->pl));
+
+    if (s->vkctx.output_format != s->vkctx.input_format) {
+        const struct LumaCoefficients *lcoeffs;
+        double tmp_mat[3][3];
+
+        struct {
+            float yuv_matrix[4][4];
+        } *par;
+
+        lcoeffs = ff_get_luma_coefficients(in->colorspace);
+        if (!lcoeffs) {
+            av_log(ctx, AV_LOG_ERROR, "Unsupported colorspace\n");
+            return AVERROR(EINVAL);
+        }
+
+        err = ff_vk_create_buf(ctx, &s->params_buf,
+                               sizeof(*par),
+                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        if (err)
+            return err;
+
+        err = ff_vk_map_buffers(ctx, &s->params_buf, (uint8_t **)&par, 1, 0);
+        if (err)
+            return err;
+
+        ff_fill_rgb2yuv_table(lcoeffs, tmp_mat);
+
+        memset(par, 0, sizeof(*par));
+
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+                par->yuv_matrix[x][y] = tmp_mat[y][x];
+
+        par->yuv_matrix[3][3] = 1.0;
+
+        err = ff_vk_unmap_buffers(ctx, &s->params_buf, 1, 1);
+        if (err)
+            return err;
+
+        s->params_desc.buffer = s->params_buf.buf;
+        s->params_desc.range  = VK_WHOLE_SIZE;
+
+        ff_vk_update_descriptor_set(ctx, s->pl, 1);
+    }
 
     /* Execution context */
     RET(ff_vk_create_exec_ctx(ctx, &s->exec,
@@ -156,18 +283,22 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     ScaleVulkanContext *s = avctx->priv;
     AVVkFrame *in = (AVVkFrame *)in_f->data[0];
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
-    int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    VkImageMemoryBarrier barriers[AV_NUM_DATA_POINTERS*2];
+    int barrier_count = 0;
 
-    for (int i = 0; i < planes; i++) {
+    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.input_format); i++) {
         RET(ff_vk_create_imageview(avctx, &s->input_images[i].imageView, in->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.input_format)[i],
                                    ff_comp_identity_map));
 
+        s->input_images[i].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+
+    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.output_format); i++) {
         RET(ff_vk_create_imageview(avctx, &s->output_images[i].imageView, out->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
                                    ff_comp_identity_map));
 
-        s->input_images[i].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     }
 
@@ -175,46 +306,51 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
 
     ff_vk_start_exec_recording(avctx, s->exec);
 
-    for (int i = 0; i < planes; i++) {
-        VkImageMemoryBarrier bar[2] = {
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout = in->layout[i],
-                .newLayout = s->input_images[i].imageLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = in->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-                .oldLayout = out->layout[i],
-                .newLayout = s->output_images[i].imageLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = out->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
+    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.input_format); i++) {
+        VkImageMemoryBarrier bar = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+            .oldLayout = in->layout[i],
+            .newLayout = s->input_images[i].imageLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = in->img[i],
+            .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .subresourceRange.levelCount = 1,
+            .subresourceRange.layerCount = 1,
         };
 
-        vkCmdPipelineBarrier(s->exec->buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
-                             0, NULL, 0, NULL, FF_ARRAY_ELEMS(bar), bar);
+        memcpy(&barriers[barrier_count++], &bar, sizeof(VkImageMemoryBarrier));
 
-        in->layout[i]  = bar[0].newLayout;
-        in->access[i]  = bar[0].dstAccessMask;
-
-        out->layout[i] = bar[1].newLayout;
-        out->access[i] = bar[1].dstAccessMask;
+        in->layout[i]  = bar.newLayout;
+        in->access[i]  = bar.dstAccessMask;
     }
+
+    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.output_format); i++) {
+        VkImageMemoryBarrier bar = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .oldLayout = out->layout[i],
+            .newLayout = s->output_images[i].imageLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = out->img[i],
+            .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .subresourceRange.levelCount = 1,
+            .subresourceRange.layerCount = 1,
+        };
+
+        memcpy(&barriers[barrier_count++], &bar, sizeof(VkImageMemoryBarrier));
+
+        out->layout[i] = bar.newLayout;
+        out->access[i] = bar.dstAccessMask;
+    }
+
+    vkCmdPipelineBarrier(s->exec->buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
+                         0, NULL, 0, NULL, barrier_count, barriers);
 
     ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl);
 
@@ -229,10 +365,10 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     if (err)
         return err;
 
-    for (int i = 0; i < planes; i++) {
+    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.input_format); i++)
         ff_vk_destroy_imageview(avctx, &s->input_images[i].imageView);
+    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.output_format); i++)
         ff_vk_destroy_imageview(avctx, &s->output_images[i].imageView);
-    }
 
 fail:
     return err;
@@ -260,6 +396,11 @@ static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (err < 0)
         goto fail;
 
+    if (s->out_range != AVCOL_RANGE_UNSPECIFIED)
+        out->color_range = s->out_range;
+    if (s->vkctx.output_format != s->vkctx.input_format)
+        out->chroma_location = AVCHROMA_LOC_TOPLEFT;
+
     av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
@@ -283,7 +424,31 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    s->vkctx.output_format = s->vkctx.input_format;
+    if (s->out_format_string) {
+        s->vkctx.output_format = av_get_pix_fmt(s->out_format_string);
+        if (s->vkctx.output_format == AV_PIX_FMT_NONE) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid output format.\n");
+            return AVERROR(EINVAL);
+        }
+    } else {
+        s->vkctx.output_format = s->vkctx.input_format;
+    }
+
+    if (s->vkctx.output_format != s->vkctx.input_format) {
+        if (!ff_vk_mt_is_np_rgb(s->vkctx.input_format)) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported input format for conversion\n");
+            return AVERROR(EINVAL);
+        }
+        if (s->vkctx.output_format != AV_PIX_FMT_NV12 &&
+            s->vkctx.output_format != AV_PIX_FMT_YUV420P &&
+            s->vkctx.output_format != AV_PIX_FMT_YUV444P) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported output format\n");
+            return AVERROR(EINVAL);
+        }
+    } else if (s->out_range != AVCOL_RANGE_UNSPECIFIED) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot change range without converting format\n");
+        return AVERROR(EINVAL);
+    }
 
     err = ff_vk_filter_config_output(outlink);
     if (err < 0)
@@ -302,6 +467,7 @@ static void scale_vulkan_uninit(AVFilterContext *avctx)
     ScaleVulkanContext *s = avctx->priv;
 
     ff_vk_filter_uninit(avctx);
+    ff_vk_free_buf(avctx, &s->params_buf);
 
     s->initialized = 0;
 }
@@ -314,6 +480,14 @@ static const AVOption scale_vulkan_options[] = {
     { "scaler", "Scaler function", OFFSET(scaler), AV_OPT_TYPE_INT, {.i64 = F_BILINEAR}, 0, F_NB, .flags = FLAGS, "scaler" },
         { "bilinear", "Bilinear interpolation (fastest)", 0, AV_OPT_TYPE_CONST, {.i64 = F_BILINEAR}, 0, 0, .flags = FLAGS, "scaler" },
         { "nearest", "Nearest (useful for pixel art)", 0, AV_OPT_TYPE_CONST, {.i64 = F_NEAREST}, 0, 0, .flags = FLAGS, "scaler" },
+    { "format", "Output video format (software format of hardware frames)", OFFSET(out_format_string), AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { "out_range", "Output colour range (from 0 to 2) (default 0)", OFFSET(out_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED}, AVCOL_RANGE_UNSPECIFIED, AVCOL_RANGE_JPEG, .flags = FLAGS, "range" },
+        { "full", "Full range", 0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_JPEG }, 0, 0, FLAGS, "range" },
+        { "limited", "Limited range", 0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_MPEG }, 0, 0, FLAGS, "range" },
+        { "jpeg", "Full range", 0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_JPEG }, 0, 0, FLAGS, "range" },
+        { "mpeg", "Limited range", 0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_MPEG }, 0, 0, FLAGS, "range" },
+        { "tv", "Limited range", 0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_MPEG }, 0, 0, FLAGS, "range" },
+        { "pc", "Full range", 0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_JPEG }, 0, 0, FLAGS, "range" },
     { NULL },
 };
 
