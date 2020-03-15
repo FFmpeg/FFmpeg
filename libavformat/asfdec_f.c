@@ -321,8 +321,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
     int64_t off = avio_tell(s->pb);
 #define LEN 22
 
-    if ((unsigned)len >= (UINT_MAX - LEN) / 2)
-        return;
+    av_assert0((unsigned)len < (INT_MAX - LEN) / 2);
 
     if (!asf->export_xmp && !strncmp(key, "xmp", 3))
         goto finish;
@@ -712,6 +711,9 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
         value_type = avio_rl16(pb); /* value_type */
         value_len  = avio_rl32(pb);
 
+        if (value_len < 0 || value_len > UINT16_MAX)
+            return AVERROR_INVALIDDATA;
+
         name_len_utf8 = 2*name_len_utf16 + 1;
         name          = av_malloc(name_len_utf8);
         if (!name)
@@ -857,11 +859,20 @@ static int asf_read_header(AVFormatContext *s)
                         return ret;
                     av_hex_dump_log(s, AV_LOG_DEBUG, pkt.data, pkt.size);
                     av_packet_unref(&pkt);
+
                     len= avio_rl32(pb);
+                    if (len > UINT16_MAX)
+                        return AVERROR_INVALIDDATA;
                     get_tag(s, "ASF_Protection_Type", -1, len, 32);
+
                     len= avio_rl32(pb);
+                    if (len > UINT16_MAX)
+                        return AVERROR_INVALIDDATA;
                     get_tag(s, "ASF_Key_ID", -1, len, 32);
+
                     len= avio_rl32(pb);
+                    if (len > UINT16_MAX)
+                        return AVERROR_INVALIDDATA;
                     get_tag(s, "ASF_License_URL", -1, len, 32);
                 } else if (!ff_guidcmp(&g, &ff_asf_ext_content_encryption)) {
                     av_log(s, AV_LOG_WARNING,
