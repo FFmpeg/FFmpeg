@@ -281,7 +281,7 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
                 dphi1 = frac64(f1, (int64_t)avc->sample_rate << 16);
                 dphi2 = frac64(f2, (int64_t)avc->sample_rate << 16);
                 in->dphi0 = dphi1;
-                in->ddphi = (dphi2 - dphi1) / dt;
+                in->ddphi = (int64_t)(dphi2 - (uint64_t)dphi1) / dt;
                 if (phi & 0x80000000) {
                     phi &= ~0x80000000;
                     if (phi >= i)
