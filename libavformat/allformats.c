@@ -113,6 +113,7 @@ extern AVOutputFormat ff_data_muxer;
 extern AVInputFormat  ff_daud_demuxer;
 extern AVOutputFormat ff_daud_muxer;
 extern AVInputFormat  ff_dcstr_demuxer;
+extern AVInputFormat  ff_derf_demuxer;
 extern AVInputFormat  ff_dfa_demuxer;
 extern AVInputFormat  ff_dhav_demuxer;
 extern AVInputFormat  ff_dirac_demuxer;

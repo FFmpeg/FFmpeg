@@ -51,6 +51,7 @@ version <next>:
 - ADPCM IMA MTF decoder
 - FWSE demuxer
 - DERF DPCM decoder
+- DERF demuxer
 
 
 version 4.2:
