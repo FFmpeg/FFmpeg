@@ -53,6 +53,7 @@ version <next>:
 - DERF DPCM decoder
 - DERF demuxer
 - CRI HCA decoder
+- CRI HCA demuxer
 
 
 version 4.2:
