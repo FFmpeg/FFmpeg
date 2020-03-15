@@ -569,6 +569,7 @@ extern AVCodec ff_pcm_vidc_encoder;
 extern AVCodec ff_pcm_vidc_decoder;
 
 /* DPCM codecs */
+extern AVCodec ff_derf_dpcm_decoder;
 extern AVCodec ff_gremlin_dpcm_decoder;
 extern AVCodec ff_interplay_dpcm_decoder;
 extern AVCodec ff_roq_dpcm_encoder;

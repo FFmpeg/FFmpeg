@@ -50,6 +50,7 @@ version <next>:
 - avgblur_vulkan, overlay_vulkan, scale_vulkan and chromaber_vulkan filters
 - ADPCM IMA MTF decoder
 - FWSE demuxer
+- DERF DPCM decoder
 
 
 version 4.2:
