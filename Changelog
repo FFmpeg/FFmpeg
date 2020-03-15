@@ -52,6 +52,7 @@ version <next>:
 - FWSE demuxer
 - DERF DPCM decoder
 - DERF demuxer
+- CRI HCA decoder
 
 
 version 4.2:
