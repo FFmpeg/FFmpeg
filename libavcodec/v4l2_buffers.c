@@ -222,7 +222,7 @@ static void v4l2_free_buffer(void *opaque, uint8_t *unused)
             if (!atomic_load(&s->refcount))
                 sem_post(&s->refsync);
         } else {
-            if (s->draining) {
+            if (s->draining && V4L2_TYPE_IS_OUTPUT(avbuf->context->type)) {
                 /* no need to queue more buffers to the driver */
                 avbuf->status = V4L2BUF_AVAILABLE;
             }
