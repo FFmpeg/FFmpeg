@@ -1275,7 +1275,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(first_slice_segment_in_pic_flag);
 
     if (current->nal_unit_header.nal_unit_type >= HEVC_NAL_BLA_W_LP &&
-        current->nal_unit_header.nal_unit_type <= HEVC_NAL_IRAP_VCL23)
+        current->nal_unit_header.nal_unit_type <= HEVC_NAL_RSV_IRAP_VCL23)
         flag(no_output_of_prior_pics_flag);
 
     ue(slice_pic_parameter_set_id, 0, 63);
