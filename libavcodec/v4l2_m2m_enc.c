@@ -172,7 +172,7 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
      * settingss
      */
     if (avctx->framerate.num || avctx->framerate.den)
-        v4l2_set_timeperframe(s, avctx->framerate.num, avctx->framerate.den);
+        v4l2_set_timeperframe(s, avctx->framerate.den, avctx->framerate.num);
 
     /* set ext ctrls */
     v4l2_set_ext_ctrl(s, MPEG_CID(HEADER_MODE), MPEG_VIDEO(HEADER_MODE_SEPARATE), "header mode");
