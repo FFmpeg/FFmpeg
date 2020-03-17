@@ -1168,6 +1168,7 @@ following image formats are supported:
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
     @tab supported extensions: XCh, XXCH, X96, XBR, XLL, LBR (partially)
 @item Dolby E  @tab     @tab  X
+@item DPCM Gremlin           @tab     @tab  X
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
@@ -1179,6 +1180,7 @@ following image formats are supported:
 @item DPCM Sol               @tab     @tab  X
 @item DPCM Xan               @tab     @tab  X
     @tab Used in Origin's Wing Commander IV AVI files.
+@item DPCM Xilam DERF        @tab     @tab  X
 @item DSD (Direct Stream Digital), least significant bit first  @tab  @tab  X
 @item DSD (Direct Stream Digital), most significant bit first   @tab  @tab  X
 @item DSD (Direct Stream Digital), least significant bit first, planar  @tab  @tab  X
