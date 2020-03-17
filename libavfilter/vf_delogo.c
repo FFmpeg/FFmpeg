@@ -207,10 +207,10 @@ typedef struct DelogoContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption delogo_options[]= {
-    { "x",    "set logo x position",       OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "y",    "set logo y position",       OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "w",    "set logo width",            OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "h",    "set logo height",           OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "x",    "set logo x position",       OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
+    { "y",    "set logo y position",       OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
+    { "w",    "set logo width",            OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
+    { "h",    "set logo height",           OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
 #if LIBAVFILTER_VERSION_MAJOR < 7
     /* Actual default value for band/t is 1, set in init */
     { "band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  0 },  0, INT_MAX, FLAGS },

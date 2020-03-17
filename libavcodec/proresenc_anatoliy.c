@@ -924,7 +924,7 @@ static av_cold int prores_encode_close(AVCodecContext *avctx)
 #define VE     AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
-    { "vendor", "vendor ID", OFFSET(vendor), AV_OPT_TYPE_STRING, { .str = "fmpg" }, CHAR_MIN, CHAR_MAX, VE },
+    { "vendor", "vendor ID", OFFSET(vendor), AV_OPT_TYPE_STRING, { .str = "fmpg" }, 0, 0, VE },
     { NULL }
 };
 

@@ -127,8 +127,8 @@ typedef struct NormalizeContext {
 #define FLAGSR AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption normalize_options[] = {
-    { "blackpt",  "output color to which darkest input color is mapped",  OFFSET(blackpt), AV_OPT_TYPE_COLOR, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGSR },
-    { "whitept",  "output color to which brightest input color is mapped",  OFFSET(whitept), AV_OPT_TYPE_COLOR, { .str = "white" }, CHAR_MIN, CHAR_MAX, FLAGSR },
+    { "blackpt",  "output color to which darkest input color is mapped",  OFFSET(blackpt), AV_OPT_TYPE_COLOR, { .str = "black" }, 0, 0, FLAGSR },
+    { "whitept",  "output color to which brightest input color is mapped",  OFFSET(whitept), AV_OPT_TYPE_COLOR, { .str = "white" }, 0, 0, FLAGSR },
     { "smoothing",  "amount of temporal smoothing of the input range, to reduce flicker", OFFSET(smoothing), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX/8, FLAGS },
     { "independence", "proportion of independent to linked channel normalization", OFFSET(independence), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0, 1.0, FLAGSR },
     { "strength", "strength of filter, from no effect to full normalization", OFFSET(strength), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0, 1.0, FLAGSR },
