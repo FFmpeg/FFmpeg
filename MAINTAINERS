@@ -436,9 +436,9 @@ Muxers/Demuxers:
   lmlm4.c                               Ivo van Poorten
   lvfdec.c                              Paul B Mahol
   lxfdec.c                              Tomas Härdin
-  matroska.c                            Aurelien Jacobs
-  matroskadec.c                         Aurelien Jacobs
-  matroskaenc.c                         David Conrad
+  matroska.c                            Aurelien Jacobs, Andreas Rheinhardt
+  matroskadec.c                         Aurelien Jacobs, Andreas Rheinhardt
+  matroskaenc.c                         David Conrad, Andreas Rheinhardt
   matroska subtitles (matroskaenc.c)    John Peebles
   metadata*                             Aurelien Jacobs
   mgsts.c                               Paul B Mahol
