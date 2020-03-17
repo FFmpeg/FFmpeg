@@ -416,6 +416,8 @@ library:
     @tab Contains header with version and mode info, simplifying playback.
 @item CRI ADX                   @tab X @tab X
     @tab Audio-only format used in console video games.
+@item CRI HCA                   @tab   @tab X
+    @tab Audio-only format used in console video games.
 @item Discworld II BMV          @tab   @tab X
 @item Interplay C93             @tab   @tab X
     @tab Used in the game Cyberia from Interplay.
@@ -572,6 +574,8 @@ library:
 @item raw aptX HD               @tab X @tab X
 @item raw Chinese AVS video     @tab X @tab X
 @item raw CRI ADX               @tab X @tab X
+@item raw CRI AIX               @tab   @tab X
+@item raw CRI HCA               @tab   @tab X
 @item raw Dirac                 @tab X @tab X
 @item raw DNxHD                 @tab X @tab X
 @item raw DTS                   @tab X @tab X
