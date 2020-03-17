@@ -79,6 +79,7 @@ Other:
   float_dsp                             Loren Merritt
   hash                                  Reimar Doeffinger
   hwcontext_cuda*                       Timo Rothenpieler
+  hwcontext_vulkan*                     Lynne
   intfloat*                             Michael Niedermayer
   integer.c, integer.h                  Michael Niedermayer
   lzo                                   Reimar Doeffinger
@@ -89,6 +90,7 @@ Other:
   rational.c, rational.h                Michael Niedermayer
   rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
+  tx*                                   Lynne
 
 
 libavcodec
@@ -606,6 +608,7 @@ James Almer                   7751 2E8C FD94 A169 57E6 9A7A 1463 01AD 7376 59E0
 Jean Delvare                  7CA6 9F44 60F1 BDC4 1FD2 C858 A552 6B9B B3CD 4E6A
 Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Lou Logan (llogan)            7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
+Lynne                         FE50 139C 6805 72CA FD52 1F8D A2FE A5F0 3F03 4464
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
 Nicolas George                24CE 01CE 9ACC 5CEB 74D8 8D9D B063 D997 36E5 4C93
 Nikolay Aleksandrov           8978 1D8C FB71 588E 4B27 EAA8 C4F0 B5FC E011 13B1
