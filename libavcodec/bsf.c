@@ -64,12 +64,18 @@ static void *bsf_child_next(void *obj, void *prev)
     return NULL;
 }
 
+static const char *bsf_to_name(void *bsf)
+{
+    return ((AVBSFContext *)bsf)->filter->name;
+}
+
 static const AVClass bsf_class = {
     .class_name       = "AVBSFContext",
-    .item_name        = av_default_item_name,
+    .item_name        = bsf_to_name,
     .version          = LIBAVUTIL_VERSION_INT,
     .child_next       = bsf_child_next,
     .child_class_next = ff_bsf_child_class_next,
+    .category         = AV_CLASS_CATEGORY_BITSTREAM_FILTER,
 };
 
 const AVClass *av_bsf_get_class(void)
