@@ -1758,7 +1758,8 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .extent.depth  = 1,
             .mipLevels     = 1,
             .arrayLayers   = 1,
-            .flags         = VK_IMAGE_CREATE_ALIAS_BIT | signal_p ? VK_IMAGE_CREATE_DISJOINT_BIT : 0x0,
+            .flags         = VK_IMAGE_CREATE_ALIAS_BIT |
+                             (signal_p ? VK_IMAGE_CREATE_DISJOINT_BIT : 0x0),
             .tiling        = f->tiling,
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
             .usage         = DEFAULT_USAGE_FLAGS,
