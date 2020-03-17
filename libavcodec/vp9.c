@@ -804,6 +804,7 @@ static int decode_frame_header(AVCodecContext *avctx,
 
     /* check reference frames */
     if (!s->s.h.keyframe && !s->s.h.intraonly) {
+        int valid_ref_frame = 0;
         for (i = 0; i < 3; i++) {
             AVFrame *ref = s->s.refs[s->s.h.refidx[i]].f;
             int refw = ref->width, refh = ref->height;
@@ -817,17 +818,25 @@ static int decode_frame_header(AVCodecContext *avctx,
             } else if (refw == w && refh == h) {
                 s->mvscale[i][0] = s->mvscale[i][1] = 0;
             } else {
+                /* Check to make sure at least one of frames that */
+                /* this frame references has valid dimensions     */
                 if (w * 2 < refw || h * 2 < refh || w > 16 * refw || h > 16 * refh) {
-                    av_log(avctx, AV_LOG_ERROR,
+                    av_log(avctx, AV_LOG_WARNING,
                            "Invalid ref frame dimensions %dx%d for frame size %dx%d\n",
                            refw, refh, w, h);
-                    return AVERROR_INVALIDDATA;
+                    s->mvscale[i][0] = s->mvscale[i][1] = REF_INVALID_SCALE;
+                    continue;
                 }
                 s->mvscale[i][0] = (refw << 14) / w;
                 s->mvscale[i][1] = (refh << 14) / h;
                 s->mvstep[i][0] = 16 * s->mvscale[i][0] >> 14;
                 s->mvstep[i][1] = 16 * s->mvscale[i][1] >> 14;
             }
+            valid_ref_frame++;
+        }
+        if (!valid_ref_frame) {
+            av_log(avctx, AV_LOG_ERROR, "No valid reference frame is found, bitstream not supported\n");
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -1622,6 +1631,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->td[i].eob = s->td[i].eob_base;
             s->td[i].uveob[0] = s->td[i].uveob_base[0];
             s->td[i].uveob[1] = s->td[i].uveob_base[1];
+            s->td[i].error_info = 0;
         }
 
 #if HAVE_THREADS
@@ -1677,6 +1687,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     } while (s->pass++ == 1);
     ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
+
+    if (s->td->error_info < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to decode tile data\n");
+        s->td->error_info = 0;
+        return AVERROR_INVALIDDATA;
+    }
 
 finish:
     // ref frame setup
