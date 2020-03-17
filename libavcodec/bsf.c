@@ -45,8 +45,6 @@ void av_bsf_free(AVBSFContext **pctx)
     if (ctx->filter->priv_class && ctx->priv_data)
         av_opt_free(ctx->priv_data);
 
-    av_opt_free(ctx);
-
     if (ctx->internal)
         av_packet_free(&ctx->internal->buffer_pkt);
     av_freep(&ctx->internal);
@@ -111,8 +109,6 @@ int av_bsf_alloc(const AVBitStreamFilter *filter, AVBSFContext **pctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-
-    av_opt_set_defaults(ctx);
 
     /* allocate priv data and init private options */
     if (filter->priv_data_size) {
