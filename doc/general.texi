@@ -1137,6 +1137,7 @@ following image formats are supported:
 @item ADPCM Westwood Studios IMA @tab     @tab  X
     @tab Used in Westwood Studios games like Command and Conquer.
 @item ADPCM Yamaha           @tab  X  @tab  X
+@item ADPCM Zork             @tab     @tab  X
 @item AMR-NB                 @tab  E  @tab  X
     @tab encoding supported through external library libopencore-amrnb
 @item AMR-WB                 @tab  E  @tab  X
@@ -1244,7 +1245,6 @@ following image formats are supported:
 @item PCM unsigned 24-bit little-endian  @tab  X  @tab  X
 @item PCM unsigned 32-bit big-endian  @tab  X  @tab  X
 @item PCM unsigned 32-bit little-endian  @tab  X  @tab  X
-@item PCM Zork               @tab     @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
 @item QDesign Music Codec 1  @tab     @tab  X
 @item QDesign Music Codec 2  @tab     @tab  X
