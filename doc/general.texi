@@ -416,6 +416,7 @@ library:
     @tab Contains header with version and mode info, simplifying playback.
 @item CRI ADX                   @tab X @tab X
     @tab Audio-only format used in console video games.
+@item CRI AIX                   @tab   @tab X
 @item CRI HCA                   @tab   @tab X
     @tab Audio-only format used in console video games.
 @item Discworld II BMV          @tab   @tab X
@@ -573,9 +574,6 @@ library:
 @item raw aptX                  @tab X @tab X
 @item raw aptX HD               @tab X @tab X
 @item raw Chinese AVS video     @tab X @tab X
-@item raw CRI ADX               @tab X @tab X
-@item raw CRI AIX               @tab   @tab X
-@item raw CRI HCA               @tab   @tab X
 @item raw Dirac                 @tab X @tab X
 @item raw DNxHD                 @tab X @tab X
 @item raw DTS                   @tab X @tab X
@@ -1159,6 +1157,7 @@ following image formats are supported:
     @tab decoding supported through external library libcelt
 @item codec2                 @tab  E  @tab  E
     @tab en/decoding supported through external library libcodec2
+@item CRI HCA                @tab     @tab X
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X
