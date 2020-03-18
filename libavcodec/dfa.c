@@ -332,7 +332,7 @@ static const chunk_decoder decoder[8] = {
     decode_tdlt, decode_dsw1, decode_blck, decode_dds1,
 };
 
-static const char * const chunk_name[8] = {
+static const char chunk_name[8][5] = {
     "COPY", "TSW1", "BDLT", "WDLT", "TDLT", "DSW1", "BLCK", "DDS1"
 };
 
