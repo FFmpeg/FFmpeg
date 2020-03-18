@@ -1120,7 +1120,6 @@ typedef struct AVStream {
      * -1   -> probing finished
      *  0   -> no probing requested
      * rest -> perform probing with request_probe being the minimum score to accept.
-     * NOT PART OF PUBLIC API
      */
     int request_probe;
     /**
@@ -1166,7 +1165,6 @@ typedef struct AVStream {
 
     /**
      * Timestamp offset added to timestamps before muxing
-     * NOT PART OF PUBLIC API
      */
     int64_t mux_ts_offset;
 
