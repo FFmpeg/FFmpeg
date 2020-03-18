@@ -46,8 +46,8 @@
 
 #define SPECIFIER_OPT_FMT_str  "%s"
 #define SPECIFIER_OPT_FMT_i    "%i"
-#define SPECIFIER_OPT_FMT_i64  "%"PRId64"d"
-#define SPECIFIER_OPT_FMT_ui64 "%"PRIu64"d"
+#define SPECIFIER_OPT_FMT_i64  "%"PRId64
+#define SPECIFIER_OPT_FMT_ui64 "%"PRIu64
 #define SPECIFIER_OPT_FMT_f    "%f"
 #define SPECIFIER_OPT_FMT_dbl  "%lf"
 
