@@ -418,10 +418,13 @@ static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
 
 static int copy_uv_planes(DnnProcessingContext *ctx, AVFrame *out, const AVFrame *in)
 {
+    const AVPixFmtDescriptor *desc;
+    int uv_height;
+
     if (!ctx->sws_uv_scale) {
         av_assert0(in->height == out->height && in->width == out->width);
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->format);
-        int uv_height = AV_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
+        desc = av_pix_fmt_desc_get(in->format);
+        uv_height = AV_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
         for (int i = 1; i < 3; ++i) {
             int bytewidth = av_image_get_linesize(in->format, in->width, i);
             av_image_copy_plane(out->data[i], out->linesize[i],
