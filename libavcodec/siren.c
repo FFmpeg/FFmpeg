@@ -363,7 +363,7 @@ typedef struct SirenContext {
     int sample_rate_bits;
     int region_size;
 
-    int dw1, dw2, dw3, dw4;
+    unsigned dw1, dw2, dw3, dw4;
 
     int absolute_region_power_index[32];
     float decoder_standard_deviation[32];
