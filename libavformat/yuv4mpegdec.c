@@ -124,9 +124,7 @@ static int yuv4_read_header(AVFormatContext *s)
             } else if (strncmp("422", tokstart, 3) == 0) {
                 pix_fmt = AV_PIX_FMT_YUV422P;
             } else if (strncmp("444alpha", tokstart, 8) == 0 ) {
-                av_log(s, AV_LOG_ERROR, "Cannot handle 4:4:4:4 "
-                       "YUV4MPEG stream.\n");
-                return -1;
+                pix_fmt = AV_PIX_FMT_YUVA444P;
             } else if (strncmp("444", tokstart, 3) == 0) {
                 pix_fmt = AV_PIX_FMT_YUV444P;
             } else if (strncmp("mono16", tokstart, 6) == 0) {
