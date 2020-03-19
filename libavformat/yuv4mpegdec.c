@@ -142,7 +142,7 @@ static int yuv4_read_header(AVFormatContext *s)
             } else {
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains an unknown "
                        "pixel format.\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             while (tokstart < header_end && *tokstart != 0x20)
                 tokstart++;
@@ -240,7 +240,7 @@ static int yuv4_read_header(AVFormatContext *s)
 
     if (width == -1 || height == -1) {
         av_log(s, AV_LOG_ERROR, "YUV4MPEG has invalid header.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (pix_fmt == AV_PIX_FMT_NONE) {
