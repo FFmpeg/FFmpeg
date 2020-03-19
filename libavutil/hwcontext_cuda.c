@@ -39,6 +39,7 @@ typedef struct CUDAFramesContext {
 static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_P010,
     AV_PIX_FMT_P016,
@@ -274,7 +275,7 @@ static int cuda_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
             .srcPitch      = src->linesize[i],
             .dstPitch      = dst->linesize[i],
             .WidthInBytes  = FFMIN(src->linesize[i], dst->linesize[i]),
-            .Height        = src->height >> (i ? priv->shift_height : 0),
+            .Height        = src->height >> ((i == 0 || i == 3) ? 0 : priv->shift_height),
         };
 
         ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, hwctx->stream));
