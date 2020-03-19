@@ -1336,7 +1336,7 @@ performance on systems without hardware floating point support).
 
 @multitable @columnfractions .4 .1
 @item Name         @tab Support
-@item AMQP         @tab X
+@item AMQP         @tab E
 @item file         @tab X
 @item FTP          @tab X
 @item Gopher       @tab X
