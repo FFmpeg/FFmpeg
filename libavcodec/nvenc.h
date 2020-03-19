@@ -62,6 +62,13 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_GETLASTERRORSTRING
 #endif
 
+// SDK 10.0 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(10, 0)
+#define NVENC_HAVE_NEW_PRESETS
+#define NVENC_HAVE_MULTIPASS
+#define NVENC_HAVE_LDKFS
+#endif
+
 typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
@@ -98,6 +105,15 @@ enum {
     PRESET_LOW_LATENCY_HP,
     PRESET_LOSSLESS_DEFAULT, // lossless presets must be the last ones
     PRESET_LOSSLESS_HP,
+#ifdef NVENC_HAVE_NEW_PRESETS
+    PRESET_P1,
+    PRESET_P2,
+    PRESET_P3,
+    PRESET_P4,
+    PRESET_P5,
+    PRESET_P6,
+    PRESET_P7,
+#endif
 };
 
 enum {
@@ -198,6 +214,9 @@ typedef struct NvencContext
     int a53_cc;
     int s12m_tc;
     int dpb_size;
+    int tuning_info;
+    int multipass;
+    int ldkfs;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);
