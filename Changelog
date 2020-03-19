@@ -54,6 +54,7 @@ version <next>:
 - DERF demuxer
 - CRI HCA decoder
 - CRI HCA demuxer
+- overlay_cuda filter
 
 
 version 4.2:

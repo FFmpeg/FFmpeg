@@ -14387,6 +14387,38 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 
 @end itemize
 
+@anchor{overlay_cuda}
+@section overlay_cuda
+
+Overlay one video on top of another.
+
+This is the CUDA cariant of the @ref{overlay} filter.
+It only accepts CUDA frames. The underlying input pixel formats have to match.
+
+It takes two inputs and has one output. The first input is the "main"
+video on which the second input is overlaid.
+
+It accepts the following parameters:
+
+@table @option
+@item x
+@item y
+Set the x and y coordinates of the overlaid video on the main video.
+Default value is "0" for both expressions.
+
+@item eof_action
+See @ref{framesync}.
+
+@item shortest
+See @ref{framesync}.
+
+@item repeatlast
+See @ref{framesync}.
+
+@end table
+
+This filter also supports the @ref{framesync} options.
+
 @section owdenoise
 
 Apply Overcomplete Wavelet denoiser.

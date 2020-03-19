@@ -312,6 +312,7 @@ extern AVFilter ff_vf_overlay;
 extern AVFilter ff_vf_overlay_opencl;
 extern AVFilter ff_vf_overlay_qsv;
 extern AVFilter ff_vf_overlay_vulkan;
+extern AVFilter ff_vf_overlay_cuda;
 extern AVFilter ff_vf_owdenoise;
 extern AVFilter ff_vf_pad;
 extern AVFilter ff_vf_pad_opencl;
