@@ -8878,6 +8878,7 @@ delogo=x=0:y=0:w=100:h=77:band=10
 
 @end itemize
 
+@anchor{derain}
 @section derain
 
 Remove the rain in the input image/video by applying the derain methods based on
@@ -8931,6 +8932,8 @@ Set path to model file specifying network architecture and its parameters.
 Note that different backends use different file formats. TensorFlow and native
 backend can load files for only its format.
 @end table
+
+It can also be finished with @ref{dnn_processing} filter.
 
 @section deshake
 
@@ -9201,9 +9204,9 @@ Set the output name of the dnn network.
 
 @itemize
 @item
-Halve the red channle of the frame with format rgb24:
+Remove rain in rgb24 frame with can.pb (see @ref{derain} filter):
 @example
-ffmpeg -i input.jpg -vf format=rgb24,dnn_processing=model=halve_first_channel.model:input=dnn_in:output=dnn_out:dnn_backend=native out.native.png
+./ffmpeg -i rain.jpg -vf format=rgb24,dnn_processing=dnn_backend=tensorflow:model=can.pb:input=x:output=y derain.jpg
 @end example
 
 @item

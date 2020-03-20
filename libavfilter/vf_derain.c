@@ -100,7 +100,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     DRContext *dr_context = ctx->priv;
     DNNReturnType dnn_result;
-    int pad_size;
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -129,15 +128,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->width  = dr_context->output.width;
     outlink->h  = dr_context->output.height;
     outlink->w  = dr_context->output.width;
-    pad_size    = (in->height - out->height) >> 1;
 
     for (int i = 0; i < out->height; i++){
         for(int j = 0; j < out->width * 3; j++){
             int k = i * out->linesize[0] + j;
             int t = i * out->width * 3 + j;
-
-            int t_in =  (i + pad_size) * in->width * 3 + j + pad_size * 3;
-            out->data[0][k] = CLIP((int)((((float *)dr_context->input.data)[t_in] - ((float *)dr_context->output.data)[t]) * 255), 0, 255);
+            out->data[0][k] = CLIP((int)((((float *)dr_context->output.data)[t]) * 255), 0, 255);
         }
     }
 
