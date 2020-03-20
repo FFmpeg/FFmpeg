@@ -25,6 +25,7 @@
 #include "imgutils.h"
 #include "mem.h"
 #include "samplefmt.h"
+#include "hwcontext.h"
 
 #if FF_API_FRAME_GET_SET
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
@@ -626,7 +627,11 @@ int av_frame_make_writable(AVFrame *frame)
     tmp.channels       = frame->channels;
     tmp.channel_layout = frame->channel_layout;
     tmp.nb_samples     = frame->nb_samples;
-    ret = av_frame_get_buffer(&tmp, 32);
+
+    if (frame->hw_frames_ctx)
+        ret = av_hwframe_get_buffer(frame->hw_frames_ctx, &tmp, 0);
+    else
+        ret = av_frame_get_buffer(&tmp, 32);
     if (ret < 0)
         return ret;
 
@@ -751,6 +756,9 @@ static int frame_copy_video(AVFrame *dst, const AVFrame *src)
     if (dst->width  < src->width ||
         dst->height < src->height)
         return AVERROR(EINVAL);
+
+    if (src->hw_frames_ctx || dst->hw_frames_ctx)
+        return av_hwframe_transfer_data(dst, src, 0);
 
     planes = av_pix_fmt_count_planes(dst->format);
     for (i = 0; i < planes; i++)
