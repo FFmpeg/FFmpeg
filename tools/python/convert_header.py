@@ -23,4 +23,4 @@ str = 'FFMPEGDNNNATIVE'
 major = 1
 
 # increase minor when we don't have to re-convert the model file
-minor = 0
+minor = 1

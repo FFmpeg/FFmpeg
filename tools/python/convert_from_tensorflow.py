@@ -70,7 +70,8 @@ class TFConverter:
         self.converted_nodes = set()
         self.conv2d_scope_names = set()
         self.conv2d_scopename_inputname_dict = {}
-        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4}
+        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4, 'MathBinary':5}
+        self.mathbin2code = {'Sub':0}
         self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
         self.name_operand_dict = {}
 
@@ -113,6 +114,8 @@ class TFConverter:
         # if activation is None, and BiasAdd.next is the last op which is Identity
         if conv2d_scope_name + '/BiasAdd' in self.edges:
             anode = self.edges[conv2d_scope_name + '/BiasAdd'][0]
+            if anode.op not in self.conv_activations:
+                anode = None
         else:
             anode = None
         return knode, bnode, dnode, anode
@@ -252,14 +255,47 @@ class TFConverter:
         np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
 
 
+    def dump_sub_to_file(self, node, f):
+        assert(node.op == 'Sub')
+        self.layer_number = self.layer_number + 1
+        self.converted_nodes.add(node.name)
+        i0_node = self.name_node_dict[node.input[0]]
+        i1_node = self.name_node_dict[node.input[1]]
+        np.array([self.op2code['MathBinary'], self.mathbin2code[node.op]], dtype=np.uint32).tofile(f)
+        if i0_node.op == 'Const':
+            scalar = i0_node.attr['value'].tensor.float_val[0]
+            assert(i0_node.name.find('sub/x'))
+            np.array([1], dtype=np.uint32).tofile(f)
+            np.array([scalar], dtype=np.float32).tofile(f)
+            np.array([0], dtype=np.uint32).tofile(f)
+            input_operand_index = self.add_operand(i1_node.name, Operand.IOTYPE_INPUT)
+            np.array([input_operand_index], dtype=np.uint32).tofile(f)
+        elif i1_node.op == 'Const':
+            scalar = i1_node.attr['value'].tensor.float_val[0]
+            assert(i1_node.name.find('sub/y'))
+            np.array([0], dtype=np.uint32).tofile(f)
+            input_operand_index = self.add_operand(i0_node.name, Operand.IOTYPE_INPUT)
+            np.array([input_operand_index], dtype=np.uint32).tofile(f)
+            np.array([1], dtype=np.uint32).tofile(f)
+            np.array([scalar], dtype=np.float32).tofile(f)
+        else:
+            np.array([0], dtype=np.uint32).tofile(f)
+            input_operand_index = self.add_operand(i0_node.name, Operand.IOTYPE_INPUT)
+            np.array([input_operand_index], dtype=np.uint32).tofile(f)
+            np.array([0], dtype=np.uint32).tofile(f)
+            input_operand_index = self.add_operand(i1_node.name, Operand.IOTYPE_INPUT)
+            np.array([input_operand_index], dtype=np.uint32).tofile(f)
+        output_operand_index = self.add_operand(node.name, Operand.IOTYPE_OUTPUT)
+        np.array([output_operand_index], dtype=np.uint32).tofile(f)
+
+
     def dump_layers_to_file(self, f):
         for node in self.nodes:
             if node.name in self.converted_nodes:
                 continue
 
             # conv2d with dilation generates very complex nodes, so handle it in special
-            scope_name = TFConverter.get_scope_name(node.name)
-            if scope_name in self.conv2d_scope_names:
+            if self.in_conv2d_scope(node.name):
                 if node.op == 'Conv2D':
                     self.dump_complex_conv2d_to_file(node, f)
                 continue
@@ -272,6 +308,8 @@ class TFConverter:
                 self.dump_mirrorpad_to_file(node, f)
             elif node.op == 'Maximum':
                 self.dump_maximum_to_file(node, f)
+            elif node.op == 'Sub':
+                self.dump_sub_to_file(node, f)
 
 
     def dump_operands_to_file(self, f):
@@ -350,6 +388,17 @@ class TFConverter:
         if index == -1:
             return ""
         return name[0:index]
+
+
+    def in_conv2d_scope(self, name):
+        inner_scope = TFConverter.get_scope_name(name)
+        if inner_scope == "":
+            return False;
+        for scope in self.conv2d_scope_names:
+            index = inner_scope.find(scope)
+            if index == 0:
+                return True
+        return False
 
 
     def generate_conv2d_scope_info(self):
