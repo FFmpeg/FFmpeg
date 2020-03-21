@@ -732,10 +732,8 @@ static int ogg_read_header(AVFormatContext *s)
     //linear headers seek from start
     do {
         ret = ogg_packet(s, NULL, NULL, NULL, NULL);
-        if (ret < 0) {
-            ogg_read_close(s);
+        if (ret < 0)
             return ret;
-        }
     } while (!ogg->headers);
     av_log(s, AV_LOG_TRACE, "found headers\n");
 
@@ -751,10 +749,8 @@ static int ogg_read_header(AVFormatContext *s)
                    "Headers mismatch for stream %d: "
                    "expected %d received %d.\n",
                    i, os->codec->nb_header, os->nb_header);
-            if (s->error_recognition & AV_EF_EXPLODE) {
-                ogg_read_close(s);
+            if (s->error_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
-            }
         }
         if (os->start_granule != OGG_NOGRANULE_VALUE)
             os->lastpts = s->streams[i]->start_time =
@@ -763,10 +759,8 @@ static int ogg_read_header(AVFormatContext *s)
 
     //linear granulepos seek from end
     ret = ogg_get_length(s);
-    if (ret < 0) {
-        ogg_read_close(s);
+    if (ret < 0)
         return ret;
-    }
 
     return 0;
 }
@@ -970,6 +964,7 @@ const AVInputFormat ff_ogg_demuxer = {
     .name           = "ogg",
     .long_name      = NULL_IF_CONFIG_SMALL("Ogg"),
     .priv_data_size = sizeof(struct ogg),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = ogg_probe,
     .read_header    = ogg_read_header,
     .read_packet    = ogg_read_packet,
