@@ -165,9 +165,6 @@ static int mpsub_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &mpsub->q);
 
 end:
-    if (res < 0)
-        ff_subtitles_queue_clean(&mpsub->q);
-
     av_bprint_finalize(&buf, NULL);
     return res;
 }
@@ -197,6 +194,7 @@ const AVInputFormat ff_mpsub_demuxer = {
     .name           = "mpsub",
     .long_name      = NULL_IF_CONFIG_SMALL("MPlayer subtitles"),
     .priv_data_size = sizeof(MPSubContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mpsub_probe,
     .read_header    = mpsub_read_header,
     .read_packet    = mpsub_read_packet,
