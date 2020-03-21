@@ -139,14 +139,10 @@ static int wc3_read_header(AVFormatContext *s)
             /* load up the name */
             buffer = av_malloc(size+1);
             if (!buffer)
-            if (!buffer) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+                return AVERROR(ENOMEM);
             if ((ret = avio_read(pb, buffer, size)) != size) {
                 av_freep(&buffer);
-                ret =  AVERROR(EIO);
-                goto fail;
+                return AVERROR(EIO);
             }
             buffer[size] = 0;
             av_dict_set(&s->metadata, "title", buffer,
@@ -168,26 +164,21 @@ static int wc3_read_header(AVFormatContext *s)
         default:
             av_log(s, AV_LOG_ERROR, "unrecognized WC3 chunk: %s\n",
                    av_fourcc2str(fourcc_tag));
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
 
         fourcc_tag = avio_rl32(pb);
         /* chunk sizes are 16-bit aligned */
         size = (avio_rb32(pb) + 1) & (~1);
-        if (avio_feof(pb)) {
-            ret = AVERROR(EIO);
-            goto fail;
-        }
+        if (avio_feof(pb))
+            return AVERROR(EIO);
 
     } while (fourcc_tag != BRCH_TAG);
 
     /* initialize the decoder streams */
     st = avformat_new_stream(s, NULL);
-    if (!st) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!st)
+        return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->video_stream_index = st->index;
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -197,10 +188,8 @@ static int wc3_read_header(AVFormatContext *s)
     st->codecpar->height = wc3->height;
 
     st = avformat_new_stream(s, NULL);
-    if (!st) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!st)
+        return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->audio_stream_index = st->index;
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -215,9 +204,6 @@ static int wc3_read_header(AVFormatContext *s)
     st->codecpar->block_align = WC3_AUDIO_BITS * WC3_AUDIO_CHANNELS;
 
     return 0;
-fail:
-    wc3_read_close(s);
-    return ret;
 }
 
 static int wc3_read_packet(AVFormatContext *s,
@@ -313,6 +299,7 @@ const AVInputFormat ff_wc3_demuxer = {
     .name           = "wc3movie",
     .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie"),
     .priv_data_size = sizeof(Wc3DemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = wc3_probe,
     .read_header    = wc3_read_header,
     .read_packet    = wc3_read_packet,
