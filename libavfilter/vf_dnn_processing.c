@@ -329,7 +329,7 @@ static int copy_from_frame_to_dnn(DnnProcessingContext *ctx, const AVFrame *fram
         if (dnn_input->dt == DNN_FLOAT) {
             sws_scale(ctx->sws_gray8_to_grayf32, (const uint8_t **)frame->data, frame->linesize,
                       0, frame->height, (uint8_t * const*)(&dnn_input->data),
-                      (const int [4]){frame->linesize[0] * sizeof(float), 0, 0, 0});
+                      (const int [4]){frame->width * 3 * sizeof(float), 0, 0, 0});
         } else {
             av_assert0(dnn_input->dt == DNN_UINT8);
             av_image_copy_plane(dnn_input->data, bytewidth,
@@ -369,7 +369,7 @@ static int copy_from_dnn_to_frame(DnnProcessingContext *ctx, AVFrame *frame)
     case AV_PIX_FMT_BGR24:
         if (dnn_output->dt == DNN_FLOAT) {
             sws_scale(ctx->sws_grayf32_to_gray8, (const uint8_t *[4]){(const uint8_t *)dnn_output->data, 0, 0, 0},
-                      (const int[4]){frame->linesize[0] * sizeof(float), 0, 0, 0},
+                      (const int[4]){frame->width * 3 * sizeof(float), 0, 0, 0},
                       0, frame->height, (uint8_t * const*)frame->data, frame->linesize);
 
         } else {
