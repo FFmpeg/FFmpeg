@@ -83,10 +83,8 @@ static int vplayer_read_header(AVFormatContext *s)
             AVPacket *sub;
 
             sub = ff_subtitles_queue_insert(&vplayer->q, p, strlen(p), 0);
-            if (!sub) {
-                ff_subtitles_queue_clean(&vplayer->q);
+            if (!sub)
                 return AVERROR(ENOMEM);
-            }
             sub->pos = pos;
             sub->pts = pts_start;
             sub->duration = -1;
@@ -122,6 +120,7 @@ const AVInputFormat ff_vplayer_demuxer = {
     .name           = "vplayer",
     .long_name      = NULL_IF_CONFIG_SMALL("VPlayer subtitles"),
     .priv_data_size = sizeof(VPlayerContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vplayer_probe,
     .read_header    = vplayer_read_header,
     .read_packet    = vplayer_read_packet,
