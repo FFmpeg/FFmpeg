@@ -144,7 +144,7 @@ static int pp_bnk_read_header(AVFormatContext *s)
 
         ret = avio_read(s->pb, buf, PP_BNK_TRACK_SIZE);
         if (ret < 0 && ret != AVERROR_EOF)
-            goto fail;
+            return ret;
 
         /* Short byte-count or EOF, we have a truncated file. */
         if (ret != PP_BNK_TRACK_SIZE) {
@@ -157,15 +157,12 @@ static int pp_bnk_read_header(AVFormatContext *s)
         pp_bnk_parse_track(&e, buf);
 
         /* The individual sample rates of all tracks must match that of the file header. */
-        if (e.sample_rate != hdr.sample_rate) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (e.sample_rate != hdr.sample_rate)
+            return AVERROR_INVALIDDATA;
 
         if (e.always1_1 != 1 || e.always1_2 != 1) {
             avpriv_request_sample(s, "Non-one track header values");
-            ret = AVERROR_PATCHWELCOME;
-            goto fail;
+            return AVERROR_PATCHWELCOME;
         }
 
         trk->data_offset = avio_tell(s->pb);
@@ -185,15 +182,13 @@ static int pp_bnk_read_header(AVFormatContext *s)
                    i, ctx->track_count);
             break;
         } else if (ret < 0) {
-            goto fail;
+            return ret;
         }
     }
 
     /* File is only a header. */
-    if (ctx->track_count == 0) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    if (ctx->track_count == 0)
+        return AVERROR_INVALIDDATA;
 
     ctx->is_music = (hdr.flags & PP_BNK_FLAG_MUSIC) &&
                     (ctx->track_count == 2) &&
@@ -201,10 +196,8 @@ static int pp_bnk_read_header(AVFormatContext *s)
 
     /* Build the streams. */
     for (int i = 0; i < (ctx->is_music ? 1 : ctx->track_count); i++) {
-        if (!(st = avformat_new_stream(s, NULL))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!(st = avformat_new_stream(s, NULL)))
+            return AVERROR(ENOMEM);
 
         par                         = st->codecpar;
         par->codec_type             = AVMEDIA_TYPE_AUDIO;
@@ -231,10 +224,6 @@ static int pp_bnk_read_header(AVFormatContext *s)
     }
 
     return 0;
-
-fail:
-    av_freep(&ctx->tracks);
-    return ret;
 }
 
 static int pp_bnk_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -336,6 +325,7 @@ const AVInputFormat ff_pp_bnk_demuxer = {
     .name           = "pp_bnk",
     .long_name      = NULL_IF_CONFIG_SMALL("Pro Pinball Series Soundbank"),
     .priv_data_size = sizeof(PPBnkCtx),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = pp_bnk_probe,
     .read_header    = pp_bnk_read_header,
     .read_packet    = pp_bnk_read_packet,
