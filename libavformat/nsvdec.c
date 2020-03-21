@@ -662,10 +662,8 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now pick one of the plates */
     for (i = 0; i < 2; i++) {
         if (nsv->ahead[i].data) {
-            /* avoid the cost of new_packet + memcpy(->data) */
-            memcpy(pkt, &nsv->ahead[i], sizeof(AVPacket));
-            nsv->ahead[i].data = NULL; /* we ate that one */
-            return pkt->size;
+            av_packet_move_ref(pkt, &nsv->ahead[i]);
+            return 0;
         }
     }
 
