@@ -145,7 +145,7 @@ static int scc_read_header(AVFormatContext *s)
 
                 sub = ff_subtitles_queue_insert(&scc->q, out, i, 0);
                 if (!sub)
-                    goto fail;
+                    return AVERROR(ENOMEM);
 
                 sub->pos = pos;
                 pos += i;
@@ -164,7 +164,7 @@ static int scc_read_header(AVFormatContext *s)
 
         sub = ff_subtitles_queue_insert(&scc->q, out, i, 0);
         if (!sub)
-            goto fail;
+            return AVERROR(ENOMEM);
 
         sub->pos = pos;
         sub->pts = ts;
@@ -175,9 +175,6 @@ static int scc_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &scc->q);
 
     return 0;
-fail:
-    ff_subtitles_queue_clean(&scc->q);
-    return AVERROR(ENOMEM);
 }
 
 static int scc_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -205,6 +202,7 @@ const AVInputFormat ff_scc_demuxer = {
     .name           = "scc",
     .long_name      = NULL_IF_CONFIG_SMALL("Scenarist Closed Captions"),
     .priv_data_size = sizeof(SCCContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = scc_probe,
     .read_header    = scc_read_header,
     .read_packet    = scc_read_packet,
