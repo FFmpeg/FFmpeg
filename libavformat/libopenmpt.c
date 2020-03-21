@@ -122,7 +122,6 @@ static int read_header_openmpt(AVFormatContext *s)
     openmpt->channels = av_get_channel_layout_nb_channels(openmpt->layout);
 
     if (openmpt->subsong >= openmpt_module_get_num_subsongs(openmpt->module)) {
-        openmpt_module_destroy(openmpt->module);
         av_log(s, AV_LOG_ERROR, "Invalid subsong index: %d\n", openmpt->subsong);
         return AVERROR(EINVAL);
     }
@@ -133,7 +132,6 @@ static int read_header_openmpt(AVFormatContext *s)
         }
         ret = openmpt_module_select_subsong(openmpt->module, openmpt->subsong);
         if (!ret){
-            openmpt_module_destroy(openmpt->module);
             av_log(s, AV_LOG_ERROR, "Could not select requested subsong: %d", openmpt->subsong);
             return AVERROR(EINVAL);
         }
@@ -148,11 +146,8 @@ static int read_header_openmpt(AVFormatContext *s)
     add_meta(s, "date",    openmpt_module_get_metadata(openmpt->module, "date"));
 
     st = avformat_new_stream(s, NULL);
-    if (!st) {
-        openmpt_module_destroy(openmpt->module);
-        openmpt->module = NULL;
+    if (!st)
         return AVERROR(ENOMEM);
-    }
     avpriv_set_pts_info(st, 64, 1, AV_TIME_BASE);
     st->duration = llrint(openmpt->duration*AV_TIME_BASE);
 
@@ -206,8 +201,10 @@ static int read_packet_openmpt(AVFormatContext *s, AVPacket *pkt)
 static int read_close_openmpt(AVFormatContext *s)
 {
     OpenMPTContext *openmpt = s->priv_data;
-    openmpt_module_destroy(openmpt->module);
-    openmpt->module = NULL;
+    if (openmpt->module) {
+        openmpt_module_destroy(openmpt->module);
+        openmpt->module = NULL;
+    }
     return 0;
 }
 
@@ -285,6 +282,7 @@ const AVInputFormat ff_libopenmpt_demuxer = {
     .name           = "libopenmpt",
     .long_name      = NULL_IF_CONFIG_SMALL("Tracker formats (libopenmpt)"),
     .priv_data_size = sizeof(OpenMPTContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = read_probe_openmpt,
     .read_header    = read_header_openmpt,
     .read_packet    = read_packet_openmpt,
