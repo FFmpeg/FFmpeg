@@ -160,8 +160,6 @@ static int ass_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &ass->q);
 
 end:
-    if (res < 0)
-        ass_read_close(s);
     av_bprint_finalize(&header, NULL);
     av_bprint_finalize(&line,   NULL);
     av_bprint_finalize(&rline,  NULL);
@@ -185,6 +183,7 @@ static int ass_read_seek(AVFormatContext *s, int stream_index,
 const AVInputFormat ff_ass_demuxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .priv_data_size = sizeof(ASSContext),
     .read_probe     = ass_probe,
     .read_header    = ass_read_header,
