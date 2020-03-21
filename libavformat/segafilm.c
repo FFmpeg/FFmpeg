@@ -90,7 +90,7 @@ static int film_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st;
     unsigned char scratch[256];
-    int i, ret;
+    int i;
     unsigned int data_offset;
     unsigned int audio_frame_counter;
     unsigned int video_frame_counter;
@@ -216,17 +216,13 @@ static int film_read_header(AVFormatContext *s)
     audio_frame_counter = video_frame_counter = 0;
     for (i = 0; i < film->sample_count; i++) {
         /* load the next sample record and transfer it to an internal struct */
-        if (avio_read(pb, scratch, 16) != 16) {
-            ret = AVERROR(EIO);
-            goto fail;
-        }
+        if (avio_read(pb, scratch, 16) != 16)
+            return AVERROR(EIO);
         film->sample_table[i].sample_offset =
             data_offset + AV_RB32(&scratch[0]);
         film->sample_table[i].sample_size = AV_RB32(&scratch[4]);
-        if (film->sample_table[i].sample_size > INT_MAX / 4) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (film->sample_table[i].sample_size > INT_MAX / 4)
+            return AVERROR_INVALIDDATA;
         if (AV_RB32(&scratch[8]) == 0xFFFFFFFF) {
             film->sample_table[i].stream = film->audio_stream_index;
             film->sample_table[i].pts = audio_frame_counter;
@@ -260,9 +256,6 @@ static int film_read_header(AVFormatContext *s)
     film->current_sample = 0;
 
     return 0;
-fail:
-    film_read_close(s);
-    return ret;
 }
 
 static int film_read_packet(AVFormatContext *s,
@@ -335,6 +328,7 @@ const AVInputFormat ff_segafilm_demuxer = {
     .name           = "film_cpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
     .priv_data_size = sizeof(FilmDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = film_probe,
     .read_header    = film_read_header,
     .read_packet    = film_read_packet,
