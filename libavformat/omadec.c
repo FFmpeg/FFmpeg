@@ -449,10 +449,8 @@ static int oma_read_header(AVFormatContext *s)
     codec_params = AV_RB24(&buf[33]);
 
     st = avformat_new_stream(s, NULL);
-    if (!st) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!st)
+        return AVERROR(ENOMEM);
 
     st->start_time = 0;
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -467,8 +465,7 @@ static int oma_read_header(AVFormatContext *s)
         samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
         if (!samplerate) {
             av_log(s, AV_LOG_ERROR, "Unsupported sample rate\n");
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
         if (samplerate != 44100)
             avpriv_request_sample(s, "Sample rate %d", samplerate);
@@ -486,7 +483,7 @@ static int oma_read_header(AVFormatContext *s)
         /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
         if ((ret = ff_alloc_extradata(st->codecpar, 14)) < 0)
-            goto fail;
+            return ret;
 
         edata = st->codecpar->extradata;
         AV_WL16(&edata[0],  1);             // always 1
@@ -503,8 +500,7 @@ static int oma_read_header(AVFormatContext *s)
         if (!channel_id) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid ATRAC-X channel id: %"PRIu32"\n", channel_id);
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
         st->codecpar->channel_layout = oma_chid_to_native_layout[channel_id - 1];
         st->codecpar->channels       = oma_chid_to_num_channels[channel_id - 1];
@@ -512,8 +508,7 @@ static int oma_read_header(AVFormatContext *s)
         samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
         if (!samplerate) {
             av_log(s, AV_LOG_ERROR, "Unsupported sample rate\n");
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
         st->codecpar->sample_rate = samplerate;
         st->codecpar->bit_rate    = samplerate * framesize / (2048 / 8);
@@ -553,16 +548,12 @@ static int oma_read_header(AVFormatContext *s)
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n", buf[32]);
-        ret = AVERROR(ENOSYS);
-        goto fail;
+        return AVERROR(ENOSYS);
     }
 
     st->codecpar->block_align = framesize;
 
     return 0;
-fail:
-    oma_read_close(s);
-    return ret;
 }
 
 static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -628,6 +619,7 @@ const AVInputFormat ff_oma_demuxer = {
     .name           = "oma",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
     .priv_data_size = sizeof(OMAContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = oma_read_probe,
     .read_header    = oma_read_header,
     .read_packet    = oma_read_packet,
