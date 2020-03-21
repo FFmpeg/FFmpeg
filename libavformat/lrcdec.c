@@ -204,10 +204,8 @@ static int lrc_read_header(AVFormatContext *s)
                 ts_stroffset += ts_stroffset_incr;
                 sub = ff_subtitles_queue_insert(&lrc->q, line.str + ts_strlength,
                                                 line.len - ts_strlength, 0);
-                if(!sub) {
-                    ff_subtitles_queue_clean(&lrc->q);
+                if (!sub)
                     return AVERROR(ENOMEM);
-                }
                 sub->pos = pos;
                 sub->pts = ts_start - lrc->ts_offset;
                 sub->duration = -1;
@@ -245,6 +243,7 @@ const AVInputFormat ff_lrc_demuxer = {
     .name           = "lrc",
     .long_name      = NULL_IF_CONFIG_SMALL("LRC lyrics"),
     .priv_data_size = sizeof (LRCContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = lrc_probe,
     .read_header    = lrc_read_header,
     .read_packet    = lrc_read_packet,
