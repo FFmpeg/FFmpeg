@@ -164,8 +164,6 @@ static int webvtt_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &webvtt->q);
 
 end:
-    if (res < 0)
-        ff_subtitles_queue_clean(&webvtt->q);
     av_bprint_finalize(&cue,    NULL);
     return res;
 }
@@ -214,6 +212,7 @@ const AVInputFormat ff_webvtt_demuxer = {
     .name           = "webvtt",
     .long_name      = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
     .priv_data_size = sizeof(WebVTTContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = webvtt_probe,
     .read_header    = webvtt_read_header,
     .read_packet    = webvtt_read_packet,
