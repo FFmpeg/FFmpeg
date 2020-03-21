@@ -124,8 +124,6 @@ static int realtext_read_header(AVFormatContext *s)
 
 end:
     av_bprint_finalize(&buf, NULL);
-    if (res < 0)
-        ff_subtitles_queue_clean(&rt->q);
     return res;
 }
 
@@ -154,6 +152,7 @@ const AVInputFormat ff_realtext_demuxer = {
     .name           = "realtext",
     .long_name      = NULL_IF_CONFIG_SMALL("RealText subtitle format"),
     .priv_data_size = sizeof(RealTextContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = realtext_probe,
     .read_header    = realtext_read_header,
     .read_packet    = realtext_read_packet,
