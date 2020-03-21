@@ -810,7 +810,7 @@ static int nut_read_header(AVFormatContext *s)
         pos = find_startcode(bc, MAIN_STARTCODE, pos) + 1;
         if (pos < 0 + 1) {
             av_log(s, AV_LOG_ERROR, "No main startcode found.\n");
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
     } while (decode_main_header(nut) < 0);
 
@@ -820,7 +820,7 @@ static int nut_read_header(AVFormatContext *s)
         pos = find_startcode(bc, STREAM_STARTCODE, pos) + 1;
         if (pos < 0 + 1) {
             av_log(s, AV_LOG_ERROR, "Not all stream headers found.\n");
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
         if (decode_stream_header(nut) >= 0)
             initialized_stream_count++;
@@ -834,7 +834,7 @@ static int nut_read_header(AVFormatContext *s)
 
         if (startcode == 0) {
             av_log(s, AV_LOG_ERROR, "EOF before video frames\n");
-            goto fail;
+            return AVERROR_INVALIDDATA;
         } else if (startcode == SYNCPOINT_STARTCODE) {
             nut->next_startcode = startcode;
             break;
@@ -857,11 +857,6 @@ static int nut_read_header(AVFormatContext *s)
     ff_metadata_conv_ctx(s, NULL, ff_nut_metadata_conv);
 
     return 0;
-
-fail:
-    nut_read_close(s);
-
-    return AVERROR_INVALIDDATA;
 }
 
 static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int is_meta, int64_t maxpos)
@@ -1302,6 +1297,7 @@ const AVInputFormat ff_nut_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
     .flags          = AVFMT_SEEK_TO_PTS,
     .priv_data_size = sizeof(NUTContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = nut_probe,
     .read_header    = nut_read_header,
     .read_packet    = nut_read_packet,
