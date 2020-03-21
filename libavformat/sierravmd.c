@@ -252,16 +252,13 @@ static int vmd_read_header(AVFormatContext *s)
         }
     }
 
-    av_free(raw_frame_table);
 
     vmd->current_frame = 0;
     vmd->frame_count = total_frames;
 
-    return 0;
-
+    ret = 0;
 error:
     av_freep(&raw_frame_table);
-    av_freep(&vmd->frame_table);
     return ret;
 }
 
@@ -321,6 +318,7 @@ const AVInputFormat ff_vmd_demuxer = {
     .name           = "vmd",
     .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD"),
     .priv_data_size = sizeof(VmdDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vmd_probe,
     .read_header    = vmd_read_header,
     .read_packet    = vmd_read_packet,
