@@ -77,17 +77,14 @@ static int read_header(AVFormatContext *s, const AVRational *framerate, AVBSFCon
         return ret;
 
     ret = avcodec_parameters_copy((*bsf)->par_in, st->codecpar);
-    if (ret < 0) {
-        av_bsf_free(bsf);
+    if (ret < 0)
         return ret;
-    }
 
     ret = av_bsf_init(*bsf);
     if (ret < 0)
-        av_bsf_free(bsf);
+        return ret;
 
-    return ret;
-
+    return 0;
 }
 
 #define DEC AV_OPT_FLAG_DECODING_PARAM
@@ -285,6 +282,7 @@ const AVInputFormat ff_av1_demuxer = {
     .name           = "av1",
     .long_name      = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
     .priv_data_size = sizeof(AnnexBContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = annexb_probe,
     .read_header    = annexb_read_header,
     .read_packet    = annexb_read_packet,
@@ -472,6 +470,7 @@ const AVInputFormat ff_obu_demuxer = {
     .name           = "obu",
     .long_name      = NULL_IF_CONFIG_SMALL("AV1 low overhead OBU"),
     .priv_data_size = sizeof(ObuContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = obu_probe,
     .read_header    = obu_read_header,
     .read_packet    = obu_read_packet,
