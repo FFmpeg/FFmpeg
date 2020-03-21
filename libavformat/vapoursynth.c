@@ -294,8 +294,6 @@ static av_cold int read_header_vs(AVFormatContext *s)
 
 done:
     av_free(buf);
-    if (err < 0)
-        read_close_vs(s);
     return err;
 }
 
@@ -487,6 +485,7 @@ const AVInputFormat ff_vapoursynth_demuxer = {
     .name           = "vapoursynth",
     .long_name      = NULL_IF_CONFIG_SMALL("VapourSynth demuxer"),
     .priv_data_size = sizeof(VSContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe_vs,
     .read_header    = read_header_vs,
     .read_packet    = read_packet_vs,
