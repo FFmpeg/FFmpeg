@@ -113,10 +113,8 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     jv->frames = av_malloc(ast->internal->nb_index_entries * sizeof(JVFrame));
-    if (!jv->frames) {
-        av_freep(&ast->internal->index_entries);
+    if (!jv->frames)
         return AVERROR(ENOMEM);
-    }
     offset = 0x68 + ast->internal->nb_index_entries * 16;
     for (i = 0; i < ast->internal->nb_index_entries; i++) {
         AVIndexEntry *e   = ast->internal->index_entries + i;
@@ -136,12 +134,8 @@ static int read_header(AVFormatContext *s)
             e->size - jvf->audio_size
                     - jvf->video_size
                     - jvf->palette_size < 0) {
-            if (s->error_recognition & AV_EF_EXPLODE) {
-                read_close(s);
-                av_freep(&jv->frames);
-                av_freep(&ast->internal->index_entries);
+            if (s->error_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
-            }
             jvf->audio_size   =
             jvf->video_size   =
             jvf->palette_size = 0;
@@ -258,6 +252,7 @@ const AVInputFormat ff_jv_demuxer = {
     .name           = "jv",
     .long_name      = NULL_IF_CONFIG_SMALL("Bitmap Brothers JV"),
     .priv_data_size = sizeof(JVDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = read_probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
