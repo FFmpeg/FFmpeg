@@ -110,10 +110,8 @@ static int mpl2_read_header(AVFormatContext *s)
             AVPacket *sub;
 
             sub = ff_subtitles_queue_insert(&mpl2->q, p, strlen(p), 0);
-            if (!sub) {
-                ff_subtitles_queue_clean(&mpl2->q);
+            if (!sub)
                 return AVERROR(ENOMEM);
-            }
             sub->pos = pos;
             sub->pts = pts_start;
             sub->duration = duration;
@@ -149,6 +147,7 @@ const AVInputFormat ff_mpl2_demuxer = {
     .name           = "mpl2",
     .long_name      = NULL_IF_CONFIG_SMALL("MPL2 subtitles"),
     .priv_data_size = sizeof(MPL2Context),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mpl2_probe,
     .read_header    = mpl2_read_header,
     .read_packet    = mpl2_read_packet,
