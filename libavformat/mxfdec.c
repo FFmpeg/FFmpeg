@@ -313,8 +313,6 @@ typedef struct MXFMetadataReadTableEntry {
     enum MXFMetadataSetType type;
 } MXFMetadataReadTableEntry;
 
-static int mxf_read_close(AVFormatContext *s);
-
 /* partial keys to match */
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
@@ -3343,7 +3341,6 @@ static int mxf_read_header(AVFormatContext *s)
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
-        //goto fail should not be needed as no metadata sets will have been parsed yet
         return AVERROR_INVALIDDATA;
     }
     avio_seek(s->pb, -14, SEEK_CUR);
@@ -3374,8 +3371,7 @@ static int mxf_read_header(AVFormatContext *s)
 
             if (!mxf->current_partition) {
                 av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to first PartitionPack\n");
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
+                return AVERROR_INVALIDDATA;
             }
 
             if (!mxf->current_partition->first_essence_klv.offset)
@@ -3400,7 +3396,7 @@ static int mxf_read_header(AVFormatContext *s)
         for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
             if (IS_KLV_KEY(klv.key, metadata->key)) {
                 if ((ret = mxf_parse_klv(mxf, klv, metadata->read, metadata->ctx_size, metadata->type)) < 0)
-                    goto fail;
+                    return ret;
                 break;
             }
         }
@@ -3413,21 +3409,20 @@ static int mxf_read_header(AVFormatContext *s)
     /* FIXME avoid seek */
     if (!essence_offset)  {
         av_log(s, AV_LOG_ERROR, "no essence\n");
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
     avio_seek(s->pb, essence_offset, SEEK_SET);
 
     /* we need to do this before computing the index tables
      * to be able to fill in zero IndexDurations with st->duration */
     if ((ret = mxf_parse_structural_metadata(mxf)) < 0)
-        goto fail;
+        return ret;
 
     for (int i = 0; i < s->nb_streams; i++)
         mxf_handle_missing_index_segment(mxf, s->streams[i]);
 
     if ((ret = mxf_compute_index_tables(mxf)) < 0)
-        goto fail;
+        return ret;
 
     if (mxf->nb_index_tables > 1) {
         /* TODO: look up which IndexSID to use via EssenceContainerData */
@@ -3435,8 +3430,7 @@ static int mxf_read_header(AVFormatContext *s)
                mxf->nb_index_tables, mxf->index_tables[0].index_sid);
     } else if (mxf->nb_index_tables == 0 && mxf->op == OPAtom && (s->error_recognition & AV_EF_EXPLODE)) {
         av_log(mxf->fc, AV_LOG_ERROR, "cannot demux OPAtom without an index\n");
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     mxf_compute_essence_containers(s);
@@ -3445,10 +3439,6 @@ static int mxf_read_header(AVFormatContext *s)
         mxf_compute_edit_units_per_packet(mxf, s->streams[i]);
 
     return 0;
-fail:
-    mxf_read_close(s);
-
-    return ret;
 }
 
 /* Get the edit unit of the next packet from current_offset in a track. The returned edit unit can be original_duration as well! */
@@ -3916,6 +3906,7 @@ const AVInputFormat ff_mxf_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
     .flags          = AVFMT_SEEK_TO_PTS,
     .priv_data_size = sizeof(MXFContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mxf_probe,
     .read_header    = mxf_read_header,
     .read_packet    = mxf_read_packet,
