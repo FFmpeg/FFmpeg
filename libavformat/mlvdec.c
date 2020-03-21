@@ -52,8 +52,6 @@ typedef struct {
     uint64_t pts;
 } MlvContext;
 
-static int read_close(AVFormatContext *s);
-
 static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('M','L','V','I') &&
@@ -380,7 +378,6 @@ static int read_header(AVFormatContext *avctx)
 
     if ((vst && !vst->internal->nb_index_entries) || (ast && !ast->internal->nb_index_entries)) {
         av_log(avctx, AV_LOG_ERROR, "no index entries found\n");
-        read_close(avctx);
         return AVERROR_INVALIDDATA;
     }
 
@@ -485,6 +482,7 @@ const AVInputFormat ff_mlv_demuxer = {
     .name           = "mlv",
     .long_name      = NULL_IF_CONFIG_SMALL("Magic Lantern Video (MLV)"),
     .priv_data_size = sizeof(MlvContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
