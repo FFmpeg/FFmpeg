@@ -288,7 +288,6 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
         if (ret == AVERROR_INVALIDDATA)
             av_log(avf, AV_LOG_ERROR, "Syntax error near offset %"PRId64".\n",
                    avio_tell(avf->pb));
-        ff_subtitles_queue_clean(&tc->subs);
         return ret;
     }
     ff_subtitles_queue_finalize(avf, &tc->subs);
@@ -358,6 +357,7 @@ const AVInputFormat ff_tedcaptions_demuxer = {
     .name           = "tedcaptions",
     .long_name      = NULL_IF_CONFIG_SMALL("TED Talks captions"),
     .priv_data_size = sizeof(TEDCaptionsDemuxer),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .priv_class     = &tedcaptions_demuxer_class,
     .read_header    = tedcaptions_read_header,
     .read_packet    = tedcaptions_read_packet,
