@@ -613,7 +613,7 @@ static int viv_read_header(AVFormatContext *s)
     ret = track_index(viv, s, buf, v);
     av_free(buf);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     viv->sb_offset = avio_tell(pb);
     if (viv->n_sb_blocks > 0) {
@@ -624,9 +624,6 @@ static int viv_read_header(AVFormatContext *s)
     }
 
     return 0;
-fail:
-    av_freep(&viv->sb_blocks);
-    return ret;
 }
 
 static int viv_read_packet(AVFormatContext *s,
@@ -785,6 +782,7 @@ const AVInputFormat ff_vividas_demuxer = {
     .name           = "vividas",
     .long_name      = NULL_IF_CONFIG_SMALL("Vividas VIV"),
     .priv_data_size = sizeof(VividasDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = viv_probe,
     .read_header    = viv_read_header,
     .read_packet    = viv_read_packet,
