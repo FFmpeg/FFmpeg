@@ -723,8 +723,7 @@ static int vobsub_read_close(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++)
         ff_subtitles_queue_clean(&vobsub->q[i]);
-    if (vobsub->sub_ctx)
-        avformat_close_input(&vobsub->sub_ctx);
+    avformat_close_input(&vobsub->sub_ctx);
     return 0;
 }
 
@@ -768,16 +767,16 @@ static int vobsub_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
 
-    av_bprint_init(&header, 0, INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
-
     if ((ret = ff_copy_whiteblacklists(vobsub->sub_ctx, s)) < 0)
-        goto end;
+        return ret;
 
     ret = avformat_open_input(&vobsub->sub_ctx, vobsub->sub_name, iformat, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s as MPEG subtitles\n", vobsub->sub_name);
-        goto end;
+        return ret;
     }
+
+    av_bprint_init(&header, 0, INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
 
     while (!avio_feof(s->pb)) {
         char line[MAX_LINE_SIZE];
@@ -911,8 +910,6 @@ static int vobsub_read_header(AVFormatContext *s)
         memcpy(par->extradata, header.str, header.len);
     }
 end:
-    if (ret < 0)
-        vobsub_read_close(s);
     av_bprint_finalize(&header, NULL);
     return ret;
 }
@@ -1044,6 +1041,7 @@ const AVInputFormat ff_vobsub_demuxer = {
     .name           = "vobsub",
     .long_name      = NULL_IF_CONFIG_SMALL("VobSub subtitle format"),
     .priv_data_size = sizeof(VobSubDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vobsub_probe,
     .read_header    = vobsub_read_header,
     .read_packet    = vobsub_read_packet,
