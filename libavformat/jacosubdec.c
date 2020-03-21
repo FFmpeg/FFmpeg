@@ -200,8 +200,7 @@ static int jacosub_read_header(AVFormatContext *s)
             sub = ff_subtitles_queue_insert(&jacosub->q, line, len, merge_line);
             if (!sub) {
                 av_bprint_finalize(&header, NULL);
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
             sub->pos = pos;
             merge_line = len > 1 && !strcmp(&line[len - 2], "\\\n");
@@ -246,7 +245,7 @@ static int jacosub_read_header(AVFormatContext *s)
     /* general/essential directives in the extradata */
     ret = ff_bprint_to_codecpar_extradata(st->codecpar, &header);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     /* SHIFT and TIMERES affect the whole script so packet timing can only be
      * done in a second pass */
@@ -257,9 +256,6 @@ static int jacosub_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &jacosub->q);
 
     return 0;
-fail:
-    jacosub_read_close(s);
-    return ret;
 }
 
 static int jacosub_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -280,6 +276,7 @@ const AVInputFormat ff_jacosub_demuxer = {
     .name           = "jacosub",
     .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
     .priv_data_size = sizeof(JACOsubContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = jacosub_probe,
     .read_header    = jacosub_read_header,
     .read_packet    = jacosub_read_packet,
