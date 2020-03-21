@@ -132,9 +132,10 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
         if (!subs)
             return NULL;
         q->subs = subs;
-        sub = &subs[q->nb_subs++];
+        sub = &subs[q->nb_subs];
         if (av_new_packet(sub, len) < 0)
             return NULL;
+        q->nb_subs++;
         sub->flags |= AV_PKT_FLAG_KEY;
         sub->pts = sub->dts = 0;
         memcpy(sub->data, event, len);
