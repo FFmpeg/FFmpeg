@@ -211,7 +211,6 @@ static const AVCodecTag nsv_codec_audio_tags[] = {
 
 //static int nsv_load_index(AVFormatContext *s);
 static int nsv_read_chunk(AVFormatContext *s, int fill_header);
-static int nsv_read_close(AVFormatContext *s);
 
 /* try to find something we recognize, and set the state accordingly */
 static int nsv_resync(AVFormatContext *s)
@@ -495,30 +494,25 @@ static int nsv_read_header(AVFormatContext *s)
     for (i = 0; i < NSV_MAX_RESYNC_TRIES; i++) {
         err = nsv_resync(s);
         if (err < 0)
-            goto fail;
+            return err;
         if (nsv->state == NSV_FOUND_NSVF) {
             err = nsv_parse_NSVf_header(s);
             if (err < 0)
-                goto fail;
+                return err;
         }
             /* we need the first NSVs also... */
         if (nsv->state == NSV_FOUND_NSVS) {
             err = nsv_parse_NSVs_header(s);
             if (err < 0)
-                goto fail;
+                return err;
             break; /* we just want the first one */
         }
     }
-    if (s->nb_streams < 1) { /* no luck so far */
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    if (s->nb_streams < 1) /* no luck so far */
+        return AVERROR_INVALIDDATA;
 
     /* now read the first chunk, so we can attempt to decode more info */
     err = nsv_read_chunk(s, 1);
-fail:
-    if (err < 0)
-        nsv_read_close(s);
 
     av_log(s, AV_LOG_TRACE, "parsed header\n");
     return err;
@@ -738,6 +732,7 @@ const AVInputFormat ff_nsv_demuxer = {
     .name           = "nsv",
     .long_name      = NULL_IF_CONFIG_SMALL("Nullsoft Streaming Video"),
     .priv_data_size = sizeof(NSVContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = nsv_probe,
     .read_header    = nsv_read_header,
     .read_packet    = nsv_read_packet,
