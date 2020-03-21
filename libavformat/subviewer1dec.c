@@ -77,10 +77,8 @@ static int subviewer1_read_header(AVFormatContext *s)
                     sub->duration = pts_start - sub->pts;
             } else {
                 sub = ff_subtitles_queue_insert(&subviewer1->q, line, len, 0);
-                if (!sub) {
-                    ff_subtitles_queue_clean(&subviewer1->q);
+                if (!sub)
                     return AVERROR(ENOMEM);
-                }
                 sub->pos = pos;
                 sub->pts = pts_start;
                 sub->duration = -1;
@@ -117,6 +115,7 @@ const AVInputFormat ff_subviewer1_demuxer = {
     .name           = "subviewer1",
     .long_name      = NULL_IF_CONFIG_SMALL("SubViewer v1 subtitle format"),
     .priv_data_size = sizeof(SubViewer1Context),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = subviewer1_probe,
     .read_header    = subviewer1_read_header,
     .read_packet    = subviewer1_read_packet,
