@@ -796,8 +796,6 @@ static const CodecMime mkv_mime_tags[] = {
 
 static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
-static int matroska_read_close(AVFormatContext *s);
-
 /*
  * This function prepares the status for parsing of level 1 elements.
  */
@@ -2953,11 +2951,11 @@ static int matroska_read_header(AVFormatContext *s)
     while (res != 1) {
         res = matroska_resync(matroska, pos);
         if (res < 0)
-            goto fail;
+            return res;
         pos = avio_tell(matroska->ctx->pb);
         res = ebml_parse(matroska, matroska_segment, matroska);
         if (res == AVERROR(EIO)) // EOF is translated to EIO, this exists the loop on EOF
-            goto fail;
+            return res;
     }
     /* Set data_offset as it might be needed later by seek_frame_generic. */
     if (matroska->current_id == MATROSKA_ID_CLUSTER)
@@ -2977,7 +2975,7 @@ static int matroska_read_header(AVFormatContext *s)
 
     res = matroska_parse_tracks(s);
     if (res < 0)
-        goto fail;
+        return res;
 
     attachments = attachments_list->elem;
     for (j = 0; j < attachments_list->nb_elem; j++) {
@@ -3006,7 +3004,7 @@ static int matroska_read_header(AVFormatContext *s)
             if (st->codecpar->codec_id != AV_CODEC_ID_NONE) {
                 res = ff_add_attached_pic(s, st, NULL, &attachments[j].bin.buf, 0);
                 if (res < 0)
-                    goto fail;
+                    return res;
             } else {
                 st->codecpar->codec_type = AVMEDIA_TYPE_ATTACHMENT;
                 if (ff_alloc_extradata(st->codecpar, attachments[j].bin.size))
@@ -3041,9 +3039,6 @@ static int matroska_read_header(AVFormatContext *s)
     matroska_convert_tags(s);
 
     return 0;
-fail:
-    matroska_read_close(s);
-    return res;
 }
 
 /*
@@ -4237,16 +4232,13 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
     }
     if (!matroska->tracks.nb_elem || !s->nb_streams) {
         av_log(s, AV_LOG_ERROR, "No track found\n");
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     if (!matroska->is_live) {
         buf = av_asprintf("%g", matroska->duration);
-        if (!buf) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!buf)
+            return AVERROR(ENOMEM);
         av_dict_set(&s->streams[0]->metadata, DURATION,
                     buf, AV_DICT_DONT_STRDUP_VAL);
 
@@ -4269,7 +4261,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
         ret = webm_dash_manifest_cues(s, init_range);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Error parsing Cues\n");
-            goto fail;
+            return ret;
         }
     }
 
@@ -4279,9 +4271,6 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
                         matroska->bandwidth, 0);
     }
     return 0;
-fail:
-    matroska_read_close(s);
-    return ret;
 }
 
 static int webm_dash_manifest_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -4308,6 +4297,7 @@ const AVInputFormat ff_matroska_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
     .extensions     = "mkv,mk3d,mka,mks,webm",
     .priv_data_size = sizeof(MatroskaDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = matroska_probe,
     .read_header    = matroska_read_header,
     .read_packet    = matroska_read_packet,
@@ -4320,6 +4310,7 @@ const AVInputFormat ff_webm_dash_manifest_demuxer = {
     .name           = "webm_dash_manifest",
     .long_name      = NULL_IF_CONFIG_SMALL("WebM DASH Manifest"),
     .priv_data_size = sizeof(MatroskaDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_header    = webm_dash_manifest_read_header,
     .read_packet    = webm_dash_manifest_read_packet,
     .read_close     = matroska_read_close,
