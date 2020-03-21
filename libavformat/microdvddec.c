@@ -121,7 +121,7 @@ static int microdvd_read_header(AVFormatContext *s)
                 int size = strlen(line + 11);
                 ret = ff_alloc_extradata(st->codecpar, size);
                 if (ret < 0)
-                    goto fail;
+                    return ret;
                 memcpy(st->codecpar->extradata, line + 11, size);
                 continue;
             }
@@ -142,10 +142,8 @@ static int microdvd_read_header(AVFormatContext *s)
         if (pts == AV_NOPTS_VALUE)
             continue;
         sub = ff_subtitles_queue_insert(&microdvd->q, p, strlen(p), 0);
-        if (!sub) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!sub)
+            return AVERROR(ENOMEM);
         sub->pos = pos;
         sub->pts = pts;
         sub->duration = get_duration(line);
@@ -162,9 +160,6 @@ static int microdvd_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id   = AV_CODEC_ID_MICRODVD;
     return 0;
-fail:
-    ff_subtitles_queue_clean(&microdvd->q);
-    return ret;
 }
 
 static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -207,6 +202,7 @@ const AVInputFormat ff_microdvd_demuxer = {
     .name           = "microdvd",
     .long_name      = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
     .priv_data_size = sizeof(MicroDVDContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = microdvd_probe,
     .read_header    = microdvd_read_header,
     .read_packet    = microdvd_read_packet,
