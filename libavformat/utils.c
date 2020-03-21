@@ -566,8 +566,11 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         ff_id3v2_read_dict(s->pb, &s->internal->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
 
     if (s->iformat->read_header)
-        if ((ret = s->iformat->read_header(s)) < 0)
+        if ((ret = s->iformat->read_header(s)) < 0) {
+            if (s->iformat->flags_internal & FF_FMT_INIT_CLEANUP)
+                goto close;
             goto fail;
+        }
 
     if (!s->metadata) {
         s->metadata = s->internal->id3v2_meta;
