@@ -104,7 +104,6 @@ static int read_header(AVFormatContext *s)
     int64_t h1offset, pos, toffset;
     uint32_t size, asize, start = 0;
     AVStream *st;
-    int ret = AVERROR_EOF;
     int loop = 0;
     int bfstm = !strcmp("bfstm", s->iformat->name);
 
@@ -288,30 +287,24 @@ static int read_header(AVFormatContext *s)
             if (!bfstm)
                 avio_skip(s->pb, pos + 16LL + b->offsets[ch].offset - avio_tell(s->pb));
 
-            if (avio_read(s->pb, b->table + ch * 32, 32) != 32) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            if (avio_read(s->pb, b->table + ch * 32, 32) != 32)
+                return AVERROR_INVALIDDATA;
 
             if (bfstm)
                 avio_skip(s->pb, 14);
         }
     }
 
-    if (size < (avio_tell(s->pb) - pos)) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    if (size < (avio_tell(s->pb) - pos))
+        return AVERROR_INVALIDDATA;
 
     avio_skip(s->pb, size - (avio_tell(s->pb) - pos));
 
     while (!avio_feof(s->pb)) {
         chunk = avio_rl32(s->pb);
         size  = read32(s);
-        if (size < 8) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (size < 8)
+            return AVERROR_INVALIDDATA;
         size -= 8;
         switch (chunk) {
         case MKTAG('S','E','E','K'):
@@ -321,19 +314,15 @@ static int read_header(AVFormatContext *s)
                 goto skip;
 
             asize = b->block_count * st->codecpar->channels * 4;
-            if (size < asize) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            if (size < asize)
+                return AVERROR_INVALIDDATA;
             if (b->adpc) {
                 av_log(s, AV_LOG_WARNING, "skipping additional ADPC chunk\n");
                 goto skip;
             } else {
                 b->adpc = av_mallocz(asize);
-                if (!b->adpc) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
-                }
+                if (!b->adpc)
+                    return AVERROR(ENOMEM);
                 if (bfstm && codec != AV_CODEC_ID_ADPCM_THP_LE) {
                     // Big-endian BFSTMs have little-endian SEEK tables
                     // for some strange reason.
@@ -351,10 +340,8 @@ static int read_header(AVFormatContext *s)
         case MKTAG('D','A','T','A'):
             if ((start < avio_tell(s->pb)) ||
                 (!b->adpc && (codec == AV_CODEC_ID_ADPCM_THP ||
-                              codec == AV_CODEC_ID_ADPCM_THP_LE))) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+                              codec == AV_CODEC_ID_ADPCM_THP_LE)))
+                return AVERROR_INVALIDDATA;
             avio_skip(s->pb, start - avio_tell(s->pb));
 
             if (bfstm && (codec == AV_CODEC_ID_ADPCM_THP ||
@@ -374,10 +361,7 @@ skip:
         }
     }
 
-fail:
-    read_close(s);
-
-    return ret;
+    return AVERROR_EOF;
 }
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -485,6 +469,7 @@ const AVInputFormat ff_brstm_demuxer = {
     .name           = "brstm",
     .long_name      = NULL_IF_CONFIG_SMALL("BRSTM (Binary Revolution Stream)"),
     .priv_data_size = sizeof(BRSTMDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
@@ -497,6 +482,7 @@ const AVInputFormat ff_bfstm_demuxer = {
     .name           = "bfstm",
     .long_name      = NULL_IF_CONFIG_SMALL("BFSTM (Binary Cafe Stream)"),
     .priv_data_size = sizeof(BRSTMDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe_bfstm,
     .read_header    = read_header,
     .read_packet    = read_packet,
