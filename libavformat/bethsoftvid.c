@@ -146,9 +146,13 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     }
 
     do{
-        vidbuf_start = av_fast_realloc(vidbuf_start, &vidbuf_capacity, vidbuf_nbytes + BUFFER_PADDING_SIZE);
-        if(!vidbuf_start)
-            return AVERROR(ENOMEM);
+        uint8_t *tmp = av_fast_realloc(vidbuf_start, &vidbuf_capacity,
+                                       vidbuf_nbytes + BUFFER_PADDING_SIZE);
+        if (!tmp) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        vidbuf_start = tmp;
 
         code = avio_r8(pb);
         vidbuf_start[vidbuf_nbytes++] = code;
