@@ -283,7 +283,6 @@ static int fourxm_read_header(AVFormatContext *s)
 
     return 0;
 fail:
-    av_freep(&fourxm->tracks);
     av_free(header);
     return ret;
 }
@@ -397,6 +396,7 @@ const AVInputFormat ff_fourxm_demuxer = {
     .name           = "4xm",
     .long_name      = NULL_IF_CONFIG_SMALL("4X Technologies"),
     .priv_data_size = sizeof(FourxmDemuxContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = fourxm_probe,
     .read_header    = fourxm_read_header,
     .read_packet    = fourxm_read_packet,
