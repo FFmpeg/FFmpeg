@@ -207,8 +207,6 @@ static int srt_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &srt->q);
 
 end:
-    if (res < 0)
-        ff_subtitles_queue_clean(&srt->q);
     av_bprint_finalize(&buf, NULL);
     return res;
 }
@@ -238,6 +236,7 @@ const AVInputFormat ff_srt_demuxer = {
     .name        = "srt",
     .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .priv_data_size = sizeof(SRTContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe  = srt_probe,
     .read_header = srt_read_header,
     .read_packet = srt_read_packet,
