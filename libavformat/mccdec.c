@@ -188,7 +188,7 @@ static int mcc_read_header(AVFormatContext *s)
             continue;
         sub = ff_subtitles_queue_insert(&mcc->q, out + start, count, 0);
         if (!sub)
-            goto fail;
+            return AVERROR(ENOMEM);
 
         sub->pos = pos;
         sub->pts = ts;
@@ -198,9 +198,6 @@ static int mcc_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &mcc->q);
 
     return ret;
-fail:
-    ff_subtitles_queue_clean(&mcc->q);
-    return AVERROR(ENOMEM);
 }
 
 static int mcc_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -228,6 +225,7 @@ const AVInputFormat ff_mcc_demuxer = {
     .name           = "mcc",
     .long_name      = NULL_IF_CONFIG_SMALL("MacCaption"),
     .priv_data_size = sizeof(MCCContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mcc_probe,
     .read_header    = mcc_read_header,
     .read_packet    = mcc_read_packet,
