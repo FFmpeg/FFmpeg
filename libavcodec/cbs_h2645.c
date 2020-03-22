@@ -250,18 +250,18 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
 #define u(width, name, range_min, range_max) \
-        xu(width, name, current->name, range_min, range_max, 0)
+        xu(width, name, current->name, range_min, range_max, 0, )
 #define ub(width, name) \
-        xu(width, name, current->name, 0, MAX_UINT_BITS(width), 0)
+        xu(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define flag(name) ub(1, name)
 #define ue(name, range_min, range_max) \
-        xue(name, current->name, range_min, range_max, 0)
+        xue(name, current->name, range_min, range_max, 0, )
 #define i(width, name, range_min, range_max) \
-        xi(width, name, current->name, range_min, range_max, 0)
+        xi(width, name, current->name, range_min, range_max, 0, )
 #define ib(width, name) \
-        xi(width, name, current->name, MIN_INT_BITS(width), MAX_INT_BITS(width), 0)
+        xi(width, name, current->name, MIN_INT_BITS(width), MAX_INT_BITS(width), 0, )
 #define se(name, range_min, range_max) \
-        xse(name, current->name, range_min, range_max, 0)
+        xse(name, current->name, range_min, range_max, 0, )
 
 #define us(width, name, range_min, range_max, subs, ...) \
         xu(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
@@ -280,7 +280,7 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 
 #define fixed(width, name, value) do { \
         av_unused uint32_t fixed_value = value; \
-        xu(width, name, fixed_value, value, value, 0); \
+        xu(width, name, fixed_value, value, value, 0, ); \
     } while (0)
 
 

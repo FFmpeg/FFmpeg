@@ -41,9 +41,9 @@
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
 #define ui(width, name) \
-        xui(width, name, current->name, 0, MAX_UINT_BITS(width), 0)
+        xui(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define uir(width, name) \
-        xui(width, name, current->name, 1, MAX_UINT_BITS(width), 0)
+        xui(width, name, current->name, 1, MAX_UINT_BITS(width), 0, )
 #define uis(width, name, subs, ...) \
         xui(width, name, current->name, 0, MAX_UINT_BITS(width), subs, __VA_ARGS__)
 #define uirs(width, name, subs, ...) \
@@ -57,7 +57,7 @@
         bit("marker_bit", 1)
 #define bit(string, value) do { \
         av_unused uint32_t bit = value; \
-        xuia(1, string, bit, value, value, 0); \
+        xuia(1, string, bit, value, value, 0, ); \
     } while (0)
 
 

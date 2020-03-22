@@ -34,7 +34,7 @@
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
 #define u(width, name, range_min, range_max) \
-    xu(width, name, range_min, range_max, 0)
+    xu(width, name, range_min, range_max, 0, )
 #define us(width, name, sub, range_min, range_max) \
     xu(width, name, range_min, range_max, 1, sub)
 

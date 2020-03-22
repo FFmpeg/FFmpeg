@@ -550,12 +550,12 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
 #define fb(width, name) \
-        xf(width, name, current->name, 0, MAX_UINT_BITS(width), 0)
+        xf(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define fc(width, name, range_min, range_max) \
-        xf(width, name, current->name, range_min, range_max, 0)
+        xf(width, name, current->name, range_min, range_max, 0, )
 #define flag(name) fb(1, name)
 #define su(width, name) \
-        xsu(width, name, current->name, 0)
+        xsu(width, name, current->name, 0, )
 
 #define fbs(width, name, subs, ...) \
         xf(width, name, current->name, 0, MAX_UINT_BITS(width), subs, __VA_ARGS__)
@@ -568,7 +568,7 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 
 #define fixed(width, name, value) do { \
         av_unused uint32_t fixed_value = value; \
-        xf(width, name, fixed_value, value, value, 0); \
+        xf(width, name, fixed_value, value, value, 0, ); \
     } while (0)
 
 
@@ -623,9 +623,9 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #define delta_q(name) do { \
         uint8_t delta_coded; \
         int8_t delta_q; \
-        xf(1, name.delta_coded, delta_coded, 0, 1, 0); \
+        xf(1, name.delta_coded, delta_coded, 0, 1, 0, ); \
         if (delta_coded) \
-            xsu(1 + 6, name.delta_q, delta_q, 0); \
+            xsu(1 + 6, name.delta_q, delta_q, 0, ); \
         else \
             delta_q = 0; \
         current->name = delta_q; \
@@ -700,9 +700,9 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
     } while (0)
 
 #define delta_q(name) do { \
-        xf(1, name.delta_coded, current->name != 0, 0, 1, 0); \
+        xf(1, name.delta_coded, current->name != 0, 0, 1, 0, ); \
         if (current->name) \
-            xsu(1 + 6, name.delta_q, current->name, 0); \
+            xsu(1 + 6, name.delta_q, current->name, 0, ); \
     } while (0)
 
 #define leb128(name) do { \

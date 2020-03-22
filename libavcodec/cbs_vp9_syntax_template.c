@@ -19,23 +19,11 @@
 static int FUNC(frame_sync_code)(CodedBitstreamContext *ctx, RWContext *rw,
                                  VP9RawFrameHeader *current)
 {
-    uint8_t frame_sync_byte_0 = VP9_FRAME_SYNC_0;
-    uint8_t frame_sync_byte_1 = VP9_FRAME_SYNC_1;
-    uint8_t frame_sync_byte_2 = VP9_FRAME_SYNC_2;
     int err;
 
-    xf(8, frame_sync_byte_0, frame_sync_byte_0, 0);
-    xf(8, frame_sync_byte_1, frame_sync_byte_1, 0);
-    xf(8, frame_sync_byte_2, frame_sync_byte_2, 0);
-
-    if (frame_sync_byte_0 != VP9_FRAME_SYNC_0 ||
-        frame_sync_byte_1 != VP9_FRAME_SYNC_1 ||
-        frame_sync_byte_2 != VP9_FRAME_SYNC_2) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid frame sync code: "
-               "%02x %02x %02x.\n", frame_sync_byte_0,
-               frame_sync_byte_1, frame_sync_byte_2);
-        return AVERROR_INVALIDDATA;
-    }
+    fixed(8, frame_sync_byte_0, VP9_FRAME_SYNC_0);
+    fixed(8, frame_sync_byte_1, VP9_FRAME_SYNC_1);
+    fixed(8, frame_sync_byte_2, VP9_FRAME_SYNC_2);
 
     return 0;
 }
@@ -396,9 +384,8 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(trailing_bits)(CodedBitstreamContext *ctx, RWContext *rw)
 {
     int err;
-    av_unused int zero = 0;
     while (byte_alignment(rw) != 0)
-        xf(1, zero_bit, zero, 0);
+        fixed(1, zero_bit, 0);
 
     return 0;
 }
