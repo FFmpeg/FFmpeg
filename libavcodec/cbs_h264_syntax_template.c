@@ -1366,7 +1366,7 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
                    (sps->pic_height_in_map_units_minus1 + 1);
         max = (pic_size + pps->slice_group_change_rate_minus1) /
               (pps->slice_group_change_rate_minus1 + 1);
-        bits = av_log2(2 * max - 1);
+        bits = av_ceil_log2(max + 1);
 
         u(bits, slice_group_change_cycle, 0, max);
     }
