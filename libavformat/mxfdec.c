@@ -2017,7 +2017,7 @@ static MXFStructuralComponent* mxf_resolve_sourceclip(MXFContext *mxf, UID *stro
 static int mxf_parse_package_comments(MXFContext *mxf, AVDictionary **pm, MXFPackage *package)
 {
     MXFTaggedValue *tag;
-    int size, i;
+    int i;
     char *key = NULL;
 
     for (i = 0; i < package->comment_count; i++) {
@@ -2025,12 +2025,10 @@ static int mxf_parse_package_comments(MXFContext *mxf, AVDictionary **pm, MXFPac
         if (!tag || !tag->name || !tag->value)
             continue;
 
-        size = strlen(tag->name) + 8 + 1;
-        key = av_mallocz(size);
+        key = av_asprintf("comment_%s", tag->name);
         if (!key)
             return AVERROR(ENOMEM);
 
-        snprintf(key, size, "comment_%s", tag->name);
         av_dict_set(pm, key, tag->value, AV_DICT_DONT_STRDUP_KEY);
     }
     return 0;
