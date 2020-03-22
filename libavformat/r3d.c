@@ -27,7 +27,6 @@
 
 typedef struct R3DContext {
     unsigned video_offsets_count;
-    unsigned *video_offsets;
     unsigned rdvo_offset;
 
     int audio_channels;
@@ -118,17 +117,14 @@ static int r3d_read_rdvo(AVFormatContext *s, Atom *atom)
     int i;
 
     r3d->video_offsets_count = (atom->size - 8) / 4;
-    r3d->video_offsets = av_malloc(atom->size);
-    if (!r3d->video_offsets)
-        return AVERROR(ENOMEM);
 
     for (i = 0; i < r3d->video_offsets_count; i++) {
-        r3d->video_offsets[i] = avio_rb32(s->pb);
-        if (!r3d->video_offsets[i]) {
+        unsigned video_offset = avio_rb32(s->pb);
+        if (!video_offset) {
             r3d->video_offsets_count = i;
             break;
         }
-        av_log(s, AV_LOG_TRACE, "video offset %d: %#x\n", i, r3d->video_offsets[i]);
+        av_log(s, AV_LOG_TRACE, "video offset %d: %#x\n", i, video_offset);
     }
 
     if (st->avg_frame_rate.num)
@@ -400,15 +396,6 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
     return 0;
 }
 
-static int r3d_close(AVFormatContext *s)
-{
-    R3DContext *r3d = s->priv_data;
-
-    av_freep(&r3d->video_offsets);
-
-    return 0;
-}
-
 AVInputFormat ff_r3d_demuxer = {
     .name           = "r3d",
     .long_name      = NULL_IF_CONFIG_SMALL("REDCODE R3D"),
@@ -416,6 +403,5 @@ AVInputFormat ff_r3d_demuxer = {
     .read_probe     = r3d_probe,
     .read_header    = r3d_read_header,
     .read_packet    = r3d_read_packet,
-    .read_close     = r3d_close,
     .read_seek      = r3d_seek,
 };
