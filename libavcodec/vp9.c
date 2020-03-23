@@ -34,6 +34,7 @@
 #include "vp9dec.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/video_enc_params.h"
 
 #define VP9_SYNCCODE 0x498342
 
@@ -97,6 +98,7 @@ static void vp9_tile_data_free(VP9TileData *td)
 {
     av_freep(&td->b_base);
     av_freep(&td->block_base);
+    av_freep(&td->block_structure);
 }
 
 static void vp9_frame_unref(AVCodecContext *avctx, VP9Frame *f)
@@ -326,6 +328,12 @@ static int update_block_buffers(AVCodecContext *avctx)
         td->eob_base = (uint8_t *) (td->uvblock_base[1] + sbs * chroma_blocks * bytesperpixel);
         td->uveob_base[0] = td->eob_base + 16 * 16 * sbs;
         td->uveob_base[1] = td->uveob_base[0] + chroma_eobs * sbs;
+
+        if (avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS) {
+            td->block_structure = av_malloc_array(s->cols * s->rows, sizeof(*td->block_structure));
+            if (!td->block_structure)
+                return AVERROR(ENOMEM);
+        }
     } else {
         for (i = 1; i < s->active_tile_cols; i++)
             vp9_tile_data_free(&s->td[i]);
@@ -341,6 +349,12 @@ static int update_block_buffers(AVCodecContext *avctx)
             s->td[i].eob_base = (uint8_t *) (s->td[i].uvblock_base[1] + chroma_blocks * bytesperpixel);
             s->td[i].uveob_base[0] = s->td[i].eob_base + 16 * 16;
             s->td[i].uveob_base[1] = s->td[i].uveob_base[0] + chroma_eobs;
+
+            if (avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS) {
+                s->td[i].block_structure = av_malloc_array(s->cols * s->rows, sizeof(*td->block_structure));
+                if (!s->td[i].block_structure)
+                    return AVERROR(ENOMEM);
+            }
         }
     }
     s->block_alloc_using_2pass = s->s.frames[CUR_FRAME].uses_2pass;
@@ -880,6 +894,7 @@ static int decode_frame_header(AVCodecContext *avctx,
         } else {
             memset(&s->td[i].counts, 0, sizeof(s->td[0].counts));
         }
+        s->td[i].nb_block_structure = 0;
     }
 
     /* FIXME is it faster to not copy here, but do it down in the fw updates
@@ -1481,6 +1496,58 @@ int loopfilter_proc(AVCodecContext *avctx)
 }
 #endif
 
+static int vp9_export_enc_params(VP9Context *s, VP9Frame *frame)
+{
+    AVVideoEncParams *par;
+    unsigned int tile, nb_blocks = 0;
+
+    if (s->s.h.segmentation.enabled) {
+        for (tile = 0; tile < s->active_tile_cols; tile++)
+            nb_blocks += s->td[tile].nb_block_structure;
+    }
+
+    par = av_video_enc_params_create_side_data(frame->tf.f,
+        AV_VIDEO_ENC_PARAMS_VP9, nb_blocks);
+    if (!par)
+        return AVERROR(ENOMEM);
+
+    par->qp             = s->s.h.yac_qi;
+    par->delta_qp[0][0] = s->s.h.ydc_qdelta;
+    par->delta_qp[1][0] = s->s.h.uvdc_qdelta;
+    par->delta_qp[2][0] = s->s.h.uvdc_qdelta;
+    par->delta_qp[1][1] = s->s.h.uvac_qdelta;
+    par->delta_qp[2][1] = s->s.h.uvac_qdelta;
+
+    if (nb_blocks) {
+        unsigned int block = 0;
+        unsigned int tile, block_tile;
+
+        for (tile = 0; tile < s->active_tile_cols; tile++) {
+            VP9TileData *td = &s->td[tile];
+
+            for (block_tile = 0; block_tile < td->nb_block_structure; block_tile++) {
+                AVVideoBlockParams *b = av_video_enc_params_block(par, block++);
+                unsigned int      row = td->block_structure[block_tile].row;
+                unsigned int      col = td->block_structure[block_tile].col;
+                uint8_t        seg_id = frame->segmentation_map[row * 8 * s->sb_cols + col];
+
+                b->src_x = col * 8;
+                b->src_y = row * 8;
+                b->w     = 1 << (3 + td->block_structure[block_tile].block_size_idx_x);
+                b->h     = 1 << (3 + td->block_structure[block_tile].block_size_idx_y);
+
+                if (s->s.h.segmentation.feat[seg_id].q_enabled) {
+                    b->delta_qp = s->s.h.segmentation.feat[seg_id].q_val;
+                    if (s->s.h.segmentation.absolute_vals)
+                        b->delta_qp -= par->qp;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
                             int *got_frame, AVPacket *pkt)
 {
@@ -1688,6 +1755,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "Failed to decode tile data\n");
         s->td->error_info = 0;
         return AVERROR_INVALIDDATA;
+    }
+    if (avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS) {
+        ret = vp9_export_enc_params(s, &s->s.frames[CUR_FRAME]);
+        if (ret < 0)
+            return ret;
     }
 
 finish:

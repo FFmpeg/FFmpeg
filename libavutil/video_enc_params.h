@@ -27,6 +27,21 @@
 
 enum AVVideoEncParamsType {
     AV_VIDEO_ENC_PARAMS_NONE = -1,
+    /**
+     * VP9 stores:
+     * - per-frame base (luma AC) quantizer index, exported as AVVideoEncParams.qp
+     * - deltas for luma DC, chroma AC and chroma DC, exported in the
+     *   corresponding entries in AVVideoEncParams.delta_qp
+     * - per-segment delta, exported as for each block as AVVideoBlockParams.delta_qp
+     *
+     * To compute the resulting quantizer index for a block:
+     * - for luma AC, add the base qp and the per-block delta_qp, saturating to
+     *   unsigned 8-bit.
+     * - for luma DC and chroma AC/DC, add the corresponding
+     *   AVVideoBlockParams.delta_qp to the luma AC index, again saturating to
+     *   unsigned 8-bit.
+     */
+    AV_VIDEO_ENC_PARAMS_VP9,
 };
 
 /**

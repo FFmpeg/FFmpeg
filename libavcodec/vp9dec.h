@@ -226,6 +226,13 @@ struct VP9TileData {
 
     // error message
     int error_info;
+    struct {
+        unsigned int row:13;
+        unsigned int col:13;
+        unsigned int block_size_idx_x:2;
+        unsigned int block_size_idx_y:2;
+    } *block_structure;
+    unsigned int nb_block_structure;
 };
 
 void ff_vp9_fill_mv(VP9TileData *td, VP56mv *mv, int mode, int sb);
