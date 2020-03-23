@@ -36,6 +36,7 @@
 #include "libavutil/timestamp.h"
 #include "libavutil/timecode.h"
 #include "libavutil/mastering_display_metadata.h"
+#include "libavutil/video_enc_params.h"
 
 #include "avfilter.h"
 #include "internal.h"
@@ -168,6 +169,25 @@ static void dump_content_light_metadata(AVFilterContext *ctx, AVFrameSideData *s
     av_log(ctx, AV_LOG_INFO, "Content Light Level information: "
            "MaxCLL=%d, MaxFALL=%d",
            metadata->MaxCLL, metadata->MaxFALL);
+}
+
+static void dump_video_enc_params(AVFilterContext *ctx, AVFrameSideData *sd)
+{
+    AVVideoEncParams *par = (AVVideoEncParams*)sd->data;
+    int plane, acdc;
+
+    av_log(ctx, AV_LOG_INFO, "video encoding parameters: type %d; ", par->type);
+    if (par->qp)
+        av_log(ctx, AV_LOG_INFO, "qp=%d; ", par->qp);
+    for (plane = 0; plane < FF_ARRAY_ELEMS(par->delta_qp); plane++)
+        for (acdc = 0; acdc < FF_ARRAY_ELEMS(par->delta_qp[plane]); acdc++) {
+            int delta_qp = par->delta_qp[plane][acdc];
+            if (delta_qp)
+                av_log(ctx, AV_LOG_INFO, "delta_qp[%d][%d]=%d; ",
+                       plane, acdc, delta_qp);
+        }
+    if (par->nb_blocks)
+        av_log(ctx, AV_LOG_INFO, "%u blocks; ", par->nb_blocks);
 }
 
 static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
@@ -352,6 +372,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_log(ctx, AV_LOG_INFO, "GOP timecode - %s", tcbuf);
             break;
         }
+        case AV_FRAME_DATA_VIDEO_ENC_PARAMS:
+            dump_video_enc_params(ctx, sd);
+            break;
         default:
             av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)",
                    sd->type, sd->size);
