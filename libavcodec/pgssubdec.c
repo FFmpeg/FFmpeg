@@ -614,7 +614,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 1;
 }
 
-static int decode(AVCodecContext *avctx, void *data, int *data_size,
+static int decode(AVCodecContext *avctx, void *data, int *got_sub_ptr,
                   AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -636,7 +636,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
     if (i & 15)
         ff_dlog(avctx, "\n");
 
-    *data_size = 0;
+    *got_sub_ptr = 0;
 
     /* Ensure that we have received at a least a segment code and segment length */
     if (buf_size < 3)
@@ -676,14 +676,14 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
              */
             break;
         case DISPLAY_SEGMENT:
-            if (*data_size) {
+            if (*got_sub_ptr) {
                 av_log(avctx, AV_LOG_ERROR, "Duplicate display segment\n");
                 ret = AVERROR_INVALIDDATA;
                 break;
             }
             ret = display_end_segment(avctx, data, buf, segment_length);
             if (ret >= 0)
-                *data_size = ret;
+                *got_sub_ptr = ret;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown subtitle segment type 0x%x, length %d\n",
@@ -693,7 +693,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
         }
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE)) {
             avsubtitle_free(data);
-            *data_size = 0;
+            *got_sub_ptr = 0;
             return ret;
         }
 
