@@ -1117,6 +1117,7 @@ OBJS-$(CONFIG_MPEG2_METADATA_BSF)         += mpeg2_metadata_bsf.o
 OBJS-$(CONFIG_NOISE_BSF)                  += noise_bsf.o
 OBJS-$(CONFIG_NULL_BSF)                   += null_bsf.o
 OBJS-$(CONFIG_OPUS_METADATA_BSF)          += opus_metadata_bsf.o
+OBJS-$(CONFIG_PCM_RECHUNK_BSF)            += pcm_rechunk_bsf.o
 OBJS-$(CONFIG_PRORES_METADATA_BSF)        += prores_metadata_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o

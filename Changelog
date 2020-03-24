@@ -65,6 +65,7 @@ version <next>:
 - Cunning Developments ADPCM decoder
 - asubboost filter
 - Pro Pinball Series Soundbank demuxer
+- pcm_rechunk bitstream filter
 
 
 version 4.2:
