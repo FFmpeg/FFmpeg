@@ -636,7 +636,7 @@ static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
     return lines;
 }
 
-static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *pkt)
+static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr, AVPacket *pkt)
 {
     TeletextContext *ctx = avctx->priv_data;
     AVSubtitle      *sub = data;
@@ -724,9 +724,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ctx->nb_pages--;
 
         if (ret >= 0)
-            *data_size = 1;
+            *got_sub_ptr = 1;
     } else
-        *data_size = 0;
+        *got_sub_ptr = 0;
 
     return ret;
 }
