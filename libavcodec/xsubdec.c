@@ -46,7 +46,7 @@ static int64_t parse_timecode(const uint8_t *buf, int64_t packet_time) {
     return ms - packet_time;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
                         AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -169,7 +169,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         bitmap += w;
         align_get_bits(&gb);
     }
-    *data_size = 1;
+    *got_sub_ptr = 1;
     return buf_size;
 }
 
