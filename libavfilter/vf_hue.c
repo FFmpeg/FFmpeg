@@ -136,7 +136,7 @@ static inline void create_chrominance_lut(HueContext *h, const int32_t c,
      */
     for (i = 0; i < 256; i++) {
         for (j = 0; j < 256; j++) {
-            /* Normalize the components from range [16;140] to [-112;112] */
+            /* Normalize the components from range [16;240] to [-112;112] */
             u = i - 128;
             v = j - 128;
             /*
