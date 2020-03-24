@@ -1610,7 +1610,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 }
 
 static int dvbsub_decode(AVCodecContext *avctx,
-                         void *data, int *data_size,
+                         void *data, int *got_sub_ptr,
                          AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -1668,7 +1668,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
             int ret = 0;
             switch (segment_type) {
             case DVBSUB_PAGE_SEGMENT:
-                ret = dvbsub_parse_page_segment(avctx, p, segment_length, sub, data_size);
+                ret = dvbsub_parse_page_segment(avctx, p, segment_length, sub, got_sub_ptr);
                 got_segment |= 1;
                 break;
             case DVBSUB_REGION_SEGMENT:
@@ -1690,7 +1690,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
                 got_dds = 1;
                 break;
             case DVBSUB_DISPLAY_SEGMENT:
-                ret = dvbsub_display_end_segment(avctx, p, segment_length, sub, data_size);
+                ret = dvbsub_display_end_segment(avctx, p, segment_length, sub, got_sub_ptr);
                 if (got_segment == 15 && !got_dds && !avctx->width && !avctx->height) {
                     // Default from ETSI EN 300 743 V1.3.1 (7.2.1)
                     avctx->width  = 720;
@@ -1713,12 +1713,12 @@ static int dvbsub_decode(AVCodecContext *avctx,
     // segments then we need no further data.
     if (got_segment == 15) {
         av_log(avctx, AV_LOG_DEBUG, "Missing display_end_segment, emulating\n");
-        dvbsub_display_end_segment(avctx, p, 0, sub, data_size);
+        dvbsub_display_end_segment(avctx, p, 0, sub, got_sub_ptr);
     }
 
 end:
     if(ret < 0) {
-        *data_size = 0;
+        *got_sub_ptr = 0;
         avsubtitle_free(sub);
         return ret;
     } else {
