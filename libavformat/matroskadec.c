@@ -3023,7 +3023,9 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
         return 0;
     }
 
-    av_assert0(size > 0);
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+
     *laces    = *data + 1;
     data     += 1;
     size     -= 1;
@@ -3053,7 +3055,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
                     break;
             }
         }
-        if (size <= total) {
+        if (size < total) {
             res = AVERROR_INVALIDDATA;
             break;
         }
@@ -3100,7 +3102,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
             lace_size[n] = lace_size[n - 1] + snum;
             total       += lace_size[n];
         }
-        if (size <= total) {
+        if (size < total) {
             res = AVERROR_INVALIDDATA;
             break;
         }
@@ -3422,7 +3424,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
 {
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
-    int res;
+    int res = 0;
     AVPacket pktl, *pkt = &pktl;
 
     if (encodings && !encodings->type && encodings->scope & 1) {
@@ -3457,6 +3459,9 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
             av_freep(&pkt_data);
         pkt_data = pr_data;
     }
+
+    if (!pkt_size && !additional_size)
+        goto no_output;
 
     av_init_packet(pkt);
     if (pkt_data != data)
@@ -3528,6 +3533,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     return 0;
 
+no_output:
 fail:
     if (pkt_data != data)
         av_freep(&pkt_data);
@@ -3561,8 +3567,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         av_log(matroska->ctx, AV_LOG_INFO,
                "Invalid stream %"PRIu64"\n", num);
         return AVERROR_INVALIDDATA;
-    } else if (size <= 3)
-        return 0;
+    } else if (size < 3)
+        return AVERROR_INVALIDDATA;
     st = track->stream;
     if (st->discard >= AVDISCARD_ALL)
         return res;
