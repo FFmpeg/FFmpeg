@@ -3556,13 +3556,16 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     size -= n;
 
     track = matroska_find_track_by_num(matroska, num);
-    if (!track || !track->stream) {
-        av_log(matroska->ctx, AV_LOG_INFO,
-               "Invalid stream %"PRIu64"\n", num);
+    if (!track || size < 3)
         return AVERROR_INVALIDDATA;
-    } else if (size < 3)
-        return AVERROR_INVALIDDATA;
-    st = track->stream;
+
+    if (!(st = track->stream)) {
+        av_log(matroska->ctx, AV_LOG_VERBOSE,
+               "No stream associated to TrackNumber %"PRIu64". "
+               "Ignoring Block with this TrackNumber.\n", num);
+        return 0;
+    }
+
     if (st->discard >= AVDISCARD_ALL)
         return res;
     av_assert1(block_duration != AV_NOPTS_VALUE);
