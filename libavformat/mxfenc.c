@@ -52,7 +52,7 @@
 #include "libavcodec/h264_ps.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/internal.h"
-#include "audiointerleave.h"
+#include "retimeinterleave.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -79,7 +79,7 @@ typedef struct MXFIndexEntry {
 } MXFIndexEntry;
 
 typedef struct MXFStreamContext {
-    AudioInterleaveContext aic;
+    RetimeInterleaveContext aic;
     UID track_essence_element_key;
     int index;               ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
@@ -2538,6 +2538,7 @@ static int mxf_write_header(AVFormatContext *s)
             if (mxf->signal_standard >= 0)
                 sc->signal_standard = mxf->signal_standard;
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            char bsf_arg[32];
             if (st->codecpar->sample_rate != 48000) {
                 av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
                 return -1;
@@ -2580,6 +2581,10 @@ static int mxf_write_header(AVFormatContext *s)
                                  av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) *
                                  av_get_bits_per_sample(st->codecpar->codec_id) / 8;
             }
+            snprintf(bsf_arg, sizeof(bsf_arg), "r=%d/%d", mxf->tc.rate.num, mxf->tc.rate.den);
+            ret = ff_stream_add_bitstream_filter(st, "pcm_rechunk", bsf_arg);
+            if (ret < 0)
+                return ret;
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             AVDictionaryEntry *e = av_dict_get(st->metadata, "data_type", NULL, 0);
             if (e && !strcmp(e->value, "vbi_vanc_smpte_436M")) {
@@ -2593,6 +2598,7 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
         }
+        ff_retime_interleave_init(&sc->aic, av_inv_q(mxf->tc.rate));
 
         if (sc->index == -1) {
             sc->index = mxf_get_essence_container_ul_index(st->codecpar->codec_id);
@@ -2645,9 +2651,6 @@ static int mxf_write_header(AVFormatContext *s)
     if (!mxf->timecode_track->priv_data)
         return AVERROR(ENOMEM);
     mxf->timecode_track->index = -1;
-
-    if (ff_audio_interleave_init(s, 0, av_inv_q(mxf->tc.rate)) < 0)
-        return -1;
 
     return 0;
 }
@@ -3010,8 +3013,6 @@ static void mxf_deinit(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
 
-    ff_audio_interleave_close(s);
-
     av_freep(&mxf->index_entries);
     av_freep(&mxf->body_partition_offset);
     if (mxf->timecode_track) {
@@ -3086,8 +3087,8 @@ static int mxf_compare_timestamps(AVFormatContext *s, const AVPacket *next,
 
 static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    return ff_audio_rechunk_interleave(s, out, pkt, flush,
-                               mxf_interleave_get_packet, mxf_compare_timestamps);
+    return ff_retime_interleave(s, out, pkt, flush,
+                                mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
 #define MXF_COMMON_OPTIONS \

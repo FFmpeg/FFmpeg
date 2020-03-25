@@ -20,36 +20,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_AUDIOINTERLEAVE_H
-#define AVFORMAT_AUDIOINTERLEAVE_H
+#ifndef AVFORMAT_RETIMEINTERLEAVE_H
+#define AVFORMAT_RETIMEINTERLEAVE_H
 
-#include "libavutil/fifo.h"
 #include "avformat.h"
 
-typedef struct AudioInterleaveContext {
-    AVFifoBuffer *fifo;
-    unsigned fifo_size;           ///< size of currently allocated FIFO
-    int64_t n;                    ///< number of generated packets
-    int64_t nb_samples;           ///< number of generated samples
+typedef struct RetimeInterleaveContext {
     uint64_t dts;                 ///< current dts
-    int sample_size;              ///< size of one sample all channels included
-    int samples_per_frame;        ///< samples per frame if fixed, 0 otherwise
-    AVRational time_base;         ///< time base of output audio packets
-} AudioInterleaveContext;
-
-int ff_audio_interleave_init(AVFormatContext *s, const int samples_per_frame, AVRational time_base);
-void ff_audio_interleave_close(AVFormatContext *s);
+    AVRational time_base;         ///< time base of output packets
+} RetimeInterleaveContext;
 
 /**
- * Rechunk audio PCM packets per AudioInterleaveContext->samples_per_frame
- * and interleave them correctly.
- * The first element of AVStream->priv_data must be AudioInterleaveContext
+ * Init the retime interleave context
+ */
+void ff_retime_interleave_init(RetimeInterleaveContext *aic, AVRational time_base);
+
+/**
+ * Retime packets per RetimeInterleaveContext->time_base and interleave them
+ * correctly.
+ * The first element of AVStream->priv_data must be RetimeInterleaveContext
  * when using this function.
  *
  * @param get_packet function will output a packet when streams are correctly interleaved.
  * @param compare_ts function will compare AVPackets and decide interleaving order.
  */
-int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
+int ff_retime_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
                         int (*compare_ts)(AVFormatContext *, const AVPacket *, const AVPacket *));
 

@@ -27,8 +27,9 @@
 #include "avformat.h"
 #include "internal.h"
 #include "gxf.h"
-#include "audiointerleave.h"
+#include "retimeinterleave.h"
 
+#define GXF_SAMPLES_PER_FRAME 32768
 #define GXF_AUDIO_PACKET_SIZE 65536
 
 #define GXF_TIMECODE(c, d, h, m, s, f) \
@@ -44,7 +45,7 @@ typedef struct GXFTimecode{
 } GXFTimecode;
 
 typedef struct GXFStreamContext {
-    AudioInterleaveContext aic;
+    RetimeInterleaveContext aic;
     uint32_t track_type;
     uint32_t sample_size;
     uint32_t sample_rate;
@@ -663,8 +664,6 @@ static int gxf_write_umf_packet(AVFormatContext *s)
     return updatePacketSize(pb, pos);
 }
 
-static const int GXF_samples_per_frame = 32768;
-
 static void gxf_init_timecode_track(GXFStreamContext *sc, GXFStreamContext *vsc)
 {
     if (!vsc)
@@ -736,6 +735,9 @@ static int gxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "only mono tracks are allowed\n");
                 return -1;
             }
+            ret = ff_stream_add_bitstream_filter(st, "pcm_rechunk", "n="AV_STRINGIFY(GXF_SAMPLES_PER_FRAME));
+            if (ret < 0)
+                return ret;
             sc->track_type = 2;
             sc->sample_rate = st->codecpar->sample_rate;
             avpriv_set_pts_info(st, 64, 1, sc->sample_rate);
@@ -813,13 +815,11 @@ static int gxf_write_header(AVFormatContext *s)
                 return -1;
             }
         }
+        ff_retime_interleave_init(&sc->aic, st->time_base);
         /* FIXME first 10 audio tracks are 0 to 9 next 22 are A to V */
         sc->media_info = media_info<<8 | ('0'+tracks[media_info]++);
         sc->order = s->nb_streams - st->index;
     }
-
-    if (ff_audio_interleave_init(s, GXF_samples_per_frame, (AVRational){ 1, 48000 }) < 0)
-        return -1;
 
     if (tcr && vsc)
         gxf_init_timecode(s, &gxf->tc, tcr->value, vsc->fields);
@@ -876,8 +876,6 @@ static int gxf_write_trailer(AVFormatContext *s)
 static void gxf_deinit(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-
-    ff_audio_interleave_close(s);
 
     av_freep(&gxf->flt_entries);
     av_freep(&gxf->map_offsets);
@@ -1016,8 +1014,8 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
 {
     if (pkt && s->streams[pkt->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
         pkt->duration = 2; // enforce 2 fields
-    return ff_audio_rechunk_interleave(s, out, pkt, flush,
-                               ff_interleave_packet_per_dts, gxf_compare_field_nb);
+    return ff_retime_interleave(s, out, pkt, flush,
+                                ff_interleave_packet_per_dts, gxf_compare_field_nb);
 }
 
 AVOutputFormat ff_gxf_muxer = {
