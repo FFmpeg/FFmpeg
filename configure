@@ -4420,7 +4420,7 @@ msvc_common_flags(){
             # generic catch all at the bottom will print the original flag.
             -Wall)                ;;
             -Wextra)              ;;
-            -std=c99)             ;;
+            -std=c*)              ;;
             # Common flags
             -fomit-frame-pointer) ;;
             -g)                   echo -Z7 ;;
