@@ -318,6 +318,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_S12M_TIMECODE: {
             uint32_t *tc = (uint32_t*)sd->data;
+            if (sd->size != 16) {
+                av_log(ctx, AV_LOG_ERROR, "invalid data");
+                break;
+            }
             for (int j = 1; j <= tc[0]; j++) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
