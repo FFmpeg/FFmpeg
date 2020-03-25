@@ -3542,6 +3542,15 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int siz
 static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fov, float *v_fov)
 {
     switch (format) {
+    case STEREOGRAPHIC:
+        {
+            const float d = 0.5f * hypotf(w, h);
+            const float l = d / (tanf(d_fov * M_PI / 720.f));
+
+            *h_fov = 2.f * atan2f(w * 0.5f, l) * 360.f / M_PI;
+            *v_fov = 2.f * atan2f(h * 0.5f, l) * 360.f / M_PI;
+        }
+        break;
     case FISHEYE:
         {
             const float d = 0.5f * hypotf(w, h);
