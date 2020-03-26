@@ -1256,7 +1256,7 @@ static const char* get_relative_url(const char *master_url, const char *media_ur
         }
     }
 
-    return media_url + base_len;
+    return media_url + base_len + 1;
 }
 
 static int64_t get_stream_bit_rate(AVStream *stream)
