@@ -65,11 +65,11 @@ void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
     if (st && st->codecpar->width > 0 && st->codecpar->height > 0)
         avio_printf(out, ",RESOLUTION=%dx%d", st->codecpar->width,
                 st->codecpar->height);
-    if (codecs && strlen(codecs) > 0)
+    if (codecs && codecs[0])
         avio_printf(out, ",CODECS=\"%s\"", codecs);
-    if (agroup && strlen(agroup) > 0)
+    if (agroup && agroup[0])
         avio_printf(out, ",AUDIO=\"group_%s\"", agroup);
-    if (ccgroup && strlen(ccgroup) > 0)
+    if (ccgroup && ccgroup[0])
         avio_printf(out, ",CLOSED-CAPTIONS=\"%s\"", ccgroup);
     avio_printf(out, "\n%s\n\n", filename);
 }
