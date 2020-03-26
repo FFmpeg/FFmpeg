@@ -250,6 +250,9 @@ static int wv_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, 2)) < 0)
+        return ret;
+    AV_WL16(st->codecpar->extradata, wc->header.version);
     st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id              = AV_CODEC_ID_WAVPACK;
     st->codecpar->channels              = wc->chan;
