@@ -1696,11 +1696,13 @@ static int stereographic_to_xyz(const V360Context *s,
 {
     const float x = ((2.f * i + 1.f) / width  - 1.f) * s->flat_range[0];
     const float y = ((2.f * j + 1.f) / height - 1.f) * s->flat_range[1];
-    const float xy = x * x + y * y;
+    const float r = hypotf(x, y);
+    const float theta = atanf(r) * 2.f;
+    const float sin_theta = sinf(theta);
 
-    vec[0] = 2.f * x / (1.f + xy);
-    vec[1] = (-1.f + xy) / (1.f + xy);
-    vec[2] = 2.f * y / (1.f + xy);
+    vec[0] =  x / r * sin_theta;
+    vec[1] = -y / r * sin_theta;
+    vec[2] = -cosf(theta);
 
     normalize_vector(vec);
 
