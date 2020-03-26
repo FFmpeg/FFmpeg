@@ -1125,6 +1125,25 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
     return 1;
 }
 
+static int interleaved_write_packet(AVFormatContext *s, AVPacket *pkt, int flush)
+{
+    for (;; ) {
+        AVPacket opkt;
+        int ret = interleave_packet(s, &opkt, pkt, flush);
+        if (ret <= 0)
+            return ret;
+
+        pkt = NULL;
+
+        ret = write_packet(s, &opkt);
+
+        av_packet_unref(&opkt);
+
+        if (ret < 0)
+            return ret;
+    }
+}
+
 int av_write_frame(AVFormatContext *s, AVPacket *in)
 {
     AVPacket local_pkt, *pkt = &local_pkt;
@@ -1220,22 +1239,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
         flush = 1;
     }
+    return interleaved_write_packet(s, pkt, flush);
 
-    for (;; ) {
-        AVPacket opkt;
-        int ret = interleave_packet(s, &opkt, pkt, flush);
-        if (ret <= 0)
-            return ret;
-
-        pkt = NULL;
-
-        ret = write_packet(s, &opkt);
-
-        av_packet_unref(&opkt);
-
-        if (ret < 0)
-            return ret;
-    }
 fail:
     av_packet_unref(pkt);
     return ret;
@@ -1245,23 +1250,8 @@ int av_write_trailer(AVFormatContext *s)
 {
     int ret, i;
 
-    for (;; ) {
-        AVPacket pkt;
-        ret = interleave_packet(s, &pkt, NULL, 1);
-        if (ret < 0)
-            goto fail;
-        if (!ret)
-            break;
+    ret = interleaved_write_packet(s, NULL, 1);
 
-        ret = write_packet(s, &pkt);
-
-        av_packet_unref(&pkt);
-
-        if (ret < 0)
-            goto fail;
-    }
-
-fail:
     if (s->oformat->write_trailer) {
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
