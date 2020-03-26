@@ -795,7 +795,7 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
  * markers. Parsing the TLM header is needed to increment the input header
  * buffer.
  * This marker is mandatory for DCI. */
-static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
+static int get_tlm(Jpeg2000DecoderContext *s, int n)
 {
     uint8_t Stlm, ST, SP, tile_tlm, i;
     bytestream2_get_byte(&s->g);               /* Ztlm: skipped */
@@ -803,7 +803,11 @@ static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
 
     // too complex ? ST = ((Stlm >> 4) & 0x01) + ((Stlm >> 4) & 0x02);
     ST = (Stlm >> 4) & 0x03;
-    // TODO: Manage case of ST = 0b11 --> raise error
+    if (ST == 0x03) {
+        av_log(s->avctx, AV_LOG_ERROR, "TLM marker contains invalid ST value.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     SP       = (Stlm >> 6) & 0x01;
     tile_tlm = (n - 4) / ((SP + 1) * 2 + ST);
     for (i = 0; i < tile_tlm; i++) {
