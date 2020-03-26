@@ -2942,13 +2942,11 @@ static int hls_init(AVFormatContext *s)
                 if (ret < 0)
                     goto fail;
             } else {
-                vs->vtt_m3u8_name = av_malloc(vtt_basename_size);
+                vs->vtt_m3u8_name = av_asprintf("%s_vtt.m3u8", vs->vtt_basename);
                 if (!vs->vtt_m3u8_name) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
-                strcpy(vs->vtt_m3u8_name, vs->vtt_basename);
-                av_strlcat(vs->vtt_m3u8_name, "_vtt.m3u8", vtt_basename_size);
             }
             av_strlcat(vs->vtt_basename, vtt_pattern, vtt_basename_size);
         }
