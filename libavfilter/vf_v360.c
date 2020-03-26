@@ -1742,8 +1742,11 @@ static int xyz_to_stereographic(const V360Context *s,
                                 const float *vec, int width, int height,
                                 int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float x = vec[0] / (1.f - vec[1]) / s->iflat_range[0] * s->input_mirror_modifier[0];
-    const float y = vec[2] / (1.f - vec[1]) / s->iflat_range[1] * s->input_mirror_modifier[1];
+    const float theta = acosf(-vec[2]);
+    const float r = tanf(theta * 0.5f);
+    const float c = r / hypotf(vec[0], vec[1]);
+    const float x =  vec[0] * c / s->iflat_range[0] * s->input_mirror_modifier[0];
+    const float y = -vec[1] * c / s->iflat_range[1] * s->input_mirror_modifier[1];
 
     const float uf = (x + 1.f) * width  / 2.f;
     const float vf = (y + 1.f) * height / 2.f;
