@@ -47,6 +47,7 @@ typedef struct BiquadContext {
 
 typedef struct CrossoverChannel {
     BiquadContext lp[MAX_BANDS][4];
+    BiquadContext hp[MAX_BANDS][4];
 } CrossoverChannel;
 
 typedef struct AudioCrossoverContext {
@@ -148,6 +149,21 @@ static void set_lp(BiquadContext *b, double fc, double q, double sr)
     b->b2 = (1. - alpha) * inv;
 }
 
+static void set_hp(BiquadContext *b, double fc, double q, double sr)
+{
+    double omega = 2 * M_PI * fc / sr;
+    double sn = sin(omega);
+    double cs = cos(omega);
+    double alpha = sn / (2 * q);
+    double inv = 1.0 / (1.0 + alpha);
+
+    b->a0 = inv * (1. + cs) / 2.;
+    b->a1 = -2. * b->a0;
+    b->a2 = b->a0;
+    b->b1 = -2. * cs * inv;
+    b->b2 = (1. - alpha) * inv;
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -177,13 +193,18 @@ static int config_input(AVFilterLink *inlink)
     for (ch = 0; ch < inlink->channels; ch++) {
         for (band = 0; band <= s->nb_splits; band++) {
             set_lp(&s->xover[ch].lp[band][0], s->splits[band], q, sample_rate);
+            set_hp(&s->xover[ch].hp[band][0], s->splits[band], q, sample_rate);
 
             if (s->order > 1) {
                 set_lp(&s->xover[ch].lp[band][1], s->splits[band], 1.34, sample_rate);
+                set_hp(&s->xover[ch].hp[band][1], s->splits[band], 1.34, sample_rate);
                 set_lp(&s->xover[ch].lp[band][2], s->splits[band],    q, sample_rate);
+                set_hp(&s->xover[ch].hp[band][2], s->splits[band],    q, sample_rate);
                 set_lp(&s->xover[ch].lp[band][3], s->splits[band], 1.34, sample_rate);
+                set_hp(&s->xover[ch].hp[band][3], s->splits[band], 1.34, sample_rate);
             } else {
                 set_lp(&s->xover[ch].lp[band][1], s->splits[band], q, sample_rate);
+                set_hp(&s->xover[ch].hp[band][1], s->splits[band], q, sample_rate);
             }
         }
     }
@@ -253,12 +274,16 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
                 double *dst = (double *)frames[band]->extended_data[ch];
 
                 lo = sample;
+                hi = sample;
                 for (f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
                     BiquadContext *lp = &xover->lp[band][f];
                     lo = biquad_process(lp, lo);
                 }
 
-                hi = sample - lo;
+                for (f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
+                    BiquadContext *hp = &xover->hp[band][f];
+                    hi = biquad_process(hp, hi);
+                }
 
                 dst[i] = lo;
 
