@@ -60,7 +60,7 @@ typedef struct AVIStream {
 
     AVFormatContext *sub_ctx;
     AVPacket sub_pkt;
-    uint8_t *sub_buffer;
+    AVBufferRef *sub_buffer;
 
     int64_t seek_pos;
 } AVIStream;
@@ -1116,8 +1116,9 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
             time_base = ast->sub_ctx->streams[0]->time_base;
             avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
         }
-        ast->sub_buffer = pkt->data;
-        memset(pkt, 0, sizeof(*pkt));
+        ast->sub_buffer = pkt->buf;
+        pkt->buf = NULL;
+        av_packet_unref(pkt);
         return 1;
 
 error:
@@ -1909,7 +1910,7 @@ static int avi_read_close(AVFormatContext *s)
                 av_freep(&ast->sub_ctx->pb);
                 avformat_close_input(&ast->sub_ctx);
             }
-            av_freep(&ast->sub_buffer);
+            av_buffer_unref(&ast->sub_buffer);
             av_packet_unref(&ast->sub_pkt);
         }
     }
