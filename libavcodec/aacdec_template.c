@@ -520,14 +520,14 @@ static void flush(AVCodecContext *avctx)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int set_default_channel_config(AVCodecContext *avctx,
+static int set_default_channel_config(AACContext *ac,
                                       uint8_t (*layout_map)[3],
                                       int *tags,
                                       int channel_config)
 {
     if (channel_config < 1 || (channel_config > 7 && channel_config < 11) ||
         channel_config > 12) {
-        av_log(avctx, AV_LOG_ERROR,
+        av_log(ac->avctx, AV_LOG_ERROR,
                "invalid default channel configuration (%d)\n",
                channel_config);
         return AVERROR_INVALIDDATA;
@@ -547,8 +547,8 @@ static int set_default_channel_config(AVCodecContext *avctx,
      * As actual intended 7.1(wide) streams are very rare, default to assuming a
      * 7.1 layout was intended.
      */
-    if (channel_config == 7 && avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
-        av_log(avctx, AV_LOG_INFO, "Assuming an incorrectly encoded 7.1 channel layout"
+    if (channel_config == 7 && ac->avctx->strict_std_compliance < FF_COMPLIANCE_STRICT && !ac->warned_71_wide++) {
+        av_log(ac->avctx, AV_LOG_INFO, "Assuming an incorrectly encoded 7.1 channel layout"
                " instead of a spec-compliant 7.1(wide) layout, use -strict %d to decode"
                " according to the specification instead.\n", FF_COMPLIANCE_STRICT);
         layout_map[2][2] = AAC_CHANNEL_SIDE;
@@ -573,7 +573,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 
         av_log(ac->avctx, AV_LOG_DEBUG, "mono with CPE\n");
 
-        if (set_default_channel_config(ac->avctx, layout_map,
+        if (set_default_channel_config(ac, layout_map,
                                        &layout_map_tags, 2) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
@@ -592,7 +592,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 
         av_log(ac->avctx, AV_LOG_DEBUG, "stereo with SCE\n");
 
-        if (set_default_channel_config(ac->avctx, layout_map,
+        if (set_default_channel_config(ac, layout_map,
                                        &layout_map_tags, 1) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
@@ -841,7 +841,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         if (tags < 0)
             return tags;
     } else {
-        if ((ret = set_default_channel_config(avctx, layout_map,
+        if ((ret = set_default_channel_config(ac, layout_map,
                                               &tags, channel_config)))
             return ret;
     }
@@ -937,7 +937,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
         skip_bits_long(gb, 8 * len);
     }
 
-    if ((ret = set_default_channel_config(avctx, layout_map,
+    if ((ret = set_default_channel_config(ac, layout_map,
                                           &tags, channel_config)))
         return ret;
 
@@ -1200,7 +1200,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         ac->oc[1].m4ac.chan_config = i;
 
         if (ac->oc[1].m4ac.chan_config) {
-            int ret = set_default_channel_config(avctx, layout_map,
+            int ret = set_default_channel_config(ac, layout_map,
                 &layout_map_tags, ac->oc[1].m4ac.chan_config);
             if (!ret)
                 output_configure(ac, layout_map, layout_map_tags,
@@ -3002,7 +3002,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         push_output_configuration(ac);
         if (hdr_info.chan_config) {
             ac->oc[1].m4ac.chan_config = hdr_info.chan_config;
-            if ((ret = set_default_channel_config(ac->avctx,
+            if ((ret = set_default_channel_config(ac,
                                                   layout_map,
                                                   &layout_map_tags,
                                                   hdr_info.chan_config)) < 0)
