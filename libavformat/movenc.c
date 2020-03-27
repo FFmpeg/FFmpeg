@@ -77,6 +77,7 @@ static const AVOption options[] = {
     { "delay_moov", "Delay writing the initial moov until the first fragment is cut, or until the first fragment flush", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DELAY_MOOV}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "global_sidx", "Write a global sidx index at the start of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_GLOBAL_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "skip_sidx", "Skip writing of sidx atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SKIP_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "write_clli", "Write clli atom (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_CLLI}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_colr", "Write colr atom (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "prefer_icc", "If writing colr atom prioritise usage of ICC profile if it exists in stream packet side data", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_PREFER_ICC}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -1967,6 +1968,25 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track, int prefer_icc)
     return update_size(pb, pos);
 }
 
+static int mov_write_clli_tag(AVIOContext *pb, MOVTrack *track)
+{
+    const uint8_t *side_data;
+    const AVContentLightMetadata *content_light_metadata;
+
+    side_data = av_stream_get_side_data(track->st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, NULL);
+    if (!side_data) {
+        av_log(NULL, AV_LOG_WARNING, "Not writing 'clli' atom. No content light level info.\n");
+        return 0;
+    }
+    content_light_metadata = (const AVContentLightMetadata*)side_data;
+
+    avio_wb32(pb, 12); // size
+    ffio_wfourcc(pb, "clli");
+    avio_wb16(pb, content_light_metadata->MaxCLL);
+    avio_wb16(pb, content_light_metadata->MaxFALL);
+    return 12;
+}
+
 static void find_compressor(char * compressor_name, int len, MOVTrack *track)
 {
     AVDictionaryEntry *encoder;
@@ -2139,6 +2159,12 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
             mov_write_colr_tag(pb, track, mov->flags & FF_MOV_FLAG_PREFER_ICC);
         else
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'colr' atom. Format is not MOV or MP4.\n");
+    }
+    if (mov->flags & FF_MOV_FLAG_WRITE_CLLI) {
+        if (track->mode == MODE_MOV || track->mode == MODE_MP4)
+            mov_write_clli_tag(pb, track);
+        else
+            av_log(mov->fc, AV_LOG_WARNING, "Not writing 'clli' atom. Format is not MOV or MP4.\n");
     }
 
     if (track->mode == MODE_MP4 && mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {

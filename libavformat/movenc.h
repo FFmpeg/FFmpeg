@@ -261,6 +261,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_SKIP_SIDX             (1 << 21)
 #define FF_MOV_FLAG_CMAF                  (1 << 22)
 #define FF_MOV_FLAG_PREFER_ICC            (1 << 23)
+#define FF_MOV_FLAG_WRITE_CLLI            (1 << 24)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
