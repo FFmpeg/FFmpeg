@@ -1144,6 +1144,42 @@ static int interleaved_write_packet(AVFormatContext *s, AVPacket *pkt, int flush
     }
 }
 
+static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, int interleaved)
+{
+    int ret;
+
+    if (s->debug & FF_FDEBUG_TS)
+        av_log(s, AV_LOG_DEBUG, "%s size:%d dts:%s pts:%s\n", __FUNCTION__,
+               pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
+
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
+    if ((ret = compute_muxer_pkt_fields(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+        return ret;
+#endif
+
+    if (interleaved) {
+        if (pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+            return AVERROR(EINVAL);
+        return interleaved_write_packet(s, pkt, 0);
+    } else {
+        return write_packet(s, pkt);
+    }
+}
+
+static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleaved)
+{
+    AVStream *st = s->streams[pkt->stream_index];
+    int ret = prepare_input_packet(s, pkt);
+    if (ret < 0)
+        return ret;
+
+    ret = do_packet_auto_bsf(s, pkt);
+    if (ret <= 0)
+        return ret;
+
+    return write_packet_common(s, st, pkt, interleaved);
+}
+
 int av_write_frame(AVFormatContext *s, AVPacket *in)
 {
     AVPacket local_pkt, *pkt = &local_pkt;
@@ -1182,22 +1218,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *in)
         }
     }
 
-    ret = prepare_input_packet(s, pkt);
-    if (ret < 0)
-        goto fail;
-
-    ret = do_packet_auto_bsf(s, pkt);
-    if (ret <= 0)
-        goto fail;
-
-#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
-    ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
-
-    if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
-        goto fail;
-#endif
-
-    ret = write_packet(s, pkt);
+    ret = write_packets_common(s, pkt, 0/*non-interleaved*/);
 
 fail:
     // Uncoded frames using the noninterleaved codepath are also freed here
@@ -1207,43 +1228,17 @@ fail:
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, flush = 0;
+    int ret;
 
     if (pkt) {
-        AVStream *st = s->streams[pkt->stream_index];
-
-        ret = prepare_input_packet(s, pkt);
+        ret = write_packets_common(s, pkt, 1/*interleaved*/);
         if (ret < 0)
-            goto fail;
-
-        ret = do_packet_auto_bsf(s, pkt);
-        if (ret == 0)
-            return 0;
-        else if (ret < 0)
-            goto fail;
-
-        if (s->debug & FF_FDEBUG_TS)
-            av_log(s, AV_LOG_DEBUG, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
-                pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
-
-#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
-        if ((ret = compute_muxer_pkt_fields(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
-            goto fail;
-#endif
-
-        if (pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
+            av_packet_unref(pkt);
+        return ret;
     } else {
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
-        flush = 1;
+        return interleaved_write_packet(s, NULL, 1/*flush*/);
     }
-    return interleaved_write_packet(s, pkt, flush);
-
-fail:
-    av_packet_unref(pkt);
-    return ret;
 }
 
 int av_write_trailer(AVFormatContext *s)
