@@ -1934,6 +1934,40 @@ static int mov_write_clli_tag(AVIOContext *pb, MOVTrack *track)
     return 12;
 }
 
+static inline int64_t rescale_mdcv(AVRational q, int b)
+{
+    return av_rescale(q.num, b, q.den);
+}
+
+static int mov_write_mdcv_tag(AVIOContext *pb, MOVTrack *track)
+{
+    const int chroma_den = 50000;
+    const int luma_den = 10000;
+    const uint8_t *side_data;
+    const AVMasteringDisplayMetadata *metadata;
+
+    side_data = av_stream_get_side_data(track->st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
+    metadata = (const AVMasteringDisplayMetadata*)side_data;
+    if (!metadata || !metadata->has_primaries || !metadata->has_luminance) {
+        av_log(NULL, AV_LOG_VERBOSE, "Not writing 'mdcv' atom. Missing mastering metadata.\n");
+        return 0;
+    }
+
+    avio_wb32(pb, 32); // size
+    ffio_wfourcc(pb, "mdcv");
+    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[1][0], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[1][1], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[2][0], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[2][1], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[0][0], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[0][1], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->white_point[0], chroma_den));
+    avio_wb16(pb, rescale_mdcv(metadata->white_point[1], chroma_den));
+    avio_wb32(pb, rescale_mdcv(metadata->max_luminance, luma_den));
+    avio_wb32(pb, rescale_mdcv(metadata->min_luminance, luma_den));
+    return 32;
+}
+
 static void find_compressor(char * compressor_name, int len, MOVTrack *track)
 {
     AVDictionaryEntry *encoder;
@@ -2107,8 +2141,10 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         else
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'colr' atom. Format is not MOV or MP4.\n");
     }
-    if (track->mode == MODE_MOV || track->mode == MODE_MP4)
+    if (track->mode == MODE_MOV || track->mode == MODE_MP4) {
         mov_write_clli_tag(pb, track);
+        mov_write_mdcv_tag(pb, track);
+    }
 
     if (track->mode == MODE_MP4 && mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
         AVStereo3D* stereo_3d = (AVStereo3D*) av_stream_get_side_data(track->st, AV_PKT_DATA_STEREO3D, NULL);
