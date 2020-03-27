@@ -605,9 +605,12 @@ static int avi_read_header(AVFormatContext *s)
                 ast = s->streams[0]->priv_data;
                 st->priv_data = NULL;
                 ff_free_stream(s, st);
-                    avi->dv_demux = avpriv_dv_init_demux(s);
-                    if (!avi->dv_demux)
-                        goto fail;
+
+                avi->dv_demux = avpriv_dv_init_demux(s);
+                if (!avi->dv_demux) {
+                    av_free(ast);
+                    return AVERROR(ENOMEM);
+                }
 
                 s->streams[0]->priv_data = ast;
                 avio_skip(pb, 3 * 4);
