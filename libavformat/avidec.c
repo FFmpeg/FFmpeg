@@ -599,15 +599,16 @@ static int avi_read_header(AVFormatContext *s)
                     handler != MKTAG('d', 'v', 's', 'l'))
                     goto fail;
 
+                if (!CONFIG_DV_DEMUXER)
+                    return AVERROR_DEMUXER_NOT_FOUND;
+
                 ast = s->streams[0]->priv_data;
                 st->priv_data = NULL;
                 ff_free_stream(s, st);
-                if (CONFIG_DV_DEMUXER) {
                     avi->dv_demux = avpriv_dv_init_demux(s);
                     if (!avi->dv_demux)
                         goto fail;
-                } else
-                    goto fail;
+
                 s->streams[0]->priv_data = ast;
                 avio_skip(pb, 3 * 4);
                 ast->scale = avio_rl32(pb);
