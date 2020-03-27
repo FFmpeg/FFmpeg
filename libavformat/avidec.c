@@ -600,21 +600,8 @@ static int avi_read_header(AVFormatContext *s)
                     goto fail;
 
                 ast = s->streams[0]->priv_data;
-                av_freep(&s->streams[0]->codecpar->extradata);
-                av_freep(&s->streams[0]->codecpar);
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-                av_freep(&s->streams[0]->codec);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-                if (s->streams[0]->info)
-                    av_freep(&s->streams[0]->info->duration_error);
-                av_freep(&s->streams[0]->info);
-                if (s->streams[0]->internal)
-                    av_freep(&s->streams[0]->internal->avctx);
-                av_freep(&s->streams[0]->internal);
-                av_freep(&s->streams[0]);
-                s->nb_streams = 0;
+                st->priv_data = NULL;
+                ff_free_stream(s, st);
                 if (CONFIG_DV_DEMUXER) {
                     avi->dv_demux = avpriv_dv_init_demux(s);
                     if (!avi->dv_demux)
