@@ -557,6 +557,8 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
         return ret;
     }
 
+    frame->extended_data = frame->data;
+
     return 0;
 }
 
