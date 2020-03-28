@@ -18519,29 +18519,31 @@ The filter accepts the following options:
 
 @table @option
 @item start
-Specify number of delay frames before input video stream.
+Specify number of delay frames before input video stream. Default is 0.
 
 @item stop
 Specify number of padding frames after input video stream.
-Set to -1 to pad indefinitely.
+Set to -1 to pad indefinitely. Default is 0.
 
 @item start_mode
 Set kind of frames added to beginning of stream.
 Can be either @var{add} or @var{clone}.
 With @var{add} frames of solid-color are added.
 With @var{clone} frames are clones of first frame.
+Default is @var{add}.
 
 @item stop_mode
 Set kind of frames added to end of stream.
 Can be either @var{add} or @var{clone}.
 With @var{add} frames of solid-color are added.
 With @var{clone} frames are clones of last frame.
+Default is @var{add}.
 
 @item start_duration, stop_duration
 Specify the duration of the start/stop delay. See
 @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
 for the accepted syntax.
-These options override @var{start} and @var{stop}.
+These options override @var{start} and @var{stop}. Default is 0.
 
 @item color
 Specify the color of the padded area. For the syntax of this option,
