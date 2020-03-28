@@ -345,6 +345,7 @@ static void unpack(HCAContext *c, ChannelContext *ch,
             } else {
                 factor += delta - half_max;
             }
+            factor = av_clip_uintp2(factor, 6);
 
             ch->scale_factors[i] = factor;
         }
