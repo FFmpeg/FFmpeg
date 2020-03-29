@@ -61,11 +61,6 @@ typedef struct SmackerContext {
     int64_t aud_pts[7];
 } SmackerContext;
 
-typedef struct SmackerFrame {
-    int64_t pts;
-    int stream;
-} SmackerFrame;
-
 /* palette used in Smacker */
 static const uint8_t smk_pal[64] = {
     0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C,
