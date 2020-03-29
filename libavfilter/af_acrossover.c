@@ -99,7 +99,10 @@ static av_cold int init(AVFilterContext *ctx)
 
         p = NULL;
 
-        av_sscanf(arg, "%f", &freq);
+        if (av_sscanf(arg, "%f", &freq) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for frequency[%d].\n", i);
+            return AVERROR(EINVAL);
+        }
         if (freq <= 0) {
             av_log(ctx, AV_LOG_ERROR, "Frequency %f must be positive number.\n", freq);
             return AVERROR(EINVAL);
