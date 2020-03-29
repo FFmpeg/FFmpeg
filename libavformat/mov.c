@@ -7734,7 +7734,8 @@ static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
     mov->next_root_atom = 0;
     if (index < 0 || index >= mov->frag_index.nb_items)
         index = search_frag_moof_offset(&mov->frag_index, target);
-    if (index < mov->frag_index.nb_items) {
+    if (index < mov->frag_index.nb_items &&
+        mov->frag_index.item[index].moof_offset == target) {
         if (index + 1 < mov->frag_index.nb_items)
             mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
         if (mov->frag_index.item[index].headers_read)
