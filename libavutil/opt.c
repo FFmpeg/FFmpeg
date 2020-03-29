@@ -330,12 +330,7 @@ static int set_string_image_size(void *obj, const AVOption *o, const char *val, 
 
 static int set_string_video_rate(void *obj, const AVOption *o, const char *val, AVRational *dst)
 {
-    int ret;
-    if (!val) {
-        ret = AVERROR(EINVAL);
-    } else {
-        ret = av_parse_video_rate(dst, val);
-    }
+    int ret = av_parse_video_rate(dst, val);
     if (ret < 0)
         av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as video rate\n", val);
     return ret;
@@ -473,7 +468,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         return AVERROR_OPTION_NOT_FOUND;
     if (!val && (o->type != AV_OPT_TYPE_STRING &&
                  o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_SAMPLE_FMT &&
-                 o->type != AV_OPT_TYPE_IMAGE_SIZE && o->type != AV_OPT_TYPE_VIDEO_RATE &&
+                 o->type != AV_OPT_TYPE_IMAGE_SIZE &&
                  o->type != AV_OPT_TYPE_DURATION && o->type != AV_OPT_TYPE_COLOR &&
                  o->type != AV_OPT_TYPE_CHANNEL_LAYOUT && o->type != AV_OPT_TYPE_BOOL))
         return AVERROR(EINVAL);
