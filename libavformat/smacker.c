@@ -51,8 +51,6 @@ typedef struct SmackerContext {
     uint32_t flags;
     uint32_t audio[7];
     uint32_t treesize;
-    uint8_t  aflags[7];
-    uint32_t rates[7];
     uint32_t pad;
     /* frame info */
     uint32_t *frm_size;
@@ -107,7 +105,7 @@ static int smacker_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     SmackerContext *smk = s->priv_data;
-    AVStream *st, *ast[7];
+    AVStream *st;
     int i, ret;
     int tbase;
 
@@ -153,9 +151,45 @@ static int smacker_read_header(AVFormatContext *s)
     if ((ret = ffio_read_size(pb, st->codecpar->extradata, 16)) < 0)
         return ret;
 
+    /* handle possible audio streams */
     for(i = 0; i < 7; i++) {
-        smk->rates[i]  = avio_rl24(pb);
-        smk->aflags[i] = avio_r8(pb);
+        uint32_t rate = avio_rl24(pb);
+        uint8_t aflag = avio_r8(pb);
+
+        smk->indexes[i] = -1;
+
+        if (rate) {
+            AVStream *ast = avformat_new_stream(s, NULL);
+            if (!ast)
+                return AVERROR(ENOMEM);
+
+            smk->indexes[i] = ast->index;
+            ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            if (aflag & SMK_AUD_BINKAUD) {
+                ast->codecpar->codec_id  = AV_CODEC_ID_BINKAUDIO_RDFT;
+            } else if (aflag & SMK_AUD_USEDCT) {
+                ast->codecpar->codec_id  = AV_CODEC_ID_BINKAUDIO_DCT;
+            } else if (aflag & SMK_AUD_PACKED) {
+                ast->codecpar->codec_id  = AV_CODEC_ID_SMACKAUDIO;
+                ast->codecpar->codec_tag = MKTAG('S', 'M', 'K', 'A');
+            } else {
+                ast->codecpar->codec_id  = AV_CODEC_ID_PCM_U8;
+            }
+            if (aflag & SMK_AUD_STEREO) {
+                ast->codecpar->channels       = 2;
+                ast->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else {
+                ast->codecpar->channels       = 1;
+                ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+            }
+            ast->codecpar->sample_rate = rate;
+            ast->codecpar->bits_per_coded_sample = (aflag & SMK_AUD_16BITS) ? 16 : 8;
+            if (ast->codecpar->bits_per_coded_sample == 16 &&
+                ast->codecpar->codec_id == AV_CODEC_ID_PCM_U8)
+                ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+            avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate
+                    * ast->codecpar->channels * ast->codecpar->bits_per_coded_sample / 8);
+        }
     }
     smk->pad = avio_rl32(pb);
     /* setup data */
@@ -194,44 +228,6 @@ static int smacker_read_header(AVFormatContext *s)
     av_reduce(&tbase, &smk->pts_inc, tbase, smk->pts_inc, (1UL<<31)-1);
     avpriv_set_pts_info(st, 33, smk->pts_inc, tbase);
     st->duration = smk->frames;
-    /* handle possible audio streams */
-    for(i = 0; i < 7; i++) {
-        smk->indexes[i] = -1;
-        if (smk->rates[i]) {
-            ast[i] = avformat_new_stream(s, NULL);
-            if (!ast[i]) {
-                av_freep(&smk->frm_size);
-                av_freep(&smk->frm_flags);
-                return AVERROR(ENOMEM);
-            }
-            smk->indexes[i] = ast[i]->index;
-            ast[i]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-            if (smk->aflags[i] & SMK_AUD_BINKAUD) {
-                ast[i]->codecpar->codec_id = AV_CODEC_ID_BINKAUDIO_RDFT;
-            } else if (smk->aflags[i] & SMK_AUD_USEDCT) {
-                ast[i]->codecpar->codec_id = AV_CODEC_ID_BINKAUDIO_DCT;
-            } else if (smk->aflags[i] & SMK_AUD_PACKED){
-                ast[i]->codecpar->codec_id = AV_CODEC_ID_SMACKAUDIO;
-                ast[i]->codecpar->codec_tag = MKTAG('S', 'M', 'K', 'A');
-            } else {
-                ast[i]->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
-            }
-            if (smk->aflags[i] & SMK_AUD_STEREO) {
-                ast[i]->codecpar->channels       = 2;
-                ast[i]->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else {
-                ast[i]->codecpar->channels       = 1;
-                ast[i]->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-            }
-            ast[i]->codecpar->sample_rate = smk->rates[i];
-            ast[i]->codecpar->bits_per_coded_sample = (smk->aflags[i] & SMK_AUD_16BITS) ? 16 : 8;
-            if(ast[i]->codecpar->bits_per_coded_sample == 16 && ast[i]->codecpar->codec_id == AV_CODEC_ID_PCM_U8)
-                ast[i]->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
-            avpriv_set_pts_info(ast[i], 64, 1, ast[i]->codecpar->sample_rate
-                    * ast[i]->codecpar->channels * ast[i]->codecpar->bits_per_coded_sample / 8);
-        }
-    }
-
 
     /* load trees to extradata, they will be unpacked by decoder */
     ret = avio_read(pb, st->codecpar->extradata + 16, st->codecpar->extradata_size - 16);
