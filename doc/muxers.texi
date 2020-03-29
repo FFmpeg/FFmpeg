@@ -1062,6 +1062,21 @@ have and language is named ENG, the other audio language is named CHN.
 
 By default, a single hls variant containing all the encoded streams is created.
 
+@example
+ffmpeg -y -i input_with_subtitle.mkv \
+ -b:v:0 5250k -c:v h264 -pix_fmt yuv420p -profile:v main -level 4.1 \
+ -b:a:0 256k \
+ -c:s webvtt -c:a mp2 -ar 48000 -ac 2 -map 0:v -map 0:a:0 -map 0:s:0 \
+ -f hls -var_stream_map "v:0,a:0,s:0,sgroup:subtitle" \
+ -master_pl_name master.m3u8 -t 300 -hls_time 10 -hls_init_time 4 -hls_list_size \
+ 10 -master_pl_publish_rate 10  -hls_flags \
+ delete_segments+discont_start+split_by_time ./tmp/video.m3u8
+@end example
+
+This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=SUBTITLES} in
+the master playlist with webvtt subtitle group name 'subtitle'. Please make sure
+the input file has one text subtitle stream at least.
+
 @item cc_stream_map
 Map string which specifies different closed captions groups and their
 attributes. The closed captions stream groups are separated by space.

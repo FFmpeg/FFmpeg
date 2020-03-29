@@ -164,6 +164,7 @@ typedef struct VariantStream {
     int is_default; /* default status of audio group */
     char *language; /* audio lauguage name */
     char *agroup; /* audio group name */
+    char *sgroup; /* subtitle group name */
     char *ccgroup; /* closed caption group name */
     char *baseurl;
     char *varname; // variant name
@@ -1285,7 +1286,9 @@ static int create_master_playlist(AVFormatContext *s,
     unsigned int i, j;
     int ret, bandwidth;
     const char *m3u8_rel_name = NULL;
+    const char *vtt_m3u8_rel_name = NULL;
     char *ccgroup;
+    char *sgroup = NULL;
     ClosedCaptionsStream *ccs;
     const char *proto = avio_find_protocol_name(hls->master_m3u8_url);
     int is_file_proto = proto && !strcmp(proto, "file");
@@ -1408,13 +1411,24 @@ static int create_master_playlist(AVFormatContext *s,
                         vs->ccgroup);
         }
 
+        if (vid_st && vs->sgroup) {
+            sgroup = vs->sgroup;
+            vtt_m3u8_rel_name = get_relative_url(hls->master_m3u8_url, vs->vtt_m3u8_name);
+            if (!vtt_m3u8_rel_name) {
+                av_log(s, AV_LOG_WARNING, "Unable to find relative subtitle URL\n");
+                break;
+            }
+
+            ff_hls_write_subtitle_rendition(hls->m3u8_out, sgroup, vtt_m3u8_rel_name, vs->language, i, hls->has_default_key ? vs->is_default : 1);
+        }
+
         if (!hls->has_default_key || !hls->has_video_m3u8) {
             ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name,
-                    aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup);
+                    aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup, sgroup);
         } else {
             if (vid_st) {
                 ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name,
-                                         aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup);
+                                         aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup, sgroup);
             }
         }
     }
@@ -1889,6 +1903,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
      * practical usage)
      *
      * agroup: is key to specify audio group. A string can be given as value.
+     * sgroup: is key to specify subtitle group. A string can be given as value.
      */
     p = av_strdup(hls->var_stream_map);
     if (!p)
@@ -1954,6 +1969,12 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
                 av_free(vs->agroup);
                 vs->agroup = av_strdup(val);
                 if (!vs->agroup)
+                    return AVERROR(ENOMEM);
+                continue;
+            } else if (av_strstart(keyval, "sgroup:", &val)) {
+                av_free(vs->sgroup);
+                vs->sgroup = av_strdup(val);
+                if (!vs->sgroup)
                     return AVERROR(ENOMEM);
                 continue;
             } else if (av_strstart(keyval, "ccgroup:", &val)) {
@@ -2512,6 +2533,7 @@ static void hls_free_variant_streams(struct HLSContext *hls)
         av_freep(&vs->m3u8_name);
         av_freep(&vs->streams);
         av_freep(&vs->agroup);
+        av_freep(&vs->sgroup);
         av_freep(&vs->language);
         av_freep(&vs->ccgroup);
         av_freep(&vs->baseurl);

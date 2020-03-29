@@ -1311,7 +1311,7 @@ static int write_manifest(AVFormatContext *s, int final)
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
             ff_hls_write_stream_info(st, c->m3u8_out, stream_bitrate,
                                      playlist_file, agroup,
-                                     codec_str_ptr, NULL);
+                                     codec_str_ptr, NULL, NULL);
         }
         dashenc_io_close(s, &c->m3u8_out, temp_filename);
         if (use_rename)
