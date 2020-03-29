@@ -108,7 +108,10 @@ static av_cold int init(AVFilterContext *ctx)
             break;
 
         p = NULL;
-        av_sscanf(arg, "%f", &s->weights[i]);
+        if (av_sscanf(arg, "%f", &s->weights[i]) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for weights[%d].\n", i);
+            return AVERROR(EINVAL);
+        }
         s->wfactor += s->weights[i];
         last = i;
     }
