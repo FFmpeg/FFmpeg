@@ -155,7 +155,10 @@ static int config_input(AVFilterLink *inlink)
         ret = av_sscanf(arg, "%d%c", &d->delay, &type);
         if (ret != 2 || type != 'S') {
             div = type == 's' ? 1.0 : 1000.0;
-            av_sscanf(arg, "%f", &delay);
+            if (av_sscanf(arg, "%f", &delay) != 1) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid syntax for delay.\n");
+                return AVERROR(EINVAL);
+            }
             d->delay = delay * inlink->sample_rate / div;
         }
 
