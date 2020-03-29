@@ -122,19 +122,6 @@ struct representation {
 typedef struct DASHContext {
     const AVClass *class;
     char *base_url;
-    char *adaptionset_contenttype_val;
-    char *adaptionset_par_val;
-    char *adaptionset_lang_val;
-    char *adaptionset_minbw_val;
-    char *adaptionset_maxbw_val;
-    char *adaptionset_minwidth_val;
-    char *adaptionset_maxwidth_val;
-    char *adaptionset_minheight_val;
-    char *adaptionset_maxheight_val;
-    char *adaptionset_minframerate_val;
-    char *adaptionset_maxframerate_val;
-    char *adaptionset_segmentalignment_val;
-    char *adaptionset_bitstreamswitching_val;
 
     int n_videos;
     struct representation **videos;
@@ -1107,26 +1094,12 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                         xmlNodePtr period_segmentlist_node)
 {
     int ret = 0;
-    DASHContext *c = s->priv_data;
     xmlNodePtr fragment_template_node = NULL;
     xmlNodePtr content_component_node = NULL;
     xmlNodePtr adaptionset_baseurl_node = NULL;
     xmlNodePtr adaptionset_segmentlist_node = NULL;
     xmlNodePtr adaptionset_supplementalproperty_node = NULL;
     xmlNodePtr node = NULL;
-    c->adaptionset_contenttype_val = xmlGetProp(adaptionset_node, "contentType");
-    c->adaptionset_par_val = xmlGetProp(adaptionset_node, "par");
-    c->adaptionset_lang_val = xmlGetProp(adaptionset_node, "lang");
-    c->adaptionset_minbw_val = xmlGetProp(adaptionset_node, "minBandwidth");
-    c->adaptionset_maxbw_val = xmlGetProp(adaptionset_node, "maxBandwidth");
-    c->adaptionset_minwidth_val = xmlGetProp(adaptionset_node, "minWidth");
-    c->adaptionset_maxwidth_val = xmlGetProp(adaptionset_node, "maxWidth");
-    c->adaptionset_minheight_val = xmlGetProp(adaptionset_node, "minHeight");
-    c->adaptionset_maxheight_val = xmlGetProp(adaptionset_node, "maxHeight");
-    c->adaptionset_minframerate_val = xmlGetProp(adaptionset_node, "minFrameRate");
-    c->adaptionset_maxframerate_val = xmlGetProp(adaptionset_node, "maxFrameRate");
-    c->adaptionset_segmentalignment_val = xmlGetProp(adaptionset_node, "segmentAlignment");
-    c->adaptionset_bitstreamswitching_val = xmlGetProp(adaptionset_node, "bitstreamSwitching");
 
     node = xmlFirstElementChild(adaptionset_node);
     while (node) {
