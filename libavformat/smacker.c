@@ -25,10 +25,10 @@
 
 #include <inttypes.h>
 
-#include "libavutil/bswap.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 #define SMACKER_PAL 0x01
@@ -51,7 +51,6 @@ typedef struct SmackerContext {
     uint32_t flags;
     uint32_t audio[7];
     uint32_t treesize;
-    uint32_t mmap_size, mclr_size, full_size, type_size;
     uint8_t  aflags[7];
     uint32_t rates[7];
     uint32_t pad;
@@ -128,6 +127,10 @@ static int smacker_read_header(AVFormatContext *s)
     smk->flags = avio_rl32(pb);
     if(smk->flags & SMACKER_FLAG_RING_FRAME)
         smk->frames++;
+    if (smk->frames > 0xFFFFFF) {
+        av_log(s, AV_LOG_ERROR, "Too many frames: %"PRIu32"\n", smk->frames);
+        return AVERROR_INVALIDDATA;
+    }
     for(i = 0; i < 7; i++)
         smk->audio[i] = avio_rl32(pb);
     smk->treesize = avio_rl32(pb);
@@ -137,21 +140,25 @@ static int smacker_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-//FIXME remove extradata "rebuilding"
-    smk->mmap_size = avio_rl32(pb);
-    smk->mclr_size = avio_rl32(pb);
-    smk->full_size = avio_rl32(pb);
-    smk->type_size = avio_rl32(pb);
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    if ((ret = ff_alloc_extradata(st->codecpar, smk->treesize + 16)) < 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Cannot allocate %"PRIu32" bytes of extradata\n",
+               smk->treesize + 16);
+        return ret;
+    }
+    if ((ret = ffio_read_size(pb, st->codecpar->extradata, 16)) < 0)
+        return ret;
+
     for(i = 0; i < 7; i++) {
         smk->rates[i]  = avio_rl24(pb);
         smk->aflags[i] = avio_r8(pb);
     }
     smk->pad = avio_rl32(pb);
     /* setup data */
-    if(smk->frames > 0xFFFFFF) {
-        av_log(s, AV_LOG_ERROR, "Too many frames: %"PRIu32"\n", smk->frames);
-        return AVERROR_INVALIDDATA;
-    }
     smk->frm_size = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
     smk->frm_flags = av_malloc(smk->frames);
     if (!smk->frm_size || !smk->frm_flags) {
@@ -171,12 +178,6 @@ static int smacker_read_header(AVFormatContext *s)
     }
 
     /* init video codec */
-    st = avformat_new_stream(s, NULL);
-    if (!st) {
-        av_freep(&smk->frm_size);
-        av_freep(&smk->frm_flags);
-        return AVERROR(ENOMEM);
-    }
     smk->videoindex = st->index;
     st->codecpar->width = smk->width;
     st->codecpar->height = smk->height;
@@ -233,24 +234,12 @@ static int smacker_read_header(AVFormatContext *s)
 
 
     /* load trees to extradata, they will be unpacked by decoder */
-    if ((ret = ff_alloc_extradata(st->codecpar, smk->treesize + 16)) < 0) {
-        av_log(s, AV_LOG_ERROR,
-               "Cannot allocate %"PRIu32" bytes of extradata\n",
-               smk->treesize + 16);
-        av_freep(&smk->frm_size);
-        av_freep(&smk->frm_flags);
-        return ret;
-    }
     ret = avio_read(pb, st->codecpar->extradata + 16, st->codecpar->extradata_size - 16);
     if(ret != st->codecpar->extradata_size - 16){
         av_freep(&smk->frm_size);
         av_freep(&smk->frm_flags);
         return AVERROR(EIO);
     }
-    ((int32_t*)st->codecpar->extradata)[0] = av_le2ne32(smk->mmap_size);
-    ((int32_t*)st->codecpar->extradata)[1] = av_le2ne32(smk->mclr_size);
-    ((int32_t*)st->codecpar->extradata)[2] = av_le2ne32(smk->full_size);
-    ((int32_t*)st->codecpar->extradata)[3] = av_le2ne32(smk->type_size);
 
     smk->curstream = -1;
     smk->nextpos = avio_tell(pb);
