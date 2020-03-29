@@ -131,7 +131,7 @@ typedef struct MXFSequence {
     uint8_t origin;
 } MXFSequence;
 
-typedef struct MXFTrack {
+typedef struct MXFTimecodeComponent {
     UID uid;
     enum MXFMetadataSetType type;
     int drop_frame;
