@@ -43,22 +43,12 @@ enum SAudFlags {
 };
 
 typedef struct SmackerContext {
-    /* Smacker file header */
-    uint32_t magic;
-    uint32_t width, height;
     uint32_t frames;
-    int      pts_inc;
-    uint32_t flags;
-    uint32_t audio[7];
-    uint32_t treesize;
-    uint32_t pad;
     /* frame info */
     uint32_t *frm_size;
     uint8_t  *frm_flags;
     /* internal variables */
     int cur_frame;
-    int is_ver4;
-    int64_t cur_pts;
     /* current frame for demuxing */
     uint8_t pal[768];
     int indexes[7];
@@ -106,34 +96,36 @@ static int smacker_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     SmackerContext *smk = s->priv_data;
     AVStream *st;
-    int i, ret;
+    uint32_t magic, width, height, flags, treesize;
+    int i, ret, pts_inc;
     int tbase;
 
     /* read and check header */
-    smk->magic = avio_rl32(pb);
-    if (smk->magic != MKTAG('S', 'M', 'K', '2') && smk->magic != MKTAG('S', 'M', 'K', '4'))
+    magic  = avio_rl32(pb);
+    if (magic != MKTAG('S', 'M', 'K', '2') && magic != MKTAG('S', 'M', 'K', '4'))
         return AVERROR_INVALIDDATA;
-    smk->width = avio_rl32(pb);
-    smk->height = avio_rl32(pb);
+    width  = avio_rl32(pb);
+    height = avio_rl32(pb);
     smk->frames = avio_rl32(pb);
-    smk->pts_inc = (int32_t)avio_rl32(pb);
-    if (smk->pts_inc > INT_MAX / 100) {
-        av_log(s, AV_LOG_ERROR, "pts_inc %d is too large\n", smk->pts_inc);
+    pts_inc = avio_rl32(pb);
+    if (pts_inc > INT_MAX / 100) {
+        av_log(s, AV_LOG_ERROR, "pts_inc %d is too large\n", pts_inc);
         return AVERROR_INVALIDDATA;
     }
 
-    smk->flags = avio_rl32(pb);
-    if(smk->flags & SMACKER_FLAG_RING_FRAME)
+    flags = avio_rl32(pb);
+    if (flags & SMACKER_FLAG_RING_FRAME)
         smk->frames++;
     if (smk->frames > 0xFFFFFF) {
         av_log(s, AV_LOG_ERROR, "Too many frames: %"PRIu32"\n", smk->frames);
         return AVERROR_INVALIDDATA;
     }
-    for(i = 0; i < 7; i++)
-        smk->audio[i] = avio_rl32(pb);
-    smk->treesize = avio_rl32(pb);
 
-    if(smk->treesize >= UINT_MAX/4){ // smk->treesize + 16 must not overflow (this check is probably redundant)
+    avio_skip(pb, 28); /* Unused audio related data */
+
+    treesize = avio_rl32(pb);
+    if (treesize >= UINT_MAX/4) {
+        // treesize + 16 must not overflow (this check is probably redundant)
         av_log(s, AV_LOG_ERROR, "treesize too large\n");
         return AVERROR_INVALIDDATA;
     }
@@ -142,10 +134,24 @@ static int smacker_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    if ((ret = ff_alloc_extradata(st->codecpar, smk->treesize + 16)) < 0) {
+    /* Smacker uses 100000 as internal timebase */
+    if (pts_inc < 0)
+        pts_inc = -pts_inc;
+    else
+        pts_inc *= 100;
+    tbase = 100000;
+    av_reduce(&tbase, &pts_inc, tbase, pts_inc, (1UL << 31) - 1);
+    avpriv_set_pts_info(st, 33, pts_inc, tbase);
+
+    /* init video codec */
+    st->codecpar->width     = width;
+    st->codecpar->height    = height;
+    st->codecpar->codec_tag = magic;
+
+    if ((ret = ff_alloc_extradata(st->codecpar, treesize + 16)) < 0) {
         av_log(s, AV_LOG_ERROR,
                "Cannot allocate %"PRIu32" bytes of extradata\n",
-               smk->treesize + 16);
+               treesize + 16);
         return ret;
     }
     if ((ret = ffio_read_size(pb, st->codecpar->extradata, 16)) < 0)
@@ -191,7 +197,7 @@ static int smacker_read_header(AVFormatContext *s)
                     * ast->codecpar->channels * ast->codecpar->bits_per_coded_sample / 8);
         }
     }
-    smk->pad = avio_rl32(pb);
+    avio_rl32(pb); /* padding */
     /* setup data */
     smk->frm_size = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
     smk->frm_flags = av_malloc(smk->frames);
@@ -201,8 +207,6 @@ static int smacker_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
 
-    smk->is_ver4 = (smk->magic != MKTAG('S', 'M', 'K', '2'));
-
     /* read frame info */
     for(i = 0; i < smk->frames; i++) {
         smk->frm_size[i] = avio_rl32(pb);
@@ -211,22 +215,10 @@ static int smacker_read_header(AVFormatContext *s)
         smk->frm_flags[i] = avio_r8(pb);
     }
 
-    /* init video codec */
     smk->videoindex = st->index;
-    st->codecpar->width = smk->width;
-    st->codecpar->height = smk->height;
     st->codecpar->format = AV_PIX_FMT_PAL8;
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = AV_CODEC_ID_SMACKVIDEO;
-    st->codecpar->codec_tag = smk->magic;
-    /* Smacker uses 100000 as internal timebase */
-    if(smk->pts_inc < 0)
-        smk->pts_inc = -smk->pts_inc;
-    else
-        smk->pts_inc *= 100;
-    tbase = 100000;
-    av_reduce(&tbase, &smk->pts_inc, tbase, smk->pts_inc, (1UL<<31)-1);
-    avpriv_set_pts_info(st, 33, smk->pts_inc, tbase);
     st->duration = smk->frames;
 
     /* load trees to extradata, they will be unpacked by decoder */
