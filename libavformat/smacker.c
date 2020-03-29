@@ -91,6 +91,7 @@ static int smacker_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     SmackerContext *smk = s->priv_data;
     AVStream *st;
+    AVCodecParameters *par;
     uint32_t magic, width, height, flags, treesize;
     int i, ret, pts_inc;
     int tbase;
@@ -129,6 +130,7 @@ static int smacker_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
+    smk->videoindex = st->index;
     /* Smacker uses 100000 as internal timebase */
     if (pts_inc < 0)
         pts_inc = -pts_inc;
@@ -137,23 +139,28 @@ static int smacker_read_header(AVFormatContext *s)
     tbase = 100000;
     av_reduce(&tbase, &pts_inc, tbase, pts_inc, (1UL << 31) - 1);
     avpriv_set_pts_info(st, 33, pts_inc, tbase);
+    st->duration = smk->frames;
 
     /* init video codec */
-    st->codecpar->width     = width;
-    st->codecpar->height    = height;
-    st->codecpar->codec_tag = magic;
+    par = st->codecpar;
+    par->width      = width;
+    par->height     = height;
+    par->format     = AV_PIX_FMT_PAL8;
+    par->codec_type = AVMEDIA_TYPE_VIDEO;
+    par->codec_id   = AV_CODEC_ID_SMACKVIDEO;
+    par->codec_tag  = magic;
 
-    if ((ret = ff_alloc_extradata(st->codecpar, treesize + 16)) < 0) {
+    if ((ret = ff_alloc_extradata(par, treesize + 16)) < 0) {
         av_log(s, AV_LOG_ERROR,
                "Cannot allocate %"PRIu32" bytes of extradata\n",
                treesize + 16);
         return ret;
     }
-    if ((ret = ffio_read_size(pb, st->codecpar->extradata, 16)) < 0)
+    if ((ret = ffio_read_size(pb, par->extradata, 16)) < 0)
         return ret;
 
     /* handle possible audio streams */
-    for(i = 0; i < 7; i++) {
+    for (i = 0; i < 7; i++) {
         uint32_t rate = avio_rl24(pb);
         uint8_t aflag = avio_r8(pb);
 
@@ -161,40 +168,44 @@ static int smacker_read_header(AVFormatContext *s)
 
         if (rate) {
             AVStream *ast = avformat_new_stream(s, NULL);
+            AVCodecParameters *par;
             if (!ast)
                 return AVERROR(ENOMEM);
 
             smk->indexes[i] = ast->index;
-            ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            par = ast->codecpar;
+            par->codec_type = AVMEDIA_TYPE_AUDIO;
             if (aflag & SMK_AUD_BINKAUD) {
-                ast->codecpar->codec_id  = AV_CODEC_ID_BINKAUDIO_RDFT;
+                par->codec_id  = AV_CODEC_ID_BINKAUDIO_RDFT;
             } else if (aflag & SMK_AUD_USEDCT) {
-                ast->codecpar->codec_id  = AV_CODEC_ID_BINKAUDIO_DCT;
+                par->codec_id  = AV_CODEC_ID_BINKAUDIO_DCT;
             } else if (aflag & SMK_AUD_PACKED) {
-                ast->codecpar->codec_id  = AV_CODEC_ID_SMACKAUDIO;
-                ast->codecpar->codec_tag = MKTAG('S', 'M', 'K', 'A');
+                par->codec_id  = AV_CODEC_ID_SMACKAUDIO;
+                par->codec_tag = MKTAG('S', 'M', 'K', 'A');
             } else {
-                ast->codecpar->codec_id  = AV_CODEC_ID_PCM_U8;
+                par->codec_id  = AV_CODEC_ID_PCM_U8;
             }
             if (aflag & SMK_AUD_STEREO) {
-                ast->codecpar->channels       = 2;
-                ast->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+                par->channels       = 2;
+                par->channel_layout = AV_CH_LAYOUT_STEREO;
             } else {
-                ast->codecpar->channels       = 1;
-                ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+                par->channels       = 1;
+                par->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            ast->codecpar->sample_rate = rate;
-            ast->codecpar->bits_per_coded_sample = (aflag & SMK_AUD_16BITS) ? 16 : 8;
-            if (ast->codecpar->bits_per_coded_sample == 16 &&
-                ast->codecpar->codec_id == AV_CODEC_ID_PCM_U8)
-                ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
-            avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate
-                    * ast->codecpar->channels * ast->codecpar->bits_per_coded_sample / 8);
+            par->sample_rate = rate;
+            par->bits_per_coded_sample = (aflag & SMK_AUD_16BITS) ? 16 : 8;
+            if (par->bits_per_coded_sample == 16 &&
+                par->codec_id == AV_CODEC_ID_PCM_U8)
+                par->codec_id = AV_CODEC_ID_PCM_S16LE;
+            avpriv_set_pts_info(ast, 64, 1, par->sample_rate * par->channels
+                                            * par->bits_per_coded_sample / 8);
         }
     }
+
     avio_rl32(pb); /* padding */
+
     /* setup data */
-    smk->frm_size = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
+    smk->frm_size  = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
     smk->frm_flags = av_malloc(smk->frames);
     if (!smk->frm_size || !smk->frm_flags) {
         av_freep(&smk->frm_size);
@@ -203,22 +214,16 @@ static int smacker_read_header(AVFormatContext *s)
     }
 
     /* read frame info */
-    for(i = 0; i < smk->frames; i++) {
+    for (i = 0; i < smk->frames; i++) {
         smk->frm_size[i] = avio_rl32(pb);
     }
-    for(i = 0; i < smk->frames; i++) {
+    for (i = 0; i < smk->frames; i++) {
         smk->frm_flags[i] = avio_r8(pb);
     }
 
-    smk->videoindex = st->index;
-    st->codecpar->format = AV_PIX_FMT_PAL8;
-    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codecpar->codec_id = AV_CODEC_ID_SMACKVIDEO;
-    st->duration = smk->frames;
-
     /* load trees to extradata, they will be unpacked by decoder */
-    ret = avio_read(pb, st->codecpar->extradata + 16, st->codecpar->extradata_size - 16);
-    if(ret != st->codecpar->extradata_size - 16){
+    ret = avio_read(pb, par->extradata + 16, par->extradata_size - 16);
+    if (ret != par->extradata_size - 16) {
         av_freep(&smk->frm_size);
         av_freep(&smk->frm_flags);
         return AVERROR(EIO);
