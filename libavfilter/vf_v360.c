@@ -3565,8 +3565,8 @@ static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fo
         {
             const float d = 0.5f * hypotf(w, h);
 
-            *h_fov = d / h * d_fov;
-            *v_fov = d / w * d_fov;
+            *h_fov = d / w * d_fov;
+            *v_fov = d / h * d_fov;
         }
         break;
     case FLAT:
