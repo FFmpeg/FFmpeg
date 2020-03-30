@@ -229,7 +229,6 @@ static int smacker_read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
-    smk->curstream = -1;
     smk->nextpos = avio_tell(pb);
 
     return 0;
@@ -249,7 +248,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     /* if we demuxed all streams, pass another frame */
-    if(smk->curstream < 0) {
+    if (smk->curstream <= 0) {
         avio_seek(s->pb, smk->nextpos, 0);
         frame_size = smk->frm_size[smk->cur_frame] & (~3);
         flags = smk->frm_flags[smk->cur_frame];
@@ -301,7 +300,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             palchange |= 1;
         }
         flags >>= 1;
-        smk->curstream = -1;
+        smk->curstream = 0;
         /* if audio chunks are present, put them to stack and retrieve later */
         for(i = 0; i < 7; i++) {
             if(flags & 1) {
@@ -315,7 +314,6 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 }
                 frame_size -= size;
                 frame_size -= 4;
-                smk->curstream++;
                 if ((err = av_reallocp(&smk->bufs[smk->curstream], size)) < 0) {
                     smk->buf_sizes[smk->curstream] = 0;
                     return err;
@@ -325,6 +323,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if(ret != size)
                     return AVERROR(EIO);
                 smk->stream_id[smk->curstream] = smk->indexes[i];
+                smk->curstream++;
             }
             flags >>= 1;
         }
@@ -345,6 +344,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         smk->cur_frame++;
         smk->nextpos = avio_tell(s->pb);
     } else {
+        smk->curstream--;
         if (smk->stream_id[smk->curstream] < 0 || !smk->bufs[smk->curstream])
             return AVERROR_INVALIDDATA;
         if ((ret = av_new_packet(pkt, smk->buf_sizes[smk->curstream])) < 0)
@@ -354,7 +354,6 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index = smk->stream_id[smk->curstream];
         pkt->pts = smk->aud_pts[smk->curstream];
         smk->aud_pts[smk->curstream] += AV_RL32(pkt->data);
-        smk->curstream--;
     }
 
     return 0;
