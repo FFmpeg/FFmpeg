@@ -61,17 +61,7 @@ typedef struct WebMDashMuxContext {
 
 static const char *get_codec_name(int codec_id)
 {
-    switch (codec_id) {
-        case AV_CODEC_ID_VP8:
-            return "vp8";
-        case AV_CODEC_ID_VP9:
-            return "vp9";
-        case AV_CODEC_ID_VORBIS:
-            return "vorbis";
-        case AV_CODEC_ID_OPUS:
-            return "opus";
-    }
-    return NULL;
+    return avcodec_descriptor_get(codec_id)->name;
 }
 
 static double get_duration(AVFormatContext *s)
