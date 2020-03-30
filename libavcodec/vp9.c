@@ -93,6 +93,12 @@ static void vp9_free_entries(AVCodecContext *avctx) {}
 static int vp9_alloc_entries(AVCodecContext *avctx, int n) { return 0; }
 #endif
 
+static void vp9_tile_data_free(VP9TileData *td)
+{
+    av_freep(&td->b_base);
+    av_freep(&td->block_base);
+}
+
 static void vp9_frame_unref(AVCodecContext *avctx, VP9Frame *f)
 {
     ff_thread_release_buffer(avctx, &f->tf);
@@ -281,10 +287,8 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 #undef assign
 
     if (s->td) {
-        for (i = 0; i < s->active_tile_cols; i++) {
-            av_freep(&s->td[i].b_base);
-            av_freep(&s->td[i].block_base);
-        }
+        for (i = 0; i < s->active_tile_cols; i++)
+            vp9_tile_data_free(&s->td[i]);
     }
 
     if (s->s.h.bpp != s->last_bpp) {
@@ -306,8 +310,7 @@ static int update_block_buffers(AVCodecContext *avctx)
     if (td->b_base && td->block_base && s->block_alloc_using_2pass == s->s.frames[CUR_FRAME].uses_2pass)
         return 0;
 
-    av_free(td->b_base);
-    av_free(td->block_base);
+    vp9_tile_data_free(td);
     chroma_blocks = 64 * 64 >> (s->ss_h + s->ss_v);
     chroma_eobs   = 16 * 16 >> (s->ss_h + s->ss_v);
     if (s->s.frames[CUR_FRAME].uses_2pass) {
@@ -324,12 +327,9 @@ static int update_block_buffers(AVCodecContext *avctx)
         td->uveob_base[0] = td->eob_base + 16 * 16 * sbs;
         td->uveob_base[1] = td->uveob_base[0] + chroma_eobs * sbs;
     } else {
-        for (i = 1; i < s->active_tile_cols; i++) {
-            if (s->td[i].b_base && s->td[i].block_base) {
-                av_free(s->td[i].b_base);
-                av_free(s->td[i].block_base);
-            }
-        }
+        for (i = 1; i < s->active_tile_cols; i++)
+            vp9_tile_data_free(&s->td[i]);
+
         for (i = 0; i < s->active_tile_cols; i++) {
             s->td[i].b_base = av_malloc(sizeof(VP9Block));
             s->td[i].block_base = av_mallocz((64 * 64 + 2 * chroma_blocks) * bytesperpixel * sizeof(int16_t) +
@@ -773,10 +773,8 @@ static int decode_frame_header(AVCodecContext *avctx,
         VP56RangeCoder *rc;
 
         if (s->td) {
-            for (i = 0; i < s->active_tile_cols; i++) {
-                av_free(s->td[i].b_base);
-                av_free(s->td[i].block_base);
-            }
+            for (i = 0; i < s->active_tile_cols; i++)
+                vp9_tile_data_free(&s->td[i]);
             av_free(s->td);
         }
 
@@ -1213,10 +1211,8 @@ static void free_buffers(VP9Context *s)
     int i;
 
     av_freep(&s->intra_pred_data[0]);
-    for (i = 0; i < s->active_tile_cols; i++) {
-        av_freep(&s->td[i].b_base);
-        av_freep(&s->td[i].block_base);
-    }
+    for (i = 0; i < s->active_tile_cols; i++)
+        vp9_tile_data_free(&s->td[i]);
 }
 
 static av_cold int vp9_decode_free(AVCodecContext *avctx)
