@@ -517,6 +517,14 @@ static int webm_dash_manifest_write_header(AVFormatContext *s)
     double start = 0.0;
     int ret;
     WebMDashMuxContext *w = s->priv_data;
+
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        enum AVCodecID codec_id = s->streams[i]->codecpar->codec_id;
+        if (codec_id != AV_CODEC_ID_VP8    && codec_id != AV_CODEC_ID_VP9 &&
+            codec_id != AV_CODEC_ID_VORBIS && codec_id != AV_CODEC_ID_OPUS)
+            return AVERROR(EINVAL);
+    }
+
     ret = parse_adaptation_sets(s);
     if (ret < 0) {
         goto fail;
