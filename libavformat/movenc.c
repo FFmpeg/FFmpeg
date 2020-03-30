@@ -1893,36 +1893,6 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track, int prefer_icc)
         }
     }
 
-    if (track->par->color_primaries == AVCOL_PRI_UNSPECIFIED &&
-        track->par->color_trc == AVCOL_TRC_UNSPECIFIED &&
-        track->par->color_space == AVCOL_SPC_UNSPECIFIED) {
-        if ((track->par->width >= 1920 && track->par->height >= 1080)
-          || (track->par->width == 1280 && track->par->height == 720)) {
-            av_log(NULL, AV_LOG_WARNING, "color primaries unspecified, assuming bt709\n");
-            track->par->color_primaries = AVCOL_PRI_BT709;
-        } else if (track->par->width == 720 && track->height == 576) {
-            av_log(NULL, AV_LOG_WARNING, "color primaries unspecified, assuming bt470bg\n");
-            track->par->color_primaries = AVCOL_PRI_BT470BG;
-        } else if (track->par->width == 720 &&
-                   (track->height == 486 || track->height == 480)) {
-            av_log(NULL, AV_LOG_WARNING, "color primaries unspecified, assuming smpte170\n");
-            track->par->color_primaries = AVCOL_PRI_SMPTE170M;
-        } else {
-            av_log(NULL, AV_LOG_WARNING, "color primaries unspecified, unable to assume anything\n");
-        }
-        switch (track->par->color_primaries) {
-        case AVCOL_PRI_BT709:
-            track->par->color_trc = AVCOL_TRC_BT709;
-            track->par->color_space = AVCOL_SPC_BT709;
-            break;
-        case AVCOL_PRI_SMPTE170M:
-        case AVCOL_PRI_BT470BG:
-            track->par->color_trc = AVCOL_TRC_BT709;
-            track->par->color_space = AVCOL_SPC_SMPTE170M;
-            break;
-        }
-    }
-
     /* We should only ever be called by MOV or MP4. */
     av_assert0(track->mode == MODE_MOV || track->mode == MODE_MP4);
 
@@ -1932,6 +1902,9 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track, int prefer_icc)
         ffio_wfourcc(pb, "nclx");
     else
         ffio_wfourcc(pb, "nclc");
+    // Do not try to guess the color info if it is AVCOL_PRI_UNSPECIFIED.
+    // e.g., Dolby Vision for Apple devices should be set to AVCOL_PRI_UNSPECIFIED. See
+    // https://developer.apple.com/av-foundation/High-Dynamic-Range-Metadata-for-Apple-Devices.pdf
     avio_wb16(pb, track->par->color_primaries);
     avio_wb16(pb, track->par->color_trc);
     avio_wb16(pb, track->par->color_space);
