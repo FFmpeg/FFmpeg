@@ -950,8 +950,8 @@ static int decklink_autodetect(struct decklink_cctx *cctx) {
         return -1;
     }
 
-    // 1 second timeout
-    for (i = 0; i < 10; i++) {
+    // 3 second timeout
+    for (i = 0; i < 30; i++) {
         av_usleep(100000);
         /* Sometimes VideoInputFrameArrived is called without the
          * bmdFrameHasNoInputSource flag before VideoInputFormatChanged.
