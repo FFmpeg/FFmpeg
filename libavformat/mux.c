@@ -1144,7 +1144,6 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
         return 1;
     } else {
-        av_init_packet(out);
         return 0;
     }
 }
