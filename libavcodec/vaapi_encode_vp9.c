@@ -291,6 +291,7 @@ AVCodec ff_vp9_vaapi_encoder = {
     .close          = &ff_vaapi_encode_close,
     .priv_class     = &vaapi_encode_vp9_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_vp9_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,

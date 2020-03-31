@@ -1292,6 +1292,7 @@ AVCodec ff_hevc_vaapi_encoder = {
     .close          = &vaapi_encode_h265_close,
     .priv_class     = &vaapi_encode_h265_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_h265_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
