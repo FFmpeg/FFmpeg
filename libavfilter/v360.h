@@ -57,6 +57,7 @@ enum Projections {
 enum InterpMethod {
     NEAREST,
     BILINEAR,
+    LAGRANGE9,
     BICUBIC,
     LANCZOS,
     SPLINE16,

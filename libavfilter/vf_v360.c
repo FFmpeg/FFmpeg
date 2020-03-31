@@ -112,6 +112,7 @@ static const AVOption v360_options[] = {
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {      "line", "bilinear interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=BILINEAR},        0,                   0, FLAGS, "interp" },
     {    "linear", "bilinear interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=BILINEAR},        0,                   0, FLAGS, "interp" },
+    { "lagrange9", "lagrange9 interpolation",                    0, AV_OPT_TYPE_CONST,  {.i64=LAGRANGE9},       0,                   0, FLAGS, "interp" },
     {      "cube", "bicubic interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=BICUBIC},         0,                   0, FLAGS, "interp" },
     {     "cubic", "bicubic interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=BICUBIC},         0,                   0, FLAGS, "interp" },
     {      "lanc", "lanczos interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=LANCZOS},         0,                   0, FLAGS, "interp" },
@@ -313,9 +314,11 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
 
 DEFINE_REMAP(1,  8)
 DEFINE_REMAP(2,  8)
+DEFINE_REMAP(3,  8)
 DEFINE_REMAP(4,  8)
 DEFINE_REMAP(1, 16)
 DEFINE_REMAP(2, 16)
+DEFINE_REMAP(3, 16)
 DEFINE_REMAP(4, 16)
 
 #define DEFINE_REMAP_LINE(ws, bits, div)                                                      \
@@ -346,8 +349,10 @@ static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_
 }
 
 DEFINE_REMAP_LINE(2,  8, 1)
+DEFINE_REMAP_LINE(3,  8, 1)
 DEFINE_REMAP_LINE(4,  8, 1)
 DEFINE_REMAP_LINE(2, 16, 2)
+DEFINE_REMAP_LINE(3, 16, 2)
 DEFINE_REMAP_LINE(4, 16, 2)
 
 void ff_v360_init(V360Context *s, int depth)
@@ -358,6 +363,9 @@ void ff_v360_init(V360Context *s, int depth)
         break;
     case BILINEAR:
         s->remap_line = depth <= 8 ? remap2_8bit_line_c : remap2_16bit_line_c;
+        break;
+    case LAGRANGE9:
+        s->remap_line = depth <= 8 ? remap3_8bit_line_c : remap3_16bit_line_c;
         break;
     case BICUBIC:
     case LANCZOS:
@@ -415,6 +423,47 @@ static void bilinear_kernel(float du, float dv, const XYRemap *rmap,
     ker[1] = lrintf(       du  * (1.f - dv) * 16385.f);
     ker[2] = lrintf((1.f - du) *        dv  * 16385.f);
     ker[3] = lrintf(       du  *        dv  * 16385.f);
+}
+
+/**
+ * Calculate 1-dimensional lagrange coefficients.
+ *
+ * @param t relative coordinate
+ * @param coeffs coefficients
+ */
+static inline void calculate_lagrange_coeffs(float t, float *coeffs)
+{
+    coeffs[0] = (t - 1.f) * (t - 2.f) * 0.5f;
+    coeffs[1] = -t * (t - 2.f);
+    coeffs[2] =  t * (t - 1.f) * 0.5f;
+}
+
+/**
+ * Calculate kernel for lagrange interpolation.
+ *
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ * @param rmap calculated 4x4 window
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
+ */
+static void lagrange_kernel(float du, float dv, const XYRemap *rmap,
+                            int16_t *u, int16_t *v, int16_t *ker)
+{
+    float du_coeffs[3];
+    float dv_coeffs[3];
+
+    calculate_lagrange_coeffs(du, du_coeffs);
+    calculate_lagrange_coeffs(dv, dv_coeffs);
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            u[i * 3 + j] = rmap->u[i + 1][j + 1];
+            v[i * 3 + j] = rmap->v[i + 1][j + 1];
+            ker[i * 3 + j] = lrintf(du_coeffs[j] * dv_coeffs[i] * 16385.f);
+        }
+    }
 }
 
 /**
@@ -3686,6 +3735,13 @@ static int config_output(AVFilterLink *outlink)
         s->calculate_kernel = bilinear_kernel;
         s->remap_slice = depth <= 8 ? remap2_8bit_slice : remap2_16bit_slice;
         s->elements = 2 * 2;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
+        break;
+    case LAGRANGE9:
+        s->calculate_kernel = lagrange_kernel;
+        s->remap_slice = depth <= 8 ? remap3_8bit_slice : remap3_16bit_slice;
+        s->elements = 3 * 3;
         sizeof_uv = sizeof(int16_t) * s->elements;
         sizeof_ker = sizeof(int16_t) * s->elements;
         break;

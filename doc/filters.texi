@@ -19105,6 +19105,8 @@ Nearest neighbour.
 @item line
 @item linear
 Bilinear interpolation.
+@item lagrange9
+Lagrange9 interpolation.
 @item cube
 @item cubic
 Bicubic interpolation.
