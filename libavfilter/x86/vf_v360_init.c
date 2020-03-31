@@ -29,6 +29,9 @@ void ff_remap1_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdi
 void ff_remap2_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
                               const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
+void ff_remap3_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
+                              const int16_t *const u, const int16_t *const v, const int16_t *const ker);
+
 void ff_remap4_8bit_line_avx2(uint8_t *dst, int width, const uint8_t *src, ptrdiff_t in_linesize,
                               const int16_t *const u, const int16_t *const v, const int16_t *const ker);
 
@@ -55,6 +58,9 @@ av_cold void ff_v360_init_x86(V360Context *s, int depth)
         s->remap_line = ff_remap2_16bit_line_avx2;
 
 #if ARCH_X86_64
+    if (EXTERNAL_AVX2_FAST(cpu_flags) && s->interp == LAGRANGE9 && depth <= 8)
+        s->remap_line = ff_remap3_8bit_line_avx2;
+
     if (EXTERNAL_AVX2_FAST(cpu_flags) && (s->interp == BICUBIC ||
                                           s->interp == LANCZOS) && depth <= 8)
         s->remap_line = ff_remap4_8bit_line_avx2;

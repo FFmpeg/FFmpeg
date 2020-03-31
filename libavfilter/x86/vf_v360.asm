@@ -166,6 +166,49 @@ DEFINE_ARGS dst, width, src, x, u, v, ker
 %if ARCH_X86_64
 
 INIT_YMM avx2
+cglobal remap3_8bit_line, 7, 11, 8, dst, width, src, in_linesize, u, v, ker, x, y, tmp, z
+    movsxdifnidn widthq, widthd
+    xor             zq, zq
+    xor             yq, yq
+    xor             xq, xq
+    movd           xm0, in_linesized
+    pcmpeqw         m7, m7
+    vpbroadcastd    m0, xm0
+    vpbroadcastd    m6, [pd_255]
+
+    .loop:
+        pmovsxwd   m1, [kerq + yq]
+        pmovsxwd   m2, [vq + yq]
+        pmovsxwd   m3, [uq + yq]
+
+        pmulld          m4, m2, m0
+        paddd           m4, m3
+        mova            m3, m7
+        vpgatherdd      m2, [srcq + m4], m3
+        pand            m2, m6
+        pmulld          m2, m1
+        HADDD           m2, m1
+        movzx         tmpq, word [vq + yq + 16]
+        imul          tmpq, in_linesizeq
+        movzx           zq, word [uq + yq + 16]
+        add           tmpq, zq
+        movzx           zq, byte [srcq + tmpq]
+        movzx         tmpq, word [kerq + yq + 16]
+        imul            zd, tmpd
+        movd           xm1, zd
+        paddd           m2, m1
+        psrld           m2, m2, 0xe
+
+        packuswb        m2, m2
+        pextrb   [dstq+xq], xm2, 0
+
+        add   xq, 1
+        add   yq, 18
+        cmp   xq, widthq
+        jl .loop
+    RET
+
+INIT_YMM avx2
 cglobal remap4_8bit_line, 7, 9, 11, dst, width, src, in_linesize, u, v, ker, x, y
     movsxdifnidn widthq, widthd
     xor             yq, yq
