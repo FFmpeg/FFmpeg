@@ -163,11 +163,13 @@ int main(int argc, char **argv)
         log_packet(ofmt_ctx, &pkt, "out");
 
         ret = av_interleaved_write_frame(ofmt_ctx, &pkt);
+        /* pkt is now blank (av_interleaved_write_frame() takes ownership of
+         * its contents and resets pkt), so that no unreferencing is necessary.
+         * This would be different if one used av_write_frame(). */
         if (ret < 0) {
             fprintf(stderr, "Error muxing packet\n");
             break;
         }
-        av_packet_unref(&pkt);
     }
 
     av_write_trailer(ofmt_ctx);
