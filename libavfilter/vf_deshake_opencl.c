@@ -45,7 +45,6 @@
  * the use of this software, even if advised of the possibility of such damage.
  */
 
-#include <stdbool.h>
 #include <float.h>
 #include <libavutil/lfg.h>
 #include "libavutil/opt.h"
@@ -205,7 +204,7 @@ typedef struct DeshakeOpenCLContext {
 
     // These variables are used in the activate callback
     int64_t duration;
-    bool eof;
+    int eof;
 
     // State for random number generation
     AVLFG alfg;
@@ -233,7 +232,7 @@ typedef struct DeshakeOpenCLContext {
     CropInfo crop_uv;
 
     // Whether or not we are processing YUV input (as oppposed to RGB)
-    bool is_yuv;
+    int is_yuv;
     // The underlying format of the hardware surfaces
     int sw_format;
 
@@ -357,7 +356,7 @@ static void run_estimate_kernel(const MotionVector *point_pairs, double *model)
 }
 
 // Checks that the 3 points in the given array are not collinear
-static bool points_not_collinear(const cl_float2 **points)
+static int points_not_collinear(const cl_float2 **points)
 {
     int j, k, i = 2;
 
@@ -373,17 +372,17 @@ static bool points_not_collinear(const cl_float2 **points)
             // (3839, 2159), this prevents a third point from being within roughly
             // 0.5 of a pixel of the line connecting the two on both axes
             if (fabs(dx2*dy1 - dy2*dx1) <= 1.0) {
-                return false;
+                return 0;
             }
         }
     }
 
-    return true;
+    return 1;
 }
 
 // Checks a subset of 3 point pairs to make sure that the points are not collinear
 // and not too close to each other
-static bool check_subset(const MotionVector *pairs_subset)
+static int check_subset(const MotionVector *pairs_subset)
 {
     const cl_float2 *prev_points[] = {
         &pairs_subset[0].p.p1,
@@ -401,7 +400,7 @@ static bool check_subset(const MotionVector *pairs_subset)
 }
 
 // Selects a random subset of 3 points from point_pairs and places them in pairs_subset
-static bool get_subset(
+static int get_subset(
     AVLFG *alfg,
     const MotionVector *point_pairs,
     const int num_point_pairs,
@@ -482,10 +481,10 @@ static int find_inliers(
     for (i = 0; i < n; i++) {
         if (err[i] <= t) {
             // This is an inlier
-            point_pairs[i].should_consider = true;
+            point_pairs[i].should_consider = 1;
             num_inliers += 1;
         } else {
-            point_pairs[i].should_consider = false;
+            point_pairs[i].should_consider = 0;
         }
     }
 
@@ -525,7 +524,7 @@ static int ransac_update_num_iters(double confidence, double num_outliers, int m
 
 // Estimates an affine transform between the given pairs of points using RANdom
 // SAmple Consensus
-static bool estimate_affine_2d(
+static int estimate_affine_2d(
     DeshakeOpenCLContext *deshake_ctx,
     MotionVector *point_pairs,
     DebugMatches *debug_matches,
@@ -535,7 +534,7 @@ static bool estimate_affine_2d(
     const int max_iters,
     const double confidence
 ) {
-    bool result = false;
+    int result = 0;
     double best_model[6], model[6];
     MotionVector pairs_subset[3], best_pairs[3];
 
@@ -544,24 +543,24 @@ static bool estimate_affine_2d(
 
     // We need at least 3 points to build a model from
     if (num_point_pairs < 3) {
-        return false;
+        return 0;
     } else if (num_point_pairs == 3) {
         // There are only 3 points, so RANSAC doesn't apply here
         run_estimate_kernel(point_pairs, model_out);
 
         for (int i = 0; i < 3; ++i) {
-            point_pairs[i].should_consider = true;
+            point_pairs[i].should_consider = 1;
         }
 
-        return true;
+        return 1;
     }
 
     for (iter = 0; iter < niters; ++iter) {
-        bool found = get_subset(&deshake_ctx->alfg, point_pairs, num_point_pairs, pairs_subset, 10000);
+        int found = get_subset(&deshake_ctx->alfg, point_pairs, num_point_pairs, pairs_subset, 10000);
 
         if (!found) {
             if (iter == 0) {
-                return false;
+                return 0;
             }
 
             break;
@@ -600,7 +599,7 @@ static bool estimate_affine_2d(
 
         // Find the inliers again for the best model for debugging
         find_inliers(point_pairs, num_point_pairs, best_model, deshake_ctx->ransac_err, threshold);
-        result = true;
+        result = 1;
     }
 
     return result;
@@ -618,7 +617,7 @@ static void optimize_model(
 ) {
     float move_x_val = 0.01;
     float move_y_val = 0.01;
-    bool move_x = true;
+    int move_x = 1;
     float old_move_x_val = 0;
     double model[6];
     int last_changed = 0;
@@ -668,9 +667,9 @@ static void optimize_model(
             }
 
             if (old_move_x_val < 0) {
-                move_x = false;
+                move_x = 0;
             } else {
-                move_x = true;
+                move_x = 1;
             }
         }
     }
@@ -681,7 +680,7 @@ static void optimize_model(
 //
 // (Pick random subsets, compute model, find total error, iterate until error
 // is minimized.)
-static bool minimize_error(
+static int minimize_error(
     DeshakeOpenCLContext *deshake_ctx,
     MotionVector *inliers,
     DebugMatches *debug_matches,
@@ -689,18 +688,18 @@ static bool minimize_error(
     double *model_out,
     const int max_iters
 ) {
-    bool result = false;
+    int result = 0;
     float best_err = FLT_MAX;
     double best_model[6], model[6];
     MotionVector pairs_subset[3], best_pairs[3];
 
     for (int i = 0; i < max_iters; i++) {
         float total_err = 0;
-        bool found = get_subset(&deshake_ctx->alfg, inliers, num_inliers, pairs_subset, 10000);
+        int found = get_subset(&deshake_ctx->alfg, inliers, num_inliers, pairs_subset, 10000);
 
         if (!found) {
             if (i == 0) {
-                return false;
+                return 0;
             }
 
             break;
@@ -734,7 +733,7 @@ static bool minimize_error(
         debug_matches->model_matches[pi] = best_pairs[pi];
     }
     debug_matches->num_model_matches = 3;
-    result = true;
+    result = 1;
 
     optimize_model(deshake_ctx, best_pairs, inliers, num_inliers, best_err, model_out);
     return result;
@@ -1170,7 +1169,7 @@ static int deshake_opencl_init(AVFilterContext *avctx)
 
     ff_framequeue_global_init(&fqg);
     ff_framequeue_init(&ctx->fq, &fqg);
-    ctx->eof = false;
+    ctx->eof = 0;
     ctx->smooth_window = (int)(av_q2d(avctx->inputs[0]->frame_rate) * ctx->smooth_window_multiplier);
     ctx->curr_frame = 0;
 
@@ -1262,9 +1261,9 @@ static int deshake_opencl_init(AVFilterContext *avctx)
     }
 
     if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
-        ctx->is_yuv = false;
+        ctx->is_yuv = 0;
     } else {
-        ctx->is_yuv = true;
+        ctx->is_yuv = 1;
     }
     ctx->sw_format = hw_frames_ctx->sw_format;
 
@@ -1971,7 +1970,7 @@ no_motion_data:
     new_vals[RingbufScaleY] = 1.0f;
 
     for (int i = 0; i < num_vectors; i++) {
-        deshake_ctx->matches_contig_host[i].should_consider = false;
+        deshake_ctx->matches_contig_host[i].should_consider = 0;
     }
     debug_matches.num_model_matches = 0;
 
@@ -2085,7 +2084,7 @@ static int activate(AVFilterContext *ctx)
 
     if (!deshake_ctx->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
-            deshake_ctx->eof = true;
+            deshake_ctx->eof = 1;
         }
     }
 
