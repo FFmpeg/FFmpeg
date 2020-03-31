@@ -2248,7 +2248,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  * Write a packet to an output media file ensuring correct interleaving.
  *
  * This function will buffer the packets internally as needed to make sure the
- * packets in the output file are properly interleaved in the order of
+ * packets in the output file are properly interleaved, usually ordered by
  * increasing dts. Callers doing their own interleaving should call
  * av_write_frame() instead of this function.
  *
@@ -2261,10 +2261,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  *            <br>
  *            If the packet is reference-counted, this function will take
  *            ownership of this reference and unreference it later when it sees
- *            fit.
- *            The caller must not access the data through this reference after
- *            this function returns. If the packet is not reference-counted,
- *            libavformat will make a copy.
+ *            fit. If the packet is not reference-counted, libavformat will
+ *            make a copy.
+ *            The returned packet will be blank (as if returned from
+ *            av_packet_alloc()), even on error.
  *            <br>
  *            This parameter can be NULL (at any time, not just at the end), to
  *            flush the interleaving queues.
@@ -2280,10 +2280,9 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  *            The dts for subsequent packets in one stream must be strictly
  *            increasing (unless the output format is flagged with the
  *            AVFMT_TS_NONSTRICT, then they merely have to be nondecreasing).
- *            @ref AVPacket.duration "duration") should also be set if known.
+ *            @ref AVPacket.duration "duration" should also be set if known.
  *
- * @return 0 on success, a negative AVERROR on error. Libavformat will always
- *         take care of freeing the packet, even if this function fails.
+ * @return 0 on success, a negative AVERROR on error.
  *
  * @see av_write_frame(), AVFormatContext.max_interleave_delta
  */
