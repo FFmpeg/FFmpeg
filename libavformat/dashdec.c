@@ -85,6 +85,7 @@ struct representation {
 
     enum AVMediaType type;
     char id[20];
+    char *lang;
     int bandwidth;
     AVRational framerate;
     AVStream *assoc_stream; /* demuxer stream associated with this representation */
@@ -143,6 +144,9 @@ typedef struct DASHContext {
     /* Period Attribute */
     uint64_t period_duration;
     uint64_t period_start;
+
+    /* AdaptationSet Attribute */
+    char *adaptionset_lang;
 
     int is_live;
     AVIOInterruptCB *interrupt_callback;
@@ -872,6 +876,15 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             ret = AVERROR(ENOMEM);
             goto end;
         }
+        if (c->adaptionset_lang) {
+            rep->lang = av_strdup(c->adaptionset_lang);
+            if (!rep->lang) {
+                av_log(s, AV_LOG_ERROR, "alloc language memory failure\n");
+                av_freep(&rep);
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+        }
         rep->parent = s;
         representation_segmenttemplate_node = find_child_node_by_name(representation_node, "SegmentTemplate");
         representation_baseurl_node = find_child_node_by_name(representation_node, "BaseURL");
@@ -1103,6 +1116,19 @@ end:
     return ret;
 }
 
+static int parse_manifest_adaptationset_attr(AVFormatContext *s, xmlNodePtr adaptionset_node)
+{
+    DASHContext *c = s->priv_data;
+
+    if (!adaptionset_node) {
+        av_log(s, AV_LOG_WARNING, "Cannot get AdaptionSet\n");
+        return AVERROR(EINVAL);
+    }
+    c->adaptionset_lang = xmlGetProp(adaptionset_node, "lang");
+
+    return 0;
+}
+
 static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                         xmlNodePtr adaptionset_node,
                                         xmlNodePtr mpd_baseurl_node,
@@ -1111,12 +1137,17 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                         xmlNodePtr period_segmentlist_node)
 {
     int ret = 0;
+    DASHContext *c = s->priv_data;
     xmlNodePtr fragment_template_node = NULL;
     xmlNodePtr content_component_node = NULL;
     xmlNodePtr adaptionset_baseurl_node = NULL;
     xmlNodePtr adaptionset_segmentlist_node = NULL;
     xmlNodePtr adaptionset_supplementalproperty_node = NULL;
     xmlNodePtr node = NULL;
+
+    ret = parse_manifest_adaptationset_attr(s, adaptionset_node);
+    if (ret < 0)
+        return ret;
 
     node = xmlFirstElementChild(adaptionset_node);
     while (node) {
@@ -1142,13 +1173,15 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                                 adaptionset_baseurl_node,
                                                 adaptionset_segmentlist_node,
                                                 adaptionset_supplementalproperty_node);
-            if (ret < 0) {
-                return ret;
-            }
+            if (ret < 0)
+                goto err;
         }
         node = xmlNextElementSibling(node);
     }
-    return 0;
+
+err:
+    av_freep(&c->adaptionset_lang);
+    return ret;
 }
 
 static int parse_programinformation(AVFormatContext *s, xmlNodePtr node)
@@ -2121,6 +2154,10 @@ static int dash_read_header(AVFormatContext *s)
                 av_dict_set_int(&rep->assoc_stream->metadata, "variant_bitrate", rep->bandwidth, 0);
             if (rep->id[0])
                 av_dict_set(&rep->assoc_stream->metadata, "id", rep->id, 0);
+            if (rep->lang) {
+                av_dict_set(&rep->assoc_stream->metadata, "language", rep->lang, 0);
+                av_freep(&rep->lang);
+            }
         }
         for (i = 0; i < c->n_subtitles; i++) {
             rep = c->subtitles[i];
@@ -2128,6 +2165,10 @@ static int dash_read_header(AVFormatContext *s)
             rep->assoc_stream = s->streams[rep->stream_index];
             if (rep->id[0])
                 av_dict_set(&rep->assoc_stream->metadata, "id", rep->id, 0);
+            if (rep->lang) {
+                av_dict_set(&rep->assoc_stream->metadata, "language", rep->lang, 0);
+                av_freep(&rep->lang);
+            }
         }
     }
 
