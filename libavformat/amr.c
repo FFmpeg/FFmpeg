@@ -83,13 +83,15 @@ static int amr_read_header(AVFormatContext *s)
     AVStream *st;
     uint8_t header[9];
 
-    avio_read(pb, header, 6);
+    if (avio_read(pb, header, 6) != 6)
+        return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     if (memcmp(header, AMR_header, 6)) {
-        avio_read(pb, header + 6, 3);
+        if (avio_read(pb, header + 6, 3) != 3)
+            return AVERROR_INVALIDDATA;
         if (memcmp(header, AMRWB_header, 9)) {
             return -1;
         }
