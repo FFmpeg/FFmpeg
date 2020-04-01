@@ -79,8 +79,7 @@ DECLARE_ASM_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 #include "swscale_template.c"
 #endif
 
-void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
-                           int lastInLumBuf, int lastInChrBuf)
+void ff_updateMMXDitherTables(SwsContext *c, int dstY)
 {
     const int dstH= c->dstH;
     const int flags= c->flags;

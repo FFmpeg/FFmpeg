@@ -266,8 +266,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
     /* vars which will change and which we need to store back in the context */
     int dstY         = c->dstY;
-    int lumBufIndex  = c->lumBufIndex;
-    int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
 
@@ -336,8 +334,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
      * will not get executed. This is not really intended but works
      * currently, so people might do it. */
     if (srcSliceY == 0) {
-        lumBufIndex  = -1;
-        chrBufIndex  = -1;
         dstY         = 0;
         lastInLumBuf = -1;
         lastInChrBuf = -1;
@@ -461,7 +457,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                 desc[i].process(c, &desc[i], firstPosY, lastPosY - firstPosY + 1);
         }
 
-        lumBufIndex += lastLumSrcY - lastInLumBuf;
         lastInLumBuf = lastLumSrcY;
 
         if (cPosY < lastChrSrcY + 1) {
@@ -469,20 +464,13 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                 desc[i].process(c, &desc[i], firstCPosY, lastCPosY - firstCPosY + 1);
         }
 
-        chrBufIndex += lastChrSrcY - lastInChrBuf;
         lastInChrBuf = lastChrSrcY;
 
-        // wrap buf index around to stay inside the ring buffer
-        if (lumBufIndex >= vLumFilterSize)
-            lumBufIndex -= vLumFilterSize;
-        if (chrBufIndex >= vChrFilterSize)
-            chrBufIndex -= vChrFilterSize;
         if (!enough_lines)
             break;  // we can't output a dstY line so let's try with the next slice
 
 #if HAVE_MMX_INLINE
-        ff_updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex,
-                              lastInLumBuf, lastInChrBuf);
+        ff_updateMMXDitherTables(c, dstY);
 #endif
         if (should_dither) {
             c->chrDither8 = ff_dither_8x8_128[chrDstY & 7];
@@ -524,8 +512,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
     /* store changed local vars back in the context */
     c->dstY         = dstY;
-    c->lumBufIndex  = lumBufIndex;
-    c->chrBufIndex  = chrBufIndex;
     c->lastInLumBuf = lastInLumBuf;
     c->lastInChrBuf = lastInChrBuf;
 

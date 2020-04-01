@@ -350,8 +350,6 @@ typedef struct SwsContext {
     //@{
     int lastInLumBuf;             ///< Last scaled horizontal luma/alpha line from source in the ring buffer.
     int lastInChrBuf;             ///< Last scaled horizontal chroma     line from source in the ring buffer.
-    int lumBufIndex;              ///< Index in ring buffer of the last scaled horizontal luma/alpha line from source.
-    int chrBufIndex;              ///< Index in ring buffer of the last scaled horizontal chroma     line from source.
     //@}
 
     uint8_t *formatConvBuffer;
@@ -635,8 +633,7 @@ int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 void ff_yuv2rgb_init_tables_ppc(SwsContext *c, const int inv_table[4],
                                 int brightness, int contrast, int saturation);
 
-void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
-                           int lastInLumBuf, int lastInChrBuf);
+void ff_updateMMXDitherTables(SwsContext *c, int dstY);
 
 av_cold void ff_sws_init_range_convert(SwsContext *c);
 
