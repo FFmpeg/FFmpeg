@@ -410,7 +410,7 @@ static int init_out_session(AVFilterContext *ctx)
     s->scale_conf.Header.BufferSz     = sizeof(mfxExtVPPScaling);
     s->scale_conf.ScalingMode         = s->mode;
     s->ext_buffers[s->num_ext_buf++]  = (mfxExtBuffer*)&s->scale_conf;
-    av_log(ctx, AV_LOG_VERBOSE, "Scaling mode: %"PRIu16"\n", s->mode);
+    av_log(ctx, AV_LOG_VERBOSE, "Scaling mode: %d\n", s->mode);
 #endif
 
     par.ExtParam    = s->ext_buffers;
