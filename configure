@@ -4797,7 +4797,7 @@ fi
 
 if test "$cpu" = host; then
     enabled cross_compile &&
-        die "--cpu=host makes no sense when cross-compiling."
+        warn "--cpu=host makes no sense when cross-compiling."
 
     case "$cc_type" in
         gcc|llvm_gcc)
