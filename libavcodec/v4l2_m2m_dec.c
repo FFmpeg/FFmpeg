@@ -123,6 +123,13 @@ static int v4l2_prepare_decoder(V4L2m2mContext *s)
         }
     }
 
+    memset(&sub, 0, sizeof(sub));
+    sub.type = V4L2_EVENT_EOS;
+    ret = ioctl(s->fd, VIDIOC_SUBSCRIBE_EVENT, &sub);
+    if (ret < 0)
+        av_log(s->avctx, AV_LOG_WARNING,
+               "the v4l2 driver does not support end of stream VIDIOC_SUBSCRIBE_EVENT\n");
+
     return 0;
 }
 

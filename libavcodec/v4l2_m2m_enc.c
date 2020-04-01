@@ -155,6 +155,17 @@ static int v4l2_check_b_frame_support(V4L2m2mContext *s)
     return AVERROR_PATCHWELCOME;
 }
 
+static inline void v4l2_subscribe_eos_event(V4L2m2mContext *s)
+{
+    struct v4l2_event_subscription sub;
+
+    memset(&sub, 0, sizeof(sub));
+    sub.type = V4L2_EVENT_EOS;
+    if (ioctl(s->fd, VIDIOC_SUBSCRIBE_EVENT, &sub) < 0)
+        av_log(s->avctx, AV_LOG_WARNING,
+               "the v4l2 driver does not support end of stream VIDIOC_SUBSCRIBE_EVENT\n");
+}
+
 static int v4l2_prepare_encoder(V4L2m2mContext *s)
 {
     AVCodecContext *avctx = s->avctx;
@@ -164,6 +175,8 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
     /**
      * requirements
      */
+    v4l2_subscribe_eos_event(s);
+
     ret = v4l2_check_b_frame_support(s);
     if (ret)
         return ret;

@@ -154,6 +154,7 @@ static inline void v4l2_save_to_context(V4L2Context* ctx, struct v4l2_format_upd
 }
 
 /**
+ * handle resolution change event and end of stream event
  * returns 1 if reinit was successful, negative if it failed
  * returns 0 if reinit was not executed
  */
@@ -168,6 +169,11 @@ static int v4l2_handle_event(V4L2Context *ctx)
     ret = ioctl(s->fd, VIDIOC_DQEVENT, &evt);
     if (ret < 0) {
         av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_DQEVENT\n", ctx->name);
+        return 0;
+    }
+
+    if (evt.type == V4L2_EVENT_EOS) {
+        ctx->done = 1;
         return 0;
     }
 
