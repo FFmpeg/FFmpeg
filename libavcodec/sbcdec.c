@@ -30,7 +30,6 @@
  * SBC decoder implementation
  */
 
-#include <stdbool.h>
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
