@@ -37,6 +37,18 @@ fate-matroska-lzo-decompression: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/lzo.mka
 FATE_MATROSKA-$(call ALLYES, MATROSKA_DEMUXER FLAC_PARSER) += fate-matroska-flac-channel-mapping
 fate-matroska-flac-channel-mapping: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/flac_channel_layouts.mka -map 0 -c:a copy
 
+# This tests that the Matroska muxer writes the channel layout
+# of FLAC tracks as a Vorbis comment in the CodecPrivate if necessary
+# and that FLAC extradata is correctly updated when a packet
+# with sidedata containing new extradata is encountered.
+# Furthermore it tests everything the matroska-flac-channel-mapping test
+# tests and it also tests the FLAC decoder and encoder, in particular
+# the latter's ability to send updated extradata.
+FATE_MATROSKA-$(call ALLYES, FLAC_DECODER FLAC_ENCODER FLAC_PARSER \
+                MATROSKA_DEMUXER MATROSKA_MUXER) += fate-matroska-flac-extradata-update
+fate-matroska-flac-extradata-update: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/flac_channel_layouts.mka \
+                                           matroska "-map 0 -map 0:0 -c flac -frames:a:2 8" "-map 0 -c copy"
+
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
 
