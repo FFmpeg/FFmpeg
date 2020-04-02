@@ -50,7 +50,7 @@ typedef struct DSSDemuxContext {
     int counter;
     int swap;
     int dss_sp_swap_byte;
-    int8_t *dss_sp_buf;
+    int8_t dss_sp_buf[DSS_FRAME_SIZE + 1];
 
     int packet_size;
     int dss_header_size;
@@ -167,10 +167,6 @@ static int dss_read_header(AVFormatContext *s)
 
     ctx->counter = 0;
     ctx->swap    = 0;
-
-    ctx->dss_sp_buf = av_malloc(DSS_FRAME_SIZE + 1);
-    if (!ctx->dss_sp_buf)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -327,15 +323,6 @@ static int dss_read_packet(AVFormatContext *s, AVPacket *pkt)
         return dss_723_1_read_packet(s, pkt);
 }
 
-static int dss_read_close(AVFormatContext *s)
-{
-    DSSDemuxContext *ctx = s->priv_data;
-
-    av_freep(&ctx->dss_sp_buf);
-
-    return 0;
-}
-
 static int dss_read_seek(AVFormatContext *s, int stream_index,
                          int64_t timestamp, int flags)
 {
@@ -382,7 +369,6 @@ AVInputFormat ff_dss_demuxer = {
     .read_probe     = dss_probe,
     .read_header    = dss_read_header,
     .read_packet    = dss_read_packet,
-    .read_close     = dss_read_close,
     .read_seek      = dss_read_seek,
     .extensions     = "dss"
 };
