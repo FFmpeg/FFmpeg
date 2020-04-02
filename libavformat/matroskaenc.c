@@ -194,9 +194,11 @@ static void put_ebml_size_unknown(AVIOContext *pb, int bytes)
  */
 static int ebml_num_size(uint64_t num)
 {
-    int bytes = 1;
-    while ((num + 1) >> bytes * 7)
+    int bytes = 0;
+    num++;
+    do {
         bytes++;
+    } while (num >>= 7);
     return bytes;
 }
 
