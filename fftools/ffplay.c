@@ -1736,7 +1736,7 @@ display:
             else
                 av_log(NULL, AV_LOG_INFO, "%s", buf.str);
 
-            fflush(stdout);
+            fflush(stderr);
             av_bprint_finalize(&buf, NULL);
 
             last_time = cur_time;
