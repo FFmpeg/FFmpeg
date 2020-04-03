@@ -75,7 +75,6 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
         if (uri[i] == *AV_CAT_SEPARATOR) {
             /* integer overflow */
             if (++len == UINT_MAX / sizeof(*nodes)) {
-                av_freep(&h->priv_data);
                 return AVERROR(ENAMETOOLONG);
             }
         }
