@@ -1288,14 +1288,14 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                             continue;
                         }
 
-                            for (layno = 0; layno < LYEpoc; layno++) {
-                                if ((ret = jpeg2000_decode_packet(s, tile, tp_index,
-                                                                codsty, rlevel,
-                                                                precno, layno,
-                                                                qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
-                                                                qntsty->nguardbits)) < 0)
-                                    return ret;
-                            }
+                        for (layno = 0; layno < LYEpoc; layno++) {
+                            if ((ret = jpeg2000_decode_packet(s, tile, tp_index,
+                                                              codsty, rlevel,
+                                                              precno, layno,
+                                                              qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
+                                                              qntsty->nguardbits)) < 0)
+                                return ret;
+                        }
                     }
                 }
             }
