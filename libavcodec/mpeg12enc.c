@@ -162,17 +162,17 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return -1;
         }
         /* Main or 4:2:2 */
-        avctx->profile = s->chroma_format == CHROMA_420 ? 4 : 0;
+        avctx->profile = s->chroma_format == CHROMA_420 ? FF_PROFILE_MPEG2_MAIN : FF_PROFILE_MPEG2_422;
     }
 
     if (avctx->level == FF_LEVEL_UNKNOWN) {
-        if (avctx->profile == 0) {                  /* 4:2:2 */
+        if (avctx->profile == FF_PROFILE_MPEG2_422) {   /* 4:2:2 */
             if (avctx->width <= 720 && avctx->height <= 608)
                 avctx->level = 5;                   /* Main */
             else
                 avctx->level = 2;                   /* High */
         } else {
-            if (avctx->profile != 1 && s->chroma_format != CHROMA_420) {
+            if (avctx->profile != FF_PROFILE_MPEG2_HIGH && s->chroma_format != CHROMA_420) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
                 return -1;
@@ -321,7 +321,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_header(s, EXT_START_CODE);
             put_bits(&s->pb, 4, 1);                 // seq ext
 
-            put_bits(&s->pb, 1, s->avctx->profile == 0); // escx 1 for 4:2:2 profile
+            put_bits(&s->pb, 1, s->avctx->profile == FF_PROFILE_MPEG2_422); // escx 1 for 4:2:2 profile
 
             put_bits(&s->pb, 3, s->avctx->profile); // profile
             put_bits(&s->pb, 4, s->avctx->level);   // level
