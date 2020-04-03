@@ -1939,8 +1939,12 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 
         len = bytestream2_get_be16(&s->g);
         if (len < 2 || bytestream2_get_bytes_left(&s->g) < len - 2) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid len %d left=%d\n", len, bytestream2_get_bytes_left(&s->g));
-            return AVERROR_INVALIDDATA;
+            if (s->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid len %d left=%d\n", len, bytestream2_get_bytes_left(&s->g));
+                return AVERROR_INVALIDDATA;
+            }
+            av_log(s->avctx, AV_LOG_WARNING, "Missing EOC Marker.\n");
+            break;
         }
 
         switch (marker) {
