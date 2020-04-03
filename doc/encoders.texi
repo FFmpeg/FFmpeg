@@ -1508,6 +1508,15 @@ Complexity-based.
 Cyclic refresh.
 @end table
 
+@item tune (@emph{tune})
+Set the distortion metric the encoder is tuned with. Default is @code{psnr}.
+
+@table @samp
+@item psnr (@emph{0})
+
+@item ssim (@emph{1})
+@end table
+
 @item lag-in-frames
 Set the maximum number of frames which the encoder may keep in flight
 at any one time for lookahead purposes.  Defaults to the internal
