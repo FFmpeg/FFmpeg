@@ -2526,10 +2526,11 @@ static int rtp_read_header(AVFormatContext *s)
 
     p = strchr(s->url, '?');
     if (p) {
-        static const char *filters[][2] = {{"sources", "incl"}, {"block", "excl"}, {NULL, NULL}};
+        static const char filters[][2][8] = { { "sources", "incl" },
+                                              { "block",   "excl" } };
         int i;
         char *q;
-        for (i = 0; filters[i][0]; i++) {
+        for (i = 0; i < FF_ARRAY_ELEMS(filters); i++) {
             if (av_find_info_tag(filters_buf, sizeof(filters_buf), filters[i][0], p)) {
                 q = filters_buf;
                 while ((q = strchr(q, ',')) != NULL)
