@@ -170,6 +170,7 @@ struct MpegTSContext {
     int current_pid;
 
     AVStream *epg_stream;
+    AVBufferPool* pools[32];
 };
 
 #define MPEGTS_OPTIONS \
@@ -1103,6 +1104,18 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl,
     return (get_bits_count(&gb) + 7) >> 3;
 }
 
+static AVBufferRef *buffer_pool_get(MpegTSContext *ts, int size)
+{
+    int index = av_log2(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!ts->pools[index]) {
+        int pool_size = FFMIN(MAX_PES_PAYLOAD + AV_INPUT_BUFFER_PADDING_SIZE, 2 << index);
+        ts->pools[index] = av_buffer_pool_init(pool_size, NULL);
+        if (!ts->pools[index])
+            return NULL;
+    }
+    return av_buffer_pool_get(ts->pools[index]);
+}
+
 /* return non zero if a packet could be constructed */
 static int mpegts_push_data(MpegTSFilter *filter,
                             const uint8_t *buf, int buf_size, int is_start,
@@ -1177,8 +1190,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         pes->total_size = MAX_PES_PAYLOAD;
 
                     /* allocate pes buffer */
-                    pes->buffer = av_buffer_alloc(pes->total_size +
-                                                  AV_INPUT_BUFFER_PADDING_SIZE);
+                    pes->buffer = buffer_pool_get(ts, pes->total_size);
                     if (!pes->buffer)
                         return AVERROR(ENOMEM);
 
@@ -1351,8 +1363,7 @@ skip:
                     if (ret < 0)
                         return ret;
                     pes->total_size = MAX_PES_PAYLOAD;
-                    pes->buffer = av_buffer_alloc(pes->total_size +
-                                                  AV_INPUT_BUFFER_PADDING_SIZE);
+                    pes->buffer = buffer_pool_get(ts, pes->total_size);
                     if (!pes->buffer)
                         return AVERROR(ENOMEM);
                     ts->stop_parse = 1;
@@ -3199,6 +3210,9 @@ static void mpegts_free(MpegTSContext *ts)
     int i;
 
     clear_programs(ts);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(ts->pools); i++)
+        av_buffer_pool_uninit(&ts->pools[i]);
 
     for (i = 0; i < NB_PID_MAX; i++)
         if (ts->pids[i])
