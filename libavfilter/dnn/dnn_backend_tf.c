@@ -95,7 +95,7 @@ static TF_Tensor *allocate_input_tensor(const DNNData *input)
         break;
     case DNN_UINT8:
         dt = TF_UINT8;
-        size = sizeof(char);
+        size = 1;
         break;
     default:
         av_assert0(!"should not reach here");

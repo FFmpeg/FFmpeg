@@ -439,7 +439,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
 static int to_integer(char *p, int len)
 {
     int ret;
-    char *q = av_malloc(sizeof(char) * len);
+    char *q = av_malloc(len);
     if (!q)
         return AVERROR(ENOMEM);
     av_strlcpy(q, p, len);
