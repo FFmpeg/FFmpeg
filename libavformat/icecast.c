@@ -75,8 +75,7 @@ static void cat_header(AVBPrint *bp, const char key[], const char value[])
 static int icecast_close(URLContext *h)
 {
     IcecastContext *s = h->priv_data;
-    if (s->hd)
-        ffurl_close(s->hd);
+    ffurl_closep(&s->hd);
     return 0;
 }
 

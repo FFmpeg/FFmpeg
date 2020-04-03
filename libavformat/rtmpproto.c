@@ -2511,7 +2511,7 @@ static int rtmp_close(URLContext *h)
 
     free_tracked_methods(rt);
     av_freep(&rt->flv_data);
-    ffurl_close(rt->stream);
+    ffurl_closep(&rt->stream);
     return ret;
 }
 
@@ -2824,8 +2824,7 @@ reconnect:
 
     if (rt->do_reconnect) {
         int i;
-        ffurl_close(rt->stream);
-        rt->stream       = NULL;
+        ffurl_closep(&rt->stream);
         rt->do_reconnect = 0;
         rt->nb_invokes   = 0;
         for (i = 0; i < 2; i++)

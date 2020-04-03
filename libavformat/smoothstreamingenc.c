@@ -99,14 +99,9 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
     if (whence != SEEK_SET)
         return AVERROR(ENOSYS);
     if (os->tail_out) {
-        if (os->out) {
-            ffurl_close(os->out);
-        }
-        if (os->out2) {
-            ffurl_close(os->out2);
-        }
+        ffurl_closep(&os->out);
+        ffurl_closep(&os->out2);
         os->out = os->tail_out;
-        os->out2 = NULL;
         os->tail_out = NULL;
     }
     if (offset >= os->cur_start_pos) {
@@ -175,10 +170,9 @@ static void ism_free(AVFormatContext *s)
         return;
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
-        ffurl_close(os->out);
-        ffurl_close(os->out2);
-        ffurl_close(os->tail_out);
-        os->out = os->out2 = os->tail_out = NULL;
+        ffurl_closep(&os->out);
+        ffurl_closep(&os->out2);
+        ffurl_closep(&os->tail_out);
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
         if (os->ctx && os->ctx->pb)
@@ -537,8 +531,7 @@ static int ism_flush(AVFormatContext *s, int final)
         if (!os->out || os->tail_out)
             return AVERROR(EIO);
 
-        ffurl_close(os->out);
-        os->out = NULL;
+        ffurl_closep(&os->out);
         size = os->tail_pos - os->cur_start_pos;
         if ((ret = parse_fragment(s, filename, &start_ts, &duration, &moof_size, size)) < 0)
             break;

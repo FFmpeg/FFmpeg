@@ -68,10 +68,7 @@ static int gopher_connect(URLContext *h, const char *path)
 static int gopher_close(URLContext *h)
 {
     GopherContext *s = h->priv_data;
-    if (s->hd) {
-        ffurl_close(s->hd);
-        s->hd = NULL;
-    }
+    ffurl_closep(&s->hd);
     return 0;
 }
 

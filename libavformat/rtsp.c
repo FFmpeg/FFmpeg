@@ -763,9 +763,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets)
                 ff_rtp_parse_close(rtsp_st->transport_priv);
         }
         rtsp_st->transport_priv = NULL;
-        if (rtsp_st->rtp_handle)
-            ffurl_close(rtsp_st->rtp_handle);
-        rtsp_st->rtp_handle = NULL;
+        ffurl_closep(&rtsp_st->rtp_handle);
     }
 }
 
@@ -1666,9 +1664,10 @@ fail:
 void ff_rtsp_close_connections(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    if (rt->rtsp_hd_out != rt->rtsp_hd) ffurl_close(rt->rtsp_hd_out);
-    ffurl_close(rt->rtsp_hd);
-    rt->rtsp_hd = rt->rtsp_hd_out = NULL;
+    if (rt->rtsp_hd_out != rt->rtsp_hd)
+        ffurl_closep(&rt->rtsp_hd_out);
+    rt->rtsp_hd_out = NULL;
+    ffurl_closep(&rt->rtsp_hd);
 }
 
 int ff_rtsp_connect(AVFormatContext *s)
@@ -2496,8 +2495,7 @@ static int rtp_read_header(AVFormatContext *s)
         break;
     }
     getsockname(ffurl_get_file_handle(in), (struct sockaddr*) &addr, &addrlen);
-    ffurl_close(in);
-    in = NULL;
+    ffurl_closep(&in);
 
     par = avcodec_parameters_alloc();
     if (!par) {
@@ -2571,8 +2569,7 @@ fail_nobuf:
     av_bprint_finalize(&sdp, NULL);
 fail:
     avcodec_parameters_free(&par);
-    if (in)
-        ffurl_close(in);
+    ffurl_closep(&in);
     ff_network_close();
     return ret;
 }

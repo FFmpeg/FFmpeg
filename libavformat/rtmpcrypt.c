@@ -240,7 +240,7 @@ static int rtmpe_close(URLContext *h)
     RTMPEContext *rt = h->priv_data;
 
     ff_dh_free(rt->dh);
-    ffurl_close(rt->stream);
+    ffurl_closep(&rt->stream);
 
     return 0;
 }

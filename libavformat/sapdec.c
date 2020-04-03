@@ -54,8 +54,7 @@ static int sap_read_close(AVFormatContext *s)
     struct SAPState *sap = s->priv_data;
     if (sap->sdp_ctx)
         avformat_close_input(&sap->sdp_ctx);
-    if (sap->ann_fd)
-        ffurl_close(sap->ann_fd);
+    ffurl_closep(&sap->ann_fd);
     av_freep(&sap->sdp);
     ff_network_close();
     return 0;

@@ -100,8 +100,7 @@ static int tls_close(URLContext *h)
         gnutls_deinit(c->session);
     if (c->cred)
         gnutls_certificate_free_credentials(c->cred);
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
     ff_gnutls_deinit();
     return 0;
 }

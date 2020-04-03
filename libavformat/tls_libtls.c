@@ -44,8 +44,7 @@ static int ff_tls_close(URLContext *h)
         tls_close(p->ctx);
         tls_free(p->ctx);
     }
-    if (p->tls_shared.tcp)
-        ffurl_close(p->tls_shared.tcp);
+    ffurl_closep(&p->tls_shared.tcp);
     return 0;
 }
 

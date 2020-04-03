@@ -49,7 +49,7 @@ static av_cold int concat_close(URLContext *h)
     struct concat_nodes *nodes = data->nodes;
 
     for (i = 0; i != data->length; i++)
-        err |= ffurl_close(nodes[i].uc);
+        err |= ffurl_closep(&nodes[i].uc);
 
     av_freep(&data->nodes);
 

@@ -293,7 +293,7 @@ cond_wakeup_background_fail:
 cond_wakeup_main_fail:
     pthread_mutex_destroy(&c->mutex);
 mutex_fail:
-    ffurl_close(c->inner);
+    ffurl_closep(&c->inner);
 url_fail:
     ring_destroy(&c->ring);
 fifo_fail:
@@ -317,7 +317,7 @@ static int async_close(URLContext *h)
     pthread_cond_destroy(&c->cond_wakeup_background);
     pthread_cond_destroy(&c->cond_wakeup_main);
     pthread_mutex_destroy(&c->mutex);
-    ffurl_close(c->inner);
+    ffurl_closep(&c->inner);
     ring_destroy(&c->ring);
 
     return 0;

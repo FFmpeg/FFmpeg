@@ -142,8 +142,7 @@ static int tls_close(URLContext *h)
     }
     if (c->ctx)
         SSL_CTX_free(c->ctx);
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
     if (c->url_bio_method)
         BIO_meth_free(c->url_bio_method);

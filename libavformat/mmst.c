@@ -473,7 +473,7 @@ static int mms_close(URLContext *h)
     MMSContext *mms   = &mmst->mms;
     if(mms->mms_hd) {
         send_close_packet(mmst);
-        ffurl_close(mms->mms_hd);
+        ffurl_closep(&mms->mms_hd);
     }
 
     /* free all separately allocated pointers in mms */

@@ -138,8 +138,7 @@ static int tls_close(URLContext *h)
     av_freep(&c->dec_buf);
     c->dec_buf_size = c->dec_buf_offset = 0;
 
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
     return 0;
 }
 
