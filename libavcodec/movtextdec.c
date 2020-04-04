@@ -76,6 +76,8 @@ typedef struct {
     uint8_t bold;
     uint8_t italic;
     uint8_t underline;
+    int color;
+    uint8_t alpha;
     uint8_t fontsize;
     uint16_t style_fontID;
 } StyleBox;
@@ -329,14 +331,16 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         m->s_temp->underline = !!(m->s_temp->style_flag & STYLE_FLAG_UNDERLINE);
         tsmb++;
         m->s_temp->fontsize = AV_RB8(tsmb);
+        tsmb++;
+        m->s_temp->color = AV_RB24(tsmb);
+        tsmb += 3;
+        m->s_temp->alpha = AV_RB8(tsmb);
+        tsmb++;
         av_dynarray_add(&m->s, &m->count_s, m->s_temp);
         if(!m->s) {
             mov_text_cleanup(m);
             return AVERROR(ENOMEM);
         }
-        tsmb++;
-        // text-color-rgba
-        tsmb += 4;
     }
     return 0;
 }
@@ -400,6 +404,11 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                         if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
                             av_bprintf(buf, "{\\fn%s}", m->ftab[i]->font);
                     }
+                if (m->d.color != m->s[entry]->color)
+                    av_bprintf(buf, "{\\1c&H%X&}",
+                               RGB_TO_BGR(m->s[entry]->color));
+                if (m->d.alpha != m->s[entry]->alpha)
+                    av_bprintf(buf, "{\\1a&H%02X&}", 255 - m->s[entry]->alpha);
             }
             if (text_pos == m->s[entry]->style_end) {
                 if (style_active) {
