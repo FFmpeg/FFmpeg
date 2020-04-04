@@ -26,11 +26,13 @@
 #include "libavutil/bprint.h"
 #include "libavutil/common.h"
 
-int ff_ass_subtitle_header(AVCodecContext *avctx,
-                           const char *font, int font_size,
-                           int color, int back_color,
-                           int bold, int italic, int underline,
-                           int border_style, int alignment)
+int ff_ass_subtitle_header_full(AVCodecContext *avctx,
+                                int play_res_x, int play_res_y,
+                                const char *font, int font_size,
+                                int primary_color, int secondary_color,
+                                int outline_color, int back_color,
+                                int bold, int italic, int underline,
+                                int border_style, int alignment)
 {
     avctx->subtitle_header = av_asprintf(
              "[Script Info]\r\n"
@@ -67,14 +69,28 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
              "[Events]\r\n"
              "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
              !(avctx->flags & AV_CODEC_FLAG_BITEXACT) ? AV_STRINGIFY(LIBAVCODEC_VERSION) : "",
-             ASS_DEFAULT_PLAYRESX, ASS_DEFAULT_PLAYRESY,
-             font, font_size, color, color, back_color, back_color,
+             play_res_x, play_res_y, font, font_size,
+             primary_color, secondary_color, outline_color, back_color,
              -bold, -italic, -underline, border_style, alignment);
 
     if (!avctx->subtitle_header)
         return AVERROR(ENOMEM);
     avctx->subtitle_header_size = strlen(avctx->subtitle_header);
     return 0;
+}
+
+int ff_ass_subtitle_header(AVCodecContext *avctx,
+                           const char *font, int font_size,
+                           int color, int back_color,
+                           int bold, int italic, int underline,
+                           int border_style, int alignment)
+{
+    return ff_ass_subtitle_header_full(avctx,
+                               ASS_DEFAULT_PLAYRESX, ASS_DEFAULT_PLAYRESY,
+                               font, font_size, color, color,
+                               back_color, back_color,
+                               bold, italic, underline,
+                               border_style, alignment);
 }
 
 int ff_ass_subtitle_header_default(AVCodecContext *avctx)

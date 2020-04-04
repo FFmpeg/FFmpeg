@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
+#include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/bprint.h"
@@ -96,6 +97,7 @@ typedef struct {
 } TextWrapBox;
 
 typedef struct {
+    AVClass *class;
     StyleBox **s;
     StyleBox *s_temp;
     HighlightBox h;
@@ -110,6 +112,8 @@ typedef struct {
     int size_var;
     int count_s, count_f;
     int readorder;
+    int frame_width;
+    int frame_height;
 } MovTextContext;
 
 typedef struct {
@@ -481,8 +485,16 @@ static int mov_text_init(AVCodecContext *avctx) {
     MovTextContext *m = avctx->priv_data;
     ret = mov_text_tx3g(avctx, m);
     if (ret == 0) {
-        return ff_ass_subtitle_header(avctx, m->d.font, m->d.fontsize,
+        if (!m->frame_width || !m->frame_height) {
+            m->frame_width = ASS_DEFAULT_PLAYRESX;
+            m->frame_height = ASS_DEFAULT_PLAYRESY;
+        }
+        return ff_ass_subtitle_header_full(avctx,
+                    m->frame_width, m->frame_height,
+                    m->d.font, m->d.fontsize,
                     (255 - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
+                    (255 - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
+                    (255 - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
                     (255 - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
                     m->d.bold, m->d.italic, m->d.underline,
                     ASS_DEFAULT_BORDERSTYLE, m->d.alignment);
@@ -601,12 +613,28 @@ static void mov_text_flush(AVCodecContext *avctx)
         m->readorder = 0;
 }
 
+#define OFFSET(x) offsetof(MovTextContext, x)
+#define FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_SUBTITLE_PARAM
+static const AVOption options[] = {
+    { "width", "Frame width, usually video width", OFFSET(frame_width), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { "height", "Frame height, usually video height", OFFSET(frame_height), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass mov_text_decoder_class = {
+    .class_name = "MOV text decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_movtext_decoder = {
     .name         = "mov_text",
     .long_name    = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
     .id           = AV_CODEC_ID_MOV_TEXT,
     .priv_data_size = sizeof(MovTextContext),
+    .priv_class   = &mov_text_decoder_class,
     .init         = mov_text_init,
     .decode       = mov_text_decode_frame,
     .close        = mov_text_decode_close,
