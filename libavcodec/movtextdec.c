@@ -55,9 +55,9 @@ typedef struct {
     int fontsize;
     int color;
     int back_color;
-    int bold;
-    int italic;
-    int underline;
+    uint8_t bold;
+    uint8_t italic;
+    uint8_t underline;
     int alignment;
 } MovTextDefault;
 
@@ -70,6 +70,9 @@ typedef struct {
     uint16_t style_start;
     uint16_t style_end;
     uint8_t style_flag;
+    uint8_t bold;
+    uint8_t italic;
+    uint8_t underline;
     uint8_t fontsize;
     uint16_t style_fontID;
 } StyleBox;
@@ -313,6 +316,9 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         m->s_temp->style_fontID = AV_RB16(tsmb);
         tsmb += 2;
         m->s_temp->style_flag = AV_RB8(tsmb);
+        m->s_temp->bold = !!(m->s_temp->style_flag & STYLE_FLAG_BOLD);
+        m->s_temp->italic = !!(m->s_temp->style_flag & STYLE_FLAG_ITALIC);
+        m->s_temp->underline = !!(m->s_temp->style_flag & STYLE_FLAG_UNDERLINE);
         tsmb++;
         m->s_temp->fontsize = AV_RB8(tsmb);
         av_dynarray_add(&m->s, &m->count_s, m->s_temp);
@@ -373,12 +379,12 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
         if ((m->box_flags & STYL_BOX) && entry < m->style_entries) {
             if (text_pos == m->s[entry]->style_start) {
                 style_active = 1;
-                if (m->s[entry]->style_flag & STYLE_FLAG_BOLD)
-                    av_bprintf(buf, "{\\b1}");
-                if (m->s[entry]->style_flag & STYLE_FLAG_ITALIC)
-                    av_bprintf(buf, "{\\i1}");
-                if (m->s[entry]->style_flag & STYLE_FLAG_UNDERLINE)
-                    av_bprintf(buf, "{\\u1}");
+                if (m->s[entry]->bold ^ m->d.bold)
+                    av_bprintf(buf, "{\\b%d}", m->s[entry]->bold);
+                if (m->s[entry]->italic ^ m->d.italic)
+                    av_bprintf(buf, "{\\i%d}", m->s[entry]->italic);
+                if (m->s[entry]->underline ^ m->d.underline)
+                    av_bprintf(buf, "{\\u%d}", m->s[entry]->underline);
                 av_bprintf(buf, "{\\fs%d}", m->s[entry]->fontsize);
                 for (i = 0; i < m->ftab_entries; i++) {
                     if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
