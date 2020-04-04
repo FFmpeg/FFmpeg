@@ -376,6 +376,8 @@ ASSSplitContext *ff_ass_split(const char *buf)
     ASSSplitContext *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return NULL;
+    if (buf && !memcmp(buf, "\xef\xbb\xbf", 3)) // Skip UTF-8 BOM header
+        buf += 3;
     ctx->current_section = -1;
     if (ass_split(ctx, buf) < 0) {
         ff_ass_split_free(ctx);
