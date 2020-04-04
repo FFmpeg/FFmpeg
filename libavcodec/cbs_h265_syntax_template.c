@@ -547,6 +547,8 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
             }
         }
 
+        if (i > 15)
+            return AVERROR_INVALIDDATA;
         infer(num_negative_pics, i);
         for (i = 0; i < current->num_negative_pics; i++) {
             infer(delta_poc_s0_minus1[i],
@@ -576,6 +578,8 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
             }
         }
 
+        if (i + current->num_negative_pics > 15)
+            return AVERROR_INVALIDDATA;
         infer(num_positive_pics, i);
         for (i = 0; i < current->num_positive_pics; i++) {
             infer(delta_poc_s1_minus1[i],
