@@ -39,6 +39,7 @@
 #define HLIT_BOX   (1<<1)
 #define HCLR_BOX   (1<<2)
 
+#define BGR_TO_RGB(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
 #define av_bprint_append_any(buf, data, size)   av_bprint_append_data(buf, ((const char*)data), size)
 
 typedef struct {
@@ -134,13 +135,14 @@ static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
 
 static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
 {
-    uint32_t tsmb_size;
+    uint32_t tsmb_size, color;
     if (s->box_flags & HCLR_BOX) {
         tsmb_size = 12;
         tsmb_size = AV_RB32(&tsmb_size);
+        color     = AV_RB32(&s->hclr.color);
         av_bprint_append_any(&s->buffer, &tsmb_size, 4);
         av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-        av_bprint_append_any(&s->buffer, &s->hclr.color, 4);
+        av_bprint_append_any(&s->buffer, &color, 4);
     }
 }
 
@@ -289,6 +291,8 @@ static void mov_text_style_cb(void *priv, const char style, int close)
 static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color_id)
 {
     MovTextContext *s = priv;
+
+    color = BGR_TO_RGB(color) << 8;
     if (color_id == 2) {    //secondary color changes
         if (s->box_flags & HLIT_BOX) {  //close tag
             s->hlit.end = AV_RB16(&s->text_pos);
@@ -296,7 +300,7 @@ static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color
             s->box_flags |= HCLR_BOX;
             s->box_flags |= HLIT_BOX;
             s->hlit.start = AV_RB16(&s->text_pos);
-            s->hclr.color = color | (0xFF << 24);  //set alpha value to FF
+            s->hclr.color = color | 0xFF;  //set alpha value to FF
         }
     }
     /* If there are more than one secondary color changes in ASS, take start of
