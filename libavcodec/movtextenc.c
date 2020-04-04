@@ -351,6 +351,26 @@ static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color
      */
 }
 
+static void mov_text_alpha_set(MovTextContext *s, uint8_t alpha)
+{
+    if (!s->style_attributes_temp ||
+        (s->style_attributes_temp->style_color & 0xff) == alpha) {
+        // color hasn't changed
+        return;
+    }
+    if (mov_text_style_start(s))
+        s->style_attributes_temp->style_color =
+                (s->style_attributes_temp->style_color & 0xffffff00) | alpha;
+}
+
+static void mov_text_alpha_cb(void *priv, int alpha, int alpha_id)
+{
+    MovTextContext *s = priv;
+
+    if (alpha_id == 1) // primary alpha changes
+        mov_text_alpha_set(s, 255 - alpha);
+}
+
 static void mov_text_end_cb(void *priv)
 {
     // End of text, close any open style record
@@ -360,7 +380,7 @@ static void mov_text_end_cb(void *priv)
 static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
 {
     ASSStyle * style = ff_ass_style_get(s->ass_ctx, dialog->style);
-    uint8_t    style_flags;
+    uint8_t    style_flags, alpha;
     uint32_t   color;
 
     if (style) {
@@ -370,6 +390,8 @@ static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
         mov_text_style_set(s, style_flags);
         color = BGR_TO_RGB(style->primary_color & 0xffffff) << 8;
         mov_text_color_set(s, color);
+        alpha = 255 - ((uint32_t)style->primary_color >> 24);
+        mov_text_alpha_set(s, alpha);
     }
 }
 
@@ -416,6 +438,7 @@ static const ASSCodesCallbacks mov_text_callbacks = {
     .new_line = mov_text_new_line_cb,
     .style    = mov_text_style_cb,
     .color    = mov_text_color_cb,
+    .alpha    = mov_text_alpha_cb,
     .end      = mov_text_end_cb,
 };
 
