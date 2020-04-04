@@ -2688,7 +2688,7 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
                 } else {
                     hdlr_type = "text";
                 }
-            descr = "SubtitleHandler";
+                descr = "SubtitleHandler";
             }
         } else if (track->par->codec_tag == MKTAG('r','t','p',' ')) {
             hdlr_type = "hint";
