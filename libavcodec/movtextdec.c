@@ -376,6 +376,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
     int text_pos = 0;
     int style_active = 0;
     int entry = 0;
+    int color = m->d.color;
 
     if (text < text_end && m->box_flags & TWRP_BOX) {
         if (m->w.wrap_flag == 1) {
@@ -404,9 +405,10 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                         if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
                             av_bprintf(buf, "{\\fn%s}", m->ftab[i]->font);
                     }
-                if (m->d.color != m->s[entry]->color)
-                    av_bprintf(buf, "{\\1c&H%X&}",
-                               RGB_TO_BGR(m->s[entry]->color));
+                if (m->d.color != m->s[entry]->color) {
+                    color = m->s[entry]->color;
+                    av_bprintf(buf, "{\\1c&H%X&}", RGB_TO_BGR(color));
+                }
                 if (m->d.alpha != m->s[entry]->alpha)
                     av_bprintf(buf, "{\\1a&H%02X&}", 255 - m->s[entry]->alpha);
             }
@@ -414,6 +416,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                 if (style_active) {
                     av_bprintf(buf, "{\\r}");
                     style_active = 0;
+                    color = m->d.color;
                 }
                 entry++;
             }
@@ -435,9 +438,10 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
             }
             if (text_pos == m->h.hlit_end) {
                 if (m->box_flags & HCLR_BOX) {
-                    av_bprintf(buf, "{\\2c&H000000&}");
+                    av_bprintf(buf, "{\\2c&H%X&}", RGB_TO_BGR(m->d.color));
                 } else {
-                    av_bprintf(buf, "{\\1c&HFFFFFF&}{\\2c&H000000&}");
+                    av_bprintf(buf, "{\\1c&H%X&}{\\2c&H%X&}",
+                               RGB_TO_BGR(color), RGB_TO_BGR(m->d.color));
                 }
             }
         }
