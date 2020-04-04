@@ -55,7 +55,9 @@ typedef struct {
     const char *font;
     uint8_t fontsize;
     int color;
+    uint8_t alpha;
     int back_color;
+    uint8_t back_alpha;
     uint8_t bold;
     uint8_t italic;
     uint8_t underline;
@@ -186,7 +188,9 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     }
     // Background Color
     m->d.back_color = AV_RB24(tx3g_ptr);
-    tx3g_ptr += 4;
+    tx3g_ptr += 3;
+    m->d.back_alpha = AV_RB8(tx3g_ptr);
+    tx3g_ptr += 1;
     // BoxRecord
     tx3g_ptr += 8;
     // StyleRecord
@@ -203,7 +207,9 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     m->d.fontsize = *tx3g_ptr++;
     // Primary color
     m->d.color = AV_RB24(tx3g_ptr);
-    tx3g_ptr += 4;
+    tx3g_ptr += 3;
+    m->d.alpha = AV_RB8(tx3g_ptr);
+    tx3g_ptr += 1;
     // FontRecord
     // FontRecord Size
     tx3g_ptr += 4;
@@ -463,8 +469,8 @@ static int mov_text_init(AVCodecContext *avctx) {
     ret = mov_text_tx3g(avctx, m);
     if (ret == 0) {
         return ff_ass_subtitle_header(avctx, m->d.font, m->d.fontsize,
-                    RGB_TO_BGR(m->d.color),
-                    RGB_TO_BGR(m->d.back_color),
+                    (255 - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
+                    (255 - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
                     m->d.bold, m->d.italic, m->d.underline,
                     ASS_DEFAULT_BORDERSTYLE, m->d.alignment);
     } else
