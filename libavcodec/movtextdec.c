@@ -355,8 +355,9 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
 {
     MovTextContext *m = avctx->priv_data;
     int i = 0;
-    int j = 0;
     int text_pos = 0;
+    int style_active = 0;
+    int entry = 0;
 
     if (text < text_end && m->box_flags & TWRP_BOX) {
         if (m->w.wrap_flag == 1) {
@@ -369,26 +370,27 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
     while (text < text_end) {
         int len;
 
-        if (m->box_flags & STYL_BOX) {
-            for (i = 0; i < m->style_entries; i++) {
-                if (m->s[i]->style_flag && text_pos == m->s[i]->style_end) {
-                    av_bprintf(buf, "{\\r}");
+        if ((m->box_flags & STYL_BOX) && entry < m->style_entries) {
+            if (text_pos == m->s[entry]->style_start) {
+                style_active = 1;
+                if (m->s[entry]->style_flag & STYLE_FLAG_BOLD)
+                    av_bprintf(buf, "{\\b1}");
+                if (m->s[entry]->style_flag & STYLE_FLAG_ITALIC)
+                    av_bprintf(buf, "{\\i1}");
+                if (m->s[entry]->style_flag & STYLE_FLAG_UNDERLINE)
+                    av_bprintf(buf, "{\\u1}");
+                av_bprintf(buf, "{\\fs%d}", m->s[entry]->fontsize);
+                for (i = 0; i < m->ftab_entries; i++) {
+                    if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
+                        av_bprintf(buf, "{\\fn%s}", m->ftab[i]->font);
                 }
             }
-            for (i = 0; i < m->style_entries; i++) {
-                if (m->s[i]->style_flag && text_pos == m->s[i]->style_start) {
-                    if (m->s[i]->style_flag & STYLE_FLAG_BOLD)
-                        av_bprintf(buf, "{\\b1}");
-                    if (m->s[i]->style_flag & STYLE_FLAG_ITALIC)
-                        av_bprintf(buf, "{\\i1}");
-                    if (m->s[i]->style_flag & STYLE_FLAG_UNDERLINE)
-                        av_bprintf(buf, "{\\u1}");
-                    av_bprintf(buf, "{\\fs%d}", m->s[i]->fontsize);
-                    for (j = 0; j < m->ftab_entries; j++) {
-                        if (m->s[i]->style_fontID == m->ftab[j]->fontID)
-                            av_bprintf(buf, "{\\fn%s}", m->ftab[j]->font);
-                    }
+            if (text_pos == m->s[entry]->style_end) {
+                if (style_active) {
+                    av_bprintf(buf, "{\\r}");
+                    style_active = 0;
                 }
+                entry++;
             }
         }
         if (m->box_flags & HLIT_BOX) {
