@@ -168,6 +168,7 @@ static void unlock_frames(AVFContext* ctx)
         _context = context;
 
         // start observing if a device is set for it
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         if (_context->observed_device) {
             NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
             NSKeyValueObservingOptions options = NSKeyValueObservingOptionNew;
@@ -177,14 +178,19 @@ static void unlock_frames(AVFContext* ctx)
                                            options: options
                                            context: _context];
         }
+#endif
     }
     return self;
 }
 
 - (void)dealloc {
     // stop observing if a device is set for it
-    NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
-    [_context->observed_device removeObserver: self forKeyPath: keyPath];
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+    if (_context->observed_device) {
+        NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
+        [_context->observed_device removeObserver: self forKeyPath: keyPath];
+    }
+#endif
     [super dealloc];
 }
 
@@ -537,6 +543,7 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
     }
     [ctx->video_output setAlwaysDiscardsLateVideoFrames:ctx->drop_late_frames];
 
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     // check for transport control support and set observer device if supported
     int trans_ctrl = [video_device transportControlsSupported];
     AVCaptureDeviceTransportControlsPlaybackMode trans_mode = [video_device transportControlsPlaybackMode];
@@ -545,6 +552,7 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
         ctx->observed_mode   = trans_mode;
         ctx->observed_device = video_device;
     }
+#endif
 
     ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
 
