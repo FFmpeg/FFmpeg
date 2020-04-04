@@ -89,6 +89,10 @@ static void mov_text_cleanup(MovTextContext *s)
         }
         av_freep(&s->style_attributes);
     }
+    if (s->style_attributes_temp) {
+        s->style_attributes_temp->style_flag = 0;
+        s->style_attributes_temp->style_start = 0;
+    }
 }
 
 static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
@@ -96,7 +100,7 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
     int j;
     uint32_t tsmb_size;
     uint16_t style_entries;
-    if (s->box_flags & STYL_BOX) {
+    if ((s->box_flags & STYL_BOX) && s->count) {
         tsmb_size = s->count * STYLE_RECORD_SIZE + SIZE_ADD;
         tsmb_size = AV_RB32(&tsmb_size);
         style_entries = AV_RB16(&s->count);
@@ -120,8 +124,8 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
             av_bprint_append_any(&s->buffer, &s->style_fontsize, 1);
             av_bprint_append_any(&s->buffer, &s->style_color, 4);
         }
-        mov_text_cleanup(s);
     }
+    mov_text_cleanup(s);
 }
 
 static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
@@ -201,6 +205,11 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     MovTextContext *s = avctx->priv_data;
     s->avctx = avctx;
 
+    s->style_attributes_temp = av_mallocz(sizeof(*s->style_attributes_temp));
+    if (!s->style_attributes_temp) {
+        return AVERROR(ENOMEM);
+    }
+
     avctx->extradata_size = sizeof text_sample_entry;
     avctx->extradata = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
@@ -214,85 +223,69 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     return s->ass_ctx ? 0 : AVERROR_INVALIDDATA;
 }
 
-static void mov_text_style_cb(void *priv, const char style, int close)
+// Start a new style box if needed
+static int mov_text_style_start(MovTextContext *s)
 {
-    MovTextContext *s = priv;
-    if (!close) {
-        if (!(s->box_flags & STYL_BOX)) {   //first style entry
-
-            s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
-
-            if (!s->style_attributes_temp) {
-                av_bprint_clear(&s->buffer);
-                s->box_flags &= ~STYL_BOX;
-                return;
-            }
-
-            s->style_attributes_temp->style_flag = 0;
-            s->style_attributes_temp->style_start = s->text_pos;
-        } else {
-            if (s->style_attributes_temp->style_flag) { //break the style record here and start a new one
-                s->style_attributes_temp->style_end = s->text_pos;
-                av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
-                s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
-                if (!s->style_attributes_temp) {
-                    mov_text_cleanup(s);
-                    av_bprint_clear(&s->buffer);
-                    s->box_flags &= ~STYL_BOX;
-                    return;
-                }
-
-                s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
-                s->style_attributes_temp->style_start = s->text_pos;
-            } else {
-                s->style_attributes_temp->style_flag = 0;
-                s->style_attributes_temp->style_start = s->text_pos;
-            }
-        }
-        switch (style){
-        case 'b':
-            s->style_attributes_temp->style_flag |= STYLE_FLAG_BOLD;
-            break;
-        case 'i':
-            s->style_attributes_temp->style_flag |= STYLE_FLAG_ITALIC;
-            break;
-        case 'u':
-            s->style_attributes_temp->style_flag |= STYLE_FLAG_UNDERLINE;
-            break;
-        }
-    } else if (!s->style_attributes_temp) {
-        av_log(s->avctx, AV_LOG_WARNING, "Ignoring unmatched close tag\n");
-        return;
-    } else {
+    // there's an existing style entry
+    if (s->style_attributes_temp->style_start == s->text_pos)
+        // Still at same text pos, use same entry
+        return 1;
+    if (s->style_attributes_temp->style_flag) {
+        // last style != defaults, end the style entry and start a new one
+        s->box_flags |= STYL_BOX;
         s->style_attributes_temp->style_end = s->text_pos;
         av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
-
         s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
-
         if (!s->style_attributes_temp) {
             mov_text_cleanup(s);
             av_bprint_clear(&s->buffer);
             s->box_flags &= ~STYL_BOX;
-            return;
+            return 0;
         }
 
         s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
-        switch (style){
-        case 'b':
-            s->style_attributes_temp->style_flag &= ~STYLE_FLAG_BOLD;
-            break;
-        case 'i':
-            s->style_attributes_temp->style_flag &= ~STYLE_FLAG_ITALIC;
-            break;
-        case 'u':
-            s->style_attributes_temp->style_flag &= ~STYLE_FLAG_UNDERLINE;
-            break;
-        }
-        if (s->style_attributes_temp->style_flag) { //start of new style record
-            s->style_attributes_temp->style_start = s->text_pos;
-        }
+        s->style_attributes_temp->style_start = s->text_pos;
+    } else { // style entry matches defaults, drop entry
+        s->style_attributes_temp->style_flag = 0;
+        s->style_attributes_temp->style_start = s->text_pos;
     }
-    s->box_flags |= STYL_BOX;
+    return 1;
+}
+
+static uint8_t mov_text_style_to_flag(const char style)
+{
+    uint8_t style_flag = 0;
+
+    switch (style){
+    case 'b':
+        style_flag = STYLE_FLAG_BOLD;
+        break;
+    case 'i':
+        style_flag = STYLE_FLAG_ITALIC;
+        break;
+    case 'u':
+        style_flag = STYLE_FLAG_UNDERLINE;
+        break;
+    }
+    return style_flag;
+}
+
+static void mov_text_style_cb(void *priv, const char style, int close)
+{
+    MovTextContext *s = priv;
+    uint8_t style_flag = mov_text_style_to_flag(style);
+
+    if (!s->style_attributes_temp ||
+        !!(s->style_attributes_temp->style_flag & style_flag) != close) {
+        // setting flag that is already set
+        return;
+    }
+    if (mov_text_style_start(s)) {
+        if (!close)
+            s->style_attributes_temp->style_flag |= style_flag;
+        else
+            s->style_attributes_temp->style_flag &= ~style_flag;
+    }
 }
 
 static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color_id)
