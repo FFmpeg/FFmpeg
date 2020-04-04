@@ -193,9 +193,9 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     tx3g_ptr += 2;
     // face-style-flags
     s_default.style_flag = *tx3g_ptr++;
-    m->d.bold = s_default.style_flag & STYLE_FLAG_BOLD;
-    m->d.italic = s_default.style_flag & STYLE_FLAG_ITALIC;
-    m->d.underline = s_default.style_flag & STYLE_FLAG_UNDERLINE;
+    m->d.bold = !!(s_default.style_flag & STYLE_FLAG_BOLD);
+    m->d.italic = !!(s_default.style_flag & STYLE_FLAG_ITALIC);
+    m->d.underline = !!(s_default.style_flag & STYLE_FLAG_UNDERLINE);
     // fontsize
     m->d.fontsize = *tx3g_ptr++;
     // Primary color
