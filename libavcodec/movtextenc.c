@@ -128,7 +128,7 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
             av_bprint_append_any(&s->buffer, &style_end, 2);
             av_bprint_append_any(&s->buffer, &style_fontID, 2);
             av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_flag, 1);
-            av_bprint_append_any(&s->buffer, &s->d.style_fontsize, 1);
+            av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_fontsize, 1);
             av_bprint_append_any(&s->buffer, &style_color, 4);
         }
     }
@@ -244,8 +244,9 @@ static int mov_text_style_start(MovTextContext *s)
     if (s->style_attributes_temp->style_start == s->text_pos)
         // Still at same text pos, use same entry
         return 1;
-    if (s->style_attributes_temp->style_flag  != s->d.style_flag ||
-        s->style_attributes_temp->style_color != s->d.style_color) {
+    if (s->style_attributes_temp->style_flag     != s->d.style_flag  ||
+        s->style_attributes_temp->style_color    != s->d.style_color ||
+        s->style_attributes_temp->style_fontsize != s->d.style_fontsize) {
         // last style != defaults, end the style entry and start a new one
         s->box_flags |= STYL_BOX;
         s->style_attributes_temp->style_end = s->text_pos;
@@ -260,10 +261,12 @@ static int mov_text_style_start(MovTextContext *s)
 
         s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
         s->style_attributes_temp->style_color = s->style_attributes[s->count - 1]->style_color;
+        s->style_attributes_temp->style_fontsize = s->style_attributes[s->count - 1]->style_fontsize;
         s->style_attributes_temp->style_start = s->text_pos;
     } else { // style entry matches defaults, drop entry
         s->style_attributes_temp->style_flag = s->d.style_flag;
         s->style_attributes_temp->style_color = s->d.style_color;
+        s->style_attributes_temp->style_fontsize = s->d.style_fontsize;
         s->style_attributes_temp->style_start = s->text_pos;
     }
     return 1;
@@ -371,6 +374,22 @@ static void mov_text_alpha_cb(void *priv, int alpha, int alpha_id)
         mov_text_alpha_set(s, 255 - alpha);
 }
 
+static void mov_text_font_size_set(MovTextContext *s, int size)
+{
+    if (!s->style_attributes_temp ||
+        s->style_attributes_temp->style_fontsize == size) {
+        // color hasn't changed
+        return;
+    }
+    if (mov_text_style_start(s))
+        s->style_attributes_temp->style_fontsize = size;
+}
+
+static void mov_text_font_size_cb(void *priv, int size)
+{
+    mov_text_font_size_set((MovTextContext*)priv, size);
+}
+
 static void mov_text_end_cb(void *priv)
 {
     // End of text, close any open style record
@@ -392,6 +411,7 @@ static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
         mov_text_color_set(s, color);
         alpha = 255 - ((uint32_t)style->primary_color >> 24);
         mov_text_alpha_set(s, alpha);
+        mov_text_font_size_set(s, style->font_size);
     }
 }
 
@@ -434,12 +454,13 @@ static void mov_text_new_line_cb(void *priv, int forced)
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {
-    .text     = mov_text_text_cb,
-    .new_line = mov_text_new_line_cb,
-    .style    = mov_text_style_cb,
-    .color    = mov_text_color_cb,
-    .alpha    = mov_text_alpha_cb,
-    .end      = mov_text_end_cb,
+    .text      = mov_text_text_cb,
+    .new_line  = mov_text_new_line_cb,
+    .style     = mov_text_style_cb,
+    .color     = mov_text_color_cb,
+    .alpha     = mov_text_alpha_cb,
+    .font_size = mov_text_font_size_cb,
+    .end       = mov_text_end_cb,
 };
 
 static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
