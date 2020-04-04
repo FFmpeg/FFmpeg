@@ -68,7 +68,6 @@ typedef struct {
     HilightcolorBox hclr;
     int count;
     uint8_t box_flags;
-    uint16_t style_entries;
     uint16_t style_fontID;
     uint8_t style_fontsize;
     uint32_t style_color;
@@ -96,10 +95,11 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
 {
     int j;
     uint32_t tsmb_size;
+    uint16_t style_entries;
     if (s->box_flags & STYL_BOX) {
         tsmb_size = s->count * STYLE_RECORD_SIZE + SIZE_ADD;
         tsmb_size = AV_RB32(&tsmb_size);
-        s->style_entries = AV_RB16(&s->count);
+        style_entries = AV_RB16(&s->count);
         s->style_fontID = 0x00 | 0x01<<8;
         s->style_fontsize = 0x12;
         s->style_color = MKTAG(0xFF, 0xFF, 0xFF, 0xFF);
@@ -107,10 +107,14 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
         but will come from ASS style in the future*/
         av_bprint_append_any(&s->buffer, &tsmb_size, 4);
         av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-        av_bprint_append_any(&s->buffer, &s->style_entries, 2);
+        av_bprint_append_any(&s->buffer, &style_entries, 2);
         for (j = 0; j < s->count; j++) {
-            av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_start, 2);
-            av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_end, 2);
+            uint16_t style_start, style_end;
+
+            style_start  = AV_RB16(&s->style_attributes[j]->style_start);
+            style_end    = AV_RB16(&s->style_attributes[j]->style_end);
+            av_bprint_append_any(&s->buffer, &style_start, 2);
+            av_bprint_append_any(&s->buffer, &style_end, 2);
             av_bprint_append_any(&s->buffer, &s->style_fontID, 2);
             av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_flag, 1);
             av_bprint_append_any(&s->buffer, &s->style_fontsize, 1);
@@ -123,13 +127,16 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
 static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
 {
     uint32_t tsmb_size;
+    uint16_t start, end;
     if (s->box_flags & HLIT_BOX) {
         tsmb_size = 12;
         tsmb_size = AV_RB32(&tsmb_size);
+        start     = AV_RB16(&s->hlit.start);
+        end       = AV_RB16(&s->hlit.end);
         av_bprint_append_any(&s->buffer, &tsmb_size, 4);
         av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-        av_bprint_append_any(&s->buffer, &s->hlit.start, 2);
-        av_bprint_append_any(&s->buffer, &s->hlit.end, 2);
+        av_bprint_append_any(&s->buffer, &start, 2);
+        av_bprint_append_any(&s->buffer, &end, 2);
     }
 }
 
@@ -222,10 +229,10 @@ static void mov_text_style_cb(void *priv, const char style, int close)
             }
 
             s->style_attributes_temp->style_flag = 0;
-            s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+            s->style_attributes_temp->style_start = s->text_pos;
         } else {
             if (s->style_attributes_temp->style_flag) { //break the style record here and start a new one
-                s->style_attributes_temp->style_end = AV_RB16(&s->text_pos);
+                s->style_attributes_temp->style_end = s->text_pos;
                 av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
                 s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
                 if (!s->style_attributes_temp) {
@@ -236,10 +243,10 @@ static void mov_text_style_cb(void *priv, const char style, int close)
                 }
 
                 s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
-                s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+                s->style_attributes_temp->style_start = s->text_pos;
             } else {
                 s->style_attributes_temp->style_flag = 0;
-                s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+                s->style_attributes_temp->style_start = s->text_pos;
             }
         }
         switch (style){
@@ -257,7 +264,7 @@ static void mov_text_style_cb(void *priv, const char style, int close)
         av_log(s->avctx, AV_LOG_WARNING, "Ignoring unmatched close tag\n");
         return;
     } else {
-        s->style_attributes_temp->style_end = AV_RB16(&s->text_pos);
+        s->style_attributes_temp->style_end = s->text_pos;
         av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
 
         s->style_attributes_temp = av_malloc(sizeof(*s->style_attributes_temp));
@@ -282,7 +289,7 @@ static void mov_text_style_cb(void *priv, const char style, int close)
             break;
         }
         if (s->style_attributes_temp->style_flag) { //start of new style record
-            s->style_attributes_temp->style_start = AV_RB16(&s->text_pos);
+            s->style_attributes_temp->style_start = s->text_pos;
         }
     }
     s->box_flags |= STYL_BOX;
@@ -295,11 +302,11 @@ static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color
     color = BGR_TO_RGB(color) << 8;
     if (color_id == 2) {    //secondary color changes
         if (s->box_flags & HLIT_BOX) {  //close tag
-            s->hlit.end = AV_RB16(&s->text_pos);
+            s->hlit.end = s->text_pos;
         } else {
             s->box_flags |= HCLR_BOX;
             s->box_flags |= HLIT_BOX;
-            s->hlit.start = AV_RB16(&s->text_pos);
+            s->hlit.start = s->text_pos;
             s->hclr.color = color | 0xFF;  //set alpha value to FF
         }
     }
@@ -366,7 +373,6 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     s->text_pos = 0;
     s->count = 0;
     s->box_flags = 0;
-    s->style_entries = 0;
     for (i = 0; i < sub->num_rects; i++) {
         const char *ass = sub->rects[i]->ass;
 
