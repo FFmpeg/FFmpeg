@@ -51,8 +51,9 @@
 #define RGB_TO_BGR(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
 
 typedef struct {
+    uint16_t fontID;
     char *font;
-    int fontsize;
+    uint8_t fontsize;
     int color;
     int back_color;
     uint8_t bold;
@@ -146,7 +147,6 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     uint8_t *tx3g_ptr = avctx->extradata;
     int i, box_size, font_length;
     int8_t v_align, h_align;
-    int style_fontID;
     StyleBox s_default;
 
     m->count_f = 0;
@@ -192,7 +192,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     // StyleRecord
     tx3g_ptr += 4;
     // fontID
-    style_fontID = AV_RB16(tx3g_ptr);
+    m->d.fontID = AV_RB16(tx3g_ptr);
     tx3g_ptr += 2;
     // face-style-flags
     s_default.style_flag = *tx3g_ptr++;
@@ -252,7 +252,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
         tx3g_ptr = tx3g_ptr + font_length;
     }
     for (i = 0; i < m->ftab_entries; i++) {
-        if (style_fontID == m->ftab[i]->fontID)
+        if (m->d.fontID == m->ftab[i]->fontID)
             m->d.font = m->ftab[i]->font;
     }
     return 0;
@@ -385,11 +385,13 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                     av_bprintf(buf, "{\\i%d}", m->s[entry]->italic);
                 if (m->s[entry]->underline ^ m->d.underline)
                     av_bprintf(buf, "{\\u%d}", m->s[entry]->underline);
-                av_bprintf(buf, "{\\fs%d}", m->s[entry]->fontsize);
-                for (i = 0; i < m->ftab_entries; i++) {
-                    if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
-                        av_bprintf(buf, "{\\fn%s}", m->ftab[i]->font);
-                }
+                if (m->s[entry]->fontsize != m->d.fontsize)
+                    av_bprintf(buf, "{\\fs%d}", m->s[entry]->fontsize);
+                if (m->s[entry]->style_fontID != m->d.fontID)
+                    for (i = 0; i < m->ftab_entries; i++) {
+                        if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
+                            av_bprintf(buf, "{\\fn%s}", m->ftab[i]->font);
+                    }
             }
             if (text_pos == m->s[entry]->style_end) {
                 if (style_active) {
