@@ -39,6 +39,11 @@
 #define HLIT_BOX   (1<<1)
 #define HCLR_BOX   (1<<2)
 
+#define DEFAULT_STYLE_FONT_ID  0x01
+#define DEFAULT_STYLE_FONTSIZE 0x12
+#define DEFAULT_STYLE_COLOR    0xffffffff
+#define DEFAULT_STYLE_FLAG     0x00
+
 #define BGR_TO_RGB(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
 #define av_bprint_append_any(buf, data, size)   av_bprint_append_data(buf, ((const char*)data), size)
 
@@ -46,6 +51,9 @@ typedef struct {
     uint16_t style_start;
     uint16_t style_end;
     uint8_t style_flag;
+    uint16_t style_fontID;
+    uint8_t style_fontsize;
+    uint32_t style_color;
 } StyleBox;
 
 typedef struct {
@@ -68,9 +76,7 @@ typedef struct {
     HilightcolorBox hclr;
     int count;
     uint8_t box_flags;
-    uint16_t style_fontID;
-    uint8_t style_fontsize;
-    uint32_t style_color;
+    StyleBox d;
     uint16_t text_pos;
     uint16_t byte_count;
 } MovTextContext;
@@ -104,25 +110,26 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
         tsmb_size = s->count * STYLE_RECORD_SIZE + SIZE_ADD;
         tsmb_size = AV_RB32(&tsmb_size);
         style_entries = AV_RB16(&s->count);
-        s->style_fontID = 0x00 | 0x01<<8;
-        s->style_fontsize = 0x12;
-        s->style_color = MKTAG(0xFF, 0xFF, 0xFF, 0xFF);
         /*The above three attributes are hard coded for now
         but will come from ASS style in the future*/
         av_bprint_append_any(&s->buffer, &tsmb_size, 4);
         av_bprint_append_any(&s->buffer, &tsmb_type, 4);
         av_bprint_append_any(&s->buffer, &style_entries, 2);
         for (j = 0; j < s->count; j++) {
-            uint16_t style_start, style_end;
+            uint16_t style_start, style_end, style_fontID;
+            uint32_t style_color;
 
             style_start  = AV_RB16(&s->style_attributes[j]->style_start);
             style_end    = AV_RB16(&s->style_attributes[j]->style_end);
+            style_color  = AV_RB32(&s->d.style_color);
+            style_fontID = AV_RB16(&s->d.style_fontID);
+
             av_bprint_append_any(&s->buffer, &style_start, 2);
             av_bprint_append_any(&s->buffer, &style_end, 2);
-            av_bprint_append_any(&s->buffer, &s->style_fontID, 2);
+            av_bprint_append_any(&s->buffer, &style_fontID, 2);
             av_bprint_append_any(&s->buffer, &s->style_attributes[j]->style_flag, 1);
-            av_bprint_append_any(&s->buffer, &s->style_fontsize, 1);
-            av_bprint_append_any(&s->buffer, &s->style_color, 4);
+            av_bprint_append_any(&s->buffer, &s->d.style_fontsize, 1);
+            av_bprint_append_any(&s->buffer, &style_color, 4);
         }
     }
     mov_text_cleanup(s);
@@ -220,6 +227,13 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     memcpy(avctx->extradata, text_sample_entry, avctx->extradata_size);
 
     s->ass_ctx = ff_ass_split(avctx->subtitle_header);
+
+    // TODO: Initialize from ASS style record
+    s->d.style_fontID   = DEFAULT_STYLE_FONT_ID;
+    s->d.style_fontsize = DEFAULT_STYLE_FONTSIZE;
+    s->d.style_color    = DEFAULT_STYLE_COLOR;
+    s->d.style_flag     = DEFAULT_STYLE_FLAG;
+
     return s->ass_ctx ? 0 : AVERROR_INVALIDDATA;
 }
 
@@ -270,6 +284,17 @@ static uint8_t mov_text_style_to_flag(const char style)
     return style_flag;
 }
 
+static void mov_text_style_set(MovTextContext *s, uint8_t style_flags)
+{
+    if (!s->style_attributes_temp ||
+        !((s->style_attributes_temp->style_flag & style_flags) ^ style_flags)) {
+        // setting flags that that are already set
+        return;
+    }
+    if (mov_text_style_start(s))
+        s->style_attributes_temp->style_flag |= style_flags;
+}
+
 static void mov_text_style_cb(void *priv, const char style, int close)
 {
     MovTextContext *s = priv;
@@ -313,6 +338,19 @@ static void mov_text_end_cb(void *priv)
 {
     // End of text, close any open style record
     mov_text_style_start((MovTextContext*)priv);
+}
+
+static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
+{
+    ASSStyle * style = ff_ass_style_get(s->ass_ctx, dialog->style);
+    uint8_t    style_flags;
+
+    if (style) {
+        style_flags = (!!style->bold      * STYLE_FLAG_BOLD)   |
+                      (!!style->italic    * STYLE_FLAG_ITALIC) |
+                      (!!style->underline * STYLE_FLAG_UNDERLINE);
+        mov_text_style_set(s, style_flags);
+    }
 }
 
 static uint16_t utf8_strlen(const char *text, int len)
@@ -386,6 +424,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             int num;
             dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
             for (; dialog && num--; dialog++) {
+                mov_text_dialog(s, dialog);
                 ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
             }
         } else {
@@ -393,6 +432,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
             if (!dialog)
                 return AVERROR(ENOMEM);
+            mov_text_dialog(s, dialog);
             ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
             ff_ass_free_dialog(&dialog);
 #if FF_API_ASS_TIMING
