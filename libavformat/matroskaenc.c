@@ -1517,14 +1517,14 @@ static int mkv_check_tag_name(const char *name, uint32_t elementid)
 }
 
 static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid,
-                         uint64_t uid)
+                         uint64_t uid, ebml_master *tag)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ebml_master tag;
+    ebml_master tag2;
     int ret;
     AVDictionaryEntry *t = NULL;
 
-    ret = mkv_write_tag_targets(s, elementid, uid, &tag);
+    ret = mkv_write_tag_targets(s, elementid, uid, tag ? tag : &tag2);
     if (ret < 0)
         return ret;
 
@@ -1536,7 +1536,9 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid
         }
     }
 
-    end_ebml_master(mkv->tags_bc, tag);
+    if (!tag)
+        end_ebml_master(mkv->tags_bc, tag2);
+
     return 0;
 }
 
@@ -1554,53 +1556,43 @@ static int mkv_check_tag(AVDictionary *m, uint32_t elementid)
 static int mkv_write_tags(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
+    ebml_master tag, *tagp;
     int i, ret;
 
     ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
 
     if (mkv_check_tag(s->metadata, 0)) {
-        ret = mkv_write_tag(s, s->metadata, 0, 0);
+        ret = mkv_write_tag(s, s->metadata, 0, 0, NULL);
         if (ret < 0) return ret;
     }
 
+    tagp = (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live ? &tag : NULL;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
             continue;
 
-        if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID))
+        if (!tagp && !mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID))
             continue;
 
-        ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1);
+        ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID,
+                            i + 1, tagp);
         if (ret < 0) return ret;
-    }
 
-    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
-        for (i = 0; i < s->nb_streams; i++) {
-            AVIOContext *pb;
-            AVStream *st = s->streams[i];
-            ebml_master tag_target;
-            ebml_master tag;
+        if (tagp) {
+            AVIOContext *pb = mkv->tags_bc;
+            ebml_master simpletag;
 
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
-                continue;
-
-            ret = mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID,
-                                        i + 1, &tag_target);
-            if (ret < 0)
-                return ret;
-            pb = mkv->tags_bc;
-
-            tag = start_ebml_master(pb, MATROSKA_ID_SIMPLETAG, 0);
+            simpletag = start_ebml_master(pb, MATROSKA_ID_SIMPLETAG, 0);
             put_ebml_string(pb, MATROSKA_ID_TAGNAME, "DURATION");
             mkv->tracks[i].duration_offset = avio_tell(pb);
 
             // Reserve space to write duration as a 20-byte string.
             // 2 (ebml id) + 1 (data size) + 20 (data)
             put_ebml_void(pb, 23);
+            end_ebml_master(pb, simpletag);
             end_ebml_master(pb, tag);
-            end_ebml_master(pb, tag_target);
         }
     }
 
@@ -1612,7 +1604,8 @@ static int mkv_write_tags(AVFormatContext *s)
                 continue;
 
             ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID,
-                                (uint32_t)ch->id + (uint64_t)mkv->chapter_id_offset);
+                                (uint32_t)ch->id + (uint64_t)mkv->chapter_id_offset,
+                                NULL);
             if (ret < 0)
                 return ret;
         }
@@ -1626,7 +1619,8 @@ static int mkv_write_tags(AVFormatContext *s)
             if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID))
                 continue;
 
-            ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID, attachment->fileuid);
+            ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID,
+                                attachment->fileuid, NULL);
             if (ret < 0)
                 return ret;
         }
