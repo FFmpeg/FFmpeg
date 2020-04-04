@@ -309,6 +309,12 @@ static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color
      */
 }
 
+static void mov_text_end_cb(void *priv)
+{
+    // End of text, close any open style record
+    mov_text_style_start((MovTextContext*)priv);
+}
+
 static uint16_t utf8_strlen(const char *text, int len)
 {
     uint16_t i = 0, ret = 0;
@@ -352,6 +358,7 @@ static const ASSCodesCallbacks mov_text_callbacks = {
     .new_line = mov_text_new_line_cb,
     .style    = mov_text_style_cb,
     .color    = mov_text_color_cb,
+    .end      = mov_text_end_cb,
 };
 
 static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
