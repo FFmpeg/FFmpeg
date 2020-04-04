@@ -48,6 +48,8 @@
 #define TOP_CENTER      8
 #define TOP_RIGHT       9
 
+#define RGB_TO_BGR(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
+
 typedef struct {
     char *font;
     int fontsize;
@@ -448,10 +450,11 @@ static int mov_text_init(AVCodecContext *avctx) {
     MovTextContext *m = avctx->priv_data;
     ret = mov_text_tx3g(avctx, m);
     if (ret == 0) {
-        return ff_ass_subtitle_header(avctx, m->d.font, m->d.fontsize, m->d.color,
-                                m->d.back_color, m->d.bold, m->d.italic,
-                                m->d.underline, ASS_DEFAULT_BORDERSTYLE,
-                                m->d.alignment);
+        return ff_ass_subtitle_header(avctx, m->d.font, m->d.fontsize,
+                    RGB_TO_BGR(m->d.color),
+                    RGB_TO_BGR(m->d.back_color),
+                    m->d.bold, m->d.italic, m->d.underline,
+                    ASS_DEFAULT_BORDERSTYLE, m->d.alignment);
     } else
         return ff_ass_subtitle_header_default(avctx);
 }
