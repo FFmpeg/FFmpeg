@@ -52,7 +52,7 @@
 
 typedef struct {
     uint16_t fontID;
-    char *font;
+    const char *font;
     uint8_t fontsize;
     int color;
     int back_color;
@@ -251,6 +251,8 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
         m->ftab_temp = NULL;
         tx3g_ptr = tx3g_ptr + font_length;
     }
+    // In case of broken header, init default font
+    m->d.font = ASS_DEFAULT_FONT;
     for (i = 0; i < m->ftab_entries; i++) {
         if (m->d.fontID == m->ftab[i]->fontID)
             m->d.font = m->ftab[i]->font;
