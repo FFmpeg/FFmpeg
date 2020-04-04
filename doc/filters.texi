@@ -19044,12 +19044,15 @@ If diagonal field of view is set it overrides horizontal and vertical field of v
 @end table
 
 @item pannini
-Pannini projection. @i{(output only)}
+Pannini projection.
 
 Format specific options:
 @table @option
 @item h_fov
-Set pannini parameter.
+Set output pannini parameter.
+
+@item ih_fov
+Set input pannini parameter.
 @end table
 
 @item cylindrical
