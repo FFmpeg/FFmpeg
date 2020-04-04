@@ -121,7 +121,7 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
 
             style_start  = AV_RB16(&s->style_attributes[j]->style_start);
             style_end    = AV_RB16(&s->style_attributes[j]->style_end);
-            style_color  = AV_RB32(&s->d.style_color);
+            style_color  = AV_RB32(&s->style_attributes[j]->style_color);
             style_fontID = AV_RB16(&s->d.style_fontID);
 
             av_bprint_append_any(&s->buffer, &style_start, 2);
@@ -244,7 +244,8 @@ static int mov_text_style_start(MovTextContext *s)
     if (s->style_attributes_temp->style_start == s->text_pos)
         // Still at same text pos, use same entry
         return 1;
-    if (s->style_attributes_temp->style_flag) {
+    if (s->style_attributes_temp->style_flag  != s->d.style_flag ||
+        s->style_attributes_temp->style_color != s->d.style_color) {
         // last style != defaults, end the style entry and start a new one
         s->box_flags |= STYL_BOX;
         s->style_attributes_temp->style_end = s->text_pos;
@@ -258,9 +259,11 @@ static int mov_text_style_start(MovTextContext *s)
         }
 
         s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
+        s->style_attributes_temp->style_color = s->style_attributes[s->count - 1]->style_color;
         s->style_attributes_temp->style_start = s->text_pos;
     } else { // style entry matches defaults, drop entry
-        s->style_attributes_temp->style_flag = 0;
+        s->style_attributes_temp->style_flag = s->d.style_flag;
+        s->style_attributes_temp->style_color = s->d.style_color;
         s->style_attributes_temp->style_start = s->text_pos;
     }
     return 1;
@@ -313,12 +316,26 @@ static void mov_text_style_cb(void *priv, const char style, int close)
     }
 }
 
+static void mov_text_color_set(MovTextContext *s, uint32_t color)
+{
+    if (!s->style_attributes_temp ||
+        (s->style_attributes_temp->style_color & 0xffffff00) == color) {
+        // color hasn't changed
+        return;
+    }
+    if (mov_text_style_start(s))
+        s->style_attributes_temp->style_color = (color & 0xffffff00) |
+                            (s->style_attributes_temp->style_color & 0xff);
+}
+
 static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color_id)
 {
     MovTextContext *s = priv;
 
     color = BGR_TO_RGB(color) << 8;
-    if (color_id == 2) {    //secondary color changes
+    if (color_id == 1) {    //primary color changes
+        mov_text_color_set(s, color);
+    } else if (color_id == 2) {    //secondary color changes
         if (s->box_flags & HLIT_BOX) {  //close tag
             s->hlit.end = s->text_pos;
         } else {
@@ -344,12 +361,15 @@ static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
 {
     ASSStyle * style = ff_ass_style_get(s->ass_ctx, dialog->style);
     uint8_t    style_flags;
+    uint32_t   color;
 
     if (style) {
         style_flags = (!!style->bold      * STYLE_FLAG_BOLD)   |
                       (!!style->italic    * STYLE_FLAG_ITALIC) |
                       (!!style->underline * STYLE_FLAG_UNDERLINE);
         mov_text_style_set(s, style_flags);
+        color = BGR_TO_RGB(style->primary_color & 0xffffff) << 8;
+        mov_text_color_set(s, color);
     }
 }
 
