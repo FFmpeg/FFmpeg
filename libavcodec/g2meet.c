@@ -917,6 +917,11 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
     awidth      = FFALIGN(tile_width,  16);
     aheight     = FFALIGN(tile_height, 16);
 
+    if (tile_width > (1 << FF_ARRAY_ELEMS(c->ec.prev_row_rung))) {
+        avpriv_request_sample(avctx, "large tile width");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (els_dsize) {
         int ret, i, j, k;
         uint8_t tr_r, tr_g, tr_b, *buf;
