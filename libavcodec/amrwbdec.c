@@ -1121,7 +1121,10 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     header_size      = decode_mime_header(ctx, buf);
     expected_fr_size = ((cf_sizes_wb[ctx->fr_cur_mode] + 7) >> 3) + 1;
 
-    if (ctx->fr_cur_mode == NO_DATA) {
+    if (!ctx->fr_quality)
+        av_log(avctx, AV_LOG_ERROR, "Encountered a bad or corrupted frame\n");
+
+    if (ctx->fr_cur_mode == NO_DATA || !ctx->fr_quality) {
         av_samples_set_silence(&frame->data[0], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
         *got_frame_ptr = 1;
         return expected_fr_size;
@@ -1138,9 +1141,6 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         *got_frame_ptr = 0;
         return AVERROR_INVALIDDATA;
     }
-
-    if (!ctx->fr_quality)
-        av_log(avctx, AV_LOG_ERROR, "Encountered a bad or corrupted frame\n");
 
     if (ctx->fr_cur_mode == MODE_SID) { /* Comfort noise frame */
         avpriv_request_sample(avctx, "SID mode");
