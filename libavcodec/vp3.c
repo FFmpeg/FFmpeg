@@ -2741,7 +2741,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I
                                                 : AV_PICTURE_TYPE_P;
     s->current_frame.f->key_frame = s->keyframe;
-    if (ff_thread_get_buffer(avctx, &s->current_frame, AV_GET_BUFFER_FLAG_REF) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &s->current_frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         goto error;
 
     if (!s->edge_emu_buffer)
@@ -2793,8 +2793,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                    "vp3: first frame not a keyframe\n");
 
             s->golden_frame.f->pict_type = AV_PICTURE_TYPE_I;
-            if (ff_thread_get_buffer(avctx, &s->golden_frame,
-                                     AV_GET_BUFFER_FLAG_REF) < 0)
+            if ((ret = ff_thread_get_buffer(avctx, &s->golden_frame,
+                                     AV_GET_BUFFER_FLAG_REF)) < 0)
                 goto error;
             ff_thread_release_buffer(avctx, &s->last_frame);
             if ((ret = ff_thread_ref_frame(&s->last_frame,
@@ -2808,39 +2808,39 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     ff_thread_finish_setup(avctx);
 
     if (s->version < 2) {
-    if (unpack_superblocks(s, &gb)) {
+    if ((ret = unpack_superblocks(s, &gb)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
         goto error;
     }
 #if CONFIG_VP4_DECODER
     } else {
-        if (vp4_unpack_macroblocks(s, &gb)) {
+        if ((ret = vp4_unpack_macroblocks(s, &gb)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "error in vp4_unpack_macroblocks\n");
             goto error;
     }
 #endif
     }
-    if (unpack_modes(s, &gb)) {
+    if ((ret = unpack_modes(s, &gb)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_modes\n");
         goto error;
     }
-    if (unpack_vectors(s, &gb)) {
+    if (ret = unpack_vectors(s, &gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_vectors\n");
         goto error;
     }
-    if (unpack_block_qpis(s, &gb)) {
+    if ((ret = unpack_block_qpis(s, &gb)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_block_qpis\n");
         goto error;
     }
 
     if (s->version < 2) {
-    if (unpack_dct_coeffs(s, &gb)) {
+    if ((ret = unpack_dct_coeffs(s, &gb)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
         goto error;
     }
 #if CONFIG_VP4_DECODER
     } else {
-        if (vp4_unpack_dct_coeffs(s, &gb)) {
+        if ((ret = vp4_unpack_dct_coeffs(s, &gb)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "error in vp4_unpack_dct_coeffs\n");
             goto error;
         }
@@ -2892,7 +2892,7 @@ error:
     if (!HAVE_THREADS || !(s->avctx->active_thread_type & FF_THREAD_FRAME))
         av_frame_unref(s->current_frame.f);
 
-    return -1;
+    return ret;
 }
 
 static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
