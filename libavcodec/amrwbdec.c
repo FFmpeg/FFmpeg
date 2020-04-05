@@ -1122,8 +1122,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     expected_fr_size = ((cf_sizes_wb[ctx->fr_cur_mode] + 7) >> 3) + 1;
 
     if (ctx->fr_cur_mode == NO_DATA) {
-        for (i = 0; i < frame->nb_samples; i++)
-            buf_out[i] = 0.f;
+        av_samples_set_silence(&frame->data[0], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
         *got_frame_ptr = 1;
         return expected_fr_size;
     }
