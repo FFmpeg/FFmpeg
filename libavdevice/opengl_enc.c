@@ -1055,13 +1055,14 @@ static av_cold int opengl_init_context(OpenGLContext *opengl)
 static av_cold int opengl_write_header(AVFormatContext *h)
 {
     OpenGLContext *opengl = h->priv_data;
+    AVCodecParameters *par = h->streams[0]->codecpar;
     AVStream *st;
     int ret;
 
     if (h->nb_streams != 1 ||
-        h->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
-        h->streams[0]->codecpar->codec_id != AV_CODEC_ID_RAWVIDEO) {
-        av_log(opengl, AV_LOG_ERROR, "Only a single video stream is supported.\n");
+        par->codec_type != AVMEDIA_TYPE_VIDEO ||
+        (par->codec_id != AV_CODEC_ID_WRAPPED_AVFRAME && par->codec_id != AV_CODEC_ID_RAWVIDEO)) {
+        av_log(opengl, AV_LOG_ERROR, "Only a single raw or wrapped avframe video stream is supported.\n");
         return AVERROR(EINVAL);
     }
     st = h->streams[0];
@@ -1256,7 +1257,13 @@ static int opengl_draw(AVFormatContext *h, void *input, int repaint, int is_pkt)
 
 static int opengl_write_packet(AVFormatContext *h, AVPacket *pkt)
 {
-    return opengl_draw(h, pkt, 0, 1);
+    AVCodecParameters *par = h->streams[0]->codecpar;
+    if (par->codec_id == AV_CODEC_ID_WRAPPED_AVFRAME) {
+        AVFrame *frame = (AVFrame *)pkt->data;
+        return opengl_draw(h, frame, 0, 0);
+    } else {
+        return opengl_draw(h, pkt, 0, 1);
+    }
 }
 
 static int opengl_write_frame(AVFormatContext *h, int stream_index,
@@ -1290,7 +1297,7 @@ AVOutputFormat ff_opengl_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("OpenGL output"),
     .priv_data_size = sizeof(OpenGLContext),
     .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
     .write_header   = opengl_write_header,
     .write_packet   = opengl_write_packet,
     .write_uncoded_frame = opengl_write_frame,
