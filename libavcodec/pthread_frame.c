@@ -982,10 +982,11 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
     PerThreadContext *p = avctx->internal->thread_ctx;
     FrameThreadContext *fctx;
     AVFrame *dst, *tmp;
+    int ret = 0;
     int can_direct_free = !(avctx->active_thread_type & FF_THREAD_FRAME) ||
                           THREAD_SAFE_CALLBACKS(avctx);
 
-    if (!f->f || !f->f->buf[0])
+    if (!f->f)
         return;
 
     if (avctx->debug & FF_DEBUG_BUFFERS)
@@ -994,7 +995,8 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
     av_buffer_unref(&f->progress);
     f->owner[0] = f->owner[1] = NULL;
 
-    if (can_direct_free) {
+    // when the frame buffers are not allocated, just reset it to clean state
+    if (can_direct_free || !f->f->buf[0]) {
         av_frame_unref(f->f);
         return;
     }
@@ -1002,13 +1004,17 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
     fctx = p->parent;
     pthread_mutex_lock(&fctx->buffer_mutex);
 
-    if (p->num_released_buffers + 1 >= INT_MAX / sizeof(*p->released_buffers))
+    if (p->num_released_buffers + 1 >= INT_MAX / sizeof(*p->released_buffers)) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
     tmp = av_fast_realloc(p->released_buffers, &p->released_buffers_allocated,
                           (p->num_released_buffers + 1) *
                           sizeof(*p->released_buffers));
-    if (!tmp)
+    if (!tmp) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
     p->released_buffers = tmp;
 
     dst = &p->released_buffers[p->num_released_buffers];
@@ -1018,4 +1024,14 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
 
 fail:
     pthread_mutex_unlock(&fctx->buffer_mutex);
+
+    // make sure the frame is clean even if we fail to free it
+    // this leaks, but it is better than crashing
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not queue a frame for freeing, this will leak\n");
+        memset(f->f->buf, 0, sizeof(f->f->buf));
+        if (f->f->extended_buf)
+            memset(f->f->extended_buf, 0, f->f->nb_extended_buf * sizeof(*f->f->extended_buf));
+        av_frame_unref(f->f);
+    }
 }
