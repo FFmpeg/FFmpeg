@@ -1903,7 +1903,7 @@ int ff_attach_decode_data(AVFrame *frame)
     return 0;
 }
 
-static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
     const AVHWAccel *hwaccel = avctx->hwaccel;
     int override_dimensions = 1;
@@ -1912,7 +1912,8 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         if ((ret = av_image_check_size2(FFALIGN(avctx->width, STRIDE_ALIGN), avctx->height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx)) < 0 || avctx->pix_fmt<0) {
             av_log(avctx, AV_LOG_ERROR, "video_get_buffer: image parameters invalid\n");
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
 
         if (frame->width <= 0 || frame->height <= 0) {
@@ -1923,56 +1924,48 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 
         if (frame->data[0] || frame->data[1] || frame->data[2] || frame->data[3]) {
             av_log(avctx, AV_LOG_ERROR, "pic->data[*]!=NULL in get_buffer_internal\n");
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
     } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         if (frame->nb_samples * (int64_t)avctx->channels > avctx->max_samples) {
             av_log(avctx, AV_LOG_ERROR, "samples per frame %d, exceeds max_samples %"PRId64"\n", frame->nb_samples, avctx->max_samples);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
     }
     ret = ff_decode_frame_props(avctx, frame);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     if (hwaccel) {
         if (hwaccel->alloc_frame) {
             ret = hwaccel->alloc_frame(avctx, frame);
-            goto end;
+            goto fail;
         }
     } else
         avctx->sw_pix_fmt = avctx->pix_fmt;
 
     ret = avctx->get_buffer2(avctx, frame, flags);
     if (ret < 0)
-        goto end;
+        goto fail;
 
     validate_avframe_allocation(avctx, frame);
 
     ret = ff_attach_decode_data(frame);
     if (ret < 0)
-        goto end;
+        goto fail;
 
-end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions &&
         !(avctx->codec->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)) {
         frame->width  = avctx->width;
         frame->height = avctx->height;
     }
 
-    if (ret < 0)
-        av_frame_unref(frame);
-
-    return ret;
-}
-
-int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
-{
-    int ret = get_buffer_internal(avctx, frame, flags);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        frame->width = frame->height = 0;
-    }
+    return 0;
+fail:
+    av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    av_frame_unref(frame);
     return ret;
 }
 
