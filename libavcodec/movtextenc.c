@@ -69,6 +69,7 @@ typedef struct {
     AVCodecContext *avctx;
 
     ASSSplitContext *ass_ctx;
+    ASSStyle *ass_dialog_style;
     AVBPrint buffer;
     StyleBox **style_attributes;
     StyleBox *style_attributes_temp;
@@ -396,9 +397,8 @@ static void mov_text_end_cb(void *priv)
     mov_text_style_start((MovTextContext*)priv);
 }
 
-static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
+static void mov_text_ass_style_set(MovTextContext *s, ASSStyle *style)
 {
-    ASSStyle * style = ff_ass_style_get(s->ass_ctx, dialog->style);
     uint8_t    style_flags, alpha;
     uint32_t   color;
 
@@ -412,7 +412,31 @@ static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
         alpha = 255 - ((uint32_t)style->primary_color >> 24);
         mov_text_alpha_set(s, alpha);
         mov_text_font_size_set(s, style->font_size);
+    } else {
+        // End current style record, go back to defaults
+        mov_text_style_start(s);
     }
+}
+
+static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
+{
+    ASSStyle * style = ff_ass_style_get(s->ass_ctx, dialog->style);
+
+    s->ass_dialog_style = style;
+    mov_text_ass_style_set(s, style);
+}
+
+static void mov_text_cancel_overrides_cb(void *priv, const char * style_name)
+{
+    MovTextContext *s = priv;
+    ASSStyle * style;
+
+    if (!style_name || !*style_name)
+        style = s->ass_dialog_style;
+    else
+        style= ff_ass_style_get(s->ass_ctx, style_name);
+
+    mov_text_ass_style_set(s, style);
 }
 
 static uint16_t utf8_strlen(const char *text, int len)
@@ -454,13 +478,14 @@ static void mov_text_new_line_cb(void *priv, int forced)
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {
-    .text      = mov_text_text_cb,
-    .new_line  = mov_text_new_line_cb,
-    .style     = mov_text_style_cb,
-    .color     = mov_text_color_cb,
-    .alpha     = mov_text_alpha_cb,
-    .font_size = mov_text_font_size_cb,
-    .end       = mov_text_end_cb,
+    .text             = mov_text_text_cb,
+    .new_line         = mov_text_new_line_cb,
+    .style            = mov_text_style_cb,
+    .color            = mov_text_color_cb,
+    .alpha            = mov_text_alpha_cb,
+    .font_size        = mov_text_font_size_cb,
+    .cancel_overrides = mov_text_cancel_overrides_cb,
+    .end              = mov_text_end_cb,
 };
 
 static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
