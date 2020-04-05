@@ -52,8 +52,9 @@ This driver can be installed using amdgpu-pro-install script in official amd dri
 FFmpeg can read AviSynth scripts as input. To enable support, pass
 @code{--enable-avisynth} to configure after installing the headers
 provided by @url{https://github.com/AviSynth/AviSynthPlus, AviSynth+}.
-AviSynth+ supplies a @code{GNUmakefile} to install only the headers,
-as CMake does not make header-only installs an easy task.
+AviSynth+ can be configured to install only the headers by either
+passing @code{-DHEADERS_ONLY:bool=on} to the normal CMake-based build
+system, or by using the supplied @code{GNUmakefile}.
 
 For Windows, supported AviSynth variants are
 @url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
