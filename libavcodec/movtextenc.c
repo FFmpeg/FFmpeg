@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 #include "avcodec.h"
+#include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
@@ -45,6 +46,7 @@
 #define DEFAULT_STYLE_FLAG     0x00
 
 #define BGR_TO_RGB(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
+#define FONTSIZE_SCALE(s,fs) ((fs) * (s)->font_scale_factor + 0.5)
 #define av_bprint_append_any(buf, data, size)   av_bprint_append_data(buf, ((const char*)data), size)
 
 typedef struct {
@@ -66,6 +68,7 @@ typedef struct {
 } HilightcolorBox;
 
 typedef struct {
+    AVClass *class;
     AVCodecContext *avctx;
 
     ASSSplitContext *ass_ctx;
@@ -82,6 +85,8 @@ typedef struct {
     uint16_t byte_count;
     char ** fonts;
     int font_count;
+    double font_scale_factor;
+    int frame_height;
 } MovTextContext;
 
 typedef struct {
@@ -237,6 +242,13 @@ static int encode_sample_description(AVCodecContext *avctx)
 
     // Populate sample description from ASS header
     ass = (ASS*)s->ass_ctx;
+    // Compute font scaling factor based on (optionally) provided
+    // output video height and ASS script play_res_y
+    if (s->frame_height && ass->script_info.play_res_y)
+        s->font_scale_factor = (double)s->frame_height / ass->script_info.play_res_y;
+    else
+        s->font_scale_factor = 1;
+
     style = ff_ass_style_get(s->ass_ctx, "Default");
     if (!style && ass->styles_count) {
         style = &ass->styles[0];
@@ -246,7 +258,7 @@ static int encode_sample_description(AVCodecContext *avctx)
     s->d.style_color    = DEFAULT_STYLE_COLOR;
     s->d.style_flag     = DEFAULT_STYLE_FLAG;
     if (style) {
-        s->d.style_fontsize = style->font_size;
+        s->d.style_fontsize = FONTSIZE_SCALE(s, style->font_size);
         s->d.style_color = BGR_TO_RGB(style->primary_color & 0xffffff) << 8 |
                            255 - ((uint32_t)style->primary_color >> 24);
         s->d.style_flag = (!!style->bold      * STYLE_FLAG_BOLD)   |
@@ -531,6 +543,7 @@ static void mov_text_font_name_cb(void *priv, const char *name)
 
 static void mov_text_font_size_set(MovTextContext *s, int size)
 {
+    size = FONTSIZE_SCALE(s, size);
     if (!s->style_attributes_temp ||
         s->style_attributes_temp->style_fontsize == size) {
         // color hasn't changed
@@ -716,12 +729,27 @@ exit:
     return length;
 }
 
+#define OFFSET(x) offsetof(MovTextContext, x)
+#define FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_SUBTITLE_PARAM
+static const AVOption options[] = {
+    { "height", "Frame height, usually video height", OFFSET(frame_height), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass mov_text_encoder_class = {
+    .class_name = "MOV text enoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_movtext_encoder = {
     .name           = "mov_text",
     .long_name      = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_MOV_TEXT,
     .priv_data_size = sizeof(MovTextContext),
+    .priv_class     = &mov_text_encoder_class,
     .init           = mov_text_encode_init,
     .encode_sub     = mov_text_encode_frame,
     .close          = mov_text_encode_close,
