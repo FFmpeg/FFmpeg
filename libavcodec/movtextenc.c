@@ -97,8 +97,7 @@ static void mov_text_cleanup(MovTextContext *s)
         av_freep(&s->style_attributes);
     }
     if (s->style_attributes_temp) {
-        s->style_attributes_temp->style_flag = 0;
-        s->style_attributes_temp->style_start = 0;
+        *s->style_attributes_temp = s->d;
     }
 }
 
@@ -123,7 +122,7 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
             style_start  = AV_RB16(&s->style_attributes[j]->style_start);
             style_end    = AV_RB16(&s->style_attributes[j]->style_end);
             style_color  = AV_RB32(&s->style_attributes[j]->style_color);
-            style_fontID = AV_RB16(&s->d.style_fontID);
+            style_fontID = AV_RB16(&s->style_attributes[j]->style_fontID);
 
             av_bprint_append_any(&s->buffer, &style_start, 2);
             av_bprint_append_any(&s->buffer, &style_end, 2);
@@ -260,14 +259,10 @@ static int mov_text_style_start(MovTextContext *s)
             return 0;
         }
 
-        s->style_attributes_temp->style_flag = s->style_attributes[s->count - 1]->style_flag;
-        s->style_attributes_temp->style_color = s->style_attributes[s->count - 1]->style_color;
-        s->style_attributes_temp->style_fontsize = s->style_attributes[s->count - 1]->style_fontsize;
+        *s->style_attributes_temp = s->d;
         s->style_attributes_temp->style_start = s->text_pos;
     } else { // style entry matches defaults, drop entry
-        s->style_attributes_temp->style_flag = s->d.style_flag;
-        s->style_attributes_temp->style_color = s->d.style_color;
-        s->style_attributes_temp->style_fontsize = s->d.style_fontsize;
+        *s->style_attributes_temp = s->d;
         s->style_attributes_temp->style_start = s->text_pos;
     }
     return 1;
