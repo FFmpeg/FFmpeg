@@ -2447,8 +2447,8 @@ static int rtp_probe(const AVProbeData *p)
 static int rtp_read_header(AVFormatContext *s)
 {
     uint8_t recvbuf[RTP_MAX_PACKET_LENGTH];
-    char host[500], sdp[1000], filters_buf[1000];
-    int ret, port, sdp_length, nc;
+    char host[500], sdp[500];
+    int ret, port;
     URLContext* in = NULL;
     int payload_type;
     AVCodecParameters *par = NULL;
@@ -2456,7 +2456,6 @@ static int rtp_read_header(AVFormatContext *s)
     AVIOContext pb;
     socklen_t addrlen = sizeof(addr);
     RTSPState *rt = s->priv_data;
-    const char *p;
 
     if (!ff_network_init())
         return AVERROR(EIO);
@@ -2514,40 +2513,13 @@ static int rtp_read_header(AVFormatContext *s)
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port,
                  NULL, 0, s->url);
 
-    sdp_length = snprintf(sdp + sdp_length, sizeof(sdp) - sdp_length,
-                          "v=0\r\nc=IN IP%d %s\r\n",
-                          addr.ss_family == AF_INET ? 4 : 6, host);
-
-    p = strchr(s->url, '?');
-    if (p) {
-        static const char *filters[][2] = {{"sources", "incl"}, {"block", "excl"}, {NULL, NULL}};
-        int i;
-        char *q;
-        for (i = 0; filters[i][0]; i++) {
-            if (av_find_info_tag(filters_buf, sizeof(filters_buf), filters[i][0], p)) {
-                q = filters_buf;
-                while ((q = strchr(q, ',')) != NULL)
-                    *q = ' ';
-                nc = snprintf(sdp + sdp_length, sizeof(sdp) - sdp_length,
-                          "a=source-filter:%s IN IP%d %s %s\r\n",
-                          filters[i][1],
-                          addr.ss_family == AF_INET ? 4 : 6, host,
-                          filters_buf);
-                if (nc < 0 || nc + sdp_length >= sizeof(sdp))
-                    goto fail_nobuf;
-                sdp_length += nc;
-            }
-        }
-    }
-
-    nc = snprintf(sdp + sdp_length, sizeof(sdp) - sdp_length,
-                  "m=%s %d RTP/AVP %d\r\n",
-                  par->codec_type == AVMEDIA_TYPE_DATA  ? "application" :
-                  par->codec_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio",
-                  port, payload_type);
-    if (nc < 0 || nc + sdp_length >= sizeof(sdp))
-        goto fail_nobuf;
-    sdp_length += nc;
+    snprintf(sdp, sizeof(sdp),
+             "v=0\r\nc=IN IP%d %s\r\nm=%s %d RTP/AVP %d\r\n",
+             addr.ss_family == AF_INET ? 4 : 6, host,
+             par->codec_type == AVMEDIA_TYPE_DATA  ? "application" :
+             par->codec_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio",
+             port, payload_type);
+    av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", sdp);
     avcodec_parameters_free(&par);
 
     ffio_init_context(&pb, sdp, strlen(sdp), 0, NULL, NULL, NULL, NULL);
@@ -2562,9 +2534,6 @@ static int rtp_read_header(AVFormatContext *s)
     s->pb = NULL;
     return ret;
 
-fail_nobuf:
-    ret = AVERROR(ENOBUFS);
-    av_log(s, AV_LOG_ERROR, "rtp_read_header(): not enough buffer space for sdp-headers\n");
 fail:
     avcodec_parameters_free(&par);
     if (in)
