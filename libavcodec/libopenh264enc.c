@@ -199,8 +199,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             param.sSpatialLayers[0].eAspectRatio = asp_idc[i];
         }
         param.sSpatialLayers[0].bAspectRatioPresent = true;
-    }
-    else {
+    } else {
         param.sSpatialLayers[0].bAspectRatioPresent = false;
     }
 #endif
@@ -227,7 +226,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     if (s->slice_mode == SM_SIZELIMITED_SLICE) {
-        if (s->max_nal_size){
+        if (s->max_nal_size) {
             param.uiMaxNalSize = s->max_nal_size;
 #if OPENH264_VER_AT_LEAST(1, 6)
             param.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
