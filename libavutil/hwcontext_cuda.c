@@ -212,6 +212,10 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     CUcontext dummy;
     int i, ret;
 
+    if ((src->hw_frames_ctx && ((AVHWFramesContext*)src->hw_frames_ctx->data)->format != AV_PIX_FMT_CUDA) ||
+        (dst->hw_frames_ctx && ((AVHWFramesContext*)dst->hw_frames_ctx->data)->format != AV_PIX_FMT_CUDA))
+        return AVERROR(ENOSYS);
+
     ret = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
     if (ret < 0)
         return ret;
