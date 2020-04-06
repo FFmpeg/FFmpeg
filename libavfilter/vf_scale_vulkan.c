@@ -251,7 +251,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         for (int y = 0; y < 3; y++)
             for (int x = 0; x < 3; x++)
-                par->yuv_matrix[x][y] = tmp_mat[y][x];
+                par->yuv_matrix[x][y] = tmp_mat[x][y];
 
         par->yuv_matrix[3][3] = 1.0;
 
