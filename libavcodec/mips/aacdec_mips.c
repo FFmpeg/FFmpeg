@@ -59,6 +59,7 @@
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
+#if HAVE_MIPSFPU
 static av_always_inline void float_copy(float *dst, const float *src, int count)
 {
     // Copy 'count' floats from src to dst
@@ -282,7 +283,6 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
     }
 }
 
-#if HAVE_MIPSFPU
 static av_always_inline void fmul_and_reverse(float *dst, const float *src0, const float *src1, int count)
 {
     /* Multiply 'count' floats in src0 by src1 and store the results in dst in reverse */
@@ -433,9 +433,9 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 void ff_aacdec_init_mips(AACContext *c)
 {
 #if HAVE_INLINE_ASM
+#if HAVE_MIPSFPU
     c->imdct_and_windowing         = imdct_and_windowing_mips;
     c->apply_ltp                   = apply_ltp_mips;
-#if HAVE_MIPSFPU
     c->update_ltp                  = update_ltp_mips;
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */

@@ -57,6 +57,7 @@
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
+#if HAVE_MIPSFPU
 static void ps_hybrid_analysis_ileave_mips(float (*out)[32][2], float L[2][38][64],
                                         int i, int len)
 {
@@ -187,7 +188,6 @@ static void ps_hybrid_synthesis_deint_mips(float out[2][38][64],
     }
 }
 
-#if HAVE_MIPSFPU
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void ps_add_squares_mips(float *dst, const float (*src)[2], int n)
 {
@@ -450,9 +450,9 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
 void ff_psdsp_init_mips(PSDSPContext *s)
 {
 #if HAVE_INLINE_ASM
+#if HAVE_MIPSFPU
     s->hybrid_analysis_ileave = ps_hybrid_analysis_ileave_mips;
     s->hybrid_synthesis_deint = ps_hybrid_synthesis_deint_mips;
-#if HAVE_MIPSFPU
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     s->add_squares            = ps_add_squares_mips;
     s->mul_pair_single        = ps_mul_pair_single_mips;
