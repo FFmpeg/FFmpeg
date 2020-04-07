@@ -25,8 +25,10 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
+#include "codec_desc.h"
+#include "codec_par.h"
 
 #define IS_EMPTY(pkt) (!(pkt)->data && !(pkt)->side_data_elems)
 

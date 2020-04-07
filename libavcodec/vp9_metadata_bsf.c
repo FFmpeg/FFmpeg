@@ -20,6 +20,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
+#include "bsf.h"
 #include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_vp9.h"

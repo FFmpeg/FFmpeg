@@ -16,6 +16,7 @@ libavutil:     2017-10-21
 API changes, most recent first:
 
 2020-xx-xx - xxxxxxxxxx - lavc 58.87.100 - avcodec.h codec_par.h
+  Move AVBitstreamFilter-related public API to new header bsf.h.
   Move AVCodecParameters-related public API to new header codec_par.h.
 
 2020-05-xx - xxxxxxxxxx - lavc 56.86.101 - avcodec.h

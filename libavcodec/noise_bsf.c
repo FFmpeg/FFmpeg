@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
 
 #include "libavutil/log.h"

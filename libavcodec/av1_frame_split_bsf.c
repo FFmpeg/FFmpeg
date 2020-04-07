@@ -32,7 +32,7 @@
 
 #include "libavutil/avassert.h"
 
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_av1.h"

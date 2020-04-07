@@ -21,7 +21,7 @@
 
 #include "adts_header.h"
 #include "adts_parser.h"
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
 #include "put_bits.h"
 #include "get_bits.h"

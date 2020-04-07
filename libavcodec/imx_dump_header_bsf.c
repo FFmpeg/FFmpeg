@@ -25,7 +25,7 @@
  * modifies bitstream to fit in mov and be decoded by final cut pro decoder
  */
 
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
 #include "bytestream.h"
 

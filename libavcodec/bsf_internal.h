@@ -19,7 +19,10 @@
 #ifndef AVCODEC_BSF_INTERNAL_H
 #define AVCODEC_BSF_INTERNAL_H
 
-#include "avcodec.h"
+#include "libavutil/log.h"
+
+#include "bsf.h"
+#include "packet.h"
 
 /**
  * Called by the bitstream filters to get the next packet for filtering.

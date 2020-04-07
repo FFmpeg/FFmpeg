@@ -25,7 +25,7 @@
  * extract one of the two textures of the HAQA
  */
 
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
 #include "bytestream.h"
 #include "hap.h"
