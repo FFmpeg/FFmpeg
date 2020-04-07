@@ -21,7 +21,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 #include "mpegaudiodecheader.h"
 #include "mpegaudiodata.h"
 

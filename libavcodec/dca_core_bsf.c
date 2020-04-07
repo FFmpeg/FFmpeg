@@ -19,7 +19,7 @@
  */
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 #include "bytestream.h"
 #include "dca_syncwords.h"
 

@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 #include "internal.h"
 #include "mpeg4video.h"
 

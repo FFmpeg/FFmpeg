@@ -21,7 +21,7 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 #include "get_bits.h"
 
 #define MAX_CACHE 8

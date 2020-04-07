@@ -26,7 +26,7 @@
 #include "libavutil/bprint.h"
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 
 #define IS_EMPTY(pkt) (!(pkt)->data && !(pkt)->side_data_elems)
 

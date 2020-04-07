@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 
 static int chomp_filter(AVBSFContext *ctx, AVPacket *pkt)
 {

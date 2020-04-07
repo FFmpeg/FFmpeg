@@ -19,7 +19,7 @@
  */
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 #include "get_bits.h"
 #include "mlp_parse.h"
 #include "mlp.h"

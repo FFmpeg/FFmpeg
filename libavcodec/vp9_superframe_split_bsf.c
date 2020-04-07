@@ -25,7 +25,7 @@
 #include <stddef.h>
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 #include "bytestream.h"
 #include "get_bits.h"
 

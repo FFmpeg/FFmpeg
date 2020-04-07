@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_BSF_H
-#define AVCODEC_BSF_H
+#ifndef AVCODEC_BSF_INTERNAL_H
+#define AVCODEC_BSF_INTERNAL_H
 
 #include "avcodec.h"
 
@@ -41,4 +41,4 @@ int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt);
 
 const AVClass *ff_bsf_child_class_next(const AVClass *prev);
 
-#endif /* AVCODEC_BSF_H */
+#endif /* AVCODEC_BSF_INTERNAL_H */

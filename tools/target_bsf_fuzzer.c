@@ -20,7 +20,7 @@
 #include "libavutil/imgutils.h"
 
 #include "libavcodec/avcodec.h"
-#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/internal.h"
 

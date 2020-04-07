@@ -22,7 +22,7 @@
  */
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 
 const AVBitStreamFilter ff_null_bsf = {
     .name           = "null",

@@ -22,7 +22,7 @@
 #include "libavutil/log.h"
 
 #include "avcodec.h"
-#include "bsf.h"
+#include "bsf_internal.h"
 
 extern const AVBitStreamFilter ff_aac_adtstoasc_bsf;
 extern const AVBitStreamFilter ff_av1_frame_merge_bsf;
