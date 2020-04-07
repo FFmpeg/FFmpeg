@@ -1252,7 +1252,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
         case MKTAG('f', 'd', 'A', 'T'):
             if (!CONFIG_APNG_DECODER || avctx->codec_id != AV_CODEC_ID_APNG)
                 goto skip_tag;
-            if (!decode_next_dat) {
+            if (!decode_next_dat || length < 4) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
