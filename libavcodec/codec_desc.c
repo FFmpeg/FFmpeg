@@ -23,7 +23,9 @@
 
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
-#include "avcodec.h"
+
+#include "codec_id.h"
+#include "codec_desc.h"
 #include "profiles.h"
 #include "version.h"
 

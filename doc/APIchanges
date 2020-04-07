@@ -15,7 +15,8 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2020-xx-xx - xxxxxxxxxx - lavc 58.78.100 - avcodec.h codec_id.h packet.h
+2020-xx-xx - xxxxxxxxxx - lavc 58.78.100 - avcodec.h codec_desc.h codec_id.h packet.h
+  Move AVCodecDesc-related public API to new header codec_desc.h.
   Move AVCodecID enum to new header codec_id.h.
   Move AVPacket-related public API to new header packet.h.
 
