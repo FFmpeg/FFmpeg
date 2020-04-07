@@ -119,6 +119,7 @@ typedef struct VariantStream {
     int packets_written;
     int init_range_length;
     uint8_t *temp_buffer;
+    uint8_t *init_buffer;
 
     AVFormatContext *avf;
     AVFormatContext *vtt_avf;
@@ -193,6 +194,7 @@ typedef struct HLSContext {
     char *segment_filename;
     char *fmp4_init_filename;
     int segment_type;
+    int resend_init_file;  ///< resend init file into disk after refresh m3u8
 
     int use_localtime;      ///< flag to expand filename with localtime
     int use_localtime_mkdir;///< flag to mkdir dirname in timebased filename
@@ -2249,6 +2251,23 @@ static int hls_write_header(AVFormatContext *s)
     return ret;
 }
 
+static int hls_init_file_resend(AVFormatContext *s, VariantStream *vs)
+{
+    HLSContext *hls = s->priv_data;
+    AVDictionary *options = NULL;
+    int ret = 0;
+
+    set_http_options(s, &options, hls);
+    ret = hlsenc_io_open(s, &vs->out, hls->fmp4_init_filename, &options);
+    av_dict_free(&options);
+    if (ret < 0)
+        return ret;
+    avio_write(vs->out, vs->init_buffer, vs->init_range_length);
+    hlsenc_io_close(s, &vs->out, hls->fmp4_init_filename);
+
+    return ret;
+}
+
 static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *hls = s->priv_data;
@@ -2261,7 +2280,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int range_length = 0;
     const char *proto = NULL;
     int use_temp_file = 0;
-    uint8_t *buffer = NULL;
     VariantStream *vs = NULL;
     char *old_filename = NULL;
 
@@ -2347,9 +2365,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_flush(oc->pb);
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
             if (!vs->init_range_length) {
-                range_length = avio_close_dyn_buf(oc->pb, &buffer);
-                avio_write(vs->out, buffer, range_length);
-                av_freep(&buffer);
+                range_length = avio_close_dyn_buf(oc->pb, &vs->init_buffer);
+                if (range_length <= 0)
+                    return AVERROR(EINVAL);
+                avio_write(vs->out, vs->init_buffer, range_length);
+                if (!hls->resend_init_file)
+                    av_freep(&vs->init_buffer);
                 vs->init_range_length = range_length;
                 avio_open_dyn_buf(&oc->pb);
                 vs->packets_written = 0;
@@ -2461,6 +2482,14 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
+        if (hls->resend_init_file && hls->segment_type == SEGMENT_TYPE_FMP4) {
+            ret = hls_init_file_resend(s, vs);
+            if (ret < 0) {
+                av_freep(&old_filename);
+                return ret;
+            }
+        }
+
         if (hls->flags & HLS_SINGLE_FILE) {
             vs->number++;
             vs->start_pos += vs->size;
@@ -2525,7 +2554,8 @@ static void hls_free_variant_streams(struct HLSContext *hls)
         }
 
         avformat_free_context(vs->avf);
-
+        if (hls->resend_init_file)
+            av_freep(&vs->init_buffer);
         hls_free_segments(vs->segments);
         hls_free_segments(vs->old_segments);
         av_freep(&vs->m3u8_name);
@@ -3024,6 +3054,7 @@ static const AVOption options[] = {
     {"mpegts",   "make segment file to mpegts files in m3u8", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_MPEGTS }, 0, UINT_MAX,   E, "segment_type"},
     {"fmp4",   "make segment file to fragment mp4 files in m3u8", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_FMP4 }, 0, UINT_MAX,   E, "segment_type"},
     {"hls_fmp4_init_filename", "set fragment mp4 file init filename", OFFSET(fmp4_init_filename),   AV_OPT_TYPE_STRING, {.str = "init.mp4"},            0,       0,         E},
+    {"hls_fmp4_init_resend", "resend fragment mp4 init file after refresh m3u8 every time", OFFSET(resend_init_file), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
     {"temp_file", "write segment and playlist to temporary file and rename when complete", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_TEMP_FILE }, 0, UINT_MAX,   E, "flags"},
