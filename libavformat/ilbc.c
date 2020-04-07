@@ -121,6 +121,7 @@ AVInputFormat ff_ilbc_demuxer = {
     .flags        = AVFMT_GENERIC_INDEX,
 };
 
+#if CONFIG_ILBC_MUXER
 AVOutputFormat ff_ilbc_muxer = {
     .name         = "ilbc",
     .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
@@ -131,3 +132,4 @@ AVOutputFormat ff_ilbc_muxer = {
     .write_packet = ff_raw_write_packet,
     .flags        = AVFMT_NOTIMESTAMPS,
 };
+#endif
