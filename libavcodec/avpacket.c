@@ -26,9 +26,10 @@
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
-#include "avcodec.h"
+
 #include "bytestream.h"
 #include "internal.h"
+#include "packet.h"
 
 void av_init_packet(AVPacket *pkt)
 {
