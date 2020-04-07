@@ -559,7 +559,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#if CONFIG_WEBM_DASH_MANIFEST_MUXER
 static const AVClass webm_dash_class = {
     .class_name = "WebM DASH Manifest muxer",
     .item_name  = av_default_item_name,
@@ -577,4 +576,3 @@ AVOutputFormat ff_webm_dash_manifest_muxer = {
     .write_packet      = webm_dash_manifest_write_packet,
     .priv_class        = &webm_dash_class,
 };
-#endif

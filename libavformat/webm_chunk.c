@@ -284,7 +284,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#if CONFIG_WEBM_CHUNK_MUXER
 static const AVClass webm_chunk_class = {
     .class_name = "WebM Chunk Muxer",
     .item_name  = av_default_item_name,
@@ -307,4 +306,3 @@ AVOutputFormat ff_webm_chunk_muxer = {
     .deinit         = webm_chunk_deinit,
     .priv_class     = &webm_chunk_class,
 };
-#endif
