@@ -31,7 +31,6 @@
 #include <string.h>
 
 #include "avformat.h"
-#include "avio_internal.h"
 #include "matroska.h"
 
 #include "libavutil/avstring.h"
