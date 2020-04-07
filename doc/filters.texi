@@ -20119,6 +20119,10 @@ Set one of available transition effects:
 @item diagtr
 @item diagbl
 @item diagbr
+@item hlslice
+@item hrslice
+@item vuslice
+@item vdslice
 @end table
 Default transition effect is fade.
 

@@ -61,6 +61,10 @@ enum XFadeTransitions {
     DIAGTR,
     DIAGBL,
     DIAGBR,
+    HLSLICE,
+    HRSLICE,
+    VUSLICE,
+    VDSLICE,
     NB_TRANSITIONS,
 };
 
@@ -174,6 +178,10 @@ static const AVOption xfade_options[] = {
     {   "diagtr",     "diag tr transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGTR},     0, 0, FLAGS, "transition" },
     {   "diagbl",     "diag bl transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGBL},     0, 0, FLAGS, "transition" },
     {   "diagbr",     "diag br transition",     0, AV_OPT_TYPE_CONST, {.i64=DIAGBR},     0, 0, FLAGS, "transition" },
+    {   "hlslice",    "hl slice transition",    0, AV_OPT_TYPE_CONST, {.i64=HLSLICE},    0, 0, FLAGS, "transition" },
+    {   "hrslice",    "hr slice transition",    0, AV_OPT_TYPE_CONST, {.i64=HRSLICE},    0, 0, FLAGS, "transition" },
+    {   "vuslice",    "vu slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VUSLICE},    0, 0, FLAGS, "transition" },
+    {   "vdslice",    "vd slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VDSLICE},    0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -225,6 +233,11 @@ CUSTOM_TRANSITION(16, uint16_t, 2)
 static inline float mix(float a, float b, float mix)
 {
     return a * mix + b * (1.f - mix);
+}
+
+static inline float fract(float a)
+{
+    return a - floorf(a);
 }
 
 static inline float smoothstep(float edge0, float edge1, float x)
@@ -1168,6 +1181,124 @@ static void diagbr##name##_transition(AVFilterContext *ctx,                     
 DIAGBR_TRANSITION(8, uint8_t, 1)
 DIAGBR_TRANSITION(16, uint16_t, 2)
 
+#define HLSLICE_TRANSITION(name, type, div)                                          \
+static void hlslice##name##_transition(AVFilterContext *ctx,                         \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float smooth = smoothstep(-0.5f, 0.f, x / w - progress * 1.5f);    \
+            const float ss = smooth <= fract(10.f * x / w) ? 0.f : 1.f;              \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], ss);                                    \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+HLSLICE_TRANSITION(8, uint8_t, 1)
+HLSLICE_TRANSITION(16, uint16_t, 2)
+
+#define HRSLICE_TRANSITION(name, type, div)                                          \
+static void hrslice##name##_transition(AVFilterContext *ctx,                         \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float w = width;                                                           \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            const float xx = (w - 1 - x) / w;                                        \
+            const float smooth = smoothstep(-0.5f, 0.f, xx - progress * 1.5f);       \
+            const float ss = smooth <= fract(10.f * xx) ? 0.f : 1.f;                 \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], ss);                                    \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+HRSLICE_TRANSITION(8, uint8_t, 1)
+HRSLICE_TRANSITION(16, uint16_t, 2)
+
+#define VUSLICE_TRANSITION(name, type, div)                                          \
+static void vuslice##name##_transition(AVFilterContext *ctx,                         \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+         const float smooth = smoothstep(-0.5f, 0.f, y / h - progress * 1.5f);       \
+         const float ss = smooth <= fract(10.f * y / h) ? 0.f : 1.f;                 \
+                                                                                     \
+         for (int x = 0; x < width; x++) {                                           \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], ss);                                    \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+VUSLICE_TRANSITION(8, uint8_t, 1)
+VUSLICE_TRANSITION(16, uint16_t, 2)
+
+#define VDSLICE_TRANSITION(name, type, div)                                          \
+static void vdslice##name##_transition(AVFilterContext *ctx,                         \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float h = out->height;                                                     \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+         const float yy = (h - 1 - y) / h;                                           \
+         const float smooth = smoothstep(-0.5f, 0.f, yy - progress * 1.5f);          \
+         const float ss = smooth <= fract(10.f * yy) ? 0.f : 1.f;                    \
+                                                                                     \
+         for (int x = 0; x < width; x++) {                                           \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], ss);                                    \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+VDSLICE_TRANSITION(8, uint8_t, 1)
+VDSLICE_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1290,6 +1421,10 @@ static int config_output(AVFilterLink *outlink)
     case DIAGTR:     s->transitionf = s->depth <= 8 ? diagtr8_transition     : diagtr16_transition;     break;
     case DIAGBL:     s->transitionf = s->depth <= 8 ? diagbl8_transition     : diagbl16_transition;     break;
     case DIAGBR:     s->transitionf = s->depth <= 8 ? diagbr8_transition     : diagbr16_transition;     break;
+    case HLSLICE:    s->transitionf = s->depth <= 8 ? hlslice8_transition    : hlslice16_transition;    break;
+    case HRSLICE:    s->transitionf = s->depth <= 8 ? hrslice8_transition    : hrslice16_transition;    break;
+    case VUSLICE:    s->transitionf = s->depth <= 8 ? vuslice8_transition    : vuslice16_transition;    break;
+    case VDSLICE:    s->transitionf = s->depth <= 8 ? vdslice8_transition    : vdslice16_transition;    break;
     }
 
     if (s->transition == CUSTOM) {
