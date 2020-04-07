@@ -2417,32 +2417,32 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
         /* init VLC tables */
         if (s->version < 2) {
-        for (i = 0; i < 16; i++) {
-            /* DC histograms */
-            init_vlc(&s->dc_vlc[i], 11, 32,
-                     &dc_bias[i][0][1], 4, 2,
-                     &dc_bias[i][0][0], 4, 2, 0);
+            for (i = 0; i < 16; i++) {
+                /* DC histograms */
+                init_vlc(&s->dc_vlc[i], 11, 32,
+                         &dc_bias[i][0][1], 4, 2,
+                         &dc_bias[i][0][0], 4, 2, 0);
 
-            /* group 1 AC histograms */
-            init_vlc(&s->ac_vlc_1[i], 11, 32,
-                     &ac_bias_0[i][0][1], 4, 2,
-                     &ac_bias_0[i][0][0], 4, 2, 0);
+                /* group 1 AC histograms */
+                init_vlc(&s->ac_vlc_1[i], 11, 32,
+                         &ac_bias_0[i][0][1], 4, 2,
+                         &ac_bias_0[i][0][0], 4, 2, 0);
 
-            /* group 2 AC histograms */
-            init_vlc(&s->ac_vlc_2[i], 11, 32,
-                     &ac_bias_1[i][0][1], 4, 2,
-                     &ac_bias_1[i][0][0], 4, 2, 0);
+                /* group 2 AC histograms */
+                init_vlc(&s->ac_vlc_2[i], 11, 32,
+                         &ac_bias_1[i][0][1], 4, 2,
+                         &ac_bias_1[i][0][0], 4, 2, 0);
 
-            /* group 3 AC histograms */
-            init_vlc(&s->ac_vlc_3[i], 11, 32,
-                     &ac_bias_2[i][0][1], 4, 2,
-                     &ac_bias_2[i][0][0], 4, 2, 0);
+                /* group 3 AC histograms */
+                init_vlc(&s->ac_vlc_3[i], 11, 32,
+                         &ac_bias_2[i][0][1], 4, 2,
+                         &ac_bias_2[i][0][0], 4, 2, 0);
 
-            /* group 4 AC histograms */
-            init_vlc(&s->ac_vlc_4[i], 11, 32,
-                     &ac_bias_3[i][0][1], 4, 2,
-                     &ac_bias_3[i][0][0], 4, 2, 0);
-        }
+                /* group 4 AC histograms */
+                init_vlc(&s->ac_vlc_4[i], 11, 32,
+                         &ac_bias_3[i][0][1], 4, 2,
+                         &ac_bias_3[i][0][0], 4, 2, 0);
+            }
 #if CONFIG_VP4_DECODER
         } else { /* version >= 2 */
             for (i = 0; i < 16; i++) {
@@ -2786,10 +2786,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     ff_thread_finish_setup(avctx);
 
     if (s->version < 2) {
-    if ((ret = unpack_superblocks(s, &gb)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
-        goto error;
-    }
+        if ((ret = unpack_superblocks(s, &gb)) < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
+            goto error;
+        }
 #if CONFIG_VP4_DECODER
     } else {
         if ((ret = vp4_unpack_macroblocks(s, &gb)) < 0) {
@@ -2812,10 +2812,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     }
 
     if (s->version < 2) {
-    if ((ret = unpack_dct_coeffs(s, &gb)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
-        goto error;
-    }
+        if ((ret = unpack_dct_coeffs(s, &gb)) < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
+            goto error;
+        }
 #if CONFIG_VP4_DECODER
     } else {
         if ((ret = vp4_unpack_dct_coeffs(s, &gb)) < 0) {
@@ -2839,10 +2839,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     // filter the last row
     if (s->version < 2)
-    for (i = 0; i < 3; i++) {
-        int row = (s->height >> (3 + (i && s->chroma_y_shift))) - 1;
-        apply_loop_filter(s, i, row, row + 1);
-    }
+        for (i = 0; i < 3; i++) {
+            int row = (s->height >> (3 + (i && s->chroma_y_shift))) - 1;
+            apply_loop_filter(s, i, row, row + 1);
+        }
     vp3_draw_horiz_band(s, s->height);
 
     /* output frame, offset as needed */
