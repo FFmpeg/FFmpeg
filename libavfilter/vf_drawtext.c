@@ -1085,10 +1085,12 @@ static int func_eval_expr_int_format(AVFilterContext *ctx, AVBPrint *bp,
 
     feclearexcept(FE_ALL_EXCEPT);
     intval = res;
+#if defined(FE_INVALID) && defined(FE_OVERFLOW) && defined(FE_UNDERFLOW)
     if ((ret = fetestexcept(FE_INVALID|FE_OVERFLOW|FE_UNDERFLOW))) {
         av_log(ctx, AV_LOG_ERROR, "Conversion of floating-point result to int failed. Control register: 0x%08x. Conversion result: %d\n", ret, intval);
         return AVERROR(EINVAL);
     }
+#endif
 
     if (argc == 3)
         av_strlcatf(fmt_str, sizeof(fmt_str), "0%u", positions);
