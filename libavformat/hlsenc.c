@@ -2743,9 +2743,8 @@ static int hls_init(AVFormatContext *s)
     VariantStream *vs = NULL;
     int basename_size = 0;
     const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt(s);
-    const char *vtt_pattern = "%d.vtt";
+    const char *vtt_pattern = hls->flags & HLS_SINGLE_FILE ? ".vtt" : "%d.vtt";
     char *p = NULL;
-    int vtt_basename_size = 0;
     int http_base_proto = ff_is_http_proto(s->url);
     int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
 
@@ -2954,28 +2953,25 @@ static int hls_init(AVFormatContext *s)
             if (!vs->vtt_oformat)
                 return AVERROR_MUXER_NOT_FOUND;
 
-            if (hls->flags & HLS_SINGLE_FILE)
-                vtt_pattern = ".vtt";
-            vtt_basename_size = strlen(vs->m3u8_name) + strlen(vtt_pattern) + 1;
-
-            vs->vtt_basename = av_malloc(vtt_basename_size);
-            if (!vs->vtt_basename)
-                return AVERROR(ENOMEM);
-            av_strlcpy(vs->vtt_basename, vs->m3u8_name, vtt_basename_size);
-            p = strrchr(vs->vtt_basename, '.');
+            p = strrchr(vs->m3u8_name, '.');
             if (p)
                 *p = '\0';
+
+            vs->vtt_basename = av_asprintf("%s%s", vs->m3u8_name, vtt_pattern);
+            if (!vs->vtt_basename)
+                return AVERROR(ENOMEM);
 
             if (hls->subtitle_filename) {
                 ret = format_name(hls->subtitle_filename, &vs->vtt_m3u8_name, i, vs->varname);
                 if (ret < 0)
                     return ret;
             } else {
-                vs->vtt_m3u8_name = av_asprintf("%s_vtt.m3u8", vs->vtt_basename);
+                vs->vtt_m3u8_name = av_asprintf("%s_vtt.m3u8", vs->m3u8_name);
                 if (!vs->vtt_m3u8_name)
                     return AVERROR(ENOMEM);
             }
-            av_strlcat(vs->vtt_basename, vtt_pattern, vtt_basename_size);
+            if (p)
+                *p = '.';
         }
 
         if (hls->baseurl) {
