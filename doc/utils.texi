@@ -126,6 +126,15 @@ The following examples are all valid time duration:
 @item 55
 55 seconds
 
+@item 0.2
+0.2 seconds
+
+@item 200ms
+200 milliseconds, that's 0.2s
+
+@item 200000us
+200000 microseconds, that's 0.2s
+
 @item 12:03:45
 12 hours, 03 minutes and 45 seconds
 
