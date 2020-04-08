@@ -1850,28 +1850,20 @@ static void dashenc_delete_file(AVFormatContext *s, char *filename) {
 static int dashenc_delete_segment_file(AVFormatContext *s, const char* file)
 {
     DASHContext *c = s->priv_data;
-    size_t dirname_len, file_len;
-    char filename[1024];
+    AVBPrint buf;
 
-    dirname_len = strlen(c->dirname);
-    if (dirname_len >= sizeof(filename)) {
-        av_log(s, AV_LOG_WARNING, "Cannot delete segments as the directory path is too long: %"PRIu64" characters: %s\n",
-            (uint64_t)dirname_len, c->dirname);
-        return AVERROR(ENAMETOOLONG);
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    av_bprintf(&buf, "%s%s", c->dirname, file);
+    if (!av_bprint_is_complete(&buf)) {
+        av_bprint_finalize(&buf, NULL);
+        av_log(s, AV_LOG_WARNING, "Out of memory for filename\n");
+        return AVERROR(ENOMEM);
     }
 
-    memcpy(filename, c->dirname, dirname_len);
+    dashenc_delete_file(s, buf.str);
 
-    file_len = strlen(file);
-    if ((dirname_len + file_len) >= sizeof(filename)) {
-        av_log(s, AV_LOG_WARNING, "Cannot delete segments as the path is too long: %"PRIu64" characters: %s%s\n",
-            (uint64_t)(dirname_len + file_len), c->dirname, file);
-        return AVERROR(ENAMETOOLONG);
-    }
-
-    memcpy(filename + dirname_len, file, file_len + 1); // include the terminating zero
-    dashenc_delete_file(s, filename);
-
+    av_bprint_finalize(&buf, NULL);
     return 0;
 }
 
