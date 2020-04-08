@@ -489,17 +489,19 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
 
     HLSSegment *segment, *previous_segment = NULL;
     float playlist_duration = 0.0f;
-    int ret = 0, path_size, sub_path_size;
+    int ret = 0;
     int segment_cnt = 0;
-    char *dirname = NULL, *sub_path;
+    AVBPrint path;
+    char *dirname = NULL;
     char *dirname_r = NULL;
     char *dirname_repl = NULL;
-    char *path = NULL;
     char *vtt_dirname = NULL;
     char *vtt_dirname_r = NULL;
     AVDictionary *options = NULL;
     AVIOContext *out = NULL;
     const char *proto = NULL;
+
+    av_bprint_init(&path, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     segment = vs->segments;
     while (segment) {
@@ -550,73 +552,68 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     while (segment) {
         av_log(hls, AV_LOG_DEBUG, "deleting old segment %s\n",
                segment->filename);
-        path_size =  (hls->use_localtime_mkdir ? 0 : strlen(dirname)+1) + strlen(segment->filename) + 1;
-        path = av_malloc(path_size);
-        if (!path) {
+        if (!hls->use_localtime_mkdir) // segment->filename contains basename only
+            av_bprintf(&path, "%s%c", dirname, SEPARATOR);
+        av_bprintf(&path, "%s", segment->filename);
+
+        if (!av_bprint_is_complete(&path)) {
             ret = AVERROR(ENOMEM);
             goto fail;
-        }
-
-        if (hls->use_localtime_mkdir)
-            av_strlcpy(path, segment->filename, path_size);
-        else { // segment->filename contains basename only
-            snprintf(path, path_size, "%s%c%s", dirname, SEPARATOR, segment->filename);
         }
 
         proto = avio_find_protocol_name(s->url);
         if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
             av_dict_set(&options, "method", "DELETE", 0);
-            if ((ret = vs->avf->io_open(vs->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0) {
+            if ((ret = vs->avf->io_open(vs->avf, &out, path.str,
+                                        AVIO_FLAG_WRITE, &options)) < 0) {
                 if (hls->ignore_io_errors)
                     ret = 0;
                 goto fail;
             }
             ff_format_io_close(vs->avf, &out);
-        } else if (unlink(path) < 0) {
+        } else if (unlink(path.str) < 0) {
             av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
-                   path, strerror(errno));
+                   path.str, strerror(errno));
         }
 
         if ((segment->sub_filename[0] != '\0')) {
             vtt_dirname_r = av_strdup(vs->vtt_avf->url);
             vtt_dirname = (char*)av_dirname(vtt_dirname_r);
-            sub_path_size = strlen(segment->sub_filename) + 1 + strlen(vtt_dirname) + 1;
-            sub_path = av_malloc(sub_path_size);
-            if (!sub_path) {
+
+            av_bprint_clear(&path);
+            av_bprintf(&path, "%s%c%s", vtt_dirname, SEPARATOR,
+                                         segment->sub_filename);
+            av_freep(&vtt_dirname_r);
+
+            if (!av_bprint_is_complete(&path)) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            snprintf(sub_path, sub_path_size, "%s%c%s", vtt_dirname, SEPARATOR, segment->sub_filename);
-
-            av_freep(&vtt_dirname_r);
-
             if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
                 av_dict_set(&options, "method", "DELETE", 0);
-                if ((ret = vs->vtt_avf->io_open(vs->vtt_avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
+                if ((ret = vs->vtt_avf->io_open(vs->vtt_avf, &out, path.str,
+                                                AVIO_FLAG_WRITE, &options)) < 0) {
                     if (hls->ignore_io_errors)
                         ret = 0;
-                    av_freep(&sub_path);
                     goto fail;
                 }
                 ff_format_io_close(vs->vtt_avf, &out);
-            } else if (unlink(sub_path) < 0) {
+            } else if (unlink(path.str) < 0) {
                 av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
-                       sub_path, strerror(errno));
+                       path.str, strerror(errno));
             }
-            av_freep(&sub_path);
         }
-        av_freep(&path);
+        av_bprint_clear(&path);
         previous_segment = segment;
         segment = previous_segment->next;
         av_freep(&previous_segment);
     }
 
 fail:
-    av_freep(&path);
+    av_bprint_finalize(&path, NULL);
     av_freep(&dirname_r);
     av_freep(&dirname_repl);
-    av_freep(&vtt_dirname_r);
 
     return ret;
 }
