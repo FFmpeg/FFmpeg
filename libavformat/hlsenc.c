@@ -484,6 +484,26 @@ static void reflush_dynbuf(VariantStream *vs, int *range_length)
 #define SEPARATOR '/'
 #endif
 
+static int hls_delete_file(HLSContext *hls, AVFormatContext *avf,
+                           const char *path, const char *proto)
+{
+    if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
+        AVDictionary *opt = NULL;
+        AVIOContext  *out = NULL;
+        int ret;
+        av_dict_set(&opt, "method", "DELETE", 0);
+        ret = avf->io_open(avf, &out, path, AVIO_FLAG_WRITE, &opt);
+        av_dict_free(&opt);
+        if (ret < 0)
+            return hls->ignore_io_errors ? 1 : ret;
+        ff_format_io_close(avf, &out);
+    } else if (unlink(path) < 0) {
+        av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
+               path, strerror(errno));
+    }
+    return 0;
+}
+
 static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
                                    VariantStream *vs)
 {
@@ -498,8 +518,6 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     char *dirname_repl = NULL;
     char *vtt_dirname = NULL;
     char *vtt_dirname_r = NULL;
-    AVDictionary *options = NULL;
-    AVIOContext *out = NULL;
     const char *proto = NULL;
 
     av_bprint_init(&path, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -563,19 +581,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         }
 
         proto = avio_find_protocol_name(s->url);
-        if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
-            av_dict_set(&options, "method", "DELETE", 0);
-            if ((ret = vs->avf->io_open(vs->avf, &out, path.str,
-                                        AVIO_FLAG_WRITE, &options)) < 0) {
-                if (hls->ignore_io_errors)
-                    ret = 0;
-                goto fail;
-            }
-            ff_format_io_close(vs->avf, &out);
-        } else if (unlink(path.str) < 0) {
-            av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
-                   path.str, strerror(errno));
-        }
+        if (ret = hls_delete_file(hls, vs->avf, path.str, proto))
+            goto fail;
 
         if ((segment->sub_filename[0] != '\0')) {
             vtt_dirname_r = av_strdup(vs->vtt_avf->url);
@@ -591,19 +598,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
                 goto fail;
             }
 
-            if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
-                av_dict_set(&options, "method", "DELETE", 0);
-                if ((ret = vs->vtt_avf->io_open(vs->vtt_avf, &out, path.str,
-                                                AVIO_FLAG_WRITE, &options)) < 0) {
-                    if (hls->ignore_io_errors)
-                        ret = 0;
-                    goto fail;
-                }
-                ff_format_io_close(vs->vtt_avf, &out);
-            } else if (unlink(path.str) < 0) {
-                av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
-                       path.str, strerror(errno));
-            }
+            if (ret = hls_delete_file(hls, vs->vtt_avf, path.str, proto))
+                goto fail;
         }
         av_bprint_clear(&path);
         previous_segment = segment;
