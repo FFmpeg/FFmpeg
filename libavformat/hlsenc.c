@@ -532,7 +532,6 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     /* if %v is present in the file's directory
      * all segment belongs to the same variant, so do it only once before the loop*/
     if (dirname && av_stristr(dirname, "%v")) {
-        char * dirname_repl = dirname;
         if (!vs->varname) {
             if (replace_int_data_in_filename(&dirname_repl, dirname, 'v', segment->var_stream_idx) < 1) {
                 ret = AVERROR(EINVAL);
