@@ -2739,14 +2739,20 @@ static int hls_init(AVFormatContext *s)
     int i = 0;
     int j = 0;
     HLSContext *hls = s->priv_data;
-    const char *pattern = "%d.ts";
+    const char *pattern;
     VariantStream *vs = NULL;
-    int basename_size = 0;
-    const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt(s);
     const char *vtt_pattern = hls->flags & HLS_SINGLE_FILE ? ".vtt" : "%d.vtt";
     char *p = NULL;
     int http_base_proto = ff_is_http_proto(s->url);
     int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
+
+    if (hls->use_localtime) {
+        pattern = get_default_pattern_localtime_fmt(s);
+    } else {
+        pattern = hls->segment_type == SEGMENT_TYPE_FMP4 ? "%d.m4s" : "%d.ts";
+        if (hls->flags & HLS_SINGLE_FILE)
+            pattern += 2;
+    }
 
     hls->has_default_key = 0;
     hls->has_video_m3u8 = 0;
@@ -2792,9 +2798,6 @@ static int hls_init(AVFormatContext *s)
         }
     }
 
-    if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-        pattern = "%d.m4s";
-    }
     if ((hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH) ||
         (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_MICROSECONDS_SINCE_EPOCH) ||
         (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_FORMATTED_DATETIME)) {
@@ -2868,34 +2871,16 @@ static int hls_init(AVFormatContext *s)
             if (ret < 0)
                 return ret;
         } else {
-            if (hls->flags & HLS_SINGLE_FILE) {
-                if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-                    pattern = ".m4s";
-                } else {
-                    pattern = ".ts";
-                }
-            }
+            p = strrchr(vs->m3u8_name, '.');
+            if (p)
+                *p = '\0';
 
-            if (hls->use_localtime) {
-                basename_size = strlen(vs->m3u8_name) + strlen(pattern_localtime_fmt) + 1;
-            } else {
-                basename_size = strlen(vs->m3u8_name) + strlen(pattern) + 1;
-            }
-
-            vs->basename = av_malloc(basename_size);
+            vs->basename = av_asprintf("%s%s", vs->m3u8_name, pattern);
             if (!vs->basename)
                 return AVERROR(ENOMEM);
 
-            av_strlcpy(vs->basename, vs->m3u8_name, basename_size);
-
-            p = strrchr(vs->basename, '.');
             if (p)
-                *p = '\0';
-            if (hls->use_localtime) {
-                av_strlcat(vs->basename, pattern_localtime_fmt, basename_size);
-            } else {
-                av_strlcat(vs->basename, pattern, basename_size);
-            }
+                *p = '.';
         }
 
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
