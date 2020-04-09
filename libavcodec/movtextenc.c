@@ -479,19 +479,23 @@ static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color
     if (color_id == 1) {    //primary color changes
         mov_text_color_set(s, color);
     } else if (color_id == 2) {    //secondary color changes
-        if (s->box_flags & HLIT_BOX) {  //close tag
-            s->hlit.end = s->text_pos;
-        } else {
+        if (!(s->box_flags & HCLR_BOX))
+            // Highlight alpha not set yet, use current primary alpha
+            s->hclr.color = s->style_attributes_temp->style_color;
+        if (!(s->box_flags & HLIT_BOX) || s->hlit.start == s->text_pos) {
             s->box_flags |= HCLR_BOX;
             s->box_flags |= HLIT_BOX;
             s->hlit.start = s->text_pos;
-            s->hclr.color = color | 0xFF;  //set alpha value to FF
+            s->hclr.color = color | (s->hclr.color & 0xFF);
         }
+        else //close tag
+            s->hlit.end = s->text_pos;
+        /* If there are more than one secondary color changes in ASS,
+           take start of first section and end of last section. Movtext
+           allows only one highlight box per sample.
+         */
     }
-    /* If there are more than one secondary color changes in ASS, take start of
-       first section and end of last section. Movtext allows only one
-       highlight box per sample.
-     */
+    // Movtext does not support changes to other color_id (outline, background)
 }
 
 static void mov_text_alpha_set(MovTextContext *s, uint8_t alpha)
@@ -510,8 +514,23 @@ static void mov_text_alpha_cb(void *priv, int alpha, int alpha_id)
 {
     MovTextContext *s = priv;
 
+    alpha = 255 - alpha;
     if (alpha_id == 1) // primary alpha changes
-        mov_text_alpha_set(s, 255 - alpha);
+        mov_text_alpha_set(s, alpha);
+    else if (alpha_id == 2) {    //secondary alpha changes
+        if (!(s->box_flags & HCLR_BOX))
+            // Highlight color not set yet, use current primary color
+            s->hclr.color = s->style_attributes_temp->style_color;
+        if (!(s->box_flags & HLIT_BOX) || s->hlit.start == s->text_pos) {
+            s->box_flags |= HCLR_BOX;
+            s->box_flags |= HLIT_BOX;
+            s->hlit.start = s->text_pos;
+            s->hclr.color = (s->hclr.color & 0xffffff00) | alpha;
+        }
+        else //close tag
+            s->hlit.end = s->text_pos;
+    }
+    // Movtext does not support changes to other alpha_id (outline, background)
 }
 
 static uint16_t find_font_id(MovTextContext * s, const char * name)
