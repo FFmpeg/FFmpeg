@@ -233,14 +233,11 @@ static void init_options(OptionsContext *o)
 static int show_hwaccels(void *optctx, const char *opt, const char *arg)
 {
     enum AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
-    int i;
 
     printf("Hardware acceleration methods:\n");
     while ((type = av_hwdevice_iterate_types(type)) !=
            AV_HWDEVICE_TYPE_NONE)
         printf("%s\n", av_hwdevice_get_type_name(type));
-    for (i = 0; hwaccels[i].name; i++)
-        printf("%s\n", hwaccels[i].name);
     printf("\n");
     return 0;
 }
@@ -936,8 +933,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                                AV_HWDEVICE_TYPE_NONE)
                             av_log(NULL, AV_LOG_FATAL, "%s ",
                                    av_hwdevice_get_type_name(type));
-                        for (i = 0; hwaccels[i].name; i++)
-                            av_log(NULL, AV_LOG_FATAL, "%s ", hwaccels[i].name);
                         av_log(NULL, AV_LOG_FATAL, "\n");
                         exit_program(1);
                     }
