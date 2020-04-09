@@ -182,8 +182,9 @@ int av_bsf_init(AVBSFContext *ctx);
  * sending more empty packets does nothing) and will cause the filter to output
  * any packets it may have buffered internally.
  *
- * @return 0 on success, a negative AVERROR on error. This function never fails if
- * pkt is empty.
+ * @return 0 on success. AVERROR(EAGAIN) if packets need to be retrieved from the
+ * filter (using av_bsf_receive_packet()) before new input can be consumed. Another
+ * negative AVERROR value if an error occurs.
  */
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
 
