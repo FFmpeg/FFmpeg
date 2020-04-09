@@ -1303,6 +1303,12 @@ int ff_AMediaCodec_delete(FFAMediaCodec* codec)
         ret = AVERROR_EXTERNAL;
     }
 
+    (*env)->DeleteGlobalRef(env, codec->input_buffers);
+    codec->input_buffers = NULL;
+
+    (*env)->DeleteGlobalRef(env, codec->output_buffers);
+    codec->output_buffers = NULL;
+
     (*env)->DeleteGlobalRef(env, codec->object);
     codec->object = NULL;
 
