@@ -276,9 +276,8 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
                 shift[ch] -= (2 * n);
             diff = sign_extend((diff &~ 3) << 8, 16);
 
-            /* saturate the shifter to a lower limit of 0 */
-            if (shift[ch] < 0)
-                shift[ch] = 0;
+            /* saturate the shifter to 0..31 */
+            shift[ch] = av_clip_uintp2(shift[ch], 5);
 
             diff >>= shift[ch];
             predictor[ch] += diff;
