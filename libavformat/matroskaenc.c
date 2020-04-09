@@ -32,7 +32,6 @@
 #include "isom.h"
 #include "matroska.h"
 #include "riff.h"
-#include "subtitles.h"
 #include "vorbiscomment.h"
 #include "wv.h"
 
@@ -55,7 +54,6 @@
 
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
-#include "libavcodec/internal.h"
 
 /* Level 1 elements we create a SeekHead entry for:
  * Info, Tracks, Chapters, Attachments, Tags and Cues */
