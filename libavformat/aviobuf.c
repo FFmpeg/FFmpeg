@@ -432,26 +432,6 @@ PUT_STR16(be, 1)
 
 #undef PUT_STR16
 
-int ff_get_v_length(uint64_t val)
-{
-    int i = 1;
-
-    while (val >>= 7)
-        i++;
-
-    return i;
-}
-
-void ff_put_v(AVIOContext *bc, uint64_t val)
-{
-    int i = ff_get_v_length(val);
-
-    while (--i > 0)
-        avio_w8(bc, 128 | (uint8_t)(val >> (7*i)));
-
-    avio_w8(bc, val & 127);
-}
-
 void avio_wl64(AVIOContext *s, uint64_t val)
 {
     avio_wl32(s, (uint32_t)(val & 0xffffffff));

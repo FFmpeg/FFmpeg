@@ -290,16 +290,6 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
                      AVFormatContext *src, int interleave);
 
 /**
- * Get the length in bytes which is needed to store val as v.
- */
-int ff_get_v_length(uint64_t val);
-
-/**
- * Put val using a variable number of bytes.
- */
-void ff_put_v(AVIOContext *bc, uint64_t val);
-
-/**
  * Read a whole line of text from AVIOContext. Stop reading after reaching
  * either a \\n, a \\0 or EOF. The returned string is always \\0-terminated,
  * and may be truncated if the buffer is too small.

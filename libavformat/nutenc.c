@@ -277,11 +277,37 @@ static void build_frame_code(AVFormatContext *s)
         nut->frame_code['N'].flags = FLAG_INVALID;
 }
 
+/**
+ * Get the length in bytes which is needed to store val as v.
+ */
+static int get_v_length(uint64_t val)
+{
+    int i = 1;
+
+    while (val >>= 7)
+        i++;
+
+    return i;
+}
+
+/**
+ * Put val using a variable number of bytes.
+ */
+static void put_v(AVIOContext *bc, uint64_t val)
+{
+    int i = get_v_length(val);
+
+    while (--i > 0)
+        avio_w8(bc, 128 | (uint8_t)(val >> (7*i)));
+
+    avio_w8(bc, val & 127);
+}
+
 static void put_tt(NUTContext *nut, AVRational *time_base, AVIOContext *bc, uint64_t val)
 {
     val *= nut->time_base_count;
     val += time_base - nut->time_base;
-    ff_put_v(bc, val);
+    put_v(bc, val);
 }
 /**
  * Store a string as vb.
@@ -290,13 +316,13 @@ static void put_str(AVIOContext *bc, const char *string)
 {
     size_t len = strlen(string);
 
-    ff_put_v(bc, len);
+    put_v(bc, len);
     avio_write(bc, string, len);
 }
 
 static void put_s(AVIOContext *bc, int64_t val)
 {
-    ff_put_v(bc, 2 * FFABS(val) - (val > 0));
+    put_v(bc, 2 * FFABS(val) - (val > 0));
 }
 
 static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc,
@@ -309,7 +335,7 @@ static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc,
     if (forw_ptr > 4096)
         ffio_init_checksum(bc, ff_crc04C11DB7_update, 0);
     avio_wb64(bc, startcode);
-    ff_put_v(bc, forw_ptr);
+    put_v(bc, forw_ptr);
     if (forw_ptr > 4096)
         avio_wl32(bc, ffio_get_checksum(bc));
 
@@ -326,16 +352,16 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc)
         tmp_head_idx;
     int64_t tmp_match;
 
-    ff_put_v(bc, nut->version);
+    put_v(bc, nut->version);
     if (nut->version > 3)
-        ff_put_v(bc, nut->minor_version = 1);
-    ff_put_v(bc, nut->avf->nb_streams);
-    ff_put_v(bc, nut->max_distance);
-    ff_put_v(bc, nut->time_base_count);
+        put_v(bc, nut->minor_version = 1);
+    put_v(bc, nut->avf->nb_streams);
+    put_v(bc, nut->max_distance);
+    put_v(bc, nut->time_base_count);
 
     for (i = 0; i < nut->time_base_count; i++) {
-        ff_put_v(bc, nut->time_base[i].num);
-        ff_put_v(bc, nut->time_base[i].den);
+        put_v(bc, nut->time_base[i].num);
+        put_v(bc, nut->time_base[i].den);
     }
 
     tmp_pts      = 0;
@@ -379,25 +405,25 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc)
         if (j != tmp_mul - tmp_size)
             tmp_fields = 6;
 
-        ff_put_v(bc, tmp_flags);
-        ff_put_v(bc, tmp_fields);
+        put_v(bc, tmp_flags);
+        put_v(bc, tmp_fields);
         if (tmp_fields > 0) put_s(bc, tmp_pts);
-        if (tmp_fields > 1) ff_put_v(bc, tmp_mul);
-        if (tmp_fields > 2) ff_put_v(bc, tmp_stream);
-        if (tmp_fields > 3) ff_put_v(bc, tmp_size);
-        if (tmp_fields > 4) ff_put_v(bc, 0 /*tmp_res*/);
-        if (tmp_fields > 5) ff_put_v(bc, j);
-        if (tmp_fields > 6) ff_put_v(bc, tmp_match);
-        if (tmp_fields > 7) ff_put_v(bc, tmp_head_idx);
+        if (tmp_fields > 1) put_v(bc, tmp_mul);
+        if (tmp_fields > 2) put_v(bc, tmp_stream);
+        if (tmp_fields > 3) put_v(bc, tmp_size);
+        if (tmp_fields > 4) put_v(bc, 0 /*tmp_res*/);
+        if (tmp_fields > 5) put_v(bc, j);
+        if (tmp_fields > 6) put_v(bc, tmp_match);
+        if (tmp_fields > 7) put_v(bc, tmp_head_idx);
     }
-    ff_put_v(bc, nut->header_count - 1);
+    put_v(bc, nut->header_count - 1);
     for (i = 1; i < nut->header_count; i++) {
-        ff_put_v(bc, nut->header_len[i]);
+        put_v(bc, nut->header_len[i]);
         avio_write(bc, nut->header[i], nut->header_len[i]);
     }
     // flags had been effectively introduced in version 4
     if (nut->version > 3)
-        ff_put_v(bc, nut->flags);
+        put_v(bc, nut->flags);
 }
 
 static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
@@ -406,14 +432,14 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
     NUTContext *nut       = avctx->priv_data;
     AVCodecParameters *par = st->codecpar;
 
-    ff_put_v(bc, i);
+    put_v(bc, i);
     switch (par->codec_type) {
-    case AVMEDIA_TYPE_VIDEO:    ff_put_v(bc, 0); break;
-    case AVMEDIA_TYPE_AUDIO:    ff_put_v(bc, 1); break;
-    case AVMEDIA_TYPE_SUBTITLE: ff_put_v(bc, 2); break;
-    default:                    ff_put_v(bc, 3); break;
+    case AVMEDIA_TYPE_VIDEO:    put_v(bc, 0); break;
+    case AVMEDIA_TYPE_AUDIO:    put_v(bc, 1); break;
+    case AVMEDIA_TYPE_SUBTITLE: put_v(bc, 2); break;
+    default:                    put_v(bc, 3); break;
     }
-    ff_put_v(bc, 4);
+    put_v(bc, 4);
 
     if (par->codec_tag) {
         avio_wl32(bc, par->codec_tag);
@@ -422,34 +448,34 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc,
         return AVERROR(EINVAL);
     }
 
-    ff_put_v(bc, nut->stream[i].time_base - nut->time_base);
-    ff_put_v(bc, nut->stream[i].msb_pts_shift);
-    ff_put_v(bc, nut->stream[i].max_pts_distance);
-    ff_put_v(bc, par->video_delay);
+    put_v(bc, nut->stream[i].time_base - nut->time_base);
+    put_v(bc, nut->stream[i].msb_pts_shift);
+    put_v(bc, nut->stream[i].max_pts_distance);
+    put_v(bc, par->video_delay);
     avio_w8(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 
-    ff_put_v(bc, par->extradata_size);
+    put_v(bc, par->extradata_size);
     avio_write(bc, par->extradata, par->extradata_size);
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        ff_put_v(bc, par->sample_rate);
-        ff_put_v(bc, 1);
-        ff_put_v(bc, par->channels);
+        put_v(bc, par->sample_rate);
+        put_v(bc, 1);
+        put_v(bc, par->channels);
         break;
     case AVMEDIA_TYPE_VIDEO:
-        ff_put_v(bc, par->width);
-        ff_put_v(bc, par->height);
+        put_v(bc, par->width);
+        put_v(bc, par->height);
 
         if (st->sample_aspect_ratio.num <= 0 ||
             st->sample_aspect_ratio.den <= 0) {
-            ff_put_v(bc, 0);
-            ff_put_v(bc, 0);
+            put_v(bc, 0);
+            put_v(bc, 0);
         } else {
-            ff_put_v(bc, st->sample_aspect_ratio.num);
-            ff_put_v(bc, st->sample_aspect_ratio.den);
+            put_v(bc, st->sample_aspect_ratio.num);
+            put_v(bc, st->sample_aspect_ratio.den);
         }
-        ff_put_v(bc, 0); /* csp type -- unknown */
+        put_v(bc, 0); /* csp type -- unknown */
         break;
     default:
         break;
@@ -480,12 +506,12 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc)
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
         count += add_info(dyn_bc, t->key, t->value);
 
-    ff_put_v(bc, 0); //stream_if_plus1
-    ff_put_v(bc, 0); //chapter_id
-    ff_put_v(bc, 0); //timestamp_start
-    ff_put_v(bc, 0); //length
+    put_v(bc, 0); //stream_if_plus1
+    put_v(bc, 0); //chapter_id
+    put_v(bc, 0); //timestamp_start
+    put_v(bc, 0); //length
 
-    ff_put_v(bc, count);
+    put_v(bc, count);
 
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
@@ -521,12 +547,12 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id) {
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
 
     if (count) {
-        ff_put_v(bc, stream_id + 1); //stream_id_plus1
-        ff_put_v(bc, 0); //chapter_id
-        ff_put_v(bc, 0); //timestamp_start
-        ff_put_v(bc, 0); //length
+        put_v(bc, stream_id + 1); //stream_id_plus1
+        put_v(bc, 0); //chapter_id
+        put_v(bc, 0); //timestamp_start
+        put_v(bc, 0); //length
 
-        ff_put_v(bc, count);
+        put_v(bc, count);
 
         avio_write(bc, dyn_buf, dyn_size);
     }
@@ -547,15 +573,15 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
     if (ret < 0)
         return ret;
 
-    ff_put_v(bc, 0);                                        // stream_id_plus1
+    put_v(bc, 0);                                           // stream_id_plus1
     put_s(bc, id + 1);                                      // chapter_id
     put_tt(nut, nut->chapter[id].time_base, bc, ch->start); // chapter_start
-    ff_put_v(bc, ch->end - ch->start);                      // chapter_len
+    put_v(bc, ch->end - ch->start);                         // chapter_len
 
     while ((t = av_dict_get(ch->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
         count += add_info(dyn_bc, t->key, t->value);
 
-    ff_put_v(bc, count);
+    put_v(bc, count);
 
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
@@ -572,11 +598,11 @@ static int write_index(NUTContext *nut, AVIOContext *bc) {
 
     put_tt(nut, nut->max_pts_tb, bc, nut->max_pts);
 
-    ff_put_v(bc, nut->sp_count);
+    put_v(bc, nut->sp_count);
 
     for (i=0; i<nut->sp_count; i++) {
         av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, (void**)next_node);
-        ff_put_v(bc, (next_node[1]->pos >> 4) - (dummy.pos>>4));
+        put_v(bc, (next_node[1]->pos >> 4) - (dummy.pos>>4));
         dummy.pos = next_node[1]->pos;
     }
 
@@ -597,12 +623,12 @@ static int write_index(NUTContext *nut, AVIOContext *bc) {
             for (; j<nut->sp_count && (nus->keyframe_pts[j] != AV_NOPTS_VALUE) == flag; j++)
                 n++;
 
-            ff_put_v(bc, 1 + 2*flag + 4*n);
+            put_v(bc, 1 + 2 * flag + 4 * n);
             for (k= j - n; k<=j && k<nut->sp_count; k++) {
                 if (nus->keyframe_pts[k] == AV_NOPTS_VALUE)
                     continue;
                 av_assert0(nus->keyframe_pts[k] > last_pts);
-                ff_put_v(bc, nus->keyframe_pts[k] - last_pts);
+                put_v(bc, nus->keyframe_pts[k] - last_pts);
                 last_pts = nus->keyframe_pts[k];
             }
         }
@@ -862,7 +888,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                 }
                 put_s(dyn_bc, -2);
                 put_str(dyn_bc, "bin");
-                ff_put_v(dyn_bc, pkt->side_data[i].size);
+                put_v(dyn_bc, pkt->side_data[i].size);
                 avio_write(dyn_bc, data, pkt->side_data[i].size);
                 sm_data_count++;
                 break;
@@ -877,7 +903,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                     put_str(dyn_bc, "ChannelLayout");
                     put_s(dyn_bc, -2);
                     put_str(dyn_bc, "u64");
-                    ff_put_v(bc, 8);
+                    put_v(bc, 8);
                     avio_write(dyn_bc, data, 8); data+=8;
                     sm_data_count++;
                 }
@@ -916,7 +942,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
     }
 
 fail:
-    ff_put_v(bc, sm_data_count);
+    put_v(bc, sm_data_count);
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
     av_freep(&dyn_buf);
@@ -1002,7 +1028,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0)
             goto fail;
         put_tt(nut, nus->time_base, dyn_bc, pkt->dts);
-        ff_put_v(dyn_bc, sp_pos != INT64_MAX ? (nut->last_syncpoint_pos - sp_pos) >> 4 : 0);
+        put_v(dyn_bc, sp_pos != INT64_MAX ? (nut->last_syncpoint_pos - sp_pos) >> 4 : 0);
 
         if (nut->flags & NUT_BROADCAST) {
             put_tt(nut, nus->time_base, dyn_bc,
@@ -1060,18 +1086,18 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
 
         if (flags & FLAG_STREAM_ID)
-            length += ff_get_v_length(pkt->stream_index);
+            length += get_v_length(pkt->stream_index);
 
         if (data_size % fc->size_mul != fc->size_lsb)
             continue;
         if (flags & FLAG_SIZE_MSB)
-            length += ff_get_v_length(data_size / fc->size_mul);
+            length += get_v_length(data_size / fc->size_mul);
 
         if (flags & FLAG_CHECKSUM)
             length += 4;
 
         if (flags & FLAG_CODED_PTS)
-            length += ff_get_v_length(coded_pts);
+            length += get_v_length(coded_pts);
 
         if (   (flags & FLAG_CODED)
             && nut->header_len[best_header_idx] > nut->header_len[fc->header_idx] + 1) {
@@ -1103,13 +1129,13 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     ffio_init_checksum(bc, ff_crc04C11DB7_update, 0);
     avio_w8(bc, frame_code);
     if (flags & FLAG_CODED) {
-        ff_put_v(bc, (flags ^ needed_flags) & ~(FLAG_CODED));
+        put_v(bc, (flags ^ needed_flags) & ~(FLAG_CODED));
         flags = needed_flags;
     }
-    if (flags & FLAG_STREAM_ID)  ff_put_v(bc, pkt->stream_index);
-    if (flags & FLAG_CODED_PTS)  ff_put_v(bc, coded_pts);
-    if (flags & FLAG_SIZE_MSB )  ff_put_v(bc, data_size / fc->size_mul);
-    if (flags & FLAG_HEADER_IDX) ff_put_v(bc, header_idx = best_header_idx);
+    if (flags & FLAG_STREAM_ID)  put_v(bc, pkt->stream_index);
+    if (flags & FLAG_CODED_PTS)  put_v(bc, coded_pts);
+    if (flags & FLAG_SIZE_MSB )  put_v(bc, data_size / fc->size_mul);
+    if (flags & FLAG_HEADER_IDX) put_v(bc, header_idx = best_header_idx);
 
     if (flags & FLAG_CHECKSUM)   avio_wl32(bc, ffio_get_checksum(bc));
     else                         ffio_get_checksum(bc);
