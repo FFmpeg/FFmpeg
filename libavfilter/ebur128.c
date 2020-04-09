@@ -155,7 +155,7 @@ static int ebur128_init_channel_map(FFEBUR128State * st)
 {
     size_t i;
     st->d->channel_map =
-        (int *) av_malloc_array(st->channels, sizeof(int));
+        (int *) av_malloc_array(st->channels, sizeof(*st->d->channel_map));
     if (!st->d->channel_map)
         return AVERROR(ENOMEM);
     if (st->channels == 4) {
@@ -221,17 +221,17 @@ FFEBUR128State *ff_ebur128_init(unsigned int channels,
     int errcode;
     FFEBUR128State *st;
 
-    st = (FFEBUR128State *) av_malloc(sizeof(FFEBUR128State));
+    st = (FFEBUR128State *) av_malloc(sizeof(*st));
     CHECK_ERROR(!st, 0, exit)
     st->d = (struct FFEBUR128StateInternal *)
-        av_malloc(sizeof(struct FFEBUR128StateInternal));
+        av_malloc(sizeof(*st->d));
     CHECK_ERROR(!st->d, 0, free_state)
     st->channels = channels;
     errcode = ebur128_init_channel_map(st);
     CHECK_ERROR(errcode, 0, free_internal)
 
     st->d->sample_peak =
-        (double *) av_mallocz_array(channels, sizeof(double));
+        (double *) av_mallocz_array(channels, sizeof(*st->d->sample_peak));
     CHECK_ERROR(!st->d->sample_peak, 0, free_channel_map)
 
     st->samplerate = samplerate;
@@ -253,16 +253,16 @@ FFEBUR128State *ff_ebur128_init(unsigned int channels,
     }
     st->d->audio_data =
         (double *) av_mallocz_array(st->d->audio_data_frames,
-                                    st->channels * sizeof(double));
+                                    st->channels * sizeof(*st->d->audio_data));
     CHECK_ERROR(!st->d->audio_data, 0, free_sample_peak)
 
     ebur128_init_filter(st);
 
     st->d->block_energy_histogram =
-        av_mallocz(1000 * sizeof(unsigned long));
+        av_mallocz(1000 * sizeof(*st->d->block_energy_histogram));
     CHECK_ERROR(!st->d->block_energy_histogram, 0, free_audio_data)
     st->d->short_term_block_energy_histogram =
-        av_mallocz(1000 * sizeof(unsigned long));
+        av_mallocz(1000 * sizeof(*st->d->short_term_block_energy_histogram));
     CHECK_ERROR(!st->d->short_term_block_energy_histogram, 0,
                 free_block_energy_histogram)
     st->d->short_term_frame_counter = 0;
@@ -275,7 +275,7 @@ FFEBUR128State *ff_ebur128_init(unsigned int channels,
     if (ff_thread_once(&histogram_init, &init_histogram) != 0)
         goto free_short_term_block_energy_histogram;
 
-    st->d->data_ptrs = av_malloc_array(channels, sizeof(void *));
+    st->d->data_ptrs = av_malloc_array(channels, sizeof(*st->d->data_ptrs));
     CHECK_ERROR(!st->d->data_ptrs, 0,
                 free_short_term_block_energy_histogram);
 
