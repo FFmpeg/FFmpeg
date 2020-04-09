@@ -862,6 +862,7 @@ static int get_plt(Jpeg2000DecoderContext *s, int n)
 static int get_ppt(Jpeg2000DecoderContext *s, int n)
 {
     Jpeg2000Tile *tile;
+    void *new;
 
     if (n < 3) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid length for PPT data.\n");
@@ -879,8 +880,8 @@ static int get_ppt(Jpeg2000DecoderContext *s, int n)
 
     tile->has_ppt = 1;  // this tile has a ppt marker
     bytestream2_get_byte(&s->g); // Zppt is skipped and not used
-    void* new = av_realloc(tile->packed_headers,
-                           tile->packed_headers_size + n - 3);
+    new = av_realloc(tile->packed_headers,
+                     tile->packed_headers_size + n - 3);
     if (new) {
         tile->packed_headers = new;
     } else
