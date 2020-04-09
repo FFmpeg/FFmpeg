@@ -1251,6 +1251,8 @@ static const char* get_relative_url(const char *master_url, const char *media_ur
             av_log(NULL, AV_LOG_WARNING, "Unable to find relative url\n");
             return NULL;
         }
+    } else {
+        return media_url;
     }
 
     return media_url + base_len + 1;
