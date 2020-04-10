@@ -6,6 +6,7 @@ HEADERS = ac3_parser.h                                                  \
           avcodec.h                                                     \
           avdct.h                                                       \
           avfft.h                                                       \
+          codec_desc.h                                                  \
           codec_id.h                                                    \
           d3d11va.h                                                     \
           dirac.h                                                       \
