@@ -33,6 +33,7 @@
 #include "blockdsp.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "aandcttab.h"
 
 typedef struct MV30Context {
     GetBitContext  gb;
@@ -57,25 +58,6 @@ typedef struct MV30Context {
 } MV30Context;
 
 static VLC cbp_tab;
-
-static const int16_t scale_tab[] = {
-    16384,  22725,  21407,  19266,
-    16384,  12873,   8867,   4520,
-    22725,  31521,  29692,  26722,
-    22725,  17855,  12299,   6270,
-    21407,  29692,  27969,  25172,
-    21407,  16819,  11585,   5906,
-    19266,  26722,  25172,  22654,
-    19266,  15137,  10426,   5315,
-    16384,  22725,  21407,  19266,
-    16384,  12873,   8867,   4520,
-    12873,  17855,  16819,  15137,
-    12873,  10114,   6967,   3552,
-     8867,  12299,  11585,  10426,
-     8867,   6967,   4799,   2446,
-     4520,   6270,   5906,   5315,
-     4520,   3552,   2446,   1247,
-};
 
 static const uint8_t luma_tab[] = {
     12, 12, 15, 19, 25, 34, 40, 48,
@@ -116,7 +98,7 @@ static void get_qtable(int16_t *table, int quant, const uint8_t *quant_tab)
 
     for (int i = 0; i < 64; i++) {
         table[i] = av_clip((quant_tab[i] * factor + 0x32) / 100, 1, 0x7fff);
-        table[i] = ((int)scale_tab[i] * (int)table[i] + 0x800) >> 12;
+        table[i] = ((int)ff_aanscales[i] * (int)table[i] + 0x800) >> 12;
     }
 }
 
