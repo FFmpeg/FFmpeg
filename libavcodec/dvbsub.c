@@ -282,7 +282,7 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
     page_id = 1;
 
     if (h->num_rects && !h->rects)
-        return -1;
+        return AVERROR(EINVAL);
 
     if (avctx->width > 0 && avctx->height > 0) {
         if (buf_size < 11)
@@ -341,7 +341,7 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
                 /* 8 bpp, standard encoding */
                 bpp_index = 2;
             } else {
-                return -1;
+                return AVERROR(EINVAL);
             }
 
 
@@ -393,7 +393,7 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
             /* 8 bpp, standard encoding */
             bpp_index = 2;
         } else {
-            return -1;
+            return AVERROR(EINVAL);
         }
 
         *q++ = 0x0f; /* sync_byte */
@@ -441,7 +441,7 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
                 /* 8 bpp, standard encoding */
                 dvb_encode_rle = dvb_encode_rle8;
             } else {
-                return -1;
+                return AVERROR(EINVAL);
             }
 
             /* Object Data segment */
