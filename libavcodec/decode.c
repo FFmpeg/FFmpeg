@@ -2084,6 +2084,21 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
 
+    if (av_codec_is_encoder(avctx->codec)) {
+        int caps = avctx->codec->capabilities;
+
+        if (!(caps & AV_CODEC_CAP_ENCODER_FLUSH)) {
+            // Only encoders that explicitly declare support for it can be
+            // flushed. Otherwise, this is a no-op.
+            av_log(avctx, AV_LOG_WARNING, "Ignoring attempt to flush encoder "
+                   "that doesn't support it\n");
+            return;
+        }
+
+        // We haven't implemented flushing for frame-threaded encoders.
+        av_assert0(!(caps & AV_CODEC_CAP_FRAME_THREADS));
+    }
+
     avci->draining      = 0;
     avci->draining_done = 0;
     avci->nb_draining_errors = 0;

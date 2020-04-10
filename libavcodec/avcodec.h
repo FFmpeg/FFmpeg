@@ -513,6 +513,13 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE (1 << 20)
 
+/**
+ * This encoder can be flushed using avcodec_flush_buffers(). If this flag is
+ * not set, the encoder must be closed and reopened to ensure that no frames
+ * remain pending.
+ */
+#define AV_CODEC_CAP_ENCODER_FLUSH   (1 << 21)
+
 /* Exported side data.
    These flags can be passed in AVCodecContext.export_side_data before initialization.
 */
@@ -4473,13 +4480,21 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              int buf_size, int align);
 
 /**
- * Reset the internal decoder state / flush internal buffers. Should be called
+ * Reset the internal codec state / flush internal buffers. Should be called
  * e.g. when seeking or when switching to a different stream.
  *
- * @note when refcounted frames are not used (i.e. avctx->refcounted_frames is 0),
- * this invalidates the frames previously returned from the decoder. When
- * refcounted frames are used, the decoder just releases any references it might
- * keep internally, but the caller's reference remains valid.
+ * @note for decoders, when refcounted frames are not used
+ * (i.e. avctx->refcounted_frames is 0), this invalidates the frames previously
+ * returned from the decoder. When refcounted frames are used, the decoder just
+ * releases any references it might keep internally, but the caller's reference
+ * remains valid.
+ *
+ * @note for encoders, this function will only do something if the encoder
+ * declares support for AV_CODEC_CAP_ENCODER_FLUSH. When called, the encoder
+ * will drain any remaining packets, and can then be re-used for a different
+ * stream (as opposed to sending a null frame which will leave the encoder
+ * in a permanent EOF state after draining). This can be desirable if the
+ * cost of tearing down and replacing the encoder instance is high.
  */
 void avcodec_flush_buffers(AVCodecContext *avctx);
 

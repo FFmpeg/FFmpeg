@@ -15,6 +15,12 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-04-15 - xxxxxxxxxx - lavc 58.79.100 - avcodec.h
+  Add formal support for calling avcodec_flush_buffers() on encoders.
+  Encoders that set the cap AV_CODEC_CAP_ENCODER_FLUSH will be flushed.
+  For all other encoders, the call is now a no-op rather than undefined
+  behaviour.
+
 2020-xx-xx - xxxxxxxxxx - lavc 58.78.100 - avcodec.h codec_desc.h codec_id.h packet.h
   Move AVCodecDesc-related public API to new header codec_desc.h.
   Move AVCodecID enum to new header codec_id.h.
