@@ -211,7 +211,7 @@ static const AVOption delogo_options[]= {
     { "y",    "set logo y position",       OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
     { "w",    "set logo width",            OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
     { "h",    "set logo height",           OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "-1" }, 0, 0, FLAGS },
-    { "show", "show delogo area",          OFFSET(show), AV_OPT_TYPE_BOOL,{ .i64 =  0 },  0, 1,       FLAGS },
+    { "show", "show delogo area",          OFFSET(show),      AV_OPT_TYPE_BOOL,   { .i64 =  0 },   0, 1, FLAGS },
     { NULL }
 };
 
