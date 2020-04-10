@@ -693,7 +693,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
         if (sub->rects[i]->type != SUBTITLE_ASS) {
             av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
-            return AVERROR(ENOSYS);
+            return AVERROR(EINVAL);
         }
 
 #if FF_API_ASS_TIMING
@@ -736,7 +736,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     if (s->buffer.len > bufsize - 3) {
         av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
-        length = AVERROR(EINVAL);
+        length = AVERROR_BUFFER_TOO_SMALL;
         goto exit;
     }
 
