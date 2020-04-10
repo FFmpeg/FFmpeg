@@ -693,11 +693,11 @@ static int cbs_insert_unit(CodedBitstreamContext *ctx,
             memmove(units + position + 1, units + position,
                     (frag->nb_units - position) * sizeof(*units));
     } else {
-        units = av_malloc_array(frag->nb_units + 1, sizeof(*units));
+        units = av_malloc_array(frag->nb_units*2 + 1, sizeof(*units));
         if (!units)
             return AVERROR(ENOMEM);
 
-        ++frag->nb_units_allocated;
+        frag->nb_units_allocated = 2*frag->nb_units_allocated + 1;
 
         if (position > 0)
             memcpy(units, frag->units, position * sizeof(*units));
