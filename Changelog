@@ -57,6 +57,7 @@ version <next>:
 - overlay_cuda filter
 - switch from AvxSynth to AviSynth+ on Linux
 - mv30 decoder
+- Expanded styling support for 3GPP Timed Text Subtitles (movtext)
 
 
 version 4.2:
