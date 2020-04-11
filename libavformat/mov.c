@@ -46,6 +46,7 @@
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
+#include "libavutil/dovi_meta.h"
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/mpegaudiodecheader.h"
@@ -6786,6 +6787,63 @@ static int mov_read_dmlp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_dvcc_dvvc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    uint32_t buf;
+    AVDOVIDecoderConfigurationRecord *dovi;
+    size_t dovi_size;
+    int ret;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    if ((uint64_t)atom.size > (1<<30) || atom.size < 4)
+        return AVERROR_INVALIDDATA;
+
+    dovi = av_dovi_alloc(&dovi_size);
+    if (!dovi)
+        return AVERROR(ENOMEM);
+
+    dovi->dv_version_major = avio_r8(pb);
+    dovi->dv_version_minor = avio_r8(pb);
+
+    buf = avio_rb16(pb);
+    dovi->dv_profile        = (buf >> 9) & 0x7f;    // 7 bits
+    dovi->dv_level          = (buf >> 3) & 0x3f;    // 6 bits
+    dovi->rpu_present_flag  = (buf >> 2) & 0x01;    // 1 bit
+    dovi->el_present_flag   = (buf >> 1) & 0x01;    // 1 bit
+    dovi->bl_present_flag   =  buf       & 0x01;    // 1 bit
+    if (atom.size >= 24) {  // 4 + 4 + 4 * 4
+        buf = avio_r8(pb);
+        dovi->dv_bl_signal_compatibility_id = (buf >> 4) & 0x0f; // 4 bits
+    } else {
+        // 0 stands for None
+        // Dolby Vision V1.2.93 profiles and levels
+        dovi->dv_bl_signal_compatibility_id = 0;
+    }
+
+    ret = av_stream_add_side_data(st, AV_PKT_DATA_DOVI_CONF,
+                                  (uint8_t *)dovi, dovi_size);
+    if (ret < 0) {
+        av_freep(dovi);
+        return ret;
+    }
+
+    av_log(c, AV_LOG_TRACE, "DOVI in dvcC/dvvC box, version: %d.%d, profile: %d, level: %d, "
+           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
+           dovi->dv_version_major, dovi->dv_version_minor,
+           dovi->dv_profile, dovi->dv_level,
+           dovi->rpu_present_flag,
+           dovi->el_present_flag,
+           dovi->bl_present_flag,
+           dovi->dv_bl_signal_compatibility_id
+        );
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -6881,6 +6939,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('v','p','c','C'), mov_read_vpcc },
 { MKTAG('m','d','c','v'), mov_read_mdcv },
 { MKTAG('c','l','l','i'), mov_read_clli },
+{ MKTAG('d','v','c','C'), mov_read_dvcc_dvvc },
+{ MKTAG('d','v','v','C'), mov_read_dvcc_dvvc },
 { 0, NULL }
 };
 
