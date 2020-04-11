@@ -36,6 +36,8 @@ static float get_expected(float f1, float f2, DNNMathBinaryOperation op)
         return f1 + f2;
     case DMBO_MUL:
         return f1 * f2;
+    case DMBO_REALDIV:
+        return f1 / f2;
     default:
         av_assert0(!"not supported yet");
         return 0.f;
@@ -193,6 +195,9 @@ int main(int argc, char **argv)
         return 1;
 
     if (test(DMBO_MUL))
+        return 1;
+
+    if (test(DMBO_REALDIV))
         return 1;
 
     return 0;
