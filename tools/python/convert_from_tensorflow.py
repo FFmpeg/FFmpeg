@@ -71,7 +71,7 @@ class TFConverter:
         self.conv2d_scope_names = set()
         self.conv2d_scopename_inputname_dict = {}
         self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4, 'MathBinary':5}
-        self.mathbin2code = {'Sub':0, 'Add':1}
+        self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2}
         self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
         self.name_operand_dict = {}
 
@@ -308,6 +308,8 @@ class TFConverter:
             elif node.op == 'Sub':
                 self.dump_mathbinary_to_file(node, f)
             elif node.op == 'Add':
+                self.dump_mathbinary_to_file(node, f)
+            elif node.op == 'Mul':
                 self.dump_mathbinary_to_file(node, f)
 
 
