@@ -36,6 +36,7 @@
 #include "libavutil/display.h"
 #include "libavutil/hash.h"
 #include "libavutil/mastering_display_metadata.h"
+#include "libavutil/dovi_meta.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/spherical.h"
@@ -1928,6 +1929,16 @@ static void print_pkt_side_data(WriterContext *w,
             AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
             print_int("max_content", metadata->MaxCLL);
             print_int("max_average", metadata->MaxFALL);
+        } else if (sd->type == AV_PKT_DATA_DOVI_CONF) {
+            AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)sd->data;
+            print_int("dv_version_major", dovi->dv_version_major);
+            print_int("dv_version_minor", dovi->dv_version_minor);
+            print_int("dv_profile", dovi->dv_profile);
+            print_int("dv_level", dovi->dv_level);
+            print_int("rpu_present_flag", dovi->rpu_present_flag);
+            print_int("el_present_flag", dovi->el_present_flag);
+            print_int("bl_present_flag", dovi->bl_present_flag);
+            print_int("dv_bl_signal_compatibility_id", dovi->dv_bl_signal_compatibility_id);
         }
         writer_print_section_footer(w);
     }
