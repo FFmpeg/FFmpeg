@@ -151,7 +151,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
              * 'METADATA_BLOCK_PICTURE'. This is the preferred and
              * recommended way of embedding cover art within VorbisComments."
              */
-            if (!strcmp(tt, "METADATA_BLOCK_PICTURE") && parse_picture) {
+            if (!av_strcasecmp(tt, "METADATA_BLOCK_PICTURE") && parse_picture) {
                 int ret, len = AV_BASE64_DECODE_SIZE(vl);
                 char *pict = av_malloc(len);
 
