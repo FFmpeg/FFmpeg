@@ -1139,7 +1139,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!ctx->fr_quality || ctx->fr_cur_mode > MODE_SID)
+    if (!ctx->fr_quality)
         av_log(avctx, AV_LOG_ERROR, "Encountered a bad or corrupted frame\n");
 
     if (ctx->fr_cur_mode == MODE_SID) { /* Comfort noise frame */
