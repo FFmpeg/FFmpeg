@@ -917,10 +917,13 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     int chunked  = s->max_chunk_size || s->max_chunk_duration;
 
     this_pktl    = av_malloc(sizeof(AVPacketList));
-    if (!this_pktl)
+    if (!this_pktl) {
+        av_packet_unref(pkt);
         return AVERROR(ENOMEM);
+    }
     if ((ret = av_packet_make_refcounted(pkt)) < 0) {
         av_free(this_pktl);
+        av_packet_unref(pkt);
         return ret;
     }
 
@@ -1215,7 +1218,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             av_init_packet(pkt);
             pkt = NULL;
         }
-        if (ret <= 0) //FIXME cleanup needed for ret<0 ?
+        if (ret <= 0)
             return ret;
 
         ret = write_packet(s, &opkt);

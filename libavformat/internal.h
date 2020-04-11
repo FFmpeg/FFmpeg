@@ -230,9 +230,9 @@ char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
 int ff_hex_to_data(uint8_t *data, const char *p);
 
 /**
- * Add packet to AVFormatContext->packet_buffer list, determining its
+ * Add packet to an AVFormatContext's packet_buffer list, determining its
  * interleaved position using compare() function argument.
- * @return 0, or < 0 on error
+ * @return 0 on success, < 0 on error. pkt will always be blank on return.
  */
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                              int (*compare)(AVFormatContext *, const AVPacket *, const AVPacket *));
