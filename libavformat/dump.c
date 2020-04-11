@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mastering_display_metadata.h"
+#include "libavutil/dovi_meta.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -387,6 +388,20 @@ static void dump_spherical(void *ctx, AVCodecParameters *par, AVPacketSideData *
     }
 }
 
+static void dump_dovi_conf(void *ctx, AVPacketSideData* sd)
+{
+    AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)sd->data;
+
+    av_log(ctx, AV_LOG_INFO, "version: %d.%d, profile: %d, level: %d, "
+           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d",
+           dovi->dv_version_major, dovi->dv_version_minor,
+           dovi->dv_profile, dovi->dv_level,
+           dovi->rpu_present_flag,
+           dovi->el_present_flag,
+           dovi->bl_present_flag,
+           dovi->dv_bl_signal_compatibility_id);
+}
+
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
 {
     int i;
@@ -448,6 +463,10 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             break;
         case AV_PKT_DATA_ICC_PROFILE:
             av_log(ctx, AV_LOG_INFO, "ICC Profile");
+            break;
+        case AV_PKT_DATA_DOVI_CONF:
+            av_log(ctx, AV_LOG_INFO, "DOVI configuration record: ");
+            dump_dovi_conf(ctx, &sd);
             break;
         default:
             av_log(ctx, AV_LOG_INFO,
