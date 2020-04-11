@@ -51,6 +51,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
+#include "libavutil/dovi_meta.h"
 #include "libavutil/color_utils.h"
 #include "hevc.h"
 #include "rtpenc.h"
@@ -1814,6 +1815,36 @@ static int mov_write_sv3d_tag(AVFormatContext *s, AVIOContext *pb, AVSphericalMa
     return update_size(pb, sv3d_pos);
 }
 
+static int mov_write_dvcc_dvvc_tag(AVFormatContext *s, AVIOContext *pb, AVDOVIDecoderConfigurationRecord *dovi)
+{
+    avio_wb32(pb, 32); /* size = 8 + 24 */
+    if (dovi->dv_profile > 7)
+        ffio_wfourcc(pb, "dvvC");
+    else
+        ffio_wfourcc(pb, "dvcC");
+    avio_w8(pb, dovi->dv_version_major);
+    avio_w8(pb, dovi->dv_version_minor);
+    avio_wb16(pb, (dovi->dv_profile << 9) | (dovi->dv_level << 3) |
+              (dovi->rpu_present_flag << 2) | (dovi->el_present_flag << 1) |
+              dovi->bl_present_flag);
+    avio_wb32(pb, (dovi->dv_bl_signal_compatibility_id << 28) | 0);
+
+    avio_wb32(pb, 0); /* reserved */
+    avio_wb32(pb, 0); /* reserved */
+    avio_wb32(pb, 0); /* reserved */
+    avio_wb32(pb, 0); /* reserved */
+    av_log(s, AV_LOG_DEBUG, "DOVI in %s box, version: %d.%d, profile: %d, level: %d, "
+           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
+           dovi->dv_profile > 7 ? "dvvC" : "dvcC",
+           dovi->dv_version_major, dovi->dv_version_minor,
+           dovi->dv_profile, dovi->dv_level,
+           dovi->rpu_present_flag,
+           dovi->el_present_flag,
+           dovi->bl_present_flag,
+           dovi->dv_bl_signal_compatibility_id);
+    return 32; /* 8 + 24 */
+}
+
 static int mov_write_clap_tag(AVIOContext *pb, MOVTrack *track)
 {
     avio_wb32(pb, 40);
@@ -2147,11 +2178,15 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     if (track->mode == MODE_MP4 && mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
         AVStereo3D* stereo_3d = (AVStereo3D*) av_stream_get_side_data(track->st, AV_PKT_DATA_STEREO3D, NULL);
         AVSphericalMapping* spherical_mapping = (AVSphericalMapping*)av_stream_get_side_data(track->st, AV_PKT_DATA_SPHERICAL, NULL);
+        AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)
+                                                 av_stream_get_side_data(track->st, AV_PKT_DATA_DOVI_CONF, NULL);;
 
         if (stereo_3d)
             mov_write_st3d_tag(s, pb, stereo_3d);
         if (spherical_mapping)
             mov_write_sv3d_tag(mov->fc, pb, spherical_mapping);
+        if (dovi)
+            mov_write_dvcc_dvvc_tag(s, pb, dovi);
     }
 
     if (track->par->sample_aspect_ratio.den && track->par->sample_aspect_ratio.num) {
