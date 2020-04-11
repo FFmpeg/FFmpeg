@@ -1158,7 +1158,7 @@ int ff_interleaved_peek(AVFormatContext *s, int stream,
 /**
  * Interleave an AVPacket correctly so it can be muxed.
  * @param out the interleaved packet will be output here
- * @param in the input packet
+ * @param in the input packet; will always be blank on return if not NULL
  * @param flush 1 if no further packets are available as input and all
  *              remaining packets should be output
  * @return 1 if a packet was output, 0 if no packet could be output,
@@ -1213,13 +1213,10 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     for (;; ) {
         AVPacket opkt;
         int ret = interleave_packet(s, &opkt, pkt, flush);
-        if (pkt) {
-            memset(pkt, 0, sizeof(*pkt));
-            av_init_packet(pkt);
-            pkt = NULL;
-        }
         if (ret <= 0)
             return ret;
+
+        pkt = NULL;
 
         ret = write_packet(s, &opkt);
 
