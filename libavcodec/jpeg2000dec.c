@@ -566,6 +566,7 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
                    uint8_t *properties)
 {
     int compno, ret;
+    uint8_t has_eph;
 
     if (bytestream2_get_bytes_left(&s->g) < 2) {
         av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for COC\n");
@@ -582,7 +583,9 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     }
 
     c      += compno;
+    has_eph = c->csty & JPEG2000_CSTY_EPH;
     c->csty = bytestream2_get_byteu(&s->g);
+    c->csty |= has_eph; //do not override eph present bits from COD
 
     if ((ret = get_cox(s, c)) < 0)
         return ret;
