@@ -743,7 +743,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         AVFrame **frame = (AVFrame **)pkt->data;
         av_assert0(pkt->size == sizeof(*frame));
         ret = s->oformat->write_uncoded_frame(s, pkt->stream_index, frame, 0);
-        av_packet_unref(pkt);
     } else {
         ret = s->oformat->write_packet(s, pkt);
     }
@@ -1318,6 +1317,7 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
                                         AVFrame *frame, int interleaved)
 {
     AVPacket pkt, *pktp;
+    int ret;
 
     av_assert0(s->oformat);
     if (!s->oformat->write_uncoded_frame) {
@@ -1354,8 +1354,11 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
         pkt.flags |= AV_PKT_FLAG_UNCODED_FRAME;
     }
 
-    return interleaved ? av_interleaved_write_frame(s, pktp) :
-                         av_write_frame(s, pktp);
+    ret = interleaved ? av_interleaved_write_frame(s, pktp) :
+                        av_write_frame(s, pktp);
+    if (pktp)
+        av_packet_unref(pktp);
+    return ret;
 }
 
 int av_write_uncoded_frame(AVFormatContext *s, int stream_index,
