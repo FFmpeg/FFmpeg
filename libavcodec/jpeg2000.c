@@ -276,11 +276,11 @@ static int init_prec(Jpeg2000Band *band,
     /* TODO: Verify with previous count of codeblocks per band */
 
     /* Compute P_x0 */
-    prec->coord[0][0] = ((band->coord[0][0] >> log2_band_prec_width) + precno % reslevel->num_precincts_x) *
+    prec->coord[0][0] = ((reslevel->coord[0][0] >> reslevel->log2_prec_width) + precno % reslevel->num_precincts_x) *
                         (1 << log2_band_prec_width);
 
     /* Compute P_y0 */
-    prec->coord[1][0] = ((band->coord[1][0] >> log2_band_prec_height) + precno / reslevel->num_precincts_x) *
+    prec->coord[1][0] = ((reslevel->coord[1][0] >> reslevel->log2_prec_height) + precno / reslevel->num_precincts_x) *
                         (1 << log2_band_prec_height);
 
     /* Compute P_x1 */
