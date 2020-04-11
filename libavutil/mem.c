@@ -183,23 +183,26 @@ int av_reallocp(void *ptr, size_t size)
 
 void *av_malloc_array(size_t nmemb, size_t size)
 {
-    if (!size || nmemb >= INT_MAX / size)
+    size_t result;
+    if (av_size_mult(nmemb, size, &result) < 0)
         return NULL;
-    return av_malloc(nmemb * size);
+    return av_malloc(result);
 }
 
 void *av_mallocz_array(size_t nmemb, size_t size)
 {
-    if (!size || nmemb >= INT_MAX / size)
+    size_t result;
+    if (av_size_mult(nmemb, size, &result) < 0)
         return NULL;
-    return av_mallocz(nmemb * size);
+    return av_mallocz(result);
 }
 
 void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 {
-    if (!size || nmemb >= INT_MAX / size)
+    size_t result;
+    if (av_size_mult(nmemb, size, &result) < 0)
         return NULL;
-    return av_realloc(ptr, nmemb * size);
+    return av_realloc(ptr, result);
 }
 
 int av_reallocp_array(void *ptr, size_t nmemb, size_t size)
@@ -243,9 +246,10 @@ void *av_mallocz(size_t size)
 
 void *av_calloc(size_t nmemb, size_t size)
 {
-    if (size <= 0 || nmemb >= INT_MAX / size)
+    size_t result;
+    if (av_size_mult(nmemb, size, &result) < 0)
         return NULL;
-    return av_mallocz(nmemb * size);
+    return av_mallocz(result);
 }
 
 char *av_strdup(const char *s)
