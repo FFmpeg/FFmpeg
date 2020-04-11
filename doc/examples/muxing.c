@@ -78,15 +78,45 @@ static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
            pkt->stream_index);
 }
 
-static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
+static int write_frame(AVFormatContext *fmt_ctx, AVCodecContext *c,
+                       AVStream *st, AVFrame *frame)
 {
-    /* rescale output packet timestamp values from codec to stream timebase */
-    av_packet_rescale_ts(pkt, *time_base, st->time_base);
-    pkt->stream_index = st->index;
+    int ret;
 
-    /* Write the compressed frame to the media file. */
-    log_packet(fmt_ctx, pkt);
-    return av_interleaved_write_frame(fmt_ctx, pkt);
+    // send the frame to the encoder
+    ret = avcodec_send_frame(c, frame);
+    if (ret < 0) {
+        fprintf(stderr, "Error sending a frame to the encoder: %s\n",
+                av_err2str(ret));
+        exit(1);
+    }
+
+    while (ret >= 0) {
+        AVPacket pkt = { 0 };
+
+        ret = avcodec_receive_packet(c, &pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            break;
+        else if (ret < 0) {
+            fprintf(stderr, "Error encoding a frame: %s\n", av_err2str(ret));
+            exit(1);
+        }
+
+        /* rescale output packet timestamp values from codec to stream timebase */
+        av_packet_rescale_ts(&pkt, c->time_base, st->time_base);
+        pkt.stream_index = st->index;
+
+        /* Write the compressed frame to the media file. */
+        log_packet(fmt_ctx, &pkt);
+        ret = av_interleaved_write_frame(fmt_ctx, &pkt);
+        av_packet_unref(&pkt);
+        if (ret < 0) {
+            fprintf(stderr, "Error while writing output packet: %s\n", av_err2str(ret));
+            exit(1);
+        }
+    }
+
+    return ret == AVERROR_EOF ? 1 : 0;
 }
 
 /* Add an output stream. */
@@ -309,13 +339,10 @@ static AVFrame *get_audio_frame(OutputStream *ost)
 static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
     AVCodecContext *c;
-    AVPacket pkt = { 0 }; // data and size must be 0;
     AVFrame *frame;
     int ret;
-    int got_packet;
     int dst_nb_samples;
 
-    av_init_packet(&pkt);
     c = ost->enc;
 
     frame = get_audio_frame(ost);
@@ -349,22 +376,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
         ost->samples_count += dst_nb_samples;
     }
 
-    ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
-    if (ret < 0) {
-        fprintf(stderr, "Error encoding audio frame: %s\n", av_err2str(ret));
-        exit(1);
-    }
-
-    if (got_packet) {
-        ret = write_frame(oc, &c->time_base, ost->st, &pkt);
-        if (ret < 0) {
-            fprintf(stderr, "Error while writing audio frame: %s\n",
-                    av_err2str(ret));
-            exit(1);
-        }
-    }
-
-    return (frame || got_packet) ? 0 : 1;
+    return write_frame(oc, c, ost->st, frame);
 }
 
 /**************************************************************/
@@ -506,37 +518,8 @@ static AVFrame *get_video_frame(OutputStream *ost)
  */
 static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
-    int ret;
-    AVCodecContext *c;
-    AVFrame *frame;
-    int got_packet = 0;
-    AVPacket pkt = { 0 };
+    return write_frame(oc, ost->enc, ost->st, get_video_frame(ost));
 
-    c = ost->enc;
-
-    frame = get_video_frame(ost);
-
-    av_init_packet(&pkt);
-
-    /* encode the image */
-    ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
-    if (ret < 0) {
-        fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
-        exit(1);
-    }
-
-    if (got_packet) {
-        ret = write_frame(oc, &c->time_base, ost->st, &pkt);
-    } else {
-        ret = 0;
-    }
-
-    if (ret < 0) {
-        fprintf(stderr, "Error while writing video frame: %s\n", av_err2str(ret));
-        exit(1);
-    }
-
-    return (frame || got_packet) ? 0 : 1;
 }
 
 static void close_stream(AVFormatContext *oc, OutputStream *ost)
