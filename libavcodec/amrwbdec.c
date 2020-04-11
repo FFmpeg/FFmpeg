@@ -1125,6 +1125,8 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "Encountered a bad or corrupted frame\n");
 
     if (ctx->fr_cur_mode == NO_DATA || !ctx->fr_quality) {
+        /* The specification suggests a "random signal" and
+           "a muting technique" to "gradually decrease the output level". */
         av_samples_set_silence(&frame->data[0], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
         *got_frame_ptr = 1;
         return expected_fr_size;
