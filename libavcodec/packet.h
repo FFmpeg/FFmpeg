@@ -274,6 +274,15 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_ICC_PROFILE,
 
     /**
+     * DOVI configuration
+     * ref:
+     * dolby-vision-bitstreams-within-the-iso-base-media-file-format-v2.1.2, section 2.2
+     * dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2, section 3.3
+     * Tags are stored in struct AVDOVIDecoderConfigurationRecord.
+     */
+    AV_PKT_DATA_DOVI_CONF,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
