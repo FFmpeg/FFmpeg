@@ -389,7 +389,7 @@ static const struct {
     MAP(HEVC,        HEVC_MAIN_STILL_PICTURE,
                                       HEVCMain    ),
 #endif
-#if VA_CHECK_VERSION(1, 2, 0)
+#if VA_CHECK_VERSION(1, 2, 0) && CONFIG_HEVC_VAAPI_HWACCEL
     MAP(HEVC,        HEVC_REXT,       None,
                  ff_vaapi_parse_hevc_rext_profile ),
 #endif
