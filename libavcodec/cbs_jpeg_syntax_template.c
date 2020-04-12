@@ -89,6 +89,8 @@ static int FUNC(huffman_table)(CodedBitstreamContext *ctx, RWContext *rw,
     ij = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < current->L[i]; j++) {
+            if (ij >= 224)
+                return AVERROR_INVALIDDATA;
             us(8, V[ij], ij, 0, 255);
             ++ij;
         }
