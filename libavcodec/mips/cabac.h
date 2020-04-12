@@ -29,7 +29,7 @@
 #include "config.h"
 
 #define get_cabac_inline get_cabac_inline_mips
-static av_always_inline int get_cabac_inline(CABACContext *c,
+static av_always_inline int get_cabac_inline_mips(CABACContext *c,
                                              uint8_t * const state){
     mips_reg tmp0, tmp1, tmp2, bit;
 
