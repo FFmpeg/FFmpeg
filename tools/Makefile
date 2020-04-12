@@ -1,4 +1,4 @@
-TOOLS = qt-faststart trasher uncoded_frame
+TOOLS = enum_options qt-faststart trasher uncoded_frame
 TOOLS-$(CONFIG_LIBMYSOFA) += sofa2wavs
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 

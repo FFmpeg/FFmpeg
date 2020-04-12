@@ -40,14 +40,14 @@ static void print_option(const AVClass *class, const AVOption *o)
 {
     printf("@item -%s @var{", o->name);
     switch (o->type) {
-    case FF_OPT_TYPE_BINARY:   printf("hexadecimal string"); break;
-    case FF_OPT_TYPE_STRING:   printf("string");             break;
-    case FF_OPT_TYPE_INT:
-    case FF_OPT_TYPE_INT64:    printf("integer");            break;
-    case FF_OPT_TYPE_FLOAT:
-    case FF_OPT_TYPE_DOUBLE:   printf("float");              break;
-    case FF_OPT_TYPE_RATIONAL: printf("rational number");    break;
-    case FF_OPT_TYPE_FLAGS:    printf("flags");              break;
+    case AV_OPT_TYPE_BINARY:   printf("hexadecimal string"); break;
+    case AV_OPT_TYPE_STRING:   printf("string");             break;
+    case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_INT64:    printf("integer");            break;
+    case AV_OPT_TYPE_FLOAT:
+    case AV_OPT_TYPE_DOUBLE:   printf("float");              break;
+    case AV_OPT_TYPE_RATIONAL: printf("rational number");    break;
+    case AV_OPT_TYPE_FLAGS:    printf("flags");              break;
     default:                   printf("value");              break;
     }
     printf("} (@emph{");
@@ -68,8 +68,8 @@ static void print_option(const AVClass *class, const AVOption *o)
         const AVOption *u = NULL;
         printf("\nPossible values:\n@table @samp\n");
 
-        while ((u = av_next_option(&class, u)))
-            if (u->type == FF_OPT_TYPE_CONST && u->unit && !strcmp(u->unit, o->unit))
+        while ((u = av_opt_next(&class, u)))
+            if (u->type == AV_OPT_TYPE_CONST && u->unit && !strcmp(u->unit, o->unit))
                 printf("@item %s\n%s\n", u->name, u->help ? u->help : "");
         printf("@end table\n");
     }
@@ -80,8 +80,8 @@ static void show_opts(const AVClass *class)
     const AVOption *o = NULL;
 
     printf("@table @option\n");
-    while ((o = av_next_option(&class, o)))
-        if (o->type != FF_OPT_TYPE_CONST)
+    while ((o = av_opt_next(&class, o)))
+        if (o->type != AV_OPT_TYPE_CONST)
             print_option(class, o);
     printf("@end table\n");
 }
@@ -114,7 +114,7 @@ static void show_format_opts(void)
 static void show_codec_opts(void)
 {
     void *iter = NULL;
-    AVCodec *c = NULL;
+    const AVCodec *c;
 
     printf("@section Generic codec AVOptions\n");
     show_opts(avcodec_get_class());
