@@ -108,6 +108,9 @@ static int FUNC(dht)(CodedBitstreamContext *ctx, RWContext *rw,
 
     n = 2;
     for (i = 0; n < current->Lh; i++) {
+        if (i >= 8)
+            return AVERROR_INVALIDDATA;
+
         CHECK(FUNC(huffman_table)(ctx, rw, &current->table[i]));
 
         ++n;
