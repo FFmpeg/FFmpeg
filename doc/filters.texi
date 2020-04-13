@@ -18382,6 +18382,25 @@ enabled for @option{mode} @var{interleave_top} and @var{interleave_bottom}.
 
 @end table
 
+@section tmedian
+Pick median pixels from several successive input video frames.
+
+The filter accepts the following options:
+
+@table @option
+@item radius
+Set radius of median filter.
+Default is 1. Allowed range is from 1 to 127.
+
+@item planes
+Set which planes to filter. Default value is @code{15}, by which all planes are processed.
+
+@item percentile
+Set median percentile. Default value is @code{0.5}.
+Default value of @code{0.5} will pick always median values, while @code{0} will pick
+minimum values, and @code{1} maximum values.
+@end table
+
 @section tmix
 
 Mix successive video frames.
