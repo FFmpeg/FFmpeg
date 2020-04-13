@@ -3476,21 +3476,14 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             !av_dict_get(ost->encoder_opts, "ab", NULL, 0))
             av_dict_set(&ost->encoder_opts, "b", "128000", 0);
 
-        if (ost->filter && av_buffersink_get_hw_frames_ctx(ost->filter->filter) &&
-            ((AVHWFramesContext*)av_buffersink_get_hw_frames_ctx(ost->filter->filter)->data)->format ==
-            av_buffersink_get_format(ost->filter->filter)) {
-            ost->enc_ctx->hw_frames_ctx = av_buffer_ref(av_buffersink_get_hw_frames_ctx(ost->filter->filter));
-            if (!ost->enc_ctx->hw_frames_ctx)
-                return AVERROR(ENOMEM);
-        } else {
-            ret = hw_device_setup_for_encode(ost);
-            if (ret < 0) {
-                snprintf(error, error_len, "Device setup failed for "
-                         "encoder on output stream #%d:%d : %s",
+        ret = hw_device_setup_for_encode(ost);
+        if (ret < 0) {
+            snprintf(error, error_len, "Device setup failed for "
+                     "encoder on output stream #%d:%d : %s",
                      ost->file_index, ost->index, av_err2str(ret));
-                return ret;
-            }
+            return ret;
         }
+
         if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE && ost->enc->type == AVMEDIA_TYPE_SUBTITLE) {
             int input_props = 0, output_props = 0;
             AVCodecDescriptor const *input_descriptor =

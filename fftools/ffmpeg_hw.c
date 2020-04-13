@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "libavutil/avstring.h"
+#include "libavfilter/buffersink.h"
 
 #include "ffmpeg.h"
 
@@ -281,7 +282,10 @@ void hw_device_free_all(void)
     nb_hw_devices = 0;
 }
 
-static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
+static HWDevice *hw_device_match_by_codec(const AVCodec *codec,
+                                          enum AVPixelFormat format,
+                                          int possible_methods,
+                                          int *matched_methods)
 {
     const AVCodecHWConfig *config;
     HWDevice *dev;
@@ -290,11 +294,18 @@ static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
         config = avcodec_get_hw_config(codec, i);
         if (!config)
             return NULL;
-        if (!(config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX))
+        if (format != AV_PIX_FMT_NONE &&
+            config->pix_fmt != AV_PIX_FMT_NONE &&
+            config->pix_fmt != format)
+            continue;
+        if (!(config->methods & possible_methods))
             continue;
         dev = hw_device_get_by_type(config->device_type);
-        if (dev)
+        if (dev) {
+            if (matched_methods)
+                *matched_methods = config->methods & possible_methods;
             return dev;
+        }
     }
 }
 
@@ -340,7 +351,9 @@ int hw_device_setup_for_decode(InputStream *ist)
             if (!dev)
                 err = hw_device_init_from_type(type, NULL, &dev);
         } else {
-            dev = hw_device_match_by_codec(ist->dec);
+            dev = hw_device_match_by_codec(ist->dec, AV_PIX_FMT_NONE,
+                                           AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX,
+                                           NULL);
             if (!dev) {
                 // No device for this codec, but not using generic hwaccel
                 // and therefore may well not need one - ignore.
@@ -417,12 +430,31 @@ int hw_device_setup_for_decode(InputStream *ist)
 int hw_device_setup_for_encode(OutputStream *ost)
 {
     HWDevice *dev;
+    AVBufferRef *frames_ref;
+    int methods = AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX;
+    int matched_methods;
 
-    dev = hw_device_match_by_codec(ost->enc);
+    if (ost->filter) {
+        frames_ref = av_buffersink_get_hw_frames_ctx(ost->filter->filter);
+        if (frames_ref &&
+            ((AVHWFramesContext*)frames_ref->data)->format ==
+            ost->enc_ctx->pix_fmt)
+            methods |= AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX;
+    }
+
+    dev = hw_device_match_by_codec(ost->enc, ost->enc_ctx->pix_fmt,
+                                   methods, &matched_methods);
     if (dev) {
-        ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
-        if (!ost->enc_ctx->hw_device_ctx)
-            return AVERROR(ENOMEM);
+        if (matched_methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) {
+            ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
+            if (!ost->enc_ctx->hw_device_ctx)
+                return AVERROR(ENOMEM);
+        }
+        if (matched_methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX) {
+            ost->enc_ctx->hw_frames_ctx = av_buffer_ref(frames_ref);
+            if (!ost->enc_ctx->hw_frames_ctx)
+                return AVERROR(ENOMEM);
+        }
         return 0;
     } else {
         // No device required, or no device available.
