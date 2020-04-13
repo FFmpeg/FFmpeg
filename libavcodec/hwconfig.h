@@ -81,4 +81,22 @@ typedef struct AVCodecHWConfigInternal {
 #define HWACCEL_XVMC(codec) \
     HW_CONFIG_HWACCEL(0, 0, 1, XVMC,         NONE,         ff_ ## codec ## _xvmc_hwaccel)
 
+#define HW_CONFIG_ENCODER(device, frames, ad_hoc, format, device_type_) \
+    &(const AVCodecHWConfigInternal) { \
+        .public          = { \
+            .pix_fmt     = AV_PIX_FMT_ ## format, \
+            .methods     = (device ? AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX : 0) | \
+                           (frames ? AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX : 0) | \
+                           (ad_hoc ? AV_CODEC_HW_CONFIG_METHOD_AD_HOC        : 0),  \
+            .device_type = AV_HWDEVICE_TYPE_ ## device_type_, \
+        }, \
+        .hwaccel         = NULL, \
+    }
+
+#define HW_CONFIG_ENCODER_DEVICE(format, device_type_) \
+    HW_CONFIG_ENCODER(1, 0, 0, format, device_type_)
+
+#define HW_CONFIG_ENCODER_FRAMES(format, device_type_) \
+    HW_CONFIG_ENCODER(0, 1, 0, format, device_type_)
+
 #endif /* AVCODEC_HWCONFIG_H */
