@@ -192,6 +192,7 @@ enc_dec(){
     enc_opt=$4
     dec_fmt=$5
     dec_opt=$6
+    ffprobe_opts=$9
     encfile="${outdir}/${test}.${enc_fmt}"
     decfile="${outdir}/${test}.out.${dec_fmt}"
     cleanfiles="$cleanfiles $decfile"
@@ -207,6 +208,8 @@ enc_dec(){
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
     tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
+    test -z $ffprobe_opts || \
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
 }
 
 transcode(){
@@ -215,8 +218,9 @@ transcode(){
     enc_fmt=$3
     enc_opt=$4
     final_decode=$5
+    ffprobe_opts=$7
     encfile="${outdir}/${test}.${enc_fmt}"
-    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
@@ -225,6 +229,8 @@ transcode(){
     echo $(wc -c $encfile)
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
+    test -z $ffprobe_opts || \
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
 }
 
 stream_remux(){
@@ -233,14 +239,17 @@ stream_remux(){
     enc_fmt=$3
     stream_maps=$4
     final_decode=$5
+    ffprobe_opts=$7
     encfile="${outdir}/${test}.${enc_fmt}"
-    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
         -f $enc_fmt -y $tencfile || return
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
+    test -z $ffprobe_opts || \
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
 }
 
 # FIXME: There is a certain duplication between the avconv-related helper
