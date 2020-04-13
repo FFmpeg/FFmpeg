@@ -262,5 +262,6 @@ AVCodec ff_vp8_vaapi_encoder = {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .hw_configs     = ff_vaapi_encode_hw_configs,
     .wrapper_name   = "vaapi",
 };

@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext_vaapi.h"
 
 #include "avcodec.h"
+#include "hwconfig.h"
 
 struct VAAPIEncodeType;
 struct VAAPIEncodePicture;
@@ -43,6 +44,8 @@ enum {
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
 };
+
+extern const AVCodecHWConfigInternal *ff_vaapi_encode_hw_configs[];
 
 enum {
     PICTURE_TYPE_IDR = 0,
