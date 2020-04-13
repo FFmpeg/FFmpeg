@@ -1147,7 +1147,7 @@ static void do_video_out(OutputFile *of,
                 av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
                 delta = duration;
                 delta0 = 0;
-                ost->sync_opts = lrint(sync_ipts);
+                ost->sync_opts = llrint(sync_ipts);
             }
         case VSYNC_CFR:
             // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
@@ -1158,18 +1158,18 @@ static void do_video_out(OutputFile *of,
             else if (delta > 1.1) {
                 nb_frames = lrintf(delta);
                 if (delta0 > 1.1)
-                    nb0_frames = lrintf(delta0 - 0.6);
+                    nb0_frames = llrintf(delta0 - 0.6);
             }
             break;
         case VSYNC_VFR:
             if (delta <= -0.6)
                 nb_frames = 0;
             else if (delta > 0.6)
-                ost->sync_opts = lrint(sync_ipts);
+                ost->sync_opts = llrint(sync_ipts);
             break;
         case VSYNC_DROP:
         case VSYNC_PASSTHROUGH:
-            ost->sync_opts = lrint(sync_ipts);
+            ost->sync_opts = llrint(sync_ipts);
             break;
         default:
             av_assert0(0);
