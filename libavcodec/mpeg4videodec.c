@@ -26,7 +26,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "error_resilience.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"

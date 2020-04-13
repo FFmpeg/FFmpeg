@@ -36,7 +36,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "copy_block.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "jpegtables.h"

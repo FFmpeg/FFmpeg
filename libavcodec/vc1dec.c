@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "get_bits.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"

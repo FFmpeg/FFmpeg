@@ -33,7 +33,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "nvdec.h"
 #include "internal.h"
 

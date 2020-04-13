@@ -33,7 +33,7 @@
 #include "flv.h"
 #include "h263.h"
 #include "h263_parser.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpeg4video.h"

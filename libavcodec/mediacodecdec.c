@@ -34,7 +34,7 @@
 #include "decode.h"
 #include "h264_parse.h"
 #include "hevc_parse.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "mediacodec_wrapper.h"
 #include "mediacodecdec_common.h"

@@ -23,7 +23,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "profiles.h"
 #include "thread.h"

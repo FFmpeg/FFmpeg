@@ -33,7 +33,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "qsv_internal.h"
 
 typedef struct QSVContext {

@@ -41,7 +41,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "decode.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "thread.h"
 

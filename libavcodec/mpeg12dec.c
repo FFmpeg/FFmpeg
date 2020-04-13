@@ -36,7 +36,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "error_resilience.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpeg_er.h"

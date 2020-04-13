@@ -28,7 +28,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"

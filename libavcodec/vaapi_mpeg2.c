@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "internal.h"

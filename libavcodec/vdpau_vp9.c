@@ -26,7 +26,7 @@
 #include "internal.h"
 #include "vp9data.h"
 #include "vp9dec.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 

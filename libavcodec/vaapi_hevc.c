@@ -25,7 +25,7 @@
 
 #include "avcodec.h"
 #include "hevcdec.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "vaapi_decode.h"
 #include "vaapi_hevc.h"
 #include "h265_profile_level.h"

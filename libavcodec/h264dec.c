@@ -46,7 +46,7 @@
 #include "h264_mvpred.h"
 #include "h264_ps.h"
 #include "golomb.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"

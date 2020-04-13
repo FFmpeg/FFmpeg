@@ -26,7 +26,7 @@
 #include "internal.h"
 #include "hevc_data.h"
 #include "hevcdec.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 

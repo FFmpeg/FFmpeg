@@ -44,7 +44,7 @@
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "decode.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
 #include "thread.h"

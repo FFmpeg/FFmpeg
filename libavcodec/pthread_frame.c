@@ -28,7 +28,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
