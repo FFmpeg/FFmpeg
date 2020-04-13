@@ -32,6 +32,7 @@
 #include "libavutil/fifo.h"
 
 #include "avcodec.h"
+#include "hwconfig.h"
 #include "qsv_internal.h"
 
 #define QSV_HAVE_CO2 QSV_VERSION_ATLEAST(1, 6)
@@ -96,6 +97,8 @@
 { "b_strategy",     "Strategy to choose between I/P/B-frames", OFFSET(qsv.b_strategy),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 { "forced_idr",     "Forcing I frames as IDR frames",         OFFSET(qsv.forced_idr),     AV_OPT_TYPE_BOOL,{ .i64 = 0  },  0,          1, VE },                         \
 { "low_power", "enable low power mode(experimental: many limitations by mfx version, BRC modes, etc.)", OFFSET(qsv.low_power), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, VE},\
+
+extern const AVCodecHWConfigInternal *ff_qsv_enc_hw_configs[];
 
 typedef int SetEncodeCtrlCB (AVCodecContext *avctx,
                              const AVFrame *frame, mfxEncodeCtrl* enc_ctrl);

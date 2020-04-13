@@ -1652,3 +1652,10 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
 
     return 0;
 }
+
+const AVCodecHWConfigInternal *ff_qsv_enc_hw_configs[] = {
+    HW_CONFIG_ENCODER_FRAMES(QSV,  QSV),
+    HW_CONFIG_ENCODER_DEVICE(NV12, QSV),
+    HW_CONFIG_ENCODER_DEVICE(P010, QSV),
+    NULL,
+};
