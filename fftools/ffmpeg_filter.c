@@ -1061,17 +1061,9 @@ int configure_filtergraph(FilterGraph *fg)
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)
         goto fail;
 
-    if (filter_hw_device || hw_device_ctx) {
-        AVBufferRef *device = filter_hw_device ? filter_hw_device->device_ref
-                                               : hw_device_ctx;
-        for (i = 0; i < fg->graph->nb_filters; i++) {
-            fg->graph->filters[i]->hw_device_ctx = av_buffer_ref(device);
-            if (!fg->graph->filters[i]->hw_device_ctx) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
-    }
+    ret = hw_device_setup_for_filter(fg);
+    if (ret < 0)
+        goto fail;
 
     if (simple && (!inputs || inputs->next || !outputs || outputs->next)) {
         const char *num_inputs;

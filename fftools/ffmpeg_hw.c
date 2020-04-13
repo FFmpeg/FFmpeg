@@ -480,3 +480,31 @@ int hwaccel_decode_init(AVCodecContext *avctx)
 
     return 0;
 }
+
+int hw_device_setup_for_filter(FilterGraph *fg)
+{
+    HWDevice *dev;
+    int i;
+
+    // If the user has supplied exactly one hardware device then just
+    // give it straight to every filter for convenience.  If more than
+    // one device is available then the user needs to pick one explcitly
+    // with the filter_hw_device option.
+    if (filter_hw_device)
+        dev = filter_hw_device;
+    else if (nb_hw_devices == 1)
+        dev = hw_devices[0];
+    else
+        dev = NULL;
+
+    if (dev) {
+        for (i = 0; i < fg->graph->nb_filters; i++) {
+            fg->graph->filters[i]->hw_device_ctx =
+                av_buffer_ref(dev->device_ref);
+            if (!fg->graph->filters[i]->hw_device_ctx)
+                return AVERROR(ENOMEM);
+        }
+    }
+
+    return 0;
+}
