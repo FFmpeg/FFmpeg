@@ -178,6 +178,7 @@ AVCodec ff_nvenc_hevc_encoder = {
                       AV_CODEC_CAP_ENCODER_FLUSH,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };
 
 #endif
@@ -208,4 +209,5 @@ AVCodec ff_hevc_nvenc_encoder = {
                       AV_CODEC_CAP_ENCODER_FLUSH,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };

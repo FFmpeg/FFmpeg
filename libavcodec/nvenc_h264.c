@@ -191,6 +191,7 @@ AVCodec ff_nvenc_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_nvenc_pix_fmts,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };
 #endif
 
@@ -222,6 +223,7 @@ AVCodec ff_nvenc_h264_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_nvenc_pix_fmts,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };
 #endif
 
@@ -253,4 +255,5 @@ AVCodec ff_h264_nvenc_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_nvenc_pix_fmts,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };

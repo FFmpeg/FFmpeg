@@ -33,6 +33,7 @@ typedef void ID3D11Device;
 #include "compat/cuda/dynlink_loader.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
+#include "hwconfig.h"
 
 #include "avcodec.h"
 
@@ -217,5 +218,6 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 void ff_nvenc_encode_flush(AVCodecContext *avctx);
 
 extern const enum AVPixelFormat ff_nvenc_pix_fmts[];
+extern const AVCodecHWConfigInternal *ff_nvenc_hw_configs[];
 
 #endif /* AVCODEC_NVENC_H */

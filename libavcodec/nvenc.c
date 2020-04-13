@@ -55,6 +55,16 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+const AVCodecHWConfigInternal *ff_nvenc_hw_configs[] = {
+    HW_CONFIG_ENCODER_FRAMES(CUDA,  CUDA),
+    HW_CONFIG_ENCODER_DEVICE(NONE,  CUDA),
+#if CONFIG_D3D11VA
+    HW_CONFIG_ENCODER_FRAMES(D3D11, D3D11VA),
+    HW_CONFIG_ENCODER_DEVICE(NONE,  D3D11VA),
+#endif
+    NULL,
+};
+
 #define IS_10BIT(pix_fmt)  (pix_fmt == AV_PIX_FMT_P010    || \
                             pix_fmt == AV_PIX_FMT_P016    || \
                             pix_fmt == AV_PIX_FMT_YUV444P16)
