@@ -6532,11 +6532,20 @@ Default is disabled.
 
 Detect video intervals that are (almost) completely black. Can be
 useful to detect chapter transitions, commercials, or invalid
-recordings. Output lines contains the time for the start, end and
-duration of the detected black interval expressed in seconds.
+recordings.
 
-In order to display the output lines, you need to set the loglevel at
-least to the AV_LOG_INFO value.
+The filter outputs its detection analysis to both the log as well as
+frame metadata. If a black segment of at least the specified minimum
+duration is found, a line with the start and end timestamps as well
+as duration is printed to the log with level @code{info}. In addition,
+a log line with level @code{debug} is printed per frame showing the
+black amount detected for that frame.
+
+The filter also attaches metadata to the first frame of a black
+segment with key @code{lavfi.black_start} and to the first frame
+after the black segment ends with key @code{lavfi.black_end}. The
+value is the frame's timestamp. This metadata is added regardless
+of the minimum duration specified.
 
 The filter accepts the following options:
 

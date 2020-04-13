@@ -136,7 +136,6 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-// TODO: document metadata
 static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
