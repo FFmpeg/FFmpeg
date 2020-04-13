@@ -289,7 +289,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         for (i = 0; i < ctx->nb_inputs; i++)
             av_freep(&ctx->input_pads[i].name);
     } else {
-        for (i = 0; i < s->nb_frames; i++)
+        for (i = 0; i < s->nb_frames && s->frames; i++)
             av_frame_free(&s->frames[i]);
     }
     av_freep(&s->frames);
