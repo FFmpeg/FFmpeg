@@ -402,6 +402,10 @@ static int get_siz(Jpeg2000DecoderContext *s)
             break;
         }
     }
+    if (   s->avctx->pix_fmt != AV_PIX_FMT_NONE
+        && !pix_fmt_match(s->avctx->pix_fmt, ncomponents, s->precision, log2_chroma_wh, s->pal8))
+            s->avctx->pix_fmt = AV_PIX_FMT_NONE;
+    if (s->avctx->pix_fmt == AV_PIX_FMT_NONE)
     for (i = 0; i < possible_fmts_nb; ++i) {
         if (pix_fmt_match(possible_fmts[i], ncomponents, s->precision, log2_chroma_wh, s->pal8)) {
             s->avctx->pix_fmt = possible_fmts[i];
