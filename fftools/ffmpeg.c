@@ -4759,7 +4759,6 @@ static int transcode(void)
         }
     }
 
-    av_buffer_unref(&hw_device_ctx);
     hw_device_free_all();
 
     /* finished ! */

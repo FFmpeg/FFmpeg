@@ -139,7 +139,6 @@ const HWAccel hwaccels[] = {
 #endif
     { 0 },
 };
-AVBufferRef *hw_device_ctx;
 HWDevice *filter_hw_device;
 
 char *vstats_filename;
@@ -536,21 +535,15 @@ static int opt_sdp_file(void *optctx, const char *opt, const char *arg)
 #if CONFIG_VAAPI
 static int opt_vaapi_device(void *optctx, const char *opt, const char *arg)
 {
-    HWDevice *dev;
     const char *prefix = "vaapi:";
     char *tmp;
     int err;
     tmp = av_asprintf("%s%s", prefix, arg);
     if (!tmp)
         return AVERROR(ENOMEM);
-    err = hw_device_init_from_string(tmp, &dev);
+    err = hw_device_init_from_string(tmp, NULL);
     av_free(tmp);
-    if (err < 0)
-        return err;
-    hw_device_ctx = av_buffer_ref(dev->device_ref);
-    if (!hw_device_ctx)
-        return AVERROR(ENOMEM);
-    return 0;
+    return err;
 }
 #endif
 
