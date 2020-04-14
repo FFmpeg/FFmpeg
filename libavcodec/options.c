@@ -55,15 +55,16 @@ static void *codec_child_next(void *obj, void *prev)
 
 static const AVClass *codec_child_class_next(const AVClass *prev)
 {
-    AVCodec *c = NULL;
+    void *iter = NULL;
+    const AVCodec *c = NULL;
 
     /* find the codec that corresponds to prev */
-    while (prev && (c = av_codec_next(c)))
+    while (prev && (c = av_codec_iterate(&iter)))
         if (c->priv_class == prev)
             break;
 
     /* find next codec with priv options */
-    while (c = av_codec_next(c))
+    while (c = av_codec_iterate(&iter))
         if (c->priv_class)
             return c->priv_class;
     return NULL;
