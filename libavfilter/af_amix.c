@@ -538,10 +538,12 @@ static av_cold int init(AVFilterContext *ctx)
         last_weight = av_strtod(p, &p);
         s->weights[i] = last_weight;
         s->weight_sum += FFABS(last_weight);
-        if (p && *p)
+        if (p && *p) {
             p++;
-        else
+        } else {
+            i++;
             break;
+        }
     }
 
     for (; i < s->nb_inputs; i++) {
