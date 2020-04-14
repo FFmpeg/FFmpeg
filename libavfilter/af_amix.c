@@ -34,6 +34,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/eval.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -506,9 +507,9 @@ static int activate(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
-    char *p, *arg, *saveptr = NULL;
     float last_weight = 1.f;
     int i, ret;
+    char *p;
 
     for (i = 0; i < s->nb_inputs; i++) {
         AVFilterPad pad = { 0 };
@@ -534,13 +535,13 @@ static av_cold int init(AVFilterContext *ctx)
 
     p = s->weights_str;
     for (i = 0; i < s->nb_inputs; i++) {
-        if (!(arg = av_strtok(p, " ", &saveptr)))
-            break;
-
-        p = NULL;
-        sscanf(arg, "%f", &last_weight);
+        last_weight = av_strtod(p, &p);
         s->weights[i] = last_weight;
         s->weight_sum += FFABS(last_weight);
+        if (p && *p)
+            p++;
+        else
+            break;
     }
 
     for (; i < s->nb_inputs; i++) {
