@@ -240,8 +240,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
     for (i = 0; i < nout; i++) {
         AVFrame *frame = av_frame_clone(s->frame[i]);
-        int interlaced = frame->interlaced_frame;
-        int tff        = frame->top_field_first;
+        int interlaced = frame ? frame->interlaced_frame : 0;
+        int tff        = frame ? frame->top_field_first  : 0;
 
         if (!frame) {
             av_frame_free(&inpicref);
