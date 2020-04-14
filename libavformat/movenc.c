@@ -520,8 +520,6 @@ concatenate:
         memcpy(info->pkt.data + info->pkt.size - pkt->size, pkt->data, pkt->size);
         info->num_blocks += num_blocks;
         info->pkt.duration += pkt->duration;
-        if ((ret = av_copy_packet_side_data(&info->pkt, pkt)) < 0)
-            goto end;
         if (info->num_blocks != 6)
             goto end;
         av_packet_unref(pkt);
