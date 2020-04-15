@@ -2432,12 +2432,14 @@ loop_end:
                    o->attachments[i]);
             exit_program(1);
         }
-        if (!(attachment = av_malloc(len))) {
-            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large to fit into memory.\n",
+        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ||
+            !(attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
+            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large.\n",
                    o->attachments[i]);
             exit_program(1);
         }
         avio_read(pb, attachment, len);
+        memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         ost = new_attachment_stream(o, oc, -1);
         ost->stream_copy               = 0;
