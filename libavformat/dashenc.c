@@ -190,6 +190,7 @@ typedef struct DASHContext {
     int frag_type;
     int write_prft;
     int64_t max_gop_size;
+    int64_t max_segment_duration;
     int profile;
     int64_t target_latency;
     int target_latency_refid;
@@ -1189,6 +1190,9 @@ static int write_manifest(AVFormatContext *s, int final)
             avio_printf(out, "\"\n");
         }
     }
+    avio_printf(out, "\tmaxSegmentDuration=\"");
+    write_time(out, c->max_segment_duration);
+    avio_printf(out, "\"\n");
     avio_printf(out, "\tminBufferTime=\"");
     write_time(out, c->ldash && c->max_gop_size ? c->max_gop_size : c->last_duration * 2);
     avio_printf(out, "\">\n");
@@ -1563,6 +1567,8 @@ static int dash_init(AVFormatContext *s)
         os->seg_duration = as->seg_duration;
         os->frag_duration = as->frag_duration;
         os->frag_type = as->frag_type;
+
+        c->max_segment_duration = FFMAX(c->max_segment_duration, as->seg_duration);
 
         if (c->profile & MPD_PROFILE_DVB && (os->seg_duration > 15000000 || os->seg_duration < 960000)) {
             av_log(s, AV_LOG_ERROR, "Segment duration %"PRId64" is outside the allowed range for DVB-DASH profile\n", os->seg_duration);
