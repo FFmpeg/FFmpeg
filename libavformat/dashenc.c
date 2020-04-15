@@ -864,7 +864,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
                 s->streams[i]->codecpar->channels);
         }
         if (!final && c->write_prft && os->producer_reference_time_str[0]) {
-            avio_printf(out, "\t\t\t\t<ProducerReferenceTime id=\"%d\" inband=\"true\" type=\"%s\" wallclockTime=\"%s\" presentationTime=\"%"PRId64"\">\n",
+            avio_printf(out, "\t\t\t\t<ProducerReferenceTime id=\"%d\" inband=\"true\" type=\"%s\" wallClockTime=\"%s\" presentationTime=\"%"PRId64"\">\n",
                         i, os->producer_reference_time.flags ? "captured" : "encoder", os->producer_reference_time_str, c->presentation_time_offset);
             avio_printf(out, "\t\t\t\t\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
             avio_printf(out, "\t\t\t\t</ProducerReferenceTime>\n");
