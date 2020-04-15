@@ -287,6 +287,7 @@ extern AVFilter ff_vf_maskedclamp;
 extern AVFilter ff_vf_maskedmax;
 extern AVFilter ff_vf_maskedmerge;
 extern AVFilter ff_vf_maskedmin;
+extern AVFilter ff_vf_maskedthreshold;
 extern AVFilter ff_vf_maskfun;
 extern AVFilter ff_vf_mcdeint;
 extern AVFilter ff_vf_median;
