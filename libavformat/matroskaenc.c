@@ -190,17 +190,36 @@ static void put_ebml_size_unknown(AVIOContext *pb, int bytes)
 }
 
 /**
+ * Returns how many bytes are needed to represent a number
+ * as EBML variable length integer.
+ */
+static int ebml_num_size(uint64_t num)
+{
+    int bytes = 0;
+    do {
+        bytes++;
+    } while (num >>= 7);
+    return bytes;
+}
+
+/**
  * Calculate how many bytes are needed to represent the length field
  * of an EBML element whose payload has a given length.
  */
 static int ebml_length_size(uint64_t length)
 {
-    int bytes = 0;
-    length++;
-    do {
-        bytes++;
-    } while (length >>= 7);
-    return bytes;
+    return ebml_num_size(length + 1);
+}
+
+/**
+ * Write a number as EBML variable length integer on `bytes` bytes.
+ * `bytes` is taken literally without checking.
+ */
+static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
+{
+    num |= 1ULL << bytes * 7;
+    for (int i = bytes - 1; i >= 0; i--)
+        avio_w8(pb, (uint8_t)(num >> i * 8));
 }
 
 /**
@@ -211,7 +230,7 @@ static int ebml_length_size(uint64_t length)
  */
 static void put_ebml_length(AVIOContext *pb, uint64_t length, int bytes)
 {
-    int i, needed_bytes = ebml_length_size(length);
+    int needed_bytes = ebml_length_size(length);
 
     // sizes larger than this are currently undefined in EBML
     av_assert0(length < (1ULL << 56) - 1);
@@ -221,10 +240,7 @@ static void put_ebml_length(AVIOContext *pb, uint64_t length, int bytes)
     // The bytes needed to write the given size must not exceed
     // the bytes that we ought to use.
     av_assert0(bytes >= needed_bytes);
-
-    length |= 1ULL << bytes * 7;
-    for (i = bytes - 1; i >= 0; i--)
-        avio_w8(pb, (uint8_t)(length >> i * 8));
+    put_ebml_num(pb, length, bytes);
 }
 
 /**
