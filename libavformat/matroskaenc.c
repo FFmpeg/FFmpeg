@@ -190,30 +190,31 @@ static void put_ebml_size_unknown(AVIOContext *pb, int bytes)
 }
 
 /**
- * Calculate how many bytes are needed to represent a given number in EBML.
+ * Calculate how many bytes are needed to represent the length field
+ * of an EBML element whose payload has a given length.
  */
-static int ebml_num_size(uint64_t num)
+static int ebml_length_size(uint64_t length)
 {
     int bytes = 0;
-    num++;
+    length++;
     do {
         bytes++;
-    } while (num >>= 7);
+    } while (length >>= 7);
     return bytes;
 }
 
 /**
- * Write a number in EBML variable length format.
+ * Write a length as EBML variable length integer.
  *
  * @param bytes The number of bytes that need to be used to write the number.
  *              If zero, the minimal number of bytes will be used.
  */
-static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
+static void put_ebml_length(AVIOContext *pb, uint64_t length, int bytes)
 {
-    int i, needed_bytes = ebml_num_size(num);
+    int i, needed_bytes = ebml_length_size(length);
 
     // sizes larger than this are currently undefined in EBML
-    av_assert0(num < (1ULL << 56) - 1);
+    av_assert0(length < (1ULL << 56) - 1);
 
     if (bytes == 0)
         bytes = needed_bytes;
@@ -221,9 +222,9 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
     // the bytes that we ought to use.
     av_assert0(bytes >= needed_bytes);
 
-    num |= 1ULL << bytes * 7;
+    length |= 1ULL << bytes * 7;
     for (i = bytes - 1; i >= 0; i--)
-        avio_w8(pb, (uint8_t)(num >> i * 8));
+        avio_w8(pb, (uint8_t)(length >> i * 8));
 }
 
 /**
@@ -232,7 +233,7 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
 static void put_ebml_uid(AVIOContext *pb, uint32_t elementid, uint64_t uid)
 {
     put_ebml_id(pb, elementid);
-    put_ebml_num(pb, 8, 0);
+    put_ebml_length(pb, 8, 0);
     avio_wb64(pb, uid);
 }
 
@@ -244,7 +245,7 @@ static void put_ebml_uint(AVIOContext *pb, uint32_t elementid, uint64_t val)
         bytes++;
 
     put_ebml_id(pb, elementid);
-    put_ebml_num(pb, bytes, 0);
+    put_ebml_length(pb, bytes, 0);
     for (i = bytes - 1; i >= 0; i--)
         avio_w8(pb, (uint8_t)(val >> i * 8));
 }
@@ -257,7 +258,7 @@ static void put_ebml_sint(AVIOContext *pb, uint32_t elementid, int64_t val)
     while (tmp>>=8) bytes++;
 
     put_ebml_id(pb, elementid);
-    put_ebml_num(pb, bytes, 0);
+    put_ebml_length(pb, bytes, 0);
     for (i = bytes - 1; i >= 0; i--)
         avio_w8(pb, (uint8_t)(val >> i * 8));
 }
@@ -265,7 +266,7 @@ static void put_ebml_sint(AVIOContext *pb, uint32_t elementid, int64_t val)
 static void put_ebml_float(AVIOContext *pb, uint32_t elementid, double val)
 {
     put_ebml_id(pb, elementid);
-    put_ebml_num(pb, 8, 0);
+    put_ebml_length(pb, 8, 0);
     avio_wb64(pb, av_double2int(val));
 }
 
@@ -273,7 +274,7 @@ static void put_ebml_binary(AVIOContext *pb, uint32_t elementid,
                             const void *buf, int size)
 {
     put_ebml_id(pb, elementid);
-    put_ebml_num(pb, size, 0);
+    put_ebml_length(pb, size, 0);
     avio_write(pb, buf, size);
 }
 
@@ -299,10 +300,10 @@ static void put_ebml_void(AVIOContext *pb, int size)
     // size if possible, 1 byte otherwise
     if (size < 10) {
         size -= 2;
-        put_ebml_num(pb, size, 0);
+        put_ebml_length(pb, size, 0);
     } else {
         size -= 9;
-        put_ebml_num(pb, size, 8);
+        put_ebml_length(pb, size, 8);
     }
     ffio_fill(pb, 0, size);
 }
@@ -310,7 +311,7 @@ static void put_ebml_void(AVIOContext *pb, int size)
 static ebml_master start_ebml_master(AVIOContext *pb, uint32_t elementid,
                                      uint64_t expectedsize)
 {
-    int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
+    int bytes = expectedsize ? ebml_length_size(expectedsize) : 8;
 
     put_ebml_id(pb, elementid);
     put_ebml_size_unknown(pb, bytes);
@@ -323,7 +324,7 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
 
     if (avio_seek(pb, master.pos - master.sizebytes, SEEK_SET) < 0)
         return;
-    put_ebml_num(pb, pos - master.pos, master.sizebytes);
+    put_ebml_length(pb, pos - master.pos, master.sizebytes);
     avio_seek(pb, pos, SEEK_SET);
 }
 
@@ -349,7 +350,7 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp,
 
     put_ebml_id(pb, id);
     size = avio_get_dyn_buf(*dyn_cp, &buf);
-    put_ebml_num(pb, size, length_size);
+    put_ebml_length(pb, size, length_size);
     if (mkv->write_crc) {
         skip = 6; /* Skip reserved 6-byte long void element from the dynamic buffer. */
         AV_WL32(crc, av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), UINT32_MAX, buf + skip, size - skip) ^ UINT32_MAX);
@@ -376,7 +377,7 @@ static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext *dyn_
     *pos = avio_tell(pb);
 
     put_ebml_id(pb, id);
-    put_ebml_num(pb, size, 0);
+    put_ebml_length(pb, size, 0);
     avio_write(pb, buf, size);
 }
 
@@ -461,7 +462,7 @@ static int mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv,
                                                   MAX_SEEKENTRY_SIZE);
 
         put_ebml_id(dyn_cp, MATROSKA_ID_SEEKID);
-        put_ebml_num(dyn_cp, ebml_id_size(entry->elementid), 0);
+        put_ebml_length(dyn_cp, ebml_id_size(entry->elementid), 0);
         put_ebml_id(dyn_cp, entry->elementid);
 
         put_ebml_uint(dyn_cp, MATROSKA_ID_SEEKPOSITION, entry->segmentpos);
@@ -1885,7 +1886,7 @@ static int mkv_write_header(AVFormatContext *s)
 static int mkv_blockgroup_size(int pkt_size)
 {
     int size = pkt_size + 4;
-    size += ebml_num_size(size);
+    size += ebml_length_size(size);
     size += 2;              // EBML ID for block and block duration
     size += 9;              // max size of block duration incl. length field
     return size;
@@ -2024,7 +2025,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     }
 
     put_ebml_id(pb, blockid);
-    put_ebml_num(pb, size + 4, 0);
+    put_ebml_length(pb, size + 4, 0);
     // this assumes stream_index is less than 126
     avio_w8(pb, 0x80 | track_number);
     avio_wb16(pb, ts - mkv->cluster_pts);
@@ -2092,7 +2093,7 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
     blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(size));
 
     put_ebml_id(pb, MATROSKA_ID_BLOCK);
-    put_ebml_num(pb, size + 4, 0);
+    put_ebml_length(pb, size + 4, 0);
     avio_w8(pb, 0x80 | track->track_num);     // this assumes track_num is less than 126
     avio_wb16(pb, ts - mkv->cluster_pts);
     avio_w8(pb, flags);
@@ -2437,7 +2438,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
             if (mkv->reserve_cues_space) {
                 size  = avio_tell(cues);
-                length_size = ebml_num_size(size);
+                length_size = ebml_length_size(size);
                 size += 4 + length_size;
                 if (mkv->reserve_cues_space < size) {
                     av_log(s, AV_LOG_WARNING,
