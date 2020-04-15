@@ -93,6 +93,7 @@ typedef struct mkv_track {
     int             has_cue;
     uint64_t        uid;
     unsigned        track_num;
+    int             track_num_size;
     int             sample_rate;
     int64_t         sample_rate_offset;
     int64_t         last_timestamp;
@@ -104,10 +105,6 @@ typedef struct mkv_track {
 
 #define MODE_MATROSKAv2 0x01
 #define MODE_WEBM       0x02
-
-/** Maximum number of tracks allowed in a Matroska file (with track numbers in
- * range 1 to 126 (inclusive) */
-#define MAX_TRACKS 126
 
 typedef struct MatroskaMuxContext {
     const AVClass   *class;
@@ -1899,9 +1896,9 @@ static int mkv_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int mkv_blockgroup_size(int pkt_size)
+static int mkv_blockgroup_size(int pkt_size, int track_num_size)
 {
-    int size = pkt_size + 4;
+    int size = pkt_size + track_num_size + 3;
     size += ebml_length_size(size);
     size += 2;              // EBML ID for block and block duration
     size += 9;              // max size of block duration incl. length field
@@ -2041,9 +2038,8 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     }
 
     put_ebml_id(pb, blockid);
-    put_ebml_length(pb, size + 4, 0);
-    // this assumes stream_index is less than 126
-    avio_w8(pb, 0x80 | track_number);
+    put_ebml_length(pb, size + track->track_num_size + 3, 0);
+    put_ebml_num(pb, track_number, track->track_num_size);
     avio_wb16(pb, ts - mkv->cluster_pts);
     avio_w8(pb, (blockid == MATROSKA_ID_SIMPLEBLOCK && keyframe) ? (1 << 7) : 0);
     avio_write(pb, data + offset, size);
@@ -2106,11 +2102,12 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
            size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
            mkv->cluster_pos, track->track_num, 1);
 
-    blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(size));
+    blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
+                                   mkv_blockgroup_size(size, track->track_num_size));
 
     put_ebml_id(pb, MATROSKA_ID_BLOCK);
-    put_ebml_length(pb, size + 4, 0);
-    avio_w8(pb, 0x80 | track->track_num);     // this assumes track_num is less than 126
+    put_ebml_length(pb, size + track->track_num_size + 3, 0);
+    put_ebml_num(pb, track->track_num, track->track_num_size);
     avio_wb16(pb, ts - mkv->cluster_pts);
     avio_w8(pb, flags);
     avio_printf(pb, "%.*s\n%.*s\n%.*s", id_size, id, settings_size, settings, pkt->size, pkt->data);
@@ -2284,7 +2281,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
             duration = mkv_write_vtt_blocks(s, pb, pkt);
         } else {
             ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
-                                                       mkv_blockgroup_size(pkt->size));
+                                                       mkv_blockgroup_size(pkt->size,
+                                                                           track->track_num_size));
 
 #if FF_API_CONVERGENCE_DURATION
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -2646,13 +2644,7 @@ static int mkv_init(struct AVFormatContext *s)
 
         nb_tracks++;
         track->track_num = mkv->is_dash ? mkv->dash_track_number : nb_tracks;
-    }
-
-    if (nb_tracks > MAX_TRACKS) {
-        av_log(s, AV_LOG_ERROR,
-               "%u > "AV_STRINGIFY(MAX_TRACKS)" tracks (excluding attachments)"
-               " not supported for muxing in Matroska\n", nb_tracks);
-        return AVERROR(EINVAL);
+        track->track_num_size = ebml_num_size(track->track_num);
     }
 
     return 0;
@@ -2710,7 +2702,7 @@ static const AVOption options[] = {
     { "cluster_size_limit",  "Store at most the provided amount of bytes in a cluster. ",                                     OFFSET(cluster_size_limit), AV_OPT_TYPE_INT  , { .i64 = -1 }, -1, INT_MAX,   FLAGS },
     { "cluster_time_limit",  "Store at most the provided number of milliseconds in a cluster.",                               OFFSET(cluster_time_limit), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, FLAGS },
     { "dash", "Create a WebM file conforming to WebM DASH specification", OFFSET(is_dash), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
-    { "dash_track_number", "Track number for the DASH stream", OFFSET(dash_track_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 127, FLAGS },
+    { "dash_track_number", "Track number for the DASH stream", OFFSET(dash_track_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "live", "Write files assuming it is a live stream.", OFFSET(is_live), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "allow_raw_vfw", "allow RAW VFW mode", OFFSET(allow_raw_vfw), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "write_crc32", "write a CRC32 element inside every Level 1 element", OFFSET(write_crc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
