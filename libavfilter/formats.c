@@ -368,11 +368,6 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     return ret;
 }
 
-const int64_t avfilter_all_channel_layouts[] = {
-#include "all_channel_layouts.inc"
-    -1
-};
-
 int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned rej)
 {
     unsigned nb_formats, fmt, flags;
@@ -413,11 +408,6 @@ int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned r
         }
     }
 }
-
-// AVFilterFormats *avfilter_make_all_channel_layouts(void)
-// {
-//     return avfilter_make_format64_list(avfilter_all_channel_layouts);
-// }
 
 AVFilterFormats *ff_planar_sample_fmts(void)
 {
