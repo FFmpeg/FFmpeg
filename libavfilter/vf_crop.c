@@ -94,24 +94,11 @@ typedef struct CropContext {
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
-    int fmt, ret;
+    int ret;
 
-    for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM)
-            continue;
-        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
-            // Not usable if there is any subsampling but the format is
-            // not planar (e.g. YUYV422).
-            if ((desc->log2_chroma_w || desc->log2_chroma_h) &&
-                !(desc->flags & AV_PIX_FMT_FLAG_PLANAR))
-                continue;
-        }
-        ret = ff_add_format(&formats, fmt);
-        if (ret < 0)
-            return ret;
-    }
-
+    ret = ff_formats_pixdesc_filter(&formats, 0, AV_PIX_FMT_FLAG_BITSTREAM | FF_PIX_FMT_FLAG_SW_FLAT_SUB);
+    if (ret < 0)
+        return ret;
     return ff_set_common_formats(ctx, formats);
 }
 
