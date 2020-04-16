@@ -396,6 +396,9 @@ fate-filter-trim-time: CMD = framecrc -i $(SRC) -vf trim=0:0.09
 
 FATE_FILTER_VSYNTH-$(CONFIG_TRIM_FILTER) += $(FATE_TRIM)
 
+FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER UNTILE_FILTER) += fate-filter-untile
+fate-filter-untile: CMD = framecrc -lavfi testsrc2=d=1:r=2,untile=2x2
+
 FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
 fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp=11:11:-1.5:11:11:-1.5
 
