@@ -806,7 +806,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
     AVDictionaryEntry *lang, *role;
     int i;
 
-    avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
+    avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"%s\" startWithSAP=\"1\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
                 as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
     if (as->media_type == AVMEDIA_TYPE_VIDEO && as->max_frame_rate.num && !as->ambiguous_frame_rate && av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0)
         avio_printf(out, " maxFrameRate=\"%d/%d\"", as->max_frame_rate.num, as->max_frame_rate.den);
