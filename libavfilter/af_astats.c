@@ -539,7 +539,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 }
 
 #define UPDATE_STATS_P(type, update_func, update_float, channel_func)           \
-    for (int c = 0; c < channels; c++) {                                        \
+    for (int c = start; c < end; c++) {                                         \
         ChannelStats *p = &s->chstats[c];                                       \
         const type *src = (const type *)data[c];                                \
         const type * const srcend = src + samples;                              \
@@ -551,7 +551,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     }
 
 #define UPDATE_STATS_I(type, update_func, update_float, channel_func)           \
-    for (int c = 0; c < channels; c++) {                                        \
+    for (int c = start; c < end; c++) {                                         \
         ChannelStats *p = &s->chstats[c];                                       \
         const type *src = (const type *)data[0];                                \
         const type * const srcend = src + samples * channels;                   \
@@ -569,21 +569,16 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         UPDATE_STATS_##planar(type, update_minmax(s, p, sample), , p->nmin = p->min normalizer_suffix; p->nmax = p->max normalizer_suffix;); \
     }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    AudioStatsContext *s = inlink->dst->priv;
-    AVDictionary **metadata = &buf->metadata;
+    AudioStatsContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFrame *buf = arg;
+    const uint8_t * const * const data = (const uint8_t * const *)buf->extended_data;
     const int channels = s->nb_channels;
     const int samples = buf->nb_samples;
-    const uint8_t * const * const data = (const uint8_t * const *)buf->extended_data;
-
-    if (s->reset_count > 0) {
-        if (s->nb_frames >= s->reset_count) {
-            reset_stats(s);
-            s->nb_frames = 0;
-        }
-        s->nb_frames++;
-    }
+    const int start = (buf->channels * jobnr) / nb_jobs;
+    const int end = (buf->channels * (jobnr+1)) / nb_jobs;
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBLP:
@@ -617,6 +612,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         UPDATE_STATS(I, int16_t, *src, / (double)INT16_MAX, *src);
         break;
     }
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AudioStatsContext *s = ctx->priv;
+    AVDictionary **metadata = &buf->metadata;
+
+    if (s->reset_count > 0) {
+        if (s->nb_frames >= s->reset_count) {
+            reset_stats(s);
+            s->nb_frames = 0;
+        }
+        s->nb_frames++;
+    }
+
+    ctx->internal->execute(ctx, filter_channel, buf, NULL, FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
 
     if (s->metadata)
         set_metadata(s, metadata);
@@ -812,4 +826,5 @@ AVFilter ff_af_astats = {
     .uninit        = uninit,
     .inputs        = astats_inputs,
     .outputs       = astats_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
