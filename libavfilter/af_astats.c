@@ -27,6 +27,9 @@
 #include "avfilter.h"
 #include "internal.h"
 
+#define HISTOGRAM_SIZE                  8192
+#define HISTOGRAM_MAX                   (HISTOGRAM_SIZE-1)
+
 #define MEASURE_ALL                     UINT_MAX
 #define MEASURE_NONE                           0
 
@@ -52,6 +55,7 @@
 #define MEASURE_NUMBER_OF_NANS          (1 << 19)
 #define MEASURE_NUMBER_OF_INFS          (1 << 20)
 #define MEASURE_NUMBER_OF_DENORMALS     (1 << 21)
+#define MEASURE_NOISE_FLOOR             (1 << 22)
 
 #define MEASURE_MINMAXPEAK              (MEASURE_MIN_LEVEL | MEASURE_MAX_LEVEL | MEASURE_PEAK_LEVEL)
 
@@ -75,6 +79,11 @@ typedef struct ChannelStats {
     uint64_t nb_nans;
     uint64_t nb_infs;
     uint64_t nb_denormals;
+    double *win_samples;
+    unsigned histogram[HISTOGRAM_SIZE];
+    int win_pos;
+    int max_index;
+    double noise_floor;
 } ChannelStats;
 
 typedef struct AudioStatsContext {
@@ -122,6 +131,7 @@ static const AVOption astats_options[] = {
       { "Dynamic_range"             , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_DYNAMIC_RANGE       }, 0, 0, FLAGS, "measure" },
       { "Zero_crossings"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ZERO_CROSSINGS      }, 0, 0, FLAGS, "measure" },
       { "Zero_crossings_rate"       , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ZERO_CROSSINGS_RATE }, 0, 0, FLAGS, "measure" },
+      { "Noise_floor"               , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NOISE_FLOOR         }, 0, 0, FLAGS, "measure" },
       { "Number_of_samples"         , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NUMBER_OF_SAMPLES   }, 0, 0, FLAGS, "measure" },
       { "Number_of_NaNs"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NUMBER_OF_NANS      }, 0, 0, FLAGS, "measure" },
       { "Number_of_Infs"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NUMBER_OF_INFS      }, 0, 0, FLAGS, "measure" },
@@ -197,6 +207,10 @@ static void reset_stats(AudioStatsContext *s)
         p->nb_infs = 0;
         p->nb_denormals = 0;
         p->last = NAN;
+        p->noise_floor = NAN;
+        p->win_pos = 0;
+        memset(p->win_samples, 0, s->tc_samples * sizeof(*p->win_samples));
+        memset(p->histogram, 0, sizeof(p->histogram));
     }
 }
 
@@ -207,9 +221,19 @@ static int config_output(AVFilterLink *outlink)
     s->chstats = av_calloc(sizeof(*s->chstats), outlink->channels);
     if (!s->chstats)
         return AVERROR(ENOMEM);
-    s->nb_channels = outlink->channels;
-    s->mult = exp((-1 / s->time_constant / outlink->sample_rate));
+
     s->tc_samples = 5 * s->time_constant * outlink->sample_rate + .5;
+    s->nb_channels = outlink->channels;
+
+    for (int i = 0; i < s->nb_channels; i++) {
+        ChannelStats *p = &s->chstats[i];
+
+        p->win_samples = av_calloc(s->tc_samples, sizeof(*p->win_samples));
+        if (!p->win_samples)
+            return AVERROR(ENOMEM);
+    }
+
+    s->mult = exp((-1 / s->time_constant / outlink->sample_rate));
     s->nb_frames = 0;
     s->maxbitdepth = av_get_bytes_per_sample(outlink->format) * 8;
     s->is_double = outlink->format == AV_SAMPLE_FMT_DBL  ||
@@ -249,6 +273,9 @@ static inline void update_minmax(AudioStatsContext *s, ChannelStats *p, double d
 
 static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, double nd, int64_t i)
 {
+    double drop;
+    int index;
+
     if (d < p->min) {
         p->min = d;
         p->nmin = nd;
@@ -295,6 +322,38 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
     p->last = d;
     p->mask |= i;
     p->imask &= i;
+
+    drop = p->win_samples[p->win_pos];
+    p->win_samples[p->win_pos] = nd;
+    index = av_clip(FFABS(nd) * HISTOGRAM_MAX, 0, HISTOGRAM_MAX);
+    p->max_index = FFMAX(p->max_index, index);
+    p->histogram[index]++;
+    if (!isnan(p->noise_floor))
+        p->histogram[av_clip(FFABS(drop) * HISTOGRAM_MAX, 0, HISTOGRAM_MAX)]--;
+    p->win_pos++;
+
+    while (p->histogram[p->max_index] == 0)
+        p->max_index--;
+    if (p->win_pos >= s->tc_samples || !isnan(p->noise_floor)) {
+        double noise_floor = 1.;
+
+        for (int i = p->max_index; i >= 0; i--) {
+            if (p->histogram[i]) {
+                noise_floor = i / (double)HISTOGRAM_MAX;
+                break;
+            }
+        }
+
+        if (isnan(p->noise_floor)) {
+            p->noise_floor = noise_floor;
+        } else {
+            p->noise_floor = FFMIN(noise_floor, p->noise_floor);
+        }
+    }
+
+    if (p->win_pos >= s->tc_samples) {
+        p->win_pos = 0;
+    }
 
     if (p->nb_samples >= s->tc_samples) {
         p->max_sigma_x2 = FFMAX(p->max_sigma_x2, p->avg_sigma_x2);
@@ -349,6 +408,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
            diff1_sum_x2 = 0,
            sigma_x = 0,
            sigma_x2 = 0,
+           noise_floor = 0,
            min_sigma_x2 = DBL_MAX,
            max_sigma_x2 =-DBL_MAX;
     AVRational depth;
@@ -372,6 +432,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
         sigma_x += p->sigma_x;
         sigma_x2 += p->sigma_x2;
+        noise_floor = FFMAX(noise_floor, p->noise_floor);
         min_count += p->min_count;
         max_count += p->max_count;
         min_runs += p->min_runs;
@@ -413,6 +474,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
             set_meta(metadata, c + 1, "Flat_factor", "%f", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         if (s->measure_perchannel & MEASURE_PEAK_COUNT)
             set_meta(metadata, c + 1, "Peak_count", "%f", (float)(p->min_count + p->max_count));
+        if (s->measure_perchannel & MEASURE_NOISE_FLOOR)
+            set_meta(metadata, c + 1, "Noise_floor"," %f", LINEAR_TO_DB(p->noise_floor));
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
             bit_depth(s, p->mask, p->imask, &depth);
             set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
@@ -458,6 +521,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, 0, "Overall.Flat_factor", "%f", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)
         set_meta(metadata, 0, "Overall.Peak_count", "%f", (float)(min_count + max_count) / (double)s->nb_channels);
+    if (s->measure_overall & MEASURE_NOISE_FLOOR)
+        set_meta(metadata, 0, "Overall.Noise_floor", "%f", LINEAR_TO_DB(noise_floor));
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
         bit_depth(s, mask, imask, &depth);
         set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth.num);
@@ -572,6 +637,7 @@ static void print_stats(AVFilterContext *ctx)
            diff1_sum = 0,
            sigma_x = 0,
            sigma_x2 = 0,
+           noise_floor = 0,
            min_sigma_x2 = DBL_MAX,
            max_sigma_x2 =-DBL_MAX;
     AVRational depth;
@@ -595,6 +661,7 @@ static void print_stats(AVFilterContext *ctx)
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
         sigma_x += p->sigma_x;
         sigma_x2 += p->sigma_x2;
+        noise_floor = FFMAX(noise_floor, p->noise_floor);
         min_count += p->min_count;
         max_count += p->max_count;
         min_runs += p->min_runs;
@@ -638,6 +705,8 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         if (s->measure_perchannel & MEASURE_PEAK_COUNT)
             av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
+        if (s->measure_perchannel & MEASURE_NOISE_FLOOR)
+            av_log(ctx, AV_LOG_INFO, "Noise floor dB: %f\n", LINEAR_TO_DB(p->noise_floor));
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
             bit_depth(s, p->mask, p->imask, &depth);
             av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
@@ -684,6 +753,8 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)
         av_log(ctx, AV_LOG_INFO, "Peak count: %f\n", (min_count + max_count) / (double)s->nb_channels);
+    if (s->measure_overall & MEASURE_NOISE_FLOOR)
+        av_log(ctx, AV_LOG_INFO, "Noise floor dB: %f\n", LINEAR_TO_DB(noise_floor));
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
         bit_depth(s, mask, imask, &depth);
         av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
@@ -704,6 +775,13 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (s->nb_channels)
         print_stats(ctx);
+    if (s->chstats) {
+        for (int i = 0; i < s->nb_channels; i++) {
+            ChannelStats *p = &s->chstats[i];
+
+            av_freep(&p->win_samples);
+        }
+    }
     av_freep(&s->chstats);
 }
 
