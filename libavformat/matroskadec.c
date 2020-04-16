@@ -747,6 +747,25 @@ static EbmlSyntax matroska_cluster_enter[] = {
 };
 #undef CHILD_OF
 
+static const CodecMime mkv_image_mime_tags[] = {
+    {"image/gif"                  , AV_CODEC_ID_GIF},
+    {"image/jpeg"                 , AV_CODEC_ID_MJPEG},
+    {"image/png"                  , AV_CODEC_ID_PNG},
+    {"image/tiff"                 , AV_CODEC_ID_TIFF},
+
+    {""                           , AV_CODEC_ID_NONE}
+};
+
+static const CodecMime mkv_mime_tags[] = {
+    {"text/plain"                 , AV_CODEC_ID_TEXT},
+    {"application/x-truetype-font", AV_CODEC_ID_TTF},
+    {"application/x-font"         , AV_CODEC_ID_TTF},
+    {"application/vnd.ms-opentype", AV_CODEC_ID_OTF},
+    {"binary"                     , AV_CODEC_ID_BIN_DATA},
+
+    {""                           , AV_CODEC_ID_NONE}
+};
+
 static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
 static int matroska_read_close(AVFormatContext *s);
@@ -2882,10 +2901,10 @@ static int matroska_read_header(AVFormatContext *s)
             av_dict_set(&st->metadata, "mimetype", attachments[j].mime, 0);
             st->codecpar->codec_id   = AV_CODEC_ID_NONE;
 
-            for (i = 0; ff_mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
-                if (!strncmp(ff_mkv_image_mime_tags[i].str, attachments[j].mime,
-                             strlen(ff_mkv_image_mime_tags[i].str))) {
-                    st->codecpar->codec_id = ff_mkv_image_mime_tags[i].id;
+            for (i = 0; mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
+                if (!strncmp(mkv_image_mime_tags[i].str, attachments[j].mime,
+                             strlen(mkv_image_mime_tags[i].str))) {
+                    st->codecpar->codec_id = mkv_image_mime_tags[i].id;
                     break;
                 }
             }
@@ -2913,10 +2932,10 @@ static int matroska_read_header(AVFormatContext *s)
                 memcpy(st->codecpar->extradata, attachments[j].bin.data,
                        attachments[j].bin.size);
 
-                for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
-                    if (!strncmp(ff_mkv_mime_tags[i].str, attachments[j].mime,
-                                strlen(ff_mkv_mime_tags[i].str))) {
-                        st->codecpar->codec_id = ff_mkv_mime_tags[i].id;
+                for (i = 0; mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
+                    if (!strncmp(mkv_mime_tags[i].str, attachments[j].mime,
+                                strlen(mkv_mime_tags[i].str))) {
+                        st->codecpar->codec_id = mkv_mime_tags[i].id;
                         break;
                     }
                 }
