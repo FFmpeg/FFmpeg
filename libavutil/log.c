@@ -467,7 +467,7 @@ static void missing_feature_sample(int sample, void *avc, const char *msg,
            "been implemented.\n");
     if (sample)
         av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-               "of this file to ftp://upload.ffmpeg.org/incoming/ "
+               "of this file to https://streams.videolan.org/upload/ "
                "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
 }
 
