@@ -194,6 +194,8 @@ typedef struct DASHContext {
     int profile;
     int64_t target_latency;
     int target_latency_refid;
+    AVRational min_playback_rate;
+    AVRational max_playback_rate;
 } DASHContext;
 
 static struct codec_string {
@@ -1203,14 +1205,19 @@ static int write_manifest(AVFormatContext *s, int final)
         av_free(escaped);
     }
     avio_printf(out, "\t</ProgramInformation>\n");
+
+    avio_printf(out, "\t<ServiceDescription id=\"0\">\n");
     if (!final && c->target_latency && c->target_latency_refid >= 0) {
-        avio_printf(out, "\t<ServiceDescription id=\"0\">\n");
         avio_printf(out, "\t\t<Latency target=\"%"PRId64"\"", c->target_latency / 1000);
         if (s->nb_streams > 1)
             avio_printf(out, " referenceId=\"%d\"", c->target_latency_refid);
         avio_printf(out, "/>\n");
-        avio_printf(out, "\t</ServiceDescription>\n");
     }
+    if (av_cmp_q(c->min_playback_rate, (AVRational) {1, 1}) ||
+        av_cmp_q(c->max_playback_rate, (AVRational) {1, 1}))
+        avio_printf(out, "\t\t<PlaybackRate min=\"%.2f\" max=\"%.2f\"/>\n",
+                    av_q2d(c->min_playback_rate), av_q2d(c->max_playback_rate));
+    avio_printf(out, "\t</ServiceDescription>\n");
 
     if (c->window_size && s->nb_streams > 0 && c->streams[0].nb_segments > 0 && !c->use_template) {
         OutputStream *os = &c->streams[0];
@@ -1421,6 +1428,11 @@ static int dash_init(AVFormatContext *s)
     if (c->target_latency && !c->write_prft) {
         av_log(s, AV_LOG_WARNING, "Target latency option will be ignored as Producer Reference Time element will not be written\n");
         c->target_latency = 0;
+    }
+
+    if (av_cmp_q(c->max_playback_rate, c->min_playback_rate) < 0) {
+        av_log(s, AV_LOG_WARNING, "Minimum playback rate value is higer than the Maximum. Both will be ignored\n");
+        c->min_playback_rate = c->max_playback_rate = (AVRational) {1, 1};
     }
 
     av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
@@ -2370,6 +2382,8 @@ static const AVOption options[] = {
     { "dvb_dash", "DVB-DASH profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DVB }, 0, UINT_MAX, E, "mpd_profile"},
     { "http_opts", "HTTP protocol options", OFFSET(http_opts), AV_OPT_TYPE_DICT, { .str = NULL }, 0, 0, E },
     { "target_latency", "Set desired target latency for Low-latency dash", OFFSET(target_latency), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, E },
+    { "min_playback_rate", "Set desired minimum playback rate", OFFSET(min_playback_rate), AV_OPT_TYPE_RATIONAL, { .dbl = 1.0 }, 0.5, 1.5, E },
+    { "max_playback_rate", "Set desired maximum playback rate", OFFSET(max_playback_rate), AV_OPT_TYPE_RATIONAL, { .dbl = 1.0 }, 0.5, 1.5, E },
     { NULL },
 };
 

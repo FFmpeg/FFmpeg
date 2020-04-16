@@ -356,6 +356,14 @@ protocol. Applicable only for HTTP output.
 Set an intended target latency in seconds (fractional value can be set) for serving. Applicable only when @var{streaming} and @var{write_prft} options are enabled.
 This is an informative fields clients can use to measure the latency of the service.
 
+@item min_playback_rate @var{min_playback_rate}
+Set the minimum playback rate indicated as appropriate for the purposes of automatically
+adjusting playback latency and buffer occupancy during normal playback by clients.
+
+@item max_playback_rate @var{max_playback_rate}
+Set the maximum playback rate indicated as appropriate for the purposes of automatically
+adjusting playback latency and buffer occupancy during normal playback by clients.
+
 @end table
 
 @anchor{framecrc}
