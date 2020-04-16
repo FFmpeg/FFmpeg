@@ -182,3 +182,12 @@ uint32_t av_q2intfloat(AVRational q) {
 
     return sign<<31 | (150-shift)<<23 | (n - (1<<23));
 }
+
+AVRational av_gcd_q(AVRational a, AVRational b, int max_den, AVRational def)
+{
+    int64_t gcd, lcm;
+
+    gcd = av_gcd(a.den, b.den);
+    lcm = (a.den / gcd) * b.den;
+    return lcm < max_den ? av_make_q(av_gcd(a.num, b.num), lcm) : def;
+}
