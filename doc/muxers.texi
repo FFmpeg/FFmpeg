@@ -339,20 +339,20 @@ Enable Low-latency Dash by constraining the presence and values of some elements
 @item master_m3u8_publish_rate @var{master_m3u8_publish_rate}
 Publish master playlist repeatedly every after specified number of segment intervals.
 
-@item -write_prft @var{write_prft}
+@item write_prft @var{write_prft}
 Write Producer Reference Time elements on supported streams. This also enables writing
 prft boxes in the underlying muxer. Applicable only when the @var{utc_url} option is enabled.
 It's set to auto by default, in which case the muxer will attempt to enable it only in modes
 that require it.
 
-@item -mpd_profile @var{mpd_profile}
+@item mpd_profile @var{mpd_profile}
 Set one or more manifest profiles.
 
-@item -http_opts @var{http_opts}
+@item http_opts @var{http_opts}
 A :-separated list of key=value options to pass to the underlying HTTP
 protocol. Applicable only for HTTP output.
 
-@item -target_latency @var{target_latency}
+@item target_latency @var{target_latency}
 Set an intended target latency in seconds (fractional value can be set) for serving. Applicable only when @var{streaming} and @var{write_prft} options are enabled.
 This is an informative fields clients can use to measure the latency of the service.
 
