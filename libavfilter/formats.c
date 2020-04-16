@@ -373,6 +373,47 @@ const int64_t avfilter_all_channel_layouts[] = {
     -1
 };
 
+int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned rej)
+{
+    unsigned nb_formats, fmt, flags;
+    AVFilterFormats *formats = NULL;
+
+    while (1) {
+        nb_formats = 0;
+        for (fmt = 0;; fmt++) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+            if (!desc)
+                break;
+            flags = desc->flags;
+            if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
+                !(desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+                (desc->log2_chroma_w || desc->log2_chroma_h))
+                flags |= FF_PIX_FMT_FLAG_SW_FLAT_SUB;
+            if ((flags & (want | rej)) != want)
+                continue;
+            if (formats)
+                formats->formats[nb_formats] = fmt;
+            nb_formats++;
+        }
+        if (formats) {
+            av_assert0(formats->nb_formats == nb_formats);
+            *rfmts = formats;
+            return 0;
+        }
+        formats = av_mallocz(sizeof(*formats));
+        if (!formats)
+            return AVERROR(ENOMEM);
+        formats->nb_formats = nb_formats;
+        if (nb_formats) {
+            formats->formats = av_malloc_array(nb_formats, sizeof(*formats->formats));
+            if (!formats->formats) {
+                av_freep(&formats);
+                return AVERROR(ENOMEM);
+            }
+        }
+    }
+}
+
 // AVFilterFormats *avfilter_make_all_channel_layouts(void)
 // {
 //     return avfilter_make_format64_list(avfilter_all_channel_layouts);
