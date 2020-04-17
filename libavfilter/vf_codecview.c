@@ -33,6 +33,7 @@
 #include "libavutil/motion_vector.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "qp_table.h"
 #include "internal.h"
 
 #define MV_P_FOR  (1<<0)
@@ -219,8 +220,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterLink *outlink = ctx->outputs[0];
 
     if (s->qp) {
-        int qstride, qp_type;
-        int8_t *qp_table = av_frame_get_qp_table(frame, &qstride, &qp_type);
+        int qstride, qp_type, ret;
+        int8_t *qp_table;
+
+        ret = ff_qp_table_extract(frame, &qp_table, &qstride, NULL, &qp_type);
+        if (ret < 0) {
+            av_frame_free(&frame);
+            return ret;
+        }
 
         if (qp_table) {
             int x, y;
@@ -240,6 +247,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 pv += lzv;
             }
         }
+        av_freep(&qp_table);
     }
 
     if (s->mv || s->mv_type) {
