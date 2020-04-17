@@ -431,7 +431,7 @@ int av_bsf_list_append(AVBSFList *lst, AVBSFContext *bsf)
     return av_dynarray_add_nofree(&lst->bsfs, &lst->nb_bsfs, bsf);
 }
 
-int av_bsf_list_append2(AVBSFList *lst, const char *bsf_name, AVDictionary ** options)
+static int bsf_list_append_internal(AVBSFList *lst, const char *bsf_name, const char *options, AVDictionary ** options_dict)
 {
     int ret;
     const AVBitStreamFilter *filter;
@@ -445,8 +445,20 @@ int av_bsf_list_append2(AVBSFList *lst, const char *bsf_name, AVDictionary ** op
     if (ret < 0)
         return ret;
 
-    if (options) {
-        ret = av_opt_set_dict2(bsf, options, AV_OPT_SEARCH_CHILDREN);
+    if (options && filter->priv_class) {
+        const AVOption *opt = av_opt_next(bsf->priv_data, NULL);
+        const char * shorthand[2] = {NULL};
+
+        if (opt)
+            shorthand[0] = opt->name;
+
+        ret = av_opt_set_from_string(bsf->priv_data, options, shorthand, "=", ":");
+        if (ret < 0)
+            goto end;
+    }
+
+    if (options_dict) {
+        ret = av_opt_set_dict2(bsf, options_dict, AV_OPT_SEARCH_CHILDREN);
         if (ret < 0)
             goto end;
     }
@@ -458,6 +470,11 @@ end:
         av_bsf_free(&bsf);
 
     return ret;
+}
+
+int av_bsf_list_append2(AVBSFList *lst, const char *bsf_name, AVDictionary ** options)
+{
+    return bsf_list_append_internal(lst, bsf_name, NULL, options);
 }
 
 int av_bsf_list_finalize(AVBSFList **lst, AVBSFContext **bsf)
@@ -486,33 +503,15 @@ end:
     return ret;
 }
 
-static int bsf_parse_single(const char *str, AVBSFList *bsf_lst)
+static int bsf_parse_single(char *str, AVBSFList *bsf_lst)
 {
-    char *bsf_name, *bsf_options_str, *buf;
-    AVDictionary *bsf_options = NULL;
-    int ret = 0;
+    char *bsf_name, *bsf_options_str;
 
-    if (!(buf = av_strdup(str)))
-        return AVERROR(ENOMEM);
+    bsf_name = av_strtok(str, "=", &bsf_options_str);
+    if (!bsf_name)
+        return AVERROR(EINVAL);
 
-    bsf_name = av_strtok(buf, "=", &bsf_options_str);
-    if (!bsf_name) {
-        ret = AVERROR(EINVAL);
-        goto end;
-    }
-
-    if (bsf_options_str) {
-        ret = av_dict_parse_string(&bsf_options, bsf_options_str, "=", ":", 0);
-        if (ret < 0)
-            goto end;
-    }
-
-    ret = av_bsf_list_append2(bsf_lst, bsf_name, &bsf_options);
-
-end:
-    av_dict_free(&bsf_options);
-    av_free(buf);
-    return ret;
+    return bsf_list_append_internal(bsf_lst, bsf_name, bsf_options_str, NULL);
 }
 
 int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
