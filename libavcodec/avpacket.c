@@ -526,10 +526,10 @@ fail:
 int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **dict)
 {
     const uint8_t *end;
-    int ret = 0;
+    int ret;
 
     if (!dict || !data || !size)
-        return ret;
+        return 0;
     end = data + size;
     if (size && end[-1])
         return AVERROR_INVALIDDATA;
@@ -542,11 +542,11 @@ int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **di
 
         ret = av_dict_set(dict, key, val, 0);
         if (ret < 0)
-            break;
+            return ret;
         data = val + strlen(val) + 1;
     }
 
-    return ret;
+    return 0;
 }
 
 int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
