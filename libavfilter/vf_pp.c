@@ -26,7 +26,9 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
+
 #include "internal.h"
+#include "qp_table.h"
 
 #include "libpostproc/postprocess.h"
 
@@ -126,8 +128,9 @@ static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
     const int aligned_w = FFALIGN(outlink->w, 8);
     const int aligned_h = FFALIGN(outlink->h, 8);
     AVFrame *outbuf;
-    int qstride, qp_type;
-    int8_t *qp_table ;
+    int qstride = 0;
+    int8_t *qp_table = NULL;
+    int ret;
 
     outbuf = ff_get_video_buffer(outlink, aligned_w, aligned_h);
     if (!outbuf) {
@@ -137,7 +140,14 @@ static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
     av_frame_copy_props(outbuf, inbuf);
     outbuf->width  = inbuf->width;
     outbuf->height = inbuf->height;
-    qp_table = av_frame_get_qp_table(inbuf, &qstride, &qp_type);
+
+    ret = ff_qp_table_extract(inbuf, &qp_table, &qstride, NULL, NULL);
+    if (ret < 0) {
+        av_frame_free(&inbuf);
+        av_frame_free(&outbuf);
+        av_freep(&qp_table);
+        return ret;
+    }
 
     pp_postprocess((const uint8_t **)inbuf->data, inbuf->linesize,
                    outbuf->data,                 outbuf->linesize,
@@ -146,9 +156,10 @@ static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
                    qstride,
                    pp->modes[pp->mode_id],
                    pp->pp_ctx,
-                   outbuf->pict_type | (qp_type ? PP_PICT_TYPE_QP2 : 0));
+                   outbuf->pict_type | (qp_table ? PP_PICT_TYPE_QP2 : 0));
 
     av_frame_free(&inbuf);
+    av_freep(&qp_table);
     return ff_filter_frame(outlink, outbuf);
 }
 
