@@ -1302,7 +1302,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             break;
         }
         case MKTAG('i', 'C', 'C', 'P'): {
-            if (decode_iccp_chunk(s, length, p) < 0)
+            if ((ret = decode_iccp_chunk(s, length, p)) < 0)
                 goto fail;
             break;
         }
