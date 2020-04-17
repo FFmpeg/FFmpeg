@@ -65,8 +65,8 @@ typedef struct FSPPContext {
     int prev_q;
     uint8_t *src;
     int16_t *temp;
-    uint8_t *non_b_qp_table;
-    int non_b_qp_alloc_size;
+    int8_t  *non_b_qp_table;
+    int non_b_qp_stride;
     int use_bframe_qp;
 
     void (*store_slice)(uint8_t *dst, int16_t *src,

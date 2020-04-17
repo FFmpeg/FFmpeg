@@ -41,6 +41,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "qp_table.h"
 #include "vf_fspp.h"
 
 #define OFFSET(x) offsetof(FSPPContext, x)
@@ -526,13 +527,6 @@ static int config_input(AVFilterLink *inlink)
     if (!fspp->temp || !fspp->src)
         return AVERROR(ENOMEM);
 
-    if (!fspp->use_bframe_qp && !fspp->qp) {
-        fspp->non_b_qp_alloc_size = AV_CEIL_RSHIFT(inlink->w, 4) * AV_CEIL_RSHIFT(inlink->h, 4);
-        fspp->non_b_qp_table = av_calloc(fspp->non_b_qp_alloc_size, sizeof(*fspp->non_b_qp_table));
-        if (!fspp->non_b_qp_table)
-            return AVERROR(ENOMEM);
-    }
-
     fspp->store_slice  = store_slice_c;
     fspp->store_slice2 = store_slice2_c;
     fspp->mul_thrmat   = mul_thrmat_c;
@@ -554,8 +548,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out = in;
 
     int qp_stride = 0;
-    uint8_t *qp_table = NULL;
+    int8_t *qp_table = NULL;
     int i, bias;
+    int ret = 0;
     int custom_threshold_m[64];
 
     bias = (1 << 4) + fspp->strength;
@@ -582,38 +577,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
      * the quantizers from the B-frames (B-frames often have a higher QP), we
      * need to save the qp table from the last non B-frame; this is what the
      * following code block does */
-    if (!fspp->qp) {
-        qp_table = av_frame_get_qp_table(in, &qp_stride, &fspp->qscale_type);
+    if (!fspp->qp && (fspp->use_bframe_qp || in->pict_type != AV_PICTURE_TYPE_B)) {
+        ret = ff_qp_table_extract(in, &qp_table, &qp_stride, NULL, &fspp->qscale_type);
+        if (ret < 0) {
+            av_frame_free(&in);
+            return ret;
+        }
 
-        if (qp_table && !fspp->use_bframe_qp && in->pict_type != AV_PICTURE_TYPE_B) {
-            int w, h;
-
-            /* if the qp stride is not set, it means the QP are only defined on
-             * a line basis */
-           if (!qp_stride) {
-                w = AV_CEIL_RSHIFT(inlink->w, 4);
-                h = 1;
-            } else {
-                w = qp_stride;
-                h = AV_CEIL_RSHIFT(inlink->h, 4);
-            }
-            if (w * h > fspp->non_b_qp_alloc_size) {
-                int ret = av_reallocp_array(&fspp->non_b_qp_table, w, h);
-                if (ret < 0) {
-                    fspp->non_b_qp_alloc_size = 0;
-                    return ret;
-                }
-                fspp->non_b_qp_alloc_size = w * h;
-            }
-
-            av_assert0(w * h <= fspp->non_b_qp_alloc_size);
-            memcpy(fspp->non_b_qp_table, qp_table, w * h);
+        if (!fspp->use_bframe_qp && in->pict_type != AV_PICTURE_TYPE_B) {
+            av_freep(&fspp->non_b_qp_table);
+            fspp->non_b_qp_table  = qp_table;
+            fspp->non_b_qp_stride = qp_stride;
         }
     }
 
     if (fspp->log2_count && !ctx->is_disabled) {
-        if (!fspp->use_bframe_qp && fspp->non_b_qp_table)
+        if (!fspp->use_bframe_qp && fspp->non_b_qp_table) {
             qp_table = fspp->non_b_qp_table;
+            qp_stride = fspp->non_b_qp_stride;
+        }
 
         if (qp_table || fspp->qp) {
             const int cw = AV_CEIL_RSHIFT(inlink->w, fspp->hsub);
@@ -628,7 +610,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 out = ff_get_video_buffer(outlink, aligned_w, aligned_h);
                 if (!out) {
                     av_frame_free(&in);
-                    return AVERROR(ENOMEM);
+                    ret = AVERROR(ENOMEM);
+                    goto finish;
                 }
                 av_frame_copy_props(out, in);
                 out->width = in->width;
@@ -652,7 +635,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 inlink->w, inlink->h);
         av_frame_free(&in);
     }
-    return ff_filter_frame(outlink, out);
+    ret = ff_filter_frame(outlink, out);
+finish:
+    if (qp_table != fspp->non_b_qp_table)
+        av_freep(&qp_table);
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
