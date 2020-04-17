@@ -39,7 +39,7 @@ typedef struct SPPContext {
     uint16_t *temp;
     AVDCT *dct;
     int8_t *non_b_qp_table;
-    int non_b_qp_alloc_size;
+    int non_b_qp_stride;
     int use_bframe_qp;
     int hsub, vsub;
 

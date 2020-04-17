@@ -37,6 +37,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "qp_table.h"
 #include "vf_spp.h"
 
 enum mode {
@@ -375,47 +376,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out = in;
     int qp_stride = 0;
-    const int8_t *qp_table = NULL;
+    int8_t *qp_table = NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int depth = desc->comp[0].depth;
+    int ret = 0;
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we
      * need to save the qp table from the last non B-frame; this is what the
      * following code block does */
-    if (!s->qp) {
-        qp_table = av_frame_get_qp_table(in, &qp_stride, &s->qscale_type);
+    if (!s->qp && (s->use_bframe_qp || in->pict_type != AV_PICTURE_TYPE_B)) {
+        ret = ff_qp_table_extract(in, &qp_table, &qp_stride, NULL, &s->qscale_type);
+        if (ret < 0) {
+            av_frame_free(&in);
+            return ret;
+        }
 
-        if (qp_table && !s->use_bframe_qp && in->pict_type != AV_PICTURE_TYPE_B) {
-            int w, h;
-
-            /* if the qp stride is not set, it means the QP are only defined on
-             * a line basis */
-            if (!qp_stride) {
-                w = AV_CEIL_RSHIFT(inlink->w, 4);
-                h = 1;
-            } else {
-                w = qp_stride;
-                h = AV_CEIL_RSHIFT(inlink->h, 4);
-            }
-
-            if (w * h > s->non_b_qp_alloc_size) {
-                int ret = av_reallocp_array(&s->non_b_qp_table, w, h);
-                if (ret < 0) {
-                    s->non_b_qp_alloc_size = 0;
-                    return ret;
-                }
-                s->non_b_qp_alloc_size = w * h;
-            }
-
-            av_assert0(w * h <= s->non_b_qp_alloc_size);
-            memcpy(s->non_b_qp_table, qp_table, w * h);
+        if (!s->use_bframe_qp && in->pict_type != AV_PICTURE_TYPE_B) {
+            av_freep(&s->non_b_qp_table);
+            s->non_b_qp_table  = qp_table;
+            s->non_b_qp_stride = qp_stride;
         }
     }
 
     if (s->log2_count && !ctx->is_disabled) {
-        if (!s->use_bframe_qp && s->non_b_qp_table)
-            qp_table = s->non_b_qp_table;
+        if (!s->use_bframe_qp && s->non_b_qp_table) {
+            qp_table  = s->non_b_qp_table;
+            qp_stride = s->non_b_qp_stride;
+        }
 
         if (qp_table || s->qp) {
             const int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
@@ -430,7 +418,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 out = ff_get_video_buffer(outlink, aligned_w, aligned_h);
                 if (!out) {
                     av_frame_free(&in);
-                    return AVERROR(ENOMEM);
+                    ret = AVERROR(ENOMEM);
+                    goto finish;
                 }
                 av_frame_copy_props(out, in);
                 out->width  = in->width;
@@ -454,7 +443,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 inlink->w, inlink->h);
         av_frame_free(&in);
     }
-    return ff_filter_frame(outlink, out);
+    ret = ff_filter_frame(outlink, out);
+finish:
+    if (qp_table != s->non_b_qp_table)
+        av_freep(&qp_table);
+    return ret;
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
