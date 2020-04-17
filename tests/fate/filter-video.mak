@@ -573,9 +573,9 @@ fate-filter-pp4: CMD = video_filter "pp=be/ci"
 fate-filter-pp5: CMD = video_filter "pp=md"
 fate-filter-pp6: CMD = video_filter "pp=be/fd"
 
-#FATE_FILTER_VSYNTH-$(CONFIG_PP7_FILTER) += fate-filter-pp7
+FATE_FILTER_VSYNTH-$(CONFIG_PP7_FILTER) += fate-filter-pp7
 fate-filter-pp7: fate-vsynth1-mpeg4-qprd
-fate-filter-pp7: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "pp7"
+fate-filter-pp7: CMD = framecrc -flags bitexact -export_side_data venc_params -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "pp7"
 
 FATE_FILTER_VSYNTH-$(CONFIG_SPP_FILTER) += fate-filter-spp
 fate-filter-spp: fate-vsynth1-mpeg4-qprd
