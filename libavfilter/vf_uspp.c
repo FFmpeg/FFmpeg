@@ -33,6 +33,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "qp_table.h"
 #include "avfilter.h"
 
 #define MAX_LEVEL 8 /* quality levels */
@@ -52,8 +53,8 @@ typedef struct USPPContext {
     AVCodecContext *avctx_enc[BLOCK*BLOCK];
     AVFrame *frame;
     AVFrame *frame_dec;
-    uint8_t *non_b_qp_table;
-    int non_b_qp_alloc_size;
+    int8_t *non_b_qp_table;
+    int non_b_qp_stride;
     int use_bframe_qp;
 } USPPContext;
 
@@ -386,45 +387,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out = in;
 
     int qp_stride = 0;
-    uint8_t *qp_table = NULL;
+    int8_t *qp_table = NULL;
+    int ret = 0;
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we
      * need to save the qp table from the last non B-frame; this is what the
      * following code block does */
-    if (!uspp->qp) {
-        qp_table = av_frame_get_qp_table(in, &qp_stride, &uspp->qscale_type);
+    if (!uspp->qp && (uspp->use_bframe_qp || in->pict_type != AV_PICTURE_TYPE_B)) {
+        ret = ff_qp_table_extract(in, &qp_table, &qp_stride, NULL, &uspp->qscale_type);
+        if (ret < 0) {
+            av_frame_free(&in);
+            return ret;
+        }
 
-        if (qp_table && !uspp->use_bframe_qp && in->pict_type != AV_PICTURE_TYPE_B) {
-            int w, h;
-
-            /* if the qp stride is not set, it means the QP are only defined on
-             * a line basis */
-            if (!qp_stride) {
-                w = AV_CEIL_RSHIFT(inlink->w, 4);
-                h = 1;
-            } else {
-                w = qp_stride;
-                h = AV_CEIL_RSHIFT(inlink->h, 4);
-            }
-
-            if (w * h > uspp->non_b_qp_alloc_size) {
-                int ret = av_reallocp_array(&uspp->non_b_qp_table, w, h);
-                if (ret < 0) {
-                    uspp->non_b_qp_alloc_size = 0;
-                    return ret;
-                }
-                uspp->non_b_qp_alloc_size = w * h;
-            }
-
-            av_assert0(w * h <= uspp->non_b_qp_alloc_size);
-            memcpy(uspp->non_b_qp_table, qp_table, w * h);
+        if (!uspp->use_bframe_qp && in->pict_type != AV_PICTURE_TYPE_B) {
+            av_freep(&uspp->non_b_qp_table);
+            uspp->non_b_qp_table  = qp_table;
+            uspp->non_b_qp_stride = qp_stride;
         }
     }
 
     if (uspp->log2_count && !ctx->is_disabled) {
-        if (!uspp->use_bframe_qp && uspp->non_b_qp_table)
+        if (!uspp->use_bframe_qp && uspp->non_b_qp_table) {
             qp_table = uspp->non_b_qp_table;
+            qp_stride = uspp->non_b_qp_stride;
+        }
 
         if (qp_table || uspp->qp) {
 
@@ -456,7 +444,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 inlink->w, inlink->h);
         av_frame_free(&in);
     }
-    return ff_filter_frame(outlink, out);
+    ret = ff_filter_frame(outlink, out);
+    if (qp_table != uspp->non_b_qp_table)
+        av_freep(&qp_table);
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
