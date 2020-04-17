@@ -270,7 +270,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p = data;
     AVFrame * const ref = a->ref;
     uint8_t* outdata;
-    int delta, ret;
+    int delta, intra, ret;
     int pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
 
@@ -289,7 +289,8 @@ static int decode_frame(AVCodecContext *avctx,
     bytestream2_skip(&a->buffer, 1);
 
     delta = bytestream2_get_byte(&a->buffer);
-    if(delta == 0x10) {
+    intra = delta == 0x10;
+    if (intra) {
         qpeg_decode_intra(a, outdata, p->linesize[0], avctx->width, avctx->height);
     } else {
         qpeg_decode_inter(a, outdata, p->linesize[0], avctx->width, avctx->height, delta, ctable, ref->data[0]);
@@ -307,6 +308,9 @@ static int decode_frame(AVCodecContext *avctx,
     av_frame_unref(ref);
     if ((ret = av_frame_ref(ref, p)) < 0)
         return ret;
+
+    p->key_frame = intra;
+    p->pict_type = intra ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     *got_frame      = 1;
 
