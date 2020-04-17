@@ -2330,6 +2330,7 @@ Crest_factor
 Flat_factor
 Peak_count
 Noise_floor
+Noise_floor_count
 Bit_depth
 Dynamic_range
 Zero_crossings
@@ -2353,6 +2354,7 @@ RMS_trough
 Flat_factor
 Peak_count
 Noise_floor
+Noise_floor_count
 Bit_depth
 Number_of_samples
 Number_of_NaNs
@@ -2426,6 +2428,10 @@ Number of occasions (not the number of samples) that the signal attained either
 
 @item Noise floor dB
 Minimum local peak measured in dBFS over a short window.
+
+@item Noise floor count
+Number of occasions (not the number of samples) that the signal attained
+@var{Noise floor}.
 
 @item Bit depth
 Overall bit depth of audio. Number of bits used for each sample.
