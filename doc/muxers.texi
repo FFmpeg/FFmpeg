@@ -648,6 +648,9 @@ Set the starting sequence numbers according to @var{start_number} option value.
 @item epoch
 The start number will be the seconds since epoch (1970-01-01 00:00:00)
 
+@item epoch_us
+The start number will be the microseconds since epoch (1970-01-01 00:00:00)
+
 @item datetime
 The start number will be based on the current date/time as YYYYmmddHHMMSS. e.g. 20161231235759.
 
