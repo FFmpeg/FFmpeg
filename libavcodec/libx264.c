@@ -447,6 +447,9 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
             return ret;
     } while (!ret && !frame && x264_encoder_delayed_frames(x4->enc));
 
+    if (!ret)
+        return 0;
+
     pkt->pts = pic_out.i_pts;
     pkt->dts = pic_out.i_dts;
 
