@@ -668,7 +668,7 @@ static inline int16_t adpcm_argo_expand_nibble(ADPCMChannelStatus *cs, int nibbl
 }
 
 /**
- * Get the number of samples that will be decoded from the packet.
+ * Get the number of samples (per channel) that will be decoded from the packet.
  * In one case, this is actually the maximum number of samples possible to
  * decode with the given buf_size.
  *
