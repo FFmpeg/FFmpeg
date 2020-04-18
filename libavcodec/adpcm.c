@@ -1271,14 +1271,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_APC:
-        while (bytestream2_get_bytes_left(&gb) > 0) {
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
             int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],  v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_SSI:
-        while (bytestream2_get_bytes_left(&gb) > 0) {
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
             int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_qt_expand_nibble(&c->status[0],  v >> 4  );
             *samples++ = adpcm_ima_qt_expand_nibble(&c->status[st], v & 0x0F);
@@ -1305,7 +1305,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_OKI:
-        while (bytestream2_get_bytes_left(&gb) > 0) {
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
             int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_oki_expand_nibble(&c->status[0],  v >> 4  );
             *samples++ = adpcm_ima_oki_expand_nibble(&c->status[st], v & 0x0F);
