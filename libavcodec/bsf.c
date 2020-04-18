@@ -533,11 +533,7 @@ int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
         goto end;
     }
 
-    while (1) {
-        bsf_str = av_strtok(buf, ",", &saveptr);
-        if (!bsf_str)
-            break;
-
+    while (bsf_str = av_strtok(buf, ",", &saveptr)) {
         ret = bsf_parse_single(bsf_str, lst);
         if (ret < 0)
             goto end;
