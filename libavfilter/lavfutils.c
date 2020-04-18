@@ -31,7 +31,7 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     AVCodecContext *codec_ctx = NULL;
     AVCodecParameters *par;
     AVFrame *frame = NULL;
-    int frame_decoded, ret = 0;
+    int ret = 0;
     AVPacket pkt;
     AVDictionary *opt=NULL;
 
@@ -86,12 +86,16 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
         goto end;
     }
 
-    ret = avcodec_decode_video2(codec_ctx, frame, &frame_decoded, &pkt);
+    ret = avcodec_send_packet(codec_ctx, &pkt);
     av_packet_unref(&pkt);
-    if (ret < 0 || !frame_decoded) {
+    if (ret < 0) {
+        av_log(log_ctx, AV_LOG_ERROR, "Error submitting a packet to decoder\n");
+        goto end;
+    }
+
+    ret = avcodec_receive_frame(codec_ctx, frame);
+    if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Failed to decode image from file\n");
-        if (ret >= 0)
-            ret = -1;
         goto end;
     }
 
