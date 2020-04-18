@@ -550,6 +550,9 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case X265_TYPE_BREF:
         pict_type = AV_PICTURE_TYPE_B;
         break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unknown picture type encountered.\n");
+        return AVERROR_EXTERNAL;
     }
 
 #if FF_API_CODED_FRAME
