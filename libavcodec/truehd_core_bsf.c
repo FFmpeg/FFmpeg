@@ -31,8 +31,6 @@ typedef struct AccessUnit {
 } AccessUnit;
 
 typedef struct TrueHDCoreContext {
-    const AVClass *class;
-
     MLPHeaderInfo hdr;
 } TrueHDCoreContext;
 
