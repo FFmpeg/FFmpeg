@@ -460,9 +460,8 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
     SPPContext *s = ctx->priv;
     int ret;
 
-    s->avctx = avcodec_alloc_context3(NULL);
     s->dct = avcodec_dct_alloc();
-    if (!s->avctx || !s->dct)
+    if (!s->dct)
         return AVERROR(ENOMEM);
 
     if (opts) {
@@ -489,10 +488,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->temp);
     av_freep(&s->src);
-    if (s->avctx) {
-        avcodec_close(s->avctx);
-        av_freep(&s->avctx);
-    }
     av_freep(&s->dct);
     av_freep(&s->non_b_qp_table);
 }
