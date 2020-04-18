@@ -476,7 +476,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         pict_type = AV_PICTURE_TYPE_B;
         break;
     default:
-        pict_type = AV_PICTURE_TYPE_NONE;
+        av_log(ctx, AV_LOG_ERROR, "Unknown picture type encountered.\n");
+        return AVERROR_EXTERNAL;
     }
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
