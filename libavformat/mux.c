@@ -811,7 +811,7 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
     AVStream *st = s->streams[pkt->stream_index];
-    int i, ret;
+    int ret;
 
     if (!(s->flags & AVFMT_FLAG_AUTO_BSF))
         return 1;
@@ -825,8 +825,8 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
         }
     }
 
-    for (i = 0; i < st->internal->nb_bsfcs; i++) {
-        AVBSFContext *ctx = st->internal->bsfcs[i];
+    if (st->internal->bsfc) {
+        AVBSFContext *ctx = st->internal->bsfc;
         // TODO: when any bitstream filter requires flushing at EOF, we'll need to
         // flush each stream's BSF chain on write_trailer.
         if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {

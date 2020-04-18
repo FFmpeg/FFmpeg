@@ -2325,10 +2325,8 @@ static int dash_check_bitstream(struct AVFormatContext *s, const AVPacket *avpkt
         if (ret == 1) {
             AVStream *st = s->streams[avpkt->stream_index];
             AVStream *ost = oc->streams[0];
-            st->internal->bsfcs = ost->internal->bsfcs;
-            st->internal->nb_bsfcs = ost->internal->nb_bsfcs;
-            ost->internal->bsfcs = NULL;
-            ost->internal->nb_bsfcs = 0;
+            st->internal->bsfc = ost->internal->bsfc;
+            ost->internal->bsfc = NULL;
         }
         return ret;
     }
