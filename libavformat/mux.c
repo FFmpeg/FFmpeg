@@ -1082,8 +1082,8 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
         return ff_interleave_packet_per_dts(s, out, in, flush);
 }
 
-static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
-    AVStream *st = s->streams[pkt->stream_index];
+static int check_bitstream(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
     int ret;
 
     if (!(s->flags & AVFMT_FLAG_AUTO_BSF))
@@ -1098,30 +1098,6 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
         }
     }
 
-    if (st->internal->bsfc) {
-        AVBSFContext *ctx = st->internal->bsfc;
-        // TODO: when any bitstream filter requires flushing at EOF, we'll need to
-        // flush each stream's BSF chain on write_trailer.
-        if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                    "Failed to send packet to filter %s for stream %d\n",
-                    ctx->filter->name, pkt->stream_index);
-            return ret;
-        }
-        // TODO: when any automatically-added bitstream filter is generating multiple
-        // output packets for a single input one, we'll need to call this in a loop
-        // and write each output packet.
-        if ((ret = av_bsf_receive_packet(ctx, pkt)) < 0) {
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-                return 0;
-            av_log(ctx, AV_LOG_ERROR,
-                    "Failed to receive packet from filter %s for stream %d\n",
-                    ctx->filter->name, pkt->stream_index);
-            if (s->error_recognition & AV_EF_EXPLODE)
-                return ret;
-            return 0;
-        }
-    }
     return 1;
 }
 
@@ -1166,6 +1142,38 @@ static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, 
     }
 }
 
+static int write_packets_from_bsfs(AVFormatContext *s, AVStream *st, AVPacket *pkt, int interleaved)
+{
+    AVBSFContext *bsfc = st->internal->bsfc;
+    int ret;
+
+    if ((ret = av_bsf_send_packet(bsfc, pkt)) < 0) {
+        av_log(s, AV_LOG_ERROR,
+                "Failed to send packet to filter %s for stream %d\n",
+                bsfc->filter->name, st->index);
+        return ret;
+    }
+
+    do {
+        ret = av_bsf_receive_packet(bsfc, pkt);
+        if (ret < 0) {
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                return 0;
+            av_log(s, AV_LOG_ERROR, "Error applying bitstream filters to an output "
+                   "packet for stream #%d: %s\n", st->index, av_err2str(ret));
+            if (!(s->error_recognition & AV_EF_EXPLODE) && ret != AVERROR(ENOMEM))
+                continue;
+            return ret;
+        }
+        av_packet_rescale_ts(pkt, bsfc->time_base_out, st->time_base);
+        ret = write_packet_common(s, st, pkt, interleaved);
+        if (ret >= 0 && !interleaved) // a successful write_packet_common already unrefed pkt for interleaved
+            av_packet_unref(pkt);
+    } while (ret >= 0);
+
+    return ret;
+}
+
 static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleaved)
 {
     AVStream *st = s->streams[pkt->stream_index];
@@ -1173,11 +1181,15 @@ static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleav
     if (ret < 0)
         return ret;
 
-    ret = do_packet_auto_bsf(s, pkt);
-    if (ret <= 0)
+    ret = check_bitstream(s, st, pkt);
+    if (ret < 0)
         return ret;
 
-    return write_packet_common(s, st, pkt, interleaved);
+    if (st->internal->bsfc) {
+        return write_packets_from_bsfs(s, st, pkt, interleaved);
+    } else {
+        return write_packet_common(s, st, pkt, interleaved);
+    }
 }
 
 int av_write_frame(AVFormatContext *s, AVPacket *in)
@@ -1243,9 +1255,22 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
 int av_write_trailer(AVFormatContext *s)
 {
-    int ret, i;
+    int i, ret1, ret = 0;
+    AVPacket pkt = {0};
+    av_init_packet(&pkt);
 
-    ret = interleaved_write_packet(s, NULL, 1);
+    for (i = 0; i < s->nb_streams; i++) {
+        if (s->streams[i]->internal->bsfc) {
+            ret1 = write_packets_from_bsfs(s, s->streams[i], &pkt, 1/*interleaved*/);
+            if (ret1 < 0)
+                av_packet_unref(&pkt);
+            if (ret >= 0)
+                ret = ret1;
+        }
+    }
+    ret1 = interleaved_write_packet(s, NULL, 1);
+    if (ret >= 0)
+        ret = ret1;
 
     if (s->oformat->write_trailer) {
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
