@@ -22,7 +22,7 @@
 
 function ff_hscale_8_to_15_neon, export=1
         sbfiz               x7, x6, #1, #32             // filterSize*2 (*2 because int16)
-1:      ldr                 w18, [x5], #4               // filterPos[idx]
+1:      ldr                 w8, [x5], #4                // filterPos[idx]
         ldr                 w0, [x5], #4                // filterPos[idx + 1]
         ldr                 w11, [x5], #4               // filterPos[idx + 2]
         ldr                 w9, [x5], #4                // filterPos[idx + 3]
@@ -34,14 +34,14 @@ function ff_hscale_8_to_15_neon, export=1
         movi                v1.2D, #0                   // val sum part 2 (for dst[1])
         movi                v2.2D, #0                   // val sum part 3 (for dst[2])
         movi                v3.2D, #0                   // val sum part 4 (for dst[3])
-        add                 x17, x3, w18, UXTW          // srcp + filterPos[0]
-        add                 x18, x3, w0, UXTW           // srcp + filterPos[1]
+        add                 x17, x3, w8, UXTW           // srcp + filterPos[0]
+        add                 x8,  x3, w0, UXTW           // srcp + filterPos[1]
         add                 x0, x3, w11, UXTW           // srcp + filterPos[2]
         add                 x11, x3, w9, UXTW           // srcp + filterPos[3]
         mov                 w15, w6                     // filterSize counter
 2:      ld1                 {v4.8B}, [x17], #8          // srcp[filterPos[0] + {0..7}]
         ld1                 {v5.8H}, [x16], #16         // load 8x16-bit filter values, part 1
-        ld1                 {v6.8B}, [x18], #8          // srcp[filterPos[1] + {0..7}]
+        ld1                 {v6.8B}, [x8], #8           // srcp[filterPos[1] + {0..7}]
         ld1                 {v7.8H}, [x12], #16         // load 8x16-bit at filter+filterSize
         uxtl                v4.8H, v4.8B                // unpack part 1 to 16-bit
         smlal               v0.4S, v4.4H, v5.4H         // v0 accumulates srcp[filterPos[0] + {0..3}] * filter[{0..3}]
