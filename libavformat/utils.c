@@ -3092,6 +3092,8 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         } else if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             ret = avcodec_decode_subtitle2(avctx, &subtitle,
                                            &got_picture, &pkt);
+            if (got_picture)
+                avsubtitle_free(&subtitle);
             if (ret >= 0)
                 pkt.size = 0;
         }
