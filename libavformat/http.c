@@ -786,6 +786,7 @@ static int parse_set_cookie_expiry_time(const char *exp_str, struct tm *buf)
 static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
 {
     char *param, *next_param, *cstr, *back;
+    char *saveptr = NULL;
 
     if (!set_cookie[0])
         return 0;
@@ -803,8 +804,9 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
     }
 
     next_param = cstr;
-    while ((param = av_strtok(next_param, ";", &next_param))) {
+    while ((param = av_strtok(next_param, ";", &saveptr))) {
         char *name, *value;
+        next_param = NULL;
         param += strspn(param, WHITESPACES);
         if ((name = av_strtok(param, "=", &value))) {
             if (av_dict_set(dict, name, value, 0) < 0) {
@@ -1064,6 +1066,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     // Set-Cookie fields will result in multiple values delimited by a newline
     int ret = 0;
     char *cookie, *set_cookies, *next;
+    char *saveptr = NULL;
 
     // destroy any cookies in the dictionary.
     av_dict_free(&s->cookie_dict);
@@ -1076,10 +1079,11 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         return AVERROR(ENOMEM);
 
     *cookies = NULL;
-    while ((cookie = av_strtok(next, "\n", &next)) && !ret) {
+    while ((cookie = av_strtok(next, "\n", &saveptr)) && !ret) {
         AVDictionary *cookie_params = NULL;
         AVDictionaryEntry *cookie_entry, *e;
 
+        next = NULL;
         // store the cookie in a dict in case it is updated in the response
         if (parse_cookie(s, cookie, &s->cookie_dict))
             av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
