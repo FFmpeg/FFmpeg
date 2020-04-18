@@ -333,15 +333,15 @@ static int ftp_passive_mode(FTPContext *s)
     *end  = '\0';
     /* skip ip */
     if (!av_strtok(start, ",", &end)) goto fail;
-    if (!av_strtok(end, ",", &end)) goto fail;
-    if (!av_strtok(end, ",", &end)) goto fail;
-    if (!av_strtok(end, ",", &end)) goto fail;
+    if (!av_strtok(NULL, ",", &end)) goto fail;
+    if (!av_strtok(NULL, ",", &end)) goto fail;
+    if (!av_strtok(NULL, ",", &end)) goto fail;
 
     /* parse port number */
-    start = av_strtok(end, ",", &end);
+    start = av_strtok(NULL, ",", &end);
     if (!start) goto fail;
     s->server_data_port = atoi(start) * 256;
-    start = av_strtok(end, ",", &end);
+    start = av_strtok(NULL, ",", &end);
     if (!start) goto fail;
     s->server_data_port += atoi(start);
     ff_dlog(s, "Server data port: %d\n", s->server_data_port);
@@ -963,8 +963,10 @@ static int ftp_parse_entry_nlst(char *line, AVIODirEntry *next)
 static int ftp_parse_entry_mlsd(char *mlsd, AVIODirEntry *next)
 {
     char *fact, *value;
+    char *saveptr = NULL, *p = mlsd;
     ff_dlog(NULL, "%s\n", mlsd);
-    while(fact = av_strtok(mlsd, ";", &mlsd)) {
+    while(fact = av_strtok(p, ";", &saveptr)) {
+        p = NULL;
         if (fact[0] == ' ') {
             next->name = av_strdup(&fact[1]);
             continue;
