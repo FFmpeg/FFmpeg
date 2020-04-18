@@ -62,6 +62,7 @@ version <next>:
 - tmedian filter
 - maskedthreshold filter
 - Support for muxing pcm and pgs in m2ts
+- Cunning Developments ADPCM decoder
 
 
 version 4.2:
