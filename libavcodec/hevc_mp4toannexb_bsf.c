@@ -161,6 +161,11 @@ static int hevc_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         for (i = 0; i < ctx->length_size; i++)
             nalu_size = (nalu_size << 8) | bytestream2_get_byte(&gb);
 
+        if (nalu_size < 2) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
         nalu_type = (bytestream2_peek_byte(&gb) >> 1) & 0x3f;
 
         /* prepend extradata to IRAP frames */
