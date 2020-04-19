@@ -1617,6 +1617,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             char url[1024], namebuf[50], optbuf[20] = "";
             struct sockaddr_storage addr;
             int port, ttl;
+            AVDictionary *opts = map_to_opts(rt);
 
             if (reply->transports[0].destination.ss_family) {
                 addr      = reply->transports[0].destination;
@@ -1633,8 +1634,11 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                         namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "%s", optbuf);
-            if (ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                           &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL) < 0) {
+            err = ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
+                           &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
+            av_dict_free(&opts);
+
+            if (err < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
