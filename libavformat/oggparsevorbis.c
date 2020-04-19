@@ -386,7 +386,12 @@ static int vorbis_header(AVFormatContext *s, int idx)
             }
         }
     } else {
-        int ret = fixup_vorbis_headers(s, priv, &st->codecpar->extradata);
+        int ret;
+
+        if (priv->vp)
+             return AVERROR_INVALIDDATA;
+
+        ret = fixup_vorbis_headers(s, priv, &st->codecpar->extradata);
         if (ret < 0) {
             st->codecpar->extradata_size = 0;
             return ret;
