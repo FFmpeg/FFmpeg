@@ -46,20 +46,20 @@ function ff_hscale_8_to_15_neon, export=1
         uxtl                v4.8H, v4.8B                // unpack part 1 to 16-bit
         smlal               v0.4S, v4.4H, v5.4H         // v0 accumulates srcp[filterPos[0] + {0..3}] * filter[{0..3}]
         smlal2              v0.4S, v4.8H, v5.8H         // v0 accumulates srcp[filterPos[0] + {4..7}] * filter[{4..7}]
-        ld1                 {v8.8B}, [x0], #8           // srcp[filterPos[2] + {0..7}]
-        ld1                 {v9.8H}, [x13], #16         // load 8x16-bit at filter+2*filterSize
+        ld1                 {v16.8B}, [x0], #8          // srcp[filterPos[2] + {0..7}]
+        ld1                 {v17.8H}, [x13], #16        // load 8x16-bit at filter+2*filterSize
         uxtl                v6.8H, v6.8B                // unpack part 2 to 16-bit
         smlal               v1.4S, v6.4H, v7.4H         // v1 accumulates srcp[filterPos[1] + {0..3}] * filter[{0..3}]
-        uxtl                v8.8H, v8.8B                // unpack part 3 to 16-bit
-        smlal               v2.4S, v8.4H, v9.4H         // v2 accumulates srcp[filterPos[2] + {0..3}] * filter[{0..3}]
-        smlal2              v2.4S, V8.8H, v9.8H         // v2 accumulates srcp[filterPos[2] + {4..7}] * filter[{4..7}]
-        ld1                 {v10.8B}, [x11], #8         // srcp[filterPos[3] + {0..7}]
+        uxtl                v16.8H, v16.8B              // unpack part 3 to 16-bit
+        smlal               v2.4S, v16.4H, v17.4H       // v2 accumulates srcp[filterPos[2] + {0..3}] * filter[{0..3}]
+        smlal2              v2.4S, v16.8H, v17.8H       // v2 accumulates srcp[filterPos[2] + {4..7}] * filter[{4..7}]
+        ld1                 {v18.8B}, [x11], #8         // srcp[filterPos[3] + {0..7}]
         smlal2              v1.4S, v6.8H, v7.8H         // v1 accumulates srcp[filterPos[1] + {4..7}] * filter[{4..7}]
-        ld1                 {v11.8H}, [x4], #16         // load 8x16-bit at filter+3*filterSize
+        ld1                 {v19.8H}, [x4], #16         // load 8x16-bit at filter+3*filterSize
         subs                w15, w15, #8                // j -= 8: processed 8/filterSize
-        uxtl                v10.8H, v10.8B              // unpack part 4 to 16-bit
-        smlal               v3.4S, v10.4H, v11.4H       // v3 accumulates srcp[filterPos[3] + {0..3}] * filter[{0..3}]
-        smlal2              v3.4S, v10.8H, v11.8H       // v3 accumulates srcp[filterPos[3] + {4..7}] * filter[{4..7}]
+        uxtl                v18.8H, v18.8B              // unpack part 4 to 16-bit
+        smlal               v3.4S, v18.4H, v19.4H       // v3 accumulates srcp[filterPos[3] + {0..3}] * filter[{0..3}]
+        smlal2              v3.4S, v18.8H, v19.8H       // v3 accumulates srcp[filterPos[3] + {4..7}] * filter[{4..7}]
         b.gt                2b                          // inner loop if filterSize not consumed completely
         addp                v0.4S, v0.4S, v0.4S         // part0 horizontal pair adding
         addp                v1.4S, v1.4S, v1.4S         // part1 horizontal pair adding
