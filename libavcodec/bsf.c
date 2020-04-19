@@ -28,6 +28,8 @@
 #include "avcodec.h"
 #include "bsf.h"
 
+#define IS_EMPTY(pkt) (!(pkt)->data && !(pkt)->side_data_elems)
+
 struct AVBSFInternal {
     AVPacket *buffer_pkt;
     int eof;
@@ -195,7 +197,7 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
     AVBSFInternal *bsfi = ctx->internal;
     int ret;
 
-    if (!pkt || (!pkt->data && !pkt->side_data_elems)) {
+    if (!pkt || IS_EMPTY(pkt)) {
         bsfi->eof = 1;
         return 0;
     }
@@ -205,8 +207,7 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
-    if (bsfi->buffer_pkt->data ||
-        bsfi->buffer_pkt->side_data_elems)
+    if (!IS_EMPTY(bsfi->buffer_pkt))
         return AVERROR(EAGAIN);
 
     ret = av_packet_make_refcounted(pkt);
@@ -230,8 +231,7 @@ int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt)
     if (bsfi->eof)
         return AVERROR_EOF;
 
-    if (!bsfi->buffer_pkt->data &&
-        !bsfi->buffer_pkt->side_data_elems)
+    if (IS_EMPTY(bsfi->buffer_pkt))
         return AVERROR(EAGAIN);
 
     tmp_pkt = av_packet_alloc();
@@ -251,8 +251,7 @@ int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt)
     if (bsfi->eof)
         return AVERROR_EOF;
 
-    if (!bsfi->buffer_pkt->data &&
-        !bsfi->buffer_pkt->side_data_elems)
+    if (IS_EMPTY(bsfi->buffer_pkt))
         return AVERROR(EAGAIN);
 
     av_packet_move_ref(pkt, bsfi->buffer_pkt);
