@@ -187,6 +187,7 @@ include $(SRC_PATH)/tests/fate/segment.mak
 include $(SRC_PATH)/tests/fate/source.mak
 include $(SRC_PATH)/tests/fate/speedhq.mak
 include $(SRC_PATH)/tests/fate/subtitles.mak
+include $(SRC_PATH)/tests/fate/truehd.mak
 include $(SRC_PATH)/tests/fate/utvideo.mak
 include $(SRC_PATH)/tests/fate/video.mak
 include $(SRC_PATH)/tests/fate/voice.mak
