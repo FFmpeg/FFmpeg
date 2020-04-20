@@ -2608,8 +2608,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             track->audio.sub_packet_size = avio_rb16(&b);
             if (track->audio.coded_framesize <= 0 ||
                 track->audio.sub_packet_h    <= 0 ||
-                track->audio.frame_size      <= 0 ||
-                track->audio.sub_packet_size <= 0 && codec_id != AV_CODEC_ID_SIPR)
+                track->audio.frame_size      <= 0)
                 return AVERROR_INVALIDDATA;
 
             if (codec_id == AV_CODEC_ID_RA_288) {
@@ -2622,7 +2621,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                         return AVERROR_INVALIDDATA;
                     track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
                     st->codecpar->bit_rate          = sipr_bit_rate[flavor];
-                }
+                } else if (track->audio.sub_packet_size <= 0)
+                    return AVERROR_INVALIDDATA;
                 st->codecpar->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
             }
