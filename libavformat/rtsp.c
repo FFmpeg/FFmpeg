@@ -2567,8 +2567,8 @@ static int rtp_read_header(AVFormatContext *s)
 fail_nobuf:
     ret = AVERROR(ENOMEM);
     av_log(s, AV_LOG_ERROR, "rtp_read_header(): not enough buffer space for sdp-headers\n");
-fail:
     av_bprint_finalize(&sdp, NULL);
+fail:
     avcodec_parameters_free(&par);
     if (in)
         ffurl_close(in);
