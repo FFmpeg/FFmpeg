@@ -1572,7 +1572,7 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
     int err, i, length;
 
 #ifdef READ
-    int start_pos, end_pos, bits_left;
+    int start_pos, end_pos;
     start_pos = get_bits_count(rw);
 #endif
 
@@ -1651,12 +1651,9 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
 #ifdef READ
-    // payload_extension_present() - true if we are before the last 1-bit
-    // in the payload structure, which must be in the last byte.
     end_pos = get_bits_count(rw);
-    bits_left = *payload_size * 8 - (end_pos - start_pos);
-    if (bits_left > 0 &&
-        (bits_left > 7 || ff_ctz(show_bits(rw, bits_left)) < bits_left - 1))
+    if (cbs_h265_payload_extension_present(rw, *payload_size,
+                                           end_pos - start_pos))
         flag(use_alt_cpb_params_flag);
     else
         infer(use_alt_cpb_params_flag, 0);

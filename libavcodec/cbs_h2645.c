@@ -233,6 +233,16 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
     return 0;
 }
 
+// payload_extension_present() - true if we are before the last 1-bit
+// in the payload structure, which must be in the last byte.
+static int cbs_h265_payload_extension_present(GetBitContext *gbc, uint32_t payload_size,
+                                              int cur_pos)
+{
+    int bits_left = payload_size * 8 - cur_pos;
+    return (bits_left > 0 &&
+            (bits_left > 7 || show_bits(gbc, bits_left) & MAX_UINT_BITS(bits_left - 1)));
+}
+
 #define HEADER(name) do { \
         ff_cbs_trace_header(ctx, name); \
     } while (0)
