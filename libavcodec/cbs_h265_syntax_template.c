@@ -80,7 +80,7 @@ static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 #else
     for (k = 0; k < current->bit_length; k++)
-        xu(1, extension_data, current->data[k / 8] >> (7 - k % 8), 0, 1);
+        xu(1, extension_data, current->data[k / 8] >> (7 - k % 8) & 1, 0, 1);
 #endif
     return 0;
 }
