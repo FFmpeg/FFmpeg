@@ -1313,7 +1313,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
                     infer(num_long_term_sps, 0);
                     idx_size = 0;
                 }
-                ue(num_long_term_pics, 0, HEVC_MAX_LONG_TERM_REF_PICS);
+                ue(num_long_term_pics, 0, HEVC_MAX_REFS - current->num_long_term_sps);
 
                 for (i = 0; i < current->num_long_term_sps +
                                 current->num_long_term_pics; i++) {
