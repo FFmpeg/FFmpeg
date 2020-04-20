@@ -45,6 +45,7 @@ static int id3v1_set_string(AVFormatContext *s, const char *key,
     return !!tag;
 }
 
+// refer to: http://id3.org/ID3v1
 static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 {
     AVDictionaryEntry *tag;
@@ -58,7 +59,17 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     count += id3v1_set_string(s, "TIT2",    buf +  3, 30 + 1);       //title
     count += id3v1_set_string(s, "TPE1",    buf + 33, 30 + 1);       //author|artist
     count += id3v1_set_string(s, "TALB",    buf + 63, 30 + 1);       //album
-    count += id3v1_set_string(s, "TDRC",    buf + 93,  4 + 1);       //date
+    if ((tag = av_dict_get(s->metadata, "TYER", NULL, 0))) {         //year
+        av_strlcpy(buf + 93, tag->value, 4 + 1);
+        count++;
+    } else if ((tag = av_dict_get(s->metadata, "TDRC", NULL, 0))) {
+        av_strlcpy(buf + 93, tag->value, 4 + 1);
+        count++;
+    } else if ((tag = av_dict_get(s->metadata, "TDAT", NULL, 0))) {
+        av_strlcpy(buf + 93, tag->value, 4 + 1);
+        count++;
+    }
+
     count += id3v1_set_string(s, "comment", buf + 97, 30 + 1);
     if ((tag = av_dict_get(s->metadata, "TRCK", NULL, 0))) { //track
         buf[125] = 0;
