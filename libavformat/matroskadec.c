@@ -2624,7 +2624,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                         return AVERROR_INVALIDDATA;
                     track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
                     st->codecpar->bit_rate          = sipr_bit_rate[flavor];
-                } else if (track->audio.sub_packet_size <= 0)
+                } else if (track->audio.sub_packet_size <= 0 ||
+                           track->audio.frame_size % track->audio.sub_packet_size)
                     return AVERROR_INVALIDDATA;
                 st->codecpar->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
@@ -3138,7 +3139,7 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
             }
             memcpy(track->audio.buf + y * w, data, w);
         } else {
-            if (size < sps * w / sps || h<=0 || w%sps) {
+            if (size < w) {
                 av_log(matroska->ctx, AV_LOG_ERROR,
                        "Corrupt generic RM-style audio packet size\n");
                 return AVERROR_INVALIDDATA;
