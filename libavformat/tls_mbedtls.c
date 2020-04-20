@@ -62,6 +62,7 @@ static int tls_close(URLContext *h)
     mbedtls_ctr_drbg_free(&tls_ctx->ctr_drbg_context);
     mbedtls_entropy_free(&tls_ctx->entropy_context);
 
+    ffurl_closep(&tls_ctx->tls_shared.tcp);
     return 0;
 }
 
