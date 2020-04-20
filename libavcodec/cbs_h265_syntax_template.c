@@ -59,7 +59,7 @@ static int FUNC(byte_alignment)(CodedBitstreamContext *ctx, RWContext *rw)
 }
 
 static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
-                                H265RawPSExtensionData *current)
+                                H265RawExtensionData *current)
 {
     int err;
     size_t k;
