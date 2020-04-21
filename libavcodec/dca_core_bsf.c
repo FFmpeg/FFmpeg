@@ -22,7 +22,6 @@
 #include "bsf.h"
 #include "bytestream.h"
 #include "dca_syncwords.h"
-#include "libavutil/mem.h"
 
 static int dca_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
