@@ -19,13 +19,11 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "avcodec.h"
 #include "bsf.h"
 
 #include "libavutil/log.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 typedef struct NoiseContext {
