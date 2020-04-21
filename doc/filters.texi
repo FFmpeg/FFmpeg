@@ -18956,6 +18956,7 @@ No padding.
 @end table
 
 Default value is @b{@samp{0}}.
+Maximum value is @b{@samp{0.1}}.
 
 @item fin_pad
 @item fout_pad
