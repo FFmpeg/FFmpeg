@@ -344,6 +344,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (desc && desc->props & AV_CODEC_PROP_REORDER)
             st->internal->reorder = 1;
 
+        st->internal->is_intra_only = ff_is_intra_only(par->codec_id);
+
         if (of->codec_tag) {
             if (   par->codec_tag
                 && par->codec_id == AV_CODEC_ID_RAWVIDEO
@@ -760,6 +762,7 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
 static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
+    AVStream *st = s->streams[pkt->stream_index];
 
     ret = check_packet(s, pkt);
     if (ret < 0)
@@ -768,7 +771,6 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
 #if !FF_API_COMPUTE_PKT_FIELDS2 || !FF_API_LAVF_AVCTX
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
-        AVStream *st = s->streams[pkt->stream_index];
 
         /* when there is no reordering (so dts is equal to pts), but
          * only one of them is set, set the other as well */
@@ -805,6 +807,9 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 #endif
+    /* update flags */
+    if (st->internal->is_intra_only)
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     return 0;
 }

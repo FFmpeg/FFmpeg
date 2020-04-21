@@ -188,6 +188,8 @@ struct AVStreamInternal {
      */
     int need_context_update;
 
+    int is_intra_only;
+
     FFFrac *priv_pts;
 };
 
