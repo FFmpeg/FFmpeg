@@ -2638,7 +2638,7 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         int h = src->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
 
-        tmp.linesize[i] = src->linesize[i];
+        tmp.linesize[i] = FFABS(src->linesize[i]);
         err = create_buf(dev_ctx, &buf[i], p_height,
                          &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL, NULL);
@@ -2793,7 +2793,7 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         int h = dst->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
 
-        tmp.linesize[i] = dst->linesize[i];
+        tmp.linesize[i] = FFABS(dst->linesize[i]);
         err = create_buf(dev_ctx, &buf[i], p_height,
                          &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL, NULL);
