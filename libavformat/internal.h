@@ -510,6 +510,8 @@ unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
 
 enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
 
+int ff_is_intra_only(enum AVCodecID id);
+
 /**
  * Select a PCM codec based on the given parameters.
  *
