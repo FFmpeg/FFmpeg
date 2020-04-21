@@ -24,7 +24,6 @@
 #include "bsf.h"
 
 #include "libavutil/log.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 enum DumpFreq {
