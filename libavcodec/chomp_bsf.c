@@ -21,7 +21,6 @@
 
 #include "avcodec.h"
 #include "bsf.h"
-#include "internal.h"
 
 static int chomp_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
