@@ -111,6 +111,50 @@ static int av1_metadata_update_sequence_header(AVBSFContext *bsf,
     return 0;
 }
 
+static int av1_metadata_update_side_data(AVBSFContext *bsf, AVPacket *pkt)
+{
+    AV1MetadataContext *ctx = bsf->priv_data;
+    CodedBitstreamFragment *frag = &ctx->access_unit;
+    uint8_t *side_data;
+    int side_data_size;
+    int err, i;
+
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                        &side_data_size);
+    if (!side_data_size)
+        return 0;
+
+    err = ff_cbs_read(ctx->cbc, frag, side_data, side_data_size);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to read extradata from packet side data.\n");
+        return err;
+    }
+
+    for (i = 0; i < frag->nb_units; i++) {
+        if (frag->units[i].type == AV1_OBU_SEQUENCE_HEADER) {
+            AV1RawOBU *obu = frag->units[i].content;
+            err = av1_metadata_update_sequence_header(bsf, &obu->obu.sequence_header);
+            if (err < 0)
+                return err;
+        }
+    }
+
+    err = ff_cbs_write_fragment_data(ctx->cbc, frag);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to write extradata into packet side data.\n");
+        return err;
+    }
+
+    side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, frag->data_size);
+    if (!side_data)
+        return AVERROR(ENOMEM);
+    memcpy(side_data, frag->data, frag->data_size);
+
+    ff_cbs_fragment_reset(ctx->cbc, frag);
+
+    return 0;
+}
+
 static int av1_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 {
     AV1MetadataContext *ctx = bsf->priv_data;
@@ -121,6 +165,10 @@ static int av1_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     err = ff_bsf_get_packet_ref(bsf, pkt);
     if (err < 0)
         return err;
+
+    err = av1_metadata_update_side_data(bsf, pkt);
+    if (err < 0)
+        goto fail;
 
     err = ff_cbs_read_packet(ctx->cbc, frag, pkt);
     if (err < 0) {
