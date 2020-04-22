@@ -252,6 +252,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_RGB,
     },
+    [AV_PIX_FMT_X2RGB10LE] = {
+        .name = "x2rgb10le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            { 0, 4, 2, 4, 10, 3, 9, 2 },       /* R */
+            { 0, 4, 1, 2, 10, 3, 9, 3 },       /* G */
+            { 0, 4, 0, 0, 10, 3, 9, 4 },       /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_RGB,
+    },
+    [AV_PIX_FMT_X2RGB10BE] = {
+        .name = "x2rgb10be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            { 0, 4, 0, 4, 10, 3, 9, 2 },       /* R */
+            { 0, 4, 1, 2, 10, 3, 9, 3 },       /* G */
+            { 0, 4, 2, 0, 10, 3, 9, 4 },       /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_BE,
+    },
     [AV_PIX_FMT_YUV422P] = {
         .name = "yuv422p",
         .nb_components = 3,
