@@ -238,6 +238,7 @@ typedef struct MpegTSWriteStream {
     int payload_flags;
     uint8_t *payload;
     AVFormatContext *amux;
+    int data_st_warning;
 
     int64_t pcr_period; /* PCR period in PCR time base */
     int64_t last_pcr;
@@ -285,6 +286,7 @@ static void put_registration_descriptor(uint8_t **q_ptr, uint32_t tag)
 static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
 {
     MpegTSWrite *ts = s->priv_data;
+    MpegTSWriteStream *ts_st = st->priv_data;
     int stream_type;
 
     switch (st->codecpar->codec_id) {
@@ -354,8 +356,10 @@ static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
         stream_type = STREAM_TYPE_PRIVATE_DATA;
         break;
     default:
-        av_log(s, AV_LOG_WARNING, "Stream %d, codec %s, is muxed as a private data stream "
-               "and may not be recognized upon reading.\n", st->index, avcodec_get_name(st->codecpar->codec_id));
+        av_log_once(s, AV_LOG_WARNING, AV_LOG_DEBUG, &ts_st->data_st_warning,
+                    "Stream %d, codec %s, is muxed as a private data stream "
+                    "and may not be recognized upon reading.\n", st->index,
+                    avcodec_get_name(st->codecpar->codec_id));
         stream_type = STREAM_TYPE_PRIVATE_DATA;
         break;
     }
@@ -366,6 +370,7 @@ static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
 static int get_m2ts_stream_type(AVFormatContext *s, AVStream *st)
 {
     int stream_type;
+    MpegTSWriteStream *ts_st = st->priv_data;
 
     switch (st->codecpar->codec_id) {
     case AV_CODEC_ID_MPEG2VIDEO:
@@ -402,8 +407,10 @@ static int get_m2ts_stream_type(AVFormatContext *s, AVStream *st)
         stream_type = 0x92;
         break;
     default:
-        av_log(s, AV_LOG_WARNING, "Stream %d, codec %s, is muxed as a private data stream "
-               "and may not be recognized upon reading.\n", st->index, avcodec_get_name(st->codecpar->codec_id));
+        av_log_once(s, AV_LOG_WARNING, AV_LOG_DEBUG, &ts_st->data_st_warning,
+                    "Stream %d, codec %s, is muxed as a private data stream "
+                    "and may not be recognized upon reading.\n", st->index,
+                    avcodec_get_name(st->codecpar->codec_id));
         stream_type = STREAM_TYPE_PRIVATE_DATA;
         break;
     }
