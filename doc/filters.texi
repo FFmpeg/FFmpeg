@@ -2454,6 +2454,45 @@ Number of points where the waveform crosses the zero level axis.
 Rate of Zero crossings and number of audio samples.
 @end table
 
+@section asubboost
+Boost subwoofer frequencies.
+
+The filter accepts the following options:
+
+@table @option
+@item dry
+Set dry gain, how much of original signal is kept. Allowed range is from 0 to 1.
+Default value is 0.5.
+
+@item wet
+Set wet gain, how much of filtered signal is kept. Allowed range is from 0 to 1.
+Default value is 0.8.
+
+@item decay
+Set delay line decay gain value. Allowed range is from 0 to 1.
+Default value is 0.7.
+
+@item feedback
+Set delay line feedback gain value. Allowed range is from 0 to 1.
+Default value is 0.5.
+
+@item cutoff
+Set cutoff frequency in herz. Allowed range is 50 to 900.
+Default value is 100.
+
+@item slope
+Set slope amount for cutoff frequency. Allowed range is 0.0001 to 1.
+Default value is 0.5.
+
+@item delay
+Set delay. Allowed range is from 1 to 100.
+Default value is 20.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section atempo
 
 Adjust audio tempo.

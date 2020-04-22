@@ -63,6 +63,7 @@ version <next>:
 - maskedthreshold filter
 - Support for muxing pcm and pgs in m2ts
 - Cunning Developments ADPCM decoder
+- asubboost filter
 
 
 version 4.2:
