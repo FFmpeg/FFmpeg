@@ -104,7 +104,7 @@ static inline void restore_ac_coeffs(MpegEncContext *s, int16_t block[6][64],
     memcpy(s->block_last_index, zigzag_last_index, sizeof(int) * 6);
 
     for (n = 0; n < 6; n++) {
-        int16_t *ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
+        int16_t *ac_val = &s->ac_val[0][0][0] + s->block_index[n] * 16;
 
         st[n] = s->intra_scantable.permutated;
         if (dir[n]) {
@@ -143,7 +143,7 @@ static inline int decide_ac_pred(MpegEncContext *s, int16_t block[6][64],
         score -= get_block_rate(s, block[n], s->block_last_index[n],
                                 s->intra_scantable.permutated);
 
-        ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+        ac_val  = &s->ac_val[0][0][0] + s->block_index[n] * 16;
         ac_val1 = ac_val;
         if (dir[n]) {
             const int xy = s->mb_x + s->mb_y * s->mb_stride - s->mb_stride;
