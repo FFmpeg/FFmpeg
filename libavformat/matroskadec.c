@@ -2612,8 +2612,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
 
             if (codec_id == AV_CODEC_ID_RA_288) {
-                if ((int64_t)track->audio.sub_packet_h * track->audio.coded_framesize
-                    > (2 + (track->audio.sub_packet_h & 1)) * track->audio.frame_size)
+                if (track->audio.sub_packet_h & 1 || 2 * track->audio.frame_size
+                    != (int64_t)track->audio.sub_packet_h * track->audio.coded_framesize)
                     return AVERROR_INVALIDDATA;
                 st->codecpar->block_align = track->audio.coded_framesize;
                 track->codec_priv.size = 0;
