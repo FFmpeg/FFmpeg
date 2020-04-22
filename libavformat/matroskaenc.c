@@ -1733,7 +1733,7 @@ static int mkv_write_attachments(AVFormatContext *s)
             const AVCodecDescriptor *desc = avcodec_descriptor_get(st->codecpar->codec_id);
             if (desc && desc->mime_types) {
                 mimetype = desc->mime_types[0];
-            } else if (st->codecpar->codec_id = AV_CODEC_ID_TEXT)
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_TEXT)
                 mimetype = "text/plain";
         }
         if (!mimetype) {
