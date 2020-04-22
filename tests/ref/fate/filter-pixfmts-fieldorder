@@ -71,6 +71,7 @@ rgba                1fdf872a087a32cd35b80cc7be399578
 rgba64be            5598f44514d122b9a57c5c92c20bbc61
 rgba64le            b34e6e30621ae579519a2d91a96a0acf
 uyvy422             75de70e31c435dde878002d3f22b238a
+x2rgb10le           636c90498c64abba1cc0624c5209a61f
 xyz12be             15f5cda71de5fef9cec5e75e3833b6bc
 xyz12le             7be6c8781f38c21a6b8f602f62ca31e6
 ya16be              0f13e0f52586d172aaa07710fa3e8f31

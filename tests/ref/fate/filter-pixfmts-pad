@@ -28,6 +28,7 @@ nv42                1738ad3c31c6c16e17679f5b09ce4677
 rgb0                78d500c8361ab6423a4826a00268c908
 rgb24               17f9e2e0c609009acaf2175c42d4a2a5
 rgba                b157c90191463d34fb3ce77b36c96386
+x2rgb10le           c240f8a8dfa647c57c0974d061c9652a
 xyz12le             85abf80b77a9236a76ba0b00fcbdea2d
 ya16le              940fafa240b9916de5f73cb20a552f24
 ya8                 5fc0f471207ddf7aa01b07027d56b672

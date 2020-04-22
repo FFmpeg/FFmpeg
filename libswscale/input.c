@@ -244,7 +244,8 @@ rgb48funcs(bgr, BE, AV_PIX_FMT_BGR48BE)
 #define input_pixel(i) ((origin == AV_PIX_FMT_RGBA ||                      \
                          origin == AV_PIX_FMT_BGRA ||                      \
                          origin == AV_PIX_FMT_ARGB ||                      \
-                         origin == AV_PIX_FMT_ABGR)                        \
+                         origin == AV_PIX_FMT_ABGR ||                      \
+                         origin == AV_PIX_FMT_X2RGB10)                     \
                         ? AV_RN32A(&src[(i) * 4])                       \
                         : (isBE(origin) ? AV_RB16(&src[(i) * 2])        \
                                         : AV_RL16(&src[(i) * 2])))
@@ -391,6 +392,7 @@ rgb16_32_wrapper(AV_PIX_FMT_BGR444BE, bgr12be, 0, 0,  0, 0,   0x000F, 0x00F0,   
 rgb16_32_wrapper(AV_PIX_FMT_RGB565BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT + 8)
 rgb16_32_wrapper(AV_PIX_FMT_RGB555BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT + 7)
 rgb16_32_wrapper(AV_PIX_FMT_RGB444BE, rgb12be, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT + 4)
+rgb16_32_wrapper(AV_PIX_FMT_X2RGB10LE, rgb30le, 16, 6, 0, 0, 0x3FF00000, 0xFFC00, 0x3FF, 0, 0, 4, RGB2YUV_SHIFT + 6)
 
 static void gbr24pToUV_half_c(uint8_t *_dstU, uint8_t *_dstV,
                          const uint8_t *gsrc, const uint8_t *bsrc, const uint8_t *rsrc,
@@ -1341,6 +1343,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         case AV_PIX_FMT_RGB444BE:
             c->chrToYV12 = rgb12beToUV_half_c;
             break;
+        case AV_PIX_FMT_X2RGB10LE:
+            c->chrToYV12 = rgb30leToUV_half_c;
+            break;
         }
     } else {
         switch (srcFormat) {
@@ -1421,6 +1426,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
             break;
         case AV_PIX_FMT_RGB444BE:
             c->chrToYV12 = rgb12beToUV_c;
+            break;
+        case AV_PIX_FMT_X2RGB10LE:
+            c->chrToYV12 = rgb30leToUV_c;
             break;
         }
     }
@@ -1700,6 +1708,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         break;
     case AV_PIX_FMT_Y210LE:
         c->lumToYV12 = y210le_Y_c;
+        break;
+    case AV_PIX_FMT_X2RGB10LE:
+        c->lumToYV12 =rgb30leToY_c;
         break;
     }
     if (c->needAlpha) {

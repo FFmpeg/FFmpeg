@@ -80,6 +80,7 @@ rgba                85bb5d03cea1c6e8002ced3373904336
 rgba64be            ee73e57923af984b31cc7795d13929da
 rgba64le            783d2779adfafe3548bdb671ec0de69e
 uyvy422             aeb4ba4f9f003ae21f6d18089198244f
+x2rgb10le           591fe7942544c8fc40e5d30e0e589f49
 xyz12be             c7ba8345998c0141ddc079cdd29b1a40
 xyz12le             95f5d3a0de834cc495c9032a14987cde
 ya16be              20d4842899d61068f5fb6af478bf26a6

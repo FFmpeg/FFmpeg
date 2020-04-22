@@ -965,6 +965,28 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         fill_table(c->table_bU, 1, cbu, y_table + yoffs);
         fill_gv_table(c->table_gV, 1, cgv);
         break;
+    case 30:
+        rbase = 20;
+        gbase = 10;
+        bbase = 0;
+        needAlpha = CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat);
+        if (!needAlpha)
+            abase = 30;
+        ALLOC_YUV_TABLE(table_plane_size * 3 * 4);
+        y_table32   = c->yuvTable;
+        yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
+        for (i = 0; i < table_plane_size; i++) {
+            unsigned yval = av_clip_uint8((yb + 0x8000) >> 16);
+            y_table32[i]= (yval << rbase) + (needAlpha ? 0 : (255u << abase));
+            y_table32[i + table_plane_size] = yval << gbase;
+            y_table32[i + 2 * table_plane_size] = yval << bbase;
+            yb += cy;
+        }
+        fill_table(c->table_rV, 4, crv, y_table32 + yoffs);
+        fill_table(c->table_gU, 4, cgu, y_table32 + yoffs + table_plane_size);
+        fill_table(c->table_bU, 4, cbu, y_table32 + yoffs + 2 * table_plane_size);
+        fill_gv_table(c->table_gV, 4, cgv);
+        break;
     case 32:
     case 64:
         base      = (c->dstFormat == AV_PIX_FMT_RGB32_1 ||
