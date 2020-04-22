@@ -798,6 +798,15 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     return 0;
 }
 
+static int read_crg(Jpeg2000DecoderContext *s, int n)
+{
+    if (s->ncomponents*4 != n - 2) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid CRG marker.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    bytestream2_skip(&s->g, n - 2);
+    return 0;
+}
 /* Tile-part lengths: see ISO 15444-1:2002, section A.7.1
  * Used to know the number of tile parts and lengths.
  * There may be multiple TLMs in the header.
@@ -2060,6 +2069,9 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         case JPEG2000_COM:
             // the comment is ignored
             bytestream2_skip(&s->g, len - 2);
+            break;
+        case JPEG2000_CRG:
+            ret = read_crg(s, len);
             break;
         case JPEG2000_TLM:
             // Tile-part lengths
