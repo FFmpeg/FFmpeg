@@ -117,6 +117,7 @@ typedef struct Jpeg2000DecoderContext {
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
     Jpeg2000POC         poc;
+    uint8_t             roi_shift[4];
 
     int             bit_index;
 
@@ -598,6 +599,31 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     return 0;
 }
 
+static int get_rgn(Jpeg2000DecoderContext *s, int n)
+{
+    uint16_t compno;
+    compno = (s->ncomponents < 257)? bytestream2_get_byte(&s->g):
+                                     bytestream2_get_be16u(&s->g);
+    if (bytestream2_get_byte(&s->g)) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid RGN header.\n");
+        return AVERROR_INVALIDDATA; // SRgn field value is 0
+    }
+    // SPrgn field
+    // Currently compno cannot be greater than 4.
+    // However, future implementation should support compno up to 65536
+    if (compno < s->ncomponents) {
+        if (s->curtileno == -1)
+            s->roi_shift[compno] = bytestream2_get_byte(&s->g);
+        else {
+            if (s->tile[s->curtileno].tp_idx != 0)
+                return AVERROR_INVALIDDATA; // marker occurs only in first tile part of tile
+            s->tile[s->curtileno].comp[compno].roi_shift = bytestream2_get_byte(&s->g);
+        }
+        return 0;
+    }
+    return AVERROR_INVALIDDATA;
+}
+
 /* Get common part for QCD and QCC segments. */
 static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
 {
@@ -946,6 +972,9 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
         comp->coord[0][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[0][1], s->reduction_factor);
         comp->coord[1][0] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], s->reduction_factor);
         comp->coord[1][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][1], s->reduction_factor);
+
+        if (!comp->roi_shift)
+            comp->roi_shift = s->roi_shift[compno];
 
         if (ret = ff_jpeg2000_init_component(comp, codsty, qntsty,
                                              s->cbps[compno], s->cdx[compno],
@@ -1615,9 +1644,9 @@ static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1,
 
 static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
                        Jpeg2000T1Context *t1, Jpeg2000Cblk *cblk,
-                       int width, int height, int bandpos)
+                       int width, int height, int bandpos, uint8_t roi_shift)
 {
-    int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1;
+    int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1 + roi_shift;
     int pass_cnt = 0;
     int vert_causal_ctx_csty_symbol = codsty->cblk_style & JPEG2000_CBLK_VSC;
     int term_cnt = 0;
@@ -1689,6 +1718,19 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     }
 
     return 1;
+}
+
+static inline int roi_shift_param(Jpeg2000Component *comp,
+                                   int quan_parameter)
+{
+    uint8_t roi_shift;
+    int val;
+    roi_shift = comp->roi_shift;
+    val = (quan_parameter < 0)?-quan_parameter:quan_parameter;
+
+    if (val > (1 << roi_shift))
+        return (quan_parameter < 0)?-(val >> roi_shift):(val >> roi_shift);
+    return quan_parameter;
 }
 
 /* TODO: Verify dequantization for lossless case
@@ -1775,6 +1817,19 @@ static inline void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
     s->dsp.mct_decode[tile->codsty[0].transform](src[0], src[1], src[2], csize);
 }
 
+static inline void roi_scale_cblk(Jpeg2000Cblk *cblk,
+                                  Jpeg2000Component *comp,
+                                  Jpeg2000T1Context *t1)
+{
+    int i, j;
+    int w = cblk->coord[0][1] - cblk->coord[0][0];
+    for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
+        int *src = t1->data + j*t1->stride;
+        for (i = 0; i < w; ++i)
+            src[i] = roi_shift_param(comp, src[i]);
+    }
+}
+
 static inline void tile_codeblocks(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     Jpeg2000T1Context t1;
@@ -1818,7 +1873,7 @@ static inline void tile_codeblocks(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                         int ret = decode_cblk(s, codsty, &t1, cblk,
                                     cblk->coord[0][1] - cblk->coord[0][0],
                                     cblk->coord[1][1] - cblk->coord[1][0],
-                                    bandpos);
+                                    bandpos, comp->roi_shift);
                         if (ret)
                             coded = 1;
                         else
@@ -1826,6 +1881,8 @@ static inline void tile_codeblocks(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                         x = cblk->coord[0][0] - band->coord[0][0];
                         y = cblk->coord[1][0] - band->coord[1][0];
 
+                        if (comp->roi_shift)
+                            roi_scale_cblk(cblk, comp, &t1);
                         if (codsty->transform == FF_DWT97)
                             dequantization_float(x, y, cblk, comp, &t1, band);
                         else if (codsty->transform == FF_DWT97_INT)
@@ -2045,6 +2102,9 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             break;
         case JPEG2000_COD:
             ret = get_cod(s, codsty, properties);
+            break;
+        case JPEG2000_RGN:
+            ret = get_rgn(s, len);
             break;
         case JPEG2000_QCC:
             ret = get_qcc(s, len, qntsty, properties);

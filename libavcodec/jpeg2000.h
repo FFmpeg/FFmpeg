@@ -210,6 +210,7 @@ typedef struct Jpeg2000Component {
     int *i_data;
     int coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
     int coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
+    uint8_t roi_shift; // ROI scaling value for the component
 } Jpeg2000Component;
 
 /* misc tools */
