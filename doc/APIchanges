@@ -15,8 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2020-04-22 - xxxxxxxxxx - lavc 58.81.100 - packet.h
-  Add AV_PKT_DATA_DOVI_CONF.
+2020-04-22 - 0e1db79e37 - lavc 58.81.100 - packet.h
+                        - lavu 56.43.100 - dovi_meta.h
+  Add AV_PKT_DATA_DOVI_CONF and AVDOVIDecoderConfigurationRecord.
 
 2020-04-15 - xxxxxxxxxx - lavc 58.79.100 - avcodec.h
   Add formal support for calling avcodec_flush_buffers() on encoders.
