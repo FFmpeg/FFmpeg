@@ -6675,7 +6675,7 @@ if enabled x86; then
             disable ffnvcodec cuvid nvdec nvenc
             ;;
     esac
-elif enabled ppc64 && ! enabled bigendian; then
+elif enabled_any aarch64 ppc64 && ! enabled bigendian; then
     case $target_os in
         linux)
             ;;
