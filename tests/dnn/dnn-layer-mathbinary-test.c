@@ -24,7 +24,7 @@
 #include "libavfilter/dnn/dnn_backend_native_layer_mathbinary.h"
 #include "libavutil/avassert.h"
 
-#define EPSON 0.00001
+#define EPSON 0.00005
 
 static float get_expected(float f1, float f2, DNNMathBinaryOperation op)
 {
