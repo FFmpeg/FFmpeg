@@ -52,9 +52,11 @@ typedef struct ScaleVulkanContext {
 } ScaleVulkanContext;
 
 static const char scale_bilinear[] = {
-    C(0, vec4 scale_bilinear(int idx, ivec2 pos)                                )
+    C(0, vec4 scale_bilinear(int idx, ivec2 pos, vec2 crop_range, vec2 crop_off))
     C(0, {                                                                      )
-    C(1,     const vec2 npos = (vec2(pos) + 0.5f) / imageSize(output_img[idx]); )
+    C(1,     vec2 npos = (vec2(pos) + 0.5f) / imageSize(output_img[idx]);       )
+    C(1,     npos *= crop_range;    /* Reduce the range */                      )
+    C(1,     npos += crop_off;      /* Offset the start */                      )
     C(1,     return texture(input_img[idx], npos);                              )
     C(0, }                                                                      )
 };
@@ -107,6 +109,11 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     VkSampler *sampler;
     VkFilter sampler_mode;
     ScaleVulkanContext *s = ctx->priv;
+
+    int crop_x = in->crop_left;
+    int crop_y = in->crop_top;
+    int crop_w = in->width - (in->crop_left + in->crop_right);
+    int crop_h = in->height - (in->crop_top + in->crop_bottom);
 
     switch (s->scaler) {
     case F_NEAREST:
@@ -186,6 +193,9 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         GLSLC(0, {                                                               );
         GLSLC(1,     ivec2 size;                                                 );
         GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);                );
+        GLSLF(1,     vec2 in_d = vec2(%i, %i);             ,in->width, in->height);
+        GLSLF(1,     vec2 c_r = vec2(%i, %i) / in_d;              ,crop_w, crop_h);
+        GLSLF(1,     vec2 c_o = vec2(%i, %i) / in_d;               ,crop_x,crop_y);
         GLSLC(0,                                                                 );
 
         if (s->vkctx.output_format == s->vkctx.input_format) {
@@ -195,14 +205,14 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
                 switch (s->scaler) {
                 case F_NEAREST:
                 case F_BILINEAR:
-                    GLSLF(2, vec4 res = scale_bilinear(%i, pos);               ,i);
+                    GLSLF(2, vec4 res = scale_bilinear(%i, pos, c_r, c_o);     ,i);
                     GLSLF(2, imageStore(output_img[%i], pos, res);             ,i);
                     break;
                 };
                 GLSLC(1, }                                                       );
             }
         } else {
-            GLSLC(1, vec4 res = scale_bilinear(0, pos);                          );
+            GLSLC(1, vec4 res = scale_bilinear(0, pos, c_r, c_o);                );
             GLSLF(1, res = rgb2yuv(res, %i);    ,s->out_range == AVCOL_RANGE_JPEG);
             switch (s->vkctx.output_format) {
             case AV_PIX_FMT_NV12:    GLSLC(1, write_nv12(res, pos); ); break;
@@ -453,11 +463,6 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
     err = ff_vk_filter_config_output(outlink);
     if (err < 0)
         return err;
-
-    if (inlink->sample_aspect_ratio.num)
-        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
-    else
-        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
     return 0;
 }
