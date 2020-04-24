@@ -715,6 +715,7 @@ typedef struct H265RawSEIPayload {
             AVBufferRef *data_ref;
         } other;
     } payload;
+    H265RawExtensionData extension_data;
 } H265RawSEIPayload;
 
 typedef struct H265RawSEI {

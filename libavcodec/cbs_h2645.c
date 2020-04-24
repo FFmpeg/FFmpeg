@@ -553,6 +553,7 @@ static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
         av_buffer_unref(&payload->payload.other.data_ref);
         break;
     }
+    av_buffer_unref(&payload->extension_data.data_ref);
 }
 
 static void cbs_h265_free_sei(void *opaque, uint8_t *content)
