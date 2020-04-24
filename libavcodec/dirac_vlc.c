@@ -1095,7 +1095,7 @@ int ff_dirac_golomb_read_16bit(const uint8_t *buf, int bytes,
 {
     LUTState lut = ff_dirac_golomb_lut[*buf++];
     int16_t *dst = (int16_t *)_dst, *last = dst + coeffs;
-    int16_t val = 0;
+    uint16_t val = 0;
 
     for (int i = 1; i < bytes; i++)
         PROCESS_VALS;
@@ -1115,7 +1115,7 @@ int ff_dirac_golomb_read_32bit(const uint8_t *buf, int bytes,
 {
     LUTState lut = ff_dirac_golomb_lut[*buf++];
     int32_t *dst = (int32_t *)_dst, *last = dst + coeffs;
-    int32_t val = 0;
+    uint32_t val = 0;
 
     for (int i = 1; i < bytes; i++)
         PROCESS_VALS;
