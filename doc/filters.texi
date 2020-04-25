@@ -23316,6 +23316,21 @@ These filters accept the following options:
 @table @option
 @item nb_inputs, n
 Set the number of different inputs, it is 2 by default.
+
+@item duration
+How to determine the end-of-stream.
+
+@table @option
+@item longest
+The duration of the longest input. (default)
+
+@item shortest
+The duration of the shortest input.
+
+@item first
+The duration of the first input.
+@end table
+
 @end table
 
 @subsection Examples
