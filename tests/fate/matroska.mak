@@ -57,6 +57,16 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER OGG_DEMUXER  \
                                += fate-webm-dash-chapters
 fate-webm-dash-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg webm "-c copy -cluster_time_limit 1500 -dash 1 -dash_track_number 124 -reserve_index_space 400" "-c copy -t 0.5" "" -show_chapters
 
+# The input file has a Block whose payload has a size of zero before reversing
+# header removal compression; it furthermore uses chained SeekHeads and has
+# level 1-elements after the Cluster. This is tested on the demuxer's side.
+# For the muxer this tests that it can correctly write huge TrackNumbers and
+# that it can expand the Cues element's length field by one byte if necessary.
+# It furthermore tests correct propagation of the description tag.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call DEMMUX, MATROSKA, MATROSKA) \
+                               += fate-matroska-zero-length-block
+fate-matroska-zero-length-block: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/zero_length_block.mks matroska "-c:s copy -dash 1 -dash_track_number 2000000000 -reserve_index_space 62 -metadata_header_padding 1" "-c:s copy" "" "-show_entries stream_tags=description"
+
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
 
