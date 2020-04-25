@@ -64,26 +64,24 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     InterleaveContext *s = ctx->priv;
     int64_t q_pts, pts = INT64_MAX;
-    int i, nb_eofs = 0, input_idx = -1, nb_active_inputs = 0;
+    int i, nb_eofs = 0, input_idx = -1;
     int nb_inputs_with_frames = 0;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         if (!ff_outlink_get_status(ctx->inputs[i])) {
-            nb_active_inputs++;
             if (!ff_inlink_queued_frames(ctx->inputs[i]))
                 break;
             nb_inputs_with_frames++;
         }
     }
 
-    if (nb_active_inputs > 0 && nb_active_inputs == nb_inputs_with_frames) {
+    if (nb_inputs_with_frames > 0) {
         for (i = 0; i < ctx->nb_inputs; i++) {
             AVFrame *frame;
 
-            if (ff_outlink_get_status(ctx->inputs[i]) ||
-                ff_inlink_queued_frames(ctx->inputs[i]) == 0)
+            if (ff_inlink_queued_frames(ctx->inputs[i]) == 0)
                 continue;
 
             frame = ff_inlink_peek_frame(ctx->inputs[i], 0);
