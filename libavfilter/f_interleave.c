@@ -70,11 +70,9 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (!ff_outlink_get_status(ctx->inputs[i])) {
-            if (!ff_inlink_queued_frames(ctx->inputs[i]))
-                break;
-            nb_inputs_with_frames++;
-        }
+        if (!ff_inlink_queued_frames(ctx->inputs[i]))
+            continue;
+        nb_inputs_with_frames++;
     }
 
     if (nb_inputs_with_frames > 0) {
@@ -135,6 +133,11 @@ static int activate(AVFilterContext *ctx)
             ff_inlink_request_frame(ctx->inputs[i]);
             return 0;
         }
+    }
+
+    if (i) {
+        ff_filter_set_ready(ctx, 100);
+        return 0;
     }
 
     return FFERROR_NOT_READY;
