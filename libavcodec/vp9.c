@@ -1216,17 +1216,14 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
     int i;
 
     for (i = 0; i < 3; i++) {
-        if (s->s.frames[i].tf.f->buf[0])
-            vp9_frame_unref(avctx, &s->s.frames[i]);
+        vp9_frame_unref(avctx, &s->s.frames[i]);
         av_frame_free(&s->s.frames[i].tf.f);
     }
     av_buffer_pool_uninit(&s->frame_extradata_pool);
     for (i = 0; i < 8; i++) {
-        if (s->s.refs[i].f->buf[0])
-            ff_thread_release_buffer(avctx, &s->s.refs[i]);
+        ff_thread_release_buffer(avctx, &s->s.refs[i]);
         av_frame_free(&s->s.refs[i].f);
-        if (s->next_refs[i].f->buf[0])
-            ff_thread_release_buffer(avctx, &s->next_refs[i]);
+        ff_thread_release_buffer(avctx, &s->next_refs[i]);
         av_frame_free(&s->next_refs[i].f);
     }
 
