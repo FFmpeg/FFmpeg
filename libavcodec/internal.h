@@ -113,11 +113,6 @@ typedef struct DecodeSimpleContext {
     AVFrame  *out_frame;
 } DecodeSimpleContext;
 
-typedef struct DecodeFilterContext {
-    AVBSFContext **bsfs;
-    int         nb_bsfs;
-} DecodeFilterContext;
-
 typedef struct AVCodecInternal {
     /**
      * Whether the parent AVCodecContext is a copy of the context which had
@@ -140,7 +135,7 @@ typedef struct AVCodecInternal {
     void *thread_ctx;
 
     DecodeSimpleContext ds;
-    DecodeFilterContext filter;
+    AVBSFContext *bsf;
 
     /**
      * Properties (timestamps+side data) extracted from the last packet passed

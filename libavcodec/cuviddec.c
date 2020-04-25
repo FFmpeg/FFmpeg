@@ -946,7 +946,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     }
 
     if (avctx->codec->bsfs) {
-        const AVCodecParameters *par = avctx->internal->filter.bsfs[avctx->internal->filter.nb_bsfs - 1]->par_out;
+        const AVCodecParameters *par = avctx->internal->bsf->par_out;
         ctx->cuparse_ext.format.seqhdr_data_length = par->extradata_size;
         memcpy(ctx->cuparse_ext.raw_seqhdr_data,
                par->extradata,
