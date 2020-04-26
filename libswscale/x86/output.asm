@@ -2,6 +2,7 @@
 ;* x86-optimized vertical line scaling functions
 ;* Copyright (c) 2011 Ronald S. Bultje <rsbultje@gmail.com>
 ;*                    Kieran Kunhya <kieran@kunhya.com>
+;*           (c) 2020 Nelson Gomez <nelson.gomez@microsoft.com>
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -22,7 +23,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
+SECTION_RODATA 32
 
 minshort:      times 8 dw 0x8000
 yuv2yuvX_16_start:  times 4 dd 0x4000 - 0x40000000
@@ -34,8 +35,19 @@ pd_4:          times 4 dd 4
 pd_4min0x40000:times 4 dd 4 - (0x40000)
 pw_16:         times 8 dw 16
 pw_32:         times 8 dw 32
+pd_255:        times 8 dd 255
 pw_512:        times 8 dw 512
 pw_1024:       times 8 dw 1024
+
+yuv2nv12_shuffle_mask: times 2 db 0,  4,  8, 12, \
+                                 -1, -1, -1, -1, \
+                                 -1, -1, -1, -1, \
+                                 -1, -1, -1, -1
+yuv2nv21_shuffle_mask: times 2 db 4,  0, 12,  8, \
+                                 -1, -1, -1, -1, \
+                                 -1, -1, -1, -1, \
+                                 -1, -1, -1, -1
+yuv2nv12_permute_mask: dd 0, 4, 1, 2, 3, 5, 6, 7
 
 SECTION .text
 
@@ -423,3 +435,115 @@ yuv2plane1_fn  9, 5, 3
 yuv2plane1_fn 10, 5, 3
 yuv2plane1_fn 16, 5, 3
 %endif
+
+%undef movsx
+
+;-----------------------------------------------------------------------------
+; AVX2 yuv2nv12cX implementation
+;
+; void ff_yuv2nv12cX_avx2(enum AVPixelFormat format, const uint8_t *dither,
+;                         const int16_t *filter, int filterSize,
+;                         const int16_t **u, const int16_t **v,
+;                         uint8_t *dst, int dstWidth)
+;
+; void ff_yuv2nv21cX_avx2(enum AVPixelFormat format, const uint8_t *dither,
+;                         const int16_t *filter, int filterSize,
+;                         const int16_t **u, const int16_t **v,
+;                         uint8_t *dst, int dstWidth)
+;-----------------------------------------------------------------------------
+
+%if ARCH_X86_64
+%macro yuv2nv12cX_fn 1
+cglobal %1cX, 8, 11, 13, tmp1, dither, filter, filterSize, u, v, dst, dstWidth
+
+    mov tmp1q, qword [ditherq]
+    movq xm0, tmp1q
+    ror tmp1q, 24
+    movq xm1, tmp1q
+
+    pmovzxbd m0, xm0
+    pslld m0, m0, 12                        ; ditherLo
+    pmovzxbd m1, xm1
+    pslld m1, m1, 12                        ; ditherHi
+
+    pxor m9, m9                             ; uint8_min dwords
+    mova m10, [pd_255]                      ; uint8_max dwords
+    mova m11, [%1_shuffle_mask]             ; shuffle_mask
+    mova m12, [yuv2nv12_permute_mask]       ; permute mask
+
+    DEFINE_ARGS tmp1, tmp2, filter, filterSize, u, v, dst, dstWidth
+
+    xor r8q, r8q
+
+nv12_outer_%1:
+    mova m2, m0                             ; resultLo
+    mova m3, m1                             ; resultHi
+    xor r9q, r9q
+
+nv12_inner_%1:
+    movsx r10d, word [filterq + (2 * r9q)]
+    movd xm4, r10d
+    vpbroadcastd m4, xm4                    ; filter
+
+    mov tmp1q, [uq + (gprsize * r9q)]
+    mova xm7, oword [tmp1q + 2 * r8q]
+
+    mov tmp2q, [vq + (gprsize * r9q)]
+    mova xm8, oword [tmp2q + 2 * r8q]
+
+    punpcklwd xm5, xm7, xm8
+    pmovsxwd m5, xm5                        ; multiplicandsLo
+    punpckhwd xm6, xm7, xm8
+    pmovsxwd m6, xm6                        ; multiplicandsHi
+
+    pmulld m7, m5, m4                       ; mulResultLo
+    pmulld m8, m6, m4                       ; mulResultHi
+    paddd m2, m2, m7                        ; resultLo += mulResultLo
+    paddd m3, m3, m8                        ; resultHi += mulResultHi
+
+    inc r9d
+    cmp r9d, filterSized
+    jl nv12_inner_%1
+    ; end of inner loop
+
+    psrad m2, m2, 19
+    psrad m3, m3, 19
+
+    ; Vectorized av_clip_uint8
+    pmaxsd m2, m2, m9
+    pmaxsd m3, m3, m9
+    pminsd m2, m2, m10
+    pminsd m3, m3, m10
+
+    ; At this point we have clamped uint8s arranged in this order:
+    ;     m2: u1  0  0  0  v1  0  0  0  [...]
+    ;     m3: u5  0  0  0  v5  0  0  0  [...]
+    ;
+    ; First, we shuffle the bytes to make the bytes semi-contiguous.
+    ; AVX-2 doesn't have cross-lane shuffling, so we'll end up with:
+    ;     m2: u1  v1  u2  v2  0  0  0  0  0  0  0  0  u3  v3  u4  v4
+    ;     m3: u5  v5  u6  v6  0  0  0  0  0  0  0  0  u7  v7  u8  v8
+    pshufb m2, m2, m11
+    pshufb m3, m3, m11
+
+    ; To fix the cross-lane shuffling issue, we'll then use cross-lane
+    ; permutation to combine the two segments
+    vpermd m2, m12, m2
+    vpermd m3, m12, m3
+
+    ; Now we have the final results in the lower 8 bytes of each register
+    movq [dstq], xm2
+    movq [dstq + 8], xm3
+
+    add r8d, 8
+    add dstq, 16
+
+    cmp r8d, dstWidthd
+    jl nv12_outer_%1
+    RET
+%endmacro
+
+INIT_YMM avx2
+yuv2nv12cX_fn yuv2nv12
+yuv2nv12cX_fn yuv2nv21
+%endif ; ARCH_X86_64
