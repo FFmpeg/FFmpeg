@@ -464,7 +464,7 @@ static int add_fragment(OutputStream *os, const char *file, const char *infofile
     Fragment *frag;
     if (os->nb_fragments >= os->fragments_size) {
         os->fragments_size = (os->fragments_size + 1) * 2;
-        if ((err = av_reallocp(&os->fragments, sizeof(*os->fragments) *
+        if ((err = av_reallocp_array(&os->fragments, sizeof(*os->fragments),
                                os->fragments_size)) < 0) {
             os->fragments_size = 0;
             os->nb_fragments = 0;
