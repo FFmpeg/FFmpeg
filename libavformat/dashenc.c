@@ -1731,7 +1731,7 @@ static int add_segment(OutputStream *os, const char *file,
     Segment *seg;
     if (os->nb_segments >= os->segments_size) {
         os->segments_size = (os->segments_size + 1) * 2;
-        if ((err = av_reallocp(&os->segments, sizeof(*os->segments) *
+        if ((err = av_reallocp_array(&os->segments, sizeof(*os->segments),
                                os->segments_size)) < 0) {
             os->segments_size = 0;
             os->nb_segments = 0;
