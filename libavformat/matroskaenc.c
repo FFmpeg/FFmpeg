@@ -1896,7 +1896,7 @@ static int mkv_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) || mkv->is_live) {
         ret = mkv_write_seekhead(pb, mkv, 0, avio_tell(pb));
         if (ret < 0)
             return ret;
