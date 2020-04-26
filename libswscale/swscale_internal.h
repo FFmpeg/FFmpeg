@@ -131,7 +131,8 @@ typedef void (*yuv2planarX_fn)(const int16_t *filter, int filterSize,
  *                      output, this is in uint16_t
  * @param dstW          width of chroma planes
  */
-typedef void (*yuv2interleavedX_fn)(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
+typedef void (*yuv2interleavedX_fn)(enum AVPixelFormat dstFormat,
+                                    const uint8_t *chrDither,
                                     const int16_t *chrFilter,
                                     int chrFilterSize,
                                     const int16_t **chrUSrc,

@@ -180,7 +180,8 @@ yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
     }
 }
 
-static void yuv2p016cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither, const int16_t *chrFilter, int chrFilterSize,
+static void yuv2p016cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
+                         const int16_t *chrFilter, int chrFilterSize,
                          const int16_t **chrUSrc, const int16_t **chrVSrc,
                          uint8_t *dest8, int chrDstW)
 {
@@ -402,9 +403,10 @@ static void yuv2plane1_8_c(const int16_t *src, uint8_t *dest, int dstW,
     }
 }
 
-static void yuv2nv12cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither, const int16_t *chrFilter, int chrFilterSize,
-                        const int16_t **chrUSrc, const int16_t **chrVSrc,
-                        uint8_t *dest, int chrDstW)
+static void yuv2nv12cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
+                         const int16_t *chrFilter, int chrFilterSize,
+                         const int16_t **chrUSrc, const int16_t **chrVSrc,
+                         uint8_t *dest, int chrDstW)
 {
     int i;
 
@@ -475,7 +477,8 @@ static void yuv2p010lX_c(const int16_t *filter, int filterSize,
     }
 }
 
-static void yuv2p010cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither, const int16_t *chrFilter, int chrFilterSize,
+static void yuv2p010cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
+                         const int16_t *chrFilter, int chrFilterSize,
                          const int16_t **chrUSrc, const int16_t **chrVSrc,
                          uint8_t *dest8, int chrDstW)
 {
