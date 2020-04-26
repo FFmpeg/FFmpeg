@@ -2149,21 +2149,21 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_compare_ts(elapsed_duration, st->time_base,
                       seg_end_duration, AV_TIME_BASE_Q) >= 0) {
         if (!c->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        c->last_duration = av_rescale_q(pkt->pts - os->start_pts,
-                                        st->time_base,
-                                        AV_TIME_BASE_Q);
-        c->total_duration = av_rescale_q(pkt->pts - os->first_pts,
-                                         st->time_base,
-                                         AV_TIME_BASE_Q);
+            c->last_duration = av_rescale_q(pkt->pts - os->start_pts,
+                    st->time_base,
+                    AV_TIME_BASE_Q);
+            c->total_duration = av_rescale_q(pkt->pts - os->first_pts,
+                    st->time_base,
+                    AV_TIME_BASE_Q);
 
-        if ((!c->use_timeline || !c->use_template) && os->last_duration) {
-            if (c->last_duration < os->last_duration*9/10 ||
-                c->last_duration > os->last_duration*11/10) {
-                av_log(s, AV_LOG_WARNING,
-                       "Segment durations differ too much, enable use_timeline "
-                       "and use_template, or keep a stricter keyframe interval\n");
+            if ((!c->use_timeline || !c->use_template) && os->last_duration) {
+                if (c->last_duration < os->last_duration*9/10 ||
+                        c->last_duration > os->last_duration*11/10) {
+                    av_log(s, AV_LOG_WARNING,
+                            "Segment durations differ too much, enable use_timeline "
+                            "and use_template, or keep a stricter keyframe interval\n");
+                }
             }
-        }
         }
 
         if (c->write_prft && os->producer_reference_time.wallclock && !os->producer_reference_time_str[0])
