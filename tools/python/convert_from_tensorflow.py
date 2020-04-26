@@ -71,7 +71,7 @@ class TFConverter:
         self.conv2d_scope_names = set()
         self.conv2d_scopename_inputname_dict = {}
         self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4, 'MathBinary':5}
-        self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3}
+        self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4}
         self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
         self.name_operand_dict = {}
 
@@ -305,14 +305,9 @@ class TFConverter:
                 self.dump_mirrorpad_to_file(node, f)
             elif node.op == 'Maximum':
                 self.dump_maximum_to_file(node, f)
-            elif node.op == 'Sub':
+            elif node.op in self.mathbin2code:
                 self.dump_mathbinary_to_file(node, f)
-            elif node.op == 'Add':
-                self.dump_mathbinary_to_file(node, f)
-            elif node.op == 'Mul':
-                self.dump_mathbinary_to_file(node, f)
-            elif node.op == 'RealDiv':
-                self.dump_mathbinary_to_file(node, f)
+
 
     def dump_operands_to_file(self, f):
             operands = sorted(self.name_operand_dict.values())

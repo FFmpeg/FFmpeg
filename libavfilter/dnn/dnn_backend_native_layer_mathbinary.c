@@ -150,6 +150,19 @@ int dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_ope
             }
         }
         return 0;
+    case DMBO_MINIMUM:
+        if (params->input0_broadcast || params->input1_broadcast) {
+            for (int i = 0; i < dims_count; ++i) {
+                dst[i] = FFMIN(params->v, src[i]);
+            }
+        } else {
+            const DnnOperand *input1 = &operands[input_operand_indexes[1]];
+            const float *src1 = input1->data;
+            for (int i = 0; i < dims_count; ++i) {
+                dst[i] = FFMIN(src[i], src1[i]);
+            }
+        }
+        return 0;
     default:
         return -1;
     }
