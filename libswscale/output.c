@@ -180,7 +180,7 @@ yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
     }
 }
 
-static void yuv2p016cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
+static void yuv2p016cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither, const int16_t *chrFilter, int chrFilterSize,
                          const int16_t **chrUSrc, const int16_t **chrVSrc,
                          uint8_t *dest8, int chrDstW)
 {
@@ -188,7 +188,7 @@ static void yuv2p016cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
     const int32_t **uSrc = (const int32_t **)chrUSrc;
     const int32_t **vSrc = (const int32_t **)chrVSrc;
     int shift = 15;
-    int big_endian = c->dstFormat == AV_PIX_FMT_P016BE;
+    int big_endian = dstFormat == AV_PIX_FMT_P016BE;
     int i, j;
 
     for (i = 0; i < chrDstW; i++) {
@@ -402,12 +402,10 @@ static void yuv2plane1_8_c(const int16_t *src, uint8_t *dest, int dstW,
     }
 }
 
-static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
+static void yuv2nv12cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither, const int16_t *chrFilter, int chrFilterSize,
                         const int16_t **chrUSrc, const int16_t **chrVSrc,
                         uint8_t *dest, int chrDstW)
 {
-    enum AVPixelFormat dstFormat = c->dstFormat;
-    const uint8_t *chrDither = c->chrDither8;
     int i;
 
     if (dstFormat == AV_PIX_FMT_NV12 ||
@@ -477,13 +475,13 @@ static void yuv2p010lX_c(const int16_t *filter, int filterSize,
     }
 }
 
-static void yuv2p010cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
+static void yuv2p010cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither, const int16_t *chrFilter, int chrFilterSize,
                          const int16_t **chrUSrc, const int16_t **chrVSrc,
                          uint8_t *dest8, int chrDstW)
 {
     uint16_t *dest = (uint16_t*)dest8;
     int shift = 17;
-    int big_endian = c->dstFormat == AV_PIX_FMT_P010BE;
+    int big_endian = dstFormat == AV_PIX_FMT_P010BE;
     int i, j;
 
     for (i = 0; i < chrDstW; i++) {
