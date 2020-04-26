@@ -1916,6 +1916,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         OutputStream *os = &c->streams[i];
         AVStream *st = s->streams[i];
         int range_length, index_length = 0;
+        int64_t duration;
 
         if (!os->packets_written)
             continue;
@@ -1955,23 +1956,18 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             }
         }
 
-        os->last_duration = FFMAX(os->last_duration, av_rescale_q(os->max_pts - os->start_pts,
-                                                                  st->time_base,
-                                                                  AV_TIME_BASE_Q));
+        duration = av_rescale_q(os->max_pts - os->start_pts, st->time_base, AV_TIME_BASE_Q);
+        os->last_duration = FFMAX(os->last_duration, duration);
 
         if (!os->muxer_overhead && os->max_pts > os->start_pts)
             os->muxer_overhead = ((int64_t) (range_length - os->total_pkt_size) *
-                                  8 * AV_TIME_BASE) /
-                                 av_rescale_q(os->max_pts - os->start_pts,
-                                              st->time_base, AV_TIME_BASE_Q);
+                                  8 * AV_TIME_BASE) / duration;
         os->total_pkt_size = 0;
         os->total_pkt_duration = 0;
 
         if (!os->bit_rate) {
             // calculate average bitrate of first segment
-            int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / av_rescale_q(os->max_pts - os->start_pts,
-                                                                                       st->time_base,
-                                                                                       AV_TIME_BASE_Q);
+            int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / duration;
             if (bitrate >= 0)
                 os->bit_rate = bitrate;
         }
