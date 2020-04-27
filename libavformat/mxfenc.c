@@ -52,7 +52,6 @@
 #include "libavcodec/h264_ps.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/internal.h"
-#include "retimeinterleave.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -79,7 +78,7 @@ typedef struct MXFIndexEntry {
 } MXFIndexEntry;
 
 typedef struct MXFStreamContext {
-    RetimeInterleaveContext aic;
+    int64_t pkt_cnt;         ///< pkt counter for muxed packets
     UID track_essence_element_key;
     int index;               ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
@@ -2598,7 +2597,6 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
         }
-        ff_retime_interleave_init(&sc->aic, av_inv_q(mxf->tc.rate));
 
         if (sc->index == -1) {
             sc->index = mxf_get_essence_container_ul_index(st->codecpar->codec_id);
@@ -3087,8 +3085,14 @@ static int mxf_compare_timestamps(AVFormatContext *s, const AVPacket *next,
 
 static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    return ff_retime_interleave(s, out, pkt, flush,
-                                mxf_interleave_get_packet, mxf_compare_timestamps);
+    int ret;
+    if (pkt) {
+        MXFStreamContext *sc = s->streams[pkt->stream_index]->priv_data;
+        pkt->pts = pkt->dts = sc->pkt_cnt++;
+        if ((ret = ff_interleave_add_packet(s, pkt, mxf_compare_timestamps)) < 0)
+            return ret;
+    }
+    return mxf_interleave_get_packet(s, out, NULL, flush);
 }
 
 #define MXF_COMMON_OPTIONS \
