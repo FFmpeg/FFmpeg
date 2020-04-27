@@ -1437,6 +1437,12 @@ static int mkv_write_chapters(AVFormatContext *s)
     if (!s->nb_chapters || mkv->wrote_chapters)
         return 0;
 
+    for (i = 0; i < s->nb_chapters; i++)
+        if (!s->chapters[i]->id) {
+            mkv->chapter_id_offset = 1;
+            break;
+        }
+
     mkv_add_seekhead_entry(mkv, MATROSKA_ID_CHAPTERS, avio_tell(pb));
 
     ret = start_ebml_master_crc32(&dyn_cp, mkv);
@@ -1863,12 +1869,6 @@ static int mkv_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    for (i = 0; i < s->nb_chapters; i++)
-        if (!s->chapters[i]->id) {
-            mkv->chapter_id_offset = 1;
-            break;
-        }
-
     ret = mkv_write_chapters(s);
     if (ret < 0)
         return ret;
@@ -1879,6 +1879,7 @@ static int mkv_write_header(AVFormatContext *s)
             return ret;
     }
 
+    /* Must come after mkv_write_chapters() because of chapter_id_offset */
     ret = mkv_write_tags(s);
     if (ret < 0)
         return ret;
