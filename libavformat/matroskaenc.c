@@ -1498,6 +1498,7 @@ static int mkv_write_chapters(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR,
                    "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
                    chapterstart, chapterend);
+            ffio_free_dyn_buf(&dyn_cp);
             return AVERROR_INVALIDDATA;
         }
 
