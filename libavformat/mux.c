@@ -814,110 +814,6 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
-    AVStream *st = s->streams[pkt->stream_index];
-    int ret;
-
-    if (!(s->flags & AVFMT_FLAG_AUTO_BSF))
-        return 1;
-
-    if (s->oformat->check_bitstream) {
-        if (!st->internal->bitstream_checked) {
-            if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
-                return ret;
-            else if (ret == 1)
-                st->internal->bitstream_checked = 1;
-        }
-    }
-
-    if (st->internal->bsfc) {
-        AVBSFContext *ctx = st->internal->bsfc;
-        // TODO: when any bitstream filter requires flushing at EOF, we'll need to
-        // flush each stream's BSF chain on write_trailer.
-        if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                    "Failed to send packet to filter %s for stream %d\n",
-                    ctx->filter->name, pkt->stream_index);
-            return ret;
-        }
-        // TODO: when any automatically-added bitstream filter is generating multiple
-        // output packets for a single input one, we'll need to call this in a loop
-        // and write each output packet.
-        if ((ret = av_bsf_receive_packet(ctx, pkt)) < 0) {
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-                return 0;
-            av_log(ctx, AV_LOG_ERROR,
-                    "Failed to receive packet from filter %s for stream %d\n",
-                    ctx->filter->name, pkt->stream_index);
-            if (s->error_recognition & AV_EF_EXPLODE)
-                return ret;
-            return 0;
-        }
-    }
-    return 1;
-}
-
-int av_write_frame(AVFormatContext *s, AVPacket *in)
-{
-    AVPacket local_pkt, *pkt = &local_pkt;
-    int ret;
-
-    if (!in) {
-        if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
-            ret = s->oformat->write_packet(s, NULL);
-            flush_if_needed(s);
-            if (ret >= 0 && s->pb && s->pb->error < 0)
-                ret = s->pb->error;
-            return ret;
-        }
-        return 1;
-    }
-
-    if (in->flags & AV_PKT_FLAG_UNCODED_FRAME) {
-        pkt = in;
-    } else {
-        /* We don't own in, so we have to make sure not to modify it.
-         * The following avoids copying in's data unnecessarily.
-         * Copying side data is unavoidable as a bitstream filter
-         * may change it, e.g. free it on errors. */
-        pkt->buf  = NULL;
-        pkt->data = in->data;
-        pkt->size = in->size;
-        ret = av_packet_copy_props(pkt, in);
-        if (ret < 0)
-            return ret;
-        if (in->buf) {
-            pkt->buf = av_buffer_ref(in->buf);
-            if (!pkt->buf) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
-    }
-
-    ret = prepare_input_packet(s, pkt);
-    if (ret < 0)
-        goto fail;
-
-    ret = do_packet_auto_bsf(s, pkt);
-    if (ret <= 0)
-        goto fail;
-
-#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
-    ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
-
-    if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
-        goto fail;
-#endif
-
-    ret = write_packet(s, pkt);
-
-fail:
-    // Uncoded frames using the noninterleaved codepath are also freed here
-    av_packet_unref(pkt);
-    return ret;
-}
-
 #define CHUNK_START 0x1000
 
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
@@ -1184,6 +1080,110 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
         return ret;
     } else
         return ff_interleave_packet_per_dts(s, out, in, flush);
+}
+
+static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
+    AVStream *st = s->streams[pkt->stream_index];
+    int ret;
+
+    if (!(s->flags & AVFMT_FLAG_AUTO_BSF))
+        return 1;
+
+    if (s->oformat->check_bitstream) {
+        if (!st->internal->bitstream_checked) {
+            if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
+                return ret;
+            else if (ret == 1)
+                st->internal->bitstream_checked = 1;
+        }
+    }
+
+    if (st->internal->bsfc) {
+        AVBSFContext *ctx = st->internal->bsfc;
+        // TODO: when any bitstream filter requires flushing at EOF, we'll need to
+        // flush each stream's BSF chain on write_trailer.
+        if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                    "Failed to send packet to filter %s for stream %d\n",
+                    ctx->filter->name, pkt->stream_index);
+            return ret;
+        }
+        // TODO: when any automatically-added bitstream filter is generating multiple
+        // output packets for a single input one, we'll need to call this in a loop
+        // and write each output packet.
+        if ((ret = av_bsf_receive_packet(ctx, pkt)) < 0) {
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                return 0;
+            av_log(ctx, AV_LOG_ERROR,
+                    "Failed to receive packet from filter %s for stream %d\n",
+                    ctx->filter->name, pkt->stream_index);
+            if (s->error_recognition & AV_EF_EXPLODE)
+                return ret;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int av_write_frame(AVFormatContext *s, AVPacket *in)
+{
+    AVPacket local_pkt, *pkt = &local_pkt;
+    int ret;
+
+    if (!in) {
+        if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
+            ret = s->oformat->write_packet(s, NULL);
+            flush_if_needed(s);
+            if (ret >= 0 && s->pb && s->pb->error < 0)
+                ret = s->pb->error;
+            return ret;
+        }
+        return 1;
+    }
+
+    if (in->flags & AV_PKT_FLAG_UNCODED_FRAME) {
+        pkt = in;
+    } else {
+        /* We don't own in, so we have to make sure not to modify it.
+         * The following avoids copying in's data unnecessarily.
+         * Copying side data is unavoidable as a bitstream filter
+         * may change it, e.g. free it on errors. */
+        pkt->buf  = NULL;
+        pkt->data = in->data;
+        pkt->size = in->size;
+        ret = av_packet_copy_props(pkt, in);
+        if (ret < 0)
+            return ret;
+        if (in->buf) {
+            pkt->buf = av_buffer_ref(in->buf);
+            if (!pkt->buf) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
+    }
+
+    ret = prepare_input_packet(s, pkt);
+    if (ret < 0)
+        goto fail;
+
+    ret = do_packet_auto_bsf(s, pkt);
+    if (ret <= 0)
+        goto fail;
+
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
+    ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
+
+    if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+        goto fail;
+#endif
+
+    ret = write_packet(s, pkt);
+
+fail:
+    // Uncoded frames using the noninterleaved codepath are also freed here
+    av_packet_unref(pkt);
+    return ret;
 }
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
