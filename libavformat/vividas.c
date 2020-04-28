@@ -646,7 +646,7 @@ static int viv_read_packet(AVFormatContext *s,
         pkt->stream_index = 1;
         astream = s->streams[pkt->stream_index];
 
-        pkt->pts = av_rescale(viv->audio_sample, astream->time_base.den, astream->time_base.num) / astream->codecpar->sample_rate;
+        pkt->pts = av_rescale_q(viv->audio_sample, av_make_q(1, astream->codecpar->sample_rate), astream->time_base);
         viv->audio_sample += viv->audio_subpackets[viv->current_audio_subpacket].pcm_bytes / 2 / astream->codecpar->channels;
         pkt->flags |= AV_PKT_FLAG_KEY;
         viv->current_audio_subpacket++;
