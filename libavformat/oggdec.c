@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
+#include "avio_internal.h"
 #include "oggdec.h"
 #include "avformat.h"
 #include "internal.h"
@@ -321,8 +322,9 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     int flags, nsegs;
     uint64_t gp;
     uint32_t serial;
+    uint32_t crc, crc_tmp;
     int size = 0, idx;
-    int64_t page_pos;
+    int64_t version, page_pos;
     uint8_t sync[4];
     uint8_t segments[255];
     uint8_t *readout_buf;
@@ -359,15 +361,19 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
         return AVERROR_INVALIDDATA;
     }
 
-    if (avio_r8(bc) != 0) {      /* version */
-        av_log (s, AV_LOG_ERROR, "ogg page, unsupported version\n");
-        return AVERROR_INVALIDDATA;
-    }
+    /* 0x4fa9b05f = av_crc(AV_CRC_32_IEEE, 0x0, "OggS", 4) */
+    ffio_init_checksum(bc, ff_crc04C11DB7_update, 0x4fa9b05f);
 
-    flags  = avio_r8(bc);
-    gp     = avio_rl64(bc);
-    serial = avio_rl32(bc);
-    avio_skip(bc, 8); /* seq, crc */
+    version = avio_r8(bc);
+    flags   = avio_r8(bc);
+    gp      = avio_rl64(bc);
+    serial  = avio_rl32(bc);
+    avio_skip(bc, 4); /* seq */
+
+    crc_tmp = ffio_get_checksum(bc);
+    crc     = avio_rb32(bc);
+    crc_tmp = ff_crc04C11DB7_update(crc_tmp, (uint8_t[4]){0}, 4);
+    ffio_init_checksum(bc, ff_crc04C11DB7_update, crc_tmp);
 
     nsegs    = avio_r8(bc);
     page_pos = avio_tell(bc) - 27;
@@ -375,9 +381,6 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     ret = avio_read(bc, segments, nsegs);
     if (ret < nsegs)
         return ret < 0 ? ret : AVERROR_EOF;
-
-    if (avio_feof(bc))
-        return AVERROR_EOF;
 
     for (i = 0; i < nsegs; i++)
         size += segments[i];
@@ -407,6 +410,25 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
         return ret < 0 ? ret : AVERROR_EOF;
     }
 
+    if (crc ^ ffio_get_checksum(bc)) {
+        av_log(s, AV_LOG_ERROR, "CRC mismatch!\n");
+        if (idx < 0)
+            av_free(readout_buf);
+        avio_seek(bc, -size, SEEK_CUR);
+        return 0;
+    }
+
+    /* Since we're almost sure its a valid packet, checking the version after
+     * the checksum lets the demuxer be more tolerant */
+    if (version) {
+        av_log(s, AV_LOG_ERROR, "Invalid Ogg vers!\n");
+        if (idx < 0)
+            av_free(readout_buf);
+        avio_seek(bc, -size, SEEK_CUR);
+        return 0;
+    }
+
+    /* CRC is correct so we can be 99% sure there's an actual change here */
     if (idx < 0) {
         if (data_packets_seen(ogg))
             idx = ogg_replace_stream(s, serial, size);
