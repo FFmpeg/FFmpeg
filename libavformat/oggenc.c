@@ -308,7 +308,7 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
     p0 = p;
 
     p += offset;
-    ff_vorbiscomment_write(&p, m, vendor, chapters, nb_chapters);
+    ff_vorbiscomment_write(&p, *m, vendor, chapters, nb_chapters);
     if (framing_bit)
         bytestream_put_byte(&p, 1);
 

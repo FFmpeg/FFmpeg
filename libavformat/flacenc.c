@@ -76,7 +76,7 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
 
     bytestream_put_byte(&p, last_block ? 0x84 : 0x04);
     bytestream_put_be24(&p, len);
-    ff_vorbiscomment_write(&p, m, vendor, NULL, 0);
+    ff_vorbiscomment_write(&p, *m, vendor, NULL, 0);
 
     avio_write(pb, p0, len+4);
     av_freep(&p0);
