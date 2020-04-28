@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/pixdesc.h"
 #include "libavfilter/buffersink.h"
 
 #include "ffmpeg.h"
@@ -282,10 +283,7 @@ void hw_device_free_all(void)
     nb_hw_devices = 0;
 }
 
-static HWDevice *hw_device_match_by_codec(const AVCodec *codec,
-                                          enum AVPixelFormat format,
-                                          int possible_methods,
-                                          int *matched_methods)
+static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
 {
     const AVCodecHWConfig *config;
     HWDevice *dev;
@@ -294,18 +292,11 @@ static HWDevice *hw_device_match_by_codec(const AVCodec *codec,
         config = avcodec_get_hw_config(codec, i);
         if (!config)
             return NULL;
-        if (format != AV_PIX_FMT_NONE &&
-            config->pix_fmt != AV_PIX_FMT_NONE &&
-            config->pix_fmt != format)
-            continue;
-        if (!(config->methods & possible_methods))
+        if (!(config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX))
             continue;
         dev = hw_device_get_by_type(config->device_type);
-        if (dev) {
-            if (matched_methods)
-                *matched_methods = config->methods & possible_methods;
+        if (dev)
             return dev;
-        }
     }
 }
 
@@ -351,9 +342,7 @@ int hw_device_setup_for_decode(InputStream *ist)
             if (!dev)
                 err = hw_device_init_from_type(type, NULL, &dev);
         } else {
-            dev = hw_device_match_by_codec(ist->dec, AV_PIX_FMT_NONE,
-                                           AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX,
-                                           NULL);
+            dev = hw_device_match_by_codec(ist->dec);
             if (!dev) {
                 // No device for this codec, but not using generic hwaccel
                 // and therefore may well not need one - ignore.
@@ -429,37 +418,57 @@ int hw_device_setup_for_decode(InputStream *ist)
 
 int hw_device_setup_for_encode(OutputStream *ost)
 {
-    HWDevice *dev;
-    AVBufferRef *frames_ref;
-    int methods = AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX;
-    int matched_methods;
+    const AVCodecHWConfig *config;
+    HWDevice *dev = NULL;
+    AVBufferRef *frames_ref = NULL;
+    int i;
 
     if (ost->filter) {
         frames_ref = av_buffersink_get_hw_frames_ctx(ost->filter->filter);
         if (frames_ref &&
             ((AVHWFramesContext*)frames_ref->data)->format ==
-            ost->enc_ctx->pix_fmt)
-            methods |= AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX;
+            ost->enc_ctx->pix_fmt) {
+            // Matching format, will try to use hw_frames_ctx.
+        } else {
+            frames_ref = NULL;
+        }
     }
 
-    dev = hw_device_match_by_codec(ost->enc, ost->enc_ctx->pix_fmt,
-                                   methods, &matched_methods);
-    if (dev) {
-        if (matched_methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) {
-            ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
-            if (!ost->enc_ctx->hw_device_ctx)
-                return AVERROR(ENOMEM);
-        }
-        if (matched_methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX) {
+    for (i = 0;; i++) {
+        config = avcodec_get_hw_config(ost->enc, i);
+        if (!config)
+            break;
+
+        if (frames_ref &&
+            config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX &&
+            (config->pix_fmt == AV_PIX_FMT_NONE ||
+             config->pix_fmt == ost->enc_ctx->pix_fmt)) {
+            av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using input "
+                   "frames context (format %s) with %s encoder.\n",
+                   av_get_pix_fmt_name(ost->enc_ctx->pix_fmt),
+                   ost->enc->name);
             ost->enc_ctx->hw_frames_ctx = av_buffer_ref(frames_ref);
             if (!ost->enc_ctx->hw_frames_ctx)
                 return AVERROR(ENOMEM);
+            return 0;
         }
-        return 0;
+
+        if (!dev &&
+            config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
+            dev = hw_device_get_by_type(config->device_type);
+    }
+
+    if (dev) {
+        av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using device %s "
+               "(type %s) with %s encoder.\n", dev->name,
+               av_hwdevice_get_type_name(dev->type), ost->enc->name);
+        ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
+        if (!ost->enc_ctx->hw_device_ctx)
+            return AVERROR(ENOMEM);
     } else {
         // No device required, or no device available.
-        return 0;
     }
+    return 0;
 }
 
 static int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input)
