@@ -434,10 +434,9 @@ static int wav_write_trailer(AVFormatContext *s)
                    "Filesize %"PRId64" invalid for wav, output file will be broken\n",
                    file_size);
         }
-
-        number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
-                                       s->streams[0]->codecpar->sample_rate * (int64_t)s->streams[0]->time_base.num,
-                                       s->streams[0]->time_base.den);
+        number_of_samples = av_rescale_q(wav->maxpts - wav->minpts + wav->last_duration,
+                                       s->streams[0]->time_base,
+                                       av_make_q(1, s->streams[0]->codecpar->sample_rate));
 
         if(s->streams[0]->codecpar->codec_tag != 0x01) {
             /* Update num_samps in fact chunk */
