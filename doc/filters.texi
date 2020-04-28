@@ -1703,6 +1703,14 @@ Specify weight of each input audio stream as sequence.
 Each weight is separated by space. By default all inputs have same weight.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item weights
+Syntax is same as option with same name.
+@end table
+
 @section amultiply
 
 Multiply first audio stream with second audio stream and store result
