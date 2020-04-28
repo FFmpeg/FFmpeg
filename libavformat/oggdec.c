@@ -205,7 +205,7 @@ static const struct ogg_codec *ogg_find_codec(uint8_t *buf, int size)
  * situation where a new audio stream spawn (identified with a new serial) and
  * must replace the previous one (track switch).
  */
-static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
+static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int size)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os;
@@ -214,11 +214,10 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
 
     if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         uint8_t magic[8];
-        int64_t pos = avio_tell(s->pb);
-        avio_skip(s->pb, nsegs);
+        avio_seek(s->pb, -size, SEEK_CUR);
         if (avio_read(s->pb, magic, sizeof(magic)) != sizeof(magic))
             return AVERROR_INVALIDDATA;
-        avio_seek(s->pb, pos, SEEK_SET);
+        avio_seek(s->pb, size - sizeof(magic), SEEK_CUR);
         codec = ogg_find_codec(magic, sizeof(magic));
         if (!codec) {
             av_log(s, AV_LOG_ERROR, "Cannot identify new stream\n");
@@ -303,27 +302,6 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     return idx;
 }
 
-static int ogg_new_buf(struct ogg *ogg, int idx)
-{
-    struct ogg_stream *os = ogg->streams + idx;
-    uint8_t *nb = av_malloc(os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
-    int size = os->bufpos - os->pstart;
-
-    if (!nb)
-        return AVERROR(ENOMEM);
-
-    if (os->buf) {
-        memcpy(nb, os->buf + os->pstart, size);
-        av_free(os->buf);
-    }
-
-    os->buf    = nb;
-    os->bufpos = size;
-    os->pstart = 0;
-
-    return 0;
-}
-
 static int data_packets_seen(const struct ogg *ogg)
 {
     int i;
@@ -343,8 +321,11 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     int flags, nsegs;
     uint64_t gp;
     uint32_t serial;
-    int size, idx;
+    int size = 0, idx;
+    int64_t page_pos;
     uint8_t sync[4];
+    uint8_t segments[255];
+    uint8_t *readout_buf;
     int sp = 0;
 
     ret = avio_read(bc, sync, 4);
@@ -387,47 +368,73 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     gp     = avio_rl64(bc);
     serial = avio_rl32(bc);
     avio_skip(bc, 8); /* seq, crc */
-    nsegs  = avio_r8(bc);
+
+    nsegs    = avio_r8(bc);
+    page_pos = avio_tell(bc) - 27;
+
+    ret = avio_read(bc, segments, nsegs);
+    if (ret < nsegs)
+        return ret < 0 ? ret : AVERROR_EOF;
 
     if (avio_feof(bc))
         return AVERROR_EOF;
 
+    for (i = 0; i < nsegs; i++)
+        size += segments[i];
+
     idx = ogg_find_stream(ogg, serial);
+    if (idx >= 0) {
+        os = ogg->streams + idx;
+
+        /* Even if invalid guarantee there's enough memory to read the page */
+        if (os->bufsize - os->bufpos < size) {
+            uint8_t *nb = av_realloc(os->buf, 2*os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!nb)
+                return AVERROR(ENOMEM);
+            os->buf = nb;
+            os->bufsize *= 2;
+        }
+
+        readout_buf = os->buf + os->bufpos;
+    } else {
+        readout_buf = av_malloc(size);
+    }
+
+    ret = avio_read(bc, readout_buf, size);
+    if (ret < size) {
+        if (idx < 0)
+            av_free(readout_buf);
+        return ret < 0 ? ret : AVERROR_EOF;
+    }
+
     if (idx < 0) {
         if (data_packets_seen(ogg))
-            idx = ogg_replace_stream(s, serial, nsegs);
+            idx = ogg_replace_stream(s, serial, size);
         else
             idx = ogg_new_stream(s, serial);
 
         if (idx < 0) {
             av_log(s, AV_LOG_ERROR, "failed to create or replace stream\n");
+            av_free(readout_buf);
             return idx;
         }
+
+        os = ogg->streams + idx;
+
+        memcpy(os->buf + os->bufpos, readout_buf, size);
+        av_free(readout_buf);
     }
 
-    os = ogg->streams + idx;
-    ogg->page_pos =
-    os->page_pos = avio_tell(bc) - 27;
-
-    if (os->psize > 0) {
-        ret = ogg_new_buf(ogg, idx);
-        if (ret < 0)
-            return ret;
-    }
-
-    ret = avio_read(bc, os->segments, nsegs);
-    if (ret < nsegs)
-        return ret < 0 ? ret : AVERROR_EOF;
-
-    os->nsegs = nsegs;
-    os->segp  = 0;
-
-    size = 0;
-    for (i = 0; i < nsegs; i++)
-        size += os->segments[i];
-
-    if (!(flags & OGG_FLAG_BOS))
-        os->got_data = 1;
+    ogg->page_pos = page_pos;
+    os->page_pos  = page_pos;
+    os->nsegs     = nsegs;
+    os->segp      = 0;
+    os->got_data  = !(flags & OGG_FLAG_BOS);
+    os->bufpos   += size;
+    os->granule   = gp;
+    os->flags     = flags;
+    memcpy(os->segments, segments, nsegs);
+    memset(os->buf + os->bufpos, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (flags & OGG_FLAG_CONT || os->incomplete) {
         if (!os->psize) {
@@ -447,26 +454,8 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
         os->sync_pos = os->page_pos;
     }
 
-    if (os->bufsize - os->bufpos < size) {
-        uint8_t *nb = av_malloc((os->bufsize *= 2) + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!nb)
-            return AVERROR(ENOMEM);
-        memcpy(nb, os->buf, os->bufpos);
-        av_free(os->buf);
-        os->buf = nb;
-    }
-
-    ret = avio_read(bc, os->buf + os->bufpos, size);
-    if (ret < size)
-        return ret < 0 ? ret : AVERROR_EOF;
-
-    os->bufpos += size;
-    os->granule = gp;
-    os->flags   = flags;
-
-    memset(os->buf + os->bufpos, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    if (sid)
-        *sid = idx;
+    /* This function is always called with sid != NULL */
+    *sid = idx;
 
     return 0;
 }
