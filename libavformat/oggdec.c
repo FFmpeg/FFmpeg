@@ -206,59 +206,40 @@ static const struct ogg_codec *ogg_find_codec(uint8_t *buf, int size)
  * situation where a new audio stream spawn (identified with a new serial) and
  * must replace the previous one (track switch).
  */
-static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int size)
+static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os;
     const struct ogg_codec *codec;
     int i = 0;
 
-    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        uint8_t magic[8];
-        avio_seek(s->pb, -size, SEEK_CUR);
-        if (avio_read(s->pb, magic, sizeof(magic)) != sizeof(magic))
-            return AVERROR_INVALIDDATA;
-        avio_seek(s->pb, size - sizeof(magic), SEEK_CUR);
-        codec = ogg_find_codec(magic, sizeof(magic));
-        if (!codec) {
-            av_log(s, AV_LOG_ERROR, "Cannot identify new stream\n");
-            return AVERROR_INVALIDDATA;
-        }
-        for (i = 0; i < ogg->nstreams; i++) {
-            if (ogg->streams[i].codec == codec)
-                break;
-        }
-        if (i >= ogg->nstreams)
-            return ogg_new_stream(s, serial);
-    } else if (ogg->nstreams != 1) {
+    if (ogg->nstreams != 1) {
         avpriv_report_missing_feature(s, "Changing stream parameters in multistream ogg");
         return AVERROR_PATCHWELCOME;
     }
 
+    /* Check for codecs */
+    codec = ogg_find_codec(magic, 8);
+    if (!codec) {
+        av_log(s, AV_LOG_ERROR, "Cannot identify new stream\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* If the codec matches, then we assume its a replacement */
+    for (i = 0; i < ogg->nstreams; i++) {
+        if (ogg->streams[i].codec == codec)
+            break;
+    }
+
+    /* Otherwise, create a new stream */
+    if (i >= ogg->nstreams)
+        return ogg_new_stream(s, serial);
+
     os = &ogg->streams[i];
-
-    os->serial  = serial;
-    return i;
-
-#if 0
-    buf     = os->buf;
-    bufsize = os->bufsize;
-    codec   = os->codec;
-
-    if (!ogg->state || ogg->state->streams[i].private != os->private)
-        av_freep(&ogg->streams[i].private);
-
-    /* Set Ogg stream settings similar to what is done in ogg_new_stream(). We
-     * also re-use the ogg_stream allocated buffer */
-    memset(os, 0, sizeof(*os));
-    os->serial  = serial;
-    os->bufsize = bufsize;
-    os->buf     = buf;
-    os->header  = -1;
-    os->codec   = codec;
+    os->serial = serial;
+    os->codec  = codec;
 
     return i;
-#endif
 }
 
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
@@ -325,6 +306,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     uint32_t crc, crc_tmp;
     int size = 0, idx;
     int64_t version, page_pos;
+    int64_t start_pos;
     uint8_t sync[4];
     uint8_t segments[255];
     uint8_t *readout_buf;
@@ -363,6 +345,10 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
 
     /* 0x4fa9b05f = av_crc(AV_CRC_32_IEEE, 0x0, "OggS", 4) */
     ffio_init_checksum(bc, ff_crc04C11DB7_update, 0x4fa9b05f);
+
+    /* To rewind if checksum is bad/check magic on switches - this is the max packet size */
+    ffio_ensure_seekback(bc, MAX_PAGE_SIZE);
+    start_pos = avio_tell(bc);
 
     version = avio_r8(bc);
     flags   = avio_r8(bc);
@@ -414,7 +400,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
         av_log(s, AV_LOG_ERROR, "CRC mismatch!\n");
         if (idx < 0)
             av_free(readout_buf);
-        avio_seek(bc, -size, SEEK_CUR);
+        avio_seek(bc, start_pos, SEEK_SET);
         return 0;
     }
 
@@ -424,14 +410,14 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
         av_log(s, AV_LOG_ERROR, "Invalid Ogg vers!\n");
         if (idx < 0)
             av_free(readout_buf);
-        avio_seek(bc, -size, SEEK_CUR);
+        avio_seek(bc, start_pos, SEEK_SET);
         return 0;
     }
 
     /* CRC is correct so we can be 99% sure there's an actual change here */
     if (idx < 0) {
         if (data_packets_seen(ogg))
-            idx = ogg_replace_stream(s, serial, size);
+            idx = ogg_replace_stream(s, serial, readout_buf);
         else
             idx = ogg_new_stream(s, serial);
 
