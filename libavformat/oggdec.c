@@ -178,6 +178,7 @@ static int ogg_reset(AVFormatContext *s)
         if (start_pos <= s->internal->data_offset) {
             os->lastpts = 0;
         }
+        os->start_trimming = 0;
         os->end_trimming = 0;
         av_freep(&os->new_metadata);
         os->new_metadata_size = 0;
@@ -206,7 +207,8 @@ static const struct ogg_codec *ogg_find_codec(uint8_t *buf, int size)
  * situation where a new audio stream spawn (identified with a new serial) and
  * must replace the previous one (track switch).
  */
-static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic)
+static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic,
+                              int probing)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os;
@@ -220,24 +222,25 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic)
 
     /* Check for codecs */
     codec = ogg_find_codec(magic, 8);
-    if (!codec) {
+    if (!codec && !probing) {
         av_log(s, AV_LOG_ERROR, "Cannot identify new stream\n");
         return AVERROR_INVALIDDATA;
     }
 
-    /* If the codec matches, then we assume its a replacement */
-    for (i = 0; i < ogg->nstreams; i++) {
-        if (ogg->streams[i].codec == codec)
-            break;
-    }
+    /* We only have a single stream anyway, so if there's a new stream with
+     * a different codec just replace it */
+    os = &ogg->streams[0];
+    os->serial  = serial;
+    os->codec   = codec;
+    os->serial  = serial;
+    os->lastpts = 0;
+    os->lastdts = 0;
+    os->start_trimming = 0;
+    os->end_trimming = 0;
 
-    /* Otherwise, create a new stream */
-    if (i >= ogg->nstreams)
-        return ogg_new_stream(s, serial);
-
-    os = &ogg->streams[i];
-    os->serial = serial;
-    os->codec  = codec;
+    /* Chained files have extradata as a new packet */
+    if (codec == &ff_opus_codec)
+        os->header = -1;
 
     return i;
 }
@@ -294,7 +297,7 @@ static int data_packets_seen(const struct ogg *ogg)
     return 0;
 }
 
-static int ogg_read_page(AVFormatContext *s, int *sid)
+static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
 {
     AVIOContext *bc = s->pb;
     struct ogg *ogg = s->priv_data;
@@ -417,7 +420,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     /* CRC is correct so we can be 99% sure there's an actual change here */
     if (idx < 0) {
         if (data_packets_seen(ogg))
-            idx = ogg_replace_stream(s, serial, readout_buf);
+            idx = ogg_replace_stream(s, serial, readout_buf, probing);
         else
             idx = ogg_new_stream(s, serial);
 
@@ -492,7 +495,7 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
         idx = ogg->curidx;
 
         while (idx < 0) {
-            ret = ogg_read_page(s, &idx);
+            ret = ogg_read_page(s, &idx, 0);
             if (ret < 0)
                 return ret;
         }
@@ -643,7 +646,7 @@ static int ogg_get_length(AVFormatContext *s)
     avio_seek(s->pb, end, SEEK_SET);
     ogg->page_pos = -1;
 
-    while (!ogg_read_page(s, &i)) {
+    while (!ogg_read_page(s, &i, 1)) {
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
             ogg->streams[i].codec) {
             s->streams[i]->duration =
@@ -847,13 +850,15 @@ retry:
     pkt->duration = os->pduration;
     pkt->pos      = fpos;
 
-    if (os->end_trimming) {
+    if (os->start_trimming || os->end_trimming) {
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_SKIP_SAMPLES,
                                                      10);
         if(!side_data)
             return AVERROR(ENOMEM);
+         AV_WL32(side_data + 0, os->start_trimming);
         AV_WL32(side_data + 4, os->end_trimming);
+        os->start_trimming = 0;
         os->end_trimming = 0;
     }
 
