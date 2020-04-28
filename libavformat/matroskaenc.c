@@ -624,7 +624,7 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
         const char *vendor = (s->flags & AVFMT_FLAG_BITEXACT) ?
                              "Lavf" : LIBAVFORMAT_IDENT;
         AVDictionary *dict = NULL;
-        uint8_t buf[32], *data, *p;
+        uint8_t buf[32];
         int64_t len;
 
         snprintf(buf, sizeof(buf), "0x%"PRIx64, par->channel_layout);
@@ -633,21 +633,11 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
         len = ff_vorbiscomment_length(dict, vendor, NULL, 0);
         av_assert1(len < (1 << 24) - 4);
 
-        data = av_malloc(len + 4);
-        if (!data) {
-            av_dict_free(&dict);
-            return AVERROR(ENOMEM);
-        }
+        avio_w8(pb, 0x84);
+        avio_wb24(pb, len);
 
-        data[0] = 0x84;
-        AV_WB24(data + 1, len);
+        ff_vorbiscomment_write(pb, dict, vendor, NULL, 0);
 
-        p = data + 4;
-        ff_vorbiscomment_write(&p, dict, vendor, NULL, 0);
-
-        avio_write(pb, data, len + 4);
-
-        av_freep(&data);
         av_dict_free(&dict);
     }
 
