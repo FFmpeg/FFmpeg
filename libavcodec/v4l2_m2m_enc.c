@@ -204,11 +204,11 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
     switch (avctx->codec_id) {
     case AV_CODEC_ID_H264:
         if (avctx->profile != FF_PROFILE_UNKNOWN) {
-        val = v4l2_h264_profile_from_ff(avctx->profile);
-        if (val < 0)
-            av_log(avctx, AV_LOG_WARNING, "h264 profile not found\n");
-        else
-            v4l2_set_ext_ctrl(s, MPEG_CID(H264_PROFILE), val, "h264 profile", 1);
+            val = v4l2_h264_profile_from_ff(avctx->profile);
+            if (val < 0)
+                av_log(avctx, AV_LOG_WARNING, "h264 profile not found\n");
+            else
+                v4l2_set_ext_ctrl(s, MPEG_CID(H264_PROFILE), val, "h264 profile", 1);
         }
         qmin_cid = MPEG_CID(H264_MIN_QP);
         qmax_cid = MPEG_CID(H264_MAX_QP);
@@ -217,11 +217,11 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
         break;
     case AV_CODEC_ID_MPEG4:
         if (avctx->profile != FF_PROFILE_UNKNOWN) {
-        val = v4l2_mpeg4_profile_from_ff(avctx->profile);
-        if (val < 0)
-            av_log(avctx, AV_LOG_WARNING, "mpeg4 profile not found\n");
-        else
-            v4l2_set_ext_ctrl(s, MPEG_CID(MPEG4_PROFILE), val, "mpeg4 profile", 1);
+            val = v4l2_mpeg4_profile_from_ff(avctx->profile);
+            if (val < 0)
+                av_log(avctx, AV_LOG_WARNING, "mpeg4 profile not found\n");
+            else
+                v4l2_set_ext_ctrl(s, MPEG_CID(MPEG4_PROFILE), val, "mpeg4 profile", 1);
         }
         qmin_cid = MPEG_CID(MPEG4_MIN_QP);
         qmax_cid = MPEG_CID(MPEG4_MAX_QP);
