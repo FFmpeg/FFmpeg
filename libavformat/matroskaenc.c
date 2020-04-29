@@ -808,18 +808,19 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
-static int mkv_write_video_color(AVIOContext *pb, const AVCodecParameters *par,
+static void mkv_write_video_color(AVIOContext *pb, const AVCodecParameters *par,
                                  const AVStream *st)
 {
-    AVIOContext *dyn_cp;
-    uint8_t *colorinfo_ptr;
+    /* 18 Elements with two bytes ID, one byte length field, 8 bytes payload
+     * a master element with two bytes ID and one byte length field
+     * plus another byte to stay clear of the end. */
+    uint8_t colour[(2 + 1 + 8) * 18 + (2 + 1) + 1];
+    AVIOContext buf, *dyn_cp = &buf;
     int side_data_size = 0;
-    int ret, colorinfo_size;
+    int colorinfo_size;
     const uint8_t *side_data;
 
-    ret = avio_open_dyn_buf(&dyn_cp);
-    if (ret < 0)
-        return ret;
+    ffio_init_context(dyn_cp, colour, sizeof(colour), 1, NULL, NULL, NULL, NULL);
 
     if (par->color_trc != AVCOL_TRC_UNSPECIFIED &&
         par->color_trc < AVCOL_TRC_NB) {
@@ -890,14 +891,12 @@ static int mkv_write_video_color(AVIOContext *pb, const AVCodecParameters *par,
         end_ebml_master(dyn_cp, meta_element);
     }
 
-    colorinfo_size = avio_get_dyn_buf(dyn_cp, &colorinfo_ptr);
+    colorinfo_size = avio_tell(dyn_cp);
     if (colorinfo_size) {
         ebml_master colorinfo = start_ebml_master(pb, MATROSKA_ID_VIDEOCOLOR, colorinfo_size);
-        avio_write(pb, colorinfo_ptr, colorinfo_size);
+        avio_write(pb, colour, colorinfo_size);
         end_ebml_master(pb, colorinfo);
     }
-    ffio_free_dyn_buf(&dyn_cp);
-    return 0;
 }
 
 static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
@@ -1290,9 +1289,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             uint32_t color_space = av_le2ne32(par->codec_tag);
             put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
         }
-        ret = mkv_write_video_color(pb, par, st);
-        if (ret < 0)
-            return ret;
+        mkv_write_video_color(pb, par, st);
+
         ret = mkv_write_video_projection(s, pb, st);
         if (ret < 0)
             return ret;
