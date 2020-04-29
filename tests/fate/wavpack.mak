@@ -91,12 +91,12 @@ fate-wavpack-matroskamode: CMD = md5 -i $(TARGET_SAMPLES)/wavpack/special/matros
 FATE_WAVPACK-$(call DEMMUX, WV, MATROSKA) += fate-wavpack-matroska_mux-mono
 fate-wavpack-matroska_mux-mono: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/num_channels/mono_16bit_int.wv -c copy -fflags +bitexact -f matroska
 fate-wavpack-matroska_mux-mono: CMP = oneline
-fate-wavpack-matroska_mux-mono: REF = 5388d452e84958d204de9974bb4e3947
+fate-wavpack-matroska_mux-mono: REF = 0a10b6cd4d64c25ced75f52d1c6929a7
 
 FATE_WAVPACK-$(call DEMMUX, WV, MATROSKA) += fate-wavpack-matroska_mux-61
 fate-wavpack-matroska_mux-61: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/num_channels/eva_2.22_6.1_16bit-partial.wv -c copy -fflags +bitexact -f matroska
 fate-wavpack-matroska_mux-61: CMP = oneline
-fate-wavpack-matroska_mux-61: REF = c28c51910fc8f3806b1ada1efc82ccae
+fate-wavpack-matroska_mux-61: REF = fee4bb1d6cf2d54f78eddc4483e7c990
 
 FATE_SAMPLES_AVCONV += $(FATE_WAVPACK-yes)
 fate-wavpack: $(FATE_WAVPACK-yes)
