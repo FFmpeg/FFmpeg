@@ -1435,65 +1435,6 @@ static int mkv_write_tracks(AVFormatContext *s)
                                              MATROSKA_ID_TRACKS);
 }
 
-static int mkv_write_chapters(AVFormatContext *s)
-{
-    MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *dyn_cp = NULL, *pb = s->pb;
-    ebml_master editionentry;
-    AVRational scale = {1, 1E9};
-    int i, ret;
-
-    if (!s->nb_chapters || mkv->wrote_chapters)
-        return 0;
-
-    for (i = 0; i < s->nb_chapters; i++)
-        if (!s->chapters[i]->id) {
-            mkv->chapter_id_offset = 1;
-            break;
-        }
-
-    ret = start_ebml_master_crc32(&dyn_cp, mkv);
-    if (ret < 0)
-        return ret;
-
-    editionentry = start_ebml_master(dyn_cp, MATROSKA_ID_EDITIONENTRY, 0);
-    if (mkv->mode != MODE_WEBM)
-        put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGDEFAULT, 1);
-
-    for (i = 0; i < s->nb_chapters; i++) {
-        ebml_master chapteratom, chapterdisplay;
-        const AVChapter *c   = s->chapters[i];
-        int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
-        int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
-        const AVDictionaryEntry *t;
-        if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
-            av_log(s, AV_LOG_ERROR,
-                   "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
-                   chapterstart, chapterend);
-            ffio_free_dyn_buf(&dyn_cp);
-            return AVERROR_INVALIDDATA;
-        }
-
-        chapteratom = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERATOM, 0);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID,
-                      (uint32_t)c->id + (uint64_t)mkv->chapter_id_offset);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
-        if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
-            chapterdisplay = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERDISPLAY, 0);
-            put_ebml_string(dyn_cp, MATROSKA_ID_CHAPSTRING, t->value);
-            put_ebml_string(dyn_cp, MATROSKA_ID_CHAPLANG  , "und");
-            end_ebml_master(dyn_cp, chapterdisplay);
-        }
-        end_ebml_master(dyn_cp, chapteratom);
-    }
-    end_ebml_master(dyn_cp, editionentry);
-    mkv->wrote_chapters = 1;
-
-    return end_ebml_master_crc32(pb, &dyn_cp, mkv,
-                                 MATROSKA_ID_CHAPTERS, 0, 0, 1);
-}
-
 static int mkv_write_simpletag(AVIOContext *pb, const AVDictionaryEntry *t)
 {
     uint8_t *key = av_strdup(t->key);
@@ -1683,6 +1624,65 @@ static int mkv_write_tags(AVFormatContext *s)
                                                  MATROSKA_ID_TAGS);
     }
     return 0;
+}
+
+static int mkv_write_chapters(AVFormatContext *s)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    AVIOContext *dyn_cp = NULL, *pb = s->pb;
+    ebml_master editionentry;
+    AVRational scale = {1, 1E9};
+    int i, ret;
+
+    if (!s->nb_chapters || mkv->wrote_chapters)
+        return 0;
+
+    for (i = 0; i < s->nb_chapters; i++)
+        if (!s->chapters[i]->id) {
+            mkv->chapter_id_offset = 1;
+            break;
+        }
+
+    ret = start_ebml_master_crc32(&dyn_cp, mkv);
+    if (ret < 0)
+        return ret;
+
+    editionentry = start_ebml_master(dyn_cp, MATROSKA_ID_EDITIONENTRY, 0);
+    if (mkv->mode != MODE_WEBM)
+        put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGDEFAULT, 1);
+
+    for (i = 0; i < s->nb_chapters; i++) {
+        ebml_master chapteratom, chapterdisplay;
+        const AVChapter *c   = s->chapters[i];
+        int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
+        int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
+        const AVDictionaryEntry *t;
+        if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
+                   chapterstart, chapterend);
+            ffio_free_dyn_buf(&dyn_cp);
+            return AVERROR_INVALIDDATA;
+        }
+
+        chapteratom = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERATOM, 0);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID,
+                      (uint32_t)c->id + (uint64_t)mkv->chapter_id_offset);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
+        if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
+            chapterdisplay = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERDISPLAY, 0);
+            put_ebml_string(dyn_cp, MATROSKA_ID_CHAPSTRING, t->value);
+            put_ebml_string(dyn_cp, MATROSKA_ID_CHAPLANG  , "und");
+            end_ebml_master(dyn_cp, chapterdisplay);
+        }
+        end_ebml_master(dyn_cp, chapteratom);
+    }
+    end_ebml_master(dyn_cp, editionentry);
+    mkv->wrote_chapters = 1;
+
+    return end_ebml_master_crc32(pb, &dyn_cp, mkv,
+                                 MATROSKA_ID_CHAPTERS, 0, 0, 1);
 }
 
 static const char *get_mimetype(const AVStream *st)
