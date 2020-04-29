@@ -2991,16 +2991,14 @@ static int dfisheye_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float scale = 1.f + s->out_pad;
-
     const float ew = width / 2.f;
     const float eh = height;
 
     const int ei = i >= ew ? i - ew : i;
     const float m = i >= ew ? 1.f : -1.f;
 
-    const float uf = ((2.f * ei) / ew - 1.f) * scale;
-    const float vf = ((2.f * j + 1.f) / eh - 1.f) * scale;
+    const float uf = s->flat_range[0] * ((2.f * ei) / ew - 1.f);
+    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / eh - 1.f);
 
     const float h     = hypotf(uf, vf);
     const float lh    = h > 0.f ? h : 1.f;
@@ -3034,8 +3032,6 @@ static int xyz_to_dfisheye(const V360Context *s,
                            const float *vec, int width, int height,
                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float scale = 1.f - s->in_pad;
-
     const float ew = width / 2.f;
     const float eh = height;
 
@@ -3043,8 +3039,8 @@ static int xyz_to_dfisheye(const V360Context *s,
     const float lh    = h > 0.f ? h : 1.f;
     const float theta = acosf(fabsf(vec[2])) / M_PI;
 
-    float uf = (theta * (vec[0] / lh) * s->input_mirror_modifier[0] * scale + 0.5f) * ew;
-    float vf = (theta * (vec[1] / lh) * s->input_mirror_modifier[1] * scale + 0.5f) * eh;
+    float uf = (theta * (vec[0] / lh) * s->input_mirror_modifier[0] / s->iflat_range[0] + 0.5f) * ew;
+    float vf = (theta * (vec[1] / lh) * s->input_mirror_modifier[1] / s->iflat_range[1] + 0.5f) * eh;
 
     int ui, vi;
     int u_shift;
@@ -3657,6 +3653,14 @@ static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fo
             *v_fov = 2.f * atan2f(h * 0.5f, l) * 360.f / M_PI;
         }
         break;
+    case DUAL_FISHEYE:
+        {
+            const float d = 0.5f * hypotf(w * 0.5f, h);
+
+            *h_fov = d / w * 2.f * d_fov;
+            *v_fov = d / h * d_fov;
+        }
+        break;
     case FISHEYE:
         {
             const float d = 0.5f * hypotf(w, h);
@@ -3928,7 +3932,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     case DUAL_FISHEYE:
         s->in_transform = xyz_to_dfisheye;
-        err = 0;
+        err = prepare_fisheye_in(ctx);
         wf = w;
         hf = h;
         break;
@@ -4058,7 +4062,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     case DUAL_FISHEYE:
         s->out_transform = dfisheye_to_xyz;
-        prepare_out = NULL;
+        prepare_out = prepare_fisheye_out;
         w = lrintf(wf);
         h = lrintf(hf);
         break;

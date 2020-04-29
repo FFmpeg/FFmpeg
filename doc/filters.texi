@@ -19043,19 +19043,19 @@ Dual fisheye.
 
 Format specific options:
 @table @option
-@item in_pad
-@item out_pad
-Set padding proportion. Values in decimals.
+@item h_fov
+@item v_fov
+@item d_fov
+Set output horizontal/vertical/diagonal field of view. Values in degrees.
 
-Example values:
-@table @samp
-@item 0
-No padding.
-@item 0.01
-1% padding.
-@end table
+If diagonal field of view is set it overrides horizontal and vertical field of view.
 
-Default value is @b{@samp{0}}.
+@item ih_fov
+@item iv_fov
+@item id_fov
+Set input horizontal/vertical/diagonal field of view. Values in degrees.
+
+If diagonal field of view is set it overrides horizontal and vertical field of view.
 @end table
 
 @item barrel
