@@ -893,9 +893,7 @@ static void mkv_write_video_color(AVIOContext *pb, const AVCodecParameters *par,
 
     colorinfo_size = avio_tell(dyn_cp);
     if (colorinfo_size) {
-        ebml_master colorinfo = start_ebml_master(pb, MATROSKA_ID_VIDEOCOLOR, colorinfo_size);
-        avio_write(pb, colour, colorinfo_size);
-        end_ebml_master(pb, colorinfo);
+        put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLOR, colour, colorinfo_size);
     }
 }
 
