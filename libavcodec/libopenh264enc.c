@@ -135,6 +135,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.iTargetBitrate             = avctx->bit_rate;
     param.iMaxBitrate                = FFMAX(avctx->rc_max_rate, avctx->bit_rate);
     param.iRCMode                    = RC_QUALITY_MODE;
+    if (avctx->qmax >= 0)
+        param.iMaxQp                 = av_clip(avctx->qmax, 1, 51);
+    if (avctx->qmin >= 0)
+        param.iMinQp                 = av_clip(avctx->qmin, 1, param.iMaxQp);
     param.iTemporalLayerNum          = 1;
     param.iSpatialLayerNum           = 1;
     param.bEnableDenoise             = 0;
@@ -331,6 +335,12 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
+static const AVCodecDefault svc_enc_defaults[] = {
+    { "qmin",      "-1"    },
+    { "qmax",      "-1"    },
+    { NULL },
+};
+
 AVCodec ff_libopenh264_encoder = {
     .name           = "libopenh264",
     .long_name      = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
@@ -344,6 +354,7 @@ AVCodec ff_libopenh264_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
+    .defaults       = svc_enc_defaults,
     .priv_class     = &class,
     .wrapper_name   = "libopenh264",
 };
