@@ -37,6 +37,8 @@
 #define SM_SIZELIMITED_SLICE SM_DYN_SLICE
 #endif
 
+#define TARGET_BITRATE_DEFAULT 2*1000*1000
+
 typedef struct SVCContext {
     const AVClass *av_class;
     ISVCEncoder *encoder;
@@ -132,7 +134,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.fMaxFrameRate              = 1/av_q2d(avctx->time_base);
     param.iPicWidth                  = avctx->width;
     param.iPicHeight                 = avctx->height;
-    param.iTargetBitrate             = avctx->bit_rate;
+    param.iTargetBitrate             = avctx->bit_rate > 0 ? avctx->bit_rate : TARGET_BITRATE_DEFAULT;
     param.iMaxBitrate                = FFMAX(avctx->rc_max_rate, avctx->bit_rate);
     param.iRCMode                    = RC_QUALITY_MODE;
     if (avctx->qmax >= 0)
@@ -147,7 +149,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.bEnableFrameSkip           = s->skip_frames;
     param.bEnableLongTermReference   = 0;
     param.iLtrMarkPeriod             = 30;
-    param.uiIntraPeriod              = avctx->gop_size;
+    if (avctx->gop_size >= 0)
+        param.uiIntraPeriod          = avctx->gop_size;
 #if OPENH264_VER_AT_LEAST(1, 4)
     param.eSpsPpsIdStrategy          = CONSTANT_ID;
 #else
@@ -336,6 +339,8 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 static const AVCodecDefault svc_enc_defaults[] = {
+    { "b",         "0"     },
+    { "g",         "-1"    },
     { "qmin",      "-1"    },
     { "qmax",      "-1"    },
     { NULL },
