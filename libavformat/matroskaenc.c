@@ -1528,26 +1528,23 @@ static int mkv_write_simpletag(AVIOContext *pb, const AVDictionaryEntry *t)
     return 0;
 }
 
-static int mkv_write_tag_targets(AVFormatContext *s, uint32_t elementid,
-                                 uint64_t uid, ebml_master *tag)
+static int mkv_write_tag_targets(MatroskaMuxContext *mkv, AVIOContext **pb,
+                                 ebml_master *tag, uint32_t elementid, uint64_t uid)
 {
-    AVIOContext *pb;
-    MatroskaMuxContext *mkv = s->priv_data;
     ebml_master targets;
     int ret;
 
-    if (!mkv->tags.bc) {
-        ret = start_ebml_master_crc32(&mkv->tags.bc, mkv);
+    if (!*pb) {
+        ret = start_ebml_master_crc32(pb, mkv);
         if (ret < 0)
             return ret;
     }
-    pb = mkv->tags.bc;
 
-    *tag    = start_ebml_master(pb, MATROSKA_ID_TAG,        0);
-    targets = start_ebml_master(pb, MATROSKA_ID_TAGTARGETS, 4 + 1 + 8);
+    *tag    = start_ebml_master(*pb, MATROSKA_ID_TAG,        0);
+    targets = start_ebml_master(*pb, MATROSKA_ID_TAGTARGETS, 4 + 1 + 8);
     if (elementid)
-        put_ebml_uid(pb, elementid, uid);
-    end_ebml_master(pb, targets);
+        put_ebml_uid(*pb, elementid, uid);
+    end_ebml_master(*pb, targets);
     return 0;
 }
 
@@ -1565,28 +1562,28 @@ static int mkv_check_tag_name(const char *name, uint32_t elementid)
              av_strcasecmp(name, "mimetype")));
 }
 
-static int mkv_write_tag(AVFormatContext *s, const AVDictionary *m,
-                         uint32_t elementid, uint64_t uid, ebml_master *tag)
+static int mkv_write_tag(MatroskaMuxContext *mkv, const AVDictionary *m,
+                         AVIOContext **pb, ebml_master *tag,
+                         uint32_t elementid, uint64_t uid)
 {
-    MatroskaMuxContext *mkv = s->priv_data;
     const AVDictionaryEntry *t = NULL;
     ebml_master tag2;
     int ret;
 
-    ret = mkv_write_tag_targets(s, elementid, uid, tag ? tag : &tag2);
+    ret = mkv_write_tag_targets(mkv, pb, tag ? tag : &tag2, elementid, uid);
     if (ret < 0)
         return ret;
 
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
         if (mkv_check_tag_name(t->key, elementid)) {
-            ret = mkv_write_simpletag(mkv->tags.bc, t);
+            ret = mkv_write_simpletag(*pb, t);
             if (ret < 0)
                 return ret;
         }
     }
 
     if (!tag)
-        end_ebml_master(mkv->tags.bc, tag2);
+        end_ebml_master(*pb, tag2);
 
     return 0;
 }
@@ -1611,7 +1608,7 @@ static int mkv_write_tags(AVFormatContext *s)
     ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
 
     if (mkv_check_tag(s->metadata, 0)) {
-        ret = mkv_write_tag(s, s->metadata, 0, 0, NULL);
+        ret = mkv_write_tag(mkv, s->metadata, &mkv->tags.bc, NULL, 0, 0);
         if (ret < 0)
             return ret;
     }
@@ -1626,8 +1623,8 @@ static int mkv_write_tags(AVFormatContext *s)
         if (!tagp && !mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID))
             continue;
 
-        ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID,
-                            track->uid, tagp);
+        ret = mkv_write_tag(mkv, st->metadata, &mkv->tags.bc, tagp,
+                            MATROSKA_ID_TAGTARGETS_TRACKUID, track->uid);
         if (ret < 0)
             return ret;
 
@@ -1655,9 +1652,9 @@ static int mkv_write_tags(AVFormatContext *s)
             if (!mkv_check_tag(ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID))
                 continue;
 
-            ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID,
-                                (uint32_t)ch->id + (uint64_t)mkv->chapter_id_offset,
-                                NULL);
+            ret = mkv_write_tag(mkv, ch->metadata, &mkv->tags.bc, NULL,
+                                MATROSKA_ID_TAGTARGETS_CHAPTERUID,
+                                (uint32_t)ch->id + (uint64_t)mkv->chapter_id_offset);
             if (ret < 0)
                 return ret;
         }
@@ -1674,8 +1671,8 @@ static int mkv_write_tags(AVFormatContext *s)
             if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID))
                 continue;
 
-            ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID,
-                                track->uid, NULL);
+            ret = mkv_write_tag(mkv, st->metadata, &mkv->tags.bc, NULL,
+                                MATROSKA_ID_TAGTARGETS_ATTACHUID, track->uid);
             if (ret < 0)
                 return ret;
         }
