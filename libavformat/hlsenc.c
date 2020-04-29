@@ -2463,7 +2463,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         if (vs->start_pos || hls->segment_type != SEGMENT_TYPE_FMP4) {
-            ret = hls_append_segment(s, hls, vs, vs->duration, vs->start_pos, vs->size);
+            double cur_duration =  (double)(pkt->pts - vs->end_pts) * st->time_base.num / st->time_base.den;
+            ret = hls_append_segment(s, hls, vs, cur_duration, vs->start_pos, vs->size);
             vs->end_pts = pkt->pts;
             vs->duration = 0;
             if (ret < 0) {
