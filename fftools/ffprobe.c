@@ -2547,6 +2547,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         if (dec_ctx) {
             print_int("coded_width",  dec_ctx->coded_width);
             print_int("coded_height", dec_ctx->coded_height);
+            print_int("closed_captions", !!(dec_ctx->properties & FF_CODEC_PROPERTY_CLOSED_CAPTIONS));
         }
 #endif
         print_int("has_b_frames", par->video_delay);
@@ -2951,6 +2952,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
             ist->dec_ctx->pkt_timebase = stream->time_base;
             ist->dec_ctx->framerate = stream->avg_frame_rate;
 #if FF_API_LAVF_AVCTX
+            ist->dec_ctx->properties = stream->codec->properties;
             ist->dec_ctx->coded_width = stream->codec->coded_width;
             ist->dec_ctx->coded_height = stream->codec->coded_height;
 #endif
