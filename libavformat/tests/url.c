@@ -56,6 +56,7 @@ int main(void)
     test("/foo/bar", "baz");
     test("/foo/bar", "../baz");
     test("/foo/bar", "/baz");
+    test("/foo/bar", "../../../baz");
     test("http://server/foo/", "baz");
     test("http://server/foo/bar", "baz");
     test("http://server/foo/", "../baz");
@@ -65,6 +66,10 @@ int main(void)
     test("http://server/foo/bar?param=value/with/slashes", "/baz");
     test("http://server/foo/bar?param&otherparam", "?someparam");
     test("http://server/foo/bar", "//other/url");
+    test("http://server/foo/bar", "../../../../../other/url");
+    test("http://server/foo/bar", "/../../../../../other/url");
+    test("http://server/foo/bar", "/test/../../../../../other/url");
+    test("http://server/foo/bar", "/test/../../test/../../../other/url");
 
     printf("\nTesting av_url_split:\n");
     test2("/foo/bar");

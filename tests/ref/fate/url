@@ -3,6 +3,7 @@ Testing ff_make_absolute_url:
                                           /foo/bar baz                  => /foo/baz
                                           /foo/bar ../baz               => /baz
                                           /foo/bar /baz                 => /baz
+                                          /foo/bar ../../../baz         => /baz
                                 http://server/foo/ baz                  => http://server/foo/baz
                              http://server/foo/bar baz                  => http://server/foo/baz
                                 http://server/foo/ ../baz               => http://server/baz
@@ -12,6 +13,10 @@ Testing ff_make_absolute_url:
     http://server/foo/bar?param=value/with/slashes /baz                 => http://server/baz
             http://server/foo/bar?param&otherparam ?someparam           => http://server/foo/bar?someparam
                              http://server/foo/bar //other/url          => http://other/url
+                             http://server/foo/bar ../../../../../other/url => http://server/other/url
+                             http://server/foo/bar /../../../../../other/url => http://server/other/url
+                             http://server/foo/bar /test/../../../../../other/url => http://server/other/url
+                             http://server/foo/bar /test/../../test/../../../other/url => http://server/other/url
 
 Testing av_url_split:
 /foo/bar                                                     =>                                                    -1 /foo/bar
