@@ -244,6 +244,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.sSpatialLayers[0].sSliceCfg.uiSliceMode               = s->slice_mode;
     param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceNum = avctx->slices;
 #endif
+    if (avctx->slices == 0 && s->slice_mode == SM_FIXEDSLCNUM_SLICE)
+        av_log(avctx, AV_LOG_WARNING, "Slice count will be set automatically\n");
 
     if (s->slice_mode == SM_SIZELIMITED_SLICE) {
         if (s->max_nal_size) {
