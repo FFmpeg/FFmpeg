@@ -66,7 +66,7 @@ static void probe(AVProbeData *pd, int type, int p, int size)
 static void print_times(void)
 {
     int i = 0;
-    AVInputFormat *fmt = NULL;
+    const AVInputFormat *fmt = NULL;
     void *fmt_opaque = NULL;
 
     while ((fmt = av_demuxer_iterate(&fmt_opaque))) {
