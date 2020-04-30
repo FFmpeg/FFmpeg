@@ -62,7 +62,7 @@ static int config_input(AVFilterLink *inlink)
     double w0 = 2 * M_PI * (1. - s->range) * 2100 / inlink->sample_rate;
     double alpha;
 
-    alpha = sin(w0) / 2 * sqrt(2 * (1 / 0.5 - 1) + 2);
+    alpha = sin(w0) / 2 * sqrt((A + 1 / A) * (1 / 0.5 - 1) + 2);
 
     s->a0 =          (A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
     s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
