@@ -160,6 +160,13 @@ typedef struct VariantStream {
     char *fmp4_init_filename;
     char *base_output_dirname;
 
+    int encrypt_started;
+
+    char key_file[LINE_BUFFER_SIZE + 1];
+    char key_uri[LINE_BUFFER_SIZE + 1];
+    char key_string[KEYSIZE*2 + 1];
+    char iv_string[KEYSIZE*2 + 1];
+
     AVStream **streams;
     char codec_attr[128];
     CodecAttributeStatus attr_status;
@@ -708,7 +715,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
 }
 
 
-static int hls_encryption_start(AVFormatContext *s)
+static int hls_encryption_start(AVFormatContext *s,  VariantStream *vs)
 {
     HLSContext *hls = s->priv_data;
     int ret;
@@ -725,44 +732,44 @@ static int hls_encryption_start(AVFormatContext *s)
         return ret;
     }
 
-    ff_get_line(pb, hls->key_uri, sizeof(hls->key_uri));
-    hls->key_uri[strcspn(hls->key_uri, "\r\n")] = '\0';
+    ff_get_line(pb, vs->key_uri, sizeof(vs->key_uri));
+    vs->key_uri[strcspn(vs->key_uri, "\r\n")] = '\0';
 
-    ff_get_line(pb, hls->key_file, sizeof(hls->key_file));
-    hls->key_file[strcspn(hls->key_file, "\r\n")] = '\0';
+    ff_get_line(pb, vs->key_file, sizeof(vs->key_file));
+    vs->key_file[strcspn(vs->key_file, "\r\n")] = '\0';
 
-    ff_get_line(pb, hls->iv_string, sizeof(hls->iv_string));
-    hls->iv_string[strcspn(hls->iv_string, "\r\n")] = '\0';
+    ff_get_line(pb, vs->iv_string, sizeof(vs->iv_string));
+    vs->iv_string[strcspn(vs->iv_string, "\r\n")] = '\0';
 
     ff_format_io_close(s, &pb);
 
-    if (!*hls->key_uri) {
+    if (!*vs->key_uri) {
         av_log(hls, AV_LOG_ERROR, "no key URI specified in key info file\n");
         return AVERROR(EINVAL);
     }
 
-    if (!*hls->key_file) {
+    if (!*vs->key_file) {
         av_log(hls, AV_LOG_ERROR, "no key file specified in key info file\n");
         return AVERROR(EINVAL);
     }
 
     set_http_options(s, &options, hls);
-    ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_READ, &options);
+    ret = s->io_open(s, &pb, vs->key_file, AVIO_FLAG_READ, &options);
     av_dict_free(&options);
     if (ret < 0) {
-        av_log(hls, AV_LOG_ERROR, "error opening key file %s\n", hls->key_file);
+        av_log(hls, AV_LOG_ERROR, "error opening key file %s\n", vs->key_file);
         return ret;
     }
 
     ret = avio_read(pb, key, sizeof(key));
     ff_format_io_close(s, &pb);
     if (ret != sizeof(key)) {
-        av_log(hls, AV_LOG_ERROR, "error reading key file %s\n", hls->key_file);
+        av_log(hls, AV_LOG_ERROR, "error reading key file %s\n", vs->key_file);
         if (ret >= 0 || ret == AVERROR_EOF)
             ret = AVERROR(EINVAL);
         return ret;
     }
-    ff_data_to_hex(hls->key_string, key, sizeof(key), 0);
+    ff_data_to_hex(vs->key_string, key, sizeof(key), 0);
 
     return 0;
 }
@@ -1084,8 +1091,8 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     }
 
     if (hls->key_info_file || hls->encrypt) {
-        av_strlcpy(en->key_uri, hls->key_uri, sizeof(en->key_uri));
-        av_strlcpy(en->iv_string, hls->iv_string, sizeof(en->iv_string));
+        av_strlcpy(en->key_uri, vs->key_uri, sizeof(en->key_uri));
+        av_strlcpy(en->iv_string, vs->iv_string, sizeof(en->iv_string));
     }
 
     if (!vs->segments)
@@ -1173,9 +1180,9 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                 ptr += strlen("URI=\"");
                 end = av_stristr(ptr, ",");
                 if (end) {
-                    av_strlcpy(hls->key_uri, ptr, end - ptr);
+                    av_strlcpy(vs->key_uri, ptr, end - ptr);
                 } else {
-                    av_strlcpy(hls->key_uri, ptr, sizeof(hls->key_uri));
+                    av_strlcpy(vs->key_uri, ptr, sizeof(vs->key_uri));
                 }
             }
 
@@ -1184,9 +1191,9 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                 ptr += strlen("IV=0x");
                 end = av_stristr(ptr, ",");
                 if (end) {
-                    av_strlcpy(hls->iv_string, ptr, end - ptr);
+                    av_strlcpy(vs->iv_string, ptr, end - ptr);
                 } else {
-                    av_strlcpy(hls->iv_string, ptr, sizeof(hls->iv_string));
+                    av_strlcpy(vs->iv_string, ptr, sizeof(vs->iv_string));
                 }
             }
 
@@ -1695,21 +1702,27 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
                   " ignoring -hls_enc\n");
         }
 
-        if (!c->encrypt_started || (c->flags & HLS_PERIODIC_REKEY)) {
+        if (!vs->encrypt_started || (c->flags & HLS_PERIODIC_REKEY)) {
             if (c->key_info_file) {
-                if ((err = hls_encryption_start(s)) < 0)
+                if ((err = hls_encryption_start(s, vs)) < 0)
                     goto fail;
             } else {
-                if ((err = do_encrypt(s, vs)) < 0)
-                    goto fail;
+                if (!c->encrypt_started) {
+                    if ((err = do_encrypt(s, vs)) < 0)
+                        goto fail;
+                    c->encrypt_started = 1;
+                }
+                av_strlcpy(vs->key_uri, c->key_uri, sizeof(vs->key_uri));
+                av_strlcpy(vs->key_string, c->key_string, sizeof(vs->key_string));
+                av_strlcpy(vs->iv_string, c->iv_string, sizeof(vs->iv_string));
             }
-            c->encrypt_started = 1;
+            vs->encrypt_started = 1;
         }
-        err = av_strlcpy(iv_string, c->iv_string, sizeof(iv_string));
+        err = av_strlcpy(iv_string, vs->iv_string, sizeof(iv_string));
         if (!err) {
             snprintf(iv_string, sizeof(iv_string), "%032"PRIx64, vs->sequence);
-            memset(c->iv_string, 0, sizeof(c->iv_string));
-            memcpy(c->iv_string, iv_string, sizeof(iv_string));
+            memset(vs->iv_string, 0, sizeof(vs->iv_string));
+            memcpy(vs->iv_string, iv_string, sizeof(iv_string));
         }
     }
     if (c->segment_type != SEGMENT_TYPE_FMP4) {
@@ -2406,8 +2419,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 AVDictionary *options = NULL;
                 char *filename = NULL;
                 if (hls->key_info_file || hls->encrypt) {
-                    av_dict_set(&options, "encryption_key", hls->key_string, 0);
-                    av_dict_set(&options, "encryption_iv", hls->iv_string, 0);
+                    av_dict_set(&options, "encryption_key", vs->key_string, 0);
+                    av_dict_set(&options, "encryption_iv", vs->iv_string, 0);
                     filename = av_asprintf("crypto:%s", oc->url);
                 } else {
                     filename = av_asprintf("%s", oc->url);
@@ -2599,8 +2612,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
             return AVERROR(ENOMEM);
         }
         if (hls->key_info_file || hls->encrypt) {
-            av_dict_set(&options, "encryption_key", hls->key_string, 0);
-            av_dict_set(&options, "encryption_iv", hls->iv_string, 0);
+            av_dict_set(&options, "encryption_key", vs->key_string, 0);
+            av_dict_set(&options, "encryption_iv", vs->iv_string, 0);
             filename = av_asprintf("crypto:%s", oc->url);
         } else {
             filename = av_asprintf("%s", oc->url);
@@ -2744,12 +2757,6 @@ static int hls_init(AVFormatContext *s)
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Variant stream info update failed with status %x\n",
                ret);
-        goto fail;
-    }
-    //TODO: Updates needed to encryption functionality with periodic re-key when more than one variant streams are present
-    if (hls->nb_varstreams > 1 && hls->flags & HLS_PERIODIC_REKEY) {
-        ret = AVERROR(EINVAL);
-        av_log(s, AV_LOG_ERROR, "Periodic re-key not supported when more than one variant streams are present\n");
         goto fail;
     }
 
