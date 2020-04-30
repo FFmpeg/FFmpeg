@@ -292,6 +292,36 @@ static av_always_inline int av_sat_dsub32_c(int a, int b)
 }
 
 /**
+ * Add two signed 64-bit values with saturation.
+ *
+ * @param  a one value
+ * @param  b another value
+ * @return sum with signed saturation
+ */
+static av_always_inline int64_t av_sat_add64_c(int64_t a, int64_t b) {
+    if (b >= 0 && a >= INT64_MAX - b)
+        return INT64_MAX;
+    if (b <= 0 && a <= INT64_MIN - b)
+        return INT64_MIN;
+    return a + b;
+}
+
+/**
+ * Subtract two signed 64-bit values with saturation.
+ *
+ * @param  a one value
+ * @param  b another value
+ * @return difference with signed saturation
+ */
+static av_always_inline int64_t av_sat_sub64_c(int64_t a, int64_t b) {
+    if (b <= 0 && a >= INT64_MAX + b)
+        return INT64_MAX;
+    if (b >= 0 && a <= INT64_MIN + b)
+        return INT64_MIN;
+    return a - b;
+}
+
+/**
  * Clip a float value into the amin-amax range.
  * @param a value to clip
  * @param amin minimum value of the clip range
@@ -544,6 +574,12 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
 #endif
 #ifndef av_sat_dsub32
 #   define av_sat_dsub32    av_sat_dsub32_c
+#endif
+#ifndef av_sat_add64
+#   define av_sat_add64     av_sat_add64_c
+#endif
+#ifndef av_sat_sub64
+#   define av_sat_sub64     av_sat_sub64_c
 #endif
 #ifndef av_clipf
 #   define av_clipf         av_clipf_c
