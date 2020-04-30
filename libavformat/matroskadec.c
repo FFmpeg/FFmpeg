@@ -1135,7 +1135,7 @@ static int is_ebml_id_valid(uint32_t id)
  * an entry already exists, return the existing entry.
  */
 static MatroskaLevel1Element *matroska_find_level1_elem(MatroskaDemuxContext *matroska,
-                                                        uint32_t id)
+                                                        uint32_t id, int64_t pos)
 {
     int i;
     MatroskaLevel1Element *elem;
@@ -1148,18 +1148,17 @@ static MatroskaLevel1Element *matroska_find_level1_elem(MatroskaDemuxContext *ma
         return NULL;
 
     // There can be multiple seekheads.
-    if (id != MATROSKA_ID_SEEKHEAD) {
-        for (i = 0; i < matroska->num_level1_elems; i++) {
-            if (matroska->level1_elems[i].id == id)
+    for (i = 0; i < matroska->num_level1_elems; i++) {
+        if (matroska->level1_elems[i].id == id) {
+            if (matroska->level1_elems[i].pos == pos ||
+                id != MATROSKA_ID_SEEKHEAD)
                 return &matroska->level1_elems[i];
         }
     }
 
     // Only a completely broken file would have more elements.
-    // It also provides a low-effort way to escape from circular seekheads
-    // (every iteration will add a level1 entry).
     if (matroska->num_level1_elems >= FF_ARRAY_ELEMS(matroska->level1_elems)) {
-        av_log(matroska->ctx, AV_LOG_ERROR, "Too many level1 elements or circular seekheads.\n");
+        av_log(matroska->ctx, AV_LOG_ERROR, "Too many level1 elements.\n");
         return NULL;
     }
 
@@ -1408,7 +1407,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
         if (id == MATROSKA_ID_CUES)
             matroska->cues_parsing_deferred = 0;
         if (syntax->type == EBML_LEVEL1 &&
-            (level1_elem = matroska_find_level1_elem(matroska, syntax->id))) {
+            (level1_elem = matroska_find_level1_elem(matroska, syntax->id, pos))) {
             if (!level1_elem->pos) {
                 // Zero is not a valid position for a level 1 element.
                 level1_elem->pos = pos;
@@ -1871,7 +1870,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         if (id != seekheads[i].id || pos < matroska->segment_start)
             continue;
 
-        elem = matroska_find_level1_elem(matroska, id);
+        elem = matroska_find_level1_elem(matroska, id, pos);
         if (!elem || elem->parsed)
             continue;
 
