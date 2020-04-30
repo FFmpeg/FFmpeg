@@ -194,6 +194,7 @@ Codecs:
   libdavs2.c                            Huiwen Ren
   libgsm.c                              Michel Bardiaux
   libkvazaar.c                          Arttu Ylä-Outinen
+  libopenh264enc.c                      Martin Storsjo, Linjie Fu
   libopenjpeg.c                         Jaikrishnan Menon
   libopenjpegenc.c                      Michael Bradshaw
   libtheoraenc.c                        David Conrad
