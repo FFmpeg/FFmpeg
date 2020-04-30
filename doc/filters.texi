@@ -3267,6 +3267,10 @@ Set soundstage wideness. Default is 0.5. Allowed range is from 0 to 1.
 This sets cut off frequency of low shelf filter. Default is cut off near
 1550 Hz. With range set to 1 cut off frequency is set to 2100 Hz.
 
+@item slope
+Set curve slope of low shelf filter. Default is 0.5.
+Allowed range is from 0.01 to 1.
+
 @item level_in
 Set input gain. Default is 0.9.
 

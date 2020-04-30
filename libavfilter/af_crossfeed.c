@@ -28,6 +28,7 @@ typedef struct CrossfeedContext {
 
     double range;
     double strength;
+    double slope;
     double level_in;
     double level_out;
 
@@ -62,7 +63,7 @@ static int config_input(AVFilterLink *inlink)
     double w0 = 2 * M_PI * (1. - s->range) * 2100 / inlink->sample_rate;
     double alpha;
 
-    alpha = sin(w0) / 2 * sqrt((A + 1 / A) * (1 / 0.5 - 1) + 2);
+    alpha = sin(w0) / 2 * sqrt((A + 1 / A) * (1 / s->slope - 1) + 2);
 
     s->a0 =          (A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
     s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
@@ -139,6 +140,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static const AVOption crossfeed_options[] = {
     { "strength",  "set crossfeed strength",  OFFSET(strength),  AV_OPT_TYPE_DOUBLE, {.dbl=.2}, 0, 1, FLAGS },
     { "range",     "set soundstage wideness", OFFSET(range),     AV_OPT_TYPE_DOUBLE, {.dbl=.5}, 0, 1, FLAGS },
+    { "slope",     "set curve slope",         OFFSET(slope),     AV_OPT_TYPE_DOUBLE, {.dbl=.5}, .01, 1, FLAGS },
     { "level_in",  "set level in",            OFFSET(level_in),  AV_OPT_TYPE_DOUBLE, {.dbl=.9}, 0, 1, FLAGS },
     { "level_out", "set level out",           OFFSET(level_out), AV_OPT_TYPE_DOUBLE, {.dbl=1.}, 0, 1, FLAGS },
     { NULL }
