@@ -2180,7 +2180,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             ret = av_stream_add_side_data(st, AV_PKT_DATA_DOVI_CONF,
                                           (uint8_t *)dovi, dovi_size);
             if (ret < 0) {
-                av_freep(dovi);
+                av_free(dovi);
                 return ret;
             }
 
