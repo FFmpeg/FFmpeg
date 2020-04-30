@@ -3278,6 +3278,10 @@ Set input gain. Default is 0.9.
 Set output gain. Default is 1.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section crystalizer
 Simple algorithm to expand audio dynamic range.
 
