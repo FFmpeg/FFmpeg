@@ -132,7 +132,9 @@ typedef struct
     CMSampleBufferRef         current_audio_frame;
 
     AVCaptureDevice          *observed_device;
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     AVCaptureDeviceTransportControlsPlaybackMode observed_mode;
+#endif
     int                      observed_quit;
 } AVFContext;
 
@@ -200,6 +202,7 @@ static void unlock_frames(AVFContext* ctx)
                         change:(NSDictionary *)change
                        context:(void *)context {
     if (context == _context) {
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         AVCaptureDeviceTransportControlsPlaybackMode mode =
             [change[NSKeyValueChangeNewKey] integerValue];
 
@@ -209,6 +212,7 @@ static void unlock_frames(AVFContext* ctx)
             }
             _context->observed_mode = mode;
         }
+#endif
     } else {
         [super observeValueForKeyPath: keyPath
                              ofObject: object
