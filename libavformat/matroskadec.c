@@ -1147,11 +1147,11 @@ static MatroskaLevel1Element *matroska_find_level1_elem(MatroskaDemuxContext *ma
     if (id == MATROSKA_ID_CLUSTER)
         return NULL;
 
-    // There can be multiple seekheads.
+    // There can be multiple SeekHeads and Tags.
     for (i = 0; i < matroska->num_level1_elems; i++) {
         if (matroska->level1_elems[i].id == id) {
             if (matroska->level1_elems[i].pos == pos ||
-                id != MATROSKA_ID_SEEKHEAD)
+                id != MATROSKA_ID_SEEKHEAD && id != MATROSKA_ID_TAGS)
                 return &matroska->level1_elems[i];
         }
     }
