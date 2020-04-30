@@ -30,11 +30,7 @@ follows.
 
 Advanced Audio Coding (AAC) encoder.
 
-This encoder is the default AAC encoder, natively implemented into FFmpeg. Its
-quality is on par or better than libfdk_aac at the default bitrate of 128kbps.
-This encoder also implements more options, profiles and samplerates than
-other encoders (with only the AAC-HE profile pending to be implemented) so this
-encoder has become the default and is the recommended choice.
+This encoder is the default AAC encoder, natively implemented into FFmpeg.
 
 @subsection Options
 
@@ -651,10 +647,7 @@ configuration. You need to explicitly configure the build with
 so if you allow the use of GPL, you should configure with
 @code{--enable-gpl --enable-nonfree --enable-libfdk-aac}.
 
-This encoder is considered to produce output on par or worse at 128kbps to the
-@ref{aacenc,,the native FFmpeg AAC encoder} but can often produce better
-sounding audio at identical or lower bitrates and has support for the
-AAC-HE profiles.
+This encoder has support for the AAC-HE profiles.
 
 VBR encoding, enabled through the @option{vbr} or @option{flags
 +qscale} options, is experimental and only works with some
