@@ -79,8 +79,6 @@ typedef struct MpegTSWrite {
     int64_t sdt_period; /* SDT period in PCR time base */
     int64_t pat_period; /* PAT/PMT period in PCR time base */
     int nb_services;
-    int onid;
-    int tsid;
     int64_t first_pcr;
     int64_t next_pcr;
     int mux_rate; ///< set to 1 when VBR
@@ -261,7 +259,7 @@ static void mpegts_write_pat(AVFormatContext *s)
         put16(&q, service->sid);
         put16(&q, 0xe000 | service->pmt.pid);
     }
-    mpegts_write_section1(&ts->pat, PAT_TID, ts->tsid, ts->tables_version, 0, 0,
+    mpegts_write_section1(&ts->pat, PAT_TID, ts->transport_stream_id, ts->tables_version, 0, 0,
                           data, q - data);
 }
 
@@ -731,7 +729,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
     int i, running_status, free_ca_mode, val;
 
     q = data;
-    put16(&q, ts->onid);
+    put16(&q, ts->original_network_id);
     *q++ = 0xff;
     for (i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];
@@ -757,7 +755,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
         desc_list_len_ptr[0] = val >> 8;
         desc_list_len_ptr[1] = val;
     }
-    mpegts_write_section1(&ts->sdt, SDT_TID, ts->tsid, ts->tables_version, 0, 0,
+    mpegts_write_section1(&ts->sdt, SDT_TID, ts->transport_stream_id, ts->tables_version, 0, 0,
                           data, q - data);
 }
 
@@ -960,8 +958,6 @@ static int mpegts_init(AVFormatContext *s)
     // round up to a whole number of TS packets
     ts->pes_payload_size = (ts->pes_payload_size + 14 + 183) / 184 * 184 - 14;
 
-    ts->tsid = ts->transport_stream_id;
-    ts->onid = ts->original_network_id;
     if (!s->nb_programs) {
         /* allocate a single DVB service */
         if (!mpegts_add_service(s, ts->service_id, s->metadata, NULL))
