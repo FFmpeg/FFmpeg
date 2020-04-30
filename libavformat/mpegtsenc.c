@@ -931,7 +931,6 @@ static int mpegts_init(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
     int i, j;
-    int *pids;
     int ret;
 
     if (ts->m2ts_mode == -1) {
@@ -989,12 +988,6 @@ static int mpegts_init(AVFormatContext *s)
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque       = s;
 
-    pids = av_malloc_array(s->nb_streams, sizeof(*pids));
-    if (!pids) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -1002,8 +995,7 @@ static int mpegts_init(AVFormatContext *s)
 
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
         if (!ts_st) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
         st->priv_data = ts_st;
 
@@ -1011,8 +1003,7 @@ static int mpegts_init(AVFormatContext *s)
 
         ts_st->payload = av_mallocz(ts->pes_payload_size);
         if (!ts_st->payload) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
 
         /* MPEG pid values < 16 are reserved. Applications which set st->id in
@@ -1043,8 +1034,7 @@ static int mpegts_init(AVFormatContext *s)
                     ts->m2ts_textsub_pid > M2TS_TEXTSUB_PID + 1        ||
                     ts_st->pid < 16) {
                     av_log(s, AV_LOG_ERROR, "Cannot automatically assign PID for stream %d\n", st->index);
-                    ret = AVERROR(EINVAL);
-                    goto fail;
+                    return AVERROR(EINVAL);
                 }
             } else {
                 ts_st->pid = ts->start_pid + i;
@@ -1055,30 +1045,26 @@ static int mpegts_init(AVFormatContext *s)
         if (ts_st->pid >= 0x1FFF) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid stream id %d, must be less than 8191\n", st->id);
-            ret = AVERROR(EINVAL);
-            goto fail;
+            return AVERROR(EINVAL);
         }
         for (j = 0; j < ts->nb_services; j++) {
             if (ts->services[j]->pmt.pid > LAST_OTHER_PID) {
                 av_log(s, AV_LOG_ERROR,
                        "Invalid PMT PID %d, must be less than %d\n", ts->services[j]->pmt.pid, LAST_OTHER_PID + 1);
-                ret = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
             if (ts_st->pid == ts->services[j]->pmt.pid) {
                 av_log(s, AV_LOG_ERROR, "PID %d cannot be both elementary and PMT PID\n", ts_st->pid);
-                ret = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
         }
         for (j = 0; j < i; j++) {
-            if (pids[j] == ts_st->pid) {
+            MpegTSWriteStream *ts_st_prev = s->streams[j]->priv_data;
+            if (ts_st_prev->pid == ts_st->pid) {
                 av_log(s, AV_LOG_ERROR, "Duplicate stream id %d\n", ts_st->pid);
-                ret = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
         }
-        pids[i]                = ts_st->pid;
         ts_st->payload_pts     = AV_NOPTS_VALUE;
         ts_st->payload_dts     = AV_NOPTS_VALUE;
         ts_st->first_pts_check = 1;
@@ -1089,34 +1075,29 @@ static int mpegts_init(AVFormatContext *s)
             AVStream *ast;
             ts_st->amux = avformat_alloc_context();
             if (!ts_st->amux) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
             ts_st->amux->oformat =
                 av_guess_format((ts->flags & MPEGTS_FLAG_AAC_LATM) ? "latm" : "adts",
                                 NULL, NULL);
             if (!ts_st->amux->oformat) {
-                ret = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
             if (!(ast = avformat_new_stream(ts_st->amux, NULL))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
             ret = avcodec_parameters_copy(ast->codecpar, st->codecpar);
             if (ret != 0)
-                goto fail;
+                return ret;
             ast->time_base = st->time_base;
             ret = avformat_write_header(ts_st->amux, NULL);
             if (ret < 0)
-                goto fail;
+                return ret;
         }
         if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
             ts_st->opus_pending_trim_start = st->codecpar->initial_padding * 48000 / st->codecpar->sample_rate;
         }
     }
-
-    av_freep(&pids);
 
     if (ts->copyts < 1)
         ts->first_pcr = av_rescale(s->max_delay, PCR_TIME_BASE, AV_TIME_BASE);
@@ -1138,10 +1119,6 @@ static int mpegts_init(AVFormatContext *s)
            av_rescale(ts->pat_period, 1000, PCR_TIME_BASE));
 
     return 0;
-
-fail:
-    av_freep(&pids);
-    return ret;
 }
 
 /* send SDT, PAT and PMT tables regularly */
