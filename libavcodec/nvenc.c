@@ -1783,10 +1783,11 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
         pkt->dts = ts0 - delta;
 
         ctx->first_packet_output = 1;
-        return 0;
+    } else {
+        pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
     }
 
-    pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
+    pkt->dts -= avctx->max_b_frames;
 
     return 0;
 }
