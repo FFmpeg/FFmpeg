@@ -297,6 +297,20 @@ static int data_packets_seen(const struct ogg *ogg)
     return 0;
 }
 
+static int buf_realloc(struct ogg_stream *os, int size)
+{
+    /* Even if invalid guarantee there's enough memory to read the page */
+    if (os->bufsize - os->bufpos < size) {
+        uint8_t *nb = av_realloc(os->buf, 2*os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!nb)
+            return AVERROR(ENOMEM);
+        os->buf = nb;
+        os->bufsize *= 2;
+    }
+
+    return 0;
+}
+
 static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
 {
     AVIOContext *bc = s->pb;
@@ -378,14 +392,9 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
     if (idx >= 0) {
         os = ogg->streams + idx;
 
-        /* Even if invalid guarantee there's enough memory to read the page */
-        if (os->bufsize - os->bufpos < size) {
-            uint8_t *nb = av_realloc(os->buf, 2*os->bufsize + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!nb)
-                return AVERROR(ENOMEM);
-            os->buf = nb;
-            os->bufsize *= 2;
-        }
+        ret = buf_realloc(os, size);
+        if (ret < 0)
+            return ret;
 
         readout_buf = os->buf + os->bufpos;
     } else {
