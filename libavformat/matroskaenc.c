@@ -2300,7 +2300,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
 
     switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+        if (side_data_size && mkv->tracks_bc) {
             int filler, output_sample_rate = 0;
             int64_t curpos;
             ret = get_aac_sample_rates(s, side_data, side_data_size, &track->sample_rate,
@@ -2331,7 +2331,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
         }
         break;
     case AV_CODEC_ID_FLAC:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+        if (side_data_size && mkv->tracks_bc) {
             AVCodecParameters *codecpriv_par;
             int64_t curpos;
             if (side_data_size != par->extradata_size) {
@@ -2358,8 +2358,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
     // FIXME: Remove the following once libaom starts propagating extradata during init()
     //        See https://bugs.chromium.org/p/aomedia/issues/detail?id=2012
     case AV_CODEC_ID_AV1:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live &&
-            !par->extradata_size) {
+        if (side_data_size && mkv->tracks_bc && !par->extradata_size) {
             AVIOContext *dyn_cp;
             uint8_t *codecpriv;
             int codecpriv_size;
@@ -2639,14 +2638,18 @@ static int mkv_write_trailer(AVFormatContext *s)
         // update the duration
         av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
         currentpos = avio_tell(pb);
+        if (mkv->info_bc) {
         avio_seek(mkv->info_bc, mkv->duration_offset, SEEK_SET);
         put_ebml_float(mkv->info_bc, MATROSKA_ID_DURATION, mkv->duration);
         avio_seek(pb, mkv->info_pos, SEEK_SET);
         end_ebml_master_crc32(pb, &mkv->info_bc, mkv, MATROSKA_ID_INFO);
+        }
 
+        if (mkv->tracks_bc) {
         // write tracks master
         avio_seek(pb, mkv->tracks_pos, SEEK_SET);
         end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, MATROSKA_ID_TRACKS);
+        }
 
         // update stream durations
         if (!mkv->is_live && mkv->stream_durations) {
