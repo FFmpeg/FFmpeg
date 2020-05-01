@@ -1001,11 +1001,9 @@ static void rtsp_parse_transport(AVFormatContext *s,
 
             while (*p != ';' && *p != '\0' && *p != ',')
                 p++;
-            if (*p == ';')
+            if (*p == ';' || *p == ',')
                 p++;
         }
-        if (*p == ',')
-            p++;
 
         reply->nb_transports++;
         if (reply->nb_transports >= RTSP_MAX_TRANSPORTS)
