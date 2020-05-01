@@ -1916,7 +1916,8 @@ static int mkv_write_header(AVFormatContext *s)
         if (mkv->reserve_cues_space == 1)
             mkv->reserve_cues_space++;
         put_ebml_void(pb, mkv->reserve_cues_space);
-        }
+        } else
+            mkv->reserve_cues_space = -1;
     }
 
     av_init_packet(&mkv->cur_audio_pkt);
@@ -2457,7 +2458,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t endpos, ret64;
-    int ret;
+    int ret, ret2 = 0;
 
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
@@ -2485,7 +2486,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
         endpos = avio_tell(pb);
 
-        if (mkv->cues.num_entries) {
+        if (mkv->cues.num_entries && mkv->reserve_cues_space >= 0) {
             AVIOContext *cues = NULL;
             uint64_t size;
             int length_size = 0;
@@ -2510,7 +2511,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                            "Insufficient space reserved for Cues: "
                            "%d < %"PRIu64". No Cues will be output.\n",
                            mkv->reserve_cues_space, size);
-                    mkv->reserve_cues_space = -1;
+                    ret2 = AVERROR(EINVAL);
                     ffio_free_dyn_buf(&cues);
                     goto after_cues;
                 } else {
@@ -2600,7 +2601,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
         end_ebml_master(pb, mkv->segment);
 
-    return mkv->reserve_cues_space < 0 ? AVERROR(EINVAL) : 0;
+    return ret2;
 }
 
 static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
