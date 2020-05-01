@@ -1,0 +1,66 @@
+9176856edc1ff2b401e323f422fd8e78 *tests/data/fate/matroska-spherical-mono-remux.matroska
+161583 tests/data/fate/matroska-spherical-mono-remux.matroska
+#extradata 0:       43, 0x2b0e0d7b
+#extradata 1:       43, 0x2b0e0d7b
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 1920x1080
+#sar 0: 0/1
+#tb 1: 1/1000
+#media_type 1: video
+#codec_id 1: h264
+#dimensions 1: 1920x1080
+#sar 1: 0/1
+0,        -80,          0,       40,    69118, 0x73cb52f0, S=2,       12, 0x00000000,       36, 0x2cf8035c
+1,        -80,          0,       40,    69118, 0x73cb52f0, S=2,       12, 0x00000000,       36, 0x2cf8035c
+0,        -40,        160,       40,     1103, 0x082a059f, F=0x0
+1,        -40,        160,       40,     1103, 0x082a059f, F=0x0
+[STREAM]
+color_range=unknown
+color_space=unknown
+color_transfer=unknown
+color_primaries=unknown
+DISPOSITION:default=0
+DISPOSITION:forced=1
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=2D
+inverted=0
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Spherical Mapping
+projection=tiled equirectangular
+bound_left=148
+bound_top=73
+bound_right=147
+bound_bottom=72
+yaw=45
+pitch=30
+roll=15
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+color_range=pc
+color_space=bt2020c
+color_transfer=smpte170m
+color_primaries=bt709
+DISPOSITION:default=0
+DISPOSITION:forced=0
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=2D
+inverted=0
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Spherical Mapping
+projection=tiled equirectangular
+bound_left=148
+bound_top=73
+bound_right=147
+bound_bottom=72
+yaw=45
+pitch=30
+roll=15
+[/SIDE_DATA]
+[/STREAM]
