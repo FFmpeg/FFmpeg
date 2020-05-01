@@ -441,6 +441,12 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
 
         os = ogg->streams + idx;
 
+        ret = buf_realloc(os, size);
+        if (ret < 0) {
+            av_free(readout_buf);
+            return ret;
+        }
+
         memcpy(os->buf + os->bufpos, readout_buf, size);
         av_free(readout_buf);
     }
