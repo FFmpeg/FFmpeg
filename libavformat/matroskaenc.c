@@ -2186,7 +2186,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
 
     switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+        if (side_data_size && mkv->track.bc) {
             int filler, output_sample_rate = 0;
             ret = get_aac_sample_rates(s, side_data, side_data_size, &track->sample_rate,
                                        &output_sample_rate);
@@ -2213,7 +2213,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
         }
         break;
     case AV_CODEC_ID_FLAC:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+        if (side_data_size && mkv->track.bc) {
             uint8_t *old_extradata = par->extradata;
             if (side_data_size != par->extradata_size) {
                 av_log(s, AV_LOG_ERROR, "Invalid FLAC STREAMINFO metadata for output stream %d\n",
@@ -2229,8 +2229,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
     // FIXME: Remove the following once libaom starts propagating extradata during init()
     //        See https://bugs.chromium.org/p/aomedia/issues/detail?id=2012
     case AV_CODEC_ID_AV1:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live &&
-            !par->extradata_size) {
+        if (side_data_size && mkv->track.bc && !par->extradata_size) {
             AVIOContext *dyn_cp;
             uint8_t *codecpriv;
             int codecpriv_size;
@@ -2541,6 +2540,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         if (ret < 0)
             return ret;
 
+        if (mkv->info.bc) {
         // update the duration
         av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
         avio_seek(mkv->info.bc, mkv->duration_offset, SEEK_SET);
@@ -2549,6 +2549,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                                     MATROSKA_ID_INFO, 0, 0, 0);
         if (ret < 0)
             return ret;
+        }
 
         if (mkv->track.bc) {
             // write Tracks master
