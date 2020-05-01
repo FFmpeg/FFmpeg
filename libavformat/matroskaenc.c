@@ -58,6 +58,9 @@
  * Info, Tracks, Chapters, Attachments, Tags and Cues */
 #define MAX_SEEKHEAD_ENTRIES 6
 
+#define IS_SEEKABLE(pb, mkv) (((pb)->seekable & AVIO_SEEKABLE_NORMAL) && \
+                              !(mkv)->is_live)
+
 enum {
     DEFAULT_MODE_INFER,
     DEFAULT_MODE_INFER_NO_SUBS,
@@ -671,9 +674,9 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
     return 0;
 }
 
-static int get_aac_sample_rates(AVFormatContext *s, const uint8_t *extradata,
-                                int extradata_size, int *sample_rate,
-                                int *output_sample_rate)
+static int get_aac_sample_rates(AVFormatContext *s, MatroskaMuxContext *mkv,
+                                const uint8_t *extradata, int extradata_size,
+                                int *sample_rate, int *output_sample_rate)
 {
     MPEG4AudioConfig mp4ac;
     int ret;
@@ -684,7 +687,7 @@ static int get_aac_sample_rates(AVFormatContext *s, const uint8_t *extradata,
      * first packet.
      * Abort however if s->pb is not seekable, as we would not be able to seek back
      * to write the sample rate elements once the extradata shows up, anyway. */
-    if (ret < 0 && (extradata_size || !(s->pb->seekable & AVIO_SEEKABLE_NORMAL))) {
+    if (ret < 0 && (extradata_size || !IS_SEEKABLE(s->pb, mkv))) {
         av_log(s, AV_LOG_ERROR,
                "Error parsing AAC extradata, unable to determine samplerate.\n");
         return AVERROR(EINVAL);
@@ -1141,8 +1144,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         return 0;
 
     if (par->codec_id == AV_CODEC_ID_AAC) {
-        ret = get_aac_sample_rates(s, par->extradata, par->extradata_size, &sample_rate,
-                                   &output_sample_rate);
+        ret = get_aac_sample_rates(s, mkv, par->extradata, par->extradata_size,
+                                   &sample_rate, &output_sample_rate);
         if (ret < 0)
             return ret;
     }
@@ -1907,11 +1910,13 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_void(pb, s->metadata_header_padding);
     }
 
-    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mkv->reserve_cues_space) {
+    if (mkv->reserve_cues_space) {
+        if (IS_SEEKABLE(pb, mkv)) {
         mkv->cues_pos = avio_tell(pb);
         if (mkv->reserve_cues_space == 1)
             mkv->reserve_cues_space++;
         put_ebml_void(pb, mkv->reserve_cues_space);
+        }
     }
 
     av_init_packet(&mkv->cur_audio_pkt);
@@ -1920,7 +1925,7 @@ static int mkv_write_header(AVFormatContext *s)
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
-    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
+    if (IS_SEEKABLE(pb, mkv)) {
         if (mkv->cluster_time_limit < 0)
             mkv->cluster_time_limit = 5000;
         if (mkv->cluster_size_limit < 0)
@@ -2188,8 +2193,8 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
     case AV_CODEC_ID_AAC:
         if (side_data_size && mkv->track.bc) {
             int filler, output_sample_rate = 0;
-            ret = get_aac_sample_rates(s, side_data, side_data_size, &track->sample_rate,
-                                       &output_sample_rate);
+            ret = get_aac_sample_rates(s, mkv, side_data, side_data_size,
+                                       &track->sample_rate, &output_sample_rate);
             if (ret < 0)
                 return ret;
             if (!output_sample_rate)
@@ -2311,7 +2316,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
         ret = mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe);
         if (ret < 0)
             return ret;
-        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && keyframe &&
+        if (keyframe && IS_SEEKABLE(s->pb, mkv) &&
             (par->codec_type == AVMEDIA_TYPE_VIDEO || !mkv->have_video && !track->has_cue)) {
             ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
                                    mkv->cluster_pos, relative_packet_pos, -1);
@@ -2341,7 +2346,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             end_ebml_master(pb, blockgroup);
         }
 
-        if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
+        if (IS_SEEKABLE(s->pb, mkv)) {
             ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
                                    mkv->cluster_pos, relative_packet_pos, duration);
             if (ret < 0)
@@ -2451,6 +2456,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
+    int64_t endpos, ret64;
     int ret;
 
     // check if we have an audio packet cached
@@ -2474,9 +2480,8 @@ static int mkv_write_trailer(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-
-    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
-        int64_t endpos, ret64;
+    if (!IS_SEEKABLE(pb, mkv))
+        return 0;
 
         endpos = avio_tell(pb);
 
@@ -2592,9 +2597,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         }
 
         avio_seek(pb, endpos, SEEK_SET);
-    }
 
-    if (!mkv->is_live)
         end_ebml_master(pb, mkv->segment);
 
     return mkv->reserve_cues_space < 0 ? AVERROR(EINVAL) : 0;
