@@ -2542,9 +2542,13 @@ static int mkv_write_trailer(AVFormatContext *s)
         }
 
     after_cues:
+    /* Lengths greater than (1ULL << 56) - 1 can't be represented
+     * via an EBML number, so leave the unknown length field. */
+    if (endpos - mkv->segment_offset < (1ULL << 56) - 1) {
         if ((ret64 = avio_seek(pb, mkv->segment_offset - 8, SEEK_SET)) < 0)
             return ret64;
         put_ebml_length(pb, endpos - mkv->segment_offset, 8);
+    }
 
         ret = mkv_write_seekhead(pb, mkv, 1, mkv->info.pos);
         if (ret < 0)
