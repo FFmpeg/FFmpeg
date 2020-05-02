@@ -358,6 +358,10 @@ often not aware of this and is often out of their control.
 When possible we attempt to notify the provider to be removed from the
 blacklists or filters.
 
+Currently (End April/May 2020) GMX is apparently blocking all mails from FFmpeg.
+If you have a gmx account, do not hesitate to complain to them about this. We so far
+have had no luck.
+
 @section Why are my sent messages not showing up?
 
 Excluding @ref{Why is my message awaiting moderator approval?, messages that are held in the moderation queue}
