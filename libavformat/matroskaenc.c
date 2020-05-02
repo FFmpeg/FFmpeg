@@ -126,7 +126,6 @@ typedef struct MatroskaMuxContext {
     ebml_stored_master info;
     ebml_stored_master track;
     ebml_stored_master tags;
-    ebml_master     segment;
     int64_t         segment_offset;
     AVIOContext     *cluster_bc;
     int64_t         cluster_pos;        ///< file offset of the current cluster
@@ -1817,7 +1816,8 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_uint  (pb, EBML_ID_DOCTYPEREADVERSION,           2);
     end_ebml_master(pb, ebml_header);
 
-    mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT, 0);
+    put_ebml_id(pb, MATROSKA_ID_SEGMENT);
+    put_ebml_size_unknown(pb, 8);
     mkv->segment_offset = avio_tell(pb);
 
     // we write a seek head at the beginning to point to all other level
@@ -2542,6 +2542,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         }
 
     after_cues:
+        if ((ret64 = avio_seek(pb, mkv->segment_offset - 8, SEEK_SET)) < 0)
+            return ret64;
+        put_ebml_length(pb, endpos - mkv->segment_offset, 8);
+
         ret = mkv_write_seekhead(pb, mkv, 1, mkv->info.pos);
         if (ret < 0)
             return ret;
@@ -2598,8 +2602,6 @@ static int mkv_write_trailer(AVFormatContext *s)
         }
 
         avio_seek(pb, endpos, SEEK_SET);
-
-        end_ebml_master(pb, mkv->segment);
 
     return ret2;
 }
