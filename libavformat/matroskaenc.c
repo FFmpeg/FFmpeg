@@ -2451,7 +2451,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         }
     }
 
-    if (mkv->cluster_bc) {
+    if (mkv->cluster_pos != -1) {
         end_ebml_master_crc32(pb, &mkv->cluster_bc, mkv,
                               MATROSKA_ID_CLUSTER, 0, 0);
     }
