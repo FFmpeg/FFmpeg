@@ -1869,7 +1869,7 @@ static int mkv_write_header(AVFormatContext *s)
             int64_t scaledDuration = av_rescale(metadata_duration, 1000, AV_TIME_BASE);
             put_ebml_float(pb, MATROSKA_ID_DURATION, scaledDuration);
             av_log(s, AV_LOG_DEBUG, "Write early duration from metadata = %" PRIu64 "\n", scaledDuration);
-        } else {
+        } else if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
             put_ebml_void(pb, 11);              // assumes double-precision float to be written
         }
     }
