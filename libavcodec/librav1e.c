@@ -202,6 +202,12 @@ static av_cold int librav1e_encode_init(AVCodecContext *avctx)
                                    });
     }
 
+    if ((avctx->flags & AV_CODEC_FLAG_PASS1 || avctx->flags & AV_CODEC_FLAG_PASS2) && !avctx->bit_rate) {
+        av_log(avctx, AV_LOG_ERROR, "A bitrate must be set to use two pass mode.\n");
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
     if (avctx->flags & AV_CODEC_FLAG_PASS2) {
         if (!avctx->stats_in) {
             av_log(avctx, AV_LOG_ERROR, "No stats file provided for second pass.\n");
