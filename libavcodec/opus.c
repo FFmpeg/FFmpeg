@@ -613,6 +613,8 @@ void ff_celt_bitalloc(CeltFrame *f, OpusRangeCoder *rc, int encode)
     }
 
     /* Allocation trim */
+    if (!encode)
+        f->alloc_trim = 5;
     if (opus_rc_tell_frac(rc) + (6 << 3) <= tbits_8ths)
         if (encode)
             ff_opus_rc_enc_cdf(rc, f->alloc_trim, ff_celt_model_alloc_trim);
