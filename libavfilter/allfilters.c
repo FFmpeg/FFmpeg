@@ -131,6 +131,7 @@ extern AVFilter ff_af_sidechaingate;
 extern AVFilter ff_af_silencedetect;
 extern AVFilter ff_af_silenceremove;
 extern AVFilter ff_af_sofalizer;
+extern AVFilter ff_af_speechnorm;
 extern AVFilter ff_af_stereotools;
 extern AVFilter ff_af_stereowiden;
 extern AVFilter ff_af_superequalizer;
