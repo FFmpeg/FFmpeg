@@ -99,50 +99,32 @@ static const AVClass flavor ## _muxer_class = {\
     .version    = LIBAVUTIL_VERSION_INT,\
 };
 
-static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
-{
-    int64_t pos = avio_tell(pb);
-    uint32_t checksum = ffio_get_checksum(pb);
-    avio_seek(pb, crc_offset, SEEK_SET);
-    avio_wb32(pb, checksum);
-    avio_seek(pb, pos, SEEK_SET);
-}
-
-static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
+static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
 {
     OGGStreamContext *oggstream = s->streams[page->stream_index]->priv_data;
-    AVIOContext *pb;
-    int64_t crc_offset;
-    int ret, size;
-    uint8_t *buf;
+    uint8_t buf[4 + 1 + 1 + 8 + 4 + 4 + 4 + 1 + 255], *ptr = buf, *crc_pos;
+    const AVCRC *crc_table = av_crc_get_table(AV_CRC_32_IEEE);
+    uint32_t crc;
 
-    ret = avio_open_dyn_buf(&pb);
-    if (ret < 0)
-        return ret;
-    ffio_init_checksum(pb, ff_crc04C11DB7_update, 0);
-    ffio_wfourcc(pb, "OggS");
-    avio_w8(pb, 0);
-    avio_w8(pb, page->flags | extra_flags);
-    avio_wl64(pb, page->granule);
-    avio_wl32(pb, oggstream->serial_num);
-    avio_wl32(pb, oggstream->page_counter++);
-    crc_offset = avio_tell(pb);
-    avio_wl32(pb, 0); // crc
-    avio_w8(pb, page->segments_count);
-    avio_write(pb, page->segments, page->segments_count);
-    avio_write(pb, page->data, page->size);
+    bytestream_put_le32(&ptr, MKTAG('O', 'g', 'g', 'S'));
+    bytestream_put_byte(&ptr, 0);
+    bytestream_put_byte(&ptr, page->flags | extra_flags);
+    bytestream_put_le64(&ptr, page->granule);
+    bytestream_put_le32(&ptr, oggstream->serial_num);
+    bytestream_put_le32(&ptr, oggstream->page_counter++);
+    crc_pos = ptr;
+    bytestream_put_le32(&ptr, 0);
+    bytestream_put_byte(&ptr, page->segments_count);
+    bytestream_put_buffer(&ptr, page->segments, page->segments_count);
 
-    ogg_update_checksum(s, pb, crc_offset);
+    crc = av_crc(crc_table, 0, buf, ptr - buf);
+    crc = av_crc(crc_table, crc, page->data, page->size);
+    bytestream_put_be32(&crc_pos, crc);
 
-    size = avio_close_dyn_buf(pb, &buf);
-    if (size < 0)
-        return size;
-
-    avio_write(s->pb, buf, size);
+    avio_write(s->pb, buf, ptr - buf);
+    avio_write(s->pb, page->data, page->size);
     avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
-    av_free(buf);
     oggstream->page_count--;
-    return 0;
 }
 
 static int ogg_key_granule(OGGStreamContext *oggstream, int64_t granule)
