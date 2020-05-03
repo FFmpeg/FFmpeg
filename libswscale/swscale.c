@@ -500,6 +500,11 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             fillPlane16(dst[3], dstStride[3], length, height, lastDstY,
                     1, desc->comp[3].depth,
                     isBE(dstFormat));
+        } else if (is32BPS(dstFormat)) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
+            fillPlane32(dst[3], dstStride[3], length, height, lastDstY,
+                    1, desc->comp[3].depth,
+                    isBE(dstFormat), desc->flags & AV_PIX_FMT_FLAG_FLOAT);
         } else
             fillPlane(dst[3], dstStride[3], length, height, lastDstY, 255);
     }

@@ -491,6 +491,34 @@ static int bswap_16bpc(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
+static int bswap_32bpc(SwsContext *c, const uint8_t *src[],
+                              int srcStride[], int srcSliceY, int srcSliceH,
+                              uint8_t *dst[], int dstStride[])
+{
+    int i, j, p;
+
+    for (p = 0; p < 4; p++) {
+        int srcstr = srcStride[p] / 4;
+        int dststr = dstStride[p] / 4;
+        uint32_t       *dstPtr =       (uint32_t *) dst[p];
+        const uint32_t *srcPtr = (const uint32_t *) src[p];
+        int min_stride         = FFMIN(FFABS(srcstr), FFABS(dststr));
+        if(!dstPtr || !srcPtr)
+            continue;
+        dstPtr += (srcSliceY >> c->chrDstVSubSample) * dststr;
+        for (i = 0; i < (srcSliceH >> c->chrDstVSubSample); i++) {
+            for (j = 0; j < min_stride; j++) {
+                dstPtr[j] = av_bswap32(srcPtr[j]);
+            }
+            srcPtr += srcstr;
+            dstPtr += dststr;
+        }
+    }
+
+    return srcSliceH;
+}
+
+
 static int palToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
                            int srcSliceY, int srcSliceH, uint8_t *dst[],
                            int dstStride[])
@@ -2076,6 +2104,11 @@ void ff_get_unscaled_swscale(SwsContext *c)
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P14) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P16))
         c->swscale = bswap_16bpc;
+
+    /* bswap 32 bits per pixel/component formats */
+    if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRPF32) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRAPF32))
+        c->swscale = bswap_32bpc;
 
     if (usePal(srcFormat) && isByteRGB(dstFormat))
         c->swscale = palToRgbWrapper;
