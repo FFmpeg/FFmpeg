@@ -522,7 +522,7 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(inter_ref_pic_set_prediction_flag, 0);
 
     if (current->inter_ref_pic_set_prediction_flag) {
-        unsigned int ref_rps_idx, num_delta_pocs;
+        unsigned int ref_rps_idx, num_delta_pocs, num_ref_pics;
         const H265RawSTRefPicSet *ref;
         int delta_rps, d_poc;
         int ref_delta_poc_s0[HEVC_MAX_REFS], ref_delta_poc_s1[HEVC_MAX_REFS];
@@ -538,18 +538,28 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
         ref_rps_idx = st_rps_idx - (current->delta_idx_minus1 + 1);
         ref = &sps->st_ref_pic_set[ref_rps_idx];
         num_delta_pocs = ref->num_negative_pics + ref->num_positive_pics;
+        av_assert0(num_delta_pocs < HEVC_MAX_DPB_SIZE);
 
         flag(delta_rps_sign);
         ue(abs_delta_rps_minus1, 0, INT16_MAX);
         delta_rps = (1 - 2 * current->delta_rps_sign) *
             (current->abs_delta_rps_minus1 + 1);
 
+        num_ref_pics = 0;
         for (j = 0; j <= num_delta_pocs; j++) {
             flags(used_by_curr_pic_flag[j], 1, j);
             if (!current->used_by_curr_pic_flag[j])
                 flags(use_delta_flag[j], 1, j);
             else
                 infer(use_delta_flag[j], 1);
+            if (current->use_delta_flag[i])
+                ++num_ref_pics;
+        }
+        if (num_ref_pics >= HEVC_MAX_DPB_SIZE) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+                   "short-term ref pic set %d "
+                   "contains too many pictures.\n", st_rps_idx);
+            return AVERROR_INVALIDDATA;
         }
 
         // Since the stored form of an RPS here is actually the delta-step
@@ -601,8 +611,6 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
             }
         }
 
-        if (i > 15)
-            return AVERROR_INVALIDDATA;
         infer(num_negative_pics, i);
         for (i = 0; i < current->num_negative_pics; i++) {
             infer(delta_poc_s0_minus1[i],
@@ -632,8 +640,6 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
             }
         }
 
-        if (i + current->num_negative_pics > 15)
-            return AVERROR_INVALIDDATA;
         infer(num_positive_pics, i);
         for (i = 0; i < current->num_positive_pics; i++) {
             infer(delta_poc_s1_minus1[i],
