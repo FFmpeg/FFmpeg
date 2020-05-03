@@ -93,6 +93,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     DSDContext * s;
     int i;
 
+    if (!avctx->channels)
+        return AVERROR_INVALIDDATA;
+
     init_static_data();
 
     s = av_malloc_array(sizeof(DSDContext), avctx->channels);
