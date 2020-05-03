@@ -960,6 +960,59 @@ static av_always_inline void planar_rgb16_to_uv(uint8_t *_dstU, uint8_t *_dstV,
 }
 #undef rdpx
 
+#define rdpx(src) (is_be ? av_int2float(AV_RB32(src)): av_int2float(AV_RL32(src)))
+
+static av_always_inline void planar_rgbf32_to_a(uint8_t *_dst, const uint8_t *_src[4], int width, int is_be, int32_t *rgb2yuv)
+{
+    int i;
+    const float **src = (const float **)_src;
+    uint16_t *dst        = (uint16_t *)_dst;
+
+    for (i = 0; i < width; i++) {
+        dst[i] = av_clip_uint16(lrintf(65535.0f * rdpx(src[3] + i)));
+    }
+}
+
+static av_always_inline void planar_rgbf32_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *_src[4], int width, int is_be, int32_t *rgb2yuv)
+{
+    int i;
+    const float **src = (const float **)_src;
+    uint16_t *dstU       = (uint16_t *)_dstU;
+    uint16_t *dstV       = (uint16_t *)_dstV;
+    int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
+    int32_t rv = rgb2yuv[RV_IDX], gv = rgb2yuv[GV_IDX], bv = rgb2yuv[BV_IDX];
+    int bpc = 16;
+    int shift = 14;
+    for (i = 0; i < width; i++) {
+        int g = av_clip_uint16(lrintf(65535.0f * rdpx(src[0] + i)));
+        int b = av_clip_uint16(lrintf(65535.0f * rdpx(src[1] + i)));
+        int r = av_clip_uint16(lrintf(65535.0f * rdpx(src[2] + i)));
+
+        dstU[i] = (ru*r + gu*g + bu*b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + shift - 14);
+        dstV[i] = (rv*r + gv*g + bv*b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + shift - 14);
+    }
+}
+
+static av_always_inline void planar_rgbf32_to_y(uint8_t *_dst, const uint8_t *_src[4], int width, int is_be, int32_t *rgb2yuv)
+{
+    int i;
+    const float **src = (const float **)_src;
+    uint16_t *dst    = (uint16_t *)_dst;
+
+    int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
+    int bpc = 16;
+    int shift = 14;
+    for (i = 0; i < width; i++) {
+        int g = av_clip_uint16(lrintf(65535.0f * rdpx(src[0] + i)));
+        int b = av_clip_uint16(lrintf(65535.0f * rdpx(src[1] + i)));
+        int r = av_clip_uint16(lrintf(65535.0f * rdpx(src[2] + i)));
+
+        dst[i] = ((ry*r + gy*g + by*b + (33 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + shift - 14));
+    }
+}
+
+#undef rdpx
+
 static av_always_inline void grayf32ToY16_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
                                             const uint8_t *unused2, int width, uint32_t *unused)
 {
@@ -1022,6 +1075,26 @@ rgb9plus_planar_transparency_funcs(10)
 rgb9plus_planar_transparency_funcs(12)
 rgb9plus_planar_transparency_funcs(16)
 
+#define rgbf32_planar_funcs_endian(endian_name, endian)                                             \
+static void planar_rgbf32##endian_name##_to_y(uint8_t *dst, const uint8_t *src[4],                  \
+                                                  int w, int32_t *rgb2yuv)                          \
+{                                                                                                   \
+    planar_rgbf32_to_y(dst, src, w, endian, rgb2yuv);                                               \
+}                                                                                                   \
+static void planar_rgbf32##endian_name##_to_uv(uint8_t *dstU, uint8_t *dstV,                        \
+                                                   const uint8_t *src[4], int w, int32_t *rgb2yuv)  \
+{                                                                                                   \
+    planar_rgbf32_to_uv(dstU, dstV, src, w, endian, rgb2yuv);                                       \
+}                                                                                                   \
+static void planar_rgbf32##endian_name##_to_a(uint8_t *dst, const uint8_t *src[4],                  \
+                                              int w, int32_t *rgb2yuv)                              \
+{                                                                                                   \
+    planar_rgbf32_to_a(dst, src, w, endian, rgb2yuv);                                               \
+}
+
+rgbf32_planar_funcs_endian(le, 0)
+rgbf32_planar_funcs_endian(be, 1)
+
 av_cold void ff_sws_init_input_funcs(SwsContext *c)
 {
     enum AVPixelFormat srcFormat = c->srcFormat;
@@ -1070,6 +1143,10 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP16LE:
         c->readChrPlanar = planar_rgb16le_to_uv;
         break;
+    case AV_PIX_FMT_GBRAPF32LE:
+    case AV_PIX_FMT_GBRPF32LE:
+        c->readChrPlanar = planar_rgbf32le_to_uv;
+        break;
     case AV_PIX_FMT_GBRP9BE:
         c->readChrPlanar = planar_rgb9be_to_uv;
         break;
@@ -1087,6 +1164,10 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRAP16BE:
     case AV_PIX_FMT_GBRP16BE:
         c->readChrPlanar = planar_rgb16be_to_uv;
+        break;
+    case AV_PIX_FMT_GBRAPF32BE:
+    case AV_PIX_FMT_GBRPF32BE:
+        c->readChrPlanar = planar_rgbf32be_to_uv;
         break;
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
@@ -1368,6 +1449,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP16LE:
         c->readLumPlanar = planar_rgb16le_to_y;
         break;
+    case AV_PIX_FMT_GBRAPF32LE:
+        c->readAlpPlanar = planar_rgbf32le_to_a;
+    case AV_PIX_FMT_GBRPF32LE:
+        c->readLumPlanar = planar_rgbf32le_to_y;
+        break;
     case AV_PIX_FMT_GBRP9BE:
         c->readLumPlanar = planar_rgb9be_to_y;
         break;
@@ -1388,6 +1474,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         c->readAlpPlanar = planar_rgb16be_to_a;
     case AV_PIX_FMT_GBRP16BE:
         c->readLumPlanar = planar_rgb16be_to_y;
+        break;
+    case AV_PIX_FMT_GBRAPF32BE:
+        c->readAlpPlanar = planar_rgbf32be_to_a;
+    case AV_PIX_FMT_GBRPF32BE:
+        c->readLumPlanar = planar_rgbf32be_to_y;
         break;
     case AV_PIX_FMT_GBRAP:
         c->readAlpPlanar = planar_rgb_to_a;
