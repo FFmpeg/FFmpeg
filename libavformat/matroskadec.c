@@ -3414,13 +3414,13 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
 
 static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 MatroskaTrack *track, AVStream *st,
-                                AVBufferRef *buf, uint8_t **data, int pkt_size,
+                                AVBufferRef *buf, uint8_t *data, int pkt_size,
                                 uint64_t timecode, uint64_t lace_duration,
                                 int64_t pos, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
                                 int64_t discard_padding)
 {
-    uint8_t *pkt_data = *data;
+    uint8_t *pkt_data = data;
     int res = 0;
     AVPacket pktl, *pkt = &pktl;
 
@@ -3432,7 +3432,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
             goto fail;
         }
         if (!buf)
-            av_freep(data);
+            av_freep(&data);
         buf = NULL;
     }
 
@@ -3445,7 +3445,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
             goto fail;
         }
         if (!buf)
-            av_freep(data);
+            av_freep(&data);
         buf = NULL;
     }
 
@@ -3525,7 +3525,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 no_output:
 fail:
     if (!buf)
-        av_freep(data);
+        av_free(pkt_data);
     return res;
 }
 
@@ -3659,7 +3659,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
             if (res)
                 return res;
         } else {
-            res = matroska_parse_frame(matroska, track, st, buf, &out_data,
+            res = matroska_parse_frame(matroska, track, st, buf, out_data,
                                        out_size, timecode, lace_duration,
                                        pos, !n ? is_keyframe : 0,
                                        additional, additional_id, additional_size,
