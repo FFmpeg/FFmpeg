@@ -362,8 +362,9 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     default:
         break;
     }
-    if (freectx)
-    av_freep(ctx);
+    if (freectx) {
+        av_freep(ctx);
+    }
 }
 
 static int64_t klv_decode_ber_length(AVIOContext *pb)
