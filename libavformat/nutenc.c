@@ -303,7 +303,7 @@ static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc,
                        uint64_t startcode)
 {
     uint8_t *dyn_buf = NULL;
-    int dyn_size     = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    int dyn_size     = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     int forw_ptr     = dyn_size + 4;
 
     if (forw_ptr > 4096)
@@ -317,7 +317,7 @@ static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc,
     avio_write(bc, dyn_buf, dyn_size);
     avio_wl32(bc, ffio_get_checksum(bc));
 
-    av_free(dyn_buf);
+    ffio_reset_dyn_buf(dyn_bc);
 }
 
 static void write_mainheader(NUTContext *nut, AVIOContext *bc)
@@ -630,9 +630,6 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc)
     put_packet(nut, bc, dyn_bc, MAIN_STARTCODE);
 
     for (i = 0; i < nut->avf->nb_streams; i++) {
-        ret = avio_open_dyn_buf(&dyn_bc);
-        if (ret < 0)
-            return ret;
         ret = write_streamheader(avctx, dyn_bc, nut->avf->streams[i], i);
         if (ret < 0) {
             ffio_free_dyn_buf(&dyn_bc);
@@ -641,30 +638,20 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc)
         put_packet(nut, bc, dyn_bc, STREAM_STARTCODE);
     }
 
-    ret = avio_open_dyn_buf(&dyn_bc);
-    if (ret < 0)
-        return ret;
     write_globalinfo(nut, dyn_bc);
     put_packet(nut, bc, dyn_bc, INFO_STARTCODE);
 
     for (i = 0; i < nut->avf->nb_streams; i++) {
-        ret = avio_open_dyn_buf(&dyn_bc);
-        if (ret < 0)
-            return ret;
         ret = write_streaminfo(nut, dyn_bc, i);
         if (ret > 0)
             put_packet(nut, bc, dyn_bc, INFO_STARTCODE);
-        else {
+        else if (ret < 0) {
             ffio_free_dyn_buf(&dyn_bc);
-            if (ret < 0)
                 return ret;
         }
     }
 
     for (i = 0; i < nut->avf->nb_chapters; i++) {
-        ret = avio_open_dyn_buf(&dyn_bc);
-        if (ret < 0)
-            return ret;
         ret = write_chapter(nut, dyn_bc, i);
         if (ret < 0) {
             ffio_free_dyn_buf(&dyn_bc);
@@ -675,6 +662,9 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc)
 
     nut->last_syncpoint_pos = INT_MIN;
     nut->header_count++;
+
+    ffio_free_dyn_buf(&dyn_bc);
+
     return 0;
 }
 
@@ -1020,6 +1010,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
                    av_rescale_q(av_gettime(), AV_TIME_BASE_Q, *nus->time_base));
         }
         put_packet(nut, bc, dyn_bc, SYNCPOINT_STARTCODE);
+        ffio_free_dyn_buf(&dyn_bc);
 
         if (nut->write_index) {
         if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0 /*unused*/, pkt->dts)) < 0)
@@ -1173,6 +1164,7 @@ static int nut_write_trailer(AVFormatContext *s)
         av_assert1(nut->write_index); // sp_count should be 0 if no index is going to be written
         write_index(nut, dyn_bc);
         put_packet(nut, bc, dyn_bc, INDEX_STARTCODE);
+        ffio_free_dyn_buf(&dyn_bc);
     }
 
     return 0;
