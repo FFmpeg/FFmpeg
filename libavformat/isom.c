@@ -313,6 +313,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
     { AV_CODEC_ID_PIXLET, MKTAG('p', 'x', 'l', 't') },
 
+    { AV_CODEC_ID_NOTCHLC, MKTAG('n', 'c', 'l', 'c') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 

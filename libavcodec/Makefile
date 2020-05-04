@@ -506,6 +506,7 @@ OBJS-$(CONFIG_MWSC_DECODER)            += mwsc.o
 OBJS-$(CONFIG_MXPEG_DECODER)           += mxpegdec.o
 OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o
 OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o
+OBJS-$(CONFIG_NOTCHLC_DECODER)         += notchlc.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
 OBJS-$(CONFIG_ON2AVC_DECODER)          += on2avc.o on2avcdata.o
 OBJS-$(CONFIG_OPUS_DECODER)            += opusdec.o opus.o opus_celt.o opus_rc.o \

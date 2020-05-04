@@ -67,6 +67,7 @@ version <next>:
 - Pro Pinball Series Soundbank demuxer
 - pcm_rechunk bitstream filter
 - scdet filter
+- NotchLC decoder
 
 
 version 4.2:

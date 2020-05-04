@@ -224,6 +224,7 @@ extern AVCodec ff_mvdv_decoder;
 extern AVCodec ff_mvha_decoder;
 extern AVCodec ff_mwsc_decoder;
 extern AVCodec ff_mxpeg_decoder;
+extern AVCodec ff_notchlc_decoder;
 extern AVCodec ff_nuv_decoder;
 extern AVCodec ff_paf_video_decoder;
 extern AVCodec ff_pam_encoder;
