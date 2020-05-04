@@ -2274,7 +2274,7 @@ static int hls_init_file_resend(AVFormatContext *s, VariantStream *vs)
     int ret = 0;
 
     set_http_options(s, &options, hls);
-    ret = hlsenc_io_open(s, &vs->out, hls->fmp4_init_filename, &options);
+    ret = hlsenc_io_open(s, &vs->out, vs->base_output_dirname, &options);
     av_dict_free(&options);
     if (ret < 0)
         return ret;
