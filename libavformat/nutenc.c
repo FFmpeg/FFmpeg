@@ -903,7 +903,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                     put_str(dyn_bc, "ChannelLayout");
                     put_s(dyn_bc, -2);
                     put_str(dyn_bc, "u64");
-                    put_v(bc, 8);
+                    put_v(dyn_bc, 8);
                     avio_write(dyn_bc, data, 8); data+=8;
                     sm_data_count++;
                 }
