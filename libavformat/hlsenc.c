@@ -1880,7 +1880,7 @@ fail:
 
 static int get_nth_codec_stream_index(AVFormatContext *s,
                                       enum AVMediaType codec_type,
-                                      int stream_id)
+                                      int64_t stream_id)
 {
     unsigned int stream_index, cnt;
     if (stream_id < 0 || stream_id > s->nb_streams - 1)
@@ -1963,6 +1963,8 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
 
         nb_streams = 0;
         while (keyval = av_strtok(varstr, ",", &saveptr2)) {
+            int64_t num;
+            char *end;
             varstr = NULL;
             if (av_strstart(keyval, "language:", &val)) {
                 av_free(vs->language);
@@ -2011,10 +2013,12 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
                 return AVERROR(EINVAL);
             }
 
-            stream_index = -1;
-            if (av_isdigit(*val))
-                stream_index = get_nth_codec_stream_index (s, codec_type,
-                                                           atoi(val));
+            num = strtoll(val, &end, 0);
+            if (!av_isdigit(*val) || *end != '\0') {
+                av_log(s, AV_LOG_ERROR, "Invalid stream number: '%s'\n", val);
+                return AVERROR(EINVAL);
+            }
+            stream_index = get_nth_codec_stream_index(s, codec_type, num);
 
             if (stream_index >= 0 && nb_streams < vs->nb_streams) {
                 for (i = 0; nb_streams > 0 && i < nb_streams; i++) {
