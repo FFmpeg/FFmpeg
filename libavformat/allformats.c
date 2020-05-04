@@ -341,6 +341,7 @@ extern AVInputFormat  ff_pcm_u8_demuxer;
 extern AVOutputFormat ff_pcm_u8_muxer;
 extern AVInputFormat  ff_pjs_demuxer;
 extern AVInputFormat  ff_pmp_demuxer;
+extern AVInputFormat  ff_pp_bnk_demuxer;
 extern AVOutputFormat ff_psp_muxer;
 extern AVInputFormat  ff_pva_demuxer;
 extern AVInputFormat  ff_pvf_demuxer;

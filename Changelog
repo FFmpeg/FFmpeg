@@ -64,6 +64,7 @@ version <next>:
 - Support for muxing pcm and pgs in m2ts
 - Cunning Developments ADPCM decoder
 - asubboost filter
+- Pro Pinball Series Soundbank demuxer
 
 
 version 4.2:
