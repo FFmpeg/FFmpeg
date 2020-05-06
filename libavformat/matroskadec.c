@@ -259,6 +259,7 @@ typedef struct MatroskaTrack {
 typedef struct MatroskaAttachment {
     uint64_t uid;
     char *filename;
+    char *description;
     char *mime;
     EbmlBin bin;
 
@@ -587,7 +588,7 @@ static EbmlSyntax matroska_attachment[] = {
     { MATROSKA_ID_FILENAME,     EBML_UTF8, 0, offsetof(MatroskaAttachment, filename) },
     { MATROSKA_ID_FILEMIMETYPE, EBML_STR,  0, offsetof(MatroskaAttachment, mime) },
     { MATROSKA_ID_FILEDATA,     EBML_BIN,  0, offsetof(MatroskaAttachment, bin) },
-    { MATROSKA_ID_FILEDESC,     EBML_NONE },
+    { MATROSKA_ID_FILEDESC,     EBML_UTF8, 0, offsetof(MatroskaAttachment, description) },
     CHILD_OF(matroska_attachments)
 };
 
@@ -2914,6 +2915,8 @@ static int matroska_read_header(AVFormatContext *s)
                 break;
             av_dict_set(&st->metadata, "filename", attachments[j].filename, 0);
             av_dict_set(&st->metadata, "mimetype", attachments[j].mime, 0);
+            if (attachments[j].description)
+                av_dict_set(&st->metadata, "title", attachments[j].description, 0);
             st->codecpar->codec_id   = AV_CODEC_ID_NONE;
 
             for (i = 0; mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
