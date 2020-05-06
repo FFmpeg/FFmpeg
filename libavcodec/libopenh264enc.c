@@ -182,6 +182,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.iEntropyCodingModeFlag     = 0;
     param.iMultipleThreadIdc         = avctx->thread_count;
 
+    /* Allow specifying the libopenh264 profile through AVCodecContext. */
+    if (FF_PROFILE_UNKNOWN == s->profile &&
+        FF_PROFILE_UNKNOWN != avctx->profile)
+        switch (avctx->profile) {
+        case FF_PROFILE_H264_HIGH:
+        case FF_PROFILE_H264_MAIN:
+        case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+            s->profile = avctx->profile;
+            break;
+        default:
+            av_log(avctx, AV_LOG_WARNING,
+                   "Unsupported avctx->profile: %d.\n", avctx->profile);
+            break;
+        }
+
     if (s->profile == FF_PROFILE_UNKNOWN)
         s->profile = !s->cabac ? FF_PROFILE_H264_CONSTRAINED_BASELINE :
 #if OPENH264_VER_AT_LEAST(1, 8)
