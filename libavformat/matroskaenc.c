@@ -915,8 +915,8 @@ static void mkv_write_video_color(AVIOContext *pb, const AVStream *st,
         put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLOR, colour, colorinfo_size);
 }
 
-static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
-                                      const AVStream *st)
+static void mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
+                                       const AVStream *st)
 {
     ebml_master projection;
     int side_data_size = 0;
@@ -927,13 +927,13 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
                                                             &side_data_size);
 
     if (!side_data_size)
-        return 0;
+        return;
 
     if (spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR      &&
         spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR_TILE &&
         spherical->projection != AV_SPHERICAL_CUBEMAP) {
         av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
-        return 0;
+        return;
     }
 
     // Maximally 4 8-byte elements with id-length 2 + 1 byte length field
@@ -981,8 +981,6 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
                        (double) spherical->roll  / (1 << 16));
 
     end_ebml_master(pb, projection);
-
-    return 0;
 }
 
 static void mkv_write_field_order(AVIOContext *pb, int mode,
@@ -1306,10 +1304,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
         }
         mkv_write_video_color(pb, st, par);
+        mkv_write_video_projection(s, pb, st);
 
-        ret = mkv_write_video_projection(s, pb, st);
-        if (ret < 0)
-            return ret;
         end_ebml_master(pb, subinfo);
         break;
 
