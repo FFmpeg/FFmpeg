@@ -44,7 +44,7 @@ typedef struct SVCContext {
     ISVCEncoder *encoder;
     int slice_mode;
     int loopfilter;
-    char *profile;
+    int profile;
     int max_nal_size;
     int skip_frames;
     int skipped;
@@ -75,7 +75,12 @@ static const AVOption options[] = {
 #endif
 #endif
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
-    { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
+    { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, 0xffff, VE, "profile" },
+#define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, { .i64 = value }, 0, 0, VE, "profile"
+        { PROFILE("constrained_baseline", FF_PROFILE_H264_CONSTRAINED_BASELINE) },
+        { PROFILE("main",                 FF_PROFILE_H264_MAIN) },
+        { PROFILE("high",                 FF_PROFILE_H264_HIGH) },
+#undef PROFILE
     { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "cabac", "Enable cabac", OFFSET(cabac), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
@@ -176,10 +181,41 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.iLoopFilterDisableIdc      = !s->loopfilter;
     param.iEntropyCodingModeFlag     = 0;
     param.iMultipleThreadIdc         = avctx->thread_count;
-    if (s->profile && !strcmp(s->profile, "main"))
+
+    if (s->profile == FF_PROFILE_UNKNOWN)
+        s->profile = !s->cabac ? FF_PROFILE_H264_CONSTRAINED_BASELINE :
+#if OPENH264_VER_AT_LEAST(1, 8)
+                                 FF_PROFILE_H264_HIGH;
+#else
+                                 FF_PROFILE_H264_MAIN;
+#endif
+
+    switch (s->profile) {
+#if OPENH264_VER_AT_LEAST(1, 8)
+    case FF_PROFILE_H264_HIGH:
         param.iEntropyCodingModeFlag = 1;
-    else if (!s->profile && s->cabac)
+        av_log(avctx, AV_LOG_VERBOSE, "Using CABAC, "
+                "select EProfileIdc PRO_HIGH in libopenh264.\n");
+        break;
+#else
+    case FF_PROFILE_H264_MAIN:
         param.iEntropyCodingModeFlag = 1;
+        av_log(avctx, AV_LOG_VERBOSE, "Using CABAC, "
+                "select EProfileIdc PRO_MAIN in libopenh264.\n");
+        break;
+#endif
+    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+    case FF_PROFILE_UNKNOWN:
+        param.iEntropyCodingModeFlag = 0;
+        av_log(avctx, AV_LOG_VERBOSE, "Using CAVLC, "
+               "select EProfileIdc PRO_BASELINE in libopenh264.\n");
+        break;
+    default:
+        param.iEntropyCodingModeFlag = 0;
+        av_log(avctx, AV_LOG_WARNING, "Unsupported profile, "
+               "select EProfileIdc PRO_BASELINE in libopenh264.\n");
+        break;
+    }
 
     param.sSpatialLayers[0].iVideoWidth         = param.iPicWidth;
     param.sSpatialLayers[0].iVideoHeight        = param.iPicHeight;
