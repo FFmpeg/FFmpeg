@@ -592,7 +592,7 @@ static struct fragment * get_Fragment(char *range)
         char *str_end_offset;
         char *str_offset = av_strtok(range, "-", &str_end_offset);
         seg->url_offset = strtoll(str_offset, NULL, 10);
-        seg->size = strtoll(str_end_offset, NULL, 10) - seg->url_offset;
+        seg->size = strtoll(str_end_offset, NULL, 10) - seg->url_offset + 1;
     }
 
     return seg;
