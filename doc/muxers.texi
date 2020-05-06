@@ -1314,7 +1314,8 @@ The recognized metadata settings in this muxer are:
 
 @table @option
 @item title
-Set title name provided to a single track.
+Set title name provided to a single track. This gets mapped to
+the FileDescription element for a stream written as attachment.
 
 @item language
 Specify the language of the track in the Matroska languages form.
