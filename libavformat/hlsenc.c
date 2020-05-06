@@ -1944,10 +1944,13 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
             return AVERROR(EINVAL);
 
         q = varstr;
-        while (q < varstr + strlen(varstr)) {
+        while (1) {
             if (!av_strncasecmp(q, "a:", 2) || !av_strncasecmp(q, "v:", 2) ||
                 !av_strncasecmp(q, "s:", 2))
                 vs->nb_streams++;
+            q = strchr(q, ',');
+            if (!q)
+                break;
             q++;
         }
         vs->streams = av_mallocz(sizeof(AVStream *) * vs->nb_streams);
