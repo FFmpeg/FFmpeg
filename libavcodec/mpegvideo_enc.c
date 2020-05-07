@@ -596,8 +596,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if ((s->codec_id == AV_CODEC_ID_WMV1 ||
          s->codec_id == AV_CODEC_ID_WMV2) &&
          avctx->width & 1) {
-         av_log(avctx, AV_LOG_ERROR, "width must be multiple of 2\n");
-         return -1;
+        av_log(avctx, AV_LOG_ERROR, "width must be multiple of 2\n");
+        return -1;
     }
 
     if ((s->avctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME)) &&
