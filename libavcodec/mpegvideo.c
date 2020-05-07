@@ -408,7 +408,7 @@ static int init_duplicate_context(MpegEncContext *s)
 
     return 0;
 fail:
-    return -1; // free() through ff_mpv_common_end()
+    return AVERROR(ENOMEM); // free() through ff_mpv_common_end()
 }
 
 static void free_duplicate_context(MpegEncContext *s)
