@@ -1029,6 +1029,8 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
     int ret = 0;
     const AVDictionaryEntry *tag;
     MatroskaVideoStereoModeType format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
+    const AVStereo3D *stereo;
+    int side_data_size = 0;
 
     *h_width = 1;
     *h_height = 1;
@@ -1051,12 +1053,9 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
         }
     }
 
-    // iterate to find the stereo3d side data
-    for (i = 0; i < st->nb_side_data; i++) {
-        AVPacketSideData sd = st->side_data[i];
-        if (sd.type == AV_PKT_DATA_STEREO3D) {
-            AVStereo3D *stereo = (AVStereo3D *)sd.data;
-
+    stereo = (const AVStereo3D*)av_stream_get_side_data(st, AV_PKT_DATA_STEREO3D,
+                                                        &side_data_size);
+    if (side_data_size >= sizeof(AVStereo3D)) {
             switch (stereo->type) {
             case AV_STEREO3D_2D:
                 format = MATROSKA_VIDEO_STEREOMODE_TYPE_MONO;
@@ -1096,8 +1095,6 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
                     format++;
                 break;
             }
-            break;
-        }
     }
 
     if (format == MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
