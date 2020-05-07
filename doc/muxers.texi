@@ -2275,6 +2275,11 @@ certain (usually permanent) errors the recovery is not attempted even when
 Specify whether to wait for the keyframe after recovering from
 queue overflow or failure. This option is set to 0 (false) by default.
 
+@item timeshift @var{duration}
+Buffer the specified amount of packets and delay writing the output. Note that
+@var{queue_size} must be big enough to store the packets for timeshift. At the
+end of the input the fifo buffer is flushed at realtime speed.
+
 @end table
 
 @subsection Examples
