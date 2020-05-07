@@ -38,7 +38,7 @@
 
 #define V4L_M2M_DEFAULT_OPTS \
     { "num_output_buffers", "Number of buffers in the output context",\
-        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 6, INT_MAX, FLAGS }
+        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 2, INT_MAX, FLAGS }
 
 typedef struct V4L2m2mContext {
     char devname[PATH_MAX];
