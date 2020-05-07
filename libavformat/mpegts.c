@@ -2881,14 +2881,15 @@ static int mpegts_resync(AVFormatContext *s, int seekback, const uint8_t *curren
     AVIOContext *pb = s->pb;
     int c, i;
     uint64_t pos = avio_tell(pb);
-
-    avio_seek(pb, -FFMIN(seekback, pos), SEEK_CUR);
+    int64_t back = FFMIN(seekback, pos);
 
     //Special case for files like 01c56b0dc1.ts
     if (current_packet[0] == 0x80 && current_packet[12] == 0x47) {
-        avio_seek(pb, 12, SEEK_CUR);
+        avio_seek(pb, 12 - back, SEEK_CUR);
         return 0;
     }
+
+    avio_seek(pb, -back, SEEK_CUR);
 
     for (i = 0; i < ts->resync_size; i++) {
         c = avio_r8(pb);
