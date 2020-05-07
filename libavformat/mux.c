@@ -761,12 +761,13 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    AVStream *st;
     int ret;
-    AVStream *st = s->streams[pkt->stream_index];
 
     ret = check_packet(s, pkt);
     if (ret < 0)
         return ret;
+    st = s->streams[pkt->stream_index];
 
 #if !FF_API_COMPUTE_PKT_FIELDS2 || !FF_API_LAVF_AVCTX
     /* sanitize the timestamps */
@@ -1176,10 +1177,11 @@ static int write_packets_from_bsfs(AVFormatContext *s, AVStream *st, AVPacket *p
 
 static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleaved)
 {
-    AVStream *st = s->streams[pkt->stream_index];
+    AVStream *st;
     int ret = prepare_input_packet(s, pkt);
     if (ret < 0)
         return ret;
+    st = s->streams[pkt->stream_index];
 
     ret = check_bitstream(s, st, pkt);
     if (ret < 0)
