@@ -2908,24 +2908,18 @@ static int hls_init(AVFormatContext *s)
                         return ret;
                 }
 
-                fmp4_init_filename_len = strlen(vs->m3u8_name) +
-                    strlen(vs->fmp4_init_filename) + 1;
-
-                vs->base_output_dirname = av_malloc(fmp4_init_filename_len);
+                p = strrchr(vs->m3u8_name, '/');
+                if (p) {
+                    char tmp = *(++p);
+                    *p = '\0';
+                    vs->base_output_dirname = av_asprintf("%s%s", vs->m3u8_name,
+                                                          vs->fmp4_init_filename);
+                    *p = tmp;
+                } else {
+                    vs->base_output_dirname = av_strdup(vs->fmp4_init_filename);
+                }
                 if (!vs->base_output_dirname)
                     return AVERROR(ENOMEM);
-
-                av_strlcpy(vs->base_output_dirname, vs->m3u8_name,
-                           fmp4_init_filename_len);
-                p = strrchr(vs->base_output_dirname, '/');
-                if (p) {
-                    *(p + 1) = '\0';
-                    av_strlcat(vs->base_output_dirname, vs->fmp4_init_filename,
-                               fmp4_init_filename_len);
-                } else {
-                    av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
-                               fmp4_init_filename_len);
-                }
             }
         }
 
