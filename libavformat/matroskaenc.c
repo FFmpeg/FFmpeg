@@ -3172,6 +3172,9 @@ static int mkv_check_bitstream(AVFormatContext *s, AVStream *st,
             ret = ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
     } else if (st->codecpar->codec_id == AV_CODEC_ID_VP9) {
         ret = ff_stream_add_bitstream_filter(st, "vp9_superframe", NULL);
+    } else if (CONFIG_MATROSKA_MUXER &&
+               st->codecpar->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE) {
+        ret = ff_stream_add_bitstream_filter(st, "pgs_frame_merge", NULL);
     }
 
     return ret;
