@@ -35,7 +35,7 @@ int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt);
  * @param ctx pointer to AVBSFContext of filter
  * @param pkt pointer to packet to move reference to
  *
- * @return 0>= on success, negative AVERROR in case of failure
+ * @return 0 on success, negative AVERROR in case of failure
  */
 int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt);
 
