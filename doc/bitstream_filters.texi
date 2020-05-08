@@ -695,6 +695,14 @@ for NTSC frame rate using the @option{frame_rate} option.
 ffmpeg -f lavfi -i sine=r=48000:d=1 -c pcm_s16le -bsf pcm_rechunk=r=30000/1001 -f framecrc -
 @end example
 
+@section pgs_frame_merge
+
+Merge a sequence of PGS Subtitle segments ending with an "end of display set"
+segment into a single packet.
+
+This is required by some containers that support PGS subtitles
+(muxer @code{matroska}).
+
 @section prores_metadata
 
 Modify color property metadata embedded in prores stream.

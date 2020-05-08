@@ -15,6 +15,7 @@ version 5.1:
 - colorchart video source filter
 - blurdetect filter
 - multiply video filter
+- PGS subtitle frame merge bitstream filter
 
 
 version 5.0:

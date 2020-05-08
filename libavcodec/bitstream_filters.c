@@ -52,6 +52,7 @@ extern const FFBitStreamFilter ff_noise_bsf;
 extern const FFBitStreamFilter ff_null_bsf;
 extern const FFBitStreamFilter ff_opus_metadata_bsf;
 extern const FFBitStreamFilter ff_pcm_rechunk_bsf;
+extern const FFBitStreamFilter ff_pgs_frame_merge_bsf;
 extern const FFBitStreamFilter ff_prores_metadata_bsf;
 extern const FFBitStreamFilter ff_remove_extradata_bsf;
 extern const FFBitStreamFilter ff_setts_bsf;
