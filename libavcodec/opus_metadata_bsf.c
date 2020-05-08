@@ -25,11 +25,6 @@ typedef struct OpusBSFContext {
     int gain;
 } OpusBSFContext;
 
-static int opus_metadata_filter(AVBSFContext *bsfc, AVPacket *pkt)
-{
-    return ff_bsf_get_packet_ref(bsfc, pkt);
-}
-
 static int opus_metadata_init(AVBSFContext *bsfc)
 {
     OpusBSFContext *s = bsfc->priv_data;
@@ -67,6 +62,6 @@ const AVBitStreamFilter ff_opus_metadata_bsf = {
     .priv_data_size = sizeof(OpusBSFContext),
     .priv_class     = &opus_metadata_class,
     .init           = &opus_metadata_init,
-    .filter         = &opus_metadata_filter,
+    .filter         = &ff_bsf_get_packet_ref,
     .codec_ids      = codec_ids,
 };
