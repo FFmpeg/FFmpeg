@@ -412,6 +412,10 @@ dequeue:
                 ctx->done = 1;
                 return NULL;
             }
+#ifdef V4L2_BUF_FLAG_LAST
+            if (buf.flags & V4L2_BUF_FLAG_LAST)
+                ctx->done = 1;
+#endif
         }
 
         avbuf = &ctx->buffers[buf.index];
