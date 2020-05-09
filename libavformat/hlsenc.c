@@ -2497,7 +2497,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             if ((ret = hls_window(s, 0, vs)) < 0) {
                 av_log(s, AV_LOG_WARNING, "upload playlist failed, will retry with a new http session.\n");
                 ff_format_io_close(s, &vs->out);
-                vs->out = NULL;
                 if ((ret = hls_window(s, 0, vs)) < 0) {
                     av_freep(&old_filename);
                     return ret;
