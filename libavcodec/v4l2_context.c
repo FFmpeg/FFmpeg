@@ -405,6 +405,15 @@ dequeue:
             return NULL;
         }
 
+        if (ctx_to_m2mctx(ctx)->draining && !V4L2_TYPE_IS_OUTPUT(ctx->type)) {
+            int bytesused = V4L2_TYPE_IS_MULTIPLANAR(buf.type) ?
+                            buf.m.planes[0].bytesused : buf.bytesused;
+            if (bytesused == 0) {
+                ctx->done = 1;
+                return NULL;
+            }
+        }
+
         avbuf = &ctx->buffers[buf.index];
         avbuf->status = V4L2BUF_AVAILABLE;
         avbuf->buf = buf;
