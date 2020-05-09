@@ -525,10 +525,10 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     int ret = 0;
     int segment_cnt = 0;
     AVBPrint path;
-    char *dirname = NULL;
+    const char *dirname = NULL;
     char *dirname_r = NULL;
     char *dirname_repl = NULL;
-    char *vtt_dirname = NULL;
+    const char *vtt_dirname = NULL;
     char *vtt_dirname_r = NULL;
     const char *proto = NULL;
 
@@ -559,7 +559,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
 
     if (segment && !hls->use_localtime_mkdir) {
         dirname_r = hls->segment_filename ? av_strdup(hls->segment_filename): av_strdup(vs->avf->url);
-        dirname = (char*)av_dirname(dirname_r);
+        dirname = av_dirname(dirname_r);
     }
 
     /* if %v is present in the file's directory
@@ -598,7 +598,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
 
         if ((segment->sub_filename[0] != '\0')) {
             vtt_dirname_r = av_strdup(vs->vtt_avf->url);
-            vtt_dirname = (char*)av_dirname(vtt_dirname_r);
+            vtt_dirname = av_dirname(vtt_dirname_r);
 
             av_bprint_clear(&path);
             av_bprintf(&path, "%s%c%s", vtt_dirname, SEPARATOR,
