@@ -833,7 +833,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         av_dict_copy(&st->metadata, vs->streams[i]->metadata, 0);
     }
 
-    vs->packets_written = 1;
     vs->start_pos = 0;
     vs->new_start = 1;
 
@@ -847,9 +846,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
             return AVERROR_PATCHWELCOME;
         }
     }
-
-    vs->packets_written = 0;
-    vs->init_range_length = 0;
 
     if ((ret = avio_open_dyn_buf(&oc->pb)) < 0)
         return ret;
