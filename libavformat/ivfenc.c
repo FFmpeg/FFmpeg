@@ -43,6 +43,16 @@ static int ivf_init(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+    if (par->codec_id == AV_CODEC_ID_VP9) {
+        int ret = ff_stream_add_bitstream_filter(s->streams[0], "vp9_superframe", NULL);
+        if (ret < 0)
+            return ret;
+    } else if (par->codec_id == AV_CODEC_ID_AV1) {
+        int ret = ff_stream_add_bitstream_filter(s->streams[0], "av1_metadata", "td=insert");
+        if (ret < 0)
+            return ret;
+    }
+
     return 0;
 }
 
@@ -100,19 +110,6 @@ static int ivf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static int ivf_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
-{
-    int ret = 1;
-    AVStream *st = s->streams[pkt->stream_index];
-
-    if (st->codecpar->codec_id == AV_CODEC_ID_VP9)
-        ret = ff_stream_add_bitstream_filter(st, "vp9_superframe", NULL);
-    else if (st->codecpar->codec_id == AV_CODEC_ID_AV1)
-        ret = ff_stream_add_bitstream_filter(st, "av1_metadata", "td=insert");
-
-    return ret;
-}
-
 static const AVCodecTag codec_ivf_tags[] = {
     { AV_CODEC_ID_VP8,  MKTAG('V', 'P', '8', '0') },
     { AV_CODEC_ID_VP9,  MKTAG('V', 'P', '9', '0') },
@@ -131,6 +128,5 @@ AVOutputFormat ff_ivf_muxer = {
     .write_header = ivf_write_header,
     .write_packet = ivf_write_packet,
     .write_trailer = ivf_write_trailer,
-    .check_bitstream = ivf_check_bitstream,
     .codec_tag    = (const AVCodecTag* const []){ codec_ivf_tags, 0 },
 };
