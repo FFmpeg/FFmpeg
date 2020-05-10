@@ -425,7 +425,7 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         return err;
 
     if (debug_mode) {
-        static const char *layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+        static const char *layers[] = { "VK_LAYER_KHRONOS_validation" };
         inst_props.ppEnabledLayerNames = layers;
         inst_props.enabledLayerCount = FF_ARRAY_ELEMS(layers);
     }
