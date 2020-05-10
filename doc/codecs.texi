@@ -849,16 +849,6 @@ Possible values:
 
 @item mpeg4_asp
 
-@item dts
-
-@item dts_es
-
-@item dts_96_24
-
-@item dts_hd_hra
-
-@item dts_hd_ma
-
 @end table
 
 Encoder specific profiles are documented in the relevant encoder documentation.
