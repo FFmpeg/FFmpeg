@@ -26,10 +26,9 @@ typedef struct IVFEncContext {
     uint64_t last_pts, sum_delta_pts;
 } IVFEncContext;
 
-static int ivf_write_header(AVFormatContext *s)
+static int ivf_init(AVFormatContext *s)
 {
     AVCodecParameters *par;
-    AVIOContext *pb = s->pb;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Format supports only exactly one video stream\n");
@@ -43,6 +42,15 @@ static int ivf_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Currently only VP8, VP9 and AV1 are supported!\n");
         return AVERROR(EINVAL);
     }
+
+    return 0;
+}
+
+static int ivf_write_header(AVFormatContext *s)
+{
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    AVIOContext *pb = s->pb;
+
     avio_write(pb, "DKIF", 4);
     avio_wl16(pb, 0); // version
     avio_wl16(pb, 32); // header length
@@ -119,6 +127,7 @@ AVOutputFormat ff_ivf_muxer = {
     .extensions   = "ivf",
     .audio_codec  = AV_CODEC_ID_NONE,
     .video_codec  = AV_CODEC_ID_VP8,
+    .init         = ivf_init,
     .write_header = ivf_write_header,
     .write_packet = ivf_write_packet,
     .write_trailer = ivf_write_trailer,
