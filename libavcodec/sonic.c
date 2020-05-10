@@ -458,8 +458,8 @@ static void predictor_init_state(int *k, int *state, int order)
 
         for (j = 0, p = i+1; p < order; j++,p++)
             {
-            int tmp = x + shift_down(k[j] * state[p], LATTICE_SHIFT);
-            state[p] += shift_down(k[j]*x, LATTICE_SHIFT);
+            int tmp = x + shift_down(k[j] * (unsigned)state[p], LATTICE_SHIFT);
+            state[p] += shift_down(k[j]* (unsigned)x, LATTICE_SHIFT);
             x = tmp;
         }
     }
@@ -467,7 +467,7 @@ static void predictor_init_state(int *k, int *state, int order)
 
 static int predictor_calc_error(int *k, int *state, int order, int error)
 {
-    int i, x = error - shift_down(k[order-1] * state[order-1], LATTICE_SHIFT);
+    int i, x = error - shift_down(k[order-1] *  (unsigned)state[order-1], LATTICE_SHIFT);
 
 #if 1
     int *k_ptr = &(k[order-2]),
