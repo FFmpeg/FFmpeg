@@ -1034,6 +1034,18 @@ If @var{device} is an integer, it selects the device by its index in a
 system-dependent list of devices.  If @var{device} is any other string, it
 selects the first device with a name containing that string as a substring.
 
+The following options are recognized:
+@table @option
+@item debug
+If set to 1, enables the validation layer, if installed.
+@item linear_images
+If set to 1, images allocated by the hwcontext will be linear and locally mappable.
+@item instance_extensions
+A plus separated list of additional instance extensions to enable.
+@item device_extensions
+A plus separated list of additional device extensions to enable.
+@end table
+
 Examples:
 @table @emph
 @item -init_hw_device vulkan:1
@@ -1041,6 +1053,9 @@ Choose the second device on the system.
 
 @item -init_hw_device vulkan:RADV
 Choose the first device with a name containing the string @emph{RADV}.
+
+@item -init_hw_device vulkan:0,instance_extensions=VK_KHR_wayland_surface+VK_KHR_xcb_surface
+Choose the first device and enable the Wayland and XCB instance extensions.
 @end table
 
 @end table

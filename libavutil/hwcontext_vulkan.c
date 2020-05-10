@@ -98,9 +98,13 @@ typedef struct AVVkFrameInternal {
         list = av_realloc_array(list, sizeof(*list), ++count);                 \
         if (!list) {                                                           \
             err = AVERROR(ENOMEM);                                             \
-            goto end;                                                          \
+            goto fail;                                                         \
         }                                                                      \
-        list[count - 1] = val;                                                 \
+        list[count - 1] = av_strdup(val);                                      \
+        if (!list[count - 1]) {                                                \
+            err = AVERROR(ENOMEM);                                             \
+            goto fail;                                                         \
+        }                                                                      \
     } while(0)
 
 static const struct {
@@ -261,7 +265,7 @@ static VkBool32 vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     return 0;
 }
 
-static int check_extensions(AVHWDeviceContext *ctx, int dev,
+static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
                             const char * const **dst, uint32_t *num, int debug)
 {
     const char *tstr;
@@ -273,6 +277,8 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev,
     const char *mod;
     int optional_exts_num;
     uint32_t sup_ext_count;
+    char *user_exts_str = NULL;
+    AVDictionaryEntry *user_exts;
     VkExtensionProperties *sup_ext;
     const VulkanOptExtension *optional_exts;
 
@@ -280,6 +286,14 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev,
         mod = "instance";
         optional_exts = optional_instance_exts;
         optional_exts_num = FF_ARRAY_ELEMS(optional_instance_exts);
+        user_exts = av_dict_get(opts, "instance_extensions", NULL, 0);
+        if (user_exts) {
+            user_exts_str = av_strdup(user_exts->value);
+            if (!user_exts_str) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
         vkEnumerateInstanceExtensionProperties(NULL, &sup_ext_count, NULL);
         sup_ext = av_malloc_array(sup_ext_count, sizeof(VkExtensionProperties));
         if (!sup_ext)
@@ -289,6 +303,14 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev,
         mod = "device";
         optional_exts = optional_device_exts;
         optional_exts_num = FF_ARRAY_ELEMS(optional_device_exts);
+        user_exts = av_dict_get(opts, "device_extensions", NULL, 0);
+        if (user_exts) {
+            user_exts_str = av_strdup(user_exts->value);
+            if (!user_exts_str) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
         vkEnumerateDeviceExtensionProperties(hwctx->phys_dev, NULL,
                                              &sup_ext_count, NULL);
         sup_ext = av_malloc_array(sup_ext_count, sizeof(VkExtensionProperties));
@@ -336,19 +358,52 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev,
             }
         }
         if (found) {
+            av_log(ctx, AV_LOG_VERBOSE, "Using %s extension \"%s\"\n", mod, tstr);
             ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
         } else {
             av_log(ctx, AV_LOG_ERROR, "Debug extension \"%s\" not found!\n",
                    tstr);
             err = AVERROR(EINVAL);
-            goto end;
+            goto fail;
+        }
+    }
+
+    if (user_exts_str) {
+        char *save, *token = av_strtok(user_exts_str, "+", &save);
+        while (token) {
+            found = 0;
+            for (int j = 0; j < sup_ext_count; j++) {
+                if (!strcmp(token, sup_ext[j].extensionName)) {
+                    found = 1;
+                    break;
+                }
+            }
+            if (found) {
+                av_log(ctx, AV_LOG_VERBOSE, "Using %s extension \"%s\"\n", mod, tstr);
+                ADD_VAL_TO_LIST(extension_names, extensions_found, token);
+            } else {
+                av_log(ctx, AV_LOG_ERROR, "%s extension \"%s\" not found!\n",
+                       mod, token);
+                err = AVERROR(EINVAL);
+                goto fail;
+            }
+            token = av_strtok(NULL, "+", &save);
         }
     }
 
     *dst = extension_names;
     *num = extensions_found;
 
-end:
+    av_free(user_exts_str);
+    av_free(sup_ext);
+    return 0;
+
+fail:
+    if (extension_names)
+        for (int i = 0; i < extensions_found; i++)
+            av_free((void *)extension_names[i]);
+    av_free(extension_names);
+    av_free(user_exts_str);
     av_free(sup_ext);
     return err;
 }
@@ -376,7 +431,7 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     };
 
     /* Check for present/missing extensions */
-    err = check_extensions(ctx, 0, &inst_props.ppEnabledExtensionNames,
+    err = check_extensions(ctx, 0, opts, &inst_props.ppEnabledExtensionNames,
                            &inst_props.enabledExtensionCount, debug_mode);
     if (err < 0)
         return err;
@@ -391,6 +446,8 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     ret = vkCreateInstance(&inst_props, hwctx->alloc, &hwctx->inst);
 
     /* Free used memory */
+    for (int i = 0; i < inst_props.enabledExtensionCount; i++)
+        av_free((void *)inst_props.ppEnabledExtensionNames[i]);
     av_free((void *)inst_props.ppEnabledExtensionNames);
 
     /* Check for errors */
@@ -777,13 +834,15 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     if ((err = search_queue_families(ctx, &dev_info)))
         goto end;
 
-    if ((err = check_extensions(ctx, 1, &dev_info.ppEnabledExtensionNames,
+    if ((err = check_extensions(ctx, 1, opts, &dev_info.ppEnabledExtensionNames,
                                 &dev_info.enabledExtensionCount, 0)))
         goto end;
 
     ret = vkCreateDevice(hwctx->phys_dev, &dev_info, hwctx->alloc,
                          &hwctx->act_dev);
 
+    for (int i = 0; i < dev_info.enabledExtensionCount; i++)
+        av_free((void *)dev_info.ppEnabledExtensionNames[i]);
     av_free((void *)dev_info.ppEnabledExtensionNames);
 
     if (ret != VK_SUCCESS) {
