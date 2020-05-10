@@ -20,6 +20,22 @@
 #define AVCODEC_PROFILES_H
 
 #include "avcodec.h"
+#include "libavutil/opt.h"
+
+#define FF_AVCTX_PROFILE_OPTION(name, description, type, value) \
+    {name, description, 0, AV_OPT_TYPE_CONST, {.i64 = value }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_## type ##_PARAM, "avctx.profile"},
+
+#define FF_AAC_PROFILE_OPTS \
+    FF_AVCTX_PROFILE_OPTION("aac_main",      NULL, AUDIO, FF_PROFILE_AAC_MAIN)\
+    FF_AVCTX_PROFILE_OPTION("aac_low",       NULL, AUDIO, FF_PROFILE_AAC_LOW)\
+    FF_AVCTX_PROFILE_OPTION("aac_ssr",       NULL, AUDIO, FF_PROFILE_AAC_SSR)\
+    FF_AVCTX_PROFILE_OPTION("aac_ltp",       NULL, AUDIO, FF_PROFILE_AAC_LTP)\
+    FF_AVCTX_PROFILE_OPTION("aac_he",        NULL, AUDIO, FF_PROFILE_AAC_HE)\
+    FF_AVCTX_PROFILE_OPTION("aac_he_v2",     NULL, AUDIO, FF_PROFILE_AAC_HE_V2)\
+    FF_AVCTX_PROFILE_OPTION("aac_ld",        NULL, AUDIO, FF_PROFILE_AAC_LD)\
+    FF_AVCTX_PROFILE_OPTION("aac_eld",       NULL, AUDIO, FF_PROFILE_AAC_ELD)\
+    FF_AVCTX_PROFILE_OPTION("mpeg2_aac_low", NULL, AUDIO, FF_PROFILE_MPEG2_AAC_LOW)\
+    FF_AVCTX_PROFILE_OPTION("mpeg2_aac_he",  NULL, AUDIO, FF_PROFILE_MPEG2_AAC_HE)\
 
 extern const AVProfile ff_aac_profiles[];
 extern const AVProfile ff_dca_profiles[];

@@ -841,26 +841,6 @@ Possible values:
 @table @samp
 @item unknown
 
-@item aac_main
-
-@item aac_low
-
-@item aac_ssr
-
-@item aac_ltp
-
-@item aac_he
-
-@item aac_he_v2
-
-@item aac_ld
-
-@item aac_eld
-
-@item mpeg2_aac_low
-
-@item mpeg2_aac_he
-
 @item mpeg4_sp
 
 @item mpeg4_core

@@ -39,6 +39,7 @@
 #include "mpeg4audio.h"
 #include "kbdwin.h"
 #include "sinewin.h"
+#include "profiles.h"
 
 #include "aac.h"
 #include "aactab.h"
@@ -1131,6 +1132,7 @@ static const AVOption aacenc_options[] = {
     {"aac_ltp", "Long term prediction", offsetof(AACEncContext, options.ltp), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {"aac_pce", "Forces the use of PCEs", offsetof(AACEncContext, options.pce), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
+    FF_AAC_PROFILE_OPTS
     {NULL}
 };
 
