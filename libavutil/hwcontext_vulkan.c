@@ -181,8 +181,7 @@ enum VulkanExtensions {
     EXT_EXTERNAL_FD_MEMORY     = 1ULL <<  2, /* VK_KHR_external_memory_fd */
     EXT_EXTERNAL_FD_SEM        = 1ULL <<  3, /* VK_KHR_external_semaphore_fd */
 
-    EXT_OPTIONAL               = 1ULL << 62,
-    EXT_REQUIRED               = 1ULL << 63,
+    EXT_NO_FLAG                = 1ULL << 63,
 };
 
 typedef struct VulkanOptExtension {
@@ -191,7 +190,7 @@ typedef struct VulkanOptExtension {
 } VulkanOptExtension;
 
 static const VulkanOptExtension optional_instance_exts[] = {
-    { VK_KHR_SURFACE_EXTENSION_NAME, EXT_OPTIONAL },
+    { VK_KHR_SURFACE_EXTENSION_NAME, EXT_NO_FLAG },
 };
 
 static const VulkanOptExtension optional_device_exts[] = {
@@ -321,9 +320,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     }
 
     for (int i = 0; i < optional_exts_num; i++) {
-        int req = optional_exts[i].flag & EXT_REQUIRED;
         tstr = optional_exts[i].name;
-
         found = 0;
         for (int j = 0; j < sup_ext_count; j++) {
             if (!strcmp(tstr, sup_ext[j].extensionName)) {
@@ -331,20 +328,11 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
                 break;
             }
         }
-        if (!found) {
-            int lvl = req ? AV_LOG_ERROR : AV_LOG_VERBOSE;
-            av_log(ctx, lvl, "Extension \"%s\" not found!\n", tstr);
-            if (req) {
-                err = AVERROR(EINVAL);
-                goto end;
-            }
+        if (!found)
             continue;
-        }
-        if (!req)
-            p->extensions |= optional_exts[i].flag;
 
         av_log(ctx, AV_LOG_VERBOSE, "Using %s extension \"%s\"\n", mod, tstr);
-
+        p->extensions |= optional_exts[i].flag;
         ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
     }
 
