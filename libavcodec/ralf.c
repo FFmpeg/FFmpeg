@@ -344,7 +344,8 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     int len, ch, ret;
     int dmode, mode[2], bits[2];
     int *ch0, *ch1;
-    int i, t, t2;
+    int i;
+    unsigned int t, t2;
 
     len = 12 - get_unary(gb, 0, 6);
 
@@ -409,8 +410,8 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
         for (i = 0; i < len; i++) {
             t  =   ch1[i] + ctx->bias[1];
             t2 = ((ch0[i] + ctx->bias[0]) * 2) | (t & 1);
-            dst0[i] = (t2 + t) / 2;
-            dst1[i] = (t2 - t) / 2;
+            dst0[i] = (int)(t2 + t) / 2;
+            dst1[i] = (int)(t2 - t) / 2;
         }
         break;
     }
