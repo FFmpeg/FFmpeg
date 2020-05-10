@@ -37,6 +37,12 @@
     FF_AVCTX_PROFILE_OPTION("mpeg2_aac_low", NULL, AUDIO, FF_PROFILE_MPEG2_AAC_LOW)\
     FF_AVCTX_PROFILE_OPTION("mpeg2_aac_he",  NULL, AUDIO, FF_PROFILE_MPEG2_AAC_HE)\
 
+#define FF_MPEG4_PROFILE_OPTS \
+    FF_AVCTX_PROFILE_OPTION("mpeg4_sp",      NULL, VIDEO, FF_PROFILE_MPEG4_SIMPLE)\
+    FF_AVCTX_PROFILE_OPTION("mpeg4_core",    NULL, VIDEO, FF_PROFILE_MPEG4_CORE)\
+    FF_AVCTX_PROFILE_OPTION("mpeg4_main",    NULL, VIDEO, FF_PROFILE_MPEG4_MAIN)\
+    FF_AVCTX_PROFILE_OPTION("mpeg4_asp",     NULL, VIDEO, FF_PROFILE_MPEG4_ADVANCED_SIMPLE)\
+
 extern const AVProfile ff_aac_profiles[];
 extern const AVProfile ff_dca_profiles[];
 extern const AVProfile ff_dnxhd_profiles[];

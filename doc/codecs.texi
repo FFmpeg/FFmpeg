@@ -837,21 +837,8 @@ Set number of macroblock rows at the bottom which are skipped.
 
 @item profile @var{integer} (@emph{encoding,audio,video})
 
-Possible values:
-@table @samp
-@item unknown
-
-@item mpeg4_sp
-
-@item mpeg4_core
-
-@item mpeg4_main
-
-@item mpeg4_asp
-
-@end table
-
-Encoder specific profiles are documented in the relevant encoder documentation.
+Set encoder codec profile. Default value is @samp{unknown}. Encoder specific
+profiles are documented in the relevant encoder documentation.
 
 @item level @var{integer} (@emph{encoding,audio,video})
 
