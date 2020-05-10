@@ -20,9 +20,11 @@
 #include "ttadsp.h"
 #include "config.h"
 
-static void tta_filter_process_c(int32_t *qm, int32_t *dx, int32_t *dl,
+static void tta_filter_process_c(int32_t *qmi, int32_t *dx, int32_t *dl,
                                  int32_t *error, int32_t *in, int32_t shift,
                                  int32_t round) {
+    uint32_t *qm = qmi;
+
     if (*error < 0) {
         qm[0] -= dx[0]; qm[1] -= dx[1]; qm[2] -= dx[2]; qm[3] -= dx[3];
         qm[4] -= dx[4]; qm[5] -= dx[5]; qm[6] -= dx[6]; qm[7] -= dx[7];
