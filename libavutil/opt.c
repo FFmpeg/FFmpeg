@@ -256,11 +256,12 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         }
 
         {
-            const AVOption *o_named = av_opt_find(target_obj, i ? buf : val, o->unit, 0, 0);
             int res;
             int ci = 0;
             double const_values[64];
             const char * const_names[64];
+            int search_flags = (o->flags & AV_OPT_FLAG_CHILD_CONSTS) ? AV_OPT_SEARCH_CHILDREN : 0;
+            const AVOption *o_named = av_opt_find(target_obj, i ? buf : val, o->unit, 0, search_flags);
             if (o_named && o_named->type == AV_OPT_TYPE_CONST)
                 d = DEFAULT_NUMVAL(o_named);
             else {
