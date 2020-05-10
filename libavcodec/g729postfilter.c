@@ -600,6 +600,7 @@ int16_t ff_g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *
             gain = ((gain_before - gain_after) << 14) / gain_after + 0x4000;
             gain = bidir_sal(gain, exp_after - exp_before);
         }
+        gain = av_clip_int16(gain);
         gain = (gain * G729_AGC_FAC1 + 0x4000) >> 15; // gain * (1-0.9875)
     } else
         gain = 0;
