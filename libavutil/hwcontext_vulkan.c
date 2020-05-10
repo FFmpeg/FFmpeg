@@ -445,15 +445,13 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     /* Try to create the instance */
     ret = vkCreateInstance(&inst_props, hwctx->alloc, &hwctx->inst);
 
-    /* Free used memory */
-    for (int i = 0; i < inst_props.enabledExtensionCount; i++)
-        av_free((void *)inst_props.ppEnabledExtensionNames[i]);
-    av_free((void *)inst_props.ppEnabledExtensionNames);
-
     /* Check for errors */
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Instance creation failure: %s\n",
                vk_ret2str(ret));
+        for (int i = 0; i < inst_props.enabledExtensionCount; i++)
+            av_free((void *)inst_props.ppEnabledExtensionNames[i]);
+        av_free((void *)inst_props.ppEnabledExtensionNames);
         return AVERROR_EXTERNAL;
     }
 
@@ -475,6 +473,9 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         pfn_vkCreateDebugUtilsMessengerEXT(hwctx->inst, &dbg,
                                            hwctx->alloc, &p->debug_ctx);
     }
+
+    hwctx->enabled_inst_extensions = inst_props.ppEnabledExtensionNames;
+    hwctx->nb_enabled_inst_extensions = inst_props.enabledExtensionCount;
 
     return 0;
 }
@@ -781,6 +782,14 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
     }
 
     vkDestroyInstance(hwctx->inst, hwctx->alloc);
+
+    for (int i = 0; i < hwctx->nb_enabled_inst_extensions; i++)
+        av_free((void *)hwctx->enabled_inst_extensions[i]);
+    av_free((void *)hwctx->enabled_inst_extensions);
+
+    for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++)
+        av_free((void *)hwctx->enabled_dev_extensions[i]);
+    av_free((void *)hwctx->enabled_dev_extensions);
 }
 
 static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
@@ -841,13 +850,12 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     ret = vkCreateDevice(hwctx->phys_dev, &dev_info, hwctx->alloc,
                          &hwctx->act_dev);
 
-    for (int i = 0; i < dev_info.enabledExtensionCount; i++)
-        av_free((void *)dev_info.ppEnabledExtensionNames[i]);
-    av_free((void *)dev_info.ppEnabledExtensionNames);
-
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Device creation failure: %s\n",
                vk_ret2str(ret));
+        for (int i = 0; i < dev_info.enabledExtensionCount; i++)
+            av_free((void *)dev_info.ppEnabledExtensionNames[i]);
+        av_free((void *)dev_info.ppEnabledExtensionNames);
         err = AVERROR_EXTERNAL;
         goto end;
     }
@@ -856,6 +864,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     opt_d = av_dict_get(opts, "linear_images", NULL, 0);
     if (opt_d)
         p->use_linear_images = strtol(opt_d->value, NULL, 10);
+
+    hwctx->enabled_dev_extensions = dev_info.ppEnabledExtensionNames;
+    hwctx->nb_enabled_dev_extensions = dev_info.enabledExtensionCount;
 
 end:
     return err;
@@ -867,6 +878,17 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     uint32_t queue_num;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
+
+    /* Set device extension flags */
+    for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++) {
+        for (int j = 0; j < FF_ARRAY_ELEMS(optional_device_exts); j++) {
+            if (!strcmp(hwctx->enabled_dev_extensions[i],
+                        optional_device_exts[j].name)) {
+                p->extensions |= optional_device_exts[j].flag;
+                break;
+            }
+        }
+    }
 
     vkGetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &queue_num, NULL);
     if (!queue_num) {

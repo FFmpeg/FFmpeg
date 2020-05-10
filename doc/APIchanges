@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-05-10 - xxxxxxxxxx - lavu 56.44.100 - hwcontext_vulkan.h
+  Add enabled_inst_extensions, num_enabled_inst_extensions, enabled_dev_extensions
+  and num_enabled_dev_extensions fields to AVVulkanDeviceContext
+
 2020-04-22 - 0e1db79e37 - lavc 58.81.100 - packet.h
                         - lavu 56.43.100 - dovi_meta.h
   Add AV_PKT_DATA_DOVI_CONF and AVDOVIDecoderConfigurationRecord.

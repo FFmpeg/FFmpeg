@@ -39,7 +39,7 @@ typedef struct AVVulkanDeviceContext {
      */
     const VkAllocationCallbacks *alloc;
     /**
-     * Instance
+     * Vulkan instance. Must be at least version 1.1.
      */
     VkInstance inst;
     /**
@@ -65,6 +65,25 @@ typedef struct AVVulkanDeviceContext {
      * Queue family index for compute ops
      */
     int queue_family_comp_index;
+    /**
+     * Enabled instance extensions. By default, VK_KHR_surface is enabled if found.
+     * If supplying your own device context, set this to an array of strings, with
+     * each entry containing the specified Vulkan extension string to enable.
+     * Duplicates are possible and accepted.
+     * If no extensions are enabled, set these fields to NULL, and 0 respectively.
+     */
+    const char * const *enabled_inst_extensions;
+    int nb_enabled_inst_extensions;
+    /**
+     * Enabled device extensions. By default, VK_KHR_external_memory_fd,
+     * VK_EXT_external_memory_dma_buf, VK_EXT_image_drm_format_modifier and
+     * VK_KHR_external_semaphore_fd are enabled if found.
+     * If supplying your own device context, these fields takes the same format as
+     * the above fields, with the same conditions that duplicates are possible
+     * and accepted, and that NULL and 0 respectively means no extensions are enabled.
+     */
+    const char * const *enabled_dev_extensions;
+    int nb_enabled_dev_extensions;
 } AVVulkanDeviceContext;
 
 /**
