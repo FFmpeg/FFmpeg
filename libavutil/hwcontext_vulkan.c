@@ -2327,7 +2327,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
 
         drm_desc->layers[i].planes[0].object_index = FFMIN(i, drm_desc->nb_objects - 1);
 
-        if (f->tiling != VK_IMAGE_TILING_OPTIMAL)
+        if (f->tiling == VK_IMAGE_TILING_OPTIMAL)
             continue;
 
         vkGetImageSubresourceLayout(hwctx->act_dev, f->img[i], &sub, &layout);
