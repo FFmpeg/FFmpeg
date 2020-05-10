@@ -330,6 +330,7 @@ static const AVOption options[] = {
       OFFSET(max_delay), AV_OPT_TYPE_DURATION, {.i64 = 13000}, 1000,13000, AE },
     { "msbc",      "use mSBC mode (wideband speech mono SBC)",
       OFFSET(msbc),      AV_OPT_TYPE_BOOL,     {.i64 = 0},        0,    1, AE },
+    FF_AVCTX_PROFILE_OPTION("msbc", NULL, AUDIO, FF_PROFILE_SBC_MSBC)
     { NULL },
 };
 
