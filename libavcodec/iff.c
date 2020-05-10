@@ -1378,11 +1378,10 @@ static void decode_delta_d(uint8_t *dst,
                     opcode--;
                 }
             } else {
-                opcode = -opcode;
                 while (opcode && bytestream2_get_bytes_left(&gb) > 0) {
                     bytestream2_put_be32(&pb, bytestream2_get_be32(&gb));
                     bytestream2_skip_p(&pb, pitch - 4);
-                    opcode--;
+                    opcode++;
                 }
             }
             entries--;
