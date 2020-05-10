@@ -317,7 +317,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
                 for (i = 0; i < width; i++) {
                     pix = fsym;
                     if (use_pred) {
-                        prev += pix;
+                        prev += (unsigned)pix;
                         pix   = prev;
                     }
                     dest[i] = pix;
