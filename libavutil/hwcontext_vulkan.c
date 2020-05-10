@@ -1225,12 +1225,14 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
 enum PrepMode {
     PREP_MODE_WRITE,
     PREP_MODE_RO_SHADER,
+    PREP_MODE_EXTERNAL_EXPORT,
 };
 
 static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
                          AVVkFrame *frame, enum PrepMode pmode)
 {
     VkResult ret;
+    uint32_t dst_qf;
     VkImageLayout new_layout;
     VkAccessFlags new_access;
     AVHWDeviceContext *ctx = hwfc->device_ctx;
@@ -1243,6 +1245,8 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
+
+    VkPipelineStageFlagBits wait_st = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -1257,10 +1261,20 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     case PREP_MODE_WRITE:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
         break;
     case PREP_MODE_RO_SHADER:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_READ_BIT;
+        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
+        break;
+    case PREP_MODE_EXTERNAL_EXPORT:
+        new_layout = VK_IMAGE_LAYOUT_GENERAL;
+        new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
+        s_info.pWaitSemaphores = &frame->sem;
+        s_info.pWaitDstStageMask = &wait_st;
+        s_info.waitSemaphoreCount = 1;
         break;
     }
 
@@ -1278,7 +1292,7 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         img_bar[i].oldLayout = frame->layout[i];
         img_bar[i].newLayout = new_layout;
         img_bar[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        img_bar[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        img_bar[i].dstQueueFamilyIndex = dst_qf;
         img_bar[i].image = frame->img[i];
         img_bar[i].subresourceRange.levelCount = 1;
         img_bar[i].subresourceRange.layerCount = 1;
@@ -2287,6 +2301,10 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     AVDRMFrameDescriptor *drm_desc = av_mallocz(sizeof(*drm_desc));
     if (!drm_desc)
         return AVERROR(ENOMEM);
+
+    err = prepare_frame(hwfc, &p->cmd, f, PREP_MODE_EXTERNAL_EXPORT);
+    if (err < 0)
+        goto end;
 
     err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src, &vulkan_unmap_to_drm, drm_desc);
     if (err < 0)
