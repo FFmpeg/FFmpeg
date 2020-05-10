@@ -119,6 +119,10 @@ typedef struct AVVulkanFramesContext {
  * All frames, imported or allocated, will be created with the
  * VK_IMAGE_CREATE_ALIAS_BIT flag set, so the memory may be aliased if needed.
  *
+ * If all three queue family indices in the device context are the same,
+ * images will be created with the EXCLUSIVE sharing mode. Otherwise, all images
+ * will be created using the CONCURRENT sharing mode.
+ *
  * @note the size of this structure is not part of the ABI, to allocate
  * you must use @av_vk_frame_alloc().
  */

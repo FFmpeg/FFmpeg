@@ -53,6 +53,10 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceProperties props;
     VkPhysicalDeviceMemoryProperties mprops;
 
+    /* Queues */
+    uint32_t qfs[3];
+    int num_qfs;
+
     /* Debug callback */
     VkDebugUtilsMessengerEXT debug_ctx;
 
@@ -897,6 +901,14 @@ if (n >= queue_num) {                                                           
 
 #undef CHECK_QUEUE
 
+    p->qfs[p->num_qfs++] = hwctx->queue_family_index;
+    if ((hwctx->queue_family_tx_index != hwctx->queue_family_index) &&
+        (hwctx->queue_family_tx_index != hwctx->queue_family_comp_index))
+        p->qfs[p->num_qfs++] = hwctx->queue_family_tx_index;
+    if ((hwctx->queue_family_comp_index != hwctx->queue_family_index) &&
+        (hwctx->queue_family_comp_index != hwctx->queue_family_tx_index))
+        p->qfs[p->num_qfs++] = hwctx->queue_family_comp_index;
+
     /* Create exec context - if there's something invalid this will error out */
     err = create_exec_ctx(ctx, &p->cmd, hwctx->queue_family_tx_index);
     if (err)
@@ -1333,21 +1345,24 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
         const int p_h = i > 0 ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h) : h;
 
         VkImageCreateInfo image_create_info = {
-            .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext         = create_pnext,
-            .imageType     = VK_IMAGE_TYPE_2D,
-            .format        = img_fmts[i],
-            .extent.width  = p_w,
-            .extent.height = p_h,
-            .extent.depth  = 1,
-            .mipLevels     = 1,
-            .arrayLayers   = 1,
-            .flags         = VK_IMAGE_CREATE_ALIAS_BIT,
-            .tiling        = tiling,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .usage         = usage,
-            .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-            .samples       = VK_SAMPLE_COUNT_1_BIT,
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = create_pnext,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = img_fmts[i],
+            .extent.width          = p_w,
+            .extent.height         = p_h,
+            .extent.depth          = 1,
+            .mipLevels             = 1,
+            .arrayLayers           = 1,
+            .flags                 = VK_IMAGE_CREATE_ALIAS_BIT,
+            .tiling                = tiling,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+            .usage                 = usage,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .pQueueFamilyIndices   = p->qfs,
+            .queueFamilyIndexCount = p->num_qfs,
+            .sharingMode           = p->num_qfs > 1 ? VK_SHARING_MODE_CONCURRENT :
+                                                      VK_SHARING_MODE_EXCLUSIVE,
         };
 
         ret = vkCreateImage(hwctx->act_dev, &image_create_info,
@@ -1820,22 +1835,24 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         const int p_h = i > 0 ? AV_CEIL_RSHIFT(hwfc->height, fmt_desc->log2_chroma_h) : hwfc->height;
 
         VkImageCreateInfo image_create_info = {
-            .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext         = &einfo,
-            .imageType     = VK_IMAGE_TYPE_2D,
-            .format        = drm_to_vulkan_fmt(desc->layers[i].format),
-            .extent.width  = p_w,
-            .extent.height = p_h,
-            .extent.depth  = 1,
-            .mipLevels     = 1,
-            .arrayLayers   = 1,
-            .flags         = VK_IMAGE_CREATE_ALIAS_BIT |
-                             (signal_p ? VK_IMAGE_CREATE_DISJOINT_BIT : 0x0),
-            .tiling        = f->tiling,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
-            .usage         = DEFAULT_USAGE_FLAGS,
-            .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-            .samples       = VK_SAMPLE_COUNT_1_BIT,
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = &einfo,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = drm_to_vulkan_fmt(desc->layers[i].format),
+            .extent.width          = p_w,
+            .extent.height         = p_h,
+            .extent.depth          = 1,
+            .mipLevels             = 1,
+            .arrayLayers           = 1,
+            .flags                 = VK_IMAGE_CREATE_ALIAS_BIT,
+            .tiling                = f->tiling,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
+            .usage                 = DEFAULT_USAGE_FLAGS,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .pQueueFamilyIndices   = p->qfs,
+            .queueFamilyIndexCount = p->num_qfs,
+            .sharingMode           = p->num_qfs > 1 ? VK_SHARING_MODE_CONCURRENT :
+                                                      VK_SHARING_MODE_EXCLUSIVE,
         };
 
         for (int j = 0; j < planes; j++) {
