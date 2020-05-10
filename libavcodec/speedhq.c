@@ -447,7 +447,7 @@ static int speedhq_decode_frame(AVCodecContext *avctx,
     }
     frame->key_frame = 1;
 
-    if (second_field_offset == 4) {
+    if (second_field_offset == 4 || second_field_offset == (buf_size-4)) {
         /*
          * Overlapping first and second fields is used to signal
          * encoding only a single field. In this case, "height"
