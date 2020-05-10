@@ -881,6 +881,8 @@ Possible values:
 
 @end table
 
+Encoder specific profiles are documented in the relevant encoder documentation.
+
 @item level @var{integer} (@emph{encoding,audio,video})
 
 Possible values:
