@@ -7026,7 +7026,8 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         // https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/Metadata/Metadata.html
         if (!parse && c->found_hdlr_mdta &&
             atom.type == MKTAG('m','e','t','a') &&
-            a.type == MKTAG('k','e','y','s')) {
+            a.type == MKTAG('k','e','y','s') &&
+            c->meta_keys_count == 0) {
             parse = mov_read_keys;
         }
 
