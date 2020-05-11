@@ -46,7 +46,7 @@
 /* The IO buffer size is unrelated to the max URL size in itself, but needs
  * to be large enough to fit the full request headers (including long
  * path names). */
-#define BUFFER_SIZE   MAX_URL_SIZE
+#define BUFFER_SIZE   (MAX_URL_SIZE + HTTP_HEADERS_SIZE)
 #define MAX_REDIRECTS 8
 #define HTTP_SINGLE   1
 #define HTTP_MUTLI    2
