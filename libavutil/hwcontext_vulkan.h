@@ -156,10 +156,10 @@ typedef struct AVVkFrame {
     VkImageLayout layout[AV_NUM_DATA_POINTERS];
 
     /**
-     * Per-frame semaphore. Must not be freed manually. Must be waited on
+     * Per-image semaphores. Must not be freed manually. Must be waited on
      * and signalled at every queue submission.
      */
-    VkSemaphore sem;
+    VkSemaphore sem[AV_NUM_DATA_POINTERS];
 
     /**
      * Internal data.

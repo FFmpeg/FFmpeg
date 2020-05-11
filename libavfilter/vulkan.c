@@ -390,28 +390,32 @@ int ff_vk_add_exec_dep(AVFilterContext *avctx, FFVkExecContext *e,
                        AVFrame *frame, VkPipelineStageFlagBits in_wait_dst_flag)
 {
     AVVkFrame *f = (AVVkFrame *)frame->data[0];
+    AVHWFramesContext *fc = (AVHWFramesContext *)frame->hw_frames_ctx->data;
+    int planes = av_pix_fmt_count_planes(fc->sw_format);
 
-    e->sem_wait = av_fast_realloc(e->sem_wait, &e->sem_wait_alloc,
-                                  (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait));
-    if (!e->sem_wait)
-        return AVERROR(ENOMEM);
+    for (int i = 0; i < planes; i++) {
+        e->sem_wait = av_fast_realloc(e->sem_wait, &e->sem_wait_alloc,
+                                      (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait));
+        if (!e->sem_wait)
+            return AVERROR(ENOMEM);
 
-    e->sem_wait_dst = av_fast_realloc(e->sem_wait_dst, &e->sem_wait_dst_alloc,
-                                      (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait_dst));
-    if (!e->sem_wait_dst)
-        return AVERROR(ENOMEM);
+        e->sem_wait_dst = av_fast_realloc(e->sem_wait_dst, &e->sem_wait_dst_alloc,
+                                          (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait_dst));
+        if (!e->sem_wait_dst)
+            return AVERROR(ENOMEM);
 
-    e->sem_sig = av_fast_realloc(e->sem_sig, &e->sem_sig_alloc,
-                                 (e->sem_sig_cnt + 1)*sizeof(*e->sem_sig));
-    if (!e->sem_sig)
-        return AVERROR(ENOMEM);
+        e->sem_sig = av_fast_realloc(e->sem_sig, &e->sem_sig_alloc,
+                                     (e->sem_sig_cnt + 1)*sizeof(*e->sem_sig));
+        if (!e->sem_sig)
+            return AVERROR(ENOMEM);
 
-    e->sem_wait[e->sem_wait_cnt] = f->sem;
-    e->sem_wait_dst[e->sem_wait_cnt] = in_wait_dst_flag;
-    e->sem_wait_cnt++;
+        e->sem_wait[e->sem_wait_cnt] = f->sem[i];
+        e->sem_wait_dst[e->sem_wait_cnt] = in_wait_dst_flag;
+        e->sem_wait_cnt++;
 
-    e->sem_sig[e->sem_sig_cnt] = f->sem;
-    e->sem_sig_cnt++;
+        e->sem_sig[e->sem_sig_cnt] = f->sem[i];
+        e->sem_sig_cnt++;
+    }
 
     return 0;
 }
