@@ -669,3 +669,4 @@ TOOLS     = aviocat                                                     \
             probetest                                                   \
             seek_print                                                  \
             sidxindex                                                   \
+            venc_data_dump

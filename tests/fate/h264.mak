@@ -196,7 +196,8 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               fate-h264-3386                                            \
               fate-h264-missing-frame                                   \
               fate-h264-ref-pic-mod-overflow                            \
-              fate-h264-timecode
+              fate-h264-timecode                                        \
+              fate-h264-encparams
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
@@ -446,3 +447,6 @@ fate-h264-timecode:                               CMD = framecrc -i $(TARGET_SAM
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
 
 fate-h264-dts_5frames:                            CMD = probeframes $(TARGET_SAMPLES)/h264/dts_5frames.mkv
+
+fate-h264-encparams: CMD = venc_data $(TARGET_SAMPLES)/h264-conformance/FRext/FRExt_MMCO4_Sony_B.264 0 1
+FATE_SAMPLES_DUMP_DATA += fate-h264-encparams

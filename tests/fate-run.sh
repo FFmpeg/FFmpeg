@@ -487,6 +487,13 @@ concat(){
     fi
 }
 
+venc_data(){
+    file=$1
+    stream=$2
+    frames=$3
+    run tools/venc_data_dump${EXECSUF} ${file} ${stream} ${frames} ${threads} ${thread_type}
+}
+
 null(){
     :
 }
