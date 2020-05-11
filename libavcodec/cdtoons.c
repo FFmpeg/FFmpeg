@@ -190,6 +190,9 @@ static int cdtoons_decode_frame(AVCodecContext *avctx, void *data,
     palette_set        = bytestream_get_byte(&buf);
     buf               += 5;
 
+    if (sprite_offset > buf_size)
+        return AVERROR_INVALIDDATA;
+
     /* read new sprites introduced in this frame */
     buf = avpkt->data + sprite_offset;
     while (sprite_count--) {
