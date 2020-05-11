@@ -440,6 +440,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
         s->video_size = FFALIGN(avctx->width, 2) * avctx->height * s->bpp;
+        if (!s->video_size)
+            return AVERROR_INVALIDDATA;
         s->video[0] = av_calloc(FFALIGN(avctx->width, 2) * avctx->height, s->bpp);
         s->video[1] = av_calloc(FFALIGN(avctx->width, 2) * avctx->height, s->bpp);
         s->pal = av_calloc(256, sizeof(*s->pal));
