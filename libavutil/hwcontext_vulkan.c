@@ -1244,8 +1244,6 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
 
-    VkPipelineStageFlagBits wait_st = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount   = 1,
@@ -1254,6 +1252,10 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         .pSignalSemaphores    = frame->sem,
         .signalSemaphoreCount = planes,
     };
+
+    VkPipelineStageFlagBits wait_st[AV_NUM_DATA_POINTERS];
+    for (int i = 0; i < planes; i++)
+        wait_st[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
     switch (pmode) {
     case PREP_MODE_WRITE:
@@ -1270,9 +1272,9 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         new_layout = VK_IMAGE_LAYOUT_GENERAL;
         new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
         dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
-        s_info.pWaitSemaphores = &frame->sem;
-        s_info.pWaitDstStageMask = &wait_st;
-        s_info.waitSemaphoreCount = 1;
+        s_info.pWaitSemaphores = frame->sem;
+        s_info.pWaitDstStageMask = wait_st;
+        s_info.waitSemaphoreCount = planes;
         break;
     }
 
