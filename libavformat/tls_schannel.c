@@ -392,7 +392,12 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
     int size, ret;
     int min_enc_buf_size = len + SCHANNEL_FREE_BUFFER_SIZE;
 
-    if (len <= c->dec_buf_offset)
+    /* If we have some left-over data from previous network activity,
+     * return it first in case it is enough. It may contain
+     * data that is required to know whether this connection
+     * is still required or not, esp. in case of HTTP keep-alive
+     * connections. */
+    if (c->dec_buf_offset > 0)
         goto cleanup;
 
     if (c->sspi_close_notify)
