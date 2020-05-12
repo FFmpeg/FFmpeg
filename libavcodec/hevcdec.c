@@ -280,7 +280,6 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     rps->nb_refs = nb_sh + nb_sps;
 
     for (i = 0; i < rps->nb_refs; i++) {
-        uint8_t delta_poc_msb_present;
 
         if (i < nb_sps) {
             uint8_t lt_idx_sps = 0;
@@ -295,8 +294,8 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
             rps->used[i] = get_bits1(gb);
         }
 
-        delta_poc_msb_present = get_bits1(gb);
-        if (delta_poc_msb_present) {
+        rps->poc_msb_present[i] = get_bits1(gb);
+        if (rps->poc_msb_present[i]) {
             int64_t delta = get_ue_golomb_long(gb);
             int64_t poc;
 

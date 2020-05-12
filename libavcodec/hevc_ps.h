@@ -41,6 +41,7 @@ typedef struct ShortTermRPS {
 
 typedef struct LongTermRPS {
     int     poc[32];
+    uint8_t poc_msb_present[32];
     uint8_t used[32];
     uint8_t nb_refs;
 } LongTermRPS;
