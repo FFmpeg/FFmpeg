@@ -1675,7 +1675,6 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             ff_format_set_url(vtt_oc, filename);
        }
     }
-    vs->number++;
 
     proto = avio_find_protocol_name(oc->url);
     use_temp_file = proto && !strcmp(proto, "file") && (c->flags & HLS_TEMP_FILE);
@@ -2509,7 +2508,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         if (hls->flags & HLS_SINGLE_FILE) {
-            vs->number++;
             vs->start_pos += vs->size;
         } else if (hls->max_seg_size > 0) {
             vs->start_pos = new_start_pos;
@@ -2520,14 +2518,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 vs->start_pos = 0;
                 /* When split segment by byte, the duration is short than hls_time,
                  * so it is not enough one segment duration as hls_time, */
-                vs->number--;
             }
-            vs->number++;
         } else {
             vs->start_pos = new_start_pos;
             sls_flag_file_rename(hls, vs, old_filename);
             ret = hls_start(s, vs);
         }
+        vs->number++;
         av_freep(&old_filename);
 
         if (ret < 0) {
@@ -2975,6 +2972,7 @@ static int hls_init(AVFormatContext *s)
 
         if ((ret = hls_start(s, vs)) < 0)
             return ret;
+        vs->number++;
     }
 
     return ret;
