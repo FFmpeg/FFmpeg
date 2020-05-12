@@ -505,6 +505,7 @@ static int ptl_convert(const PTLCommon *general_ptl, H265RawProfileTierLevel *h2
     copy_field(frame_only_constraint_flag);
     copy_field(max_12bit_constraint_flag);
     copy_field(max_10bit_constraint_flag);
+    copy_field(max_8bit_constraint_flag);
     copy_field(max_422chroma_constraint_flag);
     copy_field(max_420chroma_constraint_flag);
     copy_field(max_monochrome_constraint_flag);
