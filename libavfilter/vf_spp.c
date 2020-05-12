@@ -283,7 +283,7 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 const int x1 = x + offset[i + count - 1][0];
                 const int y1 = y + offset[i + count - 1][1];
                 const int index = x1 + y1*linesize;
-                p->dct->get_pixels(block, p->src + sample_bytes*index, sample_bytes*linesize);
+                p->dct->get_pixels_unaligned(block, p->src + sample_bytes*index, sample_bytes*linesize);
                 p->dct->fdct(block);
                 p->requantize(block2, block, qp, p->dct->idct_permutation);
                 p->dct->idct(block2);

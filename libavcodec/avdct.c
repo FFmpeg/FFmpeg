@@ -120,6 +120,7 @@ int avcodec_dct_init(AVDCT *dsp)
         PixblockDSPContext pdsp;
         ff_pixblockdsp_init(&pdsp, avctx);
         COPY(pdsp, get_pixels);
+        COPY(pdsp, get_pixels_unaligned);
     }
 #endif
 
