@@ -619,6 +619,7 @@ end:
 static int search_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
 {
     uint32_t num;
+    float *weights;
     VkQueueFamilyProperties *qs = NULL;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     int graph_index = -1, comp_index = -1, tx_index = -1;
@@ -657,41 +658,53 @@ static int search_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
                  (i != comp_index), tx_index)
 
 #undef SEARCH_FLAGS
-#define QF_FLAGS(flags)                                                        \
-    ((flags) & VK_QUEUE_GRAPHICS_BIT      ) ? "(graphics) " : "",              \
-    ((flags) & VK_QUEUE_COMPUTE_BIT       ) ? "(compute) "  : "",              \
-    ((flags) & VK_QUEUE_TRANSFER_BIT      ) ? "(transfer) " : "",              \
-    ((flags) & VK_QUEUE_SPARSE_BINDING_BIT) ? "(sparse) "   : ""
+#define ADD_QUEUE(fidx, graph, comp, tx)                                                 \
+    av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i (total queues: %i) for %s%s%s\n", \
+           fidx, qs[fidx].queueCount, graph ? "graphics " : "",                          \
+           comp ? "compute " : "", tx ? "transfers " : "");                              \
+    av_log(ctx, AV_LOG_VERBOSE, "    QF %i flags: %s%s%s%s\n", fidx,                     \
+           ((qs[fidx].queueFlags) & VK_QUEUE_GRAPHICS_BIT) ? "(graphics) " : "",         \
+           ((qs[fidx].queueFlags) & VK_QUEUE_COMPUTE_BIT) ? "(compute) " : "",           \
+           ((qs[fidx].queueFlags) & VK_QUEUE_TRANSFER_BIT) ? "(transfers) " : "",        \
+           ((qs[fidx].queueFlags) & VK_QUEUE_SPARSE_BINDING_BIT) ? "(sparse) " : "");    \
+    pc[cd->queueCreateInfoCount].queueFamilyIndex = fidx;                                \
+    pc[cd->queueCreateInfoCount].queueCount = qs[fidx].queueCount;                       \
+    weights = av_malloc(qs[fidx].queueCount * sizeof(float));                            \
+    pc[cd->queueCreateInfoCount].pQueuePriorities = weights;                             \
+    if (!weights)                                                                        \
+        goto fail;                                                                       \
+    for (int i = 0; i < qs[fidx].queueCount; i++)                                        \
+        weights[i] = 1.0f;                                                               \
+    cd->queueCreateInfoCount++;
 
-    av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i for graphics, "
-           "flags: %s%s%s%s\n", graph_index, QF_FLAGS(qs[graph_index].queueFlags));
-
+    ADD_QUEUE(graph_index, 1, comp_index < 0, tx_index < 0 && comp_index < 0)
     hwctx->queue_family_index      = graph_index;
-    hwctx->queue_family_tx_index   = graph_index;
     hwctx->queue_family_comp_index = graph_index;
-
-    pc[cd->queueCreateInfoCount++].queueFamilyIndex = graph_index;
+    hwctx->queue_family_tx_index   = graph_index;
 
     if (comp_index != -1) {
-        av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i for compute, "
-               "flags: %s%s%s%s\n", comp_index, QF_FLAGS(qs[comp_index].queueFlags));
-        hwctx->queue_family_tx_index                    = comp_index;
-        hwctx->queue_family_comp_index                  = comp_index;
-        pc[cd->queueCreateInfoCount++].queueFamilyIndex = comp_index;
+        ADD_QUEUE(comp_index, 0, 1, tx_index < 0)
+        hwctx->queue_family_tx_index   = comp_index;
+        hwctx->queue_family_comp_index = comp_index;
     }
 
     if (tx_index != -1) {
-        av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i for transfers, "
-               "flags: %s%s%s%s\n", tx_index, QF_FLAGS(qs[tx_index].queueFlags));
-        hwctx->queue_family_tx_index                    = tx_index;
-        pc[cd->queueCreateInfoCount++].queueFamilyIndex = tx_index;
+        ADD_QUEUE(tx_index, 0, 0, 1)
+        hwctx->queue_family_tx_index = tx_index;
     }
 
-#undef QF_FLAGS
-
+#undef ADD_QUEUE
     av_free(qs);
 
     return 0;
+
+fail:
+    av_freep(&pc[0].pQueuePriorities);
+    av_freep(&pc[1].pQueuePriorities);
+    av_freep(&pc[2].pQueuePriorities);
+    av_free(qs);
+
+    return AVERROR(ENOMEM);
 }
 
 static int create_exec_ctx(AVHWDeviceContext *ctx, VulkanExecCtx *cmd,
@@ -794,15 +807,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VulkanDevicePriv *p = ctx->internal->priv;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VkDeviceQueueCreateInfo queue_create_info[3] = {
-        {   .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pQueuePriorities = (float []){ 1.0f },
-            .queueCount       = 1, },
-        {   .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pQueuePriorities = (float []){ 1.0f },
-            .queueCount       = 1, },
-        {   .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pQueuePriorities = (float []){ 1.0f },
-            .queueCount       = 1, },
+        { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
+        { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
+        { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
     };
 
     VkDeviceCreateInfo dev_info = {
@@ -836,11 +843,19 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         goto end;
 
     if ((err = check_extensions(ctx, 1, opts, &dev_info.ppEnabledExtensionNames,
-                                &dev_info.enabledExtensionCount, 0)))
+                                &dev_info.enabledExtensionCount, 0))) {
+        av_free((void *)queue_create_info[0].pQueuePriorities);
+        av_free((void *)queue_create_info[1].pQueuePriorities);
+        av_free((void *)queue_create_info[2].pQueuePriorities);
         goto end;
+    }
 
     ret = vkCreateDevice(hwctx->phys_dev, &dev_info, hwctx->alloc,
                          &hwctx->act_dev);
+
+    av_free((void *)queue_create_info[0].pQueuePriorities);
+    av_free((void *)queue_create_info[1].pQueuePriorities);
+    av_free((void *)queue_create_info[2].pQueuePriorities);
 
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Device creation failure: %s\n",
