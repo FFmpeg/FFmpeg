@@ -374,10 +374,8 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
                 av_log(ctx, AV_LOG_VERBOSE, "Using %s extension \"%s\"\n", mod, tstr);
                 ADD_VAL_TO_LIST(extension_names, extensions_found, token);
             } else {
-                av_log(ctx, AV_LOG_ERROR, "%s extension \"%s\" not found!\n",
+                av_log(ctx, AV_LOG_WARNING, "%s extension \"%s\" not found, excluding.\n",
                        mod, token);
-                err = AVERROR(EINVAL);
-                goto fail;
             }
             token = av_strtok(NULL, "+", &save);
         }
