@@ -424,7 +424,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
         c->enc_buf_offset += ret;
     }
 
-    while (c->enc_buf_offset > 0 && sspi_ret == SEC_E_OK && c->dec_buf_offset < len) {
+    while (c->enc_buf_offset > 0 && sspi_ret == SEC_E_OK) {
         /*  input buffer */
         init_sec_buffer(&inbuf[0], SECBUFFER_DATA, c->enc_buf, c->enc_buf_offset);
 
