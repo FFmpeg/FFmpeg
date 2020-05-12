@@ -4713,6 +4713,10 @@ static int transcode(void)
             av_freep(&ost->enc_ctx->stats_in);
         }
         total_packets_written += ost->packets_written;
+        if (!ost->packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
+            av_log(NULL, AV_LOG_FATAL, "Empty output on stream %d.\n", i);
+            exit_program(1);
+        }
     }
 
     if (!total_packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT)) {

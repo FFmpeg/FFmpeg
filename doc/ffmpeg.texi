@@ -1721,6 +1721,8 @@ Stop and abort on various conditions. The following flags are available:
 @table @option
 @item empty_output
 No packets were passed to the muxer, the output is empty.
+@item empty_output_stream
+No packets were passed to the muxer in some of the output streams.
 @end table
 
 @item -xerror (@emph{global})
