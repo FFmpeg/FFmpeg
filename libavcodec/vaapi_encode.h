@@ -43,6 +43,10 @@ enum {
     MAX_PICTURE_REFERENCES = 2,
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
+    // A.4.1: table A.6 allows at most 22 tile rows for any level.
+    MAX_TILE_ROWS          = 22,
+    // A.4.1: table A.6 allows at most 20 tile columns for any level.
+    MAX_TILE_COLS          = 20,
 };
 
 extern const AVCodecHWConfigInternal *ff_vaapi_encode_hw_configs[];
@@ -301,6 +305,18 @@ typedef struct VAAPIEncodeContext {
     int slice_block_cols;
     int nb_slices;
     int slice_size;
+
+    // Tile encoding.
+    int tile_rows;
+    int tile_cols;
+    // Tile width of the i-th column.
+    int col_width[MAX_TILE_COLS];
+    // Tile height of i-th row.
+    int row_height[MAX_TILE_ROWS];
+    // Location of the i-th tile column boundary.
+    int col_bd[MAX_TILE_COLS + 1];
+    // Location of the i-th tile row boundary.
+    int row_bd[MAX_TILE_ROWS + 1];
 
     // Frame type decision.
     int gop_size;
