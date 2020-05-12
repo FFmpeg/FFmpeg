@@ -112,3 +112,6 @@ ELF     .size   \name, . - \name
 #define GLUE(a, b) a ## b
 #define JOIN(a, b) GLUE(a, b)
 #define X(s) JOIN(EXTERN_ASM, s)
+
+#define x18 do_not_use_x18
+#define w18 do_not_use_w18
