@@ -421,7 +421,7 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
 
     for (int y = 0; y < avctx->height; y += 16) {
         GetByteContext gbyte;
-        int pfill[3][1] = { 0 };
+        int pfill[3][1] = { {0} };
         int nb_codes = get_bits(gb, 16);
 
         av_fast_padded_malloc(&s->coeffs, &s->coeffs_size, nb_codes * sizeof(*s->coeffs));
@@ -504,7 +504,7 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
 
     for (int y = 0; y < avctx->height; y += 16) {
         GetByteContext gbyte;
-        int pfill[3][1] = { 0 };
+        int pfill[3][1] = { {0} };
         int nb_codes = get_bits(gb, 16);
 
         skip_bits(gb, 8);
