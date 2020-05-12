@@ -2685,9 +2685,10 @@ static int hls_write_trailer(struct AVFormatContext *s)
             if (ret < 0)
                 av_log(s, AV_LOG_WARNING, "Failed to upload file '%s' at the end.\n", oc->url);
         }
-        av_freep(&vs->temp_buffer);
 
 failed:
+        av_freep(&vs->temp_buffer);
+        av_dict_free(&options);
         av_freep(&filename);
         av_write_trailer(oc);
         if (oc->url[0]) {
