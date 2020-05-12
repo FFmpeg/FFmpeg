@@ -150,7 +150,7 @@ function checkasm_checked_call_\variant, export=1
 2:
         movrel          r0, error_message_gpr
 1:
-        blx             X(checkasm_fail_func)
+        bl              X(checkasm_fail_func)
 0:
         pop             {r0, r1}
 .ifc \variant, vfp
