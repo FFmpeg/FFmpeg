@@ -2442,6 +2442,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 if (ret < 0) {
                     av_log(s, hls->ignore_io_errors ? AV_LOG_WARNING : AV_LOG_ERROR,
                            "Failed to open file '%s'\n", filename);
+                    av_freep(&filename);
                     av_dict_free(&options);
                     return hls->ignore_io_errors ? 0 : ret;
                 }
@@ -2450,6 +2451,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 }
                 ret = flush_dynbuf(vs, &range_length);
                 if (ret < 0) {
+                    av_freep(&filename);
                     av_dict_free(&options);
                     return ret;
                 }
