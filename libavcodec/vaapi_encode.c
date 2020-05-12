@@ -163,6 +163,61 @@ static int vaapi_encode_wait(AVCodecContext *avctx,
     return 0;
 }
 
+static int vaapi_encode_make_row_slice(AVCodecContext *avctx,
+                                       VAAPIEncodePicture *pic)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAAPIEncodeSlice *slice;
+    int i, rounding;
+
+    for (i = 0; i < pic->nb_slices; i++)
+        pic->slices[i].row_size = ctx->slice_size;
+
+    rounding = ctx->slice_block_rows - ctx->nb_slices * ctx->slice_size;
+    if (rounding > 0) {
+        // Place rounding error at top and bottom of frame.
+        av_assert0(rounding < pic->nb_slices);
+        // Some Intel drivers contain a bug where the encoder will fail
+        // if the last slice is smaller than the one before it.  Since
+        // that's straightforward to avoid here, just do so.
+        if (rounding <= 2) {
+            for (i = 0; i < rounding; i++)
+                ++pic->slices[i].row_size;
+        } else {
+            for (i = 0; i < (rounding + 1) / 2; i++)
+                ++pic->slices[pic->nb_slices - i - 1].row_size;
+            for (i = 0; i < rounding / 2; i++)
+                ++pic->slices[i].row_size;
+        }
+    } else if (rounding < 0) {
+        // Remove rounding error from last slice only.
+        av_assert0(rounding < ctx->slice_size);
+        pic->slices[pic->nb_slices - 1].row_size += rounding;
+    }
+
+    for (i = 0; i < pic->nb_slices; i++) {
+        slice = &pic->slices[i];
+        slice->index = i;
+        if (i == 0) {
+            slice->row_start   = 0;
+            slice->block_start = 0;
+        } else {
+            const VAAPIEncodeSlice *prev = &pic->slices[i - 1];
+            slice->row_start   = prev->row_start   + prev->row_size;
+            slice->block_start = prev->block_start + prev->block_size;
+        }
+        slice->block_size  = slice->row_size * ctx->slice_block_cols;
+
+        av_log(avctx, AV_LOG_DEBUG, "Slice %d: %d-%d (%d rows), "
+               "%d-%d (%d blocks).\n", i, slice->row_start,
+               slice->row_start + slice->row_size - 1, slice->row_size,
+               slice->block_start, slice->block_start + slice->block_size - 1,
+               slice->block_size);
+    }
+
+    return 0;
+}
+
 static int vaapi_encode_issue(AVCodecContext *avctx,
                               VAAPIEncodePicture *pic)
 {
@@ -346,57 +401,17 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     if (pic->nb_slices == 0)
         pic->nb_slices = ctx->nb_slices;
     if (pic->nb_slices > 0) {
-        int rounding;
-
         pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
         if (!pic->slices) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
 
-        for (i = 0; i < pic->nb_slices; i++)
-            pic->slices[i].row_size = ctx->slice_size;
-
-        rounding = ctx->slice_block_rows - ctx->nb_slices * ctx->slice_size;
-        if (rounding > 0) {
-            // Place rounding error at top and bottom of frame.
-            av_assert0(rounding < pic->nb_slices);
-            // Some Intel drivers contain a bug where the encoder will fail
-            // if the last slice is smaller than the one before it.  Since
-            // that's straightforward to avoid here, just do so.
-            if (rounding <= 2) {
-                for (i = 0; i < rounding; i++)
-                    ++pic->slices[i].row_size;
-            } else {
-                for (i = 0; i < (rounding + 1) / 2; i++)
-                    ++pic->slices[pic->nb_slices - i - 1].row_size;
-                for (i = 0; i < rounding / 2; i++)
-                    ++pic->slices[i].row_size;
-            }
-        } else if (rounding < 0) {
-            // Remove rounding error from last slice only.
-            av_assert0(rounding < ctx->slice_size);
-            pic->slices[pic->nb_slices - 1].row_size += rounding;
-        }
+        vaapi_encode_make_row_slice(avctx, pic);
     }
+
     for (i = 0; i < pic->nb_slices; i++) {
         slice = &pic->slices[i];
-        slice->index = i;
-        if (i == 0) {
-            slice->row_start   = 0;
-            slice->block_start = 0;
-        } else {
-            const VAAPIEncodeSlice *prev = &pic->slices[i - 1];
-            slice->row_start   = prev->row_start   + prev->row_size;
-            slice->block_start = prev->block_start + prev->block_size;
-        }
-        slice->block_size  = slice->row_size * ctx->slice_block_cols;
-
-        av_log(avctx, AV_LOG_DEBUG, "Slice %d: %d-%d (%d rows), "
-               "%d-%d (%d blocks).\n", i, slice->row_start,
-               slice->row_start + slice->row_size - 1, slice->row_size,
-               slice->block_start, slice->block_start + slice->block_size - 1,
-               slice->block_size);
 
         if (ctx->codec->slice_params_size > 0) {
             slice->codec_slice_params = av_mallocz(ctx->codec->slice_params_size);
@@ -1840,51 +1855,11 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int vaapi_encode_init_slice_structure(AVCodecContext *avctx)
+static av_cold int vaapi_encode_init_row_slice_structure(AVCodecContext *avctx,
+                                                         uint32_t slice_structure)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAConfigAttrib attr[2] = { { VAConfigAttribEncMaxSlices },
-                               { VAConfigAttribEncSliceStructure } };
-    VAStatus vas;
-    uint32_t max_slices, slice_structure;
     int req_slices;
-
-    if (!(ctx->codec->flags & FLAG_SLICE_CONTROL)) {
-        if (avctx->slices > 0) {
-            av_log(avctx, AV_LOG_WARNING, "Multiple slices were requested "
-                   "but this codec does not support controlling slices.\n");
-        }
-        return 0;
-    }
-
-    ctx->slice_block_rows = (avctx->height + ctx->slice_block_height - 1) /
-                             ctx->slice_block_height;
-    ctx->slice_block_cols = (avctx->width  + ctx->slice_block_width  - 1) /
-                             ctx->slice_block_width;
-
-    if (avctx->slices <= 1) {
-        ctx->nb_slices  = 1;
-        ctx->slice_size = ctx->slice_block_rows;
-        return 0;
-    }
-
-    vas = vaGetConfigAttributes(ctx->hwctx->display,
-                                ctx->va_profile,
-                                ctx->va_entrypoint,
-                                attr, FF_ARRAY_ELEMS(attr));
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to query slice "
-               "attributes: %d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR_EXTERNAL;
-    }
-    max_slices      = attr[0].value;
-    slice_structure = attr[1].value;
-    if (max_slices      == VA_ATTRIB_NOT_SUPPORTED ||
-        slice_structure == VA_ATTRIB_NOT_SUPPORTED) {
-        av_log(avctx, AV_LOG_ERROR, "Driver does not support encoding "
-               "pictures as multiple slices.\n.");
-        return AVERROR(EINVAL);
-    }
 
     // For fixed-size slices currently we only support whole rows, making
     // rectangular slices.  This could be extended to arbitrary runs of
@@ -1924,6 +1899,59 @@ static av_cold int vaapi_encode_init_slice_structure(AVCodecContext *avctx)
                "slice structure modes (%#x).\n", slice_structure);
         return AVERROR(EINVAL);
     }
+
+    return 0;
+}
+
+static av_cold int vaapi_encode_init_slice_structure(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAConfigAttrib attr[2] = { { VAConfigAttribEncMaxSlices },
+                               { VAConfigAttribEncSliceStructure } };
+    VAStatus vas;
+    uint32_t max_slices, slice_structure;
+    int ret;
+
+    if (!(ctx->codec->flags & FLAG_SLICE_CONTROL)) {
+        if (avctx->slices > 0) {
+            av_log(avctx, AV_LOG_WARNING, "Multiple slices were requested "
+                   "but this codec does not support controlling slices.\n");
+        }
+        return 0;
+    }
+
+    ctx->slice_block_rows = (avctx->height + ctx->slice_block_height - 1) /
+                             ctx->slice_block_height;
+    ctx->slice_block_cols = (avctx->width  + ctx->slice_block_width  - 1) /
+                             ctx->slice_block_width;
+
+    if (avctx->slices <= 1) {
+        ctx->nb_slices  = 1;
+        ctx->slice_size = ctx->slice_block_rows;
+        return 0;
+    }
+
+    vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                ctx->va_profile,
+                                ctx->va_entrypoint,
+                                attr, FF_ARRAY_ELEMS(attr));
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query slice "
+               "attributes: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR_EXTERNAL;
+    }
+    max_slices      = attr[0].value;
+    slice_structure = attr[1].value;
+    if (max_slices      == VA_ATTRIB_NOT_SUPPORTED ||
+        slice_structure == VA_ATTRIB_NOT_SUPPORTED) {
+        av_log(avctx, AV_LOG_ERROR, "Driver does not support encoding "
+               "pictures as multiple slices.\n.");
+        return AVERROR(EINVAL);
+    }
+
+    ret = vaapi_encode_init_row_slice_structure(avctx, slice_structure);
+    if (ret < 0)
+        return ret;
 
     if (ctx->nb_slices > avctx->slices) {
         av_log(avctx, AV_LOG_WARNING, "Slice count rounded up to "
