@@ -194,7 +194,7 @@ typedef struct VulkanOptExtension {
 } VulkanOptExtension;
 
 static const VulkanOptExtension optional_instance_exts[] = {
-    { VK_KHR_SURFACE_EXTENSION_NAME, EXT_NO_FLAG },
+    /* For future use */
 };
 
 static const VulkanOptExtension optional_device_exts[] = {
