@@ -679,16 +679,19 @@ static int search_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     hwctx->queue_family_index      = graph_index;
     hwctx->queue_family_comp_index = graph_index;
     hwctx->queue_family_tx_index   = graph_index;
+    hwctx->nb_graphics_queues      = qs[graph_index].queueCount;
 
     if (comp_index != -1) {
         ADD_QUEUE(comp_index, 0, 1, tx_index < 0)
         hwctx->queue_family_tx_index   = comp_index;
         hwctx->queue_family_comp_index = comp_index;
+        hwctx->nb_comp_queues          = qs[comp_index].queueCount;
     }
 
     if (tx_index != -1) {
         ADD_QUEUE(tx_index, 0, 0, 1)
         hwctx->queue_family_tx_index = tx_index;
+        hwctx->nb_tx_queues          = qs[tx_index].queueCount;
     }
 
 #undef ADD_QUEUE

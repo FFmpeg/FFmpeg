@@ -55,16 +55,26 @@ typedef struct AVVulkanDeviceContext {
      * @note av_hwdevice_create() will set all 3 queue indices if unset
      * If there is no dedicated queue for compute or transfer operations,
      * they will be set to the graphics queue index which can handle both.
+     * nb_graphics_queues indicates how many queues were enabled for the
+     * graphics queue (must be at least 1)
      */
     int queue_family_index;
+    int nb_graphics_queues;
     /**
-     * Queue family index for transfer ops only
+     * Queue family index to use for transfer operations, and the amount of queues
+     * enabled. In case there is no dedicated transfer queue, nb_tx_queues
+     * must be 0 and queue_family_tx_index must be the same as either the graphics
+     * queue or the compute queue, if available.
      */
     int queue_family_tx_index;
+    int nb_tx_queues;
     /**
-     * Queue family index for compute ops
+     * Queue family index for compute ops, and the amount of queues enabled.
+     * In case there are no dedicated compute queues, nb_comp_queues must be
+     * 0 and its queue family index must be set to the graphics queue.
      */
     int queue_family_comp_index;
+    int nb_comp_queues;
     /**
      * Enabled instance extensions. By default, VK_KHR_surface is enabled if found.
      * If supplying your own device context, set this to an array of strings, with
