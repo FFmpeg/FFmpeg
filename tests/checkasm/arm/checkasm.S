@@ -45,6 +45,8 @@ error_message_gpr:
         .asciz "failed to preserve register r%d"
 error_message_vfp:
         .asciz "failed to preserve register d%d"
+error_message_stack:
+        .asciz "failed to preserve stack"
 endconst
 
 @ max number of args used by any asm function.
@@ -52,8 +54,9 @@ endconst
 
 #define ARG_STACK 4*(MAX_ARGS - 4)
 
-@ align the used stack space to 8 to preserve the stack alignment
-#define ARG_STACK_A (((ARG_STACK + pushed + 7) & ~7) - pushed)
+@ Align the used stack space to 8 to preserve the stack alignment.
+@ +8 for stack canary reference.
+#define ARG_STACK_A (((ARG_STACK + pushed + 7) & ~7) - pushed + 8)
 
 .macro clobbercheck variant
 .equ pushed, 4*9
@@ -80,14 +83,37 @@ function checkasm_checked_call_\variant, export=1
 .equ pos, pos + 4
 .endr
 
+        @ For stack overflows, the callee is free to overwrite the parameters
+        @ that were passed on the stack (if any), so we can only check after
+        @ that point. First figure out how many parameters the function
+        @ really took on the stack:
+        ldr             r12, [sp, #ARG_STACK_A + pushed + 8 + 4*(MAX_ARGS-4)]
+        @ Load the first non-parameter value from the stack, that should be
+        @ left untouched by the function. Store a copy of it inverted, so that
+        @ e.g. overwriting everything with zero would be noticed.
+        ldr             r12, [sp, r12, lsl #2]
+        mvn             r12, r12
+        str             r12, [sp, #ARG_STACK_A - 4]
+
         mov             r12, r0
         mov             r0,  r2
         mov             r1,  r3
         ldrd            r2,  r3,  [sp, #ARG_STACK_A + pushed]
+        @ Call the target function
         blx             r12
-        add             sp,  sp,  #ARG_STACK_A
 
+        @ Load the number of stack parameters, stack canary and its reference
+        ldr             r12, [sp, #ARG_STACK_A + pushed + 8 + 4*(MAX_ARGS-4)]
+        ldr             r2,  [sp, r12, lsl #2]
+        ldr             r3,  [sp, #ARG_STACK_A - 4]
+
+        add             sp,  sp,  #ARG_STACK_A
         push            {r0, r1}
+
+        mvn             r3,  r3
+        cmp             r2,  r3
+        bne             5f
+
         movrel          r12, register_init
 .ifc \variant, vfp
 .macro check_reg_vfp, dreg, offset
@@ -141,6 +167,9 @@ function checkasm_checked_call_\variant, export=1
 .purgem check_reg
 
         b               0f
+5:
+        movrel          r0, error_message_stack
+        b               1f
 4:
         movrel          r0, error_message_vfp
         b               1f

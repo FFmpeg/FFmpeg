@@ -177,8 +177,10 @@ void checkasm_stack_clobber(uint64_t clobber, ...);
 void checkasm_checked_call_vfp(void *func, int dummy, ...);
 void checkasm_checked_call_novfp(void *func, int dummy, ...);
 extern void (*checkasm_checked_call)(void *func, int dummy, ...);
-#define declare_new(ret, ...) ret (*checked_call)(void *, int dummy, __VA_ARGS__) = (void *)checkasm_checked_call;
-#define call_new(...) checked_call(func_new, 0, __VA_ARGS__)
+#define declare_new(ret, ...) ret (*checked_call)(void *, int dummy, __VA_ARGS__, \
+                                                  int, int, int, int, int, int, int, int, \
+                                                  int, int, int, int, int, int, int) = (void *)checkasm_checked_call;
+#define call_new(...) checked_call(func_new, 0, __VA_ARGS__, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0)
 #elif ARCH_AARCH64 && !defined(__APPLE__)
 void checkasm_stack_clobber(uint64_t clobber, ...);
 void checkasm_checked_call(void *func, ...);
