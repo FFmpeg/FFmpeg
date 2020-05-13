@@ -49,6 +49,17 @@
             goto fail;                                                         \
     } while (0)
 
+/* Gets the queues count for a single queue family */
+#define GET_QUEUE_COUNT(hwctx, graph, comp, tx) (                   \
+    graph ?  hwctx->nb_graphics_queues :                            \
+    comp  ? (hwctx->nb_comp_queues ?                                \
+             hwctx->nb_comp_queues : hwctx->nb_graphics_queues) :   \
+    tx    ? (hwctx->nb_tx_queues ? hwctx->nb_tx_queues :            \
+             (hwctx->nb_comp_queues ?                               \
+              hwctx->nb_comp_queues : hwctx->nb_graphics_queues)) : \
+    0                                                               \
+)
+
 /* Useful for attaching immutable samplers to arrays */
 #define DUP_SAMPLER_ARRAY4(x) (VkSampler []){ x, x, x, x, }
 
@@ -98,6 +109,7 @@ typedef struct VulkanPipeline {
     VkDescriptorPool            desc_pool;
     VkDescriptorSet            *desc_set;
     VkDescriptorUpdateTemplate *desc_template;
+    int                         desc_layout_num;
     int                         descriptor_sets_num;
     int                         pool_size_desc_num;
 
@@ -106,11 +118,29 @@ typedef struct VulkanPipeline {
     VkDescriptorPoolSize *pool_size_desc;
 } VulkanPipeline;
 
+typedef struct FFVkQueueCtx {
+    VkFence fence;
+    VkQueue queue;
+
+    /* Buffer dependencies */
+    AVBufferRef **buf_deps;
+    int nb_buf_deps;
+    int buf_deps_alloc_size;
+
+    /* Frame dependencies */
+    AVFrame **frame_deps;
+    int nb_frame_deps;
+    int frame_deps_alloc_size;
+} FFVkQueueCtx;
+
 typedef struct FFVkExecContext {
     VkCommandPool pool;
-    VkCommandBuffer buf;
-    VkQueue queue;
-    VkFence fence;
+    VkCommandBuffer *bufs;
+    FFVkQueueCtx *queues;
+
+    AVBufferRef ***deps;
+    int *nb_deps;
+    int *dep_alloc_size;
 
     VulkanPipeline *bound_pl;
 
@@ -133,6 +163,11 @@ typedef struct VulkanFilterContext {
     AVBufferRef           *frames_ref; /* For in-place filtering */
     AVHWDeviceContext     *device;
     AVVulkanDeviceContext *hwctx;
+
+    /* State - mirrored with the exec ctx */
+    int cur_queue_idx;
+    int queue_family_idx;
+    int queue_count;
 
     /* Properties */
     int                 output_width;
@@ -192,15 +227,12 @@ VkSampler *ff_vk_init_sampler(AVFilterContext *avctx, int unnorm_coords,
 
 /**
  * Create an imageview.
+ * Guaranteed to remain alive until the queue submission has finished executing,
+ * and will be destroyed after that.
  */
-int ff_vk_create_imageview(AVFilterContext *avctx, VkImageView *v, VkImage img,
-                           VkFormat fmt, const VkComponentMapping map);
-
-/**
- * Destroy an imageview. Command buffer must have completed executing, which
- * ff_vk_submit_exec_queue() will ensure
- */
-void ff_vk_destroy_imageview(AVFilterContext *avctx, VkImageView *v);
+int ff_vk_create_imageview(AVFilterContext *avctx, FFVkExecContext *e,
+                           VkImageView *v, VkImage img, VkFormat fmt,
+                           const VkComponentMapping map);
 
 /**
  * Define a push constant for a given stage into a pipeline.
@@ -264,7 +296,7 @@ void ff_vk_update_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
  * Init an execution context for command recording and queue submission.
  * WIll be auto-freed on uninit.
  */
-int ff_vk_create_exec_ctx(AVFilterContext *avctx, FFVkExecContext **ctx, int queue);
+int ff_vk_create_exec_ctx(AVFilterContext *avctx, FFVkExecContext **ctx);
 
 /**
  * Begin recording to the command buffer. Previous execution must have been
@@ -288,7 +320,23 @@ void ff_vk_update_push_exec(AVFilterContext *avctx, FFVkExecContext *e,
                             size_t size, void *src);
 
 /**
- * Adds a frame as a queue dependency. This manages semaphore signalling.
+ * Gets the command buffer to use for this submission from the exe context.
+ */
+VkCommandBuffer ff_vk_get_exec_buf(AVFilterContext *avctx, FFVkExecContext *e);
+
+/**
+ * Adds a generic AVBufferRef as a queue depenency.
+ */
+int ff_vk_add_dep_exec_ctx(AVFilterContext *avctx, FFVkExecContext *e,
+                           AVBufferRef **deps, int nb_deps);
+
+/**
+ * Discards all queue dependencies
+ */
+void ff_vk_discard_exec_deps(AVFilterContext *avctx, FFVkExecContext *e);
+
+/**
+ * Adds a frame as a queue dependency. This also manages semaphore signalling.
  * Must be called before submission.
  */
 int ff_vk_add_exec_dep(AVFilterContext *avctx, FFVkExecContext *e,

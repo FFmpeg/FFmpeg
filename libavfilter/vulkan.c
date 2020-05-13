@@ -311,72 +311,116 @@ int ff_vk_add_push_constant(AVFilterContext *avctx, VulkanPipeline *pl,
 }
 
 FN_CREATING(VulkanFilterContext, FFVkExecContext, exec_ctx, exec_ctx, exec_ctx_num)
-int ff_vk_create_exec_ctx(AVFilterContext *avctx, FFVkExecContext **ctx, int queue)
+int ff_vk_create_exec_ctx(AVFilterContext *avctx, FFVkExecContext **ctx)
 {
     VkResult ret;
     FFVkExecContext *e;
     VulkanFilterContext *s = avctx->priv;
 
+    int queue_family = s->queue_family_idx;
+    int nb_queues = s->queue_count;
+
     VkCommandPoolCreateInfo cqueue_create = {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags              = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex   = queue,
+        .queueFamilyIndex   = queue_family,
     };
     VkCommandBufferAllocateInfo cbuf_create = {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
+        .commandBufferCount = nb_queues,
     };
-    VkFenceCreateInfo fence_spawn = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 
     e = create_exec_ctx(s);
     if (!e)
         return AVERROR(ENOMEM);
 
+    e->queues = av_mallocz(nb_queues * sizeof(*e->queues));
+    if (!e->queues)
+        return AVERROR(ENOMEM);
+
+    e->bufs = av_mallocz(nb_queues * sizeof(*e->bufs));
+    if (!e->bufs)
+        return AVERROR(ENOMEM);
+
+    /* Create command pool */
     ret = vkCreateCommandPool(s->hwctx->act_dev, &cqueue_create,
                               s->hwctx->alloc, &e->pool);
     if (ret != VK_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Command pool creation failure: %s\n",
                ff_vk_ret2str(ret));
-        return 1;
+        return AVERROR_EXTERNAL;
     }
 
     cbuf_create.commandPool = e->pool;
 
-    ret = vkAllocateCommandBuffers(s->hwctx->act_dev, &cbuf_create, &e->buf);
+    /* Allocate command buffer */
+    ret = vkAllocateCommandBuffers(s->hwctx->act_dev, &cbuf_create, e->bufs);
     if (ret != VK_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Command buffer alloc failure: %s\n",
                ff_vk_ret2str(ret));
-        return 1;
+        return AVERROR_EXTERNAL;
     }
 
-    ret = vkCreateFence(s->hwctx->act_dev, &fence_spawn,
-                        s->hwctx->alloc, &e->fence);
-    if (ret != VK_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create frame fence: %s\n",
-               ff_vk_ret2str(ret));
-        return 1;
+    for (int i = 0; i < nb_queues; i++) {
+        FFVkQueueCtx *q = &e->queues[i];
+        vkGetDeviceQueue(s->hwctx->act_dev, queue_family, i, &q->queue);
     }
-
-    vkGetDeviceQueue(s->hwctx->act_dev, queue, 0, &e->queue);
 
     *ctx = e;
 
     return 0;
 }
 
+void ff_vk_discard_exec_deps(AVFilterContext *avctx, FFVkExecContext *e)
+{
+    VulkanFilterContext *s = avctx->priv;
+    FFVkQueueCtx *q = &e->queues[s->cur_queue_idx];
+
+    for (int j = 0; j < q->nb_buf_deps; j++)
+        av_buffer_unref(&q->buf_deps[j]);
+    q->nb_buf_deps = 0;
+
+    for (int j = 0; j < q->nb_frame_deps; j++)
+        av_frame_free(&q->frame_deps[j]);
+    q->nb_frame_deps = 0;
+
+    e->sem_wait_cnt = 0;
+    e->sem_sig_cnt = 0;
+}
+
 int ff_vk_start_exec_recording(AVFilterContext *avctx, FFVkExecContext *e)
 {
     VkResult ret;
+    VulkanFilterContext *s = avctx->priv;
+    FFVkQueueCtx *q = &e->queues[s->cur_queue_idx];
+
     VkCommandBufferBeginInfo cmd_start = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
 
-    e->sem_wait_cnt = 0;
-    e->sem_sig_cnt = 0;
+    /* Create the fence and don't wait for it initially */
+    if (!q->fence) {
+        VkFenceCreateInfo fence_spawn = {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        };
+        ret = vkCreateFence(s->hwctx->act_dev, &fence_spawn, s->hwctx->alloc,
+                            &q->fence);
+        if (ret != VK_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to queue frame fence: %s\n",
+                   ff_vk_ret2str(ret));
+            return AVERROR_EXTERNAL;
+        }
+    } else {
+        vkWaitForFences(s->hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(s->hwctx->act_dev, 1, &q->fence);
+    }
 
-    ret = vkBeginCommandBuffer(e->buf, &cmd_start);
+    /* Discard queue dependencies */
+    ff_vk_discard_exec_deps(avctx, e);
+
+    ret = vkBeginCommandBuffer(e->bufs[s->cur_queue_idx], &cmd_start);
     if (ret != VK_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to start command recoding: %s\n",
                ff_vk_ret2str(ret));
@@ -386,28 +430,43 @@ int ff_vk_start_exec_recording(AVFilterContext *avctx, FFVkExecContext *e)
     return 0;
 }
 
+VkCommandBuffer ff_vk_get_exec_buf(AVFilterContext *avctx, FFVkExecContext *e)
+{
+    VulkanFilterContext *s = avctx->priv;
+    return e->bufs[s->cur_queue_idx];
+}
+
 int ff_vk_add_exec_dep(AVFilterContext *avctx, FFVkExecContext *e,
                        AVFrame *frame, VkPipelineStageFlagBits in_wait_dst_flag)
 {
+    AVFrame **dst;
+    VulkanFilterContext *s = avctx->priv;
     AVVkFrame *f = (AVVkFrame *)frame->data[0];
+    FFVkQueueCtx *q = &e->queues[s->cur_queue_idx];
     AVHWFramesContext *fc = (AVHWFramesContext *)frame->hw_frames_ctx->data;
     int planes = av_pix_fmt_count_planes(fc->sw_format);
 
     for (int i = 0; i < planes; i++) {
         e->sem_wait = av_fast_realloc(e->sem_wait, &e->sem_wait_alloc,
                                       (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait));
-        if (!e->sem_wait)
+        if (!e->sem_wait) {
+            ff_vk_discard_exec_deps(avctx, e);
             return AVERROR(ENOMEM);
+        }
 
         e->sem_wait_dst = av_fast_realloc(e->sem_wait_dst, &e->sem_wait_dst_alloc,
                                           (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait_dst));
-        if (!e->sem_wait_dst)
+        if (!e->sem_wait_dst) {
+            ff_vk_discard_exec_deps(avctx, e);
             return AVERROR(ENOMEM);
+        }
 
         e->sem_sig = av_fast_realloc(e->sem_sig, &e->sem_sig_alloc,
                                      (e->sem_sig_cnt + 1)*sizeof(*e->sem_sig));
-        if (!e->sem_sig)
+        if (!e->sem_sig) {
+            ff_vk_discard_exec_deps(avctx, e);
             return AVERROR(ENOMEM);
+        }
 
         e->sem_wait[e->sem_wait_cnt] = f->sem[i];
         e->sem_wait_dst[e->sem_wait_cnt] = in_wait_dst_flag;
@@ -417,6 +476,21 @@ int ff_vk_add_exec_dep(AVFilterContext *avctx, FFVkExecContext *e,
         e->sem_sig_cnt++;
     }
 
+    dst = av_fast_realloc(q->frame_deps, &q->frame_deps_alloc_size,
+                          (q->nb_frame_deps + 1) * sizeof(*dst));
+    if (!dst) {
+        ff_vk_discard_exec_deps(avctx, e);
+        return AVERROR(ENOMEM);
+    }
+
+    q->frame_deps = dst;
+    q->frame_deps[q->nb_frame_deps] = av_frame_clone(frame);
+    if (!q->frame_deps[q->nb_frame_deps]) {
+        ff_vk_discard_exec_deps(avctx, e);
+        return AVERROR(ENOMEM);
+    }
+    q->nb_frame_deps++;
+
     return 0;
 }
 
@@ -424,11 +498,12 @@ int ff_vk_submit_exec_queue(AVFilterContext *avctx, FFVkExecContext *e)
 {
     VkResult ret;
     VulkanFilterContext *s = avctx->priv;
+    FFVkQueueCtx *q = &e->queues[s->cur_queue_idx];
 
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount   = 1,
-        .pCommandBuffers      = &e->buf,
+        .pCommandBuffers      = &e->bufs[s->cur_queue_idx],
 
         .pWaitSemaphores      = e->sem_wait,
         .pWaitDstStageMask    = e->sem_wait_dst,
@@ -438,19 +513,55 @@ int ff_vk_submit_exec_queue(AVFilterContext *avctx, FFVkExecContext *e)
         .signalSemaphoreCount = e->sem_sig_cnt,
     };
 
-    vkEndCommandBuffer(e->buf);
+    ret = vkEndCommandBuffer(e->bufs[s->cur_queue_idx]);
+    if (ret != VK_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to finish command buffer: %s\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
 
-    ret = vkQueueSubmit(e->queue, 1, &s_info, e->fence);
+    ret = vkQueueSubmit(q->queue, 1, &s_info, q->fence);
     if (ret != VK_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Unable to submit command buffer: %s\n",
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
 
-    vkWaitForFences(s->hwctx->act_dev, 1, &e->fence, VK_TRUE, UINT64_MAX);
-    vkResetFences(s->hwctx->act_dev, 1, &e->fence);
+    /* Rotate queues */
+    s->cur_queue_idx = (s->cur_queue_idx + 1) % s->queue_count;
 
     return 0;
+}
+
+int ff_vk_add_dep_exec_ctx(AVFilterContext *avctx, FFVkExecContext *e,
+                           AVBufferRef **deps, int nb_deps)
+{
+    AVBufferRef **dst;
+    VulkanFilterContext *s = avctx->priv;
+    FFVkQueueCtx *q = &e->queues[s->cur_queue_idx];
+
+    if (!deps || !nb_deps)
+        return 0;
+
+    dst = av_fast_realloc(q->buf_deps, &q->buf_deps_alloc_size,
+                          (q->nb_buf_deps + nb_deps) * sizeof(*dst));
+    if (!dst)
+        goto err;
+
+    q->buf_deps = dst;
+
+    for (int i = 0; i < nb_deps; i++) {
+        q->buf_deps[q->nb_buf_deps] = deps[i];
+        if (!q->buf_deps[q->nb_buf_deps])
+            goto err;
+        q->nb_buf_deps++;
+    }
+
+    return 0;
+
+err:
+    ff_vk_discard_exec_deps(avctx, e);
+    return AVERROR(ENOMEM);
 }
 
 int ff_vk_filter_query_formats(AVFilterContext *avctx)
@@ -685,9 +796,24 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt)
     return high ? "rgba16f" : "rgba8";
 }
 
-int ff_vk_create_imageview(AVFilterContext *avctx, VkImageView *v, VkImage img,
-                           VkFormat fmt, const VkComponentMapping map)
+typedef struct ImageViewCtx {
+    VkImageView view;
+} ImageViewCtx;
+
+static void destroy_imageview(void *opaque, uint8_t *data)
 {
+    VulkanFilterContext *s = opaque;
+    ImageViewCtx *iv = (ImageViewCtx *)data;
+    vkDestroyImageView(s->hwctx->act_dev, iv->view, s->hwctx->alloc);
+    av_free(iv);
+}
+
+int ff_vk_create_imageview(AVFilterContext *avctx, FFVkExecContext *e,
+                           VkImageView *v, VkImage img, VkFormat fmt,
+                           const VkComponentMapping map)
+{
+    int err;
+    AVBufferRef *buf;
     VulkanFilterContext *s = avctx->priv;
     VkImageViewCreateInfo imgview_spawn = {
         .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -705,24 +831,32 @@ int ff_vk_create_imageview(AVFilterContext *avctx, VkImageView *v, VkImage img,
         },
     };
 
+    ImageViewCtx *iv = av_mallocz(sizeof(*iv));
+
     VkResult ret = vkCreateImageView(s->hwctx->act_dev, &imgview_spawn,
-                                     s->hwctx->alloc, v);
+                                     s->hwctx->alloc, &iv->view);
     if (ret != VK_SUCCESS) {
-        av_log(s, AV_LOG_ERROR, "Failed to create imageview: %s\n",
+        av_log(avctx, AV_LOG_ERROR, "Failed to create imageview: %s\n",
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
 
-    return 0;
-}
-
-void ff_vk_destroy_imageview(AVFilterContext *avctx, VkImageView *v)
-{
-    VulkanFilterContext *s = avctx->priv;
-    if (v && *v) {
-        vkDestroyImageView(s->hwctx->act_dev, *v, s->hwctx->alloc);
-        *v = NULL;
+    buf = av_buffer_create((uint8_t *)iv, sizeof(*iv), destroy_imageview, s, 0);
+    if (!buf) {
+        destroy_imageview(s, (uint8_t *)iv);
+        return AVERROR(ENOMEM);
     }
+
+    /* Add to queue dependencies */
+    err = ff_vk_add_dep_exec_ctx(avctx, e, &buf, 1);
+    if (err) {
+        av_buffer_unref(&buf);
+        return err;
+    }
+
+    *v = iv->view;
+
+    return 0;
 }
 
 FN_CREATING(VulkanPipeline, SPIRVShader, shader, shaders, shaders_num)
@@ -870,11 +1004,11 @@ int ff_vk_add_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
         goto print;
 
     pl->desc_layout = av_realloc_array(pl->desc_layout, sizeof(*pl->desc_layout),
-                                       pl->descriptor_sets_num + 1);
+                                       pl->desc_layout_num + 1);
     if (!pl->desc_layout)
         return AVERROR(ENOMEM);
 
-    layout = &pl->desc_layout[pl->descriptor_sets_num];
+    layout = &pl->desc_layout[pl->desc_layout_num];
     memset(layout, 0, sizeof(*layout));
 
     { /* Create descriptor set layout descriptions */
@@ -946,11 +1080,11 @@ int ff_vk_add_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
 
         pl->desc_template_info = av_realloc_array(pl->desc_template_info,
                                                   sizeof(*pl->desc_template_info),
-                                                  pl->descriptor_sets_num + 1);
+                                                  pl->desc_layout_num + 1);
         if (!pl->desc_template_info)
             return AVERROR(ENOMEM);
 
-        dt = &pl->desc_template_info[pl->descriptor_sets_num];
+        dt = &pl->desc_template_info[pl->desc_layout_num];
         memset(dt, 0, sizeof(*dt));
 
         dt->sType = VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO;
@@ -960,13 +1094,13 @@ int ff_vk_add_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
         dt->descriptorUpdateEntryCount = num;
     }
 
-    pl->descriptor_sets_num++;
+    pl->desc_layout_num++;
 
 print:
     /* Write shader info */
     for (int i = 0; i < num; i++) {
         const struct descriptor_props *prop = &descriptor_props[desc[i].type];
-        GLSLA("layout (set = %i, binding = %i", pl->descriptor_sets_num - 1, i);
+        GLSLA("layout (set = %i, binding = %i", pl->desc_layout_num - 1, i);
 
         if (desc[i].mem_layout)
             GLSLA(", %s", desc[i].mem_layout);
@@ -1004,15 +1138,17 @@ void ff_vk_update_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
     VulkanFilterContext *s = avctx->priv;
 
     vkUpdateDescriptorSetWithTemplate(s->hwctx->act_dev,
-                                      pl->desc_set[set_id],
-                                      pl->desc_template[set_id], s);
+                                      pl->desc_set[set_id * s->cur_queue_idx],
+                                      pl->desc_template[set_id],
+                                      s);
 }
 
 void ff_vk_update_push_exec(AVFilterContext *avctx, FFVkExecContext *e,
                             VkShaderStageFlagBits stage, int offset,
                             size_t size, void *src)
 {
-    vkCmdPushConstants(e->buf, e->bound_pl->pipeline_layout,
+    VulkanFilterContext *s = avctx->priv;
+    vkCmdPushConstants(e->bufs[s->cur_queue_idx], e->bound_pl->pipeline_layout,
                        stage, offset, size, src);
 }
 
@@ -1020,6 +1156,10 @@ int ff_vk_init_pipeline_layout(AVFilterContext *avctx, VulkanPipeline *pl)
 {
     VkResult ret;
     VulkanFilterContext *s = avctx->priv;
+
+    int queues_count = 1;
+
+    pl->descriptor_sets_num = pl->desc_layout_num * queues_count;
 
     { /* Init descriptor set pool */
         VkDescriptorPoolCreateInfo pool_create_info = {
@@ -1063,7 +1203,7 @@ int ff_vk_init_pipeline_layout(AVFilterContext *avctx, VulkanPipeline *pl)
     { /* Finally create the pipeline layout */
         VkPipelineLayoutCreateInfo spawn_pipeline_layout = {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount         = pl->descriptor_sets_num,
+            .setLayoutCount         = pl->desc_layout_num,
             .pSetLayouts            = pl->desc_layout,
             .pushConstantRangeCount = pl->push_consts_num,
             .pPushConstantRanges    = pl->push_consts,
@@ -1089,7 +1229,7 @@ int ff_vk_init_pipeline_layout(AVFilterContext *avctx, VulkanPipeline *pl)
 
         /* Create update templates for the descriptor sets */
         for (int i = 0; i < pl->descriptor_sets_num; i++) {
-            desc_template_info = &pl->desc_template_info[i];
+            desc_template_info = &pl->desc_template_info[i % pl->desc_layout_num];
             desc_template_info->pipelineLayout = pl->pipeline_layout;
             ret = vkCreateDescriptorUpdateTemplate(s->hwctx->act_dev,
                                                    desc_template_info,
@@ -1153,27 +1293,53 @@ int ff_vk_init_compute_pipeline(AVFilterContext *avctx, VulkanPipeline *pl)
 void ff_vk_bind_pipeline_exec(AVFilterContext *avctx, FFVkExecContext *e,
                               VulkanPipeline *pl)
 {
-    vkCmdBindPipeline(e->buf, pl->bind_point, pl->pipeline);
+    VulkanFilterContext *s = avctx->priv;
 
-    vkCmdBindDescriptorSets(e->buf, pl->bind_point, pl->pipeline_layout, 0,
-                            pl->descriptor_sets_num, pl->desc_set, 0, 0);
+    vkCmdBindPipeline(e->bufs[s->cur_queue_idx], pl->bind_point, pl->pipeline);
+
+    vkCmdBindDescriptorSets(e->bufs[s->cur_queue_idx], pl->bind_point,
+                            pl->pipeline_layout, 0, pl->descriptor_sets_num,
+                            pl->desc_set, 0, 0);
 
     e->bound_pl = pl;
 }
 
 static void free_exec_ctx(VulkanFilterContext *s, FFVkExecContext *e)
 {
-    vkDestroyFence(s->hwctx->act_dev, e->fence, s->hwctx->alloc);
+    /* Make sure all queues have finished executing */
+    for (int i = 0; i < s->queue_count; i++) {
+        FFVkQueueCtx *q = &e->queues[i];
 
-    if (e->buf   != VK_NULL_HANDLE)
-        vkFreeCommandBuffers(s->hwctx->act_dev, e->pool, 1, &e->buf);
-    if (e->pool  != VK_NULL_HANDLE)
+        if (q->fence) {
+            vkWaitForFences(s->hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
+            vkResetFences(s->hwctx->act_dev, 1, &q->fence);
+        }
+
+        /* Free the fence */
+        if (q->fence)
+            vkDestroyFence(s->hwctx->act_dev, q->fence, s->hwctx->alloc);
+
+        /* Free buffer dependencies */
+        for (int j = 0; j < q->nb_buf_deps; j++)
+            av_buffer_unref(&q->buf_deps[j]);
+        av_free(q->buf_deps);
+
+        /* Free frame dependencies */
+        for (int j = 0; j < q->nb_frame_deps; j++)
+            av_frame_free(&q->frame_deps[j]);
+        av_free(q->frame_deps);
+    }
+
+    if (e->bufs)
+        vkFreeCommandBuffers(s->hwctx->act_dev, e->pool, s->queue_count, e->bufs);
+    if (e->pool)
         vkDestroyCommandPool(s->hwctx->act_dev, e->pool, s->hwctx->alloc);
 
-    av_free(e->sem_wait);
-    av_free(e->sem_wait_dst);
-    av_free(e->sem_sig);
-
+    av_freep(&e->bufs);
+    av_freep(&e->queues);
+    av_freep(&e->sem_sig);
+    av_freep(&e->sem_wait);
+    av_freep(&e->sem_wait_dst);
     av_free(e);
 }
 
@@ -1191,7 +1357,7 @@ static void free_pipeline(VulkanFilterContext *s, VulkanPipeline *pl)
     vkDestroyPipelineLayout(s->hwctx->act_dev, pl->pipeline_layout,
                             s->hwctx->alloc);
 
-    for (int i = 0; i < pl->descriptor_sets_num; i++) {
+    for (int i = 0; i < pl->desc_layout_num; i++) {
         if (pl->desc_template && pl->desc_template[i])
             vkDestroyDescriptorUpdateTemplate(s->hwctx->act_dev, pl->desc_template[i],
                                               s->hwctx->alloc);
@@ -1229,6 +1395,10 @@ void ff_vk_filter_uninit(AVFilterContext *avctx)
 
     glslang_uninit();
 
+    for (int i = 0; i < s->exec_ctx_num; i++)
+        free_exec_ctx(s, s->exec_ctx[i]);
+    av_freep(&s->exec_ctx);
+
     for (int i = 0; i < s->samplers_num; i++) {
         vkDestroySampler(s->hwctx->act_dev, *s->samplers[i], s->hwctx->alloc);
         av_free(s->samplers[i]);
@@ -1238,10 +1408,6 @@ void ff_vk_filter_uninit(AVFilterContext *avctx)
     for (int i = 0; i < s->pipelines_num; i++)
         free_pipeline(s, s->pipelines[i]);
     av_freep(&s->pipelines);
-
-    for (int i = 0; i < s->exec_ctx_num; i++)
-        free_exec_ctx(s, s->exec_ctx[i]);
-    av_freep(&s->exec_ctx);
 
     av_freep(&s->scratch);
     s->scratch_size = 0;
