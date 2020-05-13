@@ -807,6 +807,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     AVDictionaryEntry *opt_d;
     VulkanDevicePriv *p = ctx->internal->priv;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
+    VkPhysicalDeviceFeatures dev_features = { 0 };
     VkDeviceQueueCreateInfo queue_create_info[3] = {
         { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
         { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
@@ -815,10 +816,12 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
 
     VkDeviceCreateInfo dev_info = {
         .sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext                = &hwctx->device_features,
         .pQueueCreateInfos    = queue_create_info,
         .queueCreateInfoCount = 0,
     };
 
+    hwctx->device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     ctx->free = vulkan_device_free;
 
     /* Create an instance if not given one */
@@ -838,6 +841,14 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
            p->props.limits.optimalBufferCopyRowPitchAlignment);
     av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %li\n",
            p->props.limits.minMemoryMapAlignment);
+
+    vkGetPhysicalDeviceFeatures(hwctx->phys_dev, &dev_features);
+#define COPY_FEATURE(DST, NAME) (DST).features.NAME = dev_features.NAME;
+    COPY_FEATURE(hwctx->device_features, shaderImageGatherExtended)
+    COPY_FEATURE(hwctx->device_features, fragmentStoresAndAtomics)
+    COPY_FEATURE(hwctx->device_features, vertexPipelineStoresAndAtomics)
+    COPY_FEATURE(hwctx->device_features, shaderInt64)
+#undef COPY_FEATURE
 
     /* Search queue family */
     if ((err = search_queue_families(ctx, &dev_info)))

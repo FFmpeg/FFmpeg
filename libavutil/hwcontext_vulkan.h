@@ -94,6 +94,13 @@ typedef struct AVVulkanDeviceContext {
      */
     const char * const *enabled_dev_extensions;
     int nb_enabled_dev_extensions;
+    /**
+     * This structure should be set to the set of features that present and enabled
+     * during device creation. When a device is created by FFmpeg, it will default to
+     * enabling all that are present of the shaderImageGatherExtended,
+     * fragmentStoresAndAtomics, shaderInt64 and vertexPipelineStoresAndAtomics features.
+     */
+    VkPhysicalDeviceFeatures2 device_features;
 } AVVulkanDeviceContext;
 
 /**
