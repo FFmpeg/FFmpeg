@@ -126,6 +126,7 @@ NEON-OBJS-$(CONFIG_IDCTDSP)            += arm/idctdsp_init_neon.o       \
 NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
                                           arm/mdct_fixed_neon.o
 NEON-OBJS-$(CONFIG_MPEGVIDEO)          += arm/mpegvideo_neon.o
+NEON-OBJS-$(CONFIG_PIXBLOCKDSP)        += arm/pixblockdsp_neon.o
 NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o
 NEON-OBJS-$(CONFIG_VC1DSP)             += arm/vc1dsp_init_neon.o        \
                                           arm/vc1dsp_neon.o
