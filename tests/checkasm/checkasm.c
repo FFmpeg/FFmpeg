@@ -183,6 +183,7 @@ static const struct {
 #endif
 #if CONFIG_SWSCALE
     { "sw_rgb", checkasm_check_sw_rgb },
+    { "sw_scale", checkasm_check_sw_scale },
 #endif
 #if CONFIG_AVUTIL
         { "fixed_dsp", checkasm_check_fixed_dsp },
