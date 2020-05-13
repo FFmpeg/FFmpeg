@@ -2014,6 +2014,8 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
                 ff_jpeg2000_cleanup(comp, codsty);
             }
             av_freep(&s->tile[tileno].comp);
+            av_freep(&s->tile[tileno].packed_headers);
+            s->tile[tileno].packed_headers_size = 0;
         }
     }
     av_freep(&s->tile);
