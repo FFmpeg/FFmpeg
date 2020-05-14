@@ -71,20 +71,13 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
 
     if (crnt->height == next->height &&
         crnt->width  == next->width) {
-        AVDictionaryEntry *e_mafd = NULL;
         uint64_t sad;
-        double mafd = HUGE_VAL, diff;
-        char *tail = NULL;
+        double mafd, diff;
 
         ff_dlog(ctx, "get_scene_score() process\n");
-        e_mafd = av_dict_get(next->metadata, "lavfi.scd.mafd", NULL, AV_DICT_MATCH_CASE);
-        if (e_mafd)
-            mafd = strtod(e_mafd->value, &tail);
-        if (*tail || mafd == HUGE_VAL) {
-            s->sad(crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->width, crnt->height, &sad);
-            emms_c();
-            mafd = (double)sad * 100.0 / (crnt->width * crnt->height) / (1 << s->bitdepth);
-        }
+        s->sad(crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->width, crnt->height, &sad);
+        emms_c();
+        mafd = (double)sad * 100.0 / (crnt->width * crnt->height) / (1 << s->bitdepth);
         diff = fabs(mafd - s->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
         s->prev_mafd = mafd;
