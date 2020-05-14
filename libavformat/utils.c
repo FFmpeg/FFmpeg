@@ -1156,7 +1156,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
         if (st->start_time == AV_NOPTS_VALUE && pktl_it->pkt.pts != AV_NOPTS_VALUE) {
             st->start_time = pktl_it->pkt.pts;
             if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && st->codecpar->sample_rate)
-                st->start_time += av_rescale_q(st->skip_samples, (AVRational){1, st->codecpar->sample_rate}, st->time_base);
+                st->start_time = av_sat_add64(st->start_time, av_rescale_q(st->skip_samples, (AVRational){1, st->codecpar->sample_rate}, st->time_base));
         }
     }
 
@@ -1169,7 +1169,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
             st->start_time = pts;
         }
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && st->codecpar->sample_rate)
-            st->start_time += av_rescale_q(st->skip_samples, (AVRational){1, st->codecpar->sample_rate}, st->time_base);
+            st->start_time = av_sat_add64(st->start_time, av_rescale_q(st->skip_samples, (AVRational){1, st->codecpar->sample_rate}, st->time_base));
     }
 }
 
