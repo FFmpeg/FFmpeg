@@ -822,6 +822,7 @@ int ff_vk_compile_shader(AVFilterContext *avctx, SPIRVShader *shd,
                                &shd->shader.module);
 
     /* Free the GLSlangResult struct */
+    av_free(res->data);
     av_free(res);
 
     if (ret != VK_SUCCESS) {
@@ -1228,8 +1229,10 @@ void ff_vk_filter_uninit(AVFilterContext *avctx)
 
     glslang_uninit();
 
-    for (int i = 0; i < s->samplers_num; i++)
+    for (int i = 0; i < s->samplers_num; i++) {
         vkDestroySampler(s->hwctx->act_dev, *s->samplers[i], s->hwctx->alloc);
+        av_free(s->samplers[i]);
+    }
     av_freep(&s->samplers);
 
     for (int i = 0; i < s->pipelines_num; i++)
