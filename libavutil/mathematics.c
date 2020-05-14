@@ -207,7 +207,7 @@ int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t i
         int64_t old = av_rescale_q(ts, ts_tb, inc_tb);
         int64_t old_ts = av_rescale_q(old, inc_tb, ts_tb);
 
-        if (old == INT64_MAX)
+        if (old == INT64_MAX || old == AV_NOPTS_VALUE || old_ts == AV_NOPTS_VALUE)
             return ts;
 
         return av_rescale_q(old + 1, inc_tb, ts_tb) + (ts - old_ts);
