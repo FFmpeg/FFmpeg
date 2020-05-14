@@ -1703,7 +1703,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     hwctx->tiling = hwctx->tiling ? hwctx->tiling : p->use_linear_images ?
                     VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
 
-    hwctx->usage |= DEFAULT_USAGE_FLAGS;
+    if (!hwctx->usage)
+        hwctx->usage = DEFAULT_USAGE_FLAGS;
 
     err = create_exec_ctx(hwfc->device_ctx, &fp->conv_ctx,
                           dev_hwctx->queue_family_comp_index,

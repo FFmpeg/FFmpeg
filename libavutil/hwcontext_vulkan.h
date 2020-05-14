@@ -112,8 +112,8 @@ typedef struct AVVulkanFramesContext {
      */
     VkImageTiling tiling;
     /**
-     * Defines extra usage of output frames. This is bitwise OR'd with the
-     * standard usage flags (SAMPLED, STORAGE, TRANSFER_SRC and TRANSFER_DST).
+     * Defines extra usage of output frames. If left as 0, the following bits
+     * are set: TRANSFER_SRC, TRANSFER_DST. SAMPLED and STORAGE.
      */
     VkImageUsageFlagBits usage;
     /**
