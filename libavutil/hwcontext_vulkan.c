@@ -1944,6 +1944,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFramesPriv *fp = hwfc->internal->priv;
+    AVVulkanFramesContext *frames_hwctx = hwfc->hwctx;
     const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(hwfc->sw_format);
     const int has_modifiers = p->extensions & EXT_DRM_MODIFIER_FLAGS;
     VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
@@ -2043,7 +2044,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .flags                 = VK_IMAGE_CREATE_ALIAS_BIT,
             .tiling                = f->tiling,
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
-            .usage                 = DEFAULT_USAGE_FLAGS,
+            .usage                 = frames_hwctx->usage,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
             .pQueueFamilyIndices   = p->qfs,
             .queueFamilyIndexCount = p->num_qfs,
