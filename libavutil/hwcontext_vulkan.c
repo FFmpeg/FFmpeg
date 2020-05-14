@@ -2466,18 +2466,22 @@ typedef struct ImageBuffer {
     VkMemoryPropertyFlagBits flags;
 } ImageBuffer;
 
-static void free_buf(AVHWDeviceContext *ctx, ImageBuffer *buf)
+static void free_buf(void *opaque, uint8_t *data)
 {
+    AVHWDeviceContext *ctx = opaque;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    if (!buf)
-        return;
+    ImageBuffer *vkbuf = (ImageBuffer *)data;
 
-    vkDestroyBuffer(hwctx->act_dev, buf->buf, hwctx->alloc);
-    vkFreeMemory(hwctx->act_dev, buf->mem, hwctx->alloc);
+    if (vkbuf->buf)
+        vkDestroyBuffer(hwctx->act_dev, vkbuf->buf, hwctx->alloc);
+    if (vkbuf->mem)
+        vkFreeMemory(hwctx->act_dev, vkbuf->mem, hwctx->alloc);
+
+    av_free(data);
 }
 
-static int create_buf(AVHWDeviceContext *ctx, ImageBuffer *buf, int height,
-                      int *stride, VkBufferUsageFlags usage,
+static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf,
+                      int height, int *stride, VkBufferUsageFlags usage,
                       VkMemoryPropertyFlagBits flags, void *create_pnext,
                       void *alloc_pnext)
 {
@@ -2494,34 +2498,44 @@ static int create_buf(AVHWDeviceContext *ctx, ImageBuffer *buf, int height,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 
+    ImageBuffer *vkbuf = av_mallocz(sizeof(*vkbuf));
+    if (!vkbuf)
+        return AVERROR(ENOMEM);
+
     *stride = FFALIGN(*stride, p->props.limits.optimalBufferCopyRowPitchAlignment);
     buf_spawn.size = height*(*stride);
 
-    ret = vkCreateBuffer(hwctx->act_dev, &buf_spawn, NULL, &buf->buf);
+    ret = vkCreateBuffer(hwctx->act_dev, &buf_spawn, NULL, &vkbuf->buf);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create buffer: %s\n",
                vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
 
-    vkGetBufferMemoryRequirements(hwctx->act_dev, buf->buf, &req);
+    vkGetBufferMemoryRequirements(hwctx->act_dev, vkbuf->buf, &req);
 
-    err = alloc_mem(ctx, &req, flags, alloc_pnext, &buf->flags, &buf->mem);
+    err = alloc_mem(ctx, &req, flags, alloc_pnext, &vkbuf->flags, &vkbuf->mem);
     if (err)
         return err;
 
-    ret = vkBindBufferMemory(hwctx->act_dev, buf->buf, buf->mem, 0);
+    ret = vkBindBufferMemory(hwctx->act_dev, vkbuf->buf, vkbuf->mem, 0);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory to buffer: %s\n",
                vk_ret2str(ret));
-        free_buf(ctx, buf);
+        free_buf(ctx, (uint8_t *)vkbuf);
         return AVERROR_EXTERNAL;
+    }
+
+    *buf = av_buffer_create((uint8_t *)vkbuf, sizeof(*vkbuf), free_buf, ctx, 0);
+    if (!(*buf)) {
+        free_buf(ctx, (uint8_t *)vkbuf);
+        return AVERROR(ENOMEM);
     }
 
     return 0;
 }
 
-static int map_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf, uint8_t *mem[],
+static int map_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs, uint8_t *mem[],
                        int nb_buffers, int invalidate)
 {
     VkResult ret;
@@ -2530,7 +2544,8 @@ static int map_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf, uint8_t *mem[],
     int invalidate_count = 0;
 
     for (int i = 0; i < nb_buffers; i++) {
-        ret = vkMapMemory(hwctx->act_dev, buf[i].mem, 0,
+        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
+        ret = vkMapMemory(hwctx->act_dev, vkbuf->mem, 0,
                           VK_WHOLE_SIZE, 0, (void **)&mem[i]);
         if (ret != VK_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed to map buffer memory: %s\n",
@@ -2543,12 +2558,13 @@ static int map_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf, uint8_t *mem[],
         return 0;
 
     for (int i = 0; i < nb_buffers; i++) {
+        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
         const VkMappedMemoryRange ival_buf = {
             .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .memory = buf[i].mem,
+            .memory = vkbuf->mem,
             .size   = VK_WHOLE_SIZE,
         };
-        if (buf[i].flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        if (vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
             continue;
         invalidate_ctx[invalidate_count++] = ival_buf;
     }
@@ -2564,7 +2580,7 @@ static int map_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf, uint8_t *mem[],
     return 0;
 }
 
-static int unmap_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf,
+static int unmap_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs,
                          int nb_buffers, int flush)
 {
     int err = 0;
@@ -2575,12 +2591,13 @@ static int unmap_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf,
 
     if (flush) {
         for (int i = 0; i < nb_buffers; i++) {
+            ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
             const VkMappedMemoryRange flush_buf = {
                 .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                .memory = buf[i].mem,
+                .memory = vkbuf->mem,
                 .size   = VK_WHOLE_SIZE,
             };
-            if (buf[i].flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+            if (vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                 continue;
             flush_ctx[flush_count++] = flush_buf;
         }
@@ -2595,14 +2612,16 @@ static int unmap_buffers(AVHWDeviceContext *ctx, ImageBuffer *buf,
         }
     }
 
-    for (int i = 0; i < nb_buffers; i++)
-        vkUnmapMemory(hwctx->act_dev, buf[i].mem);
+    for (int i = 0; i < nb_buffers; i++) {
+        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
+        vkUnmapMemory(hwctx->act_dev, vkbuf->mem);
+    }
 
     return err;
 }
 
 static int transfer_image_buf(AVHWDeviceContext *ctx, AVVkFrame *frame,
-                              ImageBuffer *buffer, const int *buf_stride, int w,
+                              AVBufferRef **bufs, const int *buf_stride, int w,
                               int h, enum AVPixelFormat pix_fmt, int to_buf)
 {
     VkResult ret;
@@ -2678,6 +2697,7 @@ static int transfer_image_buf(AVHWDeviceContext *ctx, AVVkFrame *frame,
 
     /* Schedule a copy for each plane */
     for (int i = 0; i < planes; i++) {
+        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
         const int p_w = i > 0 ? AV_CEIL_RSHIFT(w, desc->log2_chroma_w) : w;
         const int p_h = i > 0 ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h) : h;
         VkBufferImageCopy buf_reg = {
@@ -2696,9 +2716,9 @@ static int transfer_image_buf(AVHWDeviceContext *ctx, AVVkFrame *frame,
 
         if (to_buf)
             vkCmdCopyImageToBuffer(s->cmd.buf, frame->img[i], frame->layout[i],
-                                   buffer[i].buf, 1, &buf_reg);
+                                   vkbuf->buf, 1, &buf_reg);
         else
-            vkCmdCopyBufferToImage(s->cmd.buf, buffer[i].buf, frame->img[i],
+            vkCmdCopyBufferToImage(s->cmd.buf, vkbuf->buf, frame->img[i],
                                    frame->layout[i], 1, &buf_reg);
     }
 
@@ -2736,7 +2756,7 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     AVFrame tmp;
     AVVkFrame *f = (AVVkFrame *)dst->data[0];
     AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
-    ImageBuffer buf[AV_NUM_DATA_POINTERS] = { { 0 } };
+    AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
     const int planes = av_pix_fmt_count_planes(src->format);
     int log2_chroma = av_pix_fmt_desc_get(src->format)->log2_chroma_h;
 
@@ -2771,7 +2791,7 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
 
         tmp.linesize[i] = FFABS(src->linesize[i]);
-        err = create_buf(dev_ctx, &buf[i], p_height,
+        err = create_buf(dev_ctx, &bufs[i], p_height,
                          &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL, NULL);
         if (err)
@@ -2779,22 +2799,22 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     }
 
     /* Map, copy image to buffer, unmap */
-    if ((err = map_buffers(dev_ctx, buf, tmp.data, planes, 0)))
+    if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
         goto end;
 
     av_image_copy(tmp.data, tmp.linesize, (const uint8_t **)src->data,
                   src->linesize, src->format, src->width, src->height);
 
-    if ((err = unmap_buffers(dev_ctx, buf, planes, 1)))
+    if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
         goto end;
 
     /* Copy buffers to image */
-    err = transfer_image_buf(dev_ctx, f, buf, tmp.linesize,
+    err = transfer_image_buf(dev_ctx, f, bufs, tmp.linesize,
                              src->width, src->height, src->format, 0);
 
 end:
     for (int i = 0; i < planes; i++)
-        free_buf(dev_ctx, &buf[i]);
+        av_buffer_unref(&bufs[i]);
 
     return err;
 }
@@ -2896,7 +2916,7 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     AVFrame tmp;
     AVVkFrame *f = (AVVkFrame *)src->data[0];
     AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
-    ImageBuffer buf[AV_NUM_DATA_POINTERS] = { { 0 } };
+    AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
     const int planes = av_pix_fmt_count_planes(dst->format);
     int log2_chroma = av_pix_fmt_desc_get(dst->format)->log2_chroma_h;
 
@@ -2926,28 +2946,28 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
 
         tmp.linesize[i] = FFABS(dst->linesize[i]);
-        err = create_buf(dev_ctx, &buf[i], p_height,
+        err = create_buf(dev_ctx, &bufs[i], p_height,
                          &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL, NULL);
     }
 
     /* Copy image to buffer */
-    if ((err = transfer_image_buf(dev_ctx, f, buf, tmp.linesize,
+    if ((err = transfer_image_buf(dev_ctx, f, bufs, tmp.linesize,
                                   dst->width, dst->height, dst->format, 1)))
         goto end;
 
     /* Map, copy buffer to frame, unmap */
-    if ((err = map_buffers(dev_ctx, buf, tmp.data, planes, 1)))
+    if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 1)))
         goto end;
 
     av_image_copy(dst->data, dst->linesize, (const uint8_t **)tmp.data,
                   tmp.linesize, dst->format, dst->width, dst->height);
 
-    err = unmap_buffers(dev_ctx, buf, planes, 0);
+    err = unmap_buffers(dev_ctx, bufs, planes, 0);
 
 end:
     for (int i = 0; i < planes; i++)
-        free_buf(dev_ctx, &buf[i]);
+        av_buffer_unref(&bufs[i]);
 
     return err;
 }
