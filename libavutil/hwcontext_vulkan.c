@@ -1697,9 +1697,6 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     AVVulkanDeviceContext *dev_hwctx = hwfc->device_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
 
-    if (hwfc->pool)
-        return 0;
-
     /* Default pool flags */
     hwctx->tiling = hwctx->tiling ? hwctx->tiling : p->use_linear_images ?
                     VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
@@ -1722,12 +1719,16 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     vulkan_frame_free(hwfc, (uint8_t *)f);
 
-    hwfc->internal->pool_internal = av_buffer_pool_init2(sizeof(AVVkFrame),
-                                                         hwfc, vulkan_pool_alloc,
-                                                         NULL);
-    if (!hwfc->internal->pool_internal) {
-        free_exec_ctx(hwfc->device_ctx, &p->cmd);
-        return AVERROR(ENOMEM);
+    /* If user did not specify a pool, hwfc->pool will be set to the internal one
+     * in hwcontext.c just after this gets called */
+    if (!hwfc->pool) {
+        hwfc->internal->pool_internal = av_buffer_pool_init2(sizeof(AVVkFrame),
+                                                             hwfc, vulkan_pool_alloc,
+                                                             NULL);
+        if (!hwfc->internal->pool_internal) {
+            free_exec_ctx(hwfc->device_ctx, &p->cmd);
+            return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
