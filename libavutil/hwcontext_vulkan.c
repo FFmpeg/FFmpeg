@@ -87,7 +87,8 @@ typedef struct VulkanDevicePriv {
 } VulkanDevicePriv;
 
 typedef struct VulkanFramesPriv {
-    VulkanExecCtx cmd;
+    /* Image conversions */
+    VulkanExecCtx conv_ctx;
 } VulkanFramesPriv;
 
 typedef struct AVVkFrameInternal {
@@ -1634,6 +1635,7 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, int size)
     AVHWFramesContext *hwfc = opaque;
     AVVulkanFramesContext *hwctx = hwfc->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
+    VulkanFramesPriv *fp = hwfc->internal->priv;
     VkExportMemoryAllocateInfo eminfo[AV_NUM_DATA_POINTERS];
     VkExternalMemoryHandleTypeFlags e = 0x0;
 
@@ -1665,7 +1667,7 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, int size)
     if (err)
         goto fail;
 
-    err = prepare_frame(hwfc, &p->cmd, f, PREP_MODE_WRITE);
+    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_WRITE);
     if (err)
         goto fail;
 
@@ -1685,7 +1687,7 @@ static void vulkan_frames_uninit(AVHWFramesContext *hwfc)
 {
     VulkanFramesPriv *fp = hwfc->internal->priv;
 
-    free_exec_ctx(hwfc->device_ctx, &fp->cmd);
+    free_exec_ctx(hwfc->device_ctx, &fp->conv_ctx);
 }
 
 static int vulkan_frames_init(AVHWFramesContext *hwfc)
@@ -1703,9 +1705,9 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     hwctx->usage |= DEFAULT_USAGE_FLAGS;
 
-    err = create_exec_ctx(hwfc->device_ctx, &fp->cmd,
-                          dev_hwctx->queue_family_tx_index,
-                          GET_QUEUE_COUNT(dev_hwctx, 0, 0, 1));
+    err = create_exec_ctx(hwfc->device_ctx, &fp->conv_ctx,
+                          dev_hwctx->queue_family_comp_index,
+                          GET_QUEUE_COUNT(dev_hwctx, 0, 1, 0));
     if (err)
         return err;
 
@@ -1713,7 +1715,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     err = create_frame(hwfc, &f, hwctx->tiling, hwctx->usage,
                        hwctx->create_pnext);
     if (err) {
-        free_exec_ctx(hwfc->device_ctx, &p->cmd);
+        free_exec_ctx(hwfc->device_ctx, &fp->conv_ctx);
         return err;
     }
 
@@ -1726,7 +1728,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                                                              hwfc, vulkan_pool_alloc,
                                                              NULL);
         if (!hwfc->internal->pool_internal) {
-            free_exec_ctx(hwfc->device_ctx, &p->cmd);
+            free_exec_ctx(hwfc->device_ctx, &fp->conv_ctx);
             return AVERROR(ENOMEM);
         }
     }
@@ -1940,6 +1942,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
+    VulkanFramesPriv *fp = hwfc->internal->priv;
     const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(hwfc->sw_format);
     const int has_modifiers = p->extensions & EXT_DRM_MODIFIER_FLAGS;
     VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
@@ -2109,7 +2112,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     /* NOTE: This is completely uneccesary and unneeded once we can import
      * semaphores from DRM. Otherwise we have to activate the semaphores.
      * We're reusing the exec context that's also used for uploads/downloads. */
-    err = prepare_frame(hwfc, &p->cmd, f, PREP_MODE_RO_SHADER);
+    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_RO_SHADER);
     if (err)
         goto fail;
 
@@ -2469,6 +2472,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     VkResult ret;
     AVVkFrame *f = (AVVkFrame *)src->data[0];
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
+    VulkanFramesPriv *fp = hwfc->internal->priv;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VK_LOAD_PFN(hwctx->inst, vkGetMemoryFdKHR);
@@ -2480,7 +2484,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     if (!drm_desc)
         return AVERROR(ENOMEM);
 
-    err = prepare_frame(hwfc, &p->cmd, f, PREP_MODE_EXTERNAL_EXPORT);
+    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_EXTERNAL_EXPORT);
     if (err < 0)
         goto end;
 
