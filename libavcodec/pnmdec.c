@@ -132,7 +132,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                 init_put_bits(&pb, ptr, linesize);
                 for(j=0; j<avctx->width * components; j++){
                     unsigned int c=0;
-                    int v=0;
+                    unsigned v=0;
                     if(s->type < 4)
                     while(s->bytestream < s->bytestream_end && (*s->bytestream < '0' || *s->bytestream > '9' ))
                         s->bytestream++;
