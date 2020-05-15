@@ -182,7 +182,7 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
     /* Remove the file name from the base url */
     sep = strrchr(buf, '/');
-    if (sep <= root)
+    if (sep && sep <= root)
         sep = root;
 
     if (sep)
