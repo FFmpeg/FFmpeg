@@ -523,7 +523,6 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
     VkPhysicalDevice *devices = NULL;
     VkPhysicalDeviceIDProperties *idp = NULL;
     VkPhysicalDeviceProperties2 *prop = NULL;
-    VulkanDevicePriv *p = ctx->internal->priv;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
 
     ret = vkEnumeratePhysicalDevices(hwctx->inst, &num, NULL);
@@ -627,10 +626,9 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
     }
 
 end:
-    if (choice > -1) {
-        p->dev_is_nvidia = (prop[choice].properties.vendorID == 0x10de);
+    if (choice > -1)
         hwctx->phys_dev = devices[choice];
-    }
+
     av_free(devices);
     av_free(prop);
     av_free(idp);
@@ -999,16 +997,6 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     if ((err = find_device(ctx, dev_select)))
         goto end;
 
-    vkGetPhysicalDeviceProperties(hwctx->phys_dev, &p->props);
-    av_log(ctx, AV_LOG_VERBOSE, "Using device: %s\n", p->props.deviceName);
-    av_log(ctx, AV_LOG_VERBOSE, "Alignments:\n");
-    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyOffsetAlignment:   %li\n",
-           p->props.limits.optimalBufferCopyOffsetAlignment);
-    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %li\n",
-           p->props.limits.optimalBufferCopyRowPitchAlignment);
-    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %li\n",
-           p->props.limits.minMemoryMapAlignment);
-
     vkGetPhysicalDeviceFeatures(hwctx->phys_dev, &dev_features);
 #define COPY_FEATURE(DST, NAME) (DST).features.NAME = dev_features.NAME;
     COPY_FEATURE(hwctx->device_features, shaderImageGatherExtended)
@@ -1064,16 +1052,30 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
 
+    vkGetPhysicalDeviceProperties(hwctx->phys_dev, &p->props);
+    av_log(ctx, AV_LOG_VERBOSE, "Using device: %s\n", p->props.deviceName);
+    av_log(ctx, AV_LOG_VERBOSE, "Alignments:\n");
+    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyOffsetAlignment:   %li\n",
+           p->props.limits.optimalBufferCopyOffsetAlignment);
+    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %li\n",
+           p->props.limits.optimalBufferCopyRowPitchAlignment);
+    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %li\n",
+           p->props.limits.minMemoryMapAlignment);
+
     /* Set device extension flags */
     for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++) {
         for (int j = 0; j < FF_ARRAY_ELEMS(optional_device_exts); j++) {
             if (!strcmp(hwctx->enabled_dev_extensions[i],
                         optional_device_exts[j].name)) {
+                av_log(ctx, AV_LOG_VERBOSE, "Using device extension %s\n",
+                       hwctx->enabled_dev_extensions[i]);
                 p->extensions |= optional_device_exts[j].flag;
                 break;
             }
         }
     }
+
+    p->dev_is_nvidia = (p->props.vendorID == 0x10de);
 
     vkGetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &queue_num, NULL);
     if (!queue_num) {
