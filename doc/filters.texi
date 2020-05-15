@@ -22281,6 +22281,33 @@ need for a nullsrc video source.
 @end itemize
 
 
+@section gradients
+Generate several gradients.
+
+@table @option
+@item size, s
+Set frame size. For the syntax of this option, check the @ref{video size syntax,,"Video
+size" section in the ffmpeg-utils manual,ffmpeg-utils}. Default value is "640x480".
+
+@item rate, r
+Set frame rate, expressed as number of frames per second. Default
+value is "25".
+
+@item c0, c1, c2, c3, c4, c5, c6, c7
+Set 8 colors. Default values for colors is to pick random one.
+
+@item x0, y0, y0, y1
+Set gradient line source and destination points. If negative or out of range, random ones
+are picked.
+
+@item nb_colors, n
+Set number of colors to use at once. Allowed range is from 2 to 8. Default value is 2.
+
+@item seed
+Set seed for picking gradient line points.
+@end table
+
+
 @section mandelbrot
 
 Generate a Mandelbrot set fractal, and progressively zoom towards the

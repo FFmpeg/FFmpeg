@@ -449,6 +449,7 @@ extern AVFilter ff_vsrc_cellauto;
 extern AVFilter ff_vsrc_color;
 extern AVFilter ff_vsrc_coreimagesrc;
 extern AVFilter ff_vsrc_frei0r_src;
+extern AVFilter ff_vsrc_gradients;
 extern AVFilter ff_vsrc_haldclutsrc;
 extern AVFilter ff_vsrc_life;
 extern AVFilter ff_vsrc_mandelbrot;

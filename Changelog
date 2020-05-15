@@ -68,6 +68,7 @@ version <next>:
 - pcm_rechunk bitstream filter
 - scdet filter
 - NotchLC decoder
+- gradients source video filter
 
 
 version 4.2:
