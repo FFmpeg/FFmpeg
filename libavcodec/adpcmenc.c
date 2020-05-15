@@ -146,7 +146,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 
     return 0;
 error:
-    adpcm_encode_close(avctx);
     return ret;
 }
 
@@ -717,6 +716,7 @@ AVCodec ff_ ## name_ ## _encoder = {                        \
     .encode2        = adpcm_encode_frame,                   \
     .close          = adpcm_encode_close,                   \
     .sample_fmts    = sample_fmts_,                         \
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,            \
 }
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, "ADPCM IMA QuickTime");
