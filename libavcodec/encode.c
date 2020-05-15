@@ -277,14 +277,12 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         return AVERROR(ENOSYS);
     }
 
-    if(CONFIG_FRAME_THREAD_ENCODER &&
-       avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
-        return ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
-
     if ((avctx->flags&AV_CODEC_FLAG_PASS1) && avctx->stats_out)
         avctx->stats_out[0] = '\0';
 
-    if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
+    if (!frame &&
+        !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY ||
+          (avctx->internal->frame_thread_encoder && avctx->active_thread_type & FF_THREAD_FRAME))) {
         av_packet_unref(avpkt);
         return 0;
     }
@@ -299,7 +297,15 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     av_assert0(avctx->codec->encode2);
 
-    ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
+
+    if (CONFIG_FRAME_THREAD_ENCODER &&
+        avctx->internal->frame_thread_encoder && (avctx->active_thread_type & FF_THREAD_FRAME))
+        ret = ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
+    else {
+        ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
+        if (*got_packet_ptr && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
+            avpkt->pts = avpkt->dts = frame->pts;
+    }
     av_assert0(ret <= 0);
 
     emms_c();
@@ -326,8 +332,6 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if (!ret) {
         if (!*got_packet_ptr)
             avpkt->size = 0;
-        else if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
-            avpkt->pts = avpkt->dts = frame->pts;
 
         if (needs_realloc && avpkt->data) {
             ret = av_buffer_realloc(&avpkt->buf, avpkt->size + AV_INPUT_BUFFER_PADDING_SIZE);

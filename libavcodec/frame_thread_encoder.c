@@ -66,7 +66,7 @@ static void * attribute_align_arg worker(void *v){
     AVPacket *pkt = NULL;
 
     while (!atomic_load(&c->exit)) {
-        int got_packet, ret;
+        int got_packet = 0, ret;
         AVFrame *frame;
         Task task;
 
@@ -86,19 +86,20 @@ static void * attribute_align_arg worker(void *v){
         pthread_mutex_unlock(&c->task_fifo_mutex);
         frame = task.indata;
 
-        ret = avcodec_encode_video2(avctx, pkt, frame, &got_packet);
-        pthread_mutex_lock(&c->buffer_mutex);
-        av_frame_unref(frame);
-        pthread_mutex_unlock(&c->buffer_mutex);
-        av_frame_free(&frame);
+        ret = avctx->codec->encode2(avctx, pkt, frame, &got_packet);
         if(got_packet) {
             int ret2 = av_packet_make_refcounted(pkt);
             if (ret >= 0 && ret2 < 0)
                 ret = ret2;
+            pkt->pts = pkt->dts = frame->pts;
         } else {
             pkt->data = NULL;
             pkt->size = 0;
         }
+        pthread_mutex_lock(&c->buffer_mutex);
+        av_frame_unref(frame);
+        pthread_mutex_unlock(&c->buffer_mutex);
+        av_frame_free(&frame);
         pthread_mutex_lock(&c->finished_task_mutex);
         c->finished_tasks[task.index].outdata = pkt; pkt = NULL;
         c->finished_tasks[task.index].return_code = ret;
