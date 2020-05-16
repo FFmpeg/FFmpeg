@@ -1108,7 +1108,7 @@ following image formats are supported:
 @item ADPCM IMA Funcom       @tab     @tab  X
 @item ADPCM IMA High Voltage Software ALP   @tab     @tab  X
 @item ADPCM IMA QuickTime    @tab  X  @tab  X
-@item ADPCM IMA Simon & Schuster Interactive   @tab  @tab  X
+@item ADPCM IMA Simon & Schuster Interactive   @tab  X  @tab  X
 @item ADPCM IMA Ubisoft APM  @tab     @tab X
 @item ADPCM IMA Loki SDL MJPEG  @tab     @tab  X
 @item ADPCM IMA WAV          @tab  X  @tab  X

@@ -77,6 +77,15 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->trellis && avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_SSI) {
+        /*
+         * The current trellis implementation doesn't work for extended
+         * runs of samples without periodic resets. Disallow it.
+         */
+        av_log(avctx, AV_LOG_ERROR, "trellis not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (avctx->trellis) {
         int frontier  = 1 << avctx->trellis;
         int max_paths =  frontier * FREEZE_INTERVAL;
@@ -138,6 +147,10 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
             goto error;
         }
         avctx->frame_size = 512 * (avctx->sample_rate / 11025);
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_SSI:
+        avctx->frame_size = BLKSIZE * 2 / avctx->channels;
+        avctx->block_align = BLKSIZE;
         break;
     default:
         ret = AVERROR(EINVAL);
@@ -483,6 +496,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     if (avctx->codec_id == AV_CODEC_ID_ADPCM_SWF)
         pkt_size = (2 + avctx->channels * (22 + 4 * (frame->nb_samples - 1)) + 7) / 8;
+    else if (avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_SSI)
+        pkt_size = (frame->nb_samples * avctx->channels) / 2;
     else
         pkt_size = avctx->block_align;
     if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
@@ -561,6 +576,22 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     put_bits(&pb, 4, t2);
                     put_bits(&pb, 4, t1);
                 }
+            }
+        }
+
+        flush_put_bits(&pb);
+        break;
+    }
+    case AV_CODEC_ID_ADPCM_IMA_SSI:
+    {
+        PutBitContext pb;
+        init_put_bits(&pb, dst, pkt_size);
+
+        av_assert0(avctx->trellis == 0);
+
+        for (i = 0; i < frame->nb_samples; i++) {
+            for (ch = 0; ch < avctx->channels; ch++) {
+                put_bits(&pb, 4, adpcm_ima_qt_compress_sample(c->status + ch, *samples++));
             }
         }
 
@@ -721,6 +752,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                       \
 }
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0, "ADPCM IMA QuickTime");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0, "ADPCM IMA WAV");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_MS,      adpcm_ms,      sample_fmts,   0, "ADPCM Microsoft");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_SWF,     adpcm_swf,     sample_fmts,   0, "ADPCM Shockwave Flash");

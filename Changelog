@@ -71,6 +71,7 @@ version <next>:
 - gradients source video filter
 - MediaFoundation encoder wrapper
 - untile filter
+- Simon & Schuster Interactive ADPCM encoder
 
 
 version 4.2:
