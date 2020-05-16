@@ -751,9 +751,9 @@ AVCodec ff_ ## name_ ## _encoder = {                                       \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,                           \
 }
 
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0, "ADPCM IMA QuickTime");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0, "ADPCM IMA WAV");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_MS,      adpcm_ms,      sample_fmts,   0, "ADPCM Microsoft");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_SWF,     adpcm_swf,     sample_fmts,   0, "ADPCM Shockwave Flash");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0, "ADPCM Yamaha");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_SWF,     adpcm_swf,     sample_fmts,   0,                             "ADPCM Shockwave Flash");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha");
