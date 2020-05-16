@@ -179,6 +179,7 @@ static int segment_mux_init(AVFormatContext *s)
         st->sample_aspect_ratio = ist->sample_aspect_ratio;
         st->time_base           = ist->time_base;
         st->avg_frame_rate      = ist->avg_frame_rate;
+        st->disposition         = ist->disposition;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
         if (ipar->codec_tag == MKTAG('t','m','c','d'))
