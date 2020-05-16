@@ -59,8 +59,8 @@ typedef struct SierpinskiContext {
 static const AVOption sierpinski_options[] = {
     {"size", "set frame size", OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"}, 0,          0, FLAGS },
     {"s",    "set frame size", OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"}, 0,          0, FLAGS },
-    {"rate", "set frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},      0,          0, FLAGS },
-    {"r",    "set frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},      0,          0, FLAGS },
+    {"rate", "set frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},      0,    INT_MAX, FLAGS },
+    {"r",    "set frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},      0,    INT_MAX, FLAGS },
     {"seed", "set the seed",   OFFSET(seed),       AV_OPT_TYPE_INT64,      {.i64=-1},       -1, UINT32_MAX, FLAGS },
     {"jump", "set the jump",   OFFSET(jump),       AV_OPT_TYPE_INT,        {.i64=100},       1,      10000, FLAGS },
     {"type","set fractal type",OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},         0,          1, FLAGS, "type" },
