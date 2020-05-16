@@ -1055,6 +1055,50 @@ FF_ENABLE_DEPRECATION_WARNINGS
     goto end;
 }
 
+void avcodec_flush_buffers(AVCodecContext *avctx)
+{
+    AVCodecInternal *avci = avctx->internal;
+
+    if (av_codec_is_encoder(avctx->codec)) {
+        int caps = avctx->codec->capabilities;
+
+        if (!(caps & AV_CODEC_CAP_ENCODER_FLUSH)) {
+            // Only encoders that explicitly declare support for it can be
+            // flushed. Otherwise, this is a no-op.
+            av_log(avctx, AV_LOG_WARNING, "Ignoring attempt to flush encoder "
+                   "that doesn't support it\n");
+            return;
+        }
+
+        // We haven't implemented flushing for frame-threaded encoders.
+        av_assert0(!(caps & AV_CODEC_CAP_FRAME_THREADS));
+    }
+
+    avci->draining      = 0;
+    avci->draining_done = 0;
+    avci->nb_draining_errors = 0;
+    av_frame_unref(avci->buffer_frame);
+    av_frame_unref(avci->compat_decode_frame);
+    av_packet_unref(avci->buffer_pkt);
+    avci->buffer_pkt_valid = 0;
+
+    av_packet_unref(avci->ds.in_pkt);
+
+    if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
+        ff_thread_flush(avctx);
+    else if (avctx->codec->flush)
+        avctx->codec->flush(avctx);
+
+    avctx->pts_correction_last_pts =
+    avctx->pts_correction_last_dts = INT64_MIN;
+
+    if (av_codec_is_decoder(avctx->codec))
+        av_bsf_flush(avci->bsf);
+
+    if (!avctx->refcounted_frames)
+        av_frame_unref(avci->to_free);
+}
+
 void avsubtitle_free(AVSubtitle *sub)
 {
     int i;
