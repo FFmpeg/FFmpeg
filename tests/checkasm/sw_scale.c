@@ -63,9 +63,9 @@ static void check_hscale(void)
 
     // The dst parameter here is either int16_t or int32_t but we use void* to
     // just cover both cases.
-    declare_func(void, void *c, void *dst, int dstW,
-                 const uint8_t *src, const int16_t *filter,
-                 const int32_t *filterPos, int filterSize);
+    declare_func_emms(AV_CPU_FLAG_MMX, void, void *c, void *dst, int dstW,
+                      const uint8_t *src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
 
     ctx = sws_alloc_context();
     if (sws_init_context(ctx, NULL, NULL) < 0)
