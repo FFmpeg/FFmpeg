@@ -705,22 +705,23 @@ static const enum AVSampleFormat sample_fmts_p[] = {
     AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_NONE
 };
 
-#define ADPCM_ENCODER(id_, name_, sample_fmts_, long_name_) \
-AVCodec ff_ ## name_ ## _encoder = {                        \
-    .name           = #name_,                               \
-    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
-    .type           = AVMEDIA_TYPE_AUDIO,                   \
-    .id             = id_,                                  \
-    .priv_data_size = sizeof(ADPCMEncodeContext),           \
-    .init           = adpcm_encode_init,                    \
-    .encode2        = adpcm_encode_frame,                   \
-    .close          = adpcm_encode_close,                   \
-    .sample_fmts    = sample_fmts_,                         \
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,            \
+#define ADPCM_ENCODER(id_, name_, sample_fmts_, capabilities_, long_name_) \
+AVCodec ff_ ## name_ ## _encoder = {                                       \
+    .name           = #name_,                                              \
+    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),                    \
+    .type           = AVMEDIA_TYPE_AUDIO,                                  \
+    .id             = id_,                                                 \
+    .priv_data_size = sizeof(ADPCMEncodeContext),                          \
+    .init           = adpcm_encode_init,                                   \
+    .encode2        = adpcm_encode_frame,                                  \
+    .close          = adpcm_encode_close,                                  \
+    .sample_fmts    = sample_fmts_,                                        \
+    .capabilities   = capabilities_,                                       \
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,                           \
 }
 
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, "ADPCM IMA QuickTime");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, "ADPCM IMA WAV");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_MS,      adpcm_ms,      sample_fmts,   "ADPCM Microsoft");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_SWF,     adpcm_swf,     sample_fmts,   "ADPCM Shockwave Flash");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   "ADPCM Yamaha");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0, "ADPCM IMA QuickTime");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0, "ADPCM IMA WAV");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_MS,      adpcm_ms,      sample_fmts,   0, "ADPCM Microsoft");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_SWF,     adpcm_swf,     sample_fmts,   0, "ADPCM Shockwave Flash");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0, "ADPCM Yamaha");
