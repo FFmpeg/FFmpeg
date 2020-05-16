@@ -56,7 +56,7 @@ static uint8_t do_chromakey_pixel(ChromakeyContext *ctx, uint8_t u[9], uint8_t v
         du = (int)u[i] - ctx->chromakey_uv[0];
         dv = (int)v[i] - ctx->chromakey_uv[1];
 
-        diff += sqrt((du * du + dv * dv) / (255.0 * 255.0));
+        diff += sqrt((du * du + dv * dv) / (255.0 * 255.0 * 2));
     }
 
     diff /= 9.0;
@@ -78,7 +78,7 @@ static uint16_t do_chromakey_pixel16(ChromakeyContext *ctx, uint16_t u[9], uint1
         du = (int)u[i] - ctx->chromakey_uv[0];
         dv = (int)v[i] - ctx->chromakey_uv[1];
 
-        diff += sqrt((du * du + dv * dv) / (max * max));
+        diff += sqrt((du * du + dv * dv) / (max * max * 2));
     }
 
     diff /= 9.0;
