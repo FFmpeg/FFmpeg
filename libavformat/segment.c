@@ -162,12 +162,11 @@ static int segment_mux_init(AVFormatContext *s)
     oc->flags              = s->flags;
 
     for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st;
-        AVCodecParameters *ipar, *opar;
+        AVStream *st, *ist = s->streams[i];
+        AVCodecParameters *ipar = ist->codecpar, *opar;
 
         if (!(st = avformat_new_stream(oc, NULL)))
             return AVERROR(ENOMEM);
-        ipar = s->streams[i]->codecpar;
         opar = st->codecpar;
         avcodec_parameters_copy(opar, ipar);
         if (!oc->oformat->codec_tag ||
@@ -177,16 +176,16 @@ static int segment_mux_init(AVFormatContext *s)
         } else {
             opar->codec_tag = 0;
         }
-        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
-        st->time_base = s->streams[i]->time_base;
-        st->avg_frame_rate = s->streams[i]->avg_frame_rate;
+        st->sample_aspect_ratio = ist->sample_aspect_ratio;
+        st->time_base           = ist->time_base;
+        st->avg_frame_rate      = ist->avg_frame_rate;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
-        if (s->streams[i]->codecpar->codec_tag == MKTAG('t','m','c','d'))
-            st->codec->time_base = s->streams[i]->codec->time_base;
+        if (ipar->codec_tag == MKTAG('t','m','c','d'))
+            st->codec->time_base = ist->codec->time_base;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
+        av_dict_copy(&st->metadata, ist->metadata, 0);
     }
 
     return 0;
