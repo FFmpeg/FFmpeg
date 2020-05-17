@@ -1772,7 +1772,7 @@ static void matroska_convert_tags(AVFormatContext *s)
                 }
             }
             if (!found) {
-                av_log(NULL, AV_LOG_WARNING,
+                av_log(s, AV_LOG_WARNING,
                        "The tags at index %d refer to a "
                        "non-existent attachment %"PRId64".\n",
                        i, tags[i].target.attachuid);
@@ -1789,7 +1789,7 @@ static void matroska_convert_tags(AVFormatContext *s)
                 }
             }
             if (!found) {
-                av_log(NULL, AV_LOG_WARNING,
+                av_log(s, AV_LOG_WARNING,
                        "The tags at index %d refer to a non-existent chapter "
                        "%"PRId64".\n",
                        i, tags[i].target.chapteruid);
@@ -1806,7 +1806,7 @@ static void matroska_convert_tags(AVFormatContext *s)
                }
             }
             if (!found) {
-                av_log(NULL, AV_LOG_WARNING,
+                av_log(s, AV_LOG_WARNING,
                        "The tags at index %d refer to a non-existent track "
                        "%"PRId64".\n",
                        i, tags[i].target.trackuid);
@@ -2158,7 +2158,9 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
     return 0;
 }
 
-static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) {
+static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track,
+                                      void *logctx)
+{
     AVSphericalMapping *spherical;
     enum AVSphericalProjection projection;
     size_t spherical_size;
@@ -2171,7 +2173,7 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
                      track->video.projection.private.size);
 
     if (bytestream2_get_byte(&gb) != 0) {
-        av_log(NULL, AV_LOG_WARNING, "Unknown spherical metadata\n");
+        av_log(logctx, AV_LOG_WARNING, "Unknown spherical metadata\n");
         return 0;
     }
 
@@ -2186,14 +2188,14 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
             r = bytestream2_get_be32(&gb);
 
             if (b >= UINT_MAX - t || r >= UINT_MAX - l) {
-                av_log(NULL, AV_LOG_ERROR,
+                av_log(logctx, AV_LOG_ERROR,
                        "Invalid bounding rectangle coordinates "
                        "%"PRIu32",%"PRIu32",%"PRIu32",%"PRIu32"\n",
                        l, t, r, b);
                 return AVERROR_INVALIDDATA;
             }
         } else if (track->video.projection.private.size != 0) {
-            av_log(NULL, AV_LOG_ERROR, "Unknown spherical metadata\n");
+            av_log(logctx, AV_LOG_ERROR, "Unknown spherical metadata\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -2204,19 +2206,19 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
         break;
     case MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP:
         if (track->video.projection.private.size < 4) {
-            av_log(NULL, AV_LOG_ERROR, "Missing projection private properties\n");
+            av_log(logctx, AV_LOG_ERROR, "Missing projection private properties\n");
             return AVERROR_INVALIDDATA;
         } else if (track->video.projection.private.size == 12) {
             uint32_t layout = bytestream2_get_be32(&gb);
             if (layout) {
-                av_log(NULL, AV_LOG_WARNING,
+                av_log(logctx, AV_LOG_WARNING,
                        "Unknown spherical cubemap layout %"PRIu32"\n", layout);
                 return 0;
             }
             projection = AV_SPHERICAL_CUBEMAP;
             padding = bytestream2_get_be32(&gb);
         } else {
-            av_log(NULL, AV_LOG_ERROR, "Unknown spherical metadata\n");
+            av_log(logctx, AV_LOG_ERROR, "Unknown spherical metadata\n");
             return AVERROR_INVALIDDATA;
         }
         break;
@@ -2224,7 +2226,7 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
         /* No Spherical metadata */
         return 0;
     default:
-        av_log(NULL, AV_LOG_WARNING,
+        av_log(logctx, AV_LOG_WARNING,
                "Unknown spherical metadata type %"PRIu64"\n",
                track->video.projection.type);
         return 0;
@@ -2780,7 +2782,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             ret = mkv_parse_video_color(st, track);
             if (ret < 0)
                 return ret;
-            ret = mkv_parse_video_projection(st, track);
+            ret = mkv_parse_video_projection(st, track, matroska->ctx);
             if (ret < 0)
                 return ret;
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
