@@ -44,6 +44,7 @@ typedef struct WebMChunkContext {
     uint64_t duration_written;
     int64_t prev_pts;
     AVFormatContext *avf;
+    int header_written;
 } WebMChunkContext;
 
 static int webm_chunk_init(AVFormatContext *s)
@@ -101,6 +102,15 @@ static int webm_chunk_init(AVFormatContext *s)
     avpriv_set_pts_info(st, ost->pts_wrap_bits, ost->time_base.num,
                                                 ost->time_base.den);
 
+    if (wc->http_method)
+        if ((ret = av_dict_set(&dict, "method", wc->http_method, 0)) < 0)
+            return ret;
+    ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &dict);
+    av_dict_free(&dict);
+    if (ret < 0)
+        return ret;
+    oc->pb->seekable = 0;
+
     if ((ret = av_dict_set_int(&dict, "dash", 1, 0))   < 0 ||
         (ret = av_dict_set_int(&dict, "cluster_time_limit",
                                wc->chunk_duration, 0)) < 0 ||
@@ -147,19 +157,10 @@ static int webm_chunk_write_header(AVFormatContext *s)
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
     int ret;
-    AVDictionary *options = NULL;
 
-    if (wc->http_method)
-        if ((ret = av_dict_set(&options, "method", wc->http_method, 0)) < 0)
-            return ret;
-    ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &options);
-    av_dict_free(&options);
-    if (ret < 0)
-        return ret;
-
-    oc->pb->seekable = 0;
     ret = avformat_write_header(oc, NULL);
     ff_format_io_close(s, &oc->pb);
+    wc->header_written = 1;
     if (ret < 0)
         return ret;
     return 0;
@@ -270,7 +271,10 @@ static void webm_chunk_deinit(AVFormatContext *s)
     if (!wc->avf)
         return;
 
-    ffio_free_dyn_buf(&wc->avf->pb);
+    if (wc->header_written)
+        ffio_free_dyn_buf(&wc->avf->pb);
+    else
+        ff_format_io_close(s, &wc->avf->pb);
     avformat_free_context(wc->avf);
     wc->avf = NULL;
 }
