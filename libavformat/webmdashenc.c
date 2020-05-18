@@ -438,9 +438,10 @@ static int parse_adaptation_sets(AVFormatContext *s)
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     state = new_set;
     while (p < w->adaptation_sets + strlen(w->adaptation_sets)) {
-        if (*p == ' ')
+        if (state == new_set && *p == ' ') {
+            p++;
             continue;
-        else if (state == new_set && !strncmp(p, "id=", 3)) {
+        } else if (state == new_set && !strncmp(p, "id=", 3)) {
             void *mem = av_realloc(w->as, sizeof(*w->as) * (w->nb_as + 1));
             const char *comma;
             if (mem == NULL)
