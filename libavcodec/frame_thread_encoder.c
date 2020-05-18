@@ -120,7 +120,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
 
     if(   !(avctx->thread_type & FF_THREAD_FRAME)
-       || !(avctx->codec->capabilities & AV_CODEC_CAP_INTRA_ONLY))
+       || !(avctx->codec->capabilities & AV_CODEC_CAP_FRAME_THREADS))
         return 0;
 
     if(   !avctx->thread_count
