@@ -274,7 +274,6 @@ static int parse_filename(char *filename, char **representation_id,
                           char **initialization_pattern, char **media_pattern) {
     char *underscore_pos = NULL;
     char *period_pos = NULL;
-    char *temp_pos = NULL;
     char *filename_str = av_strdup(filename);
     int ret = 0;
 
@@ -282,16 +281,12 @@ static int parse_filename(char *filename, char **representation_id,
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    temp_pos = av_stristr(filename_str, "_");
-    while (temp_pos) {
-        underscore_pos = temp_pos + 1;
-        temp_pos = av_stristr(temp_pos + 1, "_");
-    }
+    underscore_pos = strrchr(filename_str, '_');
     if (!underscore_pos) {
         ret = AVERROR_INVALIDDATA;
         goto end;
     }
-    period_pos = av_stristr(underscore_pos, ".");
+    period_pos = strchr(++underscore_pos, '.');
     if (!period_pos) {
         ret = AVERROR_INVALIDDATA;
         goto end;
