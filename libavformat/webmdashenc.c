@@ -425,18 +425,6 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     return 0;
 }
 
-static int to_integer(char *p, int len)
-{
-    int ret;
-    char *q = av_malloc(len);
-    if (!q)
-        return AVERROR(ENOMEM);
-    av_strlcpy(q, p, len);
-    ret = atoi(q);
-    av_free(q);
-    return ret;
-}
-
 static int parse_adaptation_sets(AVFormatContext *s)
 {
     WebMDashMuxContext *w = s->priv_data;
@@ -483,7 +471,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
                 return ret;
             q = p;
             while (*q != '\0' && *q != ',' && *q != ' ') q++;
-            as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
+            as->streams[as->nb_streams - 1] = strtoll(p, NULL, 10);
             if (as->streams[as->nb_streams - 1] < 0 ||
                 as->streams[as->nb_streams - 1] >= s->nb_streams) {
                 av_log(s, AV_LOG_ERROR, "Invalid value for 'streams' in adapation_sets.\n");
