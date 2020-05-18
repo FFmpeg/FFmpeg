@@ -465,18 +465,18 @@ static int parse_adaptation_sets(AVFormatContext *s)
             state = parsing_streams;
         } else if (state == parsing_streams) {
             struct AdaptationSet *as = &w->as[w->nb_as - 1];
+            int64_t num;
             int ret = av_reallocp_array(&as->streams, ++as->nb_streams,
                                         sizeof(*as->streams));
             if (ret < 0)
                 return ret;
-            q = p;
-            while (*q != '\0' && *q != ',' && *q != ' ') q++;
-            as->streams[as->nb_streams - 1] = strtoll(p, NULL, 10);
-            if (as->streams[as->nb_streams - 1] < 0 ||
-                as->streams[as->nb_streams - 1] >= s->nb_streams) {
+            num = strtoll(p, &q, 10);
+            if (!av_isdigit(*p) || (*q != ' ' && *q != '\0' && *q != ',') ||
+                num < 0 || num >= s->nb_streams) {
                 av_log(s, AV_LOG_ERROR, "Invalid value for 'streams' in adapation_sets.\n");
                 return AVERROR(EINVAL);
             }
+            as->streams[as->nb_streams - 1] = num;
             if (*q == '\0') break;
             if (*q == ' ') state = new_set;
             p = ++q;
