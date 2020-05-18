@@ -437,8 +437,13 @@ static int parse_adaptation_sets(AVFormatContext *s)
     }
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     state = new_set;
-    while (p < w->adaptation_sets + strlen(w->adaptation_sets)) {
-        if (state == new_set && *p == ' ') {
+    while (1) {
+        if (*p == '\0') {
+            if (state == new_set)
+                break;
+            else
+                return AVERROR(EINVAL);
+        } else if (state == new_set && *p == ' ') {
             p++;
             continue;
         } else if (state == new_set && !strncmp(p, "id=", 3)) {
