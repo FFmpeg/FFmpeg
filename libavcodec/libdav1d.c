@@ -267,6 +267,12 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             goto fail;
     }
 
+    av_reduce(&frame->sample_aspect_ratio.num,
+              &frame->sample_aspect_ratio.den,
+              frame->height * (int64_t)p->frame_hdr->render_width,
+              frame->width  * (int64_t)p->frame_hdr->render_height,
+              INT_MAX);
+
     switch (p->seq_hdr->chr) {
     case DAV1D_CHR_VERTICAL:
         frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_LEFT;
