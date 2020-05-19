@@ -49,7 +49,7 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
     AVIOContext *pb = s->pb;
     AVPacketList *pict_list = aiff->pict_list;
 
-    if (!s->metadata && !aiff->pict_list)
+    if (!s->metadata && !s->nb_chapters && !aiff->pict_list)
         return 0;
 
     avio_wl32(pb, MKTAG('I', 'D', '3', ' '));
