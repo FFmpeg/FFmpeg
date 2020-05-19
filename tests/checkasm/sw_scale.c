@@ -53,7 +53,7 @@ static void check_hscale(void)
     struct SwsContext *ctx;
 
     // padded
-    LOCAL_ALIGNED_32(uint8_t, src, [SRC_PIXELS + MAX_FILTER_WIDTH - 1]);
+    LOCAL_ALIGNED_32(uint8_t, src, [FFALIGN(SRC_PIXELS + MAX_FILTER_WIDTH - 1, 4)]);
     LOCAL_ALIGNED_32(uint32_t, dst0, [SRC_PIXELS]);
     LOCAL_ALIGNED_32(uint32_t, dst1, [SRC_PIXELS]);
 
