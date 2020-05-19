@@ -129,8 +129,8 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
     ThreadData *td = arg;                                               \
     AVFrame *in = td->in, *out = td->out;                               \
     const type *src = (const type *)in->extended_data[ch];              \
-    double *ic = (double *)s->iir[ch].cache[0];                         \
-    double *oc = (double *)s->iir[ch].cache[1];                         \
+    double *oc = (double *)s->iir[ch].cache[0];                         \
+    double *ic = (double *)s->iir[ch].cache[1];                         \
     const int nb_a = s->iir[ch].nb_ab[0];                               \
     const int nb_b = s->iir[ch].nb_ab[1];                               \
     const double *a = s->iir[ch].ab[0];                                 \
