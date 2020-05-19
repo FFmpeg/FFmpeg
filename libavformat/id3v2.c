@@ -1127,11 +1127,11 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
     *extra_meta = NULL;
 }
 
-int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
+int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
 {
     ID3v2ExtraMeta *cur;
 
-    for (cur = *extra_meta; cur; cur = cur->next) {
+    for (cur = extra_meta; cur; cur = cur->next) {
         ID3v2ExtraMetaAPIC *apic;
         AVStream *st;
 
@@ -1167,7 +1167,7 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
     return 0;
 }
 
-int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
+int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
 {
     int ret = 0;
     ID3v2ExtraMeta *cur;
@@ -1178,7 +1178,7 @@ int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
 
     // since extra_meta is a linked list where elements are prepended,
     // we need to reverse the order of chapters
-    for (cur = *extra_meta; cur; cur = cur->next) {
+    for (cur = extra_meta; cur; cur = cur->next) {
         ID3v2ExtraMetaCHAP *chap;
 
         if (strcmp(cur->tag, "CHAP"))
@@ -1218,12 +1218,12 @@ end:
     return ret;
 }
 
-int ff_id3v2_parse_priv_dict(AVDictionary **metadata, ID3v2ExtraMeta **extra_meta)
+int ff_id3v2_parse_priv_dict(AVDictionary **metadata, ID3v2ExtraMeta *extra_meta)
 {
     ID3v2ExtraMeta *cur;
     int dict_flags = AV_DICT_DONT_OVERWRITE | AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL;
 
-    for (cur = *extra_meta; cur; cur = cur->next) {
+    for (cur = extra_meta; cur; cur = cur->next) {
         if (!strcmp(cur->tag, "PRIV")) {
             ID3v2ExtraMetaPRIV *priv = &cur->data.priv;
             AVBPrint bprint;
@@ -1258,7 +1258,7 @@ int ff_id3v2_parse_priv_dict(AVDictionary **metadata, ID3v2ExtraMeta **extra_met
     return 0;
 }
 
-int ff_id3v2_parse_priv(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
+int ff_id3v2_parse_priv(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
 {
     return ff_id3v2_parse_priv_dict(&s->metadata, extra_meta);
 }

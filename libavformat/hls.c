@@ -1070,12 +1070,12 @@ static void handle_id3(AVIOContext *pb, struct playlist *pls)
 
         /* get picture attachment and set text metadata */
         if (pls->ctx->nb_streams)
-            ff_id3v2_parse_apic(pls->ctx, &extra_meta);
+            ff_id3v2_parse_apic(pls->ctx, extra_meta);
         else
             /* demuxer not yet opened, defer picture attachment */
             pls->id3_deferred_extra = extra_meta;
 
-        ff_id3v2_parse_priv_dict(&metadata, &extra_meta);
+        ff_id3v2_parse_priv_dict(&metadata, extra_meta);
         av_dict_copy(&pls->ctx->metadata, metadata, 0);
         pls->id3_initial = metadata;
 
@@ -1965,9 +1965,9 @@ static int hls_read_header(AVFormatContext *s)
             goto fail;
 
         if (pls->id3_deferred_extra && pls->ctx->nb_streams == 1) {
-            ff_id3v2_parse_apic(pls->ctx, &pls->id3_deferred_extra);
+            ff_id3v2_parse_apic(pls->ctx, pls->id3_deferred_extra);
             avformat_queue_attached_pictures(pls->ctx);
-            ff_id3v2_parse_priv(pls->ctx, &pls->id3_deferred_extra);
+            ff_id3v2_parse_priv(pls->ctx, pls->id3_deferred_extra);
             ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         }
 

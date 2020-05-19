@@ -167,25 +167,25 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta);
  * Create a stream for each APIC (attached picture) extracted from the
  * ID3v2 header.
  */
-int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
+int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta *extra_meta);
 
 /**
  * Create chapters for all CHAP tags found in the ID3v2 header.
  */
-int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
+int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta *extra_meta);
 
 /**
  * Parse PRIV tags into a dictionary. The PRIV owner is the metadata key. The
  * PRIV data is the value, with non-printable characters escaped.
  */
-int ff_id3v2_parse_priv_dict(AVDictionary **d, ID3v2ExtraMeta **extra_meta);
+int ff_id3v2_parse_priv_dict(AVDictionary **d, ID3v2ExtraMeta *extra_meta);
 
 /**
  * Add metadata for all PRIV tags in the ID3v2 header. The PRIV owner is the
  * metadata key. The PRIV data is the value, with non-printable characters
  * escaped.
  */
-int ff_id3v2_parse_priv(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
+int ff_id3v2_parse_priv(AVFormatContext *s, ID3v2ExtraMeta *extra_meta);
 
 extern const AVMetadataConv ff_id3v2_34_metadata_conv[];
 extern const AVMetadataConv ff_id3v2_4_metadata_conv[];

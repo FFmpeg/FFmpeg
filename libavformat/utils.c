@@ -638,11 +638,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (id3v2_extra_meta) {
         if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac") ||
             !strcmp(s->iformat->name, "tta") || !strcmp(s->iformat->name, "wav")) {
-            if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
+            if ((ret = ff_id3v2_parse_apic(s, id3v2_extra_meta)) < 0)
                 goto close;
-            if ((ret = ff_id3v2_parse_chapters(s, &id3v2_extra_meta)) < 0)
+            if ((ret = ff_id3v2_parse_chapters(s, id3v2_extra_meta)) < 0)
                 goto close;
-            if ((ret = ff_id3v2_parse_priv(s, &id3v2_extra_meta)) < 0)
+            if ((ret = ff_id3v2_parse_priv(s, id3v2_extra_meta)) < 0)
                 goto close;
         } else
             av_log(s, AV_LOG_DEBUG, "demuxer does not support additional id3 data, skipping\n");
