@@ -504,6 +504,16 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ret = libx265_encode_set_roi(ctx, pic, &x265pic);
         if (ret < 0)
             return ret;
+
+        if (pic->reordered_opaque) {
+            x265pic.userData = av_malloc(sizeof(pic->reordered_opaque));
+            if (!x265pic.userData) {
+                av_freep(&x265pic.quantOffsets);
+                return AVERROR(ENOMEM);
+            }
+
+            memcpy(x265pic.userData, &pic->reordered_opaque, sizeof(pic->reordered_opaque));
+        }
     }
 
     ret = ctx->api->encoder_encode(ctx->encoder, &nal, &nnal,
@@ -569,6 +579,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         pkt->flags |= AV_PKT_FLAG_DISPOSABLE;
 
     ff_side_data_set_encoder_stats(pkt, x265pic_out.frameData.qp * FF_QP2LAMBDA, NULL, 0, pict_type);
+
+    if (x265pic_out.userData) {
+        memcpy(&avctx->reordered_opaque, x265pic_out.userData, sizeof(avctx->reordered_opaque));
+        av_freep(&x265pic_out.userData);
+    } else
+        avctx->reordered_opaque = 0;
 
     *got_packet = 1;
     return 0;
@@ -683,6 +699,7 @@ AVCodec ff_libx265_encoder = {
     .priv_data_size   = sizeof(libx265Context),
     .priv_class       = &class,
     .defaults         = x265_defaults,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .wrapper_name     = "libx265",
 };
