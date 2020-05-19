@@ -54,12 +54,6 @@ typedef struct ID3v2EncContext {
     int          len;       ///< size of the tag written so far
 } ID3v2EncContext;
 
-typedef struct ID3v2ExtraMeta {
-    const char *tag;
-    void *data;
-    struct ID3v2ExtraMeta *next;
-} ID3v2ExtraMeta;
-
 typedef struct ID3v2ExtraMetaGEOB {
     uint32_t datasize;
     uint8_t *mime_type;
@@ -86,6 +80,17 @@ typedef struct ID3v2ExtraMetaCHAP {
     uint32_t start, end;
     AVDictionary *meta;
 } ID3v2ExtraMetaCHAP;
+
+typedef struct ID3v2ExtraMeta {
+    const char *tag;
+    struct ID3v2ExtraMeta *next;
+    union {
+        ID3v2ExtraMetaAPIC apic;
+        ID3v2ExtraMetaCHAP chap;
+        ID3v2ExtraMetaGEOB geob;
+        ID3v2ExtraMetaPRIV priv;
+    } data;
+} ID3v2ExtraMeta;
 
 /**
  * Detect ID3v2 Header.

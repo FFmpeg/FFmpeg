@@ -217,14 +217,13 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
     av_log(s, AV_LOG_INFO, "File is encrypted\n");
 
     /* find GEOB metadata */
-    while (em) {
-        if (!strcmp(em->tag, "GEOB") &&
-            (geob = em->data) &&
-            (!strcmp(geob->description, "OMG_LSI") ||
-             !strcmp(geob->description, "OMG_BKLSI"))) {
+    for (; em; em = em->next) {
+        if (strcmp(em->tag, "GEOB"))
+            continue;
+        geob = &em->data.geob;
+        if (!strcmp(geob->description, "OMG_LSI") ||
+            !strcmp(geob->description, "OMG_BKLSI"))
             break;
-        }
-        em = em->next;
     }
     if (!em) {
         av_log(s, AV_LOG_ERROR, "No encryption header found\n");
