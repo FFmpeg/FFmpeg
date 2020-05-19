@@ -24,9 +24,12 @@
  * 3D Lookup table filter
  */
 
+#include "float.h"
+
 #include "libavutil/opt.h"
 #include "libavutil/file.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
@@ -73,6 +76,7 @@ typedef struct LUT3DContext {
     int clut_step;
     int clut_bits;
     int clut_planar;
+    int clut_float;
     int clut_width;
     FFFrameSync fs;
 #endif
@@ -90,6 +94,30 @@ typedef struct ThreadData {
         { "trilinear",   "interpolate values using the 8 points defining a cube", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TRILINEAR},   INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
         { "tetrahedral", "interpolate values using a tetrahedron",                0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TETRAHEDRAL}, INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
     { NULL }
+
+#define EXPONENT_MASK 0x7F800000
+#define MANTISSA_MASK 0x007FFFFF
+#define SIGN_MASK     0x7FFFFFFF
+
+static inline float sanitizef(float f)
+{
+    union av_intfloat32 t;
+    t.f = f;
+
+    if ((t.i & EXPONENT_MASK) == EXPONENT_MASK) {
+        if ((t.i & MANTISSA_MASK) != 0) {
+            // NAN
+            return 0.0f;
+        } else if (t.i & SIGN_MASK) {
+            // -INF
+            return FLT_MIN;
+        } else {
+            // +INF
+            return FLT_MAX;
+        }
+    }
+    return f;
+}
 
 static inline float lerpf(float v0, float v1, float f)
 {
@@ -284,6 +312,66 @@ DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 14)
 DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 16)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 16)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 16)
+
+#define DEFINE_INTERP_FUNC_PLANAR_FLOAT(name, depth)                                                   \
+static int interp_##name##_pf##depth(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)          \
+{                                                                                                      \
+    int x, y;                                                                                          \
+    const LUT3DContext *lut3d = ctx->priv;                                                             \
+    const ThreadData *td = arg;                                                                        \
+    const AVFrame *in  = td->in;                                                                       \
+    const AVFrame *out = td->out;                                                                      \
+    const int direct = out == in;                                                                      \
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;                                        \
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                        \
+    uint8_t *grow = out->data[0] + slice_start * out->linesize[0];                                     \
+    uint8_t *brow = out->data[1] + slice_start * out->linesize[1];                                     \
+    uint8_t *rrow = out->data[2] + slice_start * out->linesize[2];                                     \
+    uint8_t *arow = out->data[3] + slice_start * out->linesize[3];                                     \
+    const uint8_t *srcgrow = in->data[0] + slice_start * in->linesize[0];                              \
+    const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];                              \
+    const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];                              \
+    const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];                              \
+    const float lutsize = lut3d->lutsize - 1;                                                          \
+    const float scale_r = lut3d->scale.r * lutsize;                                                    \
+    const float scale_g = lut3d->scale.g * lutsize;                                                    \
+    const float scale_b = lut3d->scale.b * lutsize;                                                    \
+                                                                                                       \
+    for (y = slice_start; y < slice_end; y++) {                                                        \
+        float *dstg = (float *)grow;                                                                   \
+        float *dstb = (float *)brow;                                                                   \
+        float *dstr = (float *)rrow;                                                                   \
+        float *dsta = (float *)arow;                                                                   \
+        const float *srcg = (const float *)srcgrow;                                                    \
+        const float *srcb = (const float *)srcbrow;                                                    \
+        const float *srcr = (const float *)srcrrow;                                                    \
+        const float *srca = (const float *)srcarow;                                                    \
+        for (x = 0; x < in->width; x++) {                                                              \
+            const struct rgbvec scaled_rgb = {av_clipf(sanitizef(srcr[x]) * scale_r, 0, lutsize),      \
+                                              av_clipf(sanitizef(srcg[x]) * scale_g, 0, lutsize),      \
+                                              av_clipf(sanitizef(srcb[x]) * scale_b, 0, lutsize)};     \
+            struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                     \
+            dstr[x] = vec.r;                                                                           \
+            dstg[x] = vec.g;                                                                           \
+            dstb[x] = vec.b;                                                                           \
+            if (!direct && in->linesize[3])                                                            \
+                dsta[x] = srca[x];                                                                     \
+        }                                                                                              \
+        grow += out->linesize[0];                                                                      \
+        brow += out->linesize[1];                                                                      \
+        rrow += out->linesize[2];                                                                      \
+        arow += out->linesize[3];                                                                      \
+        srcgrow += in->linesize[0];                                                                    \
+        srcbrow += in->linesize[1];                                                                    \
+        srcrrow += in->linesize[2];                                                                    \
+        srcarow += in->linesize[3];                                                                    \
+    }                                                                                                  \
+    return 0;                                                                                          \
+}
+
+DEFINE_INTERP_FUNC_PLANAR_FLOAT(nearest,     32)
+DEFINE_INTERP_FUNC_PLANAR_FLOAT(trilinear,   32)
+DEFINE_INTERP_FUNC_PLANAR_FLOAT(tetrahedral, 32)
 
 #define DEFINE_INTERP_FUNC(name, nbits)                                                             \
 static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)         \
@@ -700,7 +788,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
         AV_PIX_FMT_GBRP14,
-        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GBRP16,  AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -711,18 +800,19 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    int depth, is16bit, planar;
+    int depth, is16bit, isfloat, planar;
     LUT3DContext *lut3d = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     depth = desc->comp[0].depth;
     is16bit = desc->comp[0].depth > 8;
     planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    isfloat = desc->flags & AV_PIX_FMT_FLAG_FLOAT;
     ff_fill_rgba_map(lut3d->rgba_map, inlink->format);
     lut3d->step = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
 
 #define SET_FUNC(name) do {                                     \
-    if (planar) {                                               \
+    if (planar && !isfloat) {                                   \
         switch (depth) {                                        \
         case  8: lut3d->interp = interp_8_##name##_p8;   break; \
         case  9: lut3d->interp = interp_16_##name##_p9;  break; \
@@ -731,6 +821,7 @@ static int config_input(AVFilterLink *inlink)
         case 14: lut3d->interp = interp_16_##name##_p14; break; \
         case 16: lut3d->interp = interp_16_##name##_p16; break; \
         }                                                       \
+    } else if (isfloat) { lut3d->interp = interp_##name##_pf32; \
     } else if (is16bit) { lut3d->interp = interp_16_##name;     \
     } else {       lut3d->interp = interp_8_##name; }           \
 } while (0)
@@ -970,6 +1061,39 @@ static void update_clut_planar(LUT3DContext *lut3d, const AVFrame *frame)
     }
 }
 
+static void update_clut_float(LUT3DContext *lut3d, const AVFrame *frame)
+{
+    const uint8_t *datag = frame->data[0];
+    const uint8_t *datab = frame->data[1];
+    const uint8_t *datar = frame->data[2];
+    const int glinesize  = frame->linesize[0];
+    const int blinesize  = frame->linesize[1];
+    const int rlinesize  = frame->linesize[2];
+    const int w = lut3d->clut_width;
+    const int level = lut3d->lutsize;
+    const int level2 = lut3d->lutsize2;
+
+    int i, j, k, x = 0, y = 0;
+
+    for (k = 0; k < level; k++) {
+        for (j = 0; j < level; j++) {
+            for (i = 0; i < level; i++) {
+                const float *gsrc = (const float *)(datag + y*glinesize);
+                const float *bsrc = (const float *)(datab + y*blinesize);
+                const float *rsrc = (const float *)(datar + y*rlinesize);
+                struct rgbvec *vec = &lut3d->lut[i * level2 + j * level + k];
+                vec->r = rsrc[x];
+                vec->g = gsrc[x];
+                vec->b = bsrc[x];
+                if (++x == w) {
+                    x = 0;
+                    y++;
+                }
+            }
+        }
+    }
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -1004,6 +1128,7 @@ static int config_clut(AVFilterLink *inlink)
 
     lut3d->clut_bits = desc->comp[0].depth;
     lut3d->clut_planar = av_pix_fmt_count_planes(inlink->format) > 1;
+    lut3d->clut_float = desc->flags & AV_PIX_FMT_FLAG_FLOAT;
 
     lut3d->clut_step = av_get_padded_bits_per_pixel(desc) >> 3;
     ff_fill_rgba_map(lut3d->clut_rgba_map, inlink->format);
@@ -1049,7 +1174,9 @@ static int update_apply_clut(FFFrameSync *fs)
         return ret;
     if (!second)
         return ff_filter_frame(ctx->outputs[0], master);
-    if (lut3d->clut_planar)
+    if (lut3d->clut_float)
+        update_clut_float(ctx->priv, second);
+    else if (lut3d->clut_planar)
         update_clut_planar(ctx->priv, second);
     else
         update_clut_packed(ctx->priv, second);
@@ -1477,6 +1604,72 @@ DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      16, 16)
 DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       16, 16)
 DEFINE_INTERP_FUNC_PLANAR_1D(spline,      16, 16)
 
+#define DEFINE_INTERP_FUNC_PLANAR_1D_FLOAT(name, depth)                      \
+static int interp_1d_##name##_pf##depth(AVFilterContext *ctx,                \
+                                                 void *arg, int jobnr,       \
+                                                 int nb_jobs)                \
+{                                                                            \
+    int x, y;                                                                \
+    const LUT1DContext *lut1d = ctx->priv;                                   \
+    const ThreadData *td = arg;                                              \
+    const AVFrame *in  = td->in;                                             \
+    const AVFrame *out = td->out;                                            \
+    const int direct = out == in;                                            \
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;              \
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;              \
+    uint8_t *grow = out->data[0] + slice_start * out->linesize[0];           \
+    uint8_t *brow = out->data[1] + slice_start * out->linesize[1];           \
+    uint8_t *rrow = out->data[2] + slice_start * out->linesize[2];           \
+    uint8_t *arow = out->data[3] + slice_start * out->linesize[3];           \
+    const uint8_t *srcgrow = in->data[0] + slice_start * in->linesize[0];    \
+    const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];    \
+    const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];    \
+    const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];    \
+    const float lutsize = lut1d->lutsize - 1;                                \
+    const float scale_r = lut1d->scale.r * lutsize;                          \
+    const float scale_g = lut1d->scale.g * lutsize;                          \
+    const float scale_b = lut1d->scale.b * lutsize;                          \
+                                                                             \
+    for (y = slice_start; y < slice_end; y++) {                              \
+        float *dstg = (float *)grow;                                         \
+        float *dstb = (float *)brow;                                         \
+        float *dstr = (float *)rrow;                                         \
+        float *dsta = (float *)arow;                                         \
+        const float *srcg = (const float *)srcgrow;                          \
+        const float *srcb = (const float *)srcbrow;                          \
+        const float *srcr = (const float *)srcrrow;                          \
+        const float *srca = (const float *)srcarow;                          \
+        for (x = 0; x < in->width; x++) {                                    \
+            float r = av_clipf(sanitizef(srcr[x]) * scale_r, 0.0f, lutsize); \
+            float g = av_clipf(sanitizef(srcg[x]) * scale_g, 0.0f, lutsize); \
+            float b = av_clipf(sanitizef(srcb[x]) * scale_b, 0.0f, lutsize); \
+            r = interp_1d_##name(lut1d, 0, r);                               \
+            g = interp_1d_##name(lut1d, 1, g);                               \
+            b = interp_1d_##name(lut1d, 2, b);                               \
+            dstr[x] = r;                                                     \
+            dstg[x] = g;                                                     \
+            dstb[x] = b;                                                     \
+            if (!direct && in->linesize[3])                                  \
+                dsta[x] = srca[x];                                           \
+        }                                                                    \
+        grow += out->linesize[0];                                            \
+        brow += out->linesize[1];                                            \
+        rrow += out->linesize[2];                                            \
+        arow += out->linesize[3];                                            \
+        srcgrow += in->linesize[0];                                          \
+        srcbrow += in->linesize[1];                                          \
+        srcrrow += in->linesize[2];                                          \
+        srcarow += in->linesize[3];                                          \
+    }                                                                        \
+    return 0;                                                                \
+}
+
+DEFINE_INTERP_FUNC_PLANAR_1D_FLOAT(nearest, 32)
+DEFINE_INTERP_FUNC_PLANAR_1D_FLOAT(linear,  32)
+DEFINE_INTERP_FUNC_PLANAR_1D_FLOAT(cosine,  32)
+DEFINE_INTERP_FUNC_PLANAR_1D_FLOAT(cubic,   32)
+DEFINE_INTERP_FUNC_PLANAR_1D_FLOAT(spline,  32)
+
 #define DEFINE_INTERP_FUNC_1D(name, nbits)                                   \
 static int interp_1d_##nbits##_##name(AVFilterContext *ctx, void *arg,       \
                                       int jobnr, int nb_jobs)                \
@@ -1537,18 +1730,19 @@ DEFINE_INTERP_FUNC_1D(spline,      16)
 
 static int config_input_1d(AVFilterLink *inlink)
 {
-    int depth, is16bit, planar;
+    int depth, is16bit, isfloat, planar;
     LUT1DContext *lut1d = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     depth = desc->comp[0].depth;
     is16bit = desc->comp[0].depth > 8;
     planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    isfloat = desc->flags & AV_PIX_FMT_FLAG_FLOAT;
     ff_fill_rgba_map(lut1d->rgba_map, inlink->format);
     lut1d->step = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
 
 #define SET_FUNC_1D(name) do {                                     \
-    if (planar) {                                                  \
+    if (planar && !isfloat) {                                      \
         switch (depth) {                                           \
         case  8: lut1d->interp = interp_1d_8_##name##_p8;   break; \
         case  9: lut1d->interp = interp_1d_16_##name##_p9;  break; \
@@ -1557,6 +1751,7 @@ static int config_input_1d(AVFilterLink *inlink)
         case 14: lut1d->interp = interp_1d_16_##name##_p14; break; \
         case 16: lut1d->interp = interp_1d_16_##name##_p16; break; \
         }                                                          \
+    } else if (isfloat) { lut1d->interp = interp_1d_##name##_pf32; \
     } else if (is16bit) { lut1d->interp = interp_1d_16_##name;     \
     } else {              lut1d->interp = interp_1d_8_##name; }    \
 } while (0)
