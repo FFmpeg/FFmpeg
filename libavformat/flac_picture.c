@@ -27,7 +27,9 @@
 #include "id3v2.h"
 #include "internal.h"
 
-int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
+#define MAX_TRUNC_PICTURE_SIZE (500 * 1024 * 1024)
+
+int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size, int truncate_workaround)
 {
     const CodecMime *mime = ff_id3v2_mime_tags;
     enum AVCodecID id = AV_CODEC_ID_NONE;
@@ -36,7 +38,8 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     GetByteContext g;
     AVStream *st;
     int width, height, ret = 0;
-    unsigned int len, type;
+    unsigned int type;
+    uint32_t len, left, trunclen = 0;
 
     if (buf_size < 34) {
         av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
@@ -114,16 +117,44 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 
     /* picture data */
     len = bytestream2_get_be32u(&g);
-    if (len <= 0 || len > bytestream2_get_bytes_left(&g)) {
-        av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
-        if (s->error_recognition & AV_EF_EXPLODE)
-            ret = AVERROR_INVALIDDATA;
-        goto fail;
+
+    left = bytestream2_get_bytes_left(&g);
+    if (len <= 0 || len > left) {
+        if (len > MAX_TRUNC_PICTURE_SIZE || len >= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
+            av_log(s, AV_LOG_ERROR, "Attached picture metadata block too big %u\n", len);
+            if (s->error_recognition & AV_EF_EXPLODE)
+                ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
+        // Workaround bug for flac muxers that writs truncated metadata picture block size if
+        // the picture size do not fit in 24 bits. lavf flacenc used to have the issue and based
+        // on existing broken files other unknown flac muxers seems to truncate also.
+        if (truncate_workaround &&
+            s->strict_std_compliance <= FF_COMPLIANCE_NORMAL &&
+            len > left && (len & 0xffffff) == left) {
+            av_log(s, AV_LOG_INFO, "Correcting truncated metadata picture size from %u to %u\n", left, len);
+            trunclen = len - left;
+        } else {
+            av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
+            if (s->error_recognition & AV_EF_EXPLODE)
+                ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     }
     if (!(data = av_buffer_alloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
         RETURN_ERROR(AVERROR(ENOMEM));
     }
-    bytestream2_get_bufferu(&g, data->data, len);
+
+    if (trunclen == 0) {
+        bytestream2_get_bufferu(&g, data->data, len);
+    } else {
+        // If truncation was detected copy all data from block and read missing bytes
+        // not included in the block size
+        bytestream2_get_bufferu(&g, data->data, left);
+        if (avio_read(s->pb, data->data + len - trunclen, trunclen) < trunclen)
+            RETURN_ERROR(AVERROR_INVALIDDATA);
+    }
     memset(data->data + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (AV_RB64(data->data) == PNGSIG)

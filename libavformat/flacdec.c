@@ -146,7 +146,7 @@ static int flac_read_header(AVFormatContext *s)
             }
             av_freep(&buffer);
         } else if (metadata_type == FLAC_METADATA_TYPE_PICTURE) {
-            ret = ff_flac_parse_picture(s, buffer, metadata_size);
+            ret = ff_flac_parse_picture(s, buffer, metadata_size, 1);
             av_freep(&buffer);
             if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "Error parsing attached picture.\n");

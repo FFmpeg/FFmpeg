@@ -165,7 +165,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                 av_freep(&tt);
                 av_freep(&ct);
                 if (ret > 0)
-                    ret = ff_flac_parse_picture(as, pict, ret);
+                    ret = ff_flac_parse_picture(as, pict, ret, 0);
                 av_freep(&pict);
                 if (ret < 0) {
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
