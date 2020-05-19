@@ -1969,7 +1969,6 @@ static int hls_read_header(AVFormatContext *s)
             avformat_queue_attached_pictures(pls->ctx);
             ff_id3v2_parse_priv(pls->ctx, &pls->id3_deferred_extra);
             ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
-            pls->id3_deferred_extra = NULL;
         }
 
         if (pls->is_id3_timestamped == -1)
