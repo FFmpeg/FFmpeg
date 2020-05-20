@@ -3037,9 +3037,9 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
-    *laces    = *data + 1;
-    data     += 1;
-    size     -= 1;
+    *laces = *data + 1;
+    data  += 1;
+    size  -= 1;
 
     switch (type) {
     case 0x1: /* Xiph lacing */
@@ -3049,31 +3049,26 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
         for (n = 0; n < *laces - 1; n++) {
             lace_size[n] = 0;
 
-            while (1) {
-                if (size <= total) {
+            do {
+                if (size <= total)
                     return AVERROR_INVALIDDATA;
-                }
                 temp          = *data;
                 total        += temp;
                 lace_size[n] += temp;
                 data         += 1;
                 size         -= 1;
-                if (temp != 0xff)
-                    break;
-            }
+            } while (temp ==  0xff);
         }
-        if (size < total) {
+        if (size < total)
             return AVERROR_INVALIDDATA;
-        }
 
         lace_size[n] = size - total;
         break;
     }
 
     case 0x2: /* fixed-size lacing */
-        if (size % (*laces)) {
+        if (size % (*laces))
             return AVERROR_INVALIDDATA;
-        }
         for (n = 0; n < *laces; n++)
             lace_size[n] = size / *laces;
         break;
@@ -3109,15 +3104,15 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
         }
         data += offset;
         size -= offset;
-        if (size < total) {
+        if (size < total)
             return AVERROR_INVALIDDATA;
-        }
+
         lace_size[*laces - 1] = size - total;
         break;
     }
     }
 
-    *buf      = data;
+    *buf = data;
 
     return 0;
 }
