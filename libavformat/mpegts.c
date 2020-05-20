@@ -123,10 +123,6 @@ struct MpegTSContext {
     /** raw packet size, including FEC if present */
     int raw_packet_size;
 
-    int size_stat[3];
-    int size_stat_count;
-#define SIZE_STAT_THRESHOLD 10
-
     int64_t pos47_full;
 
     /** if true, all pids are analyzed to find streams */
@@ -2840,41 +2836,6 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
     return 0;
 }
 
-static void reanalyze(MpegTSContext *ts) {
-    AVIOContext *pb = ts->stream->pb;
-    int64_t pos = avio_tell(pb);
-    if (pos < 0)
-        return;
-    pos -= ts->pos47_full;
-    if (pos == TS_PACKET_SIZE) {
-        ts->size_stat[0] ++;
-    } else if (pos == TS_DVHS_PACKET_SIZE) {
-        ts->size_stat[1] ++;
-    } else if (pos == TS_FEC_PACKET_SIZE) {
-        ts->size_stat[2] ++;
-    }
-
-    ts->size_stat_count ++;
-    if (ts->size_stat_count > SIZE_STAT_THRESHOLD) {
-        int newsize = 0;
-        if (ts->size_stat[0] > SIZE_STAT_THRESHOLD) {
-            newsize = TS_PACKET_SIZE;
-        } else if (ts->size_stat[1] > SIZE_STAT_THRESHOLD) {
-            newsize = TS_DVHS_PACKET_SIZE;
-        } else if (ts->size_stat[2] > SIZE_STAT_THRESHOLD) {
-            newsize = TS_FEC_PACKET_SIZE;
-        }
-        if (newsize && newsize != ts->raw_packet_size) {
-            av_log(ts->stream, AV_LOG_WARNING, "changing packet size to %d\n", newsize);
-            ts->raw_packet_size = newsize;
-        }
-        ts->size_stat_count = 0;
-        memset(ts->size_stat, 0, sizeof(ts->size_stat));
-    }
-}
-
-/* XXX: try to find a better synchro over several packets (use
- * get_packet_size() ?) */
 static int mpegts_resync(AVFormatContext *s, int seekback, const uint8_t *current_packet)
 {
     MpegTSContext *ts = s->priv_data;
@@ -2896,8 +2857,18 @@ static int mpegts_resync(AVFormatContext *s, int seekback, const uint8_t *curren
         if (avio_feof(pb))
             return AVERROR_EOF;
         if (c == 0x47) {
+            int new_packet_size, ret;
             avio_seek(pb, -1, SEEK_CUR);
-            reanalyze(s->priv_data);
+            pos = avio_tell(pb);
+            ret = ffio_ensure_seekback(pb, PROBE_PACKET_MAX_BUF);
+            if (ret < 0)
+                return ret;
+            new_packet_size = get_packet_size(s);
+            if (new_packet_size > 0 && new_packet_size != ts->raw_packet_size) {
+                av_log(ts->stream, AV_LOG_WARNING, "changing packet size to %d\n", new_packet_size);
+                ts->raw_packet_size = new_packet_size;
+            }
+            avio_seek(pb, pos, SEEK_SET);
             return 0;
         }
     }
