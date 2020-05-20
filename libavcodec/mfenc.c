@@ -677,7 +677,7 @@ static int mf_encv_output_adjust(AVCodecContext *avctx, IMFMediaType *type)
         // "scenario" to "camera_record" sets it in CFR mode (where the default
         // is VFR), which makes the encoder avoid dropping frames.
         ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncMPVDefaultBPictureCount, FF_VAL_VT_UI4(avctx->max_b_frames));
-        avctx->has_b_frames = avctx->max_b_frames > 1 ? 1 : 0;
+        avctx->has_b_frames = avctx->max_b_frames > 0;
 
         ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncH264CABACEnable, FF_VAL_VT_BOOL(1));
 
