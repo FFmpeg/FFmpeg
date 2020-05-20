@@ -231,7 +231,7 @@ int ff_decode_bsfs_init(AVCodecContext *avctx)
 
     return 0;
 fail:
-    ff_decode_bsfs_uninit(avctx);
+    av_bsf_free(&avci->bsf);
     return ret;
 }
 
@@ -2004,9 +2004,4 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
 
     if (!avctx->refcounted_frames)
         av_frame_unref(avci->to_free);
-}
-
-void ff_decode_bsfs_uninit(AVCodecContext *avctx)
-{
-    av_bsf_free(&avctx->internal->bsf);
 }

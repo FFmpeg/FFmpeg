@@ -1045,7 +1045,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_packet_free(&avci->last_pkt_props);
 
         av_packet_free(&avci->ds.in_pkt);
-        ff_decode_bsfs_uninit(avctx);
+        av_bsf_free(&avci->bsf);
 
         av_buffer_unref(&avci->pool);
     }
@@ -1106,7 +1106,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
             avctx->hwaccel->uninit(avctx);
         av_freep(&avctx->internal->hwaccel_priv_data);
 
-        ff_decode_bsfs_uninit(avctx);
+        av_bsf_free(&avctx->internal->bsf);
 
         av_freep(&avctx->internal);
     }
