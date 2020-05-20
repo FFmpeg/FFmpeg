@@ -67,7 +67,8 @@ typedef struct HWContextType {
     int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
                                       AVDictionary *opts, int flags);
     int              (*device_derive)(AVHWDeviceContext *dst_ctx,
-                                      AVHWDeviceContext *src_ctx, int flags);
+                                      AVHWDeviceContext *src_ctx,
+                                      AVDictionary *opts, int flags);
 
     int              (*device_init)(AVHWDeviceContext *ctx);
     void             (*device_uninit)(AVHWDeviceContext *ctx);

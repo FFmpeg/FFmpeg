@@ -950,7 +950,8 @@ static int vulkan_device_create(AVHWDeviceContext *ctx, const char *device,
 }
 
 static int vulkan_device_derive(AVHWDeviceContext *ctx,
-                                AVHWDeviceContext *src_ctx, int flags)
+                                AVHWDeviceContext *src_ctx,
+                                AVDictionary *opts, int flags)
 {
     av_unused VulkanDeviceSelection dev_select = { 0 };
 
@@ -974,7 +975,7 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
         if (strstr(vendor, "AMD"))
             dev_select.vendor_id = 0x1002;
 
-        return vulkan_device_create_internal(ctx, &dev_select, NULL, flags);
+        return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
     }
 #endif
     case AV_HWDEVICE_TYPE_DRM: {
@@ -992,7 +993,7 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
 
         drmFreeDevice(&drm_dev_info);
 
-        return vulkan_device_create_internal(ctx, &dev_select, NULL, flags);
+        return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
     }
 #endif
 #if CONFIG_CUDA
@@ -1011,7 +1012,7 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
 
         dev_select.has_uuid = 1;
 
-        return vulkan_device_create_internal(ctx, &dev_select, NULL, flags);
+        return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
     }
 #endif
     default:

@@ -395,7 +395,7 @@ error:
 }
 
 static int cuda_device_derive(AVHWDeviceContext *device_ctx,
-                              AVHWDeviceContext *src_ctx,
+                              AVHWDeviceContext *src_ctx, AVDictionary *opts,
                               int flags) {
     AVCUDADeviceContext *hwctx = device_ctx->hwctx;
     CudaFunctions *cu;

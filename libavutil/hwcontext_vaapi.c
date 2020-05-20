@@ -1624,7 +1624,8 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 }
 
 static int vaapi_device_derive(AVHWDeviceContext *ctx,
-                               AVHWDeviceContext *src_ctx, int flags)
+                               AVHWDeviceContext *src_ctx,
+                               AVDictionary *opts, int flags)
 {
 #if HAVE_VAAPI_DRM
     if (src_ctx->type == AV_HWDEVICE_TYPE_DRM) {
