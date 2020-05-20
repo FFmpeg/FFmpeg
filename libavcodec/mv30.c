@@ -545,8 +545,8 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
                 int px = x + mv_x;
                 int py = y + mv_y;
 
-                if (px < 0 || px >= avctx->width ||
-                    py < 0 || py >= avctx->height)
+                if (px < 0 || px > FFALIGN(avctx->width , 16) - 16 ||
+                    py < 0 || py > FFALIGN(avctx->height, 16) - 16)
                     return AVERROR_INVALIDDATA;
 
                 src[0] = prev->data[0] + in_linesize[0] * py + px;
