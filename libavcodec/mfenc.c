@@ -637,11 +637,19 @@ static int64_t mf_encv_output_score(AVCodecContext *avctx, IMFMediaType *type)
 static int mf_encv_output_adjust(AVCodecContext *avctx, IMFMediaType *type)
 {
     MFContext *c = avctx->priv_data;
+    AVRational framerate;
 
     ff_MFSetAttributeSize((IMFAttributes *)type, &MF_MT_FRAME_SIZE, avctx->width, avctx->height);
     IMFAttributes_SetUINT32(type, &MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
 
-    ff_MFSetAttributeRatio((IMFAttributes *)type, &MF_MT_FRAME_RATE, avctx->framerate.num, avctx->framerate.den);
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        framerate = avctx->framerate;
+    } else {
+        framerate = av_inv_q(avctx->time_base);
+        framerate.den *= avctx->ticks_per_frame;
+    }
+
+    ff_MFSetAttributeRatio((IMFAttributes *)type, &MF_MT_FRAME_RATE, framerate.num, framerate.den);
 
     // (MS HEVC supports eAVEncH265VProfile_Main_420_8 only.)
     if (avctx->codec_id == AV_CODEC_ID_H264) {
