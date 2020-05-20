@@ -819,11 +819,11 @@ static void get_response(int channel, int format, double w,
     *i = imag;
 }
 
-static void draw_response(AVFilterContext *ctx, AVFrame *out)
+static void draw_response(AVFilterContext *ctx, AVFrame *out, int sample_rate)
 {
     AudioIIRContext *s = ctx->priv;
-    float *mag, *phase, *delay, min = FLT_MAX, max = FLT_MIN;
-    float min_delay = FLT_MAX, max_delay = FLT_MIN;
+    double *mag, *phase, *temp, *delay, min = DBL_MAX, max = -DBL_MAX;
+    double min_delay, max_delay, min_phase, max_phase;
     int prev_ymag = -1, prev_yphase = -1, prev_ydelay = -1;
     char text[32];
     int ch, i;
@@ -831,9 +831,10 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     memset(out->data[0], 0, s->h * out->linesize[0]);
 
     phase = av_malloc_array(s->w, sizeof(*phase));
+    temp = av_malloc_array(s->w, sizeof(*temp));
     mag = av_malloc_array(s->w, sizeof(*mag));
     delay = av_malloc_array(s->w, sizeof(*delay));
-    if (!mag || !phase || !delay)
+    if (!mag || !phase || !delay || !temp)
         goto end;
 
     ch = av_clip(s->ir_channel, 0, s->channels - 1);
@@ -849,16 +850,34 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
 
         mag[i] = s->iir[ch].g * hypot(real, imag);
         phase[i] = atan2(imag, real);
-        min = fminf(min, mag[i]);
-        max = fmaxf(max, mag[i]);
+        min = fmin(min, mag[i]);
+        max = fmax(max, mag[i]);
     }
 
+    temp[0] = 0.;
     for (i = 0; i < s->w - 1; i++) {
-        float dw =  M_PI / (s->w - 1);
+        double d = phase[i] - phase[i + 1];
+        temp[i + 1] = ceil(fabs(d) / (2. * M_PI)) * 2. * M_PI * ((d > M_PI) - (d < -M_PI));
+    }
 
-        delay[i] = -(phase[i + 1] - phase[i]) / dw;
-        min_delay = fminf(min_delay, delay[i]);
-        max_delay = fmaxf(max_delay, delay[i]);
+    min_phase = phase[0];
+    max_phase = phase[0];
+    for (i = 1; i < s->w; i++) {
+        temp[i] += temp[i - 1];
+        phase[i] += temp[i];
+        min_phase = fmin(min_phase, phase[i]);
+        max_phase = fmax(max_phase, phase[i]);
+    }
+
+    delay[0] = 0.;
+    min_delay = 0.;
+    max_delay = 0.;
+    for (i = 0; i < s->w - 1; i++) {
+        double div = s->w / (double)sample_rate;
+
+        delay[i + 1] = -(phase[i] - phase[i + 1]) / div;
+        min_delay = fmin(min_delay, delay[i + 1]);
+        max_delay = fmax(max_delay, delay[i + 1]);
     }
 
     delay[i] = delay[i - 1];
@@ -866,7 +885,7 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     for (i = 0; i < s->w; i++) {
         int ymag = mag[i] / max * (s->h - 1);
         int ydelay = (delay[i] - min_delay) / (max_delay - min_delay) * (s->h - 1);
-        int yphase = (0.5 * (1. + phase[i] / M_PI)) * (s->h - 1);
+        int yphase = (phase[i] - min_phase) / (max_phase - min_phase) * (s->h - 1);
 
         ymag = s->h - 1 - av_clip(ymag, 0, s->h - 1);
         yphase = s->h - 1 - av_clip(yphase, 0, s->h - 1);
@@ -897,17 +916,26 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
         snprintf(text, sizeof(text), "%.2f", min);
         drawtext(out, 15 * 8 + 2, 12, text, 0xDDDDDDDD);
 
-        drawtext(out, 2, 22, "Max Delay:", 0xDDDDDDDD);
-        snprintf(text, sizeof(text), "%.2f", max_delay);
-        drawtext(out, 11 * 8 + 2, 22, text, 0xDDDDDDDD);
+        drawtext(out, 2, 22, "Max Phase:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", max_phase);
+        drawtext(out, 15 * 8 + 2, 22, text, 0xDDDDDDDD);
 
-        drawtext(out, 2, 32, "Min Delay:", 0xDDDDDDDD);
+        drawtext(out, 2, 32, "Min Phase:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", min_phase);
+        drawtext(out, 15 * 8 + 2, 32, text, 0xDDDDDDDD);
+
+        drawtext(out, 2, 42, "Max Delay:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", max_delay);
+        drawtext(out, 11 * 8 + 2, 42, text, 0xDDDDDDDD);
+
+        drawtext(out, 2, 52, "Min Delay:", 0xDDDDDDDD);
         snprintf(text, sizeof(text), "%.2f", min_delay);
-        drawtext(out, 11 * 8 + 2, 32, text, 0xDDDDDDDD);
+        drawtext(out, 11 * 8 + 2, 52, text, 0xDDDDDDDD);
     }
 
 end:
     av_free(delay);
+    av_free(temp);
     av_free(phase);
     av_free(mag);
 }
@@ -951,7 +979,7 @@ static int config_output(AVFilterLink *outlink)
         if (!s->video)
             return AVERROR(ENOMEM);
 
-        draw_response(ctx, s->video);
+        draw_response(ctx, s->video, inlink->sample_rate);
     }
 
     if (s->format == 0)
