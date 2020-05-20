@@ -145,10 +145,8 @@ static int tta_write_trailer(AVFormatContext *s)
     /* Write Seek table */
     crc = ffio_get_checksum(tta->seek_table) ^ UINT32_MAX;
     avio_wl32(tta->seek_table, crc);
-    size = avio_close_dyn_buf(tta->seek_table, &ptr);
+    size = avio_get_dyn_buf(tta->seek_table, &ptr);
     avio_write(s->pb, ptr, size);
-    tta->seek_table = NULL;
-    av_free(ptr);
 
     /* Write audio data */
     tta_queue_flush(s);
