@@ -94,7 +94,6 @@ AVCodec ff_r210_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_GBRP10, AV_PIX_FMT_NONE },
-    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
 #if CONFIG_R10K_ENCODER
@@ -106,7 +105,6 @@ AVCodec ff_r10k_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_GBRP10, AV_PIX_FMT_NONE },
-    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
 #if CONFIG_AVRP_ENCODER
@@ -118,6 +116,5 @@ AVCodec ff_avrp_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_GBRP10, AV_PIX_FMT_NONE },
-    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif

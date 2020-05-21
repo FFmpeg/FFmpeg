@@ -125,6 +125,6 @@ AVCodec ff_librsvg_decoder = {
     .id             = AV_CODEC_ID_SVG,
     .decode         = librsvg_decode_frame,
     .priv_data_size = sizeof(LibRSVGContext),
-    .capabilities   = AV_CODEC_CAP_LOSSLESS | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .wrapper_name    = "librsvg",
 };

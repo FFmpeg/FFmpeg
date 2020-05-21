@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-05-xx - xxxxxxxxxx - lavc 56.86.101 - avcodec.h
+  Deprecated AV_CODEC_CAP_INTRA_ONLY and AV_CODEC_CAP_LOSSLESS.
+
 2020-05-xx - xxxxxxxxxx - lavu 56.46.100 - common.h
   Add av_sat_add64() and av_sat_sub64()
 

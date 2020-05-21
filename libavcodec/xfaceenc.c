@@ -219,5 +219,4 @@ AVCodec ff_xface_encoder = {
     .priv_data_size = sizeof(XFaceContext),
     .encode2        = xface_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
-    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };

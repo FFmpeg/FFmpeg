@@ -656,7 +656,7 @@ static const uint64_t aac_at_channel_layouts[] = {
 
 FFAT_ENC(aac,          AV_CODEC_ID_AAC,          aac_profiles, , .channel_layouts = aac_at_channel_layouts)
 //FFAT_ENC(adpcm_ima_qt, AV_CODEC_ID_ADPCM_IMA_QT, NULL)
-FFAT_ENC(alac,         AV_CODEC_ID_ALAC,         NULL, | AV_CODEC_CAP_VARIABLE_FRAME_SIZE | AV_CODEC_CAP_LOSSLESS)
+FFAT_ENC(alac,         AV_CODEC_ID_ALAC,         NULL, | AV_CODEC_CAP_VARIABLE_FRAME_SIZE)
 FFAT_ENC(ilbc,         AV_CODEC_ID_ILBC,         NULL)
 FFAT_ENC(pcm_alaw,     AV_CODEC_ID_PCM_ALAW,     NULL)
 FFAT_ENC(pcm_mulaw,    AV_CODEC_ID_PCM_MULAW,    NULL)
