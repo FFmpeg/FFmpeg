@@ -2,6 +2,17 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.2.3
+- avcodec/pnmdec: Use unsigned for maxval rescaling
+- avcodec/ivi: Clear got_p_frame before decoding a new frame using it
+- avcodec/dsddec: Check channels
+- avcodec/xvididct: Fix integer overflow in idct_row()
+- avcodec/wmalosslessdec: Fix integer overflows in revert_inter_ch_decorr()
+- avcodec/cbs_jpeg: Fix infinite loop in cbs_jpeg_split_fragment()
+- avformat/mpegenc: Fix integer overflow with AV_NOPTS_VALUE
+- avformat/swfenc: Fix integer overflow in frame rate handling
+- avformat/aadec: Check toc_size to contain the minimum to demuxer uses
+- avcodec/cbs_h265_syntax_template: Limit num_long_term_pics more strictly
+- ffplay: set stream_index to -1 earlier to prevent segfault
 - avformat/mov: Free temp buffer upon negative sample_size error.
 - avformat/matroskadec: Improve forward compability
 - avformat/matroskadec: Don't discard valid packets
