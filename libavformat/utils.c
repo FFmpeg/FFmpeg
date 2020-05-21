@@ -5507,6 +5507,8 @@ uint8_t *av_stream_get_side_data(const AVStream *st,
             return st->side_data[i].data;
         }
     }
+    if (size)
+        *size = 0;
     return NULL;
 }
 
