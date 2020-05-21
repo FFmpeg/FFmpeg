@@ -552,7 +552,7 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
                 flags(use_delta_flag[j], 1, j);
             else
                 infer(use_delta_flag[j], 1);
-            if (current->use_delta_flag[i])
+            if (current->use_delta_flag[j])
                 ++num_ref_pics;
         }
         if (num_ref_pics >= HEVC_MAX_DPB_SIZE) {
