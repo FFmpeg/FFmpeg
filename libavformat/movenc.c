@@ -5504,6 +5504,25 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         memset(trk->vos_data + trk->vos_len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
+    if ((par->codec_id == AV_CODEC_ID_DNXHD ||
+         par->codec_id == AV_CODEC_ID_H264 ||
+         par->codec_id == AV_CODEC_ID_HEVC ||
+         par->codec_id == AV_CODEC_ID_TRUEHD ||
+         par->codec_id == AV_CODEC_ID_AC3 ||
+         par->codec_id == AV_CODEC_ID_H264 ||
+         par->codec_id == AV_CODEC_ID_HEVC) && !trk->vos_len &&
+         !TAG_IS_AVCI(trk->tag)) {
+        /* copy frame to create needed atoms */
+        trk->vos_len  = size;
+        trk->vos_data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!trk->vos_data) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
+        memcpy(trk->vos_data, pkt->data, size);
+        memset(trk->vos_data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    }
+
     if (par->codec_id == AV_CODEC_ID_AAC && pkt->size > 2 &&
         (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
         if (!s->streams[pkt->stream_index]->nb_frames) {
@@ -5580,22 +5599,6 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             avio_write(pb, pkt->data, size);
         }
-    }
-
-    if ((par->codec_id == AV_CODEC_ID_DNXHD ||
-         par->codec_id == AV_CODEC_ID_H264 ||
-         par->codec_id == AV_CODEC_ID_HEVC ||
-         par->codec_id == AV_CODEC_ID_TRUEHD ||
-         par->codec_id == AV_CODEC_ID_AC3) && !trk->vos_len) {
-        /* copy frame to create needed atoms */
-        trk->vos_len  = size;
-        trk->vos_data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!trk->vos_data) {
-            ret = AVERROR(ENOMEM);
-            goto err;
-        }
-        memcpy(trk->vos_data, pkt->data, size);
-        memset(trk->vos_data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
     if (trk->entry >= trk->cluster_capacity) {
