@@ -78,8 +78,7 @@ void *av_malloc(size_t size)
 {
     void *ptr = NULL;
 
-    /* let's disallow possibly ambiguous cases */
-    if (size > (max_alloc_size - 32))
+    if (size > max_alloc_size)
         return NULL;
 
 #if HAVE_POSIX_MEMALIGN
@@ -134,8 +133,7 @@ void *av_malloc(size_t size)
 
 void *av_realloc(void *ptr, size_t size)
 {
-    /* let's disallow possibly ambiguous cases */
-    if (size > (max_alloc_size - 32))
+    if (size > max_alloc_size)
         return NULL;
 
 #if HAVE_ALIGNED_MALLOC
@@ -482,12 +480,12 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
     if (min_size <= *size)
         return ptr;
 
-    if (min_size > max_alloc_size - 32) {
+    if (min_size > max_alloc_size) {
         *size = 0;
         return NULL;
     }
 
-    min_size = FFMIN(max_alloc_size - 32, FFMAX(min_size + min_size / 16 + 32, min_size));
+    min_size = FFMIN(max_alloc_size, FFMAX(min_size + min_size / 16 + 32, min_size));
 
     ptr = av_realloc(ptr, min_size);
     /* we could set this to the unmodified min_size but this is safer
