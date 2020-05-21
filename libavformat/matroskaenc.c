@@ -836,7 +836,7 @@ static void mkv_write_video_color(AVIOContext *pb, const AVStream *st,
     uint8_t colour[(2 + 1 + 8) * 18 + (2 + 1) + 1];
     AVIOContext buf, *dyn_cp = &buf;
     int colorinfo_size;
-    const uint8_t *side_data;
+    const void *side_data;
 
     ffio_init_context(dyn_cp, colour, sizeof(colour), 1, NULL, NULL, NULL, NULL);
 
@@ -869,8 +869,7 @@ static void mkv_write_video_color(AVIOContext *pb, const AVStream *st,
     side_data = av_stream_get_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
                                         NULL);
     if (side_data) {
-        const AVContentLightMetadata *metadata =
-            (const AVContentLightMetadata*)side_data;
+        const AVContentLightMetadata *metadata = side_data;
         put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORMAXCLL,  metadata->MaxCLL);
         put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORMAXFALL, metadata->MaxFALL);
     }
@@ -880,8 +879,7 @@ static void mkv_write_video_color(AVIOContext *pb, const AVStream *st,
     if (side_data) {
         ebml_master meta_element = start_ebml_master(
             dyn_cp, MATROSKA_ID_VIDEOCOLORMASTERINGMETA, 10 * (2 + 1 + 8));
-        const AVMasteringDisplayMetadata *metadata =
-            (const AVMasteringDisplayMetadata*)side_data;
+        const AVMasteringDisplayMetadata *metadata = side_data;
         if (metadata->has_primaries) {
             put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_RX,
                            av_q2d(metadata->display_primaries[0][0]));
