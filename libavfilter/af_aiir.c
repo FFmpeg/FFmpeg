@@ -823,7 +823,7 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out, int sample_rate)
 {
     AudioIIRContext *s = ctx->priv;
     double *mag, *phase, *temp, *delay, min = DBL_MAX, max = -DBL_MAX;
-    double min_delay, max_delay, min_phase, max_phase;
+    double min_delay = DBL_MAX, max_delay = -DBL_MAX, min_phase, max_phase;
     int prev_ymag = -1, prev_yphase = -1, prev_ydelay = -1;
     char text[32];
     int ch, i;
@@ -869,9 +869,6 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out, int sample_rate)
         max_phase = fmax(max_phase, phase[i]);
     }
 
-    delay[0] = 0.;
-    min_delay = 0.;
-    max_delay = 0.;
     for (i = 0; i < s->w - 1; i++) {
         double div = s->w / (double)sample_rate;
 
@@ -879,8 +876,7 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out, int sample_rate)
         min_delay = fmin(min_delay, delay[i + 1]);
         max_delay = fmax(max_delay, delay[i + 1]);
     }
-
-    delay[i] = delay[i - 1];
+    delay[0] = delay[1];
 
     for (i = 0; i < s->w; i++) {
         int ymag = mag[i] / max * (s->h - 1);
