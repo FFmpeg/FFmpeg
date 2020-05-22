@@ -5508,9 +5508,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          par->codec_id == AV_CODEC_ID_H264 ||
          par->codec_id == AV_CODEC_ID_HEVC ||
          par->codec_id == AV_CODEC_ID_TRUEHD ||
-         par->codec_id == AV_CODEC_ID_AC3 ||
-         par->codec_id == AV_CODEC_ID_H264 ||
-         par->codec_id == AV_CODEC_ID_HEVC) && !trk->vos_len &&
+         par->codec_id == AV_CODEC_ID_AC3) && !trk->vos_len &&
          !TAG_IS_AVCI(trk->tag)) {
         /* copy frame to create needed atoms */
         trk->vos_len  = size;
