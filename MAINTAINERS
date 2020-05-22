@@ -461,7 +461,6 @@ Muxers/Demuxers:
   oggdec.c, oggdec.h                    David Conrad
   oggenc.c                              Baptiste Coudurier
   oggparse*.c                           David Conrad
-  oggparsedaala*                        Rostislav Pehlivanov
   oma.c                                 Maxim Poliakovski
   paf.c                                 Paul B Mahol
   psxstr.c                              Mike Melanson
