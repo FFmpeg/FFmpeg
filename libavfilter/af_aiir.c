@@ -58,6 +58,7 @@ typedef struct AudioIIRContext {
     char *a_str, *b_str, *g_str;
     double dry_gain, wet_gain;
     double mix;
+    int normalize;
     int format;
     int process;
     int precision;
@@ -430,6 +431,34 @@ static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
     return 0;
 }
 
+static void normalize_coeffs(AVFilterContext *ctx, int ch)
+{
+    AudioIIRContext *s = ctx->priv;
+    IIRChannel *iir = &s->iir[ch];
+    double sum_den = 0.;
+
+    if (!s->normalize)
+        return;
+
+    for (int i = 0; i < iir->nb_ab[1]; i++) {
+        sum_den += iir->ab[1][i];
+    }
+
+    if (sum_den > 1e-6) {
+        double factor, sum_num = 0.;
+
+        for (int i = 0; i < iir->nb_ab[0]; i++) {
+            sum_num += iir->ab[0][i];
+        }
+
+        factor = sum_num / sum_den;
+
+        for (int i = 0; i < iir->nb_ab[1]; i++) {
+            iir->ab[1][i] *= factor;
+        }
+    }
+}
+
 static int convert_zp2tf(AVFilterContext *ctx, int channels)
 {
     AudioIIRContext *s = ctx->priv;
@@ -465,6 +494,8 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
             iir->ab[0][j] = botc[2 * i];
         }
         iir->nb_ab[0]++;
+
+        normalize_coeffs(ctx, ch);
 
 fail:
         av_free(topc);
@@ -601,7 +632,8 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->biquads[current_biquad].b[1] = b[2] / a[4];
             iir->biquads[current_biquad].b[2] = b[0] / a[4];
 
-            if (fabs(iir->biquads[current_biquad].b[0] +
+            if (s->normalize &&
+                fabs(iir->biquads[current_biquad].b[0] +
                      iir->biquads[current_biquad].b[1] +
                      iir->biquads[current_biquad].b[2]) > 1e-6) {
                 factor = (iir->biquads[current_biquad].a[0] +
@@ -1009,6 +1041,8 @@ static int config_output(AVFilterLink *outlink)
         for (i = 0; i < iir->nb_ab[1]; i++) {
             iir->ab[1][i] *= iir->g / iir->ab[0][0];
         }
+
+        normalize_coeffs(ctx, ch);
     }
 
     switch (inlink->format) {
@@ -1196,6 +1230,7 @@ static const AVOption aiir_options[] = {
     { "flt", "single-precision floating-point",    0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "precision" },
     { "i32", "32-bit integers",                    0,                AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "precision" },
     { "i16", "16-bit integers",                    0,                AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "precision" },
+    { "n", "normalize coefficients",               OFFSET(normalize),AV_OPT_TYPE_BOOL,   {.i64=1},     0, 1, AF },
     { "mix", "set mix",                            OFFSET(mix),      AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "response", "show IR frequency response",    OFFSET(response), AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, VF },
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },

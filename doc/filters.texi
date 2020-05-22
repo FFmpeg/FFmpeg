@@ -1436,6 +1436,10 @@ single-precision floating-point
 16-bit integers
 @end table
 
+@item n
+Normalize filter coefficients, by default is enabled.
+Enabling it will normalize magnitude response at DC to 0dB.
+
 @item mix
 How much to use filtered signal in output. Default is 1.
 Range is between 0 and 1.
