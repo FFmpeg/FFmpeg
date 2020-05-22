@@ -1319,9 +1319,9 @@ typedef struct AVCodecContext {
      *
      * Some decoders do not support linesizes changing between frames.
      *
-     * If frame multithreading is used and thread_safe_callbacks is set,
-     * this callback may be called from a different thread, but not from more
-     * than one at once. Does not need to be reentrant.
+     * If frame multithreading is used, this callback may be called from a
+     * different thread, but not from more than one at once. Does not need to be
+     * reentrant.
      *
      * @see avcodec_align_dimensions2()
      *
@@ -1808,6 +1808,7 @@ typedef struct AVCodecContext {
      */
     int active_thread_type;
 
+#if FF_API_THREAD_SAFE_CALLBACKS
     /**
      * Set by the client if its custom get_buffer() callback can be called
      * synchronously from another thread, which allows faster multithreaded decoding.
@@ -1815,8 +1816,14 @@ typedef struct AVCodecContext {
      * Ignored if the default get_buffer() is used.
      * - encoding: Set by user.
      * - decoding: Set by user.
+     *
+     * @deprecated the custom get_buffer2() callback should always be
+     *   thread-safe. Thread-unsafe get_buffer2() implementations will be
+     *   invalid once this field is removed.
      */
+    attribute_deprecated
     int thread_safe_callbacks;
+#endif
 
     /**
      * The codec may call this to execute several independent things.

@@ -15,6 +15,11 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-xx-xx - xxxxxxxxxx - lavc 58.114.100 - avcodec.h
+  Deprecate AVCodecContext.thread_safe_callbacks. Starting with
+  LIBAVCODEC_VERSION_MAJOR=60, user callbacks must always be
+  thread-safe when frame threading is used.
+
 2020-11-25 - xxxxxxxxxx - lavc 58.113.100 - avcodec.h
   Adds a new flag AV_CODEC_EXPORT_DATA_FILM_GRAIN for export_side_data.
 
