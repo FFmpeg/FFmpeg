@@ -76,7 +76,7 @@ typedef struct AVVulkanDeviceContext {
     int queue_family_comp_index;
     int nb_comp_queues;
     /**
-     * Enabled instance extensions. By default, VK_KHR_surface is enabled if found.
+     * Enabled instance extensions.
      * If supplying your own device context, set this to an array of strings, with
      * each entry containing the specified Vulkan extension string to enable.
      * Duplicates are possible and accepted.
@@ -108,7 +108,7 @@ typedef struct AVVulkanDeviceContext {
  */
 typedef struct AVVulkanFramesContext {
     /**
-     * Controls the tiling of output frames.
+     * Controls the tiling of allocated frames.
      */
     VkImageTiling tiling;
     /**
@@ -117,15 +117,15 @@ typedef struct AVVulkanFramesContext {
      */
     VkImageUsageFlagBits usage;
     /**
-     * Extension data for image creation. By default, if the extension is
-     * available, this will be chained to a VkImageFormatListCreateInfoKHR.
+     * Extension data for image creation.
      */
     void *create_pnext;
     /**
      * Extension data for memory allocation. Must have as many entries as
      * the number of planes of the sw_format.
      * This will be chained to VkExportMemoryAllocateInfo, which is used
-     * to make all pool images exportable to other APIs.
+     * to make all pool images exportable to other APIs if the necessary
+     * extensions are present in enabled_dev_extensions.
      */
     void *alloc_pnext[AV_NUM_DATA_POINTERS];
 } AVVulkanFramesContext;
@@ -150,7 +150,7 @@ typedef struct AVVkFrame {
     VkImage img[AV_NUM_DATA_POINTERS];
 
     /**
-     * Same tiling must be used for all images.
+     * The same tiling must be used for all images in the frame.
      */
     VkImageTiling tiling;
 
@@ -173,8 +173,10 @@ typedef struct AVVkFrame {
     VkImageLayout layout[AV_NUM_DATA_POINTERS];
 
     /**
-     * Per-image semaphores. Must not be freed manually. Must be waited on
+     * Synchronization semaphores. Must not be freed manually. Must be waited on
      * and signalled at every queue submission.
+     * Could be less than the amount of images: either one per VkDeviceMemory
+     * or one for the entire frame. All others will be set to VK_NULL_HANDLE.
      */
     VkSemaphore sem[AV_NUM_DATA_POINTERS];
 
@@ -192,6 +194,7 @@ AVVkFrame *av_vk_frame_alloc(void);
 
 /**
  * Returns the format of each image up to the number of planes for a given sw_format.
+ * Returns NULL on unsupported formats.
  */
 const VkFormat *av_vkfmt_from_pixfmt(enum AVPixelFormat p);
 
