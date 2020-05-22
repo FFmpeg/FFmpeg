@@ -1038,8 +1038,9 @@ static int config_output(AVFilterLink *outlink)
             iir->ab[0][i] /= iir->ab[0][0];
         }
 
+        iir->ab[0][0] = 1.0;
         for (i = 0; i < iir->nb_ab[1]; i++) {
-            iir->ab[1][i] *= iir->g / iir->ab[0][0];
+            iir->ab[1][i] *= iir->g;
         }
 
         normalize_coeffs(ctx, ch);
