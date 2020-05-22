@@ -1001,15 +1001,6 @@ static int config_output(AVFilterLink *outlink)
         check_stability(ctx, inlink->channels);
     }
 
-    av_frame_free(&s->video);
-    if (s->response) {
-        s->video = ff_get_video_buffer(ctx->outputs[1], s->w, s->h);
-        if (!s->video)
-            return AVERROR(ENOMEM);
-
-        draw_response(ctx, s->video, inlink->sample_rate);
-    }
-
     if (s->format == 0)
         av_log(ctx, AV_LOG_WARNING, "tf coefficients format is not recommended for too high number of zeros/poles.\n");
 
@@ -1051,6 +1042,15 @@ static int config_output(AVFilterLink *outlink)
     case AV_SAMPLE_FMT_FLTP: s->iir_channel = s->process == 1 ? iir_ch_serial_fltp : iir_ch_fltp; break;
     case AV_SAMPLE_FMT_S32P: s->iir_channel = s->process == 1 ? iir_ch_serial_s32p : iir_ch_s32p; break;
     case AV_SAMPLE_FMT_S16P: s->iir_channel = s->process == 1 ? iir_ch_serial_s16p : iir_ch_s16p; break;
+    }
+
+    av_frame_free(&s->video);
+    if (s->response) {
+        s->video = ff_get_video_buffer(ctx->outputs[1], s->w, s->h);
+        if (!s->video)
+            return AVERROR(ENOMEM);
+
+        draw_response(ctx, s->video, inlink->sample_rate);
     }
 
     return 0;
