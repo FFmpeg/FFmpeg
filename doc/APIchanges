@@ -31,7 +31,7 @@ API changes, most recent first:
   Move AVBitstreamFilter-related public API to new header bsf.h.
   Move AVCodecParameters-related public API to new header codec_par.h.
 
-2020-05-xx - xxxxxxxxxx - lavc 56.86.101 - avcodec.h
+2020-05-xx - xxxxxxxxxx - lavc 58.86.101 - avcodec.h
   Deprecated AV_CODEC_CAP_INTRA_ONLY and AV_CODEC_CAP_LOSSLESS.
 
 2020-05-xx - xxxxxxxxxx - lavu 56.46.100 - common.h
