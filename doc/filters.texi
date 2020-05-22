@@ -1389,13 +1389,13 @@ Apply an arbitrary Infinite Impulse Response filter.
 It accepts the following parameters:
 
 @table @option
-@item z
+@item zeros, z
 Set numerator/zeros coefficients.
 
-@item p
+@item poles, p
 Set denominator/poles coefficients.
 
-@item k
+@item gains, k
 Set channels gains.
 
 @item dry_gain
@@ -1404,7 +1404,7 @@ Set input gain.
 @item wet_gain
 Set output gain.
 
-@item f
+@item format, f
 Set coefficients format.
 
 @table @samp
@@ -1418,11 +1418,11 @@ Z-plane zeros/poles, polar radians
 Z-plane zeros/poles, polar degrees
 @end table
 
-@item r
+@item process, r
 Set kind of processing.
 Can be @code{d} - direct or @code{s} - serial cascading. Default is @code{s}.
 
-@item e
+@item precision, e
 Set filtering precision.
 
 @table @samp
@@ -1436,7 +1436,7 @@ single-precision floating-point
 16-bit integers
 @end table
 
-@item n
+@item normalize, n
 Normalize filter coefficients, by default is enabled.
 Enabling it will normalize magnitude response at DC to 0dB.
 
