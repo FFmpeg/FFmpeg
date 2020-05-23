@@ -877,14 +877,12 @@ retry:
     }
 
     if (os->new_metadata) {
-        uint8_t *side_data = av_packet_new_side_data(pkt,
-                                                     AV_PKT_DATA_METADATA_UPDATE,
-                                                     os->new_metadata_size);
-        if(!side_data)
-            return AVERROR(ENOMEM);
+        ret = av_packet_add_side_data(pkt, AV_PKT_DATA_METADATA_UPDATE,
+                                      os->new_metadata, os->new_metadata_size);
+        if (ret < 0)
+            return ret;
 
-        memcpy(side_data, os->new_metadata, os->new_metadata_size);
-        av_freep(&os->new_metadata);
+        os->new_metadata      = NULL;
         os->new_metadata_size = 0;
     }
 

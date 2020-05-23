@@ -287,7 +287,7 @@ static int vorbis_update_metadata(AVFormatContext *s, int idx)
         os->new_metadata = av_packet_pack_dictionary(st->metadata, &os->new_metadata_size);
     /* Send an empty dictionary to indicate that metadata has been cleared. */
     } else {
-        os->new_metadata = av_malloc(1);
+        os->new_metadata = av_mallocz(1);
         os->new_metadata_size = 0;
     }
 
