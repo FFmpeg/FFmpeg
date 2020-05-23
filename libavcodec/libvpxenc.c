@@ -792,7 +792,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                                 cx_frame->sz_alpha + 8);
             if(!side_data) {
                 av_packet_unref(pkt);
-                av_free(pkt);
                 return AVERROR(ENOMEM);
             }
             AV_WB64(side_data, 1);
