@@ -626,17 +626,16 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
     if (cat->cur_file->metadata) {
-        uint8_t* metadata;
         int metadata_len;
         char* packed_metadata = av_packet_pack_dictionary(cat->cur_file->metadata, &metadata_len);
         if (!packed_metadata)
             return AVERROR(ENOMEM);
-        if (!(metadata = av_packet_new_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, metadata_len))) {
+        ret = av_packet_add_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
+                                      packed_metadata, metadata_len);
+        if (ret < 0) {
             av_freep(&packed_metadata);
-            return AVERROR(ENOMEM);
+            return ret;
         }
-        memcpy(metadata, packed_metadata, metadata_len);
-        av_freep(&packed_metadata);
     }
 
     if (cat->cur_file->duration == AV_NOPTS_VALUE && st->cur_dts != AV_NOPTS_VALUE) {
@@ -647,7 +646,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     }
 
     pkt->stream_index = cs->out_stream_index;
-    return ret;
+    return 0;
 }
 
 static void rescale_interval(AVRational tb_in, AVRational tb_out,
