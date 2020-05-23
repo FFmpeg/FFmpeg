@@ -113,6 +113,7 @@ typedef struct BiquadsContext {
     double mix;
     uint64_t channels;
     int normalize;
+    int order;
 
     double a0, a1, a2;
     double b0, b1, b2;
@@ -264,6 +265,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
     AVFilterLink *inlink    = ctx->inputs[0];
     double A = ff_exp10(s->gain / 40);
     double w0 = 2 * M_PI * s->frequency / inlink->sample_rate;
+    double K = tan(w0 / 2.);
     double alpha, beta;
 
     if (w0 > M_PI) {
@@ -389,12 +391,24 @@ static int config_filter(AVFilterLink *outlink, int reset)
         }
         break;
     case allpass:
-        s->a0 =  1 + alpha;
-        s->a1 = -2 * cos(w0);
-        s->a2 =  1 - alpha;
-        s->b0 =  1 - alpha;
-        s->b1 = -2 * cos(w0);
-        s->b2 =  1 + alpha;
+        switch (s->order) {
+        case 1:
+            s->a0 = 1.;
+            s->a1 = -(1. - K) / (1. + K);
+            s->a2 = 0.;
+            s->b0 = s->a1;
+            s->b1 = s->a0;
+            s->b2 = 0.;
+            break;
+        case 2:
+            s->a0 =  1 + alpha;
+            s->a1 = -2 * cos(w0);
+            s->a2 =  1 - alpha;
+            s->b0 =  1 - alpha;
+            s->b1 = -2 * cos(w0);
+            s->b2 =  1 + alpha;
+        break;
+        }
         break;
     default:
         av_assert0(0);
@@ -773,6 +787,8 @@ static const AVOption allpass_options[] = {
     {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {"normalize", "normalize coefficients", OFFSET(normalize), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {"n",         "normalize coefficients", OFFSET(normalize), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"order", "set filter order", OFFSET(order), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
+    {"o",     "set filter order", OFFSET(order), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
     {NULL}
 };
 

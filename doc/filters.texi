@@ -1568,6 +1568,9 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item order, o
+Set the filter order, can be 1 or 2. Default is 2.
 @end table
 
 @subsection Commands
