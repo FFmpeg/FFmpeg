@@ -28,6 +28,9 @@
 // of including it though, through strmif.h via dshow.h. And on mingw, the
 // mf*.h headers below indirectly include strmif.h.)
 #include <icodecapi.h>
+// Clang in MSVC mode fails on codecapi.h if we haven't included uuids.h
+// before, while it seems to work fine with MSVC itself.
+#include <uuids.h>
 #else
 #include <dshow.h>
 #endif
