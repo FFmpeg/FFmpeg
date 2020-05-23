@@ -86,8 +86,8 @@ typedef struct AVVulkanDeviceContext {
     int nb_enabled_inst_extensions;
     /**
      * Enabled device extensions. By default, VK_KHR_external_memory_fd,
-     * VK_EXT_external_memory_dma_buf, VK_EXT_image_drm_format_modifier and
-     * VK_KHR_external_semaphore_fd are enabled if found.
+     * VK_EXT_external_memory_dma_buf, VK_EXT_image_drm_format_modifier,
+     * VK_KHR_external_semaphore_fd and VK_EXT_external_memory_host are enabled if found.
      * If supplying your own device context, these fields takes the same format as
      * the above fields, with the same conditions that duplicates are possible
      * and accepted, and that NULL and 0 respectively means no extensions are enabled.

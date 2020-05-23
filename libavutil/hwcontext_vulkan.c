@@ -62,8 +62,9 @@ typedef struct VulkanExecCtx {
 
 typedef struct VulkanDevicePriv {
     /* Properties */
-    VkPhysicalDeviceProperties props;
+    VkPhysicalDeviceProperties2 props;
     VkPhysicalDeviceMemoryProperties mprops;
+    VkPhysicalDeviceExternalMemoryHostPropertiesEXT hprops;
 
     /* Queues */
     uint32_t qfs[3];
@@ -208,6 +209,7 @@ enum VulkanExtensions {
     EXT_DRM_MODIFIER_FLAGS     = 1ULL <<  1, /* VK_EXT_image_drm_format_modifier */
     EXT_EXTERNAL_FD_MEMORY     = 1ULL <<  2, /* VK_KHR_external_memory_fd */
     EXT_EXTERNAL_FD_SEM        = 1ULL <<  3, /* VK_KHR_external_semaphore_fd */
+    EXT_EXTERNAL_HOST_MEMORY   = 1ULL <<  4, /* VK_EXT_external_memory_host */
 
     EXT_NO_FLAG                = 1ULL << 63,
 };
@@ -226,6 +228,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,          EXT_EXTERNAL_DMABUF_MEMORY, },
     { VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,        EXT_DRM_MODIFIER_FLAGS,     },
     { VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,            EXT_EXTERNAL_FD_SEM,        },
+    { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME,             EXT_EXTERNAL_HOST_MEMORY,   },
 };
 
 /* Converts return values to strings */
@@ -1052,16 +1055,6 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
 
-    vkGetPhysicalDeviceProperties(hwctx->phys_dev, &p->props);
-    av_log(ctx, AV_LOG_VERBOSE, "Using device: %s\n", p->props.deviceName);
-    av_log(ctx, AV_LOG_VERBOSE, "Alignments:\n");
-    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyOffsetAlignment:   %li\n",
-           p->props.limits.optimalBufferCopyOffsetAlignment);
-    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %li\n",
-           p->props.limits.optimalBufferCopyRowPitchAlignment);
-    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %li\n",
-           p->props.limits.minMemoryMapAlignment);
-
     /* Set device extension flags */
     for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++) {
         for (int j = 0; j < FF_ARRAY_ELEMS(optional_device_exts); j++) {
@@ -1075,7 +1068,23 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         }
     }
 
-    p->dev_is_nvidia = (p->props.vendorID == 0x10de);
+    p->props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    p->props.pNext = &p->hprops;
+    p->hprops.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
+
+    vkGetPhysicalDeviceProperties2(hwctx->phys_dev, &p->props);
+    av_log(ctx, AV_LOG_VERBOSE, "Using device: %s\n",
+           p->props.properties.deviceName);
+    av_log(ctx, AV_LOG_VERBOSE, "Alignments:\n");
+    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %li\n",
+           p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
+    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %li\n",
+           p->props.properties.limits.minMemoryMapAlignment);
+    if (p->extensions & EXT_EXTERNAL_HOST_MEMORY)
+        av_log(ctx, AV_LOG_VERBOSE, "    minImportedHostPointerAlignment:    %li\n",
+               p->hprops.minImportedHostPointerAlignment);
+
+    p->dev_is_nvidia = (p->props.properties.vendorID == 0x10de);
 
     vkGetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &queue_num, NULL);
     if (!queue_num) {
@@ -1231,8 +1240,8 @@ static int vulkan_frames_get_constraints(AVHWDeviceContext *ctx,
 
     constraints->min_width  = 0;
     constraints->min_height = 0;
-    constraints->max_width  = p->props.limits.maxImageDimension2D;
-    constraints->max_height = p->props.limits.maxImageDimension2D;
+    constraints->max_width  = p->props.properties.limits.maxImageDimension2D;
+    constraints->max_height = p->props.properties.limits.maxImageDimension2D;
 
     constraints->valid_hw_formats = av_malloc_array(2, sizeof(enum AVPixelFormat));
     if (!constraints->valid_hw_formats)
@@ -1253,15 +1262,10 @@ static int alloc_mem(AVHWDeviceContext *ctx, VkMemoryRequirements *req,
     VulkanDevicePriv *p = ctx->internal->priv;
     AVVulkanDeviceContext *dev_hwctx = ctx->hwctx;
     VkMemoryAllocateInfo alloc_info = {
-        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext           = alloc_extension,
+        .sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .pNext          = alloc_extension,
+        .allocationSize = req->size,
     };
-
-    /* Align if we need to */
-    if (req_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-        req->size = FFALIGN(req->size, p->props.limits.minMemoryMapAlignment);
-
-    alloc_info.allocationSize = req->size;
 
     /* The vulkan spec requires memory types to be sorted in the "optimal"
      * order, so the first matching type we find will be the best/fastest one */
@@ -1354,6 +1358,7 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
     int err;
     VkResult ret;
     AVHWDeviceContext *ctx = hwfc->device_ctx;
+    VulkanDevicePriv *p = ctx->internal->priv;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { { 0 } };
 
@@ -1378,6 +1383,10 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
         };
 
         vkGetImageMemoryRequirements2(hwctx->act_dev, &req_desc, &req);
+
+        if (f->tiling == VK_IMAGE_TILING_LINEAR)
+            req.memoryRequirements.size = FFALIGN(req.memoryRequirements.size,
+                                                  p->props.properties.limits.minMemoryMapAlignment);
 
         /* In case the implementation prefers/requires dedicated allocation */
         use_ded_mem = ded_req.prefersDedicatedAllocation |
@@ -2630,6 +2639,7 @@ typedef struct ImageBuffer {
     VkBuffer buf;
     VkDeviceMemory mem;
     VkMemoryPropertyFlagBits flags;
+    int mapped_mem;
 } ImageBuffer;
 
 static void free_buf(void *opaque, uint8_t *data)
@@ -2646,7 +2656,7 @@ static void free_buf(void *opaque, uint8_t *data)
     av_free(data);
 }
 
-static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf,
+static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size,
                       int height, int *stride, VkBufferUsageFlags usage,
                       VkMemoryPropertyFlagBits flags, void *create_pnext,
                       void *alloc_pnext)
@@ -2668,8 +2678,15 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf,
     if (!vkbuf)
         return AVERROR(ENOMEM);
 
-    *stride = FFALIGN(*stride, p->props.limits.optimalBufferCopyRowPitchAlignment);
-    buf_spawn.size = height*(*stride);
+    vkbuf->mapped_mem = !!imp_size;
+
+    if (!vkbuf->mapped_mem) {
+        *stride = FFALIGN(*stride, p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
+        buf_spawn.size = height*(*stride);
+        buf_spawn.size = FFALIGN(buf_spawn.size, p->props.properties.limits.minMemoryMapAlignment);
+    } else {
+        buf_spawn.size = imp_size;
+    }
 
     ret = vkCreateBuffer(hwctx->act_dev, &buf_spawn, NULL, &vkbuf->buf);
     if (ret != VK_SUCCESS) {
@@ -2701,6 +2718,7 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf,
     return 0;
 }
 
+/* Skips mapping of host mapped buffers but still invalidates them */
 static int map_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs, uint8_t *mem[],
                        int nb_buffers, int invalidate)
 {
@@ -2711,6 +2729,9 @@ static int map_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs, uint8_t *mem[
 
     for (int i = 0; i < nb_buffers; i++) {
         ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
+        if (vkbuf->mapped_mem)
+            continue;
+
         ret = vkMapMemory(hwctx->act_dev, vkbuf->mem, 0,
                           VK_WHOLE_SIZE, 0, (void **)&mem[i]);
         if (ret != VK_SUCCESS) {
@@ -2780,6 +2801,9 @@ static int unmap_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs,
 
     for (int i = 0; i < nb_buffers; i++) {
         ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
+        if (vkbuf->mapped_mem)
+            continue;
+
         vkUnmapMemory(hwctx->act_dev, vkbuf->mem);
     }
 
@@ -2901,11 +2925,6 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
     }
 }
 
-/* Technically we can use VK_EXT_external_memory_host to upload and download,
- * however the alignment requirements make this unfeasible as both the pointer
- * and the size of each plane need to be aligned to the minimum alignment
- * requirement, which on all current implementations (anv, radv) is 4096.
- * If the requirement gets relaxed (unlikely) this can easily be implemented. */
 static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
                                          const AVFrame *src)
 {
@@ -2916,6 +2935,9 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
     const int planes = av_pix_fmt_count_planes(src->format);
     int log2_chroma = av_pix_fmt_desc_get(src->format)->log2_chroma_h;
+    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
+    int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
+    int map_host = p->extensions & EXT_EXTERNAL_HOST_MEMORY;
 
     if ((src->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(src->format))) {
         av_log(hwfc, AV_LOG_ERROR, "Unsupported source pixel format!\n");
@@ -2946,11 +2968,27 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     for (int i = 0; i < planes; i++) {
         int h = src->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
+        size_t p_size = FFABS(src->linesize[i]) * p_height;
+
+        VkImportMemoryHostPointerInfoEXT import_desc = {
+            .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+            .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+            .pHostPointer = src->data[i],
+        };
+
+        /* We can only map images with positive stride and alignment appropriate
+         * for the device. */
+        host_mapped[i] = map_host && src->linesize[i] > 0 &&
+                         !(p_size % p->hprops.minImportedHostPointerAlignment) &&
+                         !(((uintptr_t)import_desc.pHostPointer) %
+                           p->hprops.minImportedHostPointerAlignment);
+        p_size = host_mapped[i] ? p_size : 0;
 
         tmp.linesize[i] = FFABS(src->linesize[i]);
-        err = create_buf(dev_ctx, &bufs[i], p_height,
-                         &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL, NULL);
+        err = create_buf(dev_ctx, &bufs[i], p_size, p_height, &tmp.linesize[i],
+                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL,
+                         host_mapped[i] ? &import_desc : NULL);
         if (err)
             goto end;
     }
@@ -2959,8 +2997,17 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
         goto end;
 
-    av_image_copy(tmp.data, tmp.linesize, (const uint8_t **)src->data,
-                  src->linesize, src->format, src->width, src->height);
+    for (int i = 0; i < planes; i++) {
+        int h = src->height;
+        int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
+
+        if (host_mapped[i])
+            continue;
+
+        av_image_copy_plane(tmp.data[i], tmp.linesize[i],
+                            (const uint8_t *)src->data[i], src->linesize[i],
+                            FFMIN(tmp.linesize[i], src->linesize[i]), p_height);
+    }
 
     if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
         goto end;
@@ -3076,6 +3123,9 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
     const int planes = av_pix_fmt_count_planes(dst->format);
     int log2_chroma = av_pix_fmt_desc_get(dst->format)->log2_chroma_h;
+    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
+    int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
+    int map_host = p->extensions & EXT_EXTERNAL_HOST_MEMORY;
 
     if (dst->width > hwfc->width || dst->height > hwfc->height)
         return AVERROR(EINVAL);
@@ -3101,11 +3151,27 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     for (int i = 0; i < planes; i++) {
         int h = dst->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
+        size_t p_size = FFABS(dst->linesize[i]) * p_height;
+
+        VkImportMemoryHostPointerInfoEXT import_desc = {
+            .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+            .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+            .pHostPointer = dst->data[i],
+        };
+
+        /* We can only map images with positive stride and alignment appropriate
+         * for the device. */
+        host_mapped[i] = map_host && dst->linesize[i] > 0 &&
+                         !(p_size % p->hprops.minImportedHostPointerAlignment) &&
+                         !(((uintptr_t)import_desc.pHostPointer) %
+                           p->hprops.minImportedHostPointerAlignment);
+        p_size = host_mapped[i] ? p_size : 0;
 
         tmp.linesize[i] = FFABS(dst->linesize[i]);
-        err = create_buf(dev_ctx, &bufs[i], p_height,
+        err = create_buf(dev_ctx, &bufs[i], p_size, p_height,
                          &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL, NULL);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL,
+                         host_mapped[i] ? &import_desc : NULL);
         if (err)
             goto end;
     }
@@ -3119,8 +3185,17 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 1)))
         goto end;
 
-    av_image_copy(dst->data, dst->linesize, (const uint8_t **)tmp.data,
-                  tmp.linesize, dst->format, dst->width, dst->height);
+    for (int i = 0; i < planes; i++) {
+        int h = dst->height;
+        int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
+
+        if (host_mapped[i])
+            continue;
+
+        av_image_copy_plane(dst->data[i], dst->linesize[i],
+                            (const uint8_t *)tmp.data[i], tmp.linesize[i],
+                            FFMIN(tmp.linesize[i], dst->linesize[i]), p_height);
+    }
 
     err = unmap_buffers(dev_ctx, bufs, planes, 0);
 
