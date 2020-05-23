@@ -379,8 +379,7 @@ int ff_img_read_header(AVFormatContext *s1)
  * as a dictionary, so it can be used by filters like 'drawtext'.
  */
 static int add_filename_as_pkt_side_data(char *filename, AVPacket *pkt) {
-    uint8_t* metadata;
-    int metadata_len;
+    int metadata_len, ret;
     AVDictionary *d = NULL;
     char *packed_metadata = NULL;
 
@@ -391,13 +390,12 @@ static int add_filename_as_pkt_side_data(char *filename, AVPacket *pkt) {
     av_dict_free(&d);
     if (!packed_metadata)
         return AVERROR(ENOMEM);
-    if (!(metadata = av_packet_new_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, metadata_len))) {
+    ret = av_packet_add_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
+                                  packed_metadata, metadata_len);
+    if (ret < 0) {
         av_freep(&packed_metadata);
-        return AVERROR(ENOMEM);
+        return ret;
     }
-    memcpy(metadata, packed_metadata, metadata_len);
-    av_freep(&packed_metadata);
-
     return 0;
 }
 
