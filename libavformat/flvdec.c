@@ -1283,12 +1283,11 @@ retry_duration:
     pkt->stream_index = st->index;
     pkt->pos          = pos;
     if (flv->new_extradata[stream_type]) {
-        uint8_t *side = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
-                                                flv->new_extradata_size[stream_type]);
-        if (side) {
-            memcpy(side, flv->new_extradata[stream_type],
-                   flv->new_extradata_size[stream_type]);
-            av_freep(&flv->new_extradata[stream_type]);
+        int ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                          flv->new_extradata[stream_type],
+                                          flv->new_extradata_size[stream_type]);
+        if (ret >= 0) {
+            flv->new_extradata[stream_type]      = NULL;
             flv->new_extradata_size[stream_type] = 0;
         }
     }
