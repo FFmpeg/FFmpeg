@@ -107,7 +107,7 @@ static inline void idct_1d(int *blk, int step)
     const int t0 = blk[0 * step] + blk[4 * step];
     const int t1 = blk[0 * step] - blk[4 * step];
     const int t2 = blk[2 * step] + blk[6 * step];
-    const int t3 = (((blk[2 * step] - blk[6 * step]) * 362) >> 8) - t2;
+    const int t3 = ((int)((blk[2 * step] - blk[6 * step]) * 362U) >> 8) - t2;
     const int t4 = t0 + t2;
     const int t5 = t0 - t2;
     const int t6 = t1 + t3;
@@ -117,10 +117,10 @@ static inline void idct_1d(int *blk, int step)
     const int tA = blk[1 * step] + blk[7 * step];
     const int tB = blk[1 * step] - blk[7 * step];
     const int tC = t8 + tA;
-    const int tD = (tB + t9) * 473 >> 8;
-    const int tE = ((t9 * -669 >> 8) - tC) + tD;
-    const int tF = ((tA - t8) * 362 >> 8) - tE;
-    const int t10 = ((tB * 277 >> 8) - tD) + tF;
+    const int tD = (int)((tB + t9) * 473U) >> 8;
+    const int tE = (((int)(t9 * -669U) >> 8) - tC) + tD;
+    const int tF = ((int)((tA - t8) * 362U) >> 8) - tE;
+    const int t10 = (((int)(tB * 277U) >> 8) - tD) + tF;
 
     blk[0 * step] = t4 + tC;
     blk[1 * step] = t6 + tE;
