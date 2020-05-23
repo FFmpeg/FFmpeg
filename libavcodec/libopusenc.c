@@ -503,7 +503,6 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     // Check if subtraction resulted in an overflow
     if ((discard_padding < opus->opts.packet_size) != (avpkt->duration > 0)) {
         av_packet_unref(avpkt);
-        av_free(avpkt);
         return AVERROR(EINVAL);
     }
     if (discard_padding > 0) {
@@ -512,7 +511,6 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
                                                      10);
         if(!side_data) {
             av_packet_unref(avpkt);
-            av_free(avpkt);
             return AVERROR(ENOMEM);
         }
         AV_WL32(side_data + 4, discard_padding);
