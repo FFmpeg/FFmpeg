@@ -59,6 +59,15 @@ struct rgbvec {
 /* 3D LUT don't often go up to level 32, but it is common to have a Hald CLUT
  * of 512x512 (64x64x64) */
 #define MAX_LEVEL 256
+#define PRELUT_SIZE 65536
+
+typedef struct Lut3DPreLut {
+    int size;
+    float min[3];
+    float max[3];
+    float scale[3];
+    float* lut[3];
+} Lut3DPreLut;
 
 typedef struct LUT3DContext {
     const AVClass *class;
@@ -71,6 +80,7 @@ typedef struct LUT3DContext {
     struct rgbvec *lut;
     int lutsize;
     int lutsize2;
+    Lut3DPreLut prelut;
 #if CONFIG_HALDCLUT_FILTER
     uint8_t clut_rgba_map[4];
     int clut_step;
@@ -234,11 +244,39 @@ static inline struct rgbvec interp_tetrahedral(const LUT3DContext *lut3d,
     return c;
 }
 
+static inline float prelut_interp_1d_linear(const Lut3DPreLut *prelut,
+                                            int idx, const float s)
+{
+    const int lut_max = prelut->size - 1;
+    const float scaled = (s - prelut->min[idx]) * prelut->scale[idx];
+    const float x = av_clipf(scaled, 0.0f, lut_max);
+    const int prev = PREV(x);
+    const int next = FFMIN((int)(x) + 1, lut_max);
+    const float p = prelut->lut[idx][prev];
+    const float n = prelut->lut[idx][next];
+    const float d = x - (float)prev;
+    return lerpf(p, n, d);
+}
+
+static inline struct rgbvec apply_prelut(const Lut3DPreLut *prelut,
+                                         const struct rgbvec *s)
+{
+    if (prelut->size <= 0)
+        return *s;
+
+    struct rgbvec c;
+    c.r = prelut_interp_1d_linear(prelut, 0, s->r);
+    c.g = prelut_interp_1d_linear(prelut, 1, s->g);
+    c.b = prelut_interp_1d_linear(prelut, 2, s->b);
+    return c;
+}
+
 #define DEFINE_INTERP_FUNC_PLANAR(name, nbits, depth)                                                  \
 static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
 {                                                                                                      \
     int x, y;                                                                                          \
     const LUT3DContext *lut3d = ctx->priv;                                                             \
+    const Lut3DPreLut *prelut = &lut3d->prelut;                                                        \
     const ThreadData *td = arg;                                                                        \
     const AVFrame *in  = td->in;                                                                       \
     const AVFrame *out = td->out;                                                                      \
@@ -253,9 +291,11 @@ static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, i
     const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];                              \
     const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];                              \
     const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];                              \
-    const float scale_r = (lut3d->scale.r / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                  \
-    const float scale_g = (lut3d->scale.g / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                  \
-    const float scale_b = (lut3d->scale.b / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                  \
+    const float lut_max = lut3d->lutsize - 1;                                                          \
+    const float scale_f = 1.0f / ((1<<depth) - 1);                                                     \
+    const float scale_r = lut3d->scale.r * lut_max;                                                    \
+    const float scale_g = lut3d->scale.g * lut_max;                                                    \
+    const float scale_b = lut3d->scale.b * lut_max;                                                    \
                                                                                                        \
     for (y = slice_start; y < slice_end; y++) {                                                        \
         uint##nbits##_t *dstg = (uint##nbits##_t *)grow;                                               \
@@ -267,9 +307,13 @@ static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, i
         const uint##nbits##_t *srcr = (const uint##nbits##_t *)srcrrow;                                \
         const uint##nbits##_t *srca = (const uint##nbits##_t *)srcarow;                                \
         for (x = 0; x < in->width; x++) {                                                              \
-            const struct rgbvec scaled_rgb = {srcr[x] * scale_r,                                       \
-                                              srcg[x] * scale_g,                                       \
-                                              srcb[x] * scale_b};                                      \
+            const struct rgbvec rgb = {srcr[x] * scale_f,                                              \
+                                       srcg[x] * scale_f,                                              \
+                                       srcb[x] * scale_f};                                             \
+            const struct rgbvec prelut_rgb = apply_prelut(prelut, &rgb);                               \
+            const struct rgbvec scaled_rgb = {av_clipf(prelut_rgb.r * scale_r, 0, lut_max),            \
+                                              av_clipf(prelut_rgb.g * scale_g, 0, lut_max),            \
+                                              av_clipf(prelut_rgb.b * scale_b, 0, lut_max)};           \
             struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                     \
             dstr[x] = av_clip_uintp2(vec.r * (float)((1<<depth) - 1), depth);                          \
             dstg[x] = av_clip_uintp2(vec.g * (float)((1<<depth) - 1), depth);                          \
@@ -318,6 +362,7 @@ static int interp_##name##_pf##depth(AVFilterContext *ctx, void *arg, int jobnr,
 {                                                                                                      \
     int x, y;                                                                                          \
     const LUT3DContext *lut3d = ctx->priv;                                                             \
+    const Lut3DPreLut *prelut = &lut3d->prelut;                                                        \
     const ThreadData *td = arg;                                                                        \
     const AVFrame *in  = td->in;                                                                       \
     const AVFrame *out = td->out;                                                                      \
@@ -332,10 +377,10 @@ static int interp_##name##_pf##depth(AVFilterContext *ctx, void *arg, int jobnr,
     const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];                              \
     const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];                              \
     const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];                              \
-    const float lutsize = lut3d->lutsize - 1;                                                          \
-    const float scale_r = lut3d->scale.r * lutsize;                                                    \
-    const float scale_g = lut3d->scale.g * lutsize;                                                    \
-    const float scale_b = lut3d->scale.b * lutsize;                                                    \
+    const float lut_max = lut3d->lutsize - 1;                                                          \
+    const float scale_r = lut3d->scale.r * lut_max;                                                    \
+    const float scale_g = lut3d->scale.g * lut_max;                                                    \
+    const float scale_b = lut3d->scale.b * lut_max;                                                    \
                                                                                                        \
     for (y = slice_start; y < slice_end; y++) {                                                        \
         float *dstg = (float *)grow;                                                                   \
@@ -347,9 +392,13 @@ static int interp_##name##_pf##depth(AVFilterContext *ctx, void *arg, int jobnr,
         const float *srcr = (const float *)srcrrow;                                                    \
         const float *srca = (const float *)srcarow;                                                    \
         for (x = 0; x < in->width; x++) {                                                              \
-            const struct rgbvec scaled_rgb = {av_clipf(sanitizef(srcr[x]) * scale_r, 0, lutsize),      \
-                                              av_clipf(sanitizef(srcg[x]) * scale_g, 0, lutsize),      \
-                                              av_clipf(sanitizef(srcb[x]) * scale_b, 0, lutsize)};     \
+            const struct rgbvec rgb = {sanitizef(srcr[x]),                                             \
+                                       sanitizef(srcg[x]),                                             \
+                                       sanitizef(srcb[x])};                                            \
+            const struct rgbvec prelut_rgb = apply_prelut(prelut, &rgb);                               \
+            const struct rgbvec scaled_rgb = {av_clipf(prelut_rgb.r * scale_r, 0, lut_max),            \
+                                              av_clipf(prelut_rgb.g * scale_g, 0, lut_max),            \
+                                              av_clipf(prelut_rgb.b * scale_b, 0, lut_max)};           \
             struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                     \
             dstr[x] = vec.r;                                                                           \
             dstg[x] = vec.g;                                                                           \
@@ -378,6 +427,7 @@ static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, i
 {                                                                                                   \
     int x, y;                                                                                       \
     const LUT3DContext *lut3d = ctx->priv;                                                          \
+    const Lut3DPreLut *prelut = &lut3d->prelut;                                                     \
     const ThreadData *td = arg;                                                                     \
     const AVFrame *in  = td->in;                                                                    \
     const AVFrame *out = td->out;                                                                   \
@@ -391,17 +441,23 @@ static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, i
     const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                     \
     uint8_t       *dstrow = out->data[0] + slice_start * out->linesize[0];                          \
     const uint8_t *srcrow = in ->data[0] + slice_start * in ->linesize[0];                          \
-    const float scale_r = (lut3d->scale.r / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);               \
-    const float scale_g = (lut3d->scale.g / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);               \
-    const float scale_b = (lut3d->scale.b / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);               \
+    const float lut_max = lut3d->lutsize - 1;                                                       \
+    const float scale_f = 1.0f / ((1<<nbits) - 1);                                                  \
+    const float scale_r = lut3d->scale.r * lut_max;                                                 \
+    const float scale_g = lut3d->scale.g * lut_max;                                                 \
+    const float scale_b = lut3d->scale.b * lut_max;                                                 \
                                                                                                     \
     for (y = slice_start; y < slice_end; y++) {                                                     \
         uint##nbits##_t *dst = (uint##nbits##_t *)dstrow;                                           \
         const uint##nbits##_t *src = (const uint##nbits##_t *)srcrow;                               \
         for (x = 0; x < in->width * step; x += step) {                                              \
-            const struct rgbvec scaled_rgb = {src[x + r] * scale_r,                                 \
-                                              src[x + g] * scale_g,                                 \
-                                              src[x + b] * scale_b};                                \
+            const struct rgbvec rgb = {src[x + r] * scale_f,                                        \
+                                       src[x + g] * scale_f,                                        \
+                                       src[x + b] * scale_f};                                       \
+            const struct rgbvec prelut_rgb = apply_prelut(prelut, &rgb);                            \
+            const struct rgbvec scaled_rgb = {av_clipf(prelut_rgb.r * scale_r, 0, lut_max),         \
+                                              av_clipf(prelut_rgb.g * scale_g, 0, lut_max),         \
+                                              av_clipf(prelut_rgb.b * scale_b, 0, lut_max)};        \
             struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                  \
             dst[x + r] = av_clip_uint##nbits(vec.r * (float)((1<<nbits) - 1));                      \
             dst[x + g] = av_clip_uint##nbits(vec.g * (float)((1<<nbits) - 1));                      \
@@ -432,6 +488,40 @@ static int skip_line(const char *p)
     return !*p || *p == '#';
 }
 
+static char* fget_next_word(char* dst, int max, FILE* f)
+{
+    int c;
+    char *p = dst;
+
+    /* for null */
+    max--;
+    /* skip until next non whitespace char */
+    while ((c = fgetc(f)) != EOF) {
+        if (av_isspace(c))
+            continue;
+
+        *p++ = c;
+        max--;
+        break;
+    }
+
+    /* get max bytes or up until next whitespace char */
+    for (; max > 0; max--) {
+        if ((c = fgetc(f)) == EOF)
+            break;
+
+        if (av_isspace(c))
+            break;
+
+        *p++ = c;
+    }
+
+    *p = 0;
+    if (p == dst)
+        return NULL;
+    return p;
+}
+
 #define NEXT_LINE(loop_cond) do {                           \
     if (!fgets(line, sizeof(line), f)) {                    \
         av_log(ctx, AV_LOG_ERROR, "Unexpected EOF\n");      \
@@ -439,10 +529,18 @@ static int skip_line(const char *p)
     }                                                       \
 } while (loop_cond)
 
-static int allocate_3dlut(AVFilterContext *ctx, int lutsize)
+#define NEXT_LINE_OR_GOTO(loop_cond, label) do {            \
+    if (!fgets(line, sizeof(line), f)) {                    \
+        av_log(ctx, AV_LOG_ERROR, "Unexpected EOF\n");      \
+        ret = AVERROR_INVALIDDATA;                          \
+        goto label;                                         \
+    }                                                       \
+} while (loop_cond)
+
+static int allocate_3dlut(AVFilterContext *ctx, int lutsize, int prelut)
 {
     LUT3DContext *lut3d = ctx->priv;
-
+    int i;
     if (lutsize < 2 || lutsize > MAX_LEVEL) {
         av_log(ctx, AV_LOG_ERROR, "Too large or invalid 3D LUT size\n");
         return AVERROR(EINVAL);
@@ -452,6 +550,21 @@ static int allocate_3dlut(AVFilterContext *ctx, int lutsize)
     lut3d->lut = av_malloc_array(lutsize * lutsize * lutsize, sizeof(*lut3d->lut));
     if (!lut3d->lut)
         return AVERROR(ENOMEM);
+
+    if (prelut) {
+        lut3d->prelut.size = PRELUT_SIZE;
+        for (i = 0; i < 3; i++) {
+            av_freep(&lut3d->prelut.lut[i]);
+            lut3d->prelut.lut[i] = av_malloc_array(PRELUT_SIZE, sizeof(*lut3d->prelut.lut[0]));
+            if (!lut3d->prelut.lut[i])
+                return AVERROR(ENOMEM);
+        }
+    } else {
+        lut3d->prelut.size = 0;
+        for (i = 0; i < 3; i++) {
+            av_freep(&lut3d->prelut.lut[i]);
+        }
+    }
     lut3d->lutsize = lutsize;
     lut3d->lutsize2 = lutsize * lutsize;
     return 0;
@@ -475,7 +588,7 @@ static int parse_dat(AVFilterContext *ctx, FILE *f)
         NEXT_LINE(skip_line(line));
     }
 
-    ret = allocate_3dlut(ctx, size);
+    ret = allocate_3dlut(ctx, size, 0);
     if (ret < 0)
         return ret;
 
@@ -507,7 +620,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
             const int size = strtol(line + 12, NULL, 0);
             const int size2 = size * size;
 
-            ret = allocate_3dlut(ctx, size);
+            ret = allocate_3dlut(ctx, size, 0);
             if (ret < 0)
                 return ret;
 
@@ -562,7 +675,7 @@ static int parse_3dl(AVFilterContext *ctx, FILE *f)
 
     lut3d->lutsize = size;
 
-    ret = allocate_3dlut(ctx, size);
+    ret = allocate_3dlut(ctx, size, 0);
     if (ret < 0)
         return ret;
 
@@ -631,7 +744,7 @@ static int parse_m3d(AVFilterContext *ctx, FILE *f)
     lut3d->lutsize = size;
     size2 = size * size;
 
-    ret = allocate_3dlut(ctx, size);
+    ret = allocate_3dlut(ctx, size, 0);
     if (ret < 0)
         return ret;
 
@@ -655,6 +768,44 @@ static int parse_m3d(AVFilterContext *ctx, FILE *f)
     return 0;
 }
 
+static int nearest_sample_index(float *data, float x, int low, int hi)
+{
+    int mid;
+    if (x < data[low])
+        return low;
+
+    if (x > data[hi])
+        return hi;
+
+    for (;;) {
+        av_assert0(x >= data[low]);
+        av_assert0(x <= data[hi]);
+        av_assert0((hi-low) > 0);
+
+        if (hi - low == 1)
+            return low;
+
+        mid = (low + hi) / 2;
+
+        if (x < data[mid])
+            hi = mid;
+        else
+            low = mid;
+    }
+
+    return 0;
+}
+
+#define NEXT_FLOAT_OR_GOTO(value, label)                    \
+    if (!fget_next_word(line, sizeof(line) ,f)) {           \
+        ret = AVERROR_INVALIDDATA;                          \
+        goto label;                                         \
+    }                                                       \
+    if (av_sscanf(line, "%f", &value) != 1) {               \
+        ret = AVERROR_INVALIDDATA;                          \
+        goto label;                                         \
+    }
+
 static int parse_cinespace(AVFilterContext *ctx, FILE *f)
 {
     LUT3DContext *lut3d = ctx->priv;
@@ -663,22 +814,30 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
     float in_max[3]  = {1.0, 1.0, 1.0};
     float out_min[3] = {0.0, 0.0, 0.0};
     float out_max[3] = {1.0, 1.0, 1.0};
-    int ret, inside_metadata = 0, size, size2;
+    int inside_metadata = 0, size, size2;
+    int prelut = 0;
+    int ret = 0;
 
-    NEXT_LINE(skip_line(line));
+    int prelut_sizes[3] = {0, 0, 0};
+    float *in_prelut[3]  = {NULL, NULL, NULL};
+    float *out_prelut[3] = {NULL, NULL, NULL};
+
+    NEXT_LINE_OR_GOTO(skip_line(line), end);
     if (strncmp(line, "CSPLUTV100", 10)) {
         av_log(ctx, AV_LOG_ERROR, "Not cineSpace LUT format\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto end;
     }
 
-    NEXT_LINE(skip_line(line));
+    NEXT_LINE_OR_GOTO(skip_line(line), end);
     if (strncmp(line, "3D", 2)) {
         av_log(ctx, AV_LOG_ERROR, "Not 3D LUT format\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto end;
     }
 
     while (1) {
-        NEXT_LINE(skip_line(line));
+        NEXT_LINE_OR_GOTO(skip_line(line), end);
 
         if (!strncmp(line, "BEGIN METADATA", 14)) {
             inside_metadata = 1;
@@ -694,31 +853,94 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
             for (int i = 0; i < 3; i++) {
                 int npoints = strtol(line, NULL, 0);
 
-                if (npoints != 2) {
+                if (npoints > 2) {
+                    float v,last;
+
+                    if (npoints > PRELUT_SIZE) {
+                        av_log(ctx, AV_LOG_ERROR, "Prelut size too large.\n");
+                        ret = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
+
+                    if (in_prelut[i] || out_prelut[i]) {
+                        av_log(ctx, AV_LOG_ERROR, "Invalid file has multiple preluts.\n");
+                        ret = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
+
+                    in_prelut[i]  = (float*)av_malloc(npoints * sizeof(float));
+                    out_prelut[i] = (float*)av_malloc(npoints * sizeof(float));
+                    if (!in_prelut[i] || !out_prelut[i]) {
+                        ret = AVERROR(ENOMEM);
+                        goto end;
+                    }
+
+                    prelut_sizes[i] = npoints;
+                    in_min[i] = FLT_MAX;
+                    in_max[i] = FLT_MIN;
+                    out_min[i] = FLT_MAX;
+                    out_max[i] = FLT_MIN;
+
+                    last = FLT_MIN;
+
+                    for (int j = 0; j < npoints; j++) {
+                        NEXT_FLOAT_OR_GOTO(v, end)
+                        in_min[i] = FFMIN(in_min[i], v);
+                        in_max[i] = FFMAX(in_max[i], v);
+                        in_prelut[i][j] = v;
+                        if (v < last) {
+                            av_log(ctx, AV_LOG_ERROR, "Invalid file, non increasing prelut.\n");
+                            ret = AVERROR(ENOMEM);
+                            goto end;
+                        }
+                        last = v;
+                    }
+
+                    for (int j = 0; j < npoints; j++) {
+                        NEXT_FLOAT_OR_GOTO(v, end)
+                        out_min[i] = FFMIN(out_min[i], v);
+                        out_max[i] = FFMAX(out_max[i], v);
+                        out_prelut[i][j] = v;
+                    }
+
+                } else if (npoints == 2)  {
+                    NEXT_LINE_OR_GOTO(skip_line(line), end);
+                    if (av_sscanf(line, "%f %f", &in_min[i], &in_max[i]) != 2) {
+                        ret = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
+                    NEXT_LINE_OR_GOTO(skip_line(line), end);
+                    if (av_sscanf(line, "%f %f", &out_min[i], &out_max[i]) != 2) {
+                        ret = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
+
+                } else {
                     av_log(ctx, AV_LOG_ERROR, "Unsupported number of pre-lut points.\n");
-                    return AVERROR_PATCHWELCOME;
+                    ret = AVERROR_PATCHWELCOME;
+                    goto end;
                 }
 
-                NEXT_LINE(skip_line(line));
-                if (av_sscanf(line, "%f %f", &in_min[i], &in_max[i]) != 2)
-                    return AVERROR_INVALIDDATA;
-                NEXT_LINE(skip_line(line));
-                if (av_sscanf(line, "%f %f", &out_min[i], &out_max[i]) != 2)
-                    return AVERROR_INVALIDDATA;
-                NEXT_LINE(skip_line(line));
+                NEXT_LINE_OR_GOTO(skip_line(line), end);
             }
 
-            if (av_sscanf(line, "%d %d %d", &size_r, &size_g, &size_b) != 3)
-                return AVERROR(EINVAL);
+            if (av_sscanf(line, "%d %d %d", &size_r, &size_g, &size_b) != 3) {
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
             if (size_r != size_g || size_r != size_b) {
                 av_log(ctx, AV_LOG_ERROR, "Unsupported size combination: %dx%dx%d.\n", size_r, size_g, size_b);
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto end;
             }
 
             size = size_r;
             size2 = size * size;
 
-            ret = allocate_3dlut(ctx, size);
+            if (prelut_sizes[0] && prelut_sizes[1] && prelut_sizes[2])
+                prelut = 1;
+
+            ret = allocate_3dlut(ctx, size, prelut);
             if (ret < 0)
                 return ret;
 
@@ -726,10 +948,13 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
                 for (int j = 0; j < size; j++) {
                     for (int i = 0; i < size; i++) {
                         struct rgbvec *vec = &lut3d->lut[i * size2 + j * size + k];
-                        if (k != 0 || j != 0 || i != 0)
-                            NEXT_LINE(skip_line(line));
-                        if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
-                            return AVERROR_INVALIDDATA;
+
+                        NEXT_LINE_OR_GOTO(skip_line(line), end);
+                        if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3) {
+                            ret = AVERROR_INVALIDDATA;
+                            goto end;
+                        }
+
                         vec->r *= out_max[0] - out_min[0];
                         vec->g *= out_max[1] - out_min[1];
                         vec->b *= out_max[2] - out_min[2];
@@ -741,11 +966,44 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
         }
     }
 
-    lut3d->scale.r = av_clipf(1. / (in_max[0] - in_min[0]), 0.f, 1.f);
-    lut3d->scale.g = av_clipf(1. / (in_max[1] - in_min[1]), 0.f, 1.f);
-    lut3d->scale.b = av_clipf(1. / (in_max[2] - in_min[2]), 0.f, 1.f);
+    if (prelut) {
+        for (int c = 0; c < 3; c++) {
 
-    return 0;
+            lut3d->prelut.min[c] = in_min[c];
+            lut3d->prelut.max[c] = in_max[c];
+            lut3d->prelut.scale[c] =  (1.0f / (float)(in_max[c] - in_min[c])) * (lut3d->prelut.size - 1);
+
+            for (int i = 0; i < lut3d->prelut.size; ++i) {
+                float mix = (float) i / (float)(lut3d->prelut.size - 1);
+                float x = lerpf(in_min[c], in_max[c], mix);
+
+                int idx = nearest_sample_index(in_prelut[c], x, 0, prelut_sizes[c]-1);
+                av_assert0(idx + 1 < prelut_sizes[c]);
+
+                float a = out_prelut[c][idx + 0];
+                float b = out_prelut[c][idx + 1];
+                mix = x - in_prelut[c][idx];
+
+                float outval = lerpf(a, b, mix);
+                lut3d->prelut.lut[c][i] = sanitizef(outval);
+            }
+        }
+        lut3d->scale.r = 1.00f;
+        lut3d->scale.g = 1.00f;
+        lut3d->scale.b = 1.00f;
+
+    } else {
+        lut3d->scale.r = av_clipf(1. / (in_max[0] - in_min[0]), 0.f, 1.f);
+        lut3d->scale.g = av_clipf(1. / (in_max[1] - in_min[1]), 0.f, 1.f);
+        lut3d->scale.b = av_clipf(1. / (in_max[2] - in_min[2]), 0.f, 1.f);
+    }
+
+end:
+    for (int c = 0; c < 3; c++) {
+        av_freep(&in_prelut[c]);
+        av_freep(&out_prelut[c]);
+    }
+    return ret;
 }
 
 static int set_identity_matrix(AVFilterContext *ctx, int size)
@@ -755,7 +1013,7 @@ static int set_identity_matrix(AVFilterContext *ctx, int size)
     const int size2 = size * size;
     const float c = 1. / (size - 1);
 
-    ret = allocate_3dlut(ctx, size);
+    ret = allocate_3dlut(ctx, size, 0);
     if (ret < 0)
         return ret;
 
@@ -939,8 +1197,12 @@ end:
 static av_cold void lut3d_uninit(AVFilterContext *ctx)
 {
     LUT3DContext *lut3d = ctx->priv;
-
+    int i;
     av_freep(&lut3d->lut);
+
+    for (i = 0; i < 3; i++) {
+        av_freep(&lut3d->prelut.lut[i]);
+    }
 }
 
 static const AVFilterPad lut3d_inputs[] = {
@@ -1158,7 +1420,7 @@ static int config_clut(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    return allocate_3dlut(ctx, level);
+    return allocate_3dlut(ctx, level, 0);
 }
 
 static int update_apply_clut(FFFrameSync *fs)
