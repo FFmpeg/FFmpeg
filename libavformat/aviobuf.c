@@ -1284,22 +1284,19 @@ typedef struct DynBuffer {
 static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
-    unsigned new_size, new_allocated_size;
+    unsigned new_size;
 
     /* reallocate buffer if needed */
     new_size = (unsigned)d->pos + buf_size;
-    new_allocated_size = d->allocated_size;
     if (new_size < d->pos || new_size > INT_MAX/2)
         return -1;
-    while (new_size > new_allocated_size) {
-        if (!new_allocated_size)
-            new_allocated_size = new_size;
-        else
-            new_allocated_size += new_allocated_size / 2 + 1;
-    }
-
-    if (new_allocated_size > d->allocated_size) {
+    if (new_size > d->allocated_size) {
+        unsigned new_allocated_size = d->allocated_size ? d->allocated_size
+                                                        : new_size;
         int err;
+        while (new_size > new_allocated_size)
+            new_allocated_size += new_allocated_size / 2 + 1;
+
         if ((err = av_reallocp(&d->buffer, new_allocated_size)) < 0) {
             d->allocated_size = 0;
             d->size = 0;
