@@ -1305,7 +1305,7 @@ static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
     unsigned new_size, new_allocated_size;
 
     /* reallocate buffer if needed */
-    new_size = d->pos + buf_size;
+    new_size = (unsigned)d->pos + buf_size;
     new_allocated_size = d->allocated_size;
     if (new_size < d->pos || new_size > INT_MAX/2)
         return -1;
