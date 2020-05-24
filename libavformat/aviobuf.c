@@ -1288,7 +1288,7 @@ static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 
     /* reallocate buffer if needed */
     new_size = (unsigned)d->pos + buf_size;
-    if (new_size < d->pos || new_size > INT_MAX/2)
+    if (new_size < d->pos || new_size > INT_MAX)
         return -1;
     if (new_size > d->allocated_size) {
         unsigned new_allocated_size = d->allocated_size ? d->allocated_size
@@ -1296,6 +1296,8 @@ static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
         int err;
         while (new_size > new_allocated_size)
             new_allocated_size += new_allocated_size / 2 + 1;
+
+        new_allocated_size = FFMIN(new_allocated_size, INT_MAX);
 
         if ((err = av_reallocp(&d->buffer, new_allocated_size)) < 0) {
             d->allocated_size = 0;
