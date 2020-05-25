@@ -152,7 +152,7 @@ int ff_vk_create_buf(AVFilterContext *avctx, FFVkBuffer *buf, size_t size,
 {
     int err;
     VkResult ret;
-    VkMemoryRequirements req;
+    int use_ded_mem;
     VulkanFilterContext *s = avctx->priv;
 
     VkBufferCreateInfo buf_spawn = {
@@ -164,6 +164,21 @@ int ff_vk_create_buf(AVFilterContext *avctx, FFVkBuffer *buf, size_t size,
                                 but should be ok */
     };
 
+    VkBufferMemoryRequirementsInfo2 req_desc = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+    };
+    VkMemoryDedicatedAllocateInfo ded_alloc = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+        .pNext = NULL,
+    };
+    VkMemoryDedicatedRequirements ded_req = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+    };
+    VkMemoryRequirements2 req = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+        .pNext = &ded_req,
+    };
+
     ret = vkCreateBuffer(s->hwctx->act_dev, &buf_spawn, NULL, &buf->buf);
     if (ret != VK_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create buffer: %s\n",
@@ -171,9 +186,19 @@ int ff_vk_create_buf(AVFilterContext *avctx, FFVkBuffer *buf, size_t size,
         return AVERROR_EXTERNAL;
     }
 
-    vkGetBufferMemoryRequirements(s->hwctx->act_dev, buf->buf, &req);
+    req_desc.buffer = buf->buf;
 
-    err = vk_alloc_mem(avctx, &req, flags, NULL, &buf->flags, &buf->mem);
+    vkGetBufferMemoryRequirements2(s->hwctx->act_dev, &req_desc, &req);
+
+    /* In case the implementation prefers/requires dedicated allocation */
+    use_ded_mem = ded_req.prefersDedicatedAllocation |
+                  ded_req.requiresDedicatedAllocation;
+    if (use_ded_mem)
+        ded_alloc.buffer = buf->buf;
+
+    err = vk_alloc_mem(avctx, &req.memoryRequirements, flags,
+                       use_ded_mem ? &ded_alloc : (void *)ded_alloc.pNext,
+                       &buf->flags, &buf->mem);
     if (err)
         return err;
 
