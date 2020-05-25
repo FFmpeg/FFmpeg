@@ -177,7 +177,6 @@ typedef struct VariantStream {
     char *agroup; /* audio group name */
     char *sgroup; /* subtitle group name */
     char *ccgroup; /* closed caption group name */
-    char *baseurl;
     char *varname; // variant name
 } VariantStream;
 
@@ -1525,7 +1524,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
         ret = ff_hls_write_file_entry(byterange_mode ? hls->m3u8_out : vs->out, en->discont, byterange_mode,
                                       en->duration, hls->flags & HLS_ROUND_DURATIONS,
-                                      en->size, en->pos, vs->baseurl,
+                                      en->size, en->pos, hls->baseurl,
                                       en->filename, prog_date_time_p, en->keyframe_size, en->keyframe_pos, hls->flags & HLS_I_FRAMES_ONLY);
         if (ret < 0) {
             av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
@@ -1547,7 +1546,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         for (en = vs->segments; en; en = en->next) {
             ret = ff_hls_write_file_entry(hls->sub_m3u8_out, 0, byterange_mode,
                                           en->duration, 0, en->size, en->pos,
-                                          vs->baseurl, en->sub_filename, NULL, 0, 0, 0);
+                                          hls->baseurl, en->sub_filename, NULL, 0, 0, 0);
             if (ret < 0) {
                 av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
             }
@@ -2581,7 +2580,6 @@ static void hls_deinit(AVFormatContext *s)
         av_freep(&vs->sgroup);
         av_freep(&vs->language);
         av_freep(&vs->ccgroup);
-        av_freep(&vs->baseurl);
         av_freep(&vs->varname);
     }
 
@@ -2954,12 +2952,6 @@ static int hls_init(AVFormatContext *s)
             }
             if (p)
                 *p = '.';
-        }
-
-        if (hls->baseurl) {
-            vs->baseurl = av_strdup(hls->baseurl);
-            if (!vs->baseurl)
-                return AVERROR(ENOMEM);
         }
 
         if ((ret = hls_mux_init(s, vs)) < 0)
