@@ -28,7 +28,8 @@
 #include "avformat.h"
 #include "hlsplaylist.h"
 
-void ff_hls_write_playlist_version(AVIOContext *out, int version) {
+void ff_hls_write_playlist_version(AVIOContext *out, int version)
+{
     if (!out)
         return;
     avio_printf(out, "#EXTM3U\n");
@@ -96,7 +97,8 @@ void ff_hls_write_stream_info(AVStream *st, AVIOContext *out, int bandwidth,
 
 void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
                                   int target_duration, int64_t sequence,
-                                  uint32_t playlist_type, int iframe_mode) {
+                                  uint32_t playlist_type, int iframe_mode)
+{
     if (!out)
         return;
     ff_hls_write_playlist_version(out, version);
@@ -118,7 +120,8 @@ void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
 }
 
 void ff_hls_write_init_file(AVIOContext *out, const char *filename,
-                            int byterange_mode, int64_t size, int64_t pos) {
+                            int byterange_mode, int64_t size, int64_t pos)
+{
     avio_printf(out, "#EXT-X-MAP:URI=\"%s\"", filename);
     if (byterange_mode) {
         avio_printf(out, ",BYTERANGE=\"%"PRId64"@%"PRId64"\"", size, pos);
@@ -127,12 +130,14 @@ void ff_hls_write_init_file(AVIOContext *out, const char *filename,
 }
 
 int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
-                             int byterange_mode,
-                             double duration, int round_duration,
-                             int64_t size, int64_t pos, //Used only if HLS_SINGLE_FILE flag is set
+                            int byterange_mode, double duration,
+                            int round_duration, int64_t size,
+                            int64_t pos /* Used only if HLS_SINGLE_FILE flag is set */,
                             const char *baseurl /* Ignored if NULL */,
                             const char *filename, double *prog_date_time,
-                             int64_t video_keyframe_size, int64_t video_keyframe_pos, int iframe_mode) {
+                            int64_t video_keyframe_size, int64_t video_keyframe_pos,
+                            int iframe_mode)
+{
     if (!out || !filename)
         return AVERROR(EINVAL);
 
@@ -181,7 +186,8 @@ int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
     return 0;
 }
 
-void ff_hls_write_end_list (AVIOContext *out) {
+void ff_hls_write_end_list(AVIOContext *out)
+{
     if (!out)
         return;
     avio_printf(out, "#EXT-X-ENDLIST\n");

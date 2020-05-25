@@ -2137,9 +2137,8 @@ static int update_variant_stream_info(AVFormatContext *s)
             return AVERROR(ENOMEM);
 
         //by default, the first available ccgroup is mapped to the variant stream
-        if (hls->nb_ccstreams) {
+        if (hls->nb_ccstreams)
             hls->var_streams[0].ccgroup = hls->cc_streams[0].ccgroup;
-        }
 
         for (i = 0; i < s->nb_streams; i++)
             hls->var_streams[0].streams[i] = s->streams[i];
@@ -2320,7 +2319,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         vs->start_pts_from_audio = 0;
     }
 
-   if (vs->has_video) {
+    if (vs->has_video) {
         can_split = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                     ((pkt->flags & AV_PKT_FLAG_KEY) || (hls->flags & HLS_SPLIT_BY_TIME));
         is_ref_pkt = (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && (pkt->stream_index == vs->reference_stream_index);
