@@ -3251,6 +3251,12 @@ static int vulkan_transfer_data_from(AVHWFramesContext *hwfc, AVFrame *dst,
     }
 }
 
+static int vulkan_frames_derive_to(AVHWFramesContext *dst_fc,
+                                   AVHWFramesContext *src_fc, int flags)
+{
+    return vulkan_frames_init(dst_fc);
+}
+
 AVVkFrame *av_vk_frame_alloc(void)
 {
     return av_mallocz(sizeof(AVVkFrame));
@@ -3280,6 +3286,7 @@ const HWContextType ff_hwcontext_type_vulkan = {
 
     .map_to                 = vulkan_map_to,
     .map_from               = vulkan_map_from,
+    .frames_derive_to       = &vulkan_frames_derive_to,
 
     .pix_fmts = (const enum AVPixelFormat []) {
         AV_PIX_FMT_VULKAN,
