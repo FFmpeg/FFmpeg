@@ -103,8 +103,8 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         av_free(tag->key);
         *tag = m->elems[--m->count];
     } else if (copy_value) {
-        AVDictionaryEntry *tmp = av_realloc(m->elems,
-                                            (m->count + 1) * sizeof(*m->elems));
+        AVDictionaryEntry *tmp = av_realloc_array(m->elems,
+                                                  m->count + 1, sizeof(*m->elems));
         if (!tmp)
             goto err_out;
         m->elems = tmp;
