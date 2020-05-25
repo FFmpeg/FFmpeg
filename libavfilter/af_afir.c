@@ -876,6 +876,12 @@ static av_cold int init(AVFilterContext *ctx)
     if (!pad.name)
         return AVERROR(ENOMEM);
 
+    ret = ff_insert_outpad(ctx, 0, &pad);
+    if (ret < 0) {
+        av_freep(&pad.name);
+        return ret;
+    }
+
     if (s->response) {
         vpad = (AVFilterPad){
             .name         = av_strdup("filter_response"),
@@ -884,15 +890,7 @@ static av_cold int init(AVFilterContext *ctx)
         };
         if (!vpad.name)
             return AVERROR(ENOMEM);
-    }
 
-    ret = ff_insert_outpad(ctx, 0, &pad);
-    if (ret < 0) {
-        av_freep(&pad.name);
-        return ret;
-    }
-
-    if (s->response) {
         ret = ff_insert_outpad(ctx, 1, &vpad);
         if (ret < 0) {
             av_freep(&vpad.name);
