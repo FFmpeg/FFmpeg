@@ -291,8 +291,7 @@ static int prompeg_open(URLContext *h, const char *uri, int flags) {
     }
 
     if (s->ttl > 0) {
-        snprintf(buf, sizeof (buf), "%d", s->ttl);
-        av_dict_set(&udp_opts, "ttl", buf, 0);
+        av_dict_set_int(&udp_opts, "ttl", s->ttl, 0);
     }
 
     ff_url_join(buf, sizeof (buf), "udp", NULL, hostname, rtp_port + 2, NULL);
