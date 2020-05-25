@@ -1382,13 +1382,13 @@ int avio_get_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d;
 
-    if (!s || s->error) {
+    if (!s) {
         *pbuffer = NULL;
         return 0;
     }
     d = s->opaque;
 
-    if (!d->size) {
+    if (!s->error && !d->size) {
         *pbuffer = d->io_buffer;
         return FFMAX(s->buf_ptr, s->buf_ptr_max) - s->buffer;
     }
