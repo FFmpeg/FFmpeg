@@ -26,9 +26,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
-
-// Include after mf_utils.h due to Windows include mess.
-#include "mpeg4audio.h"
+#include "internal.h"
 
 typedef struct MFContext {
     AVClass *av_class;
