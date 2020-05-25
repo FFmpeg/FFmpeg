@@ -7,6 +7,7 @@ HEADERS = ac3_parser.h                                                  \
           avdct.h                                                       \
           avfft.h                                                       \
           bsf.h                                                         \
+          codec.h                                                       \
           codec_desc.h                                                  \
           codec_id.h                                                    \
           codec_par.h                                                   \

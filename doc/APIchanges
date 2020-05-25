@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-xx-xx - xxxxxxxxxx - lavc 58.88.100 - avcodec.h codec.h
+  Move AVCodec-related public API to new header codec.h.
+
 2020-05-23 - xxxxxxxxxx - lavu 56.49.100 - video_enc_params.h
   Add AV_VIDEO_ENC_PARAMS_H264.
 
