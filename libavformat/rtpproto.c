@@ -301,8 +301,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
         if (s->ttl > 0) {
-            snprintf(buf, sizeof (buf), "%d", s->ttl);
-            av_dict_set(&fec_opts, "ttl", buf, 0);
+            av_dict_set_int(&fec_opts, "ttl", s->ttl, 0);
         }
     }
 
