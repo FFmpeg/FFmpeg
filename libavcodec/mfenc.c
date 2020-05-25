@@ -651,13 +651,13 @@ static int mf_encv_output_adjust(AVCodecContext *avctx, IMFMediaType *type)
 
     // (MS HEVC supports eAVEncH265VProfile_Main_420_8 only.)
     if (avctx->codec_id == AV_CODEC_ID_H264) {
-        UINT32 profile = eAVEncH264VProfile_Base;
+        UINT32 profile = ff_eAVEncH264VProfile_Base;
         switch (avctx->profile) {
         case FF_PROFILE_H264_MAIN:
-            profile = eAVEncH264VProfile_Main;
+            profile = ff_eAVEncH264VProfile_Main;
             break;
         case FF_PROFILE_H264_HIGH:
-            profile = eAVEncH264VProfile_High;
+            profile = ff_eAVEncH264VProfile_High;
             break;
         }
         IMFAttributes_SetUINT32(type, &MF_MT_MPEG2_PROFILE, profile);
