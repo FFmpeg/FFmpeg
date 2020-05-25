@@ -1254,7 +1254,7 @@ static int vulkan_frames_get_constraints(AVHWDeviceContext *ctx,
 }
 
 static int alloc_mem(AVHWDeviceContext *ctx, VkMemoryRequirements *req,
-                     VkMemoryPropertyFlagBits req_flags, void *alloc_extension,
+                     VkMemoryPropertyFlagBits req_flags, const void *alloc_extension,
                      VkMemoryPropertyFlagBits *mem_flags, VkDeviceMemory *mem)
 {
     VkResult ret;
@@ -1987,49 +1987,12 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         goto fail;
     }
 
-    for (int i = 0; i < desc->nb_objects; i++) {
-        VkMemoryFdPropertiesKHR fdmp = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR,
-        };
-        VkMemoryRequirements req = {
-            .size = desc->objects[i].size,
-        };
-        VkImportMemoryFdInfoKHR idesc = {
-            .sType      = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
-            .handleType = htype,
-            .fd         = dup(desc->objects[i].fd),
-        };
-
-        ret = pfn_vkGetMemoryFdPropertiesKHR(hwctx->act_dev, htype,
-                                             idesc.fd, &fdmp);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to get FD properties: %s\n",
-                   vk_ret2str(ret));
-            err = AVERROR_EXTERNAL;
-            close(idesc.fd);
-            goto fail;
-        }
-
-        req.memoryTypeBits = fdmp.memoryTypeBits;
-
-        err = alloc_mem(ctx, &req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        &idesc, &f->flags, &f->mem[i]);
-        if (err) {
-            close(idesc.fd);
-            return err;
-        }
-
-        f->size[i] = desc->objects[i].size;
-    }
-
     f->tiling = has_modifiers ? VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT :
                 desc->objects[0].format_modifier == DRM_FORMAT_MOD_LINEAR ?
                 VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
 
     for (int i = 0; i < desc->nb_layers; i++) {
         const int planes = desc->layers[i].nb_planes;
-        const int signal_p = has_modifiers && (planes > 1);
-
         VkImageDrmFormatModifierExplicitCreateInfoEXT drm_info = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT,
             .drmFormatModifier = desc->objects[0].format_modifier,
@@ -2104,7 +2067,76 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
 
         f->layout[i] = image_create_info.initialLayout;
         f->access[i] = 0x0;
+    }
 
+    for (int i = 0; i < desc->nb_objects; i++) {
+        int use_ded_mem = 0;
+        VkMemoryFdPropertiesKHR fdmp = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR,
+        };
+        VkMemoryRequirements req = {
+            .size = desc->objects[i].size,
+        };
+        VkImportMemoryFdInfoKHR idesc = {
+            .sType      = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
+            .handleType = htype,
+            .fd         = dup(desc->objects[i].fd),
+        };
+        VkMemoryDedicatedAllocateInfo ded_alloc = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+            .pNext = &idesc,
+        };
+
+        ret = pfn_vkGetMemoryFdPropertiesKHR(hwctx->act_dev, htype,
+                                             idesc.fd, &fdmp);
+        if (ret != VK_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to get FD properties: %s\n",
+                   vk_ret2str(ret));
+            err = AVERROR_EXTERNAL;
+            close(idesc.fd);
+            goto fail;
+        }
+
+        req.memoryTypeBits = fdmp.memoryTypeBits;
+
+        /* Dedicated allocation only makes sense if there's a one to one mapping
+         * between images and the memory backing them, so only check in this
+         * case. */
+        if (desc->nb_layers == desc->nb_objects) {
+            VkImageMemoryRequirementsInfo2 req_desc = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+                .image = f->img[i],
+            };
+            VkMemoryDedicatedRequirements ded_req = {
+                .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+            };
+            VkMemoryRequirements2 req2 = {
+                .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+                .pNext = &ded_req,
+            };
+
+            vkGetImageMemoryRequirements2(hwctx->act_dev, &req_desc, &req2);
+
+            use_ded_mem = ded_req.prefersDedicatedAllocation |
+                          ded_req.requiresDedicatedAllocation;
+            if (use_ded_mem)
+                ded_alloc.image = f->img[i];
+        }
+
+        err = alloc_mem(ctx, &req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        use_ded_mem ? &ded_alloc : ded_alloc.pNext,
+                        &f->flags, &f->mem[i]);
+        if (err) {
+            close(idesc.fd);
+            return err;
+        }
+
+        f->size[i] = desc->objects[i].size;
+    }
+
+    for (int i = 0; i < desc->nb_layers; i++) {
+        const int planes = desc->layers[i].nb_planes;
+        const int signal_p = has_modifiers && (planes > 1);
         for (int j = 0; j < planes; j++) {
             VkImageAspectFlagBits aspect = j == 0 ? VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT :
                                            j == 1 ? VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT :
