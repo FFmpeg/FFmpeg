@@ -9291,13 +9291,21 @@ TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
 @url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
 @code{--enable-libtensorflow}
+
+@item openvino
+OpenVINO backend. To enable this backend you
+need to build and install the OpenVINO for C library (see
+@url{https://github.com/openvinotoolkit/openvino/blob/master/build-instruction.md}) and configure FFmpeg with
+@code{--enable-libopenvino} (--extra-cflags=-I... --extra-ldflags=-L... might
+be needed if the header files and libraries are not installed into system path)
+
 @end table
 
 Default value is @samp{native}.
 
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow and native
+Note that different backends use different file formats. TensorFlow, OpenVINO and native
 backend can load files for only its format.
 
 Native model file (.model) can be generated from TensorFlow model file (.pb) by using tools/python/convert.py
