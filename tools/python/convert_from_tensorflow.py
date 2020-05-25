@@ -70,8 +70,9 @@ class TFConverter:
         self.converted_nodes = set()
         self.conv2d_scope_names = set()
         self.conv2d_scopename_inputname_dict = {}
-        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4, 'MathBinary':5}
+        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4, 'MathBinary':5, 'MathUnary':6}
         self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4}
+        self.mathun2code  = {'Abs':0}
         self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
         self.name_operand_dict = {}
 
@@ -286,6 +287,17 @@ class TFConverter:
         np.array([output_operand_index], dtype=np.uint32).tofile(f)
 
 
+    def dump_mathunary_to_file(self, node, f):
+        self.layer_number = self.layer_number + 1
+        self.converted_nodes.add(node.name)
+        i0_node = self.name_node_dict[node.input[0]]
+        np.array([self.op2code['MathUnary'], self.mathun2code[node.op]], dtype=np.uint32).tofile(f)
+        input_operand_index = self.add_operand(i0_node.name, Operand.IOTYPE_INPUT)
+        np.array([input_operand_index], dtype=np.uint32).tofile(f)
+        output_operand_index = self.add_operand(node.name, Operand.IOTYPE_OUTPUT)
+        np.array([output_operand_index],dtype=np.uint32).tofile(f)
+
+
     def dump_layers_to_file(self, f):
         for node in self.nodes:
             if node.name in self.converted_nodes:
@@ -307,6 +319,8 @@ class TFConverter:
                 self.dump_maximum_to_file(node, f)
             elif node.op in self.mathbin2code:
                 self.dump_mathbinary_to_file(node, f)
+            elif node.op in self.mathun2code:
+                self.dump_mathunary_to_file(node, f)
 
 
     def dump_operands_to_file(self, f):

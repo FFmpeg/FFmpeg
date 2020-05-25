@@ -6,6 +6,7 @@ OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_con
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_depth2space.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_maximum.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_mathbinary.o
+OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_mathunary.o
 
 DNN-OBJS-$(CONFIG_LIBTENSORFLOW)             += dnn/dnn_backend_tf.o
 
