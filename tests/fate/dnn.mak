@@ -23,6 +23,11 @@ fate-dnn-layer-maximum: $(DNNTESTSDIR)/dnn-layer-maximum-test$(EXESUF)
 fate-dnn-layer-maximum: CMD = run $(DNNTESTSDIR)/dnn-layer-maximum-test$(EXESUF)
 fate-dnn-layer-maximum: CMP = null
 
+FATE_DNN += fate-dnn-layer-mathunary
+fate-dnn-layer-mathunary: $(DNNTESTSDIR)/dnn-layer-mathunary-test$(EXESUF)
+fate-dnn-layer-mathunary: CMD = run $(DNNTESTSDIR)/dnn-layer-mathunary-test$(EXESUF)
+fate-dnn-layer-mathunary: CMP = null
+
 FATE-yes += $(FATE_DNN)
 
 fate-dnn: $(FATE_DNN)
