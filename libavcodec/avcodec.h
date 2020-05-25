@@ -4116,17 +4116,6 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
 #endif
 
 /**
- * Get the type of the given codec.
- */
-enum AVMediaType avcodec_get_type(enum AVCodecID codec_id);
-
-/**
- * Get the name of a codec.
- * @return  a static string identifying the codec; never NULL
- */
-const char *avcodec_get_name(enum AVCodecID id);
-
-/**
  * @return a positive value if s is open (i.e. avcodec_open2() was called on it
  * with no corresponding avcodec_close()), 0 otherwise.
  */

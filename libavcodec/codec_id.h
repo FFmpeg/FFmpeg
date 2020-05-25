@@ -21,6 +21,8 @@
 #ifndef AVCODEC_CODEC_ID_H
 #define AVCODEC_CODEC_ID_H
 
+#include "libavutil/avutil.h"
+
 /**
  * @addtogroup lavc_core
  * @{
@@ -556,6 +558,16 @@ enum AVCodecID {
     AV_CODEC_ID_WRAPPED_AVFRAME = 0x21001, ///< Passthrough codec, AVFrames wrapped in AVPacket
 };
 
+/**
+ * Get the type of the given codec.
+ */
+enum AVMediaType avcodec_get_type(enum AVCodecID codec_id);
+
+/**
+ * Get the name of a codec.
+ * @return  a static string identifying the codec; never NULL
+ */
+const char *avcodec_get_name(enum AVCodecID id);
 
 /**
  * @}
