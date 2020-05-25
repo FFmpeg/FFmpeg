@@ -20250,6 +20250,40 @@ separatefields,select=eq(mod(n,4),0)+eq(mod(n,4),3),weave
 @end example
 @end itemize
 
+@section weighted_greyedge
+Apply the color constancy filter which estimates illumination and updates the
+image colors accordingly.
+
+It accepts the following options:
+
+@table @option
+@item difford
+The order of differentiation to be applied on the scene. Must be chosen in the range
+[0,2] and default value is 1.
+
+@item minknorm
+The Minkowski parameter to be used for calculating the Minkowski distance. Must
+be chosen in the range [0,20] and default value is 1. Set to 0 for getting
+max value instead of calculating Minkowski distance.
+
+@item sigma
+The standard deviation of Gaussian blur to be applied on the scene. Must be
+chosen in the range [0,1024.0] and default value = 1. floor( @var{sigma} * break_off_sigma(3) )
+can't be equal to 0 if @var{difford} is greater than 0.
+
+@item min_err
+The minimum angular error at which the algoritm breaks off even if it has not reached the
+required number of iterations. Must be chosen in the range [0.02,PI] radians with default of 0.1.
+
+@item max_iters
+The maximum number of iterations the algorithm performs before giving the output. Must be in the
+range [1,100] with a default value of 10.
+@end table
+
+@example
+ffmpeg -i 1.tif -vf "weighted_greyedge=difford=1:minknorm=2:sigma=2:max_iters=50" 1o.tif
+@end example
+
 @section xbr
 Apply the xBR high-quality magnification filter which is designed for pixel
 art. It follows a set of edge-detection rules, see

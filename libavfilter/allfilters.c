@@ -432,6 +432,7 @@ extern AVFilter ff_vf_vstack;
 extern AVFilter ff_vf_w3fdif;
 extern AVFilter ff_vf_waveform;
 extern AVFilter ff_vf_weave;
+extern AVFilter ff_vf_weighted_greyedge;
 extern AVFilter ff_vf_xbr;
 extern AVFilter ff_vf_xfade;
 extern AVFilter ff_vf_xfade_opencl;

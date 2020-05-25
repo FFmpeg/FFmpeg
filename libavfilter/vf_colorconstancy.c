@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018 Mina Sami
+ * Copyright (c) 2020 Yatendra Singh
  *
  * This file is part of FFmpeg.
  *
@@ -26,6 +27,14 @@
  *
  * @cite
  * J. van de Weijer, Th. Gevers, A. Gijsenij "Edge-Based Color Constancy".
+ *
+ * @cite
+ * J. van de Weijer, Th. Gevers, and J. Geusebroek,
+ * “Edge and corner detection by photometric quasi-invariants”.
+ *
+ * @cite
+ * A. Gijsenij, Th. Gevers, J. van de Weijer,
+ * "Improving Color Constancy by Photometric Edge Weighting".
  */
 
 #include "libavutil/imgutils.h"
@@ -40,8 +49,10 @@
 #include <math.h>
 
 #define GREY_EDGE "greyedge"
+#define WEIGHTED_GREY_EDGE "weighted_greyedge"
 
 #define SQRT3 1.73205080757
+#define NORAMAL_WHITE 1/SQRT3
 
 #define NUM_PLANES    3
 #define MAX_DIFF_ORD  2
@@ -82,6 +93,11 @@ typedef struct ColorConstancyContext {
     int nb_threads;
     int planeheight[4];
     int planewidth[4];
+
+    double min_err;
+    int max_iters;
+
+    double *weight_info[2];
 
     int filtersize;
     double *gauss[MAX_DIFF_ORD+1];
@@ -553,32 +569,6 @@ static void normalize_light(double *light)
 }
 
 /**
- * Redirects to corresponding algorithm estimation function and performs normalization
- * after estimation.
- *
- * @param ctx the filter context.
- * @param in frame to perfrom estimation on.
- *
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure.
- */
-static int illumination_estimation(AVFilterContext *ctx, AVFrame *in)
-{
-    ColorConstancyContext *s = ctx->priv;
-    int ret;
-
-    ret = filter_grey_edge(ctx, in);
-
-    av_log(ctx, AV_LOG_DEBUG, "Estimated illumination= %f %f %f\n",
-           s->white[0], s->white[1], s->white[2]);
-    normalize_light(s->white);
-    av_log(ctx, AV_LOG_DEBUG, "Estimated illumination after normalization= %f %f %f\n",
-           s->white[0], s->white[1], s->white[2]);
-
-    return ret;
-}
-
-/**
  * Performs simple correction via diagonal transformation model.
  *
  * @param ctx the filter context.
@@ -634,6 +624,163 @@ static void chromatic_adaptation(AVFilterContext *ctx, AVFrame *in, AVFrame *out
     ctx->internal->execute(ctx, diagonal_transformation, &td, NULL, nb_jobs);
 }
 
+/**
+ * Slice function for weighted grey edge algorithm that does partial summing/maximizing
+ * of gaussian derivatives.
+ *
+ * @param ctx the filter context.
+ * @param arg data to be passed between threads.
+ * @param jobnr current job nubmer.
+ * @param nb_jobs total number of jobs.
+ *
+ * @return 0.
+ */
+static int filter_slice_weighted_greyedge(AVFilterContext* ctx, void* arg, int jobnr, int nb_jobs)
+{
+    ColorConstancyContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in    = td->in;
+    int minknorm   = s->minknorm;
+    const uint8_t thresh = 255;
+    int plane;
+
+    int height_max  = FFMAX3(s->planeheight[0], s->planeheight[1], s->planeheight[2]);
+    int width_max   = FFMAX3(s->planewidth[0], s->planewidth[1], s->planewidth[2]);
+
+    memset(s->weight_info[0], 0, height_max * width_max * sizeof(double));
+    memset(s->weight_info[1], 0, height_max * width_max * sizeof(double));
+
+    for (plane = 0; plane < NUM_PLANES; plane++)
+    {
+        const int height        = s->planeheight[plane];
+        const int width         = s->planewidth[plane];
+        const int in_linesize   = in->linesize[plane];
+        const int slice_start   = (height * jobnr) / nb_jobs;
+        const int slice_end     = (height * (jobnr+1)) / nb_jobs;
+        const uint8_t *img_data = in->data[plane];
+
+        for(int h = slice_start; h < slice_end; h++)
+        {
+            for (int w = 0; w < width; w++)
+            {
+                s->weight_info[0][INDX2D(h, w, width)] += img_data[ INDX2D(h, w, in_linesize) ] * s->white[plane];
+                s->weight_info[1][INDX2D(h, w, width)] += pow(img_data[ INDX2D(h, w, in_linesize) ],2);
+            }
+        }
+    }
+
+    for (plane = 0; plane < NUM_PLANES; ++plane) {
+        const int height        = s->planeheight[plane];
+        const int width         = s->planewidth[plane];
+        const int in_linesize   = in->linesize[plane];
+        const int slice_start   = (height * jobnr) / nb_jobs;
+        const int slice_end     = (height * (jobnr+1)) / nb_jobs;
+        const uint8_t *img_data = in->data[plane];
+        const double *src       = td->data[INDEX_NORM][plane];
+        double *dst             = td->data[INDEX_DST][plane];
+        int r, c;
+
+        dst[jobnr] = 0;
+        if (!minknorm) {
+            for (r = slice_start; r < slice_end; ++r) {
+                for (c = 0; c < width; ++c) {
+
+                    double weight = s->weight_info[0][INDX2D(r, c, width)] * s->white[plane];
+                    if (s->weight_info[1][INDX2D(r, c, width)] > 0)
+                    {
+                        weight = weight / s->weight_info[1][INDX2D(r, c, width)];
+                    }
+                    dst[jobnr] = FFMAX( dst[jobnr], fabs(src[INDX2D(r, c, width)]) * weight
+                                        * (img_data[INDX2D(r, c, in_linesize)] < thresh) );
+
+                }
+            }
+        } else {
+            for (r = slice_start; r < slice_end; ++r) {
+                for (c = 0; c < width; ++c) {
+                    double weight = s->weight_info[0][INDX2D(r, c, width)] * s->white[plane];
+                    if (s->weight_info[1][INDX2D(r, c, width)] > 0)
+                    {
+                        weight = weight / s->weight_info[1][INDX2D(r, c, width)];
+                    }
+                    dst[jobnr] += ( pow( fabs(src[INDX2D(r, c, width)] / 255.), minknorm)
+                                    * (img_data[INDX2D(r, c, in_linesize)] < thresh) );
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * Main driver function for weighted grey edge algorithm.
+ *
+ * @param ctx the filter context.
+ * @param in holds the input frame.
+ * @param out holds the output frame.
+ *
+ * AVERROR code if any error has occured.
+ */
+static int filter_weighted_greyedge(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+{
+    ColorConstancyContext *s = ctx->priv;
+    ThreadData td;
+    int minknorm  = s->minknorm;
+    int difford   = s->difford;
+    double *white = s->white;
+    int nb_jobs   = FFMIN3(s->planeheight[1], s->planewidth[1], s->nb_threads);
+    int num_iters = 0;
+    int plane, job, ret, height_max, width_max;
+
+    td.in = in;
+    ret = setup_derivative_buffers(ctx, &td);
+    if (ret) {
+        return ret;
+    }
+
+    height_max  = FFMAX3(s->planeheight[0], s->planeheight[1], s->planeheight[2]);
+    width_max   = FFMAX3(s->planewidth[0], s->planewidth[1], s->planewidth[2]);
+
+    s->weight_info[0] = av_mallocz_array(height_max * width_max, sizeof(double));
+    s->weight_info[1] = av_mallocz_array(height_max * width_max, sizeof(double));
+
+    while( num_iters < s->max_iters )
+    {
+        get_derivative(ctx, &td);
+        if (difford > 0) {
+            ctx->internal->execute(ctx, slice_normalize, &td, NULL, nb_jobs);
+        }
+
+        ctx->internal->execute(ctx, filter_slice_weighted_greyedge, &td, NULL, nb_jobs);
+        if (!minknorm) {
+            for (plane = 0; plane < NUM_PLANES; ++plane) {
+                white[plane] = 0; // All values are absolute
+                for (job = 0; job < nb_jobs; ++job) {
+                    white[plane] = FFMAX(white[plane] , td.data[INDEX_DST][plane][job]);
+                }
+            }
+        } else {
+            for (plane = 0; plane < NUM_PLANES; ++plane) {
+                white[plane] = 0;
+                for (job = 0; job < nb_jobs; ++job) {
+                    white[plane] += td.data[INDEX_DST][plane][job];
+                }
+                white[plane] = pow(white[plane], 1./minknorm);
+            }
+        }
+
+        normalize_light(white);
+
+        chromatic_adaptation(ctx, in, out);
+
+        num_iters++;
+        //[TODO] break if angular error <= min_err
+    }
+
+    cleanup_derivative_buffers(&td, difford + 1, NUM_PLANES);
+    return 0;
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
@@ -661,7 +808,7 @@ static int config_props(AVFilterLink *inlink)
     }
 
     s->filtersize = 2 * floor(break_off_sigma * sigma + 0.5) + 1;
-    if (ret=set_gauss(ctx)) {
+    if (ret = set_gauss(ctx)) {
         return ret;
     }
 
@@ -682,12 +829,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int ret;
     int direct = 0;
 
-    ret = illumination_estimation(ctx, in);
-    if (ret) {
-        av_frame_free(&in);
-        return ret;
-    }
-
     if (av_frame_is_writable(in)) {
         direct = 1;
         out = in;
@@ -699,10 +840,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
         av_frame_copy_props(out, in);
     }
-    chromatic_adaptation(ctx, in, out);
+
+    if(!strcmp(ctx->filter->name, GREY_EDGE))
+    {
+        ColorConstancyContext *s = ctx->priv;
+        ret = filter_grey_edge(ctx, in);
+
+        normalize_light(s->white);
+
+        if (ret) {
+            av_frame_free(&in);
+            return ret;
+        }
+        chromatic_adaptation(ctx, in, out);
+    }
+    else if (!strcmp(ctx->filter->name, WEIGHTED_GREY_EDGE))
+    {
+        ret = filter_weighted_greyedge(ctx, in, out);
+        if (ret)
+        {
+            av_frame_free(&in);
+            return ret;
+        }
+    }
 
     if (!direct)
-        av_frame_free(&in);
+            av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
 }
@@ -715,6 +878,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     for (i = 0; i <= difford; ++i) {
         av_freep(&s->gauss[i]);
+    }
+
+    if (!strcmp(ctx->filter->name, WEIGHTED_GREY_EDGE))
+    {
+        av_freep( &s->weight_info[0] );
+        av_freep( &s->weight_info[1] );
     }
 }
 
@@ -760,3 +929,30 @@ AVFilter ff_vf_greyedge = {
 };
 
 #endif /* CONFIG_GREY_EDGE_FILTER */
+
+#if CONFIG_WEIGHTED_GREYEDGE_FILTER
+
+static const AVOption weighted_greyedge_options[] = {
+    { "difford",   "set differentiation order",  OFFSET(difford),   AV_OPT_TYPE_INT,    {.i64=1},   0,    2,      FLAGS },
+    { "minknorm",  "set Minkowski norm",         OFFSET(minknorm),  AV_OPT_TYPE_INT,    {.i64=1},   0,    20,     FLAGS },
+    { "sigma",     "set sigma",                  OFFSET(sigma),     AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.0,  1024.0, FLAGS },
+    { "min_err",   "set minimum angular error",  OFFSET(min_err),   AV_OPT_TYPE_DOUBLE, {.dbl=0.1}, 0.02, M_PI,   FLAGS },
+    { "max_iters", "set the maximum iterations", OFFSET(max_iters), AV_OPT_TYPE_INT,    {.i64=10},  1,    100,    FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(weighted_greyedge);
+
+AVFilter ff_vf_weighted_greyedge = {
+    .name          = WEIGHTED_GREY_EDGE,
+    .description   = NULL_IF_CONFIG_SMALL("Estimates scene illumination by grey edge assumption."),
+    .priv_size     = sizeof(ColorConstancyContext),
+    .priv_class    = &weighted_greyedge_class,
+    .query_formats = query_formats,
+    .uninit        = uninit,
+    .inputs        = colorconstancy_inputs,
+    .outputs       = colorconstancy_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+};
+
+#endif /* CONFIG_WEIGHTED_GREY_EDGE_FILTER */
