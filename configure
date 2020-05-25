@@ -253,6 +253,8 @@ External library support:
   --enable-libopenh264     enable H.264 encoding via OpenH264 [no]
   --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
   --enable-libopenmpt      enable decoding tracked files via libopenmpt [no]
+  --enable-libopenvino     enable OpenVINO as a DNN module backend
+                           for DNN based filters like dnn_processing [no]
   --enable-libopus         enable Opus de/encoding via libopus [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librabbitmq     enable RabbitMQ library [no]
@@ -1790,6 +1792,7 @@ EXTERNAL_LIBRARY_LIST="
     libopenh264
     libopenjpeg
     libopenmpt
+    libopenvino
     libopus
     libpulse
     librabbitmq
@@ -2620,7 +2623,7 @@ cbs_mpeg2_select="cbs"
 cbs_vp9_select="cbs"
 dct_select="rdft"
 dirac_parse_select="golomb"
-dnn_suggest="libtensorflow"
+dnn_suggest="libtensorflow libopenvino"
 error_resilience_select="me_cmp"
 faandct_deps="faan"
 faandct_select="fdctdsp"
@@ -6350,6 +6353,7 @@ enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_
 enabled libopenjpeg       && { check_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version ||
                                { require_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } }
 enabled libopenmpt        && require_pkg_config libopenmpt "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create -lstdc++ && append libopenmpt_extralibs "-lstdc++"
+enabled libopenvino       && require libopenvino c_api/ie_c_api.h ie_c_api_version -linference_engine_c_api
 enabled libopus           && {
     enabled libopus_decoder && {
         require_pkg_config libopus opus opus_multistream.h opus_multistream_decoder_create
