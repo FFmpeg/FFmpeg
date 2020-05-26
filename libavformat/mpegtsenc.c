@@ -1432,10 +1432,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             if (ts->m2ts_mode &&
                 st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                 st->codecpar->codec_id == AV_CODEC_ID_AC3) {
-                        /* set PES_extension_flag */
-                        pes_extension = 1;
-                        flags |= 0x01;
-                        header_len += 3;
+                /* set PES_extension_flag */
+                pes_extension = 1;
+                flags |= 0x01;
+                header_len += 3;
             }
             if (is_dvb_teletext) {
                 pes_header_stuffing_bytes = 0x24 - header_len;
@@ -1478,14 +1478,14 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 *q++ = 0x00 | 0x60;
             }
             /* For Blu-ray AC3 Audio Setting extended flags */
-          if (ts->m2ts_mode &&
-              pes_extension &&
-              st->codecpar->codec_id == AV_CODEC_ID_AC3) {
-                      flags = 0x01; /* set PES_extension_flag_2 */
-                      *q++ = flags;
-                      *q++ = 0x80 | 0x01; /* marker bit + extension length */
-                      *q++ = 0x00 | 0x71; /* for AC3 Audio (specifically on blue-rays) */
-              }
+            if (ts->m2ts_mode &&
+                pes_extension &&
+                st->codecpar->codec_id == AV_CODEC_ID_AC3) {
+                flags = 0x01; /* set PES_extension_flag_2 */
+                *q++ = flags;
+                *q++ = 0x80 | 0x01; /* marker bit + extension length */
+                *q++ = 0x00 | 0x71; /* for AC3 Audio (specifically on blue-rays) */
+            }
 
 
             if (is_dvb_subtitle) {
