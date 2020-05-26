@@ -3063,7 +3063,8 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
 
         av_image_copy_plane(tmp.data[i], tmp.linesize[i],
                             (const uint8_t *)src->data[i], src->linesize[i],
-                            FFMIN(tmp.linesize[i], src->linesize[i]), p_height);
+                            FFMIN(tmp.linesize[i], FFABS(src->linesize[i])),
+                            p_height);
     }
 
     if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
@@ -3251,7 +3252,8 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
 
         av_image_copy_plane(dst->data[i], dst->linesize[i],
                             (const uint8_t *)tmp.data[i], tmp.linesize[i],
-                            FFMIN(tmp.linesize[i], dst->linesize[i]), p_height);
+                            FFMIN(tmp.linesize[i], FFABS(dst->linesize[i])),
+                            p_height);
     }
 
     err = unmap_buffers(dev_ctx, bufs, planes, 0);
