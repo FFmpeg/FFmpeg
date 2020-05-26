@@ -2663,7 +2663,7 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size
 {
     int err;
     VkResult ret;
-    VkMemoryRequirements req;
+    int use_ded_mem;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
 
@@ -2672,6 +2672,21 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size
         .pNext       = create_pnext,
         .usage       = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+
+    VkBufferMemoryRequirementsInfo2 req_desc = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+    };
+    VkMemoryDedicatedAllocateInfo ded_alloc = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+        .pNext = alloc_pnext,
+    };
+    VkMemoryDedicatedRequirements ded_req = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+    };
+    VkMemoryRequirements2 req = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+        .pNext = &ded_req,
     };
 
     ImageBuffer *vkbuf = av_mallocz(sizeof(*vkbuf));
@@ -2695,9 +2710,19 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size
         return AVERROR_EXTERNAL;
     }
 
-    vkGetBufferMemoryRequirements(hwctx->act_dev, vkbuf->buf, &req);
+    req_desc.buffer = vkbuf->buf;
 
-    err = alloc_mem(ctx, &req, flags, alloc_pnext, &vkbuf->flags, &vkbuf->mem);
+    vkGetBufferMemoryRequirements2(hwctx->act_dev, &req_desc, &req);
+
+    /* In case the implementation prefers/requires dedicated allocation */
+    use_ded_mem = ded_req.prefersDedicatedAllocation |
+                  ded_req.requiresDedicatedAllocation;
+    if (use_ded_mem)
+        ded_alloc.buffer = vkbuf->buf;
+
+    err = alloc_mem(ctx, &req.memoryRequirements, flags,
+                    use_ded_mem ? &ded_alloc : (void *)ded_alloc.pNext,
+                    &vkbuf->flags, &vkbuf->mem);
     if (err)
         return err;
 
