@@ -83,12 +83,13 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
 
     for (i = 0; i < buf_size; i++) {
         if (i >= next_avc) {
-            int nalsize = 0;
+            uint32_t nalsize = 0;
             i = next_avc;
             for (j = 0; j < p->nal_length_size; j++)
                 nalsize = (nalsize << 8) | buf[i++];
-            if (nalsize <= 0 || nalsize > buf_size - i) {
-                av_log(logctx, AV_LOG_ERROR, "AVC-parser: nal size %d remaining %d\n", nalsize, buf_size - i);
+            if (!nalsize || nalsize > buf_size - i) {
+                av_log(logctx, AV_LOG_ERROR, "AVC-parser: nal size %"PRIu32" "
+                       "remaining %d\n", nalsize, buf_size - i);
                 return buf_size;
             }
             next_avc = i + nalsize;
