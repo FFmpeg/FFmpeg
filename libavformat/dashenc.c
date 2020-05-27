@@ -1959,7 +1959,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
 
         if (!os->bit_rate) {
             // calculate average bitrate of first segment
-            int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / duration;
+            int64_t bitrate = (int64_t) range_length * 8 * (c->use_timeline ? os->ctx->streams[0]->time_base.den : AV_TIME_BASE) / duration;
             if (bitrate >= 0)
                 os->bit_rate = bitrate;
         }
