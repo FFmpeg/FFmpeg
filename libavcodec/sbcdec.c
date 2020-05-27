@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 #include "sbc.h"
 #include "sbcdec_data.h"
 

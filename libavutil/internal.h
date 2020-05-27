@@ -43,7 +43,6 @@
 #include "cpu.h"
 #include "dict.h"
 #include "macros.h"
-#include "mem.h"
 #include "pixfmt.h"
 #include "version.h"
 

@@ -34,6 +34,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/random_seed.h"
 
 #define BITSTREAM_READER_LE

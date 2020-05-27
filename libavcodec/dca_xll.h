@@ -22,7 +22,7 @@
 #define AVCODEC_DCA_XLL_H
 
 #include "libavutil/common.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "internal.h"

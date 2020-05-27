@@ -35,6 +35,7 @@
 
 #include "avcodec.h"
 #include "libavutil/crc.h"
+#include "libavutil/mem_internal.h"
 
 #define MSBC_BLOCKS 15
 

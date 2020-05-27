@@ -30,6 +30,7 @@
 #define AVCODEC_MPC_H
 
 #include "libavutil/lfg.h"
+#include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"

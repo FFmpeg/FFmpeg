@@ -28,6 +28,7 @@
 #include "libavutil/audio_fifo.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/frame.h"
+#include "libavutil/mem_internal.h"
 
 #include "libswresample/swresample.h"
 

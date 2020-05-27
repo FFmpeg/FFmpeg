@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 #include "idctdsp.h"
 
 #define RTJPEG_FILE_VERSION 0

@@ -23,6 +23,7 @@
  * mmx/mmx2/3dnow postprocess code.
  */
 
+#include "libavutil/mem_internal.h"
 #include "libavutil/x86/asm.h"
 
 /* A single TEMPLATE_PP_* should be defined (to 1) when this template is

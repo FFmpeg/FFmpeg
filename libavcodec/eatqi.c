@@ -26,6 +26,8 @@
  * @see http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TQI
  */
 
+#include "libavutil/mem_internal.h"
+
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "bswapdsp.h"

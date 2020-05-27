@@ -24,6 +24,7 @@
 #include "vp8dsp_mips.h"
 #include "constants.h"
 #include "libavutil/mips/mmiutils.h"
+#include "libavutil/mem_internal.h"
 
 #define DECLARE_DOUBLE_1            double db_1
 #define DECLARE_DOUBLE_2            double db_2

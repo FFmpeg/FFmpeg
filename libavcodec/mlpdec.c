@@ -30,6 +30,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 #include "get_bits.h"
 #include "internal.h"

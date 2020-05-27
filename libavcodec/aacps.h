@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/mem_internal.h"
+
 #include "aacpsdsp.h"
 #include "avcodec.h"
 #include "get_bits.h"

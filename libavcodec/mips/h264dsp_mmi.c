@@ -26,6 +26,7 @@
 #include "libavcodec/bit_depth_template.c"
 #include "h264dsp_mips.h"
 #include "libavutil/mips/mmiutils.h"
+#include "libavutil/mem_internal.h"
 
 void ff_h264_add_pixels4_8_mmi(uint8_t *dst, int16_t *src, int stride)
 {

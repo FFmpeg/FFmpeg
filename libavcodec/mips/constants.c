@@ -20,7 +20,7 @@
  */
 
 #include "config.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 #include "constants.h"
 
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_1) =       {0x0001000100010001ULL};

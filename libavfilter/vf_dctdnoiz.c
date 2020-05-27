@@ -30,6 +30,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/eval.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "internal.h"
 

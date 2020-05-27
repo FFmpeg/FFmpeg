@@ -27,6 +27,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "avcodec.h"

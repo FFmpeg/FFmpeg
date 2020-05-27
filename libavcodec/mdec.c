@@ -27,6 +27,8 @@
  * This is very similar to intra-only MPEG-1.
  */
 
+#include "libavutil/mem_internal.h"
+
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "bswapdsp.h"

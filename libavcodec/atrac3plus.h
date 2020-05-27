@@ -31,6 +31,8 @@
 #include <stdint.h>
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/mem_internal.h"
+
 #include "atrac.h"
 #include "avcodec.h"
 #include "fft.h"

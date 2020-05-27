@@ -30,6 +30,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/mem_internal.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"

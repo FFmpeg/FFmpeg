@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include "thread.h"
 #include "mem.h"
+#include "mem_internal.h"
 #include "avassert.h"
 #include "attributes.h"
 

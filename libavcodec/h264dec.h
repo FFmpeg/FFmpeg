@@ -30,6 +30,7 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 
 #include "cabac.h"

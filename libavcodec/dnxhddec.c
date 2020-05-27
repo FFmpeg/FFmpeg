@@ -25,6 +25,8 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/mem_internal.h"
+
 #include "avcodec.h"
 #include "blockdsp.h"
 #define  UNCHECKED_BITSTREAM_READER 1

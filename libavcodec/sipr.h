@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "acelp_pitch_delay.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #define LP_FILTER_ORDER_16k  16
 #define L_SUBFR_16k          80

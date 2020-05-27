@@ -23,7 +23,7 @@
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #include "internal.h"
 #include "get_bits.h"

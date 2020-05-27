@@ -24,7 +24,8 @@
 #include <stdint.h>
 
 #include "libavutil/frame.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
+
 #include "get_bits.h"
 #include "hqxdsp.h"
 

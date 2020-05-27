@@ -23,6 +23,8 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/mem_internal.h"
+
 #include "vp9dsp.h"
 
 const DECLARE_ALIGNED(16, int16_t, ff_vp9_subpel_filters)[3][16][8] = {

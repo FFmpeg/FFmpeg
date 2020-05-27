@@ -22,7 +22,7 @@
 #define AVCODEC_SINEWIN_H
 
 #include "config.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 #include "libavcodec/aac_defines.h"
 
 #if CONFIG_HARDCODED_TABLES

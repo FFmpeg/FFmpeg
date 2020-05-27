@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/mem_internal.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "hq_hqadsp.h"

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 
 #include "avcodec.h"

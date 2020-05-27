@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 
 const DECLARE_ALIGNED(8, uint64_t, ff_dither4)[2] = {

@@ -27,6 +27,7 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/md5.h"
+#include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"

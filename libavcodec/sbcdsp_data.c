@@ -29,6 +29,8 @@
  * miscellaneous SBC tables
  */
 
+#include "libavutil/mem_internal.h"
+
 #include "sbcdsp_data.h"
 
 #define F_PROTO(x) ((int32_t) (((x) * 2) * ((int32_t) 1 << 15) + 0.5))

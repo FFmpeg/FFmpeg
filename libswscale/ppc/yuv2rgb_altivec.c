@@ -96,6 +96,7 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "yuv2rgb_altivec.h"
 

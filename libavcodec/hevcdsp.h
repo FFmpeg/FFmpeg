@@ -25,6 +25,8 @@
 #ifndef AVCODEC_HEVCDSP_H
 #define AVCODEC_HEVCDSP_H
 
+#include "libavutil/mem_internal.h"
+
 #include "get_bits.h"
 
 #define MAX_PB_SIZE 64

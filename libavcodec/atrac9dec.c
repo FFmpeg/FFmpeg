@@ -27,6 +27,7 @@
 #include "atrac9tab.h"
 #include "libavutil/lfg.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/mem_internal.h"
 
 #define ATRAC9_SF_VLC_BITS 8
 #define ATRAC9_COEFF_VLC_BITS 9

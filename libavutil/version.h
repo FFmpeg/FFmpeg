@@ -135,6 +135,9 @@
 #ifndef FF_API_D2STR
 #define FF_API_D2STR                    (LIBAVUTIL_VERSION_MAJOR < 58)
 #endif
+#ifndef FF_API_DECLARE_ALIGNED
+#define FF_API_DECLARE_ALIGNED          (LIBAVUTIL_VERSION_MAJOR < 58)
+#endif
 
 /**
  * @}

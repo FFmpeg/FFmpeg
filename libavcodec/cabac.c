@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "libavutil/common.h"
+#include "libavutil/mem_internal.h"
 
 #include "cabac.h"
 #include "cabac_functions.h"

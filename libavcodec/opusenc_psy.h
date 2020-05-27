@@ -22,6 +22,8 @@
 #ifndef AVCODEC_OPUSENC_PSY_H
 #define AVCODEC_OPUSENC_PSY_H
 
+#include "libavutil/mem_internal.h"
+
 #include "opusenc.h"
 #include "opusenc_utils.h"
 #include "libavfilter/window_func.h"

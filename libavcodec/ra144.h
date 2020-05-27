@@ -23,6 +23,9 @@
 #define AVCODEC_RA144_H
 
 #include <stdint.h>
+
+#include "libavutil/mem_internal.h"
+
 #include "lpc.h"
 #include "audio_frame_queue.h"
 #include "audiodsp.h"

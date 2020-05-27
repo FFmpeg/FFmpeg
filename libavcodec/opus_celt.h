@@ -33,6 +33,7 @@
 #include "mdct15.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
+#include "libavutil/mem_internal.h"
 
 #define CELT_VECTORS                 11
 #define CELT_ALLOC_STEPS             6

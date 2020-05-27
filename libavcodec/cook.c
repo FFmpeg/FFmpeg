@@ -44,6 +44,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem_internal.h"
 
 #include "audiodsp.h"
 #include "avcodec.h"

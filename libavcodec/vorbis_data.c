@@ -19,7 +19,8 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
+
 #include "vorbis.h"
 
 const uint8_t ff_vorbis_channel_layout_offsets[8][8] = {

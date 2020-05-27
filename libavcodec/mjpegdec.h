@@ -30,6 +30,7 @@
 #define AVCODEC_MJPEGDEC_H
 
 #include "libavutil/log.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
 

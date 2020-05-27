@@ -23,6 +23,7 @@
 #define AVCODEC_WMA_H
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "fft.h"

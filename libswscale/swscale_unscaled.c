@@ -30,6 +30,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"

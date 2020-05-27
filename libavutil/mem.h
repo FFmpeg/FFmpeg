@@ -33,6 +33,7 @@
 #include "attributes.h"
 #include "error.h"
 #include "avutil.h"
+#include "version.h"
 
 /**
  * @addtogroup lavu_mem
@@ -49,6 +50,10 @@
  * dealing with memory consistently possible on all platforms.
  *
  * @{
+ */
+
+#if FF_API_DECLARE_ALIGNED
+/**
  *
  * @defgroup lavu_mem_macros Alignment Macros
  * Helper macros for declaring aligned variables.
@@ -125,6 +130,7 @@
 /**
  * @}
  */
+#endif
 
 /**
  * @defgroup lavu_mem_attrs Function Attributes

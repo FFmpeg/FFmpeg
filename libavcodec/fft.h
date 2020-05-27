@@ -32,7 +32,8 @@
 
 #include <stdint.h>
 #include "config.h"
-#include "libavutil/mem.h"
+
+#include "libavutil/mem_internal.h"
 
 #if FFT_FLOAT
 

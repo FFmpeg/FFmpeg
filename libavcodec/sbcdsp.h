@@ -32,6 +32,8 @@
 #ifndef AVCODEC_SBCDSP_H
 #define AVCODEC_SBCDSP_H
 
+#include "libavutil/mem_internal.h"
+
 #include "sbc.h"
 #include "sbcdsp_data.h"
 

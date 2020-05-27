@@ -28,6 +28,8 @@
 
 #include "config.h"
 
+#include "libavutil/mem_internal.h"
+
 #include "mpegvideo.h"
 #include "dnxhddata.h"
 

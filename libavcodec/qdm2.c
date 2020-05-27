@@ -36,6 +36,7 @@
 #include <stdio.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 
 #define BITSTREAM_READER_LE

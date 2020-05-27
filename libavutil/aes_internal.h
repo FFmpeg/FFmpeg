@@ -21,7 +21,7 @@
 #ifndef AVUTIL_AES_INTERNAL_H
 #define AVUTIL_AES_INTERNAL_H
 
-#include "mem.h"
+#include "mem_internal.h"
 #include <stdint.h>
 
 typedef union {

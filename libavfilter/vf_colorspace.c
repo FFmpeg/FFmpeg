@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"

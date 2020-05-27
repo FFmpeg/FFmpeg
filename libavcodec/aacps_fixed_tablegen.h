@@ -37,6 +37,7 @@
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #include "aac_defines.h"
 #include "libavutil/softfloat.h"

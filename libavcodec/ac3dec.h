@@ -53,6 +53,8 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem_internal.h"
+
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "bswapdsp.h"

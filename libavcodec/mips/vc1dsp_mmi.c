@@ -21,6 +21,8 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem_internal.h"
+
 #include "libavcodec/vc1dsp.h"
 #include "constants.h"
 #include "vc1dsp_mips.h"
