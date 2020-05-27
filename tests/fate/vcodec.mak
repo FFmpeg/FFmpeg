@@ -323,7 +323,7 @@ fate-vsynth%-mpeg4-nr:           ENCOPTS = -qscale 8 -flags +mv4 -mbd rd \
 
 fate-vsynth%-mpeg4-nsse:         ENCOPTS = -qscale 7 -cmp nsse -subcmp nsse \
                                            -mbcmp nsse -precmp nsse         \
-                                           -skipcmp nsse
+                                           -skip_cmp nsse
 
 fate-vsynth%-mpeg4-qpel:         ENCOPTS = -qscale 7 -flags +mv4+qpel -mbd 2 \
                                            -bf 2 -cmp 1 -subcmp 2
