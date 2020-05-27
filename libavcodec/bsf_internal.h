@@ -42,6 +42,10 @@ int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt);
  */
 int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt);
 
+#if FF_API_CHILD_CLASS_NEXT
 const AVClass *ff_bsf_child_class_next(const AVClass *prev);
+#endif
+
+const AVClass *ff_bsf_child_class_iterate(void **opaque);
 
 #endif /* AVCODEC_BSF_INTERNAL_H */
