@@ -53,6 +53,13 @@ static const AVClass framesync_class = {
     .parent_log_context_offset = OFFSET(parent),
 };
 
+const AVClass *ff_framesync_child_class_iterate(void **iter)
+{
+    const AVClass *c = *iter ? NULL : &framesync_class;
+    *iter = (void *)(uintptr_t)c;
+    return c;
+}
+
 enum {
     STATE_BOF,
     STATE_RUN,
