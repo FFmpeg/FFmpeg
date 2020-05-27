@@ -178,8 +178,8 @@ const int16_t ff_adpcm_mtaf_stepsize[32][16] = {
        -424, -1273, -2121, -2970, -3819, -4668, -5516, -6365, },
 };
 
-const int8_t ff_adpcm_ima_cunning_index_table[8] = {
-    -1, -1, -1, -1, 1, 2, 3, 4,
+const int8_t ff_adpcm_ima_cunning_index_table[9] = {
+    -1, -1, -1, -1, 1, 2, 3, 4, -1
 };
 
 const int16_t ff_adpcm_ima_cunning_step_table[61] = {
