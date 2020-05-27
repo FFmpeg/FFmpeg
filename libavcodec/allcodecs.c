@@ -233,6 +233,7 @@ extern AVCodec ff_pbm_encoder;
 extern AVCodec ff_pbm_decoder;
 extern AVCodec ff_pcx_encoder;
 extern AVCodec ff_pcx_decoder;
+extern AVCodec ff_pfm_decoder;
 extern AVCodec ff_pgm_encoder;
 extern AVCodec ff_pgm_decoder;
 extern AVCodec ff_pgmyuv_encoder;

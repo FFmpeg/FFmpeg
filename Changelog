@@ -72,6 +72,7 @@ version <next>:
 - MediaFoundation encoder wrapper
 - untile filter
 - Simon & Schuster Interactive ADPCM encoder
+- PFM decoder
 
 
 version 4.2:

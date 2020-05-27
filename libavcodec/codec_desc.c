@@ -1770,6 +1770,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("NotchLC"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_PFM,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "pfm",
+        .long_name = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* various PCM "codecs" */
     {
