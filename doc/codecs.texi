@@ -646,6 +646,24 @@ noise preserving sum of squared differences
 
 @item dia_size @var{integer} (@emph{encoding,video})
 Set diamond type & size for motion estimation.
+@table @samp
+@item (1024, INT_MAX)
+full motion estimation(slowest)
+@item (768, 1024]
+umh motion estimation
+@item (512, 768]
+hex motion estimation
+@item (256, 512]
+l2s diamond motion estimation
+@item [2,256]
+var diamond motion estimation
+@item (-1,  2)
+small diamond motion estimation
+@item -1
+funny diamond motion estimation
+@item (INT_MIN, -1)
+sab diamond motion estimation
+@end table
 
 @item last_pred @var{integer} (@emph{encoding,video})
 Set amount of motion predictors from the previous frame.
