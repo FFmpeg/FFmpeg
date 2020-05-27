@@ -108,6 +108,15 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *pkt)
     if (res < 0)
         return res;
 
+    if (!pkt->size) {
+        /* In case the cache is empty we can pass side-data-only packets
+         * through unchanged. Otherwise, such a packet makes no sense. */
+        if (!s->n_cache)
+            return 0;
+        res = AVERROR_INVALIDDATA;
+        goto done;
+    }
+
     marker = pkt->data[pkt->size - 1];
     if ((marker & 0xe0) == 0xc0) {
         int nbytes = 1 + ((marker >> 3) & 0x3);
