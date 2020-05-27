@@ -1056,6 +1056,9 @@ static av_cold void av1_init_static(AVCodec *codec)
         codec->pix_fmts = av1_pix_fmts_highbd;
     else
         codec->pix_fmts = av1_pix_fmts;
+
+    if (aom_codec_version_major() < 2)
+        codec->capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
 }
 
 static av_cold int av1_init(AVCodecContext *avctx)
@@ -1132,7 +1135,7 @@ AVCodec ff_libaom_av1_encoder = {
     .init           = av1_init,
     .encode2        = aom_encode,
     .close          = aom_free,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .priv_class     = &class_aom,
     .defaults       = defaults,
