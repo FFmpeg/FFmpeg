@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-06-xx - xxxxxxxxxx - lavu 56.53.100 - log.h opt.h
+  Add av_opt_child_class_iterate() and AVClass.child_class_iterate().
+  Deprecate av_opt_child_class_next() and AVClass.child_class_next().
+
 2020-06-05 - ec39c2276a - lavu 56.50.100 - buffer.h
   Passing NULL as alloc argument to av_buffer_pool_init2() is now allowed.
 

@@ -1679,8 +1679,9 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
 
     if (search_flags & AV_OPT_SEARCH_CHILDREN) {
         if (search_flags & AV_OPT_SEARCH_FAKE_OBJ) {
-            const AVClass *child = NULL;
-            while (child = av_opt_child_class_next(c, child))
+            void *iter = NULL;
+            const AVClass *child;
+            while (child = av_opt_child_class_iterate(c, &iter))
                 if (o = av_opt_find2(&child, name, unit, opt_flags, search_flags, NULL))
                     return o;
         } else {
@@ -1715,10 +1716,29 @@ void *av_opt_child_next(void *obj, void *prev)
     return NULL;
 }
 
+#if FF_API_CHILD_CLASS_NEXT
+FF_DISABLE_DEPRECATION_WARNINGS
 const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *prev)
 {
     if (parent->child_class_next)
         return parent->child_class_next(prev);
+    return NULL;
+}
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter)
+{
+    if (parent->child_class_iterate)
+        return parent->child_class_iterate(iter);
+#if FF_API_CHILD_CLASS_NEXT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (parent->child_class_next) {
+        *iter = parent->child_class_next(*iter);
+        return *iter;
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     return NULL;
 }
 

@@ -114,7 +114,7 @@
  *      libavcodec exports generic options, while its priv_data field exports
  *      codec-specific options). In such a case, it is possible to set up the
  *      parent struct to export a child's options. To do that, simply
- *      implement AVClass.child_next() and AVClass.child_class_next() in the
+ *      implement AVClass.child_next() and AVClass.child_class_iterate() in the
  *      parent struct's AVClass.
  *      Assuming that the test_struct from above now also contains a
  *      child_struct field:
@@ -143,23 +143,25 @@
  *              return t->child_struct;
  *          return NULL
  *      }
- *      const AVClass child_class_next(const AVClass *prev)
+ *      const AVClass child_class_iterate(void **iter)
  *      {
- *          return prev ? NULL : &child_class;
+ *          const AVClass *c = *iter ? NULL : &child_class;
+ *          *iter = (void*)(uintptr_t)c;
+ *          return c;
  *      }
  *      @endcode
- *      Putting child_next() and child_class_next() as defined above into
+ *      Putting child_next() and child_class_iterate() as defined above into
  *      test_class will now make child_struct's options accessible through
  *      test_struct (again, proper setup as described above needs to be done on
  *      child_struct right after it is created).
  *
  *      From the above example it might not be clear why both child_next()
- *      and child_class_next() are needed. The distinction is that child_next()
- *      iterates over actually existing objects, while child_class_next()
+ *      and child_class_iterate() are needed. The distinction is that child_next()
+ *      iterates over actually existing objects, while child_class_iterate()
  *      iterates over all possible child classes. E.g. if an AVCodecContext
  *      was initialized to use a codec which has private options, then its
  *      child_next() will return AVCodecContext.priv_data and finish
- *      iterating. OTOH child_class_next() on AVCodecContext.av_class will
+ *      iterating. OTOH child_class_iterate() on AVCodecContext.av_class will
  *      iterate over all available codecs with private options.
  *
  * @subsection avoptions_implement_named_constants Named constants
@@ -194,7 +196,7 @@
  * For enumerating there are basically two cases. The first is when you want to
  * get all options that may potentially exist on the struct and its children
  * (e.g.  when constructing documentation). In that case you should call
- * av_opt_child_class_next() recursively on the parent struct's AVClass.  The
+ * av_opt_child_class_iterate() recursively on the parent struct's AVClass.  The
  * second case is when you have an already initialized struct with all its
  * children and you want to get all options that can be actually written or read
  * from it. In that case you should call av_opt_child_next() recursively (and
@@ -646,13 +648,26 @@ const AVOption *av_opt_next(const void *obj, const AVOption *prev);
  */
 void *av_opt_child_next(void *obj, void *prev);
 
+#if FF_API_CHILD_CLASS_NEXT
 /**
  * Iterate over potential AVOptions-enabled children of parent.
  *
  * @param prev result of a previous call to this function or NULL
  * @return AVClass corresponding to next potential child or NULL
+ *
+ * @deprecated use av_opt_child_class_iterate
  */
+attribute_deprecated
 const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *prev);
+#endif
+
+/**
+ * Iterate over potential AVOptions-enabled children of parent.
+ *
+ * @param iter a pointer where iteration state is stored.
+ * @return AVClass corresponding to next potential child or NULL
+ */
+const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter);
 
 /**
  * @defgroup opt_set_funcs Option setting functions
