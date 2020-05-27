@@ -44,9 +44,18 @@ enum mode {
     NB_MODES
 };
 
+#if FF_API_CHILD_CLASS_NEXT
 static const AVClass *child_class_next(const AVClass *prev)
 {
     return prev ? NULL : avcodec_dct_get_class();
+}
+#endif
+
+static const AVClass *child_class_iterate(void **iter)
+{
+    const AVClass *c = *iter ? NULL : avcodec_dct_get_class();
+    *iter = (void*)(uintptr_t)c;
+    return c;
 }
 
 static void *child_next(void *obj, void *prev)
@@ -74,7 +83,10 @@ static const AVClass spp_class = {
     .option           = spp_options,
     .version          = LIBAVUTIL_VERSION_INT,
     .category         = AV_CLASS_CATEGORY_FILTER,
+#if FF_API_CHILD_CLASS_NEXT
     .child_class_next = child_class_next,
+#endif
+    .child_class_iterate = child_class_iterate,
     .child_next       = child_next,
 };
 
