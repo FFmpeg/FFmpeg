@@ -91,8 +91,7 @@ static av_cold int end(AVCodecContext *avctx)
 {
     AVRnContext *a = avctx->priv_data;
 
-    avcodec_close(a->mjpeg_avctx);
-    av_freep(&a->mjpeg_avctx);
+    avcodec_free_context(&a->mjpeg_avctx);
 
     return 0;
 }
