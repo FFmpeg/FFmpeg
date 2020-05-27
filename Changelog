@@ -73,6 +73,7 @@ version <next>:
 - untile filter
 - Simon & Schuster Interactive ADPCM encoder
 - PFM decoder
+- dblur video filter
 
 
 version 4.2:

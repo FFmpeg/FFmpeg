@@ -8563,6 +8563,29 @@ Set background opacity.
 Set display number format. Can be @code{hex}, or @code{dec}. Default is @code{hex}.
 @end table
 
+@section dblur
+Apply Directional blur filter.
+
+The filter accepts the following options:
+
+@table @option
+@item angle
+Set angle of directional blur. Default is @code{45}.
+
+@item radius
+Set radius of directional blur. Default is @code{5}.
+
+@item planes
+Set which planes to filter. By default all planes are filtered.
+@end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @section dctdnoiz
 
 Denoise frames using 2D DCT (frequency domain filtering).
