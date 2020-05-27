@@ -2497,7 +2497,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     return ret;
                 else if (ret) {
                     // FIXME: merge with the stuff in mpeg_decode_slice
-                    if (s2->last_picture_ptr || s2->low_delay)
+                    if (s2->last_picture_ptr || s2->low_delay || s2->pict_type == AV_PICTURE_TYPE_B)
                         *got_output = 1;
                 }
             }
