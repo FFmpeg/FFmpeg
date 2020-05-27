@@ -21,6 +21,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
@@ -53,6 +54,8 @@ static void *format_child_next(void *obj, void *prev)
     return NULL;
 }
 
+#if FF_API_CHILD_CLASS_NEXT
+FF_DISABLE_DEPRECATION_WARNINGS
 static const AVClass *format_child_class_next(const AVClass *prev)
 {
     AVInputFormat  *ifmt = NULL;
@@ -80,6 +83,64 @@ static const AVClass *format_child_class_next(const AVClass *prev)
 
     return NULL;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+enum {
+    CHILD_CLASS_ITER_AVIO = 0,
+    CHILD_CLASS_ITER_MUX,
+    CHILD_CLASS_ITER_DEMUX,
+    CHILD_CLASS_ITER_DONE,
+
+};
+
+#define ITER_STATE_SHIFT 16
+
+static const AVClass *format_child_class_iterate(void **iter)
+{
+    // we use the low 16 bits of iter as the value to be passed to
+    // av_(de)muxer_iterate()
+    void *val = (void*)(((uintptr_t)*iter) & ((1 << ITER_STATE_SHIFT) - 1));
+    unsigned int state = ((uintptr_t)*iter) >> ITER_STATE_SHIFT;
+    const AVClass *ret = NULL;
+
+    if (state == CHILD_CLASS_ITER_AVIO) {
+        ret = &ff_avio_class;
+        state++;
+        goto finish;
+    }
+
+    if (state == CHILD_CLASS_ITER_MUX) {
+        const AVOutputFormat *ofmt;
+
+        while ((ofmt = av_muxer_iterate(&val))) {
+            ret = ofmt->priv_class;
+            if (ret)
+                goto finish;
+        }
+
+        val = NULL;
+        state++;
+    }
+
+    if (state == CHILD_CLASS_ITER_DEMUX) {
+        const AVInputFormat *ifmt;
+
+        while ((ifmt = av_demuxer_iterate(&val))) {
+            ret = ifmt->priv_class;
+            if (ret)
+                goto finish;
+        }
+        val = NULL;
+        state++;
+    }
+
+finish:
+    // make sure none av_(de)muxer_iterate does not set the high bits of val
+    av_assert0(!((uintptr_t)val >> ITER_STATE_SHIFT));
+    *iter = (void*)((uintptr_t)val | (state << ITER_STATE_SHIFT));
+    return ret;
+}
 
 static AVClassCategory get_category(void *ptr)
 {
@@ -94,7 +155,10 @@ static const AVClass av_format_context_class = {
     .option         = avformat_options,
     .version        = LIBAVUTIL_VERSION_INT,
     .child_next     = format_child_next,
+#if FF_API_CHILD_CLASS_NEXT
     .child_class_next = format_child_class_next,
+#endif
+    .child_class_iterate = format_child_class_iterate,
     .category       = AV_CLASS_CATEGORY_MUXER,
     .get_category   = get_category,
 };
