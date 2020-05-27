@@ -360,24 +360,14 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 
 static HEVCFrame *find_ref_idx(HEVCContext *s, int poc, uint8_t use_msb)
 {
+    int mask = use_msb ? ~0 : (1 << s->ps.sps->log2_max_poc_lsb) - 1;
     int i;
 
-    if (use_msb) {
-        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            HEVCFrame *ref = &s->DPB[i];
-            if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
-                if (ref->poc == poc)
-                    return ref;
-            }
-        }
-    } else {
-        int LtMask = (1 << s->ps.sps->log2_max_poc_lsb) - 1;
-        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            HEVCFrame *ref = &s->DPB[i];
-            if (ref->frame->buf[0] && ref->sequence == s->seq_decode) {
-                if ((ref->poc & LtMask) == poc)
-                    return ref;
-            }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+        HEVCFrame *ref = &s->DPB[i];
+        if (ref->frame->buf[0] && ref->sequence == s->seq_decode) {
+            if ((ref->poc & mask) == poc)
+                return ref;
         }
     }
 
