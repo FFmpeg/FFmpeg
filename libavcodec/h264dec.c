@@ -253,8 +253,7 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
 
     if (sl != h->slice_ctx) {
         memset(er, 0, sizeof(*er));
-    } else
-    if (CONFIG_ERROR_RESILIENCE) {
+    } else if (CONFIG_ERROR_RESILIENCE) {
 
         /* init ER */
         er->avctx          = h->avctx;
