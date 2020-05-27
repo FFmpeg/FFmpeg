@@ -67,7 +67,10 @@ const AVClass ffurl_context_class = {
     .option           = options,
     .version          = LIBAVUTIL_VERSION_INT,
     .child_next       = urlcontext_child_next,
+#if FF_API_CHILD_CLASS_NEXT
     .child_class_next = ff_urlcontext_child_class_next,
+#endif
+    .child_class_iterate = ff_urlcontext_child_class_iterate,
 };
 /*@}*/
 
