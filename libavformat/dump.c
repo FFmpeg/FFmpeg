@@ -500,6 +500,8 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         return;
     }
 
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
     // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
     avctx->properties = st->codec->properties;
     avctx->codec      = st->codec->codec;
@@ -507,6 +509,8 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     avctx->qmax       = st->codec->qmax;
     avctx->coded_width  = st->codec->coded_width;
     avctx->coded_height = st->codec->coded_height;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (separator)
         av_opt_set(avctx, "dump_separator", separator, 0);
@@ -541,7 +545,13 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         int tbr = st->r_frame_rate.den && st->r_frame_rate.num;
         int tbn = st->time_base.den && st->time_base.num;
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
         int tbc = st->codec->time_base.den && st->codec->time_base.num;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+        int tbc = 0;
+#endif
 
         if (fps || tbr || tbn || tbc)
             av_log(NULL, AV_LOG_INFO, "%s", separator);
@@ -552,8 +562,12 @@ static void dump_stream_format(AVFormatContext *ic, int i,
             print_fps(av_q2d(st->r_frame_rate), tbn || tbc ? "tbr, " : "tbr");
         if (tbn)
             print_fps(1 / av_q2d(st->time_base), tbc ? "tbn, " : "tbn");
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
         if (tbc)
             print_fps(1 / av_q2d(st->codec->time_base), "tbc");
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     if (st->disposition & AV_DISPOSITION_DEFAULT)
