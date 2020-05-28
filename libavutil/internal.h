@@ -137,6 +137,9 @@
 #   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_A(32, t, v, __VA_ARGS__,,))
 #endif
 
+#define FF_ALLOC_TYPED_ARRAY(p, nelem)  (p = av_malloc_array(nelem, sizeof(*p)))
+#define FF_ALLOCZ_TYPED_ARRAY(p, nelem) (p = av_mallocz_array(nelem, sizeof(*p)))
+
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
