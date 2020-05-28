@@ -49,7 +49,7 @@ int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
         if (s < LZF_LITERAL_MAX) {
             s++;
             if (s > *size - len) {
-                *size += *size /2;
+                *size += s + *size /2;
                 ret = av_reallocp(buf, *size);
                 if (ret < 0)
                     return ret;
@@ -72,7 +72,7 @@ int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
                 return AVERROR_INVALIDDATA;
 
             if (l > *size - len) {
-                *size += *size / 2;
+                *size += l + *size / 2;
                 ret = av_reallocp(buf, *size);
                 if (ret < 0)
                     return ret;
