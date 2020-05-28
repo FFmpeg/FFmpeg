@@ -1889,7 +1889,7 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     if (hwaccel) {
         if (hwaccel->alloc_frame) {
             ret = hwaccel->alloc_frame(avctx, frame);
-            goto fail;
+            goto end;
         }
     } else
         avctx->sw_pix_fmt = avctx->pix_fmt;
@@ -1904,6 +1904,7 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     if (ret < 0)
         goto fail;
 
+end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions &&
         !(avctx->codec->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)) {
         frame->width  = avctx->width;
