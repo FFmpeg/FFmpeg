@@ -293,12 +293,9 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
     if(i>=length-1){ //no escaped 0
         *dst_length= length;
         *consumed= length+1; //+1 for the header
-        if(h->avctx->flags2 & AV_CODEC_FLAG2_FAST){
-            return src;
-        }else{
-            memcpy(dst, src, length);
-            return dst;
-        }
+
+        memcpy(dst, src, length);
+        return dst;
     }
 
     memcpy(dst, src, i);
