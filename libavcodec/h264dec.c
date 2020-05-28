@@ -182,6 +182,7 @@ int ff_h264_alloc_tables(H264Context *h)
 {
     const int big_mb_num = h->mb_stride * (h->mb_height + 1);
     const int row_mb_num = 2*h->mb_stride*FFMAX(h->nb_slice_ctx, 1);
+    const int st_size = big_mb_num + h->mb_stride;
     int x, y;
 
     FF_ALLOCZ_ARRAY_OR_GOTO(h->avctx, h->intra4x4_pred_mode,
@@ -191,7 +192,7 @@ int ff_h264_alloc_tables(H264Context *h)
     FF_ALLOCZ_OR_GOTO(h->avctx, h->non_zero_count,
                       big_mb_num * 48 * sizeof(uint8_t), fail)
     FF_ALLOCZ_OR_GOTO(h->avctx, h->slice_table_base,
-                      (big_mb_num + h->mb_stride) * sizeof(*h->slice_table_base), fail)
+                      st_size * sizeof(*h->slice_table_base), fail)
     FF_ALLOCZ_OR_GOTO(h->avctx, h->cbp_table,
                       big_mb_num * sizeof(uint16_t), fail)
     FF_ALLOCZ_OR_GOTO(h->avctx, h->chroma_pred_mode_table,
@@ -209,7 +210,7 @@ int ff_h264_alloc_tables(H264Context *h)
                       big_mb_num * sizeof(uint8_t), fail)
 
     memset(h->slice_table_base, -1,
-           (big_mb_num + h->mb_stride) * sizeof(*h->slice_table_base));
+           st_size * sizeof(*h->slice_table_base));
     h->slice_table = h->slice_table_base + h->mb_stride * 2 + 1;
 
     FF_ALLOCZ_OR_GOTO(h->avctx, h->mb2b_xy,
@@ -254,6 +255,7 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
     if (sl != h->slice_ctx) {
         memset(er, 0, sizeof(*er));
     } else if (CONFIG_ERROR_RESILIENCE) {
+        const int er_size = h->mb_height * h->mb_stride * (4*sizeof(int) + 1);
 
         /* init ER */
         er->avctx          = h->avctx;
@@ -282,7 +284,7 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
                           mb_array_size * sizeof(uint8_t), fail);
 
         FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
-                         h->mb_height * h->mb_stride * (4*sizeof(int) + 1), fail);
+                         er_size * sizeof(uint8_t), fail);
 
         FF_ALLOCZ_OR_GOTO(h->avctx, sl->dc_val_base,
                           yc_size * sizeof(int16_t), fail);
