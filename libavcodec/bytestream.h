@@ -77,11 +77,15 @@ static av_always_inline type bytestream2_get_ ## name(GetByteContext *g)       \
     }                                                                          \
     return bytestream2_get_ ## name ## u(g);                                   \
 }                                                                              \
+static av_always_inline type bytestream2_peek_ ## name ## u(GetByteContext *g) \
+{                                                                              \
+    return read(g->buffer);                                                    \
+}                                                                              \
 static av_always_inline type bytestream2_peek_ ## name(GetByteContext *g)      \
 {                                                                              \
     if (g->buffer_end - g->buffer < bytes)                                     \
         return 0;                                                              \
-    return read(g->buffer);                                                    \
+    return bytestream2_peek_ ## name ## u(g);                                  \
 }
 
 DEF(uint64_t,     le64, 8, AV_RL64, AV_WL64)
