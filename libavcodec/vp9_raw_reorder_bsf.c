@@ -292,6 +292,11 @@ static int vp9_raw_reorder_filter(AVBSFContext *bsf, AVPacket *out)
             return err;
         }
 
+        if (!in->size) {
+            av_packet_free(&in);
+            return AVERROR_INVALIDDATA;
+        }
+
         if ((in->data[in->size - 1] & 0xe0) == 0xc0) {
             av_log(bsf, AV_LOG_ERROR, "Input in superframes is not "
                    "supported.\n");
