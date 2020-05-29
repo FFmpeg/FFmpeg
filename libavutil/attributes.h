@@ -37,7 +37,7 @@
 #ifdef __has_builtin
 #    define AV_HAS_BUILTIN(x) __has_builtin(x)
 #else
-#    define AV_HAS_BUILTIN(x) false
+#    define AV_HAS_BUILTIN(x) 0
 #endif
 
 #ifndef av_always_inline
