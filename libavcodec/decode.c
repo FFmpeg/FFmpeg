@@ -1911,10 +1911,12 @@ end:
         frame->height = avctx->height;
     }
 
-    return 0;
 fail:
-    av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-    av_frame_unref(frame);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        av_frame_unref(frame);
+    }
+
     return ret;
 }
 
