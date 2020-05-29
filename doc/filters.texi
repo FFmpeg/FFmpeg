@@ -1409,7 +1409,7 @@ Set coefficients format.
 
 @table @samp
 @item tf
-transfer function
+digital transfer function
 @item zp
 Z-plane zeros/poles, cartesian (default)
 @item pr
