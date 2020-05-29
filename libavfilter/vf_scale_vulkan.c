@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 #include "vulkan.h"
 #include "scale_eval.h"
@@ -117,7 +118,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     s->vkctx.queue_family_idx = s->vkctx.hwctx->queue_family_comp_index;
     s->vkctx.queue_count = GET_QUEUE_COUNT(s->vkctx.hwctx, 0, 1, 0);
-    s->vkctx.cur_queue_idx = rand() % s->vkctx.queue_count;
+    s->vkctx.cur_queue_idx = av_get_random_seed() % s->vkctx.queue_count;
 
     switch (s->scaler) {
     case F_NEAREST:
