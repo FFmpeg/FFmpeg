@@ -321,7 +321,7 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, void *data,
         int info_size;
         bytestream2_skip(&ctx->gbc, 4);
         info_size = bytestream2_get_le32(&ctx->gbc);
-        if (bytestream2_get_bytes_left(&ctx->gbc) < info_size) {
+        if (info_size < 0 || bytestream2_get_bytes_left(&ctx->gbc) < info_size) {
             av_log(avctx, AV_LOG_ERROR, "Invalid INFO size (%d).\n", info_size);
             return AVERROR_INVALIDDATA;
         }
