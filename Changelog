@@ -74,6 +74,7 @@ version <next>:
 - Simon & Schuster Interactive ADPCM encoder
 - PFM decoder
 - dblur video filter
+- Real War KVAG muxer
 
 
 version 4.2:

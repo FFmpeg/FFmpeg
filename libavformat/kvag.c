@@ -1,5 +1,5 @@
 /*
- * Simon & Schuster Interactive VAG demuxer
+ * Simon & Schuster Interactive VAG (de)muxer
  *
  * Copyright (C) 2020 Zane van Iperen (zane@zanevaniperen.com)
  *
@@ -21,6 +21,7 @@
  */
 #include "avformat.h"
 #include "internal.h"
+#include "rawenc.h"
 #include "libavutil/intreadwrite.h"
 
 #define KVAG_TAG            MKTAG('K', 'V', 'A', 'G')
@@ -34,6 +35,7 @@ typedef struct KVAGHeader {
     uint16_t    stereo;
 } KVAGHeader;
 
+#if CONFIG_KVAG_DEMUXER
 static int kvag_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != KVAG_TAG)
@@ -115,3 +117,81 @@ AVInputFormat ff_kvag_demuxer = {
     .read_header    = kvag_read_header,
     .read_packet    = kvag_read_packet
 };
+#endif
+
+#if CONFIG_KVAG_MUXER
+static int kvag_write_init(AVFormatContext *s)
+{
+    AVCodecParameters *par;
+
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "KVAG files have exactly one stream\n");
+        return AVERROR(EINVAL);
+    }
+
+    par = s->streams[0]->codecpar;
+
+    if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_SSI) {
+        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
+               avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
+    if (par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "KVAG files only support up to 2 channels\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(s, AV_LOG_WARNING, "Stream not seekable, unable to write output file\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+static int kvag_write_header(AVFormatContext *s)
+{
+    uint8_t buf[KVAG_HEADER_SIZE];
+    AVCodecParameters *par = s->streams[0]->codecpar;
+
+    AV_WL32(buf +  0, KVAG_TAG);
+    AV_WL32(buf +  4, 0); /* Data size, we fix this up later. */
+    AV_WL32(buf +  8, par->sample_rate);
+    AV_WL16(buf + 12, par->channels == 2);
+
+    avio_write(s->pb, buf, sizeof(buf));
+    return 0;
+}
+
+static int kvag_write_trailer(AVFormatContext *s)
+{
+    int64_t file_size, data_size;
+
+    file_size = avio_tell(s->pb);
+    data_size = file_size - KVAG_HEADER_SIZE;
+    if (data_size < UINT32_MAX) {
+        avio_seek(s->pb, 4, SEEK_SET);
+        avio_wl32(s->pb, (uint32_t)data_size);
+        avio_seek(s->pb, file_size, SEEK_SET);
+    } else {
+        av_log(s, AV_LOG_WARNING,
+               "Filesize %"PRId64" invalid for KVAG, output file will be broken\n",
+               file_size);
+    }
+
+    return 0;
+}
+
+AVOutputFormat ff_kvag_muxer = {
+    .name           = "kvag",
+    .long_name      = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
+    .extensions     = "vag",
+    .audio_codec    = AV_CODEC_ID_ADPCM_IMA_SSI,
+    .video_codec    = AV_CODEC_ID_NONE,
+    .init           = kvag_write_init,
+    .write_header   = kvag_write_header,
+    .write_packet   = ff_raw_write_packet,
+    .write_trailer  = kvag_write_trailer
+};
+#endif
