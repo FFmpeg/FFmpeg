@@ -511,7 +511,6 @@ static int allocate_buffers(ALACContext *alac)
     }
     return 0;
 buf_alloc_fail:
-    alac_decode_close(alac->avctx);
     return AVERROR(ENOMEM);
 }
 
@@ -625,5 +624,6 @@ AVCodec ff_alac_decoder = {
     .close          = alac_decode_close,
     .decode         = alac_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class     = &alac_class
 };
