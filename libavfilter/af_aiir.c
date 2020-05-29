@@ -336,7 +336,7 @@ static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
     return 0;
 }
 
-static const char *format[] = { "%lf", "%lf %lfi", "%lf %lfr", "%lf %lfd" };
+static const char *format[] = { "%lf", "%lf %lfi", "%lf %lfr", "%lf %lfd", "%lf %lfi" };
 
 static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int ab)
 {
@@ -696,6 +696,39 @@ static void convert_pr2zp(AVFilterContext *ctx, int channels)
     }
 }
 
+static void convert_sp2zp(AVFilterContext *ctx, int channels)
+{
+    AudioIIRContext *s = ctx->priv;
+    int ch;
+
+    for (ch = 0; ch < channels; ch++) {
+        IIRChannel *iir = &s->iir[ch];
+        int n;
+
+        for (n = 0; n < iir->nb_ab[0]; n++) {
+            double sr = iir->ab[0][2*n];
+            double si = iir->ab[0][2*n+1];
+            double snr = 1. + sr;
+            double sdr = 1. - sr;
+            double div = sdr * sdr + si * si;
+
+            iir->ab[0][2*n]   = (snr * sdr - si * si) / div;
+            iir->ab[0][2*n+1] = (sdr * si + snr * si) / div;
+        }
+
+        for (n = 0; n < iir->nb_ab[1]; n++) {
+            double sr = iir->ab[1][2*n];
+            double si = iir->ab[1][2*n+1];
+            double snr = 1. + sr;
+            double sdr = 1. - sr;
+            double div = sdr * sdr + si * si;
+
+            iir->ab[1][2*n]   = (snr * sdr - si * si) / div;
+            iir->ab[1][2*n+1] = (sdr * si + snr * si) / div;
+        }
+    }
+}
+
 static void convert_pd2zp(AVFilterContext *ctx, int channels)
 {
     AudioIIRContext *s = ctx->priv;
@@ -996,6 +1029,8 @@ static int config_output(AVFilterLink *outlink)
         convert_pr2zp(ctx, inlink->channels);
     } else if (s->format == 3) {
         convert_pd2zp(ctx, inlink->channels);
+    } else if (s->format == 4) {
+        convert_sp2zp(ctx, inlink->channels);
     }
     if (s->format > 0) {
         check_stability(ctx, inlink->channels);
@@ -1221,12 +1256,13 @@ static const AVOption aiir_options[] = {
     { "k", "set channels gains",                   OFFSET(g_str),    AV_OPT_TYPE_STRING, {.str="1|1"}, 0, 0, AF },
     { "dry", "set dry gain",                       OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "wet", "set wet gain",                       OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
-    { "format", "set coefficients format",         OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},     0, 3, AF, "format" },
-    { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},     0, 3, AF, "format" },
+    { "format", "set coefficients format",         OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},     0, 4, AF, "format" },
+    { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},     0, 4, AF, "format" },
     { "tf", "digital transfer function",           0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "format" },
     { "zp", "Z-plane zeros/poles",                 0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "format" },
     { "pr", "Z-plane zeros/poles (polar radians)", 0,                AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "format" },
     { "pd", "Z-plane zeros/poles (polar degrees)", 0,                AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "format" },
+    { "sp", "S-plane zeros/poles",                 0,                AV_OPT_TYPE_CONST,  {.i64=4},     0, 0, AF, "format" },
     { "process", "set kind of processing",         OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 1, AF, "process" },
     { "r", "set kind of processing",               OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 1, AF, "process" },
     { "d", "direct",                               0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "process" },

@@ -1416,6 +1416,8 @@ Z-plane zeros/poles, cartesian (default)
 Z-plane zeros/poles, polar radians
 @item pd
 Z-plane zeros/poles, polar degrees
+@item sp
+S-plane zeros/poles
 @end table
 
 @item process, r
