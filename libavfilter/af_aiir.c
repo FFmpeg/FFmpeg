@@ -824,9 +824,14 @@ static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t col
     }
 }
 
+static double distance(double x0, double x1, double y0, double y1)
+{
+    return hypot(x0 - x1, y0 - y1);
+}
+
 static void get_response(int channel, int format, double w,
                          const double *b, const double *a,
-                         int nb_b, int nb_a, double *r, double *i)
+                         int nb_b, int nb_a, double *magnitude, double *phase)
 {
     double realz, realp;
     double imagz, imagp;
@@ -849,39 +854,26 @@ static void get_response(int channel, int format, double w,
         div = realp * realp + imagp * imagp;
         real = (realz * realp + imagz * imagp) / div;
         imag = (imagz * realp - imagp * realz) / div;
+
+        *magnitude = hypot(real, imag);
+        *phase = atan2(imag, real);
     } else {
-        real = 1;
-        imag = 0;
+        double p = 1., z = 1.;
+        double acc = 0.;
+
         for (int x = 0; x < nb_a; x++) {
-            double ore, oim, re, im;
-
-            re = cos(w) - a[2 * x];
-            im = sin(w) - a[2 * x + 1];
-
-            ore = real;
-            oim = imag;
-
-            real = ore * re - oim * im;
-            imag = ore * im + oim * re;
+            z *= distance(cos(w), a[2 * x], sin(w), a[2 * x + 1]);
+            acc += atan2(sin(w) - a[2 * x + 1], cos(w) - a[2 * x]);
         }
 
         for (int x = 0; x < nb_b; x++) {
-            double ore, oim, re, im;
-
-            re = cos(w) - b[2 * x];
-            im = sin(w) - b[2 * x + 1];
-
-            ore = real;
-            oim = imag;
-            div = re * re + im * im;
-
-            real = (ore * re + oim * im) / div;
-            imag = (oim * re - ore * im) / div;
+            p *= distance(cos(w), b[2 * x], sin(w), b[2 * x + 1]);
+            acc -= atan2(sin(w) - b[2 * x + 1], cos(w) - b[2 * x]);
         }
-    }
 
-    *r = real;
-    *i = imag;
+        *magnitude = z / p;
+        *phase = acc;
+    }
 }
 
 static void draw_response(AVFilterContext *ctx, AVFrame *out, int sample_rate)
@@ -909,12 +901,12 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out, int sample_rate)
         const int nb_b = s->iir[ch].nb_ab[0];
         const int nb_a = s->iir[ch].nb_ab[1];
         double w = i * M_PI / (s->w - 1);
-        double real, imag;
+        double m, p;
 
-        get_response(ch, s->format, w, b, a, nb_b, nb_a, &real, &imag);
+        get_response(ch, s->format, w, b, a, nb_b, nb_a, &m, &p);
 
-        mag[i] = s->iir[ch].g * hypot(real, imag);
-        phase[i] = atan2(imag, real);
+        mag[i] = s->iir[ch].g * m;
+        phase[i] = p;
         min = fmin(min, mag[i]);
         max = fmax(max, mag[i]);
     }
