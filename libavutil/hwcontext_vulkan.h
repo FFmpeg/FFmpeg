@@ -21,6 +21,9 @@
 
 #include <vulkan/vulkan.h>
 
+#include "pixfmt.h"
+#include "frame.h"
+
 /**
  * @file
  * API-specific header for AV_HWDEVICE_TYPE_VULKAN.
