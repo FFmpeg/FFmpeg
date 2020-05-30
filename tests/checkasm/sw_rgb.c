@@ -137,12 +137,13 @@ static void check_interleave_bytes(void)
             int w = i > 0 ? i : (1 + (rnd() % (MAX_STRIDE-2)));
             int h = 1 + (rnd() % (MAX_HEIGHT-2));
 
-            memset(dst0, 0, 2 * MAX_STRIDE * MAX_HEIGHT);
-            memset(dst1, 0, 2 * MAX_STRIDE * MAX_HEIGHT);
-
             int src0_offset = 0, src0_stride = MAX_STRIDE;
             int src1_offset = 0, src1_stride = MAX_STRIDE;
             int dst_offset  = 0, dst_stride  = 2 * MAX_STRIDE;
+
+            memset(dst0, 0, 2 * MAX_STRIDE * MAX_HEIGHT);
+            memset(dst1, 0, 2 * MAX_STRIDE * MAX_HEIGHT);
+
             // Try different combinations of negative strides
             if (i & 1) {
                 src0_offset = (h-1)*src0_stride;
