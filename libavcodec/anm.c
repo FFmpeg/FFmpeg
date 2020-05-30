@@ -40,6 +40,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     AnmContext *s = avctx->priv_data;
     int i;
 
+    if (avctx->extradata_size < 16 * 8 + 4 * 256)
+        return AVERROR_INVALIDDATA;
+
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     s->frame = av_frame_alloc();
@@ -47,11 +50,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     bytestream2_init(&s->gb, avctx->extradata, avctx->extradata_size);
-    if (bytestream2_get_bytes_left(&s->gb) < 16 * 8 + 4 * 256) {
-        av_frame_free(&s->frame);
-        return AVERROR_INVALIDDATA;
-    }
-
     bytestream2_skipu(&s->gb, 16 * 8);
     for (i = 0; i < 256; i++)
         s->palette[i] = (0xFFU << 24) | bytestream2_get_le32u(&s->gb);
