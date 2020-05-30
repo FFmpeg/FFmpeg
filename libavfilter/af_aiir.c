@@ -468,8 +468,8 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
         IIRChannel *iir = &s->iir[ch];
         double *topc, *botc;
 
-        topc = av_calloc((iir->nb_ab[0] + 1) * 2, sizeof(*topc));
-        botc = av_calloc((iir->nb_ab[1] + 1) * 2, sizeof(*botc));
+        topc = av_calloc((iir->nb_ab[1] + 1) * 2, sizeof(*topc));
+        botc = av_calloc((iir->nb_ab[0] + 1) * 2, sizeof(*botc));
         if (!topc || !botc) {
             ret = AVERROR(ENOMEM);
             goto fail;
