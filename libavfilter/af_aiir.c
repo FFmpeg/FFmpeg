@@ -385,45 +385,32 @@ static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, 
     return 0;
 }
 
-static void multiply(double wre, double wim, int npz, double *coeffs)
+static void cmul(double re, double im, double re2, double im2, double *RE, double *IM)
 {
-    double nwre = -wre, nwim = -wim;
-    double cre, cim;
-    int i;
-
-    for (i = npz; i >= 1; i--) {
-        cre = coeffs[2 * i + 0];
-        cim = coeffs[2 * i + 1];
-
-        coeffs[2 * i + 0] = (nwre * cre - nwim * cim) + coeffs[2 * (i - 1) + 0];
-        coeffs[2 * i + 1] = (nwre * cim + nwim * cre) + coeffs[2 * (i - 1) + 1];
-    }
-
-    cre = coeffs[0];
-    cim = coeffs[1];
-    coeffs[0] = nwre * cre - nwim * cim;
-    coeffs[1] = nwre * cim + nwim * cre;
+    *RE = re * re2 - im * im2;
+    *IM = re * im2 + re2 * im;
 }
 
-static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
+static int expand(AVFilterContext *ctx, double *pz, int n, double *coefs)
 {
-    int i;
+    coefs[2 * n] = 1.0;
 
-    coeffs[0] = 1.0;
-    coeffs[1] = 0.0;
+    for (int i = 1; i <= n; i++) {
+        for (int j = n - i; j < n; j++) {
+            double re, im;
 
-    for (i = 0; i < nb; i++) {
-        coeffs[2 * (i + 1)    ] = 0.0;
-        coeffs[2 * (i + 1) + 1] = 0.0;
+            cmul(coefs[2 * (j + 1)], coefs[2 * (j + 1) + 1],
+                 pz[2 * (i - 1)], pz[2 * (i - 1) + 1], &re, &im);
+
+            coefs[2 * j]     -= re;
+            coefs[2 * j + 1] -= im;
+        }
     }
 
-    for (i = 0; i < nb; i++)
-        multiply(pz[2 * i], pz[2 * i + 1], nb, coeffs);
-
-    for (i = 0; i < nb + 1; i++) {
-        if (fabs(coeffs[2 * i + 1]) > FLT_EPSILON) {
-            av_log(ctx, AV_LOG_ERROR, "coeff: %f of z^%d is not real; poles/zeros are not complex conjugates.\n",
-                   coeffs[2 * i + 1], i);
+    for (int i = 0; i < n + 1; i++) {
+        if (fabs(coefs[2 * i + 1]) > FLT_EPSILON) {
+            av_log(ctx, AV_LOG_ERROR, "coefs: %f of z^%d is not real; poles/zeros are not complex conjugates.\n",
+                   coefs[2 * i + 1], i);
             return AVERROR(EINVAL);
         }
     }
