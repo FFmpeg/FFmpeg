@@ -2740,6 +2740,20 @@ MPEG-2 video encoder.
 @subsection Options
 
 @table @option
+@item profile @var{integer}
+Select the mpeg2 profile to encode:
+
+@table @samp
+@item 422
+@item main
+@item ss
+Spatially Scalable
+@item snr
+SNR Scalable
+@item high
+@item simple
+@end table
+
 @item seq_disp_ext @var{integer}
 Specifies if the encoder should write a sequence_display_extension to the
 output.

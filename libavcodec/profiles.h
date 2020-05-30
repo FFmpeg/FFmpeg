@@ -43,6 +43,14 @@
     FF_AVCTX_PROFILE_OPTION("mpeg4_main",    NULL, VIDEO, FF_PROFILE_MPEG4_MAIN)\
     FF_AVCTX_PROFILE_OPTION("mpeg4_asp",     NULL, VIDEO, FF_PROFILE_MPEG4_ADVANCED_SIMPLE)\
 
+#define FF_MPEG2_PROFILE_OPTS \
+    FF_AVCTX_PROFILE_OPTION("422",           NULL, VIDEO, FF_PROFILE_MPEG2_422)\
+    FF_AVCTX_PROFILE_OPTION("high",          NULL, VIDEO, FF_PROFILE_MPEG2_HIGH)\
+    FF_AVCTX_PROFILE_OPTION("ss",            NULL, VIDEO, FF_PROFILE_MPEG2_SS)\
+    FF_AVCTX_PROFILE_OPTION("snr",           NULL, VIDEO, FF_PROFILE_MPEG2_SNR_SCALABLE)\
+    FF_AVCTX_PROFILE_OPTION("main",          NULL, VIDEO, FF_PROFILE_MPEG2_MAIN)\
+    FF_AVCTX_PROFILE_OPTION("simple",        NULL, VIDEO, FF_PROFILE_MPEG2_SIMPLE)\
+
 extern const AVProfile ff_aac_profiles[];
 extern const AVProfile ff_dca_profiles[];
 extern const AVProfile ff_dnxhd_profiles[];

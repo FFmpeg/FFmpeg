@@ -41,6 +41,7 @@
 #include "mpeg12data.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "profiles.h"
 
 static const uint8_t svcd_scan_offset_placeholder[] = {
     0x10, 0x0E, 0x00, 0x80, 0x81, 0x00, 0x80,
@@ -1167,6 +1168,7 @@ static const AVOption mpeg2_options[] = {
     {     "mac",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_MAC        },  0, 0, VE, "video_format" },
     {     "unspecified",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_UNSPECIFIED},  0, 0, VE, "video_format" },
     FF_MPV_COMMON_OPTS
+    FF_MPEG2_PROFILE_OPTS
     { NULL },
 };
 
