@@ -426,6 +426,10 @@ static int xa_decode(AVCodecContext *avctx, int16_t *out0, int16_t *out1,
             avpriv_request_sample(avctx, "unknown XA-ADPCM filter %d", filter);
             filter=0;
         }
+        if (shift < 0) {
+            avpriv_request_sample(avctx, "unknown XA-ADPCM shift %d", shift);
+            shift = 0;
+        }
         f0 = xa_adpcm_table[filter][0];
         f1 = xa_adpcm_table[filter][1];
 
@@ -451,9 +455,13 @@ static int xa_decode(AVCodecContext *avctx, int16_t *out0, int16_t *out1,
 
         shift  = 12 - (in[5+i*2] & 15);
         filter = in[5+i*2] >> 4;
-        if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table)) {
+        if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table) || shift < 0) {
             avpriv_request_sample(avctx, "unknown XA-ADPCM filter %d", filter);
             filter=0;
+        }
+        if (shift < 0) {
+            avpriv_request_sample(avctx, "unknown XA-ADPCM shift %d", shift);
+            shift = 0;
         }
 
         f0 = xa_adpcm_table[filter][0];
