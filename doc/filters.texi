@@ -1493,6 +1493,66 @@ Default value is 1.0.
 
 This filter supports the all above options as @ref{commands}.
 
+@section afwtdn
+Reduce broadband noise from input samples using Wavelets.
+
+A description of the accepted options follows.
+
+@table @option
+@item sigma
+Set the noise sigma, allowed range is from 0 to 1.
+Default value is 0.
+This option controls strength of denoising applied to input samples.
+Most useful way to set this option is via decibels, eg. -45dB.
+
+@item levels
+Set the number of wavelet levels of decomposition.
+Allowed range is from 1 to 12.
+Default value is 10.
+Setting this too low make denoising performance very poor.
+
+@item wavet
+Set wavelet type for decomposition of input frame.
+They are sorted by number of coefficients, from lowest to highest.
+More coefficients means worse filtering speed, but overall better quality.
+Available wavelets are:
+
+@table @samp
+@item sym2
+@item sym4
+@item rbior68
+@item deb10
+@item sym10
+@item coif5
+@item bl3
+@end table
+
+@item percent
+Set percent of full denoising. Allowed range is from 0 to 100 percent.
+Default value is 85 percent or partial denoising.
+
+@item profile
+If enabled, first input frame will be used as noise profile.
+If first frame samples contain non-noise performance will be very poor.
+
+@item adaptive
+If enabled, input frames are analyzed for presence of noise.
+If noise is detected with high possibility then input frame profile will be
+used for processing following frames, until new noise frame is detected.
+
+@item samples
+Set size of single frame in number of samples. Allowed range is from 512 to
+65536. Default frame size is 8192 samples.
+
+@item softness
+Set softness applied inside thresholding function. Allowed range is from 0 to
+10. Default softness is 1.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section agate
 
 A gate is mainly used to reduce lower parts of a signal. This kind of signal

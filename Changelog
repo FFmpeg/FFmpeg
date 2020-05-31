@@ -8,6 +8,7 @@ version <next>:
 - Argonaut Games CVG demuxer
 - Argonaut Games CVG muxer
 - Concatf protocol
+- afwtdn audio filter
 
 
 version 4.4:
