@@ -1,0 +1,4 @@
+91c6a0d8eb3544e402af17a1b77a22e5 *tests/data/fate/acodec-adpcm-ima_ssi.kvag
+264614 tests/data/fate/acodec-adpcm-ima_ssi.kvag
+201607bf7610f062b9a1e6524354c569 *tests/data/fate/acodec-adpcm-ima_ssi.out.wav
+stddev:  904.76 PSNR: 37.20 MAXDIFF:34029 bytes:  1058400/  1058400
