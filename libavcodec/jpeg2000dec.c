@@ -928,6 +928,7 @@ static int get_ppt(Jpeg2000DecoderContext *s, int n)
         tile->packed_headers = new;
     } else
         return AVERROR(ENOMEM);
+    memset(&tile->packed_headers_stream, 0, sizeof(tile->packed_headers_stream));
     memcpy(tile->packed_headers + tile->packed_headers_size,
            s->g.buffer, n - 3);
     tile->packed_headers_size += n - 3;
