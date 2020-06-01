@@ -70,11 +70,6 @@ int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64
     }
 }
 
-int ff_alloc_packet(AVPacket *avpkt, int size)
-{
-    return ff_alloc_packet2(NULL, avpkt, size, 0);
-}
-
 /**
  * Pad last frame with silence.
  */
