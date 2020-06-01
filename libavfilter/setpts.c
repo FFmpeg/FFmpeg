@@ -142,10 +142,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-#define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
-#define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
-
 #define BUF_SIZE 64
 
 static inline char *double2int64str(char *buf, double v)

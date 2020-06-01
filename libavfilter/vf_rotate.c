@@ -415,8 +415,6 @@ static av_always_inline void simple_rotate(uint8_t *dst, const uint8_t *src, int
     }
 }
 
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
-
 static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 {
     ThreadData *td = arg;

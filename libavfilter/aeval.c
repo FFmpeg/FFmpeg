@@ -416,8 +416,6 @@ static int aeval_config_output(AVFilterLink *outlink)
     return 0;
 }
 
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     EvalContext *eval     = inlink->dst->priv;

@@ -335,10 +335,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return ret;
 }
 
-#define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
-#define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx = inlink->dst;

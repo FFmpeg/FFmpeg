@@ -55,7 +55,6 @@ enum var_name {
     VAR_T,
     VAR_VARS_NB
 };
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
 
 static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *log_ctx)
 {

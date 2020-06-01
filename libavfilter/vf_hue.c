@@ -363,9 +363,6 @@ static void apply_lut10(HueContext *s,
     }
 }
 
-#define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
     HueContext *hue = inlink->dst->priv;
