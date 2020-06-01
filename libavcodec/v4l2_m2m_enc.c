@@ -417,7 +417,7 @@ static const AVCodecDefault v4l2_m2m_defaults[] = {
         .defaults       = v4l2_m2m_defaults, \
         .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
         .wrapper_name   = "v4l2m2m", \
-    };
+    }
 
 M2MENC(mpeg4,"MPEG4", mpeg4_options, AV_CODEC_ID_MPEG4);
 M2MENC(h263, "H.263", options,       AV_CODEC_ID_H263);
