@@ -44,8 +44,7 @@ AVBufferRef *av_buffer_create(uint8_t *data, int size,
 
     atomic_init(&buf->refcount, 1);
 
-    if (flags & AV_BUFFER_FLAG_READONLY)
-        buf->flags |= BUFFER_FLAG_READONLY;
+    buf->flags = flags;
 
     ref = av_mallocz(sizeof(*ref));
     if (!ref) {
@@ -185,14 +184,14 @@ int av_buffer_realloc(AVBufferRef **pbuf, int size)
             return AVERROR(ENOMEM);
         }
 
-        buf->buffer->flags |= BUFFER_FLAG_REALLOCATABLE;
+        buf->buffer->flags_internal |= BUFFER_FLAG_REALLOCATABLE;
         *pbuf = buf;
 
         return 0;
     } else if (buf->size == size)
         return 0;
 
-    if (!(buf->buffer->flags & BUFFER_FLAG_REALLOCATABLE) ||
+    if (!(buf->buffer->flags_internal & BUFFER_FLAG_REALLOCATABLE) ||
         !av_buffer_is_writable(buf) || buf->data != buf->buffer->data) {
         /* cannot realloc, allocate a new reallocable buffer and copy data */
         AVBufferRef *new = NULL;
