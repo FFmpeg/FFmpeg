@@ -2490,6 +2490,5 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     return 0;
 init_fail:
-    ff_ac3_encode_close(avctx);
     return ret;
 }
