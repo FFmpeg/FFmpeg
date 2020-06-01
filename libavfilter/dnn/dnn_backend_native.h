@@ -46,7 +46,7 @@ typedef enum {
     DLT_COUNT
 } DNNLayerType;
 
-typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_INPUT} DNNOperandType;
+typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_OUTPUT} DNNOperandType;
 
 typedef struct Layer{
     DNNLayerType type;
