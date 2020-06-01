@@ -197,7 +197,6 @@ av_cold struct FFIIRFilterCoeffs *ff_iir_filter_init_coeffs(void *avc,
         return c;
 
 init_fail:
-    ff_iir_filter_free_coeffsp(&c);
     return NULL;
 }
 

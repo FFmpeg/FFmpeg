@@ -1115,7 +1115,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     return 0;
 fail:
-    aac_encode_end(avctx);
     return ret;
 }
 
@@ -1159,7 +1158,7 @@ AVCodec ff_aac_encoder = {
     .close          = aac_encode_end,
     .defaults       = aac_encode_defaults,
     .supported_samplerates = mpeg4audio_sample_rates,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
