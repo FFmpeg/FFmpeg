@@ -207,15 +207,11 @@ static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
     int i, j, level, run;
     int max_level = 1 << (ctx->bit_depth + 2);
 
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->orig_vlc_codes,
-                      max_level, 4 * sizeof(*ctx->orig_vlc_codes), fail);
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->orig_vlc_bits,
-                      max_level, 4 * sizeof(*ctx->orig_vlc_bits), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_codes,
-                      63 * 2, fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_bits,
-                      63, fail);
-
+    if (!FF_ALLOCZ_TYPED_ARRAY(ctx->orig_vlc_codes, max_level * 4) ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->orig_vlc_bits,  max_level * 4) ||
+        !(ctx->run_codes = av_mallocz(63 * 2))                     ||
+        !(ctx->run_bits  = av_mallocz(63)))
+        return AVERROR(ENOMEM);
     ctx->vlc_codes = ctx->orig_vlc_codes + max_level * 2;
     ctx->vlc_bits  = ctx->orig_vlc_bits + max_level * 2;
     for (level = -max_level; level < max_level; level++) {
@@ -259,8 +255,6 @@ static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
         ctx->run_bits[run]  = ctx->cid_table->run_bits[i];
     }
     return 0;
-fail:
-    return AVERROR(ENOMEM);
 }
 
 static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
@@ -271,16 +265,11 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
     const uint8_t *luma_weight_table   = ctx->cid_table->luma_weight;
     const uint8_t *chroma_weight_table = ctx->cid_table->chroma_weight;
 
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l,
-                      (ctx->m.avctx->qmax + 1), 64 * sizeof(int), fail);
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c,
-                      (ctx->m.avctx->qmax + 1), 64 * sizeof(int), fail);
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l16,
-                      (ctx->m.avctx->qmax + 1), 64 * 2 * sizeof(uint16_t),
-                      fail);
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c16,
-                      (ctx->m.avctx->qmax + 1), 64 * 2 * sizeof(uint16_t),
-                      fail);
+    if (!FF_ALLOCZ_TYPED_ARRAY(ctx->qmatrix_l,   ctx->m.avctx->qmax + 1) ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->qmatrix_c,   ctx->m.avctx->qmax + 1) ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->qmatrix_l16, ctx->m.avctx->qmax + 1) ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->qmatrix_c16, ctx->m.avctx->qmax + 1))
+        return AVERROR(ENOMEM);
 
     if (ctx->bit_depth == 8) {
         for (i = 1; i < 64; i++) {
@@ -339,27 +328,23 @@ static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
     ctx->m.q_intra_matrix          = ctx->qmatrix_l;
 
     return 0;
-fail:
-    return AVERROR(ENOMEM);
 }
 
 static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
 {
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_rc, (ctx->m.avctx->qmax + 1),
-                          ctx->m.mb_num * sizeof(RCEntry), fail);
+    if (!FF_ALLOCZ_TYPED_ARRAY(ctx->mb_rc, (ctx->m.avctx->qmax + 1) * ctx->m.mb_num))
+        return AVERROR(ENOMEM);
+
     if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD) {
-        FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_cmp,
-                          ctx->m.mb_num, sizeof(RCCMPEntry), fail);
-        FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_cmp_tmp,
-                          ctx->m.mb_num, sizeof(RCCMPEntry), fail);
+        if (!FF_ALLOCZ_TYPED_ARRAY(ctx->mb_cmp,     ctx->m.mb_num) ||
+            !FF_ALLOCZ_TYPED_ARRAY(ctx->mb_cmp_tmp, ctx->m.mb_num))
+            return AVERROR(ENOMEM);
     }
     ctx->frame_bits = (ctx->coding_unit_size -
                        ctx->data_offset - 4 - ctx->min_padding) * 8;
     ctx->qscale = 1;
     ctx->lambda = 2 << LAMBDA_FRAC_BITS; // qscale 2
     return 0;
-fail:
-    return AVERROR(ENOMEM);
 }
 
 static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
@@ -510,15 +495,11 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     if ((ret = dnxhd_init_rc(ctx)) < 0)
         return ret;
 
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_size,
-                      ctx->m.mb_height * sizeof(uint32_t), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_offs,
-                      ctx->m.mb_height * sizeof(uint32_t), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_bits,
-                      ctx->m.mb_num * sizeof(uint16_t), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,
-                      ctx->m.mb_num * sizeof(uint8_t), fail);
-
+    if (!FF_ALLOCZ_TYPED_ARRAY(ctx->slice_size, ctx->m.mb_height) ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->slice_offs, ctx->m.mb_height) ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->mb_bits,    ctx->m.mb_num)    ||
+        !FF_ALLOCZ_TYPED_ARRAY(ctx->mb_qscale,  ctx->m.mb_num))
+        return AVERROR(ENOMEM);
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
@@ -543,14 +524,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         for (i = 1; i < avctx->thread_count; i++) {
             ctx->thread[i] = av_malloc(sizeof(DNXHDEncContext));
             if (!ctx->thread[i])
-                goto fail;
+                return AVERROR(ENOMEM);
             memcpy(ctx->thread[i], ctx, sizeof(DNXHDEncContext));
         }
     }
 
     return 0;
-fail:  // for FF_ALLOCZ_OR_GOTO
-    return AVERROR(ENOMEM);
 }
 
 static int dnxhd_write_header(AVCodecContext *avctx, uint8_t *buf)
