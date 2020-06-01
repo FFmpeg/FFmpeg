@@ -941,15 +941,14 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 {
     int ch;
-    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->buffer.samples, s->channels, 3 * 1024 * sizeof(s->buffer.samples[0]), alloc_fail);
-    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->cpe, s->chan_map[0], sizeof(ChannelElement), alloc_fail);
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->buffer.samples, s->channels * 3 * 1024) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->cpe,            s->chan_map[0]))
+        return AVERROR(ENOMEM);
 
     for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
 
     return 0;
-alloc_fail:
-    return AVERROR(ENOMEM);
 }
 
 static av_cold void aac_encode_init_tables(void)
@@ -1078,13 +1077,13 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         s->options.mid_side = 0;
 
     if ((ret = dsp_init(avctx, s)) < 0)
-        goto fail;
+        return ret;
 
     if ((ret = alloc_buffers(avctx, s)) < 0)
-        goto fail;
+        return ret;
 
     if ((ret = put_audio_specific_config(avctx)))
-        goto fail;
+        return ret;
 
     sizes[0]   = ff_aac_swb_size_1024[s->samplerate_index];
     sizes[1]   = ff_aac_swb_size_128[s->samplerate_index];
@@ -1094,7 +1093,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
     if ((ret = ff_psy_init(&s->psy, avctx, 2, sizes, lengths,
                            s->chan_map[0], grouping)) < 0)
-        goto fail;
+        return ret;
     s->psypp = ff_psy_preprocess_init(avctx);
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
     s->random_state = 0x1f2e3d4c;
@@ -1114,8 +1113,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ff_af_queue_init(avctx, &s->afq);
 
     return 0;
-fail:
-    return ret;
 }
 
 #define AACENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
