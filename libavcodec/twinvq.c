@@ -538,6 +538,7 @@ static av_cold int init_mdct_win(TwinVQContext *tctx)
     int size_m = mtab->size / mtab->fmode[TWINVQ_FT_MEDIUM].sub;
     int channels = tctx->avctx->channels;
     float norm = channels == 1 ? 2.0 : 1.0;
+    int table_size = 2 * mtab->size * channels;
 
     for (i = 0; i < 3; i++) {
         int bsize = tctx->mtab->size / tctx->mtab->fmode[i].sub;
@@ -546,25 +547,17 @@ static av_cold int init_mdct_win(TwinVQContext *tctx)
             return ret;
     }
 
-    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->tmp_buf,
-                     mtab->size, sizeof(*tctx->tmp_buf), alloc_fail);
-
-    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->spectrum,
-                     2 * mtab->size, channels * sizeof(*tctx->spectrum),
-                     alloc_fail);
-    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->curr_frame,
-                     2 * mtab->size, channels * sizeof(*tctx->curr_frame),
-                     alloc_fail);
-    FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->prev_frame,
-                     2 * mtab->size, channels * sizeof(*tctx->prev_frame),
-                     alloc_fail);
+    if (!FF_ALLOC_TYPED_ARRAY(tctx->tmp_buf,    mtab->size) ||
+        !FF_ALLOC_TYPED_ARRAY(tctx->spectrum,   table_size) ||
+        !FF_ALLOC_TYPED_ARRAY(tctx->curr_frame, table_size) ||
+        !FF_ALLOC_TYPED_ARRAY(tctx->prev_frame, table_size))
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < 3; i++) {
         int m       = 4 * mtab->size / mtab->fmode[i].sub;
         double freq = 2 * M_PI / m;
-        FF_ALLOC_ARRAY_OR_GOTO(tctx->avctx, tctx->cos_tabs[i],
-                         (m / 4), sizeof(*tctx->cos_tabs[i]), alloc_fail);
-
+        if (!FF_ALLOC_TYPED_ARRAY(tctx->cos_tabs[i], m / 4))
+            return AVERROR(ENOMEM);
         for (j = 0; j <= m / 8; j++)
             tctx->cos_tabs[i][j] = cos((2 * j + 1) * freq);
         for (j = 1; j < m / 8; j++)
@@ -576,9 +569,6 @@ static av_cold int init_mdct_win(TwinVQContext *tctx)
     ff_init_ff_sine_windows(av_log2(mtab->size));
 
     return 0;
-
-alloc_fail:
-    return AVERROR(ENOMEM);
 }
 
 /**
