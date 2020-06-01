@@ -229,6 +229,7 @@ AVBufferPool *av_buffer_pool_init2(int size, void *opaque,
     pool->size      = size;
     pool->opaque    = opaque;
     pool->alloc2    = alloc;
+    pool->alloc     = av_buffer_alloc; // fallback
     pool->pool_free = pool_free;
 
     atomic_init(&pool->refcount, 1);
@@ -309,6 +310,8 @@ static AVBufferRef *pool_alloc_buffer(AVBufferPool *pool)
 {
     BufferPoolEntry *buf;
     AVBufferRef     *ret;
+
+    av_assert0(pool->alloc || pool->alloc2);
 
     ret = pool->alloc2 ? pool->alloc2(pool->opaque, pool->size) :
                          pool->alloc(pool->size);

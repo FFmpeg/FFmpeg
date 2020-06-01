@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-06-xx - xxxxxxxxxx - lavu 56.50.100 - buffer.h
+  Passing NULL as alloc argument to av_buffer_pool_init2() is now allowed.
+
 2020-xx-xx - xxxxxxxxxx - lavc 58.88.100 - avcodec.h codec.h
   Move AVCodec-related public API to new header codec.h.
 
