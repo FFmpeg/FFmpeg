@@ -261,10 +261,11 @@ static inline float prelut_interp_1d_linear(const Lut3DPreLut *prelut,
 static inline struct rgbvec apply_prelut(const Lut3DPreLut *prelut,
                                          const struct rgbvec *s)
 {
+    struct rgbvec c;
+
     if (prelut->size <= 0)
         return *s;
 
-    struct rgbvec c;
     c.r = prelut_interp_1d_linear(prelut, 0, s->r);
     c.g = prelut_interp_1d_linear(prelut, 1, s->g);
     c.b = prelut_interp_1d_linear(prelut, 2, s->b);
@@ -975,17 +976,16 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
 
             for (int i = 0; i < lut3d->prelut.size; ++i) {
                 float mix = (float) i / (float)(lut3d->prelut.size - 1);
-                float x = lerpf(in_min[c], in_max[c], mix);
+                float x = lerpf(in_min[c], in_max[c], mix), a, b;
 
                 int idx = nearest_sample_index(in_prelut[c], x, 0, prelut_sizes[c]-1);
                 av_assert0(idx + 1 < prelut_sizes[c]);
 
-                float a = out_prelut[c][idx + 0];
-                float b = out_prelut[c][idx + 1];
+                a   = out_prelut[c][idx + 0];
+                b   = out_prelut[c][idx + 1];
                 mix = x - in_prelut[c][idx];
 
-                float outval = lerpf(a, b, mix);
-                lut3d->prelut.lut[c][i] = sanitizef(outval);
+                lut3d->prelut.lut[c][i] = sanitizef(lerpf(a, b, mix));
             }
         }
         lut3d->scale.r = 1.00f;
