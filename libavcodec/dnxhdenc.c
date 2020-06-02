@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "mpegvideo.h"
 #include "pixblockdsp.h"
+#include "packet_internal.h"
 #include "profiles.h"
 #include "dnxhdenc.h"
 

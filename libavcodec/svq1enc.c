@@ -33,6 +33,7 @@
 #include "h263.h"
 #include "internal.h"
 #include "mpegutils.h"
+#include "packet_internal.h"
 #include "svq1.h"
 #include "svq1enc.h"
 #include "svq1enc_cb.h"

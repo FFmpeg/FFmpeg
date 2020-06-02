@@ -37,6 +37,7 @@
 #include "av1.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 #include "profiles.h"
 
 /*

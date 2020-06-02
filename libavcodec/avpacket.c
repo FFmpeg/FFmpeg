@@ -30,6 +30,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "packet.h"
+#include "packet_internal.h"
 
 void av_init_packet(AVPacket *pkt)
 {

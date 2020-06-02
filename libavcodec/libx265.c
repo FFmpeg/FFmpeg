@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 
 typedef struct libx265Context {
     const AVClass *class;

@@ -28,6 +28,7 @@
 #include <xavs.h>
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"

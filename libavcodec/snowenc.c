@@ -25,6 +25,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 #include "snow_dwt.h"
 #include "snow.h"
 

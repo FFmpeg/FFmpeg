@@ -29,6 +29,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 
 #if defined(_MSC_VER)
 #define X264_API_IMPORTS 1
