@@ -941,17 +941,10 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         if (!s->picture[i].f)
             goto fail_nomem;
     }
-    s->next_picture.f = av_frame_alloc();
-    if (!s->next_picture.f)
-        goto fail_nomem;
-    s->last_picture.f = av_frame_alloc();
-    if (!s->last_picture.f)
-        goto fail_nomem;
-    s->current_picture.f = av_frame_alloc();
-    if (!s->current_picture.f)
-        goto fail_nomem;
-    s->new_picture.f = av_frame_alloc();
-    if (!s->new_picture.f)
+    if (!(s->next_picture.f    = av_frame_alloc()) ||
+        !(s->last_picture.f    = av_frame_alloc()) ||
+        !(s->current_picture.f = av_frame_alloc()) ||
+        !(s->new_picture.f     = av_frame_alloc()))
         goto fail_nomem;
 
     if ((ret = init_context_frame(s)))
