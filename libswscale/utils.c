@@ -353,13 +353,14 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     emms_c(); // FIXME should not be required but IS (even for non-MMX versions)
 
     // NOTE: the +3 is for the MMX(+1) / SSE(+3) scaler which reads over the end
-    FF_ALLOC_ARRAY_OR_GOTO(NULL, *filterPos, (dstW + 3), sizeof(**filterPos), fail);
+    if (!FF_ALLOC_TYPED_ARRAY(*filterPos, dstW + 3))
+        goto nomem;
 
     if (FFABS(xInc - 0x10000) < 10 && srcPos == dstPos) { // unscaled
         int i;
         filterSize = 1;
-        FF_ALLOCZ_ARRAY_OR_GOTO(NULL, filter,
-                                dstW, sizeof(*filter) * filterSize, fail);
+        if (!FF_ALLOCZ_TYPED_ARRAY(filter, dstW * filterSize))
+            goto nomem;
 
         for (i = 0; i < dstW; i++) {
             filter[i * filterSize] = fone;
@@ -369,8 +370,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         int i;
         int64_t xDstInSrc;
         filterSize = 1;
-        FF_ALLOC_ARRAY_OR_GOTO(NULL, filter,
-                               dstW, sizeof(*filter) * filterSize, fail);
+        if (!FF_ALLOC_TYPED_ARRAY(filter, dstW * filterSize))
+            goto nomem;
 
         xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000LL)>>7);
         for (i = 0; i < dstW; i++) {
@@ -385,8 +386,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         int i;
         int64_t xDstInSrc;
         filterSize = 2;
-        FF_ALLOC_ARRAY_OR_GOTO(NULL, filter,
-                               dstW, sizeof(*filter) * filterSize, fail);
+        if (!FF_ALLOC_TYPED_ARRAY(filter, dstW * filterSize))
+            goto nomem;
 
         xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000LL)>>7);
         for (i = 0; i < dstW; i++) {
@@ -426,9 +427,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         filterSize = FFMIN(filterSize, srcW - 2);
         filterSize = FFMAX(filterSize, 1);
 
-        FF_ALLOC_ARRAY_OR_GOTO(NULL, filter,
-                               dstW, sizeof(*filter) * filterSize, fail);
-
+        if (!FF_ALLOC_TYPED_ARRAY(filter, dstW * filterSize))
+            goto nomem;
         xDstInSrc = ((dstPos*(int64_t)xInc)>>7) - ((srcPos*0x10000LL)>>7);
         for (i = 0; i < dstW; i++) {
             int xx = (xDstInSrc - (filterSize - 2) * (1LL<<16)) / (1 << 17);
@@ -526,8 +526,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     if (dstFilter)
         filter2Size += dstFilter->length - 1;
     av_assert0(filter2Size > 0);
-    FF_ALLOCZ_ARRAY_OR_GOTO(NULL, filter2, dstW, filter2Size * sizeof(*filter2), fail);
-
+    if (!FF_ALLOCZ_TYPED_ARRAY(filter2, dstW * filter2Size))
+        goto nomem;
     for (i = 0; i < dstW; i++) {
         int j, k;
 
@@ -685,8 +685,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
-    FF_ALLOCZ_ARRAY_OR_GOTO(NULL, *outFilter,
-                            (dstW + 3), *outFilterSize * sizeof(int16_t), fail);
+    if (!FF_ALLOCZ_TYPED_ARRAY(*outFilter, *outFilterSize * (dstW + 3)))
+        goto nomem;
 
     /* normalize & store in outFilter */
     for (i = 0; i < dstW; i++) {
@@ -722,10 +722,13 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     }
 
     ret = 0;
-
+    goto done;
+nomem:
+    ret = AVERROR(ENOMEM);
 fail:
     if(ret < 0)
         av_log(NULL, ret == RETCODE_USE_CASCADE ? AV_LOG_DEBUG : AV_LOG_ERROR, "sws: initFilter failed\n");
+done:
     av_free(filter);
     av_free(filter2);
     return ret;
@@ -1418,7 +1421,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     c->chrDstW = AV_CEIL_RSHIFT(dstW, c->chrDstHSubSample);
     c->chrDstH = AV_CEIL_RSHIFT(dstH, c->chrDstVSubSample);
 
-    FF_ALLOCZ_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
+    if (!FF_ALLOCZ_TYPED_ARRAY(c->formatConvBuffer, FFALIGN(srcW * 2 + 78, 16) * 2))
+        goto nomem;
 
     c->srcBpc = desc_src->comp[0].depth;
     if (c->srcBpc < 8)
@@ -1658,10 +1662,11 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                 return AVERROR(ENOMEM);
             }
 
-            FF_ALLOCZ_OR_GOTO(c, c->hLumFilter,    (dstW           / 8 + 8) * sizeof(int16_t), fail);
-            FF_ALLOCZ_OR_GOTO(c, c->hChrFilter,    (c->chrDstW     / 4 + 8) * sizeof(int16_t), fail);
-            FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW       / 2 / 8 + 8) * sizeof(int32_t), fail);
-            FF_ALLOCZ_OR_GOTO(c, c->hChrFilterPos, (c->chrDstW / 2 / 4 + 8) * sizeof(int32_t), fail);
+            if (!FF_ALLOCZ_TYPED_ARRAY(c->hLumFilter,    dstW           / 8 + 8) ||
+                !FF_ALLOCZ_TYPED_ARRAY(c->hChrFilter,    c->chrDstW     / 4 + 8) ||
+                !FF_ALLOCZ_TYPED_ARRAY(c->hLumFilterPos, dstW       / 2 / 8 + 8) ||
+                !FF_ALLOCZ_TYPED_ARRAY(c->hChrFilterPos, c->chrDstW / 2 / 4 + 8))
+                goto nomem;
 
             ff_init_hscaler_mmxext(      dstW, c->lumXInc, c->lumMmxextFilterCode,
                                 c->hLumFilter, (uint32_t*)c->hLumFilterPos, 8);
@@ -1729,8 +1734,9 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             goto fail;
 
 #if HAVE_ALTIVEC
-        FF_ALLOC_OR_GOTO(c, c->vYCoeffsBank, sizeof(vector signed short) * c->vLumFilterSize * c->dstH,    fail);
-        FF_ALLOC_OR_GOTO(c, c->vCCoeffsBank, sizeof(vector signed short) * c->vChrFilterSize * c->chrDstH, fail);
+        if (!FF_ALLOC_TYPED_ARRAY(c->vYCoeffsBank, c->vLumFilterSize * c->dstH) ||
+            !FF_ALLOC_TYPED_ARRAY(c->vCCoeffsBank, c->vChrFilterSize * c->chrDstH))
+            goto nomem;
 
         for (i = 0; i < c->vLumFilterSize * c->dstH; i++) {
             int j;
@@ -1749,7 +1755,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     }
 
     for (i = 0; i < 4; i++)
-        FF_ALLOCZ_OR_GOTO(c, c->dither_error[i], (c->dstW+2) * sizeof(int), fail);
+        if (!FF_ALLOCZ_TYPED_ARRAY(c->dither_error[i], c->dstW + 2))
+            goto nomem;
 
     c->needAlpha = (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat)) ? 1 : 0;
 
@@ -1839,6 +1846,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     c->swscale = ff_getSwsFunc(c);
     return ff_init_filters(c);
+nomem:
+    ret = AVERROR(ENOMEM);
 fail: // FIXME replace things by appropriate error codes
     if (ret == RETCODE_USE_CASCADE)  {
         int tmpW = sqrt(srcW * (int64_t)dstW);
