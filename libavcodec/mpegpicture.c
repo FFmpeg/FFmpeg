@@ -90,7 +90,6 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
 
     return 0;
 fail:
-    av_freep(&sc->edge_emu_buffer);
     return AVERROR(ENOMEM);
 }
 

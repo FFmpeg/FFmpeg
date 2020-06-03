@@ -529,7 +529,6 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     s->current_picture = av_frame_alloc();
     s->last_picture    = av_frame_alloc();
     if (!s->current_picture || !s->last_picture) {
-        svq1_encode_end(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -546,7 +545,6 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     s->m.avctx             = avctx;
 
     if ((ret = ff_mpv_common_init(&s->m)) < 0) {
-        svq1_encode_end(avctx);
         return ret;
     }
 
@@ -564,7 +562,6 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     if (!s->m.me.temp || !s->m.me.scratchpad || !s->m.me.map ||
         !s->m.me.score_map || !s->mb_type || !s->dummy) {
-        svq1_encode_end(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -692,6 +689,7 @@ AVCodec ff_svq1_encoder = {
     .init           = svq1_encode_init,
     .encode2        = svq1_encode_frame,
     .close          = svq1_encode_end,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV410P,
                                                      AV_PIX_FMT_NONE },
 };

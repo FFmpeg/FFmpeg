@@ -991,7 +991,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
  fail_nomem:
     ret = AVERROR(ENOMEM);
  fail:
-    ff_mpv_common_end(s);
     return ret;
 }
 
@@ -1123,7 +1122,6 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 
     return 0;
  fail:
-    ff_mpv_common_end(s);
     return err;
 }
 
@@ -1150,6 +1148,9 @@ void ff_mpv_common_end(MpegEncContext *s)
 
     av_freep(&s->bitstream_buffer);
     s->allocated_bitstream_buffer_size = 0;
+
+    if (!s->avctx)
+        return;
 
     if (s->picture) {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
