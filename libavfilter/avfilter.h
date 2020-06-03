@@ -585,6 +585,11 @@ struct AVFilterLink {
     int64_t frame_count_in, frame_count_out;
 
     /**
+     * Number of past samples sent through the link.
+     */
+    int64_t sample_count_in, sample_count_out;
+
+    /**
      * A pointer to a FFFramePool struct.
      */
     void *frame_pool;
