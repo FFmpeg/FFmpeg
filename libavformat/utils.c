@@ -219,7 +219,7 @@ static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st,
         const AVCodec *probe_codec = NULL;
         void *iter = NULL;
         while ((probe_codec = av_codec_iterate(&iter))) {
-            if (probe_codec->id == codec_id &&
+            if (probe_codec->id == codec->id &&
                     av_codec_is_decoder(probe_codec) &&
                     !(probe_codec->capabilities & (AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_EXPERIMENTAL))) {
                 return probe_codec;
