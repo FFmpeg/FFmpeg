@@ -1129,6 +1129,9 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     else
         sample_fmt          = AV_SAMPLE_FMT_S32P;
 
+    if (wc->ch_offset && avctx->sample_fmt != sample_fmt)
+        return AVERROR_INVALIDDATA;
+
     bpp            = av_get_bytes_per_sample(sample_fmt);
     orig_bpp       = ((s->frame_flags & 0x03) + 1) << 3;
     multiblock     = (s->frame_flags & WV_SINGLE_BLOCK) != WV_SINGLE_BLOCK;
