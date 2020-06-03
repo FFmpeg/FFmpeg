@@ -95,7 +95,7 @@ static const AVClass name ## _demuxer_class = {\
 };
 
 #define FF_DEF_RAWSUB_DEMUXER(shortname, longname, probe, ext, id, flag)\
-FF_RAWVIDEO_DEMUXER_CLASS(shortname)\
+FF_RAWSUB_DEMUXER_CLASS(shortname)\
 AVInputFormat ff_ ## shortname ## _demuxer = {\
     .name           = #shortname,\
     .long_name      = NULL_IF_CONFIG_SMALL(longname),\
