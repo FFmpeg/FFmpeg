@@ -2001,6 +2001,20 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
         st->id = i;
         avcodec_parameters_copy(st->codecpar, ist->codecpar);
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
+
+        // copy disposition
+        st->disposition = ist->disposition;
+
+        // copy side data
+        for (int i = 0; i < ist->nb_side_data; i++) {
+            const AVPacketSideData *sd_src = &ist->side_data[i];
+            uint8_t *dst_data;
+
+            dst_data = av_stream_new_side_data(st, sd_src->type, sd_src->size);
+            if (!dst_data)
+                return AVERROR(ENOMEM);
+            memcpy(dst_data, sd_src->data, sd_src->size);
+        }
     }
 
     return 0;
