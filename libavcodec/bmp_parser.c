@@ -45,6 +45,7 @@ static int bmp_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int i = 0;
 
     *poutbuf_size = 0;
+    *poutbuf = NULL;
 
 restart:
     if (bpc->pc.frame_start_found <= 2+4+4) {
