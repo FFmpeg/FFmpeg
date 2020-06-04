@@ -64,6 +64,7 @@ static int mlp_parse(AVCodecParserContext *s,
     s->key_frame = 0;
 
     *poutbuf_size = 0;
+    *poutbuf = NULL;
     if (buf_size == 0)
         return 0;
 
