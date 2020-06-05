@@ -223,6 +223,10 @@ FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_F
 fate-filter-overlay_yuv420: tests/data/filtergraphs/overlay_yuv420
 fate-filter-overlay_yuv420: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv420
 
+FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv420p10
+fate-filter-overlay_yuv420p10: tests/data/filtergraphs/overlay_yuv420p10
+fate-filter-overlay_yuv420p10: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv420p10 -pix_fmt yuv420p10le -frames:v 3
+
 FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_nv12
 fate-filter-overlay_nv12: tests/data/filtergraphs/overlay_nv12
 fate-filter-overlay_nv12: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_nv12
@@ -236,6 +240,10 @@ fate-filter-overlay_nv21: REF = $(SRC_PATH)/tests/ref/fate/filter-overlay_yuv420
 FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv422
 fate-filter-overlay_yuv422: tests/data/filtergraphs/overlay_yuv422
 fate-filter-overlay_yuv422: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv422
+
+FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv422p10
+fate-filter-overlay_yuv422p10: tests/data/filtergraphs/overlay_yuv422p10
+fate-filter-overlay_yuv422p10: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv422p10 -pix_fmt yuv422p10le -frames:v 3
 
 FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv444
 fate-filter-overlay_yuv444: tests/data/filtergraphs/overlay_yuv444

@@ -1,0 +1,5 @@
+sws_flags=+accurate_rnd+bitexact;
+split [main][over];
+[over] scale=88:72, format=yuv420p10, pad=96:80:4:4 [overf];
+[main] format=yuv420p10 [mainf];
+[mainf][overf] overlay=240:16:format=yuv422p10
