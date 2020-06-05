@@ -154,6 +154,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
 static const enum AVPixelFormat alpha_pix_fmts[] = {
     AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10,
     AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA,
     AV_PIX_FMT_BGRA, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
 };
@@ -172,11 +173,26 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE
     };
 
+    static const enum AVPixelFormat main_pix_fmts_yuv420p10[] = {
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUVA420P10,
+        AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat overlay_pix_fmts_yuv420p10[] = {
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_NONE
+    };
+
     static const enum AVPixelFormat main_pix_fmts_yuv422[] = {
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat overlay_pix_fmts_yuv422[] = {
         AV_PIX_FMT_YUVA422P, AV_PIX_FMT_NONE
+    };
+
+    static const enum AVPixelFormat main_pix_fmts_yuv422p10[] = {
+        AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat overlay_pix_fmts_yuv422p10[] = {
+        AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_NONE
     };
 
     static const enum AVPixelFormat main_pix_fmts_yuv444[] = {
@@ -217,9 +233,23 @@ static int query_formats(AVFilterContext *ctx)
                 goto fail;
             }
         break;
+    case OVERLAY_FORMAT_YUV420P10:
+        if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv420p10)) ||
+            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv420p10))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        break;
     case OVERLAY_FORMAT_YUV422:
         if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv422)) ||
             !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv422))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        break;
+    case OVERLAY_FORMAT_YUV422P10:
+        if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv422p10)) ||
+            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv422p10))) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
@@ -566,6 +596,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
     }                                                                                                      \
 }
 DEFINE_BLEND_PLANE(8, 8);
+DEFINE_BLEND_PLANE(16, 10);
 
 #define DEFINE_ALPHA_COMPOSITE(depth, nbits)                                                               \
 static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, const AVFrame *dst,         \
@@ -617,6 +648,7 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
     }                                                                                                      \
 }
 DEFINE_ALPHA_COMPOSITE(8, 8);
+DEFINE_ALPHA_COMPOSITE(16, 10);
 
 #define DEFINE_BLEND_SLICE_YUV(depth, nbits)                                                               \
 static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterContext *ctx,                 \
@@ -648,6 +680,7 @@ static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterCon
                                                 jobnr, nb_jobs);                                           \
 }
 DEFINE_BLEND_SLICE_YUV(8, 8);
+DEFINE_BLEND_SLICE_YUV(16, 10);
 
 static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
                                                     AVFrame *dst, const AVFrame *src,
@@ -691,6 +724,38 @@ static int blend_slice_yuva420(AVFilterContext *ctx, void *arg, int jobnr, int n
     OverlayContext *s = ctx->priv;
     ThreadData *td = arg;
     blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 1, 1, s->x, s->y, 1, jobnr, nb_jobs);
+    return 0;
+}
+
+static int blend_slice_yuv420p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    OverlayContext *s = ctx->priv;
+    ThreadData *td = arg;
+    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 1, 0, s->x, s->y, 1, jobnr, nb_jobs);
+    return 0;
+}
+
+static int blend_slice_yuva420p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    OverlayContext *s = ctx->priv;
+    ThreadData *td = arg;
+    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 1, 1, s->x, s->y, 1, jobnr, nb_jobs);
+    return 0;
+}
+
+static int blend_slice_yuv422p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    OverlayContext *s = ctx->priv;
+    ThreadData *td = arg;
+    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
+    return 0;
+}
+
+static int blend_slice_yuva422p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    OverlayContext *s = ctx->priv;
+    ThreadData *td = arg;
+    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
     return 0;
 }
 
@@ -857,8 +922,14 @@ static int config_input_main(AVFilterLink *inlink)
     case OVERLAY_FORMAT_YUV420:
         s->blend_slice = s->main_has_alpha ? blend_slice_yuva420 : blend_slice_yuv420;
         break;
+    case OVERLAY_FORMAT_YUV420P10:
+        s->blend_slice = s->main_has_alpha ? blend_slice_yuva420p10 : blend_slice_yuv420p10;
+        break;
     case OVERLAY_FORMAT_YUV422:
         s->blend_slice = s->main_has_alpha ? blend_slice_yuva422 : blend_slice_yuv422;
+        break;
+    case OVERLAY_FORMAT_YUV422P10:
+        s->blend_slice = s->main_has_alpha ? blend_slice_yuva422p10 : blend_slice_yuv422p10;
         break;
     case OVERLAY_FORMAT_YUV444:
         s->blend_slice = s->main_has_alpha ? blend_slice_yuva444 : blend_slice_yuv444;
@@ -874,8 +945,14 @@ static int config_input_main(AVFilterLink *inlink)
         case AV_PIX_FMT_YUVA420P:
             s->blend_slice = blend_slice_yuva420;
             break;
+        case AV_PIX_FMT_YUVA420P10:
+            s->blend_slice = blend_slice_yuva420p10;
+            break;
         case AV_PIX_FMT_YUVA422P:
             s->blend_slice = blend_slice_yuva422;
+            break;
+        case AV_PIX_FMT_YUVA422P10:
+            s->blend_slice = blend_slice_yuva422p10;
             break;
         case AV_PIX_FMT_YUVA444P:
             s->blend_slice = blend_slice_yuva444;
@@ -1028,7 +1105,9 @@ static const AVOption overlay_options[] = {
     { "shortest", "force termination when the shortest input terminates", OFFSET(fs.opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
         { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
+        { "yuv420p10", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420P10}, .flags = FLAGS, .unit = "format" },
         { "yuv422", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV422}, .flags = FLAGS, .unit = "format" },
+        { "yuv422p10", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV422P10}, .flags = FLAGS, .unit = "format" },
         { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
         { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
         { "gbrp",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_GBRP},   .flags = FLAGS, .unit = "format" },
