@@ -3493,30 +3493,21 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     if (s->ps.sps != s0->ps.sps)
         s->ps.sps = NULL;
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++) {
-        av_buffer_unref(&s->ps.vps_list[i]);
-        if (s0->ps.vps_list[i]) {
-            s->ps.vps_list[i] = av_buffer_ref(s0->ps.vps_list[i]);
-            if (!s->ps.vps_list[i])
-                return AVERROR(ENOMEM);
-        }
+        ret = av_buffer_replace(&s->ps.vps_list[i], s0->ps.vps_list[i]);
+        if (ret < 0)
+            return ret;
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
-        av_buffer_unref(&s->ps.sps_list[i]);
-        if (s0->ps.sps_list[i]) {
-            s->ps.sps_list[i] = av_buffer_ref(s0->ps.sps_list[i]);
-            if (!s->ps.sps_list[i])
-                return AVERROR(ENOMEM);
-        }
+        ret = av_buffer_replace(&s->ps.sps_list[i], s0->ps.sps_list[i]);
+        if (ret < 0)
+            return ret;
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++) {
-        av_buffer_unref(&s->ps.pps_list[i]);
-        if (s0->ps.pps_list[i]) {
-            s->ps.pps_list[i] = av_buffer_ref(s0->ps.pps_list[i]);
-            if (!s->ps.pps_list[i])
-                return AVERROR(ENOMEM);
-        }
+        ret = av_buffer_replace(&s->ps.pps_list[i], s0->ps.pps_list[i]);
+        if (ret < 0)
+            return ret;
     }
 
     if (s->ps.sps != s0->ps.sps)
@@ -3541,12 +3532,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         s->max_ra = INT_MAX;
     }
 
-    av_buffer_unref(&s->sei.a53_caption.buf_ref);
-    if (s0->sei.a53_caption.buf_ref) {
-        s->sei.a53_caption.buf_ref = av_buffer_ref(s0->sei.a53_caption.buf_ref);
-        if (!s->sei.a53_caption.buf_ref)
-            return AVERROR(ENOMEM);
-    }
+    ret = av_buffer_replace(&s->sei.a53_caption.buf_ref, s0->sei.a53_caption.buf_ref);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < s->sei.unregistered.nb_buf_ref; i++)
         av_buffer_unref(&s->sei.unregistered.buf_ref[i]);
