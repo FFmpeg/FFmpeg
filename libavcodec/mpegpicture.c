@@ -315,30 +315,22 @@ void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
 
 int ff_update_picture_tables(Picture *dst, Picture *src)
 {
-     int i;
+    int i, ret;
 
-#define UPDATE_TABLE(table)                                                   \
-do {                                                                          \
-    if (src->table &&                                                         \
-        (!dst->table || dst->table->buffer != src->table->buffer)) {          \
-        av_buffer_unref(&dst->table);                                         \
-        dst->table = av_buffer_ref(src->table);                               \
-        if (!dst->table) {                                                    \
-            ff_free_picture_tables(dst);                                      \
-            return AVERROR(ENOMEM);                                           \
-        }                                                                     \
-    }                                                                         \
-} while (0)
-
-    UPDATE_TABLE(mb_var_buf);
-    UPDATE_TABLE(mc_mb_var_buf);
-    UPDATE_TABLE(mb_mean_buf);
-    UPDATE_TABLE(mbskip_table_buf);
-    UPDATE_TABLE(qscale_table_buf);
-    UPDATE_TABLE(mb_type_buf);
+    ret  = av_buffer_replace(&dst->mb_var_buf,       src->mb_var_buf);
+    ret |= av_buffer_replace(&dst->mc_mb_var_buf,    src->mc_mb_var_buf);
+    ret |= av_buffer_replace(&dst->mb_mean_buf,      src->mb_mean_buf);
+    ret |= av_buffer_replace(&dst->mbskip_table_buf, src->mbskip_table_buf);
+    ret |= av_buffer_replace(&dst->qscale_table_buf, src->qscale_table_buf);
+    ret |= av_buffer_replace(&dst->mb_type_buf,      src->mb_type_buf);
     for (i = 0; i < 2; i++) {
-        UPDATE_TABLE(motion_val_buf[i]);
-        UPDATE_TABLE(ref_index_buf[i]);
+        ret |= av_buffer_replace(&dst->motion_val_buf[i], src->motion_val_buf[i]);
+        ret |= av_buffer_replace(&dst->ref_index_buf[i],  src->ref_index_buf[i]);
+    }
+
+    if (ret < 0) {
+        ff_free_picture_tables(dst);
+        return ret;
     }
 
     dst->mb_var        = src->mb_var;
