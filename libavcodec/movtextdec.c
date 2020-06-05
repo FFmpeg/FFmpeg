@@ -492,10 +492,10 @@ static int mov_text_init(AVCodecContext *avctx) {
         return ff_ass_subtitle_header_full(avctx,
                     m->frame_width, m->frame_height,
                     m->d.font, m->d.fontsize,
-                    (255 - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
-                    (255 - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
-                    (255 - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
-                    (255 - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
+                    (255U - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
+                    (255U - m->d.alpha) << 24 | RGB_TO_BGR(m->d.color),
+                    (255U - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
+                    (255U - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
                     m->d.bold, m->d.italic, m->d.underline,
                     ASS_DEFAULT_BORDERSTYLE, m->d.alignment);
     } else
