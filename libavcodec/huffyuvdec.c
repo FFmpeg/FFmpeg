@@ -928,12 +928,16 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                 left= left_prediction(s, p->data[plane], s->temp[0], w, 0);
 
                 y = 1;
+                if (y >= h)
+                    break;
 
                 /* second line is left predicted for interlaced case */
                 if (s->interlaced) {
                     decode_plane_bitstream(s, w, plane);
                     left = left_prediction(s, p->data[plane] + p->linesize[plane], s->temp[0], w, left);
                     y++;
+                    if (y >= h)
+                        break;
                 }
 
                 lefttop = p->data[plane][0];
@@ -1045,6 +1049,8 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                 }
 
                 cy = y = 1;
+                if (y >= height)
+                    break;
 
                 /* second line is left predicted for interlaced case */
                 if (s->interlaced) {
@@ -1057,6 +1063,8 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                     }
                     y++;
                     cy++;
+                    if (y >= height)
+                        break;
                 }
 
                 /* next 4 pixels are left predicted too */
