@@ -216,6 +216,32 @@ int av_buffer_realloc(AVBufferRef **pbuf, int size)
     return 0;
 }
 
+int av_buffer_replace(AVBufferRef **pdst, AVBufferRef *src)
+{
+    AVBufferRef *dst = *pdst;
+    AVBufferRef *tmp;
+
+    if (!src) {
+        av_buffer_unref(pdst);
+        return 0;
+    }
+
+    if (dst && dst->buffer == src->buffer) {
+        /* make sure the data pointers match */
+        dst->data = src->data;
+        dst->size = src->size;
+        return 0;
+    }
+
+    tmp = av_buffer_ref(src);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+
+    av_buffer_unref(pdst);
+    *pdst = tmp;
+    return 0;
+}
+
 AVBufferPool *av_buffer_pool_init2(int size, void *opaque,
                                    AVBufferRef* (*alloc)(void *opaque, int size),
                                    void (*pool_free)(void *opaque))

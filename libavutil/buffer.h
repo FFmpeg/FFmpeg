@@ -198,6 +198,22 @@ int av_buffer_make_writable(AVBufferRef **buf);
 int av_buffer_realloc(AVBufferRef **buf, int size);
 
 /**
+ * Ensure dst refers to the same data as src.
+ *
+ * When *dst is already equivalent to src, do nothing. Otherwise unreference dst
+ * and replace it with a new reference to src.
+ *
+ * @param dst Pointer to either a valid buffer reference or NULL. On success,
+ *            this will point to a buffer reference equivalent to src. On
+ *            failure, dst will be left untouched.
+ * @param src A buffer reference to replace dst with. May be NULL, then this
+ *            function is equivalent to av_buffer_unref(dst).
+ * @return 0 on success
+ *         AVERROR(ENOMEM) on memory allocation failure.
+ */
+int av_buffer_replace(AVBufferRef **dst, AVBufferRef *src);
+
+/**
  * @}
  */
 
