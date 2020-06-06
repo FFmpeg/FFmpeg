@@ -1074,6 +1074,7 @@ OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264_sei.o h264data.o
 OBJS-$(CONFIG_HEVC_PARSER)             += hevc_parser.o hevc_data.o
+OBJS-$(CONFIG_JPEG2000_PARSER)         += jpeg2000_parser.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MLP_PARSER)              += mlp_parse.o mlp_parser.o mlp.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
