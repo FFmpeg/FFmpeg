@@ -179,7 +179,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
 
     if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32) {
         pnm_get(s, buf1, sizeof(buf1));
-        if (av_sscanf(buf1, "%f", &s->scale) != 1) {
+        if (av_sscanf(buf1, "%f", &s->scale) != 1 || s->scale == 0.0 || !isfinite(s->scale)) {
             av_log(avctx, AV_LOG_ERROR, "Invalid scale.\n");
             return AVERROR_INVALIDDATA;
         }
