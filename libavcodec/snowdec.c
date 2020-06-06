@@ -117,7 +117,7 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
 static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, slice_buffer * sb, int start_y, int h, int save_state[1]){
     const int w= b->width;
     int y;
-    const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qlog= av_clip(s->qlog + (int64_t)b->qlog, 0, QROOT*16);
     int qmul= ff_qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int new_index = 0;
@@ -224,7 +224,7 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
 
 static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, IDWTELEM *src, int stride, int start_y, int end_y){
     const int w= b->width;
-    const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qlog= av_clip(s->qlog + (int64_t)b->qlog, 0, QROOT*16);
     const int qmul= ff_qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
