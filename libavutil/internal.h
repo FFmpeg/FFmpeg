@@ -320,7 +320,8 @@ void ff_check_pixfmt_descriptors(void);
 /**
  * Set a dictionary value to an ISO-8601 compliant timestamp string.
  *
- * @param s AVFormatContext
+ * @param dict pointer to a pointer to a dictionary struct. If *dict is NULL
+ *             a dictionary struct is allocated and put in *dict.
  * @param key metadata key
  * @param timestamp unix timestamp in microseconds
  * @return <0 on error
