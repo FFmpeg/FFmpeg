@@ -1434,7 +1434,8 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (s->outpicref && av_audio_fifo_size(s->fifo) >= s->win_size) {
+    if (s->outpicref && (av_audio_fifo_size(s->fifo) >= s->win_size ||
+        ff_outlink_get_status(inlink))) {
         AVFrame *fin = ff_get_audio_buffer(inlink, s->win_size);
         if (!fin)
             return AVERROR(ENOMEM);
@@ -1462,7 +1463,7 @@ static int activate(AVFilterContext *ctx)
 
         av_frame_free(&fin);
         av_audio_fifo_drain(s->fifo, s->hop_size);
-        if (ret <= 0)
+        if (ret <= 0 && !ff_outlink_get_status(inlink))
             return ret;
     }
 
@@ -1493,15 +1494,18 @@ static int activate(AVFilterContext *ctx)
     }
 
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
-    if (ff_outlink_frame_wanted(outlink) && av_audio_fifo_size(s->fifo) < s->win_size) {
+    if (av_audio_fifo_size(s->fifo) >= s->win_size ||
+        ff_outlink_get_status(inlink) == AVERROR_EOF) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
+
+    if (ff_outlink_frame_wanted(outlink) && av_audio_fifo_size(s->fifo) < s->win_size &&
+        ff_outlink_get_status(inlink) != AVERROR_EOF) {
         ff_inlink_request_frame(inlink);
         return 0;
     }
 
-    if (av_audio_fifo_size(s->fifo) >= s->win_size) {
-        ff_filter_set_ready(ctx, 10);
-        return 0;
-    }
     return FFERROR_NOT_READY;
 }
 
