@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
@@ -198,16 +199,20 @@ static av_cold int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *outlink = ctx->outputs[0];
     ANoiseSrcContext *s = ctx->priv;
     AVFrame *frame;
     int nb_samples, i;
     double *dst;
 
+    if (!ff_outlink_frame_wanted(outlink))
+        return FFERROR_NOT_READY;
+
     if (!s->infinite && s->duration <= 0) {
-        return AVERROR_EOF;
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
     } else if (!s->infinite && s->duration < s->nb_samples) {
         nb_samples = s->duration;
     } else {
@@ -236,7 +241,6 @@ static const AVFilterPad anoisesrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
     { NULL }
@@ -248,6 +252,7 @@ AVFilter ff_asrc_anoisesrc = {
     .query_formats = query_formats,
     .priv_size     = sizeof(ANoiseSrcContext),
     .inputs        = NULL,
+    .activate      = activate,
     .outputs       = anoisesrc_outputs,
     .priv_class    = &anoisesrc_class,
 };
