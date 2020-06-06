@@ -206,7 +206,7 @@ static const struct ogg_codec *ogg_find_codec(uint8_t *buf, int size)
  * situation where a new audio stream spawn (identified with a new serial) and
  * must replace the previous one (track switch).
  */
-static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic,
+static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic, int page_size,
                               int probing)
 {
     struct ogg *ogg = s->priv_data;
@@ -220,7 +220,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic,
     }
 
     /* Check for codecs */
-    codec = ogg_find_codec(magic, 8);
+    codec = ogg_find_codec(magic, page_size);
     if (!codec && !probing) {
         av_log(s, AV_LOG_ERROR, "Cannot identify new stream\n");
         return AVERROR_INVALIDDATA;
@@ -430,7 +430,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
     /* CRC is correct so we can be 99% sure there's an actual change here */
     if (idx < 0) {
         if (data_packets_seen(ogg))
-            idx = ogg_replace_stream(s, serial, readout_buf, probing);
+            idx = ogg_replace_stream(s, serial, readout_buf, size, probing);
         else
             idx = ogg_new_stream(s, serial);
 
