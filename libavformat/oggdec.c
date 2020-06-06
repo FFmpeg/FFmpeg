@@ -412,6 +412,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
         if (idx < 0)
             av_free(readout_buf);
         avio_seek(bc, start_pos, SEEK_SET);
+        *sid = -1;
         return 0;
     }
 
@@ -422,6 +423,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
         if (idx < 0)
             av_free(readout_buf);
         avio_seek(bc, start_pos, SEEK_SET);
+        *sid = -1;
         return 0;
     }
 
@@ -661,7 +663,7 @@ static int ogg_get_length(AVFormatContext *s)
     ogg->page_pos = -1;
 
     while (!ogg_read_page(s, &i, 1)) {
-        if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
+        if (i >= 0 && ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
             ogg->streams[i].codec) {
             s->streams[i]->duration =
                 ogg_gptopts(s, i, ogg->streams[i].granule, NULL);
