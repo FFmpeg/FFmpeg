@@ -32,6 +32,8 @@ static float get_expected(float f, DNNMathUnaryOperation op)
     {
     case DMUO_ABS:
         return (f >= 0) ? f : -f;
+    case DMUO_SIN:
+        return sin(f);
     default:
         av_assert0(!"not supported yet");
         return 0.f;
@@ -76,6 +78,8 @@ static int test(DNNMathUnaryOperation op)
 int main(int agrc, char **argv)
 {
     if (test(DMUO_ABS))
+        return 1;
+    if (test(DMUO_SIN))
         return 1;
     return 0;
 }
