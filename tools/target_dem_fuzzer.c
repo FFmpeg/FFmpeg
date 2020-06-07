@@ -70,6 +70,8 @@ static int64_t io_seek(void *opaque, int64_t offset, int whence)
         if (offset > INT64_MAX - c->filesize)
             return -1;
         offset += c->filesize;
+    } else if (whence == AVSEEK_SIZE) {
+        return c->filesize;
     }
     if (offset < 0 || offset > c->filesize)
         return -1;
