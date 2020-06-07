@@ -352,18 +352,10 @@ static void soft_thresholding(float *block, const int width, const int height, c
 {
     const float frac = 1.f - percent * 0.01f;
     const float shift = threshold * 0.01f * percent;
-    int w = width;
-    int h = height;
-    int y, x, l;
-
-    for (l = 0; l < nsteps; l++) {
-        w = (w + 1) >> 1;
-        h = (h + 1) >> 1;
-    }
+    int y, x;
 
     for (y = 0; y < height; y++) {
-        const int x0 = (y < h) ? w : 0;
-        for (x = x0; x < width; x++) {
+        for (x = 0; x < width; x++) {
             const float temp = FFABS(block[x]);
             if (temp <= threshold)
                 block[x] *= frac;
