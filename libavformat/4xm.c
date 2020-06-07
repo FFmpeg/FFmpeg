@@ -59,8 +59,10 @@
 #define GET_LIST_HEADER() \
     fourcc_tag = avio_rl32(pb); \
     size       = avio_rl32(pb); \
-    if (fourcc_tag != LIST_TAG) \
-        return AVERROR_INVALIDDATA; \
+    if (fourcc_tag != LIST_TAG) { \
+        ret = AVERROR_INVALIDDATA; \
+        goto fail; \
+    } \
     fourcc_tag = avio_rl32(pb);
 
 typedef struct AudioTrack {
@@ -210,7 +212,7 @@ static int fourxm_read_header(AVFormatContext *s)
     unsigned int size;
     int header_size;
     FourxmDemuxContext *fourxm = s->priv_data;
-    unsigned char *header;
+    unsigned char *header = NULL;
     int i, ret;
 
     fourxm->track_count = 0;
