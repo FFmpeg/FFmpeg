@@ -19476,6 +19476,20 @@ Partial of full denoising (limited coefficients shrinking), from 0 to 100. Defau
 
 @item planes
 A list of the planes to process. By default all planes are processed.
+
+@item type
+The threshold type the filter will use.
+
+It accepts the following values:
+@table @samp
+@item universal
+Threshold used is same for all decompositions.
+
+@item bayes
+Threshold used depends also on each decomposition coefficients.
+@end table
+
+Default is universal.
 @end table
 
 @section vectorscope

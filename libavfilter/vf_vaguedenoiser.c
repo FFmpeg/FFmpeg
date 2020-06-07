@@ -38,6 +38,7 @@ typedef struct VagueDenoiserContext {
     float threshold;
     float percent;
     int method;
+    int type;
     int nsteps;
     int planes;
 
@@ -60,7 +61,7 @@ typedef struct VagueDenoiserContext {
 
     void (*thresholding)(float *block, const int width, const int height,
                          const int stride, const float threshold,
-                         const float percent, const int nsteps);
+                         const float percent);
 } VagueDenoiserContext;
 
 #define OFFSET(x) offsetof(VagueDenoiserContext, x)
@@ -74,6 +75,9 @@ static const AVOption vaguedenoiser_options[] = {
     { "nsteps",    "set number of steps",      OFFSET(nsteps),    AV_OPT_TYPE_INT,   {.i64=6 },  1, 32,     FLAGS },
     { "percent", "set percent of full denoising", OFFSET(percent),AV_OPT_TYPE_FLOAT, {.dbl=85},  0,100,     FLAGS },
     { "planes",    "set planes to filter",     OFFSET(planes),    AV_OPT_TYPE_INT,   {.i64=15 }, 0, 15,     FLAGS },
+    { "type",    "set threshold type",     OFFSET(type),          AV_OPT_TYPE_INT,   {.i64=0 },  0, 1,      FLAGS, "type" },
+        { "universal",  "universal (VisuShrink)", 0,              AV_OPT_TYPE_CONST, {.i64=0},   0, 0,      FLAGS, "type" },
+        { "bayes",      "bayes (BayesShrink)",    0,              AV_OPT_TYPE_CONST, {.i64=1},   0, 0,      FLAGS, "type" },
     { NULL }
 };
 
@@ -333,7 +337,7 @@ static void invert_step(const float *input, float *output, float *temp, const in
 
 static void hard_thresholding(float *block, const int width, const int height,
                               const int stride, const float threshold,
-                              const float percent, const int unused)
+                              const float percent)
 {
     const float frac = 1.f - percent * 0.01f;
     int y, x;
@@ -348,7 +352,7 @@ static void hard_thresholding(float *block, const int width, const int height,
 }
 
 static void soft_thresholding(float *block, const int width, const int height, const int stride,
-                              const float threshold, const float percent, const int nsteps)
+                              const float threshold, const float percent)
 {
     const float frac = 1.f - percent * 0.01f;
     const float shift = threshold * 0.01f * percent;
@@ -368,7 +372,7 @@ static void soft_thresholding(float *block, const int width, const int height, c
 
 static void qian_thresholding(float *block, const int width, const int height,
                               const int stride, const float threshold,
-                              const float percent, const int unused)
+                              const float percent)
 {
     const float percent01 = percent * 0.01f;
     const float tr2 = threshold * threshold * percent01;
@@ -387,6 +391,23 @@ static void qian_thresholding(float *block, const int width, const int height,
         }
         block += stride;
     }
+}
+
+static float bayes_threshold(float *block, const int width, const int height,
+                              const int stride, const float threshold)
+{
+    float mean = 0.f;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            mean += block[x] * block[x];
+        }
+        block += stride;
+    }
+
+    mean /= width * height;
+
+    return threshold * threshold / (FFMAX(sqrtf(mean - threshold), FLT_EPSILON));
 }
 
 static void filter(VagueDenoiserContext *s, AVFrame *in, AVFrame *out)
@@ -452,7 +473,28 @@ static void filter(VagueDenoiserContext *s, AVFrame *in, AVFrame *out)
             v_low_size0 = (v_low_size0 + 1) >> 1;
         }
 
-        s->thresholding(s->block, width, height, width, s->threshold, s->percent, s->nsteps);
+        if (s->type == 0) {
+            s->thresholding(s->block, width, height, width, s->threshold, s->percent);
+        } else {
+            for (int n = 0; n < s->nsteps; n++) {
+                float threshold;
+                float *block;
+
+                if (n == s->nsteps - 1) {
+                    threshold = bayes_threshold(s->block, s->hlowsize[p][n], s->vlowsize[p][n], width, s->threshold);
+                    s->thresholding(s->block, s->hlowsize[p][n], s->vlowsize[p][n], width, threshold, s->percent);
+                }
+                block = s->block + s->hlowsize[p][n];
+                threshold = bayes_threshold(block, s->hhighsize[p][n], s->vlowsize[p][n], width, s->threshold);
+                s->thresholding(block, s->hhighsize[p][n], s->vlowsize[p][n], width, threshold, s->percent);
+                block = s->block + s->vlowsize[p][n] * width;
+                threshold = bayes_threshold(block, s->hlowsize[p][n], s->vhighsize[p][n], width, s->threshold);
+                s->thresholding(block, s->hlowsize[p][n], s->vhighsize[p][n], width, threshold, s->percent);
+                block = s->block + s->hlowsize[p][n] + s->vlowsize[p][n] * width;
+                threshold = bayes_threshold(block, s->hhighsize[p][n], s->vhighsize[p][n], width, s->threshold);
+                s->thresholding(block, s->hhighsize[p][n], s->vhighsize[p][n], width, threshold, s->percent);
+            }
+        }
 
         while (nsteps_invert--) {
             const int idx = s->vlowsize[p][nsteps_invert]  + s->vhighsize[p][nsteps_invert];
