@@ -75,6 +75,8 @@ static int thp_read_header(AVFormatContext *s)
                            avio_rb32(pb); /* Max samples.  */
 
     thp->fps             = av_d2q(av_int2float(avio_rb32(pb)), INT_MAX);
+    if (thp->fps.den <= 0 || thp->fps.num < 0)
+        return AVERROR_INVALIDDATA;
     thp->framecnt        = avio_rb32(pb);
     thp->first_framesz   = avio_rb32(pb);
     pb->maxsize          = avio_rb32(pb);
