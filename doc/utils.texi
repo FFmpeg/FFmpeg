@@ -110,11 +110,13 @@ maximum of 2 digits. The @var{m} at the end expresses decimal value for
 @emph{or}
 
 @example
-[-]@var{S}+[.@var{m}...]
+[-]@var{S}+[.@var{m}...][s|ms|us]
 @end example
 
 @var{S} expresses the number of seconds, with the optional decimal part
-@var{m}.
+@var{m}.  The optional literal suffixes @samp{s}, @samp{ms} or @samp{us}
+indicate to interpret the value as seconds, milliseconds or microseconds,
+respectively.
 
 In both expressions, the optional @samp{-} indicates negative duration.
 
