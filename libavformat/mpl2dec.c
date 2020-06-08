@@ -55,7 +55,7 @@ static int mpl2_probe(const AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int read_ts(char **line, int64_t *pts_start, int *duration)
+static int read_ts(char **line, int64_t *pts_start, int64_t *duration)
 {
     char c;
     int len;
@@ -69,7 +69,10 @@ static int read_ts(char **line, int64_t *pts_start, int *duration)
     }
     if (sscanf(*line, "[%"SCNd64"][%"SCNd64"]%c%n",
                pts_start, &end, &c, &len) >= 3) {
-        *duration = end - *pts_start;
+        if (end < *pts_start || end - (uint64_t)*pts_start > INT64_MAX) {
+            *duration = -1;
+        } else
+            *duration = end - *pts_start;
         *line += len - 1;
         return 0;
     }
@@ -97,7 +100,7 @@ static int mpl2_read_header(AVFormatContext *s)
         const int64_t pos = avio_tell(s->pb);
         int len = ff_get_line(s->pb, line, sizeof(line));
         int64_t pts_start;
-        int duration;
+        int64_t duration;
 
         if (!len)
             break;
