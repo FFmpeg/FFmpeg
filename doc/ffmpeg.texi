@@ -734,10 +734,6 @@ ffmpeg -dump_attachment:t "" -i INPUT
 Technical note -- attachments are implemented as codec extradata, so this
 option can actually be used to extract extradata from any stream, not just
 attachments.
-
-@item -noautorotate
-Disable automatically rotating video based on file metadata.
-
 @end table
 
 @section Video Options
@@ -819,6 +815,18 @@ Create the filtergraph specified by @var{filtergraph} and use it to
 filter the stream.
 
 This is an alias for @code{-filter:v}, see the @ref{filter_option,,-filter option}.
+
+@item -autorotate
+Automatically rotate the video according to file metadata. Enabled by
+default, use @option{-noautorotate} to disable it.
+
+@item -autoscale
+Automatically scale the video according to the resolution of first frame.
+Enabled by default, use @option{-noautoscale} to disable it. When autoscale is
+disabled, all output frames of filter graph might not be in the same resolution
+and may be inadequate for some encoder/muxer. Therefore, it is not recommended
+to disable it unless you really know what you are doing.
+Disable autoscale at your own risk.
 @end table
 
 @section Advanced Video options
