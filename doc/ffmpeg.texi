@@ -848,8 +848,8 @@ factor if negative.
 Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
 Use this option if your input file is interlaced and you want
 to keep the interlaced format for minimum losses.
-The alternative is to deinterlace the input stream with
-@option{-deinterlace}, but deinterlacing introduces losses.
+The alternative is to deinterlace the input stream by use of a filter
+such as @code{yadif} or @code{bwdif}, but deinterlacing introduces losses.
 @item -psnr
 Calculate PSNR of compressed frames.
 @item -vstats
