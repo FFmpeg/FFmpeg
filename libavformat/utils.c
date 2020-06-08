@@ -4132,8 +4132,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avcodec_string(buf, sizeof(buf), st->internal->avctx, 0);
             av_log(ic, AV_LOG_WARNING,
                    "Could not find codec parameters for stream %d (%s): %s\n"
-                   "Consider increasing the value for the 'analyzeduration' and 'probesize' options\n",
-                   i, buf, errmsg);
+                   "Consider increasing the value for the 'analyzeduration' (%"PRId64") and 'probesize' (%"PRId64") options\n",
+                   i, buf, errmsg, ic->max_analyze_duration, ic->probesize);
         } else {
             ret = 0;
         }
