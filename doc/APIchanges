@@ -15,42 +15,42 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2020-06-xx - xxxxxxxxxx - lavu 56.50.100 - buffer.h
+2020-06-05 - ec39c2276a - lavu 56.50.100 - buffer.h
   Passing NULL as alloc argument to av_buffer_pool_init2() is now allowed.
 
-2020-xx-xx - xxxxxxxxxx - lavc 58.88.100 - avcodec.h codec.h
+2020-05-27 - ba6cada92e - lavc 58.88.100 - avcodec.h codec.h
   Move AVCodec-related public API to new header codec.h.
 
-2020-05-23 - xxxxxxxxxx - lavu 56.49.100 - video_enc_params.h
+2020-05-23 - 064b875e89 - lavu 56.49.100 - video_enc_params.h
   Add AV_VIDEO_ENC_PARAMS_H264.
 
-2020-05-23 - xxxxxxxxxx - lavu 56.48.100 - hwcontext.h
+2020-05-23 - 2e08b39444 - lavu 56.48.100 - hwcontext.h
   Add av_hwdevice_ctx_create_derived_opts.
 
-2020-05-23 - xxxxxxxxxx - lavu 56.47.100 - rational.h
+2020-05-23 - 6b65c4ec54 - lavu 56.47.100 - rational.h
   Add av_gcd_q().
 
-2020-05-22 - xxxxxxxxxx - lavu 56.46.101 - opt.h
+2020-05-22 - af9e622776 - lavu 56.46.101 - opt.h
   Add AV_OPT_FLAG_CHILD_CONSTS.
 
-2020-xx-xx - xxxxxxxxxx - lavc 58.87.100 - avcodec.h codec_par.h
+2020-05-22 - 9d443c3e68 - lavc 58.87.100 - avcodec.h codec_par.h
   Move AVBitstreamFilter-related public API to new header bsf.h.
   Move AVCodecParameters-related public API to new header codec_par.h.
 
-2020-05-xx - xxxxxxxxxx - lavc 58.86.101 - avcodec.h
+2020-05-21 - 13b1bbff0b - lavc 58.86.101 - avcodec.h
   Deprecated AV_CODEC_CAP_INTRA_ONLY and AV_CODEC_CAP_LOSSLESS.
 
-2020-05-xx - xxxxxxxxxx - lavu 56.46.100 - common.h
+2020-05-17 - 84af196c65 - lavu 56.46.100 - common.h
   Add av_sat_add64() and av_sat_sub64()
 
-2020-xx-xx - xxxxxxxxxx - lavu 56.45.100 - video_enc_params.h
+2020-05-12 - 991d417692 - lavu 56.45.100 - video_enc_params.h
                           lavc 58.84.100 - avcodec.h
   Add a new API for exporting video encoding information.
   Replaces the deprecated API for exporting QP tables from decoders.
   Add AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS to request this information from
   decoders.
 
-2020-05-10 - xxxxxxxxxx - lavu 56.44.100 - hwcontext_vulkan.h
+2020-05-10 - dccd07f66d - lavu 56.44.100 - hwcontext_vulkan.h
   Add enabled_inst_extensions, num_enabled_inst_extensions, enabled_dev_extensions
   and num_enabled_dev_extensions fields to AVVulkanDeviceContext
 
@@ -58,54 +58,54 @@ API changes, most recent first:
                         - lavu 56.43.100 - dovi_meta.h
   Add AV_PKT_DATA_DOVI_CONF and AVDOVIDecoderConfigurationRecord.
 
-2020-04-15 - xxxxxxxxxx - lavc 58.79.100 - avcodec.h
+2020-04-15 - 22b25b3ea5 - lavc 58.79.100 - avcodec.h
   Add formal support for calling avcodec_flush_buffers() on encoders.
   Encoders that set the cap AV_CODEC_CAP_ENCODER_FLUSH will be flushed.
   For all other encoders, the call is now a no-op rather than undefined
   behaviour.
 
-2020-xx-xx - xxxxxxxxxx - lavc 58.78.100 - avcodec.h codec_desc.h codec_id.h packet.h
+2020-04-10 - 672946c7fe - lavc 58.78.100 - avcodec.h codec_desc.h codec_id.h packet.h
   Move AVCodecDesc-related public API to new header codec_desc.h.
   Move AVCodecID enum to new header codec_id.h.
   Move AVPacket-related public API to new header packet.h.
 
-2020-03-29 - xxxxxxxxxx - lavf 58.42.100 - avformat.h
+2020-03-29 - 4cb0dda555 - lavf 58.42.100 - avformat.h
   av_read_frame() now guarantees to handle uninitialized input packets
   and to return refcounted packets on success.
 
-2020-03-27 - xxxxxxxxxx - lavc 58.77.100 - avcodec.h
+2020-03-27 - c52ec0367d - lavc 58.77.100 - avcodec.h
   av_packet_ref() now guarantees to return the destination packet
   in a blank state on error.
 
-2020-03-10 - xxxxxxxxxx - lavc 58.75.100 - avcodec.h
+2020-03-10 - 05d27f342b - lavc 58.75.100 - avcodec.h
   Add AV_PKT_DATA_ICC_PROFILE.
 
-2020-02-21 - xxxxxxxxxx - lavc 58.73.101 - avcodec.h
+2020-02-21 - d005a7cdfd - lavc 58.73.101 - avcodec.h
   Add AV_CODEC_EXPORT_DATA_PRFT.
 
-2020-02-21 - xxxxxxxxxx - lavc 58.73.100 - avcodec.h
+2020-02-21 - c666689491 - lavc 58.73.100 - avcodec.h
   Add AVCodecContext.export_side_data and AV_CODEC_EXPORT_DATA_MVS.
 
-2020-02-13 - xxxxxxxxxx - lavu 56.41.100 - tx.h
+2020-02-13 - e8f054b095 - lavu 56.41.100 - tx.h
   Add AV_TX_INT32_FFT and AV_TX_INT32_MDCT
 
-2020-02-12 - xxxxxxxxxx - lavu 56.40.100 - log.h
+2020-02-12 - 3182114f88 - lavu 56.40.100 - log.h
   Add av_log_once().
 
-2020-02-04 - xxxxxxxxxx - lavu 56.39.100 - hwcontext.h
+2020-02-04 - a88449ffb2 - lavu 56.39.100 - hwcontext.h
   Add AV_PIX_FMT_VULKAN
   Add AV_HWDEVICE_TYPE_VULKAN and implementation.
 
-2020-01-30 - xxxxxxxxxx - lavf 58.37.100 - avio.h
+2020-01-30 - 27529eeb27 - lavf 58.37.100 - avio.h
   Add avio_protocol_get_class().
 
-2020-01-15 - xxxxxxxxxx - lavc 58.66.100 - avcodec.h
+2020-01-15 - 717b2074ec - lavc 58.66.100 - avcodec.h
   Add AV_PKT_DATA_PRFT and AVProducerReferenceTime.
 
-2019-12-27 - xxxxxxxxxx - lavu 56.38.100 - eval.h
+2019-12-27 - 45259a0ee4 - lavu 56.38.100 - eval.h
   Add av_expr_count_func().
 
-2019-12-xx - xxxxxxxxxx - lavu 56.37.100 - buffer.h
+2019-12-26 - 16685114d5 - lavu 56.37.100 - buffer.h
   Add av_buffer_pool_buffer_get_opaque().
 
 2019-11-17 - 1c23abc88f - lavu 56.36.100 - eval API
@@ -114,22 +114,22 @@ API changes, most recent first:
 2019-10-14 - f3746d31f9 - lavu 56.35.101 - opt.h
   Add AV_OPT_FLAG_RUNTIME_PARAM.
 
-2019-09-25 - xxxxxxxxxx - lavc 58.59.100 - avcodec.h
+2019-09-25 - f8406ab4b9 - lavc 58.59.100 - avcodec.h
   Add max_samples
 
 2019-09-04 - 2a9d461abc - lavu 56.35.100 - hwcontext_videotoolbox.h
   Add av_map_videotoolbox_format_from_pixfmt2() for full range pixfmt
 
-2019-09-01 - xxxxxxxxxx - lavu 56.34.100 - pixfmt.h
+2019-09-01 - 8821d1f56e - lavu 56.34.100 - pixfmt.h
   Add EBU Tech. 3213-E AVColorPrimaries value
 
-2019-08-xx - xxxxxxxxxx - lavf 58.31.101 - avio.h
+2019-08-17 - 95fa73a2b4 - lavf 58.31.101 - avio.h
   4K limit removed from avio_printf.
 
-2019-08-xx - xxxxxxxxxx - lavf 58.31.100 - avio.h
+2019-08-17 - a82f8f2f10 - lavf 58.31.100 - avio.h
   Add avio_print_string_array and avio_print.
 
-2019-07-27 - xxxxxxxxxx - lavu 56.33.100 - tx.h
+2019-07-27 - 42e2319ba9 - lavu 56.33.100 - tx.h
   Add AV_TX_DOUBLE_FFT and AV_TX_DOUBLE_MDCT
 
 -------- 8< --------- FFmpeg 4.2 was cut here -------- 8< ---------
