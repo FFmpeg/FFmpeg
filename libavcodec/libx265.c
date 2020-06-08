@@ -310,8 +310,8 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     if (!cpb_props)
         return AVERROR(ENOMEM);
     cpb_props->buffer_size = ctx->params->rc.vbvBufferSize * 1000;
-    cpb_props->max_bitrate = ctx->params->rc.vbvMaxBitrate * 1000;
-    cpb_props->avg_bitrate = ctx->params->rc.bitrate       * 1000;
+    cpb_props->max_bitrate = ctx->params->rc.vbvMaxBitrate * 1000LL;
+    cpb_props->avg_bitrate = ctx->params->rc.bitrate       * 1000LL;
 
     if (!(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
         ctx->params->bRepeatHeaders = 1;
