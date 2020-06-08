@@ -1,6 +1,9 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+
+
 version 4.3:
 - v360 filter
 - Intel QSV-accelerated MJPEG decoding
