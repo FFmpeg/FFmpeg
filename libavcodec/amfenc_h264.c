@@ -383,7 +383,6 @@ AVCodec ff_h264_amf_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .init           = amf_encode_init_h264,
-    .send_frame     = ff_amf_send_frame,
     .receive_packet = ff_amf_receive_packet,
     .close          = ff_amf_encode_close,
     .priv_data_size = sizeof(AmfContext),

@@ -113,6 +113,10 @@ typedef struct DecodeSimpleContext {
     AVFrame  *out_frame;
 } DecodeSimpleContext;
 
+typedef struct EncodeSimpleContext {
+    AVFrame *in_frame;
+} EncodeSimpleContext;
+
 typedef struct AVCodecInternal {
     /**
      * Whether the parent AVCodecContext is a copy of the context which had
@@ -151,6 +155,8 @@ typedef struct AVCodecInternal {
 
     void *frame_thread_encoder;
 
+    EncodeSimpleContext es;
+
     /**
      * Number of audio samples to skip at the start of the next decoded frame
      */
@@ -170,7 +176,6 @@ typedef struct AVCodecInternal {
      * buffers for using new encode/decode API through legacy API
      */
     AVPacket *buffer_pkt;
-    int buffer_pkt_valid; // encoding: packet without data can be valid
     AVFrame *buffer_frame;
     int draining_done;
     int compat_decode_warned;

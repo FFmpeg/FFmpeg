@@ -30,12 +30,15 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 typedef struct librav1eContext {
     const AVClass *class;
 
     RaContext *ctx;
+    AVFrame *frame;
+    RaFrame *rframe;
     AVBSFContext *bsf;
 
     uint8_t *pass_data;
@@ -165,7 +168,12 @@ static av_cold int librav1e_encode_close(AVCodecContext *avctx)
         rav1e_context_unref(ctx->ctx);
         ctx->ctx = NULL;
     }
+    if (ctx->rframe) {
+        rav1e_frame_unref(ctx->rframe);
+        ctx->rframe = NULL;
+    }
 
+    av_frame_free(&ctx->frame);
     av_bsf_free(&ctx->bsf);
     av_freep(&ctx->pass_data);
 
@@ -179,6 +187,10 @@ static av_cold int librav1e_encode_init(AVCodecContext *avctx)
     RaConfig *cfg = NULL;
     int rret;
     int ret = 0;
+
+    ctx->frame = av_frame_alloc();
+    if (!ctx->frame)
+        return AVERROR(ENOMEM);
 
     cfg = rav1e_config_default();
     if (!cfg) {
@@ -416,18 +428,27 @@ end:
     return ret;
 }
 
-static int librav1e_send_frame(AVCodecContext *avctx, const AVFrame *frame)
+static int librav1e_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
 {
     librav1eContext *ctx = avctx->priv_data;
-    RaFrame *rframe = NULL;
+    RaFrame *rframe = ctx->rframe;
+    RaPacket *rpkt = NULL;
     int ret;
 
-    if (frame) {
+    if (!rframe) {
+        AVFrame *frame = ctx->frame;
+
+        ret = ff_encode_get_frame(avctx, frame);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+
+        if (frame->buf[0]) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
 
         rframe = rav1e_frame_new(ctx->ctx);
         if (!rframe) {
             av_log(avctx, AV_LOG_ERROR, "Could not allocate new rav1e frame.\n");
+            av_frame_unref(frame);
             return AVERROR(ENOMEM);
         }
 
@@ -438,17 +459,23 @@ static int librav1e_send_frame(AVCodecContext *avctx, const AVFrame *frame)
                                    (frame->height >> shift) * frame->linesize[i],
                                    frame->linesize[i], bytes);
         }
+        av_frame_unref(frame);
+        }
     }
 
     ret = rav1e_send_frame(ctx->ctx, rframe);
     if (rframe)
+        if (ret == RA_ENCODER_STATUS_ENOUGH_DATA) {
+            ctx->rframe = rframe; /* Queue is full. Store the RaFrame to retry next call */
+        } else {
          rav1e_frame_unref(rframe); /* No need to unref if flushing. */
+            ctx->rframe = NULL;
+        }
 
     switch (ret) {
     case RA_ENCODER_STATUS_SUCCESS:
-        break;
     case RA_ENCODER_STATUS_ENOUGH_DATA:
-        return AVERROR(EAGAIN);
+        break;
     case RA_ENCODER_STATUS_FAILURE:
         av_log(avctx, AV_LOG_ERROR, "Could not send frame: %s\n", rav1e_status_to_str(ret));
         return AVERROR_EXTERNAL;
@@ -456,15 +483,6 @@ static int librav1e_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         av_log(avctx, AV_LOG_ERROR, "Unknown return code %d from rav1e_send_frame: %s\n", ret, rav1e_status_to_str(ret));
         return AVERROR_UNKNOWN;
     }
-
-    return 0;
-}
-
-static int librav1e_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
-{
-    librav1eContext *ctx = avctx->priv_data;
-    RaPacket *rpkt = NULL;
-    int ret;
 
 retry:
 
@@ -490,9 +508,7 @@ retry:
         }
         return AVERROR_EOF;
     case RA_ENCODER_STATUS_ENCODED:
-        if (avctx->internal->draining)
-            goto retry;
-        return AVERROR(EAGAIN);
+        goto retry;
     case RA_ENCODER_STATUS_NEED_MORE_DATA:
         if (avctx->internal->draining) {
             av_log(avctx, AV_LOG_ERROR, "Unexpected error when receiving packet after EOF.\n");
@@ -592,7 +608,6 @@ AVCodec ff_librav1e_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AV1,
     .init           = librav1e_encode_init,
-    .send_frame     = librav1e_send_frame,
     .receive_packet = librav1e_receive_packet,
     .close          = librav1e_encode_close,
     .priv_data_size = sizeof(librav1eContext),

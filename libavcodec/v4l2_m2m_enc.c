@@ -24,6 +24,7 @@
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <search.h>
+#include "encode.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/internal.h"
 #include "libavutil/pixdesc.h"
@@ -288,10 +289,23 @@ static int v4l2_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     V4L2Context *const capture = &s->capture;
     V4L2Context *const output = &s->output;
+    AVFrame *frame = s->frame;
     int ret;
 
     if (s->draining)
         goto dequeue;
+
+    ret = ff_encode_get_frame(avctx, frame);
+    if (ret < 0 && ret != AVERROR_EOF)
+        return ret;
+
+    if (ret == AVERROR_EOF)
+        frame = NULL;
+
+    ret = v4l2_send_frame(avctx, frame);
+    av_frame_unref(frame);
+    if (ret < 0)
+        return ret;
 
     if (!output->streamon) {
         ret = ff_v4l2_context_set_status(output, VIDIOC_STREAMON);
@@ -411,7 +425,6 @@ static const AVCodecDefault v4l2_m2m_defaults[] = {
         .priv_data_size = sizeof(V4L2m2mPriv), \
         .priv_class     = &v4l2_m2m_ ## NAME ##_enc_class, \
         .init           = v4l2_encode_init, \
-        .send_frame     = v4l2_send_frame, \
         .receive_packet = v4l2_receive_packet, \
         .close          = v4l2_encode_close, \
         .defaults       = v4l2_m2m_defaults, \

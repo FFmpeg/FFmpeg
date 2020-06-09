@@ -25,6 +25,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "vaapi_encode.h"
+#include "encode.h"
 #include "avcodec.h"
 
 const AVCodecHWConfigInternal *ff_vaapi_encode_hw_configs[] = {
@@ -1043,7 +1044,7 @@ static int vaapi_encode_check_frame(AVCodecContext *avctx,
     return 0;
 }
 
-int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame)
+static int vaapi_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic;
@@ -1066,15 +1067,14 @@ int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        err = av_frame_ref(pic->input_image, frame);
-        if (err < 0)
-            goto fail;
 
         if (ctx->input_order == 0 || frame->pict_type == AV_PICTURE_TYPE_I)
             pic->force_idr = 1;
 
         pic->input_surface = (VASurfaceID)(uintptr_t)frame->data[3];
         pic->pts = frame->pts;
+
+        av_frame_move_ref(pic->input_image, frame);
 
         if (ctx->input_order == 0)
             ctx->first_pts = pic->pts;
@@ -1114,7 +1114,19 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic;
+    AVFrame *frame = ctx->frame;
     int err;
+
+    err = ff_encode_get_frame(avctx, frame);
+    if (err < 0 && err != AVERROR_EOF)
+        return err;
+
+    if (err == AVERROR_EOF)
+        frame = NULL;
+
+    err = vaapi_encode_send_frame(avctx, frame);
+    if (err < 0)
+        return err;
 
     if (!ctx->pic_start) {
         if (ctx->end_of_stream)
@@ -2214,6 +2226,11 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     VAStatus vas;
     int err;
 
+    ctx->frame = av_frame_alloc();
+    if (!ctx->frame) {
+        return AVERROR(ENOMEM);
+    }
+
     if (!avctx->hw_frames_ctx) {
         av_log(avctx, AV_LOG_ERROR, "A hardware frames reference is "
                "required to associate the encoding device.\n");
@@ -2390,6 +2407,8 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         vaDestroyConfig(ctx->hwctx->display, ctx->va_config);
         ctx->va_config = VA_INVALID_ID;
     }
+
+    av_frame_free(&ctx->frame);
 
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);

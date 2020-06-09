@@ -313,7 +313,6 @@ AVCodec ff_hevc_amf_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .init           = amf_encode_init_hevc,
-    .send_frame     = ff_amf_send_frame,
     .receive_packet = ff_amf_receive_packet,
     .close          = ff_amf_encode_close,
     .priv_data_size = sizeof(AmfContext),

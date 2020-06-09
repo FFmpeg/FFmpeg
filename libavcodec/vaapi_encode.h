@@ -328,6 +328,8 @@ typedef struct VAAPIEncodeContext {
     // If the driver does not support ROI then warn the first time we
     // encounter a frame with ROI side data.
     int             roi_warned;
+
+    AVFrame         *frame;
 } VAAPIEncodeContext;
 
 enum {
@@ -419,7 +421,6 @@ typedef struct VAAPIEncodeType {
 } VAAPIEncodeType;
 
 
-int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame);
 int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 int ff_vaapi_encode_init(AVCodecContext *avctx);

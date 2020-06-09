@@ -33,6 +33,7 @@
 #include "libavutil/time.h"
 
 #include "amfenc.h"
+#include "encode.h"
 #include "internal.h"
 
 #if CONFIG_D3D11VA
@@ -588,17 +589,27 @@ static void amf_release_buffer_with_frame_ref(AMFBuffer *frame_ref_storage_buffe
     frame_ref_storage_buffer->pVtbl->Release(frame_ref_storage_buffer);
 }
 
-int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
+int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 {
     AmfContext *ctx = avctx->priv_data;
     AMFSurface *surface;
     AMF_RESULT  res;
     int         ret;
+    AMF_RESULT  res_query;
+    AMFData    *data = NULL;
+    AVFrame    *frame = ctx->delayed_frame;
+    int         block_and_wait;
 
     if (!ctx->encoder)
         return AVERROR(EINVAL);
 
-    if (!frame) { // submit drain
+    if (!frame->buf[0]) {
+        ret = ff_encode_get_frame(avctx, frame);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+    }
+
+    if (!frame->buf[0]) { // submit drain
         if (!ctx->eof) { // submit drain one time only
             if (ctx->delayed_surface != NULL) {
                 ctx->delayed_drain = 1; // input queue is full: resubmit Drain() in ff_amf_receive_packet
@@ -613,15 +624,10 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
                     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "Drain() failed with error %d\n", res);
                 }
             }
-        } else{
-            return AVERROR_EOF;
         }
-    } else { // submit frame
+    } else if (!ctx->delayed_surface) { // submit frame
         int hw_surface = 0;
 
-        if (ctx->delayed_surface != NULL) {
-            return AVERROR(EAGAIN); // should not happen when called from ffmpeg, other clients may resubmit
-        }
         // prepare surface from frame
         switch (frame->format) {
 #if CONFIG_D3D11VA
@@ -693,38 +699,23 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             break;
         }
 
-
         // submit surface
         res = ctx->encoder->pVtbl->SubmitInput(ctx->encoder, (AMFData*)surface);
         if (res == AMF_INPUT_FULL) { // handle full queue
             //store surface for later submission
             ctx->delayed_surface = surface;
-            if (surface->pVtbl->GetMemoryType(surface) == AMF_MEMORY_DX11) {
-                av_frame_ref(ctx->delayed_frame, frame);
-            }
         } else {
+            int64_t pts = frame->pts;
             surface->pVtbl->Release(surface);
             AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
 
-            if ((ret = timestamp_queue_enqueue(avctx, frame->pts)) < 0) {
+            av_frame_unref(frame);
+            if ((ret = timestamp_queue_enqueue(avctx, pts)) < 0) {
                 return ret;
             }
-
         }
     }
-    return 0;
-}
-int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
-{
-    int             ret;
-    AMF_RESULT      res;
-    AMF_RESULT      res_query;
-    AmfContext     *ctx = avctx->priv_data;
-    AMFData        *data = NULL;
-    int             block_and_wait;
 
-    if (!ctx->encoder)
-        return AVERROR(EINVAL);
 
     do {
         block_and_wait = 0;
