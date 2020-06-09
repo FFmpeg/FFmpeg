@@ -82,7 +82,7 @@ static inline void loco_update_rice_param(RICEContext *r, int val)
 
 static inline int loco_get_rice(RICEContext *r)
 {
-    int v;
+    unsigned v;
     if (r->run > 0) { /* we have zero run */
         r->run--;
         loco_update_rice_param(r, 0);
