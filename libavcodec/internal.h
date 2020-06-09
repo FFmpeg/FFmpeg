@@ -186,6 +186,7 @@ typedef struct AVCodecInternal {
      * of the packet (that should be submitted in the next decode call */
     size_t compat_decode_partial_size;
     AVFrame *compat_decode_frame;
+    AVPacket *compat_encode_packet;
 
     int showed_multi_packet_warning;
 
