@@ -185,7 +185,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     unsigned int channel_mask;
     int i, log2_max_num_subframes;
 
-    if (avctx->block_align <= 0) {
+    if (avctx->block_align <= 0 || avctx->block_align > (1<<21)) {
         av_log(avctx, AV_LOG_ERROR, "block_align is not set or invalid\n");
         return AVERROR(EINVAL);
     }
