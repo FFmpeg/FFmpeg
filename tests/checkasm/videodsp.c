@@ -23,6 +23,7 @@
 #include "libavcodec/videodsp.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 
 #define randomize_buffers(w, h)                         \
     do {                                                \

@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem_internal.h"
+
 static void FUNC(yuv2planeX_8_16)(const int16_t *filter, int filterSize,
                                   const int16_t **src, uint8_t *dest,
                                   const uint8_t *dither, int offset, int x)

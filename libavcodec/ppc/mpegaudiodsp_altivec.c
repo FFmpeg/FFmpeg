@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegaudiodsp.h"

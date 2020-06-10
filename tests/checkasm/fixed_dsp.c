@@ -23,6 +23,7 @@
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #define BUF_SIZE 256
 

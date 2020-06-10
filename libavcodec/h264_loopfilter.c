@@ -27,6 +27,7 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 #include "internal.h"
 #include "avcodec.h"
 #include "h264dec.h"

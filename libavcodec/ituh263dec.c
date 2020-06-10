@@ -34,6 +34,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem_internal.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"

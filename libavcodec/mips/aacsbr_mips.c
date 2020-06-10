@@ -53,6 +53,7 @@
 
 #include "libavcodec/aac.h"
 #include "libavcodec/aacsbr.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/mips/asmdefs.h"
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2

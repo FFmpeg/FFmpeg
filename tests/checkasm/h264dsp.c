@@ -26,6 +26,7 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 
 static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
 static const uint32_t pixel_mask_lf[3] = { 0xff0fff0f, 0x01ff000f, 0x03ff000f };

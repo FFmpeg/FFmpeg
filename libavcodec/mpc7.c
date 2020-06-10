@@ -28,7 +28,9 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"

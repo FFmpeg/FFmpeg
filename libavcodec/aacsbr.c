@@ -38,6 +38,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/libm.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mem_internal.h"
 
 #include <stdint.h>
 #include <float.h>

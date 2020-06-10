@@ -20,6 +20,7 @@
 #include "checkasm.h"
 #include "libavfilter/threshold.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 
 #define WIDTH 256
 #define WIDTH_PADDED 256 + 32

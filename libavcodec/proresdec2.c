@@ -29,6 +29,8 @@
 #define LONG_BITSTREAM_READER
 
 #include "libavutil/internal.h"
+#include "libavutil/mem_internal.h"
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "idctdsp.h"

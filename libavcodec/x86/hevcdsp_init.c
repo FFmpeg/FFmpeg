@@ -22,6 +22,7 @@
 #include "config.h"
 
 #include "libavutil/cpu.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/get_bits.h" /* required for hevcdsp.h GetBitContext */

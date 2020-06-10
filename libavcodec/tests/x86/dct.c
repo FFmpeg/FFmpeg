@@ -18,6 +18,8 @@
 
 #include "config.h"
 
+#include "libavutil/mem_internal.h"
+
 #include "libavcodec/x86/fdct.h"
 #include "libavcodec/x86/xvididct.h"
 #include "libavcodec/x86/simple_idct.h"

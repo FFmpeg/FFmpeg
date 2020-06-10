@@ -22,6 +22,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/aarch64/cpu.h"
 #include "vp9dsp_init.h"
 

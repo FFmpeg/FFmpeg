@@ -29,6 +29,8 @@
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
+#include "libavutil/mem_internal.h"
+
 #include "avcodec.h"
 #include "sinewin.h"
 #include "fft.h"

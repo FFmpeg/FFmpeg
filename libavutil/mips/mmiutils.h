@@ -25,6 +25,8 @@
 #define AVUTIL_MIPS_MMIUTILS_H
 
 #include "config.h"
+
+#include "libavutil/mem_internal.h"
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_LOONGSON2

@@ -24,6 +24,7 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem_internal.h"
 
 #define BUF_UNITS 8
 #define BUF_SIZE (BUF_UNITS * 128 + 8 * BUF_UNITS)

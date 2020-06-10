@@ -21,6 +21,7 @@
 #define BITSTREAM_READER_LE
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem_internal.h"
 
 #include "dcadec.h"
 #include "dcadata.h"

@@ -25,6 +25,8 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/mem_internal.h"
+
 #include "libavcodec/dcadata.h"
 #include "libavcodec/synth_filter.h"
 

@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "libavutil/internal.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/mpegutils.h"
 #include "libavcodec/mpegvideo.h"

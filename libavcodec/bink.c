@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem_internal.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"

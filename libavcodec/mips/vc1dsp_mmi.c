@@ -25,6 +25,7 @@
 #include "constants.h"
 #include "vc1dsp_mips.h"
 #include "hpeldsp_mips.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/mips/mmiutils.h"
 
 #define VC1_INV_TRANCS_8_TYPE1(o1, o2, r1, r2, r3, r4, c0)                  \

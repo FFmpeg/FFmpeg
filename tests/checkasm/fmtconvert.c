@@ -24,6 +24,8 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/common.h"
+#include "libavutil/mem_internal.h"
+
 #include "libavcodec/fmtconvert.h"
 
 #include "checkasm.h"

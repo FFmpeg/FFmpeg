@@ -29,6 +29,7 @@
 #include "libavcodec/rv34dsp.h"
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/x86/cpu.h"
 #include "hpeldsp.h"
 
