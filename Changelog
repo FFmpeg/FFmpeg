@@ -8,6 +8,7 @@ version <next>:
 - chromanr video filter
 - VDPAU accelerated HEVC 10/12bit decoding
 - ADPCM IMA Ubisoft APM encoder
+- Rayman 2 APM muxer
 
 
 version 4.3:
