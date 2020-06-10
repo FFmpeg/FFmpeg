@@ -267,8 +267,10 @@ Override User-Agent field in HTTP header. Applicable only for HTTP output.
 @item http_persistent @var{http_persistent}
 Use persistent HTTP connections. Applicable only for HTTP output.
 @item hls_playlist @var{hls_playlist}
-Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
+Generate HLS playlist files as well. The master playlist is generated with the filename @var{hls_master_name}.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
+@item hls_master_name @var{file_name}
+HLS master playlist name. Default is "master.m3u8".
 @item streaming @var{streaming}
 Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
 mode, each frame will be a moof fragment which forms a chunk.

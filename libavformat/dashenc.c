@@ -171,6 +171,7 @@ typedef struct DASHContext {
     const char *user_agent;
     AVDictionary *http_opts;
     int hls_playlist;
+    const char *hls_master_name;
     int http_persistent;
     int master_playlist_created;
     AVIOContext *mpd_out;
@@ -1261,9 +1262,9 @@ static int write_manifest(AVFormatContext *s, int final)
             return 0;
 
         if (*c->dirname)
-            snprintf(filename_hls, sizeof(filename_hls), "%smaster.m3u8", c->dirname);
+            snprintf(filename_hls, sizeof(filename_hls), "%s%s", c->dirname, c->hls_master_name);
         else
-            snprintf(filename_hls, sizeof(filename_hls), "master.m3u8");
+            snprintf(filename_hls, sizeof(filename_hls), "%s", c->hls_master_name);
 
         snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", filename_hls);
 
@@ -2292,7 +2293,7 @@ static int dash_write_trailer(AVFormatContext *s)
 
         if (c->hls_playlist && c->master_playlist_created) {
             char filename[1024];
-            snprintf(filename, sizeof(filename), "%smaster.m3u8", c->dirname);
+            snprintf(filename, sizeof(filename), "%s%s", c->dirname, c->hls_master_name);
             dashenc_delete_file(s, filename);
         }
     }
@@ -2349,6 +2350,7 @@ static const AVOption options[] = {
     { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
     { "http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     { "hls_playlist", "Generate HLS playlist files(master.m3u8, media_%d.m3u8)", OFFSET(hls_playlist), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "hls_master_name", "HLS master playlist name", OFFSET(hls_master_name), AV_OPT_TYPE_STRING, {.str = "master.m3u8"}, 0, 0, E },
     { "streaming", "Enable/Disable streaming mode of output. Each frame will be moof fragment", OFFSET(streaming), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "timeout", "set timeout for socket I/O operations", OFFSET(timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, .flags = E },
     { "index_correction", "Enable/Disable segment index correction logic", OFFSET(index_correction), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
