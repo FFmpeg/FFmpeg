@@ -126,16 +126,15 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     int32_t layer;
     DNNLayerType layer_type;
 
-    model = av_malloc(sizeof(DNNModel));
-    if (!model){
-        return NULL;
-    }
-
     if (avio_open(&model_file_context, model_filename, AVIO_FLAG_READ) < 0){
-        av_freep(&model);
         return NULL;
     }
     file_size = avio_size(model_file_context);
+
+    model = av_mallocz(sizeof(DNNModel));
+    if (!model){
+        goto fail;
+    }
 
     /**
      * check file header with string and version
@@ -143,9 +142,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     size = sizeof(header_expected);
     buf = av_malloc(size);
     if (!buf) {
-        avio_closep(&model_file_context);
-        av_freep(&model);
-        return NULL;
+        goto fail;
     }
 
     // size - 1 to skip the ending '\0' which is not saved in file
@@ -153,18 +150,14 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     dnn_size = size - 1;
     if (strncmp(buf, header_expected, size) != 0) {
         av_freep(&buf);
-        avio_closep(&model_file_context);
-        av_freep(&model);
-        return NULL;
+        goto fail;
     }
     av_freep(&buf);
 
     version = (int32_t)avio_rl32(model_file_context);
     dnn_size += 4;
     if (version != major_version_expected) {
-        avio_closep(&model_file_context);
-        av_freep(&model);
-        return NULL;
+        goto fail;
     }
 
     // currently no need to check minor version
@@ -174,9 +167,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
 
     network = av_mallocz(sizeof(ConvolutionalNetwork));
     if (!network){
-        avio_closep(&model_file_context);
-        av_freep(&model);
-        return NULL;
+        goto fail;
     }
     model->model = (void *)network;
 
@@ -188,16 +179,12 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
 
     network->layers = av_mallocz(network->layers_num * sizeof(Layer));
     if (!network->layers){
-        avio_closep(&model_file_context);
-        ff_dnn_free_model_native(&model);
-        return NULL;
+        goto fail;
     }
 
     network->operands = av_mallocz(network->operands_num * sizeof(DnnOperand));
     if (!network->operands){
-        avio_closep(&model_file_context);
-        ff_dnn_free_model_native(&model);
-        return NULL;
+        goto fail;
     }
 
     for (layer = 0; layer < network->layers_num; ++layer){
@@ -205,17 +192,13 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
         dnn_size += 4;
 
         if (layer_type >= DLT_COUNT) {
-            avio_closep(&model_file_context);
-            ff_dnn_free_model_native(&model);
-            return NULL;
+            goto fail;
         }
 
         network->layers[layer].type = layer_type;
         parsed_size = layer_funcs[layer_type].pf_load(&network->layers[layer], model_file_context, file_size);
         if (!parsed_size) {
-            avio_closep(&model_file_context);
-            ff_dnn_free_model_native(&model);
-            return NULL;
+            goto fail;
         }
         dnn_size += parsed_size;
     }
@@ -258,6 +241,11 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     model->get_input = &get_input_native;
 
     return model;
+
+fail:
+    ff_dnn_free_model_native(&model);
+    avio_closep(&model_file_context);
+    return NULL;
 }
 
 DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output)
@@ -314,23 +302,29 @@ void ff_dnn_free_model_native(DNNModel **model)
 
     if (*model)
     {
-        network = (ConvolutionalNetwork *)(*model)->model;
-        for (layer = 0; layer < network->layers_num; ++layer){
-            if (network->layers[layer].type == DLT_CONV2D){
-                conv_params = (ConvolutionalParams *)network->layers[layer].params;
-                av_freep(&conv_params->kernel);
-                av_freep(&conv_params->biases);
+        if ((*model)->model) {
+            network = (ConvolutionalNetwork *)(*model)->model;
+            if (network->layers) {
+                for (layer = 0; layer < network->layers_num; ++layer){
+                    if (network->layers[layer].type == DLT_CONV2D){
+                        conv_params = (ConvolutionalParams *)network->layers[layer].params;
+                        av_freep(&conv_params->kernel);
+                        av_freep(&conv_params->biases);
+                    }
+                    av_freep(&network->layers[layer].params);
+                }
+                av_freep(&network->layers);
             }
-            av_freep(&network->layers[layer].params);
+
+            if (network->operands) {
+                for (uint32_t operand = 0; operand < network->operands_num; ++operand)
+                    av_freep(&network->operands[operand].data);
+                av_freep(&network->operands);
+            }
+
+            av_freep(&network->output_indexes);
+            av_freep(&network);
         }
-        av_freep(&network->layers);
-
-        for (uint32_t operand = 0; operand < network->operands_num; ++operand)
-            av_freep(&network->operands[operand].data);
-        av_freep(&network->operands);
-
-        av_freep(&network->output_indexes);
-        av_freep(&network);
         av_freep(model);
     }
 }
