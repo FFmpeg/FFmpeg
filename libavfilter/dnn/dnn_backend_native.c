@@ -196,7 +196,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
         }
 
         network->layers[layer].type = layer_type;
-        parsed_size = layer_funcs[layer_type].pf_load(&network->layers[layer], model_file_context, file_size);
+        parsed_size = layer_funcs[layer_type].pf_load(&network->layers[layer], model_file_context, file_size, network->operands_num);
         if (!parsed_size) {
             goto fail;
         }
@@ -208,6 +208,10 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
         int32_t name_len;
         int32_t operand_index = (int32_t)avio_rl32(model_file_context);
         dnn_size += 4;
+
+        if (operand_index >= network->operands_num) {
+            goto fail;
+        }
 
         oprd = &network->operands[operand_index];
         name_len = (int32_t)avio_rl32(model_file_context);
