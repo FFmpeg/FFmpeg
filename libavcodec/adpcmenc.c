@@ -69,25 +69,26 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->trellis && (unsigned)avctx->trellis > 16U) {
-        av_log(avctx, AV_LOG_ERROR, "invalid trellis size\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (avctx->trellis &&
-       (avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_SSI ||
-        avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_APM)) {
-        /*
-         * The current trellis implementation doesn't work for extended
-         * runs of samples without periodic resets. Disallow it.
-         */
-        av_log(avctx, AV_LOG_ERROR, "trellis not supported\n");
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (avctx->trellis) {
-        int frontier  = 1 << avctx->trellis;
-        int max_paths =  frontier * FREEZE_INTERVAL;
+        int frontier, max_paths;
+
+        if ((unsigned)avctx->trellis > 16U) {
+            av_log(avctx, AV_LOG_ERROR, "invalid trellis size\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_SSI ||
+            avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_APM) {
+            /*
+             * The current trellis implementation doesn't work for extended
+             * runs of samples without periodic resets. Disallow it.
+             */
+            av_log(avctx, AV_LOG_ERROR, "trellis not supported\n");
+            return AVERROR_PATCHWELCOME;
+        }
+
+        frontier  = 1 << avctx->trellis;
+        max_paths =  frontier * FREEZE_INTERVAL;
         if (!FF_ALLOC_TYPED_ARRAY(s->paths,        max_paths)    ||
             !FF_ALLOC_TYPED_ARRAY(s->node_buf,     2 * frontier) ||
             !FF_ALLOC_TYPED_ARRAY(s->nodep_buf,    2 * frontier) ||
