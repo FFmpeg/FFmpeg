@@ -26,7 +26,7 @@
 
 typedef int (*LAYER_EXEC_FUNC)(DnnOperand *operands, const int32_t *input_operand_indexes,
                                int32_t output_operand_index, const void *parameters);
-typedef int (*LAYER_LOAD_FUNC)(Layer *layer, AVIOContext *model_file_context, int file_size);
+typedef int (*LAYER_LOAD_FUNC)(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
 
 typedef struct LayerFunc {
     LAYER_EXEC_FUNC pf_exec;

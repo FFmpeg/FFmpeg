@@ -27,7 +27,7 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_mathbinary.h"
 
-int dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, int file_size)
+int dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
     DnnLayerMathBinaryParams *params;
     int dnn_size = 0;
@@ -45,6 +45,9 @@ int dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, in
         params->v = av_int2float(avio_rl32(model_file_context));
     } else {
         layer->input_operand_indexes[input_index] = (int32_t)avio_rl32(model_file_context);
+        if (layer->input_operand_indexes[input_index] >= operands_num) {
+            return 0;
+        }
         input_index++;
     }
     dnn_size += 4;
@@ -55,6 +58,9 @@ int dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, in
         params->v = av_int2float(avio_rl32(model_file_context));
     } else {
         layer->input_operand_indexes[input_index] = (int32_t)avio_rl32(model_file_context);
+        if (layer->input_operand_indexes[input_index] >= operands_num) {
+            return 0;
+        }
         input_index++;
     }
     dnn_size += 4;
@@ -62,6 +68,10 @@ int dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, in
     layer->output_operand_index = (int32_t)avio_rl32(model_file_context);
     dnn_size += 4;
     layer->params = params;
+
+    if (layer->output_operand_index >= operands_num) {
+        return 0;
+    }
 
     return dnn_size;
 }
