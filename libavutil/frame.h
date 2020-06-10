@@ -184,6 +184,14 @@ enum AVFrameSideDataType {
      * Encoding parameters for a video frame, as described by AVVideoEncParams.
      */
     AV_FRAME_DATA_VIDEO_ENC_PARAMS,
+
+    /**
+     * User data unregistered metadata associated with a video frame.
+     * This is the H.26[45] UDU SEI message, and shouldn't be used for any other purpose
+     * The data is stored as uint8_t in AVFrameSideData.data which is 16 bytes of
+     * uuid_iso_iec_11578 followed by AVFrameSideData.size - 16 bytes of user_data_payload_byte.
+     */
+    AV_FRAME_DATA_SEI_UNREGISTERED,
 };
 
 enum AVActiveFormatDescription {
