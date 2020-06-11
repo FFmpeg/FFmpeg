@@ -612,12 +612,19 @@ static int get_rgn(Jpeg2000DecoderContext *s, int n)
     // Currently compno cannot be greater than 4.
     // However, future implementation should support compno up to 65536
     if (compno < s->ncomponents) {
-        if (s->curtileno == -1)
-            s->roi_shift[compno] = bytestream2_get_byte(&s->g);
-        else {
+        int v;
+        if (s->curtileno == -1) {
+            v =  bytestream2_get_byte(&s->g);
+            if (v > 30)
+                return AVERROR_PATCHWELCOME;
+            s->roi_shift[compno] = v;
+        } else {
             if (s->tile[s->curtileno].tp_idx != 0)
                 return AVERROR_INVALIDDATA; // marker occurs only in first tile part of tile
-            s->tile[s->curtileno].comp[compno].roi_shift = bytestream2_get_byte(&s->g);
+            v = bytestream2_get_byte(&s->g);
+            if (v > 30)
+                return AVERROR_PATCHWELCOME;
+            s->tile[s->curtileno].comp[compno].roi_shift = v;
         }
         return 0;
     }
@@ -1669,8 +1676,8 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     ff_mqc_initdec(&t1->mqc, cblk->data, 0, 1);
 
     while (passno--) {
-        if (bpno < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "bpno became negative\n");
+        if (bpno < 0 || bpno > 29) {
+            av_log(s->avctx, AV_LOG_ERROR, "bpno became invalid\n");
             return AVERROR_INVALIDDATA;
         }
         switch(pass_t) {
