@@ -52,6 +52,10 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->afd.present                 =  0;
 
     av_buffer_unref(&h->a53_caption.buf_ref);
+    for (int i = 0; i < h->unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&h->unregistered.buf_ref[i]);
+    h->unregistered.nb_buf_ref = 0;
+    av_freep(&h->unregistered.buf_ref);
 }
 
 int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,
@@ -260,25 +264,34 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
 {
     uint8_t *user_data;
     int e, build, i;
+    AVBufferRef *buf_ref, **tmp;
 
     if (size < 16 || size >= INT_MAX - 1)
         return AVERROR_INVALIDDATA;
 
-    user_data = av_malloc(size + 1);
-    if (!user_data)
+    tmp = av_realloc_array(h->buf_ref, h->nb_buf_ref + 1, sizeof(*h->buf_ref));
+    if (!tmp)
         return AVERROR(ENOMEM);
+    h->buf_ref = tmp;
+
+    buf_ref = av_buffer_alloc(size + 1);
+    if (!buf_ref)
+        return AVERROR(ENOMEM);
+    user_data = buf_ref->data;
 
     for (i = 0; i < size; i++)
         user_data[i] = get_bits(gb, 8);
 
     user_data[i] = 0;
+    buf_ref->size = size;
+    h->buf_ref[h->nb_buf_ref++] = buf_ref;
+
     e = sscanf(user_data + 16, "x264 - core %d", &build);
     if (e == 1 && build > 0)
         h->x264_build = build;
     if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
 
-    av_free(user_data);
     return 0;
 }
 

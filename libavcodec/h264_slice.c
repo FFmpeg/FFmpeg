@@ -1289,6 +1289,20 @@ static int h264_export_frame_props(H264Context *h)
         h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
+    for (int i = 0; i < h->sei.unregistered.nb_buf_ref; i++) {
+        H264SEIUnregistered *unreg = &h->sei.unregistered;
+
+        if (unreg->buf_ref[i]) {
+            AVFrameSideData *sd = av_frame_new_side_data_from_buf(cur->f,
+                    AV_FRAME_DATA_SEI_UNREGISTERED,
+                    unreg->buf_ref[i]);
+            if (!sd)
+                av_buffer_unref(&unreg->buf_ref[i]);
+            unreg->buf_ref[i] = NULL;
+        }
+    }
+    h->sei.unregistered.nb_buf_ref = 0;
+
     if (h->sei.picture_timing.timecode_cnt > 0) {
         uint32_t tc = 0;
         uint32_t *tc_sd;
