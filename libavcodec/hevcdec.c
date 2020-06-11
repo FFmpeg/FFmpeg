@@ -2794,6 +2794,20 @@ static int set_side_data(HEVCContext *s)
         s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
+    for (int i = 0; i < s->sei.unregistered.nb_buf_ref; i++) {
+        HEVCSEIUnregistered *unreg = &s->sei.unregistered;
+
+        if (unreg->buf_ref[i]) {
+            AVFrameSideData *sd = av_frame_new_side_data_from_buf(out,
+                    AV_FRAME_DATA_SEI_UNREGISTERED,
+                    unreg->buf_ref[i]);
+            if (!sd)
+                av_buffer_unref(&unreg->buf_ref[i]);
+            unreg->buf_ref[i] = NULL;
+        }
+    }
+    s->sei.unregistered.nb_buf_ref = 0;
+
     return 0;
 }
 

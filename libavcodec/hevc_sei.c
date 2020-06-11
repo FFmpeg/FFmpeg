@@ -213,6 +213,32 @@ static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s, GetB
     return 0;
 }
 
+static int decode_nal_sei_user_data_unregistered(HEVCSEIUnregistered *s, GetBitContext *gb,
+                                                      int size)
+{
+    AVBufferRef *buf_ref, **tmp;
+
+    if (size < 16 || size >= INT_MAX - 1)
+       return AVERROR_INVALIDDATA;
+
+    tmp = av_realloc_array(s->buf_ref, s->nb_buf_ref + 1, sizeof(*s->buf_ref));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    s->buf_ref = tmp;
+
+    buf_ref = av_buffer_alloc(size + 1);
+    if (!buf_ref)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < size; i++)
+        buf_ref->data[i] = get_bits(gb, 8);
+    buf_ref->data[size] = 0;
+    buf_ref->size = size;
+    s->buf_ref[s->nb_buf_ref++] = buf_ref;
+
+    return 0;
+}
+
 static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitContext *gb,
                                                          int size)
 {
@@ -300,6 +326,8 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         return decode_nal_sei_user_data_registered_itu_t_t35(s, gb, size);
+    case HEVC_SEI_TYPE_USER_DATA_UNREGISTERED:
+        return decode_nal_sei_user_data_unregistered(&s->unregistered, gb, size);
     case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
         return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gb);
     default:
@@ -371,4 +399,9 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
 void ff_hevc_reset_sei(HEVCSEI *s)
 {
     av_buffer_unref(&s->a53_caption.buf_ref);
+
+    for (int i = 0; i < s->unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&s->unregistered.buf_ref[i]);
+    s->unregistered.nb_buf_ref = 0;
+    av_freep(&s->unregistered.buf_ref);
 }
