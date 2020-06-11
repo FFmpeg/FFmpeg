@@ -408,10 +408,11 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 
 #define infer(name, value) do { \
         if (current->name != (value)) { \
-            av_log(ctx->log_ctx, AV_LOG_WARNING, "Warning: " \
+            av_log(ctx->log_ctx, AV_LOG_ERROR, \
                    "%s does not match inferred value: " \
                    "%"PRId64", but should be %"PRId64".\n", \
                    #name, (int64_t)current->name, (int64_t)(value)); \
+            return AVERROR_INVALIDDATA; \
         } \
     } while (0)
 
