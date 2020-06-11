@@ -190,6 +190,33 @@ static void dump_video_enc_params(AVFilterContext *ctx, AVFrameSideData *sd)
         av_log(ctx, AV_LOG_INFO, "%u blocks; ", par->nb_blocks);
 }
 
+static void dump_sei_unregistered_metadata(AVFilterContext *ctx, AVFrameSideData *sd)
+{
+    const int uuid_size = 16;
+    uint8_t *user_data = sd->data;
+    int i;
+
+    if (sd->size < uuid_size) {
+        av_log(ctx, AV_LOG_ERROR, "invalid data(%d < UUID(%d-bytes))", sd->size, uuid_size);
+        return;
+    }
+
+    av_log(ctx, AV_LOG_INFO, "User Data Unregistered:\n");
+    av_log(ctx, AV_LOG_INFO, "UUID=");
+    for (i = 0; i < uuid_size; i++) {
+        av_log(ctx, AV_LOG_INFO, "%02x", user_data[i]);
+        if (i == 3 || i == 5 || i == 7 || i == 9)
+            av_log(ctx, AV_LOG_INFO, "-");
+    }
+    av_log(ctx, AV_LOG_INFO, "\n");
+
+    av_log(ctx, AV_LOG_INFO, "User Data=");
+    for (; i < sd->size; i++) {
+        av_log(ctx, AV_LOG_INFO, "%02x", user_data[i]);
+    }
+    av_log(ctx, AV_LOG_INFO, "\n");
+}
+
 static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
 {
     const char *color_range_str     = av_color_range_name(frame->color_range);
@@ -374,6 +401,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
         case AV_FRAME_DATA_VIDEO_ENC_PARAMS:
             dump_video_enc_params(ctx, sd);
+            break;
+        case AV_FRAME_DATA_SEI_UNREGISTERED:
+            dump_sei_unregistered_metadata(ctx, sd);
             break;
         default:
             av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)",
