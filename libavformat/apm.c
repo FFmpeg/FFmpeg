@@ -29,6 +29,7 @@
 #define APM_VS12_CHUNK_SIZE     76
 #define APM_MAX_READ_SIZE       4096
 
+#define APM_TAG_CODEC           0x2000
 #define APM_TAG_VS12            MKTAG('v', 's', '1', '2')
 #define APM_TAG_DATA            MKTAG('D', 'A', 'T', 'A')
 
@@ -74,6 +75,9 @@ static void apm_parse_vs12(APMVS12Chunk *vs12, const uint8_t *buf)
 
 static int apm_probe(const AVProbeData *p)
 {
+    if (AV_RL16(p->buf) != APM_TAG_CODEC)
+        return 0;
+
     if (p->buf_size < 100)
         return 0;
 
@@ -103,7 +107,7 @@ static int apm_read_header(AVFormatContext *s)
     if (st->codecpar->bits_per_coded_sample != 4)
         return AVERROR_INVALIDDATA;
 
-    if (st->codecpar->codec_tag != 0x2000)
+    if (st->codecpar->codec_tag != APM_TAG_CODEC)
         return AVERROR_INVALIDDATA;
 
     /* ff_get_wav_header() does most of the work, but we need to fix a few things. */
