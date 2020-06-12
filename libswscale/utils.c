@@ -1575,41 +1575,42 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     if (CONFIG_SWSCALE_ALPHA && isALPHA(srcFormat) && !isALPHA(dstFormat)) {
         enum AVPixelFormat tmpFormat = alphaless_fmt(srcFormat);
 
-        if (tmpFormat != AV_PIX_FMT_NONE && c->alphablend != SWS_ALPHA_BLEND_NONE)
-        if (!unscaled ||
-            dstFormat != tmpFormat ||
-            usesHFilter || usesVFilter ||
-            c->srcRange != c->dstRange
-        ) {
-            c->cascaded_mainindex = 1;
-            ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
-                                srcW, srcH, tmpFormat, 64);
-            if (ret < 0)
-                return ret;
+        if (tmpFormat != AV_PIX_FMT_NONE && c->alphablend != SWS_ALPHA_BLEND_NONE) {
+            if (!unscaled ||
+                dstFormat != tmpFormat ||
+                usesHFilter || usesVFilter ||
+                c->srcRange != c->dstRange
+            ) {
+                c->cascaded_mainindex = 1;
+                ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
+                                     srcW, srcH, tmpFormat, 64);
+                if (ret < 0)
+                    return ret;
 
-            c->cascaded_context[0] = sws_alloc_set_opts(srcW, srcH, srcFormat,
-                                                        srcW, srcH, tmpFormat,
-                                                        flags, c->param);
-            if (!c->cascaded_context[0])
-                return -1;
-            c->cascaded_context[0]->alphablend = c->alphablend;
-            ret = sws_init_context(c->cascaded_context[0], NULL , NULL);
-            if (ret < 0)
-                return ret;
+                c->cascaded_context[0] = sws_alloc_set_opts(srcW, srcH, srcFormat,
+                                                            srcW, srcH, tmpFormat,
+                                                            flags, c->param);
+                if (!c->cascaded_context[0])
+                    return -1;
+                c->cascaded_context[0]->alphablend = c->alphablend;
+                ret = sws_init_context(c->cascaded_context[0], NULL , NULL);
+                if (ret < 0)
+                    return ret;
 
-            c->cascaded_context[1] = sws_alloc_set_opts(srcW, srcH, tmpFormat,
-                                                        dstW, dstH, dstFormat,
-                                                        flags, c->param);
-            if (!c->cascaded_context[1])
-                return -1;
+                c->cascaded_context[1] = sws_alloc_set_opts(srcW, srcH, tmpFormat,
+                                                            dstW, dstH, dstFormat,
+                                                            flags, c->param);
+                if (!c->cascaded_context[1])
+                    return -1;
 
-            c->cascaded_context[1]->srcRange = c->srcRange;
-            c->cascaded_context[1]->dstRange = c->dstRange;
-            ret = sws_init_context(c->cascaded_context[1], srcFilter , dstFilter);
-            if (ret < 0)
-                return ret;
+                c->cascaded_context[1]->srcRange = c->srcRange;
+                c->cascaded_context[1]->dstRange = c->dstRange;
+                ret = sws_init_context(c->cascaded_context[1], srcFilter , dstFilter);
+                if (ret < 0)
+                    return ret;
 
-            return 0;
+                return 0;
+            }
         }
     }
 
