@@ -444,7 +444,7 @@ static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
     if (r < 0)
         return r;
     pcm = (int16_t *)frame->data[0];
-    for (s = 0; s < duration; s++, ts++) {
+    for (s = 0; s < duration; s++, ts+=(uint64_t)1) {
         memset(channels, 0, avc->channels * sizeof(*channels));
         if (ts >= ws->next_ts)
             wavesynth_enter_intervals(ws, ts);
@@ -452,7 +452,7 @@ static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
         for (c = 0; c < avc->channels; c++)
             *(pcm++) = channels[c] >> 16;
     }
-    ws->cur_ts += duration;
+    ws->cur_ts += (uint64_t)duration;
     *rgot_frame = 1;
     return packet->size;
 }
