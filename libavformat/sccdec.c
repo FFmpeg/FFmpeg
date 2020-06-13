@@ -64,6 +64,7 @@ static int scc_read_header(AVFormatContext *s)
     SCCContext *scc = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     char line[4096], line2[4096];
+    int64_t current_pos, next_pos;
     int64_t ts_start, ts_end;
     int count = 0, ret = 0;
     ptrdiff_t len2, len;
@@ -79,7 +80,6 @@ static int scc_read_header(AVFormatContext *s)
     st->codecpar->codec_id   = AV_CODEC_ID_EIA_608;
 
     while (!ff_text_eof(&tr)) {
-        int64_t current_pos, next_pos;
         char *saveptr = NULL, *lline;
         int hh1, mm1, ss1, fs1, i;
         int hh2, mm2, ss2, fs2;
