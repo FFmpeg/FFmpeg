@@ -410,6 +410,9 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
     int ret;
 
     mgb = *gb;
+    if (get_bits_left(gb) < s->mode_size * 8)
+        return AVERROR_INVALIDDATA;
+
     skip_bits_long(gb, s->mode_size * 8);
 
     linesize[0] = frame->linesize[0];
