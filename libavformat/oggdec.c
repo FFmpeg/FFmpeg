@@ -226,9 +226,10 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic, 
         return AVERROR_INVALIDDATA;
     }
 
-    /* We only have a single stream anyway, so if there's a new stream with
-     * a different codec just replace it */
     os = &ogg->streams[0];
+    if (os->codec != codec)
+        return AVERROR(EINVAL);
+
     os->serial  = serial;
     os->codec   = codec;
     os->serial  = serial;
