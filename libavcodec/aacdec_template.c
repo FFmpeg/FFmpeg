@@ -368,6 +368,15 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
         };
         i++;
     }
+    if (i < tags && layout_map[i][2] == AAC_CHANNEL_LFE) {
+        e2c_vec[i] = (struct elem_to_channel) {
+            .av_position  = AV_CH_LOW_FREQUENCY_2,
+            .syn_ele      = TYPE_LFE,
+            .elem_id      = layout_map[i][1],
+            .aac_position = AAC_CHANNEL_LFE
+        };
+        i++;
+    }
     while (i < tags && layout_map[i][2] == AAC_CHANNEL_LFE) {
         e2c_vec[i] = (struct elem_to_channel) {
             .av_position  = UINT64_MAX,
