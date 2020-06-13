@@ -603,12 +603,13 @@ static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
 {
     int ret;
 
+    ctx->active_screen = !ctx->active_screen;
+
     // In buffered mode, we wait til the *next* EOC and
     // reap what was already on the screen since the last EOC.
     if (!ctx->real_time)
         ret = handle_edm(ctx,pts);
 
-    ctx->active_screen = !ctx->active_screen;
     ctx->cursor_column = 0;
 
     // In realtime mode, we display the buffered contents (after
