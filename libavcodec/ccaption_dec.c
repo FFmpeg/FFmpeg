@@ -619,7 +619,7 @@ static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
     return ret;
 }
 
-static void handle_delete_end_of_row(CCaptionSubContext *ctx, char hi, char lo)
+static void handle_delete_end_of_row(CCaptionSubContext *ctx)
 {
     struct Screen *screen = get_writing_screen(ctx);
     write_char(ctx, screen, 0);
@@ -690,7 +690,7 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
             ctx->mode = CCMODE_POPON;
             break;
         case 0x24:
-            handle_delete_end_of_row(ctx, hi, lo);
+            handle_delete_end_of_row(ctx);
             break;
         case 0x25:
         case 0x26:
