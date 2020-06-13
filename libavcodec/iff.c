@@ -723,7 +723,7 @@ static void decode_deep_rle32(uint8_t *dst, const uint8_t *src, int src_size, in
         if (opcode >= 0) {
             int size = opcode + 1;
             for (i = 0; i < size; i++) {
-                int length = FFMIN(size - i, width);
+                int length = FFMIN(size - i, width - x);
                 if (src_end - src < length * 4)
                     return;
                 memcpy(dst + y*linesize + x * 4, src, length * 4);
