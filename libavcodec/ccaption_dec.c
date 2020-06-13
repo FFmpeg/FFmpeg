@@ -579,29 +579,34 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
 /**
  * @param pts it is required to set end time
  */
-static void handle_edm(CCaptionSubContext *ctx, int64_t pts)
+static int handle_edm(CCaptionSubContext *ctx, int64_t pts)
 {
     struct Screen *screen = ctx->screen + ctx->active_screen;
+    int ret;
 
     // In buffered mode, keep writing to screen until it is wiped.
     // Before wiping the display, capture contents to emit subtitle.
     if (!ctx->real_time)
-        reap_screen(ctx, pts);
+        ret = reap_screen(ctx, pts);
 
     screen->row_used = 0;
 
     // In realtime mode, emit an empty caption so the last one doesn't
     // stay on the screen.
     if (ctx->real_time)
-        reap_screen(ctx, pts);
+        ret = reap_screen(ctx, pts);
+
+    return ret;
 }
 
-static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
+static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
 {
+    int ret;
+
     // In buffered mode, we wait til the *next* EOC and
     // reap what was already on the screen since the last EOC.
     if (!ctx->real_time)
-        handle_edm(ctx,pts);
+        ret = handle_edm(ctx,pts);
 
     ctx->active_screen = !ctx->active_screen;
     ctx->cursor_column = 0;
@@ -609,7 +614,9 @@ static void handle_eoc(CCaptionSubContext *ctx, int64_t pts)
     // In realtime mode, we display the buffered contents (after
     // flipping the buffer to active above) as soon as EOC arrives.
     if (ctx->real_time)
-        reap_screen(ctx, pts);
+        ret = reap_screen(ctx, pts);
+
+    return ret;
 }
 
 static void handle_delete_end_of_row(CCaptionSubContext *ctx, char hi, char lo)
@@ -658,11 +665,12 @@ static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
        ff_dlog(ctx, "(%c)\n", hi);
 }
 
-static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8_t lo)
+static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8_t lo)
 {
+    int ret = 0;
+
     if (hi == ctx->prev_cmd[0] && lo == ctx->prev_cmd[1]) {
-        /* ignore redundant command */
-        return;
+        return 0;
     }
 
     /* set prev command */
@@ -706,7 +714,7 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
             /* carriage return */
             ff_dlog(ctx, "carriage return\n");
             if (!ctx->real_time)
-                reap_screen(ctx, pts);
+                ret = reap_screen(ctx, pts);
             roll_up(ctx);
             ctx->cursor_column = 0;
             break;
@@ -722,7 +730,7 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
         case 0x2f:
             /* end of caption */
             ff_dlog(ctx, "handle_eoc\n");
-            handle_eoc(ctx, pts);
+            ret = handle_eoc(ctx, pts);
             break;
         default:
             ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
@@ -745,6 +753,8 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
         /* Ignoring all other non data code */
         ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
     }
+
+    return ret;
 }
 
 static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avpkt)
@@ -773,7 +783,10 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
         if(cc_type == 1)
             continue;
         else
-            process_cc608(ctx, start_time, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
+            ret = process_cc608(ctx, start_time, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
+
+        if (ret < 0)
+            return ret;
 
         if (!ctx->buffer_changed)
             continue;
