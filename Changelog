@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - AudioToolbox output device
+- MacCaption demuxer
 
 
 version 4.3:

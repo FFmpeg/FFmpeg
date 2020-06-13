@@ -230,6 +230,7 @@ extern AVInputFormat  ff_lvf_demuxer;
 extern AVInputFormat  ff_lxf_demuxer;
 extern AVInputFormat  ff_m4v_demuxer;
 extern AVOutputFormat ff_m4v_muxer;
+extern AVInputFormat  ff_mcc_demuxer;
 extern AVOutputFormat ff_md5_muxer;
 extern AVInputFormat  ff_matroska_demuxer;
 extern AVOutputFormat ff_matroska_muxer;
