@@ -221,7 +221,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst,
     length = 25 - nbits;
 
     while (i < size) {
-        if (state >> 8 != -3)
+        if (((state >> 8) + 3) & 0xFFFFFFF)
             value = ff_clz((state >> 8) + 3) ^ 0x1F;
         else
             value = -1;
