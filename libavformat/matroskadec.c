@@ -2938,9 +2938,8 @@ static int matroska_read_header(AVFormatContext *s)
                 st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 
                 av_init_packet(pkt);
-                pkt->buf = av_buffer_ref(attachments[j].bin.buf);
-                if (!pkt->buf)
-                    return AVERROR(ENOMEM);
+                pkt->buf          = attachments[j].bin.buf;
+                attachments[j].bin.buf = NULL;
                 pkt->data         = attachments[j].bin.data;
                 pkt->size         = attachments[j].bin.size;
                 pkt->stream_index = st->index;
