@@ -81,11 +81,11 @@ static int aqt_read_header(AVFormatContext *s)
             if (!new_event) {
                 sub = ff_subtitles_queue_insert(&aqt->q, "\n", 1, 1);
                 if (!sub)
-                    return AVERROR(ENOMEM);
+                    goto fail;
             }
             sub = ff_subtitles_queue_insert(&aqt->q, line, strlen(line), !new_event);
             if (!sub)
-                return AVERROR(ENOMEM);
+                goto fail;
             if (new_event) {
                 sub->pts = frame;
                 sub->duration = -1;
@@ -97,6 +97,9 @@ static int aqt_read_header(AVFormatContext *s)
 
     ff_subtitles_queue_finalize(s, &aqt->q);
     return 0;
+fail:
+    ff_subtitles_queue_clean(&aqt->q);
+    return AVERROR(ENOMEM);
 }
 
 static int aqt_read_packet(AVFormatContext *s, AVPacket *pkt)
