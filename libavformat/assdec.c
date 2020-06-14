@@ -160,6 +160,8 @@ static int ass_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &ass->q);
 
 end:
+    if (res < 0)
+        ass_read_close(s);
     av_bprint_finalize(&header, NULL);
     av_bprint_finalize(&line,   NULL);
     av_bprint_finalize(&rline,  NULL);
