@@ -4382,6 +4382,9 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         } else
             break;
 
+        if (*p)
+            break;
+
         *p = av_malloc(len + 1);
         if (!*p) {
             ret = AVERROR(ENOMEM);
