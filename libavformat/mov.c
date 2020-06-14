@@ -2342,18 +2342,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 uint32_t format = AV_RB32(st->codecpar->extradata + 22);
                 if (format == AV_RB32("name") && (int64_t)size >= (int64_t)len + 18) {
                     uint16_t str_size = AV_RB16(st->codecpar->extradata + 26); /* string length */
-                    if (str_size > 0 && size >= (int)str_size + 30) {
+                    if (str_size > 0 && size >= (int)str_size + 30 &&
+                        st->codecpar->extradata[30] /* Don't add empty string */) {
                         char *reel_name = av_malloc(str_size + 1);
                         if (!reel_name)
                             return AVERROR(ENOMEM);
                         memcpy(reel_name, st->codecpar->extradata + 30, str_size);
                         reel_name[str_size] = 0; /* Add null terminator */
-                        /* don't add reel_name if emtpy string */
-                        if (*reel_name == 0) {
-                            av_free(reel_name);
-                        } else {
-                            av_dict_set(&st->metadata, "reel_name", reel_name,  AV_DICT_DONT_STRDUP_VAL);
-                        }
+                        av_dict_set(&st->metadata, "reel_name", reel_name,
+                                    AV_DICT_DONT_STRDUP_VAL);
                     }
                 }
             }
