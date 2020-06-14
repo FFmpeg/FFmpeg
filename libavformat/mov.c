@@ -863,14 +863,15 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint32_t frame_duration_code = 0;
     uint32_t channel_layout_code = 0;
     GetBitContext gb;
+    int ret;
 
     buf = av_malloc(ddts_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!buf) {
         return AVERROR(ENOMEM);
     }
-    if (avio_read(pb, buf, ddts_size) < ddts_size) {
+    if ((ret = ffio_read_size(pb, buf, ddts_size)) < 0) {
         av_free(buf);
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
 
     init_get_bits(&gb, buf, 8*ddts_size);
@@ -5765,12 +5766,9 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st = c->fc->streams[c->fc->nb_streams - 1];
     sc = st->priv_data;
 
-    ret = avio_read(pb, uuid, sizeof(uuid));
-    if (ret < 0) {
+    ret = ffio_read_size(pb, uuid, sizeof(uuid));
+    if (ret < 0)
         return ret;
-    } else if (ret != sizeof(uuid)) {
-        return AVERROR_INVALIDDATA;
-    }
     if (!memcmp(uuid, uuid_isml_manifest, sizeof(uuid))) {
         uint8_t *buffer, *ptr;
         char *endptr;
@@ -5786,13 +5784,10 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (!buffer) {
             return AVERROR(ENOMEM);
         }
-        ret = avio_read(pb, buffer, len);
+        ret = ffio_read_size(pb, buffer, len);
         if (ret < 0) {
             av_free(buffer);
             return ret;
-        } else if (ret != len) {
-            av_free(buffer);
-            return AVERROR_INVALIDDATA;
         }
 
         ptr = buffer;
@@ -5823,13 +5818,10 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (!buffer) {
                 return AVERROR(ENOMEM);
             }
-            ret = avio_read(pb, buffer, len);
+            ret = ffio_read_size(pb, buffer, len);
             if (ret < 0) {
                 av_free(buffer);
                 return ret;
-            } else if (ret != len) {
-                av_free(buffer);
-                return AVERROR_INVALIDDATA;
             }
             buffer[len] = '\0';
             av_dict_set(&c->fc->metadata, "xmp",
@@ -5973,7 +5965,7 @@ static int get_current_encryption_info(MOVContext *c, MOVEncryptionIndex **encry
 
 static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVStreamContext *sc, AVEncryptionInfo **sample, int use_subsamples)
 {
-    int i;
+    int i, ret;
     unsigned int subsample_count;
     AVSubsampleEncryptionInfo *subsamples;
 
@@ -5987,11 +5979,11 @@ static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVSt
         return AVERROR(ENOMEM);
 
     if (sc->cenc.per_sample_iv_size != 0) {
-        if (avio_read(pb, (*sample)->iv, sc->cenc.per_sample_iv_size) != sc->cenc.per_sample_iv_size) {
+        if ((ret = ffio_read_size(pb, (*sample)->iv, sc->cenc.per_sample_iv_size)) < 0) {
             av_log(c->fc, AV_LOG_ERROR, "failed to read the initialization vector\n");
             av_encryption_info_free(*sample);
             *sample = NULL;
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
     }
 
@@ -6359,9 +6351,8 @@ static int mov_read_pssh(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!info)
         return AVERROR(ENOMEM);
 
-    if (avio_read(pb, info->system_id, 16) != 16) {
+    if ((ret = ffio_read_size(pb, info->system_id, 16)) < 0) {
         av_log(c->fc, AV_LOG_ERROR, "Failed to read the system id\n");
-        ret = AVERROR_INVALIDDATA;
         goto finish;
     }
 
@@ -6389,9 +6380,8 @@ static int mov_read_pssh(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
             info->num_key_ids = i + 1;
 
-            if (avio_read(pb, info->key_ids[i], 16) != 16) {
+            if ((ret = ffio_read_size(pb, info->key_ids[i], 16)) < 0) {
                 av_log(c->fc, AV_LOG_ERROR, "Failed to read the key id\n");
-                ret = AVERROR_INVALIDDATA;
                 goto finish;
             }
         }
