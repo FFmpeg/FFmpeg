@@ -136,7 +136,7 @@ try_again:
 
         sub = ff_subtitles_queue_insert(&scc->q, out, i, 0);
         if (!sub)
-            return AVERROR(ENOMEM);
+            goto fail;
 
         sub->pos = current_pos;
         sub->pts = ts_start;
@@ -155,6 +155,9 @@ try_again:
     ff_subtitles_queue_finalize(s, &scc->q);
 
     return ret;
+fail:
+    ff_subtitles_queue_clean(&scc->q);
+    return AVERROR(ENOMEM);
 }
 
 static int scc_read_packet(AVFormatContext *s, AVPacket *pkt)
