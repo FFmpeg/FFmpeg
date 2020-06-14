@@ -2236,17 +2236,19 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
     MatroskaMuxContext *mkv = s->priv_data;
     ebml_master blockgroup;
     int id_size, settings_size, size;
-    uint8_t *id, *settings;
+    const char *id, *settings;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
     const int flags = 0;
 
     id_size = 0;
     id = av_packet_get_side_data(pkt, AV_PKT_DATA_WEBVTT_IDENTIFIER,
                                  &id_size);
+    id = id ? id : "";
 
     settings_size = 0;
     settings = av_packet_get_side_data(pkt, AV_PKT_DATA_WEBVTT_SETTINGS,
                                        &settings_size);
+    settings = settings ? settings : "";
 
     size = id_size + 1 + settings_size + 1 + pkt->size;
 
