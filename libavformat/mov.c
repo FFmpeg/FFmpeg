@@ -2545,11 +2545,8 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 
             /* Move the current stream extradata to the stream context one. */
             sc->extradata_size[pseudo_stream_id] = extra_size;
-            sc->extradata[pseudo_stream_id] = av_malloc(extra_size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!sc->extradata[pseudo_stream_id])
-                return AVERROR(ENOMEM);
-            memcpy(sc->extradata[pseudo_stream_id], st->codecpar->extradata, extra_size);
-            av_freep(&st->codecpar->extradata);
+            sc->extradata[pseudo_stream_id] = st->codecpar->extradata;
+            st->codecpar->extradata      = NULL;
             st->codecpar->extradata_size = 0;
         }
         sc->stsd_count++;
