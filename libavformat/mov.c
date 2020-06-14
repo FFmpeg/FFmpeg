@@ -7858,6 +7858,27 @@ static int mov_change_extradata(MOVStreamContext *sc, AVPacket *pkt)
     return 0;
 }
 
+static int get_eia608_packet(AVIOContext *pb, AVPacket *pkt, int size)
+{
+    int new_size, ret;
+
+    if (size <= 8)
+        return AVERROR_INVALIDDATA;
+    new_size = ((size - 8) / 2) * 3;
+    ret = av_new_packet(pkt, new_size);
+    if (ret < 0)
+        return ret;
+
+    avio_skip(pb, 8);
+    for (int j = 0; j < new_size; j += 3) {
+        pkt->data[j] = 0xFC;
+        pkt->data[j+1] = avio_r8(pb);
+        pkt->data[j+2] = avio_r8(pb);
+    }
+
+    return 0;
+}
+
 static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = s->priv_data;
@@ -7902,6 +7923,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             goto retry;
         }
 
+        if (st->codecpar->codec_id == AV_CODEC_ID_EIA_608 && sample->size > 8)
+            ret = get_eia608_packet(sc->pb, pkt, sample->size);
+        else
         ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
             if (should_retry(sc->pb, ret)) {
