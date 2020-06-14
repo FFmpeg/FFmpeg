@@ -679,6 +679,9 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
         return 0;
     }
 
+    if (is_dng && stride == 0)
+        return AVERROR_INVALIDDATA;
+
     for (line = 0; line < lines; line++) {
         if (src - ssrc > size) {
             av_log(s->avctx, AV_LOG_ERROR, "Source data overread\n");
