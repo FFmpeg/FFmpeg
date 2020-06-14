@@ -857,27 +857,20 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    const uint32_t ddts_size = 20;
+#define DDTS_SIZE 20
+    uint8_t buf[DDTS_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     AVStream *st = NULL;
-    uint8_t *buf = NULL;
     uint32_t frame_duration_code = 0;
     uint32_t channel_layout_code = 0;
     GetBitContext gb;
     int ret;
 
-    buf = av_malloc(ddts_size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!buf) {
-        return AVERROR(ENOMEM);
-    }
-    if ((ret = ffio_read_size(pb, buf, ddts_size)) < 0) {
-        av_free(buf);
+    if ((ret = ffio_read_size(pb, buf, DDTS_SIZE)) < 0)
         return ret;
-    }
 
-    init_get_bits(&gb, buf, 8*ddts_size);
+    init_get_bits(&gb, buf, 8 * DDTS_SIZE);
 
     if (c->fc->nb_streams < 1) {
-        av_free(buf);
         return 0;
     }
     st = c->fc->streams[c->fc->nb_streams-1];
@@ -885,7 +878,6 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codecpar->sample_rate = get_bits_long(&gb, 32);
     if (st->codecpar->sample_rate <= 0) {
         av_log(c->fc, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
-        av_free(buf);
         return AVERROR_INVALIDDATA;
     }
     skip_bits_long(&gb, 32); /* max bitrate */
@@ -913,7 +905,6 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             ((channel_layout_code & 0x8) ? AV_CH_LOW_FREQUENCY : 0);
 
     st->codecpar->channels = av_get_channel_layout_nb_channels(st->codecpar->channel_layout);
-    av_free(buf);
 
     return 0;
 }
