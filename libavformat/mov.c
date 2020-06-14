@@ -181,7 +181,6 @@ static int mov_read_mac_string(MOVContext *c, AVIOContext *pb, int len,
 
 static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
 {
-    AVPacket pkt;
     AVStream *st;
     MOVStreamContext *sc;
     enum AVCodecID id;
@@ -205,12 +204,12 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
         return AVERROR(ENOMEM);
     st->priv_data = sc;
 
-    ret = av_get_packet(pb, &pkt, len);
+    ret = av_get_packet(pb, &st->attached_pic, len);
     if (ret < 0)
         return ret;
 
-    if (pkt.size >= 8 && id != AV_CODEC_ID_BMP) {
-        if (AV_RB64(pkt.data) == 0x89504e470d0a1a0a) {
+    if (st->attached_pic.size >= 8 && id != AV_CODEC_ID_BMP) {
+        if (AV_RB64(st->attached_pic.data) == 0x89504e470d0a1a0a) {
             id = AV_CODEC_ID_PNG;
         } else {
             id = AV_CODEC_ID_MJPEG;
@@ -219,7 +218,6 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
 
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
 
-    st->attached_pic              = pkt;
     st->attached_pic.stream_index = st->index;
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
@@ -7184,17 +7182,15 @@ static void mov_read_chapters(AVFormatContext *s)
             st->disposition |= AV_DISPOSITION_ATTACHED_PIC | AV_DISPOSITION_TIMED_THUMBNAILS;
             if (st->nb_index_entries) {
                 // Retrieve the first frame, if possible
-                AVPacket pkt;
                 AVIndexEntry *sample = &st->index_entries[0];
                 if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
                     av_log(s, AV_LOG_ERROR, "Failed to retrieve first frame\n");
                     goto finish;
                 }
 
-                if (av_get_packet(sc->pb, &pkt, sample->size) < 0)
+                if (av_get_packet(sc->pb, &st->attached_pic, sample->size) < 0)
                     goto finish;
 
-                st->attached_pic              = pkt;
                 st->attached_pic.stream_index = st->index;
                 st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
             }
