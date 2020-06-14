@@ -81,7 +81,7 @@ static int microdvd_read_header(AVFormatContext *s)
     AVRational pts_info = (AVRational){ 2997, 125 };  /* default: 23.976 fps */
     MicroDVDContext *microdvd = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
-    int i = 0;
+    int i = 0, ret;
     char line_buf[MAX_LINESIZE];
     int has_real_fps = 0;
 
@@ -117,10 +117,10 @@ static int microdvd_read_header(AVFormatContext *s)
                 continue;
             }
             if (!st->codecpar->extradata && sscanf(line, "{DEFAULT}{}%c", &c) == 1) {
-                int ret, size = strlen(line + 11);
+                int size = strlen(line + 11);
                 ret = ff_alloc_extradata(st->codecpar, size);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
                 memcpy(st->codecpar->extradata, line + 11, size);
                 continue;
             }
@@ -138,8 +138,10 @@ static int microdvd_read_header(AVFormatContext *s)
         if (!*p)
             continue;
         sub = ff_subtitles_queue_insert(&microdvd->q, p, strlen(p), 0);
-        if (!sub)
-            return AVERROR(ENOMEM);
+        if (!sub) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         sub->pos = pos;
         sub->pts = get_pts(line);
         sub->duration = get_duration(line);
@@ -156,6 +158,9 @@ static int microdvd_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id   = AV_CODEC_ID_MICRODVD;
     return 0;
+fail:
+    ff_subtitles_queue_clean(&microdvd->q);
+    return ret;
 }
 
 static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
