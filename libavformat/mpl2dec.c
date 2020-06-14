@@ -111,8 +111,10 @@ static int mpl2_read_header(AVFormatContext *s)
             AVPacket *sub;
 
             sub = ff_subtitles_queue_insert(&mpl2->q, p, strlen(p), 0);
-            if (!sub)
+            if (!sub) {
+                ff_subtitles_queue_clean(&mpl2->q);
                 return AVERROR(ENOMEM);
+            }
             sub->pos = pos;
             sub->pts = pts_start;
             sub->duration = duration;
