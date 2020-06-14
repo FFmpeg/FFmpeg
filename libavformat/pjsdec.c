@@ -94,8 +94,10 @@ static int pjs_read_header(AVFormatContext *s)
 
             p[strcspn(p, "\"")] = 0;
             sub = ff_subtitles_queue_insert(&pjs->q, p, strlen(p), 0);
-            if (!sub)
+            if (!sub) {
+                ff_subtitles_queue_clean(&pjs->q);
                 return AVERROR(ENOMEM);
+            }
             sub->pos = pos;
             sub->pts = pts_start;
             sub->duration = duration;
