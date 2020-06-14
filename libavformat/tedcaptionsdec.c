@@ -275,9 +275,12 @@ static int parse_file(AVIOContext *pb, FFDemuxSubtitlesQueue *subs)
 static av_cold int tedcaptions_read_header(AVFormatContext *avf)
 {
     TEDCaptionsDemuxer *tc = avf->priv_data;
-    AVStream *st;
+    AVStream *st = avformat_new_stream(avf, NULL);
     int ret, i;
     AVPacket *last;
+
+    if (!st)
+        return AVERROR(ENOMEM);
 
     ret = parse_file(avf->pb, &tc->subs);
     if (ret < 0) {
@@ -292,9 +295,6 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
         tc->subs.subs[i].pts += tc->start_time;
 
     last = &tc->subs.subs[tc->subs.nb_subs - 1];
-    st = avformat_new_stream(avf, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
     st->codecpar->codec_type     = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id       = AV_CODEC_ID_TEXT;
     avpriv_set_pts_info(st, 64, 1, 1000);
