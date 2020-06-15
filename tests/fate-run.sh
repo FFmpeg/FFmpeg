@@ -89,6 +89,10 @@ probefmt(){
     run ffprobe${PROGSUF}${EXECSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
+probeaudiostream(){
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout -v 0 "$@"
+}
+
 probetags(){
     run ffprobe${PROGSUF}${EXECSUF} -show_entries format_tags -v 0 "$@"
 }
