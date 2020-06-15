@@ -1993,7 +1993,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
                 return AVERROR(EINVAL);
             }
 
-            num = strtoll(val, &end, 0);
+            num = strtoll(val, &end, 10);
             if (!av_isdigit(*val) || *end != '\0') {
                 av_log(s, AV_LOG_ERROR, "Invalid stream number: '%s'\n", val);
                 return AVERROR(EINVAL);
