@@ -174,7 +174,7 @@ av_cold struct FFIIRFilterCoeffs *ff_iir_filter_init_coeffs(void *avc,
     if (!(c     = av_mallocz(sizeof(*c)))                            ||
         !(c->cx = av_malloc (sizeof(c->cx[0]) * ((order >> 1) + 1))) ||
         !(c->cy = av_malloc (sizeof(c->cy[0]) * order)))
-        return NULL;
+        goto free;
     c->order = order;
 
     switch (filt_type) {
@@ -188,11 +188,13 @@ av_cold struct FFIIRFilterCoeffs *ff_iir_filter_init_coeffs(void *avc,
         break;
     default:
         av_log(avc, AV_LOG_ERROR, "filter type is not currently implemented\n");
-        return NULL;
+        goto free;
     }
 
     if (!ret)
         return c;
+free:
+    ff_iir_filter_free_coeffsp(&c);
     return NULL;
 }
 
