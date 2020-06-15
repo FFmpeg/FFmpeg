@@ -38,6 +38,52 @@ ffmpeg -i INPUT -f alsa hw:1,7
 @end example
 @end itemize
 
+@section AudioToolbox
+
+AudioToolbox output device.
+
+Allows native output to CoreAudio devices on OSX.
+
+The output filename can be empty (or @code{-}) to refer to the default system output device or a number that refers to the device index as shown using: @code{-list_devices true}.
+
+Alternatively, the audio input device can be chosen by index using the
+@option{
+    -audio_device_index <INDEX>
+}
+, overriding any device name or index given in the input filename.
+
+All available devices can be enumerated by using @option{-list_devices true}, listing
+all device names, UIDs and corresponding indices.
+
+@subsection Options
+
+AudioToolbox supports the following options:
+
+@table @option
+
+@item -audio_device_index <INDEX>
+Specify the audio device by its index. Overrides anything given in the output filename.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Print the list of supported devices and output a sine wave to the default device:
+@example
+$ ffmpeg -f lavfi -i sine=r=44100 -f audiotoolbox -list_devices true -
+@end example
+
+@item
+Output a sine wave to the device with the index 2, overriding any output filename:
+@example
+$ ffmpeg -f lavfi -i sine=r=44100 -f audiotoolbox -audio_device_index 2 -
+@end example
+
+@end itemize
+
 @section caca
 
 CACA output device.
