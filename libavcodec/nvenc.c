@@ -1783,7 +1783,8 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
 
 static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
                                             NV_ENC_PIC_PARAMS *params,
-                                            NV_ENC_SEI_PAYLOAD *sei_data)
+                                            NV_ENC_SEI_PAYLOAD *sei_data,
+                                            int sei_count)
 {
     NvencContext *ctx = avctx->priv_data;
 
@@ -1793,9 +1794,9 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
             ctx->encode_config.encodeCodecConfig.h264Config.sliceMode;
         params->codecPicParams.h264PicParams.sliceModeData =
             ctx->encode_config.encodeCodecConfig.h264Config.sliceModeData;
-        if (sei_data) {
+        if (sei_count > 0) {
             params->codecPicParams.h264PicParams.seiPayloadArray = sei_data;
-            params->codecPicParams.h264PicParams.seiPayloadArrayCnt = 1;
+            params->codecPicParams.h264PicParams.seiPayloadArrayCnt = sei_count;
         }
 
       break;
@@ -1804,9 +1805,9 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
             ctx->encode_config.encodeCodecConfig.hevcConfig.sliceMode;
         params->codecPicParams.hevcPicParams.sliceModeData =
             ctx->encode_config.encodeCodecConfig.hevcConfig.sliceModeData;
-        if (sei_data) {
+        if (sei_count > 0) {
             params->codecPicParams.hevcPicParams.seiPayloadArray = sei_data;
-            params->codecPicParams.hevcPicParams.seiPayloadArrayCnt = 1;
+            params->codecPicParams.hevcPicParams.seiPayloadArrayCnt = sei_count;
         }
 
         break;
@@ -2077,8 +2078,9 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     NVENCSTATUS nv_status;
     NvencSurface *tmp_out_surf, *in_surf;
     int res, res2;
-    NV_ENC_SEI_PAYLOAD *sei_data = NULL;
-    size_t sei_size;
+    NV_ENC_SEI_PAYLOAD sei_data[8];
+    int sei_count = 0;
+    int i;
 
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -2136,18 +2138,22 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         pic_params.inputTimeStamp = frame->pts;
 
         if (ctx->a53_cc && av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)) {
-            if (ff_alloc_a53_sei(frame, sizeof(NV_ENC_SEI_PAYLOAD), (void**)&sei_data, &sei_size) < 0) {
+            void *a53_data = NULL;
+            size_t a53_size = 0;
+
+            if (ff_alloc_a53_sei(frame, 0, (void**)&a53_data, &a53_size) < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
             }
 
-            if (sei_data) {
-                sei_data->payloadSize = (uint32_t)sei_size;
-                sei_data->payloadType = 4;
-                sei_data->payload = (uint8_t*)(sei_data + 1);
+            if (a53_data) {
+                sei_data[sei_count].payloadSize = (uint32_t)a53_size;
+                sei_data[sei_count].payloadType = 4;
+                sei_data[sei_count].payload = (uint8_t*)a53_data;
+                sei_count ++;
             }
         }
 
-        nvenc_codec_specific_pic_params(avctx, &pic_params, sei_data);
+        nvenc_codec_specific_pic_params(avctx, &pic_params, sei_data, sei_count);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
@@ -2157,7 +2163,9 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         return res;
 
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
-    av_free(sei_data);
+
+    for ( i = 0; i < sei_count; i++)
+        av_freep(&sei_data[i].payload);
 
     res = nvenc_pop_context(avctx);
     if (res < 0)
