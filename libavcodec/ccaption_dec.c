@@ -653,7 +653,7 @@ static void handle_delete_end_of_row(CCaptionSubContext *ctx)
     write_char(ctx, screen, 0);
 }
 
-static void handle_char(CCaptionSubContext *ctx, char hi, char lo, int64_t pts)
+static void handle_char(CCaptionSubContext *ctx, char hi, char lo)
 {
     struct Screen *screen = get_writing_screen(ctx);
 
@@ -766,16 +766,16 @@ static int process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint8
         }
     } else if (hi >= 0x11 && hi <= 0x13) {
         /* Special characters */
-        handle_char(ctx, hi, lo, pts);
+        handle_char(ctx, hi, lo);
     } else if (hi >= 0x20) {
         /* Standard characters (always in pairs) */
-        handle_char(ctx, hi, lo, pts);
+        handle_char(ctx, hi, lo);
         ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;
     } else if (hi == 0x17 && lo >= 0x21 && lo <= 0x23) {
         int i;
         /* Tab offsets (spacing) */
         for (i = 0; i < lo - 0x20; i++) {
-            handle_char(ctx, ' ', 0, pts);
+            handle_char(ctx, ' ', 0);
         }
     } else {
         /* Ignoring all other non data code */
