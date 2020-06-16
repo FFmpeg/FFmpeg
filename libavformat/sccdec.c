@@ -63,11 +63,10 @@ static int scc_read_header(AVFormatContext *s)
 {
     SCCContext *scc = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
-    char line[4096], line2[4096];
-    int64_t current_pos, next_pos;
-    int64_t ts_start, ts_end;
-    int count = 0, ret = 0;
-    ptrdiff_t len2, len;
+    char line2[4096], line[4096];
+    int64_t pos, ts, next_ts = AV_NOPTS_VALUE;
+    int ret = 0;
+    ptrdiff_t len;
     uint8_t out[4096];
     FFTextReader tr;
 
@@ -79,41 +78,49 @@ static int scc_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id   = AV_CODEC_ID_EIA_608;
 
-    while (!ff_text_eof(&tr)) {
+    while (!ff_text_eof(&tr) || next_ts == AV_NOPTS_VALUE || line2[0]) {
         char *saveptr = NULL, *lline;
-        int hh1, mm1, ss1, fs1, i;
-        int hh2, mm2, ss2, fs2;
+        int hh, mm, ss, fs, i;
         AVPacket *sub;
 
-        if (count == 0) {
-            current_pos = ff_text_pos(&tr);
+        if (next_ts == AV_NOPTS_VALUE) {
             while (!ff_text_eof(&tr)) {
                 len = ff_subtitles_read_line(&tr, line, sizeof(line));
-                if (len > 13)
+                if (len <= 13)
+                    continue;
+                if (!strncmp(line, "Scenarist_SCC V1.0", 18))
+                    continue;
+                if (av_sscanf(line, "%d:%d:%d%*[:;]%d", &hh, &mm, &ss, &fs) == 4)
+                    break;
+            }
+
+            ts = (hh * 3600LL + mm * 60LL + ss) * 1000LL + fs * 33;
+
+            while (!ff_text_eof(&tr)) {
+                len = ff_subtitles_read_line(&tr, line2, sizeof(line2));
+                if (len <= 13)
+                    continue;
+
+                if (av_sscanf(line2, "%d:%d:%d%*[:;]%d", &hh, &mm, &ss, &fs) == 4)
+                    break;
+            }
+        } else {
+            memmove(line, line2, sizeof(line));
+            line2[0] = 0;
+
+            while (!ff_text_eof(&tr)) {
+                len = ff_subtitles_read_line(&tr, line2, sizeof(line2));
+                if (len <= 13)
+                    continue;
+
+                if (av_sscanf(line2, "%d:%d:%d%*[:;]%d", &hh, &mm, &ss, &fs) == 4)
                     break;
             }
         }
 
-        if (!strncmp(line, "Scenarist_SCC V1.0", 18))
-            continue;
-        if (av_sscanf(line, "%d:%d:%d%*[:;]%d", &hh1, &mm1, &ss1, &fs1) != 4)
-            continue;
+        next_ts = (hh * 3600LL + mm * 60LL + ss) * 1000LL + fs * 33;
 
-        ts_start = (hh1 * 3600LL + mm1 * 60LL + ss1) * 1000LL + fs1 * 33;
-
-        next_pos = ff_text_pos(&tr);
-        while (!ff_text_eof(&tr)) {
-            len2 = ff_subtitles_read_line(&tr, line2, sizeof(line2));
-            if (len2 > 13)
-                break;
-        }
-        if (av_sscanf(line2, "%d:%d:%d%*[:;]%d", &hh2, &mm2, &ss2, &fs2) != 4)
-            continue;
-
-        ts_end = (hh2 * 3600LL + mm2 * 60LL + ss2) * 1000LL + fs2 * 33;
-        count++;
-
-try_again:
+        pos = ff_text_pos(&tr);
         lline = (char *)&line;
         lline += 12;
 
@@ -134,20 +141,18 @@ try_again:
 
             if (i > 12 && o1 == 0x94 && o2 == 0x20 && saveptr &&
                 (av_strncasecmp(saveptr, "942f", 4) || !av_strncasecmp(saveptr, "942c", 4))) {
-                int64_t duration;
 
                 out[i] = 0;
-                duration = i * 11;
 
                 sub = ff_subtitles_queue_insert(&scc->q, out, i, 0);
                 if (!sub)
                     goto fail;
 
-                sub->pos = current_pos;
-                current_pos += i;
-                sub->pts = ts_start;
-                sub->duration = duration;
-                ts_start += duration;
+                sub->pos = pos;
+                pos += i;
+                sub->pts = ts;
+                sub->duration = i * 11;
+                ts += sub->duration;
                 i = 0;
             }
 
@@ -162,18 +167,10 @@ try_again:
         if (!sub)
             goto fail;
 
-        sub->pos = current_pos;
-        sub->pts = ts_start;
-        sub->duration = ts_end - ts_start;
-        memmove(line, line2, sizeof(line));
-        current_pos = next_pos;
-        line2[0] = 0;
-    }
-
-    if (line[0]) {
-        ts_start = ts_end;
-        ts_end += 1200;
-        goto try_again;
+        sub->pos = pos;
+        sub->pts = ts;
+        sub->duration = next_ts - ts;
+        ts = next_ts;
     }
 
     ff_subtitles_queue_finalize(s, &scc->q);
