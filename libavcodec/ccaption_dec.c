@@ -367,10 +367,6 @@ static int validate_cc_data_pair(uint8_t *cc_data_pair)
     if (cc_type == 3 || cc_type == 2)
         return AVERROR_PATCHWELCOME;
 
-    /* remove parity bit */
-    cc_data_pair[1] &= 0x7F;
-    cc_data_pair[2] &= 0x7F;
-
     return 0;
 }
 
@@ -799,9 +795,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
         /* ignoring data field 1 */
         if (cc_type == 1)
             continue;
-        else
-            ret = process_cc608(ctx, start_time, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
 
+        ret = process_cc608(ctx, start_time, bptr[i + 1] & 0x7f, bptr[i + 2] & 0x7f);
         if (ret < 0)
             return ret;
 
