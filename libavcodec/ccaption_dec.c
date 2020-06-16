@@ -635,7 +635,7 @@ static int handle_eoc(CCaptionSubContext *ctx, int64_t pts)
     // In buffered mode, we wait til the *next* EOC and
     // reap what was already on the screen since the last EOC.
     if (!ctx->real_time)
-        ret = handle_edm(ctx,pts);
+        ret = handle_edm(ctx, pts);
 
     ctx->cursor_column = 0;
 
@@ -803,12 +803,12 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     memcpy(ctx->pktbuf, avpkt->data, len);
     bptr = ctx->pktbuf;
 
-    for (i  = 0; i < len; i += 3) {
+    for (i = 0; i < len; i += 3) {
         uint8_t cc_type = *(bptr + i) & 3;
         if (validate_cc_data_pair(bptr + i))
             continue;
         /* ignoring data field 1 */
-        if(cc_type == 1)
+        if (cc_type == 1)
             continue;
         else
             ret = process_cc608(ctx, start_time, *(bptr + i + 1) & 0x7f, *(bptr + i + 2) & 0x7f);
@@ -820,9 +820,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
             continue;
         ctx->buffer_changed = 0;
 
-        if (*ctx->buffer.str || ctx->real_time)
-        {
-            ff_dlog(ctx, "cdp writing data (%s)\n",ctx->buffer.str);
+        if (ctx->buffer.str[0] || ctx->real_time) {
+            ff_dlog(ctx, "cdp writing data (%s)\n", ctx->buffer.str);
             ret = ff_ass_add_rect(sub, ctx->buffer.str, ctx->readorder++, 0, NULL, NULL);
             if (ret < 0)
                 return ret;
