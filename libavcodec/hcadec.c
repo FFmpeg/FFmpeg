@@ -287,7 +287,8 @@ static void reconstruct_hfr(HCAContext *s, ChannelContext *ch,
 
     for (int i = 0, k = start_band, l = start_band - 1; i < hfr_group_count; i++){
         for (int j = 0; j < bands_per_hfr_group && k < total_band_count && l >= 0; j++, k++, l--){
-            ch->imdct_in[k] = scale_conversion_table[ (ch->hfr_scale[i] - ch->scale_factors[l]) & 63 ] * ch->imdct_in[l];
+            ch->imdct_in[k] = scale_conversion_table[ scale_conv_bias +
+                av_clip_intp2(ch->hfr_scale[i] - ch->scale_factors[l], 6) ] * ch->imdct_in[l];
         }
     }
 
