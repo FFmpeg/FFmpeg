@@ -115,6 +115,7 @@ typedef struct OutputStream {
     int64_t last_dts, last_pts;
     int last_flags;
     int bit_rate;
+    int first_segment_bit_rate;
     SegmentType segment_type;  /* segment type selected for this particular stream */
     const char *format_name;
     const char *extension_name;
@@ -840,8 +841,12 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
             continue;
 
         if (os->bit_rate > 0)
-            snprintf(bandwidth_str, sizeof(bandwidth_str), " bandwidth=\"%d\"",
-                     os->bit_rate);
+            snprintf(bandwidth_str, sizeof(bandwidth_str), " bandwidth=\"%d\"", os->bit_rate);
+        else if (final) {
+            int average_bit_rate = os->pos * 8 * AV_TIME_BASE / c->total_duration;
+            snprintf(bandwidth_str, sizeof(bandwidth_str), " bandwidth=\"%d\"", average_bit_rate);
+        } else if (os->first_segment_bit_rate > 0)
+            snprintf(bandwidth_str, sizeof(bandwidth_str), " bandwidth=\"%d\"", os->first_segment_bit_rate);
 
         if (as->media_type == AVMEDIA_TYPE_VIDEO) {
             avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/%s\" codecs=\"%s\"%s width=\"%d\" height=\"%d\"",
@@ -1305,7 +1310,13 @@ static int write_manifest(AVFormatContext *s, int final)
             OutputStream *os = &c->streams[i];
             char *agroup = NULL;
             char *codec_str_ptr = NULL;
-            int stream_bitrate = st->codecpar->bit_rate + os->muxer_overhead;
+            int stream_bitrate = os->muxer_overhead;
+            if (os->bit_rate > 0)
+                stream_bitrate += os->bit_rate;
+            else if (final)
+                stream_bitrate += os->pos * 8 * AV_TIME_BASE / c->total_duration;
+            else if (os->first_segment_bit_rate > 0)
+                stream_bitrate += os->first_segment_bit_rate;
             if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
                 continue;
             if (os->segment_type != SEGMENT_TYPE_MP4)
@@ -1958,11 +1969,8 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         os->total_pkt_size = 0;
         os->total_pkt_duration = 0;
 
-        if (!os->bit_rate) {
-            // calculate average bitrate of first segment
-            int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / duration;
-            if (bitrate >= 0)
-                os->bit_rate = bitrate;
+        if (!os->bit_rate && !os->first_segment_bit_rate) {
+            os->first_segment_bit_rate = (int64_t) range_length * 8 * AV_TIME_BASE / duration;
         }
         add_segment(os, os->filename, os->start_pts, os->max_pts - os->start_pts, os->pos, range_length, index_length, next_exp_index);
         av_log(s, AV_LOG_VERBOSE, "Representation %d media segment %d written to: %s\n", i, os->segment_index, os->full_path);
