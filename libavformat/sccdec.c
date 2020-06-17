@@ -140,7 +140,7 @@ static int scc_read_header(AVFormatContext *s)
             lline = NULL;
 
             if (i > 12 && o1 == 0x94 && o2 == 0x20 && saveptr &&
-                (av_strncasecmp(saveptr, "942f", 4) || !av_strncasecmp(saveptr, "942c", 4))) {
+                (av_strncasecmp(saveptr, "942f", 4) && !av_strncasecmp(saveptr, "942c", 4))) {
 
                 out[i] = 0;
 
