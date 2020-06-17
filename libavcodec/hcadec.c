@@ -263,7 +263,7 @@ static void apply_intensity_stereo(HCAContext *s, ChannelContext *ch1, ChannelCo
                                    int index, unsigned band_count, unsigned base_band_count,
                                    unsigned stereo_band_count)
 {
-    float ratio_l = intensity_ratio_table[ch1->intensity[index]];
+    float ratio_l = intensity_ratio_table[ch2->intensity[index]];
     float ratio_r = ratio_l - 2.0f;
     float *c1 = &ch1->imdct_in[base_band_count];
     float *c2 = &ch2->imdct_in[base_band_count];
