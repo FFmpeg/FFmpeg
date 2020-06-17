@@ -349,6 +349,31 @@ next_frame:
     return ret;
 }
 
+static int smacker_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t timestamp, int flags)
+{
+    SmackerContext *smk = s->priv_data;
+    int64_t ret;
+
+    /* only rewinding to start is supported */
+    if (timestamp != 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Random seeks are not supported (can only seek to start).\n");
+        return AVERROR(EINVAL);
+    }
+
+    if ((ret = avio_seek(s->pb, s->internal->data_offset, SEEK_SET)) < 0)
+        return ret;
+
+    smk->cur_frame = 0;
+    smk->next_audio_index = 0;
+    smk->new_palette = 0;
+    memset(smk->pal, 0, sizeof(smk->pal));
+    memset(smk->aud_pts, 0, sizeof(smk->aud_pts));
+
+    return 0;
+}
+
 AVInputFormat ff_smacker_demuxer = {
     .name           = "smk",
     .long_name      = NULL_IF_CONFIG_SMALL("Smacker"),
@@ -356,4 +381,5 @@ AVInputFormat ff_smacker_demuxer = {
     .read_probe     = smacker_probe,
     .read_header    = smacker_read_header,
     .read_packet    = smacker_read_packet,
+    .read_seek      = smacker_read_seek,
 };
