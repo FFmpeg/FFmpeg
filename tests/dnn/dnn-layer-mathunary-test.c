@@ -42,6 +42,8 @@ static float get_expected(float f, DNNMathUnaryOperation op)
         return asin(f);
     case DMUO_ACOS:
         return acos(f);
+    case DMUO_ATAN:
+        return atan(f);
     default:
         av_assert0(!"not supported yet");
         return 0.f;
@@ -96,6 +98,8 @@ int main(int agrc, char **argv)
     if (test(DMUO_ASIN))
         return 1;
     if (test(DMUO_ACOS))
+        return 1;
+    if (test(DMUO_ATAN))
         return 1;
     return 0;
 }
