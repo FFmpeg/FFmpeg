@@ -34,6 +34,7 @@ typedef enum {
     DMUO_SIN = 1,
     DMUO_COS = 2,
     DMUO_TAN = 3,
+    DMUO_ASIN = 4,
     DMUO_COUNT
 } DNNMathUnaryOperation;
 
