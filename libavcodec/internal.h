@@ -380,6 +380,21 @@ int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
                      void **data, size_t *sei_size);
 
 /**
+ * Check AVFrame for S12M timecode side data and allocate and fill TC SEI message with timecode info
+ *
+ * @param frame      Raw frame to get S12M timecode side data from
+ * @param prefix_len Number of bytes to allocate before SEI message
+ * @param data       Pointer to a variable to store allocated memory
+ *                   Upon return the variable will hold NULL on error or if frame has no S12M timecode info.
+ *                   Otherwise it will point to prefix_len uninitialized bytes followed by
+ *                   *sei_size SEI message
+ * @param sei_size   Pointer to a variable to store generated SEI message length
+ * @return           Zero on success, negative error code on failure
+ */
+int ff_alloc_timecode_sei(const AVFrame *frame, size_t prefix_len,
+                     void **data, size_t *sei_size);
+
+/**
  * Get an estimated video bitrate based on frame size, frame rate and coded
  * bits per pixel.
  */
