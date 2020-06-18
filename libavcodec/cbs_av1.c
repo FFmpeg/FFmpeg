@@ -120,16 +120,11 @@ static int cbs_av1_write_uvlc(CodedBitstreamContext *ctx, PutBitContext *pbc,
     if (ctx->trace_enable)
         position = put_bits_count(pbc);
 
-    if (value == 0) {
-        zeroes = 0;
-        put_bits(pbc, 1, 1);
-    } else {
-        zeroes = av_log2(value + 1);
-        v = value - (1U << zeroes) + 1;
-        put_bits(pbc, zeroes, 0);
-        put_bits(pbc, 1, 1);
-        put_bits(pbc, zeroes, v);
-    }
+    zeroes = av_log2(value + 1);
+    v = value - (1U << zeroes) + 1;
+    put_bits(pbc, zeroes, 0);
+    put_bits(pbc, 1, 1);
+    put_bits(pbc, zeroes, v);
 
     if (ctx->trace_enable) {
         char bits[65];
