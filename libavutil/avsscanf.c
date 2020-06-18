@@ -229,9 +229,9 @@ static long long scanexp(FFFILE *f, int pok)
         return LLONG_MIN;
     }
     for (x=0; c-'0'<10U && x<INT_MAX/10; c = shgetc(f))
-        x = 10*x + c-'0';
+        x = 10*x + (c-'0');
     for (y=x; c-'0'<10U && y<LLONG_MAX/100; c = shgetc(f))
-        y = 10*y + c-'0';
+        y = 10*y + (c-'0');
     for (; c-'0'<10U; c = shgetc(f));
     shunget(f);
     return neg ? -y : y;
