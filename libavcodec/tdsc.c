@@ -529,10 +529,15 @@ static int tdsc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Resize deflate buffer on resolution change */
     if (ctx->width != avctx->width || ctx->height != avctx->height) {
-        ctx->deflatelen = avctx->width * avctx->height * (3 + 1);
-        ret = av_reallocp(&ctx->deflatebuffer, ctx->deflatelen);
-        if (ret < 0)
-            return ret;
+        int deflatelen = avctx->width * avctx->height * (3 + 1);
+        if (deflatelen != ctx->deflatelen) {
+            ctx->deflatelen =deflatelen;
+            ret = av_reallocp(&ctx->deflatebuffer, ctx->deflatelen);
+            if (ret < 0) {
+                ctx->deflatelen = 0;
+                return ret;
+            }
+        }
     }
     dlen = ctx->deflatelen;
 
