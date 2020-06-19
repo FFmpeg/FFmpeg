@@ -2740,17 +2740,17 @@ MPEG-2 video encoder.
 @subsection Options
 
 @table @option
-@item profile @var{integer}
+@item profile
 Select the mpeg2 profile to encode:
 
 @table @samp
 @item 422
-@item main
+@item high
 @item ss
 Spatially Scalable
 @item snr
 SNR Scalable
-@item high
+@item main
 @item simple
 @end table
 
