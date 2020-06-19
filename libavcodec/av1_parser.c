@@ -171,6 +171,8 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         color->transfer_characteristics  == AVCOL_TRC_IEC61966_2_1)
         ctx->format = pix_fmts_rgb[color->high_bitdepth + color->twelve_bit];
 
+    avctx->pix_fmt = ctx->format;
+
     avctx->profile = seq->seq_profile;
     avctx->level   = seq->seq_level_idx[0];
 
