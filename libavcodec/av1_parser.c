@@ -53,6 +53,8 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
     AV1ParseContext *s = ctx->priv_data;
     CodedBitstreamFragment *td = &s->temporal_unit;
     CodedBitstreamAV1Context *av1 = s->cbc->priv_data;
+    AV1RawSequenceHeader *seq;
+    AV1RawColorConfig *color;
     int ret;
 
     *out_data = data;
@@ -86,11 +88,12 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         goto end;
     }
 
+    seq = av1->sequence_header;
+    color = &seq->color_config;
+
     for (int i = 0; i < td->nb_units; i++) {
         CodedBitstreamUnit *unit = &td->units[i];
         AV1RawOBU *obu = unit->content;
-        AV1RawSequenceHeader *seq = av1->sequence_header;
-        AV1RawColorConfig *color = &seq->color_config;
         AV1RawFrameHeader *frame;
         int frame_type;
 
@@ -127,9 +130,6 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
             ctx->key_frame = frame_type == AV1_FRAME_KEY;
         }
 
-        avctx->profile = seq->seq_profile;
-        avctx->level   = seq->seq_level_idx[0];
-
         switch (frame_type) {
         case AV1_FRAME_KEY:
         case AV1_FRAME_INTRA_ONLY:
@@ -143,33 +143,36 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
             break;
         }
         ctx->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
+    }
 
-        switch (av1->bit_depth) {
-        case 8:
-            ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY8
-                                             : pix_fmts_8bit [color->subsampling_x][color->subsampling_y];
-            break;
-        case 10:
-            ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY10
-                                             : pix_fmts_10bit[color->subsampling_x][color->subsampling_y];
-            break;
-        case 12:
-            ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY12
-                                             : pix_fmts_12bit[color->subsampling_x][color->subsampling_y];
-            break;
-        }
-        av_assert2(ctx->format != AV_PIX_FMT_NONE);
+    switch (av1->bit_depth) {
+    case 8:
+        ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY8
+                                         : pix_fmts_8bit [color->subsampling_x][color->subsampling_y];
+        break;
+    case 10:
+        ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY10
+                                         : pix_fmts_10bit[color->subsampling_x][color->subsampling_y];
+        break;
+    case 12:
+        ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY12
+                                         : pix_fmts_12bit[color->subsampling_x][color->subsampling_y];
+        break;
+    }
+    av_assert2(ctx->format != AV_PIX_FMT_NONE);
 
-        avctx->colorspace = (enum AVColorSpace) color->matrix_coefficients;
-        avctx->color_primaries = (enum AVColorPrimaries) color->color_primaries;
-        avctx->color_trc = (enum AVColorTransferCharacteristic) color->transfer_characteristics;
-        avctx->color_range = color->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+    avctx->profile = seq->seq_profile;
+    avctx->level   = seq->seq_level_idx[0];
 
-        if (ctx->width != avctx->width || ctx->height != avctx->height) {
-            ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
-            if (ret < 0)
-                goto end;
-        }
+    avctx->colorspace = (enum AVColorSpace) color->matrix_coefficients;
+    avctx->color_primaries = (enum AVColorPrimaries) color->color_primaries;
+    avctx->color_trc = (enum AVColorTransferCharacteristic) color->transfer_characteristics;
+    avctx->color_range = color->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+    if (ctx->width != avctx->width || ctx->height != avctx->height) {
+        ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
+        if (ret < 0)
+            goto end;
     }
 
     if (avctx->framerate.num)
