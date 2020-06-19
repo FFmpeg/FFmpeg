@@ -341,10 +341,12 @@ static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
  * If the second byte doesn't pass parity, it returns INVALIDDATA
  * user can ignore the whole pair and pass the other pair.
  */
-static int validate_cc_data_pair(uint8_t *cc_data_pair)
+static int validate_cc_data_pair(const uint8_t *cc_data_pair, uint8_t *hi)
 {
     uint8_t cc_valid = (*cc_data_pair & 4) >>2;
     uint8_t cc_type = *cc_data_pair & 3;
+
+    *hi = cc_data_pair[1];
 
     if (!cc_valid)
         return AVERROR_INVALIDDATA;
@@ -355,7 +357,7 @@ static int validate_cc_data_pair(uint8_t *cc_data_pair)
             return AVERROR_INVALIDDATA;
         }
         if (!av_parity(cc_data_pair[1])) {
-            cc_data_pair[1]=0x7F;
+            *hi = 0x7F;
         }
     }
 
@@ -782,26 +784,24 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     int64_t start_time;
     int64_t end_time;
     int bidx = ctx->buffer_index;
-    uint8_t *bptr = NULL;
+    const uint8_t *bptr = avpkt->data;
     int len = avpkt->size;
     int ret = 0;
     int i;
 
-    bptr = avpkt->data;
-
     for (i = 0; i < len; i += 3) {
-        uint8_t cc_type = bptr[i] & 1;
+        uint8_t hi, cc_type = bptr[i] & 1;
 
         if (ctx->data_field < 0)
             ctx->data_field = cc_type;
 
-        if (validate_cc_data_pair(bptr + i))
+        if (validate_cc_data_pair(bptr + i, &hi))
             continue;
 
         if (cc_type != ctx->data_field)
             continue;
 
-        ret = process_cc608(ctx, bptr[i + 1] & 0x7f, bptr[i + 2] & 0x7f);
+        ret = process_cc608(ctx, hi & 0x7f, bptr[i + 2] & 0x7f);
         if (ret < 0)
             return ret;
 
