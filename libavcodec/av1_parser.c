@@ -45,6 +45,10 @@ static const enum AVPixelFormat pix_fmts_12bit[2][2] = {
     { AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12 },
 };
 
+static const enum AVPixelFormat pix_fmts_rgb[3] = {
+    AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
+};
+
 static int av1_parser_parse(AVCodecParserContext *ctx,
                             AVCodecContext *avctx,
                             const uint8_t **out_data, int *out_size,
@@ -160,6 +164,12 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         break;
     }
     av_assert2(ctx->format != AV_PIX_FMT_NONE);
+
+    if (!color->subsampling_x && !color->subsampling_y &&
+        color->matrix_coefficients       == AVCOL_SPC_RGB &&
+        color->color_primaries           == AVCOL_PRI_BT709 &&
+        color->transfer_characteristics  == AVCOL_TRC_IEC61966_2_1)
+        ctx->format = pix_fmts_rgb[color->high_bitdepth + color->twelve_bit];
 
     avctx->profile = seq->seq_profile;
     avctx->level   = seq->seq_level_idx[0];
