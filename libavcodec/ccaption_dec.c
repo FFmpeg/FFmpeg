@@ -240,7 +240,7 @@ typedef struct CCaptionSubContext {
     int64_t buffer_time[2];
     int screen_touched;
     int64_t last_real_time;
-    char prev_cmd[2];
+    uint8_t prev_cmd[2];
     int readorder;
 } CCaptionSubContext;
 
