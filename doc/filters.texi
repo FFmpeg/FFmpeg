@@ -20782,6 +20782,12 @@ Input frame count.
 @item on
 Output frame count.
 
+@item in_time, it
+The input timestamp expressed in seconds. It's NAN if the input timestamp is unknown.
+
+@item out_time, time, ot
+The output timestamp expressed in seconds.
+
 @item x
 @item y
 Last calculated 'x' and 'y' position from 'x' and 'y' expression
@@ -20820,13 +20826,13 @@ display aspect ratio
 
 @itemize
 @item
-Zoom-in up to 1.5 and pan at same time to some spot near center of picture:
+Zoom in up to 1.5x and pan at same time to some spot near center of picture:
 @example
 zoompan=z='min(zoom+0.0015,1.5)':d=700:x='if(gte(zoom,1.5),x,x+1/a)':y='if(gte(zoom,1.5),y,y+1)':s=640x360
 @end example
 
 @item
-Zoom-in up to 1.5 and pan always at center of picture:
+Zoom in up to 1.5x and pan always at center of picture:
 @example
 zoompan=z='min(zoom+0.0015,1.5)':d=700:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'
 @end example
@@ -20836,6 +20842,13 @@ Same as above but without pausing:
 @example
 zoompan=z='min(max(zoom,pzoom)+0.0015,1.5)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'
 @end example
+
+@item
+Zoom in 2x into center of picture only for the first second of the input video:
+@example
+zoompan=z='if(between(in_time,0,1),2,1)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'
+@end example
+
 @end itemize
 
 @anchor{zscale}

@@ -38,7 +38,8 @@ static const char *const var_names[] = {
     "on",
     "duration",
     "pduration",
-    "time",
+    "in_time", "it",
+    "out_time", "time", "ot",
     "frame",
     "zoom",
     "pzoom",
@@ -61,7 +62,8 @@ enum var_name {
     VAR_ON,
     VAR_DURATION,
     VAR_PDURATION,
-    VAR_TIME,
+    VAR_IN_TIME, VAR_IT,
+    VAR_TIME, VAR_OUT_TIME, VAR_OT,
     VAR_FRAME,
     VAR_ZOOM,
     VAR_PZOOM,
@@ -155,6 +157,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
 {
     ZPContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterLink *inlink = ctx->inputs[0];
     int64_t pts = s->frame_count;
     int k, x, y, w, h, ret = 0;
     uint8_t *input[4];
@@ -165,7 +168,10 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     var_values[VAR_PY]    = s->y;
     var_values[VAR_PZOOM] = s->prev_zoom;
     var_values[VAR_PDURATION] = s->prev_nb_frames;
-    var_values[VAR_TIME] = pts * av_q2d(outlink->time_base);
+    var_values[VAR_IN_TIME] = var_values[VAR_IT]  = in->pts == AV_NOPTS_VALUE ?
+        NAN : in->pts * av_q2d(inlink->time_base);
+    var_values[VAR_OUT_TIME] = pts * av_q2d(outlink->time_base);
+    var_values[VAR_TIME] = var_values[VAR_OT] = var_values[VAR_OUT_TIME];
     var_values[VAR_FRAME] = i;
     var_values[VAR_ON] = outlink->frame_count_in;
 
