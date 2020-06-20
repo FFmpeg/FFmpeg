@@ -2242,13 +2242,25 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
         /* extract A53 Part 4 CC data */
         int cc_count = p[5] & 0x1f;
         if (cc_count > 0 && buf_size >= 7 + cc_count * 3) {
-            av_freep(&s1->a53_caption);
-            s1->a53_caption_size = cc_count * 3;
-            s1->a53_caption      = av_malloc(s1->a53_caption_size);
+            if (s1->a53_caption && s1->a53_caption_size > 0) {
+                uint8_t *old_a53_caption = s1->a53_caption;
+                int old_a53_caption_size = s1->a53_caption_size;
+
+                s1->a53_caption_size = old_a53_caption_size + cc_count * 3;
+                s1->a53_caption      = av_malloc(s1->a53_caption_size);
+                if (s1->a53_caption) {
+                    memcpy(s1->a53_caption, old_a53_caption, old_a53_caption_size);
+                    memcpy(s1->a53_caption + old_a53_caption_size, p + 7, cc_count * 3);
+                }
+                av_freep(&old_a53_caption);
+            } else {
+                s1->a53_caption_size = cc_count * 3;
+                s1->a53_caption      = av_malloc(s1->a53_caption_size);
+                if (s1->a53_caption)
+                    memcpy(s1->a53_caption, p + 7, s1->a53_caption_size);
+            }
             if (!s1->a53_caption) {
                 s1->a53_caption_size = 0;
-            } else {
-                memcpy(s1->a53_caption, p + 7, s1->a53_caption_size);
             }
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
