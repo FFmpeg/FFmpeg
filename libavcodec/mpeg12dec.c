@@ -2855,12 +2855,16 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
         s2->current_picture_ptr = NULL;
 
         if (s2->timecode_frame_start != -1 && *got_output) {
+            char tcbuf[AV_TIMECODE_STR_SIZE];
             AVFrameSideData *tcside = av_frame_new_side_data(picture,
                                                              AV_FRAME_DATA_GOP_TIMECODE,
                                                              sizeof(int64_t));
             if (!tcside)
                 return AVERROR(ENOMEM);
             memcpy(tcside->data, &s2->timecode_frame_start, sizeof(int64_t));
+
+            av_timecode_make_mpeg_tc_string(tcbuf, s2->timecode_frame_start);
+            av_dict_set(&picture->metadata, "timecode", tcbuf, 0);
 
             s2->timecode_frame_start = -1;
         }
