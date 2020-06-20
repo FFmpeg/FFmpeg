@@ -2820,6 +2820,7 @@ static int set_side_data(HEVCContext *s)
 
     if (s->sei.timecode.present) {
         uint32_t *tc_sd;
+        char tcbuf[AV_TIMECODE_STR_SIZE];
         AVFrameSideData *tcside = av_frame_new_side_data(out, AV_FRAME_DATA_S12M_TIMECODE,
                                                          sizeof(uint32_t) * 4);
         if (!tcside)
@@ -2836,6 +2837,8 @@ static int set_side_data(HEVCContext *s)
             int   ff = s->sei.timecode.n_frames[i];
 
             tc_sd[i + 1] = av_timecode_get_smpte(s->avctx->framerate, drop, hh, mm, ss, ff);
+            av_timecode_make_smpte_tc_string(tcbuf, tc_sd[i + 1], 0);
+            av_dict_set(&out->metadata, "timecode", tcbuf, 0);
         }
 
         s->sei.timecode.num_clock_ts = 0;
