@@ -109,6 +109,21 @@ the received message may be truncated causing decoding errors.
 The timeout in seconds during the initial connection to the broker. The
 default value is rw_timeout, or 5 seconds if rw_timeout is not set.
 
+@item delivery_mode @var{mode}
+Sets the delivery mode of each message sent to broker.
+The following values are accepted:
+@table @samp
+@item persistent
+Delivery mode set to "persistent" (2). This is the default value.
+Messages may be written to the broker's disk depending on its setup.
+
+@item non-persistent
+Delivery mode set to "non-persistent" (1).
+Messages will stay in broker's memory unless the broker is under memory
+pressure.
+
+@end table
+
 @end table
 
 @section async

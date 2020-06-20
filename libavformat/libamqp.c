@@ -39,6 +39,7 @@ typedef struct AMQPContext {
     int pkt_size;
     int64_t connection_timeout;
     int pkt_size_overflow;
+    int delivery_mode;
 } AMQPContext;
 
 #define STR_LEN           1024
@@ -52,6 +53,9 @@ static const AVOption options[] = {
     { "exchange", "Exchange to send/read packets", OFFSET(exchange), AV_OPT_TYPE_STRING, { .str = "amq.direct" }, 0, 0, .flags = D | E },
     { "routing_key", "Key to filter streams", OFFSET(routing_key), AV_OPT_TYPE_STRING, { .str = "amqp" }, 0, 0, .flags = D | E },
     { "connection_timeout", "Initial connection timeout", OFFSET(connection_timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT64_MAX, .flags = D | E},
+    { "delivery_mode",  "Delivery mode", OFFSET(delivery_mode), AV_OPT_TYPE_INT, { .i64 = AMQP_DELIVERY_PERSISTENT }, 1, 2, .flags = E, "delivery_mode"},
+    { "persistent",     "Persistent delivery mode",     0, AV_OPT_TYPE_CONST, { .i64 = AMQP_DELIVERY_PERSISTENT }, 0, 0, E, "delivery_mode" },
+    { "non-persistent", "Non-persistent delivery mode", 0, AV_OPT_TYPE_CONST, { .i64 = AMQP_DELIVERY_NONPERSISTENT }, 0, 0, E, "delivery_mode" },
     { NULL }
 };
 
@@ -222,7 +226,7 @@ static int amqp_proto_write(URLContext *h, const unsigned char *buf, int size)
 
     props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
     props.content_type = amqp_cstring_bytes("octet/stream");
-    props.delivery_mode = 2; /* persistent delivery mode */
+    props.delivery_mode = s->delivery_mode;
 
     ret = amqp_basic_publish(s->conn, DEFAULT_CHANNEL, amqp_cstring_bytes(s->exchange),
                              amqp_cstring_bytes(s->routing_key), 0, 0,
