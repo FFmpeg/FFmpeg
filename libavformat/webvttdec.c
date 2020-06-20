@@ -125,7 +125,7 @@ static int webvtt_read_header(AVFormatContext *s)
             break;
 
         /* optional cue settings */
-        p += strcspn(p, "\n\t ");
+        p += strcspn(p, "\n\r\t ");
         while (*p == '\t' || *p == ' ')
             p++;
         settings = p;
