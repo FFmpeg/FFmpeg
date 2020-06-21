@@ -169,6 +169,18 @@ static const char *charset_overrides[4][128] =
     },
 };
 
+static const unsigned char bg_attribs[8] = // Color
+{
+    CCCOL_WHITE,
+    CCCOL_GREEN,
+    CCCOL_BLUE,
+    CCCOL_CYAN,
+    CCCOL_RED,
+    CCCOL_YELLOW,
+    CCCOL_MAGENTA,
+    CCCOL_BLACK,
+};
+
 static const unsigned char pac2_attribs[32][3] = // Color, font, ident
 {
     { CCCOL_WHITE,   CCFONT_REGULAR,            0 },  // 0x40 || 0x60
@@ -211,6 +223,7 @@ struct Screen {
     uint8_t characters[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
     uint8_t charsets[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
     uint8_t colors[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
+    uint8_t bgs[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
     uint8_t fonts[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
     /*
      * Bitmask of used rows; if a bit is not set, the
@@ -230,6 +243,7 @@ typedef struct CCaptionSubContext {
     uint8_t cursor_row;
     uint8_t cursor_column;
     uint8_t cursor_color;
+    uint8_t bg_color;
     uint8_t cursor_font;
     uint8_t cursor_charset;
     AVBPrint buffer[2];
@@ -253,6 +267,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     av_bprint_init(&ctx->buffer[1], 0, AV_BPRINT_SIZE_UNLIMITED);
     /* taking by default roll up to 2 */
     ctx->mode = CCMODE_ROLLUP;
+    ctx->bg_color = CCCOL_BLACK;
     ctx->rollup = 2;
     ctx->cursor_row = 10;
     ret = ff_ass_subtitle_header(avctx, "Monospace",
@@ -292,6 +307,7 @@ static void flush_decoder(AVCodecContext *avctx)
     ctx->cursor_column = 0;
     ctx->cursor_font = 0;
     ctx->cursor_color = 0;
+    ctx->bg_color = CCCOL_BLACK;
     ctx->cursor_charset = 0;
     ctx->active_screen = 0;
     ctx->last_real_time = 0;
@@ -312,12 +328,14 @@ static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
     char *row = screen->characters[ctx->cursor_row];
     char *font = screen->fonts[ctx->cursor_row];
     char *color = screen->colors[ctx->cursor_row];
+    char *bg = screen->bgs[ctx->cursor_row];
     char *charset = screen->charsets[ctx->cursor_row];
 
     if (col < SCREEN_COLUMNS) {
         row[col] = ch;
         font[col] = ctx->cursor_font;
         color[col] = ctx->cursor_color;
+        bg[col] = ctx->bg_color;
         charset[col] = ctx->cursor_charset;
         ctx->cursor_charset = CCSET_BASIC_AMERICAN;
         if (ch) ctx->cursor_column++;
@@ -415,6 +433,7 @@ static void roll_up(CCaptionSubContext *ctx)
 
         memcpy(screen->characters[i_row], screen->characters[i_row+1], SCREEN_COLUMNS);
         memcpy(screen->colors[i_row], screen->colors[i_row+1], SCREEN_COLUMNS);
+        memcpy(screen->bgs[i_row], screen->bgs[i_row+1], SCREEN_COLUMNS);
         memcpy(screen->fonts[i_row], screen->fonts[i_row+1], SCREEN_COLUMNS);
         memcpy(screen->charsets[i_row], screen->charsets[i_row+1], SCREEN_COLUMNS);
         if (CHECK_FLAG(screen->row_used, i_row + 1))
@@ -430,6 +449,7 @@ static int capture_screen(CCaptionSubContext *ctx)
     struct Screen *screen = ctx->screen + ctx->active_screen;
     enum cc_font prev_font = CCFONT_REGULAR;
     enum cc_color_code prev_color = CCCOL_WHITE;
+    enum cc_color_code prev_bg_color = CCCOL_BLACK;
     const int bidx = ctx->buffer_index;
 
     av_bprint_clear(&ctx->buffer[bidx]);
@@ -452,6 +472,7 @@ static int capture_screen(CCaptionSubContext *ctx)
         if (CHECK_FLAG(screen->row_used, i)) {
             const char *row = screen->characters[i];
             const char *font = screen->fonts[i];
+            const char *bg = screen->bgs[i];
             const char *color = screen->colors[i];
             const char *charset = screen->charsets[i];
             const char *override;
@@ -467,7 +488,7 @@ static int capture_screen(CCaptionSubContext *ctx)
             av_bprintf(&ctx->buffer[bidx], "{\\an7}{\\pos(%d,%d)}", x, y);
 
             for (; j < SCREEN_COLUMNS; j++) {
-                const char *e_tag = "", *s_tag = "", *c_tag = "";
+                const char *e_tag = "", *s_tag = "", *c_tag = "", *b_tag = "";
 
                 if (row[j] == 0)
                     break;
@@ -521,17 +542,46 @@ static int capture_screen(CCaptionSubContext *ctx)
                         break;
                     }
                 }
+                if (prev_bg_color != bg[j]) {
+                    switch (bg[j]) {
+                    case CCCOL_WHITE:
+                        b_tag = "{\\3c&HFFFFFF&}";
+                        break;
+                    case CCCOL_GREEN:
+                        b_tag = "{\\3c&H00FF00&}";
+                        break;
+                    case CCCOL_BLUE:
+                        b_tag = "{\\3c&HFF0000&}";
+                        break;
+                    case CCCOL_CYAN:
+                        b_tag = "{\\3c&HFFFF00&}";
+                        break;
+                    case CCCOL_RED:
+                        b_tag = "{\\3c&H0000FF&}";
+                        break;
+                    case CCCOL_YELLOW:
+                        b_tag = "{\\3c&H00FFFF&}";
+                        break;
+                    case CCCOL_MAGENTA:
+                        b_tag = "{\\3c&HFF00FF&}";
+                        break;
+                    case CCCOL_BLACK:
+                        b_tag = "{\\3c&H000000&}";
+                        break;
+                    }
+                }
 
                 prev_font = font[j];
                 prev_color = color[j];
+                prev_bg_color = bg[j];
                 override = charset_overrides[(int)charset[j]][(int)row[j]];
                 if (override) {
-                    av_bprintf(&ctx->buffer[bidx], "%s%s%s%s", e_tag, s_tag, c_tag, override);
+                    av_bprintf(&ctx->buffer[bidx], "%s%s%s%s%s", e_tag, s_tag, c_tag, b_tag, override);
                     seen_char = 1;
                 } else if (row[j] == ' ' && !seen_char) {
-                    av_bprintf(&ctx->buffer[bidx], "%s%s%s\\h", e_tag, s_tag, c_tag);
+                    av_bprintf(&ctx->buffer[bidx], "%s%s%s%s\\h", e_tag, s_tag, c_tag, b_tag);
                 } else {
-                    av_bprintf(&ctx->buffer[bidx], "%s%s%s%c", e_tag, s_tag, c_tag, row[j]);
+                    av_bprintf(&ctx->buffer[bidx], "%s%s%s%s%c", e_tag, s_tag, c_tag, b_tag, row[j]);
                     seen_char = 1;
                 }
 
@@ -553,6 +603,13 @@ static void update_time(CCaptionSubContext *ctx, int64_t pts)
 {
     ctx->buffer_time[0] = ctx->buffer_time[1];
     ctx->buffer_time[1] = pts;
+}
+
+static void handle_bgattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
+{
+    const int i = (lo & 0xf) >> 1;
+
+    ctx->bg_color = bg_attribs[i];
 }
 
 static void handle_textattr(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
@@ -608,6 +665,7 @@ static int handle_edm(CCaptionSubContext *ctx)
         ret = capture_screen(ctx);
 
     screen->row_used = 0;
+    ctx->bg_color = CCCOL_BLACK;
 
     // In realtime mode, emit an empty caption so the last one doesn't
     // stay on the screen.
@@ -702,6 +760,8 @@ static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     } else if ( ( hi == 0x11 && lo >= 0x20 && lo <= 0x2f ) ||
                 ( hi == 0x17 && lo >= 0x2e && lo <= 0x2f) ) {
         handle_textattr(ctx, hi, lo);
+    } else if ((hi == 0x10 && lo >= 0x20 && lo <= 0x2f)) {
+        handle_bgattr(ctx, hi, lo);
     } else if (hi == 0x14 || hi == 0x15 || hi == 0x1c) {
         switch (lo) {
         case 0x20:
