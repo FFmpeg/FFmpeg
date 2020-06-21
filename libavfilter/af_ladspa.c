@@ -469,6 +469,7 @@ static av_cold int init(AVFilterContext *ctx)
     } else {
         // argument is a shared object name
         char *paths = av_strdup(getenv("LADSPA_PATH"));
+        const char *home_path = getenv("HOME");
         const char *separator = ":";
 
         if (paths) {
@@ -480,12 +481,12 @@ static av_cold int init(AVFilterContext *ctx)
         }
 
         av_free(paths);
-        if (!s->dl_handle && (paths = av_asprintf("%s/.ladspa", getenv("HOME")))) {
+        if (!s->dl_handle && home_path && (paths = av_asprintf("%s/.ladspa", home_path))) {
             s->dl_handle = try_load(paths, s->dl_name);
             av_free(paths);
         }
 
-        if (!s->dl_handle && (paths = av_asprintf("%s/.ladspa/lib", getenv("HOME")))) {
+        if (!s->dl_handle && home_path && (paths = av_asprintf("%s/.ladspa/lib", home_path))) {
             s->dl_handle = try_load(paths, s->dl_name);
             av_free(paths);
         }
