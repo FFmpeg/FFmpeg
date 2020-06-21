@@ -363,11 +363,11 @@ int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int 
 
 int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
 {
-    AVIOContext *seq_pb = NULL, *meta_pb = NULL;
+    AVIOContext *meta_pb;
     AV1SequenceParameters seq_params;
     PutBitContext pbc;
-    uint8_t header[4];
-    uint8_t *seq, *meta;
+    uint8_t header[4], *meta;
+    const uint8_t *seq;
     int64_t obu_size;
     int start_pos, type, temporal_id, spatial_id;
     int ret, nb_seq = 0, seq_size, meta_size;
@@ -375,12 +375,9 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
-    ret = avio_open_dyn_buf(&seq_pb);
-    if (ret < 0)
-        return ret;
     ret = avio_open_dyn_buf(&meta_pb);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     while (size > 0) {
         int len = parse_obu_header(buf, size, &obu_size, &start_pos,
@@ -401,7 +398,8 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
             if (ret < 0)
                 goto fail;
 
-            avio_write(seq_pb, buf, len);
+            seq      = buf;
+            seq_size = len;
             break;
         case AV1_OBU_METADATA:
             if (!obu_size) {
@@ -417,8 +415,7 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
         buf  += len;
     }
 
-    seq_size  = avio_get_dyn_buf(seq_pb, &seq);
-    if (!seq_size) {
+    if (!nb_seq) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
@@ -447,7 +444,6 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
         avio_write(pb, meta, meta_size);
 
 fail:
-    ffio_free_dyn_buf(&seq_pb);
     ffio_free_dyn_buf(&meta_pb);
 
     return ret;
