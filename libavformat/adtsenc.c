@@ -169,7 +169,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     if (!par->extradata_size) {
         uint8_t *side_data;
-        int side_data_size = 0, ret;
+        int side_data_size, ret;
 
         side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                             &side_data_size);

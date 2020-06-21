@@ -66,7 +66,7 @@ typedef struct FramePool {
 
 static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
-    int size = 0, ret;
+    int size, ret;
     const uint8_t *data;
     uint32_t flags;
     int64_t val;

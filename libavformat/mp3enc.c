@@ -354,7 +354,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (mp3->xing_offset) {
             uint8_t *side_data = NULL;
-            int side_data_size = 0;
+            int side_data_size;
 
             mp3_xing_add_frame(mp3, pkt);
             mp3->audio_size += pkt->size;

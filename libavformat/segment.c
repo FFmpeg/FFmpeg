@@ -873,7 +873,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
 
     if (!st->codecpar->extradata_size) {
-        int pkt_extradata_size = 0;
+        int pkt_extradata_size;
         uint8_t *pkt_extradata = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &pkt_extradata_size);
         if (pkt_extradata && pkt_extradata_size > 0) {
             ret = ff_alloc_extradata(st->codecpar, pkt_extradata_size);
