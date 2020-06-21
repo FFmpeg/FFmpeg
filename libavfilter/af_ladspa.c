@@ -426,6 +426,11 @@ static av_cold int init(AVFilterContext *ctx)
         }
 
         av_free(paths);
+        if (!s->dl_handle && (paths = av_asprintf("%s/.ladspa", getenv("HOME")))) {
+            s->dl_handle = try_load(paths, s->dl_name);
+            av_free(paths);
+        }
+
         if (!s->dl_handle && (paths = av_asprintf("%s/.ladspa/lib", getenv("HOME")))) {
             s->dl_handle = try_load(paths, s->dl_name);
             av_free(paths);
