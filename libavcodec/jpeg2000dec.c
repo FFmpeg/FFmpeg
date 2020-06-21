@@ -269,6 +269,8 @@ static int get_siz(Jpeg2000DecoderContext *s)
     const enum AVPixelFormat *possible_fmts = NULL;
     int possible_fmts_nb = 0;
     int ret;
+    int o_dimx, o_dimy; //original image dimensions.
+    int dimx, dimy;
 
     if (bytestream2_get_bytes_left(&s->g) < 36) {
         av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for SIZ\n");
@@ -371,11 +373,18 @@ static int get_siz(Jpeg2000DecoderContext *s)
     }
 
     /* compute image size with reduction factor */
-    ret = ff_set_dimensions(s->avctx,
-            ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
-                                               s->reduction_factor),
-            ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
-                                               s->reduction_factor));
+    o_dimx = ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
+                                               s->reduction_factor);
+    o_dimy = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
+                                               s->reduction_factor);
+    dimx = ff_jpeg2000_ceildiv(o_dimx, s->cdx[0]);
+    dimy = ff_jpeg2000_ceildiv(o_dimy, s->cdy[0]);
+    for (i = 1; i < s->ncomponents; i++) {
+        dimx = FFMAX(dimx, ff_jpeg2000_ceildiv(o_dimx, s->cdx[i]));
+        dimy = FFMAX(dimy, ff_jpeg2000_ceildiv(o_dimy, s->cdy[i]));
+    }
+
+    ret = ff_set_dimensions(s->avctx, dimx, dimy);
     if (ret < 0)
         return ret;
 
