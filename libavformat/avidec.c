@@ -442,7 +442,7 @@ static int calculate_bitrate(AVFormatContext *s)
         maxpos = FFMAX(maxpos, st->index_entries[j-1].pos);
         lensum += len;
     }
-    if (maxpos < avi->io_fsize*9/10) // index does not cover the whole file
+    if (maxpos < av_rescale(avi->io_fsize, 9, 10)) // index does not cover the whole file
         return 0;
     if (lensum*9/10 > maxpos || lensum < maxpos*9/10) // frame sum and filesize mismatch
         return 0;
