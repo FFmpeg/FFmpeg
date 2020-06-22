@@ -205,10 +205,11 @@ static int smacker_read_header(AVFormatContext *s)
     avio_rl32(pb); /* padding */
 
     /* setup data */
-    smk->frm_size  = av_malloc_array(smk->frames, sizeof(*smk->frm_size) +
+    st->priv_data  = av_malloc_array(smk->frames, sizeof(*smk->frm_size) +
                                                   sizeof(*smk->frm_flags));
-    if (!smk->frm_size)
+    if (!st->priv_data)
         return AVERROR(ENOMEM);
+    smk->frm_size  = st->priv_data;
     smk->frm_flags = (void*)(smk->frm_size + smk->frames);
 
     /* read frame info */
@@ -219,7 +220,6 @@ static int smacker_read_header(AVFormatContext *s)
         /* load trees to extradata, they will be unpacked by decoder */
         (ret = ffio_read_size(pb, par->extradata + 16,
                               par->extradata_size - 16)) < 0) {
-        av_freep(&smk->frm_size);
         return ret;
     }
 
@@ -351,15 +351,6 @@ next_frame:
     return ret;
 }
 
-static int smacker_read_close(AVFormatContext *s)
-{
-    SmackerContext *smk = s->priv_data;
-
-    av_freep(&smk->frm_size);
-
-    return 0;
-}
-
 AVInputFormat ff_smacker_demuxer = {
     .name           = "smk",
     .long_name      = NULL_IF_CONFIG_SMALL("Smacker"),
@@ -367,5 +358,4 @@ AVInputFormat ff_smacker_demuxer = {
     .read_probe     = smacker_probe,
     .read_header    = smacker_read_header,
     .read_packet    = smacker_read_packet,
-    .read_close     = smacker_read_close,
 };
