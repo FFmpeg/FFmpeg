@@ -215,15 +215,12 @@ static int smacker_read_header(AVFormatContext *s)
     for (i = 0; i < smk->frames; i++) {
         smk->frm_size[i] = avio_rl32(pb);
     }
-    for (i = 0; i < smk->frames; i++) {
-        smk->frm_flags[i] = avio_r8(pb);
-    }
-
-    /* load trees to extradata, they will be unpacked by decoder */
-    ret = avio_read(pb, par->extradata + 16, par->extradata_size - 16);
-    if (ret != par->extradata_size - 16) {
+    if ((ret = ffio_read_size(pb, smk->frm_flags, smk->frames)) < 0 ||
+        /* load trees to extradata, they will be unpacked by decoder */
+        (ret = ffio_read_size(pb, par->extradata + 16,
+                              par->extradata_size - 16)) < 0) {
         av_freep(&smk->frm_size);
-        return AVERROR(EIO);
+        return ret;
     }
 
     return 0;
