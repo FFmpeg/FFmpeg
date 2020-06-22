@@ -370,6 +370,7 @@ static int replace_str_data_in_filename(char **s, const char *filename, char pla
     int addchar_count;
     int found_count = 0;
     AVBPrint buf;
+    int ret;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -395,10 +396,10 @@ static int replace_str_data_in_filename(char **s, const char *filename, char pla
     }
     if (!av_bprint_is_complete(&buf)) {
         av_bprint_finalize(&buf, NULL);
-        return -1;
+        return AVERROR(ENOMEM);
     }
-    if (av_bprint_finalize(&buf, &new_filename) < 0 || !new_filename)
-        return -1;
+    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0 || !new_filename)
+        return ret;
     *s = new_filename;
     return found_count;
 }
@@ -411,6 +412,7 @@ static int replace_int_data_in_filename(char **s, const char *filename, char pla
     int nd, addchar_count;
     int found_count = 0;
     AVBPrint buf;
+    int ret;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -444,10 +446,10 @@ static int replace_int_data_in_filename(char **s, const char *filename, char pla
     }
     if (!av_bprint_is_complete(&buf)) {
         av_bprint_finalize(&buf, NULL);
-        return -1;
+        return AVERROR(ENOMEM);
     }
-    if (av_bprint_finalize(&buf, &new_filename) < 0 || !new_filename)
-        return -1;
+    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0 || !new_filename)
+        return ret;
     *s = new_filename;
     return found_count;
 }
