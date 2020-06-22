@@ -82,6 +82,7 @@ static const AVOption v360_options[] = {
     { "hequirect", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "in" },
     {        "he", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "in" },
     { "equisolid", "equisolid",                                  0, AV_OPT_TYPE_CONST,  {.i64=EQUISOLID},       0,                   0, FLAGS, "in" },
+    {        "og", "orthographic",                               0, AV_OPT_TYPE_CONST,  {.i64=ORTHOGRAPHIC},    0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -110,6 +111,7 @@ static const AVOption v360_options[] = {
     { "hequirect", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "out" },
     {        "he", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "out" },
     { "equisolid", "equisolid",                                  0, AV_OPT_TYPE_CONST,  {.i64=EQUISOLID},       0,                   0, FLAGS, "out" },
+    {        "og", "orthographic",                               0, AV_OPT_TYPE_CONST,  {.i64=ORTHOGRAPHIC},    0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1832,8 +1834,8 @@ static int prepare_equisolid_out(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
 
-    s->flat_range[0] = sinf(FFMIN(s->h_fov, 359.f) * M_PI / 720.f);
-    s->flat_range[1] = sinf(FFMIN(s->v_fov, 359.f) * M_PI / 720.f);
+    s->flat_range[0] = sinf(s->h_fov * M_PI / 720.f);
+    s->flat_range[1] = sinf(s->v_fov * M_PI / 720.f);
 
     return 0;
 }
@@ -1913,6 +1915,111 @@ static int xyz_to_equisolid(const V360Context *s,
     const int vi = floorf(vf);
 
     const int visible = isfinite(x) && isfinite(y) && vi >= 0 && vi < height && ui >= 0 && ui < width;
+
+    *du = visible ? uf - ui : 0.f;
+    *dv = visible ? vf - vi : 0.f;
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = visible ? av_clip(ui + j - 1, 0, width  - 1) : 0;
+            vs[i][j] = visible ? av_clip(vi + i - 1, 0, height - 1) : 0;
+        }
+    }
+
+    return visible;
+}
+
+/**
+ * Prepare data for processing orthographic output format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_orthographic_out(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->flat_range[0] = sinf(FFMIN(s->h_fov, 180.f) * M_PI / 360.f);
+    s->flat_range[1] = sinf(FFMIN(s->v_fov, 180.f) * M_PI / 360.f);
+
+    return 0;
+}
+
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in orthographic format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static int orthographic_to_xyz(const V360Context *s,
+                               int i, int j, int width, int height,
+                               float *vec)
+{
+    const float x = ((2.f * i + 1.f) / width  - 1.f) * s->flat_range[0];
+    const float y = ((2.f * j + 1.f) / height - 1.f) * s->flat_range[1];
+    const float r = hypotf(x, y);
+    const float theta = asinf(r);
+
+    vec[0] = x;
+    vec[1] = y;
+    vec[2] = cosf(theta);
+
+    normalize_vector(vec);
+
+    return 1;
+}
+
+/**
+ * Prepare data for processing orthographic input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_orthographic_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = sinf(FFMIN(s->ih_fov, 180.f) * M_PI / 360.f);
+    s->iflat_range[1] = sinf(FFMIN(s->iv_fov, 180.f) * M_PI / 360.f);
+
+    return 0;
+}
+
+/**
+ * Calculate frame position in orthographic format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static int xyz_to_orthographic(const V360Context *s,
+                               const float *vec, int width, int height,
+                               int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    const float theta = acosf(vec[2]);
+    const float r = sinf(theta);
+    const float c = r / hypotf(vec[0], vec[1]);
+    const float x = vec[0] * c / s->iflat_range[0] * s->input_mirror_modifier[0];
+    const float y = vec[1] * c / s->iflat_range[1] * s->input_mirror_modifier[1];
+
+    const float uf = (x + 1.f) * width  / 2.f;
+    const float vf = (y + 1.f) * height / 2.f;
+
+    const int ui = floorf(uf);
+    const int vi = floorf(vf);
+
+    const int visible = vec[2] >= 0.f && isfinite(x) && isfinite(y) && vi >= 0 && vi < height && ui >= 0 && ui < width;
 
     *du = visible ? uf - ui : 0.f;
     *dv = visible ? vf - vi : 0.f;
@@ -3752,6 +3859,20 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int siz
 static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fov, float *v_fov)
 {
     switch (format) {
+    case ORTHOGRAPHIC:
+        {
+            const float d = 0.5f * hypotf(w, h);
+            const float l = sinf(d_fov * M_PI / 360.f) / d;
+
+            *h_fov = asinf(w * 0.5 * l) * 360.f / M_PI;
+            *v_fov = asinf(h * 0.5 * l) * 360.f / M_PI;
+
+            if (d_fov > 180.f) {
+                *h_fov = 180.f - *h_fov;
+                *v_fov = 180.f - *v_fov;
+            }
+        }
+        break;
     case EQUISOLID:
         {
             const float d = 0.5f * hypotf(w, h);
@@ -4137,6 +4258,12 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 2.f;
         break;
+    case ORTHOGRAPHIC:
+        s->in_transform = xyz_to_orthographic;
+        err = prepare_orthographic_in(ctx);
+        wf = w;
+        hf = h / 2.f;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
         return AVERROR_BUG;
@@ -4276,6 +4403,12 @@ static int config_output(AVFilterLink *outlink)
     case EQUISOLID:
         s->out_transform = equisolid_to_xyz;
         prepare_out = prepare_equisolid_out;
+        w = lrintf(wf);
+        h = lrintf(hf * 2.f);
+        break;
+    case ORTHOGRAPHIC:
+        s->out_transform = orthographic_to_xyz;
+        prepare_out = prepare_orthographic_out;
         w = lrintf(wf);
         h = lrintf(hf * 2.f);
         break;

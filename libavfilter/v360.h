@@ -52,6 +52,7 @@ enum Projections {
     TSPYRAMID,
     HEQUIRECTANGULAR,
     EQUISOLID,
+    ORTHOGRAPHIC,
     NB_PROJECTIONS,
 };
 
