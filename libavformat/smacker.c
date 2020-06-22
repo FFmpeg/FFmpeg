@@ -205,13 +205,11 @@ static int smacker_read_header(AVFormatContext *s)
     avio_rl32(pb); /* padding */
 
     /* setup data */
-    smk->frm_size  = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
-    smk->frm_flags = av_malloc(smk->frames);
-    if (!smk->frm_size || !smk->frm_flags) {
-        av_freep(&smk->frm_size);
-        av_freep(&smk->frm_flags);
+    smk->frm_size  = av_malloc_array(smk->frames, sizeof(*smk->frm_size) +
+                                                  sizeof(*smk->frm_flags));
+    if (!smk->frm_size)
         return AVERROR(ENOMEM);
-    }
+    smk->frm_flags = (void*)(smk->frm_size + smk->frames);
 
     /* read frame info */
     for (i = 0; i < smk->frames; i++) {
@@ -225,7 +223,6 @@ static int smacker_read_header(AVFormatContext *s)
     ret = avio_read(pb, par->extradata + 16, par->extradata_size - 16);
     if (ret != par->extradata_size - 16) {
         av_freep(&smk->frm_size);
-        av_freep(&smk->frm_flags);
         return AVERROR(EIO);
     }
 
@@ -362,7 +359,6 @@ static int smacker_read_close(AVFormatContext *s)
     SmackerContext *smk = s->priv_data;
 
     av_freep(&smk->frm_size);
-    av_freep(&smk->frm_flags);
 
     return 0;
 }
