@@ -81,7 +81,7 @@ static int au_read_annotation(AVFormatContext *s, int size)
     AVBPrint bprint;
     char * key = NULL;
     char * value = NULL;
-    int i;
+    int ret, i;
 
     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -92,7 +92,9 @@ static int au_read_annotation(AVFormatContext *s, int size)
             if (c == '\0') {
                 state = PARSE_FINISHED;
             } else if (c == '=') {
-                av_bprint_finalize(&bprint, &key);
+                ret = av_bprint_finalize(&bprint, &key);
+                if (ret < 0)
+                    return ret;
                 av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
                 state = PARSE_VALUE;
             } else {
