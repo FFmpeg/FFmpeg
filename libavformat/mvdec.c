@@ -268,7 +268,7 @@ static void read_index(AVIOContext *pb, AVStream *st)
         avio_skip(pb, 8);
         av_add_index_entry(st, pos, timestamp, size, 0, AVINDEX_KEYFRAME);
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            timestamp += size / (st->codecpar->channels * 2);
+            timestamp += size / (st->codecpar->channels * 2LL);
         } else {
             timestamp++;
         }
@@ -355,7 +355,7 @@ static int mv_read_header(AVFormatContext *avctx)
             avio_skip(pb, 8);
             av_add_index_entry(ast, pos, timestamp, asize, 0, AVINDEX_KEYFRAME);
             av_add_index_entry(vst, pos + asize, i, vsize, 0, AVINDEX_KEYFRAME);
-            timestamp += asize / (ast->codecpar->channels * 2);
+            timestamp += asize / (ast->codecpar->channels * 2LL);
         }
     } else if (!version && avio_rb16(pb) == 3) {
         avio_skip(pb, 4);
