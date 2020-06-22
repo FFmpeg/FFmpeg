@@ -398,7 +398,7 @@ static int replace_str_data_in_filename(char **s, const char *filename, char pla
         av_bprint_finalize(&buf, NULL);
         return AVERROR(ENOMEM);
     }
-    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0 || !new_filename)
+    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0)
         return ret;
     *s = new_filename;
     return found_count;
@@ -448,7 +448,7 @@ static int replace_int_data_in_filename(char **s, const char *filename, char pla
         av_bprint_finalize(&buf, NULL);
         return AVERROR(ENOMEM);
     }
-    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0 || !new_filename)
+    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0)
         return ret;
     *s = new_filename;
     return found_count;
