@@ -19322,6 +19322,26 @@ Truncated square pyramid projection.
 @item he
 @item hequirect
 Half equirectangular projection.
+
+@item equisolid
+Equisolid format.
+
+Format specific options:
+@table @option
+@item h_fov
+@item v_fov
+@item d_fov
+Set output horizontal/vertical/diagonal field of view. Values in degrees.
+
+If diagonal field of view is set it overrides horizontal and vertical field of view.
+
+@item ih_fov
+@item iv_fov
+@item id_fov
+Set input horizontal/vertical/diagonal field of view. Values in degrees.
+
+If diagonal field of view is set it overrides horizontal and vertical field of view.
+@end table
 @end table
 
 @item interp
