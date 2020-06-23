@@ -4493,8 +4493,11 @@ static int config_output(AVFilterLink *outlink)
         s->map[1] = s->map[2] = 1;
     }
 
-    for (int i = 0; i < s->nb_allocated; i++)
-        allocate_plane(s, sizeof_uv, sizeof_ker, sizeof_mask * have_alpha * s->alpha, i);
+    for (int i = 0; i < s->nb_allocated; i++) {
+        err = allocate_plane(s, sizeof_uv, sizeof_ker, sizeof_mask * have_alpha * s->alpha, i);
+        if (err < 0)
+            return err;
+    }
 
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
