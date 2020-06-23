@@ -679,9 +679,7 @@ extern AVCodec ff_xsub_decoder;
 /* external libraries */
 extern AVCodec ff_aac_at_encoder;
 extern AVCodec ff_aac_at_decoder;
-extern AVCodec ff_aac_mf_encoder;
 extern AVCodec ff_ac3_at_decoder;
-extern AVCodec ff_ac3_mf_encoder;
 extern AVCodec ff_adpcm_ima_qt_at_decoder;
 extern AVCodec ff_alac_at_encoder;
 extern AVCodec ff_alac_at_decoder;
@@ -693,7 +691,6 @@ extern AVCodec ff_ilbc_at_decoder;
 extern AVCodec ff_mp1_at_decoder;
 extern AVCodec ff_mp2_at_decoder;
 extern AVCodec ff_mp3_at_decoder;
-extern AVCodec ff_mp3_mf_encoder;
 extern AVCodec ff_pcm_alaw_at_encoder;
 extern AVCodec ff_pcm_alaw_at_decoder;
 extern AVCodec ff_pcm_mulaw_at_encoder;
@@ -757,6 +754,8 @@ extern AVCodec ff_idf_decoder;
 
 /* external libraries, that shouldn't be used by default if one of the
  * above is available */
+extern AVCodec ff_aac_mf_encoder;
+extern AVCodec ff_ac3_mf_encoder;
 extern AVCodec ff_h263_v4l2m2m_encoder;
 extern AVCodec ff_libaom_av1_decoder;
 extern AVCodec ff_libopenh264_encoder;
@@ -789,6 +788,7 @@ extern AVCodec ff_mjpeg_cuvid_decoder;
 extern AVCodec ff_mjpeg_qsv_encoder;
 extern AVCodec ff_mjpeg_qsv_decoder;
 extern AVCodec ff_mjpeg_vaapi_encoder;
+extern AVCodec ff_mp3_mf_encoder;
 extern AVCodec ff_mpeg1_cuvid_decoder;
 extern AVCodec ff_mpeg2_cuvid_decoder;
 extern AVCodec ff_mpeg2_qsv_encoder;
