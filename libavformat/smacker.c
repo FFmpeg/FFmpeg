@@ -307,14 +307,14 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(flags & 1) {
                 uint32_t size;
 
-                size = avio_rl32(s->pb) - 4;
-                if (!size || size + 4LL > frame_size) {
+                size = avio_rl32(s->pb);
+                if ((int)size < 8 || size > frame_size) {
                     av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
                     ret = AVERROR_INVALIDDATA;
                     goto next_frame;
                 }
                 frame_size -= size;
-                frame_size -= 4;
+                size       -= 4;
                 if ((ret = av_reallocp(&smk->bufs[smk->curstream], size)) < 0) {
                     smk->buf_sizes[smk->curstream] = 0;
                     goto next_frame;
