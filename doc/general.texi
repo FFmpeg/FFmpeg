@@ -803,6 +803,7 @@ following image formats are supported:
 @item Apple MJPEG-B          @tab     @tab  X
 @item Apple Pixlet           @tab     @tab  X
 @item Apple ProRes           @tab  X  @tab  X
+    @tab fourcc: apch,apcn,apcs,apco,ap4h,ap4x
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
 @item Asus v1                @tab  X  @tab  X
@@ -987,8 +988,6 @@ following image formats are supported:
     @tab encoding supported through external library libvpx
 @item Pinnacle TARGA CineWave YUV16 @tab     @tab  X
     @tab fourcc: Y216
-@item Prores                 @tab     @tab  X
-    @tab fourcc: apch,apcn,apcs,apco
 @item Q-team QPEG            @tab     @tab  X
     @tab fourccs: QPEG, Q1.0, Q1.1
 @item QuickTime 8BPS video   @tab     @tab  X
