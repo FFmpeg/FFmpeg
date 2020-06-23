@@ -836,6 +836,8 @@ following image formats are supported:
 @item BitJazz SheerVideo     @tab     @tab  X
 @item Bitmap Brothers JV video  @tab   @tab X
 @item y41p Brooktree uncompressed 4:1:1 12-bit     @tab  X  @tab  X
+@item Brooktree ProSumer Video  @tab     @tab  X
+    @tab fourcc: BT20
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
 @item C93 video              @tab     @tab  X
