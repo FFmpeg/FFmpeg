@@ -196,18 +196,17 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     avio_write(pb, pps, pps_size);
 
     if (sps[3] != 66 && sps[3] != 77 && sps[3] != 88) {
-        H264SequenceParameterSet *seq = ff_avc_decode_sps(sps + 3, sps_size - 3);
-        if (!seq) {
-            ret = AVERROR(ENOMEM);
+        H264SPS seq;
+        ret = ff_avc_decode_sps(&seq, sps + 3, sps_size - 3);
+        if (ret < 0)
             goto fail;
-        }
-        avio_w8(pb, 0xfc | seq->chroma_format_idc); /* 6 bits reserved (111111) + chroma_format_idc */
-        avio_w8(pb, 0xf8 | (seq->bit_depth_luma - 8)); /* 5 bits reserved (11111) + bit_depth_luma_minus8 */
-        avio_w8(pb, 0xf8 | (seq->bit_depth_chroma - 8)); /* 5 bits reserved (11111) + bit_depth_chroma_minus8 */
+
+        avio_w8(pb, 0xfc |  seq.chroma_format_idc); /* 6 bits reserved (111111) + chroma_format_idc */
+        avio_w8(pb, 0xf8 | (seq.bit_depth_luma - 8)); /* 5 bits reserved (11111) + bit_depth_luma_minus8 */
+        avio_w8(pb, 0xf8 | (seq.bit_depth_chroma - 8)); /* 5 bits reserved (11111) + bit_depth_chroma_minus8 */
         avio_w8(pb, nb_sps_ext); /* number of sps ext */
         if (nb_sps_ext)
             avio_write(pb, sps_ext, sps_ext_size);
-        av_free(seq);
     }
 
 fail:
@@ -332,27 +331,24 @@ static inline int get_se_golomb(GetBitContext *gb) {
     return ((v >> 1) ^ sign) - sign;
 }
 
-H264SequenceParameterSet *ff_avc_decode_sps(const uint8_t *buf, int buf_size)
+int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
 {
     int i, j, ret, rbsp_size, aspect_ratio_idc, pic_order_cnt_type;
     int num_ref_frames_in_pic_order_cnt_cycle;
     int delta_scale, lastScale = 8, nextScale = 8;
     int sizeOfScalingList;
-    H264SequenceParameterSet *sps = NULL;
     GetBitContext gb;
     uint8_t *rbsp_buf;
 
     rbsp_buf = ff_nal_unit_extract_rbsp(buf, buf_size, &rbsp_size, 0);
     if (!rbsp_buf)
-        return NULL;
+        return AVERROR(ENOMEM);
 
     ret = init_get_bits8(&gb, rbsp_buf, rbsp_size);
     if (ret < 0)
         goto end;
 
-    sps = av_mallocz(sizeof(*sps));
-    if (!sps)
-        goto end;
+    memset(sps, 0, sizeof(*sps));
 
     sps->profile_idc = get_bits(&gb, 8);
     sps->constraint_set_flags |= get_bits1(&gb) << 0; // constraint_set0_flag
@@ -448,7 +444,8 @@ H264SequenceParameterSet *ff_avc_decode_sps(const uint8_t *buf, int buf_size)
         sps->sar.den = 1;
     }
 
+    ret = 0;
  end:
     av_free(rbsp_buf);
-    return sps;
+    return ret;
 }
