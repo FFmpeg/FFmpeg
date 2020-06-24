@@ -365,7 +365,6 @@ fail:
 static int replace_str_data_in_filename(char **s, const char *filename, char placeholder, const char *datastring)
 {
     const char *p;
-    char *new_filename;
     char c;
     int addchar_count;
     int found_count = 0;
@@ -398,16 +397,14 @@ static int replace_str_data_in_filename(char **s, const char *filename, char pla
         av_bprint_finalize(&buf, NULL);
         return AVERROR(ENOMEM);
     }
-    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0)
+    if ((ret = av_bprint_finalize(&buf, s)) < 0)
         return ret;
-    *s = new_filename;
     return found_count;
 }
 
 static int replace_int_data_in_filename(char **s, const char *filename, char placeholder, int64_t number)
 {
     const char *p;
-    char *new_filename;
     char c;
     int nd, addchar_count;
     int found_count = 0;
@@ -448,9 +445,8 @@ static int replace_int_data_in_filename(char **s, const char *filename, char pla
         av_bprint_finalize(&buf, NULL);
         return AVERROR(ENOMEM);
     }
-    if ((ret = av_bprint_finalize(&buf, &new_filename)) < 0)
+    if ((ret = av_bprint_finalize(&buf, s)) < 0)
         return ret;
-    *s = new_filename;
     return found_count;
 }
 
