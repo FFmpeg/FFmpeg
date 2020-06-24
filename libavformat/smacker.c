@@ -50,14 +50,14 @@ typedef struct SmackerContext {
     /* internal variables */
     int64_t next_frame_pos;
     int cur_frame;
+    int videoindex;
+    int indexes[7];
     /* current frame for demuxing */
     uint32_t frame_size;
     int flags;
     int next_audio_index;
     int new_palette;
     uint8_t pal[768];
-    int indexes[7];
-    int videoindex;
     int64_t aud_pts[7];
 } SmackerContext;
 
@@ -226,7 +226,6 @@ static int smacker_read_header(AVFormatContext *s)
     return 0;
 }
 
-
 static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SmackerContext *smk = s->priv_data;
@@ -243,7 +242,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         flags = smk->frm_flags[smk->cur_frame];
         smk->flags = flags >> 1;
         /* handle palette change event */
-        if(flags & SMACKER_PAL){
+        if (flags & SMACKER_PAL) {
             int size, sz, t, off, j, pos;
             uint8_t *pal = smk->pal;
             uint8_t oldpal[768];
@@ -258,12 +257,12 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             smk->frame_size -= size--;
             sz = 0;
             pos = avio_tell(s->pb) + size;
-            while(sz < 256){
+            while (sz < 256) {
                 t = avio_r8(s->pb);
-                if(t & 0x80){ /* skip palette entries */
-                    sz += (t & 0x7F) + 1;
+                if (t & 0x80) { /* skip palette entries */
+                    sz  +=  (t & 0x7F) + 1;
                     pal += ((t & 0x7F) + 1) * 3;
-                } else if(t & 0x40){ /* copy with offset */
+                } else if (t & 0x40) { /* copy with offset */
                     off = avio_r8(s->pb);
                     j = (t & 0x3F) + 1;
                     if (off + j > 0x100) {
@@ -274,7 +273,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                         goto next_frame;
                     }
                     off *= 3;
-                    while(j-- && sz < 256) {
+                    while (j-- && sz < 256) {
                         *pal++ = oldpal[off + 0];
                         *pal++ = oldpal[off + 1];
                         *pal++ = oldpal[off + 2];
@@ -295,16 +294,16 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     for (int i = smk->next_audio_index; i < 7; i++) {
         if (smk->flags & (1 << i)) {
-                uint32_t size;
+            uint32_t size;
 
-                size = avio_rl32(s->pb);
+            size = avio_rl32(s->pb);
             if ((int)size < 8 || size > smk->frame_size) {
-                    av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto next_frame;
-                }
+                av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
+                ret = AVERROR_INVALIDDATA;
+                goto next_frame;
+            }
             smk->frame_size -= size;
-                size       -= 4;
+            size            -= 4;
 
             if (smk->indexes[i] < 0) {
                 avio_skip(s->pb, size);
@@ -312,36 +311,35 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             if ((ret = av_get_packet(s->pb, pkt, size)) != size) {
                 ret = ret < 0 ? ret : AVERROR_INVALIDDATA;
-                    goto next_frame;
-                }
+                goto next_frame;
+            }
             pkt->stream_index = smk->indexes[i];
             pkt->pts          = smk->aud_pts[i];
             smk->aud_pts[i]  += AV_RL32(pkt->data);
             smk->next_audio_index = i + 1;
             return 0;
-            }
         }
+    }
 
     if (smk->frame_size >= INT_MAX/2) {
-            ret = AVERROR_INVALIDDATA;
-            goto next_frame;
-        }
+        ret = AVERROR_INVALIDDATA;
+        goto next_frame;
+    }
     if ((ret = av_new_packet(pkt, smk->frame_size + 769)) < 0)
-            goto next_frame;
+        goto next_frame;
     flags = smk->new_palette;
-        if(smk->frm_size[smk->cur_frame] & 1)
+    if (smk->frm_size[smk->cur_frame] & 1)
         flags |= 2;
     pkt->data[0] = flags;
-        memcpy(pkt->data + 1, smk->pal, 768);
+    memcpy(pkt->data + 1, smk->pal, 768);
     ret = ffio_read_size(s->pb, pkt->data + 769, smk->frame_size);
-        if (ret < 0)
-            goto next_frame;
-        pkt->stream_index = smk->videoindex;
-        pkt->pts          = smk->cur_frame;
-        pkt->size = ret + 769;
+    if (ret < 0)
+        goto next_frame;
+    pkt->stream_index = smk->videoindex;
+    pkt->pts          = smk->cur_frame;
     smk->next_audio_index = 0;
     smk->new_palette = 0;
-        smk->cur_frame++;
+    smk->cur_frame++;
 
     return 0;
 next_frame:
