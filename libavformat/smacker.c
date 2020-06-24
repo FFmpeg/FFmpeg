@@ -58,7 +58,6 @@ typedef struct SmackerContext {
     uint8_t pal[768];
     int indexes[7];
     int videoindex;
-    int curstream;
     int64_t aud_pts[7];
 } SmackerContext;
 
@@ -247,7 +246,6 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!smk->next_audio_index) {
         smk->frame_size = smk->frm_size[smk->cur_frame] & (~3);
         smk->next_frame_pos = avio_tell(s->pb) + smk->frame_size;
-        smk->curstream = 0;
         flags = smk->frm_flags[smk->cur_frame];
         smk->flags = flags >> 1;
         /* handle palette change event */
@@ -323,10 +321,9 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                     goto next_frame;
                 }
             pkt->stream_index = smk->indexes[i];
-            pkt->pts = smk->aud_pts[smk->curstream];
-            smk->aud_pts[smk->curstream] += AV_RL32(pkt->data);
+            pkt->pts          = smk->aud_pts[i];
+            smk->aud_pts[i]  += AV_RL32(pkt->data);
             smk->next_audio_index = i + 1;
-                smk->curstream++;
             return 0;
             }
         }
