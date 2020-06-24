@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/timecode.h"
 
 #include "bswapdsp.h"
 #include "bytestream.h"
@@ -2816,6 +2817,29 @@ static int set_side_data(HEVCContext *s)
         }
     }
     s->sei.unregistered.nb_buf_ref = 0;
+
+    if (s->sei.timecode.present) {
+        uint32_t *tc_sd;
+        AVFrameSideData *tcside = av_frame_new_side_data(out, AV_FRAME_DATA_S12M_TIMECODE,
+                                                         sizeof(uint32_t) * 4);
+        if (!tcside)
+            return AVERROR(ENOMEM);
+
+        tc_sd = (uint32_t*)tcside->data;
+        tc_sd[0] = s->sei.timecode.num_clock_ts;
+
+        for (int i = 0; i < tc_sd[0]; i++) {
+            int drop = s->sei.timecode.cnt_dropped_flag[i];
+            int   hh = s->sei.timecode.hours_value[i];
+            int   mm = s->sei.timecode.minutes_value[i];
+            int   ss = s->sei.timecode.seconds_value[i];
+            int   ff = s->sei.timecode.n_frames[i];
+
+            tc_sd[i + 1] = av_timecode_get_smpte(s->avctx->framerate, drop, hh, mm, ss, ff);
+        }
+
+        s->sei.timecode.num_clock_ts = 0;
+    }
 
     return 0;
 }
