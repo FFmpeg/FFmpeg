@@ -2171,14 +2171,14 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    H264SequenceParameterSet *sps = NULL;
+    H264SPS seq, *const sps = &seq;
     GetBitContext gb;
     const uint8_t *buf = pkt->data;
     const uint8_t *buf_end = pkt->data + pkt->size;
     const uint8_t *nal_end;
     uint32_t state = -1;
     int extra_size = 512; // support AVC Intra files without SPS/PPS header
-    int i, frame_size, slice_type, intra_only = 0;
+    int i, frame_size, slice_type, has_sps = 0, intra_only = 0, ret;
 
     for (;;) {
         buf = avpriv_find_start_code(buf, buf_end, &state);
@@ -2193,11 +2193,12 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
                 break;
 
             nal_end = ff_avc_find_startcode(buf, buf_end);
-            sps = ff_avc_decode_sps(buf, nal_end - buf);
-            if (!sps) {
+            ret = ff_avc_decode_sps(sps, buf, nal_end - buf);
+            if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "error parsing sps\n");
                 return 0;
             }
+            has_sps = 1;
 
             sc->aspect_ratio.num = st->codecpar->width * sps->sar.num;
             sc->aspect_ratio.den = st->codecpar->height * sps->sar.den;
@@ -2243,7 +2244,7 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     if (mxf->header_written)
         return 1;
 
-    if (!sps)
+    if (!has_sps)
         sc->interlaced = st->codecpar->field_order != AV_FIELD_PROGRESSIVE ? 1 : 0;
     sc->codec_ul = NULL;
     frame_size = pkt->size + extra_size;
@@ -2260,7 +2261,7 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
             if (sc->interlaced)
                 sc->field_dominance = 1; // top field first is mandatory for AVC Intra
             break;
-        } else if (sps && mxf_h264_codec_uls[i].frame_size == 0 &&
+        } else if (has_sps && mxf_h264_codec_uls[i].frame_size == 0 &&
                    mxf_h264_codec_uls[i].profile == sps->profile_idc &&
                    (mxf_h264_codec_uls[i].intra_only < 0 ||
                     mxf_h264_codec_uls[i].intra_only == intra_only)) {
@@ -2270,8 +2271,6 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
             // continue to check for avc intra
         }
     }
-
-    av_free(sps);
 
     if (!sc->codec_ul) {
         av_log(s, AV_LOG_ERROR, "h264 profile not supported\n");
