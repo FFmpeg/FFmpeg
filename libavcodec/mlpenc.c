@@ -1820,7 +1820,8 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         if (!filter_state_buffer[i]) {
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "Not enough memory for applying filters.\n");
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto free_and_return;
         }
     }
 
