@@ -531,7 +531,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d. Supported "
                             "sample rates are 44100, 88200, 176400, 48000, "
                             "96000, and 192000.\n", avctx->sample_rate);
-        return -1;
+        return AVERROR(EINVAL);
     }
     ctx->coded_sample_rate[1] = -1 & 0xf;
 
@@ -564,7 +564,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     default:
         av_log(avctx, AV_LOG_ERROR, "Sample format not supported. "
                "Only 16- and 24-bit samples are supported.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     ctx->coded_sample_fmt[1] = -1 & 0xf;
 
@@ -638,7 +638,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             ctx->channel_arrangement = 12; break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported channel arrangement\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         ctx->flags = FLAGS_DVDA;
         ctx->channel_occupancy = ff_mlp_ch_info[ctx->channel_arrangement].channel_occupancy;
@@ -666,7 +666,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported channel arrangement\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         ctx->flags = 0;
         ctx->channel_occupancy = 0;
@@ -1190,7 +1190,7 @@ static unsigned int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
     int total_length;
 
     if (buf_size < 4)
-        return -1;
+        return AVERROR(EINVAL);
 
     /* Frame header will be written at the end. */
     buf      += 4;
@@ -1198,7 +1198,7 @@ static unsigned int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
 
     if (restart_frame) {
         if (buf_size < 28)
-            return -1;
+            return AVERROR(EINVAL);
         write_major_sync(ctx, buf, buf_size);
         buf      += 28;
         buf_size -= 28;
@@ -1820,7 +1820,7 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         if (!filter_state_buffer[i]) {
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "Not enough memory for applying filters.\n");
-            return -1;
+            return AVERROR(ENOMEM);
         }
     }
 
@@ -1848,7 +1848,7 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         residual = sample - (accum & mask);
 
         if (residual < SAMPLE_MIN(24) || residual > SAMPLE_MAX(24)) {
-            ret = -1;
+            ret = AVERROR_INVALIDDATA;
             goto free_and_return;
         }
 
@@ -2264,7 +2264,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (ctx->frame_size[ctx->frame_index] > MAX_BLOCKSIZE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid frame size (%d > %d)\n",
                ctx->frame_size[ctx->frame_index], MAX_BLOCKSIZE);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     restart_frame = !ctx->frame_index;
