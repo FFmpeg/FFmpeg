@@ -31,9 +31,9 @@
 #include "internal.h"
 #include "packet_internal.h"
 
-#if defined(_MSC_VER)
-#define X264_API_IMPORTS 1
-#endif
+//#if defined(_MSC_VER)
+//#define X264_API_IMPORTS 1
+//#endif
 
 #include <x264.h>
 #include <float.h>
