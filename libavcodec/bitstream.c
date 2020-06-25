@@ -162,9 +162,9 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     uint32_t code;
     volatile VLC_TYPE (* volatile table)[2]; // the double volatile is needed to prevent an internal compiler error in gcc 4.2
 
-    table_size = 1 << table_nb_bits;
     if (table_nb_bits > 30)
        return AVERROR(EINVAL);
+    table_size = 1 << table_nb_bits;
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
     ff_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
     if (table_index < 0)
