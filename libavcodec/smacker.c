@@ -214,7 +214,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
             goto error;
         skip_bits1(gb);
         if (h[i].current > 1) {
-            err = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
+            err = init_vlc(&vlc[i], SMKTREE_BITS, h[i].current,
                            INIT_VLC_DEFAULT_SIZES(h[i].lengths),
                            INIT_VLC_DEFAULT_SIZES(h[i].bits),
                            INIT_VLC_LE);
@@ -657,7 +657,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
             goto error;
         skip_bits1(&gb);
         if(h[i].current > 1) {
-            ret = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
+            ret = init_vlc(&vlc[i], SMKTREE_BITS, h[i].current,
                     h[i].lengths, sizeof(int), sizeof(int),
                     h[i].bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
             if (ret < 0) {
