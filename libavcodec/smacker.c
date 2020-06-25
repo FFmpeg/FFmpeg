@@ -59,7 +59,6 @@ typedef struct SmackVContext {
  */
 typedef struct HuffContext {
     int length;
-    int maxlength;
     int current;
     uint32_t *bits;
     int *lengths;
@@ -72,7 +71,6 @@ typedef struct DBCtx {
     int *recode1, *recode2;
     int escapes[3];
     int *last;
-    int lcur;
 } DBCtx;
 
 /* possible runs of blocks */
@@ -116,8 +114,6 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
         }
         hc->values[hc->current] = get_bits(gb, 8);
         hc->current++;
-        if(hc->maxlength < length)
-            hc->maxlength = length;
         return 0;
     } else { //Node
         int r;
@@ -200,14 +196,12 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     }
 
     tmp1.length = 256;
-    tmp1.maxlength = 0;
     tmp1.current = 0;
     tmp1.bits = av_mallocz(256 * 4);
     tmp1.lengths = av_mallocz(256 * sizeof(int));
     tmp1.values = av_mallocz(256 * sizeof(int));
 
     tmp2.length = 256;
-    tmp2.maxlength = 0;
     tmp2.current = 0;
     tmp2.bits = av_mallocz(256 * 4);
     tmp2.lengths = av_mallocz(256 * sizeof(int));
@@ -277,7 +271,6 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     ctx.last = last;
 
     huff.length = ((size + 3) >> 2) + 4;
-    huff.maxlength = 0;
     huff.current = 0;
     huff.values = av_mallocz_array(huff.length, sizeof(int));
     if (!huff.values) {
@@ -690,7 +683,6 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     // Initialize
     for(i = 0; i < (1 << (bits + stereo)); i++) {
         h[i].length = 256;
-        h[i].maxlength = 0;
         h[i].current = 0;
         h[i].bits = av_mallocz(256 * 4);
         h[i].lengths = av_mallocz(256 * sizeof(int));
