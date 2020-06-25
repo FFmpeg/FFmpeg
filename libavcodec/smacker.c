@@ -197,14 +197,15 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     for (int i = 0; i < 2; i++) {
         h[i].length  = 256;
         h[i].current = 0;
-        h[i].bits    = av_mallocz(256 * sizeof(h[i].bits[0]));
-        h[i].lengths = av_mallocz(256 * sizeof(h[i].lengths[0]));
-        h[i].values  = av_mallocz(256 * sizeof(h[i].values[0]));
+        h[i].bits    = av_malloc(256 * sizeof(h[i].bits[0]));
+        h[i].lengths = av_malloc(256 * sizeof(h[i].lengths[0]));
+        h[i].values  = av_malloc(256 * sizeof(h[i].values[0]));
         if (!h[i].bits || !h[i].lengths || !h[i].values) {
             err = AVERROR(ENOMEM);
             goto error;
         }
         if (!get_bits1(gb)) {
+            h[i].values[0] = 0;
             av_log(smk->avctx, AV_LOG_ERROR, "Skipping %s bytes tree\n",
                    i ? "high" : "low");
             continue;
@@ -242,7 +243,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
 
     huff.length = (size + 3) >> 2;
     huff.current = 0;
-    huff.values = av_mallocz_array(huff.length + 3, sizeof(huff.values[0]));
+    huff.values = av_malloc_array(huff.length + 3, sizeof(huff.values[0]));
     if (!huff.values) {
         err = AVERROR(ENOMEM);
         goto error;
@@ -645,9 +646,9 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     for(i = 0; i < (1 << (bits + stereo)); i++) {
         h[i].length = 256;
         h[i].current = 0;
-        h[i].bits = av_mallocz(256 * 4);
-        h[i].lengths = av_mallocz(256 * sizeof(int));
-        h[i].values = av_mallocz(256 * sizeof(int));
+        h[i].bits    = av_malloc(256 * sizeof(h[i].bits));
+        h[i].lengths = av_malloc(256 * sizeof(h[i].lengths));
+        h[i].values  = av_malloc(256 * sizeof(h[i].values));
         if (!h[i].bits || !h[i].lengths || !h[i].values) {
             ret = AVERROR(ENOMEM);
             goto error;
