@@ -69,8 +69,8 @@ typedef struct HuffContext {
     int length;
     int current;
     uint32_t *bits;
-    int *lengths;
-    int *values;
+    uint8_t *lengths;
+    uint8_t *values;
 } HuffContext;
 
 /* common parameters used for decode_bigtree */
@@ -78,7 +78,7 @@ typedef struct DBCtx {
     int current, length;
     int *values;
     VLC *v1, *v2;
-    int *recode1, *recode2;
+    const uint8_t *recode1, *recode2;
     int escapes[3];
     int *last;
 } DBCtx;
@@ -671,7 +671,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         skip_bits1(&gb);
         if(h[i].current > 1) {
             ret = init_vlc(&vlc[i], SMKTREE_BITS, h[i].current,
-                    h[i].lengths, sizeof(int), sizeof(int),
+                           INIT_VLC_DEFAULT_SIZES(h[i].lengths),
                     h[i].bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
