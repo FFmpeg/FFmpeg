@@ -600,13 +600,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* decode huffman trees from extradata */
     if(avctx->extradata_size < 16){
         av_log(avctx, AV_LOG_ERROR, "Extradata missing!\n");
-        decode_end(avctx);
         return AVERROR(EINVAL);
     }
 
     ret = decode_header_trees(c);
     if (ret < 0) {
-        decode_end(avctx);
         return ret;
     }
 
@@ -840,6 +838,7 @@ AVCodec ff_smacker_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 AVCodec ff_smackaud_decoder = {
