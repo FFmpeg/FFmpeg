@@ -45,6 +45,7 @@
 #include "libavutil/xga_font_data.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -138,14 +139,19 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    TestSourceContext *test = outlink->src->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    TestSourceContext *test = ctx->priv;
     AVFrame *frame;
 
+    if (!ff_outlink_frame_wanted(outlink))
+        return FFERROR_NOT_READY;
     if (test->duration >= 0 &&
-        av_rescale_q(test->pts, test->time_base, AV_TIME_BASE_Q) >= test->duration)
-        return AVERROR_EOF;
+        av_rescale_q(test->pts, test->time_base, AV_TIME_BASE_Q) >= test->duration) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, test->pts);
+        return 0;
+    }
 
     if (test->draw_once) {
         if (test->draw_once_reset) {
@@ -250,7 +256,6 @@ static const AVFilterPad color_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = color_config_props,
     },
     {  NULL }
@@ -263,6 +268,7 @@ AVFilter ff_vsrc_color = {
     .priv_size       = sizeof(TestSourceContext),
     .init            = color_init,
     .uninit          = uninit,
+    .activate        = activate,
     .query_formats   = color_query_formats,
     .inputs          = NULL,
     .outputs         = color_outputs,
@@ -384,7 +390,6 @@ static const AVFilterPad haldclutsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = haldclutsrc_config_props,
     },
     {  NULL }
@@ -398,6 +403,7 @@ AVFilter ff_vsrc_haldclutsrc = {
     .init          = haldclutsrc_init,
     .uninit        = uninit,
     .query_formats = haldclutsrc_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = haldclutsrc_outputs,
 };
@@ -422,7 +428,6 @@ static const AVFilterPad nullsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
     { NULL },
@@ -433,6 +438,7 @@ AVFilter ff_vsrc_nullsrc = {
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
     .init        = nullsrc_init,
     .uninit      = uninit,
+    .activate    = activate,
     .priv_size   = sizeof(TestSourceContext),
     .priv_class  = &nullsrc_class,
     .inputs      = NULL,
@@ -658,7 +664,6 @@ static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
     { NULL }
@@ -672,6 +677,7 @@ AVFilter ff_vsrc_testsrc = {
     .init          = test_init,
     .uninit        = uninit,
     .query_formats = test_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = avfilter_vsrc_testsrc_outputs,
 };
@@ -931,7 +937,6 @@ static const AVFilterPad avfilter_vsrc_testsrc2_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = test2_config_props,
     },
     { NULL }
@@ -945,6 +950,7 @@ AVFilter ff_vsrc_testsrc2 = {
     .init          = test2_init,
     .uninit        = uninit,
     .query_formats = test2_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = avfilter_vsrc_testsrc2_outputs,
 };
@@ -1050,7 +1056,6 @@ static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = rgbtest_config_props,
     },
     { NULL }
@@ -1064,6 +1069,7 @@ AVFilter ff_vsrc_rgbtestsrc = {
     .init          = rgbtest_init,
     .uninit        = uninit,
     .query_formats = rgbtest_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = avfilter_vsrc_rgbtestsrc_outputs,
 };
@@ -1226,7 +1232,6 @@ static const AVFilterPad avfilter_vsrc_yuvtestsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = yuvtest_config_props,
     },
     { NULL }
@@ -1240,6 +1245,7 @@ AVFilter ff_vsrc_yuvtestsrc = {
     .init          = yuvtest_init,
     .uninit        = uninit,
     .query_formats = yuvtest_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = avfilter_vsrc_yuvtestsrc_outputs,
 };
@@ -1369,7 +1375,6 @@ static const AVFilterPad smptebars_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
     { NULL }
@@ -1417,6 +1422,7 @@ AVFilter ff_vsrc_pal75bars = {
     .init          = pal75bars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
 };
@@ -1463,6 +1469,7 @@ AVFilter ff_vsrc_pal100bars = {
     .init          = pal100bars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
 };
@@ -1530,6 +1537,7 @@ AVFilter ff_vsrc_smptebars = {
     .init          = smptebars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
 };
@@ -1635,6 +1643,7 @@ AVFilter ff_vsrc_smptehdbars = {
     .init          = smptehdbars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
 };
@@ -1703,7 +1712,6 @@ static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
     { NULL }
@@ -1717,6 +1725,7 @@ AVFilter ff_vsrc_allyuv = {
     .init          = allyuv_init,
     .uninit        = uninit,
     .query_formats = allyuv_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = avfilter_vsrc_allyuv_outputs,
 };
@@ -1784,7 +1793,6 @@ static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = allrgb_config_props,
     },
     { NULL }
@@ -1798,6 +1806,7 @@ AVFilter ff_vsrc_allrgb = {
     .init          = allrgb_init,
     .uninit        = uninit,
     .query_formats = allrgb_query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = avfilter_vsrc_allrgb_outputs,
 };

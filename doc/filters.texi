@@ -22979,6 +22979,10 @@ for the accepted syntax.
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.
 
+Since the frame rate is used as time base, all frames including the last one
+will have their full duration. If the specified duration is not a multiple
+of the frame duration, it will be rounded up.
+
 @item sar
 Set the sample aspect ratio of the sourced video.
 
