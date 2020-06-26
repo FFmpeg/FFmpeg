@@ -64,7 +64,7 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, AVFrameSideData
 
     av_log(ctx, AV_LOG_INFO, "spherical information: ");
     if (sd->size < sizeof(*spherical)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
@@ -75,7 +75,7 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, AVFrameSideData
     else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE)
         av_log(ctx, AV_LOG_INFO, "tiled equirectangular ");
     else {
-        av_log(ctx, AV_LOG_WARNING, "unknown");
+        av_log(ctx, AV_LOG_WARNING, "unknown\n");
         return;
     }
 
@@ -102,7 +102,7 @@ static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
 
     av_log(ctx, AV_LOG_INFO, "stereoscopic information: ");
     if (sd->size < sizeof(*stereo)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
@@ -123,7 +123,7 @@ static void dump_roi(AVFilterContext *ctx, AVFrameSideData *sd)
     roi = (const AVRegionOfInterest *)sd->data;
     roi_size = roi->self_size;
     if (!roi_size || sd->size % roi_size != 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.");
+        av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
         return;
     }
     nb_rois = sd->size / roi_size;
@@ -142,7 +142,7 @@ static void dump_mastering_display(AVFilterContext *ctx, AVFrameSideData *sd)
 
     av_log(ctx, AV_LOG_INFO, "mastering display: ");
     if (sd->size < sizeof(*mastering_display)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
@@ -197,7 +197,7 @@ static void dump_sei_unregistered_metadata(AVFilterContext *ctx, AVFrameSideData
     int i;
 
     if (sd->size < uuid_size) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data(%d < UUID(%d-bytes))", sd->size, uuid_size);
+        av_log(ctx, AV_LOG_ERROR, "invalid data(%d < UUID(%d-bytes))\n", sd->size, uuid_size);
         return;
     }
 
@@ -367,7 +367,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             uint32_t *tc = (uint32_t*)sd->data;
             int m = FFMIN(tc[0],3);
             if (sd->size != 16) {
-                av_log(ctx, AV_LOG_ERROR, "invalid data");
+                av_log(ctx, AV_LOG_ERROR, "invalid data\n");
                 break;
             }
             for (int j = 1; j <= m; j++) {
@@ -406,7 +406,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             dump_sei_unregistered_metadata(ctx, sd);
             break;
         default:
-            av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)",
+            av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)\n",
                    sd->type, sd->size);
             break;
         }
