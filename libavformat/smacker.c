@@ -308,8 +308,11 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             smk->frame_size -= size;
             size            -= 4;
 
-            if (smk->indexes[i] < 0) {
-                avio_skip(s->pb, size);
+            if (smk->indexes[i] < 0 ||
+                s->streams[smk->indexes[i]]->discard >= AVDISCARD_ALL) {
+                smk->aud_pts[i] += smk->duration_size[i] ? avio_rl32(s->pb)
+                                                         : size;
+                avio_skip(s->pb, size - smk->duration_size[i]);
                 continue;
             }
             if ((ret = av_get_packet(s->pb, pkt, size)) != size) {
@@ -326,6 +329,10 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+    if (s->streams[smk->videoindex]->discard >= AVDISCARD_ALL) {
+        ret = FFERROR_REDO;
+        goto next_frame;
+    }
     if (smk->frame_size >= INT_MAX/2) {
         ret = AVERROR_INVALIDDATA;
         goto next_frame;
