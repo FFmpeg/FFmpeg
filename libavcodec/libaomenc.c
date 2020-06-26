@@ -96,6 +96,9 @@ typedef struct AOMEncoderContext {
     int enable_restoration;
     int usage;
     int tune;
+    int enable_rect_partitions;
+    int enable_1to4_partitions;
+    int enable_ab_partitions;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -135,6 +138,9 @@ static const char *const ctlidstr[] = {
 #endif
     [AV1E_SET_ENABLE_CDEF]      = "AV1E_SET_ENABLE_CDEF",
     [AOME_SET_TUNING]           = "AOME_SET_TUNING",
+    [AV1E_SET_ENABLE_1TO4_PARTITIONS] = "AV1E_SET_ENABLE_1TO4_PARTITIONS",
+    [AV1E_SET_ENABLE_AB_PARTITIONS]   = "AV1E_SET_ENABLE_AB_PARTITIONS",
+    [AV1E_SET_ENABLE_RECT_PARTITIONS] = "AV1E_SET_ENABLE_RECT_PARTITIONS",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -698,6 +704,12 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_ENABLE_CDEF, ctx->enable_cdef);
     if (ctx->enable_restoration >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_RESTORATION, ctx->enable_restoration);
+    if (ctx->enable_rect_partitions >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_RECT_PARTITIONS, ctx->enable_rect_partitions);
+    if (ctx->enable_1to4_partitions >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_1TO4_PARTITIONS, ctx->enable_1to4_partitions);
+    if (ctx->enable_ab_partitions >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_AB_PARTITIONS, ctx->enable_ab_partitions);
 
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)
@@ -1108,6 +1120,9 @@ static const AVOption options[] = {
     { "psnr",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_PSNR}, 0, 0, VE, "tune"},
     { "ssim",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_SSIM}, 0, 0, VE, "tune"},
     FF_AV1_PROFILE_OPTS
+    { "enable-rect-partitions", "Enable rectangular partitions", OFFSET(enable_rect_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-1to4-partitions", "Enable 1:4/4:1 partitions",     OFFSET(enable_1to4_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-ab-partitions",   "Enable ab shape partitions",    OFFSET(enable_ab_partitions),   AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { NULL },
 };
 
