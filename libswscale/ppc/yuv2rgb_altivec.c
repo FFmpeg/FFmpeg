@@ -283,6 +283,20 @@ static inline void cvtyuvtoRGB(SwsContext *c, vector signed short Y,
  * ------------------------------------------------------------------------------
  */
 
+static inline vector unsigned char ffmpeg_vec_xl(const ubyte *xi)
+{
+#if HAVE_VSX
+    return vec_xl(0, xi)
+#else
+    const vector unsigned char *xivP;
+    vector unsigned char align_perm;
+
+    xivP = (const vector unsigned char *) xi;
+    align_perm = vec_lvsl(0, xi);
+    return (vector unsigned char) vec_perm(xivP[0], xivP[1], align_perm);
+#endif
+}
+
 #define DEFCSP420_CVT(name, out_pixels)                                       \
 static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
                             int *instrides, int srcSliceY, int srcSliceH,     \
@@ -335,13 +349,13 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
         vec_dstst(oute, (0x02000002 | (((w * 3 + 32) / 32) << 16)), 1);       \
                                                                               \
         for (j = 0; j < w / 16; j++) {                                        \
-            y0 = vec_xl(0, y1i);                                              \
+            y0 = ffmpeg_vec_xl(y1i);                                          \
                                                                               \
-            y1 = vec_xl(0, y2i);                                              \
+            y1 = ffmpeg_vec_xl(y2i);                                          \
                                                                               \
-            u = (vector signed char) vec_xl(0, ui);                           \
+            u = (vector signed char) ffmpeg_vec_xl(ui);                       \
                                                                               \
-            v = (vector signed char) vec_xl(0, vi);                           \
+            v = (vector signed char) ffmpeg_vec_xl(vi);                       \
                                                                               \
             u = (vector signed char)                                          \
                     vec_sub(u,                                                \
