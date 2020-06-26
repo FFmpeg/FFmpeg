@@ -1608,6 +1608,27 @@ Enable 1:4/4:1 partitions. Default is true.
 @item enable-ab-partitions (@emph{boolean})
 Enable AB shape partitions. Default is true.
 
+@item enable-angle-delta (@emph{boolean})
+Enable angle delta intra prediction. Default is true.
+
+@item enable-cfl-intra (@emph{boolean})
+Enable chroma predicted from luma intra prediction. Default is true.
+
+@item enable-filter-intra (@emph{boolean})
+Enable filter intra predictor. Default is true.
+
+@item enable-intra-edge-filter (@emph{boolean})
+Enable intra edge filter. Default is true.
+
+@item enable-smooth-intra (@emph{boolean})
+Enable smooth intra prediction mode. Default is true.
+
+@item enable-paeth-intra (@emph{boolean})
+Enable paeth predictor in intra prediction. Default is true.
+
+@item enable-palette (@emph{boolean})
+Enable palette prediction mode. Default is true.
+
 @end table
 
 @section libkvazaar

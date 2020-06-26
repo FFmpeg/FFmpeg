@@ -99,6 +99,13 @@ typedef struct AOMEncoderContext {
     int enable_rect_partitions;
     int enable_1to4_partitions;
     int enable_ab_partitions;
+    int enable_angle_delta;
+    int enable_cfl_intra;
+    int enable_paeth_intra;
+    int enable_smooth_intra;
+    int enable_intra_edge_filter;
+    int enable_palette;
+    int enable_filter_intra;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -141,6 +148,13 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_1TO4_PARTITIONS] = "AV1E_SET_ENABLE_1TO4_PARTITIONS",
     [AV1E_SET_ENABLE_AB_PARTITIONS]   = "AV1E_SET_ENABLE_AB_PARTITIONS",
     [AV1E_SET_ENABLE_RECT_PARTITIONS] = "AV1E_SET_ENABLE_RECT_PARTITIONS",
+    [AV1E_SET_ENABLE_ANGLE_DELTA]       = "AV1E_SET_ENABLE_ANGLE_DELTA",
+    [AV1E_SET_ENABLE_CFL_INTRA]         = "AV1E_SET_ENABLE_CFL_INTRA",
+    [AV1E_SET_ENABLE_FILTER_INTRA]      = "AV1E_SET_ENABLE_FILTER_INTRA",
+    [AV1E_SET_ENABLE_INTRA_EDGE_FILTER] = "AV1E_SET_ENABLE_INTRA_EDGE_FILTER",
+    [AV1E_SET_ENABLE_PAETH_INTRA]       = "AV1E_SET_ENABLE_PAETH_INTRA",
+    [AV1E_SET_ENABLE_SMOOTH_INTRA]      = "AV1E_SET_ENABLE_SMOOTH_INTRA",
+    [AV1E_SET_ENABLE_PALETTE]           = "AV1E_SET_ENABLE_PALETTE",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -710,6 +724,20 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_ENABLE_1TO4_PARTITIONS, ctx->enable_1to4_partitions);
     if (ctx->enable_ab_partitions >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_AB_PARTITIONS, ctx->enable_ab_partitions);
+    if (ctx->enable_angle_delta >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_ANGLE_DELTA, ctx->enable_angle_delta);
+    if (ctx->enable_cfl_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_CFL_INTRA, ctx->enable_cfl_intra);
+    if (ctx->enable_filter_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_FILTER_INTRA, ctx->enable_filter_intra);
+    if (ctx->enable_intra_edge_filter >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_INTRA_EDGE_FILTER, ctx->enable_intra_edge_filter);
+    if (ctx->enable_paeth_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_PAETH_INTRA, ctx->enable_paeth_intra);
+    if (ctx->enable_smooth_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTRA, ctx->enable_smooth_intra);
+    if (ctx->enable_palette >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_PALETTE, ctx->enable_palette);
 
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)
@@ -1123,6 +1151,13 @@ static const AVOption options[] = {
     { "enable-rect-partitions", "Enable rectangular partitions", OFFSET(enable_rect_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-1to4-partitions", "Enable 1:4/4:1 partitions",     OFFSET(enable_1to4_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-ab-partitions",   "Enable ab shape partitions",    OFFSET(enable_ab_partitions),   AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-angle-delta",       "Enable angle delta intra prediction",                OFFSET(enable_angle_delta),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-cfl-intra",         "Enable chroma predicted from luma intra prediction", OFFSET(enable_cfl_intra),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-filter-intra",      "Enable filter intra predictor",                      OFFSET(enable_filter_intra),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-intra-edge-filter", "Enable intra edge filter",                           OFFSET(enable_intra_edge_filter), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-smooth-intra",      "Enable smooth intra prediction mode",                OFFSET(enable_smooth_intra),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-paeth-intra",       "Enable paeth predictor in intra prediction",         OFFSET(enable_paeth_intra),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-palette",           "Enable palette prediction mode",                     OFFSET(enable_palette),           AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { NULL },
 };
 
