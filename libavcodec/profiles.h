@@ -51,6 +51,11 @@
     FF_AVCTX_PROFILE_OPTION("main",          NULL, VIDEO, FF_PROFILE_MPEG2_MAIN)\
     FF_AVCTX_PROFILE_OPTION("simple",        NULL, VIDEO, FF_PROFILE_MPEG2_SIMPLE)\
 
+#define FF_AV1_PROFILE_OPTS \
+    FF_AVCTX_PROFILE_OPTION("main",          NULL, VIDEO, FF_PROFILE_AV1_MAIN)\
+    FF_AVCTX_PROFILE_OPTION("high",          NULL, VIDEO, FF_PROFILE_AV1_HIGH)\
+    FF_AVCTX_PROFILE_OPTION("professional",  NULL, VIDEO, FF_PROFILE_AV1_PROFESSIONAL)\
+
 extern const AVProfile ff_aac_profiles[];
 extern const AVProfile ff_dca_profiles[];
 extern const AVProfile ff_dnxhd_profiles[];
