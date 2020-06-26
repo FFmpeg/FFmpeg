@@ -813,7 +813,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
+            memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(*clut_table));
 
             rect->data[0] = av_malloc(region->buf_size);
             if (!rect->data[0]) {
@@ -1073,11 +1073,11 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
     clut = get_clut(ctx, clut_id);
 
     if (!clut) {
-        clut = av_malloc(sizeof(DVBSubCLUT));
+        clut = av_malloc(sizeof(*clut));
         if (!clut)
             return AVERROR(ENOMEM);
 
-        memcpy(clut, &default_clut, sizeof(DVBSubCLUT));
+        memcpy(clut, &default_clut, sizeof(*clut));
 
         clut->id = clut_id;
         clut->version = -1;
@@ -1163,7 +1163,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     region = get_region(ctx, region_id);
 
     if (!region) {
-        region = av_mallocz(sizeof(DVBSubRegion));
+        region = av_mallocz(sizeof(*region));
         if (!region)
             return AVERROR(ENOMEM);
 
@@ -1244,7 +1244,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
         object = get_object(ctx, object_id);
 
         if (!object) {
-            object = av_mallocz(sizeof(DVBSubObject));
+            object = av_mallocz(sizeof(*object));
             if (!object)
                 return AVERROR(ENOMEM);
 
@@ -1255,7 +1255,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
 
         object->type = (*buf) >> 6;
 
-        display = av_mallocz(sizeof(DVBSubObjectDisplay));
+        display = av_mallocz(sizeof(*display));
         if (!display)
             return AVERROR(ENOMEM);
 
@@ -1352,7 +1352,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
         }
 
         if (!display) {
-            display = av_mallocz(sizeof(DVBSubRegionDisplay));
+            display = av_mallocz(sizeof(*display));
             if (!display)
                 return AVERROR(ENOMEM);
         }
