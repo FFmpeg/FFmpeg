@@ -23,8 +23,13 @@
 #include "libavutil/avstring.h"
 #if CONFIG_HTTPS_PROTOCOL
     #include <openssl/evp.h>
+    #include <openssl/crypto.h>
     void dirty_openssl_extra(void) {
-        OPENSSL_add_all_algorithms_noconf();
+        // OPENSSL_add_all_algorithms_noconf();
+        // OPENSSL_cpuid_setup();
+        CRYPTO_library_init();
+        OpenSSL_add_all_ciphers();
+        OpenSSL_add_all_digests();
     }
 #endif
 
