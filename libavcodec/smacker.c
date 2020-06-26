@@ -595,11 +595,10 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     int16_t *samples;
     uint8_t *samples8;
     uint8_t values[4];
-    int val;
     int i, res, ret;
     int unp_size;
     int bits, stereo;
-    int pred[2] = {0, 0};
+    unsigned pred[2], val;
 
     if (buf_size <= 4) {
         av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
@@ -668,7 +667,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     /* this codec relies on wraparound instead of clipping audio */
     if(bits) { //decode 16-bit data
         for(i = stereo; i >= 0; i--)
-            pred[i] = sign_extend(av_bswap16(get_bits(&gb, 16)), 16);
+            pred[i] = av_bswap16(get_bits(&gb, 16));
         for(i = 0; i <= stereo; i++)
             *samples++ = pred[i];
         for(; i < unp_size / 2; i++) {
@@ -687,7 +686,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                 else
                     res = values[3];
                 val |= res << 8;
-                pred[1] += (unsigned)sign_extend(val, 16);
+                pred[1] += val;
                 *samples++ = pred[1];
             } else {
                 if(vlc[0].table)
@@ -700,7 +699,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                 else
                     res = values[1];
                 val |= res << 8;
-                pred[0] += (unsigned)sign_extend(val, 16);
+                pred[0] += val;
                 *samples++ = pred[0];
             }
         }
@@ -719,14 +718,14 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
                 else
                     res = values[1];
-                pred[1] += sign_extend(res, 8);
+                pred[1] += res;
                 *samples8++ = pred[1];
             } else {
                 if(vlc[0].table)
                     res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
                 else
                     res = values[0];
-                pred[0] += sign_extend(res, 8);
+                pred[0] += res;
                 *samples8++ = pred[0];
             }
         }
