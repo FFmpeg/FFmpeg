@@ -758,7 +758,8 @@ static void lms_update ## bits (WmallDecodeCtx *s, int ich, int ilms, int input)
 static void revert_cdlms ## bits (WmallDecodeCtx *s, int ch, \
                                   int coef_begin, int coef_end) \
 { \
-    int icoef, pred, ilms, num_lms, residue, input; \
+    int icoef, ilms, num_lms, residue, input; \
+    unsigned pred;\
  \
     num_lms = s->cdlms_ttl[ch]; \
     for (ilms = num_lms - 1; ilms >= 0; ilms--) { \
@@ -772,7 +773,7 @@ static void revert_cdlms ## bits (WmallDecodeCtx *s, int ch, \
                                                         s->cdlms[ch][ilms].recent, \
                                                         FFALIGN(s->cdlms[ch][ilms].order, ROUND), \
                                                         WMASIGN(residue)); \
-            input = residue + (unsigned)(pred >> s->cdlms[ch][ilms].scaling); \
+            input = residue + (unsigned)((int)pred >> s->cdlms[ch][ilms].scaling); \
             lms_update ## bits(s, ch, ilms, input); \
             s->channel_residues[ch][icoef] = input; \
         } \
