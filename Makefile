@@ -120,7 +120,7 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: M=@
 
 libavutil/ffversion.h .version:
-	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
+	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h Kodi
 	$(Q)touch .version
 
 # force version.sh to run whenever version might have changed
