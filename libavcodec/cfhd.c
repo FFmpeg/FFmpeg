@@ -41,15 +41,25 @@
 #define ALPHA_COMPAND_GAIN 9400
 
 enum CFHDParam {
+    SampleType       =   1,
+    SampleIndexTable =   2,
+    BitstreamMarker  =   4,
+    TransformType    =  10,
     ChannelCount     =  12,
     SubbandCount     =  14,
     ImageWidth       =  20,
     ImageHeight      =  21,
+    LowpassWidth     =  27,
+    LowpassHeight    =  28,
     LowpassPrecision =  35,
+    HighpassWidth    =  41,
+    HighpassHeight   =  42,
     SubbandNumber    =  48,
     Quantization     =  53,
+    BandHeader       =  55,
     ChannelNumber    =  62,
     SampleFlags      =  68,
+    EncodedFormat    =  84,
     BitsPerComponent = 101,
     ChannelWidth     = 104,
     ChannelHeight    = 105,
@@ -479,7 +489,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->prescale_shift[1] = (data >> 3) & 0x7;
             s->prescale_shift[2] = (data >> 6) & 0x7;
             av_log(avctx, AV_LOG_DEBUG, "Prescale shift (VC-5): %x\n", data);
-        } else if (tag == 27) {
+        } else if (tag == LowpassWidth) {
             av_log(avctx, AV_LOG_DEBUG, "Lowpass width %"PRIu16"\n", data);
             if (data < 3 || data > s->plane[s->channel_num].band[0][0].a_width) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid lowpass width\n");
@@ -488,7 +498,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
             s->plane[s->channel_num].band[0][0].width  = data;
             s->plane[s->channel_num].band[0][0].stride = data;
-        } else if (tag == 28) {
+        } else if (tag == LowpassHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Lowpass height %"PRIu16"\n", data);
             if (data < 3 || data > s->plane[s->channel_num].band[0][0].a_height) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid lowpass height\n");
@@ -496,9 +506,9 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->plane[s->channel_num].band[0][0].height = data;
-        } else if (tag == 1)
+        } else if (tag == SampleType)
             av_log(avctx, AV_LOG_DEBUG, "Sample type? %"PRIu16"\n", data);
-        else if (tag == 10) {
+        else if (tag == TransformType) {
             if (data != 0) {
                 avpriv_report_missing_feature(avctx, "Transform type of %"PRIu16, data);
                 ret = AVERROR_PATCHWELCOME;
@@ -515,7 +525,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             avpriv_report_missing_feature(avctx, "Skip frame");
             ret = AVERROR_PATCHWELCOME;
             break;
-        } else if (tag == 2) {
+        } else if (tag == SampleIndexTable) {
             av_log(avctx, AV_LOG_DEBUG, "tag=2 header - skipping %i tag/value pairs\n", data);
             if (data > bytestream2_get_bytes_left(&gb) / 4) {
                 av_log(avctx, AV_LOG_ERROR, "too many tag/value pairs (%d)\n", data);
@@ -527,7 +537,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 uint16_t val2 = bytestream2_get_be16(&gb);
                 av_log(avctx, AV_LOG_DEBUG, "Tag/Value = %x %x\n", tag2, val2);
             }
-        } else if (tag == 41) {
+        } else if (tag == HighpassWidth) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass width %i channel %i level %i subband %i\n", data, s->channel_num, s->level, s->subband_num);
             if (data < 3) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width\n");
@@ -536,7 +546,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
-        } else if (tag == 42) {
+        } else if (tag == HighpassHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass height %i\n", data);
             if (data < 3) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass height\n");
@@ -576,7 +586,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->bpc = data;
-        } else if (tag == 84) {
+        } else if (tag == EncodedFormat) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
             if (data == 1) {
                 s->coded_format = AV_PIX_FMT_YUV422P10;
@@ -612,7 +622,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
 
         /* Some kind of end of header tag */
-        if (tag == 4 && data == 0x1a4a && s->coded_width && s->coded_height &&
+        if (tag == BitstreamMarker && data == 0x1a4a && s->coded_width && s->coded_height &&
             s->coded_format != AV_PIX_FMT_NONE) {
             if (s->a_width != s->coded_width || s->a_height != s->coded_height ||
                 s->a_format != s->coded_format) {
@@ -645,7 +655,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         coeff_data = s->plane[s->channel_num].subband[s->subband_num_actual];
 
         /* Lowpass coefficients */
-        if (tag == 4 && data == 0xf0f && s->a_width && s->a_height) {
+        if (tag == BitstreamMarker && data == 0xf0f && s->a_width && s->a_height) {
             int lowpass_height = s->plane[s->channel_num].band[0][0].height;
             int lowpass_width  = s->plane[s->channel_num].band[0][0].width;
             int lowpass_a_height = s->plane[s->channel_num].band[0][0].a_height;
@@ -685,7 +695,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "Lowpass coefficients %d\n", lowpass_width * lowpass_height);
         }
 
-        if (tag == 55 && s->subband_num_actual != 255 && s->a_width && s->a_height) {
+        if (tag == BandHeader && s->subband_num_actual != 255 && s->a_width && s->a_height) {
             int highpass_height = s->plane[s->channel_num].band[s->level][s->subband_num].height;
             int highpass_width  = s->plane[s->channel_num].band[s->level][s->subband_num].width;
             int highpass_a_width = s->plane[s->channel_num].band[s->level][s->subband_num].a_width;
