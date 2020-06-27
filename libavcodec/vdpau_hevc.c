@@ -29,6 +29,8 @@
 #include "hwconfig.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
+#include "h265_profile_level.h"
+
 
 static int vdpau_hevc_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
@@ -429,10 +431,93 @@ static int vdpau_hevc_end_frame(AVCodecContext *avctx)
     return 0;
 }
 
+
+
+static int ptl_convert(const PTLCommon *general_ptl, H265RawProfileTierLevel *h265_raw_ptl)
+{
+    h265_raw_ptl->general_profile_space = general_ptl->profile_space;
+    h265_raw_ptl->general_tier_flag     = general_ptl->tier_flag;
+    h265_raw_ptl->general_profile_idc   = general_ptl->profile_idc;
+
+    memcpy(h265_raw_ptl->general_profile_compatibility_flag,
+                                  general_ptl->profile_compatibility_flag, 32 * sizeof(uint8_t));
+
+#define copy_field(name) h265_raw_ptl->general_ ## name = general_ptl->name
+    copy_field(progressive_source_flag);
+    copy_field(interlaced_source_flag);
+    copy_field(non_packed_constraint_flag);
+    copy_field(frame_only_constraint_flag);
+    copy_field(max_12bit_constraint_flag);
+    copy_field(max_10bit_constraint_flag);
+    copy_field(max_8bit_constraint_flag);
+    copy_field(max_422chroma_constraint_flag);
+    copy_field(max_420chroma_constraint_flag);
+    copy_field(max_monochrome_constraint_flag);
+    copy_field(intra_constraint_flag);
+    copy_field(one_picture_only_constraint_flag);
+    copy_field(lower_bit_rate_constraint_flag);
+    copy_field(max_14bit_constraint_flag);
+    copy_field(inbld_flag);
+    copy_field(level_idc);
+#undef copy_field
+
+    return 0;
+}
+
+/*
+ * Find exact vdpau_profile for HEVC Range Extension
+ */
+static int vdpau_hevc_parse_rext_profile(AVCodecContext *avctx, VdpDecoderProfile *vdp_profile)
+{
+    const HEVCContext *h = avctx->priv_data;
+    const HEVCSPS *sps = h->ps.sps;
+    const PTL *ptl = &sps->ptl;
+    const PTLCommon *general_ptl = &ptl->general_ptl;
+    const H265ProfileDescriptor *profile;
+    H265RawProfileTierLevel h265_raw_ptl = {0};
+
+    /* convert PTLCommon to H265RawProfileTierLevel */
+    ptl_convert(general_ptl, &h265_raw_ptl);
+
+    profile = ff_h265_get_profile(&h265_raw_ptl);
+    if (!profile) {
+        av_log(avctx, AV_LOG_WARNING, "HEVC profile is not found.\n");
+        if (avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH) {
+            // Default to selecting Main profile if profile mismatch is allowed
+            *vdp_profile = VDP_DECODER_PROFILE_HEVC_MAIN;
+            return 0;
+        } else
+            return AVERROR(ENOTSUP);
+    }
+
+    if (!strcmp(profile->name, "Main 12") ||
+        !strcmp(profile->name, "Main 12 Intra"))
+        *vdp_profile = VDP_DECODER_PROFILE_HEVC_MAIN_12;
+#ifdef VDP_DECODER_PROFILE_HEVC_MAIN_444
+    else if (!strcmp(profile->name, "Main 4:4:4") ||
+             !strcmp(profile->name, "Main 4:4:4 Intra"))
+        *vdp_profile = VDP_DECODER_PROFILE_HEVC_MAIN_444;
+#endif
+#ifdef VDP_DECODER_PROFILE_HEVC_MAIN_444_10
+    else if (!strcmp(profile->name, "Main 4:4:4 10") ||
+             !strcmp(profile->name, "Main 4:4:4 10 Intra"))
+        *vdp_profile = VDP_DECODER_PROFILE_HEVC_MAIN_444_10;
+    else if (!strcmp(profile->name, "Main 4:4:4 12") ||
+             !strcmp(profile->name, "Main 4:4:4 12 Intra"))
+        *vdp_profile = VDP_DECODER_PROFILE_HEVC_MAIN_444_12;
+#endif
+    else
+        return AVERROR(ENOTSUP);
+
+    return 0;
+}
+
+
 static int vdpau_hevc_init(AVCodecContext *avctx)
 {
     VdpDecoderProfile profile;
     uint32_t level = avctx->level;
+    int ret;
 
     switch (avctx->profile) {
     case FF_PROFILE_HEVC_MAIN:
@@ -445,7 +530,9 @@ static int vdpau_hevc_init(AVCodecContext *avctx)
         profile = VDP_DECODER_PROFILE_HEVC_MAIN_STILL;
         break;
     case FF_PROFILE_HEVC_REXT:
-        profile = VDP_DECODER_PROFILE_HEVC_MAIN_444;
+        ret = vdpau_hevc_parse_rext_profile(avctx, &profile);
+        if (ret)
+            return AVERROR(ENOTSUP);
         break;
     default:
         return AVERROR(ENOTSUP);
