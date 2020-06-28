@@ -4372,10 +4372,9 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->display_matrix);
     }
 
-    if (mov->dv_demux) {
-        avformat_free_context(mov->dv_fctx);
-        mov->dv_fctx = NULL;
-    }
+    av_freep(&mov->dv_demux);
+    avformat_free_context(mov->dv_fctx);
+    mov->dv_fctx = NULL;
 
     av_freep(&mov->trex_data);
     av_freep(&mov->bitrates);
