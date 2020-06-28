@@ -7357,10 +7357,9 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->coll);
     }
 
-    if (mov->dv_demux) {
-        avformat_free_context(mov->dv_fctx);
-        mov->dv_fctx = NULL;
-    }
+    av_freep(&mov->dv_demux);
+    avformat_free_context(mov->dv_fctx);
+    mov->dv_fctx = NULL;
 
     if (mov->meta_keys) {
         for (i = 1; i < mov->meta_keys_count; i++) {
