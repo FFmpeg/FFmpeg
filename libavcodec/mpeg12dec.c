@@ -2276,6 +2276,8 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             if (ret >= 0) {
                 uint8_t field, cc1, cc2;
                 uint8_t *cap = s1->a53_buf_ref->data;
+
+                memset(s1->a53_buf_ref->data + old_size, 0, cc_count * 3);
                 for (i = 0; i < cc_count && get_bits_left(&gb) >= 26; i++) {
                     skip_bits(&gb, 2); // priority
                     field = get_bits(&gb, 2);
