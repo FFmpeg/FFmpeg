@@ -81,6 +81,38 @@ uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
            (hh % 10);        // units of hours
 }
 
+uint32_t av_timecode_get_smpte(AVRational rate, int drop, int hh, int mm, int ss, int ff)
+{
+    uint32_t tc = 0;
+    uint32_t frames;
+
+    /* For SMPTE 12-M timecodes, frame count is a special case if > 30 FPS.
+       See SMPTE ST 12-1:2014 Sec 12.1 for more info. */
+    if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
+        frames = ff / 2;
+        if (ff % 2 == 1) {
+            if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
+                tc |= (1 << 7);
+            else
+                tc |= (1 << 23);
+        }
+    } else {
+        frames = ff;
+    }
+
+    tc |= drop << 30;
+    tc |= (frames / 10) << 28;
+    tc |= (frames % 10) << 24;
+    tc |= (ss / 10) << 20;
+    tc |= (ss % 10) << 16;
+    tc |= (mm / 10) << 12;
+    tc |= (mm % 10) << 8;
+    tc |= (hh / 10) << 4;
+    tc |= (hh  % 10);
+
+    return tc;
+}
+
 char *av_timecode_make_string(const AVTimecode *tc, char *buf, int framenum)
 {
     int fps = tc->fps;

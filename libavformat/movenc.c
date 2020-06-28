@@ -4798,28 +4798,40 @@ static int mov_write_tfra_tag(AVIOContext *pb, MOVTrack *track)
 
 static int mov_write_mfra_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
-    int64_t pos = avio_tell(pb);
-    int i;
+    AVIOContext *mfra_pb;
+    int i, ret, sz;
+    uint8_t *buf;
 
-    avio_wb32(pb, 0); /* size placeholder */
-    ffio_wfourcc(pb, "mfra");
+    ret = avio_open_dyn_buf(&mfra_pb);
+    if (ret < 0)
+        return ret;
+
+    avio_wb32(mfra_pb, 0); /* size placeholder */
+    ffio_wfourcc(mfra_pb, "mfra");
     /* An empty mfra atom is enough to indicate to the publishing point that
      * the stream has ended. */
     if (mov->flags & FF_MOV_FLAG_ISML)
-        return update_size(pb, pos);
+        goto done_mfra;
 
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
         if (track->nb_frag_info)
-            mov_write_tfra_tag(pb, track);
+            mov_write_tfra_tag(mfra_pb, track);
     }
 
-    avio_wb32(pb, 16);
-    ffio_wfourcc(pb, "mfro");
-    avio_wb32(pb, 0); /* version + flags */
-    avio_wb32(pb, avio_tell(pb) + 4 - pos);
+    avio_wb32(mfra_pb, 16);
+    ffio_wfourcc(mfra_pb, "mfro");
+    avio_wb32(mfra_pb, 0); /* version + flags */
+    avio_wb32(mfra_pb, avio_tell(mfra_pb) + 4);
 
-    return update_size(pb, pos);
+done_mfra:
+
+    sz  = update_size(mfra_pb, 0);
+    ret = avio_get_dyn_buf(mfra_pb, &buf);
+    avio_write(pb, buf, ret);
+    ffio_free_dyn_buf(&mfra_pb);
+
+    return sz;
 }
 
 static int mov_write_mdat_tag(AVIOContext *pb, MOVMuxContext *mov)
@@ -6987,7 +6999,9 @@ static int mov_write_trailer(AVFormatContext *s)
         }
         if (!(mov->flags & FF_MOV_FLAG_SKIP_TRAILER)) {
             avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
-            mov_write_mfra_tag(pb, mov);
+            res = mov_write_mfra_tag(pb, mov);
+            if (res < 0)
+                return res;
         }
     }
 

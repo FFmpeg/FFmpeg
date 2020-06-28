@@ -50,6 +50,7 @@
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
+#include "put_bits.h"
 #include "raw.h"
 #include "bytestream.h"
 #include "version.h"
@@ -2240,6 +2241,68 @@ int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
     memcpy(sei_data + 10, side_data->data, side_data->size);
 
     sei_data[side_data->size+10] = 255;
+
+    return 0;
+}
+
+static unsigned bcd2uint(uint8_t bcd)
+{
+    unsigned low  = bcd & 0xf;
+    unsigned high = bcd >> 4;
+    if (low > 9 || high > 9)
+        return 0;
+    return low + 10*high;
+}
+
+int ff_alloc_timecode_sei(const AVFrame *frame, size_t prefix_len,
+                     void **data, size_t *sei_size)
+{
+    AVFrameSideData *sd = NULL;
+    uint8_t *sei_data;
+    PutBitContext pb;
+    uint32_t *tc;
+    int m;
+
+    if (frame)
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE);
+
+    if (!sd) {
+        *data = NULL;
+        return 0;
+    }
+    tc =  (uint32_t*)sd->data;
+    m  = tc[0] & 3;
+
+    *sei_size = sizeof(uint32_t) * 4;
+    *data = av_mallocz(*sei_size + prefix_len);
+    if (!*data)
+        return AVERROR(ENOMEM);
+    sei_data = (uint8_t*)*data + prefix_len;
+
+    init_put_bits(&pb, sei_data, *sei_size);
+    put_bits(&pb, 2, m); // num_clock_ts
+
+    for (int j = 1; j <= m; j++) {
+        uint32_t tcsmpte = tc[j];
+        unsigned hh   = bcd2uint(tcsmpte     & 0x3f);    // 6-bit hours
+        unsigned mm   = bcd2uint(tcsmpte>>8  & 0x7f);    // 7-bit minutes
+        unsigned ss   = bcd2uint(tcsmpte>>16 & 0x7f);    // 7-bit seconds
+        unsigned ff   = bcd2uint(tcsmpte>>24 & 0x3f);    // 6-bit frames
+        unsigned drop = tcsmpte & 1<<30 && !0;  // 1-bit drop if not arbitrary bit
+
+        put_bits(&pb, 1, 1); // clock_timestamp_flag
+        put_bits(&pb, 1, 1); // units_field_based_flag
+        put_bits(&pb, 5, 0); // counting_type
+        put_bits(&pb, 1, 1); // full_timestamp_flag
+        put_bits(&pb, 1, 0); // discontinuity_flag
+        put_bits(&pb, 1, drop);
+        put_bits(&pb, 9, ff);
+        put_bits(&pb, 6, ss);
+        put_bits(&pb, 6, mm);
+        put_bits(&pb, 5, hh);
+        put_bits(&pb, 5, 0);
+    }
+    flush_put_bits(&pb);
 
     return 0;
 }
