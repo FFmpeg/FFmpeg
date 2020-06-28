@@ -928,6 +928,7 @@ static int h264_slice_header_init(H264Context *h)
 
     h->first_field           = 0;
     h->prev_interlaced_frame = 1;
+    h->got_first_iframe = 0;
 
     init_scan_tables(h);
     ret = ff_h264_alloc_tables(h);
@@ -944,7 +945,7 @@ static int h264_slice_header_init(H264Context *h)
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-
+    
     h->cur_bit_depth_luma         =
     h->avctx->bits_per_raw_sample = sps->bit_depth_luma;
     h->cur_chroma_format_idc      = sps->chroma_format_idc;
@@ -1321,7 +1322,7 @@ static int h264_export_frame_props(H264Context *h)
             int   mm = h->sei.picture_timing.timecode[i].minutes;
             int   ss = h->sei.picture_timing.timecode[i].seconds;
             int   ff = h->sei.picture_timing.timecode[i].frame;
-
+			
             tc_sd[i + 1] = av_timecode_get_smpte(h->avctx->framerate, drop, hh, mm, ss, ff);
         }
         h->sei.picture_timing.timecode_cnt = 0;
