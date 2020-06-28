@@ -22,6 +22,7 @@
 #include "config.h"
 
 #include "nvenc.h"
+#include "hevc_sei.h"
 
 #include "libavutil/hwcontext_cuda.h"
 #include "libavutil/hwcontext.h"
@@ -2149,6 +2150,22 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
                 sei_data[sei_count].payloadSize = (uint32_t)a53_size;
                 sei_data[sei_count].payloadType = 4;
                 sei_data[sei_count].payload = (uint8_t*)a53_data;
+                sei_count ++;
+            }
+        }
+
+        if (ctx->tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
+            void *tc_data = NULL;
+            size_t tc_size = 0;
+
+            if (ff_alloc_timecode_sei(frame, 0, (void**)&tc_data, &tc_size) < 0) {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode sei, skipping\n");
+            }
+
+            if (tc_data) {
+                sei_data[sei_count].payloadSize = (uint32_t)tc_size;
+                sei_data[sei_count].payloadType = HEVC_SEI_TYPE_TIME_CODE;
+                sei_data[sei_count].payload = (uint8_t*)tc_data;
                 sei_count ++;
             }
         }
