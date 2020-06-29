@@ -48,6 +48,8 @@ static float get_expected(float f, DNNMathUnaryOperation op)
         return sinh(f);
     case DMUO_COSH:
         return cosh(f);
+    case DMUO_TANH:
+        return tanh(f);
     default:
         av_assert0(!"not supported yet");
         return 0.f;
@@ -108,6 +110,8 @@ int main(int agrc, char **argv)
     if (test(DMUO_SINH))
         return 1;
     if (test(DMUO_COSH))
+        return 1;
+    if (test(DMUO_TANH))
         return 1;
     return 0;
 }
