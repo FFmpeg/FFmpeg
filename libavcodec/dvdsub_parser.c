@@ -32,11 +32,6 @@ typedef struct DVDSubParseContext {
     int packet_index;
 } DVDSubParseContext;
 
-static av_cold int dvdsub_parse_init(AVCodecParserContext *s)
-{
-    return 0;
-}
-
 static int dvdsub_parse(AVCodecParserContext *s,
                         AVCodecContext *avctx,
                         const uint8_t **poutbuf, int *poutbuf_size,
@@ -92,7 +87,6 @@ static av_cold void dvdsub_parse_close(AVCodecParserContext *s)
 AVCodecParser ff_dvdsub_parser = {
     .codec_ids      = { AV_CODEC_ID_DVD_SUBTITLE },
     .priv_data_size = sizeof(DVDSubParseContext),
-    .parser_init    = dvdsub_parse_init,
     .parser_parse   = dvdsub_parse,
     .parser_close   = dvdsub_parse_close,
 };
