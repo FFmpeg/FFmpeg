@@ -39,6 +39,7 @@ typedef enum {
     DMUO_ATAN = 6,
     DMUO_SINH = 7,
     DMUO_COSH = 8,
+    DMUO_TANH = 9,
     DMUO_COUNT
 } DNNMathUnaryOperation;
 
