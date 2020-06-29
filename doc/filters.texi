@@ -12820,7 +12820,7 @@ The obtained VMAF score is printed through the logging system.
 
 It requires Netflix's vmaf library (libvmaf) as a pre-requisite.
 After installing the library it can be enabled using:
-@code{./configure --enable-libvmaf --enable-version3}.
+@code{./configure --enable-libvmaf}.
 If no model path is specified it uses the default model: @code{vmaf_v0.6.1.pkl}.
 
 The filter has following options:

@@ -1743,7 +1743,6 @@ EXTERNAL_LIBRARY_VERSION3_LIST="
     liblensfun
     libopencore_amrnb
     libopencore_amrwb
-    libvmaf
     libvo_amrwbenc
     mbedtls
     rkmpp
@@ -1811,6 +1810,7 @@ EXTERNAL_LIBRARY_LIST="
     libtheora
     libtwolame
     libv4l2
+    libvmaf
     libvorbis
     libvpx
     libwavpack
@@ -6385,7 +6385,7 @@ enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config libvidstab "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
-enabled libvmaf           && require_pkg_config libvmaf "libvmaf >= 1.3.9" libvmaf.h compute_vmaf
+enabled libvmaf           && require_pkg_config libvmaf "libvmaf >= 1.5.2" libvmaf.h compute_vmaf
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h vorbis_info_init &&
                              require_pkg_config libvorbisenc vorbisenc vorbis/vorbisenc.h vorbis_encode_init
