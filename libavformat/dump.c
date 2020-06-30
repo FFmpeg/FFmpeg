@@ -679,17 +679,18 @@ void av_dump_format(AVFormatContext *ic, int index,
     if (ic->nb_programs) {
         int j, k, total = 0;
         for (j = 0; j < ic->nb_programs; j++) {
-            const AVDictionaryEntry *name = av_dict_get(ic->programs[j]->metadata,
+            const AVProgram *program = ic->programs[j];
+            const AVDictionaryEntry *name = av_dict_get(program->metadata,
                                                         "name", NULL, 0);
-            av_log(NULL, AV_LOG_INFO, "  Program %d %s\n", ic->programs[j]->id,
+            av_log(NULL, AV_LOG_INFO, "  Program %d %s\n", program->id,
                    name ? name->value : "");
-            dump_metadata(NULL, ic->programs[j]->metadata, "    ");
-            for (k = 0; k < ic->programs[j]->nb_stream_indexes; k++) {
-                dump_stream_format(ic, ic->programs[j]->stream_index[k],
+            dump_metadata(NULL, program->metadata, "    ");
+            for (k = 0; k < program->nb_stream_indexes; k++) {
+                dump_stream_format(ic, program->stream_index[k],
                                    index, is_output);
-                printed[ic->programs[j]->stream_index[k]] = 1;
+                printed[program->stream_index[k]] = 1;
             }
-            total += ic->programs[j]->nb_stream_indexes;
+            total += program->nb_stream_indexes;
         }
         if (total < ic->nb_streams)
             av_log(NULL, AV_LOG_INFO, "  No Program\n");
