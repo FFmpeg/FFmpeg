@@ -198,6 +198,7 @@ typedef struct DASHContext {
     int target_latency_refid;
     AVRational min_playback_rate;
     AVRational max_playback_rate;
+    int64_t update_period;
 } DASHContext;
 
 static struct codec_string {
@@ -1184,6 +1185,8 @@ static int write_manifest(AVFormatContext *s, int final)
         char now_str[100];
         if (c->use_template && !c->use_timeline)
             update_period = 500;
+        if (c->update_period)
+            update_period = c->update_period;
         avio_printf(out, "\tminimumUpdatePeriod=\"PT%"PRId64"S\"\n", update_period);
         if (!c->ldash)
             avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
@@ -2380,6 +2383,7 @@ static const AVOption options[] = {
     { "target_latency", "Set desired target latency for Low-latency dash", OFFSET(target_latency), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, E },
     { "min_playback_rate", "Set desired minimum playback rate", OFFSET(min_playback_rate), AV_OPT_TYPE_RATIONAL, { .dbl = 1.0 }, 0.5, 1.5, E },
     { "max_playback_rate", "Set desired maximum playback rate", OFFSET(max_playback_rate), AV_OPT_TYPE_RATIONAL, { .dbl = 1.0 }, 0.5, 1.5, E },
+    { "update_period", "Set the mpd update interval", OFFSET(update_period), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, E},
     { NULL },
 };
 
