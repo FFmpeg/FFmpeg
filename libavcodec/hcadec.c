@@ -157,6 +157,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     } else
         return AVERROR_INVALIDDATA;
 
+    if (c->total_band_count > FF_ARRAY_ELEMS(c->ch->imdct_in))
+        return AVERROR_INVALIDDATA;
+
+
     while (get_bits_left(gb) >= 32) {
         chunk = get_bits_long(gb, 32);
         if (chunk == MKBETAG('v', 'b', 'r', 0)) {
