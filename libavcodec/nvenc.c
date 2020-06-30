@@ -2154,7 +2154,7 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             }
         }
 
-        if (ctx->tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
+        if (ctx->s12m_tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
             void *tc_data = NULL;
             size_t tc_size = 0;
 

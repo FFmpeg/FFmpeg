@@ -196,7 +196,7 @@ typedef struct NvencContext
     int coder;
     int b_ref_mode;
     int a53_cc;
-    int tc;
+    int s12m_tc;
     int dpb_size;
 } NvencContext;
 
