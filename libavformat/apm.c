@@ -21,12 +21,12 @@
  */
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
-#define APM_FILE_HEADER_SIZE    20
-#define APM_VS12_CHUNK_SIZE     76
+#define APM_FILE_HEADER_SIZE    18
+#define APM_FILE_EXTRADATA_SIZE 80
+
 #define APM_MAX_READ_SIZE       4096
 
 #define APM_TAG_CODEC           0x2000
@@ -51,6 +51,7 @@ typedef struct APMVS12Chunk {
     uint32_t    unk2;
     APMState    state;
     uint32_t    pad[7];
+    uint32_t    data;
 } APMVS12Chunk;
 
 static void apm_parse_vs12(APMVS12Chunk *vs12, const uint8_t *buf)
@@ -71,6 +72,8 @@ static void apm_parse_vs12(APMVS12Chunk *vs12, const uint8_t *buf)
 
     for (int i = 0; i < FF_ARRAY_ELEMS(vs12->pad); i++)
         vs12->pad[i]            = AV_RL32(buf + 48 + (i * 4));
+
+    vs12->data                  = AV_RL32(buf + 76);
 }
 
 static int apm_probe(const AVProbeData *p)
@@ -95,24 +98,37 @@ static int apm_read_header(AVFormatContext *s)
     int64_t ret;
     AVStream *st;
     APMVS12Chunk vs12;
-    uint8_t buf[APM_VS12_CHUNK_SIZE];
+    uint8_t buf[APM_FILE_EXTRADATA_SIZE];
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
 
-    /* The header starts with a WAVEFORMATEX */
-    if ((ret = ff_get_wav_header(s, s->pb, st->codecpar, APM_FILE_HEADER_SIZE, 0)) < 0)
+    /*
+     * This is 98% a WAVEFORMATEX, but there's something screwy with the extradata
+     * that ff_get_wav_header() can't (and shouldn't) handle properly.
+     */
+    if (avio_rl16(s->pb) != APM_TAG_CODEC)
+        return AVERROR_INVALIDDATA;
+
+    st->codecpar->channels              = avio_rl16(s->pb);
+    st->codecpar->sample_rate           = avio_rl32(s->pb);
+
+    /* Skip the bitrate, it's usually wrong anyway. */
+    if ((ret = avio_skip(s->pb, 4)) < 0)
         return ret;
+
+    st->codecpar->block_align           = avio_rl16(s->pb);
+    st->codecpar->bits_per_coded_sample = avio_rl16(s->pb);
+
+    if (avio_rl32(s->pb) != APM_FILE_EXTRADATA_SIZE)
+        return AVERROR_INVALIDDATA;
+
+    /* I've never seen files greater than this. */
+    if (st->codecpar->sample_rate > 44100)
+        return AVERROR_INVALIDDATA;
 
     if (st->codecpar->bits_per_coded_sample != 4)
         return AVERROR_INVALIDDATA;
-
-    if (st->codecpar->codec_tag != APM_TAG_CODEC)
-        return AVERROR_INVALIDDATA;
-
-    /* ff_get_wav_header() does most of the work, but we need to fix a few things. */
-    st->codecpar->codec_id              = AV_CODEC_ID_ADPCM_IMA_APM;
-    st->codecpar->codec_tag             = 0;
 
     if (st->codecpar->channels == 2)
         st->codecpar->channel_layout    = AV_CH_LAYOUT_STEREO;
@@ -121,30 +137,28 @@ static int apm_read_header(AVFormatContext *s)
     else
         return AVERROR_INVALIDDATA;
 
+    st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id              = AV_CODEC_ID_ADPCM_IMA_APM;
     st->codecpar->format                = AV_SAMPLE_FMT_S16;
     st->codecpar->bits_per_raw_sample   = 16;
     st->codecpar->bit_rate              = st->codecpar->channels *
                                           st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample;
 
-    if ((ret = avio_read(s->pb, buf, APM_VS12_CHUNK_SIZE)) < 0)
+    if ((ret = avio_read(s->pb, buf, APM_FILE_EXTRADATA_SIZE)) < 0)
         return ret;
-    else if (ret != APM_VS12_CHUNK_SIZE)
+    else if (ret != APM_FILE_EXTRADATA_SIZE)
         return AVERROR(EIO);
 
     apm_parse_vs12(&vs12, buf);
 
-    if (vs12.magic != APM_TAG_VS12) {
+    if (vs12.magic != APM_TAG_VS12 || vs12.data != APM_TAG_DATA)
         return AVERROR_INVALIDDATA;
-    }
 
     if (vs12.state.has_saved) {
         avpriv_request_sample(s, "Saved Samples");
         return AVERROR_PATCHWELCOME;
     }
-
-    if (avio_rl32(s->pb) != APM_TAG_DATA)
-        return AVERROR_INVALIDDATA;
 
     if ((ret = ff_alloc_extradata(st->codecpar, 16)) < 0)
         return ret;
