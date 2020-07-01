@@ -2629,7 +2629,6 @@ static int hls_write_trailer(struct AVFormatContext *s)
             goto failed;
 
         vs->size = range_length;
-        hlsenc_io_close(s, &vs->out, filename);
         ret = hlsenc_io_close(s, &vs->out, filename);
         if (ret < 0) {
             av_log(s, AV_LOG_WARNING, "upload segment failed, will retry with a new http session.\n");
