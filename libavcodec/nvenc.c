@@ -42,6 +42,12 @@
                     rc == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ || \
                     rc == NV_ENC_PARAMS_RC_CBR_HQ)
 
+#ifdef NVENC_HAVE_NEW_PRESETS
+#define IS_SDK10_PRESET(p) ((p) >= PRESET_P1 && (p) <= PRESET_P7)
+#else
+#define IS_SDK10_PRESET(p) 0
+#endif
+
 const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NV12,
@@ -145,8 +151,14 @@ static int nvenc_print_error(AVCodecContext *avctx, NVENCSTATUS err,
 
 static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
 {
-#if NVENCAPI_CHECK_VERSION(9, 2)
+#if NVENCAPI_CHECK_VERSION(10, 1)
     const char *minver = "(unknown)";
+#elif NVENCAPI_CHECK_VERSION(10, 0)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "450.51";
+# else
+    const char *minver = "445.87";
+# endif
 #elif NVENCAPI_CHECK_VERSION(9, 1)
 # if defined(_WIN32) || defined(__CYGWIN__)
     const char *minver = "436.15";
@@ -650,6 +662,15 @@ static void nvenc_map_preset(NvencContext *ctx)
         PRESET(LOW_LATENCY_HQ,      NVENC_LOWLATENCY),
         PRESET(LOSSLESS_DEFAULT,    NVENC_LOSSLESS),
         PRESET(LOSSLESS_HP,         NVENC_LOSSLESS),
+#ifdef NVENC_HAVE_NEW_PRESETS
+        PRESET(P1),
+        PRESET(P2),
+        PRESET(P3),
+        PRESET(P4),
+        PRESET(P5),
+        PRESET(P6),
+        PRESET(P7),
+#endif
     };
 
     GUIDTuple *t = &presets[ctx->preset];
@@ -859,6 +880,12 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
     if (avctx->rc_max_rate > 0)
         ctx->encode_config.rcParams.maxBitRate = avctx->rc_max_rate;
 
+#ifdef NVENC_HAVE_MULTIPASS
+    ctx->encode_config.rcParams.multiPass = ctx->multipass;
+    if (ctx->encode_config.rcParams.multiPass != NV_ENC_MULTI_PASS_DISABLED)
+        ctx->flags |= NVENC_TWO_PASSES;
+#endif
+
     if (ctx->rc < 0) {
         if (ctx->flags & NVENC_ONE_PASS)
             ctx->twopass = 0;
@@ -892,6 +919,11 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
         ctx->rc &= ~RC_MODE_DEPRECATED;
     }
+
+#ifdef NVENC_HAVE_LDKFS
+    if (ctx->ldkfs)
+         ctx->encode_config.rcParams.lowDelayKeyFrameScale = ctx->ldkfs;
+#endif
 
     if (ctx->flags & NVENC_LOSSLESS) {
         set_lossless(avctx);
@@ -1202,10 +1234,27 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
     preset_config.version = NV_ENC_PRESET_CONFIG_VER;
     preset_config.presetCfg.version = NV_ENC_CONFIG_VER;
 
-    nv_status = p_nvenc->nvEncGetEncodePresetConfig(ctx->nvencoder,
-                                                    ctx->init_encode_params.encodeGUID,
-                                                    ctx->init_encode_params.presetGUID,
-                                                    &preset_config);
+    if (IS_SDK10_PRESET(ctx->preset)) {
+#ifdef NVENC_HAVE_NEW_PRESETS
+        ctx->init_encode_params.tuningInfo = ctx->tuning_info;
+
+        nv_status = p_nvenc->nvEncGetEncodePresetConfigEx(ctx->nvencoder,
+            ctx->init_encode_params.encodeGUID,
+            ctx->init_encode_params.presetGUID,
+            ctx->init_encode_params.tuningInfo,
+            &preset_config);
+#endif
+    } else {
+#ifdef NVENC_HAVE_NEW_PRESETS
+        // Turn off tuning info parameter if older presets are on
+        ctx->init_encode_params.tuningInfo = 0;
+#endif
+
+        nv_status = p_nvenc->nvEncGetEncodePresetConfig(ctx->nvencoder,
+            ctx->init_encode_params.encodeGUID,
+            ctx->init_encode_params.presetGUID,
+            &preset_config);
+    }
     if (nv_status != NV_ENC_SUCCESS)
         return nvenc_print_error(avctx, nv_status, "Cannot get the preset configuration");
 
@@ -1227,6 +1276,17 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
+
+#ifdef NVENC_HAVE_NEW_PRESETS
+    /* If lookahead isn't set from CLI, use value from preset.
+     * P6 & P7 presets may enable lookahead for better quality.
+     * */
+    if (ctx->rc_lookahead == 0 && ctx->encode_config.rcParams.enableLookahead)
+        ctx->rc_lookahead = ctx->encode_config.rcParams.lookaheadDepth;
+
+    if (ctx->init_encode_params.tuningInfo == NV_ENC_TUNING_INFO_LOSSLESS)
+        ctx->flags |= NVENC_LOSSLESS;
+#endif
 
     if (ctx->weighted_pred == 1)
         ctx->init_encode_params.enableWeightedPrediction = 1;
