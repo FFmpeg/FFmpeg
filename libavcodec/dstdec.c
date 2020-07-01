@@ -85,6 +85,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    // the sample rate is only allowed to be 64,128,256 * 44100 by ISO/IEC 14496-3:2005(E)
+    // We are a bit more tolerant here, but this check is needed to bound the size and duration
+    if (avctx->sample_rate > 512 * 44100)
+        return AVERROR_INVALIDDATA;
+
+
     if (DST_SAMPLES_PER_FRAME(avctx->sample_rate) & 7) {
         return AVERROR_PATCHWELCOME;
     }
