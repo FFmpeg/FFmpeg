@@ -110,7 +110,6 @@
 
 typedef struct DecodeSimpleContext {
     AVPacket *in_pkt;
-    AVFrame  *out_frame;
 } DecodeSimpleContext;
 
 typedef struct EncodeSimpleContext {

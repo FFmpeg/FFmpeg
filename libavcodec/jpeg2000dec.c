@@ -567,7 +567,7 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 
     if ((ret = get_cox(s, &tmp)) < 0)
         return ret;
-
+    tmp.init = 1;
     for (compno = 0; compno < s->ncomponents; compno++)
         if (!(properties[compno] & HAD_COC))
             memcpy(c + compno, &tmp, sizeof(tmp));
@@ -605,6 +605,7 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
         return ret;
 
     properties[compno] |= HAD_COC;
+    c->init = 1;
     return 0;
 }
 
@@ -991,7 +992,8 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
 
         if (!comp->roi_shift)
             comp->roi_shift = s->roi_shift[compno];
-
+        if (!codsty->init)
+            return AVERROR_INVALIDDATA;
         if (ret = ff_jpeg2000_init_component(comp, codsty, qntsty,
                                              s->cbps[compno], s->cdx[compno],
                                              s->cdy[compno], s->avctx))

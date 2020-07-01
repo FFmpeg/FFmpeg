@@ -144,6 +144,7 @@ typedef struct Jpeg2000CodingStyle {
     uint8_t prog_order;       // progression order
     uint8_t log2_prec_widths[JPEG2000_MAX_RESLEVELS];  // precincts size according resolution levels
     uint8_t log2_prec_heights[JPEG2000_MAX_RESLEVELS]; // TODO: initialize prec_size array with 0?
+    uint8_t init;
 } Jpeg2000CodingStyle;
 
 typedef struct Jpeg2000QuantStyle {
