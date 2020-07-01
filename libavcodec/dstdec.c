@@ -56,7 +56,6 @@ static const int8_t probs_code_pred_coeff[3][3] = {
 typedef struct ArithCoder {
     unsigned int a;
     unsigned int c;
-    int overread;
 } ArithCoder;
 
 typedef struct Table {
@@ -85,6 +84,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avpriv_request_sample(avctx, "Channel count %d", avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
+
+    // the sample rate is only allowed to be 64,128,256 * 44100 by ISO/IEC 14496-3:2005(E)
+    // We are a bit more tolerant here, but this check is needed to bound the size and duration
+    if (avctx->sample_rate > 512 * 44100)
+        return AVERROR_INVALIDDATA;
+
 
     if (DST_SAMPLES_PER_FRAME(avctx->sample_rate) & 7) {
         return AVERROR_PATCHWELCOME;
@@ -181,7 +186,6 @@ static void ac_init(ArithCoder *ac, GetBitContext *gb)
 {
     ac->a = 4095;
     ac->c = get_bits(gb, 12);
-    ac->overread = 0;
 }
 
 static av_always_inline void ac_get(ArithCoder *ac, GetBitContext *gb, int p, int *e)
@@ -201,8 +205,6 @@ static av_always_inline void ac_get(ArithCoder *ac, GetBitContext *gb, int p, in
     if (ac->a < 2048) {
         int n = 11 - av_log2(ac->a);
         ac->a <<= n;
-        if (get_bits_left(gb) < n)
-            ac->overread ++;
         ac->c = (ac->c << n) | get_bits(gb, n);
     }
 }
@@ -354,9 +356,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             } else {
                 prob = 128;
             }
-
-            if (ac->overread > 16)
-                return AVERROR_INVALIDDATA;
 
             ac_get(ac, gb, prob, &residual);
             v = ((predict >> 15) ^ residual) & 1;
