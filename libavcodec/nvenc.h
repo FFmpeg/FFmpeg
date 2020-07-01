@@ -67,6 +67,7 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_NEW_PRESETS
 #define NVENC_HAVE_MULTIPASS
 #define NVENC_HAVE_LDKFS
+#define NVENC_HAVE_H264_LVL6
 #endif
 
 typedef struct NvencSurface
