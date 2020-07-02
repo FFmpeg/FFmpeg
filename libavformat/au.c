@@ -81,7 +81,7 @@ static int au_read_annotation(AVFormatContext *s, int size)
     AVBPrint bprint;
     char * key = NULL;
     char * value = NULL;
-    int i;
+    int ret, i;
 
     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -92,7 +92,9 @@ static int au_read_annotation(AVFormatContext *s, int size)
             if (c == '\0') {
                 state = PARSE_FINISHED;
             } else if (c == '=') {
-                av_bprint_finalize(&bprint, &key);
+                ret = av_bprint_finalize(&bprint, &key);
+                if (ret < 0)
+                    return ret;
                 av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
                 state = PARSE_VALUE;
             } else {
@@ -143,6 +145,7 @@ static int au_read_header(AVFormatContext *s)
     int bps, ba = 0;
     enum AVCodecID codec;
     AVStream *st;
+    int ret;
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('.', 's', 'n', 'd'))
@@ -161,7 +164,9 @@ static int au_read_header(AVFormatContext *s)
 
     if (size > 24) {
         /* parse annotation field to get metadata */
-        au_read_annotation(s, size - 24);
+        ret = au_read_annotation(s, size - 24);
+        if (ret < 0)
+            return ret;
     }
 
     codec = ff_codec_get_id(codec_au_tags, id);

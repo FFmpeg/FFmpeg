@@ -2120,6 +2120,8 @@ int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
             av_freep(&buf);
         }
     }
-    av_bprint_finalize(&bprint, buffer);
+    ret = av_bprint_finalize(&bprint, buffer);
+    if (ret < 0)
+        return ret;
     return 0;
 }

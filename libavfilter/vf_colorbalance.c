@@ -188,9 +188,9 @@ static int color_balance8_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
             if (s->preserve_lightness)
                 preservel(&r, &g, &b, l);
 
-            dstr[j] = av_clip_uint8(r * max);
-            dstg[j] = av_clip_uint8(g * max);
-            dstb[j] = av_clip_uint8(b * max);
+            dstr[j] = av_clip_uint8(lrintf(r * max));
+            dstg[j] = av_clip_uint8(lrintf(g * max));
+            dstb[j] = av_clip_uint8(lrintf(b * max));
             if (in != out && out->linesize[3])
                 dsta[j] = srca[j];
         }
@@ -242,9 +242,9 @@ static int color_balance16_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_
             if (s->preserve_lightness)
                 preservel(&r, &g, &b, l);
 
-            dstr[j] = av_clip_uintp2_c(r * max, depth);
-            dstg[j] = av_clip_uintp2_c(g * max, depth);
-            dstb[j] = av_clip_uintp2_c(b * max, depth);
+            dstr[j] = av_clip_uintp2_c(lrintf(r * max), depth);
+            dstg[j] = av_clip_uintp2_c(lrintf(g * max), depth);
+            dstb[j] = av_clip_uintp2_c(lrintf(b * max), depth);
             if (in != out && out->linesize[3])
                 dsta[j] = srca[j];
         }
@@ -299,9 +299,9 @@ static int color_balance8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             if (s->preserve_lightness)
                 preservel(&r, &g, &b, l);
 
-            dst[j + roffset] = av_clip_uint8(r * max);
-            dst[j + goffset] = av_clip_uint8(g * max);
-            dst[j + boffset] = av_clip_uint8(b * max);
+            dst[j + roffset] = av_clip_uint8(lrintf(r * max));
+            dst[j + goffset] = av_clip_uint8(lrintf(g * max));
+            dst[j + boffset] = av_clip_uint8(lrintf(b * max));
             if (in != out && step == 4)
                 dst[j + aoffset] = src[j + aoffset];
         }
@@ -351,9 +351,9 @@ static int color_balance16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             if (s->preserve_lightness)
                 preservel(&r, &g, &b, l);
 
-            dst[j + roffset] = av_clip_uintp2_c(r * max, depth);
-            dst[j + goffset] = av_clip_uintp2_c(g * max, depth);
-            dst[j + boffset] = av_clip_uintp2_c(b * max, depth);
+            dst[j + roffset] = av_clip_uintp2_c(lrintf(r * max), depth);
+            dst[j + goffset] = av_clip_uintp2_c(lrintf(g * max), depth);
+            dst[j + boffset] = av_clip_uintp2_c(lrintf(b * max), depth);
             if (in != out && step == 4)
                 dst[j + aoffset] = src[j + aoffset];
         }
