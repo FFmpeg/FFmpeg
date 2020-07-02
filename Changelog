@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.15:
+ avcodec/dstdec: Replace AC overread check by sample rate check
+ avformat/mov: fix memleaks
+ libavformat/mov: Fix memleaks when demuxing DV audio
  avformat/utils: reorder duration computation to avoid overflow
  avcodec/pngdec: Check for fctl after idat
  png: split header state and data state in two separate variables.
