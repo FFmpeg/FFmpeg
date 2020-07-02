@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - AudioToolbox output device
 - MacCaption demuxer
+- PGX decoder
 
 
 version 4.3:

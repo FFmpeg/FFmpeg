@@ -1406,6 +1406,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_PGX,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "pgx",
+        .long_name = NULL_IF_CONFIG_SMALL("PGX (JPEG2000 Test Format)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_Y41P,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "y41p",
