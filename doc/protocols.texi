@@ -535,6 +535,9 @@ audio/mpeg.
 This enables support for Icecast versions < 2.4.0, that do not support the
 HTTP PUT method but the SOURCE method.
 
+@item tls
+Establish a TLS (HTTPS) connection to Icecast.
+
 @end table
 
 @example
