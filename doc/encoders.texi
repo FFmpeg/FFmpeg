@@ -1599,34 +1599,34 @@ Enable the use of global motion for block prediction. Default is true.
 Enable block copy mode for intra block prediction. This mode is
 useful for screen content. Default is true.
 
-@item enable-rect-partitions (@emph{boolean})
+@item enable-rect-partitions (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable rectangular partitions. Default is true.
 
-@item enable-1to4-partitions (@emph{boolean})
+@item enable-1to4-partitions (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable 1:4/4:1 partitions. Default is true.
 
-@item enable-ab-partitions (@emph{boolean})
+@item enable-ab-partitions (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable AB shape partitions. Default is true.
 
-@item enable-angle-delta (@emph{boolean})
+@item enable-angle-delta (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable angle delta intra prediction. Default is true.
 
-@item enable-cfl-intra (@emph{boolean})
+@item enable-cfl-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable chroma predicted from luma intra prediction. Default is true.
 
-@item enable-filter-intra (@emph{boolean})
+@item enable-filter-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable filter intra predictor. Default is true.
 
-@item enable-intra-edge-filter (@emph{boolean})
+@item enable-intra-edge-filter (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable intra edge filter. Default is true.
 
-@item enable-smooth-intra (@emph{boolean})
+@item enable-smooth-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable smooth intra prediction mode. Default is true.
 
-@item enable-paeth-intra (@emph{boolean})
+@item enable-paeth-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable paeth predictor in intra prediction. Default is true.
 
-@item enable-palette (@emph{boolean})
+@item enable-palette (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable palette prediction mode. Default is true.
 
 @end table
