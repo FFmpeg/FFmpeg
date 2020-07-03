@@ -2,6 +2,82 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.0.6:
+ avcodec/dstdec: Replace AC overread check by sample rate check
+ avcodec/hevc_mp4toannexb_bsf: Check NAL size against available input
+ lavf/webm_chunk: Fix NULL dereference
+ avcodec/ttaenc: Fix undefined shift
+ fftools/ffmpeg: Free swresample dictionary during cleanup
+ avfilter/vf_xbr: Fix left shift of negative number
+ avfilter/vf_hqx: Fix undefined left shifts of negative numbers
+ avcodec/jpeg2000dwt: Fix undefined shifts of negative numbers
+ avcodec/ituh263dec: Fix undefined left shift of negative number
+ avcodec/dnxhdenc: Fix undefined left shifts of negative numbers
+ swscale/utils: Fix invalid left shifts of negative numbers
+ swscale/x86/swscale: Fix undefined left shifts of negative numbers
+ avcodec/exr: Fix undefined left shifts of negative numbers
+ avformat/movenc: Fix undefined shift
+ avcodec/pcm: Fix undefined shifts
+ avcodec/wavpackenc: Fix undefined shifts
+ avcodec/ac3enc: Fix invalid shift
+ avcodec/tdsc: Fix undefined shifts
+ fftools/ffmpeg_opt: Fix signed integer overflow
+ avformat/mov: Fix reel_name size check
+ avformat/mov: Fix memleak upon encountering repeating tags
+ avformat/matroskaenc: Don't use NULL for %s format string
+ avformat/webvttdec: Fix memleak upon read header failure
+ avformat/vplayerdec: Fix memleak upon read header failure
+ avformat/tedcaptionsdec: Fix memleak upon read header failure
+ avformat/subviewerdec: Fix memleak upon read header failure
+ avformat/subviewer1dec: Fix memleak upon read header failure
+ avformat/stldec: Fix memleak upon read header failure
+ avformat/srtdec: Fix memleak upon read header failure
+ avformat/sccdec: Fix memleak upon read header failure
+ avformat/samidec: Fix memleak upon read header failure
+ avformat/pjsdec: Fix memleak upon read header failure
+ avformat/mpsubdec: Fix memleak upon read header failure
+ avformat/mpl2dec: Fix memleak upon read header failure
+ avformat/microdvddec: Fix memleak upon read header failure
+ avformat/lrcdec: Fix memleak upon read header failure
+ avformat/jacosubdec: Fix memleak upon read header failure
+ avformat/assdec: Fix memleak upon read header failure
+ avformat/aqtitledec: Fix memleak upon read header failure
+ avformat/mov: Fix memleaks upon read_header failure
+ avformat/omadec: Fix memleaks upon read_header failure
+ avformat/matroskadec: Fix memleaks in WebM DASH manifest demuxer
+ avformat/matroskadec: Use right number of tracks
+ avformat/matroskadec: Fix handling gigantic durations
+ avcodec/cinepakenc: Fix invalid shifts
+ avcodec/cbs_h2645: Fix potential out-of-bounds array access
+ h264_redundant_pps: Fix memleak in case of errors
+ avformat/aviobuf: Don't check for overflow after it happened
+ avformat/matroskaenc: Fix memleak upon encountering bogus chapter
+ fftools/ffmpeg_opt: Check attachment filesize
+ avformat/webmdashenc: Check codec types
+ avformat/avidec: Fix memleak with embedded GAB2 subtitles
+ avformat/webmdashenc: Fix memleak upon realloc failure
+ avformat/matroskadec: Don't discard the upper 32bits of TrackNumber
+ avformat/hnm: Check for extradata allocation failure
+ avformat/subtitles: Don't increment packet counter prematurely
+ avformat/bethsoftvid: Fix potential memleak upon reallocation failure
+ avformat/smoothstreaming: Fix memleaks on errors
+ avformat/matroskaenc: Check BlockAdditional size before use
+ avformat/utils: Fix memleaks in avformat_open_input()
+ avcodec/cavsdsp: Fix undefined left shifts of negative numbers
+ avformat/mov: Don't leak MOVFragmentStreamInfo on error
+ avformat/hevc: Fix potential leak in case of ff_hevc_annexb2mp4_buf failure
+ avformat/matroskaenc: Check for reformatting errors
+ avcodec/ra144enc: Fix invalid left shift of negative number
+ avcodec/adxenc: Avoid undefined left shift of negative numbers
+ avcodec/adpcm: Fix undefined left shifts of negative numbers
+ avformat/segafilmenc: Fix undefined left shift of 1 by 31 places
+ avcodec/proresenc_anatoliy: Fix invalid left shift of negative number
+ avformat/wtvdec: Fix memleak when reading header fails
+ avformat/fitsdec: Fix potential leak of string in AVBPrint
+ avformat/matroskadec: Fix use-after-free when demuxing ProRes
+ avformat/matroskadec: Fix demuxing ProRes
+ avcodec/bitstream: Don't check for undefined behaviour after it happened
+ avformat/mov: fix memleaks
+ libavformat/mov: Fix memleaks when demuxing DV audio
  avformat/utils: reorder duration computation to avoid overflow
  avcodec/pngdec: Check for fctl after idat
  avformat/hls: Pass a copy of the URL for probing
