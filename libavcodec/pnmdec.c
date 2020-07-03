@@ -173,7 +173,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             } else if (upgrade == 2) {
                 unsigned int j, v, f = (65535 * 32768 + s->maxval / 2) / s->maxval;
                 for (j = 0; j < n / 2; j++) {
-                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]);
+                    v = AV_RB16(s->bytestream + 2*j);
                     ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
                 }
             }
@@ -227,7 +227,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                 return AVERROR_INVALIDDATA;
             for (i = 0; i < avctx->height; i++) {
                 for (j = 0; j < n / 2; j++) {
-                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]);
+                    v = AV_RB16(s->bytestream + 2*j);
                     ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
                 }
                 s->bytestream += n;
@@ -239,13 +239,13 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             h = avctx->height >> 1;
             for (i = 0; i < h; i++) {
                 for (j = 0; j < n / 2; j++) {
-                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]);
+                    v = AV_RB16(s->bytestream + 2*j);
                     ptr1[j] = (v * f + 16384) >> 15;
                 }
                 s->bytestream += n;
 
                 for (j = 0; j < n / 2; j++) {
-                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]);
+                    v = AV_RB16(s->bytestream + 2*j);
                     ptr2[j] = (v * f + 16384) >> 15;
                 }
                 s->bytestream += n;
@@ -267,9 +267,9 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             b = (float *)p->data[1];
             for (int i = 0; i < avctx->height; i++) {
                 for (int j = 0; j < avctx->width; j++) {
-                    r[j] = av_int2float(av_le2ne32(((uint32_t *)s->bytestream)[0])) * scale;
-                    g[j] = av_int2float(av_le2ne32(((uint32_t *)s->bytestream)[4])) * scale;
-                    b[j] = av_int2float(av_le2ne32(((uint32_t *)s->bytestream)[8])) * scale;
+                    r[j] = av_int2float(AV_RL32(s->bytestream+0)) * scale;
+                    g[j] = av_int2float(AV_RL32(s->bytestream+4)) * scale;
+                    b[j] = av_int2float(AV_RL32(s->bytestream+8)) * scale;
                     s->bytestream += 12;
                 }
 
@@ -285,9 +285,9 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             b = (float *)p->data[1];
             for (int i = 0; i < avctx->height; i++) {
                 for (int j = 0; j < avctx->width; j++) {
-                    r[j] = av_int2float(av_be2ne32(((uint32_t *)s->bytestream)[0])) * scale;
-                    g[j] = av_int2float(av_be2ne32(((uint32_t *)s->bytestream)[4])) * scale;
-                    b[j] = av_int2float(av_be2ne32(((uint32_t *)s->bytestream)[8])) * scale;
+                    r[j] = av_int2float(AV_RB32(s->bytestream+0)) * scale;
+                    g[j] = av_int2float(AV_RB32(s->bytestream+4)) * scale;
+                    b[j] = av_int2float(AV_RB32(s->bytestream+8)) * scale;
                     s->bytestream += 12;
                 }
 
