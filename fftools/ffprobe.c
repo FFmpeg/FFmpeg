@@ -2854,7 +2854,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
 {
     int err, i;
     AVFormatContext *fmt_ctx = NULL;
-    AVDictionaryEntry *t;
+    AVDictionaryEntry *t = NULL;
     int scan_all_pmts_set = 0;
 
     fmt_ctx = avformat_alloc_context();
@@ -2879,10 +2879,8 @@ static int open_input_file(InputFile *ifile, const char *filename,
     ifile->fmt_ctx = fmt_ctx;
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
-    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
-        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
-        return AVERROR_OPTION_NOT_FOUND;
-    }
+    while ((t = av_dict_get(format_opts, "", t, AV_DICT_IGNORE_SUFFIX)))
+        av_log(NULL, AV_LOG_WARNING, "Option %s skipped - not known to demuxer.\n", t->key);
 
     if (find_stream_info) {
         AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);

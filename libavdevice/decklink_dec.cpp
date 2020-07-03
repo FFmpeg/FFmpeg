@@ -22,6 +22,7 @@
  */
 
 #include <atomic>
+#include <vector>
 using std::atomic;
 
 /* Include internal.h first to avoid conflict between winsock.h (used by
@@ -583,6 +584,109 @@ static int avpacket_queue_get(AVPacketQueue *q, AVPacket *pkt, int block)
     return ret;
 }
 
+static void handle_klv(AVFormatContext *avctx, decklink_ctx *ctx, IDeckLinkVideoInputFrame *videoFrame, int64_t pts)
+{
+    const uint8_t KLV_DID = 0x44;
+    const uint8_t KLV_IN_VANC_SDID = 0x04;
+
+    struct KLVPacket
+    {
+        uint16_t sequence_counter;
+        std::vector<uint8_t> data;
+    };
+
+    size_t total_size = 0;
+    std::vector<std::vector<KLVPacket>> klv_packets(256);
+
+    IDeckLinkVideoFrameAncillaryPackets *packets = nullptr;
+    if (videoFrame->QueryInterface(IID_IDeckLinkVideoFrameAncillaryPackets, (void**)&packets) != S_OK)
+        return;
+
+    IDeckLinkAncillaryPacketIterator *it = nullptr;
+    if (packets->GetPacketIterator(&it) != S_OK) {
+        packets->Release();
+        return;
+    }
+
+    IDeckLinkAncillaryPacket *packet = nullptr;
+    while (it->Next(&packet) == S_OK) {
+        uint8_t *data = nullptr;
+        uint32_t size = 0;
+
+        if (packet->GetDID() == KLV_DID && packet->GetSDID() == KLV_IN_VANC_SDID) {
+             av_log(avctx, AV_LOG_DEBUG, "Found KLV VANC packet on line: %d\n", packet->GetLineNumber());
+
+            if (packet->GetBytes(bmdAncillaryPacketFormatUInt8, (const void**) &data, &size) == S_OK) {
+                // MID and PSC
+                if (size > 3) {
+                    uint8_t mid = data[0];
+                    uint16_t psc = data[1] << 8 | data[2];
+
+                    av_log(avctx, AV_LOG_DEBUG, "KLV with MID: %d and PSC: %d\n", mid, psc);
+
+                    auto& list = klv_packets[mid];
+                    uint16_t expected_psc = list.size() + 1;
+
+                    if (psc == expected_psc) {
+                        uint32_t data_len = size - 3;
+                        total_size += data_len;
+
+                        KLVPacket packet{ psc };
+                        packet.data.resize(data_len);
+                        memcpy(packet.data.data(), data + 3, data_len);
+
+                        list.push_back(std::move(packet));
+                    } else {
+                        av_log(avctx, AV_LOG_WARNING, "Out of order PSC: %d for MID: %d\n", psc, mid);
+
+                        if (!list.empty()) {
+                            for (auto& klv : list)
+                                total_size -= klv.data.size();
+
+                            list.clear();
+                        }
+                    }
+                }
+            }
+        }
+
+        packet->Release();
+    }
+
+    it->Release();
+    packets->Release();
+
+    if (total_size > 0) {
+        std::vector<uint8_t> klv;
+        klv.reserve(total_size);
+
+        for (size_t i = 0; i < klv_packets.size(); ++i) {
+            auto& list = klv_packets[i];
+
+            if (list.empty())
+                continue;
+
+            av_log(avctx, AV_LOG_DEBUG, "Joining MID: %d\n", (int)i);
+
+            for (auto& packet : list)
+                klv.insert(klv.end(), packet.data.begin(), packet.data.end());
+        }
+
+        AVPacket klv_packet;
+        av_init_packet(&klv_packet);
+        klv_packet.pts = pts;
+        klv_packet.dts = pts;
+        klv_packet.flags |= AV_PKT_FLAG_KEY;
+        klv_packet.stream_index = ctx->klv_st->index;
+        klv_packet.data = klv.data();
+        klv_packet.size = klv.size();
+
+        if (avpacket_queue_put(&ctx->queue, &klv_packet) < 0) {
+            ++ctx->dropped;
+        }
+    }
+}
+
 class decklink_input_callback : public IDeckLinkInputCallback
 {
 public:
@@ -821,6 +925,10 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
             uint8_t txt_buf0[3531]; // 35 * 46 bytes decoded teletext lines + 1 byte data_identifier + 1920 bytes OP47 decode buffer
             uint8_t *txt_buf = txt_buf0;
 
+            if (ctx->enable_klv) {
+                handle_klv(avctx, ctx, videoFrame, pkt.pts);
+            }
+
             if (videoFrame->GetAncillaryData(&vanc) == S_OK) {
                 int i;
                 int64_t line_mask = 1;
@@ -1012,6 +1120,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         return AVERROR(ENOMEM);
     ctx->list_devices = cctx->list_devices;
     ctx->list_formats = cctx->list_formats;
+    ctx->enable_klv = cctx->enable_klv;
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
     ctx->duplex_mode  = cctx->duplex_mode;
@@ -1201,6 +1310,20 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
     ctx->video_st=st;
+
+    if (ctx->enable_klv) {
+        st = avformat_new_stream(avctx, NULL);
+        if (!st) {
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
+        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+        st->time_base.den        = ctx->bmd_tb_den;
+        st->time_base.num        = ctx->bmd_tb_num;
+        st->codecpar->codec_id   = AV_CODEC_ID_SMPTE_KLV;
+        avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+        ctx->klv_st = st;
+    }
 
     if (ctx->teletext_lines) {
         st = avformat_new_stream(avctx, NULL);

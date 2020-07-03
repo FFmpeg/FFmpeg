@@ -120,12 +120,14 @@ struct decklink_ctx {
     unsigned int dropped;
     AVStream *audio_st;
     AVStream *video_st;
+    AVStream *klv_st;
     AVStream *teletext_st;
     uint16_t cdp_sequence_num;
 
     /* Options */
     int list_devices;
     int list_formats;
+    int enable_klv;
     int64_t teletext_lines;
     double preroll;
     int duplex_mode;

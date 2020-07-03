@@ -39,6 +39,7 @@ static const AVOption options[] = {
     { "argb",          NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = 32                       }, 0, 0, DEC, "raw_format"},
     { "bgra",          NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('B','G','R','A') }, 0, 0, DEC, "raw_format"},
     { "rgb10",         NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('r','2','1','0') }, 0, 0, DEC, "raw_format"},
+    { "enable_klv",    "output klv if present in vanc", OFFSET(enable_klv), AV_OPT_TYPE_BOOL, { .i64 = 0  }, 0, 1,   DEC },
     { "teletext_lines", "teletext lines bitmask", OFFSET(teletext_lines), AV_OPT_TYPE_INT64, { .i64 = 0   }, 0, 0x7ffffffffLL, DEC, "teletext_lines"},
     { "standard",     NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7fff9fffeLL}, 0, 0,    DEC, "teletext_lines"},
     { "all",          NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7ffffffffLL}, 0, 0,    DEC, "teletext_lines"},

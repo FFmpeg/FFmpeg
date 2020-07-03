@@ -398,6 +398,12 @@ are dropped till a frame with timecode is received.
 Option @var{timecode_format} must be specified.
 Defaults to @option{false}.
 
+@item enable_klv(@emph{bool})
+If set to @option{true}, extracts KLV data from VANC and outputs KLV packets.
+KLV VANC packets are joined based on MID and PSC fields and aggregated into
+one KLV packet.
+Defaults to @option{false}.
+
 @end table
 
 @subsection Examples
