@@ -48,16 +48,16 @@ typedef struct SmackerContext {
     uint32_t *frm_size;
     uint8_t  *frm_flags;
     /* internal variables */
+    int64_t next_frame_pos;
     int cur_frame;
-    /* current frame for demuxing */
-    uint8_t pal[768];
-    int indexes[7];
     int videoindex;
-    uint8_t *bufs[7];
-    int buf_sizes[7];
-    int stream_id[7];
-    int curstream;
-    int64_t nextpos;
+    int indexes[7];
+    /* current frame for demuxing */
+    uint32_t frame_size;
+    int flags;
+    int next_audio_index;
+    int new_palette;
+    uint8_t pal[768];
     int64_t aud_pts[7];
 } SmackerContext;
 
@@ -205,85 +205,75 @@ static int smacker_read_header(AVFormatContext *s)
     avio_rl32(pb); /* padding */
 
     /* setup data */
-    smk->frm_size  = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
-    smk->frm_flags = av_malloc(smk->frames);
-    if (!smk->frm_size || !smk->frm_flags) {
-        av_freep(&smk->frm_size);
-        av_freep(&smk->frm_flags);
+    st->priv_data  = av_malloc_array(smk->frames, sizeof(*smk->frm_size) +
+                                                  sizeof(*smk->frm_flags));
+    if (!st->priv_data)
         return AVERROR(ENOMEM);
-    }
+    smk->frm_size  = st->priv_data;
+    smk->frm_flags = (void*)(smk->frm_size + smk->frames);
 
     /* read frame info */
     for (i = 0; i < smk->frames; i++) {
         smk->frm_size[i] = avio_rl32(pb);
     }
-    for (i = 0; i < smk->frames; i++) {
-        smk->frm_flags[i] = avio_r8(pb);
+    if ((ret = ffio_read_size(pb, smk->frm_flags, smk->frames)) < 0 ||
+        /* load trees to extradata, they will be unpacked by decoder */
+        (ret = ffio_read_size(pb, par->extradata + 16,
+                              par->extradata_size - 16)) < 0) {
+        return ret;
     }
-
-    /* load trees to extradata, they will be unpacked by decoder */
-    ret = avio_read(pb, par->extradata + 16, par->extradata_size - 16);
-    if (ret != par->extradata_size - 16) {
-        av_freep(&smk->frm_size);
-        av_freep(&smk->frm_flags);
-        return AVERROR(EIO);
-    }
-
-    smk->curstream = -1;
-    smk->nextpos = avio_tell(pb);
 
     return 0;
 }
-
 
 static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SmackerContext *smk = s->priv_data;
     int flags;
     int ret;
-    int i;
-    int frame_size = 0;
-    int palchange = 0;
 
     if (avio_feof(s->pb) || smk->cur_frame >= smk->frames)
         return AVERROR_EOF;
 
     /* if we demuxed all streams, pass another frame */
-    if(smk->curstream < 0) {
-        avio_seek(s->pb, smk->nextpos, 0);
-        frame_size = smk->frm_size[smk->cur_frame] & (~3);
+    if (!smk->next_audio_index) {
+        smk->frame_size = smk->frm_size[smk->cur_frame] & (~3);
+        smk->next_frame_pos = avio_tell(s->pb) + smk->frame_size;
         flags = smk->frm_flags[smk->cur_frame];
+        smk->flags = flags >> 1;
         /* handle palette change event */
-        if(flags & SMACKER_PAL){
+        if (flags & SMACKER_PAL) {
             int size, sz, t, off, j, pos;
             uint8_t *pal = smk->pal;
             uint8_t oldpal[768];
 
             memcpy(oldpal, pal, 768);
             size = avio_r8(s->pb);
-            size = size * 4 - 1;
-            if(size + 1 > frame_size)
-                return AVERROR_INVALIDDATA;
-            frame_size -= size;
-            frame_size--;
+            size = size * 4;
+            if (size > smk->frame_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto next_frame;
+            }
+            smk->frame_size -= size--;
             sz = 0;
             pos = avio_tell(s->pb) + size;
-            while(sz < 256){
+            while (sz < 256) {
                 t = avio_r8(s->pb);
-                if(t & 0x80){ /* skip palette entries */
-                    sz += (t & 0x7F) + 1;
+                if (t & 0x80) { /* skip palette entries */
+                    sz  +=  (t & 0x7F) + 1;
                     pal += ((t & 0x7F) + 1) * 3;
-                } else if(t & 0x40){ /* copy with offset */
+                } else if (t & 0x40) { /* copy with offset */
                     off = avio_r8(s->pb);
                     j = (t & 0x3F) + 1;
                     if (off + j > 0x100) {
                         av_log(s, AV_LOG_ERROR,
                                "Invalid palette update, offset=%d length=%d extends beyond palette size\n",
                                off, j);
-                        return AVERROR_INVALIDDATA;
+                        ret = AVERROR_INVALIDDATA;
+                        goto next_frame;
                     }
                     off *= 3;
-                    while(j-- && sz < 256) {
+                    while (j-- && sz < 256) {
                         *pal++ = oldpal[off + 0];
                         *pal++ = oldpal[off + 1];
                         *pal++ = oldpal[off + 2];
@@ -298,79 +288,65 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 }
             }
             avio_seek(s->pb, pos, 0);
-            palchange |= 1;
+            smk->new_palette = 1;
         }
-        flags >>= 1;
-        smk->curstream = -1;
-        /* if audio chunks are present, put them to stack and retrieve later */
-        for(i = 0; i < 7; i++) {
-            if(flags & 1) {
-                uint32_t size;
-                int err;
-
-                size = avio_rl32(s->pb) - 4;
-                if (!size || size + 4LL > frame_size) {
-                    av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
-                    return AVERROR_INVALIDDATA;
-                }
-                frame_size -= size;
-                frame_size -= 4;
-                smk->curstream++;
-                if ((err = av_reallocp(&smk->bufs[smk->curstream], size)) < 0) {
-                    smk->buf_sizes[smk->curstream] = 0;
-                    return err;
-                }
-                smk->buf_sizes[smk->curstream] = size;
-                ret = avio_read(s->pb, smk->bufs[smk->curstream], size);
-                if(ret != size)
-                    return AVERROR(EIO);
-                smk->stream_id[smk->curstream] = smk->indexes[i];
-            }
-            flags >>= 1;
-        }
-        if (frame_size < 0 || frame_size >= INT_MAX/2)
-            return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(pkt, frame_size + 769)) < 0)
-            return ret;
-        if(smk->frm_size[smk->cur_frame] & 1)
-            palchange |= 2;
-        pkt->data[0] = palchange;
-        memcpy(pkt->data + 1, smk->pal, 768);
-        ret = avio_read(s->pb, pkt->data + 769, frame_size);
-        if(ret != frame_size)
-            return AVERROR(EIO);
-        pkt->stream_index = smk->videoindex;
-        pkt->pts          = smk->cur_frame;
-        pkt->size = ret + 769;
-        smk->cur_frame++;
-        smk->nextpos = avio_tell(s->pb);
-    } else {
-        if (smk->stream_id[smk->curstream] < 0 || !smk->bufs[smk->curstream])
-            return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(pkt, smk->buf_sizes[smk->curstream])) < 0)
-            return ret;
-        memcpy(pkt->data, smk->bufs[smk->curstream], smk->buf_sizes[smk->curstream]);
-        pkt->size = smk->buf_sizes[smk->curstream];
-        pkt->stream_index = smk->stream_id[smk->curstream];
-        pkt->pts = smk->aud_pts[smk->curstream];
-        smk->aud_pts[smk->curstream] += AV_RL32(pkt->data);
-        smk->curstream--;
     }
 
+    for (int i = smk->next_audio_index; i < 7; i++) {
+        if (smk->flags & (1 << i)) {
+            uint32_t size;
+
+            size = avio_rl32(s->pb);
+            if ((int)size < 8 || size > smk->frame_size) {
+                av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
+                ret = AVERROR_INVALIDDATA;
+                goto next_frame;
+            }
+            smk->frame_size -= size;
+            size            -= 4;
+
+            if (smk->indexes[i] < 0) {
+                avio_skip(s->pb, size);
+                continue;
+            }
+            if ((ret = av_get_packet(s->pb, pkt, size)) != size) {
+                ret = ret < 0 ? ret : AVERROR_INVALIDDATA;
+                goto next_frame;
+            }
+            pkt->stream_index = smk->indexes[i];
+            pkt->pts          = smk->aud_pts[i];
+            smk->aud_pts[i]  += AV_RL32(pkt->data);
+            smk->next_audio_index = i + 1;
+            return 0;
+        }
+    }
+
+    if (smk->frame_size >= INT_MAX/2) {
+        ret = AVERROR_INVALIDDATA;
+        goto next_frame;
+    }
+    if ((ret = av_new_packet(pkt, smk->frame_size + 769)) < 0)
+        goto next_frame;
+    flags = smk->new_palette;
+    if (smk->frm_size[smk->cur_frame] & 1)
+        flags |= 2;
+    pkt->data[0] = flags;
+    memcpy(pkt->data + 1, smk->pal, 768);
+    ret = ffio_read_size(s->pb, pkt->data + 769, smk->frame_size);
+    if (ret < 0)
+        goto next_frame;
+    pkt->stream_index = smk->videoindex;
+    pkt->pts          = smk->cur_frame;
+    smk->next_audio_index = 0;
+    smk->new_palette = 0;
+    smk->cur_frame++;
+
     return 0;
-}
-
-static int smacker_read_close(AVFormatContext *s)
-{
-    SmackerContext *smk = s->priv_data;
-    int i;
-
-    for(i = 0; i < 7; i++)
-        av_freep(&smk->bufs[i]);
-    av_freep(&smk->frm_size);
-    av_freep(&smk->frm_flags);
-
-    return 0;
+next_frame:
+    avio_seek(s->pb, smk->next_frame_pos, SEEK_SET);
+    smk->next_audio_index = 0;
+    smk->cur_frame++;
+    return ret;
 }
 
 AVInputFormat ff_smacker_demuxer = {
@@ -380,5 +356,4 @@ AVInputFormat ff_smacker_demuxer = {
     .read_probe     = smacker_probe,
     .read_header    = smacker_read_header,
     .read_packet    = smacker_read_packet,
-    .read_close     = smacker_read_close,
 };
