@@ -488,6 +488,7 @@ extern AVInputFormat  ff_image_pbm_pipe_demuxer;
 extern AVInputFormat  ff_image_pcx_pipe_demuxer;
 extern AVInputFormat  ff_image_pgmyuv_pipe_demuxer;
 extern AVInputFormat  ff_image_pgm_pipe_demuxer;
+extern AVInputFormat  ff_image_pgx_pipe_demuxer;
 extern AVInputFormat  ff_image_pictor_pipe_demuxer;
 extern AVInputFormat  ff_image_png_pipe_demuxer;
 extern AVInputFormat  ff_image_ppm_pipe_demuxer;

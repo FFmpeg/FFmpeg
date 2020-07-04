@@ -1000,6 +1000,14 @@ static int pgmyuv_probe(const AVProbeData *p) // custom FFmpeg format recognized
     return ret && av_match_ext(p->filename, "pgmyuv") ? ret : 0;
 }
 
+static int pgx_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+    if (!memcmp(b, "PG ML ", 6))
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
 static int ppm_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 3) || pnm_magic_check(p, 6) ? pnm_probe(p) : 0;
@@ -1094,6 +1102,7 @@ IMAGEAUTO_DEMUXER(pbm,     AV_CODEC_ID_PBM)
 IMAGEAUTO_DEMUXER(pcx,     AV_CODEC_ID_PCX)
 IMAGEAUTO_DEMUXER(pgm,     AV_CODEC_ID_PGM)
 IMAGEAUTO_DEMUXER(pgmyuv,  AV_CODEC_ID_PGMYUV)
+IMAGEAUTO_DEMUXER(pgx,     AV_CODEC_ID_PGX)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
 IMAGEAUTO_DEMUXER(ppm,     AV_CODEC_ID_PPM)

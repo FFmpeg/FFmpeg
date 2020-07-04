@@ -35,19 +35,11 @@
 
 /* parser definition */
 typedef struct DVBSubParseContext {
-    uint8_t *packet_buf;
     int packet_start;
     int packet_index;
     int in_packet;
+    uint8_t packet_buf[PARSE_BUF_SIZE];
 } DVBSubParseContext;
-
-static av_cold int dvbsub_parse_init(AVCodecParserContext *s)
-{
-    DVBSubParseContext *pc = s->priv_data;
-    pc->packet_buf = av_malloc(PARSE_BUF_SIZE);
-
-    return 0;
-}
 
 static int dvbsub_parse(AVCodecParserContext *s,
                         AVCodecContext *avctx,
@@ -173,16 +165,8 @@ static int dvbsub_parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-static av_cold void dvbsub_parse_close(AVCodecParserContext *s)
-{
-    DVBSubParseContext *pc = s->priv_data;
-    av_freep(&pc->packet_buf);
-}
-
 AVCodecParser ff_dvbsub_parser = {
     .codec_ids      = { AV_CODEC_ID_DVB_SUBTITLE },
     .priv_data_size = sizeof(DVBSubParseContext),
-    .parser_init    = dvbsub_parse_init,
     .parser_parse   = dvbsub_parse,
-    .parser_close   = dvbsub_parse_close,
 };
