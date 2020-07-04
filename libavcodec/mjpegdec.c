@@ -499,6 +499,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             }
         }
 
+        if (s->bayer) {
+            if (pix_fmt_id != 0x11110000 && pix_fmt_id != 0x11000000)
+                goto unk_pixfmt;
+        }
+
         switch (pix_fmt_id) {
         case 0x11110000: /* for bayer-encoded huffman lossless JPEGs embedded in DNGs */
             if (!s->bayer)
