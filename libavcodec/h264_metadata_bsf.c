@@ -488,7 +488,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
                 if (err < 0) {
                     av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
                            "displaymatrix side data to packet.\n");
-                    av_freep(matrix);
+                    av_free(matrix);
                     goto fail;
                 }
             }
