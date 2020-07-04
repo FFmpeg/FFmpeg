@@ -4051,13 +4051,12 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (a.type == MKTAG('f','r','e','e') &&
                 a.size >= 8 &&
                 c->moov_retry) {
-                uint8_t buf[8];
-                uint32_t *type = (uint32_t *)buf + 1;
-                if (avio_read(pb, buf, 8) != 8)
-                    return AVERROR_INVALIDDATA;
+                uint32_t type;
+                avio_skip(pb, 4);
+                type = avio_rl32(pb);
                 avio_seek(pb, -8, SEEK_CUR);
-                if (*type == MKTAG('m','v','h','d') ||
-                    *type == MKTAG('c','m','o','v')) {
+                if (type == MKTAG('m','v','h','d') ||
+                    type == MKTAG('c','m','o','v')) {
                     av_log(c->fc, AV_LOG_ERROR, "Detected moov in a free atom.\n");
                     a.type = MKTAG('m','o','o','v');
                 }
