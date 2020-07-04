@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 
 version 4.1.6:
+ avcodec/hevc_mp4toannexb_bsf: Check NAL size against available input
  avcodec/dstdec: Replace AC overread check by sample rate check
  avformat/utils: reorder duration computation to avoid overflow
  avcodec/pngdec: Check for fctl after idat
