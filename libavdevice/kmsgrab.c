@@ -27,6 +27,11 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
+// Required for compatibility when building against libdrm < 2.4.83.
+#ifndef DRM_FORMAT_MOD_INVALID
+#define DRM_FORMAT_MOD_INVALID ((1ULL << 56) - 1)
+#endif
+
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_drm.h"
 #include "libavutil/internal.h"
@@ -45,6 +50,7 @@ typedef struct KMSGrabContext {
     AVBufferRef *device_ref;
     AVHWDeviceContext *device;
     AVDRMDeviceContext *hwctx;
+    int fb2_available;
 
     AVBufferRef *frames_ref;
     AVHWFramesContext *frames;
@@ -68,8 +74,10 @@ typedef struct KMSGrabContext {
 static void kmsgrab_free_desc(void *opaque, uint8_t *data)
 {
     AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor*)data;
+    int i;
 
-    close(desc->objects[0].fd);
+    for (i = 0; i < desc->nb_objects; i++)
+        close(desc->objects[i].fd);
 
     av_free(desc);
 }
@@ -144,6 +152,116 @@ fail:
     return err;
 }
 
+#if HAVE_LIBDRM_GETFB2
+static int kmsgrab_get_fb2(AVFormatContext *avctx,
+                           drmModePlane *plane,
+                           AVDRMFrameDescriptor *desc)
+{
+    KMSGrabContext *ctx = avctx->priv_data;
+    drmModeFB2 *fb;
+    int err, i, nb_objects;
+
+    fb = drmModeGetFB2(ctx->hwctx->fd, plane->fb_id);
+    if (!fb) {
+        err = errno;
+        av_log(avctx, AV_LOG_ERROR, "Failed to get framebuffer "
+               "%"PRIu32": %s.\n", plane->fb_id, strerror(err));
+        return AVERROR(err);
+    }
+    if (fb->pixel_format != ctx->drm_format) {
+        av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" framebuffer "
+               "format changed: now %"PRIx32".\n",
+               ctx->plane_id, fb->pixel_format);
+        err = AVERROR(EIO);
+        goto fail;
+    }
+    if (fb->modifier != ctx->drm_format_modifier) {
+        av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" framebuffer "
+               "format modifier changed: now %"PRIx64".\n",
+               ctx->plane_id, fb->modifier);
+        err = AVERROR(EIO);
+        goto fail;
+    }
+    if (fb->width != ctx->width || fb->height != ctx->height) {
+        av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" framebuffer "
+               "dimensions changed: now %"PRIu32"x%"PRIu32".\n",
+               ctx->plane_id, fb->width, fb->height);
+        err = AVERROR(EIO);
+        goto fail;
+    }
+    if (!fb->handles[0]) {
+        av_log(avctx, AV_LOG_ERROR, "No handle set on framebuffer.\n");
+        err = AVERROR(EIO);
+        goto fail;
+    }
+
+    *desc = (AVDRMFrameDescriptor) {
+        .nb_layers = 1,
+        .layers[0] = {
+            .format = ctx->drm_format,
+        },
+    };
+
+    nb_objects = 0;
+    for (i = 0; i < 4 && fb->handles[i]; i++) {
+        size_t size;
+        int dup = 0, j, obj;
+
+        size = fb->offsets[i] + fb->height * fb->pitches[i];
+
+        for (j = 0; j < i; j++) {
+            if (fb->handles[i] == fb->handles[j]) {
+                dup = 1;
+                break;
+            }
+        }
+        if (dup) {
+            obj = desc->layers[0].planes[j].object_index;
+
+            if (desc->objects[j].size < size)
+                desc->objects[j].size = size;
+
+            desc->layers[0].planes[i] = (AVDRMPlaneDescriptor) {
+                .object_index = obj,
+                .offset       = fb->offsets[i],
+                .pitch        = fb->pitches[i],
+            };
+
+        } else {
+            int fd;
+            err = drmPrimeHandleToFD(ctx->hwctx->fd, fb->handles[i],
+                                     O_RDONLY, &fd);
+            if (err < 0) {
+                err = errno;
+                av_log(avctx, AV_LOG_ERROR, "Failed to get PRIME fd from "
+                       "framebuffer handle: %s.\n", strerror(err));
+                err = AVERROR(err);
+                goto fail;
+            }
+
+            obj = nb_objects++;
+            desc->objects[obj] = (AVDRMObjectDescriptor) {
+                .fd              = fd,
+                .size            = size,
+                .format_modifier = fb->modifier,
+            };
+            desc->layers[0].planes[i] = (AVDRMPlaneDescriptor) {
+                .object_index = obj,
+                .offset       = fb->offsets[i],
+                .pitch        = fb->pitches[i],
+            };
+        }
+    }
+    desc->nb_objects = nb_objects;
+    desc->layers[0].nb_planes = i;
+
+    err = 0;
+fail:
+    drmModeFreeFB2(fb);
+    return err;
+}
+#endif
+
 static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     KMSGrabContext *ctx = avctx->priv_data;
@@ -187,7 +305,12 @@ static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         goto fail;
     }
 
-    err = kmsgrab_get_fb(avctx, plane, desc);
+#if HAVE_LIBDRM_GETFB2
+    if (ctx->fb2_available)
+        err = kmsgrab_get_fb2(avctx, plane, desc);
+    else
+#endif
+        err = kmsgrab_get_fb(avctx, plane, desc);
     if (err < 0)
         goto fail;
 
@@ -281,6 +404,9 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
     drmModePlaneRes *plane_res = NULL;
     drmModePlane *plane = NULL;
     drmModeFB *fb = NULL;
+#if HAVE_LIBDRM_GETFB2
+    drmModeFB2 *fb2 = NULL;
+#endif
     AVStream *stream;
     int err, i;
 
@@ -383,28 +509,79 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
 
     ctx->plane_id = plane->plane_id;
 
-    fb = drmModeGetFB(ctx->hwctx->fd, plane->fb_id);
-    if (!fb) {
+#if HAVE_LIBDRM_GETFB2
+    fb2 = drmModeGetFB2(ctx->hwctx->fd, plane->fb_id);
+    if (!fb2 && errno == ENOSYS) {
+        av_log(avctx, AV_LOG_INFO, "GETFB2 not supported, "
+               "will try to use GETFB instead.\n");
+    } else if (!fb2) {
         err = errno;
         av_log(avctx, AV_LOG_ERROR, "Failed to get "
                "framebuffer %"PRIu32": %s.\n",
                plane->fb_id, strerror(err));
         err = AVERROR(err);
         goto fail;
+    } else {
+        av_log(avctx, AV_LOG_INFO, "Template framebuffer is "
+               "%"PRIu32": %"PRIu32"x%"PRIu32" "
+               "format %"PRIx32" modifier %"PRIx64" flags %"PRIx32".\n",
+               fb2->fb_id, fb2->width, fb2->height,
+               fb2->pixel_format, fb2->modifier, fb2->flags);
+
+        ctx->width  = fb2->width;
+        ctx->height = fb2->height;
+
+        if (!fb2->handles[0]) {
+            av_log(avctx, AV_LOG_ERROR, "No handle set on framebuffer: "
+                   "maybe you need some additional capabilities?\n");
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+        if (ctx->drm_format != fb2->pixel_format) {
+            av_log(avctx, AV_LOG_ERROR, "Framebuffer pixel format "
+                   "%"PRIx32" does not match expected format.\n",
+                   fb2->pixel_format);
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+        if (ctx->drm_format_modifier != DRM_FORMAT_MOD_INVALID &&
+            ctx->drm_format_modifier != fb2->modifier) {
+            av_log(avctx, AV_LOG_ERROR, "Framebuffer format modifier "
+                   "%"PRIx64" does not match expected modifier.\n",
+                   fb2->modifier);
+            err = AVERROR(EINVAL);
+            goto fail;
+        } else {
+            ctx->drm_format_modifier = fb2->modifier;
+        }
+        ctx->fb2_available = 1;
     }
+#endif
 
-    av_log(avctx, AV_LOG_INFO, "Template framebuffer is %"PRIu32": "
-           "%"PRIu32"x%"PRIu32" %"PRIu32"bpp %"PRIu32"b depth.\n",
-           fb->fb_id, fb->width, fb->height, fb->bpp, fb->depth);
+    if (!ctx->fb2_available) {
+        fb = drmModeGetFB(ctx->hwctx->fd, plane->fb_id);
+        if (!fb) {
+            err = errno;
+            av_log(avctx, AV_LOG_ERROR, "Failed to get "
+                   "framebuffer %"PRIu32": %s.\n",
+                   plane->fb_id, strerror(err));
+            err = AVERROR(err);
+            goto fail;
+        }
 
-    ctx->width  = fb->width;
-    ctx->height = fb->height;
+        av_log(avctx, AV_LOG_INFO, "Template framebuffer is %"PRIu32": "
+               "%"PRIu32"x%"PRIu32" %"PRIu32"bpp %"PRIu32"b depth.\n",
+               fb->fb_id, fb->width, fb->height, fb->bpp, fb->depth);
 
-    if (!fb->handle) {
-        av_log(avctx, AV_LOG_ERROR, "No handle set on framebuffer: "
-               "maybe you need some additional capabilities?\n");
-        err = AVERROR(EINVAL);
-        goto fail;
+        ctx->width  = fb->width;
+        ctx->height = fb->height;
+
+        if (!fb->handle) {
+            av_log(avctx, AV_LOG_ERROR, "No handle set on framebuffer: "
+                   "maybe you need some additional capabilities?\n");
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
     }
 
     stream = avformat_new_stream(avctx, NULL);
@@ -415,8 +592,8 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
 
     stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codecpar->codec_id   = AV_CODEC_ID_WRAPPED_AVFRAME;
-    stream->codecpar->width      = fb->width;
-    stream->codecpar->height     = fb->height;
+    stream->codecpar->width      = ctx->width;
+    stream->codecpar->height     = ctx->height;
     stream->codecpar->format     = AV_PIX_FMT_DRM_PRIME;
 
     avpriv_set_pts_info(stream, 64, 1, 1000000);
@@ -430,8 +607,8 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
 
     ctx->frames->format    = AV_PIX_FMT_DRM_PRIME;
     ctx->frames->sw_format = ctx->format,
-    ctx->frames->width     = fb->width;
-    ctx->frames->height    = fb->height;
+    ctx->frames->width     = ctx->width;
+    ctx->frames->height    = ctx->height;
 
     err = av_hwframe_ctx_init(ctx->frames_ref);
     if (err < 0) {
@@ -448,6 +625,9 @@ fail:
     drmModeFreePlaneResources(plane_res);
     drmModeFreePlane(plane);
     drmModeFreeFB(fb);
+#if HAVE_LIBDRM_GETFB2
+    drmModeFreeFB2(fb2);
+#endif
     return err;
 }
 
@@ -472,7 +652,7 @@ static const AVOption options[] = {
       { .i64 = AV_PIX_FMT_BGR0 }, 0, UINT32_MAX, FLAGS },
     { "format_modifier", "DRM format modifier for framebuffer",
       OFFSET(drm_format_modifier), AV_OPT_TYPE_INT64,
-      { .i64 = DRM_FORMAT_MOD_NONE }, 0, INT64_MAX, FLAGS },
+      { .i64 = DRM_FORMAT_MOD_INVALID }, 0, INT64_MAX, FLAGS },
     { "crtc_id", "CRTC ID to define capture source",
       OFFSET(source_crtc), AV_OPT_TYPE_INT64,
       { .i64 = 0 }, 0, UINT32_MAX, FLAGS },
