@@ -330,23 +330,20 @@ int ff_cbs_write_packet(CodedBitstreamContext *ctx,
  * Free the units contained in a fragment as well as the fragment's
  * own data buffer, but not the units array itself.
  */
-void ff_cbs_fragment_reset(CodedBitstreamContext *ctx,
-                            CodedBitstreamFragment *frag);
+void ff_cbs_fragment_reset(CodedBitstreamFragment *frag);
 
 /**
  * Free the units array of a fragment in addition to what
  * ff_cbs_fragment_reset does.
  */
-void ff_cbs_fragment_free(CodedBitstreamContext *ctx,
-                          CodedBitstreamFragment *frag);
+void ff_cbs_fragment_free(CodedBitstreamFragment *frag);
 
 /**
  * Allocate a new internal content buffer of the given size in the unit.
  *
  * The content will be zeroed.
  */
-int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
-                              CodedBitstreamUnit *unit,
+int ff_cbs_alloc_unit_content(CodedBitstreamUnit *unit,
                               size_t size,
                               void (*free)(void *opaque, uint8_t *content));
 
@@ -355,8 +352,7 @@ int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
  *
  * The data buffer will have input padding.
  */
-int ff_cbs_alloc_unit_data(CodedBitstreamContext *ctx,
-                           CodedBitstreamUnit *unit,
+int ff_cbs_alloc_unit_data(CodedBitstreamUnit *unit,
                            size_t size);
 
 /**
@@ -365,8 +361,7 @@ int ff_cbs_alloc_unit_data(CodedBitstreamContext *ctx,
  * The content structure continues to be owned by the caller if
  * content_buf is not supplied.
  */
-int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
-                               CodedBitstreamFragment *frag,
+int ff_cbs_insert_unit_content(CodedBitstreamFragment *frag,
                                int position,
                                CodedBitstreamUnitType type,
                                void *content,
@@ -379,8 +374,7 @@ int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
  * av_malloc() and will on success become owned by the unit after this
  * call or freed on error.
  */
-int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
-                            CodedBitstreamFragment *frag,
+int ff_cbs_insert_unit_data(CodedBitstreamFragment *frag,
                             int position,
                             CodedBitstreamUnitType type,
                             uint8_t *data, size_t data_size,
@@ -391,8 +385,7 @@ int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
  *
  * Requires position to be >= 0 and < frag->nb_units.
  */
-void ff_cbs_delete_unit(CodedBitstreamContext *ctx,
-                        CodedBitstreamFragment *frag,
+void ff_cbs_delete_unit(CodedBitstreamFragment *frag,
                         int position);
 
 

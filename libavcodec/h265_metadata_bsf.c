@@ -383,7 +383,7 @@ static int h265_metadata_update_side_data(AVBSFContext *bsf, AVPacket *pkt)
         return AVERROR(ENOMEM);
     memcpy(side_data, au->data, au->data_size);
 
-    ff_cbs_fragment_reset(ctx->cbc, au);
+    ff_cbs_fragment_reset(au);
 
     return 0;
 }
@@ -417,7 +417,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     // If an AUD is present, it must be the first NAL unit.
     if (au->units[0].type == HEVC_NAL_AUD) {
         if (ctx->aud == REMOVE)
-            ff_cbs_delete_unit(ctx->cbc, au, 0);
+            ff_cbs_delete_unit(au, 0);
     } else {
         if (ctx->aud == INSERT) {
             H265RawAUD *aud = &ctx->aud_nal;
@@ -449,8 +449,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
             };
             aud->pic_type = pic_type;
 
-            err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             0, HEVC_NAL_AUD, aud, NULL);
+            err = ff_cbs_insert_unit_content(au, 0, HEVC_NAL_AUD, aud, NULL);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
                 goto fail;
@@ -482,7 +481,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->cbc, au);
+    ff_cbs_fragment_reset(au);
 
     if (err < 0)
         av_packet_unref(pkt);
@@ -532,7 +531,7 @@ static int h265_metadata_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->cbc, au);
+    ff_cbs_fragment_reset(au);
     return err;
 }
 
@@ -540,7 +539,7 @@ static void h265_metadata_close(AVBSFContext *bsf)
 {
     H265MetadataContext *ctx = bsf->priv_data;
 
-    ff_cbs_fragment_free(ctx->cbc, &ctx->access_unit);
+    ff_cbs_fragment_free(&ctx->access_unit);
     ff_cbs_close(&ctx->cbc);
 }
 

@@ -98,7 +98,7 @@ static int vp9_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->cbc, frag);
+    ff_cbs_fragment_reset(frag);
 
     if (err < 0)
         av_packet_unref(pkt);
@@ -117,7 +117,7 @@ static void vp9_metadata_close(AVBSFContext *bsf)
 {
     VP9MetadataContext *ctx = bsf->priv_data;
 
-    ff_cbs_fragment_free(ctx->cbc, &ctx->fragment);
+    ff_cbs_fragment_free(&ctx->fragment);
     ff_cbs_close(&ctx->cbc);
 }
 

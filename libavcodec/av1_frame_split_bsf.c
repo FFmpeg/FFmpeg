@@ -172,7 +172,7 @@ static int av1_frame_split_filter(AVBSFContext *ctx, AVPacket *out)
 
         if (s->cur_frame == s->nb_frames) {
             av_packet_unref(s->buffer_pkt);
-            ff_cbs_fragment_reset(s->cbc, td);
+            ff_cbs_fragment_reset(td);
         }
 
         return 0;
@@ -187,7 +187,7 @@ fail:
         av_packet_unref(out);
         av_packet_unref(s->buffer_pkt);
     }
-    ff_cbs_fragment_reset(s->cbc, td);
+    ff_cbs_fragment_reset(td);
 
     return ret;
 }
@@ -224,7 +224,7 @@ static int av1_frame_split_init(AVBSFContext *ctx)
     if (ret < 0)
         av_log(ctx, AV_LOG_WARNING, "Failed to parse extradata.\n");
 
-    ff_cbs_fragment_reset(s->cbc, td);
+    ff_cbs_fragment_reset(td);
 
     return 0;
 }
@@ -234,7 +234,7 @@ static void av1_frame_split_flush(AVBSFContext *ctx)
     AV1FSplitContext *s = ctx->priv_data;
 
     av_packet_unref(s->buffer_pkt);
-    ff_cbs_fragment_reset(s->cbc, &s->temporal_unit);
+    ff_cbs_fragment_reset(&s->temporal_unit);
 }
 
 static void av1_frame_split_close(AVBSFContext *ctx)
@@ -242,7 +242,7 @@ static void av1_frame_split_close(AVBSFContext *ctx)
     AV1FSplitContext *s = ctx->priv_data;
 
     av_packet_free(&s->buffer_pkt);
-    ff_cbs_fragment_free(s->cbc, &s->temporal_unit);
+    ff_cbs_fragment_free(&s->temporal_unit);
     ff_cbs_close(&s->cbc);
 }
 

@@ -472,8 +472,7 @@ typedef struct CodedBitstreamH264Context {
  * On success, the payload will be owned by a unit in access_unit;
  * on failure, the content of the payload will be freed.
  */
-int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
-                                CodedBitstreamFragment *access_unit,
+int ff_cbs_h264_add_sei_message(CodedBitstreamFragment *access_unit,
                                 H264RawSEIPayload *payload);
 
 /**
@@ -485,8 +484,7 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
  * Requires nal_unit to be a unit in access_unit and position to be >= 0
  * and < the payload count of the SEI nal_unit.
  */
-void ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,
-                                    CodedBitstreamFragment *access_unit,
+void ff_cbs_h264_delete_sei_message(CodedBitstreamFragment *access_unit,
                                     CodedBitstreamUnit *nal_unit,
                                     int position);
 

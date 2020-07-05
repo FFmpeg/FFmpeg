@@ -207,7 +207,7 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
            final     = 1;
         }
 
-        err = ff_cbs_insert_unit_data(ctx, frag, i, unit_type, (uint8_t*)start,
+        err = ff_cbs_insert_unit_data(frag, i, unit_type, (uint8_t*)start,
                                       unit_size, frag->data_ref);
         if (err < 0)
             return err;
@@ -235,7 +235,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         MPEG2RawSlice *slice;
         int pos, len;
 
-        err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(*slice),
+        err = ff_cbs_alloc_unit_content(unit, sizeof(*slice),
                                         &cbs_mpeg2_free_slice);
         if (err < 0)
             return err;
@@ -265,7 +265,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         case start_code: \
             { \
                 type *header; \
-                err = ff_cbs_alloc_unit_content(ctx, unit, \
+                err = ff_cbs_alloc_unit_content(unit, \
                                                 sizeof(*header), free_func); \
                 if (err < 0) \
                     return err; \

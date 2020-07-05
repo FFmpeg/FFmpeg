@@ -135,11 +135,10 @@ static int vaapi_encode_h264_add_nal(AVCodecContext *avctx,
                                      CodedBitstreamFragment *au,
                                      void *nal_unit)
 {
-    VAAPIEncodeH264Context *priv = avctx->priv_data;
     H264RawNALUnitHeader *header = nal_unit;
     int err;
 
-    err = ff_cbs_insert_unit_content(priv->cbc, au, -1,
+    err = ff_cbs_insert_unit_content(au, -1,
                                      header->nal_unit_type, nal_unit, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add NAL unit: "
@@ -174,7 +173,7 @@ static int vaapi_encode_h264_write_sequence_header(AVCodecContext *avctx,
 
     err = vaapi_encode_h264_write_access_unit(avctx, data, data_len, au);
 fail:
-    ff_cbs_fragment_reset(priv->cbc, au);
+    ff_cbs_fragment_reset(au);
     return err;
 }
 
@@ -200,7 +199,7 @@ static int vaapi_encode_h264_write_slice_header(AVCodecContext *avctx,
 
     err = vaapi_encode_h264_write_access_unit(avctx, data, data_len, au);
 fail:
-    ff_cbs_fragment_reset(priv->cbc, au);
+    ff_cbs_fragment_reset(au);
     return err;
 }
 
@@ -264,7 +263,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
         if (err < 0)
             goto fail;
 
-        ff_cbs_fragment_reset(priv->cbc, au);
+        ff_cbs_fragment_reset(au);
 
         *type = VAEncPackedHeaderRawData;
         return 0;
@@ -286,7 +285,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
     }
 
 fail:
-    ff_cbs_fragment_reset(priv->cbc, au);
+    ff_cbs_fragment_reset(au);
     return err;
 }
 
@@ -1242,7 +1241,7 @@ static av_cold int vaapi_encode_h264_close(AVCodecContext *avctx)
 {
     VAAPIEncodeH264Context *priv = avctx->priv_data;
 
-    ff_cbs_fragment_free(priv->cbc, &priv->current_access_unit);
+    ff_cbs_fragment_free(&priv->current_access_unit);
     ff_cbs_close(&priv->cbc);
     av_freep(&priv->sei_identifier_string);
 
