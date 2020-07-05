@@ -889,11 +889,15 @@ If you don't understand what all of that means, you probably don't want this.  L
 DRM device to capture on.  Defaults to @option{/dev/dri/card0}.
 
 @item format
-Pixel format of the framebuffer.  Defaults to @option{bgr0}.
+Pixel format of the framebuffer.  This can be autodetected if you are running Linux 5.7
+or later, but needs to be provided for earlier versions.  Defaults to @option{bgr0},
+which is the most common format used by the Linux console and Xorg X server.
 
 @item format_modifier
 Format modifier to signal on output frames.  This is necessary to import correctly into
-some APIs, but can't be autodetected.  See the libdrm documentation for possible values.
+some APIs.  It can be autodetected if you are running Linux 5.7 or later, but will need
+to be provided explicitly when needed in earlier versions.  See the libdrm documentation
+for possible values.
 
 @item crtc_id
 KMS CRTC ID to define the capture source.  The first active plane on the given CRTC
