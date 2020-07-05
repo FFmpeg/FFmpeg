@@ -263,6 +263,8 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     // same as the x264 default
     { "g",         "248"   },
     { "bf",        "8"     },
+    { "qmin",      "-1"    },
+    { "qmax",      "-1"    },
     { "trellis",   "-1"    },
     { "flags",     "+cgop" },
 #if FF_API_PRIVATE_OPT
