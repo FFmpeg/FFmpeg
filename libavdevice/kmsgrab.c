@@ -410,18 +410,6 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
     AVStream *stream;
     int err, i;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(kmsgrab_formats); i++) {
-        if (kmsgrab_formats[i].pixfmt == ctx->format) {
-            ctx->drm_format = kmsgrab_formats[i].drm_format;
-            break;
-        }
-    }
-    if (i >= FF_ARRAY_ELEMS(kmsgrab_formats)) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported format %s.\n",
-               av_get_pix_fmt_name(ctx->format));
-        return AVERROR(EINVAL);
-    }
-
     err = av_hwdevice_ctx_create(&ctx->device_ref, AV_HWDEVICE_TYPE_DRM,
                                  ctx->device_path, NULL, 0);
     if (err < 0) {
@@ -537,9 +525,25 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
             err = AVERROR(EINVAL);
             goto fail;
         }
-        if (ctx->drm_format != fb2->pixel_format) {
+
+        for (i = 0; i < FF_ARRAY_ELEMS(kmsgrab_formats); i++) {
+            if (kmsgrab_formats[i].drm_format == fb2->pixel_format) {
+                if (ctx->format != AV_PIX_FMT_NONE &&
+                    ctx->format != kmsgrab_formats[i].pixfmt) {
+                    av_log(avctx, AV_LOG_ERROR, "Framebuffer pixel format "
+                           "%"PRIx32" does not match expected format.\n",
+                           fb2->pixel_format);
+                    err = AVERROR(EINVAL);
+                    goto fail;
+                }
+                ctx->drm_format = fb2->pixel_format;
+                ctx->format     = kmsgrab_formats[i].pixfmt;
+                break;
+            }
+        }
+        if (i == FF_ARRAY_ELEMS(kmsgrab_formats)) {
             av_log(avctx, AV_LOG_ERROR, "Framebuffer pixel format "
-                   "%"PRIx32" does not match expected format.\n",
+                   "%"PRIx32" is not a known supported format.\n",
                    fb2->pixel_format);
             err = AVERROR(EINVAL);
             goto fail;
@@ -554,11 +558,32 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
         } else {
             ctx->drm_format_modifier = fb2->modifier;
         }
+        av_log(avctx, AV_LOG_VERBOSE, "Format is %s, from "
+               "DRM format %"PRIx32" modifier %"PRIx64".\n",
+               av_get_pix_fmt_name(ctx->format),
+               ctx->drm_format, ctx->drm_format_modifier);
+
         ctx->fb2_available = 1;
     }
 #endif
 
     if (!ctx->fb2_available) {
+        if (ctx->format == AV_PIX_FMT_NONE) {
+            // Backward compatibility: assume BGR0 if no format supplied.
+            ctx->format = AV_PIX_FMT_BGR0;
+        }
+        for (i = 0; i < FF_ARRAY_ELEMS(kmsgrab_formats); i++) {
+            if (kmsgrab_formats[i].pixfmt == ctx->format) {
+                ctx->drm_format = kmsgrab_formats[i].drm_format;
+                break;
+            }
+        }
+        if (i >= FF_ARRAY_ELEMS(kmsgrab_formats)) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported format %s.\n",
+                   av_get_pix_fmt_name(ctx->format));
+            return AVERROR(EINVAL);
+        }
+
         fb = drmModeGetFB(ctx->hwctx->fd, plane->fb_id);
         if (!fb) {
             err = errno;
@@ -649,7 +674,7 @@ static const AVOption options[] = {
       { .str = "/dev/dri/card0" }, 0, 0, FLAGS },
     { "format", "Pixel format for framebuffer",
       OFFSET(format), AV_OPT_TYPE_PIXEL_FMT,
-      { .i64 = AV_PIX_FMT_BGR0 }, 0, UINT32_MAX, FLAGS },
+      { .i64 = AV_PIX_FMT_NONE }, -1, INT32_MAX, FLAGS },
     { "format_modifier", "DRM format modifier for framebuffer",
       OFFSET(drm_format_modifier), AV_OPT_TYPE_INT64,
       { .i64 = DRM_FORMAT_MOD_INVALID }, 0, INT64_MAX, FLAGS },
