@@ -81,69 +81,43 @@ static void kmsgrab_free_frame(void *opaque, uint8_t *data)
     av_frame_free(&frame);
 }
 
-static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
+static int kmsgrab_get_fb(AVFormatContext *avctx,
+                          drmModePlane *plane,
+                          AVDRMFrameDescriptor *desc)
 {
     KMSGrabContext *ctx = avctx->priv_data;
-    drmModePlane *plane;
-    drmModeFB *fb;
-    AVDRMFrameDescriptor *desc;
-    AVFrame *frame;
-    int64_t now;
+    drmModeFB *fb = NULL;
     int err, fd;
-
-    now = av_gettime();
-    if (ctx->frame_last) {
-        int64_t delay;
-        while (1) {
-            delay = ctx->frame_last + ctx->frame_delay - now;
-            if (delay <= 0)
-                break;
-            av_usleep(delay);
-            now = av_gettime();
-        }
-    }
-    ctx->frame_last = now;
-
-    plane = drmModeGetPlane(ctx->hwctx->fd, ctx->plane_id);
-    if (!plane) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to get plane "
-               "%"PRIu32".\n", ctx->plane_id);
-        return AVERROR(EIO);
-    }
-    if (!plane->fb_id) {
-        av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" no longer has "
-               "an associated framebuffer.\n", ctx->plane_id);
-        return AVERROR(EIO);
-    }
 
     fb = drmModeGetFB(ctx->hwctx->fd, plane->fb_id);
     if (!fb) {
+        err = errno;
         av_log(avctx, AV_LOG_ERROR, "Failed to get framebuffer "
-               "%"PRIu32".\n", plane->fb_id);
-        return AVERROR(EIO);
+               "%"PRIu32": %s.\n", plane->fb_id, strerror(err));
+        err = AVERROR(err);
+        goto fail;
     }
     if (fb->width != ctx->width || fb->height != ctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" framebuffer "
                "dimensions changed: now %"PRIu32"x%"PRIu32".\n",
                ctx->plane_id, fb->width, fb->height);
-        return AVERROR(EIO);
+        err = AVERROR(EIO);
+        goto fail;
     }
     if (!fb->handle) {
         av_log(avctx, AV_LOG_ERROR, "No handle set on framebuffer.\n");
-        return AVERROR(EIO);
+        err = AVERROR(EIO);
+        goto fail;
     }
 
     err = drmPrimeHandleToFD(ctx->hwctx->fd, fb->handle, O_RDONLY, &fd);
     if (err < 0) {
         err = errno;
         av_log(avctx, AV_LOG_ERROR, "Failed to get PRIME fd from "
-               "framebuffer handle: %s.\n", strerror(errno));
-        return AVERROR(err);
+               "framebuffer handle: %s.\n", strerror(err));
+        err = AVERROR(err);
+        goto fail;
     }
-
-    desc = av_mallocz(sizeof(*desc));
-    if (!desc)
-        return AVERROR(ENOMEM);
 
     *desc = (AVDRMFrameDescriptor) {
         .nb_objects = 1,
@@ -164,31 +138,93 @@ static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         },
     };
 
+    err = 0;
+fail:
+    drmModeFreeFB(fb);
+    return err;
+}
+
+static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
+{
+    KMSGrabContext *ctx = avctx->priv_data;
+    drmModePlane *plane = NULL;
+    AVDRMFrameDescriptor *desc = NULL;
+    AVFrame *frame = NULL;
+    int64_t now;
+    int err;
+
+    now = av_gettime();
+    if (ctx->frame_last) {
+        int64_t delay;
+        while (1) {
+            delay = ctx->frame_last + ctx->frame_delay - now;
+            if (delay <= 0)
+                break;
+            av_usleep(delay);
+            now = av_gettime();
+        }
+    }
+    ctx->frame_last = now;
+
+    plane = drmModeGetPlane(ctx->hwctx->fd, ctx->plane_id);
+    if (!plane) {
+        err = errno;
+        av_log(avctx, AV_LOG_ERROR, "Failed to get plane "
+               "%"PRIu32": %s.\n", ctx->plane_id, strerror(err));
+        err = AVERROR(err);
+        goto fail;
+    }
+    if (!plane->fb_id) {
+        av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" no longer has "
+               "an associated framebuffer.\n", ctx->plane_id);
+        err = AVERROR(EIO);
+        goto fail;
+    }
+
+    desc = av_mallocz(sizeof(*desc));
+    if (!desc) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    err = kmsgrab_get_fb(avctx, plane, desc);
+    if (err < 0)
+        goto fail;
+
     frame = av_frame_alloc();
-    if (!frame)
-        return AVERROR(ENOMEM);
+    if (!frame) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     frame->hw_frames_ctx = av_buffer_ref(ctx->frames_ref);
-    if (!frame->hw_frames_ctx)
-        return AVERROR(ENOMEM);
+    if (!frame->hw_frames_ctx) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     frame->buf[0] = av_buffer_create((uint8_t*)desc, sizeof(*desc),
                                      &kmsgrab_free_desc, avctx, 0);
-    if (!frame->buf[0])
-        return AVERROR(ENOMEM);
+    if (!frame->buf[0]) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     frame->data[0] = (uint8_t*)desc;
     frame->format  = AV_PIX_FMT_DRM_PRIME;
-    frame->width   = fb->width;
-    frame->height  = fb->height;
+    frame->width   = ctx->width;
+    frame->height  = ctx->height;
 
-    drmModeFreeFB(fb);
     drmModeFreePlane(plane);
+    plane = NULL;
+    desc  = NULL;
 
     pkt->buf = av_buffer_create((uint8_t*)frame, sizeof(*frame),
                                 &kmsgrab_free_frame, avctx, 0);
-    if (!pkt->buf)
-        return AVERROR(ENOMEM);
+    if (!pkt->buf) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     pkt->data   = (uint8_t*)frame;
     pkt->size   = sizeof(*frame);
@@ -196,6 +232,12 @@ static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->flags |= AV_PKT_FLAG_TRUSTED;
 
     return 0;
+
+fail:
+    drmModeFreePlane(plane);
+    av_freep(&desc);
+    av_frame_free(&frame);
+    return err;
 }
 
 static const struct {
@@ -289,9 +331,10 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
     } else {
         plane_res = drmModeGetPlaneResources(ctx->hwctx->fd);
         if (!plane_res) {
+            err = errno;
             av_log(avctx, AV_LOG_ERROR, "Failed to get plane "
-                   "resources: %s.\n", strerror(errno));
-            err = AVERROR(EINVAL);
+                   "resources: %s.\n", strerror(err));
+            err = AVERROR(err);
             goto fail;
         }
 
@@ -402,13 +445,9 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
 
     err = 0;
 fail:
-    if (plane_res)
-        drmModeFreePlaneResources(plane_res);
-    if (plane)
-        drmModeFreePlane(plane);
-    if (fb)
-        drmModeFreeFB(fb);
-
+    drmModeFreePlaneResources(plane_res);
+    drmModeFreePlane(plane);
+    drmModeFreeFB(fb);
     return err;
 }
 
