@@ -79,6 +79,8 @@ static DNNReturnType set_input_output_native(void *model, DNNData *input, const 
 
     av_freep(&oprd->data);
     oprd->length = calculate_operand_data_length(oprd);
+    if (oprd->length <= 0)
+        return DNN_ERROR;
     oprd->data = av_malloc(oprd->length);
     if (!oprd->data)
         return DNN_ERROR;
@@ -295,7 +297,13 @@ int32_t calculate_operand_dims_count(const DnnOperand *oprd)
 int32_t calculate_operand_data_length(const DnnOperand* oprd)
 {
     // currently, we just support DNN_FLOAT
-    return oprd->dims[0] * oprd->dims[1] * oprd->dims[2] * oprd->dims[3] * sizeof(float);
+    uint64_t len = sizeof(float);
+    for (int i = 0; i < 4; i++) {
+        len *= oprd->dims[i];
+        if (len > INT32_MAX)
+            return 0;
+    }
+    return len;
 }
 
 void ff_dnn_free_model_native(DNNModel **model)
