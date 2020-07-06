@@ -288,10 +288,6 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->tile_offset_y  = bytestream2_get_be32u(&s->g); // YT0Siz
     ncomponents       = bytestream2_get_be16u(&s->g); // CSiz
 
-    if (s->image_offset_x || s->image_offset_y) {
-        avpriv_request_sample(s->avctx, "Support for image offsets");
-        return AVERROR_PATCHWELCOME;
-    }
     if (av_image_check_size2(s->width, s->height, s->avctx->max_pixels, AV_PIX_FMT_NONE, 0, s->avctx)) {
         avpriv_request_sample(s->avctx, "Large Dimensions");
         return AVERROR_PATCHWELCOME;
@@ -436,6 +432,18 @@ static int get_siz(Jpeg2000DecoderContext *s)
                 s->cdef[3] = 3;
                 i = 0;
             }
+        } else if (ncomponents == 3 && s->precision == 8 &&
+                   s->cdx[0] == s->cdx[1] && s->cdx[0] == s->cdx[2] &&
+                   s->cdy[0] == s->cdy[1] && s->cdy[0] == s->cdy[2]) {
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            i = 0;
+        } else if (ncomponents == 2 && s->precision == 8 &&
+                   s->cdx[0] == s->cdx[1] && s->cdy[0] == s->cdy[1]) {
+            s->avctx->pix_fmt = AV_PIX_FMT_YA8;
+            i = 0;
+        } else if (ncomponents == 1 && s->precision == 8) {
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+            i = 0;
         }
     }
 

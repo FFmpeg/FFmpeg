@@ -44,6 +44,18 @@ static float get_expected(float f, DNNMathUnaryOperation op)
         return acos(f);
     case DMUO_ATAN:
         return atan(f);
+    case DMUO_SINH:
+        return sinh(f);
+    case DMUO_COSH:
+        return cosh(f);
+    case DMUO_TANH:
+        return tanh(f);
+    case DMUO_ASINH:
+        return asinh(f);
+    case DMUO_ACOSH:
+        return acosh(f);
+    case DMUO_ATANH:
+        return atanh(f);
     default:
         av_assert0(!"not supported yet");
         return 0.f;
@@ -55,8 +67,8 @@ static int test(DNNMathUnaryOperation op)
     DnnLayerMathUnaryParams params;
     DnnOperand operands[2];
     int32_t input_indexes[1];
-    float input[1*1*2*3] = {
-        -3, 2.5, 2, -2.1, 7.8, 100};
+    float input[1*1*3*3] = {
+        0.1, 0.5, 0.75, -3, 2.5, 2, -2.1, 7.8, 100};
     float *output;
 
     params.un_op = op;
@@ -64,7 +76,7 @@ static int test(DNNMathUnaryOperation op)
     operands[0].data = input;
     operands[0].dims[0] = 1;
     operands[0].dims[1] = 1;
-    operands[0].dims[2] = 2;
+    operands[0].dims[2] = 3;
     operands[0].dims[3] = 3;
     operands[1].data = NULL;
 
@@ -100,6 +112,18 @@ int main(int agrc, char **argv)
     if (test(DMUO_ACOS))
         return 1;
     if (test(DMUO_ATAN))
+        return 1;
+    if (test(DMUO_SINH))
+        return 1;
+    if (test(DMUO_COSH))
+        return 1;
+    if (test(DMUO_TANH))
+        return 1;
+    if (test(DMUO_ASINH))
+        return 1;
+    if (test(DMUO_ACOSH))
+        return 1;
+    if (test(DMUO_ATANH))
         return 1;
     return 0;
 }
