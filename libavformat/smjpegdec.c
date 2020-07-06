@@ -51,6 +51,9 @@ static int smjpeg_read_header(AVFormatContext *s)
     uint32_t version, htype, hlength, duration;
     char *comment;
 
+    sc->audio_stream_index =
+    sc->video_stream_index = -1;
+
     avio_skip(pb, 8); // magic
     version = avio_rb32(pb);
     if (version)
@@ -147,6 +150,8 @@ static int smjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
     dtype = avio_rl32(s->pb);
     switch (dtype) {
     case SMJPEG_SNDD:
+        if (sc->audio_stream_index < 0)
+            return AVERROR_INVALIDDATA;
         timestamp = avio_rb32(s->pb);
         size = avio_rb32(s->pb);
         ret = av_get_packet(s->pb, pkt, size);
@@ -155,6 +160,8 @@ static int smjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->pos = pos;
         break;
     case SMJPEG_VIDD:
+        if (sc->video_stream_index < 0)
+            return AVERROR_INVALIDDATA;
         timestamp = avio_rb32(s->pb);
         size = avio_rb32(s->pb);
         ret = av_get_packet(s->pb, pkt, size);
