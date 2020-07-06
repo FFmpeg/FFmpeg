@@ -326,6 +326,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
         dst->coded_frame = src->coded_frame;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+        if (dst->codec->update_thread_context_for_user)
+            err = dst->codec->update_thread_context_for_user(dst, src);
     } else {
         if (dst->codec->update_thread_context)
             err = dst->codec->update_thread_context(dst, src);
