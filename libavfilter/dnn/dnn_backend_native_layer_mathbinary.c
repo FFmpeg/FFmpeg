@@ -91,6 +91,8 @@ int dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_ope
 
     output->data_type = input->data_type;
     output->length = calculate_operand_data_length(output);
+    if (output->length <= 0)
+        return DNN_ERROR;
     output->data = av_realloc(output->data, output->length);
     if (!output->data)
         return DNN_ERROR;
