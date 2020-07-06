@@ -44,37 +44,37 @@ typedef struct APMState {
     int32_t     saved_l;
 } APMState;
 
-typedef struct APMVS12Chunk {
+typedef struct APMExtraData {
     uint32_t    magic;
     uint32_t    file_size;
     uint32_t    data_size;
     uint32_t    unk1;
     uint32_t    unk2;
     APMState    state;
-    uint32_t    pad[7];
+    uint32_t    unk3[7];
     uint32_t    data;
-} APMVS12Chunk;
+} APMExtraData;
 
-static void apm_parse_vs12(APMVS12Chunk *vs12, const uint8_t *buf)
+static void apm_parse_extradata(APMExtraData *ext, const uint8_t *buf)
 {
-    vs12->magic                 = AV_RL32(buf + 0);
-    vs12->file_size             = AV_RL32(buf + 4);
-    vs12->data_size             = AV_RL32(buf + 8);
-    vs12->unk1                  = AV_RL32(buf + 12);
-    vs12->unk2                  = AV_RL32(buf + 16);
+    ext->magic              = AV_RL32(buf + 0);
+    ext->file_size          = AV_RL32(buf + 4);
+    ext->data_size          = AV_RL32(buf + 8);
+    ext->unk1               = AV_RL32(buf + 12);
+    ext->unk2               = AV_RL32(buf + 16);
 
-    vs12->state.has_saved       = AV_RL32(buf + 20);
-    vs12->state.predictor_r     = AV_RL32(buf + 24);
-    vs12->state.step_index_r    = AV_RL32(buf + 28);
-    vs12->state.saved_r         = AV_RL32(buf + 32);
-    vs12->state.predictor_l     = AV_RL32(buf + 36);
-    vs12->state.step_index_l    = AV_RL32(buf + 40);
-    vs12->state.saved_l         = AV_RL32(buf + 44);
+    ext->state.has_saved    = AV_RL32(buf + 20);
+    ext->state.predictor_r  = AV_RL32(buf + 24);
+    ext->state.step_index_r = AV_RL32(buf + 28);
+    ext->state.saved_r      = AV_RL32(buf + 32);
+    ext->state.predictor_l  = AV_RL32(buf + 36);
+    ext->state.step_index_l = AV_RL32(buf + 40);
+    ext->state.saved_l      = AV_RL32(buf + 44);
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(vs12->pad); i++)
-        vs12->pad[i]            = AV_RL32(buf + 48 + (i * 4));
+    for (int i = 0; i < FF_ARRAY_ELEMS(ext->unk3); i++)
+        ext->unk3[i]        = AV_RL32(buf + 48 + (i * 4));
 
-    vs12->data                  = AV_RL32(buf + 76);
+    ext->data               = AV_RL32(buf + 76);
 }
 
 static int apm_probe(const AVProbeData *p)
@@ -98,7 +98,8 @@ static int apm_read_header(AVFormatContext *s)
 {
     int64_t ret;
     AVStream *st;
-    APMVS12Chunk vs12;
+    APMExtraData extradata;
+    AVCodecParameters *par;
     uint8_t buf[APM_FILE_EXTRADATA_SIZE];
 
     if (!(st = avformat_new_stream(s, NULL)))
@@ -111,67 +112,68 @@ static int apm_read_header(AVFormatContext *s)
     if (avio_rl16(s->pb) != APM_TAG_CODEC)
         return AVERROR_INVALIDDATA;
 
-    st->codecpar->channels              = avio_rl16(s->pb);
-    st->codecpar->sample_rate           = avio_rl32(s->pb);
+    par = st->codecpar;
+    par->channels              = avio_rl16(s->pb);
+    par->sample_rate           = avio_rl32(s->pb);
 
     /* Skip the bitrate, it's usually wrong anyway. */
     if ((ret = avio_skip(s->pb, 4)) < 0)
         return ret;
 
-    st->codecpar->block_align           = avio_rl16(s->pb);
-    st->codecpar->bits_per_coded_sample = avio_rl16(s->pb);
+    par->block_align           = avio_rl16(s->pb);
+    par->bits_per_coded_sample = avio_rl16(s->pb);
 
     if (avio_rl32(s->pb) != APM_FILE_EXTRADATA_SIZE)
         return AVERROR_INVALIDDATA;
 
     /* I've never seen files greater than this. */
-    if (st->codecpar->sample_rate > 44100)
+    if (par->sample_rate > 44100)
         return AVERROR_INVALIDDATA;
 
-    if (st->codecpar->bits_per_coded_sample != 4)
+    if (par->bits_per_coded_sample != 4)
         return AVERROR_INVALIDDATA;
 
-    if (st->codecpar->channels == 2)
-        st->codecpar->channel_layout    = AV_CH_LAYOUT_STEREO;
-    else if (st->codecpar->channels == 1)
-        st->codecpar->channel_layout    = AV_CH_LAYOUT_MONO;
+    if (par->channels == 2)
+        par->channel_layout    = AV_CH_LAYOUT_STEREO;
+    else if (par->channels == 1)
+        par->channel_layout    = AV_CH_LAYOUT_MONO;
     else
         return AVERROR_INVALIDDATA;
 
-    st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id              = AV_CODEC_ID_ADPCM_IMA_APM;
-    st->codecpar->format                = AV_SAMPLE_FMT_S16;
-    st->codecpar->bits_per_raw_sample   = 16;
-    st->codecpar->bit_rate              = st->codecpar->channels *
-                                          st->codecpar->sample_rate *
-                                          st->codecpar->bits_per_coded_sample;
+    par->codec_type            = AVMEDIA_TYPE_AUDIO;
+    par->codec_id              = AV_CODEC_ID_ADPCM_IMA_APM;
+    par->format                = AV_SAMPLE_FMT_S16;
+    par->bits_per_raw_sample   = 16;
+    par->bit_rate              = par->channels *
+                                 par->sample_rate *
+                                 par->bits_per_coded_sample;
 
     if ((ret = avio_read(s->pb, buf, APM_FILE_EXTRADATA_SIZE)) < 0)
         return ret;
     else if (ret != APM_FILE_EXTRADATA_SIZE)
         return AVERROR(EIO);
 
-    apm_parse_vs12(&vs12, buf);
+    apm_parse_extradata(&extradata, buf);
 
-    if (vs12.magic != APM_TAG_VS12 || vs12.data != APM_TAG_DATA)
+    if (extradata.magic != APM_TAG_VS12 || extradata.data != APM_TAG_DATA)
         return AVERROR_INVALIDDATA;
 
-    if (vs12.state.has_saved) {
+    if (extradata.state.has_saved) {
         avpriv_request_sample(s, "Saved Samples");
         return AVERROR_PATCHWELCOME;
     }
 
-    if ((ret = ff_alloc_extradata(st->codecpar, APM_EXTRADATA_SIZE)) < 0)
+    if ((ret = ff_alloc_extradata(par, APM_EXTRADATA_SIZE)) < 0)
         return ret;
 
     /* Use the entire state as extradata. */
-    memcpy(st->codecpar->extradata, buf + 20, APM_EXTRADATA_SIZE);
+    memcpy(par->extradata, buf + 20, APM_EXTRADATA_SIZE);
 
-    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, par->sample_rate);
     st->start_time  = 0;
-    st->duration    = vs12.data_size *
-                      (8 / st->codecpar->bits_per_coded_sample) /
-                      st->codecpar->channels;
+    st->duration    = extradata.data_size *
+                      (8 / par->bits_per_coded_sample) /
+                      par->channels;
     return 0;
 }
 
