@@ -26,6 +26,7 @@
 
 #define APM_FILE_HEADER_SIZE    18
 #define APM_FILE_EXTRADATA_SIZE 80
+#define APM_EXTRADATA_SIZE      28
 
 #define APM_MAX_READ_SIZE       4096
 
@@ -160,13 +161,11 @@ static int apm_read_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    if ((ret = ff_alloc_extradata(st->codecpar, 16)) < 0)
+    if ((ret = ff_alloc_extradata(st->codecpar, APM_EXTRADATA_SIZE)) < 0)
         return ret;
 
-    AV_WL32(st->codecpar->extradata +  0, vs12.state.predictor_l);
-    AV_WL32(st->codecpar->extradata +  4, vs12.state.step_index_l);
-    AV_WL32(st->codecpar->extradata +  8, vs12.state.predictor_r);
-    AV_WL32(st->codecpar->extradata + 12, vs12.state.step_index_r);
+    /* Use the entire state as extradata. */
+    memcpy(st->codecpar->extradata, buf + 20, APM_EXTRADATA_SIZE);
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     st->start_time  = 0;
