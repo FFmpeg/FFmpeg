@@ -90,34 +90,34 @@ static int vaapi_encode_mjpeg_write_image_header(AVCodecContext *avctx,
     int err;
 
     if (priv->jfif) {
-        err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+        err = ff_cbs_insert_unit_content(frag, -1,
                                          JPEG_MARKER_APPN + 0,
                                          &priv->jfif_header, NULL);
         if (err < 0)
             goto fail;
     }
 
-    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+    err = ff_cbs_insert_unit_content(frag, -1,
                                      JPEG_MARKER_DQT,
                                      &priv->quant_tables, NULL);
     if (err < 0)
         goto fail;
 
-    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+    err = ff_cbs_insert_unit_content(frag, -1,
                                      JPEG_MARKER_SOF0,
                                      &priv->frame_header, NULL);
     if (err < 0)
         goto fail;
 
     if (priv->huffman) {
-        err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+        err = ff_cbs_insert_unit_content(frag, -1,
                                          JPEG_MARKER_DHT,
                                          &priv->huffman_tables, NULL);
         if (err < 0)
             goto fail;
     }
 
-    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+    err = ff_cbs_insert_unit_content(frag, -1,
                                      JPEG_MARKER_SOS,
                                      &priv->scan, NULL);
     if (err < 0)
@@ -142,7 +142,7 @@ static int vaapi_encode_mjpeg_write_image_header(AVCodecContext *avctx,
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(priv->cbc, frag);
+    ff_cbs_fragment_reset(frag);
     return err;
 }
 
@@ -519,7 +519,7 @@ static av_cold int vaapi_encode_mjpeg_close(AVCodecContext *avctx)
 {
     VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
 
-    ff_cbs_fragment_free(priv->cbc, &priv->current_fragment);
+    ff_cbs_fragment_free(&priv->current_fragment);
     ff_cbs_close(&priv->cbc);
 
     return ff_vaapi_encode_close(avctx);

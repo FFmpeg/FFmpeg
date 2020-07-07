@@ -127,8 +127,7 @@ void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
     av_freep(ctx_ptr);
 }
 
-static void cbs_unit_uninit(CodedBitstreamContext *ctx,
-                            CodedBitstreamUnit *unit)
+static void cbs_unit_uninit(CodedBitstreamUnit *unit)
 {
     av_buffer_unref(&unit->content_ref);
     unit->content = NULL;
@@ -139,13 +138,12 @@ static void cbs_unit_uninit(CodedBitstreamContext *ctx,
     unit->data_bit_padding = 0;
 }
 
-void ff_cbs_fragment_reset(CodedBitstreamContext *ctx,
-                           CodedBitstreamFragment *frag)
+void ff_cbs_fragment_reset(CodedBitstreamFragment *frag)
 {
     int i;
 
     for (i = 0; i < frag->nb_units; i++)
-        cbs_unit_uninit(ctx, &frag->units[i]);
+        cbs_unit_uninit(&frag->units[i]);
     frag->nb_units = 0;
 
     av_buffer_unref(&frag->data_ref);
@@ -154,10 +152,9 @@ void ff_cbs_fragment_reset(CodedBitstreamContext *ctx,
     frag->data_bit_padding = 0;
 }
 
-void ff_cbs_fragment_free(CodedBitstreamContext *ctx,
-                          CodedBitstreamFragment *frag)
+void ff_cbs_fragment_free(CodedBitstreamFragment *frag)
 {
-    ff_cbs_fragment_reset(ctx, frag);
+    ff_cbs_fragment_reset(frag);
 
     av_freep(&frag->units);
     frag->nb_units_allocated = 0;
@@ -200,8 +197,7 @@ static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static int cbs_fill_fragment_data(CodedBitstreamContext *ctx,
-                                  CodedBitstreamFragment *frag,
+static int cbs_fill_fragment_data(CodedBitstreamFragment *frag,
                                   const uint8_t *data, size_t size)
 {
     av_assert0(!frag->data && !frag->data_ref);
@@ -227,7 +223,7 @@ int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
 {
     int err;
 
-    err = cbs_fill_fragment_data(ctx, frag, par->extradata,
+    err = cbs_fill_fragment_data(frag, par->extradata,
                                  par->extradata_size);
     if (err < 0)
         return err;
@@ -254,7 +250,7 @@ int ff_cbs_read_packet(CodedBitstreamContext *ctx,
         frag->data_size = pkt->size;
 
     } else {
-        err = cbs_fill_fragment_data(ctx, frag, pkt->data, pkt->size);
+        err = cbs_fill_fragment_data(frag, pkt->data, pkt->size);
         if (err < 0)
             return err;
     }
@@ -272,7 +268,7 @@ int ff_cbs_read(CodedBitstreamContext *ctx,
 {
     int err;
 
-    err = cbs_fill_fragment_data(ctx, frag, data, size);
+    err = cbs_fill_fragment_data(frag, data, size);
     if (err < 0)
         return err;
 
@@ -328,7 +324,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
 
     flush_put_bits(&pbc);
 
-    ret = ff_cbs_alloc_unit_data(ctx, unit, put_bits_count(&pbc) / 8);
+    ret = ff_cbs_alloc_unit_data(unit, put_bits_count(&pbc) / 8);
     if (ret < 0)
         return ret;
 
@@ -641,8 +637,7 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 }
 
 
-int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
-                              CodedBitstreamUnit *unit,
+int ff_cbs_alloc_unit_content(CodedBitstreamUnit *unit,
                               size_t size,
                               void (*free)(void *opaque, uint8_t *data))
 {
@@ -662,8 +657,7 @@ int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_alloc_unit_data(CodedBitstreamContext *ctx,
-                           CodedBitstreamUnit *unit,
+int ff_cbs_alloc_unit_data(CodedBitstreamUnit *unit,
                            size_t size)
 {
     av_assert0(!unit->data && !unit->data_ref);
@@ -680,8 +674,7 @@ int ff_cbs_alloc_unit_data(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static int cbs_insert_unit(CodedBitstreamContext *ctx,
-                           CodedBitstreamFragment *frag,
+static int cbs_insert_unit(CodedBitstreamFragment *frag,
                            int position)
 {
     CodedBitstreamUnit *units;
@@ -719,8 +712,7 @@ static int cbs_insert_unit(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
-                               CodedBitstreamFragment *frag,
+int ff_cbs_insert_unit_content(CodedBitstreamFragment *frag,
                                int position,
                                CodedBitstreamUnitType type,
                                void *content,
@@ -742,7 +734,7 @@ int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
         content_ref = NULL;
     }
 
-    err = cbs_insert_unit(ctx, frag, position);
+    err = cbs_insert_unit(frag, position);
     if (err < 0) {
         av_buffer_unref(&content_ref);
         return err;
@@ -756,8 +748,7 @@ int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
-                            CodedBitstreamFragment *frag,
+int ff_cbs_insert_unit_data(CodedBitstreamFragment *frag,
                             int position,
                             CodedBitstreamUnitType type,
                             uint8_t *data, size_t data_size,
@@ -781,7 +772,7 @@ int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
         return AVERROR(ENOMEM);
     }
 
-    err = cbs_insert_unit(ctx, frag, position);
+    err = cbs_insert_unit(frag, position);
     if (err < 0) {
         av_buffer_unref(&data_ref);
         return err;
@@ -796,14 +787,13 @@ int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
     return 0;
 }
 
-void ff_cbs_delete_unit(CodedBitstreamContext *ctx,
-                        CodedBitstreamFragment *frag,
+void ff_cbs_delete_unit(CodedBitstreamFragment *frag,
                         int position)
 {
     av_assert0(0 <= position && position < frag->nb_units
                              && "Unit to be deleted not in fragment.");
 
-    cbs_unit_uninit(ctx, &frag->units[position]);
+    cbs_unit_uninit(&frag->units[position]);
 
     --frag->nb_units;
 

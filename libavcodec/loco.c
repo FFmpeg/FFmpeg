@@ -131,7 +131,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
                              int stride, const uint8_t *buf, int buf_size)
 {
     RICEContext rc;
-    int val;
+    unsigned val;
     int ret;
     int i, j;
 

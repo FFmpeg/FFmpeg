@@ -34,8 +34,8 @@ static void av1_frame_merge_flush(AVBSFContext *bsf)
 {
     AV1FMergeContext *ctx = bsf->priv_data;
 
-    ff_cbs_fragment_reset(ctx->cbc, &ctx->frag[0]);
-    ff_cbs_fragment_reset(ctx->cbc, &ctx->frag[1]);
+    ff_cbs_fragment_reset(&ctx->frag[0]);
+    ff_cbs_fragment_reset(&ctx->frag[1]);
     av_packet_unref(ctx->in);
     av_packet_unref(ctx->pkt);
 }
@@ -93,7 +93,7 @@ eof:
         ctx->idx = !ctx->idx;
     } else {
         for (i = 0; i < frag->nb_units; i++) {
-            err = ff_cbs_insert_unit_content(ctx->cbc, tu, -1, frag->units[i].type,
+            err = ff_cbs_insert_unit_content(tu, -1, frag->units[i].type,
                                              frag->units[i].content, frag->units[i].content_ref);
             if (err < 0)
                 goto fail;
@@ -108,7 +108,7 @@ eof:
     else
         av_packet_unref(in);
 
-    ff_cbs_fragment_reset(ctx->cbc, &ctx->frag[ctx->idx]);
+    ff_cbs_fragment_reset(&ctx->frag[ctx->idx]);
 
 fail:
     if (err < 0 && err != AVERROR(EAGAIN))
@@ -133,8 +133,8 @@ static void av1_frame_merge_close(AVBSFContext *bsf)
 {
     AV1FMergeContext *ctx = bsf->priv_data;
 
-    ff_cbs_fragment_free(ctx->cbc, &ctx->frag[0]);
-    ff_cbs_fragment_free(ctx->cbc, &ctx->frag[1]);
+    ff_cbs_fragment_free(&ctx->frag[0]);
+    ff_cbs_fragment_free(&ctx->frag[1]);
     av_packet_free(&ctx->in);
     av_packet_free(&ctx->pkt);
     ff_cbs_close(&ctx->cbc);
