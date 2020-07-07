@@ -1,6 +1,94 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.2.4
+ avcodec/apedec: Fix undefined integer overflow with 24bit
+ avcodec/loco: Fix integer overflow with large values from loco_get_rice()
+ avformat/smjpegdec: Check the existence of referred streams
+ avcodec/pnmdec: Fix misaligned reads
+ avcodec/scpr3: Fix out of array access with dectab
+ avcodec/dstdec: Replace AC overread check by sample rate check
+ avutil/avsscanf: Add () to avoid integer overflow in scanexp()
+ avformat/utils: reorder duration computation to avoid overflow
+ avcodec/pngdec: Check for fctl after idat
+ avformat/hls: Pass a copy of the URL for probing
+ avformat/hls: check segment duration value of EXTINF
+ avutil/common: Fix integer overflow in av_ceil_log2_c()
+ avcodec/wmalosslessdec: fix overflow with pred in revert_cdlms
+ avformat/mvdec: Fix integer overflow with billions of channels
+ avformat/microdvddec: skip malformed lines without frame number.
+ avformat/mxfdec: free duplicated utf16 strings
+ avformat/4xm: Check that a video stream was created before returning packets for it
+ avcodec/ffwavesynth: Avoid undefined operation on ts overflow
+ avcodec/mpeg4videodec: Fix 2 integer overflows in get_amv()
+ avcodec/lossless_audiodsp: Fix undefined overflows in scalarproduct_and_madd_int16_c()
+ avcodec/sonic: Fix several integer overflows
+ avcodec/mpeg4videodec: avoid invalid values and reinitialize in format changes for studio profile
+ avcodec/pixlet: Fix log(0) check
+ avcodec/iff: Fix off by x error
+ avcodec/wmalosslessdec: Check block_align maximum
+ avcodec/loco: Fix signed integer overflow in loco_get_rice()
+ avformat/thp: Check fps
+ avformat/mpl2dec: Fix integer overflow with duration
+ avcodec/cbs: Allocate more CodedBitstreamUnit at once in cbs_insert_unit()
+ avcodec/mpeg12dec: remove outdated comments
+ avcodec/snowdec: Avoid integer overflow with huge qlog
+ avformat/mov: Check if DTS is AV_NOPTS_VALUE in mov_find_next_sample().
+ avcodec/mpeg12dec: Fix got_output
+ avformat/4xm: Cleanup on GET_LIST_HEADER() failure
+ avcodec/lzf: Consider the needed size in reallocation
+ avformat/mlvdec: fail reading a packet with 0 streams
+ avformat/thp: Check compcount
+ avcodec/adpcm: XA: Check shift similar to filter
+ avcodec/huffyuvdec: Test vertical coordinate more often
+ avformat/rawdec: fix identifier names
+ avcodec/hq_hqa: Check info size
+ avcodec/wmalosslessdec: Fix integer overflow in mclms_predict()
+ avcodec/vp9dsp_template: Fix integer overflow(s) in iadst16_1d()
+ avcodec/h264dec: Disable forced small_padding on flag2 fast
+ avformat/oggparsevorbis: Error out on double init of vp
+ avcodec/h264_metadata_bsf: Fix invalid av_freep
+ avformat/hnm: Check for extradata allocation failure
+ avcodec/bitstream: Don't check for undefined behaviour after it happened
+ avformat/avc, mxfenc: Avoid allocation of H264 SPS structure, fix memleak
+ avcodec/cbs_av1: Fix writing uvlc numbers >= INT_MAX
+ avformat/mov: Fix memleak
+ avformat/mov: fix memleaks
+ libavformat/mov: Fix memleaks when demuxing DV audio
+ avformat/mov: Fix reel_name size check
+ avformat/mov: Fix memleak upon encountering repeating tags
+ avformat/matroskaenc: Don't use NULL for %s format string
+ avformat/webvttdec: Fix memleak upon read header failure
+ avformat/vplayerdec: Fix memleak upon read header failure
+ avformat/tedcaptionsdec: Fix memleak upon read header failure
+ avformat/subviewerdec: Fix memleak upon read header failure
+ avformat/subviewer1dec: Fix memleak upon read header failure
+ avformat/stldec: Fix memleak upon read header failure
+ avformat/srtdec: Fix memleak upon read header failure
+ avformat/sccdec: Fix memleak upon read header failure
+ avformat/samidec: Fix memleak upon read header failure
+ avformat/pjsdec: Fix memleak upon read header failure
+ avformat/mpsubdec: Fix memleak upon read header failure
+ avformat/mpl2dec: Fix memleak upon read header failure
+ avformat/microdvddec: Fix memleak upon read header failure
+ avformat/lrcdec: Fix memleak upon read header failure
+ avformat/jacosubdec: Fix memleak upon read header failure
+ avformat/assdec: Fix memleak upon read header failure
+ avformat/aqtitledec: Fix memleak upon read header failure
+ avformat/mov: Fix memleaks upon read_header failure
+ avformat/omadec: Fix memleaks upon read_header failure
+ avformat/matroskadec: Fix memleaks in WebM DASH manifest demuxer
+ avformat/matroskadec: Use right number of tracks
+ avformat/matroskadec: Fix handling gigantic durations
+ avformat/aviobuf: Don't check for overflow after it happened
+ avformat/apngenc: Add deinit function
+ avcodec/hevc_mp4toannexb_bsf: Check NAL size against available input
+ avcodec/nvenc: honor max bitrate in CQ mode
+ avcodec/nvenc: zero avg and max bitrate in CQ mode
+ libavcodec/libvpxenc: Don't free user-provided AVPacket
+ libavcodec/libmp3lame: Don't free user-provided AVPacket
+ avcodec/libopusenc: Don't free user-provided AVPacket
+
 version 4.2.3
 - avcodec/pnmdec: Use unsigned for maxval rescaling
 - avcodec/ivi: Clear got_p_frame before decoding a new frame using it
