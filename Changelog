@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.17:
+ avcodec/apedec: Fix undefined integer overflow with 24bit
+ avcodec/loco: Fix integer overflow with large values from loco_get_rice()
+ avformat/smjpegdec: Check the existence of referred streams
+ avcodec/pnmdec: Fix misaligned reads
  avformat/utils: reorder duration computation to avoid overflow
  avcodec/pngdec: Check for fctl after idat
  png: split header state and data state in two separate variables.
