@@ -393,7 +393,10 @@ Muxers/Demuxers:
   afc.c                                 Paul B Mahol
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
   aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
+  alp.c                                 Zane van Iperen
+  apm.c                                 Zane van Iperen
   apngdec.c                             Benoit Fouet
+  argo_asf.c                            Zane van Iperen
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
   astenc.c                              James Almer
@@ -431,6 +434,7 @@ Muxers/Demuxers:
   ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
   jvdec.c                               Peter Ross
+  kvag.c                                Zane van Iperen
   libmodplug.c                          Clément Bœsch
   libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
@@ -463,6 +467,7 @@ Muxers/Demuxers:
   oggparse*.c                           David Conrad
   oma.c                                 Maxim Poliakovski
   paf.c                                 Paul B Mahol
+  pp_bnk.c                              Zane van Iperen
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
   pvfdec.c                              Paul B Mahol
@@ -629,3 +634,4 @@ Tiancheng "Timothy" Gu        9456 AFC0 814A 8139 E994 8351 7FE6 B095 B582 B0D4
 Tim Nicholson                 38CF DB09 3ED0 F607 8B67 6CED 0C0B FC44 8B0B FC83
 Tomas Härdin (thardin)        A79D 4E3D F38F 763F 91F5 8B33 A01E 8AE0 41BB 2551
 Wei Gao                       4269 7741 857A 0E60 9EC5 08D2 4744 4EFA 62C1 87B9
+Zane van Iperen (zane)        61AE D40F 368B 6F26 9DAE 3892 6861 6B2D 8AC4 DCC5
