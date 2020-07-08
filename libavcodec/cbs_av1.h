@@ -441,9 +441,7 @@ typedef struct CodedBitstreamAV1Context {
     int tile_cols;
     int tile_rows;
 
-    AV1ReferenceFrameState *ref;
-    AV1ReferenceFrameState read_ref[AV1_NUM_REF_FRAMES];
-    AV1ReferenceFrameState write_ref[AV1_NUM_REF_FRAMES];
+    AV1ReferenceFrameState ref[AV1_NUM_REF_FRAMES];
 } CodedBitstreamAV1Context;
 
 
