@@ -5,6 +5,7 @@ version <next>:
 - AudioToolbox output device
 - MacCaption demuxer
 - PGX decoder
+- chromanr video filter
 
 
 version 4.3:
