@@ -483,15 +483,17 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if (st->codecpar->codec_id==AV_CODEC_ID_AC3 && (ts->flags & MPEGTS_FLAG_SYSTEM_B)) {
+            if (ts->flags & MPEGTS_FLAG_SYSTEM_B) {
+            if (st->codecpar->codec_id==AV_CODEC_ID_AC3) {
                 *q++=0x6a; // AC3 descriptor see A038 DVB SI
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
             }
-            if (st->codecpar->codec_id==AV_CODEC_ID_EAC3 && (ts->flags & MPEGTS_FLAG_SYSTEM_B)) {
+            else if (st->codecpar->codec_id==AV_CODEC_ID_EAC3) {
                 *q++=0x7a; // EAC3 descriptor see A038 DVB SI
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
+            }
             }
             if (st->codecpar->codec_id==AV_CODEC_ID_S302M)
                 put_registration_descriptor(&q, MKTAG('B', 'S', 'S', 'D'));
