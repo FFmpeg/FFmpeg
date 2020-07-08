@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.2.4
+ avformat/mov: Fix unaligned read of uint32_t and endian-dependance in mov_read_default
  avcodec/apedec: Fix undefined integer overflow with 24bit
  avcodec/loco: Fix integer overflow with large values from loco_get_rice()
  avformat/smjpegdec: Check the existence of referred streams
