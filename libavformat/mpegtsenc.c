@@ -453,6 +453,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
+        enum AVCodecID codec_id = st->codecpar->codec_id;
 
         if (s->nb_programs) {
             int k, found = 0;
@@ -484,19 +485,19 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             if (ts->flags & MPEGTS_FLAG_SYSTEM_B) {
-                if (st->codecpar->codec_id==AV_CODEC_ID_AC3) {
+                if (codec_id == AV_CODEC_ID_AC3) {
                     *q++=0x6a; // AC3 descriptor see A038 DVB SI
                     *q++=1; // 1 byte, all flags sets to 0
                     *q++=0; // omit all fields...
-                } else if (st->codecpar->codec_id==AV_CODEC_ID_EAC3) {
+                } else if (codec_id == AV_CODEC_ID_EAC3) {
                     *q++=0x7a; // EAC3 descriptor see A038 DVB SI
                     *q++=1; // 1 byte, all flags sets to 0
                     *q++=0; // omit all fields...
                 }
             }
-            if (st->codecpar->codec_id==AV_CODEC_ID_S302M)
+            if (codec_id == AV_CODEC_ID_S302M)
                 put_registration_descriptor(&q, MKTAG('B', 'S', 'S', 'D'));
-            if (st->codecpar->codec_id==AV_CODEC_ID_OPUS) {
+            if (codec_id == AV_CODEC_ID_OPUS) {
                 /* 6 bytes registration descriptor, 4 bytes Opus audio descriptor */
                 if (q - data > SECTION_LENGTH - 6 - 4) {
                     err = 1;
@@ -611,7 +612,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
            const char default_language[] = "und";
            const char *language = lang && strlen(lang->value) >= 3 ? lang->value : default_language;
 
-           if (st->codecpar->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
+           if (codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
                uint8_t *len_ptr;
                int extradata_copied = 0;
 
@@ -653,7 +654,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                }
 
                *len_ptr = q - len_ptr - 1;
-           } else if (st->codecpar->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
+           } else if (codec_id == AV_CODEC_ID_DVB_TELETEXT) {
                uint8_t *len_ptr = NULL;
                int extradata_copied = 0;
 
@@ -697,9 +698,9 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             }
             break;
         case AVMEDIA_TYPE_DATA:
-            if (st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV) {
+            if (codec_id == AV_CODEC_ID_SMPTE_KLV) {
                 put_registration_descriptor(&q, MKTAG('K', 'L', 'V', 'A'));
-            } else if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+            } else if (codec_id == AV_CODEC_ID_TIMED_ID3) {
                 const char *tag = "ID3 ";
                 *q++ = 0x26; /* metadata descriptor */
                 *q++ = 13;
