@@ -154,6 +154,7 @@ typedef struct MatroskaMuxContext {
     int                 is_dash;
     int                 dash_track_number;
     int                 allow_raw_vfw;
+    int                 flipped_raw_rgb;
     int                 default_mode;
 
     uint32_t            segment_uid[4];
@@ -764,6 +765,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
                                   int native_id, int qt_id)
 {
     AVIOContext *dyn_cp;
+    MatroskaMuxContext *mkv = s->priv_data;
     uint8_t *codecpriv;
     int ret, codecpriv_size;
 
@@ -802,7 +804,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
                 ret = AVERROR(EINVAL);
             }
 
-            ff_put_bmp_header(dyn_cp, par, 0, 0);
+            ff_put_bmp_header(dyn_cp, par, 0, 0, mkv->flipped_raw_rgb);
         }
     } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
         unsigned int tag;
@@ -2787,6 +2789,7 @@ static const AVOption options[] = {
     { "dash_track_number", "Track number for the DASH stream", OFFSET(dash_track_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "live", "Write files assuming it is a live stream.", OFFSET(is_live), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "allow_raw_vfw", "allow RAW VFW mode", OFFSET(allow_raw_vfw), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "flipped_raw_rgb", "Raw RGB bitmaps in VFW mode are stored bottom-up", OFFSET(flipped_raw_rgb), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "write_crc32", "write a CRC32 element inside every Level 1 element", OFFSET(write_crc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { "default_mode", "Controls how a track's FlagDefault is inferred", OFFSET(default_mode), AV_OPT_TYPE_INT, { .i64 = DEFAULT_MODE_INFER }, DEFAULT_MODE_INFER, DEFAULT_MODE_PASSTHROUGH, FLAGS, "default_mode" },
     { "infer", "For each track type, mark the first track of disposition default as default; if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER }, 0, 0, FLAGS, "default_mode" },

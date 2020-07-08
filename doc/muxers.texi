@@ -89,6 +89,12 @@ specific scenarios, e.g. when merging multiple audio streams into one for
 compatibility with software that only supports a single audio stream in AVI
 (see @ref{amerge,,the "amerge" section in the ffmpeg-filters manual,ffmpeg-filters}).
 
+@item flipped_raw_rgb
+If set to true, store positive height for raw RGB bitmaps, which indicates
+bitmap is stored bottom-up. Note that this option does not flip the bitmap
+which has to be done manually beforehand, e.g. by using the vflip filter.
+Default is @var{false} and indicates bitmap is stored top down.
+
 @end table
 
 @anchor{chromaprint}
@@ -1413,6 +1419,13 @@ disposition default exists, no subtitle track will be marked as default.
 In this mode the FlagDefault is set if and only if the AV_DISPOSITION_DEFAULT
 flag is set in the disposition of the corresponding stream.
 @end table
+
+@item flipped_raw_rgb
+If set to true, store positive height for raw RGB bitmaps, which indicates
+bitmap is stored bottom-up. Note that this option does not flip the bitmap
+which has to be done manually beforehand, e.g. by using the vflip filter.
+Default is @var{false} and indicates bitmap is stored top down.
+
 @end table
 
 @anchor{md5}
