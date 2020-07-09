@@ -1185,7 +1185,7 @@ cglobal deblock_h_chroma_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
     STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
 RET
 
-cglobal deblock_h_chroma422_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_,
+cglobal deblock_h_chroma422_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
     CHROMA_H_START_XMM r5, r6
     LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
     TRANSPOSE_8x4B_XMM
