@@ -82,7 +82,7 @@ static int find_frame_end(MJPEGParserContext *m, const uint8_t *buf, int buf_siz
                     return i-3;
                 } else if(state<0xFFD00000 || state>0xFFD9FFFF){
                     m->size= (state&0xFFFF)-1;
-                    if (m->size >= 0x8000)
+                    if (m->size >= 0xF000)
                         m->size = 0;
                 }
             }
