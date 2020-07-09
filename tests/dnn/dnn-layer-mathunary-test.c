@@ -86,7 +86,10 @@ static int test(DNNMathUnaryOperation op)
     output = operands[1].data;
     for (int i = 0; i < sizeof(input) / sizeof(float); ++i) {
         float expected_output = get_expected(input[i], op);
-        if(fabs(output[i] - expected_output) > EPS) {
+        int output_nan = isnan(output[i]);
+        int expected_nan = isnan(expected_output);
+        if ((!output_nan && !expected_nan && fabs(output[i] - expected_output) > EPS) ||
+            (output_nan && !expected_nan) || (!output_nan && expected_nan)) {
             printf("at index %d, output: %f, expected_output: %f\n", i, output[i], expected_output);
             av_freep(&output);
             return 1;

@@ -366,6 +366,10 @@ adjusting playback latency and buffer occupancy during normal playback by client
 Set the maximum playback rate indicated as appropriate for the purposes of automatically
 adjusting playback latency and buffer occupancy during normal playback by clients.
 
+@item update_period @var{update_period}
+ Set the mpd update period ,for dynamic content.
+ The unit is second.
+
 @end table
 
 @anchor{framecrc}

@@ -710,8 +710,8 @@ static void compute_default_clut(DVBSubContext *ctx, uint8_t *clut, AVSubtitleRe
     }
 
     count = FFMAX(i - 1, 1);
-    for (i--; i>=0; i--) {
-        int v = i*255/count;
+    for (i--; i >= 0; i--) {
+        int v = i * 255 / count;
         AV_WN32(clut + 4*list_inv[i], RGBA(v/2,v,v/2,v));
     }
 }
@@ -737,7 +737,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     }
 
     /* Not touching AVSubtitles again*/
-    if(sub->num_rects) {
+    if (sub->num_rects) {
         avpriv_request_sample(ctx, "Different Version of Segment asked Twice");
         return AVERROR_PATCHWELCOME;
     }
@@ -747,7 +747,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
             sub->num_rects++;
     }
 
-    if(ctx->compute_edt == 0) {
+    if (ctx->compute_edt == 0) {
         sub->end_display_time = ctx->time_out * 1000;
         *got_output = 1;
     } else if (ctx->prev_start != AV_NOPTS_VALUE) {
@@ -813,7 +813,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
+            memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(*clut_table));
 
             rect->data[0] = av_malloc(region->buf_size);
             if (!rect->data[0]) {
@@ -851,7 +851,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 fail:
     if (sub->rects) {
-        for(i=0; i<sub->num_rects; i++) {
+        for (i=0; i < sub->num_rects; i++) {
             rect = sub->rects[i];
             if (rect) {
                 av_freep(&rect->data[0]);
@@ -1073,11 +1073,11 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
     clut = get_clut(ctx, clut_id);
 
     if (!clut) {
-        clut = av_malloc(sizeof(DVBSubCLUT));
+        clut = av_malloc(sizeof(*clut));
         if (!clut)
             return AVERROR(ENOMEM);
 
-        memcpy(clut, &default_clut, sizeof(DVBSubCLUT));
+        memcpy(clut, &default_clut, sizeof(*clut));
 
         clut->id = clut_id;
         clut->version = -1;
@@ -1088,53 +1088,53 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
     if (clut->version != version) {
 
-    clut->version = version;
+        clut->version = version;
 
-    while (buf + 4 < buf_end) {
-        entry_id = *buf++;
+        while (buf + 4 < buf_end) {
+            entry_id = *buf++;
 
-        depth = (*buf) & 0xe0;
+            depth = (*buf) & 0xe0;
 
-        if (depth == 0) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid clut depth 0x%x!\n", *buf);
+            if (depth == 0) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid clut depth 0x%x!\n", *buf);
+            }
+
+            full_range = (*buf++) & 1;
+
+            if (full_range) {
+                y     = *buf++;
+                cr    = *buf++;
+                cb    = *buf++;
+                alpha = *buf++;
+            } else {
+                y     = buf[0] & 0xfc;
+                cr    = (((buf[0] & 3) << 2) | ((buf[1] >> 6) & 3)) << 4;
+                cb    = (buf[1] << 2) & 0xf0;
+                alpha = (buf[1] << 6) & 0xc0;
+
+                buf += 2;
+            }
+
+            if (y == 0)
+                alpha = 0xff;
+
+            YUV_TO_RGB1_CCIR(cb, cr);
+            YUV_TO_RGB2_CCIR(r, g, b, y);
+
+            ff_dlog(avctx, "clut %d := (%d,%d,%d,%d)\n", entry_id, r, g, b, alpha);
+            if (!!(depth & 0x80) + !!(depth & 0x40) + !!(depth & 0x20) > 1) {
+                ff_dlog(avctx, "More than one bit level marked: %x\n", depth);
+                if (avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL)
+                    return AVERROR_INVALIDDATA;
+            }
+
+            if (depth & 0x80 && entry_id < 4)
+                clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
+            else if (depth & 0x40 && entry_id < 16)
+                clut->clut16[entry_id] = RGBA(r,g,b,255 - alpha);
+            else if (depth & 0x20)
+                clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
         }
-
-        full_range = (*buf++) & 1;
-
-        if (full_range) {
-            y = *buf++;
-            cr = *buf++;
-            cb = *buf++;
-            alpha = *buf++;
-        } else {
-            y = buf[0] & 0xfc;
-            cr = (((buf[0] & 3) << 2) | ((buf[1] >> 6) & 3)) << 4;
-            cb = (buf[1] << 2) & 0xf0;
-            alpha = (buf[1] << 6) & 0xc0;
-
-            buf += 2;
-        }
-
-        if (y == 0)
-            alpha = 0xff;
-
-        YUV_TO_RGB1_CCIR(cb, cr);
-        YUV_TO_RGB2_CCIR(r, g, b, y);
-
-        ff_dlog(avctx, "clut %d := (%d,%d,%d,%d)\n", entry_id, r, g, b, alpha);
-        if (!!(depth & 0x80) + !!(depth & 0x40) + !!(depth & 0x20) > 1) {
-            ff_dlog(avctx, "More than one bit level marked: %x\n", depth);
-            if (avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL)
-                return AVERROR_INVALIDDATA;
-        }
-
-        if (depth & 0x80 && entry_id < 4)
-            clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
-        else if (depth & 0x40 && entry_id < 16)
-            clut->clut16[entry_id] = RGBA(r,g,b,255 - alpha);
-        else if (depth & 0x20)
-            clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
-    }
     }
 
     return 0;
@@ -1163,7 +1163,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     region = get_region(ctx, region_id);
 
     if (!region) {
-        region = av_mallocz(sizeof(DVBSubRegion));
+        region = av_mallocz(sizeof(*region));
         if (!region)
             return AVERROR(ENOMEM);
 
@@ -1210,7 +1210,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     }
 
     region->depth = 1 << (((*buf++) >> 2) & 7);
-    if(region->depth<2 || region->depth>8){
+    if (region->depth < 2 || region->depth > 8) {
         av_log(avctx, AV_LOG_ERROR, "region depth %d is invalid\n", region->depth);
         region->depth= 4;
     }
@@ -1244,7 +1244,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
         object = get_object(ctx, object_id);
 
         if (!object) {
-            object = av_mallocz(sizeof(DVBSubObject));
+            object = av_mallocz(sizeof(*object));
             if (!object)
                 return AVERROR(ENOMEM);
 
@@ -1255,7 +1255,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
 
         object->type = (*buf) >> 6;
 
-        display = av_mallocz(sizeof(DVBSubObjectDisplay));
+        display = av_mallocz(sizeof(*display));
         if (!display)
             return AVERROR(ENOMEM);
 
@@ -1318,7 +1318,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
 
     ff_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
 
-    if(ctx->compute_edt == 1)
+    if (ctx->compute_edt == 1)
         save_subtitle_set(avctx, sub, got_output);
 
     if (page_state == 1 || page_state == 2) {
@@ -1352,7 +1352,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
         }
 
         if (!display) {
-            display = av_mallocz(sizeof(DVBSubRegionDisplay));
+            display = av_mallocz(sizeof(*display));
             if (!display)
                 return AVERROR(ENOMEM);
         }
@@ -1601,7 +1601,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 {
     DVBSubContext *ctx = avctx->priv_data;
 
-    if(ctx->compute_edt == 0)
+    if (ctx->compute_edt == 0)
         save_subtitle_set(avctx, sub, got_output);
 #ifdef DEBUG
     save_display_set(ctx);
@@ -1717,12 +1717,12 @@ static int dvbsub_decode(AVCodecContext *avctx,
     }
 
 end:
-    if(ret < 0) {
+    if (ret < 0) {
         *got_sub_ptr = 0;
         avsubtitle_free(sub);
         return ret;
     } else {
-        if(ctx->compute_edt == 1 )
+        if (ctx->compute_edt == 1)
             FFSWAP(int64_t, ctx->prev_start, sub->pts);
     }
 
@@ -1730,10 +1730,11 @@ end:
 }
 
 #define DS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_SUBTITLE_PARAM
+#define OFFSET(x) offsetof(DVBSubContext, x)
 static const AVOption options[] = {
-    {"compute_edt", "compute end of time using pts or timeout", offsetof(DVBSubContext, compute_edt), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DS},
-    {"compute_clut", "compute clut when not available(-1) or always(1) or never(0)", offsetof(DVBSubContext, compute_clut), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, DS},
-    {"dvb_substream", "", offsetof(DVBSubContext, substream), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, DS},
+    {"compute_edt", "compute end of time using pts or timeout", OFFSET(compute_edt), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DS},
+    {"compute_clut", "compute clut when not available(-1) or always(1) or never(0)", OFFSET(compute_clut), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, DS},
+    {"dvb_substream", "", OFFSET(substream), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, DS},
     {NULL}
 };
 static const AVClass dvbsubdec_class = {

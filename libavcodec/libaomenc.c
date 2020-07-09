@@ -145,6 +145,7 @@ static const char *const ctlidstr[] = {
 #endif
     [AV1E_SET_ENABLE_CDEF]      = "AV1E_SET_ENABLE_CDEF",
     [AOME_SET_TUNING]           = "AOME_SET_TUNING",
+#if AOM_ENCODER_ABI_VERSION >= 22
     [AV1E_SET_ENABLE_1TO4_PARTITIONS] = "AV1E_SET_ENABLE_1TO4_PARTITIONS",
     [AV1E_SET_ENABLE_AB_PARTITIONS]   = "AV1E_SET_ENABLE_AB_PARTITIONS",
     [AV1E_SET_ENABLE_RECT_PARTITIONS] = "AV1E_SET_ENABLE_RECT_PARTITIONS",
@@ -155,6 +156,7 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_PAETH_INTRA]       = "AV1E_SET_ENABLE_PAETH_INTRA",
     [AV1E_SET_ENABLE_SMOOTH_INTRA]      = "AV1E_SET_ENABLE_SMOOTH_INTRA",
     [AV1E_SET_ENABLE_PALETTE]           = "AV1E_SET_ENABLE_PALETTE",
+#endif
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -718,6 +720,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_ENABLE_CDEF, ctx->enable_cdef);
     if (ctx->enable_restoration >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_RESTORATION, ctx->enable_restoration);
+#if AOM_ENCODER_ABI_VERSION >= 22
     if (ctx->enable_rect_partitions >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_RECT_PARTITIONS, ctx->enable_rect_partitions);
     if (ctx->enable_1to4_partitions >= 0)
@@ -738,6 +741,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTRA, ctx->enable_smooth_intra);
     if (ctx->enable_palette >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_PALETTE, ctx->enable_palette);
+#endif
 
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)

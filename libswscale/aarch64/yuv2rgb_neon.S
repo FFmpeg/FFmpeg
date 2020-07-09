@@ -142,6 +142,7 @@
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     load_args_\ifmt
+    mov                 w9, w1
 1:
     mov                 w8, w0                                          // w8 = width
 2:
@@ -193,6 +194,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     increment_\ifmt
     subs                w1, w1, #1                                      // height -= 1
     b.gt                1b
+    mov                 w0, w9
     ret
 endfunc
 .endm
