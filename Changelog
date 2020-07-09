@@ -1,6 +1,43 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.3.1:
+ avformat/mov: Fix unaligned read of uint32_t and endian-dependance in mov_read_default
+ avcodec/apedec: Fix undefined integer overflow with 24bit
+ avcodec/loco: Fix integer overflow with large values from loco_get_rice()
+ avformat/smjpegdec: Check the existence of referred streams
+ avcodec/tiff: Check frame parameters before blit for DNG
+ avcodec/mjpegdec: Limit bayer to single plane outputting format
+ avcodec/pnmdec: Fix misaligned reads
+ avcodec/mv30: Fix integer overflows in idct2_1d()
+ avcodec/hcadec: Check total_band_count against imdct_in size
+ avcodec/scpr3: Fix out of array access with dectab
+ avcodec/tiff: Do not overrun the array ends in dng_blit()
+ avcodec/dstdec: Replace AC overread check by sample rate check
+ dnn_backend_native: Add overflow check for length calculation.
+ avcodec/h264_metadata_bsf: Fix invalid av_freep
+ avcodec/cbs_h265: set default VUI parameters when vui_parameters_present_flag is false
+ avcodec/av1_parser: initialize avctx->pix_fmt
+ avcodec/av1_parser: add missing parsing for RGB pixel format signaling
+ avcodec/av1_parser: set context values outside the OBU parsing loop
+ avutil/avsscanf: Add () to avoid integer overflow in scanexp()
+ avformat/utils: reorder duration computation to avoid overflow
+ avcodec/pngdec: Check for fctl after idat
+ avformat/hls: Pass a copy of the URL for probing
+ avutil/common: Fix integer overflow in av_ceil_log2_c()
+ avcodec/wmalosslessdec: fix overflow with pred in revert_cdlms
+ avformat/mvdec: Fix integer overflow with billions of channels
+ avformat/microdvddec: skip malformed lines without frame number.
+ dnn_backend_native: check operand index
+ dnn_backend_native.c: refine code for fail case
+ avformat/mov: fix memleaks
+ libavformat/mov: Fix memleaks when demuxing DV audio
+ avcodec/cbs_av1: Fix writing uvlc numbers >= INT_MAX
+ avformat/avc, mxfenc: Avoid allocation of H264 SPS structure, fix memleak
+ avcodec/bitstream: Don't check for undefined behaviour after it happened
+ avformat/aviobuf: Also return truncated buffer in avio_get_dyn_buf()
+ avformat/aviobuf: Don't check for overflow after it happened
+
 version 4.3:
 - v360 filter
 - Intel QSV-accelerated MJPEG decoding
