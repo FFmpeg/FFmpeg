@@ -171,6 +171,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ChromaNRContext *s = ctx->priv;
     AVFrame *out;
 
+    s->thres = s->threshold * (1 << (s->depth - 8));
+
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
@@ -197,7 +199,6 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_planes = desc->nb_components;
     s->depth = desc->comp[0].depth;
-    s->thres = s->threshold * (1 << (s->depth - 8));
     s->filter_slice = s->depth <= 8 ? filter_slice8 : filter_slice16;
     s->chroma_w = 1 << desc->log2_chroma_w;
     s->chroma_h = 1 << desc->log2_chroma_h;
