@@ -511,6 +511,10 @@ static av_cold int X264_close(AVCodecContext *avctx)
     av_freep(&x4->sei);
     av_freep(&x4->reordered_opaque);
 
+#if X264_BUILD >= 161
+    x264_param_cleanup(&x4->params);
+#endif
+
     if (x4->enc) {
         x264_encoder_close(x4->enc);
         x4->enc = NULL;
