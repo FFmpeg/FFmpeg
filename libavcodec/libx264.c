@@ -529,6 +529,12 @@ static int parse_opts(AVCodecContext *avctx, const char *opt, const char *param)
             av_log(avctx, AV_LOG_ERROR,
                    "bad option '%s': '%s'\n", opt, param);
             ret = AVERROR(EINVAL);
+#if X264_BUILD >= 161
+        } else if (ret == X264_PARAM_ALLOC_FAILED) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "out of memory parsing option '%s': '%s'\n", opt, param);
+            ret = AVERROR(ENOMEM);
+#endif
         } else {
             av_log(avctx, AV_LOG_ERROR,
                    "bad value for '%s': '%s'\n", opt, param);
@@ -914,10 +920,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     {
         AVDictionaryEntry *en = NULL;
         while (en = av_dict_get(x4->x264_params, "", en, AV_DICT_IGNORE_SUFFIX)) {
-           if (x264_param_parse(&x4->params, en->key, en->value) < 0)
+           if ((ret = x264_param_parse(&x4->params, en->key, en->value)) < 0) {
                av_log(avctx, AV_LOG_WARNING,
                       "Error parsing option '%s = %s'.\n",
                        en->key, en->value);
+#if X264_BUILD >= 161
+               if (ret == X264_PARAM_ALLOC_FAILED)
+                   return AVERROR(ENOMEM);
+#endif
+           }
         }
     }
 
