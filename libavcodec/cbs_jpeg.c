@@ -149,6 +149,7 @@ static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
             break;
         } else if (marker == JPEG_MARKER_SOS) {
             next_marker = -1;
+            end = start;
             for (i = start; i + 1 < frag->data_size; i++) {
                 if (frag->data[i] != 0xff)
                     continue;
