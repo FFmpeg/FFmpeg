@@ -297,7 +297,7 @@ static int mov_metadata_hmmt(MOVContext *c, AVIOContext *pb, unsigned len)
 
 static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    char tmp_key[5];
+    char tmp_key[AV_FOURCC_MAX_STRING_SIZE] = {0};
     char key2[32], language[4] = {0};
     char *str = NULL;
     const char *key = NULL;
@@ -444,8 +444,7 @@ retry:
         str_size = atom.size;
 
     if (c->export_all && !key) {
-        snprintf(tmp_key, 5, "%.4s", (char*)&atom.type);
-        key = tmp_key;
+        key = av_fourcc_make_string(tmp_key, atom.type);
     }
 
     if (!key)
@@ -7024,8 +7023,8 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 avio_skip(pb, left);
             else if (left < 0) {
                 av_log(c->fc, AV_LOG_WARNING,
-                       "overread end of atom '%.4s' by %"PRId64" bytes\n",
-                       (char*)&a.type, -left);
+                       "overread end of atom '%s' by %"PRId64" bytes\n",
+                       av_fourcc2str(a.type), -left);
                 avio_seek(pb, left, SEEK_CUR);
             }
         }
