@@ -83,6 +83,8 @@ int av_vdpau_get_surface_parameters(AVCodecContext *avctx,
     switch (avctx->sw_pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV420P12:
         t = VDP_CHROMA_TYPE_420;
         w = (w + 1) & ~1;
         h = (h + 3) & ~3;
@@ -95,6 +97,8 @@ int av_vdpau_get_surface_parameters(AVCodecContext *avctx,
         break;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVJ444P:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P12:
         t = VDP_CHROMA_TYPE_444;
         h = (h + 1) & ~1;
         break;

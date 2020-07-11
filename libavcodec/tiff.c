@@ -882,6 +882,9 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
     int is_single_comp, is_u16, pixel_size;
     int ret;
 
+    if (tile_byte_count < 0 || tile_byte_count > bytestream2_get_bytes_left(&s->gb))
+        return AVERROR_INVALIDDATA;
+
     /* Prepare a packet and send to the MJPEG decoder */
     av_init_packet(&jpkt);
     jpkt.data = (uint8_t*)s->gb.buffer;
