@@ -38,11 +38,11 @@ pb_255: times 16 db 255
 
 SECTION .text
 
-%macro BLEND_INIT 2-3
+%macro BLEND_INIT 2-3 0
 %if ARCH_X86_64
 cglobal blend_%1, 6, 9, %2, top, top_linesize, bottom, bottom_linesize, dst, dst_linesize, width, end, x
     mov    widthd, dword widthm
-    %if %0 == 3; is 16 bit
+    %if %3; is 16 bit
         add    widthq, widthq ; doesn't compile on x86_32
     %endif
 %else
@@ -66,7 +66,7 @@ cglobal blend_%1, 5, 7, %2, top, top_linesize, bottom, bottom_linesize, dst, end
 REP_RET
 %endmacro
 
-%macro BLEND_SIMPLE 2-3
+%macro BLEND_SIMPLE 2-3 0
 BLEND_INIT %1, 2, %3
 .nextrow:
     mov        xq, widthq
@@ -82,10 +82,10 @@ BLEND_END
 %endmacro
 
 ; %1 name , %2 src (b or w), %3 inter (w or d), %4 (1 if 16bit, not set if 8 bit)
-%macro GRAINEXTRACT 3-4
+%macro GRAINEXTRACT 3-4 0
 BLEND_INIT %1, 6, %4
     pxor           m4, m4
-%if %0 == 4 ; 16 bit
+%if %4 ; 16 bit
     VBROADCASTI128 m5, [pd_32768]
 %else
     VBROADCASTI128 m5, [pw_128]
@@ -182,7 +182,7 @@ BLEND_END
 %endmacro
 
 ;%1 name, %2 (b or w), %3 (set if 16 bit)
-%macro AVERAGE 2-3
+%macro AVERAGE 2-3 0
 BLEND_INIT %1, 3, %3
     pcmpeqb        m2, m2
 
@@ -203,10 +203,10 @@ BLEND_END
 %endmacro
 
 ; %1 name , %2 src (b or w), %3 inter (w or d), %4 (1 if 16bit, not set if 8 bit)
-%macro GRAINMERGE 3-4
+%macro GRAINMERGE 3-4 0
 BLEND_INIT %1, 6, %4
     pxor       m4, m4
-%if %0 == 4 ; 16 bit
+%if %4 ; 16 bit
     VBROADCASTI128       m5, [pd_32768]
 %else
     VBROADCASTI128       m5, [pw_128]
@@ -288,7 +288,7 @@ BLEND_INIT divide, 4
 BLEND_END
 %endmacro
 
-%macro PHOENIX 2-3
+%macro PHOENIX 2-3 0
 ; %1 name, %2 b or w, %3 (opt) 1 if 16 bit
 BLEND_INIT %1, 4, %3
     VBROADCASTI128       m3, [pb_255]
@@ -311,7 +311,7 @@ BLEND_END
 %endmacro
 
 ; %1 name , %2 src (b or w), %3 inter (w or d), %4 (1 if 16bit, not set if 8 bit)
-%macro DIFFERENCE 3-4
+%macro DIFFERENCE 3-4 0
 BLEND_INIT %1, 5, %4
     pxor       m2, m2
 .nextrow:
@@ -326,7 +326,7 @@ BLEND_INIT %1, 5, %4
         punpckl%2%3     m1, m2
         psub%3          m0, m1
         psub%3          m3, m4
-%if %0 == 4; 16 bit
+%if %4; 16 bit
         pabsd           m0, m0
         pabsd           m3, m3
 %else
@@ -340,10 +340,10 @@ BLEND_END
 %endmacro
 
 ; %1 name , %2 src (b or w), %3 inter (w or d), %4 (1 if 16bit, not set if 8 bit)
-%macro EXTREMITY 3-4
+%macro EXTREMITY 3-4 0
 BLEND_INIT %1, 8, %4
     pxor       m2, m2
-%if %0 == 4; 16 bit
+%if %4; 16 bit
     VBROADCASTI128       m4, [pd_65535]
 %else
     VBROADCASTI128       m4, [pw_255]
@@ -362,7 +362,7 @@ BLEND_INIT %1, 8, %4
         psub%3          m7, m4, m5
         psub%3          m3, m1
         psub%3          m7, m6
-%if %0 == 4; 16 bit
+%if %4; 16 bit
         pabsd           m3, m3
         pabsd           m7, m7
 %else
@@ -375,10 +375,10 @@ BLEND_INIT %1, 8, %4
 BLEND_END
 %endmacro
 
-%macro NEGATION 3-4
+%macro NEGATION 3-4 0
 BLEND_INIT %1, 8, %4
     pxor       m2, m2
-%if %0 == 4; 16 bit
+%if %4; 16 bit
     VBROADCASTI128       m4, [pd_65535]
 %else
     VBROADCASTI128       m4, [pw_255]
@@ -397,7 +397,7 @@ BLEND_INIT %1, 8, %4
         psub%3          m7, m4, m5
         psub%3          m3, m1
         psub%3          m7, m6
-%if %0 == 4; 16 bit
+%if %4; 16 bit
         pabsd           m3, m3
         pabsd           m7, m7
 %else
