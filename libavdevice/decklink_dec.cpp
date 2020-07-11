@@ -42,6 +42,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/time.h"
+#include "libavutil/timecode.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/reverse.h"
 #include "avdevice.h"
@@ -882,6 +883,19 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                         AVDictionary* metadata_dict = NULL;
                         int metadata_len;
                         uint8_t* packed_metadata;
+                        AVTimecode tcr;
+
+                        if (av_timecode_init_from_string(&tcr, ctx->video_st->r_frame_rate, tc, ctx) >= 0) {
+                            uint32_t tc_data = av_timecode_get_smpte_from_framenum(&tcr, 0);
+                            int size = sizeof(uint32_t) * 4;
+                            uint32_t *sd = (uint32_t *)av_packet_new_side_data(&pkt, AV_PKT_DATA_S12M_TIMECODE, size);
+
+                            if (sd) {
+                                *sd       = 1;       // one TC
+                                *(sd + 1) = tc_data; // TC
+                            }
+                        }
+
                         if (av_dict_set(&metadata_dict, "timecode", tc, AV_DICT_DONT_STRDUP_VAL) >= 0) {
                             packed_metadata = av_packet_pack_dictionary(metadata_dict, &metadata_len);
                             av_dict_free(&metadata_dict);
