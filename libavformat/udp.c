@@ -852,7 +852,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
     } else {
-        /* set udp recv buffer size to the requested value (default 64K) */
+        /* set udp recv buffer size to the requested value (default UDP_RX_BUF_SIZE) */
         tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
             ff_log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_RECVBUF)");
