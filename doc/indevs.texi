@@ -1503,6 +1503,14 @@ ffmpeg -f x11grab -framerate 25 -video_size cif -i :0.0+10,20 out.mpg
 @subsection Options
 
 @table @option
+@item select_region
+Specify whether to select the grabbing area graphically using the pointer.
+A value of @code{1} prompts the user to select the grabbing area graphically
+by clicking and dragging. A single click with no dragging will select the
+whole screen. A region with zero width or height will also select the whole
+screen. This option overwrites the @var{video_size}, @var{grab_x}, and
+@var{grab_y} options. Default value is @code{0}.
+
 @item draw_mouse
 Specify whether to draw the mouse pointer. A value of @code{0} specifies
 not to draw the pointer. Default value is @code{1}.
