@@ -423,7 +423,7 @@ bad_option:
         for (x = 0; x < W * 4; x++)
             rgb_data[ x + y * 4 * W] = av_lfg_get(&rand);
     res = sws_scale(sws, rgb_src, rgb_stride, 0, H / 12, (uint8_t * const *) src, stride);
-    if (res < 0 || res != (H / 12))
+    if (res < 0 || res != H)
         goto error;
     sws_freeContext(sws);
     av_free(rgb_data);
