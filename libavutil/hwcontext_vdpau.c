@@ -32,27 +32,6 @@
 #include "pixfmt.h"
 #include "pixdesc.h"
 
-typedef struct VDPAUDeviceContext {
-    VdpVideoSurfaceQueryGetPutBitsYCbCrCapabilities *get_transfer_caps;
-    VdpVideoSurfaceGetBitsYCbCr                     *get_data;
-    VdpVideoSurfacePutBitsYCbCr                     *put_data;
-    VdpVideoSurfaceCreate                           *surf_create;
-    VdpVideoSurfaceDestroy                          *surf_destroy;
-
-    enum AVPixelFormat *pix_fmts[8];
-    int              nb_pix_fmts[8];
-} VDPAUDeviceContext;
-
-typedef struct VDPAUFramesContext {
-    VdpVideoSurfaceGetBitsYCbCr *get_data;
-    VdpVideoSurfacePutBitsYCbCr *put_data;
-    VdpChromaType chroma_type;
-    int chroma_idx;
-
-    const enum AVPixelFormat *pix_fmts;
-    int                       nb_pix_fmts;
-} VDPAUFramesContext;
-
 typedef struct VDPAUPixFmtMap {
     VdpYCbCrFormat vdpau_fmt;
     enum AVPixelFormat pix_fmt;
@@ -102,6 +81,27 @@ static const struct {
     { VDP_CHROMA_TYPE_444_16, AV_PIX_FMT_YUV444P12, pix_fmts_444 },
 #endif
 };
+
+typedef struct VDPAUDeviceContext {
+    VdpVideoSurfaceQueryGetPutBitsYCbCrCapabilities *get_transfer_caps;
+    VdpVideoSurfaceGetBitsYCbCr                     *get_data;
+    VdpVideoSurfacePutBitsYCbCr                     *put_data;
+    VdpVideoSurfaceCreate                           *surf_create;
+    VdpVideoSurfaceDestroy                          *surf_destroy;
+
+    enum AVPixelFormat *pix_fmts[FF_ARRAY_ELEMS(vdpau_pix_fmts)];
+    int              nb_pix_fmts[FF_ARRAY_ELEMS(vdpau_pix_fmts)];
+} VDPAUDeviceContext;
+
+typedef struct VDPAUFramesContext {
+    VdpVideoSurfaceGetBitsYCbCr *get_data;
+    VdpVideoSurfacePutBitsYCbCr *put_data;
+    VdpChromaType chroma_type;
+    int chroma_idx;
+
+    const enum AVPixelFormat *pix_fmts;
+    int                       nb_pix_fmts;
+} VDPAUFramesContext;
 
 static int count_pixfmts(const VDPAUPixFmtMap *map)
 {
