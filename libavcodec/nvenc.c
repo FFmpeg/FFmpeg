@@ -2219,7 +2219,7 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             void *tc_data = NULL;
             size_t tc_size = 0;
 
-            if (ff_alloc_timecode_sei(frame, 0, (void**)&tc_data, &tc_size) < 0) {
+            if (ff_alloc_timecode_sei(frame, avctx->framerate, 0, (void**)&tc_data, &tc_size) < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode sei, skipping\n");
             }
 

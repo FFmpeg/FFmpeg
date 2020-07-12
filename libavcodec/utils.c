@@ -2213,7 +2213,7 @@ static unsigned bcd2uint(uint8_t bcd)
     return low + 10*high;
 }
 
-int ff_alloc_timecode_sei(const AVFrame *frame, size_t prefix_len,
+int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_len,
                      void **data, size_t *sei_size)
 {
     AVFrameSideData *sd = NULL;
@@ -2248,6 +2248,17 @@ int ff_alloc_timecode_sei(const AVFrame *frame, size_t prefix_len,
         unsigned ss   = bcd2uint(tcsmpte>>16 & 0x7f);    // 7-bit seconds
         unsigned ff   = bcd2uint(tcsmpte>>24 & 0x3f);    // 6-bit frames
         unsigned drop = tcsmpte & 1<<30 && !0;  // 1-bit drop if not arbitrary bit
+
+        /* Calculate frame number of HEVC by SMPTE ST 12-1:2014 Sec 12.2 if rate > 30FPS */
+        if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
+            unsigned pc;
+            ff *= 2;
+            if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
+                pc = !!(tcsmpte & 1 << 7);
+            else
+                pc = !!(tcsmpte & 1 << 23);
+            ff = (ff + pc) & 0x7f;
+        }
 
         put_bits(&pb, 1, 1); // clock_timestamp_flag
         put_bits(&pb, 1, 1); // units_field_based_flag
