@@ -262,14 +262,15 @@ static av_cold void uninit(AVFilterContext *ctx)
 }
 
 #define OFFSET(x) offsetof(SetPTSContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
-static const AVOption options[] = {
-    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = FLAGS },
-    { NULL }
-};
+#define V AV_OPT_FLAG_VIDEO_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
 
 #if CONFIG_SETPTS_FILTER
-#define setpts_options options
+static const AVOption setpts_options[] = {
+    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = V|F },
+    { NULL }
+};
 AVFILTER_DEFINE_CLASS(setpts);
 
 static const AVFilterPad avfilter_vf_setpts_inputs[] = {
@@ -306,7 +307,10 @@ AVFilter ff_vf_setpts = {
 
 #if CONFIG_ASETPTS_FILTER
 
-#define asetpts_options options
+static const AVOption asetpts_options[] = {
+    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = A|F },
+    { NULL }
+};
 AVFILTER_DEFINE_CLASS(asetpts);
 
 static const AVFilterPad asetpts_inputs[] = {
