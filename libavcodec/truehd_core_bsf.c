@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "get_bits.h"
 #include "mlp_parse.h"
 #include "mlp.h"
@@ -31,8 +31,6 @@ typedef struct AccessUnit {
 } AccessUnit;
 
 typedef struct TrueHDCoreContext {
-    const AVClass *class;
-
     MLPHeaderInfo hdr;
 } TrueHDCoreContext;
 

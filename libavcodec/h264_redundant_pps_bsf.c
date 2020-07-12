@@ -22,6 +22,7 @@
 #include "libavutil/mem.h"
 
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_h264.h"
 #include "h264.h"
@@ -94,7 +95,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *pkt)
             if (!au_has_sps) {
                 av_log(bsf, AV_LOG_VERBOSE, "Deleting redundant PPS "
                        "at %"PRId64".\n", pkt->pts);
-                ff_cbs_delete_unit(ctx->input, au, i);
+                ff_cbs_delete_unit(au, i);
                 i--;
                 continue;
             }
@@ -112,7 +113,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *pkt)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->output, au);
+    ff_cbs_fragment_reset(au);
     if (err < 0)
         av_packet_unref(pkt);
 
@@ -160,7 +161,7 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->output, au);
+    ff_cbs_fragment_reset(au);
     return err;
 }
 
@@ -174,7 +175,7 @@ static void h264_redundant_pps_close(AVBSFContext *bsf)
 {
     H264RedundantPPSContext *ctx = bsf->priv_data;
 
-    ff_cbs_fragment_free(ctx->input, &ctx->access_unit);
+    ff_cbs_fragment_free(&ctx->access_unit);
     ff_cbs_close(&ctx->input);
     ff_cbs_close(&ctx->output);
 }

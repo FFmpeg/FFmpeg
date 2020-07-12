@@ -157,11 +157,11 @@ static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     av_bprint_init(&avbuf, FITS_BLOCK_SIZE, AV_BPRINT_SIZE_UNLIMITED);
     while ((ret = is_image(s, fits, &header, &avbuf, &size)) == 0) {
+        av_bprint_finalize(&avbuf, NULL);
         pos = avio_skip(s->pb, size);
         if (pos < 0)
             return pos;
 
-        av_bprint_finalize(&avbuf, NULL);
         av_bprint_init(&avbuf, FITS_BLOCK_SIZE, AV_BPRINT_SIZE_UNLIMITED);
         avpriv_fits_header_init(&header, STATE_XTENSION);
     }
@@ -183,7 +183,6 @@ static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_bprint_finalize(&avbuf, &buf);
     if (ret < 0) {
-        av_packet_unref(pkt);
         return ret;
     }
 
@@ -192,7 +191,6 @@ static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
     av_freep(&buf);
     ret = avio_read(s->pb, pkt->data + pkt->size, size);
     if (ret < 0) {
-        av_packet_unref(pkt);
         return ret;
     }
 

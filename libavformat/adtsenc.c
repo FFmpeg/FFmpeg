@@ -53,7 +53,7 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
     int off;
 
     init_get_bits(&gb, buf, size * 8);
-    off = avpriv_mpeg4audio_get_config(&m4ac, buf, size * 8, 1);
+    off = avpriv_mpeg4audio_get_config2(&m4ac, buf, size, 1, s);
     if (off < 0)
         return off;
     skip_bits_long(&gb, off);
@@ -169,7 +169,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     if (!par->extradata_size) {
         uint8_t *side_data;
-        int side_data_size = 0, ret;
+        int side_data_size, ret;
 
         side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                             &side_data_size);

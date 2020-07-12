@@ -259,9 +259,10 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
         /* These bulk costs increase every iteration */
         lowest_bulk_cost += s->pixel_size;
         sec_lowest_bulk_cost += s->pixel_size;
-
-        this_line -= s->pixel_size;
-        prev_line -= s->pixel_size;
+        if (this_line >= p->data[0] + s->pixel_size)
+            this_line -= s->pixel_size;
+        if (prev_line >= s->previous_frame->data[0] + s->pixel_size)
+            prev_line -= s->pixel_size;
     }
 
     /* Good! Now we have the best sequence for this line, let's output it. */

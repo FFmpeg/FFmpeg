@@ -22,6 +22,7 @@ AVCODECOBJS-$(CONFIG_DCA_DECODER)       += synth_filter.o
 AVCODECOBJS-$(CONFIG_EXR_DECODER)       += exrdsp.o
 AVCODECOBJS-$(CONFIG_HUFFYUV_DECODER)   += huffyuvdsp.o
 AVCODECOBJS-$(CONFIG_JPEG2000_DECODER)  += jpeg2000dsp.o
+AVCODECOBJS-$(CONFIG_OPUS_DECODER)      += opusdsp.o
 AVCODECOBJS-$(CONFIG_PIXBLOCKDSP)       += pixblockdsp.o
 AVCODECOBJS-$(CONFIG_HEVC_DECODER)      += hevc_add_res.o hevc_idct.o hevc_sao.o
 AVCODECOBJS-$(CONFIG_UTVIDEO_DECODER)   += utvideodsp.o
@@ -35,6 +36,7 @@ CHECKASMOBJS-$(CONFIG_AVCODEC)          += $(AVCODECOBJS-yes)
 AVFILTEROBJS-$(CONFIG_AFIR_FILTER) += af_afir.o
 AVFILTEROBJS-$(CONFIG_BLEND_FILTER) += vf_blend.o
 AVFILTEROBJS-$(CONFIG_COLORSPACE_FILTER) += vf_colorspace.o
+AVFILTEROBJS-$(CONFIG_EQ_FILTER)         += vf_eq.o
 AVFILTEROBJS-$(CONFIG_GBLUR_FILTER)      += vf_gblur.o
 AVFILTEROBJS-$(CONFIG_HFLIP_FILTER)      += vf_hflip.o
 AVFILTEROBJS-$(CONFIG_THRESHOLD_FILTER)  += vf_threshold.o
@@ -43,7 +45,7 @@ AVFILTEROBJS-$(CONFIG_NLMEANS_FILTER)    += vf_nlmeans.o
 CHECKASMOBJS-$(CONFIG_AVFILTER) += $(AVFILTEROBJS-yes)
 
 # swscale tests
-SWSCALEOBJS                             += sw_rgb.o
+SWSCALEOBJS                             += sw_rgb.o sw_scale.o
 
 CHECKASMOBJS-$(CONFIG_SWSCALE)  += $(SWSCALEOBJS)
 

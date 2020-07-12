@@ -19,10 +19,11 @@
 #include "libavcodec/avcodec.h"
 
 int main(void){
-    AVCodec *codec = NULL;
+    void *iter = NULL;
+    const AVCodec *codec = NULL;
     int ret = 0;
 
-    while (codec = av_codec_next(codec)) {
+    while (codec = av_codec_iterate(&iter)) {
         if (av_codec_is_encoder(codec)) {
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (!codec->sample_fmts) {

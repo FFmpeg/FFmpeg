@@ -32,11 +32,15 @@
 #include "libavutil/fifo.h"
 
 #include "avcodec.h"
+#include "hwconfig.h"
 #include "qsv_internal.h"
 
 #define QSV_HAVE_CO2 QSV_VERSION_ATLEAST(1, 6)
 #define QSV_HAVE_CO3 QSV_VERSION_ATLEAST(1, 11)
 #define QSV_HAVE_CO_VPS  QSV_VERSION_ATLEAST(1, 17)
+
+#define QSV_HAVE_EXT_HEVC_TILES QSV_VERSION_ATLEAST(1, 13)
+#define QSV_HAVE_EXT_VP9_PARAM QSV_VERSION_ATLEAST(1, 26)
 
 #define QSV_HAVE_TRELLIS QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_MAX_SLICE_SIZE QSV_VERSION_ATLEAST(1, 9)
@@ -94,6 +98,8 @@
 { "forced_idr",     "Forcing I frames as IDR frames",         OFFSET(qsv.forced_idr),     AV_OPT_TYPE_BOOL,{ .i64 = 0  },  0,          1, VE },                         \
 { "low_power", "enable low power mode(experimental: many limitations by mfx version, BRC modes, etc.)", OFFSET(qsv.low_power), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, VE},\
 
+extern const AVCodecHWConfigInternal *ff_qsv_enc_hw_configs[];
+
 typedef int SetEncodeCtrlCB (AVCodecContext *avctx,
                              const AVFrame *frame, mfxEncodeCtrl* enc_ctrl);
 typedef struct QSVEncContext {
@@ -102,7 +108,7 @@ typedef struct QSVEncContext {
     QSVFrame *work_frames;
 
     mfxSession session;
-    mfxSession internal_session;
+    QSVSession internal_qs;
 
     int packet_size;
     int width_align;
@@ -122,6 +128,13 @@ typedef struct QSVEncContext {
     mfxExtMultiFrameParam   extmfp;
     mfxExtMultiFrameControl extmfc;
 #endif
+#if QSV_HAVE_EXT_HEVC_TILES
+    mfxExtHEVCTiles exthevctiles;
+#endif
+#if QSV_HAVE_EXT_VP9_PARAM
+    mfxExtVP9Param  extvp9param;
+#endif
+
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
@@ -154,6 +167,9 @@ typedef struct QSVEncContext {
     int rdo;
     int max_frame_size;
     int max_slice_size;
+
+    int tile_cols;
+    int tile_rows;
 
     int aud;
 

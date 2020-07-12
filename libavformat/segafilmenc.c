@@ -45,7 +45,6 @@ typedef struct FILMPacket {
 } FILMPacket;
 
 typedef struct FILMOutputContext {
-    const AVClass *class;
     int audio_index;
     int video_index;
     int64_t stab_pos;
@@ -70,7 +69,7 @@ static int film_write_packet_to_header(AVFormatContext *format_context, FILMPack
         info2 = pkt->duration;
         /* The top bit being set indicates a key frame */
         if (!pkt->keyframe)
-            info1 |= (1 << 31);
+            info1 |= 1U << 31;
     }
 
     /* Write the 16-byte sample info packet to the STAB chunk in the header */
@@ -147,10 +146,8 @@ static int get_audio_codec_id(enum AVCodecID codec_id)
     case AV_CODEC_ID_PCM_S8_PLANAR:
     case AV_CODEC_ID_PCM_S16BE_PLANAR:
         return 0;
-        break;
     case AV_CODEC_ID_ADPCM_ADX:
         return 2;
-        break;
     default:
         return -1;
     }
@@ -158,7 +155,6 @@ static int get_audio_codec_id(enum AVCodecID codec_id)
 
 static int film_init(AVFormatContext *format_context)
 {
-    AVStream *audio = NULL;
     FILMOutputContext *film = format_context->priv_data;
     film->audio_index = -1;
     film->video_index = -1;
@@ -174,8 +170,12 @@ static int film_init(AVFormatContext *format_context)
                 av_log(format_context, AV_LOG_ERROR, "Sega FILM allows a maximum of one audio stream.\n");
                 return AVERROR(EINVAL);
             }
+            if (get_audio_codec_id(st->codecpar->codec_id) < 0) {
+                av_log(format_context, AV_LOG_ERROR,
+                       "Incompatible audio stream format.\n");
+                return AVERROR(EINVAL);
+            }
             film->audio_index = i;
-            audio = st;
         }
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -183,17 +183,23 @@ static int film_init(AVFormatContext *format_context)
                 av_log(format_context, AV_LOG_ERROR, "Sega FILM allows a maximum of one video stream.\n");
                 return AVERROR(EINVAL);
             }
+            if (st->codecpar->codec_id != AV_CODEC_ID_CINEPAK &&
+                st->codecpar->codec_id != AV_CODEC_ID_RAWVIDEO) {
+                av_log(format_context, AV_LOG_ERROR,
+                       "Incompatible video stream format.\n");
+                return AVERROR(EINVAL);
+            }
+            if (st->codecpar->format != AV_PIX_FMT_RGB24) {
+                av_log(format_context, AV_LOG_ERROR,
+                       "Pixel format must be rgb24.\n");
+                return AVERROR(EINVAL);
+            }
             film->video_index = i;
-        }
-
-        if (film->video_index == -1) {
-            av_log(format_context, AV_LOG_ERROR, "No video stream present.\n");
-            return AVERROR(EINVAL);
         }
     }
 
-    if (audio != NULL && get_audio_codec_id(audio->codecpar->codec_id) < 0) {
-        av_log(format_context, AV_LOG_ERROR, "Incompatible audio stream format.\n");
+    if (film->video_index == -1) {
+        av_log(format_context, AV_LOG_ERROR, "No video stream present.\n");
         return AVERROR(EINVAL);
     }
 
@@ -203,7 +209,7 @@ static int film_init(AVFormatContext *format_context)
 static int shift_data(AVFormatContext *format_context, int64_t shift_size)
 {
     int ret = 0;
-    int64_t pos, pos_end = avio_tell(format_context->pb);
+    int64_t pos, pos_end;
     uint8_t *buf, *read_buf[2];
     int read_buf_id = 0;
     int read_size[2];
@@ -261,11 +267,9 @@ static int film_write_header(AVFormatContext *format_context)
 {
     int ret = 0;
     int64_t sample_table_size, stabsize, headersize;
-    int8_t audio_codec;
     AVIOContext *pb = format_context->pb;
     FILMOutputContext *film = format_context->priv_data;
     FILMPacket *prev, *packet;
-    AVStream *audio = NULL;
     AVStream *video = NULL;
 
     /* Calculate how much we need to reserve for the header;
@@ -282,24 +286,6 @@ static int film_write_header(AVFormatContext *format_context)
     /* Seek back to the beginning to start writing the header now */
     avio_seek(pb, 0, SEEK_SET);
 
-    if (film->audio_index > -1)
-        audio = format_context->streams[film->audio_index];
-    if (film->video_index > -1)
-        video = format_context->streams[film->video_index];
-
-    if (audio != NULL) {
-        audio_codec = get_audio_codec_id(audio->codecpar->codec_id);
-        if (audio_codec < 0) {
-            av_log(format_context, AV_LOG_ERROR, "Incompatible audio stream format.\n");
-            return AVERROR(EINVAL);
-        }
-    }
-
-    if (video->codecpar->format != AV_PIX_FMT_RGB24) {
-        av_log(format_context, AV_LOG_ERROR, "Pixel format must be rgb24.\n");
-        return AVERROR(EINVAL);
-    }
-
     /* First, write the FILM header; this is very simple */
 
     ffio_wfourcc(pb, "FILM");
@@ -314,6 +300,8 @@ static int film_write_header(AVFormatContext *format_context)
     ffio_wfourcc(pb, "FDSC");
     avio_wb32(pb, 0x20); /* Size of FDSC chunk */
 
+    video = format_context->streams[film->video_index];
+
     /* The only two supported codecs; raw video is rare */
     switch (video->codecpar->codec_id) {
     case AV_CODEC_ID_CINEPAK:
@@ -322,16 +310,16 @@ static int film_write_header(AVFormatContext *format_context)
     case AV_CODEC_ID_RAWVIDEO:
         ffio_wfourcc(pb, "raw ");
         break;
-    default:
-        av_log(format_context, AV_LOG_ERROR, "Incompatible video stream format.\n");
-        return AVERROR(EINVAL);
     }
 
     avio_wb32(pb, video->codecpar->height);
     avio_wb32(pb, video->codecpar->width);
     avio_w8(pb, 24); /* Bits per pixel - observed to always be 24 */
 
-    if (audio != NULL) {
+    if (film->audio_index > -1) {
+        AVStream *audio = format_context->streams[film->audio_index];
+        int audio_codec = get_audio_codec_id(audio->codecpar->codec_id);
+
         avio_w8(pb, audio->codecpar->channels); /* Audio channels */
         avio_w8(pb, audio->codecpar->bits_per_coded_sample); /* Audio bit depth */
         avio_w8(pb, audio_codec); /* Compression - 0 is PCM, 2 is ADX */
@@ -364,8 +352,6 @@ static int film_write_header(AVFormatContext *format_context)
 
     avio_wb32(pb, film->packet_count);
 
-    avio_flush(pb);
-
     /* Finally, write out each packet's data to the header */
     packet = film->start;
     while (packet != NULL) {
@@ -374,15 +360,22 @@ static int film_write_header(AVFormatContext *format_context)
         packet = packet->next;
         av_freep(&prev);
     }
+    film->start = film->last = NULL;
 
     return 0;
 }
 
-static const AVClass film_muxer_class = {
-    .class_name     = "Sega FILM muxer",
-    .item_name      = av_default_item_name,
-    .version        = LIBAVUTIL_VERSION_INT,
-};
+static void film_deinit(AVFormatContext *format_context)
+{
+    FILMOutputContext *film = format_context->priv_data;
+    FILMPacket *packet = film->start;
+    while (packet != NULL) {
+        FILMPacket *next = packet->next;
+        av_free(packet);
+        packet = next;
+    }
+    film->start = film->last = NULL;
+}
 
 AVOutputFormat ff_segafilm_muxer = {
     .name           = "film_cpk",
@@ -394,5 +387,5 @@ AVOutputFormat ff_segafilm_muxer = {
     .init           = film_init,
     .write_trailer  = film_write_header,
     .write_packet   = film_write_packet,
-    .priv_class     = &film_muxer_class,
+    .deinit         = film_deinit,
 };

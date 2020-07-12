@@ -212,7 +212,7 @@ static char *extradata2psets(AVFormatContext *s, AVCodecParameters *par)
         p += strlen(p);
         r = r1;
     }
-    if (sps && sps_end - sps >= 4) {
+    if (sps && sps_end - sps >= 4 && p - psets <= MAX_PSET_SIZE - strlen(profile_string) - 7) {
         memcpy(p, profile_string, strlen(profile_string));
         p += strlen(p);
         ff_data_to_hex(p, sps + 1, 3, 0);

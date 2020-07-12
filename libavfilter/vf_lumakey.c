@@ -28,12 +28,13 @@
 typedef struct LumakeyContext {
     const AVClass *class;
 
-    int threshold;
-    int tolerance;
-    int softness;
+    double threshold;
+    double tolerance;
+    double softness;
 
     int white;
     int black;
+    int so;
     int max;
 
     int (*do_lumakey_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
@@ -47,7 +48,7 @@ static int do_lumakey_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
     uint8_t *alpha = frame->data[3] + slice_start * frame->linesize[3];
     const uint8_t *luma = frame->data[0] + slice_start * frame->linesize[0];
-    const int so = s->softness;
+    const int so = s->so;
     const int w = s->white;
     const int b = s->black;
     int x, y;
@@ -79,7 +80,7 @@ static int do_lumakey_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb
     const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
     uint16_t *alpha = (uint16_t *)(frame->data[3] + slice_start * frame->linesize[3]);
     const uint16_t *luma = (const uint16_t *)(frame->data[0] + slice_start * frame->linesize[0]);
-    const int so = s->softness;
+    const int so = s->so;
     const int w = s->white;
     const int b = s->black;
     const int m = s->max;
@@ -113,14 +114,16 @@ static int config_input(AVFilterLink *inlink)
 
     depth = desc->comp[0].depth;
     if (depth == 8) {
-        s->white = av_clip_uint8(s->threshold + s->tolerance);
-        s->black = av_clip_uint8(s->threshold - s->tolerance);
+        s->white = av_clip_uint8((s->threshold + s->tolerance) * 255);
+        s->black = av_clip_uint8((s->threshold - s->tolerance) * 255);
         s->do_lumakey_slice = do_lumakey_slice8;
+        s->so = s->softness * 255;
     } else {
         s->max = (1 << depth) - 1;
-        s->white = av_clip(s->threshold + s->tolerance, 0, s->max);
-        s->black = av_clip(s->threshold - s->tolerance, 0, s->max);
+        s->white = av_clip((s->threshold + s->tolerance) * s->max, 0, s->max);
+        s->black = av_clip((s->threshold - s->tolerance) * s->max, 0, s->max);
         s->do_lumakey_slice = do_lumakey_slice16;
+        s->so = s->softness * s->max;
     }
 
     return 0;
@@ -147,6 +150,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
         AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+        AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA422P12,
         AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE
     };
@@ -157,6 +161,18 @@ static av_cold int query_formats(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     return ff_set_common_formats(ctx, formats);
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
 }
 
 static const AVFilterPad lumakey_inputs[] = {
@@ -178,12 +194,12 @@ static const AVFilterPad lumakey_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(LumakeyContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption lumakey_options[] = {
-    { "threshold", "set the threshold value", OFFSET(threshold), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
-    { "tolerance", "set the tolerance value", OFFSET(tolerance), AV_OPT_TYPE_INT, {.i64=1}, 0, UINT16_MAX, FLAGS },
-    { "softness",  "set the softness value",  OFFSET(softness),  AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "threshold", "set the threshold value", OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=0},    0, 1, FLAGS },
+    { "tolerance", "set the tolerance value", OFFSET(tolerance), AV_OPT_TYPE_DOUBLE, {.dbl=0.01}, 0, 1, FLAGS },
+    { "softness",  "set the softness value",  OFFSET(softness),  AV_OPT_TYPE_DOUBLE, {.dbl=0},    0, 1, FLAGS },
     { NULL }
 };
 
@@ -198,4 +214,5 @@ AVFilter ff_vf_lumakey = {
     .inputs        = lumakey_inputs,
     .outputs       = lumakey_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };

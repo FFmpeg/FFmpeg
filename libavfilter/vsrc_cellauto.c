@@ -50,7 +50,7 @@ typedef struct CellAutoContext {
     uint64_t pts;
     AVRational frame_rate;
     double   random_fill_ratio;
-    uint32_t random_seed;
+    int64_t random_seed;
     int stitch, scroll, start_full;
     int64_t generation;         ///< the generation number, starting from 0
     AVLFG lfg;
@@ -72,8 +72,8 @@ static const AVOption cellauto_options[] = {
     { "rule",     "set rule",       OFFSET(rule), AV_OPT_TYPE_INT,    {.i64 = 110},  0, 255, FLAGS },
     { "random_fill_ratio", "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl = 1/M_PHI}, 0, 1, FLAGS },
     { "ratio",             "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl = 1/M_PHI}, 0, 1, FLAGS },
-    { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
-    { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
+    { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT64, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
+    { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT64, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { "scroll",      "scroll pattern downward", OFFSET(scroll), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     { "start_full",  "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { "full",        "start filling the whole video", OFFSET(start_full), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
@@ -199,7 +199,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%"PRIu32"\n",
+           "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%"PRId64"\n",
            s->w, s->h, s->frame_rate.num, s->frame_rate.den,
            s->rule, s->stitch, s->scroll, s->start_full,
            s->random_seed);

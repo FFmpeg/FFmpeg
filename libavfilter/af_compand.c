@@ -349,9 +349,10 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (nb_attacks > channels || nb_decays > channels) {
-        av_log(ctx, AV_LOG_ERROR,
-                "Number of attacks/decays bigger than number of channels.\n");
-        return AVERROR(EINVAL);
+        av_log(ctx, AV_LOG_WARNING,
+                "Number of attacks/decays bigger than number of channels. Ignoring rest of entries.\n");
+        nb_attacks = FFMIN(nb_attacks, channels);
+        nb_decays  = FFMIN(nb_decays, channels);
     }
 
     uninit(ctx);
@@ -534,7 +535,7 @@ static int config_output(AVFilterLink *outlink)
     s->delay_frame->nb_samples     = s->delay_samples;
     s->delay_frame->channel_layout = outlink->channel_layout;
 
-    err = av_frame_get_buffer(s->delay_frame, 32);
+    err = av_frame_get_buffer(s->delay_frame, 0);
     if (err)
         return err;
 

@@ -21,6 +21,7 @@
 
 
 #include "avformat.h"
+#include "internal.h"
 #include "config.h"
 #include "url.h"
 #if CONFIG_NETWORK
@@ -77,10 +78,55 @@ int ff_url_join(char *str, int size, const char *proto,
     return strlen(str);
 }
 
+static void trim_double_dot_url(char *buf, const char *rel, int size)
+{
+    const char *p = rel;
+    const char *root = rel;
+    char tmp_path[MAX_URL_SIZE] = {0, };
+    char *sep;
+    char *node;
+
+    /* Get the path root of the url which start by "://" */
+    if (p && (sep = strstr(p, "://"))) {
+        sep += 3;
+        root = strchr(sep, '/');
+        if (!root)
+            return;
+    }
+
+    /* set new current position if the root node is changed */
+    p = root;
+    while (p && (node = strstr(p, ".."))) {
+        av_strlcat(tmp_path, p, node - p + strlen(tmp_path));
+        p = node + 3;
+        sep = strrchr(tmp_path, '/');
+        if (sep)
+            sep[0] = '\0';
+        else
+            tmp_path[0] = '\0';
+    }
+
+    if (!av_stristart(p, "/", NULL) && root != rel)
+        av_strlcat(tmp_path, "/", size);
+
+    av_strlcat(tmp_path, p, size);
+    /* start set buf after temp path process. */
+    av_strlcpy(buf, rel, root - rel + 1);
+
+    if (!av_stristart(tmp_path, "/", NULL) && root != rel)
+        av_strlcat(buf, "/", size);
+
+    av_strlcat(buf, tmp_path, size);
+}
+
 void ff_make_absolute_url(char *buf, int size, const char *base,
                           const char *rel)
 {
     char *sep, *path_query;
+    char *root, *p;
+    char tmp_path[MAX_URL_SIZE];
+
+    memset(tmp_path, 0, sizeof(tmp_path));
     /* Absolute path, relative to the current server */
     if (base && strstr(base, "://") && rel[0] == '/') {
         if (base != buf)
@@ -99,11 +145,15 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
             }
         }
         av_strlcat(buf, rel, size);
+        trim_double_dot_url(tmp_path, buf, size);
+        memset(buf, 0, size);
+        av_strlcpy(buf, tmp_path, size);
         return;
     }
     /* If rel actually is an absolute url, just copy it */
     if (!base || strstr(rel, "://") || rel[0] == '/') {
-        av_strlcpy(buf, rel, size);
+        memset(buf, 0, size);
+        trim_double_dot_url(buf, rel, size);
         return;
     }
     if (base != buf)
@@ -117,19 +167,40 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
     /* Is relative path just a new query part? */
     if (rel[0] == '?') {
         av_strlcat(buf, rel, size);
+        trim_double_dot_url(tmp_path, buf, size);
+        memset(buf, 0, size);
+        av_strlcpy(buf, tmp_path, size);
         return;
+    }
+
+    root = p = buf;
+    /* Get the path root of the url which start by "://" */
+    if (p && strstr(p, "://")) {
+        sep = strstr(p, "://");
+        if (sep) {
+            sep += 3;
+            root = strchr(sep, '/');
+            if (!root)
+                return;
+        }
     }
 
     /* Remove the file name from the base url */
     sep = strrchr(buf, '/');
+    if (sep && sep <= root)
+        sep = root;
+
     if (sep)
         sep[1] = '\0';
     else
         buf[0] = '\0';
-    while (av_strstart(rel, "../", NULL) && sep) {
+    while (av_strstart(rel, "..", NULL) && sep) {
         /* Remove the path delimiter at the end */
-        sep[0] = '\0';
-        sep = strrchr(buf, '/');
+        if (sep > root) {
+            sep[0] = '\0';
+            sep = strrchr(buf, '/');
+        }
+
         /* If the next directory name to pop off is "..", break here */
         if (!strcmp(sep ? &sep[1] : buf, "..")) {
             /* Readd the slash we just removed */
@@ -144,6 +215,9 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
         rel += 3;
     }
     av_strlcat(buf, rel, size);
+    trim_double_dot_url(tmp_path, buf, size);
+    memset(buf, 0, size);
+    av_strlcpy(buf, tmp_path, size);
 }
 
 AVIODirEntry *ff_alloc_dir_entry(void)

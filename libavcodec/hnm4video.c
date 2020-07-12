@@ -117,14 +117,17 @@ static void unpack_intraframe(AVCodecContext *avctx, uint8_t *src,
 static void postprocess_current_frame(AVCodecContext *avctx)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
-    uint32_t x, y, src_x, src_y;
+    uint32_t x, y, src_y;
+    int width = hnm->width;
 
     for (y = 0; y < hnm->height; y++) {
+        uint8_t *dst = hnm->processed + y * width;
+        const uint8_t *src = hnm->current;
         src_y = y - (y % 2);
-        src_x = src_y * hnm->width + (y % 2);
-        for (x = 0; x < hnm->width; x++) {
-            hnm->processed[(y * hnm->width) + x] = hnm->current[src_x];
-            src_x += 2;
+        src += src_y * width + (y % 2);
+        for (x = 0; x < width; x++) {
+            dst[x] = *src;
+            src += 2;
         }
     }
 }

@@ -745,7 +745,7 @@ static int dxv_decompress_cocg(DXVContext *ctx, GetByteContext *gb,
     int skip0, skip1, oi0 = 0, oi1 = 0;
     int ret, state0 = 0, state1 = 0;
 
-    if (op_offset < 12)
+    if (op_offset < 12 || op_offset - 12 > bytestream2_get_bytes_left(gb))
         return AVERROR_INVALIDDATA;
 
     dst = tex_data;
@@ -755,7 +755,6 @@ static int dxv_decompress_cocg(DXVContext *ctx, GetByteContext *gb,
     skip0 = dxv_decompress_opcodes(gb, op_data0, op_size0);
     if (skip0 < 0)
         return skip0;
-    bytestream2_seek(gb, data_start + op_offset + skip0 - 12, SEEK_SET);
     if (op_size1 > max_op_size1)
         return AVERROR_INVALIDDATA;
     skip1 = dxv_decompress_opcodes(gb, op_data1, op_size1);
@@ -784,7 +783,7 @@ static int dxv_decompress_cocg(DXVContext *ctx, GetByteContext *gb,
             return ret;
     }
 
-    bytestream2_seek(gb, data_start + op_offset + skip0 + skip1 - 12, SEEK_SET);
+    bytestream2_seek(gb, data_start - 12 + op_offset + skip0 + skip1, SEEK_SET);
 
     return 0;
 }
@@ -798,6 +797,9 @@ static int dxv_decompress_yo(DXVContext *ctx, GetByteContext *gb,
     int data_start = bytestream2_tell(gb);
     uint8_t *dst, *table0[256] = { 0 }, *table1[256] = { 0 };
     int ret, state = 0, skip, oi = 0, v, vv;
+
+    if (op_offset < 8 || op_offset - 8 > bytestream2_get_bytes_left(gb))
+        return AVERROR_INVALIDDATA;
 
     dst = tex_data;
     bytestream2_skip(gb, op_offset - 8);
@@ -865,8 +867,8 @@ static int dxv_decompress_dxt5(AVCodecContext *avctx)
 {
     DXVContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
-    uint32_t value, op;
-    int idx, prev, state = 0;
+    uint32_t value, op, prev;
+    int idx, state = 0;
     int pos = 4;
     int run = 0;
     int probe, check;

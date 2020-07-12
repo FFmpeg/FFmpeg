@@ -238,7 +238,7 @@ int ff_accept(int fd, int timeout, URLContext *h)
     if (ret < 0)
         return ff_neterrno();
     if (ff_socket_nonblock(ret, 1) < 0)
-        av_log(NULL, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
+        av_log(h, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
 
     return ret;
 }
@@ -264,7 +264,7 @@ int ff_listen_connect(int fd, const struct sockaddr *addr,
     socklen_t optlen;
 
     if (ff_socket_nonblock(fd, 1) < 0)
-        av_log(NULL, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
+        av_log(h, AV_LOG_DEBUG, "ff_socket_nonblock failed\n");
 
     while ((ret = connect(fd, addr, addrlen))) {
         ret = ff_neterrno();

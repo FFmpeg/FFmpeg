@@ -256,7 +256,7 @@ static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlin
         av_log(ctx, AV_LOG_DEBUG, "Writing frame with pts %"PRId64" to pts %"PRId64"\n",
                s->frames[0]->pts, frame->pts);
         s->cur_frame_out++;
-
+        *again = 1;
         return ff_filter_frame(outlink, frame);
     }
 }

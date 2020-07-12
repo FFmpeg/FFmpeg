@@ -25,23 +25,6 @@
 //                            const uint8_t *ref, ptrdiff_t ref_stride,
 //                            int h, int mx, int my);
 
-function ff_vp9_copy64_aarch64, export=1
-1:
-        ldp             x5,  x6,  [x2]
-        ldp             x7,  x8,  [x2, #16]
-        stp             x5,  x6,  [x0]
-        ldp             x9,  x10, [x2, #32]
-        stp             x7,  x8,  [x0, #16]
-        subs            w4,  w4,  #1
-        ldp             x11, x12, [x2, #48]
-        stp             x9,  x10, [x0, #32]
-        stp             x11, x12, [x0, #48]
-        add             x2,  x2,  x3
-        add             x0,  x0,  x1
-        b.ne            1b
-        ret
-endfunc
-
 function ff_vp9_avg64_neon, export=1
         mov             x5,  x0
 1:
@@ -60,19 +43,6 @@ function ff_vp9_avg64_neon, export=1
         urhadd          v18.16b, v18.16b, v22.16b
         urhadd          v19.16b, v19.16b, v23.16b
         st1             {v16.16b, v17.16b, v18.16b, v19.16b}, [x5], x1
-        b.ne            1b
-        ret
-endfunc
-
-function ff_vp9_copy32_aarch64, export=1
-1:
-        ldp             x5,  x6,  [x2]
-        ldp             x7,  x8,  [x2, #16]
-        stp             x5,  x6,  [x0]
-        subs            w4,  w4,  #1
-        stp             x7,  x8,  [x0, #16]
-        add             x2,  x2,  x3
-        add             x0,  x0,  x1
         b.ne            1b
         ret
 endfunc

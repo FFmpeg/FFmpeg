@@ -48,6 +48,8 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
     ff_vp56_init_dequant(s, vp56_rac_gets(c, 6));
     if (s->frames[VP56_FRAME_CURRENT]->key_frame)
     {
+        int render_x, render_y;
+
         vp56_rac_gets(c, 8);
         if(vp56_rac_gets(c, 5) > 5)
             return AVERROR_INVALIDDATA;
@@ -63,8 +65,11 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
                    cols << 4, rows << 4);
             return AVERROR_INVALIDDATA;
         }
-        vp56_rac_gets(c, 8);  /* number of displayed macroblock rows */
-        vp56_rac_gets(c, 8);  /* number of displayed macroblock cols */
+        render_y = vp56_rac_gets(c, 8);  /* number of displayed macroblock rows */
+        render_x = vp56_rac_gets(c, 8);  /* number of displayed macroblock cols */
+        if (render_x == 0 || render_x > cols ||
+            render_y == 0 || render_y > rows)
+            return AVERROR_INVALIDDATA;
         vp56_rac_gets(c, 2);
         if (!s->macroblocks || /* first frame */
             16*cols != s->avctx->coded_width ||
@@ -183,7 +188,7 @@ static int vp5_parse_coeff(VP56Context *s)
     int b, i, cg, idx, ctx, ctx_last;
     int pt = 0;    /* plane type (0 for Y, 1 for U or V) */
 
-    if (c->end <= c->buffer && c->bits >= 0) {
+    if (vpX_rac_is_end(c)) {
         av_log(s->avctx, AV_LOG_ERROR, "End of AC stream reached in vp5_parse_coeff\n");
         return AVERROR_INVALIDDATA;
     }

@@ -21,10 +21,11 @@ Specifically, the GPL parts of FFmpeg are:
     - `compat/solaris/make_sunver.pl`
     - `doc/t2h.pm`
     - `doc/texi2pod.pl`
-    - `libswresample/swresample-test.c`
+    - `libswresample/tests/swresample.c`
     - `tests/checkasm/*`
     - `tests/tiny_ssim.c`
 - the following filters in libavfilter:
+    - `signature_lookup.c`
     - `vf_blackframe.c`
     - `vf_boxblur.c`
     - `vf_colormatrix.c`
@@ -34,13 +35,13 @@ Specifically, the GPL parts of FFmpeg are:
     - `vf_eq.c`
     - `vf_find_rect.c`
     - `vf_fspp.c`
-    - `vf_geq.c`
     - `vf_histeq.c`
     - `vf_hqdn3d.c`
-    - `vf_interlace.c`
     - `vf_kerndeint.c`
+    - `vf_lensfun.c` (GPL version 3 or later)
     - `vf_mcdeint.c`
     - `vf_mpdecimate.c`
+    - `vf_nnedi.c`
     - `vf_owdenoise.c`
     - `vf_perspective.c`
     - `vf_phase.c`
@@ -49,12 +50,14 @@ Specifically, the GPL parts of FFmpeg are:
     - `vf_pullup.c`
     - `vf_repeatfields.c`
     - `vf_sab.c`
+    - `vf_signature.c`
     - `vf_smartblur.c`
     - `vf_spp.c`
     - `vf_stereo3d.c`
     - `vf_super2xsai.c`
     - `vf_tinterlace.c`
     - `vf_uspp.c`
+    - `vf_vaguedenoiser.c`
     - `vsrc_mptestsrc.c`
 
 Should you, for whatever reason, prefer to use version 3 of the (L)GPL, then
@@ -80,23 +83,38 @@ affect the licensing of binaries resulting from the combination.
 
 ### Compatible libraries
 
-The following libraries are under GPL:
+The following libraries are under GPL version 2:
+- avisynth
 - frei0r
 - libcdio
+- libdavs2
 - librubberband
 - libvidstab
 - libx264
 - libx265
 - libxavs
+- libxavs2
 - libxvid
 
 When combining them with FFmpeg, FFmpeg needs to be licensed as GPL as well by
 passing `--enable-gpl` to configure.
 
-The OpenCORE and VisualOn libraries are under the Apache License 2.0. That
-license is incompatible with the LGPL v2.1 and the GPL v2, but not with
+The following libraries are under LGPL version 3:
+- gmp
+- libaribb24
+- liblensfun
+
+When combining them with FFmpeg, use the configure option `--enable-version3` to
+upgrade FFmpeg to the LGPL v3.
+
+The VMAF, mbedTLS, RK MPI, OpenCORE and VisualOn libraries are under the Apache License
+2.0. That license is incompatible with the LGPL v2.1 and the GPL v2, but not with
 version 3 of those licenses. So to combine these libraries with FFmpeg, the
 license version needs to be upgraded by passing `--enable-version3` to configure.
+
+The smbclient library is under the GPL v3, to combine it with FFmpeg,
+the options `--enable-gpl` and `--enable-version3` have to be passed to
+configure to upgrade FFmpeg to the GPL v3.
 
 ### Incompatible libraries
 

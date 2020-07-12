@@ -111,6 +111,74 @@ static void check_uyvy_to_422p(void)
     }
 }
 
+static void check_interleave_bytes(void)
+{
+    LOCAL_ALIGNED_16(uint8_t, src0_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
+    LOCAL_ALIGNED_16(uint8_t, src1_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
+    LOCAL_ALIGNED_16(uint8_t, dst0_buf, [2*MAX_STRIDE*MAX_HEIGHT+2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1_buf, [2*MAX_STRIDE*MAX_HEIGHT+2]);
+    // Intentionally using unaligned buffers, as this function doesn't have
+    // any alignment requirements.
+    uint8_t *src0 = src0_buf + 1;
+    uint8_t *src1 = src1_buf + 1;
+    uint8_t *dst0 = dst0_buf + 2;
+    uint8_t *dst1 = dst1_buf + 2;
+
+    declare_func_emms(AV_CPU_FLAG_MMX, void, const uint8_t *, const uint8_t *,
+                                       uint8_t *, int, int, int, int, int);
+
+    randomize_buffers(src0, MAX_STRIDE * MAX_HEIGHT);
+    randomize_buffers(src1, MAX_STRIDE * MAX_HEIGHT);
+
+    if (check_func(interleaveBytes, "interleave_bytes")) {
+        for (int i = 0; i <= 16; i++) {
+            // Try all widths [1,16], and try one random width.
+
+            int w = i > 0 ? i : (1 + (rnd() % (MAX_STRIDE-2)));
+            int h = 1 + (rnd() % (MAX_HEIGHT-2));
+
+            int src0_offset = 0, src0_stride = MAX_STRIDE;
+            int src1_offset = 0, src1_stride = MAX_STRIDE;
+            int dst_offset  = 0, dst_stride  = 2 * MAX_STRIDE;
+
+            memset(dst0, 0, 2 * MAX_STRIDE * MAX_HEIGHT);
+            memset(dst1, 0, 2 * MAX_STRIDE * MAX_HEIGHT);
+
+            // Try different combinations of negative strides
+            if (i & 1) {
+                src0_offset = (h-1)*src0_stride;
+                src0_stride = -src0_stride;
+            }
+            if (i & 2) {
+                src1_offset = (h-1)*src1_stride;
+                src1_stride = -src1_stride;
+            }
+            if (i & 4) {
+                dst_offset = (h-1)*dst_stride;
+                dst_stride = -dst_stride;
+            }
+
+            call_ref(src0 + src0_offset, src1 + src1_offset, dst0 + dst_offset,
+                     w, h, src0_stride, src1_stride, dst_stride);
+            call_new(src0 + src0_offset, src1 + src1_offset, dst1 + dst_offset,
+                     w, h, src0_stride, src1_stride, dst_stride);
+            // Check a one pixel-pair edge around the destination area,
+            // to catch overwrites past the end.
+            checkasm_check(uint8_t, dst0, 2*MAX_STRIDE, dst1, 2*MAX_STRIDE,
+                           2 * w + 2, h + 1, "dst");
+        }
+
+        bench_new(src0, src1, dst1, 127, MAX_HEIGHT,
+                  MAX_STRIDE, MAX_STRIDE, 2*MAX_STRIDE);
+    }
+    if (check_func(interleaveBytes, "interleave_bytes_aligned")) {
+        // Bench the function in a more typical case, with aligned
+        // buffers and widths.
+        bench_new(src0_buf, src1_buf, dst1_buf, 128, MAX_HEIGHT,
+                  MAX_STRIDE, MAX_STRIDE, 2*MAX_STRIDE);
+    }
+}
+
 void checkasm_check_sw_rgb(void)
 {
     ff_sws_rgb2rgb_init();
@@ -132,4 +200,7 @@ void checkasm_check_sw_rgb(void)
 
     check_uyvy_to_422p();
     report("uyvytoyuv422");
+
+    check_interleave_bytes();
+    report("interleave_bytes");
 }

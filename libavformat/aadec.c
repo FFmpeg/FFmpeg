@@ -92,7 +92,7 @@ static int aa_read_header(AVFormatContext *s)
     avio_skip(pb, 4); // magic string
     toc_size = avio_rb32(pb); // TOC size
     avio_skip(pb, 4); // unidentified integer
-    if (toc_size > MAX_TOC_ENTRIES)
+    if (toc_size > MAX_TOC_ENTRIES || toc_size < 2)
         return AVERROR_INVALIDDATA;
     for (i = 0; i < toc_size; i++) { // read TOC
         avio_skip(pb, 4); // TOC entry index

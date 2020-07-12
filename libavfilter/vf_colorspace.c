@@ -331,15 +331,15 @@ static void apply_lut(int16_t *buf[3], ptrdiff_t stride,
     }
 }
 
-struct ThreadData {
+typedef struct ThreadData {
     AVFrame *in, *out;
     ptrdiff_t in_linesize[3], out_linesize[3];
     int in_ss_h, out_ss_h;
-};
+} ThreadData;
 
 static int convert(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
 {
-    struct ThreadData *td = data;
+    const ThreadData *td = data;
     ColorSpaceContext *s = ctx->priv;
     uint8_t *in_data[3], *out_data[3];
     int16_t *rgb[3];
@@ -732,7 +732,7 @@ static int create_filtergraph(AVFilterContext *ctx,
     return 0;
 }
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     ColorSpaceContext *s = ctx->priv;
 
@@ -771,7 +771,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     int res;
     ptrdiff_t rgb_stride = FFALIGN(in->width * sizeof(int16_t), 32);
     unsigned rgb_sz = rgb_stride * in->height;
-    struct ThreadData td;
+    ThreadData td;
 
     if (!out) {
         av_frame_free(&in);
@@ -780,6 +780,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     res = av_frame_copy_props(out, in);
     if (res < 0) {
         av_frame_free(&in);
+        av_frame_free(&out);
         return res;
     }
 
@@ -839,13 +840,18 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             !s->dither_scratch_base[1][0] || !s->dither_scratch_base[1][1] ||
             !s->dither_scratch_base[2][0] || !s->dither_scratch_base[2][1]) {
             uninit(ctx);
+            av_frame_free(&in);
+            av_frame_free(&out);
             return AVERROR(ENOMEM);
         }
         s->rgb_sz = rgb_sz;
     }
     res = create_filtergraph(ctx, in, out);
-    if (res < 0)
+    if (res < 0) {
+        av_frame_free(&in);
+        av_frame_free(&out);
         return res;
+    }
     s->rgb_stride = rgb_stride / sizeof(int16_t);
     td.in = in;
     td.out = out;
@@ -859,8 +865,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     td.out_ss_h = av_pix_fmt_desc_get(out->format)->log2_chroma_h;
     if (s->yuv2yuv_passthrough) {
         res = av_frame_copy(out, in);
-        if (res < 0)
+        if (res < 0) {
+            av_frame_free(&in);
+            av_frame_free(&out);
             return res;
+        }
     } else {
         ctx->internal->execute(ctx, convert, &td, NULL,
                                FFMIN((in->height + 1) >> 1, ff_filter_get_nb_threads(ctx)));
@@ -969,6 +978,7 @@ static const AVOption colorspace_options[] = {
     ENUM("smpte432",     AVCOL_PRI_SMPTE432,   "prm"),
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
     ENUM("jedec-p22",    AVCOL_PRI_JEDEC_P22,  "prm"),
+    ENUM("ebu3213",      AVCOL_PRI_EBU3213,    "prm"),
 
     { "trc",        "Output transfer characteristics",
       OFFSET(user_trc),   AV_OPT_TYPE_INT, { .i64 = AVCOL_TRC_UNSPECIFIED },

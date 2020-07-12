@@ -310,7 +310,7 @@ static int cache_close(URLContext *h)
             av_log(h, AV_LOG_ERROR, "Could not delete %s.\n", c->filename);
         av_freep(&c->filename);
     }
-    ffurl_close(c->inner);
+    ffurl_closep(&c->inner);
     av_tree_enumerate(c->root, NULL, NULL, enu_free);
     av_tree_destroy(c->root);
 
@@ -326,7 +326,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass cache_context_class = {
-    .class_name = "Cache",
+    .class_name = "cache",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

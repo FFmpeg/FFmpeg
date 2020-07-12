@@ -322,7 +322,11 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
  */
 AVIODirEntry *ff_alloc_dir_entry(void);
 
+#if FF_API_CHILD_CLASS_NEXT
 const AVClass *ff_urlcontext_child_class_next(const AVClass *prev);
+#endif
+
+const AVClass *ff_urlcontext_child_class_iterate(void **iter);
 
 /**
  * Construct a list of protocols matching a given whitelist and/or blacklist.

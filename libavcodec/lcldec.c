@@ -136,7 +136,7 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
         return AVERROR_UNKNOWN;
     }
-    c->zstream.next_in = (uint8_t *)src;
+    c->zstream.next_in = src;
     c->zstream.avail_in = src_len;
     c->zstream.next_out = c->decomp_buf + offset;
     c->zstream.avail_out = c->decomp_size - offset;
@@ -190,11 +190,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 ;
             } else if (c->flags & FLAG_MULTITHREAD) {
                 mthread_inlen = AV_RL32(buf);
-                if (len < 8) {
+                if (len < 8 || len - 8 < mthread_inlen) {
                     av_log(avctx, AV_LOG_ERROR, "len %d is too small\n", len);
                     return AVERROR_INVALIDDATA;
                 }
-                mthread_inlen = FFMIN(mthread_inlen, len - 8);
                 mthread_outlen = AV_RL32(buf + 4);
                 mthread_outlen = FFMIN(mthread_outlen, c->decomp_size);
                 mszh_dlen = mszh_decomp(buf + 8, mthread_inlen, c->decomp_buf, c->decomp_size);
@@ -623,13 +622,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#if HAVE_THREADS
-static int init_thread_copy(AVCodecContext *avctx)
-{
-    return decode_init(avctx);
-}
-#endif
-
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
@@ -651,7 +643,6 @@ AVCodec ff_mszh_decoder = {
     .id             = AV_CODEC_ID_MSZH,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
@@ -667,7 +658,6 @@ AVCodec ff_zlib_decoder = {
     .id             = AV_CODEC_ID_ZLIB,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

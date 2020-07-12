@@ -145,17 +145,23 @@ static int tta_write_trailer(AVFormatContext *s)
     /* Write Seek table */
     crc = ffio_get_checksum(tta->seek_table) ^ UINT32_MAX;
     avio_wl32(tta->seek_table, crc);
-    size = avio_close_dyn_buf(tta->seek_table, &ptr);
+    size = avio_get_dyn_buf(tta->seek_table, &ptr);
     avio_write(s->pb, ptr, size);
-    av_free(ptr);
 
     /* Write audio data */
     tta_queue_flush(s);
 
     ff_ape_write_tag(s);
-    avio_flush(s->pb);
 
     return 0;
+}
+
+static void tta_deinit(AVFormatContext *s)
+{
+    TTAMuxContext *tta = s->priv_data;
+
+    ffio_free_dyn_buf(&tta->seek_table);
+    ff_packet_list_free(&tta->queue, &tta->queue_end);
 }
 
 AVOutputFormat ff_tta_muxer = {
@@ -167,6 +173,7 @@ AVOutputFormat ff_tta_muxer = {
     .audio_codec       = AV_CODEC_ID_TTA,
     .video_codec       = AV_CODEC_ID_NONE,
     .init              = tta_init,
+    .deinit            = tta_deinit,
     .write_header      = tta_write_header,
     .write_packet      = tta_write_packet,
     .write_trailer     = tta_write_trailer,

@@ -19,9 +19,6 @@
 #ifndef AVCODEC_CBS_H2645_H
 #define AVCODEC_CBS_H2645_H
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include "h2645_parse.h"
 
 
@@ -33,10 +30,6 @@ typedef struct CodedBitstreamH2645Context {
     int nal_length_size;
     // Packet reader.
     H2645Packet read_packet;
-
-    // Write buffer
-    uint8_t *write_buffer;
-    size_t write_buffer_size;
 } CodedBitstreamH2645Context;
 
 

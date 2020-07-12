@@ -25,8 +25,8 @@
  * modifies bitstream to be decoded by quicktime
  */
 
-#include "avcodec.h"
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "bytestream.h"
 #include "mjpeg.h"
 

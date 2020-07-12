@@ -385,8 +385,7 @@ static int crypto_close(URLContext *h)
         ret = ffurl_write(c->hd, out_buf, BLOCKSIZE);
     }
 
-    if (c->hd)
-        ffurl_close(c->hd);
+    ffurl_closep(&c->hd);
     av_freep(&c->aes_decrypt);
     av_freep(&c->aes_encrypt);
     av_freep(&c->write_buf);

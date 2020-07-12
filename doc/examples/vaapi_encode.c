@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         sw_frame->width  = width;
         sw_frame->height = height;
         sw_frame->format = AV_PIX_FMT_NV12;
-        if ((err = av_frame_get_buffer(sw_frame, 32)) < 0)
+        if ((err = av_frame_get_buffer(sw_frame, 0)) < 0)
             goto close;
         if ((err = fread((uint8_t*)(sw_frame->data[0]), size, 1, fin)) <= 0)
             break;

@@ -27,6 +27,10 @@ stream information. A higher value will enable detecting more
 information in case it is dispersed into the stream, but will increase
 latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
+@item max_probe_packets @var{integer} (@emph{input})
+Set the maximum number of buffered packets when probing a codec.
+Default is 2500 packets.
+
 @item packetsize @var{integer} (@emph{output})
 Set packet size.
 
@@ -139,7 +143,7 @@ Consider things that a sane encoder should not do as an error.
 
 @item max_interleave_delta @var{integer} (@emph{output})
 Set maximum buffering duration for interleaving. The duration is
-expressed in microseconds, and defaults to 1000000 (1 second).
+expressed in microseconds, and defaults to 10000000 (10 seconds).
 
 To ensure all the streams are interleaved correctly, libavformat will
 wait until it has at least one packet for each stream before actually

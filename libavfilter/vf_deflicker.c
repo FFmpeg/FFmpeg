@@ -109,6 +109,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV440P12,
         AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
@@ -420,7 +424,10 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_request_frame(ctx->inputs[0]);
     if (ret == AVERROR_EOF && s->available > 0) {
-        AVFrame *buf = av_frame_clone(ff_bufqueue_peek(&s->q, s->size - 1));
+        AVFrame *buf = ff_bufqueue_peek(&s->q, s->available - 1);
+        if (!buf)
+            return AVERROR(ENOMEM);
+        buf = av_frame_clone(buf);
         if (!buf)
             return AVERROR(ENOMEM);
 

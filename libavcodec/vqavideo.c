@@ -637,6 +637,11 @@ static av_cold int vqa_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVCodecDefault vqa_defaults[] = {
+    { "max_pixels", "320*240" },
+    { NULL },
+};
+
 AVCodec ff_vqa_decoder = {
     .name           = "vqavideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA (Vector Quantized Animation) video"),
@@ -647,4 +652,5 @@ AVCodec ff_vqa_decoder = {
     .close          = vqa_decode_end,
     .decode         = vqa_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .defaults       = vqa_defaults,
 };

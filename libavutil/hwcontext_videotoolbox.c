@@ -34,16 +34,19 @@
 
 static const struct {
     uint32_t cv_fmt;
+    bool full_range;
     enum AVPixelFormat pix_fmt;
 } cv_pix_fmts[] = {
-    { kCVPixelFormatType_420YpCbCr8Planar,              AV_PIX_FMT_YUV420P },
-    { kCVPixelFormatType_422YpCbCr8,                    AV_PIX_FMT_UYVY422 },
-    { kCVPixelFormatType_32BGRA,                        AV_PIX_FMT_BGRA },
+    { kCVPixelFormatType_420YpCbCr8Planar,              false, AV_PIX_FMT_YUV420P },
+    { kCVPixelFormatType_422YpCbCr8,                    false, AV_PIX_FMT_UYVY422 },
+    { kCVPixelFormatType_32BGRA,                        false, AV_PIX_FMT_BGRA },
 #ifdef kCFCoreFoundationVersionNumber10_7
-    { kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,  AV_PIX_FMT_NV12 },
+    { kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,  false, AV_PIX_FMT_NV12 },
+    { kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,   true,  AV_PIX_FMT_NV12 },
 #endif
 #if HAVE_KCVPIXELFORMATTYPE_420YPCBCR10BIPLANARVIDEORANGE
-    { kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange, AV_PIX_FMT_P010 },
+    { kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange, false, AV_PIX_FMT_P010 },
+    { kCVPixelFormatType_420YpCbCr10BiPlanarFullRange,  true,  AV_PIX_FMT_P010 },
 #endif
 };
 
@@ -59,9 +62,14 @@ enum AVPixelFormat av_map_videotoolbox_format_to_pixfmt(uint32_t cv_fmt)
 
 uint32_t av_map_videotoolbox_format_from_pixfmt(enum AVPixelFormat pix_fmt)
 {
+    return av_map_videotoolbox_format_from_pixfmt2(pix_fmt, false);
+}
+
+uint32_t av_map_videotoolbox_format_from_pixfmt2(enum AVPixelFormat pix_fmt, bool full_range)
+{
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(cv_pix_fmts); i++) {
-        if (cv_pix_fmts[i].pix_fmt == pix_fmt)
+        if (cv_pix_fmts[i].pix_fmt == pix_fmt && cv_pix_fmts[i].full_range == full_range)
             return cv_pix_fmts[i].cv_fmt;
     }
     return 0;

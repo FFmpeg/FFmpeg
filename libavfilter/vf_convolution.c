@@ -91,6 +91,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
         AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
@@ -115,10 +116,10 @@ static void filter16_prewitt(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[1][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) * -1 +
-                   AV_RN16A(&c[6][2 * x]) *  1 + AV_RN16A(&c[7][2 * x]) *  1 + AV_RN16A(&c[8][2 * x]) *  1;
-        int sumb = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -1 +
-                   AV_RN16A(&c[5][2 * x]) *  1 + AV_RN16A(&c[6][2 * x]) * -1 + AV_RN16A(&c[8][2 * x]) *  1;
+        float suma = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[1][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) * -1 +
+                     AV_RN16A(&c[6][2 * x]) *  1 + AV_RN16A(&c[7][2 * x]) *  1 + AV_RN16A(&c[8][2 * x]) *  1;
+        float sumb = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -1 +
+                     AV_RN16A(&c[5][2 * x]) *  1 + AV_RN16A(&c[6][2 * x]) * -1 + AV_RN16A(&c[8][2 * x]) *  1;
 
         dst[x] = av_clip(sqrtf(suma*suma + sumb*sumb) * scale + delta, 0, peak);
     }
@@ -133,8 +134,8 @@ static void filter16_roberts(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = AV_RN16A(&c[0][2 * x]) *  1 + AV_RN16A(&c[1][2 * x]) * -1;
-        int sumb = AV_RN16A(&c[4][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -1;
+        float suma = AV_RN16A(&c[0][2 * x]) *  1 + AV_RN16A(&c[1][2 * x]) * -1;
+        float sumb = AV_RN16A(&c[4][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -1;
 
         dst[x] = av_clip(sqrtf(suma*suma + sumb*sumb) * scale + delta, 0, peak);
     }
@@ -149,10 +150,10 @@ static void filter16_sobel(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[1][2 * x]) * -2 + AV_RN16A(&c[2][2 * x]) * -1 +
-                   AV_RN16A(&c[6][2 * x]) *  1 + AV_RN16A(&c[7][2 * x]) *  2 + AV_RN16A(&c[8][2 * x]) *  1;
-        int sumb = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -2 +
-                   AV_RN16A(&c[5][2 * x]) *  2 + AV_RN16A(&c[6][2 * x]) * -1 + AV_RN16A(&c[8][2 * x]) *  1;
+        float suma = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[1][2 * x]) * -2 + AV_RN16A(&c[2][2 * x]) * -1 +
+                     AV_RN16A(&c[6][2 * x]) *  1 + AV_RN16A(&c[7][2 * x]) *  2 + AV_RN16A(&c[8][2 * x]) *  1;
+        float sumb = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -2 +
+                     AV_RN16A(&c[5][2 * x]) *  2 + AV_RN16A(&c[6][2 * x]) * -1 + AV_RN16A(&c[8][2 * x]) *  1;
 
         dst[x] = av_clip(sqrtf(suma*suma + sumb*sumb) * scale + delta, 0, peak);
     }
@@ -169,10 +170,10 @@ static void filter_prewitt(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = c0[x] * -1 + c1[x] * -1 + c2[x] * -1 +
-                   c6[x] *  1 + c7[x] *  1 + c8[x] *  1;
-        int sumb = c0[x] * -1 + c2[x] *  1 + c3[x] * -1 +
-                   c5[x] *  1 + c6[x] * -1 + c8[x] *  1;
+        float suma = c0[x] * -1 + c1[x] * -1 + c2[x] * -1 +
+                     c6[x] *  1 + c7[x] *  1 + c8[x] *  1;
+        float sumb = c0[x] * -1 + c2[x] *  1 + c3[x] * -1 +
+                     c5[x] *  1 + c6[x] * -1 + c8[x] *  1;
 
         dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
     }
@@ -186,8 +187,8 @@ static void filter_roberts(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = c[0][x] *  1 + c[1][x] * -1;
-        int sumb = c[4][x] *  1 + c[3][x] * -1;
+        float suma = c[0][x] *  1 + c[1][x] * -1;
+        float sumb = c[4][x] *  1 + c[3][x] * -1;
 
         dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
     }
@@ -204,10 +205,10 @@ static void filter_sobel(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = c0[x] * -1 + c1[x] * -2 + c2[x] * -1 +
-                   c6[x] *  1 + c7[x] *  2 + c8[x] *  1;
-        int sumb = c0[x] * -1 + c2[x] *  1 + c3[x] * -2 +
-                   c5[x] *  2 + c6[x] * -1 + c8[x] *  1;
+        float suma = c0[x] * -1 + c1[x] * -2 + c2[x] * -1 +
+                     c6[x] *  1 + c7[x] *  2 + c8[x] *  1;
+        float sumb = c0[x] * -1 + c2[x] *  1 + c3[x] * -2 +
+                     c5[x] *  2 + c6[x] * -1 + c8[x] *  1;
 
         dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
     }
@@ -588,8 +589,9 @@ static int config_input(AVFilterLink *inlink)
                     s->filter[p] = filter16_7x7;
             }
         }
-        if (ARCH_X86_64)
-            ff_convolution_init_x86(s);
+#if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64
+        ff_convolution_init_x86(s);
+#endif
     } else if (!strcmp(ctx->filter->name, "prewitt")) {
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)

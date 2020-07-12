@@ -252,15 +252,16 @@ AVCodec ff_vp8_vaapi_encoder = {
     .id             = AV_CODEC_ID_VP8,
     .priv_data_size = sizeof(VAAPIEncodeVP8Context),
     .init           = &vaapi_encode_vp8_init,
-    .send_frame     = &ff_vaapi_encode_send_frame,
     .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &ff_vaapi_encode_close,
     .priv_class     = &vaapi_encode_vp8_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_vp8_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .hw_configs     = ff_vaapi_encode_hw_configs,
     .wrapper_name   = "vaapi",
 };

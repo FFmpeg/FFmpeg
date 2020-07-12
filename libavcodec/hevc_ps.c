@@ -267,7 +267,7 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
 {
     int i;
 
-    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 16 + 16 + 12)
+    if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 43 + 1)
         return -1;
 
     ptl->profile_space = get_bits(gb, 2);
@@ -295,9 +295,43 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
     ptl->non_packed_constraint_flag = get_bits1(gb);
     ptl->frame_only_constraint_flag = get_bits1(gb);
 
-    skip_bits(gb, 16); // XXX_reserved_zero_44bits[0..15]
-    skip_bits(gb, 16); // XXX_reserved_zero_44bits[16..31]
-    skip_bits(gb, 12); // XXX_reserved_zero_44bits[32..43]
+#define check_profile_idc(idc) \
+        ptl->profile_idc == idc || ptl->profile_compatibility_flag[idc]
+
+    if (check_profile_idc(4) || check_profile_idc(5) || check_profile_idc(6) ||
+        check_profile_idc(7) || check_profile_idc(8) || check_profile_idc(9) ||
+        check_profile_idc(10)) {
+
+        ptl->max_12bit_constraint_flag        = get_bits1(gb);
+        ptl->max_10bit_constraint_flag        = get_bits1(gb);
+        ptl->max_8bit_constraint_flag         = get_bits1(gb);
+        ptl->max_422chroma_constraint_flag    = get_bits1(gb);
+        ptl->max_420chroma_constraint_flag    = get_bits1(gb);
+        ptl->max_monochrome_constraint_flag   = get_bits1(gb);
+        ptl->intra_constraint_flag            = get_bits1(gb);
+        ptl->one_picture_only_constraint_flag = get_bits1(gb);
+        ptl->lower_bit_rate_constraint_flag   = get_bits1(gb);
+
+        if (check_profile_idc(5) || check_profile_idc(9) || check_profile_idc(10)) {
+            ptl->max_14bit_constraint_flag    = get_bits1(gb);
+            skip_bits_long(gb, 33); // XXX_reserved_zero_33bits[0..32]
+        } else {
+            skip_bits_long(gb, 34); // XXX_reserved_zero_34bits[0..33]
+        }
+    } else if (check_profile_idc(2)) {
+        skip_bits(gb, 7);
+        ptl->one_picture_only_constraint_flag = get_bits1(gb);
+        skip_bits_long(gb, 35); // XXX_reserved_zero_35bits[0..34]
+    } else {
+        skip_bits_long(gb, 43); // XXX_reserved_zero_43bits[0..42]
+    }
+
+    if (check_profile_idc(1) || check_profile_idc(2) || check_profile_idc(3) ||
+        check_profile_idc(4) || check_profile_idc(5) || check_profile_idc(9))
+        ptl->inbld_flag = get_bits1(gb);
+    else
+        skip_bits1(gb);
+#undef check_profile_idc
 
     return 0;
 }
@@ -448,10 +482,6 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     memcpy(vps->data, gb->buffer, vps->data_size);
 
     vps_id = get_bits(gb, 4);
-    if (vps_id >= HEVC_MAX_VPS_COUNT) {
-        av_log(avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", vps_id);
-        goto err;
-    }
 
     if (get_bits(gb, 2) != 3) { // vps_reserved_three_2bits
         av_log(avctx, AV_LOG_ERROR, "vps_reserved_three_2bits is not three\n");
@@ -883,10 +913,6 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     // Coded parameters
 
     sps->vps_id = get_bits(gb, 4);
-    if (sps->vps_id >= HEVC_MAX_VPS_COUNT) {
-        av_log(avctx, AV_LOG_ERROR, "VPS id out of range: %d\n", sps->vps_id);
-        return AVERROR_INVALIDDATA;
-    }
 
     if (vps_list && !vps_list[sps->vps_id]) {
         av_log(avctx, AV_LOG_ERROR, "VPS %d does not exist\n",

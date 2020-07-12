@@ -1,6 +1,90 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+- AudioToolbox output device
+- MacCaption demuxer
+- PGX decoder
+- chromanr video filter
+- VDPAU accelerated HEVC 10/12bit decoding
+
+
+version 4.3:
+- v360 filter
+- Intel QSV-accelerated MJPEG decoding
+- Intel QSV-accelerated VP9 decoding
+- Support for TrueHD in mp4
+- Support AMD AMF encoder on Linux (via Vulkan)
+- IMM5 video decoder
+- ZeroMQ protocol
+- support Sipro ACELP.KELVIN decoding
+- streamhash muxer
+- sierpinski video source
+- scroll video filter
+- photosensitivity filter
+- anlms filter
+- arnndn filter
+- bilateral filter
+- maskedmin and maskedmax filters
+- VDPAU VP9 hwaccel
+- median filter
+- QSV-accelerated VP9 encoding
+- AV1 encoding support via librav1e
+- AV1 frame merge bitstream filter
+- AV1 Annex B demuxer
+- axcorrelate filter
+- mvdv decoder
+- mvha decoder
+- MPEG-H 3D Audio support in mp4
+- thistogram filter
+- freezeframes filter
+- Argonaut Games ADPCM decoder
+- Argonaut Games ASF demuxer
+- xfade video filter
+- xfade_opencl filter
+- afirsrc audio filter source
+- pad_opencl filter
+- Simon & Schuster Interactive ADPCM decoder
+- Real War KVAG demuxer
+- CDToons video decoder
+- siren audio decoder
+- Rayman 2 ADPCM decoder
+- Rayman 2 APM demuxer
+- cas video filter
+- High Voltage Software ADPCM decoder
+- LEGO Racers ALP (.tun & .pcm) demuxer
+- AMQP 0-9-1 protocol (RabbitMQ)
+- Vulkan support
+- avgblur_vulkan, overlay_vulkan, scale_vulkan and chromaber_vulkan filters
+- ADPCM IMA MTF decoder
+- FWSE demuxer
+- DERF DPCM decoder
+- DERF demuxer
+- CRI HCA decoder
+- CRI HCA demuxer
+- overlay_cuda filter
+- switch from AvxSynth to AviSynth+ on Linux
+- mv30 decoder
+- Expanded styling support for 3GPP Timed Text Subtitles (movtext)
+- WebP parser
+- tmedian filter
+- maskedthreshold filter
+- Support for muxing pcm and pgs in m2ts
+- Cunning Developments ADPCM decoder
+- asubboost filter
+- Pro Pinball Series Soundbank demuxer
+- pcm_rechunk bitstream filter
+- scdet filter
+- NotchLC decoder
+- gradients source video filter
+- MediaFoundation encoder wrapper
+- untile filter
+- Simon & Schuster Interactive ADPCM encoder
+- PFM decoder
+- dblur video filter
+- Real War KVAG muxer
+
+
 version 4.2:
 - tpad filter
 - AV1 decoding support through libdav1d

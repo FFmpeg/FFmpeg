@@ -66,6 +66,7 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
     int xl = *x;
     int yl = *y;
     int planel = *plane;
+    int pixels_per_value = 8/bits_per_plane;
     value   <<= shift;
 
     d = frame->data[0] + yl * frame->linesize[0];
@@ -74,7 +75,7 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
         for (j = 8-bits_per_plane; j >= 0; j -= bits_per_plane) {
             d[xl] |= (value >> j) & mask;
             xl += 1;
-            if (xl == s->width) {
+            while (xl == s->width) {
                 yl -= 1;
                 xl = 0;
                 if (yl < 0) {
@@ -86,6 +87,19 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
                    mask  <<= bits_per_plane;
                 }
                 d = frame->data[0] + yl * frame->linesize[0];
+                if (s->nb_planes == 1 &&
+                    run*pixels_per_value >= s->width &&
+                    pixels_per_value < s->width &&
+                    s->width % pixels_per_value == 0
+                    ) {
+                    for (; xl < pixels_per_value; xl ++) {
+                        j = (j < bits_per_plane ? 8 : j) - bits_per_plane;
+                        d[xl] |= (value >> j) & mask;
+                    }
+                    av_memcpy_backptr(d+xl, pixels_per_value, s->width - xl);
+                    run -= s->width / pixels_per_value;
+                    xl = s->width;
+                }
             }
         }
         run--;

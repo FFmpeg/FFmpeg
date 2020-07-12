@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
@@ -40,9 +41,10 @@ typedef struct StreamSelectContext {
 
 #define OFFSET(x) offsetof(StreamSelectContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption streamselect_options[] = {
     { "inputs",  "number of input streams",           OFFSET(nb_inputs),  AV_OPT_TYPE_INT,    {.i64=2},    2, INT_MAX,  .flags=FLAGS },
-    { "map",     "input indexes to remap to outputs", OFFSET(map_str),    AV_OPT_TYPE_STRING, {.str=NULL},              .flags=FLAGS },
+    { "map",     "input indexes to remap to outputs", OFFSET(map_str),    AV_OPT_TYPE_STRING, {.str=NULL},              .flags=TFLAGS },
     { NULL }
 };
 
@@ -53,7 +55,7 @@ static int process_frame(FFFrameSync *fs)
     AVFilterContext *ctx = fs->parent;
     StreamSelectContext *s = fs->opaque;
     AVFrame **in = s->frames;
-    int i, j, ret = 0;
+    int i, j, ret = 0, have_out = 0;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
@@ -75,12 +77,15 @@ static int process_frame(FFFrameSync *fs)
                 out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, ctx->outputs[i]->time_base);
                 s->last_pts[j] = in[j]->pts;
                 ret = ff_filter_frame(ctx->outputs[i], out);
+                have_out = 1;
                 if (ret < 0)
                     return ret;
             }
         }
     }
 
+    if (!have_out)
+        ff_filter_set_ready(ctx, 100);
     return ret;
 }
 
@@ -290,6 +295,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->map);
     av_freep(&s->frames);
     ff_framesync_uninit(&s->fs);
+
+    for (int i = 0; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
+
+    for (int i = 0; i < ctx->nb_outputs; i++)
+        av_freep(&ctx->output_pads[i].name);
 }
 
 static int query_formats(AVFilterContext *ctx)

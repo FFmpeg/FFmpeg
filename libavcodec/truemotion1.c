@@ -444,6 +444,8 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     if (s->flags & FLAG_KEYFRAME) {
         /* no change bits specified for a keyframe; only index bytes */
         s->index_stream = s->mb_change_bits;
+        if (s->avctx->width * s->avctx->height / 2048 + header.header_size > s->size)
+            return AVERROR_INVALIDDATA;
     } else {
         /* one change bit per 4x4 block */
         s->index_stream = s->mb_change_bits +
@@ -882,7 +884,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
     if ((ret = truemotion1_decode_header(s)) < 0)
         return ret;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     if (compression_types[s->compression].algorithm == ALGO_RGB24H) {

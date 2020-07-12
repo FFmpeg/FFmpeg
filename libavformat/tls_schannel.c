@@ -138,8 +138,7 @@ static int tls_close(URLContext *h)
     av_freep(&c->dec_buf);
     c->dec_buf_size = c->dec_buf_offset = 0;
 
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
     return 0;
 }
 
@@ -392,7 +391,12 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
     int size, ret;
     int min_enc_buf_size = len + SCHANNEL_FREE_BUFFER_SIZE;
 
-    if (len <= c->dec_buf_offset)
+    /* If we have some left-over data from previous network activity,
+     * return it first in case it is enough. It may contain
+     * data that is required to know whether this connection
+     * is still required or not, esp. in case of HTTP keep-alive
+     * connections. */
+    if (c->dec_buf_offset > 0)
         goto cleanup;
 
     if (c->sspi_close_notify)
@@ -424,7 +428,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
         c->enc_buf_offset += ret;
     }
 
-    while (c->enc_buf_offset > 0 && sspi_ret == SEC_E_OK && c->dec_buf_offset < len) {
+    while (c->enc_buf_offset > 0 && sspi_ret == SEC_E_OK) {
         /*  input buffer */
         init_sec_buffer(&inbuf[0], SECBUFFER_DATA, c->enc_buf, c->enc_buf_offset);
 

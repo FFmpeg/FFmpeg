@@ -133,7 +133,7 @@ static inline void generate_window_func(float *lut, int N, int win_func,
         for (c = 1 - 1 / (b*b), n = (N-1) / 2; n >= 0; --n) {
             for (sum = !n, b = t = j = 1; j <= n && sum != t; b *= (n-j) * (1./j), ++j)
                 t = sum, sum += (b *= c * (N - n - j) * (1./j));
-            sum /= (N - 1 - n), sum /= (norm = norm ? norm : sum);
+            sum /= (N - 1 - n), norm = norm ? norm : sum, sum /= norm;
             lut[n] = sum;
             lut[N - 1 - n] = sum;
         }

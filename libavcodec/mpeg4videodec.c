@@ -26,7 +26,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "error_resilience.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -610,7 +610,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
             dy -= 1 << (shift + a + 1);
         else
             dx -= 1 << (shift + a + 1);
-        mb_v = s->sprite_offset[0][n] + dx * s->mb_x * 16 + dy * s->mb_y * 16;
+        mb_v = s->sprite_offset[0][n] + dx * s->mb_x * 16U + dy * s->mb_y * 16U;
 
         sum = 0;
         for (y = 0; y < 16; y++) {
@@ -711,7 +711,7 @@ static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
                 int i;
 
                 do {
-                    if (show_bits_long(&s->gb, 19) == DC_MARKER)
+                    if (show_bits(&s->gb, 19) == DC_MARKER)
                         return mb_num - 1;
 
                     cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
@@ -1001,7 +1001,7 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         while (show_bits(&s->gb, 9) == 1)
             skip_bits(&s->gb, 9);
-        if (get_bits_long(&s->gb, 19) != DC_MARKER) {
+        if (get_bits(&s->gb, 19) != DC_MARKER) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "marker missing after first I partition at %d %d\n",
                    s->mb_x, s->mb_y);
@@ -1782,7 +1782,7 @@ static void next_start_code_studio(GetBitContext *gb)
 {
     align_get_bits(gb);
 
-    while (get_bits_left(gb) >= 24 && show_bits_long(gb, 24) != 0x1) {
+    while (get_bits_left(gb) >= 24 && show_bits(gb, 24) != 0x1) {
         get_bits(gb, 8);
     }
 }
@@ -1826,6 +1826,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
     uint32_t flc;
     const int min = -1 *  (1 << (s->avctx->bits_per_raw_sample + 6));
     const int max =      ((1 << (s->avctx->bits_per_raw_sample + 6)) - 1);
+    int shift =  3 - s->dct_precision;
 
     mismatch = 1;
 
@@ -1921,7 +1922,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
             else
                 block[j] = flc;
         }
-        block[j] = ((8 * 2 * block[j] * quant_matrix[j] * s->qscale) >> s->dct_precision) / 32;
+        block[j] = ((block[j] * quant_matrix[j] * s->qscale) * (1 << shift)) / 16;
         block[j] = av_clip(block[j], min, max);
         mismatch ^= block[j];
     }
@@ -3133,6 +3134,7 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     MpegEncContext *s = &ctx->m;
     int width, height;
     int bits_per_raw_sample;
+    int rgb, chroma_format;
 
             // random_accessible_vol and video_object_type_indication have already
             // been read by the caller decode_vol_header()
@@ -3140,28 +3142,36 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             ctx->shape = get_bits(gb, 2); /* video_object_layer_shape */
             skip_bits(gb, 4); /* video_object_layer_shape_extension */
             skip_bits1(gb); /* progressive_sequence */
+            if (ctx->shape != RECT_SHAPE) {
+                avpriv_request_sample(s->avctx, "MPEG-4 Studio profile non rectangular shape");
+                return AVERROR_PATCHWELCOME;
+            }
             if (ctx->shape != BIN_ONLY_SHAPE) {
-                ctx->rgb = get_bits1(gb); /* rgb_components */
-                s->chroma_format = get_bits(gb, 2); /* chroma_format */
-                if (!s->chroma_format) {
+                rgb = get_bits1(gb); /* rgb_components */
+                chroma_format = get_bits(gb, 2); /* chroma_format */
+                if (!chroma_format || chroma_format == CHROMA_420 || (rgb && chroma_format == CHROMA_422)) {
                     av_log(s->avctx, AV_LOG_ERROR, "illegal chroma format\n");
                     return AVERROR_INVALIDDATA;
                 }
 
                 bits_per_raw_sample = get_bits(gb, 4); /* bit_depth */
                 if (bits_per_raw_sample == 10) {
-                    if (ctx->rgb) {
+                    if (rgb) {
                         s->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
                     }
                     else {
-                        s->avctx->pix_fmt = s->chroma_format == CHROMA_422 ? AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV444P10;
+                        s->avctx->pix_fmt = chroma_format == CHROMA_422 ? AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV444P10;
                     }
                 }
                 else {
                     avpriv_request_sample(s->avctx, "MPEG-4 Studio profile bit-depth %u", bits_per_raw_sample);
                     return AVERROR_PATCHWELCOME;
                 }
+                if (rgb != ctx->rgb || s->chroma_format != chroma_format)
+                    s->context_reinit = 1;
                 s->avctx->bits_per_raw_sample = bits_per_raw_sample;
+                ctx->rgb = rgb;
+                s->chroma_format = chroma_format;
             }
             if (ctx->shape == RECT_SHAPE) {
                 check_marker(s->avctx, gb, "before video_object_layer_width");
@@ -3211,7 +3221,7 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
  * Decode MPEG-4 headers.
  *
  * @param  header If set the absence of a VOP is not treated as error; otherwise, it is treated as such.
- * @return <0 if an error occured
+ * @return <0 if an error occurred
  *         FRAME_SKIPPED if a not coded VOP is found
  *         0 else
  */
@@ -3459,7 +3469,33 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
-    memcpy(((uint8_t*)s) + sizeof(MpegEncContext), ((uint8_t*)s1) + sizeof(MpegEncContext), sizeof(Mpeg4DecContext) - sizeof(MpegEncContext));
+    // copy all the necessary fields explicitly
+    s->time_increment_bits       = s1->time_increment_bits;
+    s->shape                     = s1->shape;
+    s->vol_sprite_usage          = s1->vol_sprite_usage;
+    s->sprite_brightness_change  = s1->sprite_brightness_change;
+    s->num_sprite_warping_points = s1->num_sprite_warping_points;
+    s->rvlc                      = s1->rvlc;
+    s->resync_marker             = s1->resync_marker;
+    s->t_frame                   = s1->t_frame;
+    s->new_pred                  = s1->new_pred;
+    s->enhancement_type          = s1->enhancement_type;
+    s->scalability               = s1->scalability;
+    s->use_intra_dc_vlc          = s1->use_intra_dc_vlc;
+    s->intra_dc_threshold        = s1->intra_dc_threshold;
+    s->divx_version              = s1->divx_version;
+    s->divx_build                = s1->divx_build;
+    s->xvid_build                = s1->xvid_build;
+    s->lavc_build                = s1->lavc_build;
+    s->showed_packed_warning     = s1->showed_packed_warning;
+    s->vol_control_parameters    = s1->vol_control_parameters;
+    s->cplx_estimation_trash_i   = s1->cplx_estimation_trash_i;
+    s->cplx_estimation_trash_p   = s1->cplx_estimation_trash_p;
+    s->cplx_estimation_trash_b   = s1->cplx_estimation_trash_b;
+    s->rgb                       = s1->rgb;
+
+    memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
+    memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
 
     if (CONFIG_MPEG4_DECODER && !init && s1->xvid_build >= 0)
         ff_xvid_idct_init(&s->m.idsp, dst);
@@ -3523,7 +3559,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->time_increment_bits = 4; /* default value for broken headers */
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
-    avctx->internal->allocate_progress = 1;
 
     return 0;
 }
@@ -3533,13 +3568,11 @@ static av_cold int decode_end(AVCodecContext *avctx)
     Mpeg4DecContext *ctx = avctx->priv_data;
     int i;
 
-    if (!avctx->internal->is_copy) {
-        for (i = 0; i < 12; i++)
-            ff_free_vlc(&ctx->studio_intra_tab[i]);
+    for (i = 0; i < 12; i++)
+        ff_free_vlc(&ctx->studio_intra_tab[i]);
 
-        ff_free_vlc(&ctx->studio_luma_dc);
-        ff_free_vlc(&ctx->studio_chroma_dc);
-    }
+    ff_free_vlc(&ctx->studio_luma_dc);
+    ff_free_vlc(&ctx->studio_chroma_dc);
 
     return ff_h263_decode_end(avctx);
 }
@@ -3569,7 +3602,9 @@ AVCodec ff_mpeg4_decoder = {
     .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
+                             FF_CODEC_CAP_ALLOCATE_PROGRESS |
+                             FF_CODEC_CAP_INIT_CLEANUP,
     .flush                 = ff_mpeg_flush,
     .max_lowres            = 3,
     .pix_fmts              = ff_h263_hwaccel_pixfmt_list_420,

@@ -473,9 +473,9 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
     in_port_params.format.video.nFrameWidth  = avctx->width;
     in_port_params.format.video.nFrameHeight = avctx->height;
     if (avctx->framerate.den > 0 && avctx->framerate.num > 0)
-        in_port_params.format.video.xFramerate = (1 << 16) * avctx->framerate.num / avctx->framerate.den;
+        in_port_params.format.video.xFramerate = (1LL << 16) * avctx->framerate.num / avctx->framerate.den;
     else
-        in_port_params.format.video.xFramerate = (1 << 16) * avctx->time_base.den / avctx->time_base.num;
+        in_port_params.format.video.xFramerate = (1LL << 16) * avctx->time_base.den / avctx->time_base.num;
 
     err = OMX_SetParameter(s->handle, OMX_IndexParamPortDefinition, &in_port_params);
     CHECK(err);
@@ -644,10 +644,6 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
     OMX_BUFFERHEADERTYPE *buffer;
     OMX_ERRORTYPE err;
 
-#if CONFIG_OMX_RPI
-    s->input_zerocopy = 1;
-#endif
-
     s->omx_context = omx_init(avctx, s->libname, s->libprefix);
     if (!s->omx_context)
         return AVERROR_ENCODER_NOT_FOUND;
@@ -739,6 +735,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int ret = 0;
     OMX_BUFFERHEADERTYPE* buffer;
     OMX_ERRORTYPE err;
+    int had_partial = 0;
 
     if (frame) {
         uint8_t *dst[4];
@@ -802,6 +799,26 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         // Convert the timestamps to microseconds; some encoders can ignore
         // the framerate and do VFR bit allocation based on timestamps.
         buffer->nTimeStamp = to_omx_ticks(av_rescale_q(frame->pts, avctx->time_base, AV_TIME_BASE_Q));
+        if (frame->pict_type == AV_PICTURE_TYPE_I) {
+#if CONFIG_OMX_RPI
+            OMX_CONFIG_BOOLEANTYPE config = {0, };
+            INIT_STRUCT(config);
+            config.bEnabled = OMX_TRUE;
+            err = OMX_SetConfig(s->handle, OMX_IndexConfigBrcmVideoRequestIFrame, &config);
+            if (err != OMX_ErrorNone) {
+                av_log(avctx, AV_LOG_ERROR, "OMX_SetConfig(RequestIFrame) failed: %x\n", err);
+            }
+#else
+            OMX_CONFIG_INTRAREFRESHVOPTYPE config = {0, };
+            INIT_STRUCT(config);
+            config.nPortIndex = s->out_port;
+            config.IntraRefreshVOP = OMX_TRUE;
+            err = OMX_SetConfig(s->handle, OMX_IndexConfigVideoIntraVOPRefresh, &config);
+            if (err != OMX_ErrorNone) {
+                av_log(avctx, AV_LOG_ERROR, "OMX_SetConfig(IntraVOPRefresh) failed: %x\n", err);
+            }
+#endif
+        }
         err = OMX_EmptyThisBuffer(s->handle, buffer);
         if (err != OMX_ErrorNone) {
             append_buffer(&s->input_mutex, &s->input_cond, &s->num_free_in_buffers, s->free_in_buffers, buffer);
@@ -830,7 +847,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         // packet, or get EOS.
         buffer = get_buffer(&s->output_mutex, &s->output_cond,
                             &s->num_done_out_buffers, s->done_out_buffers,
-                            !frame);
+                            !frame || had_partial);
         if (!buffer)
             break;
 
@@ -865,6 +882,9 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     s->output_buf = NULL;
                     s->output_buf_size = 0;
                 }
+#if CONFIG_OMX_RPI
+                had_partial = 1;
+#endif
             } else {
                 // End of frame, and the caller provided a preallocated frame
                 if ((ret = ff_alloc_packet2(avctx, pkt, s->output_buf_size + buffer->nFilledLen, 0)) < 0) {
@@ -913,7 +933,7 @@ static av_cold int omx_encode_end(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "omx_libname", "OpenMAX library name", OFFSET(libname), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VDE },
     { "omx_libprefix", "OpenMAX library prefix", OFFSET(libprefix), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VDE },
-    { "zerocopy", "Try to avoid copying input frames if possible", OFFSET(input_zerocopy), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "zerocopy", "Try to avoid copying input frames if possible", OFFSET(input_zerocopy), AV_OPT_TYPE_INT, { .i64 = CONFIG_OMX_RPI }, 0, 1, VE },
     { "profile",  "Set the encoding profile", OFFSET(profile), AV_OPT_TYPE_INT,   { .i64 = FF_PROFILE_UNKNOWN },       FF_PROFILE_UNKNOWN, FF_PROFILE_H264_HIGH, VE, "profile" },
     { "baseline", "",                         0,               AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_BASELINE }, 0, 0, VE, "profile" },
     { "main",     "",                         0,               AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_MAIN },     0, 0, VE, "profile" },

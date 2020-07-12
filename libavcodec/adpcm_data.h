@@ -42,5 +42,7 @@ extern const int16_t ff_adpcm_yamaha_indexscale[];
 extern const int8_t  ff_adpcm_yamaha_difflookup[];
 extern const int16_t ff_adpcm_afc_coeffs[2][16];
 extern const int16_t ff_adpcm_mtaf_stepsize[32][16];
+extern const int8_t  ff_adpcm_ima_cunning_index_table[9];
+extern const int16_t ff_adpcm_ima_cunning_step_table[61];
 
 #endif /* AVCODEC_ADPCM_DATA_H */

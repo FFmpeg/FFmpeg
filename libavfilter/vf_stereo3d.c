@@ -100,9 +100,9 @@ static const int ana_coeff[][3][6] = {
      {    0,     0,     0,     0, 65536,     0},
      {    0,     0,     0,     0,     0, 65536}},
   [ANAGLYPH_RC_DUBOIS] =
-    {{29891, 32800, 11559, -2849, -5763,  -102},
-     {-2627, -2479, -1033, 24804, 48080, -1209},
-     { -997, -1350,  -358, -4729, -7403, 80373}},
+    {{29884, 32768, 11534, -2818, -5767,  -131},
+     {-2621, -2490, -1049, 24773, 48103, -1180},
+     { -983, -1376,  -328, -4719, -7406, 80347}},
   [ANAGLYPH_GM_GRAY]   =
     {{    0,     0,     0, 19595, 38470,  7471},
      {19595, 38470,  7471,     0,     0,     0},
@@ -132,9 +132,9 @@ static const int ana_coeff[][3][6] = {
      {    0,     0,     0,     0, 65536,     0},
      {    0,     0, 65536,     0,     0,     0}},
   [ANAGLYPH_YB_DUBOIS] =
-    {{65535,-12650,18451,   -987, -7590, -1049},
-     {-1604, 56032, 4196,    370,  3826, -1049},
-     {-2345,-10676, 1358,   5801, 11416, 56217}},
+    {{69599,-13435,19595,  -1048, -8061, -1114},
+     {-1704, 59507, 4456,    393,  4063, -1114},
+     {-2490,-11338, 1442,   6160, 12124, 59703}},
 };
 
 typedef struct Stereo3DContext {
@@ -160,9 +160,13 @@ typedef struct Stereo3DContext {
 static const AVOption stereo3d_options[] = {
     { "in",    "set input format",  OFFSET(in.format),   AV_OPT_TYPE_INT,   {.i64=SIDE_BY_SIDE_LR}, INTERLEAVE_ROWS_LR, STEREO_CODE_COUNT-1, FLAGS, "in"},
     { "ab2l",  "above below half height left first",  0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_LR},   0, 0, FLAGS, "in" },
+    { "tb2l",  "above below half height left first",  0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_LR},   0, 0, FLAGS, "in" },
     { "ab2r",  "above below half height right first", 0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_RL},   0, 0, FLAGS, "in" },
+    { "tb2r",  "above below half height right first", 0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_RL},   0, 0, FLAGS, "in" },
     { "abl",   "above below left first",              0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_LR},     0, 0, FLAGS, "in" },
+    { "tbl",   "above below left first",              0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_LR},     0, 0, FLAGS, "in" },
     { "abr",   "above below right first",             0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_RL},     0, 0, FLAGS, "in" },
+    { "tbr",   "above below right first",             0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_RL},     0, 0, FLAGS, "in" },
     { "al",    "alternating frames left first",       0, AV_OPT_TYPE_CONST, {.i64=ALTERNATING_LR},     0, 0, FLAGS, "in" },
     { "ar",    "alternating frames right first",      0, AV_OPT_TYPE_CONST, {.i64=ALTERNATING_RL},     0, 0, FLAGS, "in" },
     { "sbs2l", "side by side half width left first",  0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_2_LR},  0, 0, FLAGS, "in" },
@@ -175,9 +179,13 @@ static const AVOption stereo3d_options[] = {
     { "icr",   "interleave columns right first",      0, AV_OPT_TYPE_CONST, {.i64=INTERLEAVE_COLS_RL}, 0, 0, FLAGS, "in" },
     { "out",   "set output format", OFFSET(out.format),  AV_OPT_TYPE_INT,   {.i64=ANAGLYPH_RC_DUBOIS}, 0, STEREO_CODE_COUNT-1, FLAGS, "out"},
     { "ab2l",  "above below half height left first",  0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_LR},   0, 0, FLAGS, "out" },
+    { "tb2l",  "above below half height left first",  0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_LR},   0, 0, FLAGS, "out" },
     { "ab2r",  "above below half height right first", 0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_RL},   0, 0, FLAGS, "out" },
+    { "tb2r",  "above below half height right first", 0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_2_RL},   0, 0, FLAGS, "out" },
     { "abl",   "above below left first",              0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_LR},     0, 0, FLAGS, "out" },
+    { "tbl",   "above below left first",              0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_LR},     0, 0, FLAGS, "out" },
     { "abr",   "above below right first",             0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_RL},     0, 0, FLAGS, "out" },
+    { "tbr",   "above below right first",             0, AV_OPT_TYPE_CONST, {.i64=ABOVE_BELOW_RL},     0, 0, FLAGS, "out" },
     { "agmc",  "anaglyph green magenta color",        0, AV_OPT_TYPE_CONST, {.i64=ANAGLYPH_GM_COLOR},  0, 0, FLAGS, "out" },
     { "agmd",  "anaglyph green magenta dubois",       0, AV_OPT_TYPE_CONST, {.i64=ANAGLYPH_GM_DUBOIS}, 0, 0, FLAGS, "out" },
     { "agmg",  "anaglyph green magenta gray",         0, AV_OPT_TYPE_CONST, {.i64=ANAGLYPH_GM_GRAY},   0, 0, FLAGS, "out" },
@@ -551,8 +559,6 @@ static int config_output(AVFilterLink *outlink)
         break;
     case CHECKERBOARD_LR:
     case CHECKERBOARD_RL:
-        s->out.width     = s->width * 2;
-        break;
     case INTERLEAVE_COLS_LR:
     case INTERLEAVE_COLS_RL:
         s->out.width     = s->width * 2;
@@ -666,7 +672,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     AVFilterContext *ctx  = inlink->dst;
     Stereo3DContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out, *oleft, *oright, *ileft, *iright;
+    AVFrame *out = NULL, *oleft, *oright, *ileft, *iright;
     int out_off_left[4], out_off_right[4];
     int i, ret;
 
@@ -1076,6 +1082,7 @@ copy:
         av_frame_free(&s->prev);
         av_frame_free(&inpicref);
     }
+    av_assert0(out);
     out->sample_aspect_ratio = s->aspect;
     return ff_filter_frame(outlink, out);
 }

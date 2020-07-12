@@ -53,7 +53,7 @@ fate-h264-levels: REF = /dev/null
 
 FATE_LIBAVCODEC-$(CONFIG_HEVC_METADATA_BSF) += fate-h265-levels
 fate-h265-levels: libavcodec/tests/h265_levels$(EXESUF)
-fate-h265-levels: CMD = run libavcodec/tests/h265_levels
+fate-h265-levels: CMD = run libavcodec/tests/h265_levels$(EXESUF)
 fate-h265-levels: REF = /dev/null
 
 FATE_LIBAVCODEC-$(CONFIG_IIRFILTER) += fate-iirfilter

@@ -290,7 +290,7 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
         break;
     }
 
-    if ((res = ff_reget_buffer(avctx, cin->frame)) < 0)
+    if ((res = ff_reget_buffer(avctx, cin->frame, 0)) < 0)
         return res;
 
     memcpy(cin->frame->data[1], cin->palette, sizeof(cin->palette));

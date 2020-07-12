@@ -20,6 +20,7 @@
 #include "libavutil/opt.h"
 
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_h265.h"
 #include "hevc.h"
@@ -39,7 +40,8 @@ enum {
 typedef struct H265MetadataContext {
     const AVClass *class;
 
-    CodedBitstreamContext *cbc;
+    CodedBitstreamContext *input;
+    CodedBitstreamContext *output;
     CodedBitstreamFragment access_unit;
 
     H265RawAUD aud_nal;
@@ -131,7 +133,7 @@ static void h265_metadata_guess_level(AVBSFContext *bsf,
     }
 
     desc = ff_h265_guess_level(ptl, bit_rate, width, height,
-                               0, tile_cols, tile_rows,
+                               0, tile_rows, tile_cols,
                                max_dec_pic_buffering);
     if (desc) {
         av_log(bsf, AV_LOG_DEBUG, "Stream appears to conform to "
@@ -336,6 +338,57 @@ static int h265_metadata_update_sps(AVBSFContext *bsf,
     return 0;
 }
 
+static int h265_metadata_update_side_data(AVBSFContext *bsf, AVPacket *pkt)
+{
+    H265MetadataContext *ctx = bsf->priv_data;
+    CodedBitstreamFragment *au = &ctx->access_unit;
+    uint8_t *side_data;
+    int side_data_size;
+    int err, i;
+
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                        &side_data_size);
+    if (!side_data_size)
+        return 0;
+
+    err = ff_cbs_read(ctx->input, au, side_data, side_data_size);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to read extradata from packet side data.\n");
+        return err;
+    }
+
+    if (ctx->level == LEVEL_AUTO && !ctx->level_guess)
+        h265_metadata_guess_level(bsf, au);
+
+    for (i = 0; i < au->nb_units; i++) {
+        if (au->units[i].type == HEVC_NAL_VPS) {
+            err = h265_metadata_update_vps(bsf, au->units[i].content);
+            if (err < 0)
+                return err;
+        }
+        if (au->units[i].type == HEVC_NAL_SPS) {
+            err = h265_metadata_update_sps(bsf, au->units[i].content);
+            if (err < 0)
+                return err;
+        }
+    }
+
+    err = ff_cbs_write_fragment_data(ctx->output, au);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to write extradata into packet side data.\n");
+        return err;
+    }
+
+    side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, au->data_size);
+    if (!side_data)
+        return AVERROR(ENOMEM);
+    memcpy(side_data, au->data, au->data_size);
+
+    ff_cbs_fragment_reset(au);
+
+    return 0;
+}
+
 static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 {
     H265MetadataContext *ctx = bsf->priv_data;
@@ -346,7 +399,11 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     if (err < 0)
         return err;
 
-    err = ff_cbs_read_packet(ctx->cbc, au, pkt);
+    err = h265_metadata_update_side_data(bsf, pkt);
+    if (err < 0)
+        goto fail;
+
+    err = ff_cbs_read_packet(ctx->input, au, pkt);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
         goto fail;
@@ -361,7 +418,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     // If an AUD is present, it must be the first NAL unit.
     if (au->units[0].type == HEVC_NAL_AUD) {
         if (ctx->aud == REMOVE)
-            ff_cbs_delete_unit(ctx->cbc, au, 0);
+            ff_cbs_delete_unit(au, 0);
     } else {
         if (ctx->aud == INSERT) {
             H265RawAUD *aud = &ctx->aud_nal;
@@ -393,8 +450,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
             };
             aud->pic_type = pic_type;
 
-            err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             0, HEVC_NAL_AUD, aud, NULL);
+            err = ff_cbs_insert_unit_content(au, 0, HEVC_NAL_AUD, aud, NULL);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
                 goto fail;
@@ -418,7 +474,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
         }
     }
 
-    err = ff_cbs_write_packet(ctx->cbc, pkt, au);
+    err = ff_cbs_write_packet(ctx->output, pkt, au);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
         goto fail;
@@ -426,7 +482,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->cbc, au);
+    ff_cbs_fragment_reset(au);
 
     if (err < 0)
         av_packet_unref(pkt);
@@ -440,12 +496,15 @@ static int h265_metadata_init(AVBSFContext *bsf)
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i;
 
-    err = ff_cbs_init(&ctx->cbc, AV_CODEC_ID_HEVC, bsf);
+    err = ff_cbs_init(&ctx->input,  AV_CODEC_ID_HEVC, bsf);
+    if (err < 0)
+        return err;
+    err = ff_cbs_init(&ctx->output, AV_CODEC_ID_HEVC, bsf);
     if (err < 0)
         return err;
 
     if (bsf->par_in->extradata) {
-        err = ff_cbs_read_extradata(ctx->cbc, au, bsf->par_in);
+        err = ff_cbs_read_extradata(ctx->input, au, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
             goto fail;
@@ -467,7 +526,7 @@ static int h265_metadata_init(AVBSFContext *bsf)
             }
         }
 
-        err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, au);
+        err = ff_cbs_write_extradata(ctx->output, bsf->par_out, au);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
             goto fail;
@@ -476,7 +535,7 @@ static int h265_metadata_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_reset(ctx->cbc, au);
+    ff_cbs_fragment_reset(au);
     return err;
 }
 
@@ -484,8 +543,9 @@ static void h265_metadata_close(AVBSFContext *bsf)
 {
     H265MetadataContext *ctx = bsf->priv_data;
 
-    ff_cbs_fragment_free(ctx->cbc, &ctx->access_unit);
-    ff_cbs_close(&ctx->cbc);
+    ff_cbs_fragment_free(&ctx->access_unit);
+    ff_cbs_close(&ctx->input);
+    ff_cbs_close(&ctx->output);
 }
 
 #define OFFSET(x) offsetof(H265MetadataContext, x)

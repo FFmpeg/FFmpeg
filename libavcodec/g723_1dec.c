@@ -677,7 +677,9 @@ static int estimate_sid_gain(G723_1_ChannelContext *p)
             if (p->sid_gain < 0) t = INT32_MIN;
             else                 t = INT32_MAX;
         } else
-            t = p->sid_gain << shift;
+            t = p->sid_gain * (1 << shift);
+    } else if(shift < -31) {
+        t = (p->sid_gain < 0) ? -1 : 0;
     }else
         t = p->sid_gain >> -shift;
     x = av_clipl_int32(t * (int64_t)cng_filt[0] >> 16);
@@ -1010,7 +1012,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             formant_postfilter(p, lpc, p->audio, out);
         } else { // if output is not postfiltered it should be scaled by 2
             for (i = 0; i < FRAME_LEN; i++)
-                out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
+                out[i] = av_clip_int16(2 * p->audio[LPC_ORDER + i]);
         }
     }
 

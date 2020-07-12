@@ -26,13 +26,9 @@
 #include "thread.h"
 
 /**
- * The buffer is always treated as read-only.
- */
-#define BUFFER_FLAG_READONLY      (1 << 0)
-/**
  * The buffer was av_realloc()ed, so it is reallocatable.
  */
-#define BUFFER_FLAG_REALLOCATABLE (1 << 1)
+#define BUFFER_FLAG_REALLOCATABLE (1 << 0)
 
 struct AVBuffer {
     uint8_t *data; /**< data described by this buffer */
@@ -54,9 +50,14 @@ struct AVBuffer {
     void *opaque;
 
     /**
-     * A combination of BUFFER_FLAG_*
+     * A combination of AV_BUFFER_FLAG_*
      */
     int flags;
+
+    /**
+     * A combination of BUFFER_FLAG_*
+     */
+    int flags_internal;
 };
 
 typedef struct BufferPoolEntry {

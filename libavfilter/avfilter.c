@@ -88,7 +88,7 @@ const char *avfilter_configuration(void)
 const char *avfilter_license(void)
 {
 #define LICENSE_PREFIX "libavfilter license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 void ff_command_queue_pop(AVFilterContext *filter)
@@ -467,24 +467,6 @@ static int ff_request_frame_to_filter(AVFilterLink *link)
     return ret;
 }
 
-int ff_poll_frame(AVFilterLink *link)
-{
-    int i, min = INT_MAX;
-
-    if (link->srcpad->poll_frame)
-        return link->srcpad->poll_frame(link);
-
-    for (i = 0; i < link->src->nb_inputs; i++) {
-        int val;
-        if (!link->src->inputs[i])
-            return AVERROR(EINVAL);
-        val = ff_poll_frame(link->src->inputs[i]);
-        min = FFMIN(min, val);
-    }
-
-    return min;
-}
-
 static const char *const var_names[] = {
     "t",
     "n",
@@ -601,6 +583,7 @@ static void *filter_child_next(void *obj, void *prev)
     return NULL;
 }
 
+#if FF_API_CHILD_CLASS_NEXT
 static const AVClass *filter_child_class_next(const AVClass *prev)
 {
     void *opaque = NULL;
@@ -617,6 +600,18 @@ static const AVClass *filter_child_class_next(const AVClass *prev)
 
     /* find next filter with specific options */
     while ((f = av_filter_iterate(&opaque)))
+        if (f->priv_class)
+            return f->priv_class;
+
+    return NULL;
+}
+#endif
+
+static const AVClass *filter_child_class_iterate(void **iter)
+{
+    const AVFilter *f;
+
+    while ((f = av_filter_iterate(iter)))
         if (f->priv_class)
             return f->priv_class;
 
@@ -643,7 +638,10 @@ static const AVClass avfilter_class = {
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,
     .child_next = filter_child_next,
+#if FF_API_CHILD_CLASS_NEXT
     .child_class_next = filter_child_class_next,
+#endif
+    .child_class_iterate = filter_child_class_iterate,
     .option           = avfilter_options,
 };
 
@@ -801,9 +799,9 @@ void avfilter_free(AVFilterContext *filter)
 
 int ff_filter_get_nb_threads(AVFilterContext *ctx)
 {
-     if (ctx->nb_threads > 0)
-         return FFMIN(ctx->nb_threads, ctx->graph->nb_threads);
-     return ctx->graph->nb_threads;
+    if (ctx->nb_threads > 0)
+        return FFMIN(ctx->nb_threads, ctx->graph->nb_threads);
+    return ctx->graph->nb_threads;
 }
 
 static int process_options(AVFilterContext *ctx, AVDictionary **options,
@@ -882,6 +880,19 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
             return ret;
     }
     return count;
+}
+
+int ff_filter_process_command(AVFilterContext *ctx, const char *cmd,
+                              const char *arg, char *res, int res_len, int flags)
+{
+    const AVOption *o;
+
+    if (!ctx->filter->priv_class)
+        return 0;
+    o = av_opt_find2(ctx->priv, cmd, NULL, AV_OPT_FLAG_RUNTIME_PARAM | AV_OPT_FLAG_FILTERING_PARAM, AV_OPT_SEARCH_CHILDREN, NULL);
+    if (!o)
+        return AVERROR(ENOSYS);
+    return av_opt_set(ctx->priv, cmd, arg, 0);
 }
 
 int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)

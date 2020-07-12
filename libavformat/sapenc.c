@@ -60,8 +60,7 @@ static int sap_write_close(AVFormatContext *s)
     }
 
     av_freep(&sap->ann);
-    if (sap->ann_fd)
-        ffurl_close(sap->ann_fd);
+    ffurl_closep(&sap->ann_fd);
     ff_network_close();
     return 0;
 }

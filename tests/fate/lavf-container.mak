@@ -56,6 +56,9 @@ fate-lavf-wtv: CMD = lavf_container "" "-c:a mp2 -threads 1"
 FATE_AVCONV += $(FATE_LAVF_CONTAINER)
 fate-lavf-container fate-lavf: $(FATE_LAVF_CONTAINER)
 
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, IVF_DEMUXER AV1_PARSER MOV_MUXER)      += av1.mp4
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, IVF_DEMUXER AV1_PARSER MATROSKA_MUXER) += av1.mkv
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, H264_DEMUXER H264_PARSER MOV_MUXER)    += h264.mp4
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGG_MUXER)          += vp3.ogg
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGV_MUXER)          += vp8.ogg
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MOV_DEMUXER        LATM_MUXER)         += latm
@@ -68,6 +71,9 @@ FATE_LAVF_CONTAINER_FATE = $(FATE_LAVF_CONTAINER_FATE-yes:%=fate-lavf-fate-%)
 $(FATE_LAVF_CONTAINER_FATE): REF = $(SRC_PATH)/tests/ref/lavf-fate/$(@:fate-lavf-fate-%=%)
 $(FATE_LAVF_CONTAINER_FATE): $(AREF) $(VREF)
 
+fate-lavf-fate-av1.mp4: CMD = lavf_container_fate "av1-test-vectors/av1-1-b8-05-mv.ivf" "" "-c:v copy"
+fate-lavf-fate-av1.mkv: CMD = lavf_container_fate "av1-test-vectors/av1-1-b8-05-mv.ivf" "" "-c:v copy"
+fate-lavf-fate-h264.mp4: CMD = lavf_container_fate "h264/intra_refresh.h264" "" "-c:v copy"
 fate-lavf-fate-vp3.ogg: CMD = lavf_container_fate "vp3/coeff_level64.mkv" "-idct auto"
 fate-lavf-fate-vp8.ogg: CMD = lavf_container_fate "vp8/RRSF49-short.webm" "" "-acodec copy"
 fate-lavf-fate-latm: CMD = lavf_container_fate "aac/al04_44.mp4" "" "-acodec copy"

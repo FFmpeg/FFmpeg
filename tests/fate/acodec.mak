@@ -46,6 +46,7 @@ fate-acodec-pcm-f%be: FMT = au
 
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_ADX,     ADX)  += adx
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_QT,  AIFF) += ima_qt
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_SSI, KVAG) += ima_ssi
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_WAV, WAV)  += ima_wav
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_MS,      WAV)  += ms
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_SWF,     FLV)  += swf
@@ -59,6 +60,7 @@ fate-acodec-adpcm-%: CODEC = adpcm_$(@:fate-acodec-adpcm-%=%)
 
 fate-acodec-adpcm-adx:     FMT = adx
 fate-acodec-adpcm-ima_qt:  FMT = aiff
+fate-acodec-adpcm-ima_ssi: FMT = kvag
 fate-acodec-adpcm-ima_wav: FMT = wav
 fate-acodec-adpcm-ms:      FMT = wav
 fate-acodec-adpcm-swf:     FMT = flv

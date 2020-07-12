@@ -37,6 +37,7 @@
 #include "av1.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 #include "profiles.h"
 
 /*
@@ -92,6 +93,19 @@ typedef struct AOMEncoderContext {
     int enable_cdef;
     int enable_global_motion;
     int enable_intrabc;
+    int enable_restoration;
+    int usage;
+    int tune;
+    int enable_rect_partitions;
+    int enable_1to4_partitions;
+    int enable_ab_partitions;
+    int enable_angle_delta;
+    int enable_cfl_intra;
+    int enable_paeth_intra;
+    int enable_smooth_intra;
+    int enable_intra_edge_filter;
+    int enable_palette;
+    int enable_filter_intra;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -110,6 +124,7 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_SUPERBLOCK_SIZE]  = "AV1E_SET_SUPERBLOCK_SIZE",
     [AV1E_SET_TILE_COLUMNS]     = "AV1E_SET_TILE_COLUMNS",
     [AV1E_SET_TILE_ROWS]        = "AV1E_SET_TILE_ROWS",
+    [AV1E_SET_ENABLE_RESTORATION] = "AV1E_SET_ENABLE_RESTORATION",
 #ifdef AOM_CTRL_AV1E_SET_ROW_MT
     [AV1E_SET_ROW_MT]           = "AV1E_SET_ROW_MT",
 #endif
@@ -129,6 +144,19 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_INTRABC]   = "AV1E_SET_ENABLE_INTRABC",
 #endif
     [AV1E_SET_ENABLE_CDEF]      = "AV1E_SET_ENABLE_CDEF",
+    [AOME_SET_TUNING]           = "AOME_SET_TUNING",
+#if AOM_ENCODER_ABI_VERSION >= 22
+    [AV1E_SET_ENABLE_1TO4_PARTITIONS] = "AV1E_SET_ENABLE_1TO4_PARTITIONS",
+    [AV1E_SET_ENABLE_AB_PARTITIONS]   = "AV1E_SET_ENABLE_AB_PARTITIONS",
+    [AV1E_SET_ENABLE_RECT_PARTITIONS] = "AV1E_SET_ENABLE_RECT_PARTITIONS",
+    [AV1E_SET_ENABLE_ANGLE_DELTA]       = "AV1E_SET_ENABLE_ANGLE_DELTA",
+    [AV1E_SET_ENABLE_CFL_INTRA]         = "AV1E_SET_ENABLE_CFL_INTRA",
+    [AV1E_SET_ENABLE_FILTER_INTRA]      = "AV1E_SET_ENABLE_FILTER_INTRA",
+    [AV1E_SET_ENABLE_INTRA_EDGE_FILTER] = "AV1E_SET_ENABLE_INTRA_EDGE_FILTER",
+    [AV1E_SET_ENABLE_PAETH_INTRA]       = "AV1E_SET_ENABLE_PAETH_INTRA",
+    [AV1E_SET_ENABLE_SMOOTH_INTRA]      = "AV1E_SET_ENABLE_SMOOTH_INTRA",
+    [AV1E_SET_ENABLE_PALETTE]           = "AV1E_SET_ENABLE_PALETTE",
+#endif
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -549,6 +577,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     enccfg.g_threads      =
         FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
 
+    enccfg.g_usage        = ctx->usage;
+
     if (ctx->lag_in_frames >= 0)
         enccfg.g_lag_in_frames = ctx->lag_in_frames;
 
@@ -572,14 +602,11 @@ static av_cold int aom_init(AVCodecContext *avctx,
         enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                                   AV_ROUND_NEAR_INF);
     } else if (enccfg.rc_end_usage != AOM_Q) {
-        if (enccfg.rc_end_usage == AOM_CQ) {
-            enccfg.rc_target_bitrate = 1000000;
-        } else {
-            avctx->bit_rate = enccfg.rc_target_bitrate * 1000;
-            av_log(avctx, AV_LOG_WARNING,
-                   "Neither bitrate nor constrained quality specified, using default bitrate of %dkbit/sec\n",
-                   enccfg.rc_target_bitrate);
-        }
+        enccfg.rc_end_usage = AOM_Q;
+        ctx->crf = 32;
+        av_log(avctx, AV_LOG_WARNING,
+               "Neither bitrate nor constrained quality specified, using default CRF of %d\n",
+               ctx->crf);
     }
 
     if (avctx->qmin >= 0)
@@ -691,9 +718,36 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AOME_SET_ARNR_STRENGTH,    ctx->arnr_strength);
     if (ctx->enable_cdef >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_CDEF, ctx->enable_cdef);
+    if (ctx->enable_restoration >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_RESTORATION, ctx->enable_restoration);
+#if AOM_ENCODER_ABI_VERSION >= 22
+    if (ctx->enable_rect_partitions >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_RECT_PARTITIONS, ctx->enable_rect_partitions);
+    if (ctx->enable_1to4_partitions >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_1TO4_PARTITIONS, ctx->enable_1to4_partitions);
+    if (ctx->enable_ab_partitions >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_AB_PARTITIONS, ctx->enable_ab_partitions);
+    if (ctx->enable_angle_delta >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_ANGLE_DELTA, ctx->enable_angle_delta);
+    if (ctx->enable_cfl_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_CFL_INTRA, ctx->enable_cfl_intra);
+    if (ctx->enable_filter_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_FILTER_INTRA, ctx->enable_filter_intra);
+    if (ctx->enable_intra_edge_filter >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_INTRA_EDGE_FILTER, ctx->enable_intra_edge_filter);
+    if (ctx->enable_paeth_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_PAETH_INTRA, ctx->enable_paeth_intra);
+    if (ctx->enable_smooth_intra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTRA, ctx->enable_smooth_intra);
+    if (ctx->enable_palette >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_PALETTE, ctx->enable_palette);
+#endif
+
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)
         codecctl_int(avctx, AOME_SET_CQ_LEVEL,          ctx->crf);
+    if (ctx->tune >= 0)
+        codecctl_int(avctx, AOME_SET_TUNING, ctx->tune);
 
     codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, avctx->color_primaries);
     codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
@@ -1046,6 +1100,9 @@ static av_cold void av1_init_static(AVCodec *codec)
         codec->pix_fmts = av1_pix_fmts_highbd;
     else
         codec->pix_fmts = av1_pix_fmts;
+
+    if (aom_codec_version_major() < 2)
+        codec->capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
 }
 
 static av_cold int av1_init(AVCodecContext *avctx)
@@ -1087,11 +1144,29 @@ static const AVOption options[] = {
     { "enable-cdef",      "Enable CDEF filtering",                 OFFSET(enable_cdef),    AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-global-motion",  "Enable global motion",             OFFSET(enable_global_motion), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-intrabc",  "Enable intra block copy prediction mode", OFFSET(enable_intrabc), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-restoration", "Enable Loop Restoration filtering", OFFSET(enable_restoration), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "usage",           "Quality and compression efficiency vs speed trade-off", OFFSET(usage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "usage"},
+    { "good",            "Good quality",      0, AV_OPT_TYPE_CONST, {.i64 = 0 /* AOM_USAGE_GOOD_QUALITY */}, 0, 0, VE, "usage"},
+    { "realtime",        "Realtime encoding", 0, AV_OPT_TYPE_CONST, {.i64 = 1 /* AOM_USAGE_REALTIME */},     0, 0, VE, "usage"},
+    { "tune",            "The metric that the encoder tunes for. Automatically chosen by the encoder by default", OFFSET(tune), AV_OPT_TYPE_INT, {.i64 = -1}, -1, AOM_TUNE_SSIM, VE, "tune"},
+    { "psnr",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_PSNR}, 0, 0, VE, "tune"},
+    { "ssim",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_SSIM}, 0, 0, VE, "tune"},
+    FF_AV1_PROFILE_OPTS
+    { "enable-rect-partitions", "Enable rectangular partitions", OFFSET(enable_rect_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-1to4-partitions", "Enable 1:4/4:1 partitions",     OFFSET(enable_1to4_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-ab-partitions",   "Enable ab shape partitions",    OFFSET(enable_ab_partitions),   AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-angle-delta",       "Enable angle delta intra prediction",                OFFSET(enable_angle_delta),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-cfl-intra",         "Enable chroma predicted from luma intra prediction", OFFSET(enable_cfl_intra),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-filter-intra",      "Enable filter intra predictor",                      OFFSET(enable_filter_intra),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-intra-edge-filter", "Enable intra edge filter",                           OFFSET(enable_intra_edge_filter), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-smooth-intra",      "Enable smooth intra prediction mode",                OFFSET(enable_smooth_intra),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-paeth-intra",       "Enable paeth predictor in intra prediction",         OFFSET(enable_paeth_intra),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-palette",           "Enable palette prediction mode",                     OFFSET(enable_palette),           AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { NULL },
 };
 
 static const AVCodecDefault defaults[] = {
-    { "b",          "256*1000" },
+    { "b",                 "0" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },
     { "g",                "-1" },
@@ -1115,7 +1190,7 @@ AVCodec ff_libaom_av1_encoder = {
     .init           = av1_init,
     .encode2        = aom_encode,
     .close          = aom_free,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .priv_class     = &class_aom,
     .defaults       = defaults,

@@ -403,6 +403,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '0') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '2') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '4') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'Y', '0') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'Y', '2') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'R', 'A') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'R', 'G') },
@@ -488,6 +489,17 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '6') },
     { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '7') },
     { AV_CODEC_ID_LSCR,         MKTAG('L', 'S', 'C', 'R') },
+    { AV_CODEC_ID_IMM5,         MKTAG('I', 'M', 'M', '5') },
+    { AV_CODEC_ID_MVDV,         MKTAG('M', 'V', 'D', 'V') },
+    { AV_CODEC_ID_MVHA,         MKTAG('M', 'V', 'H', 'A') },
+    { AV_CODEC_ID_MV30,         MKTAG('M', 'V', '3', '0') },
+    { AV_CODEC_ID_NOTCHLC,      MKTAG('n', 'l', 'c', '1') },
+    { AV_CODEC_ID_NONE,         0 }
+};
+
+const AVCodecTag ff_codec_bmp_tags_unofficial[] = {
+    { AV_CODEC_ID_HEVC,         MKTAG('H', 'E', 'V', 'C') },
+    { AV_CODEC_ID_HEVC,         MKTAG('H', '2', '6', '5') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
@@ -508,7 +520,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_ADPCM_IMA_OKI,   0x0010 },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   0x0011 },
     /* must come after adpcm_ima_wav in this list */
-    { AV_CODEC_ID_PCM_ZORK,        0x0011 },
+    { AV_CODEC_ID_ADPCM_ZORK,      0x0011 },
     { AV_CODEC_ID_ADPCM_IMA_OKI,   0x0017 },
     { AV_CODEC_ID_ADPCM_YAMAHA,    0x0020 },
     { AV_CODEC_ID_TRUESPEECH,      0x0022 },
@@ -534,6 +546,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_AAC,             0x00ff },
     { AV_CODEC_ID_G723_1,          0x0111 },
     { AV_CODEC_ID_SIPR,            0x0130 },
+    { AV_CODEC_ID_ACELP_KELVIN,    0x0135 },
     { AV_CODEC_ID_WMAV1,           0x0160 },
     { AV_CODEC_ID_WMAV2,           0x0161 },
     { AV_CODEC_ID_WMAPRO,          0x0162 },

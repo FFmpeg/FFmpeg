@@ -301,8 +301,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
         if (s->ttl > 0) {
-            snprintf(buf, sizeof (buf), "%d", s->ttl);
-            av_dict_set(&fec_opts, "ttl", buf, 0);
+            av_dict_set_int(&fec_opts, "ttl", s->ttl, 0);
         }
     }
 
@@ -363,10 +362,8 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     return 0;
 
  fail:
-    if (s->rtp_hd)
-        ffurl_close(s->rtp_hd);
-    if (s->rtcp_hd)
-        ffurl_close(s->rtcp_hd);
+    ffurl_closep(&s->rtp_hd);
+    ffurl_closep(&s->rtcp_hd);
     ffurl_closep(&s->fec_hd);
     av_free(fec_protocol);
     av_dict_free(&fec_opts);
@@ -506,8 +503,8 @@ static int rtp_close(URLContext *h)
 
     ff_ip_reset_filters(&s->filters);
 
-    ffurl_close(s->rtp_hd);
-    ffurl_close(s->rtcp_hd);
+    ffurl_closep(&s->rtp_hd);
+    ffurl_closep(&s->rtcp_hd);
     ffurl_closep(&s->fec_hd);
     return 0;
 }

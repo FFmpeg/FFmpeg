@@ -35,6 +35,7 @@ typedef struct DatascopeContext {
     int ow, oh;
     int x, y;
     int mode;
+    int dformat;
     int axis;
     float opacity;
 
@@ -54,6 +55,7 @@ typedef struct DatascopeContext {
 
 #define OFFSET(x) offsetof(DatascopeContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGSR AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption datascope_options[] = {
     { "size", "set output size", OFFSET(ow),   AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, FLAGS },
@@ -66,6 +68,9 @@ static const AVOption datascope_options[] = {
     {   "color2", NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mode" },
     { "axis",    "draw column/row numbers", OFFSET(axis), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "opacity", "set background opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
+    { "format", "set display number format", OFFSET(dformat), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "format" },
+    {   "hex",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "format" },
+    {   "dec",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "format" },
     { NULL }
 };
 
@@ -179,9 +184,10 @@ static int filter_color2(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int yoff = td->yoff;
     const int P = FFMAX(s->nb_planes, s->nb_comps);
     const int C = s->chars;
+    const int D = ((s->chars - s->dformat) >> 2) + s->dformat * 2;
     const int W = (outlink->w - xoff) / (C * 10);
     const int H = (outlink->h - yoff) / (P * 12);
-    const char *format[2] = {"%02X\n", "%04X\n"};
+    const char *format[4] = {"%02X\n", "%04X\n", "%03d\n", "%05d\n"};
     const int slice_start = (W * jobnr) / nb_jobs;
     const int slice_end = (W * (jobnr+1)) / nb_jobs;
     int x, y, p;
@@ -200,7 +206,7 @@ static int filter_color2(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             for (p = 0; p < P; p++) {
                 char text[256];
 
-                snprintf(text, sizeof(text), format[C>>2], value[p]);
+                snprintf(text, sizeof(text), format[D], value[p]);
                 draw_text(&s->draw, out, &reverse, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
@@ -221,9 +227,10 @@ static int filter_color(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int yoff = td->yoff;
     const int P = FFMAX(s->nb_planes, s->nb_comps);
     const int C = s->chars;
+    const int D = ((s->chars - s->dformat) >> 2) + s->dformat * 2;
     const int W = (outlink->w - xoff) / (C * 10);
     const int H = (outlink->h - yoff) / (P * 12);
-    const char *format[2] = {"%02X\n", "%04X\n"};
+    const char *format[4] = {"%02X\n", "%04X\n", "%03d\n", "%05d\n"};
     const int slice_start = (W * jobnr) / nb_jobs;
     const int slice_end = (W * (jobnr+1)) / nb_jobs;
     int x, y, p;
@@ -238,7 +245,7 @@ static int filter_color(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             for (p = 0; p < P; p++) {
                 char text[256];
 
-                snprintf(text, sizeof(text), format[C>>2], value[p]);
+                snprintf(text, sizeof(text), format[D], value[p]);
                 draw_text(&s->draw, out, &color, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
@@ -259,9 +266,10 @@ static int filter_mono(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int yoff = td->yoff;
     const int P = FFMAX(s->nb_planes, s->nb_comps);
     const int C = s->chars;
+    const int D = ((s->chars - s->dformat) >> 2) + s->dformat * 2;
     const int W = (outlink->w - xoff) / (C * 10);
     const int H = (outlink->h - yoff) / (P * 12);
-    const char *format[2] = {"%02X\n", "%04X\n"};
+    const char *format[4] = {"%02X\n", "%04X\n", "%03d\n", "%05d\n"};
     const int slice_start = (W * jobnr) / nb_jobs;
     const int slice_end = (W * (jobnr+1)) / nb_jobs;
     int x, y, p;
@@ -275,7 +283,7 @@ static int filter_mono(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             for (p = 0; p < P; p++) {
                 char text[256];
 
-                snprintf(text, sizeof(text), format[C>>2], value[p]);
+                snprintf(text, sizeof(text), format[D], value[p]);
                 draw_text(&s->draw, out, &s->white, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
@@ -359,7 +367,7 @@ static int config_input(AVFilterLink *inlink)
     ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, alpha} );
     ff_draw_color(&s->draw, &s->yellow, (uint8_t[]){ 255, 255, 0, 255} );
     ff_draw_color(&s->draw, &s->gray,   (uint8_t[]){ 77, 77, 77, 255} );
-    s->chars = (s->draw.desc->comp[0].depth + 7) / 8 * 2;
+    s->chars = (s->draw.desc->comp[0].depth + 7) / 8 * 2 + s->dformat;
     s->nb_comps = s->draw.desc->nb_components;
 
     switch (s->mode) {
@@ -444,6 +452,8 @@ typedef struct PixscopeContext {
     FFDrawColor   red;
     FFDrawColor  *colors[4];
 
+    uint16_t values[4][80][80];
+
     void (*pick_color)(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value);
 } PixscopeContext;
 
@@ -518,6 +528,8 @@ static int pixscope_config_input(AVFilterLink *inlink)
     return 0;
 }
 
+#define SQR(x) ((x)*(x))
+
 static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
@@ -526,7 +538,7 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out = ff_get_video_buffer(outlink, in->width, in->height);
     int max[4] = { 0 }, min[4] = { INT_MAX, INT_MAX, INT_MAX, INT_MAX };
     float average[4] = { 0 };
-    double rms[4] = { 0 };
+    double std[4] = { 0 }, rms[4] = { 0 };
     const char rgba[4] = { 'R', 'G', 'B', 'A' };
     const char yuva[4] = { 'Y', 'U', 'V', 'A' };
     int x, y, X, Y, i, w, h;
@@ -583,6 +595,7 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
             ff_fill_rectangle(&s->draw, &color, out->data, out->linesize,
                               x * w + (s->ww - 4 - (s->w * w)) / 2 + X, y * h + 2 + Y, w, h);
             for (i = 0; i < 4; i++) {
+                s->values[i][x][y] = value[i];
                 rms[i]     += (double)value[i] * (double)value[i];
                 average[i] += value[i];
                 min[i]      = FFMIN(min[i], value[i]);
@@ -629,13 +642,33 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
         average[i] /= s->w * s->h;
     }
 
+    for (y = 0; y < s->h; y++) {
+        for (x = 0; x < s->w; x++) {
+            for (i = 0; i < 4; i++)
+                std[i] += SQR(s->values[i][x][y] - average[i]);
+        }
+    }
+
+    for (i = 0; i < 4; i++) {
+        std[i] /= s->w * s->h;
+        std[i]  = sqrt(std[i]);
+    }
+
     snprintf(text, sizeof(text), "CH   AVG    MIN    MAX    RMS\n");
-    draw_text(&s->draw, out, &s->white,        X + 28, Y + s->ww + 20,           text, 0);
+    draw_text(&s->draw, out, &s->white,        X + 28, Y + s->ww +  5,           text, 0);
     for (i = 0; i < s->nb_comps; i++) {
         int c = s->rgba_map[i];
 
         snprintf(text, sizeof(text), "%c  %07.1f %05d %05d %07.1f\n", s->is_rgb ? rgba[i] : yuva[i], average[c], min[c], max[c], rms[c]);
-        draw_text(&s->draw, out, s->colors[i], X + 28, Y + s->ww + 20 * (i + 2), text, 0);
+        draw_text(&s->draw, out, s->colors[i], X + 28, Y + s->ww + 15 * (i + 1), text, 0);
+    }
+    snprintf(text, sizeof(text), "CH   STD\n");
+    draw_text(&s->draw, out, &s->white,        X + 28, Y + s->ww + 15 * (0 + 5), text, 0);
+    for (i = 0; i < s->nb_comps; i++) {
+        int c = s->rgba_map[i];
+
+        snprintf(text, sizeof(text), "%c  %07.2f\n", s->is_rgb ? rgba[i] : yuva[i], std[c]);
+        draw_text(&s->draw, out, s->colors[i], X + 28, Y + s->ww + 15 * (i + 6), text, 0);
     }
 
     av_frame_free(&in);
@@ -720,19 +753,19 @@ typedef struct OscilloscopeContext {
 #define OOFFSET(x) offsetof(OscilloscopeContext, x)
 
 static const AVOption oscilloscope_options[] = {
-    { "x",  "set scope x position",    OOFFSET(xpos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "y",  "set scope y position",    OOFFSET(ypos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "s",  "set scope size",          OOFFSET(size),       AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGS },
-    { "t",  "set scope tilt",          OOFFSET(tilt),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "o",  "set trace opacity",       OOFFSET(o),          AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGS },
-    { "tx", "set trace x position",    OOFFSET(tx),         AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "ty", "set trace y position",    OOFFSET(ty),         AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1,  FLAGS },
-    { "tw", "set trace width",         OOFFSET(twidth),     AV_OPT_TYPE_FLOAT, {.dbl=0.8},.1, 1,  FLAGS },
-    { "th", "set trace height",        OOFFSET(theight),    AV_OPT_TYPE_FLOAT, {.dbl=0.3},.1, 1,  FLAGS },
-    { "c",  "set components to trace", OOFFSET(components), AV_OPT_TYPE_INT,   {.i64=7},   0, 15, FLAGS },
-    { "g",  "draw trace grid",         OOFFSET(grid),       AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
-    { "st", "draw statistics",         OOFFSET(statistics), AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
-    { "sc", "draw scope",              OOFFSET(scope),      AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
+    { "x",  "set scope x position",    OOFFSET(xpos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "y",  "set scope y position",    OOFFSET(ypos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "s",  "set scope size",          OOFFSET(size),       AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGSR },
+    { "t",  "set scope tilt",          OOFFSET(tilt),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "o",  "set trace opacity",       OOFFSET(o),          AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGSR },
+    { "tx", "set trace x position",    OOFFSET(tx),         AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "ty", "set trace y position",    OOFFSET(ty),         AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1,  FLAGSR },
+    { "tw", "set trace width",         OOFFSET(twidth),     AV_OPT_TYPE_FLOAT, {.dbl=0.8},.1, 1,  FLAGSR },
+    { "th", "set trace height",        OOFFSET(theight),    AV_OPT_TYPE_FLOAT, {.dbl=0.3},.1, 1,  FLAGSR },
+    { "c",  "set components to trace", OOFFSET(components), AV_OPT_TYPE_INT,   {.i64=7},   0, 15, FLAGSR },
+    { "g",  "draw trace grid",         OOFFSET(grid),       AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGSR },
+    { "st", "draw statistics",         OOFFSET(statistics), AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGSR },
+    { "sc", "draw scope",              OOFFSET(scope),      AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGSR },
     { NULL }
 };
 
@@ -830,15 +863,36 @@ static void draw_trace16(OscilloscopeContext *s, AVFrame *frame)
     }
 }
 
-static int oscilloscope_config_input(AVFilterLink *inlink)
+static void update_oscilloscope(AVFilterContext *ctx)
 {
-    OscilloscopeContext *s = inlink->dst->priv;
+    OscilloscopeContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
     int cx, cy, size;
     double tilt;
 
+    ff_draw_color(&s->draw, &s->dark,    (uint8_t[]){   0,   0,   0, s->o * 255} );
+    s->height = s->theight * inlink->h;
+    s->width = s->twidth * inlink->w;
+    size = hypot(inlink->w, inlink->h);
+    size *= s->size;
+    tilt  = (s->tilt - 0.5) * M_PI;
+    cx = s->xpos * (inlink->w - 1);
+    cy = s->ypos * (inlink->h - 1);
+    s->x1 = cx - size / 2.0 * cos(tilt);
+    s->x2 = cx + size / 2.0 * cos(tilt);
+    s->y1 = cy - size / 2.0 * sin(tilt);
+    s->y2 = cy + size / 2.0 * sin(tilt);
+    s->ox = (inlink->w - s->width) * s->tx;
+    s->oy = (inlink->h - s->height) * s->ty;
+}
+
+static int oscilloscope_config_input(AVFilterLink *inlink)
+{
+    OscilloscopeContext *s = inlink->dst->priv;
+    int size;
+
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     ff_draw_init(&s->draw, inlink->format, 0);
-    ff_draw_color(&s->draw, &s->dark,    (uint8_t[]){   0,   0,   0, s->o * 255} );
     ff_draw_color(&s->draw, &s->black,   (uint8_t[]){   0,   0,   0, 255} );
     ff_draw_color(&s->draw, &s->white,   (uint8_t[]){ 255, 255, 255, 255} );
     ff_draw_color(&s->draw, &s->green,   (uint8_t[]){   0, 255,   0, 255} );
@@ -876,24 +930,13 @@ static int oscilloscope_config_input(AVFilterLink *inlink)
     }
 
     s->max = (1 << s->draw.desc->comp[0].depth);
-    cx = s->xpos * (inlink->w - 1);
-    cy = s->ypos * (inlink->h - 1);
-    s->height = s->theight * inlink->h;
-    s->width = s->twidth * inlink->w;
     size = hypot(inlink->w, inlink->h);
 
     s->values = av_calloc(size, sizeof(*s->values));
     if (!s->values)
         return AVERROR(ENOMEM);
 
-    size *= s->size;
-    tilt  = (s->tilt - 0.5) * M_PI;
-    s->x1 = cx - size / 2.0 * cos(tilt);
-    s->x2 = cx + size / 2.0 * cos(tilt);
-    s->y1 = cy - size / 2.0 * sin(tilt);
-    s->y2 = cy + size / 2.0 * sin(tilt);
-    s->ox = (inlink->w - s->width) * s->tx;
-    s->oy = (inlink->h - s->height) * s->ty;
+    update_oscilloscope(inlink->dst);
 
     return 0;
 }
@@ -973,7 +1016,7 @@ static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
                        frame->width, frame->height,
                        s->ox, s->oy, s->width, s->height + 20 * s->statistics);
 
-    if (s->grid) {
+    if (s->grid && outlink->h >= 10) {
         ff_fill_rectangle(&s->draw, &s->gray, frame->data, frame->linesize,
                           s->ox, s->oy, s->width - 1, 1);
 
@@ -1022,6 +1065,20 @@ static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(outlink, frame);
 }
 
+static int oscilloscope_process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                                        char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    update_oscilloscope(ctx);
+
+    return 0;
+}
+
 static const AVFilterPad oscilloscope_inputs[] = {
     {
         .name           = "default",
@@ -1051,4 +1108,5 @@ AVFilter ff_vf_oscilloscope = {
     .inputs        = oscilloscope_inputs,
     .outputs       = oscilloscope_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = oscilloscope_process_command,
 };

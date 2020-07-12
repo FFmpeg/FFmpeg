@@ -1261,7 +1261,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
             return ret;
     } else {
-        if ((ret = ff_reget_buffer(avctx, c->last)) < 0)
+        if ((ret = ff_reget_buffer(avctx, c->last, 0)) < 0)
             return ret;
         if ((ret = av_frame_ref(frame, c->last)) < 0)
             return ret;

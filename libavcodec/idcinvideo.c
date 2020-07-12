@@ -243,6 +243,11 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static const AVCodecDefault idcin_defaults[] = {
+    { "max_pixels", "320*240" },
+    { NULL },
+};
+
 AVCodec ff_idcin_decoder = {
     .name           = "idcinvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
@@ -252,4 +257,5 @@ AVCodec ff_idcin_decoder = {
     .init           = idcin_decode_init,
     .decode         = idcin_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .defaults       = idcin_defaults,
 };

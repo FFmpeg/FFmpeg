@@ -26,26 +26,25 @@
 #include "internal.h"
 #include "v210enc.h"
 
-#define CLIP(v) av_clip(v, 4, 1019)
-#define CLIP8(v) av_clip(v, 1, 254)
+#define TYPE uint8_t
+#define DEPTH 8
+#define BYTES_PER_PIXEL 1
+#define RENAME(a) a ## _ ## 8
+#include "v210_template.c"
+#undef RENAME
+#undef DEPTH
+#undef BYTES_PER_PIXEL
+#undef TYPE
 
-#define WRITE_PIXELS(a, b, c)           \
-    do {                                \
-        val  =  CLIP(*a++);             \
-        val |= (CLIP(*b++) << 10) |     \
-               (CLIP(*c++) << 20);      \
-        AV_WL32(dst, val);              \
-        dst += 4;                       \
-    } while (0)
-
-#define WRITE_PIXELS8(a, b, c)          \
-    do {                                \
-        val  = (CLIP8(*a++) << 2);      \
-        val |= (CLIP8(*b++) << 12) |    \
-               (CLIP8(*c++) << 22);     \
-        AV_WL32(dst, val);              \
-        dst += 4;                       \
-    } while (0)
+#define TYPE uint16_t
+#define DEPTH 10
+#define BYTES_PER_PIXEL 2
+#define RENAME(a) a ## _ ## 10
+#include "v210_template.c"
+#undef RENAME
+#undef DEPTH
+#undef BYTES_PER_PIXEL
+#undef TYPE
 
 static void v210_planar_pack_8_c(const uint8_t *y, const uint8_t *u,
                                  const uint8_t *v, uint8_t *dst,
@@ -56,14 +55,14 @@ static void v210_planar_pack_8_c(const uint8_t *y, const uint8_t *u,
 
     /* unroll this to match the assembly */
     for (i = 0; i < width - 11; i += 12) {
-        WRITE_PIXELS8(u, y, v);
-        WRITE_PIXELS8(y, u, y);
-        WRITE_PIXELS8(v, y, u);
-        WRITE_PIXELS8(y, v, y);
-        WRITE_PIXELS8(u, y, v);
-        WRITE_PIXELS8(y, u, y);
-        WRITE_PIXELS8(v, y, u);
-        WRITE_PIXELS8(y, v, y);
+        WRITE_PIXELS(u, y, v, 8);
+        WRITE_PIXELS(y, u, y, 8);
+        WRITE_PIXELS(v, y, u, 8);
+        WRITE_PIXELS(y, v, y, 8);
+        WRITE_PIXELS(u, y, v, 8);
+        WRITE_PIXELS(y, u, y, 8);
+        WRITE_PIXELS(v, y, u, 8);
+        WRITE_PIXELS(y, v, y, 8);
     }
 }
 
@@ -75,10 +74,10 @@ static void v210_planar_pack_10_c(const uint16_t *y, const uint16_t *u,
     int i;
 
     for (i = 0; i < width - 5; i += 6) {
-        WRITE_PIXELS(u, y, v);
-        WRITE_PIXELS(y, u, y);
-        WRITE_PIXELS(v, y, u);
-        WRITE_PIXELS(y, v, y);
+        WRITE_PIXELS(u, y, v, 10);
+        WRITE_PIXELS(y, u, y, 10);
+        WRITE_PIXELS(v, y, u, 10);
+        WRITE_PIXELS(y, v, y, 10);
     }
 }
 
@@ -86,7 +85,7 @@ av_cold void ff_v210enc_init(V210EncContext *s)
 {
     s->pack_line_8  = v210_planar_pack_8_c;
     s->pack_line_10 = v210_planar_pack_10_c;
-    s->sample_factor_8  = 1;
+    s->sample_factor_8  = 2;
     s->sample_factor_10 = 1;
 
     if (ARCH_X86)
@@ -119,12 +118,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pic, int *got_packet)
 {
-    V210EncContext *s = avctx->priv_data;
     int aligned_width = ((avctx->width + 47) / 48) * 48;
     int stride = aligned_width * 8 / 3;
-    int line_padding = stride - ((avctx->width * 8 + 11) / 12) * 4;
     AVFrameSideData *side_data;
-    int h, w, ret;
+    int ret;
     uint8_t *dst;
 
     ret = ff_alloc_packet2(avctx, pkt, avctx->height * stride, avctx->height * stride);
@@ -134,105 +131,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     dst = pkt->data;
 
-    if (pic->format == AV_PIX_FMT_YUV422P10) {
-        const uint16_t *y = (const uint16_t *)pic->data[0];
-        const uint16_t *u = (const uint16_t *)pic->data[1];
-        const uint16_t *v = (const uint16_t *)pic->data[2];
-
-        const int sample_size = 6 * s->sample_factor_10;
-        const int sample_w    = avctx->width / sample_size;
-
-        for (h = 0; h < avctx->height; h++) {
-            uint32_t val;
-            w = sample_w * sample_size;
-            s->pack_line_10(y, u, v, dst, w);
-
-            y += w;
-            u += w >> 1;
-            v += w >> 1;
-            dst += sample_w * 16 * s->sample_factor_10;
-
-            for (; w < avctx->width - 5; w += 6) {
-                WRITE_PIXELS(u, y, v);
-                WRITE_PIXELS(y, u, y);
-                WRITE_PIXELS(v, y, u);
-                WRITE_PIXELS(y, v, y);
-            }
-            if (w < avctx->width - 1) {
-                WRITE_PIXELS(u, y, v);
-
-                val = CLIP(*y++);
-                if (w == avctx->width - 2) {
-                    AV_WL32(dst, val);
-                    dst += 4;
-                }
-            }
-            if (w < avctx->width - 3) {
-                val |= (CLIP(*u++) << 10) | (CLIP(*y++) << 20);
-                AV_WL32(dst, val);
-                dst += 4;
-
-                val = CLIP(*v++) | (CLIP(*y++) << 10);
-                AV_WL32(dst, val);
-                dst += 4;
-            }
-
-            memset(dst, 0, line_padding);
-            dst += line_padding;
-            y += pic->linesize[0] / 2 - avctx->width;
-            u += pic->linesize[1] / 2 - avctx->width / 2;
-            v += pic->linesize[2] / 2 - avctx->width / 2;
-        }
-    } else if(pic->format == AV_PIX_FMT_YUV422P) {
-        const uint8_t *y = pic->data[0];
-        const uint8_t *u = pic->data[1];
-        const uint8_t *v = pic->data[2];
-
-        const int sample_size = 12 * s->sample_factor_8;
-        const int sample_w    = avctx->width / sample_size;
-
-        for (h = 0; h < avctx->height; h++) {
-            uint32_t val;
-            w = sample_w * sample_size;
-            s->pack_line_8(y, u, v, dst, w);
-
-            y += w;
-            u += w >> 1;
-            v += w >> 1;
-            dst += sample_w * 32 * s->sample_factor_8;
-
-            for (; w < avctx->width - 5; w += 6) {
-                WRITE_PIXELS8(u, y, v);
-                WRITE_PIXELS8(y, u, y);
-                WRITE_PIXELS8(v, y, u);
-                WRITE_PIXELS8(y, v, y);
-            }
-            if (w < avctx->width - 1) {
-                WRITE_PIXELS8(u, y, v);
-
-                val = CLIP8(*y++) << 2;
-                if (w == avctx->width - 2) {
-                    AV_WL32(dst, val);
-                    dst += 4;
-                }
-            }
-            if (w < avctx->width - 3) {
-                val |= (CLIP8(*u++) << 12) | (CLIP8(*y++) << 22);
-                AV_WL32(dst, val);
-                dst += 4;
-
-                val = (CLIP8(*v++) << 2) | (CLIP8(*y++) << 12);
-                AV_WL32(dst, val);
-                dst += 4;
-            }
-            memset(dst, 0, line_padding);
-            dst += line_padding;
-
-            y += pic->linesize[0] - avctx->width;
-            u += pic->linesize[1] - avctx->width / 2;
-            v += pic->linesize[2] - avctx->width / 2;
-        }
-    }
+    if (pic->format == AV_PIX_FMT_YUV422P10)
+        v210_enc_10(avctx, dst, pic);
+    else if(pic->format == AV_PIX_FMT_YUV422P)
+        v210_enc_8(avctx, dst, pic);
 
     side_data = av_frame_get_side_data(pic, AV_FRAME_DATA_A53_CC);
     if (side_data && side_data->size) {

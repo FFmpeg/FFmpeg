@@ -999,11 +999,11 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 
     if (s->avctx->debug & FF_DEBUG_RC) {
         av_log(s->avctx, AV_LOG_DEBUG,
-               "%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f "
+               "%c qp:%d<%2.1f<%d %d want:%"PRId64" total:%"PRId64" comp:%f st_q:%2.2f "
                "size:%d var:%"PRId64"/%"PRId64" br:%"PRId64" fps:%d\n",
                av_get_picture_type_char(pict_type),
                qmin, q, qmax, picture_number,
-               (int)wanted_bits / 1000, (int)s->total_bits / 1000,
+               wanted_bits / 1000, s->total_bits / 1000,
                br_compensation, short_term_q, s->frame_bits,
                pic->mb_var_sum, pic->mc_mb_var_sum,
                s->bit_rate / 1000, (int)fps);

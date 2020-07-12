@@ -60,16 +60,16 @@ static int xwma_read_header(AVFormatContext *s)
     /* check RIFF header */
     tag = avio_rl32(pb);
     if (tag != MKTAG('R', 'I', 'F', 'F'))
-        return -1;
+        return AVERROR_INVALIDDATA;
     avio_rl32(pb); /* file size */
     tag = avio_rl32(pb);
     if (tag != MKTAG('X', 'W', 'M', 'A'))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* parse fmt header */
     tag = avio_rl32(pb);
     if (tag != MKTAG('f', 'm', 't', ' '))
-        return -1;
+        return AVERROR_INVALIDDATA;
     size = avio_rl32(pb);
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -130,15 +130,15 @@ static int xwma_read_header(AVFormatContext *s)
             avpriv_request_sample(s, "Unexpected extradata (%d bytes)",
                                   st->codecpar->extradata_size);
         } else if (st->codecpar->codec_id == AV_CODEC_ID_WMAPRO) {
-            if (ff_alloc_extradata(st->codecpar, 18))
-                return AVERROR(ENOMEM);
+            if ((ret = ff_alloc_extradata(st->codecpar, 18)) < 0)
+                return ret;
 
             memset(st->codecpar->extradata, 0, st->codecpar->extradata_size);
             st->codecpar->extradata[ 0] = st->codecpar->bits_per_coded_sample;
             st->codecpar->extradata[14] = 224;
         } else {
-            if (ff_alloc_extradata(st->codecpar, 6))
-                return AVERROR(ENOMEM);
+            if ((ret = ff_alloc_extradata(st->codecpar, 6)) < 0)
+                return ret;
 
             memset(st->codecpar->extradata, 0, st->codecpar->extradata_size);
             /* setup extradata with our experimentally obtained value */

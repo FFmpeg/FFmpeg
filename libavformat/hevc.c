@@ -25,6 +25,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avc.h"
 #include "avio.h"
+#include "avio_internal.h"
 #include "hevc.h"
 
 #define MAX_SPATIAL_SEGMENTATION 4096 // max. value of u(12) field
@@ -1054,37 +1055,40 @@ int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
         return ret;
 
     ret   = ff_hevc_annexb2mp4(pb, buf_in, *size, filter_ps, ps_count);
+    if (ret < 0) {
+        ffio_free_dyn_buf(&pb);
+        return ret;
+    }
+
     *size = avio_close_dyn_buf(pb, buf_out);
 
-    return ret;
+    return 0;
 }
 
 int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
                        int size, int ps_array_completeness)
 {
-    int ret = 0;
-    uint8_t *buf, *end, *start = NULL;
     HEVCDecoderConfigurationRecord hvcc;
-
-    hvcc_init(&hvcc);
+    uint8_t *buf, *end, *start;
+    int ret;
 
     if (size < 6) {
         /* We can't write a valid hvcC from the provided data */
-        ret = AVERROR_INVALIDDATA;
-        goto end;
+        return AVERROR_INVALIDDATA;
     } else if (*data == 1) {
         /* Data is already hvcC-formatted */
         avio_write(pb, data, size);
-        goto end;
+        return 0;
     } else if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
         /* Not a valid Annex B start code prefix */
-        ret = AVERROR_INVALIDDATA;
-        goto end;
+        return AVERROR_INVALIDDATA;
     }
 
     ret = ff_avc_parse_nal_units_buf(data, &start, &size);
     if (ret < 0)
-        goto end;
+        return ret;
+
+    hvcc_init(&hvcc);
 
     buf = start;
     end = start + size;

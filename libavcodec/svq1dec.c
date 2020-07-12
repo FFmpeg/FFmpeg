@@ -32,6 +32,8 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/crc.h"
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "h263.h"
@@ -546,9 +548,7 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
         if (s->frame_code == 0x50 || s->frame_code == 0x60) {
             int csum = get_bits(bitbuf, 16);
 
-            csum = ff_svq1_packet_checksum(bitbuf->buffer,
-                                           bitbuf->size_in_bits >> 3,
-                                           csum);
+            csum = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_CCITT), av_bswap16(csum), bitbuf->buffer, bitbuf->size_in_bits >> 3));
 
             ff_dlog(avctx, "%s checksum (%02x) for packet data\n",
                     (csum == 0) ? "correct" : "incorrect", csum);
@@ -602,6 +602,8 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
         if (skip_1stop_8data_bits(bitbuf) < 0)
             return AVERROR_INVALIDDATA;
     }
+    if (get_bits_left(bitbuf) <= 0)
+        return AVERROR_INVALIDDATA;
 
     s->width  = width;
     s->height = height;

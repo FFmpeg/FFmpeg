@@ -29,6 +29,14 @@
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
 
+const DECLARE_ALIGNED(8, uint64_t, ff_dither4)[2] = {
+    0x0103010301030103LL,
+    0x0200020002000200LL,};
+
+const DECLARE_ALIGNED(8, uint64_t, ff_dither8)[2] = {
+    0x0602060206020602LL,
+    0x0004000400040004LL,};
+
 #if HAVE_INLINE_ASM
 
 #define DITHER1XBPP
@@ -37,14 +45,6 @@ DECLARE_ASM_CONST(8, uint64_t, bF8)=       0xF8F8F8F8F8F8F8F8LL;
 DECLARE_ASM_CONST(8, uint64_t, bFC)=       0xFCFCFCFCFCFCFCFCLL;
 DECLARE_ASM_CONST(8, uint64_t, w10)=       0x0010001000100010LL;
 DECLARE_ASM_CONST(8, uint64_t, w02)=       0x0002000200020002LL;
-
-const DECLARE_ALIGNED(8, uint64_t, ff_dither4)[2] = {
-    0x0103010301030103LL,
-    0x0200020002000200LL,};
-
-const DECLARE_ALIGNED(8, uint64_t, ff_dither8)[2] = {
-    0x0602060206020602LL,
-    0x0004000400040004LL,};
 
 DECLARE_ASM_CONST(8, uint64_t, b16Mask)=   0x001F001F001F001FLL;
 DECLARE_ASM_CONST(8, uint64_t, g16Mask)=   0x07E007E007E007E0LL;
@@ -79,8 +79,7 @@ DECLARE_ASM_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 #include "swscale_template.c"
 #endif
 
-void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
-                           int lastInLumBuf, int lastInChrBuf)
+void ff_updateMMXDitherTables(SwsContext *c, int dstY)
 {
     const int dstH= c->dstH;
     const int flags= c->flags;
@@ -160,7 +159,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
                 *(const void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
                 lumMmxFilter[s*i+APCK_COEF/4  ]=
                 lumMmxFilter[s*i+APCK_COEF/4+1]= vLumFilter[dstY*vLumFilterSize + i    ]
-                + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
+                    + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1] * (1 << 16) : 0);
                 if (CONFIG_SWSCALE_ALPHA && hasAlpha) {
                     *(const void**)&alpMmxFilter[s*i              ]= alpSrcPtr[i  ];
                     *(const void**)&alpMmxFilter[s*i+APCK_PTR2/4  ]= alpSrcPtr[i+(vLumFilterSize>1)];
@@ -173,7 +172,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
                 *(const void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrUSrcPtr[i+(vChrFilterSize>1)];
                 chrMmxFilter[s*i+APCK_COEF/4  ]=
                 chrMmxFilter[s*i+APCK_COEF/4+1]= vChrFilter[chrDstY*vChrFilterSize + i    ]
-                + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1]<<16 : 0);
+                    + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1] * (1 << 16) : 0);
             }
         } else {
             for (i=0; i<vLumFilterSize; i++) {
@@ -381,6 +380,17 @@ INPUT_FUNCS(sse2);
 INPUT_FUNCS(ssse3);
 INPUT_FUNCS(avx);
 
+#if ARCH_X86_64
+#define YUV2NV_DECL(fmt, opt) \
+void ff_yuv2 ## fmt ## cX_ ## opt(enum AVPixelFormat format, const uint8_t *dither, \
+                                  const int16_t *filter, int filterSize, \
+                                  const int16_t **u, const int16_t **v, \
+                                  uint8_t *dst, int dstWidth)
+
+YUV2NV_DECL(nv12, avx2);
+YUV2NV_DECL(nv21, avx2);
+#endif
+
 av_cold void ff_sws_init_swscale_x86(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -581,4 +591,21 @@ switch(c->dstBpc){ \
             break;
         }
     }
+
+#if ARCH_X86_64
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        switch (c->dstFormat) {
+        case AV_PIX_FMT_NV12:
+        case AV_PIX_FMT_NV24:
+            c->yuv2nv12cX = ff_yuv2nv12cX_avx2;
+            break;
+        case AV_PIX_FMT_NV21:
+        case AV_PIX_FMT_NV42:
+            c->yuv2nv12cX = ff_yuv2nv21cX_avx2;
+            break;
+        default:
+            break;
+        }
+    }
+#endif
 }

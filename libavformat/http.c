@@ -27,6 +27,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/parseutils.h"
@@ -45,7 +46,7 @@
 /* The IO buffer size is unrelated to the max URL size in itself, but needs
  * to be large enough to fit the full request headers (including long
  * path names). */
-#define BUFFER_SIZE   MAX_URL_SIZE
+#define BUFFER_SIZE   (MAX_URL_SIZE + HTTP_HEADERS_SIZE)
 #define MAX_REDIRECTS 8
 #define HTTP_SINGLE   1
 #define HTTP_MUTLI    2
@@ -190,9 +191,10 @@ void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 {
     const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
+    char *hashmark;
     char hostname[1024], hoststr[1024], proto[10];
     char auth[1024], proxyauth[1024] = "";
-    char path1[MAX_URL_SIZE];
+    char path1[MAX_URL_SIZE], sanitized_path[MAX_URL_SIZE];
     char buf[1024], urlbuf[MAX_URL_SIZE];
     int port, use_proxy, err, location_changed = 0;
     HTTPContext *s = h->priv_data;
@@ -215,10 +217,18 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     if (port < 0)
         port = 80;
 
-    if (path1[0] == '\0')
+    hashmark = strchr(path1, '#');
+    if (hashmark)
+        *hashmark = '\0';
+
+    if (path1[0] == '\0') {
         path = "/";
-    else
+    } else if (path1[0] == '?') {
+        snprintf(sanitized_path, sizeof(sanitized_path), "/%s", path1);
+        path = sanitized_path;
+    } else {
         path = path1;
+    }
     local_path = path;
     if (use_proxy) {
         /* Reassemble the request URL without auth string - we don't
@@ -304,8 +314,27 @@ fail:
         return location_changed;
     return ff_http_averror(s->http_code, AVERROR(EIO));
 }
+int ff_http_get_shutdown_status(URLContext *h)
+{
+    int ret = 0;
+    HTTPContext *s = h->priv_data;
 
-int ff_http_do_new_request(URLContext *h, const char *uri)
+    /* flush the receive buffer when it is write only mode */
+    char buf[1024];
+    int read_ret;
+    read_ret = ffurl_read(s->hd, buf, sizeof(buf));
+    if (read_ret < 0) {
+        ret = read_ret;
+    }
+
+    return ret;
+}
+
+int ff_http_do_new_request(URLContext *h, const char *uri) {
+    return ff_http_do_new_request2(h, uri, NULL);
+}
+
+int ff_http_do_new_request2(URLContext *h, const char *uri, AVDictionary **opts)
 {
     HTTPContext *s = h->priv_data;
     AVDictionary *options = NULL;
@@ -349,6 +378,9 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     s->location = av_strdup(uri);
     if (!s->location)
         return AVERROR(ENOMEM);
+
+    if ((ret = av_opt_set_dict(s, opts)) < 0)
+        return ret;
 
     av_log(s, AV_LOG_INFO, "Opening \'%s\' for %s\n", uri, h->flags & AVIO_FLAG_WRITE ? "writing" : "reading");
     ret = http_open_cnx(h, &options);
@@ -754,6 +786,7 @@ static int parse_set_cookie_expiry_time(const char *exp_str, struct tm *buf)
 static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
 {
     char *param, *next_param, *cstr, *back;
+    char *saveptr = NULL;
 
     if (!set_cookie[0])
         return 0;
@@ -771,8 +804,9 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
     }
 
     next_param = cstr;
-    while ((param = av_strtok(next_param, ";", &next_param))) {
+    while ((param = av_strtok(next_param, ";", &saveptr))) {
         char *name, *value;
+        next_param = NULL;
         param += strspn(param, WHITESPACES);
         if ((name = av_strtok(param, "=", &value))) {
             if (av_dict_set(dict, name, value, 0) < 0) {
@@ -1032,6 +1066,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     // Set-Cookie fields will result in multiple values delimited by a newline
     int ret = 0;
     char *cookie, *set_cookies, *next;
+    char *saveptr = NULL;
 
     // destroy any cookies in the dictionary.
     av_dict_free(&s->cookie_dict);
@@ -1044,10 +1079,11 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         return AVERROR(ENOMEM);
 
     *cookies = NULL;
-    while ((cookie = av_strtok(next, "\n", &next)) && !ret) {
+    while ((cookie = av_strtok(next, "\n", &saveptr)) && !ret) {
         AVDictionary *cookie_params = NULL;
         AVDictionaryEntry *cookie_entry, *e;
 
+        next = NULL;
         // store the cookie in a dict in case it is updated in the response
         if (parse_cookie(s, cookie, &s->cookie_dict))
             av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
@@ -1147,19 +1183,50 @@ static int http_read_header(URLContext *h, int *new_location)
     return err;
 }
 
+/**
+ * Escape unsafe characters in path in order to pass them safely to the HTTP
+ * request. Insipred by the algorithm in GNU wget:
+ * - escape "%" characters not followed by two hex digits
+ * - escape all "unsafe" characters except which are also "reserved"
+ * - pass through everything else
+ */
+static void bprint_escaped_path(AVBPrint *bp, const char *path)
+{
+#define NEEDS_ESCAPE(ch) \
+    ((ch) <= ' ' || (ch) >= '\x7f' || \
+     (ch) == '"' || (ch) == '%' || (ch) == '<' || (ch) == '>' || (ch) == '\\' || \
+     (ch) == '^' || (ch) == '`' || (ch) == '{' || (ch) == '}' || (ch) == '|')
+    while (*path) {
+        char buf[1024];
+        char *q = buf;
+        while (*path && q - buf < sizeof(buf) - 4) {
+            if (path[0] == '%' && av_isxdigit(path[1]) && av_isxdigit(path[2])) {
+                *q++ = *path++;
+                *q++ = *path++;
+                *q++ = *path++;
+            } else if (NEEDS_ESCAPE(*path)) {
+                q += snprintf(q, 4, "%%%02X", (uint8_t)*path++);
+            } else {
+                *q++ = *path++;
+            }
+        }
+        av_bprint_append_data(bp, buf, q - buf);
+    }
+}
+
 static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth, int *new_location)
 {
     HTTPContext *s = h->priv_data;
     int post, err;
-    char headers[HTTP_HEADERS_SIZE] = "";
+    AVBPrint request;
     char *authstr = NULL, *proxyauthstr = NULL;
     uint64_t off = s->off;
-    int len = 0;
     const char *method;
     int send_expect_100 = 0;
-    int ret;
+
+    av_bprint_init_for_buffer(&request, s->buffer, sizeof(s->buffer));
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
@@ -1202,95 +1269,74 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
         s->user_agent = av_strdup(s->user_agent_deprecated);
     }
 #endif
+
+    av_bprintf(&request, "%s ", method);
+    bprint_escaped_path(&request, path);
+    av_bprintf(&request, " HTTP/1.1\r\n");
+
+    if (post && s->chunked_post)
+        av_bprintf(&request, "Transfer-Encoding: chunked\r\n");
     /* set default headers if needed */
     if (!has_header(s->headers, "\r\nUser-Agent: "))
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "User-Agent: %s\r\n", s->user_agent);
+        av_bprintf(&request, "User-Agent: %s\r\n", s->user_agent);
     if (s->referer) {
         /* set default headers if needed */
         if (!has_header(s->headers, "\r\nReferer: "))
-            len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "Referer: %s\r\n", s->referer);
+            av_bprintf(&request, "Referer: %s\r\n", s->referer);
     }
     if (!has_header(s->headers, "\r\nAccept: "))
-        len += av_strlcpy(headers + len, "Accept: */*\r\n",
-                          sizeof(headers) - len);
+        av_bprintf(&request, "Accept: */*\r\n");
     // Note: we send this on purpose even when s->off is 0 when we're probing,
     // since it allows us to detect more reliably if a (non-conforming)
     // server supports seeking by analysing the reply headers.
     if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable == -1)) {
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Range: bytes=%"PRIu64"-", s->off);
+        av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
         if (s->end_off)
-            len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "%"PRId64, s->end_off - 1);
-        len += av_strlcpy(headers + len, "\r\n",
-                          sizeof(headers) - len);
+            av_bprintf(&request, "%"PRId64, s->end_off - 1);
+        av_bprintf(&request, "\r\n");
     }
     if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Expect: 100-continue\r\n");
+        av_bprintf(&request, "Expect: 100-continue\r\n");
 
-    if (!has_header(s->headers, "\r\nConnection: ")) {
-        if (s->multiple_requests)
-            len += av_strlcpy(headers + len, "Connection: keep-alive\r\n",
-                              sizeof(headers) - len);
-        else
-            len += av_strlcpy(headers + len, "Connection: close\r\n",
-                              sizeof(headers) - len);
-    }
+    if (!has_header(s->headers, "\r\nConnection: "))
+        av_bprintf(&request, "Connection: %s\r\n", s->multiple_requests ? "keep-alive" : "close");
 
     if (!has_header(s->headers, "\r\nHost: "))
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Host: %s\r\n", hoststr);
+        av_bprintf(&request, "Host: %s\r\n", hoststr);
     if (!has_header(s->headers, "\r\nContent-Length: ") && s->post_data)
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Content-Length: %d\r\n", s->post_datalen);
+        av_bprintf(&request, "Content-Length: %d\r\n", s->post_datalen);
 
     if (!has_header(s->headers, "\r\nContent-Type: ") && s->content_type)
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Content-Type: %s\r\n", s->content_type);
+        av_bprintf(&request, "Content-Type: %s\r\n", s->content_type);
     if (!has_header(s->headers, "\r\nCookie: ") && s->cookies) {
         char *cookies = NULL;
         if (!get_cookies(s, &cookies, path, hoststr) && cookies) {
-            len += av_strlcatf(headers + len, sizeof(headers) - len,
-                               "Cookie: %s\r\n", cookies);
+            av_bprintf(&request, "Cookie: %s\r\n", cookies);
             av_free(cookies);
         }
     }
     if (!has_header(s->headers, "\r\nIcy-MetaData: ") && s->icy)
-        len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Icy-MetaData: %d\r\n", 1);
+        av_bprintf(&request, "Icy-MetaData: 1\r\n");
 
     /* now add in custom headers */
     if (s->headers)
-        av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
+        av_bprintf(&request, "%s", s->headers);
 
-    ret = snprintf(s->buffer, sizeof(s->buffer),
-             "%s %s HTTP/1.1\r\n"
-             "%s"
-             "%s"
-             "%s"
-             "%s%s"
-             "\r\n",
-             method,
-             path,
-             post && s->chunked_post ? "Transfer-Encoding: chunked\r\n" : "",
-             headers,
-             authstr ? authstr : "",
-             proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
+    if (authstr)
+        av_bprintf(&request, "%s", authstr);
+    if (proxyauthstr)
+        av_bprintf(&request, "Proxy-%s", proxyauthstr);
+    av_bprintf(&request, "\r\n");
 
-    av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+    av_log(h, AV_LOG_DEBUG, "request: %s\n", request.str);
 
-    if (strlen(headers) + 1 == sizeof(headers) ||
-        ret >= sizeof(s->buffer)) {
+    if (!av_bprint_is_complete(&request)) {
         av_log(h, AV_LOG_ERROR, "overlong headers\n");
         err = AVERROR(EINVAL);
         goto done;
     }
 
-
-    if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
+    if ((err = ffurl_write(s->hd, request.str, request.len)) < 0)
         goto done;
 
     if (s->post_data)
@@ -1769,7 +1815,7 @@ const URLProtocol ff_http_protocol = {
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
-    .default_whitelist   = "http,https,tls,rtp,tcp,udp,crypto,httpproxy"
+    .default_whitelist   = "http,https,tls,rtp,tcp,udp,crypto,httpproxy,data"
 };
 #endif /* CONFIG_HTTP_PROTOCOL */
 

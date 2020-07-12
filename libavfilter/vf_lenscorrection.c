@@ -36,8 +36,8 @@
 
 typedef struct LenscorrectionCtx {
     const AVClass *av_class;
-    unsigned int width;
-    unsigned int height;
+    int width;
+    int height;
     int hsub, vsub;
     int nb_planes;
     double cx, cy, k1, k2;
@@ -65,7 +65,7 @@ typedef struct ThreadData {
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 {
-    ThreadData *td = (ThreadData*)arg;
+    ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
 
@@ -155,10 +155,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < rect->nb_planes; ++plane) {
         int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
-        int hdiv = 1 << hsub;
-        int vdiv = 1 << vsub;
-        int w = rect->width / hdiv;
-        int h = rect->height / vdiv;
+        int w = AV_CEIL_RSHIFT(rect->width, hsub);
+        int h = AV_CEIL_RSHIFT(rect->height, vsub);
         int xcenter = rect->cx * w;
         int ycenter = rect->cy * h;
         int k1 = rect->k1 * (1<<24);

@@ -199,6 +199,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     uint32_t size;
     int offset = 0;
 
+    if (avpkt->size < 2)
+        return AVERROR_INVALIDDATA;
+
     bytestream2_init(&c->stream, avpkt->data, avpkt->size);
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)

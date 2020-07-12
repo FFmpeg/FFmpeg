@@ -1,0 +1,53 @@
+3c721898cf2cf3e2e6c43ad58952bd2d *tests/data/fate/matroska-flac-extradata-update.matroska
+2032 tests/data/fate/matroska-flac-extradata-update.matroska
+#extradata 0:       34, 0x7acb09e7
+#extradata 1:       34, 0x7acb09e7
+#extradata 2:       34, 0x443402dd
+#tb 0: 1/1000
+#media_type 0: audio
+#codec_id 0: flac
+#sample_rate 0: 48000
+#channel_layout 0: 3f
+#channel_layout_name 0: 5.1
+#tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: flac
+#sample_rate 1: 48000
+#channel_layout 1: 60f
+#channel_layout_name 1: 5.1(side)
+#tb 2: 1/1000
+#media_type 2: audio
+#codec_id 2: flac
+#sample_rate 2: 48000
+#channel_layout 2: 3f
+#channel_layout_name 2: 5.1
+0,          0,          0,       96,       26, 0x4e160341
+1,          0,          0,       96,       26, 0x4e160341
+2,          0,          0,       96,       26, 0x4e160341
+0,         96,         96,       96,       26, 0x4e17035c
+1,         96,         96,       96,       26, 0x4e17035c
+2,         96,         96,       96,       26, 0x4e17035c
+0,        192,        192,       96,       26, 0x4de40383
+1,        192,        192,       96,       26, 0x4de40383
+2,        192,        192,       96,       26, 0x4de40383
+0,        288,        288,       96,       26, 0x4e3903a2
+1,        288,        288,       96,       26, 0x4e3903a2
+2,        288,        288,       96,       26, 0x4e3903a2
+0,        384,        384,       96,       26, 0x4f9a03d5
+1,        384,        384,       96,       26, 0x4f9a03d5
+2,        384,        384,       96,       26, 0x4f9a03d5
+0,        480,        480,       96,       26, 0x501303e0
+1,        480,        480,       96,       26, 0x501303e0
+2,        480,        480,       96,       26, 0x501303e0
+0,        576,        576,       96,       26, 0x5160042f
+1,        576,        576,       96,       26, 0x5160042f
+2,        576,        576,       96,       26, 0x5160042f
+0,        672,        672,       96,       26, 0x50dd042e
+1,        672,        672,       96,       26, 0x50dd042e
+2,        672,        672,       96,       26, 0x50dd042e
+0,        768,        768,       96,       26, 0x53de0499
+1,        768,        768,       96,       26, 0x53de0499
+0,        864,        864,       96,       26, 0x53df04b4
+1,        864,        864,       96,       26, 0x53df04b4
+0,        960,        960,       42,       26, 0x5740044b
+1,        960,        960,       42,       26, 0x5740044b

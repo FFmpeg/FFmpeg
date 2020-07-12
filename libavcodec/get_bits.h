@@ -234,9 +234,9 @@ static inline void refill_32(GetBitContext *s, int is_le)
 #endif
 
     if (is_le)
-    s->cache       = (uint64_t)AV_RL32(s->buffer + (s->index >> 3)) << s->bits_left | s->cache;
+        s->cache = (uint64_t)AV_RL32(s->buffer + (s->index >> 3)) << s->bits_left | s->cache;
     else
-    s->cache       = s->cache | (uint64_t)AV_RB32(s->buffer + (s->index >> 3)) << (32 - s->bits_left);
+        s->cache = s->cache | (uint64_t)AV_RB32(s->buffer + (s->index >> 3)) << (32 - s->bits_left);
     s->index     += 32;
     s->bits_left += 32;
 }
@@ -249,9 +249,9 @@ static inline void refill_64(GetBitContext *s, int is_le)
 #endif
 
     if (is_le)
-    s->cache = AV_RL64(s->buffer + (s->index >> 3));
+        s->cache = AV_RL64(s->buffer + (s->index >> 3));
     else
-    s->cache = AV_RB64(s->buffer + (s->index >> 3));
+        s->cache = AV_RB64(s->buffer + (s->index >> 3));
     s->index += 64;
     s->bits_left = 64;
 }

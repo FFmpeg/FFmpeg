@@ -25,8 +25,9 @@
 #include "avformat.h"
 #include "avio.h"
 #include "avc.h"
+#include "avio_internal.h"
 
-static const uint8_t *ff_avc_find_startcode_internal(const uint8_t *p, const uint8_t *end)
+static const uint8_t *avc_find_startcode_internal(const uint8_t *p, const uint8_t *end)
 {
     const uint8_t *a = p + 4 - ((intptr_t)p & 3);
 
@@ -64,7 +65,7 @@ static const uint8_t *ff_avc_find_startcode_internal(const uint8_t *p, const uin
 }
 
 const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end){
-    const uint8_t *out= ff_avc_find_startcode_internal(p, end);
+    const uint8_t *out = avc_find_startcode_internal(p, end);
     if(p<out && out<end && !out[-1]) out--;
     return out;
 }
@@ -100,18 +101,17 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 
     ff_avc_parse_nal_units(pb, buf_in, *size);
 
-    av_freep(buf);
     *size = avio_close_dyn_buf(pb, buf);
     return 0;
 }
 
 int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
-    AVIOContext *sps_pb = NULL, *pps_pb = NULL;
-    uint8_t *buf = NULL, *end, *start = NULL;
-    uint8_t *sps = NULL, *pps = NULL;
-    uint32_t sps_size = 0, pps_size = 0;
-    int ret, nb_sps = 0, nb_pps = 0;
+    AVIOContext *sps_pb = NULL, *pps_pb = NULL, *sps_ext_pb = NULL;
+    uint8_t *buf, *end, *start;
+    uint8_t *sps, *pps, *sps_ext;
+    uint32_t sps_size = 0, pps_size = 0, sps_ext_size = 0;
+    int ret, nb_sps = 0, nb_pps = 0, nb_sps_ext = 0;
 
     if (len <= 6)
         return AVERROR_INVALIDDATA;
@@ -133,6 +133,9 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     if (ret < 0)
         goto fail;
     ret = avio_open_dyn_buf(&pps_pb);
+    if (ret < 0)
+        goto fail;
+    ret = avio_open_dyn_buf(&sps_ext_pb);
     if (ret < 0)
         goto fail;
 
@@ -160,12 +163,21 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
             }
             avio_wb16(pps_pb, size);
             avio_write(pps_pb, buf, size);
+        } else if (nal_type == 13) { /* SPS_EXT */
+            nb_sps_ext++;
+            if (size > UINT16_MAX || nb_sps_ext >= 256) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            avio_wb16(sps_ext_pb, size);
+            avio_write(sps_ext_pb, buf, size);
         }
 
         buf += size;
     }
-    sps_size = avio_close_dyn_buf(sps_pb, &sps);
-    pps_size = avio_close_dyn_buf(pps_pb, &pps);
+    sps_size = avio_get_dyn_buf(sps_pb, &sps);
+    pps_size = avio_get_dyn_buf(pps_pb, &pps);
+    sps_ext_size = avio_get_dyn_buf(sps_ext_pb, &sps_ext);
 
     if (sps_size < 6 || !pps_size) {
         ret = AVERROR_INVALIDDATA;
@@ -183,13 +195,24 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     avio_w8(pb, nb_pps); /* number of pps */
     avio_write(pb, pps, pps_size);
 
+    if (sps[3] != 66 && sps[3] != 77 && sps[3] != 88) {
+        H264SPS seq;
+        ret = ff_avc_decode_sps(&seq, sps + 3, sps_size - 3);
+        if (ret < 0)
+            goto fail;
+
+        avio_w8(pb, 0xfc |  seq.chroma_format_idc); /* 6 bits reserved (111111) + chroma_format_idc */
+        avio_w8(pb, 0xf8 | (seq.bit_depth_luma - 8)); /* 5 bits reserved (11111) + bit_depth_luma_minus8 */
+        avio_w8(pb, 0xf8 | (seq.bit_depth_chroma - 8)); /* 5 bits reserved (11111) + bit_depth_chroma_minus8 */
+        avio_w8(pb, nb_sps_ext); /* number of sps ext */
+        if (nb_sps_ext)
+            avio_write(pb, sps_ext, sps_ext_size);
+    }
+
 fail:
-    if (!sps)
-        avio_close_dyn_buf(sps_pb, &sps);
-    if (!pps)
-        avio_close_dyn_buf(pps_pb, &pps);
-    av_free(sps);
-    av_free(pps);
+    ffio_free_dyn_buf(&sps_pb);
+    ffio_free_dyn_buf(&pps_pb);
+    ffio_free_dyn_buf(&sps_ext_pb);
     av_free(start);
 
     return ret;
@@ -308,27 +331,24 @@ static inline int get_se_golomb(GetBitContext *gb) {
     return ((v >> 1) ^ sign) - sign;
 }
 
-H264SequenceParameterSet *ff_avc_decode_sps(const uint8_t *buf, int buf_size)
+int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
 {
     int i, j, ret, rbsp_size, aspect_ratio_idc, pic_order_cnt_type;
     int num_ref_frames_in_pic_order_cnt_cycle;
     int delta_scale, lastScale = 8, nextScale = 8;
     int sizeOfScalingList;
-    H264SequenceParameterSet *sps = NULL;
     GetBitContext gb;
     uint8_t *rbsp_buf;
 
     rbsp_buf = ff_nal_unit_extract_rbsp(buf, buf_size, &rbsp_size, 0);
     if (!rbsp_buf)
-        return NULL;
+        return AVERROR(ENOMEM);
 
     ret = init_get_bits8(&gb, rbsp_buf, rbsp_size);
     if (ret < 0)
         goto end;
 
-    sps = av_mallocz(sizeof(*sps));
-    if (!sps)
-        goto end;
+    memset(sps, 0, sizeof(*sps));
 
     sps->profile_idc = get_bits(&gb, 8);
     sps->constraint_set_flags |= get_bits1(&gb) << 0; // constraint_set0_flag
@@ -351,7 +371,7 @@ H264SequenceParameterSet *ff_avc_decode_sps(const uint8_t *buf, int buf_size)
             skip_bits1(&gb); // separate_colour_plane_flag
         }
         sps->bit_depth_luma = get_ue_golomb(&gb) + 8;
-        get_ue_golomb(&gb); // bit_depth_chroma_minus8
+        sps->bit_depth_chroma = get_ue_golomb(&gb) + 8;
         skip_bits1(&gb); // qpprime_y_zero_transform_bypass_flag
         if (get_bits1(&gb)) { // seq_scaling_matrix_present_flag
             for (i = 0; i < ((sps->chroma_format_idc != 3) ? 8 : 12); i++) {
@@ -372,6 +392,7 @@ H264SequenceParameterSet *ff_avc_decode_sps(const uint8_t *buf, int buf_size)
     } else {
         sps->chroma_format_idc = 1;
         sps->bit_depth_luma = 8;
+        sps->bit_depth_chroma = 8;
     }
 
     get_ue_golomb(&gb); // log2_max_frame_num_minus4
@@ -423,7 +444,8 @@ H264SequenceParameterSet *ff_avc_decode_sps(const uint8_t *buf, int buf_size)
         sps->sar.den = 1;
     }
 
+    ret = 0;
  end:
     av_free(rbsp_buf);
-    return sps;
+    return ret;
 }

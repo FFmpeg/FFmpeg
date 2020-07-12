@@ -187,7 +187,7 @@ static inline void calc_precision(ATRAC9Context *s, ATRAC9BlockData *b,
     for (int i = 0; i < b->q_unit_cnt; i++) {
         c->precision_fine[i] = 0;
         if (c->precision_coarse[i] > 15) {
-            c->precision_fine[i] = c->precision_coarse[i] - 15;
+            c->precision_fine[i] = FFMIN(c->precision_coarse[i], 30) - 15;
             c->precision_coarse[i] = 15;
         }
     }
@@ -199,7 +199,7 @@ static inline int parse_band_ext(ATRAC9Context *s, ATRAC9BlockData *b,
     int ext_band = 0;
 
     if (b->has_band_ext) {
-        if (b->q_unit_cnt < 13)
+        if (b->q_unit_cnt < 13 || b->q_unit_cnt > 20)
             return AVERROR_INVALIDDATA;
         ext_band = at9_tab_band_ext_group[b->q_unit_cnt - 13][2];
         if (stereo) {
@@ -223,8 +223,18 @@ static inline int parse_band_ext(ATRAC9Context *s, ATRAC9BlockData *b,
     b->channel[0].band_ext = get_bits(gb, 2);
     b->channel[0].band_ext = ext_band > 2 ? b->channel[0].band_ext : 4;
 
-    if (!get_bits(gb, 5))
+    if (!get_bits(gb, 5)) {
+        for (int i = 0; i <= stereo; i++) {
+            ATRAC9ChannelData *c = &b->channel[i];
+            const int count = at9_tab_band_ext_cnt[c->band_ext][ext_band];
+            for (int j = 0; j < count; j++) {
+                int len = at9_tab_band_ext_lengths[c->band_ext][ext_band][j];
+                c->band_ext_data[j] = av_clip_uintp2_c(c->band_ext_data[j], len);
+            }
+        }
+
         return 0;
+    }
 
     for (int i = 0; i <= stereo; i++) {
         ATRAC9ChannelData *c = &b->channel[i];
@@ -839,6 +849,11 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
 
     av_lfg_init(&s->lfg, 0xFBADF00D);
 
+    if (avctx->block_align <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid block align\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (avctx->extradata_size != 12) {
         av_log(avctx, AV_LOG_ERROR, "Invalid extradata length!\n");
         return AVERROR_INVALIDDATA;
@@ -868,6 +883,7 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     s->block_config = &at9_block_layout[block_config_idx];
 
     avctx->channel_layout = s->block_config->channel_layout;
+    avctx->channels       = av_get_channel_layout_nb_channels(avctx->channel_layout);
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
 
     if (get_bits1(&gb)) {

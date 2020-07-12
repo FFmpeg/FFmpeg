@@ -53,6 +53,13 @@ static const AVClass framesync_class = {
     .parent_log_context_offset = OFFSET(parent),
 };
 
+const AVClass *ff_framesync_child_class_iterate(void **iter)
+{
+    const AVClass *c = *iter ? NULL : &framesync_class;
+    *iter = (void *)(uintptr_t)c;
+    return c;
+}
+
 enum {
     STATE_BOF,
     STATE_RUN,
@@ -117,7 +124,6 @@ static void framesync_sync_level_update(FFFrameSync *fs)
 int ff_framesync_configure(FFFrameSync *fs)
 {
     unsigned i;
-    int64_t gcd, lcm;
 
     if (!fs->opt_repeatlast || fs->opt_eof_action == EOF_ACTION_PASS) {
         fs->opt_repeatlast = 0;
@@ -142,17 +148,8 @@ int ff_framesync_configure(FFFrameSync *fs)
         for (i = 0; i < fs->nb_in; i++) {
             if (fs->in[i].sync) {
                 if (fs->time_base.num) {
-                    gcd = av_gcd(fs->time_base.den, fs->in[i].time_base.den);
-                    lcm = (fs->time_base.den / gcd) * fs->in[i].time_base.den;
-                    if (lcm < AV_TIME_BASE / 2) {
-                        fs->time_base.den = lcm;
-                        fs->time_base.num = av_gcd(fs->time_base.num,
-                                                   fs->in[i].time_base.num);
-                    } else {
-                        fs->time_base.num = 1;
-                        fs->time_base.den = AV_TIME_BASE;
-                        break;
-                    }
+                    fs->time_base = av_gcd_q(fs->time_base, fs->in[i].time_base,
+                                             AV_TIME_BASE / 2, AV_TIME_BASE_Q);
                 } else {
                     fs->time_base = fs->in[i].time_base;
                 }

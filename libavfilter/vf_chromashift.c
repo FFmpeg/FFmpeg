@@ -28,7 +28,6 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "framesync.h"
 #include "video.h"
 
 typedef struct ChromaShiftContext {
@@ -63,6 +62,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV440P10,
         AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
         AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
@@ -400,17 +400,29 @@ static int config_input(AVFilterLink *inlink)
     return av_image_fill_linesizes(s->linesize, inlink->format, inlink->w);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
+}
+
 #define OFFSET(x) offsetof(ChromaShiftContext, x)
-#define VF AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define VFR AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption chromashift_options[] = {
-    { "cbh", "shift chroma-blue horizontally", OFFSET(cbh),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "cbv", "shift chroma-blue vertically",   OFFSET(cbv),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "crh", "shift chroma-red horizontally",  OFFSET(crh),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "crv", "shift chroma-red vertically",    OFFSET(crv),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "edge", "set edge operation",            OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VF, "edge" },
-    { "smear",                              0,            0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VF, "edge" },
-    { "wrap",                               0,            0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VF, "edge" },
+    { "cbh", "shift chroma-blue horizontally", OFFSET(cbh),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "cbv", "shift chroma-blue vertically",   OFFSET(cbv),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "crh", "shift chroma-red horizontally",  OFFSET(crh),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "crv", "shift chroma-red vertically",    OFFSET(crv),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "edge", "set edge operation",            OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VFR, "edge" },
+    { "smear",                              0,            0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VFR, "edge" },
+    { "wrap",                               0,            0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VFR, "edge" },
     { NULL },
 };
 
@@ -443,20 +455,21 @@ AVFilter ff_vf_chromashift = {
     .outputs       = outputs,
     .inputs        = inputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 static const AVOption rgbashift_options[] = {
-    { "rh", "shift red horizontally",   OFFSET(rh),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "rv", "shift red vertically",     OFFSET(rv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "gh", "shift green horizontally", OFFSET(gh),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "gv", "shift green vertically",   OFFSET(gv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "bh", "shift blue horizontally",  OFFSET(bh),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "bv", "shift blue vertically",    OFFSET(bv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "ah", "shift alpha horizontally", OFFSET(ah),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "av", "shift alpha vertically",   OFFSET(av),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VF },
-    { "edge", "set edge operation",     OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VF, "edge" },
-    { "smear",                          0,         0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VF, "edge" },
-    { "wrap",                           0,         0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VF, "edge" },
+    { "rh", "shift red horizontally",   OFFSET(rh),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "rv", "shift red vertically",     OFFSET(rv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "gh", "shift green horizontally", OFFSET(gh),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "gv", "shift green vertically",   OFFSET(gv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "bh", "shift blue horizontally",  OFFSET(bh),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "bv", "shift blue vertically",    OFFSET(bv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "ah", "shift alpha horizontally", OFFSET(ah),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "av", "shift alpha vertically",   OFFSET(av),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
+    { "edge", "set edge operation",     OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VFR, "edge" },
+    { "smear",                          0,         0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VFR, "edge" },
+    { "wrap",                           0,         0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VFR, "edge" },
     { NULL },
 };
 
@@ -471,4 +484,5 @@ AVFilter ff_vf_rgbashift = {
     .outputs       = outputs,
     .inputs        = inputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };

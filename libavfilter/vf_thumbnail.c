@@ -162,7 +162,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
     ThumbContext *s = ctx->priv;
-    for (i = 0; i < s->n_frames && s->frames[i].buf; i++)
+    for (i = 0; i < s->n_frames && s->frames && s->frames[i].buf; i++)
         av_frame_free(&s->frames[i].buf);
     av_freep(&s->frames);
 }
@@ -234,4 +234,5 @@ AVFilter ff_vf_thumbnail = {
     .inputs        = thumbnail_inputs,
     .outputs       = thumbnail_outputs,
     .priv_class    = &thumbnail_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

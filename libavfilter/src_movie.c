@@ -89,8 +89,8 @@ static const AVOption movie_options[]= {
     { "si",           "set stream index",        OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX,                 FLAGS  },
     { "seek_point",   "set seekpoint (seconds)", OFFSET(seek_point_d), AV_OPT_TYPE_DOUBLE, { .dbl =  0 },  0, (INT64_MAX-1) / 1000000, FLAGS },
     { "sp",           "set seekpoint (seconds)", OFFSET(seek_point_d), AV_OPT_TYPE_DOUBLE, { .dbl =  0 },  0, (INT64_MAX-1) / 1000000, FLAGS },
-    { "streams",      "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, FLAGS },
-    { "s",            "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, FLAGS },
+    { "streams",      "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  0, 0, FLAGS },
+    { "s",            "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  0, 0, FLAGS },
     { "loop",         "set loop count",          OFFSET(loop_count),   AV_OPT_TYPE_INT,    {.i64 =  1},  0,        INT_MAX, FLAGS },
     { "discontinuity", "set discontinuity threshold", OFFSET(discontinuity_threshold), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX, FLAGS },
     { NULL },
@@ -153,14 +153,14 @@ static AVStream *find_stream(void *log, AVFormatContext *avf, const char *spec)
     return found;
 }
 
-static int open_stream(void *log, MovieStream *st)
+static int open_stream(AVFilterContext *ctx, MovieStream *st)
 {
     AVCodec *codec;
     int ret;
 
     codec = avcodec_find_decoder(st->st->codecpar->codec_id);
     if (!codec) {
-        av_log(log, AV_LOG_ERROR, "Failed to find any codec\n");
+        av_log(ctx, AV_LOG_ERROR, "Failed to find any codec\n");
         return AVERROR(EINVAL);
     }
 
@@ -173,9 +173,10 @@ static int open_stream(void *log, MovieStream *st)
         return ret;
 
     st->codec_ctx->refcounted_frames = 1;
+    st->codec_ctx->thread_count = ff_filter_get_nb_threads(ctx);
 
     if ((ret = avcodec_open2(st->codec_ctx, codec, NULL)) < 0) {
-        av_log(log, AV_LOG_ERROR, "Failed to open codec\n");
+        av_log(ctx, AV_LOG_ERROR, "Failed to open codec\n");
         return ret;
     }
 

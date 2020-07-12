@@ -66,8 +66,8 @@ static void FUNC(flac_decorrelate_ls_c)(uint8_t **out, int32_t **in,
     int i;
 
     for (i = 0; i < len; i++) {
-        int a = in[0][i];
-        int b = in[1][i];
+        unsigned a = in[0][i];
+        unsigned b = in[1][i];
         S(samples, 0, i) =  a      << shift;
         S(samples, 1, i) = (a - b) << shift;
     }
@@ -80,8 +80,8 @@ static void FUNC(flac_decorrelate_rs_c)(uint8_t **out, int32_t **in,
     int i;
 
     for (i = 0; i < len; i++) {
-        int a = in[0][i];
-        int b = in[1][i];
+        unsigned a = in[0][i];
+        unsigned b = in[1][i];
         S(samples, 0, i) = (a + b) << shift;
         S(samples, 1, i) =  b      << shift;
     }
@@ -94,7 +94,7 @@ static void FUNC(flac_decorrelate_ms_c)(uint8_t **out, int32_t **in,
     int i;
 
     for (i = 0; i < len; i++) {
-        int a = in[0][i];
+        unsigned a = in[0][i];
         int b = in[1][i];
         a -= b >> 1;
         S(samples, 0, i) = (a + b) << shift;

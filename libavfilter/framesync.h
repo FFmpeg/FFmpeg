@@ -297,6 +297,8 @@ int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
  */
 int ff_framesync_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
 
+const AVClass *ff_framesync_child_class_iterate(void **iter);
+
 #define FRAMESYNC_DEFINE_CLASS(name, context, field) \
 static int name##_framesync_preinit(AVFilterContext *ctx) { \
     context *s = ctx->priv; \
@@ -318,6 +320,7 @@ static const AVClass name##_class = { \
     .version          = LIBAVUTIL_VERSION_INT, \
     .category         = AV_CLASS_CATEGORY_FILTER, \
     .child_class_next = name##_child_class_next, \
+    .child_class_iterate = ff_framesync_child_class_iterate, \
     .child_next       = name##_child_next, \
 }
 

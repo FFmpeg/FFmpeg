@@ -1995,8 +1995,8 @@ static void common_hv_2ht_2vt_4x8_msa(uint8_t *src, int32_t src_stride,
     hz_out4 = HORIZ_2TAP_FILT_UH(src4, src5, mask, filt_hz, 7);
     hz_out6 = HORIZ_2TAP_FILT_UH(src6, src7, mask, filt_hz, 7);
     hz_out8 = HORIZ_2TAP_FILT_UH(src8, src8, mask, filt_hz, 7);
-    SLDI_B3_UH(hz_out2, hz_out4, hz_out6, hz_out0, hz_out2, hz_out4, hz_out1,
-               hz_out3, hz_out5, 8);
+    SLDI_B3_UH(hz_out2, hz_out0, hz_out4, hz_out2, hz_out6, hz_out4, 8, hz_out1,
+               hz_out3, hz_out5);
     hz_out7 = (v8u16) __msa_pckod_d((v2i64) hz_out8, (v2i64) hz_out6);
 
     ILVEV_B2_UB(hz_out0, hz_out1, hz_out2, hz_out3, vec0, vec1);

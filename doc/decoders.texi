@@ -57,7 +57,7 @@ You need to explicitly configure the build with @code{--enable-libdav1d}.
 
 @subsection Options
 
-The following option is supported by the libdav1d wrapper.
+The following options are supported by the libdav1d wrapper.
 
 @table @option
 
@@ -68,8 +68,15 @@ Set amount of frame threads to use during decoding. The default value is 0 (auto
 Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
 
 @item filmgrain
-Apply film grain to the decoded video if present in the bitstream. The default value
-is true.
+Apply film grain to the decoded video if present in the bitstream. Defaults to the
+internal default of the library.
+
+@item oppoint
+Select an operating point of a scalable AV1 bitstream (0 - 31). Defaults to the
+internal default of the library.
+
+@item alllayers
+Output all spatial layers of a scalable AV1 bitstream. The default value is false.
 
 @end table
 
@@ -280,7 +287,7 @@ palette is stored in the IFO file, and therefore not available when reading
 from dumped VOB files.
 
 The format for this option is a string containing 16 24-bits hexadecimal
-numbers (without 0x prefix) separated by comas, for example @code{0d00ee,
+numbers (without 0x prefix) separated by commas, for example @code{0d00ee,
 ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
 7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
 
@@ -309,6 +316,11 @@ List of teletext page numbers to decode. Pages that do not match the specified
 list are dropped. You may use the special @code{*} string to match all pages,
 or @code{subtitle} to match all subtitle pages.
 Default value is *.
+@item txt_default_region
+Set default character set used for decoding, a value between 0 and 87 (see
+ETS 300 706, Section 15, Table 32). Default value is -1, which does not
+override the libzvbi default. This option is needed for some legacy level 1.0
+transmissions which cannot signal the proper charset.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
 @item txt_format

@@ -55,7 +55,7 @@ static int av_log_level = AV_LOG_INFO;
 static int flags;
 
 #define NB_LEVELS 8
-#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
 #include <windows.h>
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] = 12,
@@ -120,50 +120,68 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
 #endif
 static int use_color = -1;
 
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
+static void win_console_puts(const char *str)
+{
+    const uint8_t *q = str;
+    uint16_t line[LINE_SZ];
+
+    while (*q) {
+        uint16_t *buf = line;
+        DWORD nb_chars = 0;
+        DWORD written;
+
+        while (*q && nb_chars < LINE_SZ - 1) {
+            uint32_t ch;
+            uint16_t tmp;
+
+            GET_UTF8(ch, *q ? *q++ : 0, ch = 0xfffd; goto continue_on_invalid;)
+continue_on_invalid:
+            PUT_UTF16(ch, tmp, *buf++ = tmp; nb_chars++;)
+        }
+
+        WriteConsoleW(con, line, nb_chars, &written, NULL);
+    }
+}
+#endif
+
 static void check_color_terminal(void)
 {
-#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
+    char *term = getenv("TERM");
+
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
     CONSOLE_SCREEN_BUFFER_INFO con_info;
+    DWORD dummy;
     con = GetStdHandle(STD_ERROR_HANDLE);
-    use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
-                !getenv("AV_LOG_FORCE_NOCOLOR");
-    if (use_color) {
+    if (con != INVALID_HANDLE_VALUE && !GetConsoleMode(con, &dummy))
+        con = INVALID_HANDLE_VALUE;
+    if (con != INVALID_HANDLE_VALUE) {
         GetConsoleScreenBufferInfo(con, &con_info);
         attr_orig  = con_info.wAttributes;
         background = attr_orig & 0xF0;
     }
-#elif HAVE_ISATTY
-    char *term = getenv("TERM");
-    use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
-                (getenv("TERM") && isatty(2) || getenv("AV_LOG_FORCE_COLOR"));
-    if (   getenv("AV_LOG_FORCE_256COLOR")
-        || (term && strstr(term, "256color")))
-        use_color *= 256;
-#else
-    use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
-               !getenv("AV_LOG_FORCE_NOCOLOR");
 #endif
+
+    if (getenv("AV_LOG_FORCE_NOCOLOR")) {
+        use_color = 0;
+    } else if (getenv("AV_LOG_FORCE_COLOR")) {
+        use_color = 1;
+    } else {
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
+        use_color = (con != INVALID_HANDLE_VALUE);
+#elif HAVE_ISATTY
+        use_color = (term && isatty(2));
+#else
+        use_color = 0;
+#endif
+    }
+
+    if (getenv("AV_LOG_FORCE_256COLOR") || term && strstr(term, "256color"))
+        use_color *= 256;
 }
 
-static void colored_fputs(int level, int tint, const char *str)
+static void ansi_fputs(int level, int tint, const char *str, int local_use_color)
 {
-    int local_use_color;
-    if (!*str)
-        return;
-
-    if (use_color < 0)
-        check_color_terminal();
-
-    if (level == AV_LOG_INFO/8) local_use_color = 0;
-    else                        local_use_color = use_color;
-
-#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
-    if (local_use_color)
-        SetConsoleTextAttribute(con, background | color[level]);
-    fputs(str, stderr);
-    if (local_use_color)
-        SetConsoleTextAttribute(con, attr_orig);
-#else
     if (local_use_color == 1) {
         fprintf(stderr,
                 "\033[%"PRIu32";3%"PRIu32"m%s\033[0m",
@@ -184,6 +202,32 @@ static void colored_fputs(int level, int tint, const char *str)
                 str);
     } else
         fputs(str, stderr);
+}
+
+static void colored_fputs(int level, int tint, const char *str)
+{
+    int local_use_color;
+    if (!*str)
+        return;
+
+    if (use_color < 0)
+        check_color_terminal();
+
+    if (level == AV_LOG_INFO/8) local_use_color = 0;
+    else                        local_use_color = use_color;
+
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
+    if (con != INVALID_HANDLE_VALUE) {
+        if (local_use_color)
+            SetConsoleTextAttribute(con, background | color[level]);
+        win_console_puts(str);
+        if (local_use_color)
+            SetConsoleTextAttribute(con, attr_orig);
+    } else {
+        ansi_fputs(level, tint, str, local_use_color);
+    }
+#else
+    ansi_fputs(level, tint, str, local_use_color);
 #endif
 
 }
@@ -226,6 +270,8 @@ static const char *get_level_str(int level)
         return "quiet";
     case AV_LOG_DEBUG:
         return "debug";
+    case AV_LOG_TRACE:
+        return "trace";
     case AV_LOG_VERBOSE:
         return "verbose";
     case AV_LOG_INFO:
@@ -360,19 +406,28 @@ static void (*av_log_callback)(void*, int, const char*, va_list) =
 
 void av_log(void* avcl, int level, const char *fmt, ...)
 {
-    AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     va_list vl;
     va_start(vl, fmt);
-    if (avc && avc->version >= (50 << 16 | 15 << 8 | 2) &&
-        avc->log_level_offset_offset && level >= AV_LOG_FATAL)
-        level += *(int *) (((uint8_t *) avcl) + avc->log_level_offset_offset);
     av_vlog(avcl, level, fmt, vl);
     va_end(vl);
 }
 
+void av_log_once(void* avcl, int initial_level, int subsequent_level, int *state, const char *fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    av_vlog(avcl, *state ? subsequent_level : initial_level, fmt, vl);
+    va_end(vl);
+    *state = 1;
+}
+
 void av_vlog(void* avcl, int level, const char *fmt, va_list vl)
 {
+    AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     void (*log_callback)(void*, int, const char*, va_list) = av_log_callback;
+    if (avc && avc->version >= (50 << 16 | 15 << 8 | 2) &&
+        avc->log_level_offset_offset && level >= AV_LOG_FATAL)
+        level += *(int *) (((uint8_t *) avcl) + avc->log_level_offset_offset);
     if (log_callback)
         log_callback(avcl, level, fmt, vl);
 }
@@ -412,7 +467,7 @@ static void missing_feature_sample(int sample, void *avc, const char *msg,
            "been implemented.\n");
     if (sample)
         av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-               "of this file to ftp://upload.ffmpeg.org/incoming/ "
+               "of this file to https://streams.videolan.org/upload/ "
                "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
 }
 

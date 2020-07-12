@@ -48,7 +48,7 @@ typedef struct TLSContext {
 #endif
 } TLSContext;
 
-#if HAVE_THREADS
+#if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
 #include <openssl/crypto.h>
 pthread_mutex_t *openssl_mutexes;
 static void openssl_lock(int mode, int type, const char *file, int line)
@@ -70,9 +70,16 @@ int ff_openssl_init(void)
 {
     ff_lock_avformat();
     if (!openssl_init) {
+        /* OpenSSL 1.0.2 or below, then you would use SSL_library_init. If you are
+         * using OpenSSL 1.1.0 or above, then the library will initialize
+         * itself automatically.
+         * https://wiki.openssl.org/index.php/Library_Initialization
+         */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         SSL_library_init();
         SSL_load_error_strings();
-#if HAVE_THREADS
+#endif
+#if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
         if (!CRYPTO_get_locking_callback()) {
             int i;
             openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
@@ -101,7 +108,7 @@ void ff_openssl_deinit(void)
     ff_lock_avformat();
     openssl_init--;
     if (!openssl_init) {
-#if HAVE_THREADS
+#if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
         if (CRYPTO_get_locking_callback() == openssl_lock) {
             int i;
             CRYPTO_set_locking_callback(NULL);
@@ -135,8 +142,7 @@ static int tls_close(URLContext *h)
     }
     if (c->ctx)
         SSL_CTX_free(c->ctx);
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
     if (c->url_bio_method)
         BIO_meth_free(c->url_bio_method);

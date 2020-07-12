@@ -88,7 +88,6 @@ typedef struct
     int64_t         first_pts;
     int64_t         first_audio_pts;
     pthread_mutex_t frame_lock;
-    pthread_cond_t  frame_wait_cond;
     id              avf_delegate;
     id              avf_audio_delegate;
 
@@ -98,7 +97,9 @@ typedef struct
     int             capture_cursor;
     int             capture_mouse_clicks;
     int             capture_raw_data;
+    int             drop_late_frames;
     int             video_is_muxed;
+    int             video_is_screen;
 
     int             list_devices;
     int             video_device_index;
@@ -129,6 +130,12 @@ typedef struct
     AVCaptureAudioDataOutput *audio_output;
     CMSampleBufferRef         current_frame;
     CMSampleBufferRef         current_audio_frame;
+
+    AVCaptureDevice          *observed_device;
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+    AVCaptureDeviceTransportControlsPlaybackMode observed_mode;
+#endif
+    int                      observed_quit;
 } AVFContext;
 
 static void lock_frames(AVFContext* ctx)
@@ -162,8 +169,56 @@ static void unlock_frames(AVFContext* ctx)
 {
     if (self = [super init]) {
         _context = context;
+
+        // start observing if a device is set for it
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+        if (_context->observed_device) {
+            NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
+            NSKeyValueObservingOptions options = NSKeyValueObservingOptionNew;
+
+            [_context->observed_device addObserver: self
+                                        forKeyPath: keyPath
+                                           options: options
+                                           context: _context];
+        }
+#endif
     }
     return self;
+}
+
+- (void)dealloc {
+    // stop observing if a device is set for it
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+    if (_context->observed_device) {
+        NSString *keyPath = NSStringFromSelector(@selector(transportControlsPlaybackMode));
+        [_context->observed_device removeObserver: self forKeyPath: keyPath];
+    }
+#endif
+    [super dealloc];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context {
+    if (context == _context) {
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+        AVCaptureDeviceTransportControlsPlaybackMode mode =
+            [change[NSKeyValueChangeNewKey] integerValue];
+
+        if (mode != _context->observed_mode) {
+            if (mode == AVCaptureDeviceTransportControlsNotPlayingMode) {
+                _context->observed_quit = 1;
+            }
+            _context->observed_mode = mode;
+        }
+#endif
+    } else {
+        [super observeValueForKeyPath: keyPath
+                             ofObject: object
+                               change: change
+                              context: context];
+    }
 }
 
 - (void)  captureOutput:(AVCaptureOutput *)captureOutput
@@ -177,8 +232,6 @@ static void unlock_frames(AVFContext* ctx)
     }
 
     _context->current_frame = (CMSampleBufferRef)CFRetain(videoFrame);
-
-    pthread_cond_signal(&_context->frame_wait_cond);
 
     unlock_frames(_context);
 
@@ -224,8 +277,6 @@ static void unlock_frames(AVFContext* ctx)
 
     _context->current_audio_frame = (CMSampleBufferRef)CFRetain(audioFrame);
 
-    pthread_cond_signal(&_context->frame_wait_cond);
-
     unlock_frames(_context);
 
     ++_context->audio_frames_captured;
@@ -252,7 +303,6 @@ static void destroy_context(AVFContext* ctx)
     av_freep(&ctx->audio_buffer);
 
     pthread_mutex_destroy(&ctx->frame_lock);
-    pthread_cond_destroy(&ctx->frame_wait_cond);
 
     if (ctx->current_frame) {
         CFRelease(ctx->current_frame);
@@ -496,7 +546,20 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
 
         [ctx->video_output setVideoSettings:capture_dict];
     }
-    [ctx->video_output setAlwaysDiscardsLateVideoFrames:YES];
+    [ctx->video_output setAlwaysDiscardsLateVideoFrames:ctx->drop_late_frames];
+
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+    // check for transport control support and set observer device if supported
+    if (!ctx->video_is_screen) {
+        int trans_ctrl = [video_device transportControlsSupported];
+        AVCaptureDeviceTransportControlsPlaybackMode trans_mode = [video_device transportControlsPlaybackMode];
+
+        if (trans_ctrl) {
+            ctx->observed_mode   = trans_mode;
+            ctx->observed_device = video_device;
+        }
+    }
+#endif
 
     ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
 
@@ -694,7 +757,6 @@ static int get_audio_config(AVFormatContext *s)
 static int avf_read_header(AVFormatContext *s)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    int capture_screen      = 0;
     uint32_t num_screens    = 0;
     AVFContext *ctx         = (AVFContext*)s->priv_data;
     AVCaptureDevice *video_device = nil;
@@ -708,7 +770,6 @@ static int avf_read_header(AVFormatContext *s)
     ctx->first_audio_pts    = av_gettime();
 
     pthread_mutex_init(&ctx->frame_lock, NULL);
-    pthread_cond_init(&ctx->frame_wait_cond, NULL);
 
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     CGGetActiveDisplayList(0, NULL, &num_screens);
@@ -792,7 +853,7 @@ static int avf_read_header(AVFormatContext *s)
             }
 
             video_device = (AVCaptureDevice*) capture_screen_input;
-            capture_screen = 1;
+            ctx->video_is_screen = 1;
 #endif
          } else {
             av_log(ctx, AV_LOG_ERROR, "Invalid device index\n");
@@ -829,7 +890,7 @@ static int avf_read_header(AVFormatContext *s)
                 AVCaptureScreenInput* capture_screen_input = [[[AVCaptureScreenInput alloc] initWithDisplayID:screens[idx]] autorelease];
                 video_device = (AVCaptureDevice*) capture_screen_input;
                 ctx->video_device_index = ctx->num_video_devices + idx;
-                capture_screen = 1;
+                ctx->video_is_screen = 1;
 
                 if (ctx->framerate.num > 0) {
                     capture_screen_input.minFrameDuration = CMTimeMake(ctx->framerate.den, ctx->framerate.num);
@@ -920,7 +981,7 @@ static int avf_read_header(AVFormatContext *s)
 
     /* Unlock device configuration only after the session is started so it
      * does not reset the capture formats */
-    if (!capture_screen) {
+    if (!ctx->video_is_screen) {
         [video_device unlockForConfiguration];
     }
 
@@ -1109,7 +1170,12 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ctx->current_audio_frame = nil;
         } else {
             pkt->data = NULL;
-            pthread_cond_wait(&ctx->frame_wait_cond, &ctx->frame_lock);
+            unlock_frames(ctx);
+            if (ctx->observed_quit) {
+                return AVERROR_EOF;
+            } else {
+                return AVERROR(EAGAIN);
+            }
         }
 
         unlock_frames(ctx);
@@ -1135,12 +1201,13 @@ static const AVOption options[] = {
     { "capture_cursor", "capture the screen cursor", offsetof(AVFContext, capture_cursor), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { "capture_mouse_clicks", "capture the screen mouse clicks", offsetof(AVFContext, capture_mouse_clicks), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { "capture_raw_data", "capture the raw data from device connection", offsetof(AVFContext, capture_raw_data), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { "drop_late_frames", "drop frames that are available later than expected", offsetof(AVFContext, drop_late_frames), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
 
     { NULL },
 };
 
 static const AVClass avf_class = {
-    .class_name = "AVFoundation input device",
+    .class_name = "AVFoundation indev",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

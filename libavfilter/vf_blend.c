@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
@@ -100,11 +101,11 @@ typedef struct ThreadData {
     { "subtract",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SUBTRACT},   0, 0, FLAGS, "mode" },\
     { "vividlight", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_VIVIDLIGHT}, 0, 0, FLAGS, "mode" },\
     { "xor",        "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_XOR},        0, 0, FLAGS, "mode" },\
-    { "c0_expr",  "set color component #0 expression", OFFSET(params[0].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },\
-    { "c1_expr",  "set color component #1 expression", OFFSET(params[1].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },\
-    { "c2_expr",  "set color component #2 expression", OFFSET(params[2].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },\
-    { "c3_expr",  "set color component #3 expression", OFFSET(params[3].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },\
-    { "all_expr", "set expression for all color components", OFFSET(all_expr), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },\
+    { "c0_expr",  "set color component #0 expression", OFFSET(params[0].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },\
+    { "c1_expr",  "set color component #1 expression", OFFSET(params[1].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },\
+    { "c2_expr",  "set color component #2 expression", OFFSET(params[2].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },\
+    { "c3_expr",  "set color component #3 expression", OFFSET(params[3].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },\
+    { "all_expr", "set expression for all color components", OFFSET(all_expr), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },\
     { "c0_opacity",  "set color component #0 opacity", OFFSET(params[0].opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS },\
     { "c1_opacity",  "set color component #1 opacity", OFFSET(params[1].opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS },\
     { "c2_opacity",  "set color component #2 opacity", OFFSET(params[2].opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS },\
@@ -137,6 +138,9 @@ COPY(bottom, 8)
 
 COPY(top, 16)
 COPY(bottom, 16)
+
+COPY(top, 32)
+COPY(bottom, 32)
 
 #undef COPY
 
@@ -184,6 +188,31 @@ static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
     }
 }
 
+static void blend_normal_32bit(const uint8_t *_top, ptrdiff_t top_linesize,
+                               const uint8_t *_bottom, ptrdiff_t bottom_linesize,
+                               uint8_t *_dst, ptrdiff_t dst_linesize,
+                               ptrdiff_t width, ptrdiff_t height,
+                               FilterParams *param, double *values, int starty)
+{
+    const float *top = (float*)_top;
+    const float *bottom = (float*)_bottom;
+    float *dst = (float*)_dst;
+    const double opacity = param->opacity;
+    int i, j;
+    dst_linesize /= 4;
+    top_linesize /= 4;
+    bottom_linesize /= 4;
+
+    for (i = 0; i < height; i++) {
+        for (j = 0; j < width; j++) {
+            dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
+        }
+        dst    += dst_linesize;
+        top    += top_linesize;
+        bottom += bottom_linesize;
+    }
+}
+
 #define DEFINE_BLEND8(name, expr)                                              \
 static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,         \
                                  const uint8_t *bottom, ptrdiff_t bottom_linesize,   \
@@ -219,6 +248,32 @@ static void blend_## name##_##depth##bit(const uint8_t *_top, ptrdiff_t top_line
     dst_linesize /= 2;                                                         \
     top_linesize /= 2;                                                         \
     bottom_linesize /= 2;                                                      \
+                                                                               \
+    for (i = 0; i < height; i++) {                                             \
+        for (j = 0; j < width; j++) {                                          \
+            dst[j] = top[j] + ((expr) - top[j]) * opacity;                     \
+        }                                                                      \
+        dst    += dst_linesize;                                                \
+        top    += top_linesize;                                                \
+        bottom += bottom_linesize;                                             \
+    }                                                                          \
+}
+
+#define DEFINE_BLEND32(name, expr, depth)                                            \
+static void blend_## name##_##depth##bit(const uint8_t *_top, ptrdiff_t top_linesize,\
+                                  const uint8_t *_bottom, ptrdiff_t bottom_linesize, \
+                                  uint8_t *_dst, ptrdiff_t dst_linesize,             \
+                                  ptrdiff_t width, ptrdiff_t height,                 \
+                                  FilterParams *param, double *values, int starty)   \
+{                                                                              \
+    const float *top = (const float*)_top;                                     \
+    const float *bottom = (const float*)_bottom;                               \
+    float *dst = (float*)_dst;                                                 \
+    double opacity = param->opacity;                                           \
+    int i, j;                                                                  \
+    dst_linesize /= 4;                                                         \
+    top_linesize /= 4;                                                         \
+    bottom_linesize /= 4;                                                      \
                                                                                \
     for (i = 0; i < height; i++) {                                             \
         for (j = 0; j < width; j++) {                                          \
@@ -443,6 +498,49 @@ DEFINE_BLEND16(xor,        A ^ B, 9)
 DEFINE_BLEND16(vividlight, (A < 256) ? BURN(2 * A, B) : DODGE(2 * (A - 256), B), 9)
 DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 256) ? B + 2 * A - 511 : B + 2 * (A - 256), 9), 9)
 
+#undef MULTIPLY
+#undef SCREEN
+#undef BURN
+#undef DODGE
+
+#define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / 1.0))
+#define SCREEN(x, a, b)   (1.0 - (x) * ((1.0 - (a)) * (1.0 - (b)) / 1.0))
+#define BURN(a, b)        (((a) <= 0.0) ? (a) : FFMAX(0.0, 1.0 - (1.0 - (b)) / (a)))
+#define DODGE(a, b)       (((a) >= 1.0) ? (a) : FFMIN(1.0, ((b) / (1.0 - (a)))))
+
+DEFINE_BLEND32(addition,   A + B, 32)
+DEFINE_BLEND32(grainmerge, A + B - 0.5, 32)
+DEFINE_BLEND32(average,    (A + B) / 2, 32)
+DEFINE_BLEND32(subtract,   A - B, 32)
+DEFINE_BLEND32(multiply,   A * B, 32)
+DEFINE_BLEND32(multiply128, (A - 0.5) * B / 0.125 + 0.5, 32)
+DEFINE_BLEND32(negation,   1.0 - FFABS(1.0 - A - B), 32)
+DEFINE_BLEND32(extremity,  FFABS(1.0 - A - B), 32)
+DEFINE_BLEND32(difference, FFABS(A - B), 32)
+DEFINE_BLEND32(grainextract, 0.5 + A - B, 32)
+DEFINE_BLEND32(screen,     SCREEN(1, A, B), 32)
+DEFINE_BLEND32(overlay,    (A < 0.5) ? MULTIPLY(2, A, B) : SCREEN(2, A, B), 32)
+DEFINE_BLEND32(hardlight,  (B < 0.5) ? MULTIPLY(2, B, A) : SCREEN(2, B, A), 32)
+DEFINE_BLEND32(hardmix,    (A < (1.0 - B)) ? 0: 1.0, 32)
+DEFINE_BLEND32(heat,       (A == 0) ? 0 : 1.0 - FFMIN(((1.0 - B) * (1.0 - B)) / A, 1.0), 32)
+DEFINE_BLEND32(freeze,     (B == 0) ? 0 : 1.0 - FFMIN(((1.0 - A) * (1.0 - A)) / B, 1.0), 32)
+DEFINE_BLEND32(darken,     FFMIN(A, B), 32)
+DEFINE_BLEND32(lighten,    FFMAX(A, B), 32)
+DEFINE_BLEND32(divide,     B == 0 ? 1.0 : 1.0 * A / B, 32)
+DEFINE_BLEND32(dodge,      DODGE(A, B), 32)
+DEFINE_BLEND32(burn,       BURN(A, B), 32)
+DEFINE_BLEND32(softlight,  (A > 0.5) ? B + (1.0 - B) * (A - 0.5) / 0.5 * (0.5 - fabs(B - 0.5) / 1.0): B - B * ((0.5 - A) / 0.5) * (0.5 - fabs(B - 0.5)/1.0), 32)
+DEFINE_BLEND32(exclusion,  A + B - 2 * A * B / 1.0, 32)
+DEFINE_BLEND32(pinlight,   (B < 0.5) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 0.5)), 32)
+DEFINE_BLEND32(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 1.0, 32)
+DEFINE_BLEND32(reflect,    (B == 1.0) ? B : FFMIN(1.0, (A * A / (1.0 - B))), 32)
+DEFINE_BLEND32(glow,       (A == 1.0) ? A : FFMIN(1.0, (B * B / (1.0 - A))), 32)
+DEFINE_BLEND32(and,        av_int2float(av_float2int(A) & av_float2int(B)), 32)
+DEFINE_BLEND32(or,         av_int2float(av_float2int(A) | av_float2int(B)), 32)
+DEFINE_BLEND32(xor,        av_int2float(av_float2int(A) ^ av_float2int(B)), 32)
+DEFINE_BLEND32(vividlight, (A < 0.5) ? BURN(2 * A, B) : DODGE(2 * (A - 0.5), B), 32)
+DEFINE_BLEND32(linearlight,(B < 0.5) ? B + 2 * A - 1.0 : B + 2 * (A - 0.5), 32)
+
 #define DEFINE_BLEND_EXPR(type, name, div)                                     \
 static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,          \
                                const uint8_t *_bottom, ptrdiff_t bottom_linesize,    \
@@ -475,6 +573,7 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
 
 DEFINE_BLEND_EXPR(uint8_t, 8bit, 1)
 DEFINE_BLEND_EXPR(uint16_t, 16bit, 2)
+DEFINE_BLEND_EXPR(float, 32bit, 4)
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
@@ -575,10 +674,12 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
         AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GRAY12,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32, AV_PIX_FMT_GRAYF32,
         AV_PIX_FMT_NONE
     };
 
@@ -600,50 +701,51 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_expr_free(s->params[i].e);
 }
 
-#define DEFINE_INIT_BLEND_FUNC(depth, nbits)                                              \
-static av_cold void init_blend_func_##depth##_##nbits##bit(FilterParams *param)           \
-{                                                                                         \
-    switch (param->mode) {                                                                \
-        case BLEND_ADDITION:   param->blend = blend_addition_##depth##bit;   break;       \
-        case BLEND_GRAINMERGE: param->blend = blend_grainmerge_##depth##bit; break;       \
-        case BLEND_AND:        param->blend = blend_and_##depth##bit;        break;       \
-        case BLEND_AVERAGE:    param->blend = blend_average_##depth##bit;    break;       \
-        case BLEND_BURN:       param->blend = blend_burn_##depth##bit;       break;       \
-        case BLEND_DARKEN:     param->blend = blend_darken_##depth##bit;     break;       \
-        case BLEND_DIFFERENCE: param->blend = blend_difference_##depth##bit; break;       \
-        case BLEND_GRAINEXTRACT: param->blend = blend_grainextract_##depth##bit; break;   \
-        case BLEND_DIVIDE:     param->blend = blend_divide_##depth##bit;     break;       \
-        case BLEND_DODGE:      param->blend = blend_dodge_##depth##bit;      break;       \
-        case BLEND_EXCLUSION:  param->blend = blend_exclusion_##depth##bit;  break;       \
-        case BLEND_EXTREMITY:  param->blend = blend_extremity_##depth##bit;  break;       \
-        case BLEND_FREEZE:     param->blend = blend_freeze_##depth##bit;     break;       \
-        case BLEND_GLOW:       param->blend = blend_glow_##depth##bit;       break;       \
-        case BLEND_HARDLIGHT:  param->blend = blend_hardlight_##depth##bit;  break;       \
-        case BLEND_HARDMIX:    param->blend = blend_hardmix_##depth##bit;    break;       \
-        case BLEND_HEAT:       param->blend = blend_heat_##depth##bit;       break;       \
-        case BLEND_LIGHTEN:    param->blend = blend_lighten_##depth##bit;    break;       \
-        case BLEND_LINEARLIGHT:param->blend = blend_linearlight_##depth##bit;break;       \
-        case BLEND_MULTIPLY:   param->blend = blend_multiply_##depth##bit;   break;       \
-        case BLEND_MULTIPLY128:param->blend = blend_multiply128_##depth##bit;break;       \
-        case BLEND_NEGATION:   param->blend = blend_negation_##depth##bit;   break;       \
-        case BLEND_NORMAL:     param->blend = blend_normal_##nbits##bit;     break;       \
-        case BLEND_OR:         param->blend = blend_or_##depth##bit;         break;       \
-        case BLEND_OVERLAY:    param->blend = blend_overlay_##depth##bit;    break;       \
-        case BLEND_PHOENIX:    param->blend = blend_phoenix_##depth##bit;    break;       \
-        case BLEND_PINLIGHT:   param->blend = blend_pinlight_##depth##bit;   break;       \
-        case BLEND_REFLECT:    param->blend = blend_reflect_##depth##bit;    break;       \
-        case BLEND_SCREEN:     param->blend = blend_screen_##depth##bit;     break;       \
-        case BLEND_SOFTLIGHT:  param->blend = blend_softlight_##depth##bit;  break;       \
-        case BLEND_SUBTRACT:   param->blend = blend_subtract_##depth##bit;   break;       \
-        case BLEND_VIVIDLIGHT: param->blend = blend_vividlight_##depth##bit; break;       \
-        case BLEND_XOR:        param->blend = blend_xor_##depth##bit;        break;       \
-    }                                                                                     \
+#define DEFINE_INIT_BLEND_FUNC(depth, nbits)                                          \
+static av_cold void init_blend_func_##depth##_##nbits##bit(FilterParams *param)       \
+{                                                                                     \
+    switch (param->mode) {                                                            \
+    case BLEND_ADDITION:     param->blend = blend_addition_##depth##bit;     break;   \
+    case BLEND_GRAINMERGE:   param->blend = blend_grainmerge_##depth##bit;   break;   \
+    case BLEND_AND:          param->blend = blend_and_##depth##bit;          break;   \
+    case BLEND_AVERAGE:      param->blend = blend_average_##depth##bit;      break;   \
+    case BLEND_BURN:         param->blend = blend_burn_##depth##bit;         break;   \
+    case BLEND_DARKEN:       param->blend = blend_darken_##depth##bit;       break;   \
+    case BLEND_DIFFERENCE:   param->blend = blend_difference_##depth##bit;   break;   \
+    case BLEND_GRAINEXTRACT: param->blend = blend_grainextract_##depth##bit; break;   \
+    case BLEND_DIVIDE:       param->blend = blend_divide_##depth##bit;       break;   \
+    case BLEND_DODGE:        param->blend = blend_dodge_##depth##bit;        break;   \
+    case BLEND_EXCLUSION:    param->blend = blend_exclusion_##depth##bit;    break;   \
+    case BLEND_EXTREMITY:    param->blend = blend_extremity_##depth##bit;    break;   \
+    case BLEND_FREEZE:       param->blend = blend_freeze_##depth##bit;       break;   \
+    case BLEND_GLOW:         param->blend = blend_glow_##depth##bit;         break;   \
+    case BLEND_HARDLIGHT:    param->blend = blend_hardlight_##depth##bit;    break;   \
+    case BLEND_HARDMIX:      param->blend = blend_hardmix_##depth##bit;      break;   \
+    case BLEND_HEAT:         param->blend = blend_heat_##depth##bit;         break;   \
+    case BLEND_LIGHTEN:      param->blend = blend_lighten_##depth##bit;      break;   \
+    case BLEND_LINEARLIGHT:  param->blend = blend_linearlight_##depth##bit;  break;   \
+    case BLEND_MULTIPLY:     param->blend = blend_multiply_##depth##bit;     break;   \
+    case BLEND_MULTIPLY128:  param->blend = blend_multiply128_##depth##bit;  break;   \
+    case BLEND_NEGATION:     param->blend = blend_negation_##depth##bit;     break;   \
+    case BLEND_NORMAL:       param->blend = blend_normal_##nbits##bit;       break;   \
+    case BLEND_OR:           param->blend = blend_or_##depth##bit;           break;   \
+    case BLEND_OVERLAY:      param->blend = blend_overlay_##depth##bit;      break;   \
+    case BLEND_PHOENIX:      param->blend = blend_phoenix_##depth##bit;      break;   \
+    case BLEND_PINLIGHT:     param->blend = blend_pinlight_##depth##bit;     break;   \
+    case BLEND_REFLECT:      param->blend = blend_reflect_##depth##bit;      break;   \
+    case BLEND_SCREEN:       param->blend = blend_screen_##depth##bit;       break;   \
+    case BLEND_SOFTLIGHT:    param->blend = blend_softlight_##depth##bit;    break;   \
+    case BLEND_SUBTRACT:     param->blend = blend_subtract_##depth##bit;     break;   \
+    case BLEND_VIVIDLIGHT:   param->blend = blend_vividlight_##depth##bit;   break;   \
+    case BLEND_XOR:          param->blend = blend_xor_##depth##bit;          break;   \
+    }                                                                                 \
 }
-DEFINE_INIT_BLEND_FUNC(8, 8);
-DEFINE_INIT_BLEND_FUNC(9, 16);
-DEFINE_INIT_BLEND_FUNC(10, 16);
-DEFINE_INIT_BLEND_FUNC(12, 16);
-DEFINE_INIT_BLEND_FUNC(16, 16);
+DEFINE_INIT_BLEND_FUNC(8, 8)
+DEFINE_INIT_BLEND_FUNC(9, 16)
+DEFINE_INIT_BLEND_FUNC(10, 16)
+DEFINE_INIT_BLEND_FUNC(12, 16)
+DEFINE_INIT_BLEND_FUNC(16, 16)
+DEFINE_INIT_BLEND_FUNC(32, 32)
 
 void ff_blend_init(FilterParams *param, int depth)
 {
@@ -663,15 +765,18 @@ void ff_blend_init(FilterParams *param, int depth)
     case 16:
         init_blend_func_16_16bit(param);
         break;
+    case 32:
+        init_blend_func_32_32bit(param);
+        break;
     }
 
     if (param->opacity == 0 && param->mode != BLEND_NORMAL) {
-        param->blend = depth > 8 ? blend_copytop_16 : blend_copytop_8;
+        param->blend = depth > 8 ? depth > 16 ? blend_copytop_32 : blend_copytop_16 : blend_copytop_8;
     } else if (param->mode == BLEND_NORMAL) {
         if (param->opacity == 1)
-            param->blend = depth > 8 ? blend_copytop_16 : blend_copytop_8;
+            param->blend = depth > 8 ? depth > 16 ? blend_copytop_32 : blend_copytop_16 : blend_copytop_8;
         else if (param->opacity == 0)
-            param->blend = depth > 8 ? blend_copybottom_16 : blend_copybottom_8;
+            param->blend = depth > 8 ? depth > 16 ? blend_copybottom_32 : blend_copybottom_16 : blend_copybottom_8;
     }
 
     if (ARCH_X86)
@@ -739,7 +844,7 @@ static int config_output(AVFilterLink *outlink)
                                 NULL, NULL, NULL, NULL, 0, ctx);
             if (ret < 0)
                 return ret;
-            param->blend = s->depth > 8 ? blend_expr_16bit : blend_expr_8bit;
+            param->blend = s->depth > 8 ? s->depth > 16 ? blend_expr_32bit : blend_expr_16bit : blend_expr_8bit;
         }
     }
 

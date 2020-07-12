@@ -54,15 +54,20 @@ typedef struct FadeContext {
     int type;
     int factor, fade_per_frame;
     int start_frame, nb_frames;
-    int hsub, vsub, bpp;
+    int hsub, vsub, bpp, depth;
     unsigned int black_level, black_level_scaled;
+    uint8_t is_rgb;
     uint8_t is_packed_rgb;
     uint8_t rgba_map[4];
     int alpha;
+    int is_planar;
     uint64_t start_time, duration;
     enum {VF_FADE_WAITING=0, VF_FADE_FADING, VF_FADE_DONE} fade_state;
     uint8_t color_rgba[4];  ///< fade color
     int black_fade;         ///< if color_rgba is black
+    int (*filter_slice_luma)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
+    int (*filter_slice_chroma)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
+    int (*filter_slice_alpha)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } FadeContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -107,23 +112,40 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB24,    AV_PIX_FMT_BGR24,
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRP,     AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
+        AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat pix_fmts_rgb[] = {
         AV_PIX_FMT_RGB24,    AV_PIX_FMT_BGR24,
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat pix_fmts_alpha[] = {
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
+        AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat pix_fmts_rgba[] = {
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list;
@@ -148,31 +170,17 @@ const static enum AVPixelFormat studio_level_pix_fmts[] = {
     AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,
     AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+    AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+    AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+    AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
+    AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
     AV_PIX_FMT_NONE
 };
-
-static int config_props(AVFilterLink *inlink)
-{
-    FadeContext *s = inlink->dst->priv;
-    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
-
-    s->hsub = pixdesc->log2_chroma_w;
-    s->vsub = pixdesc->log2_chroma_h;
-
-    s->bpp = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR ?
-             1 :
-             av_get_bits_per_pixel(pixdesc) >> 3;
-    s->alpha &= !!(pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA);
-    s->is_packed_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
-
-    /* use CCIR601/709 black level for studio-level pixel non-alpha components */
-    s->black_level =
-            ff_fmt_is_in(inlink->format, studio_level_pix_fmts) && !s->alpha ? 16 : 0;
-    /* 32768 = 1 << 15, it is an integer representation
-     * of 0.5 and is for rounding. */
-    s->black_level_scaled = (s->black_level << 16) + 32768;
-    return 0;
-}
 
 static av_always_inline void filter_rgb(FadeContext *s, const AVFrame *frame,
                                         int slice_start, int slice_end,
@@ -199,6 +207,29 @@ static av_always_inline void filter_rgb(FadeContext *s, const AVFrame *frame,
     }
 }
 
+static av_always_inline void filter_rgb_planar(FadeContext *s, const AVFrame *frame,
+                                               int slice_start, int slice_end,
+                                               int do_alpha)
+{
+    int i, j;
+    const uint8_t *c = s->color_rgba;
+
+    for (i = slice_start; i < slice_end; i++) {
+        uint8_t *pg = frame->data[0] + i * frame->linesize[0];
+        uint8_t *pb = frame->data[1] + i * frame->linesize[1];
+        uint8_t *pr = frame->data[2] + i * frame->linesize[2];
+        uint8_t *pa = frame->data[3] + i * frame->linesize[3];
+        for (j = 0; j < frame->width; j++) {
+#define INTERPP(c_name, c_idx) av_clip_uint8(((c[c_idx]<<16) + ((int)c_name - (int)c[c_idx]) * s->factor + (1<<15)) >> 16)
+            pr[j] = INTERPP(pr[j], 0);
+            pg[j] = INTERPP(pg[j], 1);
+            pb[j] = INTERPP(pb[j], 2);
+            if (do_alpha)
+                pa[j] = INTERPP(pa[j], 3);
+        }
+    }
+}
+
 static int filter_slice_rgb(AVFilterContext *ctx, void *arg, int jobnr,
                             int nb_jobs)
 {
@@ -207,7 +238,11 @@ static int filter_slice_rgb(AVFilterContext *ctx, void *arg, int jobnr,
     int slice_start = (frame->height *  jobnr   ) / nb_jobs;
     int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
 
-    if      (s->alpha)    filter_rgb(s, frame, slice_start, slice_end, 1, 4);
+    if      (s->is_planar && s->alpha)
+                          filter_rgb_planar(s, frame, slice_start, slice_end, 1);
+    else if (s->is_planar)
+                          filter_rgb_planar(s, frame, slice_start, slice_end, 0);
+    else if (s->alpha)    filter_rgb(s, frame, slice_start, slice_end, 1, 4);
     else if (s->bpp == 3) filter_rgb(s, frame, slice_start, slice_end, 0, 3);
     else if (s->bpp == 4) filter_rgb(s, frame, slice_start, slice_end, 0, 4);
     else                  av_assert0(0);
@@ -224,14 +259,41 @@ static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
     int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
     int i, j;
 
-    for (i = slice_start; i < slice_end; i++) {
-        uint8_t *p = frame->data[0] + i * frame->linesize[0];
-        for (j = 0; j < frame->width * s->bpp; j++) {
-            /* s->factor is using 16 lower-order bits for decimal
-             * places. 32768 = 1 << 15, it is an integer representation
-             * of 0.5 and is for rounding. */
-            *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
-            p++;
+    for (int k = 0; k < 1 + 2 * (s->is_planar && s->is_rgb); k++) {
+        for (i = slice_start; i < slice_end; i++) {
+            uint8_t *p = frame->data[k] + i * frame->linesize[k];
+            for (j = 0; j < frame->width * s->bpp; j++) {
+                /* s->factor is using 16 lower-order bits for decimal
+                 * places. 32768 = 1 << 15, it is an integer representation
+                 * of 0.5 and is for rounding. */
+                *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
+                p++;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int filter_slice_luma16(AVFilterContext *ctx, void *arg, int jobnr,
+                               int nb_jobs)
+{
+    FadeContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int slice_start = (frame->height *  jobnr   ) / nb_jobs;
+    int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
+    int i, j;
+
+    for (int k = 0; k < 1 + 2 * (s->is_planar && s->is_rgb); k++) {
+        for (i = slice_start; i < slice_end; i++) {
+            uint16_t *p = (uint16_t *)(frame->data[k] + i * frame->linesize[k]);
+            for (j = 0; j < frame->width * s->bpp; j++) {
+                /* s->factor is using 16 lower-order bits for decimal
+                 * places. 32768 = 1 << 15, it is an integer representation
+                 * of 0.5 and is for rounding. */
+                *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
+                p++;
+            }
         }
     }
 
@@ -265,6 +327,32 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
     return 0;
 }
 
+static int filter_slice_chroma16(AVFilterContext *ctx, void *arg, int jobnr,
+                                 int nb_jobs)
+{
+    FadeContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int i, j, plane;
+    const int width = AV_CEIL_RSHIFT(frame->width, s->hsub);
+    const int height= AV_CEIL_RSHIFT(frame->height, s->vsub);
+    const int mid = 1 << (s->depth - 1);
+    const int add = ((mid << 1) + 1) << 15;
+    int slice_start = (height *  jobnr   ) / nb_jobs;
+    int slice_end   = FFMIN(((height * (jobnr+1)) / nb_jobs), frame->height);
+
+    for (plane = 1; plane < 3; plane++) {
+        for (i = slice_start; i < slice_end; i++) {
+            uint16_t *p = (uint16_t *)(frame->data[plane] + i * frame->linesize[plane]);
+            for (j = 0; j < width; j++) {
+                *p = ((*p - mid) * s->factor + add) >> 16;
+                p++;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int filter_slice_alpha(AVFilterContext *ctx, void *arg, int jobnr,
                               int nb_jobs)
 {
@@ -286,6 +374,64 @@ static int filter_slice_alpha(AVFilterContext *ctx, void *arg, int jobnr,
             p += step;
         }
     }
+
+    return 0;
+}
+
+static int filter_slice_alpha16(AVFilterContext *ctx, void *arg, int jobnr,
+                                int nb_jobs)
+{
+    FadeContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int plane = s->is_packed_rgb ? 0 : A;
+    int slice_start = (frame->height *  jobnr   ) / nb_jobs;
+    int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
+    int i, j;
+
+    for (i = slice_start; i < slice_end; i++) {
+        uint16_t *p = (uint16_t *)(frame->data[plane] + i * frame->linesize[plane]) + s->is_packed_rgb*s->rgba_map[A];
+        int step = s->is_packed_rgb ? 4 : 1;
+        for (j = 0; j < frame->width; j++) {
+            /* s->factor is using 16 lower-order bits for decimal
+             * places. 32768 = 1 << 15, it is an integer representation
+             * of 0.5 and is for rounding. */
+            *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
+            p += step;
+        }
+    }
+
+    return 0;
+}
+
+static int config_props(AVFilterLink *inlink)
+{
+    FadeContext *s = inlink->dst->priv;
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
+
+    s->hsub = pixdesc->log2_chroma_w;
+    s->vsub = pixdesc->log2_chroma_h;
+
+    ff_fill_rgba_map(s->rgba_map, inlink->format);
+
+    s->depth = pixdesc->comp[0].depth;
+    s->bpp = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR ?
+             1 :
+             av_get_bits_per_pixel(pixdesc) >> 3;
+    s->alpha &= !!(pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    s->is_planar = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    s->is_rgb = pixdesc->flags & AV_PIX_FMT_FLAG_RGB;
+    s->is_packed_rgb = !s->is_planar && s->is_rgb;
+
+    /* use CCIR601/709 black level for studio-level pixel non-alpha components */
+    s->black_level =
+            ff_fmt_is_in(inlink->format, studio_level_pix_fmts) && !s->alpha ? 16 * (1 << (s->depth - 8)): 0;
+    /* 32768 = 1 << 15, it is an integer representation
+     * of 0.5 and is for rounding. */
+    s->black_level_scaled = (s->black_level << 16) + 32768;
+
+    s->filter_slice_luma   = s->depth <= 8 ? filter_slice_luma   : filter_slice_luma16;
+    s->filter_slice_chroma = s->depth <= 8 ? filter_slice_chroma : filter_slice_chroma16;
+    s->filter_slice_alpha  = s->depth <= 8 ? filter_slice_alpha  : filter_slice_alpha16;
 
     return 0;
 }
@@ -346,19 +492,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     if (s->factor < UINT16_MAX) {
         if (s->alpha) {
-            ctx->internal->execute(ctx, filter_slice_alpha, frame, NULL,
+            ctx->internal->execute(ctx, s->filter_slice_alpha, frame, NULL,
                                 FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
-        } else if (s->is_packed_rgb && !s->black_fade) {
+        } else if (s->is_rgb && !s->black_fade) {
             ctx->internal->execute(ctx, filter_slice_rgb, frame, NULL,
                                    FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else {
             /* luma, or rgb plane in case of black */
-            ctx->internal->execute(ctx, filter_slice_luma, frame, NULL,
+            ctx->internal->execute(ctx, s->filter_slice_luma, frame, NULL,
                                 FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
-            if (frame->data[1] && frame->data[2]) {
+            if (frame->data[1] && frame->data[2] && !s->is_rgb) {
                 /* chroma planes */
-                ctx->internal->execute(ctx, filter_slice_chroma, frame, NULL,
+                ctx->internal->execute(ctx, s->filter_slice_chroma, frame, NULL,
                                     FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
             }
         }
@@ -372,10 +518,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption fade_options[] = {
-    { "type", "'in' or 'out' for fade-in/fade-out", OFFSET(type), AV_OPT_TYPE_INT, { .i64 = FADE_IN }, FADE_IN, FADE_OUT, FLAGS, "type" },
-    { "t",    "'in' or 'out' for fade-in/fade-out", OFFSET(type), AV_OPT_TYPE_INT, { .i64 = FADE_IN }, FADE_IN, FADE_OUT, FLAGS, "type" },
-        { "in",  "fade-in",  0, AV_OPT_TYPE_CONST, { .i64 = FADE_IN },  .unit = "type" },
-        { "out", "fade-out", 0, AV_OPT_TYPE_CONST, { .i64 = FADE_OUT }, .unit = "type" },
+    { "type", "set the fade direction", OFFSET(type), AV_OPT_TYPE_INT, { .i64 = FADE_IN }, FADE_IN, FADE_OUT, FLAGS, "type" },
+    { "t",    "set the fade direction", OFFSET(type), AV_OPT_TYPE_INT, { .i64 = FADE_IN }, FADE_IN, FADE_OUT, FLAGS, "type" },
+        { "in",  "fade-in",  0, AV_OPT_TYPE_CONST, { .i64 = FADE_IN },  .flags = FLAGS, .unit = "type" },
+        { "out", "fade-out", 0, AV_OPT_TYPE_CONST, { .i64 = FADE_OUT }, .flags = FLAGS, .unit = "type" },
     { "start_frame", "Number of the first frame to which to apply the effect.",
                                                     OFFSET(start_frame), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
     { "s",           "Number of the first frame to which to apply the effect.",
@@ -393,8 +539,8 @@ static const AVOption fade_options[] = {
                                                     OFFSET(duration),    AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
     { "d",           "Duration of the effect in seconds.",
                                                     OFFSET(duration),    AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
-    { "color",       "set color",                   OFFSET(color_rgba),  AV_OPT_TYPE_COLOR,    {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "c",           "set color",                   OFFSET(color_rgba),  AV_OPT_TYPE_COLOR,    {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "color",       "set color",                   OFFSET(color_rgba),  AV_OPT_TYPE_COLOR,    {.str = "black"}, 0, 0, FLAGS },
+    { "c",           "set color",                   OFFSET(color_rgba),  AV_OPT_TYPE_COLOR,    {.str = "black"}, 0, 0, FLAGS },
     { NULL }
 };
 

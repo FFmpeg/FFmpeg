@@ -94,8 +94,9 @@ static void sum_delta_flipped(uint8_t       *dst, int dst_linesize,
 {
     int i;
     for (; height > 0; height--) {
+        const uint8_t *src1 = &src[(height - 1) * src_linesize];
         for (i = 0; i < bytewidth; i++)
-            dst[i] += src[(height - 1) * src_linesize + i];
+            dst[i] += src1[i];
         dst += dst_linesize;
     }
 }
@@ -145,7 +146,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_UNKNOWN;
     }
 
-    ret = ff_reget_buffer(avctx, ctx->current);
+    ret = ff_reget_buffer(avctx, ctx->current, 0);
     if (ret < 0)
         return ret;
 

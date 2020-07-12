@@ -122,7 +122,7 @@ static const AVOption paletteuse_options[] = {
     { "alpha_threshold", "set the alpha threshold for transparency", OFFSET(trans_thresh), AV_OPT_TYPE_INT, {.i64=128}, 0, 255, FLAGS },
 
     /* following are the debug options, not part of the official API */
-    { "debug_kdtree", "save Graphviz graph of the kdtree in specified file", OFFSET(dot_filename), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "debug_kdtree", "save Graphviz graph of the kdtree in specified file", OFFSET(dot_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "color_search", "set reverse colormap color search method", OFFSET(color_search_method), AV_OPT_TYPE_INT, {.i64=COLOR_SEARCH_NNS_ITERATIVE}, 0, NB_COLOR_SEARCHES-1, FLAGS, "search" },
         { "nns_iterative", "iterative search",             0, AV_OPT_TYPE_CONST, {.i64=COLOR_SEARCH_NNS_ITERATIVE}, INT_MIN, INT_MAX, FLAGS, "search" },
         { "nns_recursive", "recursive search",             0, AV_OPT_TYPE_CONST, {.i64=COLOR_SEARCH_NNS_RECURSIVE}, INT_MIN, INT_MAX, FLAGS, "search" },
@@ -903,7 +903,6 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        av_frame_free(&in);
         *outf = NULL;
         return AVERROR(ENOMEM);
     }
@@ -913,13 +912,12 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
                           s->last_out, out, &x, &y, &w, &h);
     av_frame_unref(s->last_in);
     av_frame_unref(s->last_out);
-    if (av_frame_ref(s->last_in, in) < 0 ||
-        av_frame_ref(s->last_out, out) < 0 ||
-        av_frame_make_writable(s->last_in) < 0) {
-        av_frame_free(&in);
+    if ((ret = av_frame_ref(s->last_in, in))       < 0 ||
+        (ret = av_frame_ref(s->last_out, out))     < 0 ||
+        (ret = av_frame_make_writable(s->last_in)) < 0) {
         av_frame_free(&out);
         *outf = NULL;
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
     ff_dlog(ctx, "%dx%d rect: (%d;%d) -> (%d,%d) [area:%dx%d]\n",
@@ -934,7 +932,6 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
     memcpy(out->data[1], s->palette, AVPALETTE_SIZE);
     if (s->calc_mean_err)
         debug_mean_error(s, in, out, inlink->frame_count_out);
-    av_frame_free(&in);
     *outf = out;
     return 0;
 }
@@ -1023,20 +1020,17 @@ static int load_apply_palette(FFFrameSync *fs)
     if (ret < 0)
         return ret;
     if (!master || !second) {
-        ret = AVERROR_BUG;
-        goto error;
+        av_frame_free(&master);
+        return AVERROR_BUG;
     }
     if (!s->palette_loaded) {
         load_palette(s, second);
     }
     ret = apply_palette(inlink, master, &out);
-    if (ret < 0)
-        goto error;
-    return ff_filter_frame(ctx->outputs[0], out);
-
-error:
     av_frame_free(&master);
-    return ret;
+    if (ret < 0)
+        return ret;
+    return ff_filter_frame(ctx->outputs[0], out);
 }
 
 #define DEFINE_SET_FRAME(color_search, name, value)                             \

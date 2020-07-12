@@ -75,7 +75,7 @@ const char * avdevice_configuration(void)
 const char * avdevice_license(void)
 {
 #define LICENSE_PREFIX "libavdevice license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 static void *device_next(void *prev, int output,

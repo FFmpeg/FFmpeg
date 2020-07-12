@@ -208,6 +208,12 @@ int av_find_nearest_q_idx(AVRational q, const AVRational* q_list);
 uint32_t av_q2intfloat(AVRational q);
 
 /**
+ * Return the best rational so that a and b are multiple of it.
+ * If the resulting denominator is larger than max_den, return def.
+ */
+AVRational av_gcd_q(AVRational a, AVRational b, int max_den, AVRational def);
+
+/**
  * @}
  */
 

@@ -37,19 +37,9 @@
 #define HNM4_CHUNK_ID_SD 17491
 
 typedef struct Hnm4DemuxContext {
-    uint8_t version;
-    uint16_t width;
-    uint16_t height;
-    uint32_t filesize;
     uint32_t frames;
-    uint32_t taboffset;
-    uint16_t bits;
-    uint16_t channels;
-    uint32_t framesize;
     uint32_t currentframe;
-    int64_t pts;
     uint32_t superchunk_remaining;
-    AVPacket vpkt;
 } Hnm4DemuxContext;
 
 static int hnm_probe(const AVProbeData *p)
@@ -69,41 +59,23 @@ static int hnm_read_header(AVFormatContext *s)
 {
     Hnm4DemuxContext *hnm = s->priv_data;
     AVIOContext *pb = s->pb;
+    unsigned width, height;
     AVStream *vst;
-
-    /* default context members */
-    hnm->pts = 0;
-    av_init_packet(&hnm->vpkt);
-    hnm->vpkt.data = NULL;
-    hnm->vpkt.size = 0;
-
-    hnm->superchunk_remaining = 0;
+    int ret;
 
     avio_skip(pb, 8);
-    hnm->width     = avio_rl16(pb);
-    hnm->height    = avio_rl16(pb);
-    hnm->filesize  = avio_rl32(pb);
+    width          = avio_rl16(pb);
+    height         = avio_rl16(pb);
+    avio_rl32(pb); // filesize
     hnm->frames    = avio_rl32(pb);
-    hnm->taboffset = avio_rl32(pb);
-    hnm->bits      = avio_rl16(pb);
-    hnm->channels  = avio_rl16(pb);
-    hnm->framesize = avio_rl32(pb);
-    avio_skip(pb, 32);
+    avio_skip(pb, 44);
 
-    hnm->currentframe = 0;
-
-    if (hnm->width  < 256 || hnm->width  > 640 ||
-        hnm->height < 150 || hnm->height > 480) {
+    if (width  < 256 || width  > 640 ||
+        height < 150 || height > 480) {
         av_log(s, AV_LOG_ERROR,
-               "invalid resolution: %ux%u\n", hnm->width, hnm->height);
+               "invalid resolution: %ux%u\n", width, height);
         return AVERROR_INVALIDDATA;
     }
-
-    // TODO: find a better way to detect HNM4A
-    if (hnm->width == 640)
-        hnm->version = 0x4a;
-    else
-        hnm->version = 0x40;
 
     if (!(vst = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
@@ -111,12 +83,13 @@ static int hnm_read_header(AVFormatContext *s)
     vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codecpar->codec_id   = AV_CODEC_ID_HNM4_VIDEO;
     vst->codecpar->codec_tag  = 0;
-    vst->codecpar->width      = hnm->width;
-    vst->codecpar->height     = hnm->height;
-    vst->codecpar->extradata  = av_mallocz(1);
+    vst->codecpar->width      = width;
+    vst->codecpar->height     = height;
+    if ((ret = ff_alloc_extradata(vst->codecpar, 1)) < 0)
+        return ret;
 
-    vst->codecpar->extradata_size = 1;
-    memcpy(vst->codecpar->extradata, &hnm->version, 1);
+    // TODO: find a better way to detect HNM4A
+    vst->codecpar->extradata[0] = width == 640 ? 0x4a : 0x40;
 
     vst->start_time = 0;
 
@@ -185,16 +158,6 @@ static int hnm_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static int hnm_read_close(AVFormatContext *s)
-{
-    Hnm4DemuxContext *hnm = s->priv_data;
-
-    if (hnm->vpkt.size > 0)
-        av_packet_unref(&hnm->vpkt);
-
-    return 0;
-}
-
 AVInputFormat ff_hnm_demuxer = {
     .name           = "hnm",
     .long_name      = NULL_IF_CONFIG_SMALL("Cryo HNM v4"),
@@ -202,6 +165,5 @@ AVInputFormat ff_hnm_demuxer = {
     .read_probe     = hnm_probe,
     .read_header    = hnm_read_header,
     .read_packet    = hnm_read_packet,
-    .read_close     = hnm_read_close,
     .flags          = AVFMT_NO_BYTE_SEEK | AVFMT_NOGENSEARCH | AVFMT_NOBINSEARCH
 };

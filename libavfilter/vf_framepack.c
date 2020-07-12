@@ -33,6 +33,7 @@
 #include "libavutil/stereo3d.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -48,8 +49,6 @@ typedef struct FramepackContext {
     enum AVStereo3DType format;         ///< frame pack type output
 
     AVFrame *input_views[2];            ///< input frames
-
-    int64_t double_pts;                 ///< new pts for frameseq mode
 } FramepackContext;
 
 static const enum AVPixelFormat formats_supported[] = {
@@ -120,8 +119,6 @@ static int config_output(AVFilterLink *outlink)
     case AV_STEREO3D_FRAMESEQUENCE:
         time_base.den  *= 2;
         frame_rate.num *= 2;
-
-        s->double_pts = AV_NOPTS_VALUE;
         break;
     case AV_STEREO3D_COLUMNS:
     case AV_STEREO3D_SIDEBYSIDE:
@@ -269,39 +266,6 @@ static av_always_inline void spatial_frame_pack(AVFilterLink *outlink,
     }
 }
 
-static int try_push_frame(AVFilterContext *ctx);
-
-static int filter_frame_left(AVFilterLink *inlink, AVFrame *frame)
-{
-    FramepackContext *s = inlink->dst->priv;
-    s->input_views[LEFT] = frame;
-    return try_push_frame(inlink->dst);
-}
-
-static int filter_frame_right(AVFilterLink *inlink, AVFrame *frame)
-{
-    FramepackContext *s = inlink->dst->priv;
-    s->input_views[RIGHT] = frame;
-    return try_push_frame(inlink->dst);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    FramepackContext *s = ctx->priv;
-    int ret, i;
-
-    /* get a frame on the either input, stop as soon as a video ends */
-    for (i = 0; i < 2; i++) {
-        if (!s->input_views[i]) {
-            ret = ff_request_frame(ctx->inputs[i]);
-            if (ret < 0)
-                return ret;
-        }
-    }
-    return 0;
-}
-
 static int try_push_frame(AVFilterContext *ctx)
 {
     FramepackContext *s = ctx->priv;
@@ -312,12 +276,12 @@ static int try_push_frame(AVFilterContext *ctx)
     if (!(s->input_views[0] && s->input_views[1]))
         return 0;
     if (s->format == AV_STEREO3D_FRAMESEQUENCE) {
-        if (s->double_pts == AV_NOPTS_VALUE)
-            s->double_pts = s->input_views[LEFT]->pts;
+        int64_t pts = s->input_views[0]->pts;
 
         for (i = 0; i < 2; i++) {
             // set correct timestamps
-            s->input_views[i]->pts = s->double_pts++;
+            if (pts != AV_NOPTS_VALUE)
+                s->input_views[i]->pts = i == 0 ? pts * 2 : pts * 2 + av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
 
             // set stereo3d side data
             stereo = av_stereo3d_create_side_data(s->input_views[i]);
@@ -363,21 +327,64 @@ static int try_push_frame(AVFilterContext *ctx)
     }
 }
 
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *outlink = ctx->outputs[0];
+    FramepackContext *s = ctx->priv;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
+
+    if (!s->input_views[0]) {
+        ret = ff_inlink_consume_frame(ctx->inputs[0], &s->input_views[0]);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (!s->input_views[1]) {
+        ret = ff_inlink_consume_frame(ctx->inputs[1], &s->input_views[1]);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (s->input_views[0] && s->input_views[1])
+        return try_push_frame(ctx);
+
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[0], outlink);
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[1], outlink);
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[0]) &&
+        !s->input_views[0]) {
+        ff_inlink_request_frame(ctx->inputs[0]);
+        return 0;
+    }
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[1]) &&
+        !s->input_views[1]) {
+        ff_inlink_request_frame(ctx->inputs[1]);
+        return 0;
+    }
+
+    return FFERROR_NOT_READY;
+}
+
 #define OFFSET(x) offsetof(FramepackContext, x)
-#define V AV_OPT_FLAG_VIDEO_PARAM
+#define VF AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption framepack_options[] = {
     { "format", "Frame pack output format", OFFSET(format), AV_OPT_TYPE_INT,
-        { .i64 = AV_STEREO3D_SIDEBYSIDE }, 0, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_SIDEBYSIDE }, 0, INT_MAX, .flags = VF, .unit = "format" },
     { "sbs", "Views are packed next to each other", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_SIDEBYSIDE }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_SIDEBYSIDE }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "tab", "Views are packed on top of each other", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_TOPBOTTOM }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_TOPBOTTOM }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "frameseq", "Views are one after the other", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_FRAMESEQUENCE }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_FRAMESEQUENCE }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "lines", "Views are interleaved by lines", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_LINES }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_LINES }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "columns", "Views are interleaved by columns", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_COLUMNS }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_COLUMNS }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { NULL },
 };
 
@@ -387,14 +394,10 @@ static const AVFilterPad framepack_inputs[] = {
     {
         .name         = "left",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_left,
-        .needs_fifo   = 1,
     },
     {
         .name         = "right",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_right,
-        .needs_fifo   = 1,
     },
     { NULL }
 };
@@ -404,7 +407,6 @@ static const AVFilterPad framepack_outputs[] = {
         .name          = "packed",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -417,5 +419,6 @@ AVFilter ff_vf_framepack = {
     .query_formats = query_formats,
     .inputs        = framepack_inputs,
     .outputs       = framepack_outputs,
+    .activate      = activate,
     .uninit        = framepack_uninit,
 };

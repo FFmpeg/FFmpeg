@@ -24,6 +24,7 @@
 #include "decode.h"
 #include "internal.h"
 #include "vaapi_decode.h"
+#include "vaapi_hevc.h"
 
 
 int ff_vaapi_decode_make_param_buffer(AVCodecContext *avctx,
@@ -256,6 +257,10 @@ static const struct {
 #ifdef VA_FOURCC_YV16
     MAP(YV16, YUV422P),
 #endif
+    MAP(YUY2, YUYV422),
+#ifdef VA_FOURCC_Y210
+    MAP(Y210,    Y210),
+#endif
     // 4:4:0
     MAP(422V, YUV440P),
     // 4:4:4
@@ -364,8 +369,9 @@ static const struct {
     enum AVCodecID codec_id;
     int codec_profile;
     VAProfile va_profile;
+    VAProfile (*profile_parser)(AVCodecContext *avctx);
 } vaapi_profile_map[] = {
-#define MAP(c, p, v) { AV_CODEC_ID_ ## c, FF_PROFILE_ ## p, VAProfile ## v }
+#define MAP(c, p, v, ...) { AV_CODEC_ID_ ## c, FF_PROFILE_ ## p, VAProfile ## v, __VA_ARGS__ }
     MAP(MPEG2VIDEO,  MPEG2_SIMPLE,    MPEG2Simple ),
     MAP(MPEG2VIDEO,  MPEG2_MAIN,      MPEG2Main   ),
     MAP(H263,        UNKNOWN,         H263Baseline),
@@ -380,6 +386,12 @@ static const struct {
 #if VA_CHECK_VERSION(0, 37, 0)
     MAP(HEVC,        HEVC_MAIN,       HEVCMain    ),
     MAP(HEVC,        HEVC_MAIN_10,    HEVCMain10  ),
+    MAP(HEVC,        HEVC_MAIN_STILL_PICTURE,
+                                      HEVCMain    ),
+#endif
+#if VA_CHECK_VERSION(1, 2, 0) && CONFIG_HEVC_VAAPI_HWACCEL
+    MAP(HEVC,        HEVC_REXT,       None,
+                 ff_vaapi_parse_hevc_rext_profile ),
 #endif
     MAP(MJPEG,       MJPEG_HUFFMAN_BASELINE_DCT,
                                       JPEGBaseline),
@@ -415,8 +427,8 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
     VAStatus vas;
     int err, i, j;
     const AVCodecDescriptor *codec_desc;
-    VAProfile *profile_list = NULL, matched_va_profile;
-    int profile_count, exact_match, matched_ff_profile;
+    VAProfile *profile_list = NULL, matched_va_profile, va_profile;
+    int profile_count, exact_match, matched_ff_profile, codec_profile;
 
     AVHWDeviceContext    *device = (AVHWDeviceContext*)device_ref->data;
     AVVAAPIDeviceContext *hwctx = device->hwctx;
@@ -454,15 +466,21 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
         if (avctx->profile == vaapi_profile_map[i].codec_profile ||
             vaapi_profile_map[i].codec_profile == FF_PROFILE_UNKNOWN)
             profile_match = 1;
+
+        va_profile = vaapi_profile_map[i].profile_parser ?
+                     vaapi_profile_map[i].profile_parser(avctx) :
+                     vaapi_profile_map[i].va_profile;
+        codec_profile = vaapi_profile_map[i].codec_profile;
+
         for (j = 0; j < profile_count; j++) {
-            if (vaapi_profile_map[i].va_profile == profile_list[j]) {
+            if (va_profile == profile_list[j]) {
                 exact_match = profile_match;
                 break;
             }
         }
         if (j < profile_count) {
-            matched_va_profile = vaapi_profile_map[i].va_profile;
-            matched_ff_profile = vaapi_profile_map[i].codec_profile;
+            matched_va_profile = va_profile;
+            matched_ff_profile = codec_profile;
             if (exact_match)
                 break;
         }

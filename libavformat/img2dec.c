@@ -374,6 +374,31 @@ int ff_img_read_header(AVFormatContext *s1)
     return 0;
 }
 
+/**
+ * Add this frame's source path and basename to packet's sidedata
+ * as a dictionary, so it can be used by filters like 'drawtext'.
+ */
+static int add_filename_as_pkt_side_data(char *filename, AVPacket *pkt) {
+    int metadata_len, ret;
+    AVDictionary *d = NULL;
+    char *packed_metadata = NULL;
+
+    av_dict_set(&d, "lavf.image2dec.source_path", filename, 0);
+    av_dict_set(&d, "lavf.image2dec.source_basename", av_basename(filename), 0);
+
+    packed_metadata = av_packet_pack_dictionary(d, &metadata_len);
+    av_dict_free(&d);
+    if (!packed_metadata)
+        return AVERROR(ENOMEM);
+    ret = av_packet_add_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
+                                  packed_metadata, metadata_len);
+    if (ret < 0) {
+        av_freep(&packed_metadata);
+        return ret;
+    }
+    return 0;
+}
+
 int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoDemuxData *s = s1->priv_data;
@@ -486,6 +511,17 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     if (s->is_pipe)
         pkt->pos = avio_tell(f[0]);
 
+    /*
+     * export_path_metadata must be explicitly enabled via
+     * command line options for path metadata to be exported
+     * as packet side_data.
+     */
+    if (!s->is_pipe && s->export_path_metadata == 1) {
+        res = add_filename_as_pkt_side_data(filename, pkt);
+        if (res < 0)
+            goto fail;
+    }
+
     pkt->size = 0;
     for (i = 0; i < 3; i++) {
         if (f[i]) {
@@ -504,7 +540,6 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     if (ret[0] <= 0 || ret[1] < 0 || ret[2] < 0) {
-        av_packet_unref(pkt);
         if (ret[0] < 0) {
             res = ret[0];
         } else if (ret[1] < 0) {
@@ -585,6 +620,7 @@ const AVOption ff_img_options[] = {
     { "none", "none",                   0, AV_OPT_TYPE_CONST,    {.i64 = 0   }, 0, 2,       DEC, "ts_type" },
     { "sec",  "second precision",       0, AV_OPT_TYPE_CONST,    {.i64 = 1   }, 0, 2,       DEC, "ts_type" },
     { "ns",   "nano second precision",  0, AV_OPT_TYPE_CONST,    {.i64 = 2   }, 0, 2,       DEC, "ts_type" },
+    { "export_path_metadata", "enable metadata containing input path information", OFFSET(export_path_metadata), AV_OPT_TYPE_BOOL,   {.i64 = 0   }, 0, 1,       DEC }, \
     COMMON_OPTIONS
 };
 
@@ -964,6 +1000,14 @@ static int pgmyuv_probe(const AVProbeData *p) // custom FFmpeg format recognized
     return ret && av_match_ext(p->filename, "pgmyuv") ? ret : 0;
 }
 
+static int pgx_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+    if (!memcmp(b, "PG ML ", 6))
+        return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
 static int ppm_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 3) || pnm_magic_check(p, 6) ? pnm_probe(p) : 0;
@@ -1058,6 +1102,7 @@ IMAGEAUTO_DEMUXER(pbm,     AV_CODEC_ID_PBM)
 IMAGEAUTO_DEMUXER(pcx,     AV_CODEC_ID_PCX)
 IMAGEAUTO_DEMUXER(pgm,     AV_CODEC_ID_PGM)
 IMAGEAUTO_DEMUXER(pgmyuv,  AV_CODEC_ID_PGMYUV)
+IMAGEAUTO_DEMUXER(pgx,     AV_CODEC_ID_PGX)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
 IMAGEAUTO_DEMUXER(ppm,     AV_CODEC_ID_PPM)

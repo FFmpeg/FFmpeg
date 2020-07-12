@@ -50,7 +50,7 @@ static int find_frame_end(MJPEGParserContext *m, const uint8_t *buf, int buf_siz
         for(i=0; i<buf_size;){
             state= (state<<8) | buf[i];
             if(state>=0xFFC00000 && state<=0xFFFEFFFF){
-                if(state>=0xFFD80000 && state<=0xFFD8FFFF){
+                if(state>=0xFFD8FFC0 && state<=0xFFD8FFFF){
                     i++;
                     vop_found=1;
                     break;
@@ -76,12 +76,14 @@ static int find_frame_end(MJPEGParserContext *m, const uint8_t *buf, int buf_siz
         for(; i<buf_size;){
             state= (state<<8) | buf[i];
             if(state>=0xFFC00000 && state<=0xFFFEFFFF){
-                if(state>=0xFFD80000 && state<=0xFFD8FFFF){
+                if(state>=0xFFD8FFC0 && state<=0xFFD8FFFF){
                     pc->frame_start_found=0;
                     pc->state=0;
                     return i-3;
                 } else if(state<0xFFD00000 || state>0xFFD9FFFF){
                     m->size= (state&0xFFFF)-1;
+                    if (m->size >= 0xF000)
+                        m->size = 0;
                 }
             }
             if(m->size>0){

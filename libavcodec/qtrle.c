@@ -452,13 +452,16 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     int header, start_line;
     int height, row_ptr;
     int has_palette = 0;
+    int duplicate = 0;
     int ret, size;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
 
     /* check if this frame is even supposed to change */
-    if (avpkt->size < 8)
-        return avpkt->size;
+    if (avpkt->size < 8) {
+        duplicate = 1;
+        goto done;
+    }
 
     /* start after the chunk size */
     size = bytestream2_get_be32(&s->g) & 0x3FFFFFFF;
@@ -471,19 +474,23 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
 
     /* if a header is present, fetch additional decoding parameters */
     if (header & 0x0008) {
-        if (avpkt->size < 14)
-            return avpkt->size;
+        if (avpkt->size < 14) {
+            duplicate = 1;
+            goto done;
+        }
         start_line = bytestream2_get_be16(&s->g);
         bytestream2_skip(&s->g, 2);
         height     = bytestream2_get_be16(&s->g);
         bytestream2_skip(&s->g, 2);
-        if (height > s->avctx->height - start_line)
-            return avpkt->size;
+        if (height > s->avctx->height - start_line) {
+            duplicate = 1;
+            goto done;
+        }
     } else {
         start_line = 0;
         height     = s->avctx->height;
     }
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     row_ptr = s->frame->linesize[0] * start_line;
@@ -546,12 +553,30 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         memcpy(s->frame->data[1], s->pal, AVPALETTE_SIZE);
     }
 
+done:
+    if (!s->frame->data[0])
+        return AVERROR_INVALIDDATA;
+    if (duplicate) {
+        // ff_reget_buffer() isn't needed when frames don't change, so just update
+        // frame props.
+        ret = ff_decode_frame_props(avctx, s->frame);
+        if (ret < 0)
+            return ret;
+    }
+
     if ((ret = av_frame_ref(data, s->frame)) < 0)
         return ret;
     *got_frame      = 1;
 
     /* always report that the buffer was completely consumed */
     return avpkt->size;
+}
+
+static void qtrle_decode_flush(AVCodecContext *avctx)
+{
+    QtrleContext *s = avctx->priv_data;
+
+    av_frame_unref(s->frame);
 }
 
 static av_cold int qtrle_decode_end(AVCodecContext *avctx)
@@ -572,5 +597,6 @@ AVCodec ff_qtrle_decoder = {
     .init           = qtrle_decode_init,
     .close          = qtrle_decode_end,
     .decode         = qtrle_decode_frame,
+    .flush          = qtrle_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
 };

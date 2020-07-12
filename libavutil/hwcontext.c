@@ -59,6 +59,9 @@ static const HWContextType * const hw_table[] = {
 #if CONFIG_MEDIACODEC
     &ff_hwcontext_type_mediacodec,
 #endif
+#if CONFIG_VULKAN
+    &ff_hwcontext_type_vulkan,
+#endif
     NULL,
 };
 
@@ -73,6 +76,7 @@ static const char *const hw_type_names[] = {
     [AV_HWDEVICE_TYPE_VDPAU]  = "vdpau",
     [AV_HWDEVICE_TYPE_VIDEOTOOLBOX] = "videotoolbox",
     [AV_HWDEVICE_TYPE_MEDIACODEC] = "mediacodec",
+    [AV_HWDEVICE_TYPE_VULKAN] = "vulkan",
 };
 
 enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name)
@@ -418,7 +422,7 @@ static int transfer_data_alloc(AVFrame *dst, const AVFrame *src, int flags)
     frame_tmp->width  = ctx->width;
     frame_tmp->height = ctx->height;
 
-    ret = av_frame_get_buffer(frame_tmp, 32);
+    ret = av_frame_get_buffer(frame_tmp, 0);
     if (ret < 0)
         goto fail;
 
@@ -444,21 +448,54 @@ int av_hwframe_transfer_data(AVFrame *dst, const AVFrame *src, int flags)
     if (!dst->buf[0])
         return transfer_data_alloc(dst, src, flags);
 
-    if (src->hw_frames_ctx) {
-        ctx = (AVHWFramesContext*)src->hw_frames_ctx->data;
+    /*
+     * Hardware -> Hardware Transfer.
+     * Unlike Software -> Hardware or Hardware -> Software, the transfer
+     * function could be provided by either the src or dst, depending on
+     * the specific combination of hardware.
+     */
+    if (src->hw_frames_ctx && dst->hw_frames_ctx) {
+        AVHWFramesContext *src_ctx =
+            (AVHWFramesContext*)src->hw_frames_ctx->data;
+        AVHWFramesContext *dst_ctx =
+            (AVHWFramesContext*)dst->hw_frames_ctx->data;
 
-        ret = ctx->internal->hw_type->transfer_data_from(ctx, dst, src);
+        if (src_ctx->internal->source_frames) {
+            av_log(src_ctx, AV_LOG_ERROR,
+                   "A device with a derived frame context cannot be used as "
+                   "the source of a HW -> HW transfer.");
+            return AVERROR(ENOSYS);
+        }
+
+        if (dst_ctx->internal->source_frames) {
+            av_log(src_ctx, AV_LOG_ERROR,
+                   "A device with a derived frame context cannot be used as "
+                   "the destination of a HW -> HW transfer.");
+            return AVERROR(ENOSYS);
+        }
+
+        ret = src_ctx->internal->hw_type->transfer_data_from(src_ctx, dst, src);
+        if (ret == AVERROR(ENOSYS))
+            ret = dst_ctx->internal->hw_type->transfer_data_to(dst_ctx, dst, src);
         if (ret < 0)
             return ret;
-    } else if (dst->hw_frames_ctx) {
-        ctx = (AVHWFramesContext*)dst->hw_frames_ctx->data;
+    } else {
+        if (src->hw_frames_ctx) {
+            ctx = (AVHWFramesContext*)src->hw_frames_ctx->data;
 
-        ret = ctx->internal->hw_type->transfer_data_to(ctx, dst, src);
-        if (ret < 0)
-            return ret;
-    } else
-        return AVERROR(ENOSYS);
+            ret = ctx->internal->hw_type->transfer_data_from(ctx, dst, src);
+            if (ret < 0)
+                return ret;
+        } else if (dst->hw_frames_ctx) {
+            ctx = (AVHWFramesContext*)dst->hw_frames_ctx->data;
 
+            ret = ctx->internal->hw_type->transfer_data_to(ctx, dst, src);
+            if (ret < 0)
+                return ret;
+        } else {
+            return AVERROR(ENOSYS);
+        }
+    }
     return 0;
 }
 
@@ -519,6 +556,8 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
         av_buffer_unref(&frame->hw_frames_ctx);
         return ret;
     }
+
+    frame->extended_data = frame->data;
 
     return 0;
 }
@@ -604,9 +643,10 @@ fail:
     return ret;
 }
 
-int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ref_ptr,
-                                   enum AVHWDeviceType type,
-                                   AVBufferRef *src_ref, int flags)
+int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
+                                        enum AVHWDeviceType type,
+                                        AVBufferRef *src_ref,
+                                        AVDictionary *options, int flags)
 {
     AVBufferRef *dst_ref = NULL, *tmp_ref;
     AVHWDeviceContext *dst_ctx, *tmp_ctx;
@@ -639,6 +679,7 @@ int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ref_ptr,
         if (dst_ctx->internal->hw_type->device_derive) {
             ret = dst_ctx->internal->hw_type->device_derive(dst_ctx,
                                                             tmp_ctx,
+                                                            options,
                                                             flags);
             if (ret == 0) {
                 dst_ctx->internal->source_device = av_buffer_ref(src_ref);
@@ -668,6 +709,14 @@ fail:
     av_buffer_unref(&dst_ref);
     *dst_ref_ptr = NULL;
     return ret;
+}
+
+int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ref_ptr,
+                                   enum AVHWDeviceType type,
+                                   AVBufferRef *src_ref, int flags)
+{
+    return av_hwdevice_ctx_create_derived_opts(dst_ref_ptr, type, src_ref,
+                                               NULL, flags);
 }
 
 static void ff_hwframe_unmap(void *opaque, uint8_t *data)

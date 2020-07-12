@@ -823,8 +823,6 @@ static int write_trailer(AVFormatContext *s)
     avio_seek(pb, 0x5c, SEEK_SET);
     avio_wl32(pb, file_end_pos >> WTV_SECTOR_BITS);
 
-    avio_flush(pb);
-
     av_free(wctx->sp_pairs);
     av_free(wctx->st_pairs);
     av_packet_unref(&wctx->thumbnail);

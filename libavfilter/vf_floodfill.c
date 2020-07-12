@@ -34,9 +34,11 @@ typedef struct FloodfillContext {
     const AVClass *class;
 
     int x, y;
-    int s0, s1, s2, s3;
-    int d0, d1, d2, d3;
+    int s[4];
+    int S[4];
+    int d[4];
 
+    int nb_planes;
     int back, front;
     Points *points;
 
@@ -238,12 +240,12 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx = inlink->dst;
     FloodfillContext *s = ctx->priv;
-    int nb_planes = av_pix_fmt_count_planes(inlink->format);
     int depth;
 
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     depth = desc->comp[0].depth;
     if (depth == 8) {
-        switch (nb_planes) {
+        switch (s->nb_planes) {
         case 1: s->set_pixel  = set_pixel1;
                 s->is_same    = is_same1;
                 s->pick_pixel = pick_pixel1; break;
@@ -255,7 +257,7 @@ static int config_input(AVFilterLink *inlink)
                 s->pick_pixel = pick_pixel4; break;
        }
     } else {
-        switch (nb_planes) {
+        switch (s->nb_planes) {
         case 1: s->set_pixel  = set_pixel1_16;
                 s->is_same    = is_same1_16;
                 s->pick_pixel = pick_pixel1_16; break;
@@ -280,29 +282,41 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     FloodfillContext *s = ctx->priv;
-    const unsigned d0 = s->d0;
-    const unsigned d1 = s->d1;
-    const unsigned d2 = s->d2;
-    const unsigned d3 = s->d3;
-    int s0 = s->s0;
-    int s1 = s->s1;
-    int s2 = s->s2;
-    int s3 = s->s3;
+    const unsigned d0 = s->d[0];
+    const unsigned d1 = s->d[1];
+    const unsigned d2 = s->d[2];
+    const unsigned d3 = s->d[3];
+    int s0 = s->s[0];
+    int s1 = s->s[1];
+    int s2 = s->s[2];
+    int s3 = s->s[3];
     const int w = frame->width;
     const int h = frame->height;
-    int ret;
-
-    if (ret = av_frame_make_writable(frame))
-        return ret;
+    int i, ret;
 
     if (is_inside(s->x, s->y, w, h)) {
         s->pick_pixel(frame, s->x, s->y, &s0, &s1, &s2, &s3);
+
+        s->S[0] = s0;
+        s->S[1] = s1;
+        s->S[2] = s2;
+        s->S[3] = s3;
+        for (i = 0; i < s->nb_planes; i++) {
+            if (s->S[i] != s->d[i])
+                break;
+        }
+
+        if (i == s->nb_planes)
+            goto end;
 
         if (s->is_same(frame, s->x, s->y, s0, s1, s2, s3)) {
             s->points[s->front].x = s->x;
             s->points[s->front].y = s->y;
             s->front++;
         }
+
+        if (ret = av_frame_make_writable(frame))
+            return ret;
 
         while (s->front > s->back) {
             int x, y;
@@ -337,34 +351,20 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         }
     }
 
+end:
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 
 static av_cold int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_GBRP,
-        AV_PIX_FMT_GBRP9,
-        AV_PIX_FMT_GBRP10,
-        AV_PIX_FMT_GBRAP10,
-        AV_PIX_FMT_GBRP12,
-        AV_PIX_FMT_GBRAP12,
-        AV_PIX_FMT_GBRP14,
-        AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_YUV444P9,
-        AV_PIX_FMT_YUVA444P9,
-        AV_PIX_FMT_YUV444P10,
-        AV_PIX_FMT_YUVA444P10,
-        AV_PIX_FMT_YUV444P12,
-        AV_PIX_FMT_YUV444P14,
-        AV_PIX_FMT_GRAY16,
-        AV_PIX_FMT_YUV444P16,
-        AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRAP16, AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *formats;
@@ -405,16 +405,16 @@ static const AVFilterPad floodfill_outputs[] = {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption floodfill_options[] = {
-    { "x",  "set pixel x coordinate",             OFFSET(x),  AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
-    { "y",  "set pixel y coordinate",             OFFSET(y),  AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
-    { "s0", "set source #0 component value",      OFFSET(s0), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
-    { "s1", "set source #1 component value",      OFFSET(s1), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
-    { "s2", "set source #2 component value",      OFFSET(s2), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
-    { "s3", "set source #3 component value",      OFFSET(s3), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
-    { "d0", "set destination #0 component value", OFFSET(d0), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
-    { "d1", "set destination #1 component value", OFFSET(d1), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
-    { "d2", "set destination #2 component value", OFFSET(d2), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
-    { "d3", "set destination #3 component value", OFFSET(d3), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "x",  "set pixel x coordinate",             OFFSET(x),    AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "y",  "set pixel y coordinate",             OFFSET(y),    AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "s0", "set source #0 component value",      OFFSET(s[0]), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
+    { "s1", "set source #1 component value",      OFFSET(s[1]), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
+    { "s2", "set source #2 component value",      OFFSET(s[2]), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
+    { "s3", "set source #3 component value",      OFFSET(s[3]), AV_OPT_TYPE_INT, {.i64=0},-1, UINT16_MAX, FLAGS },
+    { "d0", "set destination #0 component value", OFFSET(d[0]), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "d1", "set destination #1 component value", OFFSET(d[1]), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "d2", "set destination #2 component value", OFFSET(d[2]), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
+    { "d3", "set destination #3 component value", OFFSET(d[3]), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, FLAGS },
     { NULL }
 };
 

@@ -31,7 +31,7 @@
     int err; \
     av_strlcatf(opt_str, sizeof(opt_str), format, __VA_ARGS__); \
     err = cae->api->opt_set2(cae->param, name, opt_str); \
-    if (err) {\
+    if (err < 0) {\
         av_log(avctx, AV_LOG_WARNING, "Invalid value for %s: %s\n", name, opt_str);\
     }\
 } while(0);
@@ -48,7 +48,7 @@ typedef struct XAVS2EContext {
     int log_level;
 
     void *encoder;
-    char *xavs2_opts;
+    AVDictionary *xavs2_opts;
 
     xavs2_outpacket_t packet;
     xavs2_param_t *param;
@@ -59,7 +59,7 @@ typedef struct XAVS2EContext {
 
 static av_cold int xavs2_init(AVCodecContext *avctx)
 {
-    XAVS2EContext *cae= avctx->priv_data;
+    XAVS2EContext *cae = avctx->priv_data;
     int bit_depth, code;
 
     bit_depth = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? 8 : 10;
@@ -67,13 +67,13 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
     /* get API handler */
     cae->api = xavs2_api_get(bit_depth);
     if (!cae->api) {
-        av_log(avctx, AV_LOG_ERROR, "api get failed\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to get xavs2 api context\n");
         return AVERROR_EXTERNAL;
     }
 
     cae->param = cae->api->opt_alloc();
     if (!cae->param) {
-        av_log(avctx, AV_LOG_ERROR, "param alloc failed\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to alloc xavs2 parameters\n");
         return AVERROR(ENOMEM);
     }
 
@@ -92,16 +92,10 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
 
     xavs2_opt_set2("OpenGOP",  "%d", !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
 
-    if (cae->xavs2_opts) {
-        AVDictionary *dict    = NULL;
+    {
         AVDictionaryEntry *en = NULL;
-
-        if (!av_dict_parse_string(&dict, cae->xavs2_opts, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                xavs2_opt_set2(en->key, "%s", en->value);
-            }
-            av_dict_free(&dict);
-        }
+        while ((en = av_dict_get(cae->xavs2_opts, "", en, AV_DICT_IGNORE_SUFFIX)))
+            xavs2_opt_set2(en->key, "%s", en->value);
     }
 
     /* Rate control */
@@ -115,15 +109,13 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
         xavs2_opt_set2("InitialQP",     "%d", cae->qp);
     }
 
-
     ff_mpeg12_find_best_frame_rate(avctx->framerate, &code, NULL, NULL, 0);
-
     xavs2_opt_set2("FrameRate",   "%d", code);
 
     cae->encoder = cae->api->encoder_create(cae->param);
 
     if (!cae->encoder) {
-        av_log(avctx,AV_LOG_ERROR, "Can not create encoder. Null pointer returned\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to create xavs2 encoder instance.\n");
         return AVERROR(EINVAL);
     }
 
@@ -132,29 +124,42 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
 
 static void xavs2_copy_frame_with_shift(xavs2_picture_t *pic, const AVFrame *frame, const int shift_in)
 {
-    int j, k;
-    for (k = 0; k < 3; k++) {
-        int i_stride = pic->img.i_stride[k];
-        for (j = 0; j < pic->img.i_lines[k]; j++) {
-            uint16_t *p_plane = (uint16_t *)&pic->img.img_planes[k][j * i_stride];
-            int i;
-            uint8_t *p_buffer = frame->data[k] + frame->linesize[k] * j;
-            memset(p_plane, 0, i_stride);
-            for (i = 0; i < pic->img.i_width[k]; i++) {
-                p_plane[i] = p_buffer[i] << shift_in;
+    uint16_t *p_plane;
+    uint8_t *p_buffer;
+    int plane;
+    int hIdx;
+    int wIdx;
+
+    for (plane = 0; plane < 3; plane++) {
+        p_plane = (uint16_t *)pic->img.img_planes[plane];
+        p_buffer = frame->data[plane];
+        for (hIdx = 0; hIdx < pic->img.i_lines[plane]; hIdx++) {
+            memset(p_plane, 0, pic->img.i_stride[plane]);
+            for (wIdx = 0; wIdx < pic->img.i_width[plane]; wIdx++) {
+                p_plane[wIdx] = p_buffer[wIdx] << shift_in;
             }
+            p_plane += pic->img.i_stride[plane];
+            p_buffer += frame->linesize[plane];
         }
     }
 }
 
 static void xavs2_copy_frame(xavs2_picture_t *pic, const AVFrame *frame)
 {
-    int j, k;
-    for (k = 0; k < 3; k++) {
-        for (j = 0; j < pic->img.i_lines[k]; j++) {
-            memcpy( pic->img.img_planes[k] + pic->img.i_stride[k] * j,
-                    frame->data[k]+frame->linesize[k] * j,
-                    pic->img.i_width[k] * pic->img.in_sample_size);
+    uint8_t *p_plane;
+    uint8_t *p_buffer;
+    int plane;
+    int hIdx;
+    int stride;
+
+    for (plane = 0; plane < 3; plane++) {
+        p_plane = pic->img.img_planes[plane];
+        p_buffer = frame->data[plane];
+        stride = pic->img.i_width[plane] * pic->img.in_sample_size;
+        for (hIdx = 0; hIdx < pic->img.i_lines[plane]; hIdx++) {
+            memcpy(p_plane, p_buffer, stride);
+            p_plane += pic->img.i_stride[plane];
+            p_buffer += frame->linesize[plane];
         }
     }
 }
@@ -169,7 +174,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* create the XAVS2 video encoder */
     /* read frame data and send to the XAVS2 video encoder */
     if (cae->api->encoder_get_buffer(cae->encoder, &pic) < 0) {
-        av_log(avctx,AV_LOG_ERROR, "failed to get frame buffer\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to get xavs2 frame buffer\n");
         return AVERROR_EXTERNAL;
     }
     if (frame) {
@@ -200,7 +205,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ret = cae->api->encoder_encode(cae->encoder, &pic, &cae->packet);
 
         if (ret) {
-            av_log(avctx, AV_LOG_ERROR, "encode failed\n");
+            av_log(avctx, AV_LOG_ERROR, "Encoding error occured.\n");
             return AVERROR_EXTERNAL;
         }
 
@@ -208,10 +213,9 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         cae->api->encoder_encode(cae->encoder, NULL, &cae->packet);
     }
 
-    if ((cae->packet.len) && (cae->packet.state != XAVS2_STATE_FLUSH_END)){
-
-        if (av_new_packet(pkt, cae->packet.len) < 0){
-            av_log(avctx, AV_LOG_ERROR, "packet alloc failed\n");
+    if ((cae->packet.len) && (cae->packet.state != XAVS2_STATE_FLUSH_END)) {
+        if (av_new_packet(pkt, cae->packet.len) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to alloc xavs2 packet.\n");
             cae->api->encoder_packet_unref(cae->encoder, &cae->packet);
             return AVERROR(ENOMEM);
         }
@@ -257,7 +261,7 @@ static const AVOption options[] = {
     { "min_qp"          ,   "min qp for rate control" ,                 OFFSET(min_qp)          , AV_OPT_TYPE_INT, {.i64 = 20 },  0,      63,  VE },
     { "speed_level"     ,   "Speed level, higher is better but slower", OFFSET(preset_level)    , AV_OPT_TYPE_INT, {.i64 =  0 },  0,       9,  VE },
     { "log_level"       ,   "log level: -1: none, 0: error, 1: warning, 2: info, 3: debug", OFFSET(log_level)    , AV_OPT_TYPE_INT, {.i64 =  0 },  -1,       3,  VE },
-    { "xavs2-params"    ,   "set the xavs2 configuration using a :-separated list of key=value parameters", OFFSET(xavs2_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "xavs2-params"    ,   "set the xavs2 configuration using a :-separated list of key=value parameters", OFFSET(xavs2_opts), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
     { NULL },
 };
 

@@ -93,17 +93,6 @@ struct AVFilterPad {
     int (*filter_frame)(AVFilterLink *link, AVFrame *frame);
 
     /**
-     * Frame poll callback. This returns the number of immediately available
-     * samples. It should return a positive value if the next request_frame()
-     * is guaranteed to return one frame (with no delay).
-     *
-     * Defaults to just calling the source poll_frame() method.
-     *
-     * Output pads only.
-     */
-    int (*poll_frame)(AVFilterLink *link);
-
-    /**
      * Frame request callback. A call to this should result in some progress
      * towards producing output over the given link. This should return zero
      * on success, and another value on error.
@@ -245,6 +234,10 @@ void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts
 
 void ff_command_queue_pop(AVFilterContext *filter);
 
+#define D2TS(d)      (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
+#define TS2D(ts)     ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
+#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
+
 /* misc trace functions */
 
 #define FF_TPRINTF_START(ctx, func) ff_tlog(NULL, "%-16s: ", #func)
@@ -288,15 +281,6 @@ static inline int ff_insert_outpad(AVFilterContext *f, unsigned index,
     return ff_insert_pad(index, &f->nb_outputs, offsetof(AVFilterLink, srcpad),
                   &f->output_pads, &f->outputs, p);
 }
-
-/**
- * Poll a frame from the filter chain.
- *
- * @param  link the input link
- * @return the number of immediately available frames, a negative
- * number in case of error
- */
-int ff_poll_frame(AVFilterLink *link);
 
 /**
  * Request an input frame from the filter at the other end of the link.
@@ -410,6 +394,13 @@ static inline int ff_norm_qscale(int qscale, int type)
  * This number is always same or less than graph->nb_threads.
  */
 int ff_filter_get_nb_threads(AVFilterContext *ctx);
+
+/**
+ * Generic processing of user supplied commands that are set
+ * in the same way as the filter options.
+ */
+int ff_filter_process_command(AVFilterContext *ctx, const char *cmd,
+                              const char *arg, char *res, int res_len, int flags);
 
 /**
  * Perform any additional setup required for hardware frames.

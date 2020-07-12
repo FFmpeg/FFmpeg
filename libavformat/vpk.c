@@ -24,6 +24,7 @@
 #include "internal.h"
 
 typedef struct VPKDemuxContext {
+    unsigned data_start;
     unsigned block_count;
     unsigned current_block;
     unsigned last_block_size;
@@ -70,6 +71,7 @@ static int vpk_read_header(AVFormatContext *s)
     if (offset < avio_tell(s->pb))
         return AVERROR_INVALIDDATA;
     avio_skip(s->pb, offset - avio_tell(s->pb));
+    vpk->data_start = offset;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
@@ -85,6 +87,7 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (vpk->current_block == vpk->block_count) {
         unsigned size = vpk->last_block_size / par->channels;
         unsigned skip = (par->block_align - vpk->last_block_size) / par->channels;
+        uint64_t pos = avio_tell(s->pb);
 
         ret = av_new_packet(pkt, vpk->last_block_size);
         if (ret < 0)
@@ -93,11 +96,10 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = avio_read(s->pb, pkt->data + i * size, size);
             avio_skip(s->pb, skip);
             if (ret != size) {
-                av_packet_unref(pkt);
-                ret = AVERROR(EIO);
-                break;
+                return AVERROR(EIO);
             }
         }
+        pkt->pos = pos;
         pkt->stream_index = 0;
     } else if (vpk->current_block < vpk->block_count) {
         ret = av_get_packet(s->pb, pkt, par->block_align);
@@ -109,6 +111,26 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int vpk_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t timestamp, int flags)
+{
+    AVStream *st = s->streams[stream_index];
+    AVCodecParameters *par = st->codecpar;
+    VPKDemuxContext *vpk = s->priv_data;
+    int samples_per_block;
+    int64_t ret = 0;
+
+    samples_per_block = av_get_audio_frame_duration2(par, par->block_align);
+    timestamp /= samples_per_block;
+    ret = avio_seek(s->pb, vpk->data_start + timestamp * par->block_align, SEEK_SET);
+    if (ret < 0)
+        return ret;
+
+    vpk->current_block = timestamp;
+    ff_update_cur_dts(s, st, timestamp * samples_per_block);
+    return 0;
+}
+
 AVInputFormat ff_vpk_demuxer = {
     .name           = "vpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 VPK"),
@@ -116,5 +138,6 @@ AVInputFormat ff_vpk_demuxer = {
     .read_probe     = vpk_probe,
     .read_header    = vpk_read_header,
     .read_packet    = vpk_read_packet,
+    .read_seek      = vpk_read_seek,
     .extensions     = "vpk",
 };

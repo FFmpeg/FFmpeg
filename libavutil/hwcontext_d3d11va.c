@@ -39,6 +39,7 @@
 #include "pixdesc.h"
 #include "pixfmt.h"
 #include "thread.h"
+#include "compat/w32dlfcn.h"
 
 typedef HRESULT(WINAPI *PFN_CREATE_DXGI_FACTORY)(REFIID riid, void **ppFactory);
 
@@ -55,8 +56,8 @@ static av_cold void load_functions(void)
     // from too many LoadLibrary calls.
     HANDLE d3dlib, dxgilib;
 
-    d3dlib  = LoadLibrary("d3d11.dll");
-    dxgilib = LoadLibrary("dxgi.dll");
+    d3dlib  = dlopen("d3d11.dll", 0);
+    dxgilib = dlopen("dxgi.dll", 0);
     if (!d3dlib || !dxgilib)
         return;
 

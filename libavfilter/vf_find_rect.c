@@ -22,7 +22,6 @@
  * @todo switch to dualinput
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"
@@ -81,7 +80,7 @@ static AVFrame *downscale(AVFrame *in)
     frame->width  = (in->width + 1) / 2;
     frame->height = (in->height+ 1) / 2;
 
-    if (av_frame_get_buffer(frame, 32) < 0) {
+    if (av_frame_get_buffer(frame, 0) < 0) {
         av_frame_free(&frame);
         return NULL;
     }
@@ -159,7 +158,7 @@ static float search(FOCContext *foc, int pass, int maxpass, int xmin, int xmax, 
 
     if (pass + 1 <= maxpass) {
         int sub_x, sub_y;
-        search(foc, pass+1, maxpass, xmin>>1, (xmax+1)>>1, ymin>>1, (ymax+1)>>1, &sub_x, &sub_y, 1.0);
+        search(foc, pass+1, maxpass, xmin>>1, (xmax+1)>>1, ymin>>1, (ymax+1)>>1, &sub_x, &sub_y, 2.0);
         xmin = FFMAX(xmin, 2*sub_x - 4);
         xmax = FFMIN(xmax, 2*sub_x + 4);
         ymin = FFMAX(ymin, 2*sub_y - 4);
@@ -169,7 +168,6 @@ static float search(FOCContext *foc, int pass, int maxpass, int xmin, int xmax, 
     for (y = ymin; y <= ymax; y++) {
         for (x = xmin; x <= xmax; x++) {
             float score = compare(foc->haystack_frame[pass], foc->needle_frame[pass], x, y);
-            av_assert0(score != 0);
             if (score < best_score) {
                 best_score = score;
                 *best_x = x;
@@ -198,7 +196,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                         FFMIN(foc->xmax, foc->last_x + 8),
                         FFMAX(foc->ymin, foc->last_y - 8),
                         FFMIN(foc->ymax, foc->last_y + 8),
-                        &best_x, &best_y, 1.0);
+                        &best_x, &best_y, 2.0);
 
     best_score = search(foc, 0, foc->mipmaps - 1, foc->xmin, foc->xmax, foc->ymin, foc->ymax,
                         &best_x, &best_y, best_score);

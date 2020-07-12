@@ -146,8 +146,7 @@ static void hds_free(AVFormatContext *s)
             av_write_trailer(os->ctx);
         if (os->ctx)
             avio_context_free(&os->ctx->pb);
-        if (os->ctx)
-            avformat_free_context(os->ctx);
+        avformat_free_context(os->ctx);
         av_freep(&os->metadata);
         for (j = 0; j < os->nb_extra_packets; j++)
             av_freep(&os->extra_packets[j]);
@@ -318,21 +317,18 @@ static int hds_write_header(AVFormatContext *s)
     ff_const59 AVOutputFormat *oformat;
 
     if (mkdir(s->url, 0777) == -1 && errno != EEXIST) {
-        ret = AVERROR(errno);
         av_log(s, AV_LOG_ERROR , "Failed to create directory %s\n", s->url);
-        goto fail;
+        return AVERROR(errno);
     }
 
     oformat = av_guess_format("flv", NULL, NULL);
     if (!oformat) {
-        ret = AVERROR_MUXER_NOT_FOUND;
-        goto fail;
+        return AVERROR_MUXER_NOT_FOUND;
     }
 
     c->streams = av_mallocz_array(s->nb_streams, sizeof(*c->streams));
     if (!c->streams) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -342,8 +338,7 @@ static int hds_write_header(AVFormatContext *s)
 
         if (!st->codecpar->bit_rate) {
             av_log(s, AV_LOG_ERROR, "No bit rate set for stream %d\n", i);
-            ret = AVERROR(EINVAL);
-            goto fail;
+            return AVERROR(EINVAL);
         }
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (os->has_video) {
@@ -359,8 +354,7 @@ static int hds_write_header(AVFormatContext *s)
             os->has_audio = 1;
         } else {
             av_log(s, AV_LOG_ERROR, "Unsupported stream type in stream %d\n", i);
-            ret = AVERROR(EINVAL);
-            goto fail;
+            return AVERROR(EINVAL);
         }
         os->bitrate += s->streams[i]->codecpar->bit_rate;
 
@@ -368,8 +362,7 @@ static int hds_write_header(AVFormatContext *s)
             os->first_stream = i;
             ctx = avformat_alloc_context();
             if (!ctx) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
             os->ctx = ctx;
             ctx->oformat = oformat;
@@ -380,8 +373,7 @@ static int hds_write_header(AVFormatContext *s)
                                          AVIO_FLAG_WRITE, os,
                                          NULL, hds_write, NULL);
             if (!ctx->pb) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
         } else {
             ctx = os->ctx;
@@ -389,8 +381,7 @@ static int hds_write_header(AVFormatContext *s)
         s->streams[i]->id = c->nb_streams;
 
         if (!(st = avformat_new_stream(ctx, NULL))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->codecpar->codec_tag = 0;
@@ -404,7 +395,7 @@ static int hds_write_header(AVFormatContext *s)
         OutputStream *os = &c->streams[i];
         int j;
         if ((ret = avformat_write_header(os->ctx, NULL)) < 0) {
-             goto fail;
+             return ret;
         }
         os->ctx_inited = 1;
         avio_flush(os->ctx->pb);
@@ -415,7 +406,7 @@ static int hds_write_header(AVFormatContext *s)
                  "%s/stream%d_temp", s->url, i);
         ret = init_file(s, os, 0);
         if (ret < 0)
-            goto fail;
+            return ret;
 
         if (!os->has_video && c->min_frag_duration <= 0) {
             av_log(s, AV_LOG_WARNING,
@@ -426,9 +417,6 @@ static int hds_write_header(AVFormatContext *s)
     }
     ret = write_manifest(s, 0);
 
-fail:
-    if (ret)
-        hds_free(s);
     return ret;
 }
 
@@ -558,7 +546,6 @@ static int hds_write_trailer(AVFormatContext *s)
         rmdir(s->url);
     }
 
-    hds_free(s);
     return 0;
 }
 
@@ -589,5 +576,6 @@ AVOutputFormat ff_hds_muxer = {
     .write_header   = hds_write_header,
     .write_packet   = hds_write_packet,
     .write_trailer  = hds_write_trailer,
+    .deinit         = hds_free,
     .priv_class     = &hds_class,
 };

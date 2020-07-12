@@ -211,6 +211,7 @@ static const AVCodecTag nsv_codec_audio_tags[] = {
 
 //static int nsv_load_index(AVFormatContext *s);
 static int nsv_read_chunk(AVFormatContext *s, int fill_header);
+static int nsv_read_close(AVFormatContext *s);
 
 /* try to find something we recognize, and set the state accordingly */
 static int nsv_resync(AVFormatContext *s)
@@ -492,25 +493,32 @@ static int nsv_read_header(AVFormatContext *s)
     nsv->ahead[0].data = nsv->ahead[1].data = NULL;
 
     for (i = 0; i < NSV_MAX_RESYNC_TRIES; i++) {
-        if (nsv_resync(s) < 0)
-            return -1;
+        err = nsv_resync(s);
+        if (err < 0)
+            goto fail;
         if (nsv->state == NSV_FOUND_NSVF) {
             err = nsv_parse_NSVf_header(s);
             if (err < 0)
-                return err;
+                goto fail;
         }
             /* we need the first NSVs also... */
         if (nsv->state == NSV_FOUND_NSVS) {
             err = nsv_parse_NSVs_header(s);
             if (err < 0)
-                return err;
+                goto fail;
             break; /* we just want the first one */
         }
     }
-    if (s->nb_streams < 1) /* no luck so far */
-        return -1;
+    if (s->nb_streams < 1) { /* no luck so far */
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     /* now read the first chunk, so we can attempt to decode more info */
     err = nsv_read_chunk(s, 1);
+fail:
+    if (err < 0)
+        nsv_read_close(s);
 
     av_log(s, AV_LOG_TRACE, "parsed header\n");
     return err;
@@ -654,10 +662,8 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now pick one of the plates */
     for (i = 0; i < 2; i++) {
         if (nsv->ahead[i].data) {
-            /* avoid the cost of new_packet + memcpy(->data) */
-            memcpy(pkt, &nsv->ahead[i], sizeof(AVPacket));
-            nsv->ahead[i].data = NULL; /* we ate that one */
-            return pkt->size;
+            av_packet_move_ref(pkt, &nsv->ahead[i]);
+            return 0;
         }
     }
 

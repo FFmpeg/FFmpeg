@@ -87,6 +87,15 @@ int ffio_read_size(AVIOContext *s, unsigned char *buf, int size);
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
 
 /**
+ * Reallocate a given buffer for AVIOContext.
+ *
+ * @param s the AVIOContext to realloc.
+ * @param buf_size required new buffer size.
+ * @return 0 on success, a negative AVERROR on failure.
+ */
+int ffio_realloc_buf(AVIOContext *s, int buf_size);
+
+/**
  * Ensures that the requested seekback buffer size will be available
  *
  * Will ensure that when reading sequentially up to buf_size, seeking
@@ -161,6 +170,13 @@ int ffio_open_whitelist(AVIOContext **s, const char *url, int flags,
  * @return the number of bytes written to the null buffer
  */
 int ffio_close_null_buf(AVIOContext *s);
+
+/**
+ * Reset a dynamic buffer.
+ *
+ * Resets everything, but keeps the allocated buffer for later use.
+ */
+void ffio_reset_dyn_buf(AVIOContext *s);
 
 /**
  * Free a dynamic buffer.

@@ -10,6 +10,9 @@ fate-adts-id3v2-two-tags-demux: CMD = framecrc -i $(TARGET_SAMPLES)/aac/id3v2_tw
 FATE_SAMPLES_DEMUX-$(CONFIG_AEA_DEMUXER) += fate-aea-demux
 fate-aea-demux: CMD = crc -i $(TARGET_SAMPLES)/aea/chirp.aea -c:a copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_AV1_DEMUXER) += fate-av1-annexb-demux
+fate-av1-annexb-demux: CMD = framecrc -i $(TARGET_SAMPLES)/av1/annexb.obu -c:v copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_AST_DEMUXER) += fate-ast
 fate-ast: CMD = crc -i $(TARGET_SAMPLES)/ast/demo11_02_partial.ast -c copy
 

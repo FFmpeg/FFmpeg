@@ -53,6 +53,7 @@ static const AVOption tinterlace_options[] = {
     {"complex_filter",    "enable complex vertical low-pass filter",      0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_CVLPF},INT_MIN, INT_MAX, FLAGS, "flags" },
     {"cvlpf",             "enable complex vertical low-pass filter",      0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_CVLPF},INT_MIN, INT_MAX, FLAGS, "flags" },
     {"exact_tb",          "force a timebase which can represent timestamps exactly", 0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_EXACT_TB}, INT_MIN, INT_MAX, FLAGS, "flags" },
+    {"bypass_il",         "bypass already interlaced frames",             0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_BYPASS_IL}, INT_MIN, INT_MAX, FLAGS, "flags" },
 
     {NULL}
 };
@@ -63,10 +64,10 @@ static const AVOption interlace_options[] = {
    { "scan",              "scanning mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = MODE_TFF}, 0, 1, FLAGS, "mode"},
    { "tff",               "top field first",                              0, AV_OPT_TYPE_CONST, {.i64 = MODE_TFF}, INT_MIN, INT_MAX, FLAGS, .unit = "mode"},
    { "bff",               "bottom field first",                           0, AV_OPT_TYPE_CONST, {.i64 = MODE_BFF}, INT_MIN, INT_MAX, FLAGS, .unit = "mode"},
-   { "lowpass",           "set vertical low-pass filter", OFFSET(flags), AV_OPT_TYPE_FLAGS,   {.i64 = TINTERLACE_FLAG_VLPF}, 0, 2, FLAGS, "flags" },
-   { "off",               "disable vertical low-pass filter",             0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS, "flags" },
-   { "linear",            "linear vertical low-pass filter",              0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_VLPF}, INT_MIN, INT_MAX, FLAGS, "flags" },
-   { "complex",           "complex vertical low-pass filter",             0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_CVLPF},INT_MIN, INT_MAX, FLAGS, "flags" },
+   { "lowpass",           "set vertical low-pass filter", OFFSET(lowpass), AV_OPT_TYPE_INT,   {.i64 = VLPF_LIN}, 0, 2, FLAGS, "lowpass" },
+   {     "off",           "disable vertical low-pass filter",             0, AV_OPT_TYPE_CONST, {.i64 = VLPF_OFF}, INT_MIN, INT_MAX, FLAGS, "lowpass" },
+   {     "linear",        "linear vertical low-pass filter",              0, AV_OPT_TYPE_CONST, {.i64 = VLPF_LIN}, INT_MIN, INT_MAX, FLAGS, "lowpass" },
+   {     "complex",       "complex vertical low-pass filter",             0, AV_OPT_TYPE_CONST, {.i64 = VLPF_CMP}, INT_MIN, INT_MAX, FLAGS, "lowpass" },
 
    { NULL }
 };
@@ -439,6 +440,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
          * halving the frame rate and preserving image height */
     case MODE_INTERLEAVE_TOP:    /* top    field first */
     case MODE_INTERLEAVE_BOTTOM: /* bottom field first */
+        if ((tinterlace->flags & TINTERLACE_FLAG_BYPASS_IL) && cur->interlaced_frame) {
+            av_log(ctx, AV_LOG_WARNING,
+                   "video is already interlaced, adjusting framerate only\n");
+            out = av_frame_clone(cur);
+            if (!out)
+                return AVERROR(ENOMEM);
+            out->pts /= 2;  // adjust pts to new framerate
+            ret = ff_filter_frame(outlink, out);
+            return ret;
+        }
         tff = tinterlace->mode == MODE_INTERLEAVE_TOP;
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
@@ -517,6 +528,12 @@ static int init_interlace(AVFilterContext *ctx)
 
     if (tinterlace->mode <= MODE_BFF)
         tinterlace->mode += MODE_INTERLEAVE_TOP;
+
+    tinterlace->flags |= TINTERLACE_FLAG_BYPASS_IL;
+    if (tinterlace->lowpass == VLPF_LIN)
+        tinterlace->flags |= TINTERLACE_FLAG_VLPF;
+    if (tinterlace->lowpass == VLPF_CMP)
+        tinterlace->flags |= TINTERLACE_FLAG_CVLPF;
 
     return 0;
 }

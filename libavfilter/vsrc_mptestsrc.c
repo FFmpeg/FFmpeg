@@ -54,6 +54,7 @@ typedef struct MPTestContext {
     const AVClass *class;
     AVRational frame_rate;
     int64_t pts, max_pts, duration;
+    int64_t max_frames;
     int hsub, vsub;
     int test;           ///< test_type
 } MPTestContext;
@@ -79,6 +80,10 @@ static const AVOption mptestsrc_options[]= {
         { "ring1",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING1},       INT_MIN, INT_MAX, FLAGS, "test" },
         { "ring2",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING2},       INT_MIN, INT_MAX, FLAGS, "test" },
         { "all",         "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_ALL},         INT_MIN, INT_MAX, FLAGS, "test" },
+    { "max_frames", "Set the maximum number of frames generated for each test", OFFSET(max_frames),
+        AV_OPT_TYPE_INT64, {.i64 = 30}, 1, INT64_MAX, FLAGS },
+    { "m",          "Set the maximum number of frames generated for each test", OFFSET(max_frames),
+        AV_OPT_TYPE_INT64, {.i64 = 30}, 1, INT64_MAX, FLAGS },
     { NULL }
 };
 
@@ -303,7 +308,8 @@ static int request_frame(AVFilterLink *outlink)
     AVFrame *picref;
     int w = WIDTH, h = HEIGHT,
         cw = AV_CEIL_RSHIFT(w, test->hsub), ch = AV_CEIL_RSHIFT(h, test->vsub);
-    unsigned int frame = outlink->frame_count_in;
+    uint64_t frame = outlink->frame_count_in / test->max_frames;
+    uint64_t mod = outlink->frame_count_in % test->max_frames;
     enum test_type tt = test->test;
     int i;
 
@@ -322,20 +328,20 @@ static int request_frame(AVFilterLink *outlink)
         memset(picref->data[2] + i*picref->linesize[2], 128, cw);
     }
 
-    if (tt == TEST_ALL && frame%30) /* draw a black frame at the beginning of each test */
-        tt = (frame/30)%(TEST_NB-1);
+    if (tt == TEST_ALL && mod) /* draw a black frame at the beginning of each test */
+        tt = frame%(TEST_NB-1);
 
     switch (tt) {
-    case TEST_DC_LUMA:       dc_test(picref->data[0], picref->linesize[0], 256, 256, frame%30); break;
-    case TEST_DC_CHROMA:     dc_test(picref->data[1], picref->linesize[1], 256, 256, frame%30); break;
-    case TEST_FREQ_LUMA:   freq_test(picref->data[0], picref->linesize[0], frame%30); break;
-    case TEST_FREQ_CHROMA: freq_test(picref->data[1], picref->linesize[1], frame%30); break;
-    case TEST_AMP_LUMA:     amp_test(picref->data[0], picref->linesize[0], frame%30); break;
-    case TEST_AMP_CHROMA:   amp_test(picref->data[1], picref->linesize[1], frame%30); break;
-    case TEST_CBP:          cbp_test(picref->data   , picref->linesize   , frame%30); break;
-    case TEST_MV:            mv_test(picref->data[0], picref->linesize[0], frame%30); break;
-    case TEST_RING1:      ring1_test(picref->data[0], picref->linesize[0], frame%30); break;
-    case TEST_RING2:      ring2_test(picref->data[0], picref->linesize[0], frame%30); break;
+    case TEST_DC_LUMA:       dc_test(picref->data[0], picref->linesize[0], 256, 256, mod); break;
+    case TEST_DC_CHROMA:     dc_test(picref->data[1], picref->linesize[1], 256, 256, mod); break;
+    case TEST_FREQ_LUMA:   freq_test(picref->data[0], picref->linesize[0], mod); break;
+    case TEST_FREQ_CHROMA: freq_test(picref->data[1], picref->linesize[1], mod); break;
+    case TEST_AMP_LUMA:     amp_test(picref->data[0], picref->linesize[0], mod); break;
+    case TEST_AMP_CHROMA:   amp_test(picref->data[1], picref->linesize[1], mod); break;
+    case TEST_CBP:          cbp_test(picref->data   , picref->linesize   , mod); break;
+    case TEST_MV:            mv_test(picref->data[0], picref->linesize[0], mod); break;
+    case TEST_RING1:      ring1_test(picref->data[0], picref->linesize[0], mod); break;
+    case TEST_RING2:      ring2_test(picref->data[0], picref->linesize[0], mod); break;
     }
 
     return ff_filter_frame(outlink, picref);

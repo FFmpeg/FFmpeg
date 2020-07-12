@@ -132,6 +132,9 @@ compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
 for loops with variable definition (@samp{for (int i = 0; i < 8; i++)});
 
 @item
+Variadic macros (@samp{#define ARRAY(nb, ...) (int[nb + 1])@{ nb, __VA_ARGS__ @}});
+
+@item
 Implementation defined behavior for signed integers is assumed to match the
 expected behavior for two's complement. Non representable values in integer
 casts are binary truncated. Shift right of signed values uses sign extension.
@@ -622,7 +625,7 @@ If the patch fixes a bug, did you provide a verbose analysis of the bug?
 If the patch fixes a bug, did you provide enough information, including
 a sample, so the bug can be reproduced and the fix can be verified?
 Note please do not attach samples >100k to mails but rather provide a
-URL, you can upload to ftp://upload.ffmpeg.org.
+URL, you can upload to @url{https://streams.videolan.org/upload/}.
 
 @item
 Did you provide a verbose summary about what the patch does change?

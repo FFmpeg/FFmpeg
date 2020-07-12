@@ -40,7 +40,7 @@ static int dfa_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int frames;
+    int frames, ret;
     int version;
     uint32_t mspf;
 
@@ -69,8 +69,8 @@ static int dfa_read_header(AVFormatContext *s)
     avio_skip(pb, 128 - 16); // padding
     st->duration = frames;
 
-    if (ff_alloc_extradata(st->codecpar, 2))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, 2)) < 0)
+        return ret;
     AV_WL16(st->codecpar->extradata, version);
     if (version == 0x100)
         st->sample_aspect_ratio = (AVRational){2, 1};
@@ -93,7 +93,6 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!first) {
             ret = av_append_packet(pb, pkt, 12);
             if (ret < 0) {
-                av_packet_unref(pkt);
                 return ret;
             }
         } else
@@ -101,7 +100,6 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
         frame_size = AV_RL32(pkt->data + pkt->size - 8);
         if (frame_size > INT_MAX - 4) {
             av_log(s, AV_LOG_ERROR, "Too large chunk size: %"PRIu32"\n", frame_size);
-            av_packet_unref(pkt);
             return AVERROR(EIO);
         }
         if (AV_RL32(pkt->data + pkt->size - 12) == MKTAG('E', 'O', 'F', 'R')) {
@@ -115,7 +113,6 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         ret = av_append_packet(pb, pkt, frame_size);
         if (ret < 0) {
-            av_packet_unref(pkt);
             return ret;
         }
     }

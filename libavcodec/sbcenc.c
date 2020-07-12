@@ -30,7 +30,6 @@
  * SBC encoder implementation
  */
 
-#include <stdbool.h>
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -95,7 +94,7 @@ static int sbc_analyze_audio(SBCDSPContext *s, struct sbc_frame *frame)
  * Returns the length of the packed frame.
  */
 static size_t sbc_pack_frame(AVPacket *avpkt, struct sbc_frame *frame,
-                             int joint, bool msbc)
+                             int joint, int msbc)
 {
     PutBitContext pb;
 
@@ -331,6 +330,7 @@ static const AVOption options[] = {
       OFFSET(max_delay), AV_OPT_TYPE_DURATION, {.i64 = 13000}, 1000,13000, AE },
     { "msbc",      "use mSBC mode (wideband speech mono SBC)",
       OFFSET(msbc),      AV_OPT_TYPE_BOOL,     {.i64 = 0},        0,    1, AE },
+    FF_AVCTX_PROFILE_OPTION("msbc", NULL, AUDIO, FF_PROFILE_SBC_MSBC)
     { NULL },
 };
 

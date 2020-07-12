@@ -26,7 +26,11 @@
 #define OFFSET(x) offsetof(NvencContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+#ifdef NVENC_HAVE_NEW_PRESETS
+    { "preset",       "Set the encoding preset",            OFFSET(preset),       AV_OPT_TYPE_INT,   { .i64 = PRESET_P4 },     PRESET_DEFAULT, PRESET_P7,          VE, "preset" },
+#else
     { "preset",       "Set the encoding preset",            OFFSET(preset),       AV_OPT_TYPE_INT,   { .i64 = PRESET_MEDIUM }, PRESET_DEFAULT, PRESET_LOSSLESS_HP, VE, "preset" },
+#endif
     { "default",      "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_DEFAULT },             0, 0, VE, "preset" },
     { "slow",         "hq 2 passes",                        0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_SLOW },                0, 0, VE, "preset" },
     { "medium",       "hq 1 pass",                          0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_MEDIUM },              0, 0, VE, "preset" },
@@ -39,6 +43,20 @@ static const AVOption options[] = {
     { "llhp",         "low latency hp",                     0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_LOW_LATENCY_HP },      0, 0, VE, "preset" },
     { "lossless",     "lossless",                           0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_LOSSLESS_DEFAULT },    0, 0, VE, "preset" },
     { "losslesshp",   "lossless hp",                        0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_LOSSLESS_HP },         0, 0, VE, "preset" },
+#ifdef NVENC_HAVE_NEW_PRESETS
+    { "p1",          "fastest (lowest quality)",            0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P1 },                  0, 0, VE, "preset" },
+    { "p2",          "faster (lower quality)",              0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P2 },                  0, 0, VE, "preset" },
+    { "p3",          "fast (low quality)",                  0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P3 },                  0, 0, VE, "preset" },
+    { "p4",          "medium (default)",                    0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P4 },                  0, 0, VE, "preset" },
+    { "p5",          "slow (good quality)",                 0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P5 },                  0, 0, VE, "preset" },
+    { "p6",          "slower (better quality)",             0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P6 },                  0, 0, VE, "preset" },
+    { "p7",          "slowest (best quality)",              0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P7 },                  0, 0, VE, "preset" },
+    { "tune",        "Set the encoding tuning info",        OFFSET(tuning_info),  AV_OPT_TYPE_INT,   { .i64 = NV_ENC_TUNING_INFO_HIGH_QUALITY }, NV_ENC_TUNING_INFO_HIGH_QUALITY, NV_ENC_TUNING_INFO_LOSSLESS,  VE, "tune" },
+    { "hq",          "High quality",                        0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_HIGH_QUALITY },             0, 0, VE, "tune" },
+    { "ll",          "Low latency",                         0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_LOW_LATENCY },              0, 0, VE, "tune" },
+    { "ull",         "Ultra low latency",                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },        0, 0, VE, "tune" },
+    { "lossless",    "Lossless",                            0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_LOSSLESS },                 0, 0, VE, "tune" },
+#endif
     { "profile",      "Set the encoding profile",           OFFSET(profile),      AV_OPT_TYPE_INT,   { .i64 = NV_ENC_HEVC_PROFILE_MAIN }, NV_ENC_HEVC_PROFILE_MAIN, FF_PROFILE_HEVC_REXT, VE, "profile" },
     { "main",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MAIN },    0, 0, VE, "profile" },
     { "main10",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MAIN_10 }, 0, 0, VE, "profile" },
@@ -96,7 +114,9 @@ static const AVOption options[] = {
     { "forced-idr",   "If forcing keyframes, force them as IDR frames.",
                                                             OFFSET(forced_idr),   AV_OPT_TYPE_BOOL,  { .i64 = 0 }, -1, 1, VE },
     { "spatial_aq",   "set to 1 to enable Spatial AQ",      OFFSET(aq),           AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
+    { "spatial-aq",   "set to 1 to enable Spatial AQ",      OFFSET(aq),           AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "temporal_aq",  "set to 1 to enable Temporal AQ",     OFFSET(temporal_aq),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
+    { "temporal-aq",  "set to 1 to enable Temporal AQ",     OFFSET(temporal_aq),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "zerolatency",  "Set 1 to indicate zero latency operation (no reordering delay)",
                                                             OFFSET(zerolatency),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "nonref_p",     "Set this to 1 to enable automatic insertion of non-reference P-frames",
@@ -126,6 +146,22 @@ static const AVOption options[] = {
     { "disabled",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0,       VE, "b_ref_mode" },
     { "each",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0,       VE, "b_ref_mode" },
     { "middle",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0,       VE, "b_ref_mode" },
+#endif
+    { "a53cc",        "Use A53 Closed Captions (if available)", OFFSET(a53_cc),   AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1,       VE },
+    { "s12m_tc",      "Use timecode (if available)",        OFFSET(s12m_tc),      AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1,       VE },
+    { "dpb_size",     "Specifies the DPB size used for encoding (0 means automatic)",
+                                                            OFFSET(dpb_size),     AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, VE },
+#ifdef NVENC_HAVE_MULTIPASS
+    { "multipass",    "Set the multipass encoding",         OFFSET(multipass),    AV_OPT_TYPE_INT,   { .i64 = NV_ENC_MULTI_PASS_DISABLED },         NV_ENC_MULTI_PASS_DISABLED, NV_ENC_TWO_PASS_FULL_RESOLUTION, VE, "multipass" },
+    { "disabled",     "Single Pass",                        0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_MULTI_PASS_DISABLED },         0,                          0,                               VE, "multipass" },
+    { "qres",         "Two Pass encoding is enabled where first Pass is quarter resolution",
+                                                            0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TWO_PASS_QUARTER_RESOLUTION }, 0,                          0,                               VE, "multipass" },
+    { "fullres",      "Two Pass encoding is enabled where first Pass is full resolution",
+                                                            0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TWO_PASS_FULL_RESOLUTION },    0,                          0,                               VE, "multipass" },
+#endif
+#ifdef NVENC_HAVE_LDKFS
+    { "ldkfs",        "Low delay key frame scale; Specifies the Scene Change frame size increase allowed in case of single frame VBV and CBR",
+                                                            OFFSET(ldkfs),        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, UCHAR_MAX, VE },
 #endif
     { NULL }
 };
@@ -164,17 +200,17 @@ AVCodec ff_nvenc_hevc_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .init           = nvenc_old_init,
-    .send_frame     = ff_nvenc_send_frame,
     .receive_packet = ff_nvenc_receive_packet,
-    .encode2        = ff_nvenc_encode_frame,
     .close          = ff_nvenc_encode_close,
     .priv_data_size = sizeof(NvencContext),
     .priv_class     = &nvenc_hevc_class,
     .defaults       = defaults,
     .pix_fmts       = ff_nvenc_pix_fmts,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
+                      AV_CODEC_CAP_ENCODER_FLUSH,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };
 
 #endif
@@ -192,15 +228,16 @@ AVCodec ff_hevc_nvenc_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .init           = ff_nvenc_encode_init,
-    .send_frame     = ff_nvenc_send_frame,
     .receive_packet = ff_nvenc_receive_packet,
-    .encode2        = ff_nvenc_encode_frame,
     .close          = ff_nvenc_encode_close,
+    .flush          = ff_nvenc_encode_flush,
     .priv_data_size = sizeof(NvencContext),
     .priv_class     = &hevc_nvenc_class,
     .defaults       = defaults,
     .pix_fmts       = ff_nvenc_pix_fmts,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
+                      AV_CODEC_CAP_ENCODER_FLUSH,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name   = "nvenc",
+    .hw_configs     = ff_nvenc_hw_configs,
 };

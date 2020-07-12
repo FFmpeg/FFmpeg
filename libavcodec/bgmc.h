@@ -40,7 +40,7 @@ int ff_bgmc_init(AVCodecContext *avctx, uint8_t **cf_lut, int **cf_lut_status);
 void ff_bgmc_end(uint8_t **cf_lut, int **cf_lut_status);
 
 
-void ff_bgmc_decode_init(GetBitContext *gb,
+int ff_bgmc_decode_init(GetBitContext *gb,
                       unsigned int *h, unsigned int *l, unsigned int *v);
 
 

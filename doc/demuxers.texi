@@ -331,6 +331,10 @@ segment index to start live streams at (negative values are from the end).
 Maximum number of times a insufficient list is attempted to be reloaded.
 Default value is 1000.
 
+@item m3u8_hold_counters
+The maximum number of times to load m3u8 when it refreshes without new segments.
+Default value is 1000.
+
 @item http_persistent
 Use persistent HTTP connections. Applicable only for HTTP streams.
 Enabled by default.
@@ -452,6 +456,17 @@ nanosecond precision.
 @item video_size
 Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.
+@item export_path_metadata
+If set to 1, will add two extra fields to the metadata found in input, making them
+also available for other filters (see @var{drawtext} filter for examples). Default
+value is 0. The extra fields are described below:
+@table @option
+@item lavf.image2dec.source_path
+Corresponds to the full path to the input file being read.
+@item lavf.image2dec.source_basename
+Corresponds to the name of the file being read.
+@end table
+
 @end table
 
 @subsection Examples
@@ -589,9 +604,13 @@ Set the sample rate for libopenmpt to output.
 Range is from 1000 to INT_MAX. The value default is 48000.
 @end table
 
-@section mov/mp4/3gp/QuickTime
+@section mov/mp4/3gp
 
-QuickTime / MP4 demuxer.
+Demuxer for Quicktime File Format & ISO/IEC Base Media File Format (ISO/IEC 14496-12 or MPEG-4 Part 12, ISO/IEC 15444-12 or JPEG 2000 Part 12).
+
+Registered extensions: mov, mp4, m4a, 3gp, 3g2, mj2, psp, m4b, ism, ismv, isma, f4v
+
+@subsection Options
 
 This demuxer accepts the following options:
 @table @option
@@ -602,9 +621,72 @@ Enabling this can theoretically leak information in some use cases.
 @item use_absolute_path
 Allows loading of external tracks via absolute paths, disabled by default.
 Enabling this poses a security risk. It should only be enabled if the source
-is known to be non malicious.
+is known to be non-malicious.
 
+@item seek_streams_individually
+When seeking, identify the closest point in each stream individually and demux packets in
+that stream from identified point. This can lead to a different sequence of packets compared
+to demuxing linearly from the beginning. Default is true.
+
+@item ignore_editlist
+Ignore any edit list atoms. The demuxer, by default, modifies the stream index to reflect the
+timeline described by the edit list. Default is false.
+
+@item advanced_editlist
+Modify the stream index to reflect the timeline described by the edit list. @code{ignore_editlist}
+must be set to false for this option to be effective.
+If both @code{ignore_editlist} and this option are set to false, then only the
+start of the stream index is modified to reflect initial dwell time or starting timestamp
+described by the edit list. Default is true.
+
+@item ignore_chapters
+Don't parse chapters. This includes GoPro 'HiLight' tags/moments. Note that chapters are
+only parsed when input is seekable. Default is false.
+
+@item use_mfra_for
+For seekable fragmented input, set fragment's starting timestamp from media fragment random access box, if present.
+
+Following options are available:
+@table @samp
+@item auto
+Auto-detect whether to set mfra timestamps as PTS or DTS @emph{(default)}
+
+@item dts
+Set mfra timestamps as DTS
+
+@item pts
+Set mfra timestamps as PTS
+
+@item 0
+Don't use mfra box to set timestamps
 @end table
+
+@item export_all
+Export unrecognized boxes within the @var{udta} box as metadata entries. The first four
+characters of the box type are set as the key. Default is false.
+
+@item export_xmp
+Export entire contents of @var{XMP_} box and @var{uuid} box as a string with key @code{xmp}. Note that
+if @code{export_all} is set and this option isn't, the contents of @var{XMP_} box are still exported
+but with key @code{XMP_}. Default is false.
+
+@item activation_bytes
+4-byte key required to decrypt Audible AAX and AAX+ files. See Audible AAX subsection below.
+
+@item audible_fixed_key
+Fixed key used for handling Audible AAX/AAX+ files. It has been pre-set so should not be necessary to
+specify.
+
+@item decryption_key
+16-byte key, in hex, to decrypt files encrypted using ISO Common Encryption (CENC/AES-128 CTR; ISO/IEC 23001-7).
+@end table
+
+@subsection Audible AAX
+
+Audible AAX files are encrypted M4B files, and they can be decrypted by specifying a 4 byte activation secret.
+@example
+ffmpeg -activation_bytes 1CEB00DA -i test.aax -vn -c:a copy output.mp4
+@end example
 
 @section mpegts
 

@@ -27,15 +27,19 @@
 #define COMPAT_OS2THREADS_H
 
 #define INCL_DOS
+#define INCL_DOSERRORS
 #include <os2.h>
 
 #undef __STRICT_ANSI__          /* for _beginthread() */
 #include <stdlib.h>
+#include <time.h>
 
 #include <sys/builtin.h>
 #include <sys/fmutex.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/common.h"
+#include "libavutil/time.h"
 
 typedef struct {
     TID tid;
@@ -161,6 +165,28 @@ static av_always_inline int pthread_cond_broadcast(pthread_cond_t *cond)
         pthread_cond_signal(cond);
 
     return 0;
+}
+
+static av_always_inline int pthread_cond_timedwait(pthread_cond_t *cond,
+                                                   pthread_mutex_t *mutex,
+                                                   const struct timespec *abstime)
+{
+    int64_t abs_milli = abstime->tv_sec * 1000LL + abstime->tv_nsec / 1000000;
+    ULONG t = av_clip64(abs_milli - av_gettime() / 1000, 0, ULONG_MAX);
+
+    __atomic_increment(&cond->wait_count);
+
+    pthread_mutex_unlock(mutex);
+
+    APIRET ret = DosWaitEventSem(cond->event_sem, t);
+
+    __atomic_decrement(&cond->wait_count);
+
+    DosPostEventSem(cond->ack_sem);
+
+    pthread_mutex_lock(mutex);
+
+    return (ret == ERROR_TIMEOUT) ? ETIMEDOUT : 0;
 }
 
 static av_always_inline int pthread_cond_wait(pthread_cond_t *cond,

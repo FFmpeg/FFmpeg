@@ -213,8 +213,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     if (s->do_video) {
+        AVFrame *clone;
+
         s->out->pts = in->pts;
-        ff_filter_frame(outlink, av_frame_clone(s->out));
+        clone = av_frame_clone(s->out);
+        if (!clone)
+            return AVERROR(ENOMEM);
+        ff_filter_frame(outlink, clone);
     }
     return ff_filter_frame(aoutlink, in);
 }

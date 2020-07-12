@@ -299,6 +299,7 @@
 #define LD_SB4(...) LD_V4(v16i8, __VA_ARGS__)
 #define LD_UH4(...) LD_V4(v8u16, __VA_ARGS__)
 #define LD_SH4(...) LD_V4(v8i16, __VA_ARGS__)
+#define LD_SW4(...) LD_V4(v4i32, __VA_ARGS__)
 
 #define LD_V5(RTYPE, psrc, stride, out0, out1, out2, out3, out4)  \
 {                                                                 \
@@ -337,6 +338,7 @@
 #define LD_SB8(...) LD_V8(v16i8, __VA_ARGS__)
 #define LD_UH8(...) LD_V8(v8u16, __VA_ARGS__)
 #define LD_SH8(...) LD_V8(v8i16, __VA_ARGS__)
+#define LD_SW8(...) LD_V8(v4i32, __VA_ARGS__)
 
 #define LD_V16(RTYPE, psrc, stride,                                   \
                out0, out1, out2, out3, out4, out5, out6, out7,        \
@@ -602,66 +604,47 @@
 }
 #define AVER_UB4_UB(...) AVER_UB4(v16u8, __VA_ARGS__)
 
-/* Description : Immediate number of columns to slide with zero
-   Arguments   : Inputs  - in0, in1, slide_val
-                 Outputs - out0, out1
-                 Return Type - as per RTYPE
-   Details     : Byte elements from 'zero_m' vector are slide into 'in0' by
-                 number of elements specified by 'slide_val'
-*/
-#define SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val)                 \
-{                                                                         \
-    v16i8 zero_m = { 0 };                                                 \
-    out0 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in0, slide_val);  \
-    out1 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in1, slide_val);  \
-}
-#define SLDI_B2_0_UB(...) SLDI_B2_0(v16u8, __VA_ARGS__)
-#define SLDI_B2_0_SB(...) SLDI_B2_0(v16i8, __VA_ARGS__)
-#define SLDI_B2_0_SW(...) SLDI_B2_0(v4i32, __VA_ARGS__)
-
-#define SLDI_B3_0(RTYPE, in0, in1, in2, out0, out1, out2,  slide_val)     \
-{                                                                         \
-    v16i8 zero_m = { 0 };                                                 \
-    SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val);                    \
-    out2 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in2, slide_val);  \
-}
-#define SLDI_B3_0_UB(...) SLDI_B3_0(v16u8, __VA_ARGS__)
-#define SLDI_B3_0_SB(...) SLDI_B3_0(v16i8, __VA_ARGS__)
-
-#define SLDI_B4_0(RTYPE, in0, in1, in2, in3,            \
-                  out0, out1, out2, out3, slide_val)    \
-{                                                       \
-    SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val);  \
-    SLDI_B2_0(RTYPE, in2, in3, out2, out3, slide_val);  \
-}
-#define SLDI_B4_0_UB(...) SLDI_B4_0(v16u8, __VA_ARGS__)
-#define SLDI_B4_0_SB(...) SLDI_B4_0(v16i8, __VA_ARGS__)
-#define SLDI_B4_0_SH(...) SLDI_B4_0(v8i16, __VA_ARGS__)
-
 /* Description : Immediate number of columns to slide
-   Arguments   : Inputs  - in0_0, in0_1, in1_0, in1_1, slide_val
-                 Outputs - out0, out1
+   Arguments   : Inputs  - s, d, slide_val
+                 Outputs - out
                  Return Type - as per RTYPE
-   Details     : Byte elements from 'in0_0' vector are slide into 'in1_0' by
+   Details     : Byte elements from 'd' vector are slide into 's' by
                  number of elements specified by 'slide_val'
 */
-#define SLDI_B2(RTYPE, in0_0, in0_1, in1_0, in1_1, out0, out1, slide_val)  \
-{                                                                          \
-    out0 = (RTYPE) __msa_sldi_b((v16i8) in0_0, (v16i8) in1_0, slide_val);  \
-    out1 = (RTYPE) __msa_sldi_b((v16i8) in0_1, (v16i8) in1_1, slide_val);  \
+#define SLDI_B(RTYPE, d, s, slide_val, out)                       \
+{                                                                 \
+    out = (RTYPE) __msa_sldi_b((v16i8) d, (v16i8) s, slide_val);  \
+}
+
+#define SLDI_B2(RTYPE, d0, s0, d1, s1, slide_val, out0, out1)  \
+{                                                              \
+    SLDI_B(RTYPE, d0, s0, slide_val, out0)                     \
+    SLDI_B(RTYPE, d1, s1, slide_val, out1)                     \
 }
 #define SLDI_B2_UB(...) SLDI_B2(v16u8, __VA_ARGS__)
 #define SLDI_B2_SB(...) SLDI_B2(v16i8, __VA_ARGS__)
 #define SLDI_B2_SH(...) SLDI_B2(v8i16, __VA_ARGS__)
+#define SLDI_B2_SW(...) SLDI_B2(v4i32, __VA_ARGS__)
 
-#define SLDI_B3(RTYPE, in0_0, in0_1, in0_2, in1_0, in1_1, in1_2,           \
-                out0, out1, out2, slide_val)                               \
-{                                                                          \
-    SLDI_B2(RTYPE, in0_0, in0_1, in1_0, in1_1, out0, out1, slide_val)      \
-    out2 = (RTYPE) __msa_sldi_b((v16i8) in0_2, (v16i8) in1_2, slide_val);  \
+#define SLDI_B3(RTYPE, d0, s0, d1, s1, d2, s2, slide_val,  \
+                out0, out1, out2)                          \
+{                                                          \
+    SLDI_B2(RTYPE, d0, s0, d1, s1, slide_val, out0, out1)  \
+    SLDI_B(RTYPE, d2, s2, slide_val, out2)                 \
 }
+#define SLDI_B3_UB(...) SLDI_B3(v16u8, __VA_ARGS__)
 #define SLDI_B3_SB(...) SLDI_B3(v16i8, __VA_ARGS__)
 #define SLDI_B3_UH(...) SLDI_B3(v8u16, __VA_ARGS__)
+
+#define SLDI_B4(RTYPE, d0, s0, d1, s1, d2, s2, d3, s3,     \
+                slide_val, out0, out1, out2, out3)         \
+{                                                          \
+    SLDI_B2(RTYPE, d0, s0, d1, s1, slide_val, out0, out1)  \
+    SLDI_B2(RTYPE, d2, s2, d3, s3, slide_val, out2, out3)  \
+}
+#define SLDI_B4_UB(...) SLDI_B4(v16u8, __VA_ARGS__)
+#define SLDI_B4_SB(...) SLDI_B4(v16i8, __VA_ARGS__)
+#define SLDI_B4_SH(...) SLDI_B4(v8i16, __VA_ARGS__)
 
 /* Description : Shuffle byte vector elements as per mask vector
    Arguments   : Inputs  - in0, in1, in2, in3, mask0, mask1
@@ -933,99 +916,78 @@
 
 /* Description : Clips all halfword elements of input vector between min & max
                  out = ((in) < (min)) ? (min) : (((in) > (max)) ? (max) : (in))
-   Arguments   : Inputs  - in       (input vector)
-                         - min      (min threshold)
-                         - max      (max threshold)
-                 Outputs - out_m    (output vector with clipped elements)
+   Arguments   : Inputs  - in    (input vector)
+                         - min   (min threshold)
+                         - max   (max threshold)
+                 Outputs - in    (output vector with clipped elements)
                  Return Type - signed halfword
 */
-#define CLIP_SH(in, min, max)                           \
-( {                                                     \
-    v8i16 out_m;                                        \
-                                                        \
-    out_m = __msa_max_s_h((v8i16) min, (v8i16) in);     \
-    out_m = __msa_min_s_h((v8i16) max, (v8i16) out_m);  \
-    out_m;                                              \
-} )
+#define CLIP_SH(in, min, max)                     \
+{                                                 \
+    in = __msa_max_s_h((v8i16) min, (v8i16) in);  \
+    in = __msa_min_s_h((v8i16) max, (v8i16) in);  \
+}
 
 /* Description : Clips all signed halfword elements of input vector
                  between 0 & 255
-   Arguments   : Inputs  - in       (input vector)
-                 Outputs - out_m    (output vector with clipped elements)
-                 Return Type - signed halfword
+   Arguments   : Inputs  - in    (input vector)
+                 Outputs - in    (output vector with clipped elements)
+                 Return Type - signed halfwords
 */
-#define CLIP_SH_0_255(in)                                 \
-( {                                                       \
-    v8i16 max_m = __msa_ldi_h(255);                       \
-    v8i16 out_m;                                          \
-                                                          \
-    out_m = __msa_maxi_s_h((v8i16) in, 0);                \
-    out_m = __msa_min_s_h((v8i16) max_m, (v8i16) out_m);  \
-    out_m;                                                \
-} )
+#define CLIP_SH_0_255(in)                       \
+{                                               \
+    in = __msa_maxi_s_h((v8i16) in, 0);         \
+    in = (v8i16) __msa_sat_u_h((v8u16) in, 7);  \
+}
+
 #define CLIP_SH2_0_255(in0, in1)  \
 {                                 \
-    in0 = CLIP_SH_0_255(in0);     \
-    in1 = CLIP_SH_0_255(in1);     \
+    CLIP_SH_0_255(in0);           \
+    CLIP_SH_0_255(in1);           \
 }
+
 #define CLIP_SH4_0_255(in0, in1, in2, in3)  \
 {                                           \
     CLIP_SH2_0_255(in0, in1);               \
     CLIP_SH2_0_255(in2, in3);               \
 }
 
-#define CLIP_SH_0_255_MAX_SATU(in)                    \
-( {                                                   \
-    v8i16 out_m;                                      \
-                                                      \
-    out_m = __msa_maxi_s_h((v8i16) in, 0);            \
-    out_m = (v8i16) __msa_sat_u_h((v8u16) out_m, 7);  \
-    out_m;                                            \
-} )
-#define CLIP_SH2_0_255_MAX_SATU(in0, in1)  \
-{                                          \
-    in0 = CLIP_SH_0_255_MAX_SATU(in0);     \
-    in1 = CLIP_SH_0_255_MAX_SATU(in1);     \
-}
-#define CLIP_SH4_0_255_MAX_SATU(in0, in1, in2, in3)  \
-{                                                    \
-    CLIP_SH2_0_255_MAX_SATU(in0, in1);               \
-    CLIP_SH2_0_255_MAX_SATU(in2, in3);               \
+#define CLIP_SH8_0_255(in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    CLIP_SH4_0_255(in0, in1, in2, in3);     \
+    CLIP_SH4_0_255(in4, in5, in6, in7);     \
 }
 
 /* Description : Clips all signed word elements of input vector
                  between 0 & 255
-   Arguments   : Inputs  - in       (input vector)
-                 Outputs - out_m    (output vector with clipped elements)
+   Arguments   : Inputs  - in    (input vector)
+                 Outputs - in    (output vector with clipped elements)
                  Return Type - signed word
 */
-#define CLIP_SW_0_255(in)                                 \
-( {                                                       \
-    v4i32 max_m = __msa_ldi_w(255);                       \
-    v4i32 out_m;                                          \
-                                                          \
-    out_m = __msa_maxi_s_w((v4i32) in, 0);                \
-    out_m = __msa_min_s_w((v4i32) max_m, (v4i32) out_m);  \
-    out_m;                                                \
-} )
-
-#define CLIP_SW_0_255_MAX_SATU(in)                    \
-( {                                                   \
-    v4i32 out_m;                                      \
-                                                      \
-    out_m = __msa_maxi_s_w((v4i32) in, 0);            \
-    out_m = (v4i32) __msa_sat_u_w((v4u32) out_m, 7);  \
-    out_m;                                            \
-} )
-#define CLIP_SW2_0_255_MAX_SATU(in0, in1)  \
-{                                          \
-    in0 = CLIP_SW_0_255_MAX_SATU(in0);     \
-    in1 = CLIP_SW_0_255_MAX_SATU(in1);     \
+#define CLIP_SW_0_255(in)                       \
+{                                               \
+    in = __msa_maxi_s_w((v4i32) in, 0);         \
+    in = (v4i32) __msa_sat_u_w((v4u32) in, 7);  \
 }
-#define CLIP_SW4_0_255_MAX_SATU(in0, in1, in2, in3)  \
-{                                                    \
-    CLIP_SW2_0_255_MAX_SATU(in0, in1);               \
-    CLIP_SW2_0_255_MAX_SATU(in2, in3);               \
+
+#define CLIP_SW2_0_255(in0, in1)  \
+{                                 \
+    CLIP_SW_0_255(in0);           \
+    CLIP_SW_0_255(in1);           \
+}
+
+#define CLIP_SW4_0_255(in0, in1, in2, in3)  \
+{                                           \
+    CLIP_SW2_0_255(in0, in1);               \
+    CLIP_SW2_0_255(in2, in3);               \
+}
+
+#define CLIP_SW8_0_255(in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    CLIP_SW4_0_255(in0, in1, in2, in3);     \
+    CLIP_SW4_0_255(in4, in5, in6, in7);     \
 }
 
 /* Description : Addition of 4 signed word elements
@@ -1422,6 +1384,7 @@
             out4, out5, out6, out7);                              \
 }
 #define ILVR_B8_UH(...) ILVR_B8(v8u16, __VA_ARGS__)
+#define ILVR_B8_SW(...) ILVR_B8(v4i32, __VA_ARGS__)
 
 /* Description : Interleave right half of halfword elements from vectors
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
@@ -2433,6 +2396,7 @@
 {                                                                        \
     v16i8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                \
     v16i8 tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                \
+    v16i8 zeros = { 0 };                                                 \
                                                                          \
     ILVR_B4_SB(in2, in0, in3, in1, in6, in4, in7, in5,                   \
                tmp0_m, tmp1_m, tmp2_m, tmp3_m);                          \
@@ -2440,8 +2404,8 @@
     ILVRL_B2_SB(tmp3_m, tmp2_m, tmp6_m, tmp7_m);                         \
     ILVRL_W2(RTYPE, tmp6_m, tmp4_m, out0, out2);                         \
     ILVRL_W2(RTYPE, tmp7_m, tmp5_m, out4, out6);                         \
-    SLDI_B2_0(RTYPE, out0, out2, out1, out3, 8);                         \
-    SLDI_B2_0(RTYPE, out4, out6, out5, out7, 8);                         \
+    SLDI_B4(RTYPE, zeros, out0, zeros, out2, zeros, out4, zeros, out6,   \
+            8, out1, out3, out5, out7);                                  \
 }
 #define TRANSPOSE8x8_UB_UB(...) TRANSPOSE8x8_UB(v16u8, __VA_ARGS__)
 #define TRANSPOSE8x8_UB_UH(...) TRANSPOSE8x8_UB(v8u16, __VA_ARGS__)
@@ -2523,8 +2487,6 @@
     out5 = (v16u8) __msa_ilvod_w((v4i32) tmp3_m, (v4i32) tmp2_m);            \
                                                                              \
     tmp2_m = (v16u8) __msa_ilvod_h((v8i16) tmp5_m, (v8i16) tmp4_m);          \
-    tmp2_m = (v16u8) __msa_ilvod_h((v8i16) tmp5_m, (v8i16) tmp4_m);          \
-    tmp3_m = (v16u8) __msa_ilvod_h((v8i16) tmp7_m, (v8i16) tmp6_m);          \
     tmp3_m = (v16u8) __msa_ilvod_h((v8i16) tmp7_m, (v8i16) tmp6_m);          \
     out3 = (v16u8) __msa_ilvev_w((v4i32) tmp3_m, (v4i32) tmp2_m);            \
     out7 = (v16u8) __msa_ilvod_w((v4i32) tmp3_m, (v4i32) tmp2_m);            \

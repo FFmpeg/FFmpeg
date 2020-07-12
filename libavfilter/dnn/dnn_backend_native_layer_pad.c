@@ -22,6 +22,33 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_pad.h"
 
+int dnn_load_layer_pad(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
+{
+    LayerPadParams *params;
+    int dnn_size = 0;
+    params = av_malloc(sizeof(*params));
+    if (!params)
+        return 0;
+
+    params->mode = (int32_t)avio_rl32(model_file_context);
+    dnn_size += 4;
+    for (int i = 0; i < 4; ++i) {
+        params->paddings[i][0] = avio_rl32(model_file_context);
+        params->paddings[i][1] = avio_rl32(model_file_context);
+        dnn_size += 8;
+    }
+    layer->input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
+    layer->output_operand_index = (int32_t)avio_rl32(model_file_context);
+    dnn_size += 8;
+    layer->params = params;
+
+    if (layer->input_operand_indexes[0] >= operands_num || layer->output_operand_index >= operands_num) {
+        return 0;
+    }
+
+    return dnn_size;
+}
+
 static int before_get_buddy(int given, int paddings, LayerPadModeParam mode)
 {
     if (mode == LPMP_SYMMETRIC) {
@@ -48,12 +75,22 @@ static int after_get_buddy(int given, int border, LayerPadModeParam mode)
     }
 }
 
-void dnn_execute_layer_pad(const float *input, float *output, const LayerPadParams *params, int number, int height, int width, int channel)
+int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_indexes,
+                          int32_t output_operand_index, const void *parameters)
 {
     int32_t before_paddings;
     int32_t after_paddings;
+    float* output;
+    const LayerPadParams *params = (const LayerPadParams *)parameters;
 
     // suppose format is <N, H, W, C>
+    int32_t input_operand_index = input_operand_indexes[0];
+    int number = operands[input_operand_index].dims[0];
+    int height = operands[input_operand_index].dims[1];
+    int width = operands[input_operand_index].dims[2];
+    int channel = operands[input_operand_index].dims[3];
+    const float *input = operands[input_operand_index].data;
+
     int new_number = number + params->paddings[0][0] + params->paddings[0][1];
     int new_height = height + params->paddings[1][0] + params->paddings[1][1];
     int new_width = width + params->paddings[2][0] + params->paddings[2][1];
@@ -66,6 +103,20 @@ void dnn_execute_layer_pad(const float *input, float *output, const LayerPadPara
     int new_c_stride = new_channel;
     int new_wc_stride = new_c_stride * new_width;
     int new_hwc_stride = new_wc_stride * new_height;
+
+    DnnOperand *output_operand = &operands[output_operand_index];
+    output_operand->dims[0] = new_number;
+    output_operand->dims[1] = new_height;
+    output_operand->dims[2] = new_width;
+    output_operand->dims[3] = new_channel;
+    output_operand->data_type = operands[input_operand_index].data_type;
+    output_operand->length = calculate_operand_data_length(output_operand);
+    if (output_operand->length <= 0)
+        return -1;
+    output_operand->data = av_realloc(output_operand->data, output_operand->length);
+    if (!output_operand->data)
+        return -1;
+    output = output_operand->data;
 
     // copy the original data
     for (int n = 0; n < number; n++) {
@@ -208,4 +259,6 @@ void dnn_execute_layer_pad(const float *input, float *output, const LayerPadPara
             }
         }
     }
+
+    return 0;
 }

@@ -49,6 +49,21 @@ typedef struct DPCMContext {
     const int8_t *sol_table;        ///< delta table for SOL_DPCM
 } DPCMContext;
 
+static const int32_t derf_steps[96] = {
+    0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10, 11, 12, 13, 14, 16,
+    17, 19, 21, 23, 25, 28, 31, 34,
+    37, 41, 45, 50, 55, 60, 66, 73,
+    80, 88, 97, 107, 118, 130, 143, 157,
+    173, 190, 209, 230, 253, 279, 307, 337,
+    371, 408, 449, 494, 544, 598, 658, 724,
+    796, 876, 963, 1060, 1166, 1282, 1411, 1552,
+    1707, 1878, 2066, 2272, 2499, 2749, 3024, 3327,
+    3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132,
+    7845, 8630, 9493, 10442, 11487, 12635, 13899, 15289,
+    16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
+};
+
 static const int16_t interplay_delta_table[] = {
          0,      1,      2,      3,      4,      5,      6,      7,
          8,      9,     10,     11,     12,     13,     14,     15,
@@ -225,6 +240,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         else
             out = buf_size;
         break;
+    case AV_CODEC_ID_DERF_DPCM:
     case AV_CODEC_ID_GREMLIN_DPCM:
     case AV_CODEC_ID_SDX2_DPCM:
         out = buf_size;
@@ -305,9 +321,8 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
                 shift[ch] -= (2 * n);
             diff = sign_extend((diff &~ 3) << 8, 16);
 
-            /* saturate the shifter to a lower limit of 0 */
-            if (shift[ch] < 0)
-                shift[ch] = 0;
+            /* saturate the shifter to 0..31 */
+            shift[ch] = av_clip_uintp2(shift[ch], 5);
 
             diff >>= shift[ch];
             predictor[ch] += diff;
@@ -367,8 +382,23 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         while (output_samples < samples_end) {
             uint8_t n = bytestream2_get_byteu(&gb);
 
-            *output_samples++ = s->sample[idx] += s->array[n];
+            *output_samples++ = s->sample[idx] += (unsigned)s->array[n];
             idx ^= 1;
+        }
+        }
+        break;
+
+    case AV_CODEC_ID_DERF_DPCM: {
+        int idx = 0;
+
+        while (output_samples < samples_end) {
+            uint8_t n = bytestream2_get_byteu(&gb);
+            int index = FFMIN(n & 0x7f, 95);
+
+            s->sample[idx] += (n & 0x80 ? -1: 1) * derf_steps[index];
+            s->sample[idx]  = av_clip_int16(s->sample[idx]);
+            *output_samples++ = s->sample[idx];
+            idx ^= stereo;
         }
         }
         break;
@@ -391,6 +421,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .capabilities   = AV_CODEC_CAP_DR1,                     \
 }
 
+DPCM_DECODER(AV_CODEC_ID_DERF_DPCM,      derf_dpcm,      "DPCM Xilam DERF");
 DPCM_DECODER(AV_CODEC_ID_GREMLIN_DPCM,   gremlin_dpcm,   "DPCM Gremlin");
 DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
 DPCM_DECODER(AV_CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");

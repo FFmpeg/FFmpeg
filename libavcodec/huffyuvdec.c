@@ -570,35 +570,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return ret;
 }
 
-#if HAVE_THREADS
-static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
-{
-    HYuvContext *s = avctx->priv_data;
-    int i, ret;
-
-    s->avctx = avctx;
-
-    if ((ret = ff_huffyuv_alloc_temp(s)) < 0) {
-        ff_huffyuv_common_end(s);
-        return ret;
-    }
-
-    for (i = 0; i < 8; i++)
-        s->vlc[i].table = NULL;
-
-    if (s->version >= 2) {
-        if ((ret = read_huffman_tables(s, avctx->extradata + 4,
-                                       avctx->extradata_size)) < 0)
-            return ret;
-    } else {
-        if ((ret = read_old_huffman_tables(s)) < 0)
-            return ret;
-    }
-
-    return 0;
-}
-#endif
-
 /** Subset of GET_VLC for use in hand-roller VLC code */
 #define VLC_INTERN(dst, table, gb, name, bits, max_depth)   \
     code = table[index][0];                                 \
@@ -957,12 +928,16 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                 left= left_prediction(s, p->data[plane], s->temp[0], w, 0);
 
                 y = 1;
+                if (y >= h)
+                    break;
 
                 /* second line is left predicted for interlaced case */
                 if (s->interlaced) {
                     decode_plane_bitstream(s, w, plane);
                     left = left_prediction(s, p->data[plane] + p->linesize[plane], s->temp[0], w, left);
                     y++;
+                    if (y >= h)
+                        break;
                 }
 
                 lefttop = p->data[plane][0];
@@ -1074,6 +1049,8 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                 }
 
                 cy = y = 1;
+                if (y >= height)
+                    break;
 
                 /* second line is left predicted for interlaced case */
                 if (s->interlaced) {
@@ -1086,6 +1063,8 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                     }
                     y++;
                     cy++;
+                    if (y >= height)
+                        break;
                 }
 
                 /* next 4 pixels are left predicted too */
@@ -1302,7 +1281,6 @@ AVCodec ff_huffyuv_decoder = {
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                         AV_CODEC_CAP_FRAME_THREADS,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
 };
 
 #if CONFIG_FFVHUFF_DECODER
@@ -1317,7 +1295,6 @@ AVCodec ff_ffvhuff_decoder = {
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                         AV_CODEC_CAP_FRAME_THREADS,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
 };
 #endif /* CONFIG_FFVHUFF_DECODER */
 
@@ -1333,6 +1310,5 @@ AVCodec ff_hymt_decoder = {
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                         AV_CODEC_CAP_FRAME_THREADS,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
 };
 #endif /* CONFIG_HYMT_DECODER */

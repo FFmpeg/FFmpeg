@@ -356,7 +356,7 @@ struct AACContext {
     OutputConfiguration oc[2];
     int warned_num_aac_frames;
     int warned_960_sbr;
-
+    unsigned warned_71_wide;
     int warned_gain_control;
 
     /* aacdec functions pointers */

@@ -124,6 +124,8 @@ static int decode_fint(AVCodecContext *avctx,
         clear_plane(avctx, s->frame1);
         return 0;
     }
+    if (bytestream2_get_bytes_left(gb) < 72)
+        return AVERROR_INVALIDDATA;
 
     bytestream2_skip(gb, 8);
     w = bytestream2_get_le32(gb);

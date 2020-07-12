@@ -162,7 +162,7 @@ static const AVOption atempo_options[] = {
       OFFSET(tempo), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 },
       YAE_ATEMPO_MIN,
       YAE_ATEMPO_MAX,
-      AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM },
+      AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM },
     { NULL }
 };
 
@@ -328,28 +328,14 @@ static int yae_reset(ATempoContext *atempo,
     return 0;
 }
 
-static int yae_set_tempo(AVFilterContext *ctx, const char *arg_tempo)
+static int yae_update(AVFilterContext *ctx)
 {
     const AudioFragment *prev;
     ATempoContext *atempo = ctx->priv;
-    char   *tail = NULL;
-    double tempo = av_strtod(arg_tempo, &tail);
-
-    if (tail && *tail) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid tempo value '%s'\n", arg_tempo);
-        return AVERROR(EINVAL);
-    }
-
-    if (tempo < YAE_ATEMPO_MIN || tempo > YAE_ATEMPO_MAX) {
-        av_log(ctx, AV_LOG_ERROR, "Tempo value %f exceeds [%f, %f] range\n",
-               tempo, YAE_ATEMPO_MIN, YAE_ATEMPO_MAX);
-        return AVERROR(EINVAL);
-    }
 
     prev = yae_prev_frag(atempo);
     atempo->origin[0] = prev->position[0] + atempo->window / 2;
     atempo->origin[1] = prev->position[1] + atempo->window / 2;
-    atempo->tempo = tempo;
     return 0;
 }
 
@@ -1189,7 +1175,12 @@ static int process_command(AVFilterContext *ctx,
                            int res_len,
                            int flags)
 {
-    return !strcmp(cmd, "tempo") ? yae_set_tempo(ctx, arg) : AVERROR(ENOSYS);
+    int ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return yae_update(ctx);
 }
 
 static const AVFilterPad atempo_inputs[] = {

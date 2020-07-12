@@ -168,6 +168,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     size = gb_get_v(&gb);
     if(size > UINT_MAX/4 || size > c->samples/1152){
         av_log(s, AV_LOG_ERROR, "Seek table is too big\n");
+        av_free(buf);
         return;
     }
     seekd = get_bits(&gb, 4);
@@ -211,7 +212,7 @@ static int mpc8_read_header(AVFormatContext *s)
     MPCContext *c = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int tag = 0;
+    int tag = 0, ret;
     int64_t size, pos;
 
     c->header_pos = avio_tell(pb);
@@ -252,8 +253,8 @@ static int mpc8_read_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_MUSEPACK8;
     st->codecpar->bits_per_coded_sample = 16;
 
-    if (ff_get_extradata(s, st->codecpar, pb, 2) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, st->codecpar, pb, 2)) < 0)
+        return ret;
 
     st->codecpar->channels = (st->codecpar->extradata[1] >> 4) + 1;
     st->codecpar->sample_rate = mpc8_rate[st->codecpar->extradata[0] >> 5];
@@ -276,7 +277,7 @@ static int mpc8_read_header(AVFormatContext *s)
 static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MPCContext *c = s->priv_data;
-    int tag;
+    int tag, ret;
     int64_t pos, size;
 
     while(!avio_feof(s->pb)){
@@ -290,8 +291,8 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (size < 0)
             return -1;
         if(tag == TAG_AUDIOPACKET){
-            if(av_get_packet(s->pb, pkt, size) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = av_get_packet(s->pb, pkt, size)) < 0)
+                return ret;
             pkt->stream_index = 0;
             pkt->duration     = 1;
             return 0;

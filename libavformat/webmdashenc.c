@@ -31,7 +31,6 @@
 #include <string.h>
 
 #include "avformat.h"
-#include "avio_internal.h"
 #include "matroska.h"
 
 #include "libavutil/avstring.h"
@@ -57,22 +56,11 @@ typedef struct WebMDashMuxContext {
     char *utc_timing_url;
     double time_shift_buffer_depth;
     int minimum_update_period;
-    int debug_mode;
 } WebMDashMuxContext;
 
 static const char *get_codec_name(int codec_id)
 {
-    switch (codec_id) {
-        case AV_CODEC_ID_VP8:
-            return "vp8";
-        case AV_CODEC_ID_VP9:
-            return "vp9";
-        case AV_CODEC_ID_VORBIS:
-            return "vorbis";
-        case AV_CODEC_ID_OPUS:
-            return "opus";
-    }
-    return NULL;
+    return avcodec_descriptor_get(codec_id)->name;
 }
 
 static double get_duration(AVFormatContext *s)
@@ -114,7 +102,7 @@ static int write_header(AVFormatContext *s)
         if (!strftime(gmt_iso, 21, "%Y-%m-%dT%H:%M:%SZ", gmt)) {
             return AVERROR_UNKNOWN;
         }
-        if (w->debug_mode) {
+        if (s->flags & AVFMT_FLAG_BITEXACT) {
             av_strlcpy(gmt_iso, "", 1);
         }
         avio_printf(s->pb, "  availabilityStartTime=\"%s\"\n", gmt_iso);
@@ -286,7 +274,6 @@ static int parse_filename(char *filename, char **representation_id,
                           char **initialization_pattern, char **media_pattern) {
     char *underscore_pos = NULL;
     char *period_pos = NULL;
-    char *temp_pos = NULL;
     char *filename_str = av_strdup(filename);
     int ret = 0;
 
@@ -294,16 +281,12 @@ static int parse_filename(char *filename, char **representation_id,
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    temp_pos = av_stristr(filename_str, "_");
-    while (temp_pos) {
-        underscore_pos = temp_pos + 1;
-        temp_pos = av_stristr(temp_pos + 1, "_");
-    }
+    underscore_pos = strrchr(filename_str, '_');
     if (!underscore_pos) {
         ret = AVERROR_INVALIDDATA;
         goto end;
     }
-    period_pos = av_stristr(underscore_pos, ".");
+    period_pos = strchr(++underscore_pos, '.');
     if (!period_pos) {
         ret = AVERROR_INVALIDDATA;
         goto end;
@@ -437,18 +420,6 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     return 0;
 }
 
-static int to_integer(char *p, int len)
-{
-    int ret;
-    char *q = av_malloc(sizeof(char) * len);
-    if (!q)
-        return AVERROR(ENOMEM);
-    av_strlcpy(q, p, len);
-    ret = atoi(q);
-    av_free(q);
-    return ret;
-}
-
 static int parse_adaptation_sets(AVFormatContext *s)
 {
     WebMDashMuxContext *w = s->priv_data;
@@ -461,10 +432,16 @@ static int parse_adaptation_sets(AVFormatContext *s)
     }
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     state = new_set;
-    while (p < w->adaptation_sets + strlen(w->adaptation_sets)) {
-        if (*p == ' ')
+    while (1) {
+        if (*p == '\0') {
+            if (state == new_set)
+                break;
+            else
+                return AVERROR(EINVAL);
+        } else if (state == new_set && *p == ' ') {
+            p++;
             continue;
-        else if (state == new_set && !strncmp(p, "id=", 3)) {
+        } else if (state == new_set && !strncmp(p, "id=", 3)) {
             void *mem = av_realloc(w->as, sizeof(*w->as) * (w->nb_as + 1));
             const char *comma;
             if (mem == NULL)
@@ -489,17 +466,18 @@ static int parse_adaptation_sets(AVFormatContext *s)
             state = parsing_streams;
         } else if (state == parsing_streams) {
             struct AdaptationSet *as = &w->as[w->nb_as - 1];
-            q = p;
-            while (*q != '\0' && *q != ',' && *q != ' ') q++;
-            as->streams = av_realloc(as->streams, sizeof(*as->streams) * ++as->nb_streams);
-            if (as->streams == NULL)
-                return AVERROR(ENOMEM);
-            as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
-            if (as->streams[as->nb_streams - 1] < 0 ||
-                as->streams[as->nb_streams - 1] >= s->nb_streams) {
+            int64_t num;
+            int ret = av_reallocp_array(&as->streams, ++as->nb_streams,
+                                        sizeof(*as->streams));
+            if (ret < 0)
+                return ret;
+            num = strtoll(p, &q, 10);
+            if (!av_isdigit(*p) || (*q != ' ' && *q != '\0' && *q != ',') ||
+                num < 0 || num >= s->nb_streams) {
                 av_log(s, AV_LOG_ERROR, "Invalid value for 'streams' in adapation_sets.\n");
                 return AVERROR(EINVAL);
             }
+            as->streams[as->nb_streams - 1] = num;
             if (*q == '\0') break;
             if (*q == ' ') state = new_set;
             p = ++q;
@@ -516,6 +494,14 @@ static int webm_dash_manifest_write_header(AVFormatContext *s)
     double start = 0.0;
     int ret;
     WebMDashMuxContext *w = s->priv_data;
+
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        enum AVCodecID codec_id = s->streams[i]->codecpar->codec_id;
+        if (codec_id != AV_CODEC_ID_VP8    && codec_id != AV_CODEC_ID_VP9 &&
+            codec_id != AV_CODEC_ID_VORBIS && codec_id != AV_CODEC_ID_OPUS)
+            return AVERROR(EINVAL);
+    }
+
     ret = parse_adaptation_sets(s);
     if (ret < 0) {
         goto fail;
@@ -550,16 +536,9 @@ static int webm_dash_manifest_write_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-static int webm_dash_manifest_write_trailer(AVFormatContext *s)
-{
-    free_adaptation_sets(s);
-    return 0;
-}
-
 #define OFFSET(x) offsetof(WebMDashMuxContext, x)
 static const AVOption options[] = {
     { "adaptation_sets", "Adaptation sets. Syntax: id=0,streams=0,1,2 id=1,streams=3,4 and so on", OFFSET(adaptation_sets), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "debug_mode", "[private option - users should never set this]. Create deterministic output", OFFSET(debug_mode), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "live", "create a live stream manifest", OFFSET(is_live), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "chunk_start_index",  "start index of the chunk", OFFSET(chunk_start_index), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "chunk_duration_ms", "duration of each chunk (in milliseconds)", OFFSET(chunk_duration), AV_OPT_TYPE_INT, {.i64 = 1000}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
@@ -569,7 +548,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#if CONFIG_WEBM_DASH_MANIFEST_MUXER
 static const AVClass webm_dash_class = {
     .class_name = "WebM DASH Manifest muxer",
     .item_name  = av_default_item_name,
@@ -585,7 +563,5 @@ AVOutputFormat ff_webm_dash_manifest_muxer = {
     .priv_data_size    = sizeof(WebMDashMuxContext),
     .write_header      = webm_dash_manifest_write_header,
     .write_packet      = webm_dash_manifest_write_packet,
-    .write_trailer     = webm_dash_manifest_write_trailer,
     .priv_class        = &webm_dash_class,
 };
-#endif

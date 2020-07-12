@@ -142,7 +142,7 @@ int ff_libwebp_get_frame(AVCodecContext *avctx, LibWebPContextCommon *s,
             alt_frame->format = frame->format;
             if (s->cr_threshold)
                 alt_frame->format = AV_PIX_FMT_YUVA420P;
-            ret = av_frame_get_buffer(alt_frame, 32);
+            ret = av_frame_get_buffer(alt_frame, 0);
             if (ret < 0)
                 goto end;
             alt_frame->format = frame->format;

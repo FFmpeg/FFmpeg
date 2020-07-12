@@ -43,10 +43,11 @@ typedef struct RubberBandContext {
 
 #define OFFSET(x) offsetof(RubberBandContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AT AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption rubberband_options[] = {
-    { "tempo",      "set tempo scale factor", OFFSET(tempo), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01, 100, A },
-    { "pitch",      "set pitch scale factor", OFFSET(pitch), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01, 100, A },
+    { "tempo",      "set tempo scale factor", OFFSET(tempo), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01, 100, AT },
+    { "pitch",      "set pitch scale factor", OFFSET(pitch), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01, 100, AT },
     { "transients", "set transients", OFFSET(transients), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, A, "transients" },
         { "crisp",  0,                0,                  AV_OPT_TYPE_CONST, {.i64=RubberBandOptionTransientsCrisp},  0, 0, A, "transients" },
         { "mixed",  0,                0,                  AV_OPT_TYPE_CONST, {.i64=RubberBandOptionTransientsMixed},  0, 0, A, "transients" },
@@ -120,8 +121,9 @@ static int query_formats(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    RubberBandContext *s = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx = inlink->dst;
+    RubberBandContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     int ret = 0, nb_samples;
 
@@ -148,7 +150,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_free(&in);
-    return ret  < 0 ? ret : nb_samples;
+    if (ff_inlink_queued_samples(inlink) >= s->nb_samples)
+        ff_filter_set_ready(ctx, 100);
+    return ret < 0 ? ret : nb_samples;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -200,30 +204,15 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     RubberBandContext *s = ctx->priv;
+    int ret;
 
-    if (!strcmp(cmd, "tempo")) {
-        double arg;
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
 
-        sscanf(args, "%lf", &arg);
-        if (arg < 0.01 || arg > 100) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Tempo scale factor '%f' out of range\n", arg);
-            return AVERROR(EINVAL);
-        }
-        rubberband_set_time_ratio(s->rbs, 1. / arg);
-    }
-
-    if (!strcmp(cmd, "pitch")) {
-        double arg;
-
-        sscanf(args, "%lf", &arg);
-        if (arg < 0.01 || arg > 100) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Pitch scale factor '%f' out of range\n", arg);
-            return AVERROR(EINVAL);
-        }
-        rubberband_set_pitch_scale(s->rbs, arg);
-    }
+    rubberband_set_time_ratio(s->rbs, 1. / s->tempo);
+    rubberband_set_pitch_scale(s->rbs, s->pitch);
+    s->nb_samples = rubberband_get_samples_required(s->rbs);
 
     return 0;
 }

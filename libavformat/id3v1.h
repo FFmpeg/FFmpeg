@@ -26,7 +26,7 @@
 
 #define ID3v1_TAG_SIZE 128
 
-#define ID3v1_GENRE_MAX 147
+#define ID3v1_GENRE_MAX 191
 
 /**
  * ID3v1 genres

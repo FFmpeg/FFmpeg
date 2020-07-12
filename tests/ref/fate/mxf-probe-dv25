@@ -10,6 +10,7 @@ width=720
 height=576
 coded_width=720
 coded_height=576
+closed_captions=0
 has_b_frames=0
 sample_aspect_ratio=16:15
 display_aspect_ratio=4:3

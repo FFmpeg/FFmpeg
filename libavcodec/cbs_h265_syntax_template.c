@@ -59,7 +59,7 @@ static int FUNC(byte_alignment)(CodedBitstreamContext *ctx, RWContext *rw)
 }
 
 static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
-                                H265RawPSExtensionData *current)
+                                H265RawExtensionData *current)
 {
     int err;
     size_t k;
@@ -80,7 +80,7 @@ static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 #else
     for (k = 0; k < current->bit_length; k++)
-        xu(1, extension_data, current->data[k / 8] >> (7 - k % 8), 0, 1, 0);
+        xu(1, extension_data, current->data[k / 8] >> (7 - k % 8) & 1, 0, 1, 0);
 #endif
     return 0;
 }
@@ -522,7 +522,7 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(inter_ref_pic_set_prediction_flag, 0);
 
     if (current->inter_ref_pic_set_prediction_flag) {
-        unsigned int ref_rps_idx, num_delta_pocs;
+        unsigned int ref_rps_idx, num_delta_pocs, num_ref_pics;
         const H265RawSTRefPicSet *ref;
         int delta_rps, d_poc;
         int ref_delta_poc_s0[HEVC_MAX_REFS], ref_delta_poc_s1[HEVC_MAX_REFS];
@@ -538,18 +538,28 @@ static int FUNC(st_ref_pic_set)(CodedBitstreamContext *ctx, RWContext *rw,
         ref_rps_idx = st_rps_idx - (current->delta_idx_minus1 + 1);
         ref = &sps->st_ref_pic_set[ref_rps_idx];
         num_delta_pocs = ref->num_negative_pics + ref->num_positive_pics;
+        av_assert0(num_delta_pocs < HEVC_MAX_DPB_SIZE);
 
         flag(delta_rps_sign);
         ue(abs_delta_rps_minus1, 0, INT16_MAX);
         delta_rps = (1 - 2 * current->delta_rps_sign) *
             (current->abs_delta_rps_minus1 + 1);
 
+        num_ref_pics = 0;
         for (j = 0; j <= num_delta_pocs; j++) {
             flags(used_by_curr_pic_flag[j], 1, j);
             if (!current->used_by_curr_pic_flag[j])
                 flags(use_delta_flag[j], 1, j);
             else
                 infer(use_delta_flag[j], 1);
+            if (current->use_delta_flag[j])
+                ++num_ref_pics;
+        }
+        if (num_ref_pics >= HEVC_MAX_DPB_SIZE) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+                   "short-term ref pic set %d "
+                   "contains too many pictures.\n", st_rps_idx);
+            return AVERROR_INVALIDDATA;
         }
 
         // Since the stored form of an RPS here is actually the delta-step
@@ -734,6 +744,32 @@ static int FUNC(sps_scc_extension)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(vui_parameters_default)(CodedBitstreamContext *ctx,
+                                        RWContext *rw, H265RawVUI *current,
+                                        H265RawSPS *sps)
+{
+    infer(aspect_ratio_idc, 0);
+
+    infer(video_format,             5);
+    infer(video_full_range_flag,    0);
+    infer(colour_primaries,         2);
+    infer(transfer_characteristics, 2);
+    infer(matrix_coefficients,      2);
+
+    infer(chroma_sample_loc_type_top_field,    0);
+    infer(chroma_sample_loc_type_bottom_field, 0);
+
+    infer(tiles_fixed_structure_flag,    0);
+    infer(motion_vectors_over_pic_boundaries_flag, 1);
+    infer(min_spatial_segmentation_idc,  0);
+    infer(max_bytes_per_pic_denom,       2);
+    infer(max_bits_per_min_cu_denom,     1);
+    infer(log2_max_mv_length_horizontal, 15);
+    infer(log2_max_mv_length_vertical,   15);
+
+    return 0;
+}
+
 static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                      H265RawSPS *current)
 {
@@ -898,6 +934,8 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(vui_parameters_present_flag);
     if (current->vui_parameters_present_flag)
         CHECK(FUNC(vui_parameters)(ctx, rw, &current->vui, current));
+    else
+        CHECK(FUNC(vui_parameters_default)(ctx, rw, &current->vui, current));
 
     flag(sps_extension_present_flag);
     if (current->sps_extension_present_flag) {
@@ -1275,7 +1313,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(first_slice_segment_in_pic_flag);
 
     if (current->nal_unit_header.nal_unit_type >= HEVC_NAL_BLA_W_LP &&
-        current->nal_unit_header.nal_unit_type <= HEVC_NAL_IRAP_VCL23)
+        current->nal_unit_header.nal_unit_type <= HEVC_NAL_RSV_IRAP_VCL23)
         flag(no_output_of_prior_pics_flag);
 
     ue(slice_pic_parameter_set_id, 0, 63);
@@ -1367,7 +1405,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
                     infer(num_long_term_sps, 0);
                     idx_size = 0;
                 }
-                ue(num_long_term_pics, 0, HEVC_MAX_LONG_TERM_REF_PICS);
+                ue(num_long_term_pics, 0, HEVC_MAX_REFS - current->num_long_term_sps);
 
                 for (i = 0; i < current->num_long_term_sps +
                                 current->num_long_term_pics; i++) {
@@ -1560,7 +1598,8 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
 static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
                                       H265RawSEIBufferingPeriod *current,
-                                      uint32_t *payload_size)
+                                      uint32_t *payload_size,
+                                      int *more_data)
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawSPS *sps;
@@ -1568,7 +1607,7 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
     int err, i, length;
 
 #ifdef READ
-    int start_pos, end_pos, bits_left;
+    int start_pos, end_pos;
     start_pos = get_bits_count(rw);
 #endif
 
@@ -1647,18 +1686,22 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
 #ifdef READ
-    // payload_extension_present() - true if we are before the last 1-bit
-    // in the payload structure, which must be in the last byte.
     end_pos = get_bits_count(rw);
-    bits_left = *payload_size * 8 - (end_pos - start_pos);
-    if (bits_left > 0 &&
-        (bits_left > 7 || ff_ctz(show_bits(rw, bits_left)) < bits_left - 1))
+    if (cbs_h265_payload_extension_present(rw, *payload_size,
+                                           end_pos - start_pos))
         flag(use_alt_cpb_params_flag);
     else
         infer(use_alt_cpb_params_flag, 0);
 #else
-    if (current->use_alt_cpb_params_flag)
+    // If unknown extension data exists, then use_alt_cpb_params_flag is
+    // coded in the bitstream and must be written even if it's 0.
+    if (current->use_alt_cpb_params_flag || *more_data) {
         flag(use_alt_cpb_params_flag);
+        // Ensure this bit is not the last in the payload by making the
+        // more_data_in_payload() check evaluate to true, so it may not
+        // be mistaken as something else by decoders.
+        *more_data = 1;
+    }
 #endif
 
     return 0;
@@ -2056,11 +2099,48 @@ static int FUNC(sei_alpha_channel_info)(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int FUNC(payload_extension)(CodedBitstreamContext *ctx, RWContext *rw,
+                                   H265RawExtensionData *current, uint32_t payload_size,
+                                   int cur_pos)
+{
+    int err;
+    size_t byte_length, k;
+
+#ifdef READ
+    GetBitContext tmp;
+    int bits_left, payload_zero_bits;
+
+    if (!cbs_h265_payload_extension_present(rw, payload_size, cur_pos))
+        return 0;
+
+    bits_left = 8 * payload_size - cur_pos;
+    tmp = *rw;
+    if (bits_left > 8)
+        skip_bits_long(&tmp, bits_left - 8);
+    payload_zero_bits = get_bits(&tmp, FFMIN(bits_left, 8));
+    if (!payload_zero_bits)
+        return AVERROR_INVALIDDATA;
+    payload_zero_bits = ff_ctz(payload_zero_bits);
+    current->bit_length = bits_left - payload_zero_bits - 1;
+    allocate(current->data, (current->bit_length + 7) / 8);
+#endif
+
+    byte_length = (current->bit_length + 7) / 8;
+    for (k = 0; k < byte_length; k++) {
+        int length = FFMIN(current->bit_length - k * 8, 8);
+        xu(length, reserved_payload_extension_data, current->data[k],
+           0, MAX_UINT_BITS(length), 0);
+    }
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                              H265RawSEIPayload *current, int prefix)
 {
     int err, i;
-    int start_position, end_position;
+    int start_position, current_position;
+    int more_data = !!current->extension_data.bit_length;
 
 #ifdef READ
     start_position = get_bits_count(rw);
@@ -2092,8 +2172,15 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name, \
                                  &current->payload_size)); \
         break
+#define SEI_TYPE_E(type, prefix_valid, suffix_valid, name) \
+    case HEVC_SEI_TYPE_ ## type: \
+        SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
+        CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name, \
+                                 &current->payload_size, \
+                                 &more_data)); \
+        break
 
-        SEI_TYPE_S(BUFFERING_PERIOD,         1, 0, buffering_period);
+        SEI_TYPE_E(BUFFERING_PERIOD,         1, 0, buffering_period);
         SEI_TYPE_N(PICTURE_TIMING,           1, 0, pic_timing);
         SEI_TYPE_N(PAN_SCAN_RECT,            1, 0, pan_scan_rect);
         SEI_TYPE_S(USER_DATA_REGISTERED_ITU_T_T35,
@@ -2124,24 +2211,23 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         }
     }
 
-    if (byte_alignment(rw)) {
+    // more_data_in_payload()
+#ifdef READ
+    current_position = get_bits_count(rw) - start_position;
+    if (current_position < 8 * current->payload_size) {
+#else
+    current_position = put_bits_count(rw) - start_position;
+    if (byte_alignment(rw) || more_data) {
+#endif
+        CHECK(FUNC(payload_extension)(ctx, rw, &current->extension_data,
+                                      current->payload_size, current_position));
         fixed(1, bit_equal_to_one, 1);
         while (byte_alignment(rw))
             fixed(1, bit_equal_to_zero, 0);
     }
 
-#ifdef READ
-    end_position = get_bits_count(rw);
-    if (end_position < start_position + 8 * current->payload_size) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Incorrect SEI payload length: "
-               "header %"PRIu32" bits, actually %d bits.\n",
-               8 * current->payload_size,
-               end_position - start_position);
-        return AVERROR_INVALIDDATA;
-    }
-#else
-    end_position = put_bits_count(rw);
-    current->payload_size = (end_position - start_position) >> 3;
+#ifdef WRITE
+    current->payload_size = (put_bits_count(rw) - start_position) >> 3;
 #endif
 
     return 0;
@@ -2184,6 +2270,7 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
         current->payload[k].payload_type = payload_type;
         current->payload[k].payload_size = payload_size;
 
+        current->payload_count++;
         CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k], prefix));
 
         if (!cbs_h2645_read_more_rbsp_data(rw))
@@ -2194,7 +2281,6 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
                "SEI message: found %d.\n", k);
         return AVERROR_INVALIDDATA;
     }
-    current->payload_count = k + 1;
 #else
     for (k = 0; k < current->payload_count; k++) {
         PutBitContext start_state;

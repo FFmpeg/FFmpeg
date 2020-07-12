@@ -27,10 +27,8 @@ IN="$2"
 NAME="$(basename "$IN" | sed 's/\..*//')"
 
 printf "const char %s_ptx[] = \\" "$NAME" > "$OUT"
-while IFS= read -r LINE
-do
-    printf "\n\t\"%s\\\n\"" "$(printf "%s" "$LINE" | sed -e 's/\r//g' -e 's/["\\]/\\&/g')" >> "$OUT"
-done < "$IN"
-printf ";\n" >> "$OUT"
+echo >> "$OUT"
+sed -e "$(printf 's/\r//g')" -e 's/["\\]/\\&/g' -e "$(printf 's/^/\t"/')" -e 's/$/\\n"/' < "$IN" >> "$OUT"
+echo ";" >> "$OUT"
 
 exit 0

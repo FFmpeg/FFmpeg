@@ -521,13 +521,13 @@ static void init_luts(void)
         mask = ~((1<<NMSEDEC_FRACBITS)-1);
 
     for (i = 0; i < (1 << NMSEDEC_BITS); i++){
-        lut_nmsedec_sig[i]  = FFMAX(6*i - (9<<NMSEDEC_FRACBITS-1) << 12-NMSEDEC_FRACBITS, 0);
+        lut_nmsedec_sig[i]  = FFMAX((3 * i << (13 - NMSEDEC_FRACBITS)) - (9 << 11), 0);
         lut_nmsedec_sig0[i] = FFMAX((i*i + (1<<NMSEDEC_FRACBITS-1) & mask) << 1, 0);
 
         a = (i >> (NMSEDEC_BITS-2)&2) + 1;
-        lut_nmsedec_ref[i]  = FFMAX((-2*i + (1<<NMSEDEC_FRACBITS) + a*i - (a*a<<NMSEDEC_FRACBITS-2))
-                                    << 13-NMSEDEC_FRACBITS, 0);
-        lut_nmsedec_ref0[i] = FFMAX(((i*i + (1-4*i << NMSEDEC_FRACBITS-1) + (1<<2*NMSEDEC_FRACBITS)) & mask)
+        lut_nmsedec_ref[i]  = FFMAX((a - 2) * (i << (13 - NMSEDEC_FRACBITS)) +
+                                    (1 << 13) - (a * a << 11), 0);
+        lut_nmsedec_ref0[i] = FFMAX(((i * i - (i << NMSEDEC_BITS) + (1 << 2 * NMSEDEC_FRACBITS) + (1 << (NMSEDEC_FRACBITS - 1))) & mask)
                                     << 1, 0);
     }
 }
@@ -927,7 +927,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                             for (y = yy0; y < yy1; y++){
                                 int *ptr = t1.data + (y-yy0)*t1.stride;
                                 for (x = xx0; x < xx1; x++){
-                                    *ptr++ = comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] << NMSEDEC_FRACBITS;
+                                    *ptr++ = comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] * (1 << NMSEDEC_FRACBITS);
                                 }
                             }
                         } else{

@@ -1,6 +1,9 @@
 [FRAME]
 width=384
 height=240
+[SIDE_DATA]
+side_data_type=H.26[45] User Data Unregistered SEI message
+[/SIDE_DATA]
 [/FRAME]
 [STREAM]
 width=384

@@ -56,20 +56,24 @@ typedef struct AV1SequenceParameters {
 int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
 
 /**
- * Filter out AV1 OBUs not meant to be present in ISOBMFF sample data and write
- * the resulting bitstream to a newly allocated data buffer.
+ * Filter out AV1 OBUs not meant to be present in ISOBMFF sample data and return
+ * the result in a data buffer, avoiding allocations and copies if possible.
  *
- * @param pb pointer to the AVIOContext where the filtered bitstream shall be
- *           written
- * @param buf input data buffer
- * @param out pointer to pointer that will hold the allocated data buffer
+ * @param in input data buffer
+ * @param out pointer to pointer for the returned buffer. In case of success,
+ *            it is independently allocated if and only if `*out` differs from in.
  * @param size size of the input data buffer. The size of the resulting output
-               data buffer will be written here
+ *             data buffer will be written here
+ * @param offset offset of the returned data inside `*out`: It runs from
+ *               `*out + offset` (inclusive) to `*out + offset + size`
+ *               (exclusive); is zero if `*out` is independently allocated.
  *
- * @return the amount of bytes written in case of success, a negative AVERROR
- *         code in case of failure. On failure, out and size are unchanged
+ * @return 0 in case of success, a negative AVERROR code in case of failure.
+ *         On failure, *out and *size are unchanged
+ * @note *out will be treated as unintialized on input and will not be freed.
  */
-int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size);
+int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out,
+                           int *size, int *offset);
 
 /**
  * Parses a Sequence Header from the the provided buffer.

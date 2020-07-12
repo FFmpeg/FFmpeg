@@ -809,8 +809,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src)
         ret = get_frame(ctx, 1);
         if (ret < 0) {
             av_frame_free(&s->dst);
-            av_frame_free(&s->src);
             av_frame_free(&s->second);
+            s->src = NULL;
             return ret;
         }
         dst = s->dst;

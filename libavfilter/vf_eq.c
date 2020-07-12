@@ -174,12 +174,18 @@ static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *
     return 0;
 }
 
+void ff_eq_init(EQContext *eq)
+{
+    eq->process = process_c;
+    if (ARCH_X86)
+        ff_eq_init_x86(eq);
+}
+
 static int initialize(AVFilterContext *ctx)
 {
     EQContext *eq = ctx->priv;
     int ret;
-
-    eq->process = process_c;
+    ff_eq_init(eq);
 
     if ((ret = set_expr(&eq->contrast_pexpr,     eq->contrast_expr,     "contrast",     ctx)) < 0 ||
         (ret = set_expr(&eq->brightness_pexpr,   eq->brightness_expr,   "brightness",   ctx)) < 0 ||
@@ -191,9 +197,6 @@ static int initialize(AVFilterContext *ctx)
         (ret = set_expr(&eq->gamma_weight_pexpr, eq->gamma_weight_expr, "gamma_weight", ctx)) < 0 )
         return ret;
 
-    if (ARCH_X86)
-        ff_eq_init_x86(eq);
-
     if (eq->eval_mode == EVAL_MODE_INIT) {
         set_gamma(eq);
         set_contrast(eq);
@@ -204,7 +207,7 @@ static int initialize(AVFilterContext *ctx)
     return 0;
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     EQContext *eq = ctx->priv;
 
@@ -245,8 +248,6 @@ static int query_formats(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     return ff_set_common_formats(ctx, fmts_list);
 }
-
-#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -350,24 +351,24 @@ static const AVFilterPad eq_outputs[] = {
 
 #define OFFSET(x) offsetof(EQContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
-
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption eq_options[] = {
     { "contrast",     "set the contrast adjustment, negative values give a negative image",
-        OFFSET(contrast_expr),     AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(contrast_expr),     AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "brightness",   "set the brightness adjustment",
-        OFFSET(brightness_expr),   AV_OPT_TYPE_STRING, {.str = "0.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(brightness_expr),   AV_OPT_TYPE_STRING, {.str = "0.0"}, 0, 0, TFLAGS },
     { "saturation",   "set the saturation adjustment",
-        OFFSET(saturation_expr),   AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(saturation_expr),   AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "gamma",        "set the initial gamma value",
-        OFFSET(gamma_expr),        AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_expr),        AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "gamma_r",      "gamma value for red",
-        OFFSET(gamma_r_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_r_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "gamma_g",      "gamma value for green",
-        OFFSET(gamma_g_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_g_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "gamma_b",      "gamma value for blue",
-        OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "gamma_weight", "set the gamma weight which reduces the effect of gamma on bright areas",
-        OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+        OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
@@ -387,5 +388,5 @@ AVFilter ff_vf_eq = {
     .query_formats   = query_formats,
     .init            = initialize,
     .uninit          = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

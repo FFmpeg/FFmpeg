@@ -21,7 +21,7 @@
  */
 
 #include "h263.h"
-#include "hwaccel.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "mpeg4video.h"
 #include "mpegvideo.h"

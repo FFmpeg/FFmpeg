@@ -276,11 +276,11 @@ static int init_prec(Jpeg2000Band *band,
     /* TODO: Verify with previous count of codeblocks per band */
 
     /* Compute P_x0 */
-    prec->coord[0][0] = ((band->coord[0][0] >> log2_band_prec_width) + precno % reslevel->num_precincts_x) *
+    prec->coord[0][0] = ((reslevel->coord[0][0] >> reslevel->log2_prec_width) + precno % reslevel->num_precincts_x) *
                         (1 << log2_band_prec_width);
 
     /* Compute P_y0 */
-    prec->coord[1][0] = ((band->coord[1][0] >> log2_band_prec_height) + precno / reslevel->num_precincts_x) *
+    prec->coord[1][0] = ((reslevel->coord[1][0] >> reslevel->log2_prec_height) + precno / reslevel->num_precincts_x) *
                         (1 << log2_band_prec_height);
 
     /* Compute P_x1 */
@@ -509,9 +509,6 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         // update precincts size: 2^n value
         reslevel->log2_prec_width  = codsty->log2_prec_widths[reslevelno];
         reslevel->log2_prec_height = codsty->log2_prec_heights[reslevelno];
-        if (!reslevel->log2_prec_width || !reslevel->log2_prec_height) {
-            return AVERROR_INVALIDDATA;
-        }
 
         /* Number of bands for each resolution level */
         if (reslevelno == 0)

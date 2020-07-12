@@ -107,7 +107,7 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
         }
         out->pts = s->pts;
         out->nb_samples = ret;
-        s->pts += out->nb_samples;
+        s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
         i += out->nb_samples;
         s->current_sample += out->nb_samples;
 
@@ -116,6 +116,7 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
             return ret;
 
         if (s->current_sample >= s->nb_samples) {
+            s->duration = s->pts;
             s->current_sample = 0;
 
             if (s->loop > 0)
@@ -145,7 +146,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
                 drain = FFMAX(0, s->start - s->ignored_samples);
                 s->pts = frame->pts;
                 av_audio_fifo_drain(s->fifo, drain);
-                s->pts += s->start - s->ignored_samples;
+                s->pts += av_rescale_q(s->start - s->ignored_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             }
             s->nb_samples += ret - drain;
             drain = frame->nb_samples - written;
@@ -158,7 +159,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
                 av_audio_fifo_drain(s->left, drain);
             }
             frame->nb_samples = ret;
-            s->pts += ret;
+            s->pts += av_rescale_q(ret, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             ret = ff_filter_frame(outlink, frame);
         } else {
             int nb_samples = frame->nb_samples;
@@ -169,7 +170,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
     } else {
         s->ignored_samples += frame->nb_samples;
         frame->pts = s->pts;
-        s->pts += frame->nb_samples;
+        s->pts += av_rescale_q(frame->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
         ret = ff_filter_frame(outlink, frame);
     }
 
@@ -195,7 +196,7 @@ static int arequest_frame(AVFilterLink *outlink)
                 return AVERROR(ENOMEM);
             av_audio_fifo_read(s->left, (void **)out->extended_data, nb_samples);
             out->pts = s->pts;
-            s->pts += nb_samples;
+            s->pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             ret = ff_filter_frame(outlink, out);
             if (ret < 0)
                 return ret;
@@ -205,11 +206,53 @@ static int arequest_frame(AVFilterLink *outlink)
         ret = push_samples(ctx, 1024);
     }
 
-    if (ret == AVERROR_EOF && s->nb_samples > 0 && s->loop != 0) {
-        ret = push_samples(ctx, outlink->sample_rate);
+    if (s->eof && s->nb_samples > 0 && s->loop != 0) {
+        ret = push_samples(ctx, 1024);
     }
 
     return ret;
+}
+
+static int aactivate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    LoopContext *s = ctx->priv;
+    AVFrame *frame = NULL;
+    int ret, status;
+    int64_t pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!s->eof && (s->nb_samples < s->size || !s->loop || !s->size)) {
+        ret = ff_inlink_consume_frame(inlink, &frame);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            return afilter_frame(inlink, frame);
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF) {
+            s->size = s->nb_samples;
+            s->eof = 1;
+        }
+    }
+
+    if (s->eof && (!s->loop || !s->size)) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->duration);
+        return 0;
+    }
+
+    if (!s->eof && (!s->size ||
+        (s->nb_samples < s->size) ||
+        (s->nb_samples >= s->size && s->loop == 0))) {
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    } else if (s->loop && s->nb_samples == s->size) {
+        return arequest_frame(outlink);
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 static const AVOption aloop_options[] = {
@@ -225,7 +268,6 @@ static const AVFilterPad ainputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = afilter_frame,
         .config_props = aconfig_input,
     },
     { NULL }
@@ -235,7 +277,6 @@ static const AVFilterPad aoutputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = arequest_frame,
     },
     { NULL }
 };
@@ -245,6 +286,7 @@ AVFilter ff_af_aloop = {
     .description   = NULL_IF_CONFIG_SMALL("Loop audio samples."),
     .priv_size     = sizeof(LoopContext),
     .priv_class    = &aloop_class,
+    .activate      = aactivate,
     .uninit        = auninit,
     .inputs        = ainputs,
     .outputs       = aoutputs,

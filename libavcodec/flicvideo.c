@@ -185,7 +185,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
     bytestream2_init(&g2, buf, buf_size);
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     pixels = s->frame->data[0];
@@ -519,7 +519,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
 
     bytestream2_init(&g2, buf, buf_size);
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     pixels = s->frame->data[0];
@@ -817,7 +817,7 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
 
     bytestream2_init(&g2, buf, buf_size);
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     pixels = s->frame->data[0];
@@ -1024,14 +1024,7 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
                 for (y_ptr = 0; y_ptr < s->frame->linesize[0] * s->avctx->height;
                      y_ptr += s->frame->linesize[0]) {
 
-                    pixel_countdown = s->avctx->width;
-                    pixel_ptr = 0;
-                    while (pixel_countdown > 0) {
-                        pixel = bytestream2_get_le24(&g2);
-                        AV_WL24(&pixels[y_ptr + pixel_ptr], pixel);
-                        pixel_ptr += 3;
-                        pixel_countdown--;
-                    }
+                    bytestream2_get_buffer(&g2, pixels + y_ptr, 3*s->avctx->width);
                     if (s->avctx->width & 1)
                         bytestream2_skip(&g2, 3);
                 }

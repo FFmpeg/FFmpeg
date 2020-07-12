@@ -40,6 +40,8 @@ typedef struct Libdav1dContext {
     int tile_threads;
     int frame_threads;
     int apply_grain;
+    int operating_point;
+    int all_layers;
 } Libdav1dContext;
 
 static const enum AVPixelFormat pix_fmt[][3] = {
@@ -130,7 +132,13 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.allocator.cookie = dav1d;
     s.allocator.alloc_picture_callback = libdav1d_picture_allocator;
     s.allocator.release_picture_callback = libdav1d_picture_release;
-    s.apply_grain = dav1d->apply_grain;
+    s.frame_size_limit = c->max_pixels;
+    if (dav1d->apply_grain >= 0)
+        s.apply_grain = dav1d->apply_grain;
+
+    s.all_layers = dav1d->all_layers;
+    if (dav1d->operating_point >= 0)
+        s.operating_point = dav1d->operating_point;
 
     s.n_tile_threads = dav1d->tile_threads
                      ? dav1d->tile_threads
@@ -162,6 +170,11 @@ static void libdav1d_data_free(const uint8_t *data, void *opaque) {
     av_buffer_unref(&buf);
 }
 
+static void libdav1d_user_data_free(const uint8_t *data, void *opaque) {
+    av_assert0(data == opaque);
+    av_free(opaque);
+}
+
 static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -189,6 +202,23 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
             pkt.buf = NULL;
             av_packet_unref(&pkt);
+
+            if (c->reordered_opaque != AV_NOPTS_VALUE) {
+                uint8_t *reordered_opaque = av_malloc(sizeof(c->reordered_opaque));
+                if (!reordered_opaque) {
+                    dav1d_data_unref(data);
+                    return AVERROR(ENOMEM);
+                }
+
+                memcpy(reordered_opaque, &c->reordered_opaque, sizeof(c->reordered_opaque));
+                res = dav1d_data_wrap_user_data(data, reordered_opaque,
+                                                libdav1d_user_data_free, reordered_opaque);
+                if (res < 0) {
+                    av_free(reordered_opaque);
+                    dav1d_data_unref(data);
+                    return res;
+                }
+            }
         }
     }
 
@@ -237,6 +267,12 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             goto fail;
     }
 
+    av_reduce(&frame->sample_aspect_ratio.num,
+              &frame->sample_aspect_ratio.den,
+              frame->height * (int64_t)p->frame_hdr->render_width,
+              frame->width  * (int64_t)p->frame_hdr->render_height,
+              INT_MAX);
+
     switch (p->seq_hdr->chr) {
     case DAV1D_CHR_VERTICAL:
         frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_LEFT;
@@ -257,6 +293,18 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
         frame->format = c->pix_fmt = pix_fmt_rgb[p->seq_hdr->hbd];
     else
         frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
+
+    if (p->m.user_data.data)
+        memcpy(&frame->reordered_opaque, p->m.user_data.data, sizeof(frame->reordered_opaque));
+    else
+        frame->reordered_opaque = AV_NOPTS_VALUE;
+
+    if (p->seq_hdr->num_units_in_tick && p->seq_hdr->time_scale) {
+        av_reduce(&c->framerate.den, &c->framerate.num,
+                  p->seq_hdr->num_units_in_tick, p->seq_hdr->time_scale, INT_MAX);
+        if (p->seq_hdr->equal_picture_interval)
+            c->ticks_per_frame = p->seq_hdr->num_ticks_per_picture;
+    }
 
     // match timestamps and packet size
     frame->pts = frame->best_effort_timestamp = p->m.timestamp;
@@ -341,7 +389,9 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 static const AVOption libdav1d_options[] = {
     { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_TILE_THREADS, VD },
     { "framethreads", "Frame threads", OFFSET(frame_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_THREADS, VD },
-    { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, VD },
+    { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VD },
+    { "oppoint",  "Select an operating point of the scalable bitstream", OFFSET(operating_point), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 31, VD },
+    { "alllayers", "Output all spatial layers", OFFSET(all_layers), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { NULL }
 };
 

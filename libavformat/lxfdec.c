@@ -316,7 +316,6 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret2;
 
     if ((ret2 = avio_read(pb, pkt->data, ret)) != ret) {
-        av_packet_unref(pkt);
         return ret2 < 0 ? ret2 : AVERROR_EOF;
     }
 

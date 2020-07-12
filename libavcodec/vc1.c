@@ -451,7 +451,11 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
             h = get_bits(gb, 8) + 1;
             v->s.avctx->sample_aspect_ratio = (AVRational){w, h};
         } else {
-            av_reduce(&v->s.avctx->sample_aspect_ratio.num,
+            if (v->s.avctx->width  > v->max_coded_width ||
+                v->s.avctx->height > v->max_coded_height) {
+                avpriv_request_sample(v->s.avctx, "Huge resolution");
+            } else
+                av_reduce(&v->s.avctx->sample_aspect_ratio.num,
                       &v->s.avctx->sample_aspect_ratio.den,
                       v->s.avctx->height * w,
                       v->s.avctx->width * h,
@@ -933,7 +937,9 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         else if ((v->s.pict_type != AV_PICTURE_TYPE_B) && (v->s.pict_type != AV_PICTURE_TYPE_BI)) {
             v->refdist = get_bits(gb, 2);
             if (v->refdist == 3)
-                v->refdist += get_unary(gb, 0, 16);
+                v->refdist += get_unary(gb, 0, 14);
+            if (v->refdist > 16)
+                return AVERROR_INVALIDDATA;
         }
         if ((v->s.pict_type == AV_PICTURE_TYPE_B) || (v->s.pict_type == AV_PICTURE_TYPE_BI)) {
             if (read_bfraction(v, gb) < 0)
@@ -1313,16 +1319,17 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         break;
     }
 
-    if (v->fcm != PROGRESSIVE && !v->s.quarter_sample) {
-        v->range_x <<= 1;
-        v->range_y <<= 1;
-    }
 
     /* AC Syntax */
     v->c_ac_table_index = decode012(gb);
     if (v->s.pict_type == AV_PICTURE_TYPE_I || v->s.pict_type == AV_PICTURE_TYPE_BI) {
         v->y_ac_table_index = decode012(gb);
     }
+    else if (v->fcm != PROGRESSIVE && !v->s.quarter_sample) {
+        v->range_x <<= 1;
+        v->range_y <<= 1;
+    }
+
     /* DC Syntax */
     v->s.dc_table_index = get_bits1(gb);
     if ((v->s.pict_type == AV_PICTURE_TYPE_I || v->s.pict_type == AV_PICTURE_TYPE_BI)

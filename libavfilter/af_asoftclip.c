@@ -42,11 +42,11 @@ typedef struct ASoftClipContext {
     double param;
 
     void (*filter)(struct ASoftClipContext *s, void **dst, const void **src,
-                   int nb_samples, int channels);
+                   int nb_samples, int channels, int start, int end);
 } ASoftClipContext;
 
 #define OFFSET(x) offsetof(ASoftClipContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption asoftclip_options[] = {
     { "type", "set softclip type", OFFSET(type), AV_OPT_TYPE_INT,    {.i64=0},          0, NB_TYPES-1, A, "types" },
@@ -97,11 +97,12 @@ static int query_formats(AVFilterContext *ctx)
 
 static void filter_flt(ASoftClipContext *s,
                        void **dptr, const void **sptr,
-                       int nb_samples, int channels)
+                       int nb_samples, int channels,
+                       int start, int end)
 {
     float param = s->param;
 
-    for (int c = 0; c < channels; c++) {
+    for (int c = start; c < end; c++) {
         const float *src = sptr[c];
         float *dst = dptr[c];
 
@@ -153,11 +154,12 @@ static void filter_flt(ASoftClipContext *s,
 
 static void filter_dbl(ASoftClipContext *s,
                        void **dptr, const void **sptr,
-                       int nb_samples, int channels)
+                       int nb_samples, int channels,
+                       int start, int end)
 {
     double param = s->param;
 
-    for (int c = 0; c < channels; c++) {
+    for (int c = start; c < end; c++) {
         const double *src = sptr[c];
         double *dst = dptr[c];
 
@@ -222,12 +224,35 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+    int nb_samples;
+    int channels;
+} ThreadData;
+
+static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ASoftClipContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
+    const int channels = td->channels;
+    const int nb_samples = td->nb_samples;
+    const int start = (channels * jobnr) / nb_jobs;
+    const int end = (channels * (jobnr+1)) / nb_jobs;
+
+    s->filter(s, (void **)out->extended_data, (const void **)in->extended_data,
+              nb_samples, channels, start, end);
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    ASoftClipContext *s = ctx->priv;
     int nb_samples, channels;
+    ThreadData td;
     AVFrame *out;
 
     if (av_frame_is_writable(in)) {
@@ -249,8 +274,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         channels = 1;
     }
 
-    s->filter(s, (void **)out->extended_data, (const void **)in->extended_data,
-              nb_samples, channels);
+    td.in = in;
+    td.out = out;
+    td.nb_samples = nb_samples;
+    td.channels = channels;
+    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(channels,
+                                                            ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);
@@ -284,5 +313,7 @@ AVFilter ff_af_asoftclip = {
     .priv_class     = &asoftclip_class,
     .inputs         = inputs,
     .outputs        = outputs,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = ff_filter_process_command,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                      AVFILTER_FLAG_SLICE_THREADS,
 };

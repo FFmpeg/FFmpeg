@@ -141,13 +141,12 @@ static int handle_id3(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_append_packet(s->pb, pkt, ff_id3v2_tag_len(pkt->data) - pkt->size);
     if (ret < 0) {
-        av_packet_unref(pkt);
         return ret;
     }
 
     ffio_init_context(&ioctx, pkt->data, pkt->size, 0, NULL, NULL, NULL, NULL);
     ff_id3v2_read_dict(&ioctx, &metadata, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
-    if ((ret = ff_id3v2_parse_priv_dict(&metadata, &id3v2_extra_meta)) < 0)
+    if ((ret = ff_id3v2_parse_priv_dict(&metadata, id3v2_extra_meta)) < 0)
         goto error;
 
     if (metadata) {
@@ -174,7 +173,6 @@ retry:
         return ret;
 
     if (ret < ADTS_HEADER_SIZE) {
-        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
 
@@ -185,7 +183,6 @@ retry:
         av_assert2(append > 0);
         ret = av_append_packet(s->pb, pkt, append);
         if (ret != append) {
-            av_packet_unref(pkt);
             return AVERROR(EIO);
         }
         if (!ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
@@ -201,13 +198,10 @@ retry:
 
     fsize = (AV_RB32(pkt->data + 3) >> 13) & 0x1FFF;
     if (fsize < ADTS_HEADER_SIZE) {
-        av_packet_unref(pkt);
         return AVERROR_INVALIDDATA;
     }
 
     ret = av_append_packet(s->pb, pkt, fsize - pkt->size);
-    if (ret < 0)
-        av_packet_unref(pkt);
 
     return ret;
 }

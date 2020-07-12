@@ -143,7 +143,7 @@ static int fits_read_header(AVCodecContext *avctx, const uint8_t **ptr, FITSHead
 
     size = abs(header->bitpix) >> 3;
     for (i = 0; i < header->naxis; i++) {
-        if (size && header->naxisn[i] > SIZE_MAX / size) {
+        if (size == 0 || header->naxisn[i] > SIZE_MAX / size) {
             av_log(avctx, AV_LOG_ERROR, "unsupported size of FITS image");
             return AVERROR_INVALIDDATA;
         }
@@ -264,6 +264,13 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
             CASE_RGB(16, dst16, uint16_t, AV_RB16);
         }
     } else {
+        double scale = header.data_max - header.data_min;
+
+        if (scale <= 0 || !isfinite(scale)) {
+            scale = 1;
+        }
+        scale = 1/scale;
+
         switch (header.bitpix) {
 #define CASE_GRAY(cas, dst, type, t, rd) \
     case cas: \
@@ -272,7 +279,7 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
             for (j = 0; j < avctx->width; j++) { \
                 t = rd; \
                 if (!header.blank_found || t != header.blank) { \
-                    *dst++ = ((t - header.data_min) * ((1 << (sizeof(type) * 8)) - 1)) / (header.data_max - header.data_min); \
+                    *dst++ = lrint(((t - header.data_min) * ((1 << (sizeof(type) * 8)) - 1)) * scale); \
                 } else { \
                     *dst++ = fitsctx->blank_val; \
                 } \

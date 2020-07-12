@@ -160,7 +160,7 @@ static int str_read_packet(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
-    int channel;
+    int channel, ret;
     AVPacket *pkt;
     AVStream *st;
 
@@ -213,8 +213,9 @@ static int str_read_packet(AVFormatContext *s,
                     if(pkt->data)
                         av_log(s, AV_LOG_ERROR, "mismatching sector_count\n");
                     av_packet_unref(pkt);
-                    if (av_new_packet(pkt, sector_count*VIDEO_DATA_CHUNK_SIZE))
-                        return AVERROR(EIO);
+                    ret = av_new_packet(pkt, sector_count * VIDEO_DATA_CHUNK_SIZE);
+                    if (ret < 0)
+                        return ret;
                     memset(pkt->data, 0, sector_count*VIDEO_DATA_CHUNK_SIZE);
 
                     pkt->pos= avio_tell(pb) - RAW_CD_SECTOR_SIZE;
@@ -267,8 +268,8 @@ static int str_read_packet(AVFormatContext *s,
                 st->start_time = 0;
             }
             pkt = ret_pkt;
-            if (av_new_packet(pkt, 2304))
-                return AVERROR(EIO);
+            if ((ret = av_new_packet(pkt, 2304)) < 0)
+                return ret;
             memcpy(pkt->data,sector+24,2304);
 
             pkt->stream_index =

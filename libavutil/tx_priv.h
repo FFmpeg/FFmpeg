@@ -28,27 +28,72 @@
 
 #ifdef TX_FLOAT
 #define TX_NAME(x) x ## _float
+#define SCALE_TYPE float
 typedef float FFTSample;
 typedef AVComplexFloat FFTComplex;
 #elif defined(TX_DOUBLE)
 #define TX_NAME(x) x ## _double
+#define SCALE_TYPE double
 typedef double FFTSample;
 typedef AVComplexDouble FFTComplex;
+#elif defined(TX_INT32)
+#define TX_NAME(x) x ## _int32
+#define SCALE_TYPE float
+typedef int32_t FFTSample;
+typedef AVComplexInt32 FFTComplex;
 #else
 typedef void FFTComplex;
 #endif
 
 #if defined(TX_FLOAT) || defined(TX_DOUBLE)
-#define BF(x, y, a, b) do {                                                    \
-        x = (a) - (b);                                                         \
-        y = (a) + (b);                                                         \
-    } while (0)
 
 #define CMUL(dre, dim, are, aim, bre, bim) do {                                \
         (dre) = (are) * (bre) - (aim) * (bim);                                 \
         (dim) = (are) * (bim) + (aim) * (bre);                                 \
     } while (0)
+
+#define SMUL(dre, dim, are, aim, bre, bim) do {                                \
+        (dre) = (are) * (bre) - (aim) * (bim);                                 \
+        (dim) = (are) * (bim) - (aim) * (bre);                                 \
+    } while (0)
+
+#define RESCALE(x) (x)
+
+#define FOLD(a, b) ((a) + (b))
+
+#elif defined(TX_INT32)
+
+/* Properly rounds the result */
+#define CMUL(dre, dim, are, aim, bre, bim) do {                                \
+        int64_t accu;                                                          \
+        (accu)  = (int64_t)(bre) * (are);                                      \
+        (accu) -= (int64_t)(bim) * (aim);                                      \
+        (dre)   = (int)(((accu) + 0x40000000) >> 31);                          \
+        (accu)  = (int64_t)(bim) * (are);                                      \
+        (accu) += (int64_t)(bre) * (aim);                                      \
+        (dim)   = (int)(((accu) + 0x40000000) >> 31);                          \
+    } while (0)
+
+#define SMUL(dre, dim, are, aim, bre, bim) do {                                \
+        int64_t accu;                                                          \
+        (accu)  = (int64_t)(bre) * (are);                                      \
+        (accu) -= (int64_t)(bim) * (aim);                                      \
+        (dre)   = (int)(((accu) + 0x40000000) >> 31);                          \
+        (accu)  = (int64_t)(bim) * (are);                                      \
+        (accu) -= (int64_t)(bre) * (aim);                                      \
+        (dim)   = (int)(((accu) + 0x40000000) >> 31);                          \
+    } while (0)
+
+#define RESCALE(x) (lrintf((x) * 2147483648.0))
+
+#define FOLD(x, y) ((int)((x) + (unsigned)(y) + 32) >> 6)
+
 #endif
+
+#define BF(x, y, a, b) do {                                                    \
+        x = (a) - (b);                                                         \
+        y = (a) + (b);                                                         \
+    } while (0)
 
 #define CMUL3(c, a, b)                                                         \
     CMUL((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
@@ -70,6 +115,7 @@ struct AVTXContext {
 };
 
 /* Shared functions */
+int ff_tx_type_is_mdct(enum AVTXType type);
 int ff_tx_gen_compound_mapping(AVTXContext *s);
 int ff_tx_gen_ptwo_revtab(AVTXContext *s);
 
@@ -96,6 +142,9 @@ int ff_tx_init_mdct_fft_float(AVTXContext *s, av_tx_fn *tx,
 int ff_tx_init_mdct_fft_double(AVTXContext *s, av_tx_fn *tx,
                                enum AVTXType type, int inv, int len,
                                const void *scale, uint64_t flags);
+int ff_tx_init_mdct_fft_int32(AVTXContext *s, av_tx_fn *tx,
+                              enum AVTXType type, int inv, int len,
+                              const void *scale, uint64_t flags);
 
 typedef struct CosTabsInitOnce {
     void (*func)(void);

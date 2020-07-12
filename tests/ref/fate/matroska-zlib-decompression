@@ -1,0 +1,5 @@
+#extradata 0:      348, 0x5f625922
+#tb 0: 1/1000
+#media_type 0: subtitle
+#codec_id 0: dvd_subtitle
+0,       1000,       1000,     1991,      191, 0x52f74934

@@ -30,6 +30,8 @@ typedef struct PNMContext {
     uint8_t *bytestream_end;
     int maxval;                 ///< maximum value of a pixel
     int type;
+    int endian;
+    float scale;
 } PNMContext;
 
 int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s);

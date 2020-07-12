@@ -84,6 +84,7 @@ struct ogg_stream {
     int got_start;
     int got_data;   ///< 1 if the stream got some data (non-initial packets), 0 otherwise
     int nb_header; ///< set to the number of parsed headers
+    int start_trimming; ///< set the number of packets to drop from the start
     int end_trimming; ///< set the number of packets to drop from the end
     uint8_t *new_metadata;
     unsigned int new_metadata_size;
@@ -114,7 +115,6 @@ struct ogg {
 #define OGG_NOGRANULE_VALUE (-1ull)
 
 extern const struct ogg_codec ff_celt_codec;
-extern const struct ogg_codec ff_daala_codec;
 extern const struct ogg_codec ff_dirac_codec;
 extern const struct ogg_codec ff_flac_codec;
 extern const struct ogg_codec ff_ogm_audio_codec;

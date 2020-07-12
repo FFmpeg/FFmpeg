@@ -23,6 +23,10 @@
 #include "vc1dsp_mips.h"
 #include "config.h"
 
+#define FN_ASSIGN(OP, X, Y, INSN) \
+    dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##INSN; \
+    dsp->OP##vc1_mspel_pixels_tab[0][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##_16##INSN
+
 #if HAVE_MMI
 static av_cold void vc1dsp_init_mmi(VC1DSPContext *dsp)
 {
@@ -48,10 +52,6 @@ static av_cold void vc1dsp_init_mmi(VC1DSPContext *dsp)
     dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_mmi;
     dsp->vc1_v_loop_filter16 = ff_vc1_v_loop_filter16_mmi;
     dsp->vc1_h_loop_filter16 = ff_vc1_h_loop_filter16_mmi;
-
-#define FN_ASSIGN(OP, X, Y, INSN) \
-    dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##INSN; \
-    dsp->OP##vc1_mspel_pixels_tab[0][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##_16##INSN
 
     FN_ASSIGN(put_, 0, 0, _mmi);
     FN_ASSIGN(put_, 0, 1, _mmi);
@@ -100,9 +100,31 @@ static av_cold void vc1dsp_init_mmi(VC1DSPContext *dsp)
 }
 #endif /* HAVE_MMI */
 
+#if HAVE_MSA
+static av_cold void vc1dsp_init_msa(VC1DSPContext *dsp)
+{
+    dsp->vc1_inv_trans_8x8 = ff_vc1_inv_trans_8x8_msa;
+    dsp->vc1_inv_trans_4x8 = ff_vc1_inv_trans_4x8_msa;
+    dsp->vc1_inv_trans_8x4 = ff_vc1_inv_trans_8x4_msa;
+
+    FN_ASSIGN(put_, 1, 1, _msa);
+    FN_ASSIGN(put_, 1, 2, _msa);
+    FN_ASSIGN(put_, 1, 3, _msa);
+    FN_ASSIGN(put_, 2, 1, _msa);
+    FN_ASSIGN(put_, 2, 2, _msa);
+    FN_ASSIGN(put_, 2, 3, _msa);
+    FN_ASSIGN(put_, 3, 1, _msa);
+    FN_ASSIGN(put_, 3, 2, _msa);
+    FN_ASSIGN(put_, 3, 3, _msa);
+}
+#endif /* HAVE_MSA */
+
 av_cold void ff_vc1dsp_init_mips(VC1DSPContext *dsp)
 {
 #if HAVE_MMI
     vc1dsp_init_mmi(dsp);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    vc1dsp_init_msa(dsp);
+#endif /* HAVE_MSA */
 }

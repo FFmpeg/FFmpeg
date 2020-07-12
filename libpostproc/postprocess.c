@@ -108,7 +108,7 @@ const char *postproc_configuration(void)
 const char *postproc_license(void)
 {
 #define LICENSE_PREFIX "libpostproc license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 #define GET_MODE_BUFFER_SIZE 500
@@ -407,7 +407,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
     const int QP= c->QP;
     const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
     const int dcThreshold= dcOffset*2 + 1;
-//START_TIMER
+
     src+= step*4; // src points to begin of the 8x8 Block
     for(y=0; y<8; y++){
         int numEq= 0;
@@ -511,11 +511,6 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
 
         src += stride;
     }
-/*if(step==16){
-    STOP_TIMER("step16")
-}else{
-    STOP_TIMER("stepX")
-}*/
 }
 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one

@@ -58,10 +58,6 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     len -= 2;
 
     if (config_packet) {
-
-        av_freep(&st->codecpar->extradata);
-        st->codecpar->extradata_size = 0;
-
         if (len < 2 || ff_alloc_extradata(st->codecpar, len + 8))
             return AVERROR_INVALIDDATA;
 

@@ -486,6 +486,7 @@ static av_cold int init(AVFilterContext *fctx)
         av_log(ctx, AV_LOG_DEBUG, "Filter_string: %s\n", ctx->filter_string);
         ret = av_dict_parse_string(&filter_dict, ctx->filter_string, "@", "#", AV_DICT_MULTIKEY); // parse filter_name:all_filter_options
         if (ret) {
+            av_dict_free(&filter_dict);
             av_log(ctx, AV_LOG_ERROR, "Parsing of filters failed.\n");
             return AVERROR(EIO);
         }
@@ -507,6 +508,7 @@ static av_cold int init(AVFilterContext *fctx)
             if (strncmp(f->value, "default", 7)) { // not default
                 ret = av_dict_parse_string(&filter_options, f->value, "=", "@", 0); // parse option_name:option_value
                 if (ret) {
+                    av_dict_free(&filter_options);
                     av_log(ctx, AV_LOG_ERROR, "Parsing of filter options for \"%s\" failed.\n", f->key);
                     return AVERROR(EIO);
                 }

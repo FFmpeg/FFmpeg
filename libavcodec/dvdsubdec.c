@@ -27,7 +27,6 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 
 typedef struct DVDSubContext
@@ -626,18 +625,6 @@ static int dvdsub_decode(AVCodecContext *avctx,
     return buf_size;
 }
 
-static void parse_palette(DVDSubContext *ctx, char *p)
-{
-    int i;
-
-    ctx->has_palette = 1;
-    for(i=0;i<16;i++) {
-        ctx->palette[i] = strtoul(p, &p, 16);
-        while(*p == ',' || av_isspace(*p))
-            p++;
-    }
-}
-
 static int parse_ifo_palette(DVDSubContext *ctx, char *p)
 {
     FILE *ifo;
@@ -719,7 +706,8 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
             break;
 
         if (strncmp("palette:", data, 8) == 0) {
-            parse_palette(ctx, data + 8);
+            ctx->has_palette = 1;
+            ff_dvdsub_parse_palette(ctx->palette, data + 8);
         } else if (strncmp("size:", data, 5) == 0) {
             int w, h;
             if (sscanf(data + 5, "%dx%d", &w, &h) == 2) {
@@ -748,8 +736,10 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
 
     if (ctx->ifo_str)
         parse_ifo_palette(ctx, ctx->ifo_str);
-    if (ctx->palette_str)
-        parse_palette(ctx, ctx->palette_str);
+    if (ctx->palette_str) {
+        ctx->has_palette = 1;
+        ff_dvdsub_parse_palette(ctx->palette, ctx->palette_str);
+    }
     if (ctx->has_palette) {
         int i;
         av_log(avctx, AV_LOG_DEBUG, "palette:");

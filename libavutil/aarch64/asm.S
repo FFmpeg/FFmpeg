@@ -32,6 +32,10 @@
 #   define FUNC #
 #endif
 
+#ifndef __has_feature
+#   define __has_feature(x) 0
+#endif
+
 .macro  function name, export=0, align=2
     .macro endfunc
 ELF     .size   \name, . - \name
@@ -94,7 +98,11 @@ ELF     .size   \name, . - \name
         add             \rd, \rd, :lo12:\val+(\offset)
     .endif
 #elif CONFIG_PIC
+#   if __has_feature(hwaddress_sanitizer)
+        adrp            \rd, :pg_hi21_nc:\val+(\offset)
+#   else
         adrp            \rd, \val+(\offset)
+#   endif
         add             \rd, \rd, :lo12:\val+(\offset)
 #else
         ldr             \rd, =\val+\offset
@@ -104,3 +112,6 @@ ELF     .size   \name, . - \name
 #define GLUE(a, b) a ## b
 #define JOIN(a, b) GLUE(a, b)
 #define X(s) JOIN(EXTERN_ASM, s)
+
+#define x18 do_not_use_x18
+#define w18 do_not_use_w18

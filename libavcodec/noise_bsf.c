@@ -19,13 +19,11 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 
-#include "avcodec.h"
 #include "bsf.h"
+#include "bsf_internal.h"
 
 #include "libavutil/log.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 typedef struct NoiseContext {
@@ -39,7 +37,7 @@ static int noise(AVBSFContext *ctx, AVPacket *pkt)
 {
     NoiseContext *s = ctx->priv_data;
     int amount = s->amount > 0 ? s->amount : (s->state % 10001 + 1);
-    int i, ret = 0;
+    int i, ret;
 
     if (amount <= 0)
         return AVERROR(EINVAL);
@@ -55,19 +53,18 @@ static int noise(AVBSFContext *ctx, AVPacket *pkt)
     }
 
     ret = av_packet_make_writable(pkt);
-    if (ret < 0)
-        goto fail;
+    if (ret < 0) {
+        av_packet_unref(pkt);
+        return ret;
+    }
 
     for (i = 0; i < pkt->size; i++) {
         s->state += pkt->data[i] + 1;
         if (s->state % amount == 0)
             pkt->data[i] = s->state;
     }
-fail:
-    if (ret < 0)
-        av_packet_unref(pkt);
 
-    return ret;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(NoiseContext, x)

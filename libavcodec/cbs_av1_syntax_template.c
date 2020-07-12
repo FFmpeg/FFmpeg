@@ -20,7 +20,6 @@ static int FUNC(obu_header)(CodedBitstreamContext *ctx, RWContext *rw,
                             AV1RawOBUHeader *current)
 {
     int err;
-    av_unused int zero = 0;
 
     HEADER("OBU header");
 
@@ -268,7 +267,7 @@ static int FUNC(sequence_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(enable_intra_edge_filter);
 
     if (current->reduced_still_picture_header) {
-        infer(enable_intraintra_compound, 0);
+        infer(enable_interintra_compound, 0);
         infer(enable_masked_compound,     0);
         infer(enable_warped_motion,       0);
         infer(enable_dual_filter,         0);
@@ -281,7 +280,7 @@ static int FUNC(sequence_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(seq_force_integer_mv,
               AV1_SELECT_INTEGER_MV);
     } else {
-        flag(enable_intraintra_compound);
+        flag(enable_interintra_compound);
         flag(enable_masked_compound);
         flag(enable_warped_motion);
         flag(enable_dual_filter);
@@ -335,6 +334,117 @@ static int FUNC(temporal_delimiter_obu)(CodedBitstreamContext *ctx, RWContext *r
     HEADER("Temporal Delimiter");
 
     priv->seen_frame_header = 0;
+
+    return 0;
+}
+
+static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
+                                AV1RawFrameHeader *current)
+{
+    CodedBitstreamAV1Context *priv = ctx->priv_data;
+    const AV1RawSequenceHeader *seq = priv->sequence_header;
+    static const uint8_t ref_frame_list[AV1_NUM_REF_FRAMES - 2] = {
+        AV1_REF_FRAME_LAST2, AV1_REF_FRAME_LAST3, AV1_REF_FRAME_BWDREF,
+        AV1_REF_FRAME_ALTREF2, AV1_REF_FRAME_ALTREF
+    };
+    int8_t ref_frame_idx[AV1_REFS_PER_FRAME], used_frame[AV1_NUM_REF_FRAMES];
+    int8_t shifted_order_hints[AV1_NUM_REF_FRAMES];
+    int cur_frame_hint, latest_order_hint, earliest_order_hint, ref;
+    int i, j;
+
+    for (i = 0; i < AV1_REFS_PER_FRAME; i++)
+        ref_frame_idx[i] = -1;
+    ref_frame_idx[AV1_REF_FRAME_LAST - AV1_REF_FRAME_LAST] = current->last_frame_idx;
+    ref_frame_idx[AV1_REF_FRAME_GOLDEN - AV1_REF_FRAME_LAST] = current->golden_frame_idx;
+
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++)
+        used_frame[i] = 0;
+    used_frame[current->last_frame_idx] = 1;
+    used_frame[current->golden_frame_idx] = 1;
+
+    cur_frame_hint = 1 << (seq->order_hint_bits_minus_1);
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++)
+        shifted_order_hints[i] = cur_frame_hint +
+                                 cbs_av1_get_relative_dist(seq, priv->ref[i].order_hint,
+                                                           current->order_hint);
+
+    latest_order_hint = shifted_order_hints[current->last_frame_idx];
+    earliest_order_hint = shifted_order_hints[current->golden_frame_idx];
+
+    ref = -1;
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
+        int hint = shifted_order_hints[i];
+        if (!used_frame[i] && hint >= cur_frame_hint &&
+            (ref < 0 || hint >= latest_order_hint)) {
+            ref = i;
+            latest_order_hint = hint;
+        }
+    }
+    if (ref >= 0) {
+        ref_frame_idx[AV1_REF_FRAME_ALTREF - AV1_REF_FRAME_LAST] = ref;
+        used_frame[ref] = 1;
+    }
+
+    ref = -1;
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
+        int hint = shifted_order_hints[i];
+        if (!used_frame[i] && hint >= cur_frame_hint &&
+            (ref < 0 || hint < earliest_order_hint)) {
+            ref = i;
+            earliest_order_hint = hint;
+        }
+    }
+    if (ref >= 0) {
+        ref_frame_idx[AV1_REF_FRAME_BWDREF - AV1_REF_FRAME_LAST] = ref;
+        used_frame[ref] = 1;
+    }
+
+    ref = -1;
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
+        int hint = shifted_order_hints[i];
+        if (!used_frame[i] && hint >= cur_frame_hint &&
+            (ref < 0 || hint < earliest_order_hint)) {
+            ref = i;
+            earliest_order_hint = hint;
+        }
+    }
+    if (ref >= 0) {
+        ref_frame_idx[AV1_REF_FRAME_ALTREF2 - AV1_REF_FRAME_LAST] = ref;
+        used_frame[ref] = 1;
+    }
+
+    for (i = 0; i < AV1_REFS_PER_FRAME - 2; i++) {
+        int ref_frame = ref_frame_list[i];
+        if (ref_frame_idx[ref_frame - AV1_REF_FRAME_LAST] < 0 ) {
+            ref = -1;
+            for (j = 0; j < AV1_NUM_REF_FRAMES; j++) {
+                int hint = shifted_order_hints[j];
+                if (!used_frame[j] && hint < cur_frame_hint &&
+                    (ref < 0 || hint >= latest_order_hint)) {
+                    ref = j;
+                    latest_order_hint = hint;
+                }
+            }
+            if (ref >= 0) {
+                ref_frame_idx[ref_frame - AV1_REF_FRAME_LAST] = ref;
+                used_frame[ref] = 1;
+            }
+        }
+    }
+
+    ref = -1;
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
+        int hint = shifted_order_hints[i];
+        if (ref < 0 || hint < earliest_order_hint) {
+            ref = i;
+            earliest_order_hint = hint;
+        }
+    }
+    for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
+        if (ref_frame_idx[i] < 0)
+            ref_frame_idx[i] = ref;
+        infer(ref_frame_idx[i], ref_frame_idx[i]);
+    }
 
     return 0;
 }
@@ -419,17 +529,16 @@ static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
         flags(found_ref[i], 1, i);
         if (current->found_ref[i]) {
-            AV1ReferenceFrameState *ref;
+            AV1ReferenceFrameState *ref =
+                &priv->ref[current->ref_frame_idx[i]];
 
-            if (current->ref_frame_idx[i] < 0 ||
-                !priv->ref[current->ref_frame_idx[i]].valid) {
+            if (!ref->valid) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR,
                        "Missing reference frame needed for frame size "
                        "(ref = %d, ref_frame_idx = %d).\n",
                        i, current->ref_frame_idx[i]);
                 return AVERROR_INVALIDDATA;
             }
-            ref = &priv->ref[current->ref_frame_idx[i]];
 
             priv->upscaled_width = ref->upscaled_width;
             priv->frame_width    = ref->frame_width;
@@ -882,7 +991,7 @@ static int FUNC(skip_mode_params)(CodedBitstreamContext *ctx, RWContext *rw,
         forward_idx  = -1;
         backward_idx = -1;
         for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
-            ref_hint = priv->ref[i].order_hint;
+            ref_hint = priv->ref[current->ref_frame_idx[i]].order_hint;
             dist = cbs_av1_get_relative_dist(seq, ref_hint,
                                              current->order_hint);
             if (dist < 0) {
@@ -913,7 +1022,7 @@ static int FUNC(skip_mode_params)(CodedBitstreamContext *ctx, RWContext *rw,
 
             second_forward_idx = -1;
             for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
-                ref_hint = priv->ref[i].order_hint;
+                ref_hint = priv->ref[current->ref_frame_idx[i]].order_hint;
                 if (cbs_av1_get_relative_dist(seq, ref_hint,
                                               forward_hint) < 0) {
                     if (second_forward_idx < 0 ||
@@ -1045,9 +1154,12 @@ static int FUNC(film_grain_params)(CodedBitstreamContext *ctx, RWContext *rw,
         return 0;
     }
 
-    fb(4, num_y_points);
+    fc(4, num_y_points, 0, 14);
     for (i = 0; i < current->num_y_points; i++) {
-        fbs(8, point_y_value[i],   1, i);
+        fcs(8, point_y_value[i],
+            i ? current->point_y_value[i - 1] + 1 : 0,
+            MAX_UINT_BITS(8) - (current->num_y_points - i - 1),
+            1, i);
         fbs(8, point_y_scaling[i], 1, i);
     }
 
@@ -1064,14 +1176,20 @@ static int FUNC(film_grain_params)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(num_cb_points, 0);
         infer(num_cr_points, 0);
     } else {
-        fb(4, num_cb_points);
+        fc(4, num_cb_points, 0, 10);
         for (i = 0; i < current->num_cb_points; i++) {
-            fbs(8, point_cb_value[i],   1, i);
+            fcs(8, point_cb_value[i],
+                i ? current->point_cb_value[i - 1] + 1 : 0,
+                MAX_UINT_BITS(8) - (current->num_cb_points - i - 1),
+                1, i);
             fbs(8, point_cb_scaling[i], 1, i);
         }
-        fb(4, num_cr_points);
+        fc(4, num_cr_points, 0, 10);
         for (i = 0; i < current->num_cr_points; i++) {
-            fbs(8, point_cr_value[i],   1, i);
+            fcs(8, point_cr_value[i],
+                i ? current->point_cr_value[i - 1] + 1 : 0,
+                MAX_UINT_BITS(8) - (current->num_cr_points - i - 1),
+                1, i);
             fbs(8, point_cr_scaling[i], 1, i);
         }
     }
@@ -1307,16 +1425,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             if (current->frame_refs_short_signaling) {
                 fb(3, last_frame_idx);
                 fb(3, golden_frame_idx);
-
-                for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
-                    if (i == 0)
-                        infer(ref_frame_idx[i], current->last_frame_idx);
-                    else if (i == AV1_REF_FRAME_GOLDEN -
-                                  AV1_REF_FRAME_LAST)
-                        infer(ref_frame_idx[i], current->golden_frame_idx);
-                    else
-                        infer(ref_frame_idx[i], -1);
-                }
+                CHECK(FUNC(set_frame_refs)(ctx, rw, current));
             }
         }
 
@@ -1499,8 +1608,6 @@ static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
             HEADER("Redundant Frame Header (used as Frame Header)");
         else
             HEADER("Frame Header");
-
-        priv->seen_frame_header = 1;
 
 #ifdef READ
         start_pos = get_bits_count(rw);

@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "audio_frame_queue.h"
 #include "internal.h"
+#include "profiles.h"
 
 #ifdef AACENCODER_LIB_VL0
 #define FDKENC_VER_AT_LEAST(vl0, vl1) \
@@ -62,6 +63,7 @@ static const AVOption aac_enc_options[] = {
     { "latm", "Output LATM/LOAS encapsulated data", offsetof(AACContext, latm), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "header_period", "StreamMuxConfig and PCE repetition period (in frames)", offsetof(AACContext, header_period), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0xffff, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "vbr", "VBR mode (1-5)", offsetof(AACContext, vbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 5, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    FF_AAC_PROFILE_OPTS
     { NULL }
 };
 

@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avio.h"
 #include "avformat.h"
 #include "metadata.h"
 #include "vorbiscomment.h"
-#include "libavcodec/bytestream.h"
 #include "libavutil/dict.h"
 
 /**
@@ -38,7 +38,7 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { 0 }
 };
 
-int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string,
+int64_t ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
                                 AVChapter **chapters, unsigned int nb_chapters)
 {
     int64_t len = 8;
@@ -62,31 +62,31 @@ int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string,
     return len;
 }
 
-int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
+int ff_vorbiscomment_write(AVIOContext *pb, const AVDictionary *m,
                            const char *vendor_string,
                            AVChapter **chapters, unsigned int nb_chapters)
 {
     int cm_count = 0;
-    bytestream_put_le32(p, strlen(vendor_string));
-    bytestream_put_buffer(p, vendor_string, strlen(vendor_string));
+    avio_wl32(pb, strlen(vendor_string));
+    avio_write(pb, vendor_string, strlen(vendor_string));
     if (chapters && nb_chapters) {
         for (int i = 0; i < nb_chapters; i++) {
             cm_count += av_dict_count(chapters[i]->metadata) + 1;
         }
     }
-    if (*m) {
-        int count = av_dict_count(*m) + cm_count;
+    if (m) {
+        int count = av_dict_count(m) + cm_count;
         AVDictionaryEntry *tag = NULL;
-        bytestream_put_le32(p, count);
-        while ((tag = av_dict_get(*m, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        avio_wl32(pb, count);
+        while ((tag = av_dict_get(m, "", tag, AV_DICT_IGNORE_SUFFIX))) {
             int64_t len1 = strlen(tag->key);
             int64_t len2 = strlen(tag->value);
             if (len1+1+len2 > UINT32_MAX)
                 return AVERROR(EINVAL);
-            bytestream_put_le32(p, len1+1+len2);
-            bytestream_put_buffer(p, tag->key, len1);
-            bytestream_put_byte(p, '=');
-            bytestream_put_buffer(p, tag->value, len2);
+            avio_wl32(pb, len1 + 1 + len2);
+            avio_write(pb, tag->key, len1);
+            avio_w8(pb, '=');
+            avio_write(pb, tag->value, len2);
         }
         for (int i = 0; i < nb_chapters; i++) {
             AVChapter *chp = chapters[i];
@@ -101,11 +101,11 @@ int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
             s  = s % 60;
             snprintf(chapter_number, sizeof(chapter_number), "%03d", i);
             snprintf(chapter_time, sizeof(chapter_time), "%02d:%02d:%02d.%03d", h, m, s, ms);
-            bytestream_put_le32(p, 10+1+12);
-            bytestream_put_buffer(p, "CHAPTER", 7);
-            bytestream_put_buffer(p, chapter_number, 3);
-            bytestream_put_byte(p, '=');
-            bytestream_put_buffer(p, chapter_time, 12);
+            avio_wl32(pb, 10 + 1 + 12);
+            avio_write(pb, "CHAPTER", 7);
+            avio_write(pb, chapter_number, 3);
+            avio_w8(pb, '=');
+            avio_write(pb, chapter_time, 12);
 
             tag = NULL;
             while ((tag = av_dict_get(chapters[i]->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
@@ -113,18 +113,18 @@ int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
                 int64_t len2 = strlen(tag->value);
                 if (len1+1+len2+10 > UINT32_MAX)
                     return AVERROR(EINVAL);
-                bytestream_put_le32(p, 10+len1+1+len2);
-                bytestream_put_buffer(p, "CHAPTER", 7);
-                bytestream_put_buffer(p, chapter_number, 3);
+                avio_wl32(pb, 10 + len1 + 1 + len2);
+                avio_write(pb, "CHAPTER", 7);
+                avio_write(pb, chapter_number, 3);
                 if (!strcmp(tag->key, "title"))
-                    bytestream_put_buffer(p, "NAME", 4);
+                    avio_write(pb, "NAME", 4);
                 else
-                    bytestream_put_buffer(p, tag->key, len1);
-                bytestream_put_byte(p, '=');
-                bytestream_put_buffer(p, tag->value, len2);
+                    avio_write(pb, tag->key, len1);
+                avio_w8(pb, '=');
+                avio_write(pb, tag->value, len2);
             }
         }
     } else
-        bytestream_put_le32(p, 0);
+        avio_wl32(pb, 0);
     return 0;
 }

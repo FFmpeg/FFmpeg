@@ -97,7 +97,7 @@ static int vqf_read_header(AVFormatContext *s)
     int rate_flag = -1;
     int header_size;
     int read_bitrate = 0;
-    int size;
+    int size, ret;
     uint8_t comm_chunk[12];
 
     if (!st)
@@ -222,8 +222,8 @@ static int vqf_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, size, st->codecpar->sample_rate);
 
     /* put first 12 bytes of COMM chunk in extradata */
-    if (ff_alloc_extradata(st->codecpar, 12))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, 12)) < 0)
+        return ret;
     memcpy(st->codecpar->extradata, comm_chunk, 12);
 
     ff_metadata_conv_ctx(s, NULL, vqf_metadata_conv);
@@ -237,8 +237,8 @@ static int vqf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
     int size = (c->frame_bit_len - c->remaining_bits + 7)>>3;
 
-    if (av_new_packet(pkt, size+2) < 0)
-        return AVERROR(EIO);
+    if ((ret = av_new_packet(pkt, size + 2)) < 0)
+        return ret;
 
     pkt->pos          = avio_tell(s->pb);
     pkt->stream_index = 0;
@@ -249,7 +249,6 @@ static int vqf_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = avio_read(s->pb, pkt->data+2, size);
 
     if (ret != size) {
-        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
 

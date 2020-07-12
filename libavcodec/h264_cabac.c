@@ -31,7 +31,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/timer.h"
 #include "config.h"
 #include "cabac.h"
 #include "cabac_functions.h"
@@ -1895,9 +1894,7 @@ static av_always_inline void decode_cabac_luma_residual(const H264Context *h, H2
                     qmul = h->ps.pps->dequant4_coeff[cqm][qscale];
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
                         const int index = 16*p + 4*i8x8 + i4x4;
-//START_TIMER
                         decode_cabac_residual_nondc(h, sl, sl->mb + (16*index << pixel_shift), ctx_cat[2][p], index, scan, qmul, 16);
-//STOP_TIMER("decode_residual")
                     }
                 }
             } else {

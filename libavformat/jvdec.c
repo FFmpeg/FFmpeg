@@ -113,9 +113,10 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     jv->frames = av_malloc(ast->nb_index_entries * sizeof(JVFrame));
-    if (!jv->frames)
+    if (!jv->frames) {
+        av_freep(&ast->index_entries);
         return AVERROR(ENOMEM);
-
+    }
     offset = 0x68 + ast->nb_index_entries * 16;
     for (i = 0; i < ast->nb_index_entries; i++) {
         AVIndexEntry *e   = ast->index_entries + i;
@@ -137,6 +138,8 @@ static int read_header(AVFormatContext *s)
                     - jvf->palette_size < 0) {
             if (s->error_recognition & AV_EF_EXPLODE) {
                 read_close(s);
+                av_freep(&jv->frames);
+                av_freep(&ast->index_entries);
                 return AVERROR_INVALIDDATA;
             }
             jvf->audio_size   =
@@ -165,6 +168,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     JVDemuxContext *jv = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *ast = s->streams[0];
+    int ret;
 
     while (!avio_feof(s->pb) && jv->pts < ast->nb_index_entries) {
         const AVIndexEntry *e   = ast->index_entries + jv->pts;
@@ -174,8 +178,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         case JV_AUDIO:
             jv->state++;
             if (jvf->audio_size) {
-                if (av_get_packet(s->pb, pkt, jvf->audio_size) < 0)
-                    return AVERROR(ENOMEM);
+                if ((ret = av_get_packet(s->pb, pkt, jvf->audio_size)) < 0)
+                    return ret;
                 pkt->stream_index = 0;
                 pkt->pts          = e->timestamp;
                 pkt->flags       |= AV_PKT_FLAG_KEY;
@@ -184,10 +188,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         case JV_VIDEO:
             jv->state++;
             if (jvf->video_size || jvf->palette_size) {
-                int ret;
                 int size = jvf->video_size + jvf->palette_size;
-                if (av_new_packet(pkt, size + JV_PREAMBLE_SIZE))
-                    return AVERROR(ENOMEM);
+                if ((ret = av_new_packet(pkt, size + JV_PREAMBLE_SIZE)) < 0)
+                    return ret;
 
                 AV_WL32(pkt->data, jvf->video_size);
                 pkt->data[4] = jvf->video_type;

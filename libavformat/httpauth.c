@@ -255,7 +255,7 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
 
     if (state->auth_type == HTTP_AUTH_BASIC) {
         int auth_b64_len, len;
-        char *ptr, *decoded_auth = ff_urldecode(auth);
+        char *ptr, *decoded_auth = ff_urldecode(auth, 0);
 
         if (!decoded_auth)
             return NULL;
@@ -275,7 +275,7 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
         av_strlcat(ptr, "\r\n", len - (ptr - authstr));
         av_free(decoded_auth);
     } else if (state->auth_type == HTTP_AUTH_DIGEST) {
-        char *username = ff_urldecode(auth), *password;
+        char *username = ff_urldecode(auth, 0), *password;
 
         if (!username)
             return NULL;

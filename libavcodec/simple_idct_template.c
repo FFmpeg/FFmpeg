@@ -121,7 +121,7 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
 // TODO: Add DC-only support for int32_t input
 #if IN_IDCT_DEPTH == 16
 #if HAVE_FAST_64BIT
-#define ROW0_MASK (0xffffLL << 48 * HAVE_BIGENDIAN)
+#define ROW0_MASK (0xffffULL << 48 * HAVE_BIGENDIAN)
     if (((AV_RN64A(row) & ~ROW0_MASK) | AV_RN64A(row+4)) == 0) {
         uint64_t temp;
         if (DC_SHIFT - extra_shift >= 0) {

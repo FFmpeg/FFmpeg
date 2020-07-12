@@ -201,20 +201,20 @@ static void cavs_idct8_add_c(uint8_t *dst, int16_t *block, ptrdiff_t stride)
     src[0][0] += 8;
 
     for( i = 0; i < 8; i++ ) {
-        const int a0 =  3*src[i][1] - (src[i][7]<<1);
-        const int a1 =  3*src[i][3] + (src[i][5]<<1);
-        const int a2 =  (src[i][3]<<1) - 3*src[i][5];
-        const int a3 =  (src[i][1]<<1) + 3*src[i][7];
+        const int a0 = 3 * src[i][1] - 2 * src[i][7];
+        const int a1 = 3 * src[i][3] + 2 * src[i][5];
+        const int a2 = 2 * src[i][3] - 3 * src[i][5];
+        const int a3 = 2 * src[i][1] + 3 * src[i][7];
 
-        const int b4 = ((a0 + a1 + a3)<<1) + a1;
-        const int b5 = ((a0 - a1 + a2)<<1) + a0;
-        const int b6 = ((a3 - a2 - a1)<<1) + a3;
-        const int b7 = ((a0 - a2 - a3)<<1) - a2;
+        const int b4 = 2 * (a0 + a1 + a3) + a1;
+        const int b5 = 2 * (a0 - a1 + a2) + a0;
+        const int b6 = 2 * (a3 - a2 - a1) + a3;
+        const int b7 = 2 * (a0 - a2 - a3) - a2;
 
-        const int a7 = (src[i][2]<<2) - 10*src[i][6];
-        const int a6 = (src[i][6]<<2) + 10*src[i][2];
-        const int a5 = ((src[i][0] - src[i][4]) << 3) + 4;
-        const int a4 = ((src[i][0] + src[i][4]) << 3) + 4;
+        const int a7 = 4 * src[i][2] - 10 * src[i][6];
+        const int a6 = 4 * src[i][6] + 10 * src[i][2];
+        const int a5 = 8 * (src[i][0] - src[i][4]) + 4;
+        const int a4 = 8 * (src[i][0] + src[i][4]) + 4;
 
         const int b0 = a4 + a6;
         const int b1 = a5 + a7;
@@ -231,20 +231,20 @@ static void cavs_idct8_add_c(uint8_t *dst, int16_t *block, ptrdiff_t stride)
         src[i][7] = (b0 - b4) >> 3;
     }
     for( i = 0; i < 8; i++ ) {
-        const int a0 =  3*src[1][i] - (src[7][i]<<1);
-        const int a1 =  3*src[3][i] + (src[5][i]<<1);
-        const int a2 =  (src[3][i]<<1) - 3*src[5][i];
-        const int a3 =  (src[1][i]<<1) + 3*src[7][i];
+        const int a0 = 3 * src[1][i] - 2 * src[7][i];
+        const int a1 = 3 * src[3][i] + 2 * src[5][i];
+        const int a2 = 2 * src[3][i] - 3 * src[5][i];
+        const int a3 = 2 * src[1][i] + 3 * src[7][i];
 
-        const int b4 = ((a0 + a1 + a3)<<1) + a1;
-        const int b5 = ((a0 - a1 + a2)<<1) + a0;
-        const int b6 = ((a3 - a2 - a1)<<1) + a3;
-        const int b7 = ((a0 - a2 - a3)<<1) - a2;
+        const int b4 = 2 * (a0 + a1 + a3) + a1;
+        const int b5 = 2 * (a0 - a1 + a2) + a0;
+        const int b6 = 2 * (a3 - a2 - a1) + a3;
+        const int b7 = 2 * (a0 - a2 - a3) - a2;
 
-        const int a7 = (src[2][i]<<2) - 10*src[6][i];
-        const int a6 = (src[6][i]<<2) + 10*src[2][i];
-        const int a5 = (src[0][i] - src[4][i]) << 3;
-        const int a4 = (src[0][i] + src[4][i]) << 3;
+        const int a7 = 4 * src[2][i] - 10 * src[6][i];
+        const int a6 = 4 * src[6][i] + 10 * src[2][i];
+        const int a5 = 8 * (src[0][i] - src[4][i]);
+        const int a4 = 8 * (src[0][i] + src[4][i]);
 
         const int b0 = a4 + a6;
         const int b1 = a5 + a7;

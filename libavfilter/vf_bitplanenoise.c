@@ -122,7 +122,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->depth <= 8) {
         for (plane = 0; plane < s->nb_planes; plane++) {
-            const int linesize = in->linesize[plane];
+            const int linesize = s->planeheight[plane] > 1 ? in->linesize[plane] : 0;
             const int dlinesize = out->linesize[plane];
             uint8_t *val = in->data[plane];
             uint8_t *dst = s->filter ? out->data[plane]: NULL;
@@ -151,7 +151,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     } else {
         for (plane = 0; plane < s->nb_planes; plane++) {
-            const int linesize = in->linesize[plane] / 2;
+            const int linesize = s->planeheight[plane] > 1 ? in->linesize[plane] / 2 : 0;
             const int dlinesize = out->linesize[plane] / 2;
             uint16_t *val = (uint16_t *)in->data[plane];
             uint16_t *dst = s->filter ? (uint16_t *)out->data[plane] : NULL;

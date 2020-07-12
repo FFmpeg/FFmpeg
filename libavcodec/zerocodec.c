@@ -131,12 +131,17 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
     }
 
     zc->previous_frame = av_frame_alloc();
-    if (!zc->previous_frame) {
-        zerocodec_decode_close(avctx);
+    if (!zc->previous_frame)
         return AVERROR(ENOMEM);
-    }
 
     return 0;
+}
+
+static void zerocodec_decode_flush(AVCodecContext *avctx)
+{
+    ZeroCodecContext *zc = avctx->priv_data;
+
+    av_frame_unref(zc->previous_frame);
 }
 
 AVCodec ff_zerocodec_decoder = {
@@ -147,7 +152,9 @@ AVCodec ff_zerocodec_decoder = {
     .priv_data_size = sizeof(ZeroCodecContext),
     .init           = zerocodec_decode_init,
     .decode         = zerocodec_decode_frame,
+    .flush          = zerocodec_decode_flush,
     .close          = zerocodec_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };

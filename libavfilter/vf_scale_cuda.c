@@ -35,7 +35,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "scale.h"
+#include "scale_eval.h"
 #include "video.h"
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -81,6 +81,9 @@ typedef struct CUDAScaleContext {
 
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
+
+    int force_original_aspect_ratio;
+    int force_divisible_by;
 
     CUcontext   cu_ctx;
     CUmodule    cu_module;
@@ -304,6 +307,9 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
                                         inlink, outlink,
                                         &w, &h)) < 0)
         goto fail;
+
+    ff_scale_adjust_dimensions(inlink, &w, &h,
+                               s->force_original_aspect_ratio, s->force_divisible_by);
 
     if (((int64_t)h * inlink->w) > INT_MAX  ||
         ((int64_t)w * inlink->h) > INT_MAX)
@@ -536,6 +542,11 @@ fail:
 static const AVOption options[] = {
     { "w",      "Output video width",  OFFSET(w_expr),     AV_OPT_TYPE_STRING, { .str = "iw"   }, .flags = FLAGS },
     { "h",      "Output video height", OFFSET(h_expr),     AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
+    { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0}, 0, 2, FLAGS, "force_oar" },
+    { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
+    { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
+    { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
+    { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
     { NULL },
 };
 

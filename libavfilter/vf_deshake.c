@@ -354,7 +354,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (deshake->filename)
         deshake->fp = fopen(deshake->filename, "w");
     if (deshake->fp)
-        fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
+        fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", 1, 104, deshake->fp);
 
     // Quadword align left edge of box for MMX code, adjust width if necessary
     // to keep right margin
@@ -421,6 +421,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     const int chroma_width  = AV_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
     const int chroma_height = AV_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
     int aligned;
+    float transform_zoom;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -484,7 +485,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     // Write statistics to file
     if (deshake->fp) {
         snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vec.x, deshake->avg.vec.x, t.vec.x, orig.vec.y, deshake->avg.vec.y, t.vec.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
-        fwrite(tmp, sizeof(char), strlen(tmp), deshake->fp);
+        fwrite(tmp, 1, strlen(tmp), deshake->fp);
     }
 
     // Turn relative current frame motion into absolute by adding it to the
@@ -505,10 +506,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     deshake->last.angle = t.angle;
     deshake->last.zoom = t.zoom;
 
+    transform_zoom = 1.0 + t.zoom / 100.0;
+
     // Generate a luma transformation matrix
-    avfilter_get_matrix(t.vec.x, t.vec.y, t.angle, 1.0 + t.zoom / 100.0, matrix_y);
+    ff_get_matrix(t.vec.x, t.vec.y, t.angle, transform_zoom, transform_zoom, matrix_y);
     // Generate a chroma transformation matrix
-    avfilter_get_matrix(t.vec.x / (link->w / chroma_width), t.vec.y / (link->h / chroma_height), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
+    ff_get_matrix(t.vec.x / (link->w / chroma_width), t.vec.y / (link->h / chroma_height), t.angle, transform_zoom, transform_zoom, matrix_uv);
     // Transform the luma and chroma planes
     ret = deshake->transform(link->dst, link->w, link->h, chroma_width, chroma_height,
                              matrix_y, matrix_uv, INTERPOLATE_BILINEAR, deshake->edge, in, out);

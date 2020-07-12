@@ -49,6 +49,34 @@ typedef struct FFASSDecoderContext {
 
 /**
  * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS.
+ * Can specify all fields explicitly
+ *
+ * @param avctx pointer to the AVCodecContext
+ * @param play_res_x subtitle frame width
+ * @param play_res_y subtitle frame height
+ * @param font name of the default font face to use
+ * @param font_size default font size to use
+ * @param primary_color default text color to use (ABGR)
+ * @param secondary_color default secondary text color to use (ABGR)
+ * @param outline_color default outline color to use (ABGR)
+ * @param back_color default background color to use (ABGR)
+ * @param bold 1 for bold text, 0 for normal text
+ * @param italic 1 for italic text, 0 for normal text
+ * @param underline 1 for underline text, 0 for normal text
+ * @param border_style 1 for outline, 3 for opaque box
+ * @param alignment position of the text (left, center, top...), defined after
+ *                  the layout of the numpad (1-3 sub, 4-6 mid, 7-9 top)
+ * @return >= 0 on success otherwise an error code <0
+ */
+int ff_ass_subtitle_header_full(AVCodecContext *avctx,
+                                int play_res_x, int play_res_y,
+                                const char *font, int font_size,
+                                int primary_color, int secondary_color,
+                                int outline_color, int back_color,
+                                int bold, int italic, int underline,
+                                int border_style, int alignment);
+/**
+ * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS.
  *
  * @param avctx pointer to the AVCodecContext
  * @param font name of the default font face to use

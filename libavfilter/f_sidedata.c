@@ -39,7 +39,7 @@ typedef struct SideDataContext {
     const AVClass *class;
 
     int mode;
-    enum AVFrameSideDataType type;
+    int type;   // enum AVFrameSideDataType or -1 for delete side data mode
 } SideDataContext;
 
 #define OFFSET(x) offsetof(SideDataContext, x)

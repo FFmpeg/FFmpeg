@@ -318,7 +318,7 @@ static int activate(AVFilterContext *ctx)
 
         dst = (double *)out->data[0];
         out->pts = s->pts;
-        s->pts += nb_samples;
+        s->pts += av_rescale_q(nb_samples, (AVRational){1, ctx->outputs[0]->sample_rate}, ctx->outputs[0]->time_base);
 
         gate(s, (double *)in[0]->data[0], dst,
              (double *)in[1]->data[0], nb_samples,

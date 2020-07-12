@@ -82,7 +82,7 @@ static inline void loco_update_rice_param(RICEContext *r, int val)
 
 static inline int loco_get_rice(RICEContext *r)
 {
-    int v;
+    unsigned v;
     if (r->run > 0) { /* we have zero run */
         r->run--;
         loco_update_rice_param(r, 0);
@@ -131,7 +131,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
                              int stride, const uint8_t *buf, int buf_size)
 {
     RICEContext rc;
-    int val;
+    unsigned val;
     int ret;
     int i, j;
 
@@ -155,12 +155,16 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     /* restore top line */
     for (i = 1; i < width; i++) {
         val = loco_get_rice(&rc);
+        if (val == INT_MIN)
+           return AVERROR_INVALIDDATA;
         data[i] = data[i - 1] + val;
     }
     data += stride;
     for (j = 1; j < height; j++) {
         /* restore left column */
         val = loco_get_rice(&rc);
+        if (val == INT_MIN)
+           return AVERROR_INVALIDDATA;
         data[0] = data[-stride] + val;
         /* restore all other pixels */
         for (i = 1; i < width; i++) {

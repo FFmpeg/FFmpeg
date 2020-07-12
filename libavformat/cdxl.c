@@ -131,7 +131,8 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     height       = AV_RB16(&cdxl->header[16]);
     palette_size = AV_RB16(&cdxl->header[20]);
     audio_size   = AV_RB16(&cdxl->header[22]);
-    if (FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
+    if (cdxl->header[19] == 0 ||
+        FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
     if (format == 0x20)
         image_size = width * height * cdxl->header[19] / 8;
@@ -201,12 +202,11 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
                 avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
         }
 
-        if (av_new_packet(pkt, video_size + CDXL_HEADER_SIZE) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, video_size + CDXL_HEADER_SIZE)) < 0)
+            return ret;
         memcpy(pkt->data, cdxl->header, CDXL_HEADER_SIZE);
         ret = avio_read(pb, pkt->data + CDXL_HEADER_SIZE, video_size);
         if (ret < 0) {
-            av_packet_unref(pkt);
             return ret;
         }
         av_shrink_packet(pkt, CDXL_HEADER_SIZE + ret);

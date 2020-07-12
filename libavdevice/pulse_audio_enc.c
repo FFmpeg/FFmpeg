@@ -771,7 +771,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass pulse_muxer_class = {
-    .class_name     = "PulseAudio muxer",
+    .class_name     = "PulseAudio outdev",
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,

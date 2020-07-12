@@ -78,6 +78,7 @@ static int qdm2_parse_config(PayloadContext *qdm, AVStream *st,
                              const uint8_t *buf, const uint8_t *end)
 {
     const uint8_t *p = buf;
+    int ret;
 
     while (end - p >= 2) {
         unsigned int item_len = p[0], config_item = p[1];
@@ -104,9 +105,10 @@ static int qdm2_parse_config(PayloadContext *qdm, AVStream *st,
             case 4: /* stream with extradata */
                 if (item_len < 30)
                     return AVERROR_INVALIDDATA;
-                av_freep(&st->codecpar->extradata);
-                if (ff_alloc_extradata(st->codecpar, 26 + item_len)) {
-                    return AVERROR(ENOMEM);
+
+                ret = ff_alloc_extradata(st->codecpar, 26 + item_len);
+                if (ret < 0) {
+                    return ret;
                 }
                 AV_WB32(st->codecpar->extradata, 12);
                 memcpy(st->codecpar->extradata + 4, "frma", 4);

@@ -1290,6 +1290,14 @@ void ff_vp9_decode_block(VP9TileData *td, int row, int col,
         b->uvtx = b->tx - ((s->ss_h && w4 * 2 == (1 << b->tx)) ||
                            (s->ss_v && h4 * 2 == (1 << b->tx)));
 
+        if (td->block_structure) {
+            td->block_structure[td->nb_block_structure].row = row;
+            td->block_structure[td->nb_block_structure].col = col;
+            td->block_structure[td->nb_block_structure].block_size_idx_x = av_log2(w4);
+            td->block_structure[td->nb_block_structure].block_size_idx_y = av_log2(h4);
+            td->nb_block_structure++;
+        }
+
         if (!b->skip) {
             int has_coeffs;
 

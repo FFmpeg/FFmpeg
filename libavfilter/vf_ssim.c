@@ -55,13 +55,13 @@ typedef struct SSIMContext {
     uint64_t nb_frames;
     double ssim[4], ssim_total;
     char comps[4];
-    float coefs[4];
+    double coefs[4];
     uint8_t rgba_map[4];
     int planewidth[4];
     int planeheight[4];
     int *temp;
     int is_rgb;
-    float (*ssim_plane)(SSIMDSPContext *dsp,
+    double (*ssim_plane)(SSIMDSPContext *dsp,
                         uint8_t *main, int main_stride,
                         uint8_t *ref, int ref_stride,
                         int width, int height, void *temp,
@@ -206,9 +206,9 @@ static float ssim_endn_16bit(const int64_t (*sum0)[4], const int64_t (*sum1)[4],
     return ssim;
 }
 
-static float ssim_endn_8bit(const int (*sum0)[4], const int (*sum1)[4], int width)
+static double ssim_endn_8bit(const int (*sum0)[4], const int (*sum1)[4], int width)
 {
-    float ssim = 0.0;
+    double ssim = 0.0;
     int i;
 
     for (i = 0; i < width; i++)
@@ -221,14 +221,14 @@ static float ssim_endn_8bit(const int (*sum0)[4], const int (*sum1)[4], int widt
 
 #define SUM_LEN(w) (((w) >> 2) + 3)
 
-static float ssim_plane_16bit(SSIMDSPContext *dsp,
+static double ssim_plane_16bit(SSIMDSPContext *dsp,
                               uint8_t *main, int main_stride,
                               uint8_t *ref, int ref_stride,
                               int width, int height, void *temp,
                               int max)
 {
     int z = 0, y;
-    float ssim = 0.0;
+    double ssim = 0.0;
     int64_t (*sum0)[4] = temp;
     int64_t (*sum1)[4] = sum0 + SUM_LEN(width);
 
@@ -249,14 +249,14 @@ static float ssim_plane_16bit(SSIMDSPContext *dsp,
     return ssim / ((height - 1) * (width - 1));
 }
 
-static float ssim_plane(SSIMDSPContext *dsp,
+static double ssim_plane(SSIMDSPContext *dsp,
                         uint8_t *main, int main_stride,
                         uint8_t *ref, int ref_stride,
                         int width, int height, void *temp,
                         int max)
 {
     int z = 0, y;
-    float ssim = 0.0;
+    double ssim = 0.0;
     int (*sum0)[4] = temp;
     int (*sum1)[4] = sum0 + SUM_LEN(width);
 
@@ -279,7 +279,7 @@ static float ssim_plane(SSIMDSPContext *dsp,
 
 static double ssim_db(double ssim, double weight)
 {
-    return 10 * log10(weight / (weight - ssim));
+    return (fabs(weight - ssim) > 1e-9) ? 10.0 * log10(weight / (weight - ssim)) : INFINITY;
 }
 
 static int do_ssim(FFFrameSync *fs)
@@ -288,7 +288,7 @@ static int do_ssim(FFFrameSync *fs)
     SSIMContext *s = ctx->priv;
     AVFrame *master, *ref;
     AVDictionary **metadata;
-    float c[4], ssimv = 0.0;
+    double c[4] = { 0 }, ssimv = 0.0;
     int ret, i;
 
     ret = ff_framesync_dualinput_get(fs, &master, &ref);
@@ -442,6 +442,14 @@ static int config_output(AVFilterLink *outlink)
 
     if ((ret = ff_framesync_configure(&s->fs)) < 0)
         return ret;
+
+    outlink->time_base = s->fs.time_base;
+
+    if (av_cmp_q(mainlink->time_base, outlink->time_base) ||
+        av_cmp_q(ctx->inputs[1]->time_base, outlink->time_base))
+        av_log(ctx, AV_LOG_WARNING, "not matching timebases found between first input: %d/%d and second input %d/%d, results may be incorrect!\n",
+               mainlink->time_base.num, mainlink->time_base.den,
+               ctx->inputs[1]->time_base.num, ctx->inputs[1]->time_base.den);
 
     return 0;
 }

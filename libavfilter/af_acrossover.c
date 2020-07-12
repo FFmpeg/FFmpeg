@@ -61,6 +61,9 @@ typedef struct AudioCrossoverContext {
     float *splits;
 
     CrossoverChannel *xover;
+
+    AVFrame *input_frame;
+    AVFrame *frames[MAX_BANDS];
 } AudioCrossoverContext;
 
 #define OFFSET(x) offsetof(AudioCrossoverContext, x)
@@ -96,7 +99,10 @@ static av_cold int init(AVFilterContext *ctx)
 
         p = NULL;
 
-        av_sscanf(arg, "%f", &freq);
+        if (av_sscanf(arg, "%f", &freq) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for frequency[%d].\n", i);
+            return AVERROR(EINVAL);
+        }
         if (freq <= 0) {
             av_log(ctx, AV_LOG_ERROR, "Frequency %f must be positive number.\n", freq);
             return AVERROR(EINVAL);
@@ -131,21 +137,22 @@ static av_cold int init(AVFilterContext *ctx)
     return ret;
 }
 
-static void set_lp(BiquadContext *b, float fc, float q, float sr)
+static void set_lp(BiquadContext *b, double fc, double q, double sr)
 {
-    double omega = (2.0 * M_PI * fc / sr);
+    double omega = 2.0 * M_PI * fc / sr;
     double sn = sin(omega);
     double cs = cos(omega);
-    double alpha = (sn / (2 * q));
-    double inv = (1.0 / (1.0 + alpha));
+    double alpha = sn / (2. * q);
+    double inv = 1.0 / (1.0 + alpha);
 
-    b->a2 = b->a0 = (inv * (1.0 - cs) * 0.5);
-    b->a1 = b->a0 + b->a0;
+    b->a0 = (1. - cs) * 0.5 * inv;
+    b->a1 = (1. - cs) * inv;
+    b->a2 = b->a0;
     b->b1 = -2. * cs * inv;
     b->b2 = (1. - alpha) * inv;
 }
 
-static void set_hp(BiquadContext *b, float fc, float q, float sr)
+static void set_hp(BiquadContext *b, double fc, double q, double sr)
 {
     double omega = 2 * M_PI * fc / sr;
     double sn = sin(omega);
@@ -250,12 +257,53 @@ static double biquad_process(BiquadContext *b, double in)
     return out;
 }
 
+static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    AudioCrossoverContext *s = ctx->priv;
+    AVFrame *in = s->input_frame;
+    AVFrame **frames = s->frames;
+    const int start = (in->channels * jobnr) / nb_jobs;
+    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+    int f, band;
+
+    for (int ch = start; ch < end; ch++) {
+        const double *src = (const double *)in->extended_data[ch];
+        CrossoverChannel *xover = &s->xover[ch];
+
+        for (int i = 0; i < in->nb_samples; i++) {
+            double sample = src[i], lo, hi;
+
+            for (band = 0; band < ctx->nb_outputs; band++) {
+                double *dst = (double *)frames[band]->extended_data[ch];
+
+                lo = sample;
+                hi = sample;
+                for (f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
+                    BiquadContext *lp = &xover->lp[band][f];
+                    lo = biquad_process(lp, lo);
+                }
+
+                for (f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
+                    BiquadContext *hp = &xover->hp[band][f];
+                    hi = biquad_process(hp, hi);
+                }
+
+                dst[i] = lo;
+
+                sample = hi;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioCrossoverContext *s = ctx->priv;
-    AVFrame *frames[MAX_BANDS] = { NULL };
-    int i, f, ch, band, ret = 0;
+    AVFrame **frames = s->frames;
+    int i, ret = 0;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
         frames[i] = ff_get_audio_buffer(ctx->outputs[i], in->nb_samples);
@@ -271,39 +319,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (ret < 0)
         goto fail;
 
-    for (ch = 0; ch < inlink->channels; ch++) {
-        const double *src = (const double *)in->extended_data[ch];
-        CrossoverChannel *xover = &s->xover[ch];
-
-        for (band = 0; band < ctx->nb_outputs; band++) {
-            double *dst = (double *)frames[band]->extended_data[ch];
-
-            for (i = 0; i < in->nb_samples; i++) {
-                dst[i] = src[i];
-
-                for (f = 0; f < s->filter_count; f++) {
-                    if (band + 1 < ctx->nb_outputs) {
-                        BiquadContext *lp = &xover->lp[band][f];
-                        dst[i] = biquad_process(lp, dst[i]);
-                    }
-
-                    if (band - 1 >= 0) {
-                        BiquadContext *hp = &xover->hp[band - 1][f];
-                        dst[i] = biquad_process(hp, dst[i]);
-                    }
-                }
-            }
-        }
-    }
+    s->input_frame = in;
+    ctx->internal->execute(ctx, filter_channels, NULL, NULL, FFMIN(inlink->channels,
+                                                                   ff_filter_get_nb_threads(ctx)));
 
     for (i = 0; i < ctx->nb_outputs; i++) {
         ret = ff_filter_frame(ctx->outputs[i], frames[i]);
+        frames[i] = NULL;
         if (ret < 0)
             break;
     }
 
 fail:
+    for (i = 0; i < ctx->nb_outputs; i++)
+        av_frame_free(&frames[i]);
     av_frame_free(&in);
+    s->input_frame = NULL;
 
     return ret;
 }
@@ -314,6 +345,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     av_freep(&s->splits);
+    av_freep(&s->xover);
 
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
@@ -339,5 +371,6 @@ AVFilter ff_af_acrossover = {
     .query_formats  = query_formats,
     .inputs         = inputs,
     .outputs        = NULL,
-    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+                      AVFILTER_FLAG_SLICE_THREADS,
 };

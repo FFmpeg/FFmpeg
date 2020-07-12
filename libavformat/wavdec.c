@@ -181,7 +181,7 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
 static int wav_parse_xma2_tag(AVFormatContext *s, int64_t size, AVStream **st)
 {
     AVIOContext *pb = s->pb;
-    int version, num_streams, i, channels = 0;
+    int version, num_streams, i, channels = 0, ret;
 
     if (size < 36)
         return AVERROR_INVALIDDATA;
@@ -220,9 +220,8 @@ static int wav_parse_xma2_tag(AVFormatContext *s, int64_t size, AVStream **st)
     avpriv_set_pts_info(*st, 64, 1, (*st)->codecpar->sample_rate);
 
     avio_seek(pb, -size, SEEK_CUR);
-    av_freep(&(*st)->codecpar->extradata);
-    if (ff_get_extradata(s, (*st)->codecpar, pb, size) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, (*st)->codecpar, pb, size)) < 0)
+        return ret;
 
     return 0;
 }
@@ -473,9 +472,9 @@ static int wav_read_header(AVFormatContext *s)
             vst->codecpar->codec_id = AV_CODEC_ID_SMVJPEG;
             vst->codecpar->width  = avio_rl24(pb);
             vst->codecpar->height = avio_rl24(pb);
-            if (ff_alloc_extradata(vst->codecpar, 4)) {
+            if ((ret = ff_alloc_extradata(vst->codecpar, 4)) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not allocate extradata.\n");
-                return AVERROR(ENOMEM);
+                return ret;
             }
             size = avio_rl24(pb);
             wav->smv_data_ofs = avio_tell(pb) + (size - 5) * 3;
@@ -508,9 +507,9 @@ static int wav_read_header(AVFormatContext *s)
             ID3v2ExtraMeta *id3v2_extra_meta = NULL;
             ff_id3v2_read_dict(pb, &s->internal->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
             if (id3v2_extra_meta) {
-                ff_id3v2_parse_apic(s, &id3v2_extra_meta);
-                ff_id3v2_parse_chapters(s, &id3v2_extra_meta);
-                ff_id3v2_parse_priv(s, &id3v2_extra_meta);
+                ff_id3v2_parse_apic(s, id3v2_extra_meta);
+                ff_id3v2_parse_chapters(s, id3v2_extra_meta);
+                ff_id3v2_parse_priv(s, id3v2_extra_meta);
             }
             ff_id3v2_free_extra_meta(&id3v2_extra_meta);
             }

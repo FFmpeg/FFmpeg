@@ -435,7 +435,8 @@ static int fill_block(InterplayACMContext *s)
 static void juggle(int *wrap_p, int *block_p, unsigned sub_len, unsigned sub_count)
 {
     unsigned i, j;
-    int *p, r0, r1, r2, r3;
+    int *p;
+    unsigned int r0, r1, r2, r3;
 
     for (i = 0; i < sub_len; i++) {
         p = block_p;
@@ -528,7 +529,7 @@ static int decode_block(InterplayACMContext *s)
 
     for (i = 1, x = -val; i <= count; i++) {
         s->midbuf[-i] = x;
-        x -= val;
+        x -= (unsigned)val;
     }
 
     ret = fill_block(s);

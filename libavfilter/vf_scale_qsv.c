@@ -201,8 +201,8 @@ static int init_out_pool(AVFilterContext *ctx,
     out_frames_hwctx = out_frames_ctx->hwctx;
 
     out_frames_ctx->format            = AV_PIX_FMT_QSV;
-    out_frames_ctx->width             = FFALIGN(out_width,  32);
-    out_frames_ctx->height            = FFALIGN(out_height, 32);
+    out_frames_ctx->width             = FFALIGN(out_width,  16);
+    out_frames_ctx->height            = FFALIGN(out_height, 16);
     out_frames_ctx->sw_format         = out_format;
     out_frames_ctx->initial_pool_size = 4;
 
@@ -410,7 +410,7 @@ static int init_out_session(AVFilterContext *ctx)
     s->scale_conf.Header.BufferSz     = sizeof(mfxExtVPPScaling);
     s->scale_conf.ScalingMode         = s->mode;
     s->ext_buffers[s->num_ext_buf++]  = (mfxExtBuffer*)&s->scale_conf;
-    av_log(ctx, AV_LOG_VERBOSE, "Scaling mode: %"PRIu16"\n", s->mode);
+    av_log(ctx, AV_LOG_VERBOSE, "Scaling mode: %d\n", s->mode);
 #endif
 
     par.ExtParam    = s->ext_buffers;
@@ -541,7 +541,7 @@ static int qsvscale_config_props(AVFilterLink *outlink)
     return 0;
 
 fail:
-    av_log(NULL, AV_LOG_ERROR,
+    av_log(ctx, AV_LOG_ERROR,
            "Error when evaluating the expression '%s'\n", expr);
     return ret;
 }
@@ -629,7 +629,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass qsvscale_class = {
-    .class_name = "qsvscale",
+    .class_name = "scale_qsv",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

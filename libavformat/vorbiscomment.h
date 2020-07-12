@@ -34,22 +34,21 @@
  * For no string, set to an empty string.
  * @return The length in bytes.
  */
-int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string,
+int64_t ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
                                 AVChapter **chapters, unsigned int nb_chapters);
 
 /**
- * Write a VorbisComment into a buffer. The buffer, p, must have enough
- * data to hold the whole VorbisComment. The minimum size required can be
- * obtained by passing the same AVDictionary and vendor_string to
+ * Write a VorbisComment into an AVIOContext. The output size can be obtained
+ * in advance by passing the same chapters, AVDictionary and vendor_string to
  * ff_vorbiscomment_length()
  *
- * @param p The buffer in which to write.
+ * @param pb The AVIOContext to write the output.
  * @param m The metadata struct to write.
  * @param vendor_string The vendor string to write.
  * @param chapters The chapters to write.
  * @param nb_chapters The number of chapters to write.
  */
-int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
+int ff_vorbiscomment_write(AVIOContext *pb, const AVDictionary *m,
                            const char *vendor_string,
                            AVChapter **chapters, unsigned int nb_chapters);
 

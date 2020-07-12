@@ -217,10 +217,10 @@ static void wavesynth_seek(struct wavesynth_context *ws, int64_t ts)
     *last = -1;
     lcg_seek(&ws->dither_state, (uint32_t)ts - (uint32_t)ws->cur_ts);
     if (ws->pink_need) {
-        int64_t pink_ts_cur  = (ws->cur_ts + PINK_UNIT - 1) & ~(PINK_UNIT - 1);
-        int64_t pink_ts_next = ts & ~(PINK_UNIT - 1);
+        uint64_t pink_ts_cur  = (ws->cur_ts + (uint64_t)PINK_UNIT - 1) & ~(PINK_UNIT - 1);
+        uint64_t pink_ts_next = ts & ~(PINK_UNIT - 1);
         int pos = ts & (PINK_UNIT - 1);
-        lcg_seek(&ws->pink_state, (pink_ts_next - pink_ts_cur) << 1);
+        lcg_seek(&ws->pink_state, (uint32_t)(pink_ts_next - pink_ts_cur) * 2);
         if (pos) {
             pink_fill(ws);
             ws->pink_pos = pos;
@@ -281,7 +281,7 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
                 dphi1 = frac64(f1, (int64_t)avc->sample_rate << 16);
                 dphi2 = frac64(f2, (int64_t)avc->sample_rate << 16);
                 in->dphi0 = dphi1;
-                in->ddphi = (dphi2 - dphi1) / dt;
+                in->ddphi = (int64_t)(dphi2 - (uint64_t)dphi1) / dt;
                 if (phi & 0x80000000) {
                     phi &= ~0x80000000;
                     if (phi >= i)
@@ -301,8 +301,8 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
             default:
                 return AVERROR(EINVAL);
         }
-        in->amp0 = (int64_t)a1 << 32;
-        in->damp = (((int64_t)a2 << 32) - ((int64_t)a1 << 32)) / dt;
+        in->amp0 = (uint64_t)a1 << 32;
+        in->damp = (int64_t)(((uint64_t)a2 << 32) - ((uint64_t)a1 << 32)) / dt;
     }
     if (edata != edata_end)
         return AVERROR(EINVAL);
@@ -350,7 +350,8 @@ fail:
 static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
                                    int32_t *channels)
 {
-    int32_t amp, val, *cv;
+    int32_t amp, *cv;
+    unsigned val;
     struct ws_interval *in;
     int i, *last, pink;
     uint32_t c, all_ch = 0;
@@ -377,7 +378,7 @@ static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
                 in->dphi += in->ddphi;
                 break;
             case WS_NOISE:
-                val = amp * pink;
+                val = amp * (unsigned)pink;
                 break;
             default:
                 val = 0;
@@ -385,7 +386,7 @@ static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
         all_ch |= in->channels;
         for (c = in->channels, cv = channels; c; c >>= 1, cv++)
             if (c & 1)
-                *cv += val;
+                *cv += (unsigned)val;
     }
     val = (int32_t)lcg_next(&ws->dither_state) >> 16;
     for (c = all_ch, cv = channels; c; c >>= 1, cv++)
@@ -443,7 +444,7 @@ static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
     if (r < 0)
         return r;
     pcm = (int16_t *)frame->data[0];
-    for (s = 0; s < duration; s++, ts++) {
+    for (s = 0; s < duration; s++, ts+=(uint64_t)1) {
         memset(channels, 0, avc->channels * sizeof(*channels));
         if (ts >= ws->next_ts)
             wavesynth_enter_intervals(ws, ts);
@@ -451,7 +452,7 @@ static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
         for (c = 0; c < avc->channels; c++)
             *(pcm++) = channels[c] >> 16;
     }
-    ws->cur_ts += duration;
+    ws->cur_ts += (uint64_t)duration;
     *rgot_frame = 1;
     return packet->size;
 }

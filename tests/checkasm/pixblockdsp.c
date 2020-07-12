@@ -44,13 +44,13 @@
         }                                   \
     } while (0)
 
-#define check_get_pixels(type)                                                             \
+#define check_get_pixels(type, aligned)                                                    \
     do {                                                                                   \
         int i;                                                                             \
         declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *block, const uint8_t *pixels, ptrdiff_t line_size);    \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
-            int src_offset = i * 64 * sizeof(type) + 8 * i; /* Test various alignments */      \
+            int src_offset = i * 64 * sizeof(type) + (aligned ? 8 : 1) * i;                \
             int dst_offset = i * 64; /* dst must be aligned */                             \
             randomize_buffers();                                                           \
             call_ref(dst0 + dst_offset, src10 + src_offset, 8);                            \
@@ -61,13 +61,13 @@
         }                                                                                  \
     } while (0)
 
-#define check_diff_pixels(type)                                                            \
+#define check_diff_pixels(type, aligned)                                                   \
     do {                                                                                   \
         int i;                                                                             \
         declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *av_restrict block, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride); \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
-            int src_offset = i * 64 * sizeof(type) + 8 * i; /* Test various alignments */      \
+            int src_offset = i * 64 * sizeof(type) + (aligned ? 8 : 1) * i;                \
             int dst_offset = i * 64; /* dst must be aligned */                             \
             randomize_buffers();                                                           \
             call_ref(dst0 + dst_offset, src10 + src_offset, src20 + src_offset, 8);        \
@@ -96,12 +96,16 @@ void checkasm_check_pixblockdsp(void)
     ff_pixblockdsp_init(&h, &avctx);
 
     if (check_func(h.get_pixels, "get_pixels"))
-        check_get_pixels(uint8_t);
+        check_get_pixels(uint8_t, 1);
+    if (check_func(h.get_pixels_unaligned, "get_pixels_unaligned"))
+        check_get_pixels(uint8_t, 0);
 
     report("get_pixels");
 
     if (check_func(h.diff_pixels, "diff_pixels"))
-        check_diff_pixels(uint8_t);
+        check_diff_pixels(uint8_t, 1);
+    if (check_func(h.diff_pixels_unaligned, "diff_pixels_unaligned"))
+        check_diff_pixels(uint8_t, 0);
 
     report("diff_pixels");
 }

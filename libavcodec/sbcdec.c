@@ -30,7 +30,6 @@
  * SBC decoder implementation
  */
 
-#include <stdbool.h>
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
@@ -227,10 +226,10 @@ static inline void sbc_synthesize_four(struct sbc_decoder_state *state,
 
         /* Distribute the new matrix value to the shifted position */
         v[offset[i]] =
-            ( ff_synmatrix4[i][0] * frame->sb_sample[blk][ch][0] +
-              ff_synmatrix4[i][1] * frame->sb_sample[blk][ch][1] +
-              ff_synmatrix4[i][2] * frame->sb_sample[blk][ch][2] +
-              ff_synmatrix4[i][3] * frame->sb_sample[blk][ch][3] ) >> 15;
+            (int)( (unsigned)ff_synmatrix4[i][0] * frame->sb_sample[blk][ch][0] +
+                   (unsigned)ff_synmatrix4[i][1] * frame->sb_sample[blk][ch][1] +
+                   (unsigned)ff_synmatrix4[i][2] * frame->sb_sample[blk][ch][2] +
+                   (unsigned)ff_synmatrix4[i][3] * frame->sb_sample[blk][ch][3] ) >> 15;
     }
 
     /* Compute the samples */
@@ -239,16 +238,16 @@ static inline void sbc_synthesize_four(struct sbc_decoder_state *state,
 
         /* Store in output, Q0 */
         AV_WN16A(&output_frame->data[ch][blk * 8 + i * 2], av_clip_int16(
-            ( v[offset[i] + 0] * ff_sbc_proto_4_40m0[idx + 0] +
-              v[offset[k] + 1] * ff_sbc_proto_4_40m1[idx + 0] +
-              v[offset[i] + 2] * ff_sbc_proto_4_40m0[idx + 1] +
-              v[offset[k] + 3] * ff_sbc_proto_4_40m1[idx + 1] +
-              v[offset[i] + 4] * ff_sbc_proto_4_40m0[idx + 2] +
-              v[offset[k] + 5] * ff_sbc_proto_4_40m1[idx + 2] +
-              v[offset[i] + 6] * ff_sbc_proto_4_40m0[idx + 3] +
-              v[offset[k] + 7] * ff_sbc_proto_4_40m1[idx + 3] +
-              v[offset[i] + 8] * ff_sbc_proto_4_40m0[idx + 4] +
-              v[offset[k] + 9] * ff_sbc_proto_4_40m1[idx + 4] ) >> 15));
+         (int)( (unsigned)v[offset[i] + 0] * ff_sbc_proto_4_40m0[idx + 0] +
+                (unsigned)v[offset[k] + 1] * ff_sbc_proto_4_40m1[idx + 0] +
+                (unsigned)v[offset[i] + 2] * ff_sbc_proto_4_40m0[idx + 1] +
+                (unsigned)v[offset[k] + 3] * ff_sbc_proto_4_40m1[idx + 1] +
+                (unsigned)v[offset[i] + 4] * ff_sbc_proto_4_40m0[idx + 2] +
+                (unsigned)v[offset[k] + 5] * ff_sbc_proto_4_40m1[idx + 2] +
+                (unsigned)v[offset[i] + 6] * ff_sbc_proto_4_40m0[idx + 3] +
+                (unsigned)v[offset[k] + 7] * ff_sbc_proto_4_40m1[idx + 3] +
+                (unsigned)v[offset[i] + 8] * ff_sbc_proto_4_40m0[idx + 4] +
+                (unsigned)v[offset[k] + 9] * ff_sbc_proto_4_40m1[idx + 4] ) >> 15));
     }
 }
 
@@ -270,14 +269,14 @@ static inline void sbc_synthesize_eight(struct sbc_decoder_state *state,
 
         /* Distribute the new matrix value to the shifted position */
         v[offset[i]] =
-            ( ff_synmatrix8[i][0] * frame->sb_sample[blk][ch][0] +
-              ff_synmatrix8[i][1] * frame->sb_sample[blk][ch][1] +
-              ff_synmatrix8[i][2] * frame->sb_sample[blk][ch][2] +
-              ff_synmatrix8[i][3] * frame->sb_sample[blk][ch][3] +
-              ff_synmatrix8[i][4] * frame->sb_sample[blk][ch][4] +
-              ff_synmatrix8[i][5] * frame->sb_sample[blk][ch][5] +
-              ff_synmatrix8[i][6] * frame->sb_sample[blk][ch][6] +
-              ff_synmatrix8[i][7] * frame->sb_sample[blk][ch][7] ) >> 15;
+             (int)( (unsigned)ff_synmatrix8[i][0] * frame->sb_sample[blk][ch][0] +
+                    (unsigned)ff_synmatrix8[i][1] * frame->sb_sample[blk][ch][1] +
+                    (unsigned)ff_synmatrix8[i][2] * frame->sb_sample[blk][ch][2] +
+                    (unsigned)ff_synmatrix8[i][3] * frame->sb_sample[blk][ch][3] +
+                    (unsigned)ff_synmatrix8[i][4] * frame->sb_sample[blk][ch][4] +
+                    (unsigned)ff_synmatrix8[i][5] * frame->sb_sample[blk][ch][5] +
+                    (unsigned)ff_synmatrix8[i][6] * frame->sb_sample[blk][ch][6] +
+                    (unsigned)ff_synmatrix8[i][7] * frame->sb_sample[blk][ch][7] ) >> 15;
     }
 
     /* Compute the samples */
@@ -286,16 +285,16 @@ static inline void sbc_synthesize_eight(struct sbc_decoder_state *state,
 
         /* Store in output, Q0 */
         AV_WN16A(&output_frame->data[ch][blk * 16 + i * 2], av_clip_int16(
-            ( v[offset[i] + 0] * ff_sbc_proto_8_80m0[idx + 0] +
-              v[offset[k] + 1] * ff_sbc_proto_8_80m1[idx + 0] +
-              v[offset[i] + 2] * ff_sbc_proto_8_80m0[idx + 1] +
-              v[offset[k] + 3] * ff_sbc_proto_8_80m1[idx + 1] +
-              v[offset[i] + 4] * ff_sbc_proto_8_80m0[idx + 2] +
-              v[offset[k] + 5] * ff_sbc_proto_8_80m1[idx + 2] +
-              v[offset[i] + 6] * ff_sbc_proto_8_80m0[idx + 3] +
-              v[offset[k] + 7] * ff_sbc_proto_8_80m1[idx + 3] +
-              v[offset[i] + 8] * ff_sbc_proto_8_80m0[idx + 4] +
-              v[offset[k] + 9] * ff_sbc_proto_8_80m1[idx + 4] ) >> 15));
+         (int)( (unsigned)v[offset[i] + 0] * ff_sbc_proto_8_80m0[idx + 0] +
+                (unsigned)v[offset[k] + 1] * ff_sbc_proto_8_80m1[idx + 0] +
+                (unsigned)v[offset[i] + 2] * ff_sbc_proto_8_80m0[idx + 1] +
+                (unsigned)v[offset[k] + 3] * ff_sbc_proto_8_80m1[idx + 1] +
+                (unsigned)v[offset[i] + 4] * ff_sbc_proto_8_80m0[idx + 2] +
+                (unsigned)v[offset[k] + 5] * ff_sbc_proto_8_80m1[idx + 2] +
+                (unsigned)v[offset[i] + 6] * ff_sbc_proto_8_80m0[idx + 3] +
+                (unsigned)v[offset[k] + 7] * ff_sbc_proto_8_80m1[idx + 3] +
+                (unsigned)v[offset[i] + 8] * ff_sbc_proto_8_80m0[idx + 4] +
+                (unsigned)v[offset[k] + 9] * ff_sbc_proto_8_80m1[idx + 4] ) >> 15));
     }
 }
 
@@ -324,6 +323,8 @@ static int sbc_decode_init(AVCodecContext *avctx)
     SBCDecContext *sbc = avctx->priv_data;
     int i, ch;
 
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
+
     sbc->frame.crc_ctx = av_crc_get_table(AV_CRC_8_EBU);
 
     memset(sbc->dsp.V, 0, sizeof(sbc->dsp.V));
@@ -348,8 +349,8 @@ static int sbc_decode_frame(AVCodecContext *avctx,
     if (frame_length <= 0)
         return frame_length;
 
-    frame->channels = sbc->frame.channels;
-    frame->format = AV_SAMPLE_FMT_S16P;
+    avctx->channels = sbc->frame.channels;
+
     frame->nb_samples = sbc->frame.blocks * sbc->frame.subbands;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;

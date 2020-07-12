@@ -1,0 +1,16 @@
+#extradata 0:        4, 0x0402019c
+#extradata 1:        4, 0x0402019c
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: prores
+#dimensions 0: 720x480
+#sar 0: 186/157
+#tb 1: 1/1000
+#media_type 1: video
+#codec_id 1: prores
+#dimensions 1: 720x480
+#sar 1: 186/157
+0,          0,          0,        0,     4304, 0x3625b1fc
+1,          0,          0,        0,     4304, 0x3625b1fc
+0,         42,         42,        0,     4304, 0x3625b1fc
+1,         42,         42,        0,     4304, 0x3625b1fc

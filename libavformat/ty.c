@@ -454,7 +454,7 @@ static int demux_video(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
     TYDemuxContext *ty = s->priv_data;
     const int subrec_type = rec_hdr->subrec_type;
     const int64_t rec_size = rec_hdr->rec_size;
-    int es_offset1;
+    int es_offset1, ret;
     int got_packet = 0;
 
     if (subrec_type != 0x02 && subrec_type != 0x0c &&
@@ -474,8 +474,8 @@ static int demux_video(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
                     int size = rec_hdr->rec_size - VIDEO_PES_LENGTH - es_offset1;
 
                     ty->cur_chunk_pos += VIDEO_PES_LENGTH + es_offset1;
-                    if (av_new_packet(pkt, size) < 0)
-                        return AVERROR(ENOMEM);
+                    if ((ret = av_new_packet(pkt, size)) < 0)
+                        return ret;
                     memcpy(pkt->data, ty->chunk + ty->cur_chunk_pos, size);
                     ty->cur_chunk_pos += size;
                     pkt->stream_index = 0;
@@ -498,8 +498,8 @@ static int demux_video(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
     }
 
     if (!got_packet) {
-        if (av_new_packet(pkt, rec_size) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, rec_size)) < 0)
+            return ret;
         memcpy(pkt->data, ty->chunk + ty->cur_chunk_pos, rec_size);
         ty->cur_chunk_pos += rec_size;
         pkt->stream_index = 0;
@@ -578,7 +578,7 @@ static int demux_audio(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
     TYDemuxContext *ty = s->priv_data;
     const int subrec_type = rec_hdr->subrec_type;
     const int64_t rec_size = rec_hdr->rec_size;
-    int es_offset1;
+    int es_offset1, ret;
 
     if (subrec_type == 2) {
         int need = 0;
@@ -621,8 +621,8 @@ static int demux_audio(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
             ty->pes_buf_cnt = 0;
 
         }
-        if (av_new_packet(pkt, rec_size - need) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, rec_size - need)) < 0)
+            return ret;
         memcpy(pkt->data, ty->chunk + ty->cur_chunk_pos, rec_size - need);
         ty->cur_chunk_pos += rec_size - need;
         pkt->stream_index = 1;
@@ -643,8 +643,8 @@ static int demux_audio(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
             }
         }
     } else if (subrec_type == 0x03) {
-        if (av_new_packet(pkt, rec_size) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, rec_size)) < 0)
+            return ret;
         memcpy(pkt->data, ty->chunk + ty->cur_chunk_pos, rec_size);
         ty->cur_chunk_pos += rec_size;
         pkt->stream_index = 1;
@@ -674,15 +674,15 @@ static int demux_audio(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
     } else if (subrec_type == 0x04) {
         /* SA Audio with no PES Header                      */
         /* ================================================ */
-        if (av_new_packet(pkt, rec_size) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, rec_size)) < 0)
+            return ret;
         memcpy(pkt->data, ty->chunk + ty->cur_chunk_pos, rec_size);
         ty->cur_chunk_pos += rec_size;
         pkt->stream_index = 1;
         pkt->pts = ty->last_audio_pts;
     } else if (subrec_type == 0x09) {
-        if (av_new_packet(pkt, rec_size) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, rec_size)) < 0)
+            return ret;
         memcpy(pkt->data, ty->chunk + ty->cur_chunk_pos, rec_size);
         ty->cur_chunk_pos += rec_size ;
         pkt->stream_index = 1;

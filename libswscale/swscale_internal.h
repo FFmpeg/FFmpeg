@@ -119,7 +119,8 @@ typedef void (*yuv2planarX_fn)(const int16_t *filter, int filterSize,
  * Write one line of horizontally scaled chroma to interleaved output
  * with multi-point vertical scaling between input pixels.
  *
- * @param c             SWS scaling context
+ * @param dstFormat     destination pixel format
+ * @param chrDither     ordered dither array of type uint8_t and size 8
  * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
  * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit
  *                      output, 19 bits for 16-bit output (in int32_t)
@@ -130,7 +131,8 @@ typedef void (*yuv2planarX_fn)(const int16_t *filter, int filterSize,
  *                      output, this is in uint16_t
  * @param dstW          width of chroma planes
  */
-typedef void (*yuv2interleavedX_fn)(struct SwsContext *c,
+typedef void (*yuv2interleavedX_fn)(enum AVPixelFormat dstFormat,
+                                    const uint8_t *chrDither,
                                     const int16_t *chrFilter,
                                     int chrFilterSize,
                                     const int16_t **chrUSrc,
@@ -350,8 +352,6 @@ typedef struct SwsContext {
     //@{
     int lastInLumBuf;             ///< Last scaled horizontal luma/alpha line from source in the ring buffer.
     int lastInChrBuf;             ///< Last scaled horizontal chroma     line from source in the ring buffer.
-    int lumBufIndex;              ///< Index in ring buffer of the last scaled horizontal luma/alpha line from source.
-    int chrBufIndex;              ///< Index in ring buffer of the last scaled horizontal chroma     line from source.
     //@}
 
     uint8_t *formatConvBuffer;
@@ -635,8 +635,7 @@ int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 void ff_yuv2rgb_init_tables_ppc(SwsContext *c, const int inv_table[4],
                                 int brightness, int contrast, int saturation);
 
-void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
-                           int lastInLumBuf, int lastInChrBuf);
+void ff_updateMMXDitherTables(SwsContext *c, int dstY);
 
 av_cold void ff_sws_init_range_convert(SwsContext *c);
 
@@ -648,6 +647,13 @@ static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
     return desc->comp[0].depth == 16;
+}
+
+static av_always_inline int is32BPS(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->comp[0].depth == 32;
 }
 
 static av_always_inline int isNBPS(enum AVPixelFormat pix_fmt)
@@ -921,7 +927,36 @@ static inline void fillPlane16(uint8_t *plane, int stride, int width, int height
         }
         ptr += stride;
     }
+#undef FILL
 }
+
+static inline void fillPlane32(uint8_t *plane, int stride, int width, int height, int y,
+                               int alpha, int bits, const int big_endian, int is_float)
+{
+    int i, j;
+    uint8_t *ptr = plane + stride * y;
+    uint32_t v;
+    uint32_t onef32 = 0x3f800000;
+    if (is_float)
+        v = alpha ? onef32 : 0;
+    else
+        v = alpha ? 0xFFFFFFFF>>(32-bits) : (1<<(bits-1));
+
+    for (i = 0; i < height; i++) {
+#define FILL(wfunc) \
+        for (j = 0; j < width; j++) {\
+            wfunc(ptr+4*j, v);\
+        }
+        if (big_endian) {
+            FILL(AV_WB32);
+        } else {
+            FILL(AV_WL32);
+        }
+        ptr += stride;
+    }
+#undef FILL
+}
+
 
 #define MAX_SLICE_PLANES 4
 

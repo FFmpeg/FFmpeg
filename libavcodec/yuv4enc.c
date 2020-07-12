@@ -76,5 +76,4 @@ AVCodec ff_yuv4_encoder = {
     .encode2      = yuv4_encode_frame,
     .close        = yuv4_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .capabilities = AV_CODEC_CAP_INTRA_ONLY,
 };

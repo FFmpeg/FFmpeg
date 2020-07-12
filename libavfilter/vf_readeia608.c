@@ -36,41 +36,52 @@
 #include "internal.h"
 #include "video.h"
 
-#define FALL 0
-#define RISE 1
+#define LAG 25
+#define CLOCK_BITSIZE_MIN 0.2f
+#define CLOCK_BITSIZE_MAX 1.5f
+#define SYNC_BITSIZE_MIN 12.f
+#define SYNC_BITSIZE_MAX 15.f
+
+typedef struct LineItem {
+    int   input;
+    int   output;
+
+    float unfiltered;
+    float filtered;
+    float average;
+    float deviation;
+} LineItem;
+
+typedef struct CodeItem {
+    uint8_t bit;
+    int size;
+} CodeItem;
 
 typedef struct ReadEIA608Context {
     const AVClass *class;
     int start, end;
-    int min_range;
-    int max_peak_diff;
-    int max_period_diff;
-    int max_start_diff;
     int nb_found;
     int white;
     int black;
-    float mpd, mhd, msd, mac, spw, bhd, wth, bth;
+    float spw;
     int chp;
     int lp;
-    uint8_t *temp;
+
+    uint64_t histogram[256];
+
+    CodeItem *code;
+    LineItem *line;
 } ReadEIA608Context;
 
 #define OFFSET(x) offsetof(ReadEIA608Context, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption readeia608_options[] = {
-    { "scan_min", "set from which line to scan for codes",                            OFFSET(start), AV_OPT_TYPE_INT,   {.i64=0},       0, INT_MAX, FLAGS },
-    { "scan_max", "set to which line to scan for codes",                              OFFSET(end),   AV_OPT_TYPE_INT,   {.i64=29},      0, INT_MAX, FLAGS },
-    { "mac",      "set minimal acceptable amplitude change for sync codes detection", OFFSET(mac),   AV_OPT_TYPE_FLOAT, {.dbl=.2},  0.001,       1, FLAGS },
-    { "spw",      "set ratio of width reserved for sync code detection",              OFFSET(spw),   AV_OPT_TYPE_FLOAT, {.dbl=.27},   0.1,     0.7, FLAGS },
-    { "mhd",      "set max peaks height difference for sync code detection",          OFFSET(mhd),   AV_OPT_TYPE_FLOAT, {.dbl=.1},      0,     0.5, FLAGS },
-    { "mpd",      "set max peaks period difference for sync code detection",          OFFSET(mpd),   AV_OPT_TYPE_FLOAT, {.dbl=.1},      0,     0.5, FLAGS },
-    { "msd",      "set first two max start code bits differences",                    OFFSET(msd),   AV_OPT_TYPE_FLOAT, {.dbl=.02},     0,     0.5, FLAGS },
-    { "bhd",      "set min ratio of bits height compared to 3rd start code bit",      OFFSET(bhd),   AV_OPT_TYPE_FLOAT, {.dbl=.75},  0.01,       1, FLAGS },
-    { "th_w",     "set white color threshold",                                        OFFSET(wth),   AV_OPT_TYPE_FLOAT, {.dbl=.35},   0.1,       1, FLAGS },
-    { "th_b",     "set black color threshold",                                        OFFSET(bth),   AV_OPT_TYPE_FLOAT, {.dbl=.15},     0,     0.5, FLAGS },
-    { "chp",      "check and apply parity bit",                                       OFFSET(chp),   AV_OPT_TYPE_BOOL,  {.i64= 0},      0,       1, FLAGS },
-    { "lp",       "lowpass line prior to processing",                                 OFFSET(lp),    AV_OPT_TYPE_BOOL,  {.i64= 0},      0,       1, FLAGS },
+    { "scan_min", "set from which line to scan for codes",               OFFSET(start), AV_OPT_TYPE_INT,   {.i64=0},     0, INT_MAX, FLAGS },
+    { "scan_max", "set to which line to scan for codes",                 OFFSET(end),   AV_OPT_TYPE_INT,   {.i64=29},    0, INT_MAX, FLAGS },
+    { "spw",      "set ratio of width reserved for sync code detection", OFFSET(spw),   AV_OPT_TYPE_FLOAT, {.dbl=.27}, 0.1,     0.7, FLAGS },
+    { "chp",      "check and apply parity bit",                          OFFSET(chp),   AV_OPT_TYPE_BOOL,  {.i64= 0},    0,       1, FLAGS },
+    { "lp",       "lowpass line prior to processing",                    OFFSET(lp),    AV_OPT_TYPE_BOOL,  {.i64= 1},    0,       1, FLAGS },
     { NULL }
 };
 
@@ -96,10 +107,9 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx = inlink->dst;
     ReadEIA608Context *s = ctx->priv;
-    int depth = desc->comp[0].depth;
+    int size = inlink->w + LAG;
 
     if (s->end >= inlink->h) {
         av_log(ctx, AV_LOG_WARNING, "Last line to scan too large, clipping.\n");
@@ -111,124 +121,243 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    s->min_range = s->mac * ((1 << depth) - 1);
-    s->max_peak_diff = s->mhd * ((1 << depth) - 1);
-    s->max_period_diff = s->mpd * ((1 << depth) - 1);
-    s->max_start_diff = s->msd * ((1 << depth) - 1);
-    s->white = s->wth * ((1 << depth) - 1);
-    s->black = s->bth * ((1 << depth) - 1);
-    s->temp = av_calloc(inlink->w, sizeof(*s->temp));
-    if (!s->temp)
+    s->line = av_calloc(size, sizeof(*s->line));
+    s->code = av_calloc(size, sizeof(*s->code));
+    if (!s->line || !s->code)
         return AVERROR(ENOMEM);
 
     return 0;
 }
 
-static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in, int line)
+static void build_histogram(ReadEIA608Context *s, const LineItem *line, int len)
+{
+    memset(s->histogram, 0, sizeof(s->histogram));
+
+    for (int i = LAG; i < len + LAG; i++)
+        s->histogram[line[i].input]++;
+}
+
+static void find_black_and_white(ReadEIA608Context *s)
+{
+    int start = 0, end = 0, middle;
+    int black = 0, white = 0;
+    int cnt;
+
+    for (int i = 0; i < 256; i++) {
+        if (s->histogram[i]) {
+            start = i;
+            break;
+        }
+    }
+
+    for (int i = 255; i >= 0; i--) {
+        if (s->histogram[i]) {
+            end = i;
+            break;
+        }
+    }
+
+    middle = start + (end - start) / 2;
+
+    cnt = 0;
+    for (int i = start; i <= middle; i++) {
+        if (s->histogram[i] > cnt) {
+            cnt = s->histogram[i];
+            black = i;
+        }
+    }
+
+    cnt = 0;
+    for (int i = end; i >= middle; i--) {
+        if (s->histogram[i] > cnt) {
+            cnt = s->histogram[i];
+            white = i;
+        }
+    }
+
+    s->black = black;
+    s->white = white;
+}
+
+static float meanf(const LineItem *line, int len)
+{
+    float sum = 0.0, mean = 0.0;
+
+    for (int i = 0; i < len; i++)
+        sum += line[i].filtered;
+
+    mean = sum / len;
+
+    return mean;
+}
+
+static float stddevf(const LineItem *line, int len)
+{
+    float m = meanf(line, len);
+    float standard_deviation = 0.f;
+
+    for (int i = 0; i < len; i++)
+        standard_deviation += (line[i].filtered - m) * (line[i].filtered - m);
+
+    return sqrtf(standard_deviation / (len - 1));
+}
+
+static void thresholding(ReadEIA608Context *s, LineItem *line,
+                         int lag, float threshold, float influence, int len)
+{
+    for (int i = lag; i < len + lag; i++) {
+        line[i].unfiltered = line[i].input / 255.f;
+        line[i].filtered = line[i].unfiltered;
+    }
+
+    for (int i = 0; i < lag; i++) {
+        line[i].unfiltered = meanf(line, len * s->spw);
+        line[i].filtered = line[i].unfiltered;
+    }
+
+    line[lag - 1].average   = meanf(line, lag);
+    line[lag - 1].deviation = stddevf(line, lag);
+
+    for (int i = lag; i < len + lag; i++) {
+        if (fabsf(line[i].unfiltered - line[i-1].average) > threshold * line[i-1].deviation) {
+            if (line[i].unfiltered > line[i-1].average) {
+                line[i].output = 255;
+            } else {
+                line[i].output = 0;
+            }
+
+            line[i].filtered = influence * line[i].unfiltered + (1.f - influence) * line[i-1].filtered;
+        } else {
+            int distance_from_black, distance_from_white;
+
+            distance_from_black = FFABS(line[i].input - s->black);
+            distance_from_white = FFABS(line[i].input - s->white);
+
+            line[i].output = distance_from_black <= distance_from_white ? 0 : 255;
+        }
+
+        line[i].average   = meanf(line + i - lag, lag);
+        line[i].deviation = stddevf(line + i - lag, lag);
+    }
+}
+
+static int periods(const LineItem *line, CodeItem *code, int len)
+{
+    int hold = line[LAG].output, cnt = 0;
+    int last = LAG;
+
+    memset(code, 0, len * sizeof(*code));
+
+    for (int i = LAG + 1; i < len + LAG; i++) {
+        if (line[i].output != hold) {
+            code[cnt].size = i - last;
+            code[cnt].bit = hold;
+            hold = line[i].output;
+            last = i;
+            cnt++;
+        }
+    }
+
+    code[cnt].size = LAG + len - last;
+    code[cnt].bit = hold;
+
+    return cnt + 1;
+}
+
+static void dump_code(AVFilterContext *ctx, int len, int item)
 {
     ReadEIA608Context *s = ctx->priv;
-    int max = 0, min = INT_MAX;
-    int i, ch, range = 0;
+
+    av_log(ctx, AV_LOG_DEBUG, "%d:", item);
+    for (int i = 0; i < len; i++) {
+        av_log(ctx, AV_LOG_DEBUG, " %03d", s->code[i].size);
+    }
+    av_log(ctx, AV_LOG_DEBUG, "\n");
+}
+
+static void extract_line(AVFilterContext *ctx, AVFrame *in, int w, int nb_line)
+{
+    ReadEIA608Context *s = ctx->priv;
+    LineItem *line = s->line;
+    int i, j, ch, len;
     const uint8_t *src;
-    uint16_t clock[8][2] = { { 0 } };
-    const int sync_width = s->spw * in->width;
-    int last = 0, peaks = 0, max_peak_diff = 0, dir = RISE;
-    const int width_per_bit = (in->width - sync_width) / 19;
     uint8_t byte[2] = { 0 };
-    int s1, s2, s3, parity;
+    uint8_t codes[19] = { 0 };
+    float bit_size = 0.f;
+    int parity;
 
-    src = &in->data[0][line * in->linesize[0]];
+    memset(line, 0, (w + LAG) * sizeof(*line));
 
+    src = &in->data[0][nb_line * in->linesize[0]];
     if (s->lp) {
-        uint8_t *dst = s->temp;
-        int w = inlink->w - 1;
-
-        for (i = 0; i < inlink->w; i++) {
+        for (i = 0; i < w; i++) {
             int a = FFMAX(i - 3, 0);
             int b = FFMAX(i - 2, 0);
             int c = FFMAX(i - 1, 0);
-            int d = FFMIN(i + 3, w);
-            int e = FFMIN(i + 2, w);
-            int f = FFMIN(i + 1, w);
+            int d = FFMIN(i + 3, w-1);
+            int e = FFMIN(i + 2, w-1);
+            int f = FFMIN(i + 1, w-1);
 
-            dst[i] = (src[a] + src[b] + src[c] + src[i] + src[d] + src[e] + src[f] + 6) / 7;
+            line[LAG + i].input = (src[a] + src[b] + src[c] + src[i] + src[d] + src[e] + src[f] + 6) / 7;
+        }
+    } else {
+        for (i = 0; i < w; i++) {
+            line[LAG + i].input = src[i];
+        }
+    }
+
+    build_histogram(s, line, w);
+    find_black_and_white(s);
+    if (s->white - s->black < 5)
+        return;
+
+    thresholding(s, line, LAG, 1, 0, w);
+    len = periods(line, s->code, w);
+    dump_code(ctx, len, nb_line);
+    if (len < 15 ||
+        s->code[14].bit != 0 ||
+        w / (float)s->code[14].size < SYNC_BITSIZE_MIN ||
+        w / (float)s->code[14].size > SYNC_BITSIZE_MAX) {
+        return;
+    }
+
+    for (i = 14; i < len; i++) {
+        bit_size += s->code[i].size;
+    }
+
+    bit_size /= 19.f;
+    for (i = 1; i < 14; i++) {
+        if (s->code[i].size / bit_size > CLOCK_BITSIZE_MAX ||
+            s->code[i].size / bit_size < CLOCK_BITSIZE_MIN) {
+            return;
+        }
+    }
+
+    if (s->code[15].size / bit_size < 0.45f) {
+        return;
+    }
+
+    for (j = 0, i = 14; i < len; i++) {
+        int run, bit;
+
+        run = lrintf(s->code[i].size / bit_size);
+        bit = s->code[i].bit;
+
+        for (int k = 0; j < 19 && k < run; k++) {
+            codes[j++] = bit;
         }
 
-        src = s->temp;
-    }
-
-    for (i = 0; i < sync_width; i++) {
-        max = FFMAX(max, src[i]);
-        min = FFMIN(min, src[i]);
-    }
-
-    range = max - min;
-    if (range < s->min_range)
-        return;
-
-    for (i = 0; i < sync_width; i++) {
-        int Y = src[i];
-
-        if (dir == RISE) {
-            if (Y < last) {
-                dir = FALL;
-                if (last >= s->white) {
-                    clock[peaks][0] = last;
-                    clock[peaks][1] = i;
-                    peaks++;
-                    if (peaks > 7)
-                        break;
-                }
-            }
-        } else if (dir == FALL) {
-            if (Y > last && last <= s->black) {
-                dir = RISE;
-            }
-        }
-        last = Y;
-    }
-
-    if (peaks != 7) {
-        av_log(ctx, AV_LOG_DEBUG, "peaks: %d != 7\n", peaks);
-        return;
-    }
-
-    for (i = 1; i < 7; i++)
-        max_peak_diff = FFMAX(max_peak_diff, FFABS(clock[i][0] - clock[i-1][0]));
-
-    if (max_peak_diff > s->max_peak_diff) {
-        av_log(ctx, AV_LOG_DEBUG, "mhd: %d > %d\n", max_peak_diff, s->max_peak_diff);
-        return;
-    }
-
-    max = 0; min = INT_MAX;
-    for (i = 1; i < 7; i++) {
-        max = FFMAX(max, FFABS(clock[i][1] - clock[i-1][1]));
-        min = FFMIN(min, FFABS(clock[i][1] - clock[i-1][1]));
-    }
-
-    range = max - min;
-    if (range > s->max_period_diff) {
-        av_log(ctx, AV_LOG_DEBUG, "mpd: %d > %d\n", range, s->max_period_diff);
-        return;
-    }
-
-    s1 = src[sync_width + width_per_bit * 0 + width_per_bit / 2];
-    s2 = src[sync_width + width_per_bit * 1 + width_per_bit / 2];
-    s3 = src[sync_width + width_per_bit * 2 + width_per_bit / 2];
-
-    if (FFABS(s1 - s2) > s->max_start_diff || s1 > s->black || s2 > s->black || s3 < s->white) {
-        av_log(ctx, AV_LOG_DEBUG, "msd: %d > %d\n", FFABS(s1 - s2), s->max_start_diff);
-        return;
+        if (j >= 19)
+            break;
     }
 
     for (ch = 0; ch < 2; ch++) {
         for (parity = 0, i = 0; i < 8; i++) {
-            int b = src[sync_width + width_per_bit * (i + 3 + 8 * ch) + width_per_bit / 2];
+            int b = codes[3 + ch * 8 + i];
 
-            if (b - s1 > (s3 - s1) * s->bhd) {
-                b = 1;
+            if (b == 255) {
                 parity++;
+                b = 1;
             } else {
                 b = 0;
             }
@@ -237,7 +366,7 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
 
         if (s->chp) {
             if (!(parity & 1)) {
-                byte[ch] = 0;
+                byte[ch] = 0x7F;
             }
         }
     }
@@ -245,12 +374,16 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
     {
         uint8_t key[128], value[128];
 
+        //snprintf(key, sizeof(key), "lavfi.readeia608.%d.bits", s->nb_found);
+        //snprintf(value, sizeof(value), "0b%d%d%d%d%d%d%d%d 0b%d%d%d%d%d%d%d%d", codes[3]==255,codes[4]==255,codes[5]==255,codes[6]==255,codes[7]==255,codes[8]==255,codes[9]==255,codes[10]==255,codes[11]==255,codes[12]==255,codes[13]==255,codes[14]==255,codes[15]==255,codes[16]==255,codes[17]==255,codes[18]==255);
+        //av_dict_set(&in->metadata, key, value, 0);
+
         snprintf(key, sizeof(key), "lavfi.readeia608.%d.cc", s->nb_found);
         snprintf(value, sizeof(value), "0x%02X%02X", byte[0], byte[1]);
         av_dict_set(&in->metadata, key, value, 0);
 
         snprintf(key, sizeof(key), "lavfi.readeia608.%d.line", s->nb_found);
-        snprintf(value, sizeof(value), "%d", line);
+        snprintf(value, sizeof(value), "%d", nb_line);
         av_dict_set(&in->metadata, key, value, 0);
     }
 
@@ -266,7 +399,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->nb_found = 0;
     for (i = s->start; i <= s->end; i++)
-        extract_line(ctx, inlink, in, i);
+        extract_line(ctx, in, inlink->w, i);
 
     return ff_filter_frame(outlink, in);
 }
@@ -275,7 +408,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     ReadEIA608Context *s = ctx->priv;
 
-    av_freep(&s->temp);
+    av_freep(&s->code);
+    av_freep(&s->line);
 }
 
 static const AVFilterPad readeia608_inputs[] = {

@@ -89,6 +89,10 @@ probefmt(){
     run ffprobe${PROGSUF}${EXECSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
+probeaudiostream(){
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout -v 0 "$@"
+}
+
 probetags(){
     run ffprobe${PROGSUF}${EXECSUF} -show_entries format_tags -v 0 "$@"
 }
@@ -154,7 +158,7 @@ md5pipe(){
 md5(){
     encfile="${outdir}/${test}.out"
     cleanfiles="$cleanfiles $encfile"
-    ffmpeg "$@" $encfile
+    ffmpeg "$@" $(target_path $encfile)
     do_md5sum $encfile | awk '{print $1}'
 }
 
@@ -192,6 +196,7 @@ enc_dec(){
     enc_opt=$4
     dec_fmt=$5
     dec_opt=$6
+    ffprobe_opts=$9
     encfile="${outdir}/${test}.${enc_fmt}"
     decfile="${outdir}/${test}.out.${dec_fmt}"
     cleanfiles="$cleanfiles $decfile"
@@ -207,6 +212,8 @@ enc_dec(){
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
     tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
+    test -z $ffprobe_opts || \
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
 }
 
 transcode(){
@@ -215,16 +222,19 @@ transcode(){
     enc_fmt=$3
     enc_opt=$4
     final_decode=$5
+    ffprobe_opts=$7
     encfile="${outdir}/${test}.${enc_fmt}"
-    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
+    ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
+    test -z $ffprobe_opts || \
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
 }
 
 stream_remux(){
@@ -233,14 +243,17 @@ stream_remux(){
     enc_fmt=$3
     stream_maps=$4
     final_decode=$5
+    ffprobe_opts=$7
     encfile="${outdir}/${test}.${enc_fmt}"
-    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
         -f $enc_fmt -y $tencfile || return
-    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
+    ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
+    test -z $ffprobe_opts || \
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
 }
 
 # FIXME: There is a certain duplication between the avconv-related helper
@@ -296,7 +309,7 @@ lavf_container(){
     outdir="tests/data/lavf"
     file=${outdir}/lavf.$t
     do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le $1 -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -b:a 64k -t 1 -qscale:v 10 $2
-    test $3 = "disable_crc" ||
+    test "$3" = "disable_crc" ||
         do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
 }
 
@@ -420,16 +433,16 @@ gapless(){
     cleanfiles="$cleanfiles $decfile1 $decfile2 $decfile3"
 
     # test packet data
-    ffmpeg $extra_args -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile1
+    ffmpeg $extra_args -i "$sample" -bitexact -c:a copy -f framecrc -y $(target_path $decfile1)
     do_md5sum $decfile1
     # test decoded (and cut) data
     ffmpeg $extra_args -i "$sample" -bitexact -f wav md5:
     # the same as above again, with seeking to the start
-    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile2
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $(target_path $decfile2)
     do_md5sum $decfile2
     ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -f wav md5:
     # test packet data, with seeking to a specific position
-    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile3
+    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $(target_path $decfile3)
     do_md5sum $decfile3
 }
 
@@ -442,19 +455,19 @@ gaplessenc(){
     cleanfiles="$cleanfiles $file1"
 
     # test data after reencoding
-    ffmpeg -i "$sample" -bitexact -map 0:a -c:a $codec -f $format -y "$file1"
-    probegaplessinfo "$file1"
+    ffmpeg -i "$sample" -bitexact -map 0:a -c:a $codec -f $format -y "$(target_path "$file1")"
+    probegaplessinfo "$(target_path "$file1")"
 }
 
 audio_match(){
     sample=$(target_path $1)
-    trefile=$(target_path $2)
+    trefile=$2
     extra_args=$3
 
     decfile="${outdir}/${test}.wav"
     cleanfiles="$cleanfiles $decfile"
 
-    ffmpeg -i "$sample" -bitexact $extra_args -y $decfile
+    ffmpeg -i "$sample" -bitexact $extra_args -y $(target_path $decfile)
     tests/audiomatch${HOSTEXECSUF} $decfile $trefile
 }
 
@@ -471,11 +484,18 @@ concat(){
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
     if [ "$mode" = "md5" ]; then
-        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile | tr -d '\r' > $packetfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -safe 0 $extra_args $(target_path $concatfile) | tr -d '\r' > $packetfile
         do_md5sum $packetfile
     else
-        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -safe 0 $extra_args $(target_path $concatfile)
     fi
+}
+
+venc_data(){
+    file=$1
+    stream=$2
+    frames=$3
+    run tools/venc_data_dump${EXECSUF} ${file} ${stream} ${frames} ${threads} ${thread_type}
 }
 
 null(){

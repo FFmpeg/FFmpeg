@@ -39,8 +39,8 @@ typedef struct VDPAUDeviceContext {
     VdpVideoSurfaceCreate                           *surf_create;
     VdpVideoSurfaceDestroy                          *surf_destroy;
 
-    enum AVPixelFormat *pix_fmts[3];
-    int              nb_pix_fmts[3];
+    enum AVPixelFormat *pix_fmts[8];
+    int              nb_pix_fmts[8];
 } VDPAUDeviceContext;
 
 typedef struct VDPAUFramesContext {
@@ -61,6 +61,10 @@ typedef struct VDPAUPixFmtMap {
 static const VDPAUPixFmtMap pix_fmts_420[] = {
     { VDP_YCBCR_FORMAT_NV12, AV_PIX_FMT_NV12    },
     { VDP_YCBCR_FORMAT_YV12, AV_PIX_FMT_YUV420P },
+#ifdef VDP_YCBCR_FORMAT_P016
+    { VDP_YCBCR_FORMAT_P016, AV_PIX_FMT_P016    },
+    { VDP_YCBCR_FORMAT_P010, AV_PIX_FMT_P010    },
+#endif
     { 0,                     AV_PIX_FMT_NONE,   },
 };
 
@@ -76,6 +80,9 @@ static const VDPAUPixFmtMap pix_fmts_444[] = {
 #ifdef VDP_YCBCR_FORMAT_Y_U_V_444
     { VDP_YCBCR_FORMAT_Y_U_V_444, AV_PIX_FMT_YUV444P },
 #endif
+#ifdef VDP_YCBCR_FORMAT_P016
+    {VDP_YCBCR_FORMAT_Y_U_V_444_16, AV_PIX_FMT_YUV444P16},
+#endif
     { 0,                          AV_PIX_FMT_NONE,   },
 };
 
@@ -87,6 +94,13 @@ static const struct {
     { VDP_CHROMA_TYPE_420, AV_PIX_FMT_YUV420P, pix_fmts_420 },
     { VDP_CHROMA_TYPE_422, AV_PIX_FMT_YUV422P, pix_fmts_422 },
     { VDP_CHROMA_TYPE_444, AV_PIX_FMT_YUV444P, pix_fmts_444 },
+#ifdef VDP_YCBCR_FORMAT_P016
+    { VDP_CHROMA_TYPE_420_16, AV_PIX_FMT_YUV420P10, pix_fmts_420 },
+    { VDP_CHROMA_TYPE_420_16, AV_PIX_FMT_YUV420P12, pix_fmts_420 },
+    { VDP_CHROMA_TYPE_422_16, AV_PIX_FMT_YUV422P10, pix_fmts_422 },
+    { VDP_CHROMA_TYPE_444_16, AV_PIX_FMT_YUV444P10, pix_fmts_444 },
+    { VDP_CHROMA_TYPE_444_16, AV_PIX_FMT_YUV444P12, pix_fmts_444 },
+#endif
 };
 
 static int count_pixfmts(const VDPAUPixFmtMap *map)
@@ -354,6 +368,9 @@ static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     if ((vdpau_format == VDP_YCBCR_FORMAT_YV12)
 #ifdef VDP_YCBCR_FORMAT_Y_U_V_444
             || (vdpau_format == VDP_YCBCR_FORMAT_Y_U_V_444)
+#endif
+#ifdef VDP_YCBCR_FORMAT_P016
+            || (vdpau_format == VDP_YCBCR_FORMAT_Y_U_V_444_16)
 #endif
             )
         FFSWAP(void*, data[1], data[2]);

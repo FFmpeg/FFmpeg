@@ -385,7 +385,7 @@ static void rv40_weight_func_rnd_ ## size (uint8_t *dst, uint8_t *src1, uint8_t 
 \
     for (j = 0; j < size; j++) {\
         for (i = 0; i < size; i++)\
-            dst[i] = (((w2 * src1[i]) >> 9) + ((w1 * src2[i]) >> 9) + 0x10) >> 5;\
+            dst[i] = ((((unsigned)w2 * src1[i]) >> 9) + (((unsigned)w1 * src2[i]) >> 9) + 0x10) >> 5;\
         src1 += stride;\
         src2 += stride;\
         dst  += stride;\
@@ -397,7 +397,7 @@ static void rv40_weight_func_nornd_ ## size (uint8_t *dst, uint8_t *src1, uint8_
 \
     for (j = 0; j < size; j++) {\
         for (i = 0; i < size; i++)\
-            dst[i] = (w2 * src1[i] + w1 * src2[i] + 0x10) >> 5;\
+            dst[i] = ((unsigned)w2 * src1[i] + (unsigned)w1 * src2[i] + 0x10) >> 5;\
         src1 += stride;\
         src2 += stride;\
         dst  += stride;\

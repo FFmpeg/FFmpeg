@@ -46,7 +46,7 @@ typedef struct AverageBlurContext {
 } AverageBlurContext;
 
 #define OFFSET(x) offsetof(AverageBlurContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption avgblur_options[] = {
     { "sizeX",  "set horizontal size",  OFFSET(radius),  AV_OPT_TYPE_INT, {.i64=1},   1, 1024, FLAGS },
@@ -138,7 +138,6 @@ static int filter_vertically_##name(AVFilterContext *ctx, void *arg, int jobnr, 
         float acc = 0;                                                                        \
         int count = 0;                                                                        \
                                                                                               \
-        ptr = buffer + x;                                                                     \
         src = s->buffer + x;                                                                  \
                                                                                               \
         for (i = 0; i < radius; i++) {                                                        \
@@ -149,7 +148,7 @@ static int filter_vertically_##name(AVFilterContext *ctx, void *arg, int jobnr, 
                                                                                               \
         src = s->buffer + x;                                                                  \
         ptr = buffer + x;                                                                     \
-        for (i = 0; i <= radius; i++) {                                                       \
+        for (i = 0; i + radius < height && i <= radius; i++) {                                \
             acc += src[(i + radius) * width];                                                 \
             count++;                                                                          \
             ptr[i * linesize] = acc / count;                                                  \
@@ -238,6 +237,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
         AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
@@ -323,4 +323,5 @@ AVFilter ff_vf_avgblur = {
     .inputs        = avgblur_inputs,
     .outputs       = avgblur_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

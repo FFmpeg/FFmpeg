@@ -41,9 +41,9 @@
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
 #define ui(width, name) \
-        xui(width, name, current->name, 0, MAX_UINT_BITS(width), 0)
+        xui(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define uir(width, name) \
-        xui(width, name, current->name, 1, MAX_UINT_BITS(width), 0)
+        xui(width, name, current->name, 1, MAX_UINT_BITS(width), 0, )
 #define uis(width, name, subs, ...) \
         xui(width, name, current->name, 0, MAX_UINT_BITS(width), subs, __VA_ARGS__)
 #define uirs(width, name, subs, ...) \
@@ -57,7 +57,7 @@
         bit("marker_bit", 1)
 #define bit(string, value) do { \
         av_unused uint32_t bit = value; \
-        xuia(1, string, bit, value, value, 0); \
+        xuia(1, string, bit, value, value, 0, ); \
     } while (0)
 
 
@@ -207,7 +207,7 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
            final     = 1;
         }
 
-        err = ff_cbs_insert_unit_data(ctx, frag, i, unit_type, (uint8_t*)start,
+        err = ff_cbs_insert_unit_data(frag, i, unit_type, (uint8_t*)start,
                                       unit_size, frag->data_ref);
         if (err < 0)
             return err;
@@ -235,7 +235,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         MPEG2RawSlice *slice;
         int pos, len;
 
-        err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(*slice),
+        err = ff_cbs_alloc_unit_content(unit, sizeof(*slice),
                                         &cbs_mpeg2_free_slice);
         if (err < 0)
             return err;
@@ -244,6 +244,9 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         err = cbs_mpeg2_read_slice_header(ctx, &gbc, &slice->header);
         if (err < 0)
             return err;
+
+        if (!get_bits_left(&gbc))
+            return AVERROR_INVALIDDATA;
 
         pos = get_bits_count(&gbc);
         len = unit->data_size;
@@ -262,7 +265,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         case start_code: \
             { \
                 type *header; \
-                err = ff_cbs_alloc_unit_content(ctx, unit, \
+                err = ff_cbs_alloc_unit_content(unit, \
                                                 sizeof(*header), free_func); \
                 if (err < 0) \
                     return err; \
@@ -337,7 +340,7 @@ static int cbs_mpeg2_write_slice(CodedBitstreamContext *ctx,
         uint8_t *pos = slice->data + slice->data_bit_start / 8;
 
         av_assert0(slice->data_bit_start >= 0 &&
-                   8 * slice->data_size > slice->data_bit_start);
+                   slice->data_size > slice->data_bit_start / 8);
 
         if (slice->data_size * 8 + 8 > put_bits_left(pbc))
             return AVERROR(ENOSPC);
@@ -371,58 +374,13 @@ static int cbs_mpeg2_write_slice(CodedBitstreamContext *ctx,
 }
 
 static int cbs_mpeg2_write_unit(CodedBitstreamContext *ctx,
-                                CodedBitstreamUnit *unit)
+                                CodedBitstreamUnit *unit,
+                                PutBitContext *pbc)
 {
-    CodedBitstreamMPEG2Context *priv = ctx->priv_data;
-    PutBitContext pbc;
-    int err;
-
-    if (!priv->write_buffer) {
-        // Initial write buffer size is 1MB.
-        priv->write_buffer_size = 1024 * 1024;
-
-    reallocate_and_try_again:
-        err = av_reallocp(&priv->write_buffer, priv->write_buffer_size);
-        if (err < 0) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
-                   "sufficiently large write buffer (last attempt "
-                   "%"SIZE_SPECIFIER" bytes).\n", priv->write_buffer_size);
-            return err;
-        }
-    }
-
-    init_put_bits(&pbc, priv->write_buffer, priv->write_buffer_size);
-
     if (MPEG2_START_IS_SLICE(unit->type))
-        err = cbs_mpeg2_write_slice(ctx, unit, &pbc);
+        return cbs_mpeg2_write_slice (ctx, unit, pbc);
     else
-        err = cbs_mpeg2_write_header(ctx, unit, &pbc);
-
-    if (err == AVERROR(ENOSPC)) {
-        // Overflow.
-        priv->write_buffer_size *= 2;
-        goto reallocate_and_try_again;
-    }
-    if (err < 0) {
-        // Write failed for some other reason.
-        return err;
-    }
-
-    if (put_bits_count(&pbc) % 8)
-        unit->data_bit_padding = 8 - put_bits_count(&pbc) % 8;
-    else
-        unit->data_bit_padding = 0;
-
-    unit->data_size = (put_bits_count(&pbc) + 7) / 8;
-    flush_put_bits(&pbc);
-
-    err = ff_cbs_alloc_unit_data(ctx, unit, unit->data_size);
-    if (err < 0)
-        return err;
-
-    memcpy(unit->data, priv->write_buffer, unit->data_size);
-
-    return 0;
+        return cbs_mpeg2_write_header(ctx, unit, pbc);
 }
 
 static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
@@ -462,13 +420,6 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_mpeg2_close(CodedBitstreamContext *ctx)
-{
-    CodedBitstreamMPEG2Context *priv = ctx->priv_data;
-
-    av_freep(&priv->write_buffer);
-}
-
 const CodedBitstreamType ff_cbs_type_mpeg2 = {
     .codec_id          = AV_CODEC_ID_MPEG2VIDEO,
 
@@ -478,6 +429,4 @@ const CodedBitstreamType ff_cbs_type_mpeg2 = {
     .read_unit         = &cbs_mpeg2_read_unit,
     .write_unit        = &cbs_mpeg2_write_unit,
     .assemble_fragment = &cbs_mpeg2_assemble_fragment,
-
-    .close             = &cbs_mpeg2_close,
 };

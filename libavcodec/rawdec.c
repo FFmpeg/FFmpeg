@@ -223,7 +223,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
                                                            FFALIGN(avctx->width, 16),
                                                            avctx->height, 1);
     } else {
-        context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
+        context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample > 8 && avctx->bits_per_coded_sample < 16;
         context->frame_size = av_image_get_buffer_size(avctx->pix_fmt, avctx->width,
                                                        avctx->height, 1);
     }
@@ -467,10 +467,13 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         avctx->pix_fmt   == AV_PIX_FMT_RGBA64BE) {
         uint8_t *dst = frame->data[0];
         uint64_t v;
-        int x;
-        for (x = 0; x >> 3 < avctx->width * avctx->height; x += 8) {
-            v = AV_RB64(&dst[x]);
-            AV_WB64(&dst[x], v << 16 | v >> 48);
+        int x, y;
+        for (y = 0; y < avctx->height; y++) {
+            for (x = 0; x >> 3 < avctx->width; x += 8) {
+                v = AV_RB64(&dst[x]);
+                AV_WB64(&dst[x], v << 16 | v >> 48);
+            }
+            dst += frame->linesize[0];
         }
     }
 

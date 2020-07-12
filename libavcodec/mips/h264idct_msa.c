@@ -233,8 +233,7 @@ static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
          res0, res1, res2, res3);
     ADD4(res4, tmp4, res5, tmp5, res6, tmp6, res7, tmp7,
          res4, res5, res6, res7);
-    CLIP_SH4_0_255(res0, res1, res2, res3);
-    CLIP_SH4_0_255(res4, res5, res6, res7);
+    CLIP_SH8_0_255(res0, res1, res2, res3, res4, res5, res6, res7);
     PCKEV_B4_SB(res1, res0, res3, res2, res5, res4, res7, res6,
                 dst0, dst1, dst2, dst3);
     ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)
@@ -263,8 +262,8 @@ static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
          dst0_r, dst1_r, dst2_r, dst3_r);
     ADD4(dst4_r, dc, dst5_r, dc, dst6_r, dc, dst7_r, dc,
          dst4_r, dst5_r, dst6_r, dst7_r);
-    CLIP_SH4_0_255(dst0_r, dst1_r, dst2_r, dst3_r);
-    CLIP_SH4_0_255(dst4_r, dst5_r, dst6_r, dst7_r);
+    CLIP_SH8_0_255(dst0_r, dst1_r, dst2_r, dst3_r,
+                   dst4_r, dst5_r, dst6_r, dst7_r);
     PCKEV_B4_SB(dst1_r, dst0_r, dst3_r, dst2_r, dst5_r, dst4_r, dst7_r, dst6_r,
                 dst0, dst1, dst2, dst3);
     ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)

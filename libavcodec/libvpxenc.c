@@ -32,6 +32,7 @@
 #include "internal.h"
 #include "libavutil/avassert.h"
 #include "libvpx.h"
+#include "packet_internal.h"
 #include "profiles.h"
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
@@ -100,7 +101,9 @@ typedef struct VPxEncoderContext {
     int rc_undershoot_pct;
     int rc_overshoot_pct;
 
-    char *vp8_ts_parameters;
+    AVDictionary *vpx_ts_parameters;
+    int *ts_layer_flags;
+    int current_temporal_idx;
 
     // VP9-only
     int lossless;
@@ -116,6 +119,11 @@ typedef struct VPxEncoderContext {
     int tune_content;
     int corpus_complexity;
     int tpl_model;
+    /**
+     * If the driver does not support ROI then warn the first time we
+     * encounter a frame with ROI side data.
+     */
+    int roi_warned;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -132,6 +140,7 @@ static const char *const ctlidstr[] = {
     [VP8E_SET_CQ_LEVEL]          = "VP8E_SET_CQ_LEVEL",
     [VP8E_SET_MAX_INTRA_BITRATE_PCT] = "VP8E_SET_MAX_INTRA_BITRATE_PCT",
     [VP8E_SET_SHARPNESS]               = "VP8E_SET_SHARPNESS",
+    [VP8E_SET_TEMPORAL_LAYER_ID]       = "VP8E_SET_TEMPORAL_LAYER_ID",
 #if CONFIG_LIBVPX_VP9_ENCODER
     [VP9E_SET_LOSSLESS]                = "VP9E_SET_LOSSLESS",
     [VP9E_SET_TILE_COLUMNS]            = "VP9E_SET_TILE_COLUMNS",
@@ -139,6 +148,11 @@ static const char *const ctlidstr[] = {
     [VP9E_SET_FRAME_PARALLEL_DECODING] = "VP9E_SET_FRAME_PARALLEL_DECODING",
     [VP9E_SET_AQ_MODE]                 = "VP9E_SET_AQ_MODE",
     [VP9E_SET_COLOR_SPACE]             = "VP9E_SET_COLOR_SPACE",
+    [VP9E_SET_SVC_LAYER_ID]            = "VP9E_SET_SVC_LAYER_ID",
+#if VPX_ENCODER_ABI_VERSION >= 12
+    [VP9E_SET_SVC_PARAMETERS]          = "VP9E_SET_SVC_PARAMETERS",
+#endif
+    [VP9E_SET_SVC]                     = "VP9E_SET_SVC",
 #if VPX_ENCODER_ABI_VERSION >= 11
     [VP9E_SET_COLOR_RANGE]             = "VP9E_SET_COLOR_RANGE",
 #endif
@@ -216,10 +230,22 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "rc_overshoot_pct:",  cfg->rc_overshoot_pct);
     av_log(avctx, level, "temporal layering settings\n"
            "  %*s%u\n", width, "ts_number_layers:", cfg->ts_number_layers);
-    av_log(avctx, level,
-           "\n  %*s", width, "ts_target_bitrate:");
-    for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
-        av_log(avctx, level, "%u ", cfg->ts_target_bitrate[i]);
+    if (avctx->codec_id == AV_CODEC_ID_VP8) {
+        av_log(avctx, level,
+               "\n  %*s", width, "ts_target_bitrate:");
+        for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
+            av_log(avctx, level,
+                   "%u ", cfg->ts_target_bitrate[i]);
+    }
+#if (VPX_ENCODER_ABI_VERSION >= 12) && CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        av_log(avctx, level,
+               "\n  %*s", width, "layer_target_bitrate:");
+        for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
+            av_log(avctx, level,
+                   "%u ", cfg->layer_target_bitrate[i]);
+    }
+#endif
     av_log(avctx, level, "\n");
     av_log(avctx, level,
            "\n  %*s", width, "ts_rate_decimator:");
@@ -341,9 +367,14 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     }
 #endif
 
+    av_freep(&ctx->ts_layer_flags);
+
     vpx_codec_destroy(&ctx->encoder);
-    if (ctx->is_alpha)
+    if (ctx->is_alpha) {
         vpx_codec_destroy(&ctx->encoder_alpha);
+        av_freep(&ctx->rawimg_alpha.planes[VPX_PLANE_U]);
+        av_freep(&ctx->rawimg_alpha.planes[VPX_PLANE_V]);
+    }
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
@@ -362,23 +393,149 @@ static void vp8_ts_parse_int_array(int *dest, char *value, size_t value_len, int
     }
 }
 
-static int vp8_ts_param_parse(struct vpx_codec_enc_cfg *enccfg, char *key, char *value)
+static void set_temporal_layer_pattern(int layering_mode, vpx_codec_enc_cfg_t *cfg,
+                                       int *layer_flags, int *flag_periodicity)
+{
+    switch (layering_mode) {
+    case 2: {
+        /**
+         * 2-layers, 2-frame period.
+         */
+        static const int ids[2] = { 0, 1 };
+        cfg->ts_periodicity = 2;
+        *flag_periodicity = 2;
+        cfg->ts_number_layers = 2;
+        cfg->ts_rate_decimator[0] = 2;
+        cfg->ts_rate_decimator[1] = 1;
+        memcpy(cfg->ts_layer_id, ids, sizeof(ids));
+
+        layer_flags[0] =
+             VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+             VP8_EFLAG_NO_UPD_GF | VP8_EFLAG_NO_UPD_ARF;
+        layer_flags[1] =
+            VP8_EFLAG_NO_UPD_ARF | VP8_EFLAG_NO_UPD_GF |
+            VP8_EFLAG_NO_UPD_LAST |
+            VP8_EFLAG_NO_REF_ARF | VP8_EFLAG_NO_REF_GF;
+        break;
+    }
+    case 3: {
+        /**
+         * 3-layers structure with one reference frame.
+         *  This works same as temporal_layering_mode 3.
+         *
+         * 3-layers, 4-frame period.
+         */
+        static const int ids[4] = { 0, 2, 1, 2 };
+        cfg->ts_periodicity = 4;
+        *flag_periodicity = 4;
+        cfg->ts_number_layers = 3;
+        cfg->ts_rate_decimator[0] = 4;
+        cfg->ts_rate_decimator[1] = 2;
+        cfg->ts_rate_decimator[2] = 1;
+        memcpy(cfg->ts_layer_id, ids, sizeof(ids));
+
+        /**
+         * 0=L, 1=GF, 2=ARF,
+         * Intra-layer prediction disabled.
+         */
+        layer_flags[0] =
+            VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_GF | VP8_EFLAG_NO_UPD_ARF;
+        layer_flags[1] =
+            VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_LAST | VP8_EFLAG_NO_UPD_GF |
+            VP8_EFLAG_NO_UPD_ARF;
+        layer_flags[2] =
+            VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_ARF | VP8_EFLAG_NO_UPD_LAST;
+        layer_flags[3] =
+            VP8_EFLAG_NO_REF_LAST | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_LAST | VP8_EFLAG_NO_UPD_GF |
+            VP8_EFLAG_NO_UPD_ARF;
+        break;
+    }
+    case 4: {
+        /**
+         * 3-layers structure.
+         * added dependency between the two TL2 frames (on top of case 3).
+         * 3-layers, 4-frame period.
+         */
+        static const int ids[4] = { 0, 2, 1, 2 };
+        cfg->ts_periodicity = 4;
+        *flag_periodicity = 4;
+        cfg->ts_number_layers = 3;
+        cfg->ts_rate_decimator[0] = 4;
+        cfg->ts_rate_decimator[1] = 2;
+        cfg->ts_rate_decimator[2] = 1;
+        memcpy(cfg->ts_layer_id, ids, sizeof(ids));
+
+        /**
+         * 0=L, 1=GF, 2=ARF, Intra-layer prediction disabled.
+         */
+        layer_flags[0] =
+            VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_GF | VP8_EFLAG_NO_UPD_ARF;
+        layer_flags[1] =
+            VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_LAST | VP8_EFLAG_NO_UPD_GF;
+        layer_flags[2] =
+            VP8_EFLAG_NO_REF_GF | VP8_EFLAG_NO_REF_ARF |
+            VP8_EFLAG_NO_UPD_ARF | VP8_EFLAG_NO_UPD_LAST;
+        layer_flags[3] =
+            VP8_EFLAG_NO_REF_LAST |
+            VP8_EFLAG_NO_UPD_LAST | VP8_EFLAG_NO_UPD_GF |
+            VP8_EFLAG_NO_UPD_ARF;
+        break;
+    }
+    default:
+        /**
+         * do not change the layer_flags or the flag_periodicity in this case;
+         * it might be that the code is using external flags to be used.
+         */
+        break;
+
+    }
+}
+
+static int vpx_ts_param_parse(VPxContext *ctx, struct vpx_codec_enc_cfg *enccfg,
+                              char *key, char *value, enum AVCodecID codec_id)
 {
     size_t value_len = strlen(value);
+    int ts_layering_mode = 0;
 
     if (!value_len)
         return -1;
 
     if (!strcmp(key, "ts_number_layers"))
         enccfg->ts_number_layers = strtoul(value, &value, 10);
-    else if (!strcmp(key, "ts_target_bitrate"))
-        vp8_ts_parse_int_array(enccfg->ts_target_bitrate, value, value_len, VPX_TS_MAX_LAYERS);
-    else if (!strcmp(key, "ts_rate_decimator"))
-      vp8_ts_parse_int_array(enccfg->ts_rate_decimator, value, value_len, VPX_TS_MAX_LAYERS);
-    else if (!strcmp(key, "ts_periodicity"))
+    else if (!strcmp(key, "ts_target_bitrate")) {
+        if (codec_id == AV_CODEC_ID_VP8)
+            vp8_ts_parse_int_array(enccfg->ts_target_bitrate, value, value_len, VPX_TS_MAX_LAYERS);
+#if (VPX_ENCODER_ABI_VERSION >= 12) && CONFIG_LIBVPX_VP9_ENCODER
+        if (codec_id == AV_CODEC_ID_VP9)
+            vp8_ts_parse_int_array(enccfg->layer_target_bitrate, value, value_len, VPX_TS_MAX_LAYERS);
+#endif
+    } else if (!strcmp(key, "ts_rate_decimator")) {
+        vp8_ts_parse_int_array(enccfg->ts_rate_decimator, value, value_len, VPX_TS_MAX_LAYERS);
+    } else if (!strcmp(key, "ts_periodicity")) {
         enccfg->ts_periodicity = strtoul(value, &value, 10);
-    else if (!strcmp(key, "ts_layer_id"))
+    } else if (!strcmp(key, "ts_layer_id")) {
         vp8_ts_parse_int_array(enccfg->ts_layer_id, value, value_len, VPX_TS_MAX_PERIODICITY);
+    } else if (!strcmp(key, "ts_layering_mode")) {
+        /* option for pre-defined temporal structures in function set_temporal_layer_pattern. */
+        ts_layering_mode = strtoul(value, &value, 4);
+    }
+
+#if (VPX_ENCODER_ABI_VERSION >= 12) && CONFIG_LIBVPX_VP9_ENCODER
+    enccfg->temporal_layering_mode = VP9E_TEMPORAL_LAYERING_MODE_BYPASS; // only bypass mode is supported for now.
+    enccfg->ss_number_layers = 1; // TODO: add spatial scalability support.
+#endif
+    if (ts_layering_mode) {
+        // make sure the ts_layering_mode comes at the end of the ts_parameter string to ensure that
+        // correct configuration is done.
+        ctx->ts_layer_flags = av_malloc_array(VPX_TS_MAX_PERIODICITY, sizeof(*ctx->ts_layer_flags));
+        set_temporal_layer_pattern(ts_layering_mode, enccfg, ctx->ts_layer_flags, &enccfg->ts_periodicity);
+    }
 
     return 0;
 }
@@ -510,6 +667,66 @@ static void set_color_range(AVCodecContext *avctx)
 #endif
 #endif
 
+/**
+ * Set the target bitrate to VPX library default. Also set CRF to 32 if needed.
+ */
+static void set_vp8_defaults(AVCodecContext *avctx,
+                             struct vpx_codec_enc_cfg *enccfg)
+{
+    VPxContext *ctx = avctx->priv_data;
+    av_assert0(!avctx->bit_rate);
+    avctx->bit_rate = enccfg->rc_target_bitrate * 1000;
+    if (enccfg->rc_end_usage == VPX_CQ) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Bitrate not specified for constrained quality mode, using default of %dkbit/sec\n",
+               enccfg->rc_target_bitrate);
+    } else {
+        enccfg->rc_end_usage = VPX_CQ;
+        ctx->crf = 32;
+        av_log(avctx, AV_LOG_WARNING,
+               "Neither bitrate nor constrained quality specified, using default CRF of %d and bitrate of %dkbit/sec\n",
+               ctx->crf, enccfg->rc_target_bitrate);
+    }
+}
+
+
+#if CONFIG_LIBVPX_VP9_ENCODER
+/**
+ * Keep the target bitrate at 0 to engage constant quality mode. If CRF is not
+ * set, use 32.
+ */
+static void set_vp9_defaults(AVCodecContext *avctx,
+                             struct vpx_codec_enc_cfg *enccfg)
+{
+    VPxContext *ctx = avctx->priv_data;
+    av_assert0(!avctx->bit_rate);
+    if (enccfg->rc_end_usage != VPX_Q && ctx->lossless < 0) {
+        enccfg->rc_end_usage = VPX_Q;
+        ctx->crf = 32;
+        av_log(avctx, AV_LOG_WARNING,
+               "Neither bitrate nor constrained quality specified, using default CRF of %d\n",
+               ctx->crf);
+    }
+}
+#endif
+
+/**
+ * Called when the bitrate is not set. It sets appropriate default values for
+ * bitrate and CRF.
+ */
+static void set_vpx_defaults(AVCodecContext *avctx,
+                             struct vpx_codec_enc_cfg *enccfg)
+{
+    av_assert0(!avctx->bit_rate);
+#if CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        set_vp9_defaults(avctx, enccfg);
+        return;
+    }
+#endif
+    set_vp8_defaults(avctx, enccfg);
+}
+
 static av_cold int vpx_init(AVCodecContext *avctx,
                             const struct vpx_codec_iface *iface)
 {
@@ -522,7 +739,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     vpx_img_fmt_t img_fmt = VPX_IMG_FMT_I420;
 #if CONFIG_LIBVPX_VP9_ENCODER
     vpx_codec_caps_t codec_caps = vpx_codec_get_caps(iface);
+    vpx_svc_extra_cfg_t svc_params;
 #endif
+    AVDictionaryEntry* en = NULL;
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
@@ -581,17 +800,11 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                                   AV_ROUND_NEAR_INF);
 #if CONFIG_LIBVPX_VP9_ENCODER
-    } else if (enccfg.rc_end_usage == VPX_Q) {
+        enccfg.ss_target_bitrate[0] = enccfg.rc_target_bitrate;
 #endif
     } else {
-        if (enccfg.rc_end_usage == VPX_CQ) {
-            enccfg.rc_target_bitrate = 1000000;
-        } else {
-            avctx->bit_rate = enccfg.rc_target_bitrate * 1000;
-            av_log(avctx, AV_LOG_WARNING,
-                   "Neither bitrate nor constrained quality specified, using default bitrate of %dkbit/sec\n",
-                   enccfg.rc_target_bitrate);
-        }
+        // Set bitrate to default value. Also sets CRF to default if needed.
+        set_vpx_defaults(avctx, &enccfg);
     }
 
     if (avctx->codec_id == AV_CODEC_ID_VP9 && ctx->lossless == 1) {
@@ -698,20 +911,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     enccfg.g_error_resilient = ctx->error_resilient || ctx->flags & VP8F_ERROR_RESILIENT;
 
-    if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && ctx->vp8_ts_parameters) {
-        AVDictionary *dict    = NULL;
-        AVDictionaryEntry* en = NULL;
-
-        if (!av_dict_parse_string(&dict, ctx->vp8_ts_parameters, "=", ":", 0)) {
-            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
-                if (vp8_ts_param_parse(&enccfg, en->key, en->value) < 0)
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Error parsing option '%s = %s'.\n",
-                           en->key, en->value);
-            }
-
-            av_dict_free(&dict);
-        }
+    while ((en = av_dict_get(ctx->vpx_ts_parameters, "", en, AV_DICT_IGNORE_SUFFIX))) {
+        if (vpx_ts_param_parse(ctx, &enccfg, en->key, en->value, avctx->codec_id) < 0)
+            av_log(avctx, AV_LOG_WARNING,
+                   "Error parsing option '%s = %s'.\n",
+                   en->key, en->value);
     }
 
     dump_enc_cfg(avctx, &enccfg);
@@ -721,7 +925,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
         log_encoder_error(avctx, "Failed to initialize encoder");
         return AVERROR(EINVAL);
     }
-
+#if CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9 && enccfg.ts_number_layers > 1) {
+        memset(&svc_params, 0, sizeof(svc_params));
+        for (int i = 0; i < enccfg.ts_number_layers; ++i) {
+            svc_params.max_quantizers[i] = enccfg.rc_max_quantizer;
+            svc_params.min_quantizers[i] = enccfg.rc_min_quantizer;
+        }
+        svc_params.scaling_factor_num[0] = enccfg.g_h;
+        svc_params.scaling_factor_den[0] = enccfg.g_h;
+#if VPX_ENCODER_ABI_VERSION >= 12
+        codecctl_int(avctx, VP9E_SET_SVC, 1);
+        codecctl_intp(avctx, VP9E_SET_SVC_PARAMETERS, (int *)&svc_params);
+#endif
+    }
+#endif
     if (ctx->is_alpha) {
         enccfg_alpha = enccfg;
         res = vpx_codec_enc_init(&ctx->encoder_alpha, iface, &enccfg_alpha, flags);
@@ -815,10 +1033,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->codec_id == AV_CODEC_ID_VP9 && (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH))
         ctx->rawimg.bit_depth = enccfg.g_bit_depth;
 #endif
-
-    if (ctx->is_alpha)
-        vpx_img_wrap(&ctx->rawimg_alpha, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
-                     (unsigned char*)1);
 
     cpb_props = ff_add_cpb_side_data(avctx);
     if (!cpb_props)
@@ -935,7 +1149,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                                 cx_frame->sz_alpha + 8);
             if(!side_data) {
                 av_packet_unref(pkt);
-                av_free(pkt);
                 return AVERROR(ENOMEM);
             }
             AV_WB64(side_data, 1);
@@ -992,8 +1205,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
                 if (size < 0)
                     return size;
             } else {
-                struct FrameListData *cx_frame =
-                    av_malloc(sizeof(struct FrameListData));
+                struct FrameListData *cx_frame = av_malloc(sizeof(*cx_frame));
 
                 if (!cx_frame) {
                     av_log(avctx, AV_LOG_ERROR,
@@ -1057,6 +1269,213 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
     return size;
 }
 
+static int set_roi_map(AVCodecContext *avctx, const AVFrameSideData *sd, int frame_width, int frame_height,
+                       vpx_roi_map_t *roi_map, int block_size, int segment_cnt)
+{
+    /**
+     * range of vpx_roi_map_t.delta_q[i] is [-63, 63]
+     */
+#define MAX_DELTA_Q 63
+
+    const AVRegionOfInterest *roi = NULL;
+    int nb_rois;
+    uint32_t self_size;
+    int segment_id;
+
+    /* record the mapping from delta_q to "segment id + 1" in segment_mapping[].
+     * the range of delta_q is [-MAX_DELTA_Q, MAX_DELTA_Q],
+     * and its corresponding array index is [0, 2 * MAX_DELTA_Q],
+     * and so the length of the mapping array is 2 * MAX_DELTA_Q + 1.
+     * "segment id + 1", so we can say there's no mapping if the value of array element is zero.
+     */
+    int segment_mapping[2 * MAX_DELTA_Q + 1] = { 0 };
+
+    memset(roi_map, 0, sizeof(*roi_map));
+
+    /* segment id 0 in roi_map is reserved for the areas not covered by AVRegionOfInterest.
+     * segment id 0 in roi_map is also for the areas with AVRegionOfInterest.qoffset near 0.
+     * (delta_q of segment id 0 is 0).
+     */
+    segment_mapping[MAX_DELTA_Q] = 1;
+    segment_id = 1;
+
+    roi = (const AVRegionOfInterest*)sd->data;
+    self_size = roi->self_size;
+    if (!self_size || sd->size % self_size) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
+        return AVERROR(EINVAL);
+    }
+    nb_rois = sd->size / self_size;
+
+    /* This list must be iterated from zero because regions are
+     * defined in order of decreasing importance. So discard less
+     * important areas if they exceed the segment count.
+     */
+    for (int i = 0; i < nb_rois; i++) {
+        int delta_q;
+        int mapping_index;
+
+        roi = (const AVRegionOfInterest*)(sd->data + self_size * i);
+        if (!roi->qoffset.den) {
+            av_log(avctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den must not be zero.\n");
+            return AVERROR(EINVAL);
+        }
+
+        delta_q = (int)(roi->qoffset.num * 1.0f / roi->qoffset.den * MAX_DELTA_Q);
+        delta_q = av_clip(delta_q, -MAX_DELTA_Q, MAX_DELTA_Q);
+
+        mapping_index = delta_q + MAX_DELTA_Q;
+        if (!segment_mapping[mapping_index]) {
+            if (segment_id == segment_cnt) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "ROI only supports %d segments (and segment 0 is reserved for non-ROIs), skipping the left ones.\n",
+                       segment_cnt);
+                break;
+            }
+
+            segment_mapping[mapping_index] = segment_id + 1;
+            roi_map->delta_q[segment_id] = delta_q;
+            segment_id++;
+        }
+    }
+
+    roi_map->rows = (frame_height + block_size - 1) / block_size;
+    roi_map->cols = (frame_width  + block_size - 1) / block_size;
+    roi_map->roi_map = av_mallocz_array(roi_map->rows * roi_map->cols, sizeof(*roi_map->roi_map));
+    if (!roi_map->roi_map) {
+        av_log(avctx, AV_LOG_ERROR, "roi_map alloc failed.\n");
+        return AVERROR(ENOMEM);
+    }
+
+    /* This list must be iterated in reverse, so for the case that
+     * two regions are overlapping, the more important area takes effect.
+     */
+    for (int i = nb_rois - 1; i >= 0; i--) {
+        int delta_q;
+        int mapping_value;
+        int starty, endy, startx, endx;
+
+        roi = (const AVRegionOfInterest*)(sd->data + self_size * i);
+
+        starty = av_clip(roi->top / block_size, 0, roi_map->rows);
+        endy   = av_clip((roi->bottom + block_size - 1) / block_size, 0, roi_map->rows);
+        startx = av_clip(roi->left / block_size, 0, roi_map->cols);
+        endx   = av_clip((roi->right + block_size - 1) / block_size, 0, roi_map->cols);
+
+        delta_q = (int)(roi->qoffset.num * 1.0f / roi->qoffset.den * MAX_DELTA_Q);
+        delta_q = av_clip(delta_q, -MAX_DELTA_Q, MAX_DELTA_Q);
+
+        mapping_value = segment_mapping[delta_q + MAX_DELTA_Q];
+        if (mapping_value) {
+            for (int y = starty; y < endy; y++)
+                for (int x = startx; x < endx; x++)
+                    roi_map->roi_map[x + y * roi_map->cols] = mapping_value - 1;
+        }
+    }
+
+    return 0;
+}
+
+static int vp9_encode_set_roi(AVCodecContext *avctx, int frame_width, int frame_height, const AVFrameSideData *sd)
+{
+    VPxContext *ctx = avctx->priv_data;
+
+#ifdef VPX_CTRL_VP9E_SET_ROI_MAP
+    int version = vpx_codec_version();
+    int major = VPX_VERSION_MAJOR(version);
+    int minor = VPX_VERSION_MINOR(version);
+    int patch = VPX_VERSION_PATCH(version);
+
+    if (major > 1 || (major == 1 && minor > 8) || (major == 1 && minor == 8 && patch >= 1)) {
+        vpx_roi_map_t roi_map;
+        const int segment_cnt = 8;
+        const int block_size = 8;
+        int ret;
+
+        if (ctx->aq_mode > 0 || ctx->cpu_used < 5 || ctx->deadline != VPX_DL_REALTIME) {
+            if (!ctx->roi_warned) {
+                ctx->roi_warned = 1;
+                av_log(avctx, AV_LOG_WARNING, "ROI is only enabled when aq_mode is 0, cpu_used >= 5 "
+                                              "and deadline is REALTIME, so skipping ROI.\n");
+                return AVERROR(EINVAL);
+            }
+        }
+
+        ret = set_roi_map(avctx, sd, frame_width, frame_height, &roi_map, block_size, segment_cnt);
+        if (ret) {
+            log_encoder_error(avctx, "Failed to set_roi_map.\n");
+            return ret;
+        }
+
+        memset(roi_map.ref_frame, -1, sizeof(roi_map.ref_frame));
+
+        if (vpx_codec_control(&ctx->encoder, VP9E_SET_ROI_MAP, &roi_map)) {
+            log_encoder_error(avctx, "Failed to set VP9E_SET_ROI_MAP codec control.\n");
+            ret = AVERROR_INVALIDDATA;
+        }
+        av_freep(&roi_map.roi_map);
+        return ret;
+    }
+#endif
+
+    if (!ctx->roi_warned) {
+        ctx->roi_warned = 1;
+        av_log(avctx, AV_LOG_WARNING, "ROI is not supported, please upgrade libvpx to version >= 1.8.1. "
+                                      "You may need to rebuild ffmpeg.\n");
+    }
+    return 0;
+}
+
+static int vp8_encode_set_roi(AVCodecContext *avctx, int frame_width, int frame_height, const AVFrameSideData *sd)
+{
+    vpx_roi_map_t roi_map;
+    const int segment_cnt = 4;
+    const int block_size = 16;
+    VPxContext *ctx = avctx->priv_data;
+
+    int ret = set_roi_map(avctx, sd, frame_width, frame_height, &roi_map, block_size, segment_cnt);
+    if (ret) {
+        log_encoder_error(avctx, "Failed to set_roi_map.\n");
+        return ret;
+    }
+
+    if (vpx_codec_control(&ctx->encoder, VP8E_SET_ROI_MAP, &roi_map)) {
+        log_encoder_error(avctx, "Failed to set VP8E_SET_ROI_MAP codec control.\n");
+        ret = AVERROR_INVALIDDATA;
+    }
+
+    av_freep(&roi_map.roi_map);
+    return ret;
+}
+
+static int realloc_alpha_uv(AVCodecContext *avctx, int width, int height)
+{
+    VPxContext *ctx = avctx->priv_data;
+    struct vpx_image *rawimg_alpha = &ctx->rawimg_alpha;
+    unsigned char **planes = rawimg_alpha->planes;
+    int *stride = rawimg_alpha->stride;
+
+    if (!planes[VPX_PLANE_U] ||
+        !planes[VPX_PLANE_V] ||
+        width  != (int)rawimg_alpha->d_w ||
+        height != (int)rawimg_alpha->d_h) {
+        av_freep(&planes[VPX_PLANE_U]);
+        av_freep(&planes[VPX_PLANE_V]);
+
+        vpx_img_wrap(rawimg_alpha, VPX_IMG_FMT_I420, width, height, 1,
+                     (unsigned char*)1);
+        planes[VPX_PLANE_U] = av_malloc_array(stride[VPX_PLANE_U], height);
+        planes[VPX_PLANE_V] = av_malloc_array(stride[VPX_PLANE_V], height);
+        if (!planes[VPX_PLANE_U] || !planes[VPX_PLANE_V])
+            return AVERROR(ENOMEM);
+
+        memset(planes[VPX_PLANE_U], 0x80, stride[VPX_PLANE_U] * height);
+        memset(planes[VPX_PLANE_V], 0x80, stride[VPX_PLANE_V] * height);
+    }
+
+    return 0;
+}
+
 static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
@@ -1066,8 +1485,12 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
     int64_t timestamp = 0;
     int res, coded_size;
     vpx_enc_frame_flags_t flags = 0;
+    const struct vpx_codec_enc_cfg *enccfg = ctx->encoder.config.enc;
+    vpx_svc_layer_id_t layer_id;
+    int layer_id_valid = 0;
 
     if (frame) {
+        const AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
         rawimg                      = &ctx->rawimg;
         rawimg->planes[VPX_PLANE_Y] = frame->data[0];
         rawimg->planes[VPX_PLANE_U] = frame->data[1];
@@ -1076,23 +1499,12 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[VPX_PLANE_U] = frame->linesize[1];
         rawimg->stride[VPX_PLANE_V] = frame->linesize[2];
         if (ctx->is_alpha) {
-            uint8_t *u_plane, *v_plane;
             rawimg_alpha = &ctx->rawimg_alpha;
+            res = realloc_alpha_uv(avctx, frame->width, frame->height);
+            if (res < 0)
+                return res;
             rawimg_alpha->planes[VPX_PLANE_Y] = frame->data[3];
-            u_plane = av_malloc(frame->linesize[1] * frame->height);
-            v_plane = av_malloc(frame->linesize[2] * frame->height);
-            if (!u_plane || !v_plane) {
-                av_free(u_plane);
-                av_free(v_plane);
-                return AVERROR(ENOMEM);
-            }
-            memset(u_plane, 0x80, frame->linesize[1] * frame->height);
-            rawimg_alpha->planes[VPX_PLANE_U] = u_plane;
-            memset(v_plane, 0x80, frame->linesize[2] * frame->height);
-            rawimg_alpha->planes[VPX_PLANE_V] = v_plane;
-            rawimg_alpha->stride[VPX_PLANE_Y] = frame->linesize[0];
-            rawimg_alpha->stride[VPX_PLANE_U] = frame->linesize[1];
-            rawimg_alpha->stride[VPX_PLANE_V] = frame->linesize[2];
+            rawimg_alpha->stride[VPX_PLANE_Y] = frame->linesize[3];
         }
         timestamp                   = frame->pts;
 #if VPX_IMAGE_ABI_VERSION >= 4
@@ -1107,12 +1519,67 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= VPX_EFLAG_FORCE_KF;
-        if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && frame->metadata) {
+        if (frame->metadata) {
             AVDictionaryEntry* en = av_dict_get(frame->metadata, "vp8-flags", NULL, 0);
             if (en) {
                 flags |= strtoul(en->value, NULL, 10);
             }
+
+            memset(&layer_id, 0, sizeof(layer_id));
+
+            en = av_dict_get(frame->metadata, "temporal_id", NULL, 0);
+            if (en) {
+                layer_id.temporal_layer_id = strtoul(en->value, NULL, 10);
+#ifdef VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT
+                layer_id.temporal_layer_id_per_spatial[0] = layer_id.temporal_layer_id;
+#endif
+                layer_id_valid = 1;
+            }
         }
+
+        if (sd) {
+            if (avctx->codec_id == AV_CODEC_ID_VP8) {
+                vp8_encode_set_roi(avctx, frame->width, frame->height, sd);
+            } else {
+                vp9_encode_set_roi(avctx, frame->width, frame->height, sd);
+            }
+        }
+    }
+
+    // this is for encoding with preset temporal layering patterns defined in
+    // set_temporal_layer_pattern function.
+    if (enccfg->ts_number_layers > 1 && ctx->ts_layer_flags) {
+        if (flags & VPX_EFLAG_FORCE_KF) {
+            // keyframe, reset temporal layering.
+            ctx->current_temporal_idx = 0;
+            flags = VPX_EFLAG_FORCE_KF;
+        } else {
+            flags = 0;
+        }
+
+        /* get the flags from the temporal layer configuration. */
+        flags |= ctx->ts_layer_flags[ctx->current_temporal_idx];
+
+        memset(&layer_id, 0, sizeof(layer_id));
+#if VPX_ENCODER_ABI_VERSION >= 12
+        layer_id.spatial_layer_id = 0;
+#endif
+        layer_id.temporal_layer_id = enccfg->ts_layer_id[ctx->current_temporal_idx];
+#ifdef VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT
+        layer_id.temporal_layer_id_per_spatial[0] = layer_id.temporal_layer_id;
+#endif
+        layer_id_valid = 1;
+    }
+
+    if (layer_id_valid) {
+        if (avctx->codec_id == AV_CODEC_ID_VP8) {
+            codecctl_int(avctx, VP8E_SET_TEMPORAL_LAYER_ID, layer_id.temporal_layer_id);
+        }
+#if CONFIG_LIBVPX_VP9_ENCODER && VPX_ENCODER_ABI_VERSION >= 12
+        else if (avctx->codec_id == AV_CODEC_ID_VP9) {
+            codecctl_intp(avctx, VP9E_SET_SVC_LAYER_ID, (int *)&layer_id);
+        }
+#endif
     }
 
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
@@ -1144,11 +1611,8 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
         }
         av_base64_encode(avctx->stats_out, b64_size, ctx->twopass_stats.buf,
                          ctx->twopass_stats.sz);
-    }
-
-    if (rawimg_alpha) {
-        av_freep(&rawimg_alpha->planes[VPX_PLANE_U]);
-        av_freep(&rawimg_alpha->planes[VPX_PLANE_V]);
+    } else if (enccfg->ts_number_layers > 1 && ctx->ts_layer_flags) {
+        ctx->current_temporal_idx = (ctx->current_temporal_idx + 1) % enccfg->ts_periodicity;
     }
 
     *got_packet = !!coded_size;
@@ -1179,7 +1643,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
     { "default",         "Improve resiliency against losses of whole frames", 0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_DEFAULT}, 0, 0, VE, "er"}, \
     { "partitions",      "The frame partitions are independently decodable " \
                          "by the bool decoder, meaning that partitions can be decoded even " \
-                         "though earlier partitions have been lost. Note that intra predicition" \
+                         "though earlier partitions have been lost. Note that intra prediction" \
                          " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"}, \
     { "crf",              "Select the quality for constant quality mode", offsetof(VPxContext, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE }, \
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE }, \
@@ -1187,6 +1651,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
     { "noise-sensitivity", "Noise sensitivity", OFFSET(noise_sensitivity), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 4, VE}, \
     { "undershoot-pct",  "Datarate undershoot (min) target (%)", OFFSET(rc_undershoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 100, VE }, \
     { "overshoot-pct",   "Datarate overshoot (max) target (%)", OFFSET(rc_overshoot_pct), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1000, VE }, \
+    { "ts-parameters",   "Temporal scaling configuration using a :-separated list of key=value parameters", OFFSET(vpx_ts_parameters), AV_OPT_TYPE_DICT, {.str=NULL},  0,  0, VE}, \
 
 #define LEGACY_OPTIONS \
     {"speed", "", offsetof(VPxContext, cpu_used), AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE}, \
@@ -1206,8 +1671,6 @@ static const AVOption vp8_options[] = {
     { "auto-alt-ref",    "Enable use of alternate reference "
                          "frames (2-pass only)",                        OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1}, -1,  2, VE},
     { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
-    { "ts-parameters",   "Temporal scaling configuration using a "
-                         ":-separated list of key=value parameters",    OFFSET(vp8_ts_parameters), AV_OPT_TYPE_STRING, {.str=NULL},  0,  0, VE},
     LEGACY_OPTIONS
     { NULL }
 };
@@ -1266,6 +1729,7 @@ static const AVOption vp9_options[] = {
 #undef LEGACY_OPTIONS
 
 static const AVCodecDefault defaults[] = {
+    { "b",                 "0" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },
     { "g",                "-1" },

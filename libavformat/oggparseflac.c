@@ -34,7 +34,7 @@ flac_header (AVFormatContext * s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     GetBitContext gb;
-    int mdt;
+    int mdt, ret;
 
     if (os->buf[os->pstart] == 0xff)
         return 0;
@@ -50,7 +50,7 @@ flac_header (AVFormatContext * s, int idx)
         skip_bits_long(&gb, 4*8); /* "FLAC" */
         if(get_bits(&gb, 8) != 1) /* unsupported major version */
             return -1;
-        skip_bits_long(&gb, 8 + 16); /* minor version + header count */
+        skip_bits(&gb, 8 + 16);   /* minor version + header count */
         skip_bits_long(&gb, 4*8); /* "fLaC" */
 
         /* METADATA_BLOCK_HEADER */
@@ -61,8 +61,8 @@ flac_header (AVFormatContext * s, int idx)
         st->codecpar->codec_id = AV_CODEC_ID_FLAC;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-        if (ff_alloc_extradata(st->codecpar, FLAC_STREAMINFO_SIZE) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(st->codecpar, FLAC_STREAMINFO_SIZE)) < 0)
+            return ret;
         memcpy(st->codecpar->extradata, streaminfo_start, st->codecpar->extradata_size);
 
         samplerate = AV_RB24(st->codecpar->extradata + 10) >> 4;

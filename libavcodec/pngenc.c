@@ -741,7 +741,7 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
     diffFrame->format = pict->format;
     diffFrame->width = pict->width;
     diffFrame->height = pict->height;
-    if ((ret = av_frame_get_buffer(diffFrame, 32)) < 0)
+    if ((ret = av_frame_get_buffer(diffFrame, 0)) < 0)
         goto fail;
 
     original_bytestream = s->bytestream;
@@ -956,7 +956,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
                 s->prev_frame->format = pict->format;
                 s->prev_frame->width = pict->width;
                 s->prev_frame->height = pict->height;
-                if ((ret = av_frame_get_buffer(s->prev_frame, 32)) < 0)
+                if ((ret = av_frame_get_buffer(s->prev_frame, 0)) < 0)
                     return ret;
             }
 
@@ -1146,7 +1146,7 @@ AVCodec ff_png_encoder = {
     .init           = png_enc_init,
     .close          = png_enc_close,
     .encode2        = encode_png,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,

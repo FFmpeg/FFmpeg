@@ -43,6 +43,7 @@ int ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_si
     c->bits = -16;
     c->buffer = buf;
     c->end = buf + buf_size;
+    c->end_reached = 0;
     if (buf_size < 1)
         return AVERROR_INVALIDDATA;
     c->code_word = bytestream_get_be24(&c->buffer);

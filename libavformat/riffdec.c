@@ -145,7 +145,6 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
             size   -= 22;
         }
         if (cbSize > 0) {
-            av_freep(&par->extradata);
             if (ff_get_extradata(s, par, pb, cbSize) < 0)
                 return AVERROR(ENOMEM);
             size -= cbSize;
@@ -158,7 +157,6 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         int nb_streams, i;
 
         size -= 4;
-        av_freep(&par->extradata);
         if (ff_get_extradata(s, par, pb, size) < 0)
             return AVERROR(ENOMEM);
         nb_streams         = AV_RL16(par->extradata + 4);
@@ -204,7 +202,7 @@ enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps)
         id = ff_get_pcm_codec_id(bps, 1, 0,  0);
 
     if (id == AV_CODEC_ID_ADPCM_IMA_WAV && bps == 8)
-        id = AV_CODEC_ID_PCM_ZORK;
+        id = AV_CODEC_ID_ADPCM_ZORK;
     return id;
 }
 

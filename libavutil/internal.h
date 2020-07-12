@@ -137,41 +137,8 @@
 #   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_A(32, t, v, __VA_ARGS__,,))
 #endif
 
-#define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
-{\
-    p = av_malloc(size);\
-    if (!(p) && (size) != 0) {\
-        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
-        goto label;\
-    }\
-}
-
-#define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
-{\
-    p = av_mallocz(size);\
-    if (!(p) && (size) != 0) {\
-        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
-        goto label;\
-    }\
-}
-
-#define FF_ALLOC_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
-{\
-    p = av_malloc_array(nelem, elsize);\
-    if (!p) {\
-        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
-        goto label;\
-    }\
-}
-
-#define FF_ALLOCZ_ARRAY_OR_GOTO(ctx, p, nelem, elsize, label)\
-{\
-    p = av_mallocz_array(nelem, elsize);\
-    if (!p) {\
-        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
-        goto label;\
-    }\
-}
+#define FF_ALLOC_TYPED_ARRAY(p, nelem)  (p = av_malloc_array(nelem, sizeof(*p)))
+#define FF_ALLOCZ_TYPED_ARRAY(p, nelem) (p = av_mallocz_array(nelem, sizeof(*p)))
 
 #include "libm.h"
 
@@ -353,7 +320,8 @@ void ff_check_pixfmt_descriptors(void);
 /**
  * Set a dictionary value to an ISO-8601 compliant timestamp string.
  *
- * @param s AVFormatContext
+ * @param dict pointer to a pointer to a dictionary struct. If *dict is NULL
+ *             a dictionary struct is allocated and put in *dict.
  * @param key metadata key
  * @param timestamp unix timestamp in microseconds
  * @return <0 on error

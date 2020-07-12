@@ -198,7 +198,6 @@ static int video_decode(const char *input_filename)
 
     av_packet_unref(&pkt);
     av_frame_free(&fr);
-    avcodec_close(ctx);
     avformat_close_input(&fmt_ctx);
     avcodec_free_context(&ctx);
     av_freep(&byte_buffer);

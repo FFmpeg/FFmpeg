@@ -80,7 +80,7 @@ static int query_formats(AVFilterContext *ctx)
 
     static const enum AVPixelFormat alpha_pix_fmts[] = {
         AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
@@ -186,7 +186,7 @@ static void premultiply16yuv(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - half) * (((asrc[x] >> 1) & 1) + asrc[x]))) >> shift) + half;
+            dst[x] = ((((msrc[x] - half) * (int64_t)(((asrc[x] >> 1) & 1) + asrc[x]))) >> shift) + half;
         }
 
         dst  += dlinesize / 2;
@@ -209,7 +209,7 @@ static void premultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - offset) * (((asrc[x] >> 1) & 1) + asrc[x])) + half) >> shift) + offset;
+            dst[x] = ((((msrc[x] - offset) * (int64_t)(((asrc[x] >> 1) & 1) + asrc[x])) + half) >> shift) + offset;
         }
 
         dst  += dlinesize / 2;
@@ -638,6 +638,8 @@ static int activate(AVFilterContext *ctx)
         AVFrame *out = NULL;
         int ret, status;
         int64_t pts;
+
+        FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
 
         if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &frame)) > 0) {
             ret = filter_frame(ctx, &out, frame, frame);

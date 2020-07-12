@@ -37,8 +37,13 @@
 typedef struct InterleaveContext {
     const AVClass *class;
     int nb_inputs;
+    int duration_mode;
     int64_t pts;
 } InterleaveContext;
+
+#define DURATION_LONGEST  0
+#define DURATION_SHORTEST 1
+#define DURATION_FIRST    2
 
 #define OFFSET(x) offsetof(InterleaveContext, x)
 
@@ -46,6 +51,11 @@ typedef struct InterleaveContext {
 static const AVOption filt_name##_options[] = {                     \
    { "nb_inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, .flags = flags_ }, \
    { "n",         "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, .flags = flags_ }, \
+   { "duration", "how to determine the end-of-stream",              \
+       OFFSET(duration_mode), AV_OPT_TYPE_INT, { .i64 = DURATION_LONGEST }, 0,  2, flags_, "duration" }, \
+       { "longest",  "Duration of longest input",  0, AV_OPT_TYPE_CONST, { .i64 = DURATION_LONGEST  }, 0, 0, flags_, "duration" }, \
+       { "shortest", "Duration of shortest input", 0, AV_OPT_TYPE_CONST, { .i64 = DURATION_SHORTEST }, 0, 0, flags_, "duration" }, \
+       { "first",    "Duration of first input",    0, AV_OPT_TYPE_CONST, { .i64 = DURATION_FIRST    }, 0, 0, flags_, "duration" }, \
    { NULL }                                                         \
 }
 
@@ -55,20 +65,21 @@ static int activate(AVFilterContext *ctx)
     InterleaveContext *s = ctx->priv;
     int64_t q_pts, pts = INT64_MAX;
     int i, nb_eofs = 0, input_idx = -1;
+    int nb_inputs_with_frames = 0;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (!ff_outlink_get_status(ctx->inputs[i]) &&
-            !ff_inlink_queued_frames(ctx->inputs[i]))
-            break;
+        if (!ff_inlink_queued_frames(ctx->inputs[i]))
+            continue;
+        nb_inputs_with_frames++;
     }
 
-    if (i == ctx->nb_inputs) {
+    if (nb_inputs_with_frames > 0) {
         for (i = 0; i < ctx->nb_inputs; i++) {
             AVFrame *frame;
 
-            if (ff_outlink_get_status(ctx->inputs[i]))
+            if (ff_inlink_queued_frames(ctx->inputs[i]) == 0)
                 continue;
 
             frame = ff_inlink_peek_frame(ctx->inputs[i], 0);
@@ -104,6 +115,16 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
+    for (i = 0; i < ctx->nb_inputs; i++)
+        nb_eofs += !!ff_outlink_get_status(ctx->inputs[i]);
+
+    if ((nb_eofs > 0 && s->duration_mode == DURATION_SHORTEST) ||
+        (nb_eofs == ctx->nb_inputs && s->duration_mode == DURATION_LONGEST) ||
+        (ff_outlink_get_status(ctx->inputs[0]) && s->duration_mode == DURATION_FIRST)) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
+
     for (i = 0; i < ctx->nb_inputs; i++) {
         if (ff_inlink_queued_frames(ctx->inputs[i]))
             continue;
@@ -112,11 +133,10 @@ static int activate(AVFilterContext *ctx)
             ff_inlink_request_frame(ctx->inputs[i]);
             return 0;
         }
-        nb_eofs++;
     }
 
-    if (nb_eofs == ctx->nb_inputs) {
-        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+    if (i) {
+        ff_filter_set_ready(ctx, 100);
         return 0;
     }
 

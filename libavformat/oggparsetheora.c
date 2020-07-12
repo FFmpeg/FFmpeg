@@ -65,7 +65,7 @@ static int theora_header(AVFormatContext *s, int idx)
         /* 0x80"theora" */
         skip_bits_long(&gb, 7 * 8);
 
-        thp->version = get_bits_long(&gb, 24);
+        thp->version = get_bits(&gb, 24);
         if (thp->version < 0x030100) {
             av_log(s, AV_LOG_ERROR,
                    "Too old or unsupported Theora (%x)\n", thp->version);
@@ -79,8 +79,8 @@ static int theora_header(AVFormatContext *s, int idx)
             skip_bits(&gb, 100);
 
         if (thp->version >= 0x030200) {
-            int width  = get_bits_long(&gb, 24);
-            int height = get_bits_long(&gb, 24);
+            int width  = get_bits(&gb, 24);
+            int height = get_bits(&gb, 24);
             if (width  <= st->codecpar->width  && width  > st->codecpar->width  - 16 &&
                 height <= st->codecpar->height && height > st->codecpar->height - 16) {
                 st->codecpar->width  = width;
@@ -99,8 +99,8 @@ static int theora_header(AVFormatContext *s, int idx)
         }
         avpriv_set_pts_info(st, 64, timebase.num, timebase.den);
 
-        st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
-        st->sample_aspect_ratio.den = get_bits_long(&gb, 24);
+        st->sample_aspect_ratio.num = get_bits(&gb, 24);
+        st->sample_aspect_ratio.den = get_bits(&gb, 24);
 
         if (thp->version >= 0x030200)
             skip_bits_long(&gb, 38);
@@ -191,9 +191,9 @@ static int theora_packet(AVFormatContext *s, int idx)
 
         pts = theora_gptopts(s, idx, os->granule, NULL);
         if (pts != AV_NOPTS_VALUE)
-            pts -= duration;
+            pts = av_sat_sub64(pts, duration);
         os->lastpts = os->lastdts = pts;
-        if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
+        if(s->streams[idx]->start_time == AV_NOPTS_VALUE && os->lastpts != AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
             if (s->streams[idx]->duration > 0)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;

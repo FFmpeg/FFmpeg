@@ -38,11 +38,13 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <process.h>
+#include <time.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/time.h"
 
 typedef struct pthread_t {
     void *handle;
@@ -60,6 +62,9 @@ typedef CONDITION_VARIABLE pthread_cond_t;
 
 #define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
 #define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
+
+#define PTHREAD_CANCEL_ENABLE 1
+#define PTHREAD_CANCEL_DISABLE 0
 
 static av_unused unsigned __stdcall attribute_align_arg win32thread_worker(void *arg)
 {
@@ -156,9 +161,30 @@ static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex
     return 0;
 }
 
+static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+                                         const struct timespec *abstime)
+{
+    int64_t abs_milli = abstime->tv_sec * 1000LL + abstime->tv_nsec / 1000000;
+    DWORD t = av_clip64(abs_milli - av_gettime() / 1000, 0, UINT32_MAX);
+
+    if (!SleepConditionVariableSRW(cond, mutex, t, 0)) {
+        DWORD err = GetLastError();
+        if (err == ERROR_TIMEOUT)
+            return ETIMEDOUT;
+        else
+            return EINVAL;
+    }
+    return 0;
+}
+
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
     WakeConditionVariable(cond);
+    return 0;
+}
+
+static inline int pthread_setcancelstate(int state, int *oldstate)
+{
     return 0;
 }
 

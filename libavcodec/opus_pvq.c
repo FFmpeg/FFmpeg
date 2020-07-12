@@ -627,7 +627,7 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
             }
         } else if (stereo) {
             if (quant) {
-                inv = itheta > 8192;
+                inv = f->apply_phase_inv ? itheta > 8192 : 0;
                  if (inv) {
                     for (i = 0; i < N; i++)
                        Y[i] *= -1;

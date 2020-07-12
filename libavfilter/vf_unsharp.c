@@ -218,7 +218,7 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
            effect, effect_type, fp->msize_x, fp->msize_y, fp->amount / 65535.0);
 
     fp->sr = av_malloc_array((MAX_MATRIX_SIZE - 1) * s->nb_threads, sizeof(uint32_t));
-    fp->sc = av_malloc_array(2 * fp->steps_y * s->nb_threads, sizeof(uint32_t **));
+    fp->sc = av_mallocz_array(2 * fp->steps_y * s->nb_threads, sizeof(uint32_t *));
     if (!fp->sr || !fp->sc)
         return AVERROR(ENOMEM);
 
@@ -230,10 +230,10 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
     return 0;
 }
 
-static int config_props(AVFilterLink *link)
+static int config_input(AVFilterLink *inlink)
 {
-    UnsharpContext *s = link->dst->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+    UnsharpContext *s = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
     s->hsub = desc->log2_chroma_w;
@@ -241,13 +241,13 @@ static int config_props(AVFilterLink *link)
 
     // ensure (height / nb_threads) > 4 * steps_y,
     // so that we don't have too much overlap between two threads
-    s->nb_threads = FFMIN(ff_filter_get_nb_threads(link->dst),
-                          link->h / (4 * s->luma.steps_y));
+    s->nb_threads = FFMIN(ff_filter_get_nb_threads(inlink->dst),
+                          inlink->h / (4 * s->luma.steps_y));
 
-    ret = init_filter_param(link->dst, &s->luma,   "luma",   link->w);
+    ret = init_filter_param(inlink->dst, &s->luma,   "luma",   inlink->w);
     if (ret < 0)
         return ret;
-    ret = init_filter_param(link->dst, &s->chroma, "chroma", AV_CEIL_RSHIFT(link->w, s->hsub));
+    ret = init_filter_param(inlink->dst, &s->chroma, "chroma", AV_CEIL_RSHIFT(inlink->w, s->hsub));
     if (ret < 0)
         return ret;
 
@@ -258,9 +258,11 @@ static void free_filter_param(UnsharpFilterParam *fp, int nb_threads)
 {
     int z;
 
-    for (z = 0; z < 2 * fp->steps_y * nb_threads; z++)
-        av_freep(&fp->sc[z]);
-    av_freep(&fp->sc);
+    if (fp->sc) {
+        for (z = 0; z < 2 * fp->steps_y * nb_threads; z++)
+            av_freep(&fp->sc[z]);
+        av_freep(&fp->sc);
+    }
     av_freep(&fp->sr);
 }
 
@@ -325,7 +327,7 @@ static const AVFilterPad avfilter_vf_unsharp_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .config_props = config_props,
+        .config_props = config_input,
     },
     { NULL }
 };

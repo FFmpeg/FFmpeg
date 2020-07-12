@@ -211,11 +211,9 @@ static int decode_header(PSDContext * s)
     case 2:
         avpriv_request_sample(s->avctx, "ZIP without predictor compression");
         return AVERROR_PATCHWELCOME;
-        break;
     case 3:
         avpriv_request_sample(s->avctx, "ZIP with predictor compression");
         return AVERROR_PATCHWELCOME;
-        break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "Unknown compression %d.\n", s->compression);
         return AVERROR_INVALIDDATA;

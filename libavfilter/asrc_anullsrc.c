@@ -114,11 +114,8 @@ static int request_frame(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     samplesref->pts = null->pts;
-    samplesref->channel_layout = null->channel_layout;
-    samplesref->sample_rate = outlink->sample_rate;
 
-    ret = ff_filter_frame(outlink, av_frame_clone(samplesref));
-    av_frame_free(&samplesref);
+    ret = ff_filter_frame(outlink, samplesref);
     if (ret < 0)
         return ret;
 

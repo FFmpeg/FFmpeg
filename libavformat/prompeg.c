@@ -291,8 +291,7 @@ static int prompeg_open(URLContext *h, const char *uri, int flags) {
     }
 
     if (s->ttl > 0) {
-        snprintf(buf, sizeof (buf), "%d", s->ttl);
-        av_dict_set(&udp_opts, "ttl", buf, 0);
+        av_dict_set_int(&udp_opts, "ttl", s->ttl, 0);
     }
 
     ff_url_join(buf, sizeof (buf), "udp", NULL, hostname, rtp_port + 2, NULL);
@@ -388,7 +387,7 @@ static int prompeg_write(URLContext *h, const uint8_t *buf, int size) {
     PrompegFec *fec_tmp;
     uint8_t *bitstring = NULL;
     int col_idx, col_out_idx, row_idx;
-    int ret, written = 0;
+    int ret = 0;
 
     if (s->init && ((ret = prompeg_init(h, buf, size)) < 0))
         goto end;
@@ -404,7 +403,6 @@ static int prompeg_write(URLContext *h, const uint8_t *buf, int size) {
         if (!s->first || s->packet_idx > 0) {
             if ((ret = prompeg_write_fec(h, s->fec_row, PROMPEG_FEC_ROW)) < 0)
                 goto end;
-            written += ret;
         }
         memcpy(s->fec_row->bitstring, bitstring, s->bitstring_size);
         s->fec_row->sn = AV_RB16(buf + 2);
@@ -435,7 +433,6 @@ static int prompeg_write(URLContext *h, const uint8_t *buf, int size) {
         col_out_idx = s->packet_idx / s->d;
         if ((ret = prompeg_write_fec(h, s->fec_col[col_out_idx], PROMPEG_FEC_COL)) < 0)
             goto end;
-        written += ret;
     }
 
     if (++s->packet_idx >= s->packet_idx_max) {
@@ -444,7 +441,7 @@ static int prompeg_write(URLContext *h, const uint8_t *buf, int size) {
             s->first = 0;
     }
 
-    ret = written;
+    ret = size;
 
 end:
     av_free(bitstring);

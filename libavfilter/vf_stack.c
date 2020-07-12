@@ -21,9 +21,11 @@
 #include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "framesync.h"
@@ -44,6 +46,12 @@ typedef struct StackContext {
     int is_vertical;
     int is_horizontal;
     int nb_planes;
+    uint8_t fillcolor[4];
+    char *fillcolor_str;
+    int fillcolor_enable;
+
+    FFDrawContext draw;
+    FFDrawColor color;
 
     StackItem *items;
     AVFrame **frames;
@@ -53,7 +61,12 @@ typedef struct StackContext {
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *pix_fmts = NULL;
+    StackContext *s = ctx->priv;
     int fmt, ret;
+
+    if (s->fillcolor_enable) {
+        return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    }
 
     for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
@@ -82,7 +95,17 @@ static av_cold int init(AVFilterContext *ctx)
     if (!s->frames)
         return AVERROR(ENOMEM);
 
+    s->items = av_calloc(s->nb_inputs, sizeof(*s->items));
+    if (!s->items)
+        return AVERROR(ENOMEM);
+
     if (!strcmp(ctx->filter->name, "xstack")) {
+        if (strcmp(s->fillcolor_str, "none") &&
+            av_parse_color(s->fillcolor, s->fillcolor_str, -1, ctx) >= 0) {
+            s->fillcolor_enable = 1;
+        } else {
+            s->fillcolor_enable = 0;
+        }
         if (!s->layout) {
             if (s->nb_inputs == 2) {
                 s->layout = av_strdup("0_0|w0_0");
@@ -93,10 +116,6 @@ static av_cold int init(AVFilterContext *ctx)
                 return AVERROR(EINVAL);
             }
         }
-
-        s->items = av_calloc(s->nb_inputs, sizeof(*s->items));
-        if (!s->items)
-            return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < s->nb_inputs; i++) {
@@ -116,6 +135,29 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static int process_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    StackContext *s = ctx->priv;
+    AVFrame *out = arg;
+    AVFrame **in = s->frames;
+    const int start = (s->nb_inputs *  job   ) / nb_jobs;
+    const int end   = (s->nb_inputs * (job+1)) / nb_jobs;
+
+    for (int i = start; i < end; i++) {
+        StackItem *item = &s->items[i];
+
+        for (int p = 0; p < s->nb_planes; p++) {
+            av_image_copy_plane(out->data[p] + out->linesize[p] * item->y[p] + item->x[p],
+                                out->linesize[p],
+                                in[i]->data[p],
+                                in[i]->linesize[p],
+                                item->linesize[p], item->height[p]);
+        }
+    }
+
+    return 0;
+}
+
 static int process_frame(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
@@ -123,7 +165,7 @@ static int process_frame(FFFrameSync *fs)
     StackContext *s = fs->opaque;
     AVFrame **in = s->frames;
     AVFrame *out;
-    int i, p, ret, offset[4] = { 0 };
+    int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
         if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
@@ -136,47 +178,11 @@ static int process_frame(FFFrameSync *fs)
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
     out->sample_aspect_ratio = outlink->sample_aspect_ratio;
 
-    for (i = 0; i < s->nb_inputs; i++) {
-        AVFilterLink *inlink = ctx->inputs[i];
-        int linesize[4];
-        int height[4];
+    if (s->fillcolor_enable)
+        ff_fill_rectangle(&s->draw, &s->color, out->data, out->linesize,
+                          0, 0, outlink->w, outlink->h);
 
-        if (s->is_horizontal || s->is_vertical) {
-            if ((ret = av_image_fill_linesizes(linesize, inlink->format, inlink->w)) < 0) {
-                av_frame_free(&out);
-                return ret;
-            }
-
-            height[1] = height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
-            height[0] = height[3] = inlink->h;
-        }
-
-        for (p = 0; p < s->nb_planes; p++) {
-            if (s->is_vertical) {
-                av_image_copy_plane(out->data[p] + offset[p] * out->linesize[p],
-                                    out->linesize[p],
-                                    in[i]->data[p],
-                                    in[i]->linesize[p],
-                                    linesize[p], height[p]);
-                offset[p] += height[p];
-            } else if (s->is_horizontal) {
-                av_image_copy_plane(out->data[p] + offset[p],
-                                    out->linesize[p],
-                                    in[i]->data[p],
-                                    in[i]->linesize[p],
-                                    linesize[p], height[p]);
-                offset[p] += linesize[p];
-            } else {
-                StackItem *item = &s->items[i];
-
-                av_image_copy_plane(out->data[p] + out->linesize[p] * item->y[p] + item->x[p],
-                                    out->linesize[p],
-                                    in[i]->data[p],
-                                    in[i]->linesize[p],
-                                    item->linesize[p], item->height[p]);
-            }
-        }
-    }
+    ctx->internal->execute(ctx, process_slice, out, NULL, FFMIN(s->nb_inputs, ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, out);
 }
@@ -197,26 +203,64 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_BUG;
 
     if (s->is_vertical) {
-        for (i = 1; i < s->nb_inputs; i++) {
+        for (i = 0; i < s->nb_inputs; i++) {
+            AVFilterLink *inlink = ctx->inputs[i];
+            StackItem *item = &s->items[i];
+
             if (ctx->inputs[i]->w != width) {
                 av_log(ctx, AV_LOG_ERROR, "Input %d width %d does not match input %d width %d.\n", i, ctx->inputs[i]->w, 0, width);
                 return AVERROR(EINVAL);
             }
-            height += ctx->inputs[i]->h;
+
+            if ((ret = av_image_fill_linesizes(item->linesize, inlink->format, inlink->w)) < 0) {
+                return ret;
+            }
+
+            item->height[1] = item->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
+            item->height[0] = item->height[3] = inlink->h;
+
+            if (i) {
+                item->y[1] = item->y[2] = AV_CEIL_RSHIFT(height, s->desc->log2_chroma_h);
+                item->y[0] = item->y[3] = height;
+
+                height += ctx->inputs[i]->h;
+            }
         }
     } else if (s->is_horizontal) {
-        for (i = 1; i < s->nb_inputs; i++) {
+        for (i = 0; i < s->nb_inputs; i++) {
+            AVFilterLink *inlink = ctx->inputs[i];
+            StackItem *item = &s->items[i];
+
             if (ctx->inputs[i]->h != height) {
                 av_log(ctx, AV_LOG_ERROR, "Input %d height %d does not match input %d height %d.\n", i, ctx->inputs[i]->h, 0, height);
                 return AVERROR(EINVAL);
             }
-            width += ctx->inputs[i]->w;
+
+            if ((ret = av_image_fill_linesizes(item->linesize, inlink->format, inlink->w)) < 0) {
+                return ret;
+            }
+
+            item->height[1] = item->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
+            item->height[0] = item->height[3] = inlink->h;
+
+            if (i) {
+                if ((ret = av_image_fill_linesizes(item->x, inlink->format, width)) < 0) {
+                    return ret;
+                }
+
+                width += ctx->inputs[i]->w;
+            }
         }
     } else {
         char *arg, *p = s->layout, *saveptr = NULL;
         char *arg2, *p2, *saveptr2 = NULL;
         char *arg3, *p3, *saveptr3 = NULL;
         int inw, inh, size;
+
+        if (s->fillcolor_enable) {
+            ff_draw_init(&s->draw, ctx->inputs[0]->format, 0);
+            ff_draw_color(&s->draw, &s->color, s->fillcolor);
+        }
 
         for (i = 0; i < s->nb_inputs; i++) {
             AVFilterLink *inlink = ctx->inputs[i];
@@ -294,6 +338,17 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = frame_rate;
     outlink->sample_aspect_ratio = sar;
 
+    for (i = 1; i < s->nb_inputs; i++) {
+        AVFilterLink *inlink = ctx->inputs[i];
+        if (outlink->frame_rate.num != inlink->frame_rate.num ||
+            outlink->frame_rate.den != inlink->frame_rate.den) {
+            av_log(ctx, AV_LOG_VERBOSE,
+                    "Video inputs have different frame rates, output will be VFR\n");
+            outlink->frame_rate = av_make_q(1, 0);
+            break;
+        }
+    }
+
     if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
 
@@ -367,7 +422,7 @@ AVFilter ff_vf_hstack = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_HSTACK_FILTER */
@@ -387,7 +442,7 @@ AVFilter ff_vf_vstack = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_VSTACK_FILTER */
@@ -398,6 +453,7 @@ static const AVOption xstack_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=2}, 2, INT_MAX, .flags = FLAGS },
     { "layout", "set custom layout", OFFSET(layout), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, .flags = FLAGS },
     { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
+    { "fill",  "set the color for unused pixels", OFFSET(fillcolor_str), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = FLAGS },
     { NULL },
 };
 
@@ -413,7 +469,7 @@ AVFilter ff_vf_xstack = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_XSTACK_FILTER */

@@ -244,6 +244,9 @@ static int jpg_decode_block(JPGContext *c, GetBitContext *gb,
     const int is_chroma = !!plane;
     const uint8_t *qmat = is_chroma ? chroma_quant : luma_quant;
 
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
+
     c->bdsp.clear_block(block);
     dc = get_vlc2(gb, c->dc_vlc[is_chroma].table, 9, 3);
     if (dc < 0)
@@ -854,6 +857,9 @@ static int epic_decode_tile(ePICContext *dc, uint8_t *out, int tile_height,
                     uint32_t ref_pix = curr_row[x - 1];
                     if (!x || !epic_decode_from_cache(dc, ref_pix, &pix)) {
                         pix = epic_decode_pixel_pred(dc, x, y, curr_row, above_row);
+                        if (is_pixel_on_stack(dc, pix))
+                            return AVERROR_INVALIDDATA;
+
                         if (x) {
                             int ret = epic_add_pixel_to_cache(&dc->hash,
                                                               ref_pix,
@@ -910,6 +916,11 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
     tile_height = FFMIN(c->height - tile_y * c->tile_height, c->tile_height);
     awidth      = FFALIGN(tile_width,  16);
     aheight     = FFALIGN(tile_height, 16);
+
+    if (tile_width > (1 << FF_ARRAY_ELEMS(c->ec.prev_row_rung))) {
+        avpriv_request_sample(avctx, "large tile width");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (els_dsize) {
         int ret, i, j, k;

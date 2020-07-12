@@ -88,7 +88,6 @@ static int smjpeg_write_header(AVFormatContext *s)
     }
 
     avio_wl32(pb, SMJPEG_HEND);
-    avio_flush(pb);
 
     return 0;
 }

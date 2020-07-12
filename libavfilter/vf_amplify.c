@@ -71,6 +71,11 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
@@ -231,7 +236,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (s->frames) {
         for (i = 0; i < s->nb_frames; i++)
-           av_frame_free(&s->frames[i]);
+            av_frame_free(&s->frames[i]);
     }
     av_freep(&s->frames);
 }
@@ -254,29 +259,37 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->frames[s->nb_inputs - 1] = in;
     }
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out)
-        return AVERROR(ENOMEM);
-    out->pts = s->frames[0]->pts;
+    if (!ctx->is_disabled) {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
+        av_frame_copy_props(out, s->frames[0]);
 
-    td.out = out;
-    td.in = s->frames;
-    ctx->internal->execute(ctx, amplify_frame, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+        td.out = out;
+        td.in = s->frames;
+        ctx->internal->execute(ctx, amplify_frame, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+    } else {
+        out = av_frame_clone(s->frames[s->radius]);
+        if (!out)
+            return AVERROR(ENOMEM);
+        out->pts = s->frames[0]->pts;
+    }
 
     return ff_filter_frame(outlink, out);
 }
 
 #define OFFSET(x) offsetof(AmplifyContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define VFT AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption amplify_options[] = {
     { "radius", "set radius", OFFSET(radius), AV_OPT_TYPE_INT, {.i64=2}, 1, 63, .flags = FLAGS },
-    { "factor", "set factor", OFFSET(factor), AV_OPT_TYPE_FLOAT, {.dbl=2}, 0, UINT16_MAX, .flags = FLAGS },
-    { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=10}, 0, UINT16_MAX, .flags = FLAGS },
-    { "tolerance", "set tolerance", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, UINT16_MAX, .flags = FLAGS },
-    { "low", "set low limit for amplification", OFFSET(llimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
-    { "high", "set high limit for amplification", OFFSET(hlimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
-    { "planes", "set what planes to filter", OFFSET(planes), AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
+    { "factor", "set factor", OFFSET(factor), AV_OPT_TYPE_FLOAT, {.dbl=2}, 0, UINT16_MAX, .flags = VFT },
+    { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=10}, 0, UINT16_MAX, .flags = VFT },
+    { "tolerance", "set tolerance", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, UINT16_MAX, .flags = VFT },
+    { "low", "set low limit for amplification", OFFSET(llimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = VFT },
+    { "high", "set high limit for amplification", OFFSET(hlimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = VFT },
+    { "planes", "set what planes to filter", OFFSET(planes), AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  VFT },
     { NULL },
 };
 
@@ -310,5 +323,6 @@ AVFilter ff_vf_amplify = {
     .inputs        = inputs,
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

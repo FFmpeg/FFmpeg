@@ -1442,7 +1442,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                         int vqbook  = vr->books[vqclass][pass];
 
                         if (vqbook >= 0 && vc->codebooks[vqbook].codevectors) {
-                            unsigned coffs;
+                            int coffs;
                             unsigned dim  = vc->codebooks[vqbook].dimensions;
                             unsigned step = FASTDIV(vr->partition_size << 1, dim << 1);
                             vorbis_codebook codebook = vc->codebooks[vqbook];
@@ -1451,14 +1451,20 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
 
                                 voffs = voffset+j*vlen;
                                 for (k = 0; k < step; ++k) {
-                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
+                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3);
+                                    if (coffs < 0)
+                                        return coffs;
+                                    coffs *= dim;
                                     for (l = 0; l < dim; ++l)
                                         vec[voffs + k + l * step] += codebook.codevectors[coffs + l];
                                 }
                             } else if (vr_type == 1) {
                                 voffs = voffset + j * vlen;
                                 for (k = 0; k < step; ++k) {
-                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
+                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3);
+                                    if (coffs < 0)
+                                        return coffs;
+                                    coffs *= dim;
                                     for (l = 0; l < dim; ++l, ++voffs) {
                                         vec[voffs]+=codebook.codevectors[coffs+l];
 
@@ -1471,13 +1477,19 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
 
                                 if (dim == 2) {
                                     for (k = 0; k < step; ++k) {
-                                        coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * 2;
+                                        coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3);
+                                        if (coffs < 0)
+                                            return coffs;
+                                        coffs *= 2;
                                         vec[voffs + k       ] += codebook.codevectors[coffs    ];
                                         vec[voffs + k + vlen] += codebook.codevectors[coffs + 1];
                                     }
                                 } else if (dim == 4) {
                                     for (k = 0; k < step; ++k, voffs += 2) {
-                                        coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * 4;
+                                        coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3);
+                                        if (coffs < 0)
+                                            return coffs;
+                                        coffs *= 4;
                                         vec[voffs           ] += codebook.codevectors[coffs    ];
                                         vec[voffs + 1       ] += codebook.codevectors[coffs + 2];
                                         vec[voffs + vlen    ] += codebook.codevectors[coffs + 1];
@@ -1485,7 +1497,10 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                     }
                                 } else
                                 for (k = 0; k < step; ++k) {
-                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
+                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3);
+                                    if (coffs < 0)
+                                        return coffs;
+                                    coffs *= dim;
                                     for (l = 0; l < dim; l += 2, voffs++) {
                                         vec[voffs       ] += codebook.codevectors[coffs + l    ];
                                         vec[voffs + vlen] += codebook.codevectors[coffs + l + 1];
@@ -1498,11 +1513,14 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                 }
 
                             } else if (vr_type == 2) {
-                                unsigned voffs_div = FASTDIV(voffset << 1, ch <<1);
+                                unsigned voffs_div = ch == 1 ? voffset : FASTDIV(voffset, ch);
                                 unsigned voffs_mod = voffset - voffs_div * ch;
 
                                 for (k = 0; k < step; ++k) {
-                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
+                                    coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3);
+                                    if (coffs < 0)
+                                        return coffs;
+                                    coffs *= dim;
                                     for (l = 0; l < dim; ++l) {
                                         vec[voffs_div + voffs_mod * vlen] +=
                                             codebook.codevectors[coffs + l];

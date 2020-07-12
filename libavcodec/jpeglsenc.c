@@ -471,7 +471,7 @@ AVCodec ff_jpegls_encoder = {
     .priv_data_size = sizeof(JPEGLSContext),
     .priv_class     = &jpegls_class,
     .init           = encode_init_ls,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .encode2        = encode_picture_ls,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,

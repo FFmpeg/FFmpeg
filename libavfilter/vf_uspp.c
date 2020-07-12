@@ -468,10 +468,8 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&uspp->src[i]);
     }
 
-    for (i = 0; i < (1 << uspp->log2_count); i++) {
-        avcodec_close(uspp->avctx_enc[i]);
-        av_freep(&uspp->avctx_enc[i]);
-    }
+    for (i = 0; i < (1 << uspp->log2_count); i++)
+        avcodec_free_context(&uspp->avctx_enc[i]);
 
     av_freep(&uspp->non_b_qp_table);
     av_freep(&uspp->outbuf);

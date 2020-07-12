@@ -100,8 +100,7 @@ static int tls_close(URLContext *h)
         gnutls_deinit(c->session);
     if (c->cred)
         gnutls_certificate_free_credentials(c->cred);
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
     ff_gnutls_deinit();
     return 0;
 }
@@ -183,6 +182,11 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_transport_set_ptr(p->session, c->tcp);
     gnutls_priority_set_direct(p->session, "NORMAL", NULL);
     do {
+        if (ff_check_interrupt(&h->interrupt_callback)) {
+            ret = AVERROR_EXIT;
+            goto fail;
+        }
+
         ret = gnutls_handshake(p->session);
         if (gnutls_error_is_fatal(ret)) {
             ret = print_tls_error(h, ret);

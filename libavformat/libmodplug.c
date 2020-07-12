@@ -216,9 +216,10 @@ static int modplug_read_header(AVFormatContext *s)
     ModPlug_SetSettings(&settings);
 
     modplug->f = ModPlug_Load(modplug->buf, sz);
-    if (!modplug->f)
+    if (!modplug->f) {
+        av_freep(&modplug->buf);
         return AVERROR_INVALIDDATA;
-
+    }
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
@@ -269,6 +270,7 @@ static void write_text(uint8_t *dst, const char *s, int linesize, int x, int y)
 static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ModPlugContext *modplug = s->priv_data;
+    int ret;
 
     if (modplug->video_stream) {
         modplug->video_switch ^= 1; // one video packet for one audio packet
@@ -284,8 +286,8 @@ static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
             var_values[VAR_PATTERN] = ModPlug_GetCurrentPattern(modplug->f);
             var_values[VAR_ROW    ] = ModPlug_GetCurrentRow    (modplug->f);
 
-            if (av_new_packet(pkt, modplug->fsize) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = av_new_packet(pkt, modplug->fsize)) < 0)
+                return ret;
             pkt->stream_index = 1;
             memset(pkt->data, 0, modplug->fsize);
 
@@ -317,15 +319,14 @@ static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (av_new_packet(pkt, AUDIO_PKT_SIZE) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, AUDIO_PKT_SIZE)) < 0)
+        return ret;
 
     if (modplug->video_stream)
         pkt->pts = pkt->dts = modplug->packet_count++ * modplug->ts_per_packet;
 
     pkt->size = ModPlug_Read(modplug->f, pkt->data, AUDIO_PKT_SIZE);
     if (pkt->size <= 0) {
-        av_packet_unref(pkt);
         return pkt->size == 0 ? AVERROR_EOF : AVERROR(EIO);
     }
     return 0;

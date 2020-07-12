@@ -66,7 +66,7 @@ static av_always_inline void init_cos_tabs_idx(int index)
     double freq = 2*M_PI/m;
     FFTSample *tab = cos_tabs[index];
     for(int i = 0; i <= m/4; i++)
-        tab[i] = cos(i*freq);
+        tab[i] = RESCALE(cos(i*freq));
     for(int i = 1; i < m/4; i++)
         tab[m/2 - i] = tab[i];
 }
@@ -94,10 +94,10 @@ INIT_FF_COS_TABS_FUNC(17, 131072)
 
 static av_cold void ff_init_53_tabs(void)
 {
-    TX_NAME(ff_cos_53)[0] = (FFTComplex){ cos(2 * M_PI / 12), cos(2 * M_PI / 12) };
-    TX_NAME(ff_cos_53)[1] = (FFTComplex){ 0.5, 0.5 };
-    TX_NAME(ff_cos_53)[2] = (FFTComplex){ cos(2 * M_PI /  5), sin(2 * M_PI /  5) };
-    TX_NAME(ff_cos_53)[3] = (FFTComplex){ cos(2 * M_PI / 10), sin(2 * M_PI / 10) };
+    TX_NAME(ff_cos_53)[0] = (FFTComplex){ RESCALE(cos(2 * M_PI / 12)), RESCALE(cos(2 * M_PI / 12)) };
+    TX_NAME(ff_cos_53)[1] = (FFTComplex){ RESCALE(cos(2 * M_PI /  6)), RESCALE(cos(2 * M_PI /  6)) };
+    TX_NAME(ff_cos_53)[2] = (FFTComplex){ RESCALE(cos(2 * M_PI /  5)), RESCALE(sin(2 * M_PI /  5)) };
+    TX_NAME(ff_cos_53)[3] = (FFTComplex){ RESCALE(cos(2 * M_PI / 10)), RESCALE(sin(2 * M_PI / 10)) };
 }
 
 static CosTabsInitOnce cos_tabs_init_once[] = {
@@ -131,81 +131,69 @@ static av_always_inline void fft3(FFTComplex *out, FFTComplex *in,
                                   ptrdiff_t stride)
 {
     FFTComplex tmp[2];
+#ifdef TX_INT32
+    int64_t mtmp[4];
+#endif
 
-    tmp[0].re = in[1].im - in[2].im;
-    tmp[0].im = in[1].re - in[2].re;
-    tmp[1].re = in[1].re + in[2].re;
-    tmp[1].im = in[1].im + in[2].im;
+    BF(tmp[0].re, tmp[1].im, in[1].im, in[2].im);
+    BF(tmp[0].im, tmp[1].re, in[1].re, in[2].re);
 
     out[0*stride].re = in[0].re + tmp[1].re;
     out[0*stride].im = in[0].im + tmp[1].im;
 
-    tmp[0].re *= TX_NAME(ff_cos_53)[0].re;
-    tmp[0].im *= TX_NAME(ff_cos_53)[0].im;
-    tmp[1].re *= TX_NAME(ff_cos_53)[1].re;
-    tmp[1].im *= TX_NAME(ff_cos_53)[1].re;
-
+#ifdef TX_INT32
+    mtmp[0] = (int64_t)TX_NAME(ff_cos_53)[0].re * tmp[0].re;
+    mtmp[1] = (int64_t)TX_NAME(ff_cos_53)[0].im * tmp[0].im;
+    mtmp[2] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].re;
+    mtmp[3] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].im;
+    out[1*stride].re = in[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
+    out[1*stride].im = in[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
+    out[2*stride].re = in[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
+    out[2*stride].im = in[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
+#else
+    tmp[0].re = TX_NAME(ff_cos_53)[0].re * tmp[0].re;
+    tmp[0].im = TX_NAME(ff_cos_53)[0].im * tmp[0].im;
+    tmp[1].re = TX_NAME(ff_cos_53)[1].re * tmp[1].re;
+    tmp[1].im = TX_NAME(ff_cos_53)[1].re * tmp[1].im;
     out[1*stride].re = in[0].re - tmp[1].re + tmp[0].re;
     out[1*stride].im = in[0].im - tmp[1].im - tmp[0].im;
     out[2*stride].re = in[0].re - tmp[1].re - tmp[0].re;
     out[2*stride].im = in[0].im - tmp[1].im + tmp[0].im;
+#endif
 }
 
-#define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                    \
-static av_always_inline void NAME(FFTComplex *out, FFTComplex *in,             \
-                                  ptrdiff_t stride)                            \
-{                                                                              \
-    FFTComplex z0[4], t[6];                                                    \
-                                                                               \
-    t[0].re = in[1].re + in[4].re;                                             \
-    t[0].im = in[1].im + in[4].im;                                             \
-    t[1].im = in[1].re - in[4].re;                                             \
-    t[1].re = in[1].im - in[4].im;                                             \
-    t[2].re = in[2].re + in[3].re;                                             \
-    t[2].im = in[2].im + in[3].im;                                             \
-    t[3].im = in[2].re - in[3].re;                                             \
-    t[3].re = in[2].im - in[3].im;                                             \
-                                                                               \
-    out[D0*stride].re = in[0].re + in[1].re + in[2].re +                       \
-                        in[3].re + in[4].re;                                   \
-    out[D0*stride].im = in[0].im + in[1].im + in[2].im +                       \
-                        in[3].im + in[4].im;                                   \
-                                                                               \
-    t[4].re  = TX_NAME(ff_cos_53)[2].re * t[2].re;                             \
-    t[4].im  = TX_NAME(ff_cos_53)[2].re * t[2].im;                             \
-    t[4].re -= TX_NAME(ff_cos_53)[3].re * t[0].re;                             \
-    t[4].im -= TX_NAME(ff_cos_53)[3].re * t[0].im;                             \
-    t[0].re  = TX_NAME(ff_cos_53)[2].re * t[0].re;                             \
-    t[0].im  = TX_NAME(ff_cos_53)[2].re * t[0].im;                             \
-    t[0].re -= TX_NAME(ff_cos_53)[3].re * t[2].re;                             \
-    t[0].im -= TX_NAME(ff_cos_53)[3].re * t[2].im;                             \
-    t[5].re  = TX_NAME(ff_cos_53)[2].im * t[3].re;                             \
-    t[5].im  = TX_NAME(ff_cos_53)[2].im * t[3].im;                             \
-    t[5].re -= TX_NAME(ff_cos_53)[3].im * t[1].re;                             \
-    t[5].im -= TX_NAME(ff_cos_53)[3].im * t[1].im;                             \
-    t[1].re  = TX_NAME(ff_cos_53)[2].im * t[1].re;                             \
-    t[1].im  = TX_NAME(ff_cos_53)[2].im * t[1].im;                             \
-    t[1].re += TX_NAME(ff_cos_53)[3].im * t[3].re;                             \
-    t[1].im += TX_NAME(ff_cos_53)[3].im * t[3].im;                             \
-                                                                               \
-    z0[0].re = t[0].re - t[1].re;                                              \
-    z0[0].im = t[0].im - t[1].im;                                              \
-    z0[1].re = t[4].re + t[5].re;                                              \
-    z0[1].im = t[4].im + t[5].im;                                              \
-                                                                               \
-    z0[2].re = t[4].re - t[5].re;                                              \
-    z0[2].im = t[4].im - t[5].im;                                              \
-    z0[3].re = t[0].re + t[1].re;                                              \
-    z0[3].im = t[0].im + t[1].im;                                              \
-                                                                               \
-    out[D1*stride].re = in[0].re + z0[3].re;                                   \
-    out[D1*stride].im = in[0].im + z0[0].im;                                   \
-    out[D2*stride].re = in[0].re + z0[2].re;                                   \
-    out[D2*stride].im = in[0].im + z0[1].im;                                   \
-    out[D3*stride].re = in[0].re + z0[1].re;                                   \
-    out[D3*stride].im = in[0].im + z0[2].im;                                   \
-    out[D4*stride].re = in[0].re + z0[0].re;                                   \
-    out[D4*stride].im = in[0].im + z0[3].im;                                   \
+#define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                                       \
+static av_always_inline void NAME(FFTComplex *out, FFTComplex *in,                                \
+                                  ptrdiff_t stride)                                               \
+{                                                                                                 \
+    FFTComplex z0[4], t[6];                                                                       \
+                                                                                                  \
+    BF(t[1].im, t[0].re, in[1].re, in[4].re);                                                     \
+    BF(t[1].re, t[0].im, in[1].im, in[4].im);                                                     \
+    BF(t[3].im, t[2].re, in[2].re, in[3].re);                                                     \
+    BF(t[3].re, t[2].im, in[2].im, in[3].im);                                                     \
+                                                                                                  \
+    out[D0*stride].re = in[0].re + t[0].re + t[2].re;                                             \
+    out[D0*stride].im = in[0].im + t[0].im + t[2].im;                                             \
+                                                                                                  \
+    SMUL(t[4].re, t[0].re, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].re, t[0].re); \
+    SMUL(t[4].im, t[0].im, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].im, t[0].im); \
+    CMUL(t[5].re, t[1].re, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].re, t[1].re); \
+    CMUL(t[5].im, t[1].im, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].im, t[1].im); \
+                                                                                                  \
+    BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                                                     \
+    BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                                                     \
+    BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                                                     \
+    BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                                                     \
+                                                                                                  \
+    out[D1*stride].re = in[0].re + z0[3].re;                                                      \
+    out[D1*stride].im = in[0].im + z0[0].im;                                                      \
+    out[D2*stride].re = in[0].re + z0[2].re;                                                      \
+    out[D2*stride].im = in[0].im + z0[1].im;                                                      \
+    out[D3*stride].re = in[0].re + z0[1].re;                                                      \
+    out[D3*stride].im = in[0].im + z0[2].im;                                                      \
+    out[D4*stride].re = in[0].re + z0[0].re;                                                      \
+    out[D4*stride].im = in[0].im + z0[3].im;                                                      \
 }
 
 DECL_FFT5(fft5,     0,  1,  2,  3,  4)
@@ -298,6 +286,14 @@ static void fft##n(FFTComplex *z)\
     pass(z,TX_NAME(ff_cos_##n),n4/2);\
 }
 
+static void fft2(FFTComplex *z)
+{
+    FFTComplex tmp;
+    BF(tmp.re, z[0].re, z[0].re, z[1].re);
+    BF(tmp.im, z[0].im, z[0].im, z[1].im);
+    z[1] = tmp;
+}
+
 static void fft4(FFTComplex *z)
 {
     FFTSample t1, t2, t3, t4, t5, t6, t7, t8;
@@ -324,7 +320,7 @@ static void fft8(FFTComplex *z)
     BF(t6, z[7].im, z[6].im, -z[7].im);
 
     BUTTERFLIES(z[0],z[2],z[4],z[6]);
-    TRANSFORM(z[1],z[3],z[5],z[7],M_SQRT1_2,M_SQRT1_2);
+    TRANSFORM(z[1],z[3],z[5],z[7],RESCALE(M_SQRT1_2),RESCALE(M_SQRT1_2));
 }
 
 static void fft16(FFTComplex *z)
@@ -338,7 +334,7 @@ static void fft16(FFTComplex *z)
     fft4(z+12);
 
     TRANSFORM_ZERO(z[0],z[4],z[8],z[12]);
-    TRANSFORM(z[2],z[6],z[10],z[14],M_SQRT1_2,M_SQRT1_2);
+    TRANSFORM(z[2],z[6],z[10],z[14],RESCALE(M_SQRT1_2),RESCALE(M_SQRT1_2));
     TRANSFORM(z[1],z[5],z[9],z[13],cos_16_1,cos_16_3);
     TRANSFORM(z[3],z[7],z[11],z[15],cos_16_3,cos_16_1);
 }
@@ -359,8 +355,8 @@ DECL_FFT(65536,32768,16384)
 DECL_FFT(131072,65536,32768)
 
 static void (* const fft_dispatch[])(FFTComplex*) = {
-    fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512, fft1024,
-    fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
+    NULL, fft2, fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512,
+    fft1024, fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
 };
 
 #define DECL_COMP_FFT(N)                                                       \
@@ -371,7 +367,7 @@ static void compound_fft_##N##xM(AVTXContext *s, void *_out,                   \
     FFTComplex *in = _in;                                                      \
     FFTComplex *out = _out;                                                    \
     FFTComplex fft##N##in[N];                                                  \
-    void (*fftp)(FFTComplex *z) = fft_dispatch[av_log2(m) - 2];                \
+    void (*fftp)(FFTComplex *z) = fft_dispatch[av_log2(m)];                    \
                                                                                \
     for (int i = 0; i < m; i++) {                                              \
         for (int j = 0; j < N; j++)                                            \
@@ -395,7 +391,7 @@ static void monolithic_fft(AVTXContext *s, void *_out, void *_in,
 {
     FFTComplex *in = _in;
     FFTComplex *out = _out;
-    int m = s->m, mb = av_log2(m) - 2;
+    int m = s->m, mb = av_log2(m);
     for (int i = 0; i < m; i++)
         out[s->revtab[i]] = in[i];
     fft_dispatch[mb](out);
@@ -410,7 +406,7 @@ static void compound_imdct_##N##xM(AVTXContext *s, void *_dst, void *_src,     \
     const int m = s->m, len8 = N*m >> 1;                                       \
     const int *in_map = s->pfatab, *out_map = in_map + N*m;                    \
     const FFTSample *src = _src, *in1, *in2;                                   \
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];                 \
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];                     \
                                                                                \
     stride /= sizeof(*src); /* To convert it from bytes */                     \
     in1 = src;                                                                 \
@@ -451,7 +447,7 @@ static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
     FFTComplex *exp = s->exptab, tmp, fft##N##in[N];                           \
     const int m = s->m, len4 = N*m, len3 = len4 * 3, len8 = len4 >> 1;         \
     const int *in_map = s->pfatab, *out_map = in_map + N*m;                    \
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];                 \
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];                     \
                                                                                \
     stride /= sizeof(*dst);                                                    \
                                                                                \
@@ -459,11 +455,11 @@ static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
         for (int j = 0; j < N; j++) {                                          \
             const int k = in_map[i*N + j];                                     \
             if (k < len4) {                                                    \
-                tmp.re = -src[ len4 + k] + src[1*len4 - 1 - k];                \
-                tmp.im = -src[ len3 + k] - src[1*len3 - 1 - k];                \
+                tmp.re = FOLD(-src[ len4 + k],  src[1*len4 - 1 - k]);          \
+                tmp.im = FOLD(-src[ len3 + k], -src[1*len3 - 1 - k]);          \
             } else {                                                           \
-                tmp.re = -src[ len4 + k] - src[5*len4 - 1 - k];                \
-                tmp.im =  src[-len4 + k] - src[1*len3 - 1 - k];                \
+                tmp.re = FOLD(-src[ len4 + k], -src[5*len4 - 1 - k]);          \
+                tmp.im = FOLD( src[-len4 + k], -src[1*len3 - 1 - k]);          \
             }                                                                  \
             CMUL(fft##N##in[j].im, fft##N##in[j].re, tmp.re, tmp.im,           \
                  exp[k >> 1].re, exp[k >> 1].im);                              \
@@ -497,7 +493,7 @@ static void monolithic_imdct(AVTXContext *s, void *_dst, void *_src,
     FFTComplex *z = _dst, *exp = s->exptab;
     const int m = s->m, len8 = m >> 1;
     const FFTSample *src = _src, *in1, *in2;
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];
 
     stride /= sizeof(*src);
     in1 = src;
@@ -526,18 +522,18 @@ static void monolithic_mdct(AVTXContext *s, void *_dst, void *_src,
     FFTSample *src = _src, *dst = _dst;
     FFTComplex *exp = s->exptab, tmp, *z = _dst;
     const int m = s->m, len4 = m, len3 = len4 * 3, len8 = len4 >> 1;
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m) - 2];
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];
 
     stride /= sizeof(*dst);
 
     for (int i = 0; i < m; i++) { /* Folding and pre-reindexing */
         const int k = 2*i;
         if (k < len4) {
-            tmp.re = -src[ len4 + k] + src[1*len4 - 1 - k];
-            tmp.im = -src[ len3 + k] - src[1*len3 - 1 - k];
+            tmp.re = FOLD(-src[ len4 + k],  src[1*len4 - 1 - k]);
+            tmp.im = FOLD(-src[ len3 + k], -src[1*len3 - 1 - k]);
         } else {
-            tmp.re = -src[ len4 + k] - src[5*len4 - 1 - k];
-            tmp.im =  src[-len4 + k] - src[1*len3 - 1 - k];
+            tmp.re = FOLD(-src[ len4 + k], -src[5*len4 - 1 - k]);
+            tmp.im = FOLD( src[-len4 + k], -src[1*len3 - 1 - k]);
         }
         CMUL(z[s->revtab[i]].im, z[s->revtab[i]].re, tmp.re, tmp.im,
              exp[i].re, exp[i].im);
@@ -567,8 +563,8 @@ static int gen_mdct_exptab(AVTXContext *s, int len4, double scale)
     scale = sqrt(fabs(scale));
     for (int i = 0; i < len4; i++) {
         const double alpha = M_PI_2 * (i + theta) / len4;
-        s->exptab[i].re = cos(alpha) * scale;
-        s->exptab[i].im = sin(alpha) * scale;
+        s->exptab[i].re = RESCALE(cos(alpha) * scale);
+        s->exptab[i].im = RESCALE(sin(alpha) * scale);
     }
 
     return 0;
@@ -578,8 +574,8 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
                                  enum AVTXType type, int inv, int len,
                                  const void *scale, uint64_t flags)
 {
-    const int is_mdct = type == AV_TX_FLOAT_MDCT || type == AV_TX_DOUBLE_MDCT;
-    int err, n = 1, m = 1, max_ptwo = 1 << (FF_ARRAY_ELEMS(fft_dispatch) + 1);
+    const int is_mdct = ff_tx_type_is_mdct(type);
+    int err, n = 1, m = 1, max_ptwo = 1 << (FF_ARRAY_ELEMS(fft_dispatch) - 1);
 
     if (is_mdct)
         len >>= 1;
@@ -592,10 +588,10 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     CHECK_FACTOR(n, 15, len)
     CHECK_FACTOR(n,  5, len)
     CHECK_FACTOR(n,  3, len)
-#undef CHECK_NPTWO_FACTOR
+#undef CHECK_FACTOR
 
     /* len must be a power of two now */
-    if (!(len & (len - 1)) && len >= 4 && len <= max_ptwo) {
+    if (!(len & (len - 1)) && len >= 2 && len <= max_ptwo) {
         m = len;
         len = 1;
     }
@@ -637,7 +633,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     }
 
     if (is_mdct)
-        return gen_mdct_exptab(s, n*m, *((FFTSample *)scale));
+        return gen_mdct_exptab(s, n*m, *((SCALE_TYPE *)scale));
 
     return 0;
 }

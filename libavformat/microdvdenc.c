@@ -36,7 +36,7 @@ static int microdvd_write_header(struct AVFormatContext *s)
     if (par->extradata && par->extradata_size > 0) {
         avio_write(s->pb, "{DEFAULT}{}", 11);
         avio_write(s->pb, par->extradata, par->extradata_size);
-        avio_flush(s->pb);
+        avio_w8(s->pb, '\n');
     }
 
     avpriv_set_pts_info(s->streams[0], 64, framerate.num, framerate.den);
@@ -51,7 +51,7 @@ static int microdvd_write_packet(AVFormatContext *avf, AVPacket *pkt)
     else
         avio_printf(avf->pb, "{%"PRId64"}", pkt->pts + pkt->duration);
     avio_write(avf->pb, pkt->data, pkt->size);
-    avio_write(avf->pb, "\n", 1);
+    avio_w8(avf->pb, '\n');
     return 0;
 }
 

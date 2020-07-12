@@ -21,6 +21,24 @@
 #ifndef AVCODEC_QSV_INTERNAL_H
 #define AVCODEC_QSV_INTERNAL_H
 
+#include "config.h"
+
+#if CONFIG_VAAPI
+#define AVCODEC_QSV_LINUX_SESSION_HANDLE
+#endif //CONFIG_VAAPI
+
+#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
+#include <stdio.h>
+#include <string.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <fcntl.h>
+#include <va/va.h>
+#include <va/va_drm.h>
+#include "libavutil/hwcontext_vaapi.h"
+#endif
+
 #include <mfx/mfxvideo.h>
 
 #include "libavutil/frame.h"
@@ -64,6 +82,14 @@ typedef struct QSVFrame {
     struct QSVFrame *next;
 } QSVFrame;
 
+typedef struct QSVSession {
+    mfxSession session;
+#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
+    AVBufferRef *va_device_ref;
+    AVHWDeviceContext *va_device_ctx;
+#endif
+} QSVSession;
+
 typedef struct QSVFramesContext {
     AVBufferRef *hw_frames_ctx;
     void *logctx;
@@ -77,6 +103,9 @@ typedef struct QSVFramesContext {
     int  nb_mids;
 } QSVFramesContext;
 
+int ff_qsv_print_iopattern(void *log_ctx, int mfx_iopattern,
+                           const char *extra_string);
+
 /**
  * Convert a libmfx error code into an ffmpeg error code.
  */
@@ -89,21 +118,27 @@ int ff_qsv_print_warning(void *log_ctx, mfxStatus err,
                          const char *warning_string);
 
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
-int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile);
 int ff_qsv_level_to_mfx(enum AVCodecID codec_id, int level);
+
+enum AVPixelFormat ff_qsv_map_fourcc(uint32_t fourcc);
 
 int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc);
 enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type);
 
-int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
-                                 const char *load_plugins);
+enum AVFieldOrder ff_qsv_map_picstruct(int mfx_pic_struct);
+
+int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
+                                 const char *load_plugins, int gpu_copy);
+
+int ff_qsv_close_internal_session(QSVSession *qs);
 
 int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
-                               AVBufferRef *device_ref, const char *load_plugins);
+                               AVBufferRef *device_ref, const char *load_plugins,
+                               int gpu_copy);
 
 int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *session,
                                QSVFramesContext *qsv_frames_ctx,
-                               const char *load_plugins, int opaque);
+                               const char *load_plugins, int opaque, int gpu_copy);
 
 int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame);
 

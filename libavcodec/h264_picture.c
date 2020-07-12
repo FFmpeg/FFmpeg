@@ -27,7 +27,6 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/timer.h"
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
@@ -55,6 +54,7 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 
     av_buffer_unref(&pic->qscale_table_buf);
     av_buffer_unref(&pic->mb_type_buf);
+    av_buffer_unref(&pic->pps_buf);
     for (i = 0; i < 2; i++) {
         av_buffer_unref(&pic->motion_val_buf[i]);
         av_buffer_unref(&pic->ref_index_buf[i]);
@@ -78,12 +78,14 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
 
     dst->qscale_table_buf = av_buffer_ref(src->qscale_table_buf);
     dst->mb_type_buf      = av_buffer_ref(src->mb_type_buf);
-    if (!dst->qscale_table_buf || !dst->mb_type_buf) {
+    dst->pps_buf          = av_buffer_ref(src->pps_buf);
+    if (!dst->qscale_table_buf || !dst->mb_type_buf || !dst->pps_buf) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
     dst->qscale_table = src->qscale_table;
     dst->mb_type      = src->mb_type;
+    dst->pps          = src->pps;
 
     for (i = 0; i < 2; i++) {
         dst->motion_val_buf[i] = av_buffer_ref(src->motion_val_buf[i]);
@@ -121,6 +123,9 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
     dst->recovered     = src->recovered;
     dst->invalid_gap   = src->invalid_gap;
     dst->sei_recovery_frame_cnt = src->sei_recovery_frame_cnt;
+    dst->mb_width      = src->mb_width;
+    dst->mb_height     = src->mb_height;
+    dst->mb_stride     = src->mb_stride;
 
     return 0;
 fail:

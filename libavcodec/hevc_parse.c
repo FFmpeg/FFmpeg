@@ -37,6 +37,8 @@ static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets
 
     for (i = 0; i < pkt.nb_nals; i++) {
         H2645NAL *nal = &pkt.nals[i];
+        if (nal->nuh_layer_id > 0)
+            continue;
 
         /* ignore everything except parameter sets and VCL NALUs */
         switch (nal->type) {

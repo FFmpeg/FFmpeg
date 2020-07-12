@@ -45,48 +45,48 @@
 /* alaw2linear() - Convert an A-law value to 16-bit linear PCM */
 static av_cold int alaw2linear(unsigned char a_val)
 {
-        int t;
-        int seg;
+    int t;
+    int seg;
 
-        a_val ^= 0x55;
+    a_val ^= 0x55;
 
-        t = a_val & QUANT_MASK;
-        seg = ((unsigned)a_val & SEG_MASK) >> SEG_SHIFT;
-        if(seg) t= (t + t + 1 + 32) << (seg + 2);
-        else    t= (t + t + 1     ) << 3;
+    t = a_val & QUANT_MASK;
+    seg = ((unsigned)a_val & SEG_MASK) >> SEG_SHIFT;
+    if(seg) t= (t + t + 1 + 32) << (seg + 2);
+    else    t= (t + t + 1     ) << 3;
 
-        return (a_val & SIGN_BIT) ? t : -t;
+    return (a_val & SIGN_BIT) ? t : -t;
 }
 
 static av_cold int ulaw2linear(unsigned char u_val)
 {
-        int t;
+    int t;
 
-        /* Complement to obtain normal u-law value. */
-        u_val = ~u_val;
+    /* Complement to obtain normal u-law value. */
+    u_val = ~u_val;
 
-        /*
-         * Extract and bias the quantization bits. Then
-         * shift up by the segment number and subtract out the bias.
-         */
-        t = ((u_val & QUANT_MASK) << 3) + BIAS;
-        t <<= ((unsigned)u_val & SEG_MASK) >> SEG_SHIFT;
+    /*
+     * Extract and bias the quantization bits. Then
+     * shift up by the segment number and subtract out the bias.
+     */
+    t = ((u_val & QUANT_MASK) << 3) + BIAS;
+    t <<= ((unsigned)u_val & SEG_MASK) >> SEG_SHIFT;
 
-        return (u_val & SIGN_BIT) ? (BIAS - t) : (t - BIAS);
+    return (u_val & SIGN_BIT) ? (BIAS - t) : (t - BIAS);
 }
 
 static av_cold int vidc2linear(unsigned char u_val)
 {
-        int t;
+    int t;
 
-        /*
-         * Extract and bias the quantization bits. Then
-         * shift up by the segment number and subtract out the bias.
-         */
-        t = (((u_val & VIDC_QUANT_MASK) >> VIDC_QUANT_SHIFT) << 3) + BIAS;
-        t <<= ((unsigned)u_val & VIDC_SEG_MASK) >> VIDC_SEG_SHIFT;
+    /*
+     * Extract and bias the quantization bits. Then
+     * shift up by the segment number and subtract out the bias.
+     */
+    t = (((u_val & VIDC_QUANT_MASK) >> VIDC_QUANT_SHIFT) << 3) + BIAS;
+    t <<= ((unsigned)u_val & VIDC_SEG_MASK) >> VIDC_SEG_SHIFT;
 
-        return (u_val & VIDC_SIGN_BIT) ? (BIAS - t) : (t - BIAS);
+    return (u_val & VIDC_SIGN_BIT) ? (BIAS - t) : (t - BIAS);
 }
 
 #if CONFIG_HARDCODED_TABLES

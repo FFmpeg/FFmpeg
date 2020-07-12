@@ -30,27 +30,26 @@ cextern pw_1023
 %macro ADD_RES_MMX_4_8 0
     mova              m0, [r1]
     mova              m2, [r1+8]
-    pxor              m1, m1
-    pxor              m3, m3
-    psubw             m1, m0
-    psubw             m3, m2
-    packuswb          m0, m2
-    packuswb          m1, m3
 
-    movd              m2, [r0]
+    movd              m1, [r0]
     movd              m3, [r0+r2]
-    punpckldq         m2, m3
-    paddusb           m0, m2
-    psubusb           m0, m1
+    punpcklbw         m1, m4
+    punpcklbw         m3, m4
+
+    paddsw            m0, m1
+    paddsw            m2, m3
+    packuswb          m0, m4
+    packuswb          m2, m4
+
     movd            [r0], m0
-    psrlq             m0, 32
-    movd         [r0+r2], m0
+    movd         [r0+r2], m2
 %endmacro
 
 
 INIT_MMX mmxext
 ; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_4_8, 3, 3, 6
+    pxor              m4, m4
     ADD_RES_MMX_4_8
     add               r1, 16
     lea               r0, [r0+r2*2]
@@ -58,69 +57,70 @@ cglobal hevc_add_residual_4_8, 3, 3, 6
     RET
 
 %macro ADD_RES_SSE_8_8 0
-    pxor              m3, m3
-    mova              m4, [r1]
-    mova              m6, [r1+16]
-    mova              m0, [r1+32]
-    mova              m2, [r1+48]
-    psubw             m5, m3, m4
-    psubw             m7, m3, m6
-    psubw             m1, m3, m0
-    packuswb          m4, m0
-    packuswb          m5, m1
-    psubw             m3, m2
-    packuswb          m6, m2
-    packuswb          m7, m3
-
     movq              m0, [r0]
     movq              m1, [r0+r2]
-    movhps            m0, [r0+r2*2]
-    movhps            m1, [r0+r3]
-    paddusb           m0, m4
-    paddusb           m1, m6
-    psubusb           m0, m5
-    psubusb           m1, m7
+    punpcklbw         m0, m4
+    punpcklbw         m1, m4
+    mova              m2, [r1]
+    mova              m3, [r1+16]
+    paddsw            m0, m2
+    paddsw            m1, m3
+    packuswb          m0, m1
+
+    movq              m2, [r0+r2*2]
+    movq              m3, [r0+r3]
+    punpcklbw         m2, m4
+    punpcklbw         m3, m4
+    mova              m6, [r1+32]
+    mova              m7, [r1+48]
+    paddsw            m2, m6
+    paddsw            m3, m7
+    packuswb          m2, m3
+
     movq            [r0], m0
-    movq         [r0+r2], m1
-    movhps     [r0+2*r2], m0
-    movhps       [r0+r3], m1
+    movhps       [r0+r2], m0
+    movq       [r0+r2*2], m2
+    movhps       [r0+r3], m2
 %endmacro
 
 %macro ADD_RES_SSE_16_32_8 3
-    mova             xm2, [r1+%1]
+    mova              m1, [%2]
+    mova              m2, m1
+    punpcklbw         m1, m0
+    punpckhbw         m2, m0
+    mova             xm5, [r1+%1]
     mova             xm6, [r1+%1+16]
 %if cpuflag(avx2)
-    vinserti128       m2, m2, [r1+%1+32], 1
+    vinserti128       m5, m5, [r1+%1+32], 1
     vinserti128       m6, m6, [r1+%1+48], 1
 %endif
-    psubw             m1, m0, m2
-    psubw             m5, m0, m6
-    packuswb          m2, m6
-    packuswb          m1, m5
+    paddsw            m1, m5
+    paddsw            m2, m6
 
-    mova             xm4, [r1+%1+mmsize*2]
+    mova              m3, [%3]
+    mova              m4, m3
+    punpcklbw         m3, m0
+    punpckhbw         m4, m0
+    mova             xm5, [r1+%1+mmsize*2]
     mova             xm6, [r1+%1+mmsize*2+16]
 %if cpuflag(avx2)
-    vinserti128       m4, m4, [r1+%1+96 ], 1
+    vinserti128       m5, m5, [r1+%1+96], 1
     vinserti128       m6, m6, [r1+%1+112], 1
 %endif
-    psubw             m3, m0, m4
-    psubw             m5, m0, m6
-    packuswb          m4, m6
-    packuswb          m3, m5
+    paddsw            m3, m5
+    paddsw            m4, m6
 
-    paddusb           m2, [%2]
-    paddusb           m4, [%3]
-    psubusb           m2, m1
-    psubusb           m4, m3
-    mova            [%2], m2
-    mova            [%3], m4
+    packuswb          m1, m2
+    packuswb          m3, m4
+    mova            [%2], m1
+    mova            [%3], m3
 %endmacro
 
 
 %macro TRANSFORM_ADD_8 0
 ; void ff_hevc_add_residual_8_8_<opt>(uint8_t *dst, int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_8_8, 3, 4, 8
+    pxor              m4, m4
     lea               r3, [r2*3]
     ADD_RES_SSE_8_8
     add               r1, 64

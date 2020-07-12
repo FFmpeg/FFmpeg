@@ -40,41 +40,50 @@ typedef struct ShufflePlanesContext {
     int copy;
 } ShufflePlanesContext;
 
+static int query_formats(AVFilterContext *ctx)
+{
+    AVFilterFormats *formats = NULL;
+    ShufflePlanesContext *s = ctx->priv;
+    int fmt, ret, i;
+
+    for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        int planes = av_pix_fmt_count_planes(fmt);
+
+        if (!(desc->flags & AV_PIX_FMT_FLAG_PAL) &&
+            !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+            for (i = 0; i < 4; i++) {
+                if (s->map[i] >= planes)
+                    break;
+
+                if ((desc->log2_chroma_h || desc->log2_chroma_w) &&
+                    (i == 1 || i == 2) != (s->map[i] == 1 || s->map[i] == 2))
+                    break;
+            }
+
+            if (i != 4)
+                continue;
+            if ((ret = ff_add_format(&formats, fmt)) < 0) {
+                ff_formats_unref(&formats);
+                return ret;
+            }
+        }
+    }
+
+    return ff_set_common_formats(ctx, formats);
+}
+
 static av_cold int shuffleplanes_config_input(AVFilterLink *inlink)
 {
     AVFilterContext    *ctx = inlink->dst;
     ShufflePlanesContext *s = ctx->priv;
-    const AVPixFmtDescriptor *desc;
     int used[4] = { 0 };
     int i;
 
     s->copy   = 0;
     s->planes = av_pix_fmt_count_planes(inlink->format);
-    desc      = av_pix_fmt_desc_get(inlink->format);
 
     for (i = 0; i < s->planes; i++) {
-        if (s->map[i] >= s->planes) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Non-existing input plane #%d mapped to output plane #%d.\n",
-                   s->map[i], i);
-            return AVERROR(EINVAL);
-        }
-
-        if ((desc->log2_chroma_h || desc->log2_chroma_w) &&
-            (i == 1 || i == 2) != (s->map[i] == 1 || s->map[i] == 2)) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Cannot map between a subsampled chroma plane and a luma "
-                   "or alpha plane.\n");
-            return AVERROR(EINVAL);
-        }
-
-        if ((desc->flags & AV_PIX_FMT_FLAG_PAL ||
-             desc->flags & FF_PSEUDOPAL) &&
-            (i == 1) != (s->map[i] == 1)) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Cannot map between a palette plane and a data plane.\n");
-            return AVERROR(EINVAL);
-        }
         if (used[s->map[i]])
             s->copy = 1;
         used[s->map[i]]++;
@@ -127,10 +136,10 @@ fail:
 #define OFFSET(x) offsetof(ShufflePlanesContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption shuffleplanes_options[] = {
-    { "map0", "Index of the input plane to be used as the first output plane ",  OFFSET(map[0]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 4, FLAGS },
-    { "map1", "Index of the input plane to be used as the second output plane ", OFFSET(map[1]), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 4, FLAGS },
-    { "map2", "Index of the input plane to be used as the third output plane ",  OFFSET(map[2]), AV_OPT_TYPE_INT, { .i64 = 2 }, 0, 4, FLAGS },
-    { "map3", "Index of the input plane to be used as the fourth output plane ", OFFSET(map[3]), AV_OPT_TYPE_INT, { .i64 = 3 }, 0, 4, FLAGS },
+    { "map0", "Index of the input plane to be used as the first output plane ",  OFFSET(map[0]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 3, FLAGS },
+    { "map1", "Index of the input plane to be used as the second output plane ", OFFSET(map[1]), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 3, FLAGS },
+    { "map2", "Index of the input plane to be used as the third output plane ",  OFFSET(map[2]), AV_OPT_TYPE_INT, { .i64 = 2 }, 0, 3, FLAGS },
+    { "map3", "Index of the input plane to be used as the fourth output plane ", OFFSET(map[3]), AV_OPT_TYPE_INT, { .i64 = 3 }, 0, 3, FLAGS },
     { NULL },
 };
 
@@ -142,7 +151,6 @@ static const AVFilterPad shuffleplanes_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = shuffleplanes_config_input,
         .filter_frame     = shuffleplanes_filter_frame,
-        .get_video_buffer = ff_null_get_video_buffer,
     },
     { NULL },
 };
@@ -160,6 +168,7 @@ AVFilter ff_vf_shuffleplanes = {
     .description  = NULL_IF_CONFIG_SMALL("Shuffle video planes."),
     .priv_size    = sizeof(ShufflePlanesContext),
     .priv_class   = &shuffleplanes_class,
+    .query_formats = query_formats,
     .inputs       = shuffleplanes_inputs,
     .outputs      = shuffleplanes_outputs,
     .flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,

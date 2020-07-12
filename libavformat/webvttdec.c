@@ -60,7 +60,7 @@ static int64_t read_ts(const char *s)
 static int webvtt_read_header(AVFormatContext *s)
 {
     WebVTTContext *webvtt = s->priv_data;
-    AVBPrint header, cue;
+    AVBPrint cue;
     int res = 0;
     AVStream *st = avformat_new_stream(s, NULL);
 
@@ -71,7 +71,6 @@ static int webvtt_read_header(AVFormatContext *s)
     st->codecpar->codec_id   = AV_CODEC_ID_WEBVTT;
     st->disposition |= webvtt->kind;
 
-    av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&cue,    0, AV_BPRINT_SIZE_UNLIMITED);
 
     for (;;) {
@@ -126,7 +125,7 @@ static int webvtt_read_header(AVFormatContext *s)
             break;
 
         /* optional cue settings */
-        p += strcspn(p, "\n\t ");
+        p += strcspn(p, "\n\r\t ");
         while (*p == '\t' || *p == ' ')
             p++;
         settings = p;
@@ -165,8 +164,9 @@ static int webvtt_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &webvtt->q);
 
 end:
+    if (res < 0)
+        ff_subtitles_queue_clean(&webvtt->q);
     av_bprint_finalize(&cue,    NULL);
-    av_bprint_finalize(&header, NULL);
     return res;
 }
 

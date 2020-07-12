@@ -25,6 +25,7 @@
 #include "libavcodec/get_bits.h"
 
 #include "avformat.h"
+#include "internal.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 
@@ -147,15 +148,9 @@ static av_cold int hevc_parse_sdp_line(AVFormatContext *ctx, int st_index,
                                 hevc_sdp_parse_fmtp_config);
         if (hevc_data->vps_size || hevc_data->sps_size ||
             hevc_data->pps_size || hevc_data->sei_size) {
-            av_freep(&par->extradata);
             par->extradata_size = hevc_data->vps_size + hevc_data->sps_size +
                                   hevc_data->pps_size + hevc_data->sei_size;
-            par->extradata = av_malloc(par->extradata_size +
-                                       AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!par->extradata) {
-                ret = AVERROR(ENOMEM);
-                par->extradata_size = 0;
-            } else {
+            if ((ret = ff_alloc_extradata(par, par->extradata_size)) >= 0) {
                 int pos = 0;
                 memcpy(par->extradata + pos, hevc_data->vps, hevc_data->vps_size);
                 pos += hevc_data->vps_size;
@@ -164,8 +159,6 @@ static av_cold int hevc_parse_sdp_line(AVFormatContext *ctx, int st_index,
                 memcpy(par->extradata + pos, hevc_data->pps, hevc_data->pps_size);
                 pos += hevc_data->pps_size;
                 memcpy(par->extradata + pos, hevc_data->sei, hevc_data->sei_size);
-                pos += hevc_data->sei_size;
-                memset(par->extradata + pos, 0, AV_INPUT_BUFFER_PADDING_SIZE);
             }
 
             av_freep(&hevc_data->vps);

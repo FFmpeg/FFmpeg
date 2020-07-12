@@ -222,6 +222,16 @@ av_warn_unused_result
 AVFilterFormats *ff_all_formats(enum AVMediaType type);
 
 /**
+ * Construct a formats list containing all pixel formats with certain
+ * properties
+ */
+av_warn_unused_result
+int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned rej);
+
+//* format is software, non-planar with sub-sampling
+#define FF_PIX_FMT_FLAG_SW_FLAT_SUB (1 << 24)
+
+/**
  * Construct a formats list containing all planar sample formats.
  */
 av_warn_unused_result

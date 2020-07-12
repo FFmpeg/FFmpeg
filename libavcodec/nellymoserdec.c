@@ -143,7 +143,6 @@ static int decode_tag(AVCodecContext *avctx, void *data,
 {
     AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
-    const uint8_t *side=av_packet_get_side_data(avpkt, 'F', NULL);
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;
     int blocks, i, ret;
@@ -160,15 +159,6 @@ static int decode_tag(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_WARNING, "Leftover bytes: %d.\n",
                buf_size % NELLY_BLOCK_LEN);
     }
-    /* Normal numbers of blocks for sample rates:
-     *  8000 Hz - 1
-     * 11025 Hz - 2
-     * 16000 Hz - 3
-     * 22050 Hz - 4
-     * 44100 Hz - 8
-     */
-    if(side && blocks>1 && avctx->sample_rate%11025==0 && (1<<((side[0]>>2)&3)) == blocks)
-        avctx->sample_rate= 11025*(blocks/2);
 
     /* get output buffer */
     frame->nb_samples = NELLY_SAMPLES * blocks;

@@ -23,6 +23,7 @@
 #include "av1_parse.h"
 #include "cbs.h"
 #include "cbs_av1.h"
+#include "internal.h"
 #include "parser.h"
 
 typedef struct AV1ParseContext {
@@ -44,6 +45,10 @@ static const enum AVPixelFormat pix_fmts_12bit[2][2] = {
     { AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12 },
 };
 
+static const enum AVPixelFormat pix_fmts_rgb[3] = {
+    AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
+};
+
 static int av1_parser_parse(AVCodecParserContext *ctx,
                             AVCodecContext *avctx,
                             const uint8_t **out_data, int *out_size,
@@ -52,6 +57,8 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
     AV1ParseContext *s = ctx->priv_data;
     CodedBitstreamFragment *td = &s->temporal_unit;
     CodedBitstreamAV1Context *av1 = s->cbc->priv_data;
+    AV1RawSequenceHeader *seq;
+    AV1RawColorConfig *color;
     int ret;
 
     *out_data = data;
@@ -71,7 +78,7 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
             av_log(avctx, AV_LOG_WARNING, "Failed to parse extradata.\n");
         }
 
-        ff_cbs_fragment_reset(s->cbc, td);
+        ff_cbs_fragment_reset(td);
     }
 
     ret = ff_cbs_read(s->cbc, td, data, size);
@@ -85,11 +92,12 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         goto end;
     }
 
+    seq = av1->sequence_header;
+    color = &seq->color_config;
+
     for (int i = 0; i < td->nb_units; i++) {
         CodedBitstreamUnit *unit = &td->units[i];
         AV1RawOBU *obu = unit->content;
-        AV1RawSequenceHeader *seq = av1->sequence_header;
-        AV1RawColorConfig *color = &seq->color_config;
         AV1RawFrameHeader *frame;
         int frame_type;
 
@@ -98,6 +106,9 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         else if (unit->type == AV1_OBU_FRAME_HEADER)
             frame = &obu->obu.frame_header;
         else
+            continue;
+
+        if (obu->header.spatial_id > 0)
             continue;
 
         if (frame->show_existing_frame) {
@@ -123,9 +134,6 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
             ctx->key_frame = frame_type == AV1_FRAME_KEY;
         }
 
-        avctx->profile = seq->seq_profile;
-        avctx->level   = seq->seq_level_idx[0];
-
         switch (frame_type) {
         case AV1_FRAME_KEY:
         case AV1_FRAME_INTRA_ONLY:
@@ -139,26 +147,51 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
             break;
         }
         ctx->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
-
-        switch (av1->bit_depth) {
-        case 8:
-            ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY8
-                                             : pix_fmts_8bit [color->subsampling_x][color->subsampling_y];
-            break;
-        case 10:
-            ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY10
-                                             : pix_fmts_10bit[color->subsampling_x][color->subsampling_y];
-            break;
-        case 12:
-            ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY12
-                                             : pix_fmts_12bit[color->subsampling_x][color->subsampling_y];
-            break;
-        }
-        av_assert2(ctx->format != AV_PIX_FMT_NONE);
     }
 
+    switch (av1->bit_depth) {
+    case 8:
+        ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY8
+                                         : pix_fmts_8bit [color->subsampling_x][color->subsampling_y];
+        break;
+    case 10:
+        ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY10
+                                         : pix_fmts_10bit[color->subsampling_x][color->subsampling_y];
+        break;
+    case 12:
+        ctx->format = color->mono_chrome ? AV_PIX_FMT_GRAY12
+                                         : pix_fmts_12bit[color->subsampling_x][color->subsampling_y];
+        break;
+    }
+    av_assert2(ctx->format != AV_PIX_FMT_NONE);
+
+    if (!color->subsampling_x && !color->subsampling_y &&
+        color->matrix_coefficients       == AVCOL_SPC_RGB &&
+        color->color_primaries           == AVCOL_PRI_BT709 &&
+        color->transfer_characteristics  == AVCOL_TRC_IEC61966_2_1)
+        ctx->format = pix_fmts_rgb[color->high_bitdepth + color->twelve_bit];
+
+    avctx->pix_fmt = ctx->format;
+
+    avctx->profile = seq->seq_profile;
+    avctx->level   = seq->seq_level_idx[0];
+
+    avctx->colorspace = (enum AVColorSpace) color->matrix_coefficients;
+    avctx->color_primaries = (enum AVColorPrimaries) color->color_primaries;
+    avctx->color_trc = (enum AVColorTransferCharacteristic) color->transfer_characteristics;
+    avctx->color_range = color->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+    if (ctx->width != avctx->width || ctx->height != avctx->height) {
+        ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
+        if (ret < 0)
+            goto end;
+    }
+
+    if (avctx->framerate.num)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
+
 end:
-    ff_cbs_fragment_reset(s->cbc, td);
+    ff_cbs_fragment_reset(td);
 
     s->cbc->log_ctx = NULL;
 
@@ -192,7 +225,7 @@ static void av1_parser_close(AVCodecParserContext *ctx)
 {
     AV1ParseContext *s = ctx->priv_data;
 
-    ff_cbs_fragment_free(s->cbc, &s->temporal_unit);
+    ff_cbs_fragment_free(&s->temporal_unit);
     ff_cbs_close(&s->cbc);
 }
 

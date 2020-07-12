@@ -105,12 +105,14 @@ It takes a single signed native-endian 16-bit raw audio stream of at most 2 chan
 
 @table @option
 @item silence_threshold
-Threshold for detecting silence, ranges from -1 to 32767. -1 disables silence detection and
-is required for use with the AcoustID service. Default is -1.
+Threshold for detecting silence. Range is from -1 to 32767, where -1 disables
+silence detection. Silence detection can only be used with version 3 of the
+algorithm.
+Silence detection must be disabled for use with the AcoustID service. Default is -1.
 
 @item algorithm
-Version of algorithm to fingerprint with. Range is 0 to 4. Version 2 requires that silence
-detection be enabled. Default is 1.
+Version of algorithm to fingerprint with. Range is 0 to 4.
+Version 3 enables silence detection. Default is 1.
 
 @item fp_format
 Format to output the fingerprint as. Accepts the following options:
@@ -234,8 +236,10 @@ This is a deprecated option to set the segment length in microseconds, use @var{
 @item seg_duration @var{duration}
 Set the segment length in seconds (fractional value can be set). The value is
 treated as average segment duration when @var{use_template} is enabled and
-@var{use_timeline} is disabled and as minimum segment duration for all the other
-use cases.
+@item frag_duration @var{duration}
+Set the length in seconds of fragments within segments (fractional value can be set).
+@item frag_type @var{type}
+Set the type of interval for fragmentation.
 @item window_size @var{size}
 Set the maximum number of segments kept in the manifest.
 @item extra_window_size @var{size}
@@ -263,8 +267,10 @@ Override User-Agent field in HTTP header. Applicable only for HTTP output.
 @item http_persistent @var{http_persistent}
 Use persistent HTTP connections. Applicable only for HTTP output.
 @item hls_playlist @var{hls_playlist}
-Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
+Generate HLS playlist files as well. The master playlist is generated with the filename @var{hls_master_name}.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
+@item hls_master_name @var{file_name}
+HLS master playlist name. Default is "master.m3u8".
 @item streaming @var{streaming}
 Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
 mode, each frame will be a moof fragment which forms a chunk.
@@ -276,9 +282,14 @@ To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be use
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
 
-Optional syntax is "id=x,descriptor=descriptor_string,streams=a,b,c id=y,streams=d,e" and so on, descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015.
+Optional syntax is "id=x,seg_duration=x,frag_duration=x,frag_type=type,descriptor=descriptor_string,streams=a,b,c id=y,seg_duration=y,frag_type=type,streams=d,e" and so on,
+descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015.
 For example, -adaptation_sets "id=0,descriptor=<SupplementalProperty schemeIdUri=\"urn:mpeg:dash:srd:2014\" value=\"0,0,0,1,1,2,2\"/>,streams=v".
 Please note that descriptor string should be a self-closing xml tag.
+seg_duration, frag_duration and frag_type override the global option values for each adaptation set.
+For example, -adaptation_sets "id=0,seg_duration=2,frag_duration=1,frag_type=duration,streams=v id=1,seg_duration=2,frag_type=none,streams=a"
+type_id marks an adaptation set as containing streams meant to be used for Trick Mode for the referenced adaptation set.
+For example, -adaptation_sets "id=0,seg_duration=2,frag_type=none,streams=0 id=1,seg_duration=10,frag_type=none,trick_id=0,streams=1"
 @item timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
 @item index_correction @var{index_correction}
@@ -324,8 +335,40 @@ This option will also try to comply with the above open spec, till Apple's spec 
 Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
 This is an experimental feature.
 
+@item ldash @var{ldash}
+Enable Low-latency Dash by constraining the presence and values of some elements.
+
 @item master_m3u8_publish_rate @var{master_m3u8_publish_rate}
 Publish master playlist repeatedly every after specified number of segment intervals.
+
+@item write_prft @var{write_prft}
+Write Producer Reference Time elements on supported streams. This also enables writing
+prft boxes in the underlying muxer. Applicable only when the @var{utc_url} option is enabled.
+It's set to auto by default, in which case the muxer will attempt to enable it only in modes
+that require it.
+
+@item mpd_profile @var{mpd_profile}
+Set one or more manifest profiles.
+
+@item http_opts @var{http_opts}
+A :-separated list of key=value options to pass to the underlying HTTP
+protocol. Applicable only for HTTP output.
+
+@item target_latency @var{target_latency}
+Set an intended target latency in seconds (fractional value can be set) for serving. Applicable only when @var{streaming} and @var{write_prft} options are enabled.
+This is an informative fields clients can use to measure the latency of the service.
+
+@item min_playback_rate @var{min_playback_rate}
+Set the minimum playback rate indicated as appropriate for the purposes of automatically
+adjusting playback latency and buffer occupancy during normal playback by clients.
+
+@item max_playback_rate @var{max_playback_rate}
+Set the maximum playback rate indicated as appropriate for the purposes of automatically
+adjusting playback latency and buffer occupancy during normal playback by clients.
+
+@item update_period @var{update_period}
+ Set the mpd update period ,for dynamic content.
+ The unit is second.
 
 @end table
 
@@ -611,6 +654,9 @@ Set the starting sequence numbers according to @var{start_number} option value.
 @item epoch
 The start number will be the seconds since epoch (1970-01-01 00:00:00)
 
+@item epoch_us
+The start number will be the microseconds since epoch (1970-01-01 00:00:00)
+
 @item datetime
 The start number will be based on the current date/time as YYYYmmddHHMMSS. e.g. 20161231235759.
 
@@ -807,6 +853,9 @@ fmp4 files may be used in HLS version 7 and above.
 @item hls_fmp4_init_filename @var{filename}
 Set filename to the fragment files header file, default filename is @file{init.mp4}.
 
+@item hls_fmp4_init_resend
+Resend init file after m3u8 file refresh every time, default is @var{0}.
+
 When @code{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
 the position of variant stream index in the generated init file names.
@@ -902,8 +951,8 @@ serving up segments can be configured to reject requests to *.tmp to prevent acc
 before they have been added to the m3u8 playlist. This flag also affects how m3u8 playlist files are created.
 If this flag is set, all playlist files will written into temporary file and renamed after they are complete, similarly as segments are handled.
 But playlists with @code{file} protocol and with type (@code{hls_playlist_type}) other than @code{vod}
-are always written into temporary file regardles of this flag. Master playlist files (@code{master_pl_name}), if any, with @code{file} protocol,
-are always written into temporary file regardles of this flag if @code{master_pl_publish_rate} value is other than zero.
+are always written into temporary file regardless of this flag. Master playlist files (@code{master_pl_name}), if any, with @code{file} protocol,
+are always written into temporary file regardless of this flag if @code{master_pl_publish_rate} value is other than zero.
 
 @end table
 
@@ -1032,6 +1081,21 @@ and they are mapped to the one video only variant streams with audio group name
 have and language is named ENG, the other audio language is named CHN.
 
 By default, a single hls variant containing all the encoded streams is created.
+
+@example
+ffmpeg -y -i input_with_subtitle.mkv \
+ -b:v:0 5250k -c:v h264 -pix_fmt yuv420p -profile:v main -level 4.1 \
+ -b:a:0 256k \
+ -c:s webvtt -c:a mp2 -ar 48000 -ac 2 -map 0:v -map 0:a:0 -map 0:s:0 \
+ -f hls -var_stream_map "v:0,a:0,s:0,sgroup:subtitle" \
+ -master_pl_name master.m3u8 -t 300 -hls_time 10 -hls_init_time 4 -hls_list_size \
+ 10 -master_pl_publish_rate 10  -hls_flags \
+ delete_segments+discont_start+split_by_time ./tmp/video.m3u8
+@end example
+
+This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=SUBTITLES} in
+the master playlist with webvtt subtitle group name 'subtitle'. Please make sure
+the input file has one text subtitle stream at least.
 
 @item cc_stream_map
 Map string which specifies different closed captions groups and their
@@ -1167,6 +1231,37 @@ The pattern "img%%-%d.jpg" will specify a sequence of filenames of the
 form @file{img%-1.jpg}, @file{img%-2.jpg}, ..., @file{img%-10.jpg},
 etc.
 
+The image muxer supports the .Y.U.V image file format. This format is
+special in that that each image frame consists of three files, for
+each of the YUV420P components. To read or write this image file format,
+specify the name of the '.Y' file. The muxer will automatically open the
+'.U' and '.V' files as required.
+
+@subsection Options
+
+@table @option
+@item frame_pts
+If set to 1, expand the filename with pts from pkt->pts.
+Default value is 0.
+
+@item start_number
+Start the sequence from the specified number. Default value is 1.
+
+@item update
+If set to 1, the filename will always be interpreted as just a
+filename, not a pattern, and the corresponding file will be continuously
+overwritten with new images. Default value is 0.
+
+@item strftime
+If set to 1, expand the filename with date and time information from
+@code{strftime()}. Default value is 0.
+
+@item protocol_opts @var{options_list}
+Set protocol options as a :-separated list of key=value parameters. Values
+containing the @code{:} special character must be escaped.
+
+@end table
+
 @subsection Examples
 
 The following example shows how to use @command{ffmpeg} for creating a
@@ -1207,31 +1302,11 @@ You can set the file name with current frame's PTS:
 ffmpeg -f v4l2 -r 1 -i /dev/video0 -copyts -f image2 -frame_pts true %d.jpg"
 @end example
 
-@subsection Options
-
-@table @option
-@item frame_pts
-If set to 1, expand the filename with pts from pkt->pts.
-Default value is 0.
-
-@item start_number
-Start the sequence from the specified number. Default value is 1.
-
-@item update
-If set to 1, the filename will always be interpreted as just a
-filename, not a pattern, and the corresponding file will be continuously
-overwritten with new images. Default value is 0.
-
-@item strftime
-If set to 1, expand the filename with date and time information from
-@code{strftime()}. Default value is 0.
-@end table
-
-The image muxer supports the .Y.U.V image file format. This format is
-special in that that each image frame consists of three files, for
-each of the YUV420P components. To read or write this image file format,
-specify the name of the '.Y' file. The muxer will automatically open the
-'.U' and '.V' files as required.
+A more complex example is to publish contents of your desktop directly to a
+WebDAV server every second:
+@example
+ffmpeg -f x11grab -framerate 1 -i :0.0 -q:v 6 -update 1 -protocol_opts method=PUT http://example.com/desktop.jpg
+@end example
 
 @section matroska
 
@@ -1245,7 +1320,8 @@ The recognized metadata settings in this muxer are:
 
 @table @option
 @item title
-Set title name provided to a single track.
+Set title name provided to a single track. This gets mapped to
+the FileDescription element for a stream written as attachment.
 
 @item language
 Specify the language of the track in the Matroska languages form.
@@ -1312,11 +1388,31 @@ index at the beginning of the file.
 
 If this option is set to a non-zero value, the muxer will reserve a given amount
 of space in the file header and then try to write the cues there when the muxing
-finishes. If the available space does not suffice, muxing will fail. A safe size
-for most use cases should be about 50kB per hour of video.
+finishes. If the reserved space does not suffice, no Cues will be written, the
+file will be finalized and writing the trailer will return an error.
+A safe size for most use cases should be about 50kB per hour of video.
 
 Note that cues are only written if the output is seekable and this option will
 have no effect if it is not.
+@item default_mode
+This option controls how the FlagDefault of the output tracks will be set.
+It influences which tracks players should play by default. The default mode
+is @samp{infer}.
+@table @samp
+@item infer
+In this mode, for each type of track (audio, video or subtitle), if there is
+a track with disposition default of this type, then the first such track
+(i.e. the one with the lowest index) will be marked as default; if no such
+track exists, the first track of this type will be marked as default instead
+(if existing). This ensures that the default flag is set in a sensible way even
+if the input originated from containers that lack the concept of default tracks.
+@item infer_no_subs
+This mode is the same as infer except that if no subtitle track with
+disposition default exists, no subtitle track will be marked as default.
+@item passthrough
+In this mode the FlagDefault is set if and only if the AV_DISPOSITION_DEFAULT
+flag is set in the disposition of the corresponding stream.
+@end table
 @end table
 
 @anchor{md5}
@@ -1466,13 +1562,6 @@ point on IIS with this muxer. Example:
 ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
 @end example
 
-@subsection Audible AAX
-
-Audible AAX files are encrypted M4B files, and they can be decrypted by specifying a 4 byte activation secret.
-@example
-ffmpeg -activation_bytes 1CEB00DA -i test.aax -vn -c:a copy output.mp4
-@end example
-
 @section mp3
 
 The MP3 muxer writes a raw MP3 stream with the following optional features:
@@ -1580,11 +1669,14 @@ Advanced Codec Digital HDTV service.
 @end table
 
 @item mpegts_pmt_start_pid @var{integer}
-Set the first PID for PMT. Default is @code{0x1000}. Max is @code{0x1f00}.
+Set the first PID for PMTs. Default is @code{0x1000}, minimum is @code{0x0020},
+maximum is @code{0x1ffa}. This option has no effect in m2ts mode where the PMT
+PID is fixed @code{0x0100}.
 
 @item mpegts_start_pid @var{integer}
-Set the first PID for data packets. Default is @code{0x0100}. Max is
-@code{0x0f00}.
+Set the first PID for elementary streams. Default is @code{0x0100}, minimum is
+@code{0x0020}, maximum is @code{0x1ffa}. This option has no effect in m2ts mode
+where the elementary stream PIDs are fixed.
 
 @item mpegts_m2ts_mode @var{boolean}
 Enable m2ts mode if set to @code{1}. Default value is @code{-1} which
@@ -1611,10 +1703,6 @@ Conform to System B (DVB) instead of System A (ATSC).
 Mark the initial packet of each stream as discontinuity.
 @end table
 
-@item resend_headers @var{integer}
-Reemit PAT/PMT before writing the next packet. This option is deprecated:
-use @option{mpegts_flags} instead.
-
 @item mpegts_copyts @var{boolean}
 Preserve original timestamps, if value is set to @code{1}. Default value
 is @code{-1}, which results in shifting timestamps so that they start from 0.
@@ -1623,14 +1711,16 @@ is @code{-1}, which results in shifting timestamps so that they start from 0.
 Omit the PES packet length for video packets. Default is @code{1} (true).
 
 @item pcr_period @var{integer}
-Override the default PCR retransmission time in milliseconds. Ignored if
-variable muxrate is selected. Default is @code{20}.
+Override the default PCR retransmission time in milliseconds. Default is
+@code{-1} which means that the PCR interval will be determined automatically:
+20 ms is used for CBR streams, the highest multiple of the frame duration which
+is less than 100 ms is used for VBR streams.
 
-@item pat_period @var{double}
-Maximum time in seconds between PAT/PMT tables.
+@item pat_period @var{duration}
+Maximum time in seconds between PAT/PMT tables. Default is @code{0.1}.
 
-@item sdt_period @var{double}
-Maximum time in seconds between SDT tables.
+@item sdt_period @var{duration}
+Maximum time in seconds between SDT tables. Default is @code{0.5}.
 
 @item tables_version @var{integer}
 Set PAT, PMT and SDT version (default @code{0}, valid values are from 0 to 31, inclusively).
@@ -2066,6 +2156,53 @@ Specify whether to remove all fragments when finished. Default 0 (do not remove)
 
 @end table
 
+@anchor{streamhash}
+@section streamhash
+
+Per stream hash testing format.
+
+This muxer computes and prints a cryptographic hash of all the input frames,
+on a per-stream basis. This can be used for equality checks without having
+to do a complete binary comparison.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. Timestamps
+are ignored. It uses the SHA-256 cryptographic hash function by default,
+but supports several other algorithms.
+
+The output of the muxer consists of one line per stream of the form:
+@var{streamindex},@var{streamtype},@var{algo}=@var{hash}, where
+@var{streamindex} is the index of the mapped stream, @var{streamtype} is a
+single character indicating the type of stream, @var{algo} is a short string
+representing the hash function used, and @var{hash} is a hexadecimal number
+representing the computed hash.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the input converted to raw audio and
+video, and store it in the file @file{out.sha256}:
+@example
+ffmpeg -i INPUT -f streamhash out.sha256
+@end example
+
+To print an MD5 hash to stdout use the command:
+@example
+ffmpeg -i INPUT -f streamhash -hash md5 -
+@end example
+
+See also the @ref{hash} and @ref{framehash} muxers.
+
 @anchor{fifo}
 @section fifo
 
@@ -2143,6 +2280,11 @@ certain (usually permanent) errors the recovery is not attempted even when
 @item restart_with_keyframe @var{bool}
 Specify whether to wait for the keyframe after recovering from
 queue overflow or failure. This option is set to 0 (false) by default.
+
+@item timeshift @var{duration}
+Buffer the specified amount of packets and delay writing the output. Note that
+@var{queue_size} must be big enough to store the packets for timeshift. At the
+end of the input the fifo buffer is flushed at realtime speed.
 
 @end table
 

@@ -91,7 +91,7 @@ int ff_boxblur_eval_filter_params(AVFilterLink *inlink,
                                  NULL, NULL, NULL, NULL, NULL, 0, ctx); \
     comp->radius = res;                                                 \
     if (ret < 0) {                                                      \
-        av_log(NULL, AV_LOG_ERROR,                                      \
+        av_log(ctx, AV_LOG_ERROR,                                      \
                "Error when evaluating " #comp " radius expression '%s'\n", expr); \
         return ret;                                                     \
     }

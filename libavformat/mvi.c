@@ -45,6 +45,7 @@ static int read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *ast, *vst;
     unsigned int version, frames_count, msecs_per_frame, player_version;
+    int ret;
 
     ast = avformat_new_stream(s, NULL);
     if (!ast)
@@ -54,8 +55,8 @@ static int read_header(AVFormatContext *s)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    if (ff_alloc_extradata(vst->codecpar, 2))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(vst->codecpar, 2)) < 0)
+        return ret;
 
     version                  = avio_r8(pb);
     vst->codecpar->extradata[0] = avio_r8(pb);

@@ -271,6 +271,7 @@ typedef enum {
   MATROSKA_TRACK_TYPE_COMPLEX  = 0x3,
   MATROSKA_TRACK_TYPE_LOGO     = 0x10,
   MATROSKA_TRACK_TYPE_SUBTITLE = 0x11,
+  MATROSKA_TRACK_TYPE_BUTTONS  = 0x12,
   MATROSKA_TRACK_TYPE_CONTROL  = 0x20,
   MATROSKA_TRACK_TYPE_METADATA = 0x21,
 } MatroskaTrackType;
@@ -285,13 +286,13 @@ typedef enum {
 typedef enum {
     MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED = 0,
     MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED   = 1,
-    MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE  = 2
+    MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE  = 2,
 } MatroskaVideoInterlaceFlag;
 
 typedef enum {
     MATROSKA_VIDEO_FIELDORDER_PROGRESSIVE  = 0,
-    MATROSKA_VIDEO_FIELDORDER_UNDETERMINED = 2,
     MATROSKA_VIDEO_FIELDORDER_TT           = 1,
+    MATROSKA_VIDEO_FIELDORDER_UNDETERMINED = 2,
     MATROSKA_VIDEO_FIELDORDER_BB           = 6,
     MATROSKA_VIDEO_FIELDORDER_TB           = 9,
     MATROSKA_VIDEO_FIELDORDER_BT           = 14,
@@ -361,8 +362,6 @@ typedef struct CodecTags{
 
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecTags ff_webm_codec_tags[];
-extern const CodecMime ff_mkv_mime_tags[];
-extern const CodecMime ff_mkv_image_mime_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];
 extern const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREOMODE_TYPE_NB];
 extern const char * const ff_matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_PLANE_COUNT];

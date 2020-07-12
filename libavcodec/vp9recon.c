@@ -572,6 +572,16 @@ static av_always_inline void inter_recon(VP9TileData *td, int bytesperpixel)
     VP9Block *b = td->b;
     int row = td->row, col = td->col;
 
+    if (s->mvscale[b->ref[0]][0] == REF_INVALID_SCALE ||
+        (b->comp && s->mvscale[b->ref[1]][0] == REF_INVALID_SCALE)) {
+        if (!s->td->error_info) {
+            s->td->error_info = AVERROR_INVALIDDATA;
+            av_log(NULL, AV_LOG_ERROR, "Bitstream not supported, "
+                                       "reference frame has invalid dimensions\n");
+        }
+        return;
+    }
+
     if (s->mvscale[b->ref[0]][0] || (b->comp && s->mvscale[b->ref[1]][0])) {
         if (bytesperpixel == 1) {
             inter_pred_scaled_8bpp(td);

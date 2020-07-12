@@ -41,6 +41,7 @@
 #include "mpeg12data.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "profiles.h"
 
 static const uint8_t svcd_scan_offset_placeholder[] = {
     0x10, 0x0E, 0x00, 0x80, 0x81, 0x00, 0x80,
@@ -139,16 +140,17 @@ static int find_frame_rate_index(MpegEncContext *s)
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
+    int ret;
     MpegEncContext *s = avctx->priv_data;
 
-    if (ff_mpv_encode_init(avctx) < 0)
-        return -1;
+    if ((ret = ff_mpv_encode_init(avctx)) < 0)
+        return ret;
 
     if (find_frame_rate_index(s) < 0) {
         if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
                    avctx->time_base.den, avctx->time_base.num);
-            return -1;
+            return AVERROR(EINVAL);
         } else {
             av_log(avctx, AV_LOG_INFO,
                    "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
@@ -159,23 +161,23 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->profile == FF_PROFILE_UNKNOWN) {
         if (avctx->level != FF_LEVEL_UNKNOWN) {
             av_log(avctx, AV_LOG_ERROR, "Set profile and level\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         /* Main or 4:2:2 */
-        avctx->profile = s->chroma_format == CHROMA_420 ? 4 : 0;
+        avctx->profile = s->chroma_format == CHROMA_420 ? FF_PROFILE_MPEG2_MAIN : FF_PROFILE_MPEG2_422;
     }
 
     if (avctx->level == FF_LEVEL_UNKNOWN) {
-        if (avctx->profile == 0) {                  /* 4:2:2 */
+        if (avctx->profile == FF_PROFILE_MPEG2_422) {   /* 4:2:2 */
             if (avctx->width <= 720 && avctx->height <= 608)
                 avctx->level = 5;                   /* Main */
             else
                 avctx->level = 2;                   /* High */
         } else {
-            if (avctx->profile != 1 && s->chroma_format != CHROMA_420) {
+            if (avctx->profile != FF_PROFILE_MPEG2_HIGH && s->chroma_format != CHROMA_420) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if (avctx->width <= 720 && avctx->height <= 576)
                 avctx->level = 8;                   /* Main */
@@ -205,7 +207,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->drop_frame_timecode && s->frame_rate_index != 4) {
         av_log(avctx, AV_LOG_ERROR,
                "Drop frame time code only allowed with 1001/30000 fps\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 #if FF_API_PRIVATE_OPT
@@ -321,7 +323,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_header(s, EXT_START_CODE);
             put_bits(&s->pb, 4, 1);                 // seq ext
 
-            put_bits(&s->pb, 1, s->avctx->profile == 0); // escx 1 for 4:2:2 profile
+            put_bits(&s->pb, 1, s->avctx->profile == FF_PROFILE_MPEG2_422); // escx 1 for 4:2:2 profile
 
             put_bits(&s->pb, 3, s->avctx->profile); // profile
             put_bits(&s->pb, 4, s->avctx->level);   // level
@@ -1134,7 +1136,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 #define COMMON_OPTS                                                           \
     { "gop_timecode",        "MPEG GOP Timecode in hh:mm:ss[:;.]ff format. Overrides timecode_frame_start.",   \
-      OFFSET(tc_opt_str), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, VE },\
+      OFFSET(tc_opt_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE },\
     { "intra_vlc",           "Use MPEG-2 intra VLC table.",                   \
       OFFSET(intra_vlc_format),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "drop_frame_timecode", "Timecode is in drop frame format.",             \
@@ -1166,6 +1168,7 @@ static const AVOption mpeg2_options[] = {
     {     "mac",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_MAC        },  0, 0, VE, "video_format" },
     {     "unspecified",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_UNSPECIFIED},  0, 0, VE, "video_format" },
     FF_MPV_COMMON_OPTS
+    FF_MPEG2_PROFILE_OPTS
     { NULL },
 };
 
@@ -1193,6 +1196,7 @@ AVCodec ff_mpeg1video_encoder = {
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_NONE },
     .capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class           = &mpeg1_class,
 };
 
@@ -1210,5 +1214,6 @@ AVCodec ff_mpeg2video_encoder = {
                                                            AV_PIX_FMT_YUV422P,
                                                            AV_PIX_FMT_NONE },
     .capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class           = &mpeg2_class,
 };

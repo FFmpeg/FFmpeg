@@ -277,8 +277,8 @@ audio track.
 
 @item list_devices
 If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}. Alternatively you can use the @code{-sources}
-option of ffmpeg to list the available input devices.
+Defaults to @option{false}. This option is deprecated, please use the
+@code{-sources} option of ffmpeg to list the available input devices.
 
 @item list_formats
 If set to @option{true}, print a list of supported formats and exit.
@@ -291,11 +291,6 @@ Note that there is a FourCC @option{'pal '} that can also be used
 as @option{pal} (3 letters).
 Default behavior is autodetection of the input video format, if the hardware
 supports it.
-
-@item bm_v210
-This is a deprecated option, you can use @option{raw_format} instead.
-If set to @samp{1}, video is captured in 10 bit v210 instead
-of uyvy422. Not all Blackmagic devices support this option.
 
 @item raw_format
 Set the pixel format of the captured video.
@@ -395,6 +390,20 @@ Either sync could go wrong by 1 frame or in a rarer case
 @option{timestamp_align} seconds.
 Defaults to @samp{0}.
 
+@item wait_for_tc (@emph{bool})
+Drop frames till a frame with timecode is received. Sometimes serial timecode
+isn't received with the first input frame. If that happens, the stored stream
+timecode will be inaccurate. If this option is set to @option{true}, input frames
+are dropped till a frame with timecode is received.
+Option @var{timecode_format} must be specified.
+Defaults to @option{false}.
+
+@item enable_klv(@emph{bool})
+If set to @option{true}, extracts KLV data from VANC and outputs KLV packets.
+KLV VANC packets are joined based on MID and PSC fields and aggregated into
+one KLV packet.
+Defaults to @option{false}.
+
 @end table
 
 @subsection Examples
@@ -404,7 +413,7 @@ Defaults to @samp{0}.
 @item
 List input devices:
 @example
-ffmpeg -f decklink -list_devices 1 -i dummy
+ffmpeg -sources decklink
 @end example
 
 @item
@@ -422,7 +431,7 @@ ffmpeg -format_code Hi50 -f decklink -i 'Intensity Pro' -c:a copy -c:v copy outp
 @item
 Capture video clip at 1080i50 10 bit:
 @example
-ffmpeg -bm_v210 1 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -c:a copy -c:v copy output.avi
+ffmpeg -raw_format yuv422p10 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -c:a copy -c:v copy output.avi
 @end example
 
 @item
@@ -1524,7 +1533,7 @@ ffmpeg -f x11grab -follow_mouse centered -show_region 1 -framerate 25 -video_siz
 @end example
 
 @item video_size
-Set the video frame size. Default value is @code{vga}.
+Set the video frame size. Default is the full desktop.
 
 @item grab_x
 @item grab_y

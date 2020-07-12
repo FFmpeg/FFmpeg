@@ -18,6 +18,18 @@
 
 #include "tx_priv.h"
 
+int ff_tx_type_is_mdct(enum AVTXType type)
+{
+    switch (type) {
+    case AV_TX_FLOAT_MDCT:
+    case AV_TX_DOUBLE_MDCT:
+    case AV_TX_INT32_MDCT:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /* Calculates the modular multiplicative inverse, not fast, replace */
 static av_always_inline int mulinv(int n, int m)
 {
@@ -35,11 +47,10 @@ int ff_tx_gen_compound_mapping(AVTXContext *s)
     const int n     = s->n;
     const int m     = s->m;
     const int inv   = s->inv;
-    const int type  = s->type;
     const int len   = n*m;
     const int m_inv = mulinv(m, n);
     const int n_inv = mulinv(n, m);
-    const int mdct  = type == AV_TX_FLOAT_MDCT || type == AV_TX_DOUBLE_MDCT;
+    const int mdct  = ff_tx_type_is_mdct(s->type);
 
     if (!(s->pfatab = av_malloc(2*len*sizeof(*s->pfatab))))
         return AVERROR(ENOMEM);
@@ -126,6 +137,11 @@ av_cold int av_tx_init(AVTXContext **ctx, av_tx_fn *tx, enum AVTXType type,
     case AV_TX_DOUBLE_FFT:
     case AV_TX_DOUBLE_MDCT:
         if ((err = ff_tx_init_mdct_fft_double(s, tx, type, inv, len, scale, flags)))
+            goto fail;
+        break;
+    case AV_TX_INT32_FFT:
+    case AV_TX_INT32_MDCT:
+        if ((err = ff_tx_init_mdct_fft_int32(s, tx, type, inv, len, scale, flags)))
             goto fail;
         break;
     default:

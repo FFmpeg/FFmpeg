@@ -89,7 +89,7 @@ static int flic_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned char header[FLIC_HEADER_SIZE];
     AVStream *st, *ast;
-    int speed;
+    int speed, ret;
     int magic_number;
     unsigned char preamble[FLIC_PREAMBLE_SIZE];
 
@@ -125,8 +125,8 @@ static int flic_read_header(AVFormatContext *s)
     }
 
     /* send over the whole 128-byte FLIC header */
-    if (ff_alloc_extradata(st->codecpar, FLIC_HEADER_SIZE))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, FLIC_HEADER_SIZE)) < 0)
+        return ret;
     memcpy(st->codecpar->extradata, header, FLIC_HEADER_SIZE);
 
     /* peek at the preamble to detect TFTD videos - they seem to always start with an audio chunk */
@@ -175,9 +175,8 @@ static int flic_read_header(AVFormatContext *s)
         avio_seek(pb, 12, SEEK_SET);
 
         /* send over abbreviated FLIC header chunk */
-        av_freep(&st->codecpar->extradata);
-        if (ff_alloc_extradata(st->codecpar, 12))
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(st->codecpar, 12)) < 0)
+            return ret;
         memcpy(st->codecpar->extradata, header, 12);
 
     } else if (magic_number == FLIC_FILE_MAGIC_1) {
@@ -216,10 +215,9 @@ static int flic_read_packet(AVFormatContext *s,
         magic = AV_RL16(&preamble[4]);
 
         if (((magic == FLIC_CHUNK_MAGIC_1) || (magic == FLIC_CHUNK_MAGIC_2)) && size > FLIC_PREAMBLE_SIZE) {
-            if (av_new_packet(pkt, size)) {
-                ret = AVERROR(EIO);
-                break;
-            }
+            if ((ret = av_new_packet(pkt, size)) < 0)
+                return ret;
+
             pkt->stream_index = flic->video_stream_index;
             pkt->pts = flic->frame_number++;
             pkt->pos = avio_tell(pb);
@@ -227,15 +225,12 @@ static int flic_read_packet(AVFormatContext *s,
             ret = avio_read(pb, pkt->data + FLIC_PREAMBLE_SIZE,
                 size - FLIC_PREAMBLE_SIZE);
             if (ret != size - FLIC_PREAMBLE_SIZE) {
-                av_packet_unref(pkt);
                 ret = AVERROR(EIO);
             }
             packet_read = 1;
         } else if (magic == FLIC_TFTD_CHUNK_AUDIO) {
-            if (av_new_packet(pkt, size)) {
-                ret = AVERROR(EIO);
-                break;
-            }
+            if ((ret = av_new_packet(pkt, size)) < 0)
+                return ret;
 
             /* skip useless 10B sub-header (yes, it's not accounted for in the chunk header) */
             avio_skip(pb, 10);
@@ -245,8 +240,8 @@ static int flic_read_packet(AVFormatContext *s,
             ret = avio_read(pb, pkt->data, size);
 
             if (ret != size) {
-                av_packet_unref(pkt);
                 ret = AVERROR(EIO);
+                break;
             }
 
             packet_read = 1;

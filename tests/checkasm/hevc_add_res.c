@@ -42,31 +42,42 @@
             AV_WN16A(buf + j * 2, rnd() & 0x3FF); \
     } while (0)
 
-static void check_add_res(HEVCDSPContext h, int bit_depth)
+static void compare_add_res(int size, ptrdiff_t stride, int overflow_test)
 {
-    int i;
     LOCAL_ALIGNED_32(int16_t, res0, [32 * 32]);
     LOCAL_ALIGNED_32(int16_t, res1, [32 * 32]);
     LOCAL_ALIGNED_32(uint8_t, dst0, [32 * 32 * 2]);
     LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
 
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *res, ptrdiff_t stride);
+
+    randomize_buffers(res0, size);
+    randomize_buffers2(dst0, size);
+    if (overflow_test)
+        res0[0] = 0x8000;
+    memcpy(res1, res0, sizeof(*res0) * size);
+    memcpy(dst1, dst0, sizeof(int16_t) * size);
+
+    call_ref(dst0, res0, stride);
+    call_new(dst1, res1, stride);
+    if (memcmp(dst0, dst1, size))
+        fail();
+    bench_new(dst1, res1, stride);
+}
+
+static void check_add_res(HEVCDSPContext h, int bit_depth)
+{
+    int i;
+
     for (i = 2; i <= 5; i++) {
         int block_size = 1 << i;
         int size = block_size * block_size;
         ptrdiff_t stride = block_size << (bit_depth > 8);
-        declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *res, ptrdiff_t stride);
-
-        randomize_buffers(res0, size);
-        randomize_buffers2(dst0, size);
-        memcpy(res1, res0, sizeof(*res0) * size);
-        memcpy(dst1, dst0, sizeof(int16_t) * size);
 
         if (check_func(h.add_residual[i - 2], "hevc_add_res_%dx%d_%d", block_size, block_size, bit_depth)) {
-            call_ref(dst0, res0, stride);
-            call_new(dst1, res1, stride);
-            if (memcmp(dst0, dst1, size))
-                fail();
-            bench_new(dst1, res1, stride);
+            compare_add_res(size, stride, 0);
+            // overflow test for res = -32768
+            compare_add_res(size, stride, 1);
         }
     }
 }

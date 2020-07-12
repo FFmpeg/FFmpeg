@@ -59,6 +59,11 @@ enum MXFFrameLayout {
     SegmentedFrame,
 };
 
+typedef struct MXFContentPackageRate {
+    int rate;
+    AVRational tb;
+} MXFContentPackageRate;
+
 typedef struct KLVPacket {
     UID key;
     int64_t offset;
@@ -82,18 +87,12 @@ typedef struct MXFCodecUL {
     MXFWrappingIndicatorType wrapping_indicator_type;
 } MXFCodecUL;
 
-typedef struct {
-    struct AVRational time_base;
-    int samples_per_frame[6];
-} MXFSamplesPerFrame;
-
 extern const MXFCodecUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
 extern const MXFCodecUL ff_mxf_pixel_format_uls[];
 extern const MXFCodecUL ff_mxf_codec_tag_uls[];
 
 int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *pix_fmt);
-const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s, AVRational time_base);
 int ff_mxf_get_content_package_rate(AVRational time_base);
 
 

@@ -36,7 +36,7 @@ typedef struct AIFFOutputContext {
     int64_t frames;
     int64_t ssnd;
     int audio_stream_idx;
-    AVPacketList *pict_list;
+    AVPacketList *pict_list, *pict_list_end;
     int write_id3v2;
     int id3v2_version;
 } AIFFOutputContext;
@@ -49,10 +49,7 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
     AVIOContext *pb = s->pb;
     AVPacketList *pict_list = aiff->pict_list;
 
-    if (!pb->seekable & AVIO_SEEKABLE_NORMAL)
-        return 0;
-
-    if (!s->metadata && !aiff->pict_list)
+    if (!s->metadata && !s->nb_chapters && !aiff->pict_list)
         return 0;
 
     avio_wl32(pb, MKTAG('I', 'D', '3', ' '));
@@ -125,7 +122,7 @@ static int aiff_write_header(AVFormatContext *s)
 
     /* First verify if format is ok */
     if (!par->codec_tag)
-        return -1;
+        return AVERROR(EINVAL);
     if (par->codec_tag != MKTAG('N','O','N','E'))
         aifc = 1;
 
@@ -138,7 +135,7 @@ static int aiff_write_header(AVFormatContext *s)
     if (aifc) { // compressed audio
         if (!par->block_align) {
             av_log(s, AV_LOG_ERROR, "block align not set\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         /* Version chunk */
         ffio_wfourcc(pb, "FVER");
@@ -169,7 +166,7 @@ static int aiff_write_header(AVFormatContext *s)
         par->bits_per_coded_sample = av_get_bits_per_sample(par->codec_id);
     if (!par->bits_per_coded_sample) {
         av_log(s, AV_LOG_ERROR, "could not compute bits per sample\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if (!par->block_align)
         par->block_align = (par->bits_per_coded_sample * par->channels) >> 3;
@@ -202,9 +199,6 @@ static int aiff_write_header(AVFormatContext *s)
     avpriv_set_pts_info(s->streams[aiff->audio_stream_idx], 64, 1,
                         s->streams[aiff->audio_stream_idx]->codecpar->sample_rate);
 
-    /* Data is starting here */
-    avio_flush(pb);
-
     return 0;
 }
 
@@ -215,9 +209,6 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == aiff->audio_stream_idx)
         avio_write(pb, pkt->data, pkt->size);
     else {
-        int ret;
-        AVPacketList *pict_list, *last;
-
         if (s->streams[pkt->stream_index]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
             return 0;
 
@@ -229,24 +220,8 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (s->streams[pkt->stream_index]->nb_frames >= 1)
             return 0;
 
-        pict_list = av_mallocz(sizeof(AVPacketList));
-        if (!pict_list)
-            return AVERROR(ENOMEM);
-
-        ret = av_packet_ref(&pict_list->pkt, pkt);
-        if (ret < 0) {
-            av_freep(&pict_list);
-            return ret;
-        }
-
-        if (!aiff->pict_list)
-            aiff->pict_list = pict_list;
-        else {
-            last = aiff->pict_list;
-            while (last->next)
-                last = last->next;
-            last->next = pict_list;
-        }
+        return ff_packet_list_put(&aiff->pict_list, &aiff->pict_list_end,
+                                  pkt, FF_PACKETLIST_FLAG_REF_PACKET);
     }
 
     return 0;
@@ -254,10 +229,9 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int aiff_write_trailer(AVFormatContext *s)
 {
-    int ret;
+    int ret = 0;
     AVIOContext *pb = s->pb;
     AIFFOutputContext *aiff = s->priv_data;
-    AVPacketList *pict_list = aiff->pict_list;
     AVCodecParameters *par = s->streams[aiff->audio_stream_idx]->codecpar;
 
     /* Chunks sizes must be even */
@@ -289,18 +263,16 @@ static int aiff_write_trailer(AVFormatContext *s)
         file_size = avio_tell(pb);
         avio_seek(pb, aiff->form, SEEK_SET);
         avio_wb32(pb, file_size - aiff->form - 4);
-
-        avio_flush(pb);
     }
 
-    while (pict_list) {
-        AVPacketList *next = pict_list->next;
-        av_packet_unref(&pict_list->pkt);
-        av_freep(&pict_list);
-        pict_list = next;
-    }
+    return ret;
+}
 
-    return 0;
+static void aiff_deinit(AVFormatContext *s)
+{
+    AIFFOutputContext *aiff = s->priv_data;
+
+    ff_packet_list_free(&aiff->pict_list, &aiff->pict_list_end);
 }
 
 #define OFFSET(x) offsetof(AIFFOutputContext, x)
@@ -331,6 +303,7 @@ AVOutputFormat ff_aiff_muxer = {
     .write_header      = aiff_write_header,
     .write_packet      = aiff_write_packet,
     .write_trailer     = aiff_write_trailer,
+    .deinit            = aiff_deinit,
     .codec_tag         = (const AVCodecTag* const []){ ff_codec_aiff_tags, 0 },
     .priv_class        = &aiff_muxer_class,
 };

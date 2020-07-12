@@ -65,8 +65,7 @@ static int mmsh_close(URLContext *h)
 {
     MMSHContext *mmsh = (MMSHContext *)h->priv_data;
     MMSContext *mms   = &mmsh->mms;
-    if (mms->mms_hd)
-        ffurl_closep(&mms->mms_hd);
+    ffurl_closep(&mms->mms_hd);
     av_freep(&mms->streams);
     av_freep(&mms->asf_header);
     return 0;
@@ -265,7 +264,7 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
     }
 
     // close the socket and then reopen it for sending the second play request.
-    ffurl_close(mms->mms_hd);
+    ffurl_closep(&mms->mms_hd);
     memset(headers, 0, sizeof(headers));
     if ((err = ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
                            &h->interrupt_callback)) < 0) {

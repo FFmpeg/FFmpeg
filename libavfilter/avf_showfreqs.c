@@ -195,7 +195,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fft_data)
         return AVERROR(ENOMEM);
     s->avg_data = av_calloc(s->nb_channels, sizeof(*s->avg_data));
-    if (!s->fft_data)
+    if (!s->avg_data)
         return AVERROR(ENOMEM);
     for (i = 0; i < s->nb_channels; i++) {
         s->fft_data[i] = av_calloc(s->win_size, sizeof(**s->fft_data));
@@ -475,6 +475,7 @@ static int activate(AVFilterContext *ctx)
         av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
         if (s->pts == AV_NOPTS_VALUE)
             s->pts = in->pts;
+        av_frame_free(&in);
     }
 
     if (av_audio_fifo_size(s->fifo) >= s->win_size) {

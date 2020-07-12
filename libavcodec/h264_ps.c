@@ -104,14 +104,14 @@ static void remove_sps(H264ParamSets *s, int id)
     av_buffer_unref(&s->sps_list[id]);
 }
 
-static inline int decode_hrd_parameters(GetBitContext *gb, AVCodecContext *avctx,
+static inline int decode_hrd_parameters(GetBitContext *gb, void *logctx,
                                         SPS *sps)
 {
     int cpb_count, i;
     cpb_count = get_ue_golomb_31(gb) + 1;
 
     if (cpb_count > 32U) {
-        av_log(avctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
+        av_log(logctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
         return AVERROR_INVALIDDATA;
     }
 
@@ -130,7 +130,7 @@ static inline int decode_hrd_parameters(GetBitContext *gb, AVCodecContext *avctx
     return 0;
 }
 
-static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx,
+static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
                                         SPS *sps)
 {
     int aspect_ratio_info_present_flag;
@@ -146,7 +146,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
         } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h264_pixel_aspect)) {
             sps->sar = ff_h264_pixel_aspect[aspect_ratio_idc];
         } else {
-            av_log(avctx, AV_LOG_ERROR, "illegal aspect ratio\n");
+            av_log(logctx, AV_LOG_ERROR, "illegal aspect ratio\n");
             return AVERROR_INVALIDDATA;
         }
     } else {
@@ -181,12 +181,13 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
     /* chroma_location_info_present_flag */
     if (get_bits1(gb)) {
         /* chroma_sample_location_type_top_field */
-        avctx->chroma_sample_location = get_ue_golomb(gb) + 1;
+        sps->chroma_location = get_ue_golomb(gb) + 1;
         get_ue_golomb(gb);  /* chroma_sample_location_type_bottom_field */
-    }
+    } else
+        sps->chroma_location = AVCHROMA_LOC_LEFT;
 
     if (show_bits1(gb) && get_bits_left(gb) < 10) {
-        av_log(avctx, AV_LOG_WARNING, "Truncated VUI\n");
+        av_log(logctx, AV_LOG_WARNING, "Truncated VUI (%d)\n", get_bits_left(gb));
         return 0;
     }
 
@@ -195,7 +196,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
         unsigned num_units_in_tick = get_bits_long(gb, 32);
         unsigned time_scale        = get_bits_long(gb, 32);
         if (!num_units_in_tick || !time_scale) {
-            av_log(avctx, AV_LOG_ERROR,
+            av_log(logctx, AV_LOG_ERROR,
                    "time_scale/num_units_in_tick invalid or unsupported (%u/%u)\n",
                    time_scale, num_units_in_tick);
             sps->timing_info_present_flag = 0;
@@ -208,11 +209,11 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
 
     sps->nal_hrd_parameters_present_flag = get_bits1(gb);
     if (sps->nal_hrd_parameters_present_flag)
-        if (decode_hrd_parameters(gb, avctx, sps) < 0)
+        if (decode_hrd_parameters(gb, logctx, sps) < 0)
             return AVERROR_INVALIDDATA;
     sps->vcl_hrd_parameters_present_flag = get_bits1(gb);
     if (sps->vcl_hrd_parameters_present_flag)
-        if (decode_hrd_parameters(gb, avctx, sps) < 0)
+        if (decode_hrd_parameters(gb, logctx, sps) < 0)
             return AVERROR_INVALIDDATA;
     if (sps->nal_hrd_parameters_present_flag ||
         sps->vcl_hrd_parameters_present_flag)
@@ -237,7 +238,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
 
         if (sps->num_reorder_frames > 16U
             /* max_dec_frame_buffering || max_dec_frame_buffering > 16 */) {
-            av_log(avctx, AV_LOG_ERROR,
+            av_log(logctx, AV_LOG_ERROR,
                    "Clipping illegal num_reorder_frames %d\n",
                    sps->num_reorder_frames);
             sps->num_reorder_frames = 16;
@@ -323,7 +324,6 @@ void ff_h264_ps_uninit(H264ParamSets *ps)
     for (i = 0; i < MAX_PPS_COUNT; i++)
         av_buffer_unref(&ps->pps_list[i]);
 
-    av_buffer_unref(&ps->sps_ref);
     av_buffer_unref(&ps->pps_ref);
 
     ps->pps = NULL;
@@ -579,7 +579,8 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     if (get_bits_left(gb) < 0) {
-        av_log(avctx, ignore_truncation ? AV_LOG_WARNING : AV_LOG_ERROR,
+        av_log_once(avctx, ignore_truncation ? AV_LOG_WARNING : AV_LOG_ERROR, AV_LOG_DEBUG,
+                    &ps->overread_warning_printed[sps->vui_parameters_present_flag],
                "Overread %s by %d bits\n", sps->vui_parameters_present_flag ? "VUI" : "SPS", -get_bits_left(gb));
         if (!ignore_truncation)
             goto fail;
@@ -736,6 +737,15 @@ static int more_rbsp_data_in_pps(const SPS *sps, void *logctx)
     return 1;
 }
 
+static void pps_free(void *opaque, uint8_t *data)
+{
+    PPS *pps = (PPS*)data;
+
+    av_buffer_unref(&pps->sps_ref);
+
+    av_freep(&data);
+}
+
 int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                                          H264ParamSets *ps, int bit_length)
 {
@@ -752,10 +762,15 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         return AVERROR_INVALIDDATA;
     }
 
-    pps_buf = av_buffer_allocz(sizeof(*pps));
-    if (!pps_buf)
+    pps = av_mallocz(sizeof(*pps));
+    if (!pps)
         return AVERROR(ENOMEM);
-    pps = (PPS*)pps_buf->data;
+    pps_buf = av_buffer_create((uint8_t*)pps, sizeof(*pps),
+                               pps_free, NULL, 0);
+    if (!pps_buf) {
+        av_freep(&pps);
+        return AVERROR(ENOMEM);
+    }
 
     pps->data_size = gb->buffer_end - gb->buffer;
     if (pps->data_size > sizeof(pps->data)) {
@@ -773,7 +788,14 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    sps = (const SPS*)ps->sps_list[pps->sps_id]->data;
+    pps->sps_ref = av_buffer_ref(ps->sps_list[pps->sps_id]);
+    if (!pps->sps_ref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    pps->sps = (const SPS*)pps->sps_ref->data;
+    sps      = pps->sps;
+
     if (sps->bit_depth_luma > 14) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid luma bit depth=%d\n",
@@ -793,7 +815,9 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     pps->slice_group_count = get_ue_golomb(gb) + 1;
     if (pps->slice_group_count > 1) {
         pps->mb_slice_group_map_type = get_ue_golomb(gb);
-        av_log(avctx, AV_LOG_ERROR, "FMO not supported\n");
+        avpriv_report_missing_feature(avctx, "FMO");
+        ret = AVERROR_PATCHWELCOME;
+        goto fail;
     }
     pps->ref_count[0] = get_ue_golomb(gb) + 1;
     pps->ref_count[1] = get_ue_golomb(gb) + 1;

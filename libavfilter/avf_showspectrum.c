@@ -695,16 +695,19 @@ static int draw_legend(AVFilterContext *ctx, int samples)
                                  inlink->channel_layout);
 
     text = av_asprintf("%d Hz | %s", inlink->sample_rate, chlayout_str);
+    if (!text)
+        return AVERROR(ENOMEM);
 
     drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
     drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
+    av_freep(&text);
     if (s->stop) {
-        char *text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
+        text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
+        if (!text)
+            return AVERROR(ENOMEM);
         drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, 3, text, 0);
         av_freep(&text);
     }
-
-    av_freep(&text);
 
     dst = s->outpicref->data[0] + (s->start_y - 1) * s->outpicref->linesize[0] + s->start_x - 1;
     for (x = 0; x < s->w + 1; x++)
@@ -766,6 +769,8 @@ static int draw_legend(AVFilterContext *ctx, int samples)
         for (x = 0; x < s->w && s->single_pic; x+=80) {
             float seconds = x * spp / inlink->sample_rate;
             char *units = get_time(ctx, seconds, x);
+            if (!units)
+                return AVERROR(ENOMEM);
 
             drawtext(s->outpicref, s->start_x + x - 4 * strlen(units), s->h + s->start_y + 6, units, 0);
             drawtext(s->outpicref, s->start_x + x - 4 * strlen(units), s->start_y - 12, units, 0);
@@ -822,6 +827,8 @@ static int draw_legend(AVFilterContext *ctx, int samples)
         for (y = 0; y < s->h && s->single_pic; y+=40) {
             float seconds = y * spp / inlink->sample_rate;
             char *units = get_time(ctx, seconds, x);
+            if (!units)
+                return AVERROR(ENOMEM);
 
             drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, s->start_y + y - 4, units, 0);
             av_free(units);
@@ -1358,8 +1365,12 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         s->xpos = 0;
     if (!s->single_pic && (s->sliding != FULLFRAME || s->xpos == 0)) {
         if (s->old_pts < outpicref->pts) {
+            AVFrame *clone;
+
             if (s->legend) {
                 char *units = get_time(ctx, insamples->pts /(float)inlink->sample_rate, x);
+                if (!units)
+                    return AVERROR(ENOMEM);
 
                 if (s->orientation == VERTICAL) {
                     for (y = 0; y < 10; y++) {
@@ -1384,7 +1395,10 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
                 av_free(units);
             }
             s->old_pts = outpicref->pts;
-            ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
+            clone = av_frame_clone(s->outpicref);
+            if (!clone)
+                return AVERROR(ENOMEM);
+            ret = ff_filter_frame(outlink, clone);
             if (ret < 0)
                 return ret;
             return 0;
@@ -1420,7 +1434,8 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (s->outpicref && av_audio_fifo_size(s->fifo) >= s->win_size) {
+    if (s->outpicref && (av_audio_fifo_size(s->fifo) >= s->win_size ||
+        ff_outlink_get_status(inlink))) {
         AVFrame *fin = ff_get_audio_buffer(inlink, s->win_size);
         if (!fin)
             return AVERROR(ENOMEM);
@@ -1448,7 +1463,7 @@ static int activate(AVFilterContext *ctx)
 
         av_frame_free(&fin);
         av_audio_fifo_drain(s->fifo, s->hop_size);
-        if (ret <= 0)
+        if (ret <= 0 && !ff_outlink_get_status(inlink))
             return ret;
     }
 
@@ -1479,15 +1494,18 @@ static int activate(AVFilterContext *ctx)
     }
 
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
-    if (ff_outlink_frame_wanted(outlink) && av_audio_fifo_size(s->fifo) < s->win_size) {
+    if (av_audio_fifo_size(s->fifo) >= s->win_size ||
+        ff_outlink_get_status(inlink) == AVERROR_EOF) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
+
+    if (ff_outlink_frame_wanted(outlink) && av_audio_fifo_size(s->fifo) < s->win_size &&
+        ff_outlink_get_status(inlink) != AVERROR_EOF) {
         ff_inlink_request_frame(inlink);
         return 0;
     }
 
-    if (av_audio_fifo_size(s->fifo) >= s->win_size) {
-        ff_filter_set_ready(ctx, 10);
-        return 0;
-    }
     return FFERROR_NOT_READY;
 }
 

@@ -50,7 +50,6 @@ hiegrep ';;'              'double ;' $*
 hiegrep2 '\b_[a-zA-Z0-9_]{1,}' '__(asm|attribute)([^a-zA-Z0-9]|$)' 'reserved identifer' $*
 hiegrep '//[-/<\* ]*$'    'empty comment' $*
 hiegrep '/\*[-<\* ]*\*/'  'empty comment' $*
-hiegrep 'for *\( *'"$ERE_PRITYP"' '  'not gcc 2.95 compatible' $*
 hiegrep '(static|inline|const) *\1[^_a-zA-Z]'  'duplicate word' $*
 hiegrep 'INIT_VLC_USE_STATIC' 'forbidden ancient vlc type' $*
 hiegrep '=[-+\*\&] ' 'looks like compound assignment' $*

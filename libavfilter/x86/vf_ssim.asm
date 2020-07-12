@@ -169,8 +169,9 @@ SSIM_4X4_LINE 8
 %endif
 
 INIT_XMM sse4
-cglobal ssim_end_line, 3, 3, 6, sum0, sum1, w
+cglobal ssim_end_line, 3, 3, 7, sum0, sum1, w
     pxor              m0, m0
+    pxor              m6, m6
 .loop:
     mova              m1, [sum0q+mmsize*0]
     mova              m2, [sum0q+mmsize*1]
@@ -214,34 +215,46 @@ cglobal ssim_end_line, 3, 3, 6, sum0, sum1, w
     mulps             m4, m5
     mulps             m3, m1
     divps             m4, m3                    ; ssim_endl
-    addps             m0, m4                    ; ssim
+    mova              m5, m4
+    cvtps2pd          m3, m5
+    movhlps           m5, m5
+    cvtps2pd          m5, m5
+    addpd             m0, m3                    ; ssim
+    addpd             m6, m5                    ; ssim
     add            sum0q, mmsize*4
     add            sum1q, mmsize*4
     sub               wd, 4
     jg .loop
 
-    ; subps the ones we added too much
+    ; subpd the ones we added too much
     test              wd, wd
     jz .end
     add               wd, 4
+    test              wd, 3
+    jz .skip3
     test              wd, 2
     jz .skip2
-    psrldq            m4, 8
-.skip2:
     test              wd, 1
     jz .skip1
-    psrldq            m4, 4
+.skip3:
+    psrldq            m5, 8
+    subpd             m6, m5
+    jmp .end
+.skip2:
+    psrldq            m5, 8
+    subpd             m6, m5
+    subpd             m0, m3
+    jmp .end
 .skip1:
-    subps             m0, m4
+    psrldq            m3, 16
+    subpd             m6, m5
 
 .end:
+    addpd             m0, m6
     movhlps           m4, m0
-    addps             m0, m4
-    movss             m4, m0
-    shufps            m0, m0, 1
-    addss             m0, m4
+    addpd             m0, m4
 %if ARCH_X86_32
-    movss            r0m, m0
-    fld             r0mp
+    movsd            r0m, m0
+    fld        qword r0m
 %endif
     RET

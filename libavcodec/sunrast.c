@@ -72,7 +72,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
 
     if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF) {
         av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     switch (depth) {
@@ -100,13 +100,17 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (ret < 0)
         return ret;
 
+    /* scanlines are aligned on 16 bit boundaries */
+    len  = (depth * w + 7) >> 3;
+    alen = len + (len & 1);
+
+    if (buf_end - buf < maplength + (len * h) * 3 / 256)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     p->pict_type = AV_PICTURE_TYPE_I;
-
-    if (buf_end - buf < maplength)
-        return AVERROR_INVALIDDATA;
 
     if (depth > 8 && maplength) {
         av_log(avctx, AV_LOG_WARNING, "useless colormap found or file is corrupted, trying to recover\n");
@@ -132,13 +136,9 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR(ENOMEM);
         stride = (w + 15 >> 3) * depth;
     } else {
-    ptr    = p->data[0];
-    stride = p->linesize[0];
+        ptr    = p->data[0];
+        stride = p->linesize[0];
     }
-
-    /* scanlines are aligned on 16 bit boundaries */
-    len  = (depth * w + 7) >> 3;
-    alen = len + (len & 1);
 
     if (type == RT_BYTE_ENCODED) {
         int value, run;

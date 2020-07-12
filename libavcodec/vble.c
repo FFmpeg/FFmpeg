@@ -214,6 +214,5 @@ AVCodec ff_vble_decoder = {
     .close          = vble_decode_close,
     .decode         = vble_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(vble_decode_init),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

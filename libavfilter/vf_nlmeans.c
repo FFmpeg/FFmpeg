@@ -419,7 +419,7 @@ static void weight_averages(uint8_t *dst, ptrdiff_t dst_linesize,
             // Also weight the centered pixel
             wa[x].total_weight += 1.f;
             wa[x].sum += 1.f * src[x];
-            dst[x] = av_clip_uint8(wa[x].sum / wa[x].total_weight);
+            dst[x] = av_clip_uint8(wa[x].sum / wa[x].total_weight + 0.5f);
         }
         dst += dst_linesize;
         src += src_linesize;

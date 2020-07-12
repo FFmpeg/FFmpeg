@@ -453,10 +453,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 true_peak = tmp;
         }
 
-        offset    = s->target_i - global;
-        offset_tp = true_peak + offset;
+        offset    = pow(10., (s->target_i - global) / 20.);
+        offset_tp = true_peak * offset;
         s->offset = offset_tp < s->target_tp ? offset : s->target_tp - true_peak;
-        s->offset = pow(10., s->offset / 20.);
         s->frame_type = LINEAR_MODE;
     }
 

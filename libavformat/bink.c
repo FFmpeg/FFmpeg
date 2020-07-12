@@ -56,6 +56,7 @@ typedef struct BinkDemuxContext {
     int64_t audio_pts[BINK_MAX_AUDIO_TRACKS];
 
     uint32_t remain_packet_size;
+    int flags;
     int smush_size;
 } BinkDemuxContext;
 
@@ -90,6 +91,7 @@ static int read_header(AVFormatContext *s)
     unsigned int i;
     uint32_t pos, next_pos;
     uint16_t flags;
+    int next_keyframe = 1;
     int keyframe;
     int ret;
     uint32_t signature;
@@ -150,8 +152,8 @@ static int read_header(AVFormatContext *s)
         vst->codecpar->codec_id = AV_CODEC_ID_NONE;
     }
 
-    if (ff_get_extradata(s, vst->codecpar, pb, 4) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, vst->codecpar, pb, 4)) < 0)
+        return ret;
 
     bink->num_audio_tracks = avio_rl32(pb);
 
@@ -190,8 +192,8 @@ static int read_header(AVFormatContext *s)
                 ast->codecpar->channels       = 1;
                 ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            if (ff_alloc_extradata(ast->codecpar, 4))
-                return AVERROR(ENOMEM);
+            if ((ret = ff_alloc_extradata(ast->codecpar, 4)) < 0)
+                return ret;
             AV_WL32(ast->codecpar->extradata, vst->codecpar->codec_tag);
         }
 
@@ -203,12 +205,13 @@ static int read_header(AVFormatContext *s)
     next_pos = avio_rl32(pb);
     for (i = 0; i < vst->duration; i++) {
         pos = next_pos;
+        keyframe = next_keyframe;
         if (i == vst->duration - 1) {
             next_pos = bink->file_size;
-            keyframe = 0;
+            next_keyframe = 0;
         } else {
             next_pos = avio_rl32(pb);
-            keyframe = pos & 1;
+            next_keyframe = next_pos & 1;
         }
         pos &= ~1;
         next_pos &= ~1;
@@ -254,6 +257,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         bink->remain_packet_size = st->index_entries[index_entry].size;
+        bink->flags = st->index_entries[index_entry].flags;
         bink->current_track = 0;
     }
 
@@ -290,7 +294,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
     pkt->stream_index = 0;
     pkt->pts = bink->video_pts++;
-    pkt->flags |= AV_PKT_FLAG_KEY;
+    if (bink->flags & AVINDEX_KEYFRAME)
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     /* -1 instructs the next call to read_packet() to read the next frame */
     bink->current_track = -1;
@@ -302,13 +307,15 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 {
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
+    int64_t ret;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return -1;
 
     /* seek to the first frame */
-    if (avio_seek(s->pb, vst->index_entries[0].pos + bink->smush_size, SEEK_SET) < 0)
-        return -1;
+    ret = avio_seek(s->pb, vst->index_entries[0].pos + bink->smush_size, SEEK_SET);
+    if (ret < 0)
+        return ret;
 
     bink->video_pts = 0;
     memset(bink->audio_pts, 0, sizeof(bink->audio_pts));

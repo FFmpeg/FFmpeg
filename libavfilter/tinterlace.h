@@ -36,6 +36,13 @@
 #define TINTERLACE_FLAG_VLPF 01
 #define TINTERLACE_FLAG_CVLPF 2
 #define TINTERLACE_FLAG_EXACT_TB 4
+#define TINTERLACE_FLAG_BYPASS_IL 8
+
+enum VLPFilter {
+    VLPF_OFF = 0,
+    VLPF_LIN = 1,
+    VLPF_CMP = 2,
+};
 
 enum TInterlaceMode {
     MODE_MERGE = 0,
@@ -59,6 +66,7 @@ typedef struct TInterlaceContext {
     int mode;                   ///< TInterlaceMode, interlace mode selected
     AVRational preout_time_base;
     int flags;                  ///< flags affecting interlacing algorithm
+    int lowpass;                ///< legacy interlace filter lowpass mode
     int frame;                  ///< number of the output frame
     int vsub;                   ///< chroma vertical subsampling
     AVFrame *cur;

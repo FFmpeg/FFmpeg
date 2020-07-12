@@ -44,9 +44,11 @@ typedef struct CodedBitstreamType {
     int (*read_unit)(CodedBitstreamContext *ctx,
                      CodedBitstreamUnit *unit);
 
-    // Write the unit->data bitstream from unit->content.
+    // Write the data bitstream from unit->content into pbc.
+    // Return value AVERROR(ENOSPC) indicates that pbc was too small.
     int (*write_unit)(CodedBitstreamContext *ctx,
-                      CodedBitstreamUnit *unit);
+                      CodedBitstreamUnit *unit,
+                      PutBitContext *pbc);
 
     // Read the data from all of frag->units and assemble it into
     // a bitstream for the whole fragment.

@@ -359,7 +359,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass pulse_demuxer_class = {
-    .class_name     = "Pulse demuxer",
+    .class_name     = "Pulse indev",
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,

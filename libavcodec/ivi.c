@@ -30,7 +30,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/timer.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
@@ -354,23 +353,11 @@ av_cold int ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes, cons
             band->height   = b_height;
             band->pitch    = width_aligned;
             band->aheight  = height_aligned;
-            band->bufs[0]  = av_mallocz(buf_size);
-            band->bufs[1]  = av_mallocz(buf_size);
+            av_assert0(!band->bufs[0] && !band->bufs[1] &&
+                       !band->bufs[2] && !band->bufs[3]);
             band->bufsize  = buf_size/2;
-            if (!band->bufs[0] || !band->bufs[1])
-                return AVERROR(ENOMEM);
+            av_assert0(buf_size % 2 == 0);
 
-            /* allocate the 3rd band buffer for scalability mode */
-            if (cfg->luma_bands > 1) {
-                band->bufs[2] = av_mallocz(buf_size);
-                if (!band->bufs[2])
-                    return AVERROR(ENOMEM);
-            }
-            if (is_indeo4) {
-                band->bufs[3]  = av_mallocz(buf_size);
-                if (!band->bufs[3])
-                    return AVERROR(ENOMEM);
-            }
             /* reset custom vlc */
             planes[p].bands[0].blk_vlc.cust_desc.num_rows = 0;
         }
@@ -488,7 +475,7 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
     if (get_bits1(gb)) {
         len = get_bits(gb, 8);
         if (len == 255)
-            len = get_bits_long(gb, 24);
+            len = get_bits(gb, 24);
     }
 
     /* align the bitstream reader on the byte boundary */
@@ -945,6 +932,15 @@ static void ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, ptrdiff_t dst_pi
     }
 }
 
+static void *prepare_buf(IVI45DecContext *ctx, IVIBandDesc *band, int i)
+{
+    if (ctx->pic_conf.luma_bands <= 1 && i == 2)
+        return NULL;
+    if (!band->bufs[i])
+        band->bufs[i] = av_mallocz(2 * band->bufsize);
+    return band->bufs[i];
+}
+
 /**
  *  Decode an Indeo 4 or 5 band.
  *
@@ -959,18 +955,22 @@ static int decode_band(IVI45DecContext *ctx,
     int         result, i, t, idx1, idx2, pos;
     IVITile     *tile;
 
-    band->buf     = band->bufs[ctx->dst_buf];
+    band->buf     = prepare_buf(ctx, band, ctx->dst_buf);
     if (!band->buf) {
         av_log(avctx, AV_LOG_ERROR, "Band buffer points to no data!\n");
         return AVERROR_INVALIDDATA;
     }
     if (ctx->is_indeo4 && ctx->frame_type == IVI4_FRAMETYPE_BIDIR) {
-        band->ref_buf   = band->bufs[ctx->b_ref_buf];
-        band->b_ref_buf = band->bufs[ctx->ref_buf];
+        band->ref_buf   = prepare_buf(ctx, band, ctx->b_ref_buf);
+        band->b_ref_buf = prepare_buf(ctx, band, ctx->ref_buf);
+        if (!band->b_ref_buf)
+            return AVERROR(ENOMEM);
     } else {
-        band->ref_buf   = band->bufs[ctx->ref_buf];
+        band->ref_buf   = prepare_buf(ctx, band, ctx->ref_buf);
         band->b_ref_buf = 0;
     }
+    if (!band->ref_buf)
+        return AVERROR(ENOMEM);
     band->data_ptr  = ctx->frame_data + (get_bits_count(&ctx->gb) >> 3);
 
     result = ctx->decode_band_hdr(ctx, band, avctx);
@@ -1123,8 +1123,6 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     ctx->switch_buffers(ctx);
 
-    //{ START_TIMER;
-
     if (ctx->is_nonnull_frame(ctx)) {
         ctx->buf_invalid[ctx->dst_buf] = 1;
         for (p = 0; p < 3; p++) {
@@ -1149,8 +1147,6 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
     if (ctx->buf_invalid[ctx->dst_buf])
         return -1;
-
-    //STOP_TIMER("decode_planes"); }
 
     if (!ctx->is_nonnull_frame(ctx))
         return buf_size;
@@ -1192,10 +1188,12 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         left = get_bits_count(&ctx->gb) & 0x18;
         skip_bits_long(&ctx->gb, 64 - left);
         if (get_bits_left(&ctx->gb) > 18 &&
-            show_bits_long(&ctx->gb, 21) == 0xBFFF8) { // syncheader + inter type
+            show_bits(&ctx->gb, 21) == 0xBFFF8) { // syncheader + inter type
             AVPacket pkt;
             pkt.data = avpkt->data + (get_bits_count(&ctx->gb) >> 3);
             pkt.size = get_bits_left(&ctx->gb) >> 3;
+            ctx->got_p_frame = 0;
+            av_frame_unref(ctx->p_frame);
             ff_ivi_decode_frame(avctx, ctx->p_frame, &ctx->got_p_frame, &pkt);
         }
     }

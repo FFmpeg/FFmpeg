@@ -50,6 +50,9 @@ $(TOOLS): %$(EXESUF): %.o
 target_dec_%_fuzzer$(EXESUF): target_dec_%_fuzzer.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
 
+tools/target_bsf_%_fuzzer$(EXESUF): tools/target_bsf_%_fuzzer.o $(FF_DEP_LIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
+
 tools/target_dem_fuzzer$(EXESUF): tools/target_dem_fuzzer.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
 
@@ -148,6 +151,7 @@ distclean:: clean
 		version.h libavutil/ffversion.h libavcodec/codec_names.h \
 		libavcodec/bsf_list.c libavformat/protocol_list.c \
 		libavcodec/codec_list.c libavcodec/parser_list.c \
+		libavfilter/filter_list.c libavdevice/indev_list.c libavdevice/outdev_list.c \
 		libavformat/muxer_list.c libavformat/demuxer_list.c
 ifeq ($(SRC_LINK),src)
 	$(RM) src

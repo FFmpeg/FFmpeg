@@ -568,8 +568,9 @@ static void opengl_make_ortho(float matrix[16], float left, float right,
     matrix[15] = 1.0f;
 }
 
-static av_cold int opengl_read_limits(OpenGLContext *opengl)
+static av_cold int opengl_read_limits(AVFormatContext *h)
 {
+    OpenGLContext *opengl = h->priv_data;
     static const struct{
         const char *extension;
         int major;
@@ -587,17 +588,21 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
 
     version = glGetString(GL_VERSION);
     extensions = glGetString(GL_EXTENSIONS);
+    if (!version || !extensions) {
+        av_log(h, AV_LOG_ERROR, "No OpenGL context initialized for the current thread\n");
+        return AVERROR(ENOSYS);
+    }
 
-    av_log(opengl, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
+    av_log(h, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
     sscanf(version, "%d.%d", &major, &minor);
 
     for (i = 0; required_extensions[i].extension; i++) {
         if (major < required_extensions[i].major &&
             (major == required_extensions[i].major && minor < required_extensions[i].minor) &&
             !strstr(extensions, required_extensions[i].extension)) {
-            av_log(opengl, AV_LOG_ERROR, "Required extension %s is not supported.\n",
+            av_log(h, AV_LOG_ERROR, "Required extension %s is not supported.\n",
                    required_extensions[i].extension);
-            av_log(opengl, AV_LOG_DEBUG, "Supported extensions are: %s\n", extensions);
+            av_log(h, AV_LOG_DEBUG, "Supported extensions are: %s\n", extensions);
             return AVERROR(ENOSYS);
         }
     }
@@ -610,10 +615,10 @@ static av_cold int opengl_read_limits(OpenGLContext *opengl)
     opengl->unpack_subimage = 1;
 #endif
 
-    av_log(opengl, AV_LOG_DEBUG, "Non Power of 2 textures support: %s\n", opengl->non_pow_2_textures ? "Yes" : "No");
-    av_log(opengl, AV_LOG_DEBUG, "Unpack Subimage extension support: %s\n", opengl->unpack_subimage ? "Yes" : "No");
-    av_log(opengl, AV_LOG_DEBUG, "Max texture size: %dx%d\n", opengl->max_texture_size, opengl->max_texture_size);
-    av_log(opengl, AV_LOG_DEBUG, "Max viewport size: %dx%d\n",
+    av_log(h, AV_LOG_DEBUG, "Non Power of 2 textures support: %s\n", opengl->non_pow_2_textures ? "Yes" : "No");
+    av_log(h, AV_LOG_DEBUG, "Unpack Subimage extension support: %s\n", opengl->unpack_subimage ? "Yes" : "No");
+    av_log(h, AV_LOG_DEBUG, "Max texture size: %dx%d\n", opengl->max_texture_size, opengl->max_texture_size);
+    av_log(h, AV_LOG_DEBUG, "Max viewport size: %dx%d\n",
            opengl->max_viewport_width, opengl->max_viewport_height);
 
     OPENGL_ERROR_CHECK(opengl);
@@ -1050,13 +1055,14 @@ static av_cold int opengl_init_context(OpenGLContext *opengl)
 static av_cold int opengl_write_header(AVFormatContext *h)
 {
     OpenGLContext *opengl = h->priv_data;
+    AVCodecParameters *par = h->streams[0]->codecpar;
     AVStream *st;
     int ret;
 
     if (h->nb_streams != 1 ||
-        h->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
-        h->streams[0]->codecpar->codec_id != AV_CODEC_ID_RAWVIDEO) {
-        av_log(opengl, AV_LOG_ERROR, "Only a single video stream is supported.\n");
+        par->codec_type != AVMEDIA_TYPE_VIDEO ||
+        (par->codec_id != AV_CODEC_ID_WRAPPED_AVFRAME && par->codec_id != AV_CODEC_ID_RAWVIDEO)) {
+        av_log(opengl, AV_LOG_ERROR, "Only a single raw or wrapped avframe video stream is supported.\n");
         return AVERROR(EINVAL);
     }
     st = h->streams[0];
@@ -1074,7 +1080,7 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     if ((ret = opengl_create_window(h)))
         goto fail;
 
-    if ((ret = opengl_read_limits(opengl)) < 0)
+    if ((ret = opengl_read_limits(h)) < 0)
         goto fail;
 
     if (opengl->width > opengl->max_texture_size || opengl->height > opengl->max_texture_size) {
@@ -1251,7 +1257,13 @@ static int opengl_draw(AVFormatContext *h, void *input, int repaint, int is_pkt)
 
 static int opengl_write_packet(AVFormatContext *h, AVPacket *pkt)
 {
-    return opengl_draw(h, pkt, 0, 1);
+    AVCodecParameters *par = h->streams[0]->codecpar;
+    if (par->codec_id == AV_CODEC_ID_WRAPPED_AVFRAME) {
+        AVFrame *frame = (AVFrame *)pkt->data;
+        return opengl_draw(h, frame, 0, 0);
+    } else {
+        return opengl_draw(h, pkt, 0, 1);
+    }
 }
 
 static int opengl_write_frame(AVFormatContext *h, int stream_index,
@@ -1265,7 +1277,7 @@ static int opengl_write_frame(AVFormatContext *h, int stream_index,
 #define OFFSET(x) offsetof(OpenGLContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "background",   "set background color",   OFFSET(background),   AV_OPT_TYPE_COLOR,  {.str = "black"}, CHAR_MIN, CHAR_MAX, ENC },
+    { "background",   "set background color",   OFFSET(background),   AV_OPT_TYPE_COLOR,  {.str = "black"}, 0, 0, ENC },
     { "no_window",    "disable default window", OFFSET(no_window),    AV_OPT_TYPE_INT,    {.i64 = 0}, INT_MIN, INT_MAX, ENC },
     { "window_title", "set window title",       OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, ENC },
     { "window_size",  "set window size",        OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, ENC },
@@ -1285,7 +1297,7 @@ AVOutputFormat ff_opengl_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("OpenGL output"),
     .priv_data_size = sizeof(OpenGLContext),
     .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
     .write_header   = opengl_write_header,
     .write_packet   = opengl_write_packet,
     .write_uncoded_frame = opengl_write_frame,

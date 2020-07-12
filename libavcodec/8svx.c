@@ -164,8 +164,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_8SVX_FIB: esc->table = fibonacci;    break;
     case AV_CODEC_ID_8SVX_EXP: esc->table = exponential;  break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Invalid codec id %d.\n", avctx->codec->id);
-        return AVERROR_INVALIDDATA;
+        av_assert1(0);
     }
     avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
 

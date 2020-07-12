@@ -56,7 +56,6 @@ typedef struct TeeContext {
     TeeSlave *slaves;
     int use_fifo;
     AVDictionary *fifo_options;
-    char *fifo_options_str;
 } TeeContext;
 
 static const char *const slave_delim     = "|";
@@ -67,8 +66,8 @@ static const char *const slave_select_sep = ",";
 static const AVOption options[] = {
         {"use_fifo", "Use fifo pseudo-muxer to separate actual muxers from encoder",
          OFFSET(use_fifo), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
-        {"fifo_options", "fifo pseudo-muxer options", OFFSET(fifo_options_str),
-         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM},
+        {"fifo_options", "fifo pseudo-muxer options", OFFSET(fifo_options),
+         AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM},
         {NULL}
 };
 
@@ -159,7 +158,7 @@ static void close_slaves(AVFormatContext *avf)
 static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 {
     int i, ret;
-    AVDictionary *options = NULL;
+    AVDictionary *options = NULL, *bsf_options = NULL;
     AVDictionaryEntry *entry;
     char *filename;
     char *format = NULL, *select = NULL, *on_fail = NULL;
@@ -186,6 +185,12 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     STEAL_OPTION("onfail", on_fail);
     STEAL_OPTION("use_fifo", use_fifo);
     STEAL_OPTION("fifo_options", fifo_options_str);
+    entry = NULL;
+    while ((entry = av_dict_get(options, "bsfs", entry, AV_DICT_IGNORE_SUFFIX))) {
+        /* trim out strlen("bsfs") characters from key */
+        av_dict_set(&bsf_options, entry->key + 4, entry->value, 0);
+        av_dict_set(&options, entry->key, NULL, 0);
+    }
 
     ret = parse_slave_failure_policy_option(on_fail, tee_slave);
     if (ret < 0) {
@@ -290,7 +295,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
             goto end;
     }
 
-    ret = ff_format_output_open(avf2, filename, NULL);
+    ret = ff_format_output_open(avf2, filename, &options);
     if (ret < 0) {
         av_log(avf, AV_LOG_ERROR, "Slave '%s': error opening: %s\n", slave,
                av_err2str(ret));
@@ -311,8 +316,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
 
     entry = NULL;
-    while (entry = av_dict_get(options, "bsfs", NULL, AV_DICT_IGNORE_SUFFIX)) {
-        const char *spec = entry->key + strlen("bsfs");
+    while (entry = av_dict_get(bsf_options, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+        const char *spec = entry->key;
         if (*spec) {
             if (strspn(spec, slave_bsfs_spec_sep) != 1) {
                 av_log(avf, AV_LOG_ERROR,
@@ -352,7 +357,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
             }
         }
 
-        av_dict_set(&options, entry->key, NULL, 0);
+        av_dict_set(&bsf_options, entry->key, NULL, 0);
     }
 
     for (i = 0; i < avf->nb_streams; i++){
@@ -399,6 +404,7 @@ end:
     av_free(select);
     av_free(on_fail);
     av_dict_free(&options);
+    av_dict_free(&bsf_options);
     av_freep(&tmp_select);
     return ret;
 }
@@ -466,12 +472,6 @@ static int tee_write_header(AVFormatContext *avf)
         }
         if (strspn(filename, slave_delim))
             filename++;
-    }
-
-    if (tee->fifo_options_str) {
-        ret = av_dict_parse_string(&tee->fifo_options, tee->fifo_options_str, "=", ":", 0);
-        if (ret < 0)
-            goto fail;
     }
 
     if (!(tee->slaves = av_mallocz_array(nb_slaves, sizeof(*tee->slaves)))) {
@@ -564,7 +564,6 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         if (s2 < 0)
             continue;
 
-        memset(&pkt2, 0, sizeof(AVPacket));
         if ((ret = av_packet_ref(&pkt2, pkt)) < 0)
             if (!ret_all) {
                 ret_all = ret;

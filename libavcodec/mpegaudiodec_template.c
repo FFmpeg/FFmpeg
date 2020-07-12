@@ -27,6 +27,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/crc.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
 #include "avcodec.h"
@@ -1565,9 +1566,22 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
 
     init_get_bits(&s->gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE) * 8);
 
-    /* skip error protection field */
-    if (s->error_protection)
-        skip_bits(&s->gb, 16);
+    if (s->error_protection) {
+        uint16_t crc = get_bits(&s->gb, 16);
+        if (s->err_recognition & AV_EF_CRCCHECK) {
+            const int sec_len = s->lsf ? ((s->nb_channels == 1) ? 9  : 17) :
+                                         ((s->nb_channels == 1) ? 17 : 32);
+            const AVCRC *crc_tab = av_crc_get_table(AV_CRC_16_ANSI);
+            uint32_t crc_cal = av_crc(crc_tab, UINT16_MAX, &buf[2], 2);
+            crc_cal = av_crc(crc_tab, crc_cal, &buf[6], sec_len);
+
+            if (av_bswap16(crc) ^ crc_cal) {
+                av_log(s->avctx, AV_LOG_ERROR, "CRC mismatch!\n");
+                if (s->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
+            }
+        }
+    }
 
     switch(s->layer) {
     case 1:
@@ -1851,8 +1865,8 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avpriv_mpeg4audio_get_config(&cfg, avctx->extradata,
-                                 avctx->extradata_size * 8, 1);
+    avpriv_mpeg4audio_get_config2(&cfg, avctx->extradata,
+                                  avctx->extradata_size, 1, avctx);
     if (!cfg.chan_config || cfg.chan_config > 7) {
         av_log(avctx, AV_LOG_ERROR, "Invalid channel config number.\n");
         return AVERROR_INVALIDDATA;

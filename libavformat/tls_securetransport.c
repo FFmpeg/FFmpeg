@@ -251,8 +251,7 @@ static int tls_close(URLContext *h)
     }
     if (c->ca_array)
         CFRelease(c->ca_array);
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
+    ffurl_closep(&c->tls_shared.tcp);
     return 0;
 }
 

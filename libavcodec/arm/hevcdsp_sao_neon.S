@@ -35,10 +35,10 @@ function ff_hevc_sao_band_filter_neon_8, export=1
         vmov.u16    q15,  #1
         vmov.u8     q14,  #32
 0:      pld      [r1]
-        vld1.8   {d16},  [r1], r3
         cmp      r5,    #4
         beq      4f
 8:      subs     r4,    #1
+        vld1.8   {d16},  [r1], r3
         vshr.u8  d17,   d16,  #3   // index = [src>>3]
         vshll.u8 q9,    d17,  #1   // lowIndex = 2*index
         vadd.u16 q11,   q9,   q15  // highIndex = (2*index+1) << 8
@@ -54,7 +54,6 @@ function ff_hevc_sao_band_filter_neon_8, export=1
         vaddw.u8 q13,   q12,       d16
         vqmovun.s16      d8,         q13
         vst1.8    d8,   [r0],      r2
-        vld1.8   {d16}, [r1],      r3
         bne      8b
         subs     r5,    #8
         beq      99f
@@ -65,6 +64,7 @@ function ff_hevc_sao_band_filter_neon_8, export=1
         mov r1, r7
         b        0b
 4:      subs     r4,    #1
+        vld1.32   {d16[0]},  [r1],  r3
         vshr.u8  d17,   d16,  #3  // src>>3
         vshll.u8 q9,    d17,  #1   // lowIndex = 2*index
         vadd.u16 q11,   q9,   q15  // highIndex = (2*index+1) << 8
@@ -80,7 +80,6 @@ function ff_hevc_sao_band_filter_neon_8, export=1
         vaddw.u8 q13,   q12,       d16
         vqmovun.s16     d14,       q13
         vst1.32   d14[0],    [r0],     r2
-        vld1.32   {d16[0]},  [r1],     r3
         bne      4b
         b        99f
 99:
@@ -110,12 +109,12 @@ function ff_hevc_sao_edge_filter_neon_8, export=1
         mov      r11,    r1
         add      r11,    r9           // src[x + b_stride]
         pld      [r1]
-        vld1.8   {d16},  [r1],  r3    // src[x]  8x8bit
-        vld1.8   {d17},  [r10], r3    // src[x + a_stride]
-        vld1.8   {d18},  [r11], r3    // src[x + b_stride]
         cmp      r5,     #4
         beq      4f
 8:      subs     r4,     #1
+        vld1.8   {d16},  [r1],  r3    // src[x]  8x8bit
+        vld1.8   {d17},  [r10], r3    // src[x + a_stride]
+        vld1.8   {d18},  [r11], r3    // src[x + b_stride]
         vcgt.u8  d8,     d16,   d17
         vshr.u8  d9,     d8,    #7
         vclt.u8  d8,     d16,   d17
@@ -136,9 +135,6 @@ function ff_hevc_sao_edge_filter_neon_8, export=1
         vaddw.u8 q12,    q11,   d16
         vqmovun.s16      d26,   q12
         vst1.8   d26,    [r0],  r2
-        vld1.8   {d16},  [r1],  r3    // src[x]  8x8bit
-        vld1.8   {d17},  [r10], r3    // src[x + a_stride]
-        vld1.8   {d18},  [r11], r3    // src[x + b_stride]
         bne      8b
         subs     r5,     #8
         beq      99f
@@ -149,6 +145,9 @@ function ff_hevc_sao_edge_filter_neon_8, export=1
         mov      r1,     r7
         b        0b
 4:      subs     r4,    #1
+        vld1.32   {d16[0]},  [r1],  r3
+        vld1.32   {d17[0]},  [r10], r3    // src[x + a_stride]
+        vld1.32   {d18[0]},  [r11], r3    // src[x + b_stride]
         vcgt.u8  d8,     d16,   d17
         vshr.u8  d9,     d8,    #7
         vclt.u8  d8,     d16,   d17
@@ -169,9 +168,6 @@ function ff_hevc_sao_edge_filter_neon_8, export=1
         vaddw.u8 q12,    q11,   d16
         vqmovun.s16      d26,   q12
         vst1.32  d26[0], [r0],  r2
-        vld1.32   {d16[0]},  [r1],  r3
-        vld1.32   {d17[0]},  [r10], r3    // src[x + a_stride]
-        vld1.32   {d18[0]},  [r11], r3    // src[x + b_stride]
         bne      4b
         b        99f
 99:

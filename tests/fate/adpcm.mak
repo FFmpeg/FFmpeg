@@ -88,5 +88,56 @@ fate-adpcm-vima: CMD = framecrc -i $(TARGET_SAMPLES)/smush/ronin_part.znm -vn
 FATE_ADPCM-$(call DEMDEC, STR, ADPCM_XA) += fate-adpcm-xa
 fate-adpcm-xa: CMD = framecrc -i $(TARGET_SAMPLES)/psx-str/abc000_cut.str -vn
 
+FATE_ADPCM-$(call DEMDEC, ARGO_ASF, ADPCM_ARGO) += fate-adpcm-argo-mono
+fate-adpcm-argo-mono: CMD = md5 -i $(TARGET_SAMPLES)/argo-asf/PWIN22M.ASF -f s16le
+
+FATE_ADPCM-$(call DEMDEC, ARGO_ASF, ADPCM_ARGO) += fate-adpcm-argo-stereo
+fate-adpcm-argo-stereo: CMD = md5 -i $(TARGET_SAMPLES)/argo-asf/CBK2_cut.asf -f s16le
+
+FATE_ADPCM-$(call DEMDEC, KVAG, ADPCM_IMA_SSI) += fate-adpcm-ima-ssi-mono
+fate-adpcm-ima-ssi-mono: CMD = md5 -i $(TARGET_SAMPLES)/kvag/mull1_cut.vag -f s16le
+
+FATE_ADPCM-$(call DEMDEC, KVAG, ADPCM_IMA_SSI) += fate-adpcm-ima-ssi-stereo
+fate-adpcm-ima-ssi-stereo: CMD = md5 -i $(TARGET_SAMPLES)/kvag/credits_cut.vag -f s16le
+
+FATE_ADPCM-$(call DEMDEC, APM, ADPCM_IMA_APM) += fate-adpcm-ima-apm-mono
+fate-adpcm-ima-apm-mono: CMD = md5 -i $(TARGET_SAMPLES)/apm/outro1.apm -f s16le
+
+FATE_ADPCM-$(call DEMDEC, APM, ADPCM_IMA_APM) += fate-adpcm-ima-apm-stereo
+fate-adpcm-ima-apm-stereo: CMD = md5 -i $(TARGET_SAMPLES)/apm/AS01.apm -f s16le
+
+FATE_ADPCM-$(call DEMDEC, ALP, ADPCM_IMA_ALP) += fate-adpcm-ima-alp-mono
+fate-adpcm-ima-alp-mono: CMD = md5 -i $(TARGET_SAMPLES)/alp/AD_P11.PCM -f s16le
+
+FATE_ADPCM-$(call DEMDEC, ALP, ADPCM_IMA_ALP) += fate-adpcm-ima-alp-stereo
+fate-adpcm-ima-alp-stereo: CMD = md5 -i $(TARGET_SAMPLES)/alp/theme-cut.tun -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-single
+fate-adpcm-ima-cunning-single: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/GD-cut.5c -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-track0
+fate-adpcm-ima-cunning-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-cut.11c -map 0:a:0 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-track1
+fate-adpcm-ima-cunning-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-cut.11c -map 0:a:1 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t1
+fate-adpcm-ima-cunning-trunc-t1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t1.11c -map 0:a:0 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2-track0
+fate-adpcm-ima-cunning-trunc-t2-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2.11c -map 0:a:0 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2-track1
+fate-adpcm-ima-cunning-trunc-t2-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2.11c -map 0:a:1 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2a-track0
+fate-adpcm-ima-cunning-trunc-t2a-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2a.11c -map 0:a:0 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2a-track1
+fate-adpcm-ima-cunning-trunc-t2a-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2a.11c -map 0:a:1 -f s16le
+
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-h2
+fate-adpcm-ima-cunning-trunc-h2: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-h2.11c -map 0:a:0 -f s16le
+
 FATE_SAMPLES_AVCONV += $(FATE_ADPCM-yes)
 fate-adpcm: $(FATE_ADPCM-yes)

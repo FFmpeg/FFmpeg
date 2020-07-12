@@ -182,7 +182,6 @@ static int gdv_read_packet(AVFormatContext *ctx, AVPacket *pkt)
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                           AVPALETTE_SIZE);
             if (!pal) {
-                av_packet_unref(pkt);
                 return AVERROR(ENOMEM);
             }
             memcpy(pal, gdv->pal, AVPALETTE_SIZE);

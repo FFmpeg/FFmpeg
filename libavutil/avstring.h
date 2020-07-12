@@ -274,16 +274,21 @@ char *av_strireplace(const char *str, const char *from, const char *to);
 
 /**
  * Thread safe basename.
- * @param path the path, on DOS both \ and / are considered separators.
+ * @param path the string to parse, on DOS both \ and / are considered separators.
  * @return pointer to the basename substring.
+ * If path does not contain a slash, the function returns a copy of path.
+ * If path is a NULL pointer or points to an empty string, a pointer
+ * to a string "." is returned.
  */
 const char *av_basename(const char *path);
 
 /**
  * Thread safe dirname.
- * @param path the path, on DOS both \ and / are considered separators.
- * @return the path with the separator replaced by the string terminator or ".".
- * @note the function may change the input string.
+ * @param path the string to parse, on DOS both \ and / are considered separators.
+ * @return A pointer to a string that's the parent directory of path.
+ * If path is a NULL pointer or points to an empty string, a pointer
+ * to a string "." is returned.
+ * @note the function may modify the contents of the path, so copies should be passed.
  */
 const char *av_dirname(char *path);
 

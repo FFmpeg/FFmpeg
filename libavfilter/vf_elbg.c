@@ -36,7 +36,7 @@
 typedef struct ELBGContext {
     const AVClass *class;
     AVLFG lfg;
-    unsigned int lfg_seed;
+    int64_t lfg_seed;
     int max_steps_nb;
     int *codeword;
     int codeword_length;
@@ -56,8 +56,8 @@ static const AVOption elbg_options[] = {
     { "l",               "set codebook length", OFFSET(codebook_length), AV_OPT_TYPE_INT, { .i64 = 256 }, 1, INT_MAX, FLAGS },
     { "nb_steps", "set max number of steps used to compute the mapping", OFFSET(max_steps_nb), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "n",        "set max number of steps used to compute the mapping", OFFSET(max_steps_nb), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
-    { "seed", "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
-    { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT32_MAX, FLAGS },
+    { "seed", "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT64, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
+    { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, UINT32_MAX, FLAGS },
     { "pal8", "set the pal8 output", OFFSET(pal8), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
@@ -178,8 +178,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         uint32_t *pal;
 
-        if (!out)
+        if (!out) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
         out->pts = frame->pts;
         av_frame_free(&frame);
         pal = (uint32_t *)out->data[1];

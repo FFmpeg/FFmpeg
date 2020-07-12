@@ -19,13 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "internal.h"
 #include "mpeg4video.h"
 
 typedef struct UnpackBFramesBSFContext {
-    AVPacket *b_frame;
+    AVBufferRef *b_frame_ref;
 } UnpackBFramesBSFContext;
 
 /* determine the position of the packed marker in the userdata,
@@ -56,32 +56,32 @@ static void scan_buffer(const uint8_t *buf, int buf_size,
     }
 }
 
-static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
+static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     UnpackBFramesBSFContext *s = ctx->priv_data;
     int pos_p = -1, nb_vop = 0, pos_vop2 = -1, ret = 0;
-    AVPacket *in;
 
-    ret = ff_bsf_get_packet(ctx, &in);
+    ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
-    scan_buffer(in->data, in->size, &pos_p, &nb_vop, &pos_vop2);
+    scan_buffer(pkt->data, pkt->size, &pos_p, &nb_vop, &pos_vop2);
     av_log(ctx, AV_LOG_DEBUG, "Found %d VOP startcode(s) in this packet.\n", nb_vop);
 
     if (pos_vop2 >= 0) {
-        if (s->b_frame->data) {
+        if (s->b_frame_ref) {
             av_log(ctx, AV_LOG_WARNING,
                    "Missing one N-VOP packet, discarding one B-frame.\n");
-            av_packet_unref(s->b_frame);
+            av_buffer_unref(&s->b_frame_ref);
         }
-        /* store the packed B-frame in the BSFContext */
-        ret = av_packet_ref(s->b_frame, in);
-        if (ret < 0) {
+        /* store a reference to the packed B-frame's data in the BSFContext */
+        s->b_frame_ref = av_buffer_ref(pkt->buf);
+        if (!s->b_frame_ref) {
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
-        s->b_frame->size -= pos_vop2;
-        s->b_frame->data += pos_vop2;
+        s->b_frame_ref->data = pkt->data + pos_vop2;
+        s->b_frame_ref->size = pkt->size - pos_vop2;
     }
 
     if (nb_vop > 2) {
@@ -89,56 +89,49 @@ static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
        "Found %d VOP headers in one packet, only unpacking one.\n", nb_vop);
     }
 
-    if (nb_vop == 1 && s->b_frame->data) {
-        /* use frame from BSFContext */
-        av_packet_move_ref(out, s->b_frame);
+    if (nb_vop == 1 && s->b_frame_ref) {
+        AVBufferRef *tmp = pkt->buf;
 
-        /* use properties from current input packet */
-        ret = av_packet_copy_props(out, in);
-        if (ret < 0) {
-            goto fail;
-        }
+        /* make tmp accurately reflect the packet's data */
+        tmp->data = pkt->data;
+        tmp->size = pkt->size;
 
-        if (in->size <= MAX_NVOP_SIZE) {
-            /* N-VOP */
+        /* replace data in packet with stored data */
+        pkt->buf  = s->b_frame_ref;
+        pkt->data = s->b_frame_ref->data;
+        pkt->size = s->b_frame_ref->size;
+
+        /* store reference to data into BSFContext */
+        s->b_frame_ref = tmp;
+
+        if (s->b_frame_ref->size <= MAX_NVOP_SIZE) {
+            /* N-VOP - discard stored data */
             av_log(ctx, AV_LOG_DEBUG, "Skipping N-VOP.\n");
-        } else {
-            /* copy packet into BSFContext */
-            av_packet_move_ref(s->b_frame, in);
+            av_buffer_unref(&s->b_frame_ref);
         }
     } else if (nb_vop >= 2) {
         /* use first frame of the packet */
-        av_packet_move_ref(out, in);
-        out->size = pos_vop2;
+        pkt->size = pos_vop2;
     } else if (pos_p >= 0) {
-        ret = av_packet_make_writable(in);
+        ret = av_packet_make_writable(pkt);
         if (ret < 0)
             goto fail;
         av_log(ctx, AV_LOG_DEBUG, "Updating DivX userdata (remove trailing 'p').\n");
-        av_packet_move_ref(out, in);
         /* remove 'p' (packed) from the end of the (DivX) userdata string */
-        out->data[pos_p] = '\0';
+        pkt->data[pos_p] = '\0';
     } else {
-        /* copy packet */
-        av_packet_move_ref(out, in);
+        /* use packet as is */
     }
 
 fail:
     if (ret < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
+        av_packet_unref(pkt);
 
     return ret;
 }
 
 static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
 {
-    UnpackBFramesBSFContext *s = ctx->priv_data;
-
-    s->b_frame = av_packet_alloc();
-    if (!s->b_frame)
-        return AVERROR(ENOMEM);
-
     if (ctx->par_in->extradata) {
         int pos_p_ext = -1;
         scan_buffer(ctx->par_in->extradata, ctx->par_in->extradata_size, &pos_p_ext, NULL, NULL);
@@ -152,16 +145,10 @@ static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
     return 0;
 }
 
-static void mpeg4_unpack_bframes_flush(AVBSFContext *bsfc)
+static void mpeg4_unpack_bframes_close_flush(AVBSFContext *bsfc)
 {
     UnpackBFramesBSFContext *ctx = bsfc->priv_data;
-    av_packet_unref(ctx->b_frame);
-}
-
-static void mpeg4_unpack_bframes_close(AVBSFContext *bsfc)
-{
-    UnpackBFramesBSFContext *ctx = bsfc->priv_data;
-    av_packet_free(&ctx->b_frame);
+    av_buffer_unref(&ctx->b_frame_ref);
 }
 
 static const enum AVCodecID codec_ids[] = {
@@ -173,7 +160,7 @@ const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
     .priv_data_size = sizeof(UnpackBFramesBSFContext),
     .init           = mpeg4_unpack_bframes_init,
     .filter         = mpeg4_unpack_bframes_filter,
-    .flush          = mpeg4_unpack_bframes_flush,
-    .close          = mpeg4_unpack_bframes_close,
+    .flush          = mpeg4_unpack_bframes_close_flush,
+    .close          = mpeg4_unpack_bframes_close_flush,
     .codec_ids      = codec_ids,
 };

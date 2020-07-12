@@ -31,7 +31,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/timer.h"
 
 #include "avcodec.h"
 #include "internal.h"

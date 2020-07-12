@@ -131,8 +131,21 @@ static int config_output(AVFilterLink *outlink)
     outlink->h                   = inlink->h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->format              = inlink->format;
+    outlink->frame_rate          = inlink->frame_rate;
+
     for (seg = 1; seg < cat->nb_segments; seg++) {
-        inlink = ctx->inputs[in_no += ctx->nb_outputs];
+        inlink = ctx->inputs[in_no + seg * ctx->nb_outputs];
+        if (outlink->frame_rate.num != inlink->frame_rate.num ||
+            outlink->frame_rate.den != inlink->frame_rate.den) {
+            av_log(ctx, AV_LOG_VERBOSE,
+                    "Video inputs have different frame rates, output will be VFR\n");
+            outlink->frame_rate = av_make_q(1, 0);
+            break;
+        }
+    }
+
+    for (seg = 1; seg < cat->nb_segments; seg++) {
+        inlink = ctx->inputs[in_no + seg * ctx->nb_outputs];
         if (!outlink->sample_aspect_ratio.num)
             outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
         /* possible enhancement: unsafe mode, do not check */

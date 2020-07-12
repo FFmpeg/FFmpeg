@@ -24,6 +24,7 @@
 #include "libavutil/samplefmt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct AudioEchoContext {
@@ -36,6 +37,7 @@ typedef struct AudioEchoContext {
     uint8_t **delayptrs;
     int max_samples, fade_out;
     int *samples;
+    int eof;
     int64_t next_pts;
 
     void (*echo_samples)(struct AudioEchoContext *ctx, uint8_t **delayptrs,
@@ -302,42 +304,65 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioEchoContext *s = ctx->priv;
-    int ret;
+    int nb_samples = FFMIN(s->fade_out, 2048);
+    AVFrame *frame = ff_get_audio_buffer(outlink, nb_samples);
 
-    ret = ff_request_frame(ctx->inputs[0]);
+    if (!frame)
+        return AVERROR(ENOMEM);
+    s->fade_out -= nb_samples;
 
-    if (ret == AVERROR_EOF && !ctx->is_disabled && s->fade_out) {
-        int nb_samples = FFMIN(s->fade_out, 2048);
-        AVFrame *frame;
+    av_samples_set_silence(frame->extended_data, 0,
+                           frame->nb_samples,
+                           outlink->channels,
+                           frame->format);
 
-        frame = ff_get_audio_buffer(outlink, nb_samples);
-        if (!frame)
-            return AVERROR(ENOMEM);
-        s->fade_out -= nb_samples;
+    s->echo_samples(s, s->delayptrs, frame->extended_data, frame->extended_data,
+                    frame->nb_samples, outlink->channels);
 
-        av_samples_set_silence(frame->extended_data, 0,
-                               frame->nb_samples,
-                               outlink->channels,
-                               frame->format);
+    frame->pts = s->next_pts;
+    if (s->next_pts != AV_NOPTS_VALUE)
+        s->next_pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
-        s->echo_samples(s, s->delayptrs, frame->extended_data, frame->extended_data,
-                        frame->nb_samples, outlink->channels);
+    return ff_filter_frame(outlink, frame);
+}
 
-        frame->pts = s->next_pts;
-        if (s->next_pts != AV_NOPTS_VALUE)
-            s->next_pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AudioEchoContext *s = ctx->priv;
+    AVFrame *in;
+    int ret, status;
+    int64_t pts;
 
-        return ff_filter_frame(outlink, frame);
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    ret = ff_inlink_consume_frame(inlink, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return filter_frame(inlink, in);
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF)
+            s->eof = 1;
     }
 
-    return ret;
+    if (s->eof && s->fade_out <= 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->next_pts);
+        return 0;
+    }
+
+    if (!s->eof)
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return request_frame(outlink);
 }
 
 static const AVFilterPad aecho_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -345,7 +370,6 @@ static const AVFilterPad aecho_inputs[] = {
 static const AVFilterPad aecho_outputs[] = {
     {
         .name          = "default",
-        .request_frame = request_frame,
         .config_props  = config_output,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
@@ -359,6 +383,7 @@ AVFilter ff_af_aecho = {
     .priv_size     = sizeof(AudioEchoContext),
     .priv_class    = &aecho_class,
     .init          = init,
+    .activate      = activate,
     .uninit        = uninit,
     .inputs        = aecho_inputs,
     .outputs       = aecho_outputs,

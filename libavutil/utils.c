@@ -70,7 +70,7 @@ const char *avutil_configuration(void)
 const char *avutil_license(void)
 {
 #define LICENSE_PREFIX "libavutil license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 const char *av_get_media_type_string(enum AVMediaType media_type)

@@ -61,8 +61,6 @@ typedef struct BufferSinkContext {
 } BufferSinkContext;
 
 #define NB_ITEMS(list) (list ## _size / sizeof(*list))
-#define FIFO_INIT_SIZE 8
-#define FIFO_INIT_ELEMENT_SIZE sizeof(void *)
 
 int attribute_align_arg av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
 {
@@ -127,6 +125,7 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
     return get_frame_internal(ctx, frame, 0, nb_samples);
 }
 
+#if FF_API_NEXT
 AVBufferSinkParams *av_buffersink_params_alloc(void)
 {
     static const int pixel_fmts[] = { AV_PIX_FMT_NONE };
@@ -146,6 +145,7 @@ AVABufferSinkParams *av_abuffersink_params_alloc(void)
         return NULL;
     return params;
 }
+#endif
 
 static av_cold int common_init(AVFilterContext *ctx)
 {
@@ -201,20 +201,6 @@ MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
 
 MAKE_AVFILTERLINK_ACCESSOR(AVBufferRef *    , hw_frames_ctx      )
 
-static av_cold int vsink_init(AVFilterContext *ctx, void *opaque)
-{
-    BufferSinkContext *buf = ctx->priv;
-    AVBufferSinkParams *params = opaque;
-    int ret;
-
-    if (params) {
-        if ((ret = av_opt_set_int_list(buf, "pix_fmts", params->pixel_fmts, AV_PIX_FMT_NONE, 0)) < 0)
-            return ret;
-    }
-
-    return common_init(ctx);
-}
-
 #define CHECK_LIST_SIZE(field) \
         if (buf->field ## _size % sizeof(*buf->field)) { \
             av_log(ctx, AV_LOG_ERROR, "Invalid size for " #field ": %d, " \
@@ -242,23 +228,6 @@ static int vsink_query_formats(AVFilterContext *ctx)
     }
 
     return 0;
-}
-
-static av_cold int asink_init(AVFilterContext *ctx, void *opaque)
-{
-    BufferSinkContext *buf = ctx->priv;
-    AVABufferSinkParams *params = opaque;
-    int ret;
-
-    if (params) {
-        if ((ret = av_opt_set_int_list(buf, "sample_fmts",     params->sample_fmts,  AV_SAMPLE_FMT_NONE, 0)) < 0 ||
-            (ret = av_opt_set_int_list(buf, "sample_rates",    params->sample_rates,    -1, 0)) < 0 ||
-            (ret = av_opt_set_int_list(buf, "channel_layouts", params->channel_layouts, -1, 0)) < 0 ||
-            (ret = av_opt_set_int_list(buf, "channel_counts",  params->channel_counts,  -1, 0)) < 0 ||
-            (ret = av_opt_set_int(buf, "all_channel_counts", params->all_channel_counts, 0)) < 0)
-            return ret;
-    }
-    return common_init(ctx);
 }
 
 static int asink_query_formats(AVFilterContext *ctx)
@@ -336,42 +305,40 @@ AVFILTER_DEFINE_CLASS(abuffersink);
 
 static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
 
 AVFilter ff_vsink_buffer = {
-    .name        = "buffersink",
-    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
-    .priv_size   = sizeof(BufferSinkContext),
-    .priv_class  = &buffersink_class,
-    .init_opaque = vsink_init,
-
+    .name          = "buffersink",
+    .description   = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
+    .priv_size     = sizeof(BufferSinkContext),
+    .priv_class    = &buffersink_class,
+    .init          = common_init,
     .query_formats = vsink_query_formats,
-    .activate    = activate,
-    .inputs      = avfilter_vsink_buffer_inputs,
-    .outputs     = NULL,
+    .activate      = activate,
+    .inputs        = avfilter_vsink_buffer_inputs,
+    .outputs       = NULL,
 };
 
 static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
     },
     { NULL }
 };
 
 AVFilter ff_asink_abuffer = {
-    .name        = "abuffersink",
-    .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
-    .priv_class  = &abuffersink_class,
-    .priv_size   = sizeof(BufferSinkContext),
-    .init_opaque = asink_init,
-
+    .name          = "abuffersink",
+    .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
+    .priv_class    = &abuffersink_class,
+    .priv_size     = sizeof(BufferSinkContext),
+    .init          = common_init,
     .query_formats = asink_query_formats,
-    .activate    = activate,
-    .inputs      = avfilter_asink_abuffer_inputs,
-    .outputs     = NULL,
+    .activate      = activate,
+    .inputs        = avfilter_asink_abuffer_inputs,
+    .outputs       = NULL,
 };

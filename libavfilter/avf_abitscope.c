@@ -142,7 +142,7 @@ static void count_bits(AudioBitScopeContext *s, uint32_t sample, int max)
     int i;
 
     for (i = 0; i < max; i++) {
-        if (sample & (1 << i))
+        if (sample & (1U << i))
             s->counter[i]++;
     }
 }

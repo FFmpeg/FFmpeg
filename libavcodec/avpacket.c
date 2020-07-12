@@ -26,9 +26,11 @@
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
-#include "avcodec.h"
+
 #include "bytestream.h"
 #include "internal.h"
+#include "packet.h"
+#include "packet_internal.h"
 
 void av_init_packet(AVPacket *pkt)
 {
@@ -54,7 +56,7 @@ AVPacket *av_packet_alloc(void)
     if (!pkt)
         return pkt;
 
-    av_packet_unref(pkt);
+    av_init_packet(pkt);
 
     return pkt;
 }
@@ -127,7 +129,8 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
                 return AVERROR(ENOMEM);
         }
 
-        if (new_size + data_offset > pkt->buf->size) {
+        if (new_size + data_offset > pkt->buf->size ||
+            !av_buffer_is_writable(pkt->buf)) {
             int ret = av_buffer_realloc(&pkt->buf, new_size + data_offset);
             if (ret < 0) {
                 pkt->data = old_data;
@@ -394,6 +397,9 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_ENCRYPTION_INIT_INFO:       return "Encryption initialization data";
     case AV_PKT_DATA_ENCRYPTION_INFO:            return "Encryption info";
     case AV_PKT_DATA_AFD:                        return "Active Format Description data";
+    case AV_PKT_DATA_PRFT:                       return "Producer Reference Time";
+    case AV_PKT_DATA_ICC_PROFILE:                return "ICC Profile";
+    case AV_PKT_DATA_DOVI_CONF:                  return "DOVI configuration record";
     }
     return NULL;
 }
@@ -523,10 +529,10 @@ fail:
 int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **dict)
 {
     const uint8_t *end;
-    int ret = 0;
+    int ret;
 
     if (!dict || !data || !size)
-        return ret;
+        return 0;
     end = data + size;
     if (size && end[-1])
         return AVERROR_INVALIDDATA;
@@ -539,11 +545,11 @@ int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **di
 
         ret = av_dict_set(dict, key, val, 0);
         if (ret < 0)
-            break;
+            return ret;
         data = val + strlen(val) + 1;
     }
 
-    return ret;
+    return 0;
 }
 
 int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
@@ -609,9 +615,11 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
 {
     int ret;
 
+    dst->buf = NULL;
+
     ret = av_packet_copy_props(dst, src);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     if (!src->buf) {
         ret = packet_alloc(&dst->buf, src->size);
@@ -635,7 +643,7 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
 
     return 0;
 fail:
-    av_packet_free_side_data(dst);
+    av_packet_unref(dst);
     return ret;
 }
 
@@ -738,6 +746,28 @@ int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, i
     side_data[5] = error_count;
     for (i = 0; i<error_count; i++)
         AV_WL64(side_data+8 + 8*i , error[i]);
+
+    return 0;
+}
+
+int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp)
+{
+    AVProducerReferenceTime *prft;
+    uint8_t *side_data;
+    int side_data_size;
+
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT, &side_data_size);
+    if (!side_data) {
+        side_data_size = sizeof(AVProducerReferenceTime);
+        side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_PRFT, side_data_size);
+    }
+
+    if (!side_data || side_data_size < sizeof(AVProducerReferenceTime))
+        return AVERROR(ENOMEM);
+
+    prft = (AVProducerReferenceTime *)side_data;
+    prft->wallclock = timestamp;
+    prft->flags = 0;
 
     return 0;
 }

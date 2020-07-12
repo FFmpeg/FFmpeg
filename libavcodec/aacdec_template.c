@@ -520,7 +520,7 @@ static void flush(AVCodecContext *avctx)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int set_default_channel_config(AVCodecContext *avctx,
+static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
                                       uint8_t (*layout_map)[3],
                                       int *tags,
                                       int channel_config)
@@ -547,7 +547,7 @@ static int set_default_channel_config(AVCodecContext *avctx,
      * As actual intended 7.1(wide) streams are very rare, default to assuming a
      * 7.1 layout was intended.
      */
-    if (channel_config == 7 && avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
+    if (channel_config == 7 && avctx->strict_std_compliance < FF_COMPLIANCE_STRICT && (!ac || !ac->warned_71_wide++)) {
         av_log(avctx, AV_LOG_INFO, "Assuming an incorrectly encoded 7.1 channel layout"
                " instead of a spec-compliant 7.1(wide) layout, use -strict %d to decode"
                " according to the specification instead.\n", FF_COMPLIANCE_STRICT);
@@ -573,7 +573,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 
         av_log(ac->avctx, AV_LOG_DEBUG, "mono with CPE\n");
 
-        if (set_default_channel_config(ac->avctx, layout_map,
+        if (set_default_channel_config(ac, ac->avctx, layout_map,
                                        &layout_map_tags, 2) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
@@ -592,7 +592,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 
         av_log(ac->avctx, AV_LOG_DEBUG, "stereo with SCE\n");
 
-        if (set_default_channel_config(ac->avctx, layout_map,
+        if (set_default_channel_config(ac, ac->avctx, layout_map,
                                        &layout_map_tags, 1) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
@@ -841,7 +841,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         if (tags < 0)
             return tags;
     } else {
-        if ((ret = set_default_channel_config(avctx, layout_map,
+        if ((ret = set_default_channel_config(ac, avctx, layout_map,
                                               &tags, channel_config)))
             return ret;
     }
@@ -937,7 +937,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
         skip_bits_long(gb, 8 * len);
     }
 
-    if ((ret = set_default_channel_config(avctx, layout_map,
+    if ((ret = set_default_channel_config(ac, avctx, layout_map,
                                           &tags, channel_config)))
         return ret;
 
@@ -975,7 +975,7 @@ static int decode_audio_specific_config_gb(AACContext *ac,
     int i, ret;
     GetBitContext gbc = *gb;
 
-    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension)) < 0)
+    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension, avctx)) < 0)
         return AVERROR_INVALIDDATA;
 
     if (m4ac->sampling_index > 12) {
@@ -1157,6 +1157,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AACContext *ac = avctx->priv_data;
     int ret;
 
+    if (avctx->sample_rate > 96000)
+        return AVERROR_INVALIDDATA;
+
     ret = ff_thread_once(&aac_table_init, &aac_static_table_init);
     if (ret != 0)
         return AVERROR_UNKNOWN;
@@ -1197,7 +1200,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         ac->oc[1].m4ac.chan_config = i;
 
         if (ac->oc[1].m4ac.chan_config) {
-            int ret = set_default_channel_config(avctx, layout_map,
+            int ret = set_default_channel_config(ac, avctx, layout_map,
                 &layout_map_tags, ac->oc[1].m4ac.chan_config);
             if (!ret)
                 output_configure(ac, layout_map, layout_map_tags,
@@ -2659,7 +2662,7 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
         ac->mdct.imdct_half(&ac->mdct, buf, in);
 #if USE_FIXED
         for (i=0; i<1024; i++)
-          buf[i] = (buf[i] + 4) >> 3;
+          buf[i] = (buf[i] + 4LL) >> 3;
 #endif /* USE_FIXED */
     }
 
@@ -2999,7 +3002,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         push_output_configuration(ac);
         if (hdr_info.chan_config) {
             ac->oc[1].m4ac.chan_config = hdr_info.chan_config;
-            if ((ret = set_default_channel_config(ac->avctx,
+            if ((ret = set_default_channel_config(ac, ac->avctx,
                                                   layout_map,
                                                   &layout_map_tags,
                                                   hdr_info.chan_config)) < 0)
@@ -3246,9 +3249,15 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                     err = AVERROR_INVALIDDATA;
                     goto fail;
             }
-            while (elem_id > 0)
-                elem_id -= decode_extension_payload(ac, gb, elem_id, che_prev, che_prev_type);
-            err = 0; /* FIXME */
+            err = 0;
+            while (elem_id > 0) {
+                int ret = decode_extension_payload(ac, gb, elem_id, che_prev, che_prev_type);
+                if (ret < 0) {
+                    err = ret;
+                    break;
+                }
+                elem_id -= ret;
+            }
             break;
 
         default:

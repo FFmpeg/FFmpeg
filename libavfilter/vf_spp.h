@@ -22,7 +22,6 @@
 #ifndef AVFILTER_SPP_H
 #define AVFILTER_SPP_H
 
-#include "libavcodec/avcodec.h"
 #include "libavcodec/avdct.h"
 #include "avfilter.h"
 
@@ -38,7 +37,6 @@ typedef struct SPPContext {
     int temp_linesize;
     uint8_t *src;
     uint16_t *temp;
-    AVCodecContext *avctx;
     AVDCT *dct;
     int8_t *non_b_qp_table;
     int non_b_qp_alloc_size;

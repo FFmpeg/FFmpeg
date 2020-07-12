@@ -39,6 +39,29 @@ enum PhaseMode {
     AUTO_ANALYZE
 };
 
+#define DEPTH 8
+#include "phase_template.c"
+
+#undef DEPTH
+#define DEPTH 9
+#include "phase_template.c"
+
+#undef DEPTH
+#define DEPTH 10
+#include "phase_template.c"
+
+#undef DEPTH
+#define DEPTH 12
+#include "phase_template.c"
+
+#undef DEPTH
+#define DEPTH 14
+#include "phase_template.c"
+
+#undef DEPTH
+#define DEPTH 16
+#include "phase_template.c"
+
 typedef struct PhaseContext {
     const AVClass *class;
     int mode;                   ///<PhaseMode
@@ -46,6 +69,8 @@ typedef struct PhaseContext {
     int nb_planes;
     int planeheight[4];
     int linesize[4];
+
+    enum PhaseMode (*analyze_plane)(void *ctx, enum PhaseMode mode, AVFrame *old, AVFrame *new);
 } PhaseContext;
 
 #define OFFSET(x) offsetof(PhaseContext, x)
@@ -71,10 +96,33 @@ AVFILTER_DEFINE_CLASS(phase);
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ422P,AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ411P,
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
+        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_GRAY9,
+        AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_GRAY14,
+        AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRP9,  AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_NONE
     };
 
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -89,6 +137,16 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
+    switch (desc->comp[0].depth) {
+    case  8: s->analyze_plane = analyze_plane_8;  break;
+    case  9: s->analyze_plane = analyze_plane_9;  break;
+    case 10: s->analyze_plane = analyze_plane_10; break;
+    case 12: s->analyze_plane = analyze_plane_12; break;
+    case 14: s->analyze_plane = analyze_plane_14; break;
+    case 16: s->analyze_plane = analyze_plane_16; break;
+    default: av_assert0(0);
+    };
+
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
@@ -98,149 +156,6 @@ static int config_input(AVFilterLink *inlink)
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     return 0;
-}
-
-/*
- * This macro interpolates the value of both fields at a point halfway
- * between lines and takes the squared difference. In field resolution
- * the point is a quarter pixel below a line in one field and a quarter
- * pixel above a line in other.
- *
- * (The result is actually multiplied by 25)
- */
-#define DIFF(a, as, b, bs) ((t) = ((*(a) - (b)[bs]) << 2) + (a)[(as) << 1] - (b)[-(bs)], (t) * (t))
-
-/*
- * Find which field combination has the smallest average squared difference
- * between the fields.
- */
-static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old, AVFrame *new)
-{
-    double bdiff, tdiff, pdiff;
-
-    if (mode == AUTO) {
-        mode = new->interlaced_frame ? new->top_field_first ?
-               TOP_FIRST : BOTTOM_FIRST : PROGRESSIVE;
-    } else if (mode == AUTO_ANALYZE) {
-        mode = new->interlaced_frame ? new->top_field_first ?
-               TOP_FIRST_ANALYZE : BOTTOM_FIRST_ANALYZE : FULL_ANALYZE;
-    }
-
-    if (mode <= BOTTOM_FIRST) {
-        bdiff = pdiff = tdiff = 65536.0;
-    } else {
-        const int ns = new->linesize[0];
-        const int os = old->linesize[0];
-        const uint8_t *nptr = new->data[0];
-        const uint8_t *optr = old->data[0];
-        const int h = new->height;
-        const int w = new->width;
-        int bdif, tdif, pdif;
-        double scale;
-
-        int top = 0, t;
-        const uint8_t *rend, *end = nptr + (h - 2) * ns;
-
-        bdiff = pdiff = tdiff = 0.0;
-
-        nptr += ns;
-        optr += os;
-        while (nptr < end) {
-            pdif = tdif = bdif = 0;
-
-            switch (mode) {
-            case TOP_FIRST_ANALYZE:
-                if (top) {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        pdif += DIFF(nptr, ns, nptr, ns);
-                        tdif += DIFF(nptr, ns, optr, os);
-                    }
-                } else {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        pdif += DIFF(nptr, ns, nptr, ns);
-                        tdif += DIFF(optr, os, nptr, ns);
-                    }
-                }
-                break;
-            case BOTTOM_FIRST_ANALYZE:
-                if (top) {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        pdif += DIFF(nptr, ns, nptr, ns);
-                        bdif += DIFF(optr, os, nptr, ns);
-                    }
-                } else {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        pdif += DIFF(nptr, ns, nptr, ns);
-                        bdif += DIFF(nptr, ns, optr, os);
-                    }
-                }
-                break;
-            case ANALYZE:
-                if (top) {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        tdif += DIFF(nptr, ns, optr, os);
-                        bdif += DIFF(optr, os, nptr, ns);
-                    }
-                } else {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        bdif += DIFF(nptr, ns, optr, os);
-                        tdif += DIFF(optr, os, nptr, ns);
-                    }
-                }
-                break;
-            case FULL_ANALYZE:
-                if (top) {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        pdif += DIFF(nptr, ns, nptr, ns);
-                        tdif += DIFF(nptr, ns, optr, os);
-                        bdif += DIFF(optr, os, nptr, ns);
-                    }
-                } else {
-                    for (rend = nptr + w; nptr < rend; nptr++, optr++) {
-                        pdif += DIFF(nptr, ns, nptr, ns);
-                        bdif += DIFF(nptr, ns, optr, os);
-                        tdif += DIFF(optr, os, nptr, ns);
-                    }
-                }
-                break;
-            default:
-                av_assert0(0);
-            }
-
-            pdiff += (double)pdif;
-            tdiff += (double)tdif;
-            bdiff += (double)bdif;
-            nptr += ns - w;
-            optr += os - w;
-            top ^= 1;
-        }
-
-        scale = 1.0 / (w * (h - 3)) / 25.0;
-        pdiff *= scale;
-        tdiff *= scale;
-        bdiff *= scale;
-
-        if (mode == TOP_FIRST_ANALYZE) {
-            bdiff = 65536.0;
-        } else if (mode == BOTTOM_FIRST_ANALYZE) {
-            tdiff = 65536.0;
-        } else if (mode == ANALYZE) {
-            pdiff = 65536.0;
-        }
-
-        if (bdiff < pdiff && bdiff < tdiff) {
-            mode = BOTTOM_FIRST;
-        } else if (tdiff < pdiff && tdiff < bdiff) {
-            mode = TOP_FIRST;
-        } else {
-            mode = PROGRESSIVE;
-        }
-    }
-
-    av_log(ctx, AV_LOG_DEBUG, "mode=%c tdiff=%f bdiff=%f pdiff=%f\n",
-           mode == BOTTOM_FIRST ? 'b' : mode == TOP_FIRST ? 't' : 'p',
-           tdiff, bdiff, pdiff);
-    return mode;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -272,7 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->frame = in;
         mode = PROGRESSIVE;
     } else {
-        mode = analyze_plane(ctx, s->mode, s->frame, in);
+        mode = s->analyze_plane(ctx, s->mode, s->frame, in);
     }
 
     for (plane = 0; plane < s->nb_planes; plane++) {

@@ -200,7 +200,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
                                int width, int height,
                                int tb_num, int tb_den,
                                enum AVFieldOrder field_order,
-                               decklink_direction_t direction, int num)
+                               decklink_direction_t direction)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
@@ -214,8 +214,8 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     int i = 1;
     HRESULT res;
 
-    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, field order %d, direction %d, mode number %d, format code %s\n",
-        width, height, tb_num, tb_den, field_order, direction, num, (cctx->format_code) ? cctx->format_code : "(unset)");
+    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, field order %d, direction %d, format code %s\n",
+        width, height, tb_num, tb_den, field_order, direction, cctx->format_code ? cctx->format_code : "(unset)");
 
     if (direction == DIRECTION_IN) {
         res = ctx->dli->GetDisplayModeIterator (&itermode);
@@ -248,7 +248,6 @@ int ff_decklink_set_format(AVFormatContext *avctx,
              bmd_height == height &&
              !av_cmp_q(mode_tb, target_tb) &&
              field_order_eq(field_order, bmd_field_dominance))
-             || i == num
              || target_mode == bmd_mode) {
             ctx->bmd_mode   = bmd_mode;
             ctx->bmd_width  = bmd_width;
@@ -270,7 +269,22 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     if (ctx->bmd_mode == bmdModeUnknown)
         return -1;
 
-#if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
+#if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b050000
+    if (direction == DIRECTION_IN) {
+        BMDDisplayMode actualMode = ctx->bmd_mode;
+        if (ctx->dli->DoesSupportVideoMode(ctx->video_input, ctx->bmd_mode, (BMDPixelFormat) cctx->raw_format,
+                                           bmdNoVideoInputConversion, bmdSupportedVideoModeDefault,
+                                           &actualMode, &support) != S_OK || !support || ctx->bmd_mode != actualMode)
+            return -1;
+    } else {
+        BMDDisplayMode actualMode = ctx->bmd_mode;
+        if (ctx->dlo->DoesSupportVideoMode(bmdVideoConnectionUnspecified, ctx->bmd_mode, ctx->raw_format,
+                                           bmdNoVideoOutputConversion, bmdSupportedVideoModeDefault,
+                                           &actualMode, &support) != S_OK || !support || ctx->bmd_mode != actualMode)
+            return -1;
+    }
+    return 0;
+#elif BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
     if (direction == DIRECTION_IN) {
         if (ctx->dli->DoesSupportVideoMode(ctx->video_input, ctx->bmd_mode, (BMDPixelFormat) cctx->raw_format,
                                            bmdSupportedVideoModeDefault,
@@ -314,8 +328,8 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     return -1;
 }
 
-int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction, int num) {
-    return ff_decklink_set_format(avctx, 0, 0, 0, 0, AV_FIELD_UNKNOWN, direction, num);
+int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction) {
+    return ff_decklink_set_format(avctx, 0, 0, 0, 0, AV_FIELD_UNKNOWN, direction);
 }
 
 int ff_decklink_list_devices(AVFormatContext *avctx,

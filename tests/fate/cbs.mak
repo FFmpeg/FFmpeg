@@ -2,7 +2,7 @@
 # arguments, it decomposes the stream fully and then recomposes it
 # without making any changes.
 
-fate-cbs: fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2 fate-cbs-vp9
+fate-cbs: fate-cbs-av1 fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2 fate-cbs-vp9
 
 FATE_CBS_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_DECODER $(5)_MUXER)
 
@@ -11,6 +11,35 @@ define FATE_CBS_TEST
 FATE_CBS_$(1) += fate-cbs-$(1)-$(2)
 fate-cbs-$(1)-$(2): CMD = md5 -i $(TARGET_SAMPLES)/$(3) -c:v copy -y -bsf:v $(1)_metadata -f $(4)
 endef
+
+# AV1 read/write
+
+FATE_CBS_AV1_CONFORMANCE_SAMPLES = \
+    av1-1-b8-02-allintra.ivf       \
+    av1-1-b8-03-sizedown.ivf       \
+    av1-1-b8-03-sizeup.ivf         \
+    av1-1-b8-04-cdfupdate.ivf      \
+    av1-1-b8-05-mv.ivf             \
+    av1-1-b8-06-mfmv.ivf           \
+    av1-1-b8-22-svc-L1T2.ivf       \
+    av1-1-b8-22-svc-L2T1.ivf       \
+    av1-1-b8-22-svc-L2T2.ivf       \
+    av1-1-b8-23-film_grain-50.ivf  \
+    av1-1-b10-23-film_grain-50.ivf
+
+FATE_CBS_AV1_SAMPLES =              \
+    decode_model.ivf                \
+    frames_refs_short_signaling.ivf \
+    non_uniform_tiling.ivf          \
+    seq_hdr_op_param_info.ivf       \
+    switch_frame.ivf
+
+$(foreach N,$(FATE_CBS_AV1_CONFORMANCE_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1-test-vectors/$(N),rawvideo)))
+$(foreach N,$(FATE_CBS_AV1_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1/$(N),rawvideo)))
+
+FATE_CBS_AV1-$(call ALLYES, IVF_DEMUXER AV1_PARSER AV1_METADATA_BSF RAWVIDEO_MUXER) = $(FATE_CBS_av1)
+FATE_SAMPLES_AVCONV += $(FATE_CBS_AV1-yes)
+fate-cbs-av1: $(FATE_CBS_AV1-yes)
 
 # H.264 read/write
 

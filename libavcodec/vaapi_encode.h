@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext_vaapi.h"
 
 #include "avcodec.h"
+#include "hwconfig.h"
 
 struct VAAPIEncodeType;
 struct VAAPIEncodePicture;
@@ -43,6 +44,8 @@ enum {
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
 };
+
+extern const AVCodecHWConfigInternal *ff_vaapi_encode_hw_configs[];
 
 enum {
     PICTURE_TYPE_IDR = 0,
@@ -325,6 +328,8 @@ typedef struct VAAPIEncodeContext {
     // If the driver does not support ROI then warn the first time we
     // encounter a frame with ROI side data.
     int             roi_warned;
+
+    AVFrame         *frame;
 } VAAPIEncodeContext;
 
 enum {
@@ -416,7 +421,6 @@ typedef struct VAAPIEncodeType {
 } VAAPIEncodeType;
 
 
-int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame);
 int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 int ff_vaapi_encode_init(AVCodecContext *avctx);

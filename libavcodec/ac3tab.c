@@ -126,7 +126,7 @@ const uint8_t ff_ac3_dec_channel_map[8][2][6] = {
 };
 
 /* possible frequencies */
-const uint16_t ff_ac3_sample_rate_tab[3] = { 48000, 44100, 32000 };
+const int ff_ac3_sample_rate_tab[] = { 48000, 44100, 32000, 0 };
 
 /* possible bitrates */
 const uint16_t ff_ac3_bitrate_tab[19] = {

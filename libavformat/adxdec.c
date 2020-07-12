@@ -65,11 +65,9 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret != size) {
-        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
     if (AV_RB16(pkt->data) & 0x8000) {
-        av_packet_unref(pkt);
         return AVERROR_EOF;
     }
     pkt->size     = size;
@@ -83,7 +81,7 @@ static int adx_read_header(AVFormatContext *s)
 {
     ADXDemuxerContext *c = s->priv_data;
     AVCodecParameters *par;
-
+    int ret;
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
@@ -94,8 +92,8 @@ static int adx_read_header(AVFormatContext *s)
     c->header_size = avio_rb16(s->pb) + 4;
     avio_seek(s->pb, -4, SEEK_CUR);
 
-    if (ff_get_extradata(s, par, s->pb, c->header_size) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, par, s->pb, c->header_size)) < 0)
+        return ret;
 
     if (par->extradata_size < 12) {
         av_log(s, AV_LOG_ERROR, "Invalid extradata size.\n");

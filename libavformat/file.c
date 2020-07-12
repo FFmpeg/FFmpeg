@@ -369,7 +369,7 @@ const URLProtocol ff_file_protocol = {
     .url_open_dir        = file_open_dir,
     .url_read_dir        = file_read_dir,
     .url_close_dir       = file_close_dir,
-    .default_whitelist   = "file,crypto"
+    .default_whitelist   = "file,crypto,data"
 };
 
 #endif /* CONFIG_FILE_PROTOCOL */
@@ -408,7 +408,7 @@ const URLProtocol ff_pipe_protocol = {
     .url_check           = file_check,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &pipe_class,
-    .default_whitelist   = "crypto"
+    .default_whitelist   = "crypto,data"
 };
 
 #endif /* CONFIG_PIPE_PROTOCOL */

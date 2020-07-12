@@ -33,13 +33,13 @@ static const AVOption options[] = {
     { "list_devices", "list available devices"  , OFFSET(list_devices), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "format_code",  "set format by fourcc"    , OFFSET(format_code),  AV_OPT_TYPE_STRING, { .str = NULL}, 0, 0, DEC },
-    { "bm_v210",      "v210 10 bit per channel" , OFFSET(v210),         AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "raw_format",   "pixel format to be returned by the card when capturing" , OFFSET(raw_format),  AV_OPT_TYPE_INT, { .i64 = MKBETAG('2','v','u','y')}, 0, UINT_MAX, DEC, "raw_format" },
     { "uyvy422",       NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('2','v','u','y') }, 0, 0, DEC, "raw_format"},
     { "yuv422p10",     NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('v','2','1','0') }, 0, 0, DEC, "raw_format"},
     { "argb",          NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = 32                       }, 0, 0, DEC, "raw_format"},
     { "bgra",          NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('B','G','R','A') }, 0, 0, DEC, "raw_format"},
     { "rgb10",         NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('r','2','1','0') }, 0, 0, DEC, "raw_format"},
+    { "enable_klv",    "output klv if present in vanc", OFFSET(enable_klv), AV_OPT_TYPE_BOOL, { .i64 = 0  }, 0, 1,   DEC },
     { "teletext_lines", "teletext lines bitmask", OFFSET(teletext_lines), AV_OPT_TYPE_INT64, { .i64 = 0   }, 0, 0x7ffffffffLL, DEC, "teletext_lines"},
     { "standard",     NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7fff9fffeLL}, 0, 0,    DEC, "teletext_lines"},
     { "all",          NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7ffffffffLL}, 0, 0,    DEC, "teletext_lines"},
@@ -85,11 +85,12 @@ static const AVOption options[] = {
     { "audio_depth",   "audio bitdepth (16 or 32)", OFFSET(audio_depth),  AV_OPT_TYPE_INT,   { .i64 = 16}, 16, 32, DEC },
     { "decklink_copyts", "copy timestamps, do not remove the initial offset", OFFSET(copyts), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
     { "timestamp_align", "capture start time alignment (in seconds)", OFFSET(timestamp_align), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, DEC },
+    { "wait_for_tc",     "drop frames till a frame with timecode is received. TC format must be set", OFFSET(wait_for_tc), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
     { NULL },
 };
 
 static const AVClass decklink_demuxer_class = {
-    .class_name = "Blackmagic DeckLink demuxer",
+    .class_name = "Blackmagic DeckLink indev",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

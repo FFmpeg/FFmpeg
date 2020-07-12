@@ -113,8 +113,8 @@ static int xv_write_header(AVFormatContext *s)
 
     if (   s->nb_streams > 1
         || par->codec_type != AVMEDIA_TYPE_VIDEO
-        || par->codec_id   != AV_CODEC_ID_RAWVIDEO) {
-        av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
+        || (par->codec_id != AV_CODEC_ID_WRAPPED_AVFRAME && par->codec_id != AV_CODEC_ID_RAWVIDEO)) {
+        av_log(s, AV_LOG_ERROR, "Only a single raw or wrapped avframe video stream is supported.\n");
         return AVERROR(EINVAL);
     }
 
@@ -322,12 +322,18 @@ static int write_picture(AVFormatContext *s, uint8_t *input_data[4],
 static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
-    uint8_t *data[4];
-    int linesize[4];
 
-    av_image_fill_arrays(data, linesize, pkt->data, par->format,
-                         par->width, par->height, 1);
-    return write_picture(s, data, linesize);
+    if (par->codec_id == AV_CODEC_ID_WRAPPED_AVFRAME) {
+        AVFrame *frame = (AVFrame *)pkt->data;
+        return write_picture(s, frame->data, frame->linesize);
+    } else {
+        uint8_t *data[4];
+        int linesize[4];
+
+        av_image_fill_arrays(data, linesize, pkt->data, par->format,
+                             par->width, par->height, 1);
+        return write_picture(s, data, linesize);
+    }
 }
 
 static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
@@ -375,7 +381,7 @@ AVOutputFormat ff_xv_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("XV (XVideo) output device"),
     .priv_data_size = sizeof(XVContext),
     .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
     .write_header   = xv_write_header,
     .write_packet   = xv_write_packet,
     .write_uncoded_frame = xv_write_frame,

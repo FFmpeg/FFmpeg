@@ -131,61 +131,38 @@ int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *
     return -1;
 }
 
-static const MXFSamplesPerFrame mxf_spf[] = {
-    { { 1001, 24000 }, { 2002, 0,    0,    0,    0,    0 } }, // FILM 23.976
-    { { 1, 24},        { 2000, 0,    0,    0,    0,    0 } }, // FILM 24
-    { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
-    { { 1001, 60000 }, { 801,  801,  800,  801,  801,  0 } }, // NTSC 59.94
-    { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
-    { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
-    { { 1, 60 },       { 800,  0,    0,    0,    0,    0 } },
-};
-
-static const AVRational mxf_time_base[] = {
-    { 1001, 24000 },
-    { 1, 24},
-    { 1001, 30000 },
-    { 1001, 60000 },
-    { 1, 25 },
-    { 1, 50 },
-    { 1, 60 },
-    { 0, 0}
-};
-
-const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s,
-                                                       AVRational time_base)
-{
-    int idx = av_find_nearest_q_idx(time_base, mxf_time_base);
-    AVRational diff = av_sub_q(time_base, mxf_time_base[idx]);
-
-    diff.num = FFABS(diff.num);
-
-    if (av_cmp_q(diff, (AVRational){1, 1000}) >= 0)
-        return NULL;
-
-    if (av_cmp_q(time_base, mxf_time_base[idx]))
-        av_log(s, AV_LOG_WARNING,
-               "%d/%d input time base matched %d/%d container time base\n",
-               time_base.num, time_base.den,
-               mxf_spf[idx].time_base.num,
-               mxf_spf[idx].time_base.den);
-
-    return &mxf_spf[idx];
-}
-
-static const int mxf_content_package_rates[] = {
-    3, 2, 7, 13, 4, 10, 12,
+/**
+ * See SMPTE 326M-2000 Section 7.2 Content package rate
+ * MXFContentPackageRate->rate is bits b5..b0.
+ */
+static const MXFContentPackageRate mxf_content_package_rates[] = {
+    {  2, { 1,    24    } },
+    {  3, { 1001, 24000 } },
+    {  4, { 1,    25    } },
+    {  6, { 1,    30    } },
+    {  7, { 1001, 30000 } },
+    {  8, { 1   , 48    } },
+    {  9, { 1001, 48000 } },
+    { 10, { 1,    50    } },
+    { 12, { 1,    60    } },
+    { 13, { 1001, 60000 } },
+    { 14, { 1,    72    } },
+    { 15, { 1001, 72000 } },
+    { 16, { 1,    75    } },
+    { 18, { 1,    90    } },
+    { 19, { 1001, 90000 } },
+    { 20, { 1,    96    } },
+    { 21, { 1001, 96000 } },
+    { 22, { 1,    100   } },
+    { 24, { 1,    120   } },
+    { 25, { 1001, 120000} },
+    {0}
 };
 
 int ff_mxf_get_content_package_rate(AVRational time_base)
 {
-    int idx = av_find_nearest_q_idx(time_base, mxf_time_base);
-    AVRational diff = av_sub_q(time_base, mxf_time_base[idx]);
-
-    diff.num = FFABS(diff.num);
-
-    if (av_cmp_q(diff, (AVRational){1, 1000}) >= 0)
-        return -1;
-
-    return mxf_content_package_rates[idx];
+    for (int i = 0; mxf_content_package_rates[i].rate; i++)
+        if (!av_cmp_q(time_base, mxf_content_package_rates[i].tb))
+            return mxf_content_package_rates[i].rate;
+    return 0;
 }

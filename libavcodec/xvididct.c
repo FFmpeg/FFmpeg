@@ -115,24 +115,24 @@ static int idct_row(short *in, const int *const tab, int rnd)
         in[6] = a1;
     } else {
         const int k  = c4 * in[0] + rnd;
-        const int a0 = k + c2 * in[2] + c4 * in[4] + c6 * in[6];
-        const int a1 = k + c6 * in[2] - c4 * in[4] - c2 * in[6];
-        const int a2 = k - c6 * in[2] - c4 * in[4] + c2 * in[6];
-        const int a3 = k - c2 * in[2] + c4 * in[4] - c6 * in[6];
+        const unsigned int a0 = k + c2 * in[2] + c4 * in[4] + c6 * in[6];
+        const unsigned int a1 = k + c6 * in[2] - c4 * in[4] - c2 * in[6];
+        const unsigned int a2 = k - c6 * in[2] - c4 * in[4] + c2 * in[6];
+        const unsigned int a3 = k - c2 * in[2] + c4 * in[4] - c6 * in[6];
 
-        const int b0 = c1 * in[1] + c3 * in[3] + c5 * in[5] + c7 * in[7];
-        const int b1 = c3 * in[1] - c7 * in[3] - c1 * in[5] - c5 * in[7];
-        const int b2 = c5 * in[1] - c1 * in[3] + c7 * in[5] + c3 * in[7];
-        const int b3 = c7 * in[1] - c5 * in[3] + c3 * in[5] - c1 * in[7];
+        const unsigned int b0 = c1 * in[1] + c3 * in[3] + c5 * in[5] + c7 * in[7];
+        const unsigned int b1 = c3 * in[1] - c7 * in[3] - c1 * in[5] - c5 * in[7];
+        const unsigned int b2 = c5 * in[1] - c1 * in[3] + c7 * in[5] + c3 * in[7];
+        const unsigned int b3 = c7 * in[1] - c5 * in[3] + c3 * in[5] - c1 * in[7];
 
-        in[0] = (a0 + b0) >> ROW_SHIFT;
-        in[1] = (a1 + b1) >> ROW_SHIFT;
-        in[2] = (a2 + b2) >> ROW_SHIFT;
-        in[3] = (a3 + b3) >> ROW_SHIFT;
-        in[4] = (a3 - b3) >> ROW_SHIFT;
-        in[5] = (a2 - b2) >> ROW_SHIFT;
-        in[6] = (a1 - b1) >> ROW_SHIFT;
-        in[7] = (a0 - b0) >> ROW_SHIFT;
+        in[0] = (int)(a0 + b0) >> ROW_SHIFT;
+        in[1] = (int)(a1 + b1) >> ROW_SHIFT;
+        in[2] = (int)(a2 + b2) >> ROW_SHIFT;
+        in[3] = (int)(a3 + b3) >> ROW_SHIFT;
+        in[4] = (int)(a3 - b3) >> ROW_SHIFT;
+        in[5] = (int)(a2 - b2) >> ROW_SHIFT;
+        in[6] = (int)(a1 - b1) >> ROW_SHIFT;
+        in[7] = (int)(a0 - b0) >> ROW_SHIFT;
     }
     return 1;
 }
@@ -142,7 +142,7 @@ static int idct_row(short *in, const int *const tab, int rnd)
 #define TAN3  0xAB0E
 #define SQRT2 0x5A82
 
-#define MULT(c, x, n)  (((c) * (x)) >> (n))
+#define MULT(c, x, n)  ((unsigned)((int)((c) * (unsigned)(x)) >> (n)))
 // 12b version => #define MULT(c,x, n)  ((((c) >> 3) * (x)) >> ((n) - 3))
 // 12b zero-testing version:
 

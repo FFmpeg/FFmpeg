@@ -32,15 +32,25 @@ typedef struct AVComplexDouble {
     double re, im;
 } AVComplexDouble;
 
+typedef struct AVComplexInt32 {
+    int32_t re, im;
+} AVComplexInt32;
+
 enum AVTXType {
     /**
      * Standard complex to complex FFT with sample data type AVComplexFloat.
-     * Scaling currently unsupported
+     * Output is not 1/len normalized. Scaling currently unsupported.
+     * The stride parameter is ignored.
      */
     AV_TX_FLOAT_FFT = 0,
     /**
      * Standard MDCT with sample data type of float and a scale type of
      * float. Length is the frame size, not the window size (which is 2x frame)
+     * For forward transforms, the stride specifies the spacing between each
+     * sample in the output array in bytes. The input must be a flat array.
+     * For inverse transforms, the stride specifies the spacing between each
+     * sample in the input array in bytes. The output will be a flat array.
+     * Stride must be a non-zero multiple of sizeof(float).
      */
     AV_TX_FLOAT_MDCT = 1,
     /**
@@ -49,8 +59,19 @@ enum AVTXType {
     AV_TX_DOUBLE_FFT = 2,
     /**
      * Same as AV_TX_FLOAT_MDCT with data and scale type of double.
+     * Stride must be a non-zero multiple of sizeof(double).
      */
     AV_TX_DOUBLE_MDCT = 3,
+    /**
+     * Same as AV_TX_FLOAT_FFT with a data type of AVComplexInt32.
+     */
+    AV_TX_INT32_FFT = 4,
+    /**
+     * Same as AV_TX_FLOAT_MDCT with data type of int32_t and scale type of float.
+     * Only scale values less than or equal to 1.0 are supported.
+     * Stride must be a non-zero multiple of sizeof(int32_t).
+     */
+    AV_TX_INT32_MDCT = 5,
 };
 
 /**
@@ -62,14 +83,17 @@ enum AVTXType {
  * @param s the transform context
  * @param out the output array
  * @param in the input array
- * @param stride the input or output stride (depending on transform direction)
- * in bytes, currently implemented for all MDCT transforms
+ * @param stride the input or output stride in bytes
+ *
+ * The out and in arrays must be aligned to the maximum required by the CPU
+ * architecture.
+ * The stride must follow the constraints the transform type has specified.
  */
 typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
 
 /**
  * Initialize a transform context with the given configuration
- * Currently power of two lengths from 4 to 131072 are supported, along with
+ * Currently power of two lengths from 2 to 131072 are supported, along with
  * any length decomposable to a power of two and either 3, 5 or 15.
  *
  * @param ctx the context to allocate, will be NULL on error

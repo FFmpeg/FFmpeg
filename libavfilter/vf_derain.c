@@ -34,11 +34,12 @@
 typedef struct DRContext {
     const AVClass *class;
 
+    int                filter_type;
     char              *model_filename;
     DNNBackendType     backend_type;
     DNNModule         *dnn_module;
     DNNModel          *model;
-    DNNInputData       input;
+    DNNData            input;
     DNNData            output;
 } DRContext;
 
@@ -46,12 +47,15 @@ typedef struct DRContext {
 #define OFFSET(x) offsetof(DRContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption derain_options[] = {
-    { "dnn_backend", "DNN backend",             OFFSET(backend_type),   AV_OPT_TYPE_INT,    { .i64 = 0 },    0, 1, FLAGS, "backend" },
-    { "native",      "native backend flag",     0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "backend" },
+    { "filter_type", "filter type(derain/dehaze)",  OFFSET(filter_type),    AV_OPT_TYPE_INT,    { .i64 = 0 },    0, 1, FLAGS, "type" },
+    { "derain",      "derain filter flag",          0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "type" },
+    { "dehaze",      "dehaze filter flag",          0,                      AV_OPT_TYPE_CONST,  { .i64 = 1 },    0, 0, FLAGS, "type" },
+    { "dnn_backend", "DNN backend",                 OFFSET(backend_type),   AV_OPT_TYPE_INT,    { .i64 = 0 },    0, 1, FLAGS, "backend" },
+    { "native",      "native backend flag",         0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "backend" },
 #if (CONFIG_LIBTENSORFLOW == 1)
-    { "tensorflow",  "tensorflow backend flag", 0,                      AV_OPT_TYPE_CONST,  { .i64 = 1 },    0, 0, FLAGS, "backend" },
+    { "tensorflow",  "tensorflow backend flag",     0,                      AV_OPT_TYPE_CONST,  { .i64 = 1 },    0, 0, FLAGS, "backend" },
 #endif
-    { "model",       "path to model file",      OFFSET(model_filename), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
+    { "model",       "path to model file",          OFFSET(model_filename), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { NULL }
 };
 
@@ -96,7 +100,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     DRContext *dr_context = ctx->priv;
     DNNReturnType dnn_result;
-    int pad_size;
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -125,15 +128,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->width  = dr_context->output.width;
     outlink->h  = dr_context->output.height;
     outlink->w  = dr_context->output.width;
-    pad_size    = (in->height - out->height) >> 1;
 
     for (int i = 0; i < out->height; i++){
         for(int j = 0; j < out->width * 3; j++){
             int k = i * out->linesize[0] + j;
             int t = i * out->width * 3 + j;
-
-            int t_in =  (i + pad_size) * in->width * 3 + j + pad_size * 3;
-            out->data[0][k] = CLIP((int)((((float *)dr_context->input.data)[t_in] - dr_context->output.data[t]) * 255), 0, 255);
+            out->data[0][k] = CLIP((int)((((float *)dr_context->output.data)[t]) * 255), 0, 255);
         }
     }
 

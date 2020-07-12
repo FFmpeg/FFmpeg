@@ -393,10 +393,14 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb;
-    AVStream *st = avctx->streams[mlv->stream_index];
+    AVStream *st;
     int index, ret;
     unsigned int size, space;
 
+    if (!avctx->nb_streams)
+        return AVERROR_EOF;
+
+    st = avctx->streams[mlv->stream_index];
     if (mlv->pts >= st->duration)
         return AVERROR_EOF;
 
@@ -462,8 +466,7 @@ static int read_close(AVFormatContext *s)
     MlvContext *mlv = s->priv_data;
     int i;
     for (i = 0; i < 100; i++)
-        if (mlv->pb[i])
-            ff_format_io_close(s, &mlv->pb[i]);
+        ff_format_io_close(s, &mlv->pb[i]);
     return 0;
 }
 

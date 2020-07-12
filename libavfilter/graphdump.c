@@ -154,7 +154,7 @@ static void avfilter_graph_dump_to_buf(AVBPrint *buf, AVFilterGraph *graph)
 char *avfilter_graph_dump(AVFilterGraph *graph, const char *options)
 {
     AVBPrint buf;
-    char *dump;
+    char *dump = NULL;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_COUNT_ONLY);
     avfilter_graph_dump_to_buf(&buf, graph);

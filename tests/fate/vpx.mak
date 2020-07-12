@@ -71,10 +71,10 @@ FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-represe
 fate-webm-dash-manifest-representations: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video4.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live
-fate-webm-dash-manifest-live: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -debug_mode 1 -
+fate-webm-dash-manifest-live: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -fflags +bitexact -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live-bandwidth
-fate-webm-dash-manifest-live-bandwidth: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -bandwidth 100 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -bandwidth 200 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -debug_mode 1 -
+fate-webm-dash-manifest-live-bandwidth: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -bandwidth 100 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -bandwidth 200 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -fflags +bitexact -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -
 
 FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-2451
 fate-vp8-2451: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -vsync cfr -an
@@ -162,6 +162,11 @@ $(eval $(call FATE_VP9_FULL))
 FATE_VP9-$(CONFIG_IVF_DEMUXER) += fate-vp9-05-resize
 fate-vp9-05-resize: CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf -s 352x288 -sws_flags bitexact+bilinear
 fate-vp9-05-resize: REF = $(SRC_PATH)/tests/ref/fate/vp9-05-resize
+
+fate-vp9-encparams: CMD = venc_data $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-segmentation-aq-akiyo.webm 0 5
+FATE_SAMPLES_DUMP_DATA += fate-vp9-encparams
+
+FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9-encparams
 
 FATE_SAMPLES_AVCONV-$(CONFIG_VP9_DECODER) += $(FATE_VP9-yes)
 fate-vp9: $(FATE_VP9-yes)

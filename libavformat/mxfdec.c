@@ -131,7 +131,7 @@ typedef struct MXFSequence {
     uint8_t origin;
 } MXFSequence;
 
-typedef struct MXFTrack {
+typedef struct MXFTimecodeComponent {
     UID uid;
     enum MXFMetadataSetType type;
     int drop_frame;
@@ -362,8 +362,9 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     default:
         break;
     }
-    if (freectx)
-    av_freep(ctx);
+    if (freectx) {
+        av_freep(ctx);
+    }
 }
 
 static int64_t klv_decode_ber_length(AVIOContext *pb)
@@ -866,6 +867,7 @@ static inline int mxf_read_utf16_string(AVIOContext *pb, int size, char** str, i
         return AVERROR(EINVAL);
 
     buf_size = size + size / 2 + 1;
+    av_free(*str);
     *str = av_malloc(buf_size);
     if (!*str)
         return AVERROR(ENOMEM);
@@ -2017,7 +2019,7 @@ static MXFStructuralComponent* mxf_resolve_sourceclip(MXFContext *mxf, UID *stro
 static int mxf_parse_package_comments(MXFContext *mxf, AVDictionary **pm, MXFPackage *package)
 {
     MXFTaggedValue *tag;
-    int size, i;
+    int i;
     char *key = NULL;
 
     for (i = 0; i < package->comment_count; i++) {
@@ -2025,12 +2027,10 @@ static int mxf_parse_package_comments(MXFContext *mxf, AVDictionary **pm, MXFPac
         if (!tag || !tag->name || !tag->value)
             continue;
 
-        size = strlen(tag->name) + 8 + 1;
-        key = av_mallocz(size);
+        key = av_asprintf("comment_%s", tag->name);
         if (!key)
             return AVERROR(ENOMEM);
 
-        snprintf(key, size, "comment_%s", tag->name);
         av_dict_set(pm, key, tag->value, AV_DICT_DONT_STRDUP_KEY);
     }
     return 0;
@@ -3169,6 +3169,7 @@ static int mxf_read_header(AVFormatContext *s)
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
+        //goto fail should not be needed as no metadata sets will have been parsed yet
         return AVERROR_INVALIDDATA;
     }
     avio_seek(s->pb, -14, SEEK_CUR);
@@ -3199,7 +3200,8 @@ static int mxf_read_header(AVFormatContext *s)
 
             if (!mxf->current_partition) {
                 av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to first PartitionPack\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
 
             if (!mxf->current_partition->first_essence_klv.offset)
@@ -3305,20 +3307,17 @@ static int mxf_get_next_track_edit_unit(MXFContext *mxf, MXFTrack *track, int64_
 static int64_t mxf_compute_sample_count(MXFContext *mxf, AVStream *st,
                                         int64_t edit_unit)
 {
-    int i, total = 0, size = 0;
     MXFTrack *track = st->priv_data;
     AVRational time_base = av_inv_q(track->edit_rate);
     AVRational sample_rate = av_inv_q(st->time_base);
-    const MXFSamplesPerFrame *spf = NULL;
-    int64_t sample_count;
 
     // For non-audio sample_count equals current edit unit
     if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
         return edit_unit;
 
-    if ((sample_rate.num / sample_rate.den) == 48000)
-        spf = ff_mxf_get_samples_per_frame(mxf->fc, time_base);
-    if (!spf) {
+    if ((sample_rate.num / sample_rate.den) == 48000) {
+        return av_rescale_q(edit_unit, sample_rate, track->edit_rate);
+    } else {
         int remainder = (sample_rate.num * time_base.num) %
                         (time_base.den * sample_rate.den);
         if (remainder)
@@ -3329,20 +3328,6 @@ static int64_t mxf_compute_sample_count(MXFContext *mxf, AVStream *st,
                    sample_rate.num, sample_rate.den);
         return av_rescale_q(edit_unit, sample_rate, track->edit_rate);
     }
-
-    while (spf->samples_per_frame[size]) {
-        total += spf->samples_per_frame[size];
-        size++;
-    }
-
-    av_assert2(size);
-
-    sample_count = (edit_unit / size) * (uint64_t)total;
-    for (i = 0; i < edit_unit % size; i++) {
-        sample_count += spf->samples_per_frame[i];
-    }
-
-    return sample_count;
 }
 
 /**
@@ -3508,8 +3493,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 } else {
                     if ((size = next_ofs - pos) <= 0) {
                         av_log(s, AV_LOG_ERROR, "bad size: %"PRId64"\n", size);
-                        ret = AVERROR_INVALIDDATA;
-                        goto skip;
+                        mxf->current_klv_data = (KLVPacket){{0}};
+                        return AVERROR_INVALIDDATA;
                     }
                     // We must not overread, because the next edit unit might be in another KLV
                     if (size > max_data_size)
@@ -3581,6 +3566,7 @@ static int mxf_read_close(AVFormatContext *s)
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         mxf_free_metadataset(mxf->metadata_sets + i, 1);
     }
+    mxf->metadata_sets_count = 0;
     av_freep(&mxf->partitions);
     av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);

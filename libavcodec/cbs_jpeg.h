@@ -120,11 +120,4 @@ typedef struct JPEGRawComment {
 } JPEGRawComment;
 
 
-typedef struct CodedBitstreamJPEGContext {
-    // Write buffer.
-    uint8_t *write_buffer;
-    size_t write_buffer_size;
-} CodedBitstreamJPEGContext;
-
-
 #endif /* AVCODEC_CBS_JPEG_H */

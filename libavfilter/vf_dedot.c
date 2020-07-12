@@ -71,6 +71,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
         AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
@@ -283,7 +284,7 @@ static int activate(AVFilterContext *ctx)
                     s->frames[i] = av_frame_clone(frame);
             }
             av_frame_free(&frame);
-        } else {
+        } else if (s->frames[3]) {
             s->eof_frames--;
             s->frames[4] = av_frame_clone(s->frames[3]);
         }
@@ -312,7 +313,8 @@ static int activate(AVFilterContext *ctx)
                                                FFMIN(s->planeheight[2],
                                                ff_filter_get_nb_threads(ctx)));
                     }
-                }
+                } else
+                    av_frame_free(&out);
             } else if (!out) {
                 ret = AVERROR(ENOMEM);
             }
@@ -343,7 +345,11 @@ static int activate(AVFilterContext *ctx)
     if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
             s->eof = 1;
-            s->eof_frames = 2;
+            s->eof_frames = !!s->frames[0] + !!s->frames[1];
+            if (s->eof_frames <= 0) {
+                ff_outlink_set_status(outlink, AVERROR_EOF, pts);
+                return 0;
+            }
             ff_filter_set_ready(ctx, 10);
             return 0;
         }

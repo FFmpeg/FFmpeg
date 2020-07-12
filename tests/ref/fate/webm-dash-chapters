@@ -1,0 +1,74 @@
+e7fde2ecc9683a7a5296dab33b028653 *tests/data/fate/webm-dash-chapters.webm
+111220 tests/data/fate/webm-dash-chapters.webm
+#extradata 0:     3469, 0xc6769ddc
+#tb 0: 1/1000
+#media_type 0: audio
+#codec_id 0: vorbis
+#sample_rate 0: 44100
+#channel_layout 0: 4
+#channel_layout_name 0: mono
+0,          0,          0,        5,       28, 0xefcf103e
+0,          6,          6,       26,      198, 0xfbbe5eb5
+0,         32,         32,       46,      198, 0xabd95c6c
+0,         99,         99,       26,       41, 0x954b12a5
+0,        105,        105,        5,       41, 0xbccd1463
+0,        110,        110,        5,       44, 0x4fa218a1
+0,        116,        116,        5,       43, 0xf87716d4
+0,        122,        122,        5,       32, 0x0fdc1057
+0,        128,        128,        5,       67, 0xd5352244
+0,        134,        134,        5,       68, 0x36e91faf
+0,        140,        140,        5,       57, 0xe6f51928
+0,        145,        145,        5,       49, 0x3bb416e1
+0,        151,        151,        5,       54, 0x678f1777
+0,        157,        157,        5,       57, 0x56601ef3
+0,        163,        163,        5,       52, 0xc0fe1a12
+0,        169,        169,       26,      236, 0xfe396f02
+0,        195,        195,       46,      208, 0x018e62d3
+0,        241,        241,       46,      223, 0x9fa76917
+0,        308,        308,       26,       46, 0xd8c314f9
+0,        314,        314,        5,       46, 0x199018bc
+0,        319,        319,        5,       46, 0xbe8314cd
+0,        325,        325,        5,       45, 0xe0ad1622
+0,        331,        331,        5,       43, 0xe52a1659
+0,        337,        337,        5,       58, 0xd5e01f9c
+0,        343,        343,        5,       67, 0x5bbc2201
+0,        348,        348,       26,      226, 0x04887569
+0,        375,        375,       46,      217, 0x4b6564ab
+0,        421,        421,       46,      211, 0xb7e868da
+0,        467,        467,       46,      198, 0x7bf65d8a
+[CHAPTER]
+id=1
+time_base=1/1000000000
+start=0
+start_time=0.000000
+end=5000000000
+end_time=5.000000
+TAG:title=start
+[/CHAPTER]
+[CHAPTER]
+id=2
+time_base=1/1000000000
+start=5000000000
+start_time=5.000000
+end=10500000000
+end_time=10.500000
+TAG:title=Five Seconds
+[/CHAPTER]
+[CHAPTER]
+id=3
+time_base=1/1000000000
+start=10500000000
+start_time=10.500000
+end=15000000000
+end_time=15.000000
+TAG:title=Ten point 5 seconds
+[/CHAPTER]
+[CHAPTER]
+id=4
+time_base=1/1000000000
+start=15000000000
+start_time=15.000000
+end=19849000000
+end_time=19.849000
+TAG:title=15 sec - over soon
+[/CHAPTER]

@@ -123,6 +123,7 @@ typedef struct WMACodecContext {
     uint8_t last_superframe[MAX_CODED_SUPERFRAME_SIZE + AV_INPUT_BUFFER_PADDING_SIZE]; /* padding added */
     int last_bitoffset;
     int last_superframe_len;
+    int exponents_initialized[MAX_CHANNELS];
     float noise_table[NOISE_TAB_SIZE];
     int noise_index;
     float noise_mult; /* XXX: suppress that and integrate it in the noise array */

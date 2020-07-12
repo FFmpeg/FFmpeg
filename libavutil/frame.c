@@ -25,6 +25,7 @@
 #include "imgutils.h"
 #include "mem.h"
 #include "samplefmt.h"
+#include "hwcontext.h"
 
 #if FF_API_FRAME_GET_SET
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
@@ -460,7 +461,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
 
     /* duplicate the frame data if it's not refcounted */
     if (!src->buf[0]) {
-        ret = av_frame_get_buffer(dst, 32);
+        ret = av_frame_get_buffer(dst, 0);
         if (ret < 0)
             return ret;
 
@@ -626,7 +627,11 @@ int av_frame_make_writable(AVFrame *frame)
     tmp.channels       = frame->channels;
     tmp.channel_layout = frame->channel_layout;
     tmp.nb_samples     = frame->nb_samples;
-    ret = av_frame_get_buffer(&tmp, 32);
+
+    if (frame->hw_frames_ctx)
+        ret = av_hwframe_get_buffer(frame->hw_frames_ctx, &tmp, 0);
+    else
+        ret = av_frame_get_buffer(&tmp, 0);
     if (ret < 0)
         return ret;
 
@@ -752,6 +757,9 @@ static int frame_copy_video(AVFrame *dst, const AVFrame *src)
         dst->height < src->height)
         return AVERROR(EINVAL);
 
+    if (src->hw_frames_ctx || dst->hw_frames_ctx)
+        return av_hwframe_transfer_data(dst, src, 0);
+
     planes = av_pix_fmt_count_planes(dst->format);
     for (i = 0; i < planes; i++)
         if (!dst->data[i] || !src->data[i])
@@ -806,7 +814,7 @@ void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type)
 {
     int i;
 
-    for (i = 0; i < frame->nb_side_data; i++) {
+    for (i = frame->nb_side_data - 1; i >= 0; i--) {
         AVFrameSideData *sd = frame->side_data[i];
         if (sd->type == type) {
             free_side_data(&frame->side_data[i]);
@@ -842,6 +850,8 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
 #endif
     case AV_FRAME_DATA_DYNAMIC_HDR_PLUS: return "HDR Dynamic Metadata SMPTE2094-40 (HDR10+)";
     case AV_FRAME_DATA_REGIONS_OF_INTEREST: return "Regions Of Interest";
+    case AV_FRAME_DATA_VIDEO_ENC_PARAMS:            return "Video encoding parameters";
+    case AV_FRAME_DATA_SEI_UNREGISTERED:            return "H.26[45] User Data Unregistered SEI message";
     }
     return NULL;
 }

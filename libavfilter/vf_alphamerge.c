@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
 #include "drawutils.h"
@@ -37,6 +38,8 @@
 enum { Y, U, V, A };
 
 typedef struct AlphaMergeContext {
+    const AVClass *class;
+
     int is_packed_rgb;
     uint8_t rgba_map[4];
     AVFrame *main_frame;
@@ -77,9 +80,9 @@ fail:
 
 static int config_input_main(AVFilterLink *inlink)
 {
-    AlphaMergeContext *merge = inlink->dst->priv;
-    merge->is_packed_rgb =
-        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0 &&
+    AlphaMergeContext *s = inlink->dst->priv;
+    s->is_packed_rgb =
+        ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0 &&
         inlink->format != AV_PIX_FMT_GBRAP;
     return 0;
 }
@@ -109,15 +112,15 @@ static void draw_frame(AVFilterContext *ctx,
                        AVFrame *main_buf,
                        AVFrame *alpha_buf)
 {
-    AlphaMergeContext *merge = ctx->priv;
+    AlphaMergeContext *s = ctx->priv;
     int h = main_buf->height;
 
-    if (merge->is_packed_rgb) {
+    if (s->is_packed_rgb) {
         int x, y;
         uint8_t *pin, *pout;
         for (y = 0; y < h; y++) {
             pin = alpha_buf->data[0] + y * alpha_buf->linesize[0];
-            pout = main_buf->data[0] + y * main_buf->linesize[0] + merge->rgba_map[A];
+            pout = main_buf->data[0] + y * main_buf->linesize[0] + s->rgba_map[A];
             for (x = 0; x < main_buf->width; x++) {
                 *pout = *pin;
                 pin += 1;
@@ -154,7 +157,8 @@ static int activate(AVFilterContext *ctx)
     }
 
     if (s->main_frame && s->alpha_frame) {
-        draw_frame(ctx, s->main_frame, s->alpha_frame);
+        if (!ctx->is_disabled)
+            draw_frame(ctx, s->main_frame, s->alpha_frame);
         ret = ff_filter_frame(outlink, s->main_frame);
         av_frame_free(&s->alpha_frame);
         s->main_frame = NULL;
@@ -203,13 +207,21 @@ static const AVFilterPad alphamerge_outputs[] = {
     { NULL }
 };
 
+static const AVOption alphamerge_options[] = {
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(alphamerge);
+
 AVFilter ff_vf_alphamerge = {
     .name           = "alphamerge",
     .description    = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
                       "input into the alpha channel of the first input."),
     .priv_size      = sizeof(AlphaMergeContext),
+    .priv_class     = &alphamerge_class,
     .query_formats  = query_formats,
     .inputs         = alphamerge_inputs,
     .outputs        = alphamerge_outputs,
     .activate       = activate,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

@@ -189,23 +189,26 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
     return 0;
 }
 
-static void fill_ones(SwsSlice *s, int n, int is16bit)
+static void fill_ones(SwsSlice *s, int n, int bpc)
 {
-    int i;
+    int i, j, k, size, end;
+
     for (i = 0; i < 4; ++i) {
-        int j;
-        int size = s->plane[i].available_lines;
+        size = s->plane[i].available_lines;
         for (j = 0; j < size; ++j) {
-            int k;
-            int end = is16bit ? n>>1: n;
-            // fill also one extra element
-            end += 1;
-            if (is16bit)
+            if (bpc == 16) {
+                end = (n>>1) + 1;
                 for (k = 0; k < end; ++k)
                     ((int32_t*)(s->plane[i].line[j]))[k] = 1<<18;
-            else
+            } else if (bpc == 32) {
+                end = (n>>2) + 1;
+                for (k = 0; k < end; ++k)
+                    ((int64_t*)(s->plane[i].line[j]))[k] = 1LL<<34;
+            } else {
+                end = n + 1;
                 for (k = 0; k < end; ++k)
                     ((int16_t*)(s->plane[i].line[j]))[k] = 1<<14;
+            }
         }
     }
 }
@@ -272,6 +275,9 @@ int ff_init_filters(SwsContext * c)
     if (c->dstBpc == 16)
         dst_stride <<= 1;
 
+    if (c->dstBpc == 32)
+        dst_stride <<= 2;
+
     num_ydesc = need_lum_conv ? 2 : 1;
     num_cdesc = need_chr_conv ? 2 : 1;
 
@@ -302,7 +308,7 @@ int ff_init_filters(SwsContext * c)
     res = alloc_lines(&c->slice[i], dst_stride, c->dstW);
     if (res < 0) goto cleanup;
 
-    fill_ones(&c->slice[i], dst_stride>>1, c->dstBpc == 16);
+    fill_ones(&c->slice[i], dst_stride>>1, c->dstBpc);
 
     // vertical scaler output
     ++i;

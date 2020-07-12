@@ -20,11 +20,10 @@
 
 #include <string.h>
 
-#include "avcodec.h"
 #include "bsf.h"
+#include "bsf_internal.h"
 
 #include "libavutil/log.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 enum DumpFreq {
@@ -51,8 +50,8 @@ static int dump_extradata(AVBSFContext *ctx, AVPacket *out)
     if (ctx->par_in->extradata &&
         (s->freq == DUMP_FREQ_ALL ||
          (s->freq == DUMP_FREQ_KEYFRAME && in->flags & AV_PKT_FLAG_KEY)) &&
-         in->size >= ctx->par_in->extradata_size &&
-         memcmp(in->data, ctx->par_in->extradata, ctx->par_in->extradata_size)) {
+         (in->size < ctx->par_in->extradata_size ||
+          memcmp(in->data, ctx->par_in->extradata, ctx->par_in->extradata_size))) {
         if (in->size >= INT_MAX - ctx->par_in->extradata_size) {
             ret = AVERROR(ERANGE);
             goto fail;

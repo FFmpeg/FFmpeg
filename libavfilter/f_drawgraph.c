@@ -40,6 +40,7 @@ typedef struct DrawGraphContext {
     int           mode;
     int           slide;
     int           w, h;
+    AVRational    frame_rate;
 
     AVFrame       *out;
     int           x;
@@ -48,21 +49,22 @@ typedef struct DrawGraphContext {
     float         *values[4];
     int           values_size[4];
     int           nb_values;
+    int64_t       prev_pts;
 } DrawGraphContext;
 
 #define OFFSET(x) offsetof(DrawGraphContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption drawgraph_options[] = {
-    { "m1", "set 1st metadata key", OFFSET(key[0]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg1", "set 1st foreground color expression", OFFSET(fg_str[0]), AV_OPT_TYPE_STRING, {.str="0xffff0000"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "m2", "set 2nd metadata key", OFFSET(key[1]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg2", "set 2nd foreground color expression", OFFSET(fg_str[1]), AV_OPT_TYPE_STRING, {.str="0xff00ff00"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "m3", "set 3rd metadata key", OFFSET(key[2]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg3", "set 3rd foreground color expression", OFFSET(fg_str[2]), AV_OPT_TYPE_STRING, {.str="0xffff00ff"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "m4", "set 4th metadata key", OFFSET(key[3]), AV_OPT_TYPE_STRING, {.str=""}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "fg4", "set 4th foreground color expression", OFFSET(fg_str[3]), AV_OPT_TYPE_STRING, {.str="0xffffff00"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "bg", "set background color", OFFSET(bg), AV_OPT_TYPE_COLOR, {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "m1", "set 1st metadata key", OFFSET(key[0]), AV_OPT_TYPE_STRING, {.str=""}, 0, 0, FLAGS },
+    { "fg1", "set 1st foreground color expression", OFFSET(fg_str[0]), AV_OPT_TYPE_STRING, {.str="0xffff0000"}, 0, 0, FLAGS },
+    { "m2", "set 2nd metadata key", OFFSET(key[1]), AV_OPT_TYPE_STRING, {.str=""}, 0, 0, FLAGS },
+    { "fg2", "set 2nd foreground color expression", OFFSET(fg_str[1]), AV_OPT_TYPE_STRING, {.str="0xff00ff00"}, 0, 0, FLAGS },
+    { "m3", "set 3rd metadata key", OFFSET(key[2]), AV_OPT_TYPE_STRING, {.str=""}, 0, 0, FLAGS },
+    { "fg3", "set 3rd foreground color expression", OFFSET(fg_str[2]), AV_OPT_TYPE_STRING, {.str="0xffff00ff"}, 0, 0, FLAGS },
+    { "m4", "set 4th metadata key", OFFSET(key[3]), AV_OPT_TYPE_STRING, {.str=""}, 0, 0, FLAGS },
+    { "fg4", "set 4th foreground color expression", OFFSET(fg_str[3]), AV_OPT_TYPE_STRING, {.str="0xffffff00"}, 0, 0, FLAGS },
+    { "bg", "set background color", OFFSET(bg), AV_OPT_TYPE_COLOR, {.str="white"}, 0, 0, FLAGS },
     { "min", "set minimal value", OFFSET(min), AV_OPT_TYPE_FLOAT, {.dbl=-1.}, INT_MIN, INT_MAX, FLAGS },
     { "max", "set maximal value", OFFSET(max), AV_OPT_TYPE_FLOAT, {.dbl=1.}, INT_MIN, INT_MAX, FLAGS },
     { "mode", "set graph mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, "mode" },
@@ -77,6 +79,8 @@ static const AVOption drawgraph_options[] = {
         {"picture", "display graph in single frame", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "slide"},
     { "size", "set graph size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="900x256"}, 0, 0, FLAGS },
     { "s", "set graph size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="900x256"}, 0, 0, FLAGS },
+    { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
+    { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
     { NULL }
 };
 
@@ -159,6 +163,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVDictionary *metadata;
     AVDictionaryEntry *e;
     AVFrame *out = s->out;
+    AVFrame *clone = NULL;
+    int64_t in_pts, out_pts;
     int i;
 
     if (s->slide == 4 && s->nb_values >= s->values_size[0] / sizeof(float)) {
@@ -309,12 +315,24 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->nb_values++;
     s->x++;
 
+    in_pts = in->pts;
+
     av_frame_free(&in);
 
     if (s->slide == 4)
         return 0;
 
-    return ff_filter_frame(outlink, av_frame_clone(s->out));
+    out_pts = av_rescale_q(in_pts, inlink->time_base, outlink->time_base);
+
+    if (out_pts == s->prev_pts)
+        return 0;
+
+    clone = av_frame_clone(s->out);
+    if (!clone)
+        return AVERROR(ENOMEM);
+
+    clone->pts = s->prev_pts = out_pts;
+    return ff_filter_frame(outlink, clone);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -406,6 +424,9 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
+    outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
+    s->prev_pts = AV_NOPTS_VALUE;
 
     return 0;
 }

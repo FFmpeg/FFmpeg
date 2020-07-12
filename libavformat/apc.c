@@ -37,6 +37,7 @@ static int apc_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;
+    int ret;
 
     avio_rl32(pb); /* CRYO */
     avio_rl32(pb); /* _APC */
@@ -53,8 +54,8 @@ static int apc_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rl32(pb);
 
     /* initial predictor values for adpcm decoder */
-    if (ff_get_extradata(s, st->codecpar, pb, 2 * 4) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, st->codecpar, pb, 2 * 4)) < 0)
+        return ret;
 
     if (avio_rl32(pb)) {
         st->codecpar->channels       = 2;
@@ -78,7 +79,6 @@ static int apc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     if (av_get_packet(s->pb, pkt, MAX_READ_SIZE) <= 0)
         return AVERROR(EIO);
-    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
     return 0;
 }

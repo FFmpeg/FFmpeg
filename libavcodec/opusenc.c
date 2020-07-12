@@ -691,7 +691,7 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
         s->frame[i].avctx = s->avctx;
         s->frame[i].seed = 0;
         s->frame[i].pvq = s->pvq;
-        s->frame[i].apply_phase_inv = 1;
+        s->frame[i].apply_phase_inv = s->options.apply_phase_inv;
         s->frame[i].block[0].emph_coeff = s->frame[i].block[1].emph_coeff = 0.0f;
     }
 
@@ -701,6 +701,7 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
 #define OPUSENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption opusenc_options[] = {
     { "opus_delay", "Maximum delay in milliseconds", offsetof(OpusEncContext, options.max_delay_ms), AV_OPT_TYPE_FLOAT, { .dbl = OPUS_MAX_LOOKAHEAD }, 2.5f, OPUS_MAX_LOOKAHEAD, OPUSENC_FLAGS, "max_delay_ms" },
+    { "apply_phase_inv", "Apply intensity stereo phase inversion", offsetof(OpusEncContext, options.apply_phase_inv), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, OPUSENC_FLAGS, "apply_phase_inv" },
     { NULL },
 };
 

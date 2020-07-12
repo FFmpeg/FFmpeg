@@ -167,7 +167,6 @@ static void test_copy(const AVCodec *c1, const AVCodec *c2)
         avcodec_copy_context(ctx2, ctx1);
         test_copy_print_codec(ctx1);
         test_copy_print_codec(ctx2);
-        avcodec_close(ctx1);
     }
     avcodec_free_context(&ctx1);
     avcodec_free_context(&ctx2);

@@ -67,7 +67,8 @@ typedef struct HWContextType {
     int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
                                       AVDictionary *opts, int flags);
     int              (*device_derive)(AVHWDeviceContext *dst_ctx,
-                                      AVHWDeviceContext *src_ctx, int flags);
+                                      AVHWDeviceContext *src_ctx,
+                                      AVDictionary *opts, int flags);
 
     int              (*device_init)(AVHWDeviceContext *ctx);
     void             (*device_uninit)(AVHWDeviceContext *ctx);
@@ -172,5 +173,6 @@ extern const HWContextType ff_hwcontext_type_vaapi;
 extern const HWContextType ff_hwcontext_type_vdpau;
 extern const HWContextType ff_hwcontext_type_videotoolbox;
 extern const HWContextType ff_hwcontext_type_mediacodec;
+extern const HWContextType ff_hwcontext_type_vulkan;
 
 #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */

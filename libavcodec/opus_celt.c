@@ -507,7 +507,11 @@ void ff_celt_flush(CeltFrame *f)
         memset(block->pf_gains_old, 0, sizeof(block->pf_gains_old));
         memset(block->pf_gains_new, 0, sizeof(block->pf_gains_new));
 
-        block->emph_coeff = 0.0;
+        /* libopus uses CELT_EMPH_COEFF on init, but 0 is better since there's
+         * a lesser discontinuity when seeking.
+         * The deemphasis functions differ from libopus in that they require
+         * an initial state divided by the coefficient. */
+        block->emph_coeff = 0.0f / CELT_EMPH_COEFF;
     }
     f->seed = 0;
 

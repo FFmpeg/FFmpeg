@@ -132,9 +132,10 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
         if (!subs)
             return NULL;
         q->subs = subs;
-        sub = &subs[q->nb_subs++];
+        sub = &subs[q->nb_subs];
         if (av_new_packet(sub, len) < 0)
             return NULL;
+        q->nb_subs++;
         sub->flags |= AV_PKT_FLAG_KEY;
         sub->pts = sub->dts = 0;
         memcpy(sub->data, event, len);
@@ -194,6 +195,9 @@ void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q)
 {
     int i;
 
+    if (!q->nb_subs)
+        return;
+
     qsort(q->subs, q->nb_subs, sizeof(*q->subs),
           q->sort == SUB_SORT_TS_POS ? cmp_pkt_sub_ts_pos
                                      : cmp_pkt_sub_pos_ts);
@@ -208,11 +212,12 @@ void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q)
 int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)
 {
     AVPacket *sub = q->subs + q->current_sub_idx;
+    int ret;
 
     if (q->current_sub_idx == q->nb_subs)
         return AVERROR_EOF;
-    if (av_packet_ref(pkt, sub) < 0) {
-        return AVERROR(ENOMEM);
+    if ((ret = av_packet_ref(pkt, sub)) < 0) {
+        return ret;
     }
 
     pkt->dts = pkt->pts;

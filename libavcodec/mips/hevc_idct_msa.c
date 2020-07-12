@@ -803,8 +803,9 @@ static void hevc_addblk_16x16_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
         LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
         coeffs += 64;
 
-        CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-        CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+        CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                       dst_r2, dst_l2, dst_r3, dst_l3);
+
         PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                     dst_r3, dst0, dst1, dst2, dst3);
         ST_UB4(dst0, dst1, dst2, dst3, dst, stride);
@@ -825,8 +826,8 @@ static void hevc_addblk_16x16_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
     dst_r3 += in6;
     dst_l3 += in7;
 
-    CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-    CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+    CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                   dst_r2, dst_l2, dst_r3, dst_l3);
     PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                 dst_r3, dst0, dst1, dst2, dst3);
     ST_UB4(dst0, dst1, dst2, dst3, dst, stride);
@@ -873,8 +874,8 @@ static void hevc_addblk_32x32_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
         LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
         coeffs += 64;
 
-        CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-        CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+        CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                       dst_r2, dst_l2, dst_r3, dst_l3);
         PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                     dst_r3, dst0, dst1, dst2, dst3);
         ST_UB2(dst0, dst1, dst, 16);
@@ -905,8 +906,8 @@ static void hevc_addblk_32x32_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
     LD_SH4(coeffs, 16, in0, in2, in4, in6);
     LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
 
-    CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-    CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+    CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                   dst_r2, dst_l2, dst_r3, dst_l3);
     PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                 dst_r3, dst0, dst1, dst2, dst3);
     ST_UB2(dst0, dst1, dst, 16);
@@ -928,8 +929,8 @@ static void hevc_addblk_32x32_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
     dst_r3 += in6;
     dst_l3 += in7;
 
-    CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-    CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+    CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                   dst_r2, dst_l2, dst_r3, dst_l3);
     PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                 dst_r3, dst0, dst1, dst2, dst3);
     ST_UB2(dst0, dst1, dst, 16);

@@ -73,7 +73,7 @@ static int write_header(AVFormatContext *s)
     if (cpr->silence_threshold != -1) {
 #if CPR_VERSION_INT >= AV_VERSION_INT(0, 7, 0)
         if (!chromaprint_set_option(cpr->ctx, "silence_threshold", cpr->silence_threshold)) {
-            av_log(s, AV_LOG_ERROR, "Failed to set silence threshold.\n");
+            av_log(s, AV_LOG_ERROR, "Failed to set silence threshold. Setting silence_threshold requires -algorithm 3 option.\n");
             goto fail;
         }
 #else
@@ -114,14 +114,15 @@ fail:
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ChromaprintMuxContext *cpr = s->priv_data;
-    return chromaprint_feed(cpr->ctx, pkt->data, pkt->size / 2) ? 0 : AVERROR(EINVAL);
+    return chromaprint_feed(cpr->ctx, (const int16_t *)pkt->data, pkt->size / 2) ? 0 : AVERROR(EINVAL);
 }
 
 static int write_trailer(AVFormatContext *s)
 {
     ChromaprintMuxContext *cpr = s->priv_data;
     AVIOContext *pb = s->pb;
-    void *fp = NULL, *enc_fp = NULL;
+    void *fp = NULL;
+    char *enc_fp = NULL;
     int size, enc_size, ret = AVERROR(EINVAL);
 
     if (!chromaprint_finish(cpr->ctx)) {
@@ -129,14 +130,14 @@ static int write_trailer(AVFormatContext *s)
         goto fail;
     }
 
-    if (!chromaprint_get_raw_fingerprint(cpr->ctx, &fp, &size)) {
+    if (!chromaprint_get_raw_fingerprint(cpr->ctx, (uint32_t **)&fp, &size)) {
         av_log(s, AV_LOG_ERROR, "Failed to retrieve fingerprint\n");
         goto fail;
     }
 
     switch (cpr->fp_format) {
     case FINGERPRINT_RAW:
-        avio_write(pb, fp, size);
+        avio_write(pb, fp, size * 4); //fp points to array of uint32_t
         break;
     case FINGERPRINT_COMPRESSED:
     case FINGERPRINT_BASE64:
@@ -164,7 +165,7 @@ fail:
 static const AVOption options[] = {
     { "silence_threshold", "threshold for detecting silence", OFFSET(silence_threshold), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 32767, FLAGS },
     { "algorithm", "version of the fingerprint algorithm", OFFSET(algorithm), AV_OPT_TYPE_INT, { .i64 = CHROMAPRINT_ALGORITHM_DEFAULT }, CHROMAPRINT_ALGORITHM_TEST1, INT_MAX, FLAGS },
-    { "fp_format", "fingerprint format to write", OFFSET(fp_format), AV_OPT_TYPE_INT, { .i64 = FINGERPRINT_BASE64 }, FINGERPRINT_RAW, FINGERPRINT_BASE64, FLAGS },
+    { "fp_format", "fingerprint format to write", OFFSET(fp_format), AV_OPT_TYPE_INT, { .i64 = FINGERPRINT_BASE64 }, FINGERPRINT_RAW, FINGERPRINT_BASE64, FLAGS, "fp_format" },
     { "raw", "binary raw fingerprint", 0, AV_OPT_TYPE_CONST, {.i64 = FINGERPRINT_RAW }, INT_MIN, INT_MAX, FLAGS, "fp_format"},
     { "compressed", "binary compressed fingerprint", 0, AV_OPT_TYPE_CONST, {.i64 = FINGERPRINT_COMPRESSED }, INT_MIN, INT_MAX, FLAGS, "fp_format"},
     { "base64", "Base64 compressed fingerprint", 0, AV_OPT_TYPE_CONST, {.i64 = FINGERPRINT_BASE64 }, INT_MIN, INT_MAX, FLAGS, "fp_format"},

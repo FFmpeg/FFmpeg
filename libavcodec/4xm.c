@@ -351,6 +351,8 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, const uint16_t *src,
     index = size2index[log2h][log2w];
     av_assert0(index >= 0);
 
+    if (get_bits_left(&f->gb) < 1)
+        return AVERROR_INVALIDDATA;
     h     = 1 << log2h;
     code  = get_vlc2(&f->gb, block_type_vlc[1 - (f->version > 1)][index].table,
                      BLOCK_TYPE_VLC_BITS, 1);
@@ -523,6 +525,10 @@ static int decode_i_block(FourXContext *f, int16_t *block)
             break;
         if (code == 0xf0) {
             i += 16;
+            if (i >= 64) {
+                av_log(f->avctx, AV_LOG_ERROR, "run %d overflow\n", i);
+                return 0;
+            }
         } else {
             if (code & 0xf) {
                 level = get_xbits(&f->gb, code & 0xf);

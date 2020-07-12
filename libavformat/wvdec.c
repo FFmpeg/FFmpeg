@@ -79,7 +79,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
 {
     WVContext *wc = ctx->priv_data;
     int ret;
-    int rate, bpp, chan;
+    int rate, rate_x, bpp, chan;
     uint32_t chmask, flags;
 
     wc->pos = avio_tell(pb);
@@ -98,11 +98,6 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
         return ret;
     }
 
-    if (wc->header.flags & WV_DSD) {
-        avpriv_report_missing_feature(ctx, "WV DSD");
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (wc->header.version < 0x402 || wc->header.version > 0x410) {
         avpriv_report_missing_feature(ctx, "WV version 0x%03X",
                                       wc->header.version);
@@ -115,7 +110,8 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
         return 0;
     // parse flags
     flags  = wc->header.flags;
-    bpp    = ((flags & 3) + 1) << 3;
+    rate_x = (flags & WV_DSD) ? 4 : 1;
+    bpp    = (flags & WV_DSD) ? 0 : ((flags & 3) + 1) << 3;
     chan   = 1 + !(flags & WV_MONO);
     chmask = flags & WV_MONO ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
     rate   = wv_rates[(flags >> 23) & 0xF];
@@ -124,7 +120,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
         chan   = wc->chan;
         chmask = wc->chmask;
     }
-    if ((rate == -1 || !chan) && !wc->block_parsed) {
+    if ((rate == -1 || !chan || flags & WV_DSD) && !wc->block_parsed) {
         int64_t block_end = avio_tell(pb) + wc->header.blocksize;
         if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             av_log(ctx, AV_LOG_ERROR,
@@ -177,6 +173,16 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
                     return AVERROR_INVALIDDATA;
                 }
                 break;
+            case 0xE:
+                if (size <= 1) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "Invalid DSD block\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                rate_x = 1U << (avio_r8(pb) & 0x1f);
+                if (size)
+                    avio_skip(pb, size-1);
+                break;
             case 0x27:
                 rate = avio_rl24(pb);
                 break;
@@ -200,7 +206,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     if (!wc->chmask)
         wc->chmask = chmask;
     if (!wc->rate)
-        wc->rate   = rate;
+        wc->rate   = rate * rate_x;
 
     if (flags && bpp != wc->bpp) {
         av_log(ctx, AV_LOG_ERROR,
@@ -214,10 +220,10 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
                chan, wc->chan);
         return AVERROR_INVALIDDATA;
     }
-    if (flags && rate != -1 && rate != wc->rate) {
+    if (flags && rate != -1 && !(flags & WV_DSD) && rate * rate_x != wc->rate) {
         av_log(ctx, AV_LOG_ERROR,
                "Sampling rate differ, this block: %i, header block: %i\n",
-               rate, wc->rate);
+               rate * rate_x, wc->rate);
         return AVERROR_INVALIDDATA;
     }
     return 0;
@@ -244,6 +250,9 @@ static int wv_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, 2)) < 0)
+        return ret;
+    AV_WL16(st->codecpar->extradata, wc->header.version);
     st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id              = AV_CODEC_ID_WAVPACK;
     st->codecpar->channels              = wc->chan;
@@ -282,30 +291,26 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     pos = wc->pos;
-    if (av_new_packet(pkt, wc->header.blocksize + WV_HEADER_SIZE) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, wc->header.blocksize + WV_HEADER_SIZE)) < 0)
+        return ret;
     memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
     ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
     if (ret != wc->header.blocksize) {
-        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
     while (!(wc->header.flags & WV_FLAG_FINAL_BLOCK)) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0) {
-            av_packet_unref(pkt);
             return ret;
         }
 
         off = pkt->size;
         if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->header.blocksize)) < 0) {
-            av_packet_unref(pkt);
             return ret;
         }
         memcpy(pkt->data + off, wc->block_header, WV_HEADER_SIZE);
 
         ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->header.blocksize);
         if (ret != wc->header.blocksize) {
-            av_packet_unref(pkt);
             return (ret < 0) ? ret : AVERROR_EOF;
         }
     }

@@ -141,24 +141,25 @@ typedef struct AudioFFTDeNoiseContext {
 } AudioFFTDeNoiseContext;
 
 #define OFFSET(x) offsetof(AudioFFTDeNoiseContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AF  AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AFR AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption afftdn_options[] = {
-    { "nr", "set the noise reduction",    OFFSET(noise_reduction), AV_OPT_TYPE_FLOAT,  {.dbl = 12},          .01, 97, A },
-    { "nf", "set the noise floor",        OFFSET(noise_floor),     AV_OPT_TYPE_FLOAT,  {.dbl =-50},          -80,-20, A },
-    { "nt", "set the noise type",         OFFSET(noise_type),      AV_OPT_TYPE_INT,    {.i64 = WHITE_NOISE}, WHITE_NOISE, NB_NOISE-1, A, "type" },
-    {  "w", "white noise",                0,                       AV_OPT_TYPE_CONST,  {.i64 = WHITE_NOISE},   0,  0, A, "type" },
-    {  "v", "vinyl noise",                0,                       AV_OPT_TYPE_CONST,  {.i64 = VINYL_NOISE},   0,  0, A, "type" },
-    {  "s", "shellac noise",              0,                       AV_OPT_TYPE_CONST,  {.i64 = SHELLAC_NOISE}, 0,  0, A, "type" },
-    {  "c", "custom noise",               0,                       AV_OPT_TYPE_CONST,  {.i64 = CUSTOM_NOISE},  0,  0, A, "type" },
-    { "bn", "set the custom bands noise", OFFSET(band_noise_str),  AV_OPT_TYPE_STRING, {.str = 0},             0,  0, A },
-    { "rf", "set the residual floor",     OFFSET(residual_floor),  AV_OPT_TYPE_FLOAT,  {.dbl =-38},          -80,-20, A },
-    { "tn", "track noise",                OFFSET(track_noise),     AV_OPT_TYPE_BOOL,   {.i64 =  0},            0,  1, A },
-    { "tr", "track residual",             OFFSET(track_residual),  AV_OPT_TYPE_BOOL,   {.i64 =  0},            0,  1, A },
-    { "om", "set output mode",            OFFSET(output_mode),     AV_OPT_TYPE_INT,    {.i64 = OUT_MODE},      0,  NB_MODES-1, A, "mode" },
-    {  "i", "input",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = IN_MODE},       0,  0, A, "mode" },
-    {  "o", "output",                     0,                       AV_OPT_TYPE_CONST,  {.i64 = OUT_MODE},      0,  0, A, "mode" },
-    {  "n", "noise",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = NOISE_MODE},    0,  0, A, "mode" },
+    { "nr", "set the noise reduction",    OFFSET(noise_reduction), AV_OPT_TYPE_FLOAT,  {.dbl = 12},          .01, 97, AFR },
+    { "nf", "set the noise floor",        OFFSET(noise_floor),     AV_OPT_TYPE_FLOAT,  {.dbl =-50},          -80,-20, AFR },
+    { "nt", "set the noise type",         OFFSET(noise_type),      AV_OPT_TYPE_INT,    {.i64 = WHITE_NOISE}, WHITE_NOISE, NB_NOISE-1, AF, "type" },
+    {  "w", "white noise",                0,                       AV_OPT_TYPE_CONST,  {.i64 = WHITE_NOISE},   0,  0, AF, "type" },
+    {  "v", "vinyl noise",                0,                       AV_OPT_TYPE_CONST,  {.i64 = VINYL_NOISE},   0,  0, AF, "type" },
+    {  "s", "shellac noise",              0,                       AV_OPT_TYPE_CONST,  {.i64 = SHELLAC_NOISE}, 0,  0, AF, "type" },
+    {  "c", "custom noise",               0,                       AV_OPT_TYPE_CONST,  {.i64 = CUSTOM_NOISE},  0,  0, AF, "type" },
+    { "bn", "set the custom bands noise", OFFSET(band_noise_str),  AV_OPT_TYPE_STRING, {.str = 0},             0,  0, AF },
+    { "rf", "set the residual floor",     OFFSET(residual_floor),  AV_OPT_TYPE_FLOAT,  {.dbl =-38},          -80,-20, AFR },
+    { "tn", "track noise",                OFFSET(track_noise),     AV_OPT_TYPE_BOOL,   {.i64 =  0},            0,  1, AFR },
+    { "tr", "track residual",             OFFSET(track_residual),  AV_OPT_TYPE_BOOL,   {.i64 =  0},            0,  1, AFR },
+    { "om", "set output mode",            OFFSET(output_mode),     AV_OPT_TYPE_INT,    {.i64 = OUT_MODE},      0,  NB_MODES-1, AFR, "mode" },
+    {  "i", "input",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = IN_MODE},       0,  0, AFR, "mode" },
+    {  "o", "output",                     0,                       AV_OPT_TYPE_CONST,  {.i64 = OUT_MODE},      0,  0, AFR, "mode" },
+    {  "n", "noise",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = NOISE_MODE},    0,  0, AFR, "mode" },
     { NULL }
 };
 
@@ -1260,7 +1261,7 @@ static int output_frame(AVFilterLink *inlink)
     ret = ff_filter_frame(outlink, out);
     if (ret < 0)
         goto end;
-    s->pts += s->sample_advance;
+    s->pts += av_rescale_q(s->sample_advance, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 end:
     av_frame_free(&in);
 
@@ -1375,6 +1376,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 {
     AudioFFTDeNoiseContext *s = ctx->priv;
     int need_reset = 0;
+    int ret = 0;
 
     if (!strcmp(cmd, "sample_noise") ||
         !strcmp(cmd, "sn")) {
@@ -1386,31 +1388,11 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
             s->sample_noise_start = 0;
             s->sample_noise_end = 1;
         }
-    } else if (!strcmp(cmd, "nr") ||
-               !strcmp(cmd, "noise_reduction")) {
-        float nr;
-
-        if (av_sscanf(args, "%f", &nr) == 1) {
-            s->noise_reduction = av_clipf(nr, 0.01, 97);
-            need_reset = 1;
-        }
-    } else if (!strcmp(cmd, "nf") ||
-               !strcmp(cmd, "noise_floor")) {
-        float nf;
-
-        if (av_sscanf(args, "%f", &nf) == 1) {
-            s->noise_floor = av_clipf(nf, -80, -20);
-            need_reset = 1;
-        }
-    } else if (!strcmp(cmd, "output_mode") ||
-               !strcmp(cmd, "om")) {
-        if (!strcmp(args, "i")) {
-            s->output_mode = IN_MODE;
-        } else if (!strcmp(args, "o")) {
-            s->output_mode = OUT_MODE;
-        } else if (!strcmp(args, "n")) {
-            s->output_mode = NOISE_MODE;
-        }
+    } else {
+        ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+        if (ret < 0)
+            return ret;
+        need_reset = 1;
     }
 
     if (need_reset)

@@ -31,7 +31,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/timer.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -287,7 +286,6 @@ static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
 
         sample[0][-1]= sample[1][0  ];
         sample[1][ w]= sample[1][w-1];
-// { START_TIMER
         if (s->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
                 sample[0][x] = src[x * pixel_stride + stride * y];
@@ -306,7 +304,6 @@ static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
             if((ret = encode_line(s, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
                 return ret;
         }
-// STOP_TIMER("encode line") }
     }
     return 0;
 }
@@ -332,6 +329,18 @@ static void write_quant_tables(RangeCoder *c,
     int i;
     for (i = 0; i < 5; i++)
         write_quant_table(c, quant_table[i]);
+}
+
+static int contains_non_128(uint8_t (*initial_state)[CONTEXT_SIZE],
+                            int nb_contexts)
+{
+    if (!initial_state)
+        return 0;
+    for (int i = 0; i < nb_contexts; i++)
+        for (int j = 0; j < CONTEXT_SIZE; j++)
+            if (initial_state[i][j] != 128)
+                return 1;
+    return 0;
 }
 
 static void write_header(FFV1Context *f)
@@ -428,10 +437,7 @@ static int write_extradata(FFV1Context *f)
         write_quant_tables(c, f->quant_tables[i]);
 
     for (i = 0; i < f->quant_table_count; i++) {
-        for (j = 0; j < f->context_count[i] * CONTEXT_SIZE; j++)
-            if (f->initial_states[i] && f->initial_states[i][0][j] != 128)
-                break;
-        if (j < f->context_count[i] * CONTEXT_SIZE) {
+        if (contains_non_128(f->initial_states[i], f->context_count[i])) {
             put_rac(c, state, 1);
             for (j = 0; j < f->context_count[i]; j++)
                 for (k = 0; k < CONTEXT_SIZE; k++) {

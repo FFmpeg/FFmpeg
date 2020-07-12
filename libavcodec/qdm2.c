@@ -1334,6 +1334,9 @@ static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
         if (q->frequency_range > (local_int_14 + 1)) {
             int sub_packet = (local_int_20 + local_int_28);
 
+            if (q->fft_coefs_index + stereo >= FF_ARRAY_ELEMS(q->fft_coefs))
+                return;
+
             qdm2_fft_init_coefficient(q, sub_packet, offset, duration,
                                       channel, exp, phase);
             if (stereo)
@@ -1704,7 +1707,7 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     s->group_size = bytestream2_get_be32(&gb);
     s->fft_size = bytestream2_get_be32(&gb);
     s->checksum_size = bytestream2_get_be32(&gb);
-    if (s->checksum_size >= 1U << 28 || !s->checksum_size) {
+    if (s->checksum_size >= 1U << 28 || s->checksum_size <= 1) {
         av_log(avctx, AV_LOG_ERROR, "data block size invalid (%u)\n", s->checksum_size);
         return AVERROR_INVALIDDATA;
     }
@@ -1726,6 +1729,11 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     s->sub_sampling = s->fft_order - 7;
     s->frequency_range = 255 / (1 << (2 - s->sub_sampling));
+
+    if (s->frame_size * 4 >> s->sub_sampling > MPA_FRAME_SIZE) {
+        avpriv_request_sample(avctx, "large frames");
+        return AVERROR_PATCHWELCOME;
+    }
 
     switch ((s->sub_sampling * 2 + s->channels - 1)) {
         case 0: tmp = 40; break;

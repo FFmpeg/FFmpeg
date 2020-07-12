@@ -40,15 +40,15 @@ enum Jpeg2000Markers {
     JPEG2000_SIZ = 0xff51, // image and tile size
     JPEG2000_COD,          // coding style default
     JPEG2000_COC,          // coding style component
-    JPEG2000_TLM = 0xff55, // packed packet headers, tile-part header
-    JPEG2000_PLM = 0xff57, // tile-part lengths
-    JPEG2000_PLT,          // packet length, main header
+    JPEG2000_TLM = 0xff55, // tile-part length, main header
+    JPEG2000_PLM = 0xff57, // packet length, main header
+    JPEG2000_PLT,          // packet length, tile-part header
     JPEG2000_QCD = 0xff5c, // quantization default
     JPEG2000_QCC,          // quantization component
     JPEG2000_RGN,          // region of interest
     JPEG2000_POC,          // progression order change
-    JPEG2000_PPM,          // packet length, tile-part header
-    JPEG2000_PPT,          // packed packet headers, main header
+    JPEG2000_PPM,          // packed packet headers, main header
+    JPEG2000_PPT,          // packed packet headers, tile-part header
     JPEG2000_CRG = 0xff63, // component registration
     JPEG2000_COM,          // comment
     JPEG2000_SOT = 0xff90, // start of tile-part
@@ -144,6 +144,7 @@ typedef struct Jpeg2000CodingStyle {
     uint8_t prog_order;       // progression order
     uint8_t log2_prec_widths[JPEG2000_MAX_RESLEVELS];  // precincts size according resolution levels
     uint8_t log2_prec_heights[JPEG2000_MAX_RESLEVELS]; // TODO: initialize prec_size array with 0?
+    uint8_t init;
 } Jpeg2000CodingStyle;
 
 typedef struct Jpeg2000QuantStyle {
@@ -210,6 +211,7 @@ typedef struct Jpeg2000Component {
     int *i_data;
     int coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
     int coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
+    uint8_t roi_shift; // ROI scaling value for the component
 } Jpeg2000Component;
 
 /* misc tools */

@@ -68,6 +68,17 @@
  * Codec initializes slice-based threading with a main function
  */
 #define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
+/*
+ * The codec supports frame threading and has inter-frame dependencies, so it
+ * uses ff_thread_report/await_progress().
+ */
+#define FF_CODEC_CAP_ALLOCATE_PROGRESS      (1 << 6)
+
+/**
+ * AVCodec.codec_tags termination value
+ */
+#define FF_CODEC_TAGS_END -1
+
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
@@ -83,7 +94,7 @@
 #define FF_QSCALE_TYPE_H264  2
 #define FF_QSCALE_TYPE_VP56  3
 
-#define FF_SANE_NB_CHANNELS 256U
+#define FF_SANE_NB_CHANNELS 512U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
@@ -97,34 +108,13 @@
 #   define STRIDE_ALIGN 8
 #endif
 
-typedef struct FramePool {
-    /**
-     * Pools for each data plane. For audio all the planes have the same size,
-     * so only pools[0] is used.
-     */
-    AVBufferPool *pools[4];
-
-    /*
-     * Pool parameters
-     */
-    int format;
-    int width, height;
-    int stride_align[AV_NUM_DATA_POINTERS];
-    int linesize[4];
-    int planes;
-    int channels;
-    int samples;
-} FramePool;
-
 typedef struct DecodeSimpleContext {
     AVPacket *in_pkt;
-    AVFrame  *out_frame;
 } DecodeSimpleContext;
 
-typedef struct DecodeFilterContext {
-    AVBSFContext **bsfs;
-    int         nb_bsfs;
-} DecodeFilterContext;
+typedef struct EncodeSimpleContext {
+    AVFrame *in_frame;
+} EncodeSimpleContext;
 
 typedef struct AVCodecInternal {
     /**
@@ -136,21 +126,6 @@ typedef struct AVCodecInternal {
     int is_copy;
 
     /**
-     * Whether to allocate progress for frame threading.
-     *
-     * The codec must set it to 1 if it uses ff_thread_await/report_progress(),
-     * then progress will be allocated in ff_thread_get_buffer(). The frames
-     * then MUST be freed with ff_thread_release_buffer().
-     *
-     * If the codec does not need to call the progress functions (there are no
-     * dependencies between the frames), it should leave this at 0. Then it can
-     * decode straight to the user-provided frames (which the user will then
-     * free with av_frame_unref()), there is no need to call
-     * ff_thread_release_buffer().
-     */
-    int allocate_progress;
-
-    /**
      * An audio frame with less than required samples has been submitted and
      * padded with silence. Reject all subsequent frames.
      */
@@ -158,12 +133,12 @@ typedef struct AVCodecInternal {
 
     AVFrame *to_free;
 
-    FramePool *pool;
+    AVBufferRef *pool;
 
     void *thread_ctx;
 
     DecodeSimpleContext ds;
-    DecodeFilterContext filter;
+    AVBSFContext *bsf;
 
     /**
      * Properties (timestamps+side data) extracted from the last packet passed
@@ -178,6 +153,8 @@ typedef struct AVCodecInternal {
     unsigned int byte_buffer_size;
 
     void *frame_thread_encoder;
+
+    EncodeSimpleContext es;
 
     /**
      * Number of audio samples to skip at the start of the next decoded frame
@@ -198,11 +175,8 @@ typedef struct AVCodecInternal {
      * buffers for using new encode/decode API through legacy API
      */
     AVPacket *buffer_pkt;
-    int buffer_pkt_valid; // encoding: packet without data can be valid
     AVFrame *buffer_frame;
     int draining_done;
-    /* set to 1 when the caller is using the old decoding API */
-    int compat_decode;
     int compat_decode_warned;
     /* this variable is set by the decoder internals to signal to the old
      * API compat wrappers the amount of data consumed from the last packet */
@@ -211,6 +185,7 @@ typedef struct AVCodecInternal {
      * of the packet (that should be submitted in the next decode call */
     size_t compat_decode_partial_size;
     AVFrame *compat_decode_frame;
+    AVPacket *compat_encode_packet;
 
     int showed_multi_packet_warning;
 
@@ -280,8 +255,6 @@ void ff_color_frame(AVFrame *frame, const int color[4]);
  */
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size);
 
-attribute_deprecated int ff_alloc_packet(AVPacket *avpkt, int size);
-
 /**
  * Rescale from sample rate to AVCodecContext.time_base.
  */
@@ -320,11 +293,12 @@ static av_always_inline float ff_exp2fi(int x) {
  */
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
+#define FF_REGET_BUFFER_FLAG_READONLY 1 ///< the returned buffer does not need to be writable
 /**
- * Identical in function to av_frame_make_writable(), except it uses
- * ff_get_buffer() to allocate the buffer when needed.
+ * Identical in function to ff_get_buffer(), except it reuses the existing buffer
+ * if available.
  */
-int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame);
+int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
 int ff_thread_can_start_frame(AVCodecContext *avctx);
 
@@ -389,8 +363,6 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
  */
 AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
 
-int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
-
 /**
  * Check AVFrame for A53 side data and allocate and fill SEI message with A53 info
  *
@@ -404,6 +376,21 @@ int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, i
  * @return           Zero on success, negative error code on failure
  */
 int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
+                     void **data, size_t *sei_size);
+
+/**
+ * Check AVFrame for S12M timecode side data and allocate and fill TC SEI message with timecode info
+ *
+ * @param frame      Raw frame to get S12M timecode side data from
+ * @param prefix_len Number of bytes to allocate before SEI message
+ * @param data       Pointer to a variable to store allocated memory
+ *                   Upon return the variable will hold NULL on error or if frame has no S12M timecode info.
+ *                   Otherwise it will point to prefix_len uninitialized bytes followed by
+ *                   *sei_size SEI message
+ * @param sei_size   Pointer to a variable to store generated SEI message length
+ * @return           Zero on success, negative error code on failure
+ */
+int ff_alloc_timecode_sei(const AVFrame *frame, size_t prefix_len,
                      void **data, size_t *sei_size);
 
 /**
@@ -423,6 +410,8 @@ int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
  */
 int ff_int_from_list_or_default(void *ctx, const char * val_name, int val,
                                 const int * array_valid_values, int default_value);
+
+void ff_dvdsub_parse_palette(uint32_t *palette, const char *p);
 
 #if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
 #    define av_export_avcodec __declspec(dllimport)

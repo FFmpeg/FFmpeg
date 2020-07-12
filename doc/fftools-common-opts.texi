@@ -236,13 +236,11 @@ ffmpeg [...] -loglevel +repeat
 By default the program logs to stderr. If coloring is supported by the
 terminal, colors are used to mark errors and warnings. Log coloring
 can be disabled setting the environment variable
-@env{AV_LOG_FORCE_NOCOLOR} or @env{NO_COLOR}, or can be forced setting
+@env{AV_LOG_FORCE_NOCOLOR}, or can be forced setting
 the environment variable @env{AV_LOG_FORCE_COLOR}.
-The use of the environment variable @env{NO_COLOR} is deprecated and
-will be dropped in a future FFmpeg version.
 
 @item -report
-Dump full command line and console output to a file named
+Dump full command line and log output to a file named
 @code{@var{program}-@var{YYYYMMDD}-@var{HHMMSS}.log} in the current
 directory.
 This file can be useful for bug reports.

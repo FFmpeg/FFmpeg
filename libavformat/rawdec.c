@@ -39,8 +39,8 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = raw->raw_packet_size;
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, size)) < 0)
+        return ret;
 
     pkt->pos= avio_tell(s->pb);
     pkt->stream_index = 0;
@@ -123,6 +123,8 @@ const AVOption ff_rawvideo_options[] = {
     { "raw_packet_size", "", OFFSET(raw_packet_size), AV_OPT_TYPE_INT, {.i64 = RAW_PACKET_SIZE }, 1, INT_MAX, DEC},
     { NULL },
 };
+#undef OFFSET
+#define OFFSET(x) offsetof(FFRawDemuxerContext, x)
 const AVOption ff_raw_options[] = {
     { "raw_packet_size", "", OFFSET(raw_packet_size), AV_OPT_TYPE_INT, {.i64 = RAW_PACKET_SIZE }, 1, INT_MAX, DEC},
     { NULL },

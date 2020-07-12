@@ -62,7 +62,7 @@ static inline int mpc8_dec_enum(GetBitContext *gb, int k, int n)
     do {
         n--;
         if (code >= C[n]) {
-            bits |= 1 << n;
+            bits |= 1U << n;
             code -= C[n];
             C -= 32;
             k--;

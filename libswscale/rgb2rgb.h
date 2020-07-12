@@ -169,6 +169,7 @@ extern void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const u
 
 void ff_sws_rgb2rgb_init(void);
 
+void rgb2rgb_init_aarch64(void);
 void rgb2rgb_init_x86(void);
 
 #endif /* SWSCALE_RGB2RGB_H */

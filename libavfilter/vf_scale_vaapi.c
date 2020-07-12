@@ -26,7 +26,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "scale.h"
+#include "scale_eval.h"
 #include "video.h"
 #include "vaapi_vpp.h"
 
@@ -39,6 +39,9 @@ typedef struct ScaleVAAPIContext {
 
     char *w_expr;      // width expression string
     char *h_expr;      // height expression string
+
+    int force_original_aspect_ratio;
+    int force_divisible_by;
 
     char *colour_primaries_string;
     char *colour_transfer_string;
@@ -81,6 +84,9 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
                                         &vpp_ctx->output_width, &vpp_ctx->output_height)) < 0)
         return err;
 
+    ff_scale_adjust_dimensions(inlink, &vpp_ctx->output_width, &vpp_ctx->output_height,
+                               ctx->force_original_aspect_ratio, ctx->force_divisible_by);
+
     err = ff_vaapi_vpp_config_output(outlink);
     if (err < 0)
         return err;
@@ -119,7 +125,7 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
 
     err = av_frame_copy_props(output_frame, input_frame);
     if (err < 0)
-        return err;
+        goto fail;
 
     if (ctx->colour_primaries != AVCOL_PRI_UNSPECIFIED)
         output_frame->color_primaries = ctx->colour_primaries;
@@ -247,6 +253,11 @@ static const AVOption scale_vaapi_options[] = {
     { "out_chroma_location", "Output chroma sample location",
       OFFSET(chroma_location_string),  AV_OPT_TYPE_STRING,
       { .str = NULL }, .flags = FLAGS },
+    { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0}, 0, 2, FLAGS, "force_oar" },
+    { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
+    { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
+    { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
+    { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
 
     { NULL },
 };

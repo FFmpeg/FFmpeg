@@ -283,7 +283,7 @@ static int cdg_decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
-    if ((ret = ff_reget_buffer(avctx, cc->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, cc->frame, 0)) < 0)
         return ret;
     if (!cc->cleared) {
         memset(cc->frame->data[0], 0, cc->frame->linesize[0] * avctx->height);

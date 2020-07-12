@@ -33,16 +33,19 @@
 
 #include "log.h"
 
+#define ASSERT_PTHREAD_ABORT(func, ret) do {                            \
+    char errbuf[AV_ERROR_MAX_STRING_SIZE] = "";                         \
+    av_log(NULL, AV_LOG_FATAL, AV_STRINGIFY(func)                       \
+           " failed with error: %s\n",                                  \
+           av_make_error_string(errbuf, AV_ERROR_MAX_STRING_SIZE,       \
+                                AVERROR(ret)));                         \
+    abort();                                                            \
+} while (0)
+
 #define ASSERT_PTHREAD_NORET(func, ...) do {                            \
     int ret = func(__VA_ARGS__);                                        \
-    if (ret) {                                                          \
-        char errbuf[AV_ERROR_MAX_STRING_SIZE] = "";                     \
-        av_log(NULL, AV_LOG_FATAL, AV_STRINGIFY(func)                   \
-               " failed with error: %s\n",                              \
-               av_make_error_string(errbuf, AV_ERROR_MAX_STRING_SIZE,   \
-                                    AVERROR(ret)));                     \
-        abort();                                                        \
-    }                                                                   \
+    if (ret)                                                            \
+        ASSERT_PTHREAD_ABORT(func, ret);                                \
 } while (0)
 
 #define ASSERT_PTHREAD(func, ...) do {                                  \
@@ -109,6 +112,15 @@ static inline int strict_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t
     ASSERT_PTHREAD(pthread_cond_wait, cond, mutex);
 }
 
+static inline int strict_pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+                                                const struct timespec *abstime)
+{
+    int ret = pthread_cond_timedwait(cond, mutex, abstime);
+    if (ret && ret != ETIMEDOUT)
+        ASSERT_PTHREAD_ABORT(pthread_cond_timedwait, ret);
+    return ret;
+}
+
 static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
 {
     ASSERT_PTHREAD(pthread_once, once_control, init_routine);
@@ -124,6 +136,7 @@ static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_
 #define pthread_cond_signal    strict_pthread_cond_signal
 #define pthread_cond_broadcast strict_pthread_cond_broadcast
 #define pthread_cond_wait      strict_pthread_cond_wait
+#define pthread_cond_timedwait strict_pthread_cond_timedwait
 #define pthread_once           strict_pthread_once
 #endif
 

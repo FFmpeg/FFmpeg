@@ -90,5 +90,4 @@ AVCodec ff_y41p_encoder = {
     .close        = y41p_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                  AV_PIX_FMT_NONE },
-    .capabilities = AV_CODEC_CAP_INTRA_ONLY,
 };

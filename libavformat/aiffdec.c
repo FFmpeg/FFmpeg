@@ -29,6 +29,7 @@
 #include "isom.h"
 #include "id3v2.h"
 #include "mov_chan.h"
+#include "replaygain.h"
 
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
@@ -242,7 +243,10 @@ static int aiff_read_header(AVFormatContext *s)
         if (size < 0)
             return size;
 
-        filesize -= size + 8;
+        if (size >= 0x7fffffff - 8)
+            filesize = 0;
+        else
+            filesize -= size + 8;
 
         switch (tag) {
         case MKTAG('C', 'O', 'M', 'M'):     /* Common chunk */
@@ -257,8 +261,8 @@ static int aiff_read_header(AVFormatContext *s)
             position = avio_tell(pb);
             ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, size);
             if (id3v2_extra_meta)
-                if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0 ||
-                    (ret = ff_id3v2_parse_chapters(s, &id3v2_extra_meta)) < 0) {
+                if ((ret = ff_id3v2_parse_apic(s, id3v2_extra_meta)) < 0 ||
+                    (ret = ff_id3v2_parse_chapters(s, id3v2_extra_meta)) < 0) {
                     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
                     return ret;
                 }
@@ -297,8 +301,8 @@ static int aiff_read_header(AVFormatContext *s)
         case MKTAG('w', 'a', 'v', 'e'):
             if ((uint64_t)size > (1<<30))
                 return -1;
-            if (ff_get_extradata(s, st->codecpar, pb, size) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0)
+                return ret;
             if (   (st->codecpar->codec_id == AV_CODEC_ID_QDMC || st->codecpar->codec_id == AV_CODEC_ID_QDM2)
                 && size>=12*4 && !st->codecpar->block_align) {
                 st->codecpar->block_align = AV_RB32(st->codecpar->extradata+11*4);
@@ -321,8 +325,8 @@ static int aiff_read_header(AVFormatContext *s)
             }
             break;
         case MKTAG('C','H','A','N'):
-            if(ff_mov_read_chan(s, pb, st, size) < 0)
-                return AVERROR_INVALIDDATA;
+            if ((ret = ff_mov_read_chan(s, pb, st, size)) < 0)
+                return ret;
             break;
         case MKTAG('A','P','C','M'): /* XA ADPCM compressed sound chunk */
             st->codecpar->codec_id = AV_CODEC_ID_ADPCM_XA;
@@ -347,6 +351,10 @@ static int aiff_read_header(AVFormatContext *s)
             avio_skip(pb, 1);
         }
     }
+
+    ret = ff_replaygain_export(st, s->metadata);
+    if (ret < 0)
+        return ret;
 
 got_sound:
     if (!st->codecpar->block_align && st->codecpar->codec_id == AV_CODEC_ID_QCELP) {

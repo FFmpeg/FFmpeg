@@ -45,7 +45,7 @@ static int decode_frame(AVCodecContext *avctx,
 {
     WCMVContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    int skip, blocks, zret, ret, intra = 0, bpp = s->bpp;
+    int skip, blocks, zret, ret, intra = 0, flags = 0, bpp = s->bpp;
     GetByteContext gb;
     uint8_t *dst;
 
@@ -58,9 +58,9 @@ static int decode_frame(AVCodecContext *avctx,
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     blocks = bytestream2_get_le16(&gb);
     if (!blocks)
-        return avpkt->size;
+        flags |= FF_REGET_BUFFER_FLAG_READONLY;
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->prev_frame, flags)) < 0)
         return ret;
 
     if (blocks > 5) {
@@ -157,13 +157,9 @@ static int decode_frame(AVCodecContext *avctx,
     if (bytestream2_get_bytes_left(&gb) < 8LL * blocks)
         return AVERROR_INVALIDDATA;
 
-    if (s->prev_frame->data[0]) {
-        ret = av_frame_copy(frame, s->prev_frame);
-        if (ret < 0)
-            return ret;
-    } else {
-        ptrdiff_t linesize[4] = { frame->linesize[0], 0, 0, 0 };
-        av_image_fill_black(frame->data, linesize, avctx->pix_fmt, 0,
+    if (!avctx->frame_number) {
+        ptrdiff_t linesize[4] = { s->prev_frame->linesize[0], 0, 0, 0 };
+        av_image_fill_black(s->prev_frame->data, linesize, avctx->pix_fmt, 0,
                             avctx->width, avctx->height);
     }
 
@@ -184,7 +180,7 @@ static int decode_frame(AVCodecContext *avctx,
         if (w > avctx->width || h > avctx->height)
             return AVERROR_INVALIDDATA;
 
-        dst = frame->data[0] + (avctx->height - y - 1) * frame->linesize[0] + x * bpp;
+        dst = s->prev_frame->data[0] + (avctx->height - y - 1) * s->prev_frame->linesize[0] + x * bpp;
         for (int i = 0; i < h; i++) {
             s->zstream.next_out  = dst;
             s->zstream.avail_out = w * bpp;
@@ -196,15 +192,14 @@ static int decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             }
 
-            dst -= frame->linesize[0];
+            dst -= s->prev_frame->linesize[0];
         }
     }
 
-    frame->key_frame = intra;
-    frame->pict_type = intra ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    s->prev_frame->key_frame = intra;
+    s->prev_frame->pict_type = intra ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
-    av_frame_unref(s->prev_frame);
-    if ((ret = av_frame_ref(s->prev_frame, frame)) < 0)
+    if ((ret = av_frame_ref(frame, s->prev_frame)) < 0)
         return ret;
 
     *got_frame = 1;

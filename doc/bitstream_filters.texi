@@ -548,6 +548,36 @@ ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 @section null
 This bitstream filter passes the packets through unchanged.
 
+@section pcm_rechunk
+
+Repacketize PCM audio to a fixed number of samples per packet or a fixed packet
+rate per second. This is similar to the @ref{asetnsamples,,asetnsamples audio
+filter,ffmpeg-filters} but works on audio packets instead of audio frames.
+
+@table @option
+@item nb_out_samples, n
+Set the number of samples per each output audio packet. The number is intended
+as the number of samples @emph{per each channel}. Default value is 1024.
+
+@item pad, p
+If set to 1, the filter will pad the last audio packet with silence, so that it
+will contain the same number of samples (or roughly the same number of samples,
+see @option{frame_rate}) as the previous ones. Default value is 1.
+
+@item frame_rate, r
+This option makes the filter output a fixed number of packets per second instead
+of a fixed number of samples per packet. If the audio sample rate is not
+divisible by the frame rate then the number of samples will not be constant but
+will vary slightly so that each packet will start as close to the frame
+boundary as possible. Using this option has precedence over @option{nb_out_samples}.
+@end table
+
+You can generate the well known 1602-1601-1602-1601-1602 pattern of 48kHz audio
+for NTSC frame rate using the @option{frame_rate} option.
+@example
+ffmpeg -f lavfi -i sine=r=48000:d=1 -c pcm_s16le -bsf pcm_rechunk=r=30000/1001 -f framecrc -
+@end example
+
 @section prores_metadata
 
 Modify color property metadata embedded in prores stream.
@@ -589,6 +619,10 @@ Keep the same transfer characteristics property (default).
 @item unknown
 @item bt709
 BT 601, BT 709, BT 2020
+@item smpte2084
+SMPTE ST 2084
+@item arib-std-b67
+ARIB STD-B67
 @end table
 
 
@@ -598,7 +632,7 @@ Available values are:
 
 @table @samp
 @item auto
-Keep the same transfer characteristics property (default).
+Keep the same colorspace property (default).
 
 @item unknown
 @item bt709
@@ -612,6 +646,11 @@ BT 601
 Set Rec709 colorspace for each frame of the file
 @example
 ffmpeg -i INPUT -c copy -bsf:v prores_metadata=color_primaries=bt709:color_trc=bt709:colorspace=bt709 output.mov
+@end example
+
+Set Hybrid Log-Gamma parameters for each frame of the file
+@example
+ffmpeg -i INPUT -c copy -bsf:v prores_metadata=color_primaries=bt2020:color_trc=arib-std-b67:colorspace=bt2020nc output.mov
 @end example
 
 @section remove_extra

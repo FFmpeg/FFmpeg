@@ -224,7 +224,7 @@ static const AVFilterPad vibrance_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(VibranceContext, x)
-#define VF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define VF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption vibrance_options[] = {
     { "intensity", "set the intensity value",   OFFSET(intensity),  AV_OPT_TYPE_FLOAT, {.dbl=0},       -2,  2, VF },
@@ -249,4 +249,5 @@ AVFilter ff_vf_vibrance = {
     .inputs        = vibrance_inputs,
     .outputs       = vibrance_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

@@ -156,7 +156,7 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
             sig_scaled[i] = residual[i] >> shift;
     else
         for (i = 0; i < subframe_size + RES_PREV_DATA_SIZE; i++)
-            sig_scaled[i] = residual[i] << -shift;
+            sig_scaled[i] = (unsigned)residual[i] << -shift;
 
     /* Start of best delay searching code */
     gain_num = 0;
@@ -201,8 +201,8 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         }
         if (corr_int_num) {
             /* Compute denominator of pseudo-normalized correlation R'(0). */
-            corr_int_den = adsp->scalarproduct_int16(sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
-                                                    sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
+            corr_int_den = adsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE - best_delay_int,
+                                                     sig_scaled + RES_PREV_DATA_SIZE - best_delay_int,
                                                     subframe_size);
 
             /* Compute signals with non-integer delay k (with 1/8 precision),
@@ -346,7 +346,7 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         L_temp1 = gain_long_num * gain_long_num;
         L_temp1 = MULL(L_temp1, gain_den, FRAC_BITS);
 
-        tmp = ((sh_gain_long_num - sh_gain_num) << 1) - (sh_gain_long_den - sh_gain_den);
+        tmp = ((sh_gain_long_num - sh_gain_num) * 2) - (sh_gain_long_den - sh_gain_den);
         if (tmp > 0)
             L_temp0 >>= tmp;
         else
@@ -367,7 +367,7 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         /* Rescale selected signal to original value. */
         if (shift > 0)
             for (i = 0; i < subframe_size; i++)
-                selected_signal[i] <<= shift;
+                selected_signal[i] *= 1 << shift;
         else
             for (i = 0; i < subframe_size; i++)
                 selected_signal[i] >>= -shift;
@@ -464,7 +464,7 @@ static int16_t get_tilt_comp(AudioDSPContext *adsp, int16_t *lp_gn,
             speech[i] = (speech[i] * temp + 0x4000) >> 15;
     }
 
-    return -(rh1 << 15) / rh0;
+    return -(rh1 * (1 << 15)) / rh0;
 }
 
 /**
@@ -486,29 +486,29 @@ static int16_t apply_tilt_comp(int16_t* out, int16_t* res_pst, int refl_coeff,
 
     if (refl_coeff > 0) {
         gt = (refl_coeff * G729_TILT_FACTOR_PLUS + 0x4000) >> 15;
-        fact = 0x4000; // 0.5 in (0.15)
-        sh_fact = 15;
+        fact = 0x2000; // 0.5 in (0.15)
+        sh_fact = 14;
     } else {
         gt = (refl_coeff * G729_TILT_FACTOR_MINUS + 0x4000) >> 15;
-        fact = 0x800; // 0.5 in (3.12)
-        sh_fact = 12;
+        fact = 0x400; // 0.5 in (3.12)
+        sh_fact = 11;
     }
-    ga = (fact << 15) / av_clip_int16(32768 - FFABS(gt));
+    ga = (fact << 16) / av_clip_int16(32768 - FFABS(gt));
     gt >>= 1;
 
     /* Apply tilt compensation filter to signal. */
     tmp = res_pst[subframe_size - 1];
 
     for (i = subframe_size - 1; i >= 1; i--) {
-        tmp2 = (res_pst[i] << 15) + ((gt * res_pst[i-1]) << 1);
-        tmp2 = (tmp2 + 0x4000) >> 15;
+        tmp2 = (gt * res_pst[i-1]) * 2 + 0x4000;
+        tmp2 = res_pst[i] + (tmp2 >> 15);
 
-        tmp2 = (tmp2 * ga * 2 + fact) >> sh_fact;
+        tmp2 = (tmp2 * ga + fact) >> sh_fact;
         out[i] = tmp2;
     }
-    tmp2 = (res_pst[0] << 15) + ((gt * ht_prev_data) << 1);
-    tmp2 = (tmp2 + 0x4000) >> 15;
-    tmp2 = (tmp2 * ga * 2 + fact) >> sh_fact;
+    tmp2 = (gt * ht_prev_data) * 2 + 0x4000;
+    tmp2 = res_pst[0] + (tmp2 >> 15);
+    tmp2 = (tmp2 * ga + fact) >> sh_fact;
     out[0] = tmp2;
 
     return tmp;
@@ -600,6 +600,7 @@ int16_t ff_g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *
             gain = ((gain_before - gain_after) << 14) / gain_after + 0x4000;
             gain = bidir_sal(gain, exp_after - exp_before);
         }
+        gain = av_clip_int16(gain);
         gain = (gain * G729_AGC_FAC1 + 0x4000) >> 15; // gain * (1-0.9875)
     } else
         gain = 0;

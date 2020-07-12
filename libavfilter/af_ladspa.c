@@ -64,6 +64,9 @@ typedef struct LADSPAContext {
     int nb_samples;
     int64_t pts;
     int64_t duration;
+    int in_trim;
+    int out_pad;
+    int latency;
 } LADSPAContext;
 
 #define OFFSET(x) offsetof(LADSPAContext, x)
@@ -81,10 +84,27 @@ static const AVOption ladspa_options[] = {
     { "n",          "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64=1024}, 1, INT_MAX, FLAGS },
     { "duration", "set audio duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=-1}, -1, INT64_MAX, FLAGS },
     { "d",        "set audio duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=-1}, -1, INT64_MAX, FLAGS },
+    { "latency", "enable latency compensation", OFFSET(latency), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "l",       "enable latency compensation", OFFSET(latency), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(ladspa);
+
+static int find_latency(AVFilterContext *ctx, LADSPAContext *s)
+{
+    int latency = 0;
+
+    for (int ctl = 0; ctl < s->nb_outputcontrols; ctl++) {
+        if (av_strcasecmp("latency", s->desc->PortNames[s->ocmap[ctl]]))
+            continue;
+
+        latency = lrintf(s->octlv[ctl]);
+        break;
+    }
+
+    return latency;
+}
 
 static void print_ctl_info(AVFilterContext *ctx, int level,
                            LADSPAContext *s, int ctl, unsigned long *map,
@@ -143,12 +163,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     LADSPAContext *s = ctx->priv;
     AVFrame *out;
-    int i, h, p;
+    int i, h, p, new_out_samples;
 
     av_assert0(in->channels == (s->nb_inputs * s->nb_handles));
 
     if (!s->nb_outputs ||
         (av_frame_is_writable(in) && s->nb_inputs == s->nb_outputs &&
+         s->in_trim == 0 && s->out_pad == 0 &&
         !(s->desc->Properties & LADSPA_PROPERTY_INPLACE_BROKEN))) {
         out = in;
     } else {
@@ -176,6 +197,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         s->desc->run(s->handles[h], in->nb_samples);
+        if (s->latency)
+            s->in_trim = s->out_pad = find_latency(ctx, s);
+        s->latency = 0;
     }
 
     for (i = 0; i < s->nb_outputcontrols; i++)
@@ -183,6 +207,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (out != in)
         av_frame_free(&in);
+
+    new_out_samples = out->nb_samples;
+    if (s->in_trim > 0) {
+        int trim = FFMIN(new_out_samples, s->in_trim);
+
+        new_out_samples -= trim;
+        s->in_trim -= trim;
+    }
+
+    if (new_out_samples <= 0) {
+        av_frame_free(&out);
+        return 0;
+    } else if (new_out_samples < out->nb_samples) {
+        int offset = out->nb_samples - new_out_samples;
+        for (int ch = 0; ch < out->channels; ch++)
+            memmove(out->extended_data[ch], out->extended_data[ch] + sizeof(float) * offset,
+                    sizeof(float) * new_out_samples);
+        out->nb_samples = new_out_samples;
+    }
 
     return ff_filter_frame(ctx->outputs[0], out);
 }
@@ -195,8 +238,19 @@ static int request_frame(AVFilterLink *outlink)
     int64_t t;
     int i;
 
-    if (ctx->nb_inputs)
-        return ff_request_frame(ctx->inputs[0]);
+    if (ctx->nb_inputs) {
+        int ret = ff_request_frame(ctx->inputs[0]);
+
+        if (ret == AVERROR_EOF && s->out_pad > 0) {
+            AVFrame *frame = ff_get_audio_buffer(outlink, FFMIN(2048, s->out_pad));
+            if (!frame)
+                return AVERROR(ENOMEM);
+
+            s->out_pad -= frame->nb_samples;
+            return filter_frame(ctx->inputs[0], frame);
+        }
+        return ret;
+    }
 
     t = av_rescale(s->pts, AV_TIME_BASE, s->sample_rate);
     if (s->duration >= 0 && t >= s->duration)
@@ -415,6 +469,7 @@ static av_cold int init(AVFilterContext *ctx)
     } else {
         // argument is a shared object name
         char *paths = av_strdup(getenv("LADSPA_PATH"));
+        const char *home_path = getenv("HOME");
         const char *separator = ":";
 
         if (paths) {
@@ -426,7 +481,12 @@ static av_cold int init(AVFilterContext *ctx)
         }
 
         av_free(paths);
-        if (!s->dl_handle && (paths = av_asprintf("%s/.ladspa/lib", getenv("HOME")))) {
+        if (!s->dl_handle && home_path && (paths = av_asprintf("%s/.ladspa", home_path))) {
+            s->dl_handle = try_load(paths, s->dl_name);
+            av_free(paths);
+        }
+
+        if (!s->dl_handle && home_path && (paths = av_asprintf("%s/.ladspa/lib", home_path))) {
             s->dl_handle = try_load(paths, s->dl_name);
             av_free(paths);
         }

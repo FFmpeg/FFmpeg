@@ -1,13 +1,30 @@
-baz
-/foo/baz
-/baz
-/baz
-http://server/foo/baz
-http://server/foo/baz
-http://server/baz
-http://server/baz
-http://server/baz
-https://other/url
-http://server/baz
-http://server/foo/bar?someparam
-http://other/url
+Testing ff_make_absolute_url:
+                                            (null) baz                  => baz
+                                          /foo/bar baz                  => /foo/baz
+                                          /foo/bar ../baz               => /baz
+                                          /foo/bar /baz                 => /baz
+                                          /foo/bar ../../../baz         => /baz
+                                http://server/foo/ baz                  => http://server/foo/baz
+                             http://server/foo/bar baz                  => http://server/foo/baz
+                                http://server/foo/ ../baz               => http://server/baz
+                         http://server/foo/bar/123 ../../baz            => http://server/baz
+                         http://server/foo/bar/123 /baz                 => http://server/baz
+                         http://server/foo/bar/123 https://other/url    => https://other/url
+    http://server/foo/bar?param=value/with/slashes /baz                 => http://server/baz
+            http://server/foo/bar?param&otherparam ?someparam           => http://server/foo/bar?someparam
+                             http://server/foo/bar //other/url          => http://other/url
+                             http://server/foo/bar ../../../../../other/url => http://server/other/url
+                             http://server/foo/bar /../../../../../other/url => http://server/other/url
+                             http://server/foo/bar /test/../../../../../other/url => http://server/other/url
+                             http://server/foo/bar /test/../../test/../../../other/url => http://server/other/url
+
+Testing av_url_split:
+/foo/bar                                                     =>                                                    -1 /foo/bar
+http://server/foo/                                           => http                            server             -1 /foo/
+http://example.com/foo/bar                                   => http                            example.com        -1 /foo/bar
+http://user:pass@localhost:8080/foo/bar/123                  => http            user:pass       localhost        8080 /foo/bar/123
+http://server/foo/bar?param=value/with/slashes               => http                            server             -1 /foo/bar?param=value/with/slashes
+https://1l-lh.a.net/i/1LIVE_HDS@179577/master.m3u8           => https                           1l-lh.a.net        -1 /i/1LIVE_HDS@179577/master.m3u8
+ftp://u:p%2B%2F2@ftp.pbt.com/ExportHD.mpg                    => ftp             u:p%2B%2F2      ftp.pbt.com        -1 /ExportHD.mpg
+https://key.dns.com?key_id=2&model_id=12345&&access_key=     => https                           key.dns.com        -1 ?key_id=2&model_id=12345&&access_key=
+http://example.com#tag                                       => http                            example.com        -1 #tag

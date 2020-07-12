@@ -99,7 +99,8 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
                 break;
         }
         if (*p == -1) {
-            if((codec->capabilities & AV_CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codecpar->format) > av_get_sample_fmt_name(codec->sample_fmts[0]))
+            const AVCodecDescriptor *desc = avcodec_descriptor_get(codec->id);
+            if(desc && (desc->props & AV_CODEC_PROP_LOSSLESS) && av_get_sample_fmt_name(st->codecpar->format) > av_get_sample_fmt_name(codec->sample_fmts[0]))
                 av_log(NULL, AV_LOG_ERROR, "Conversion will not be lossless.\n");
             if(av_get_sample_fmt_name(st->codecpar->format))
             av_log(NULL, AV_LOG_WARNING,
@@ -469,7 +470,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ret < 0)
         return ret;
 
-    if (ofilter->width || ofilter->height) {
+    if ((ofilter->width || ofilter->height) && ofilter->ost->autoscale) {
         char args[255];
         AVFilterContext *filter;
         AVDictionaryEntry *e = NULL;
@@ -740,6 +741,12 @@ static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
         return AVERROR(ENOMEM);
     ist->sub2video.last_pts = INT64_MIN;
     ist->sub2video.end_pts  = INT64_MIN;
+
+    /* sub2video structure has been (re-)initialized.
+       Mark it as such so that the system will be
+       initialized with the first received heartbeat. */
+    ist->sub2video.initialize = 1;
+
     return 0;
 }
 
@@ -786,10 +793,9 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args,
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
-             "pixel_aspect=%d/%d:sws_param=flags=%d",
+             "pixel_aspect=%d/%d",
              ifilter->width, ifilter->height, ifilter->format,
-             tb.num, tb.den, sar.num, sar.den,
-             SWS_BILINEAR + ((ist->dec_ctx->flags&AV_CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
+             tb.num, tb.den, sar.num, sar.den);
     if (fr.num && fr.den)
         av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
@@ -1056,17 +1062,9 @@ int configure_filtergraph(FilterGraph *fg)
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)
         goto fail;
 
-    if (filter_hw_device || hw_device_ctx) {
-        AVBufferRef *device = filter_hw_device ? filter_hw_device->device_ref
-                                               : hw_device_ctx;
-        for (i = 0; i < fg->graph->nb_filters; i++) {
-            fg->graph->filters[i]->hw_device_ctx = av_buffer_ref(device);
-            if (!fg->graph->filters[i]->hw_device_ctx) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
-    }
+    ret = hw_device_setup_for_filter(fg);
+    if (ret < 0)
+        goto fail;
 
     if (simple && (!inputs || inputs->next || !outputs || outputs->next)) {
         const char *num_inputs;
@@ -1169,7 +1167,7 @@ int configure_filtergraph(FilterGraph *fg)
             while (av_fifo_size(ist->sub2video.sub_queue)) {
                 AVSubtitle tmp;
                 av_fifo_generic_read(ist->sub2video.sub_queue, &tmp, sizeof(tmp), NULL);
-                sub2video_update(ist, &tmp);
+                sub2video_update(ist, INT64_MIN, &tmp);
                 avsubtitle_free(&tmp);
             }
         }

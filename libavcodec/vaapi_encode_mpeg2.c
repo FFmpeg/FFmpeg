@@ -93,10 +93,9 @@ static int vaapi_encode_mpeg2_add_header(AVCodecContext *avctx,
                                          CodedBitstreamFragment *frag,
                                          int type, void *header)
 {
-    VAAPIEncodeMPEG2Context *priv = avctx->priv_data;
     int err;
 
-    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1, type, header, NULL);
+    err = ff_cbs_insert_unit_content(frag, -1, type, header, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add header: "
                "type = %d.\n", type);
@@ -135,7 +134,7 @@ static int vaapi_encode_mpeg2_write_sequence_header(AVCodecContext *avctx,
 
     err = vaapi_encode_mpeg2_write_fragment(avctx, data, data_len, frag);
 fail:
-    ff_cbs_fragment_reset(priv->cbc, frag);
+    ff_cbs_fragment_reset(frag);
     return 0;
 }
 
@@ -159,7 +158,7 @@ static int vaapi_encode_mpeg2_write_picture_header(AVCodecContext *avctx,
 
     err = vaapi_encode_mpeg2_write_fragment(avctx, data, data_len, frag);
 fail:
-    ff_cbs_fragment_reset(priv->cbc, frag);
+    ff_cbs_fragment_reset(frag);
     return 0;
 }
 
@@ -633,7 +632,7 @@ static av_cold int vaapi_encode_mpeg2_close(AVCodecContext *avctx)
 {
     VAAPIEncodeMPEG2Context *priv = avctx->priv_data;
 
-    ff_cbs_fragment_free(priv->cbc, &priv->current_fragment);
+    ff_cbs_fragment_free(&priv->current_fragment);
     ff_cbs_close(&priv->cbc);
 
     return ff_vaapi_encode_close(avctx);
@@ -697,15 +696,16 @@ AVCodec ff_mpeg2_vaapi_encoder = {
     .id             = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(VAAPIEncodeMPEG2Context),
     .init           = &vaapi_encode_mpeg2_init,
-    .send_frame     = &ff_vaapi_encode_send_frame,
     .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &vaapi_encode_mpeg2_close,
     .priv_class     = &vaapi_encode_mpeg2_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_mpeg2_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .hw_configs     = ff_vaapi_encode_hw_configs,
     .wrapper_name   = "vaapi",
 };

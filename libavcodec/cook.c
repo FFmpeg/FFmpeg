@@ -60,7 +60,7 @@
 #define MONO            0x1000001
 #define STEREO          0x1000002
 #define JOINT_STEREO    0x1000003
-#define MC_COOK         0x2000000   // multichannel Cook, not supported
+#define MC_COOK         0x2000000
 
 #define SUBBAND_SIZE    20
 #define MAX_SUBPACKETS   5
@@ -143,7 +143,7 @@ typedef struct cook {
 
     /* generate tables and related variables */
     int                 gain_size_factor;
-    float               gain_table[23];
+    float               gain_table[31];
 
     /* data buffers */
 
@@ -185,8 +185,8 @@ static av_cold void init_gain_table(COOKContext *q)
 {
     int i;
     q->gain_size_factor = q->samples_per_channel / 8;
-    for (i = 0; i < 23; i++)
-        q->gain_table[i] = pow(pow2tab[i + 52],
+    for (i = 0; i < 31; i++)
+        q->gain_table[i] = pow(pow2tab[i + 48],
                                (1.0 / (double) q->gain_size_factor));
 }
 
@@ -670,7 +670,7 @@ static void interpolate_float(COOKContext *q, float *buffer,
         for (i = 0; i < q->gain_size_factor; i++)
             buffer[i] *= fc1;
     } else {                                        // smooth gain
-        fc2 = q->gain_table[11 + (gain_index_next - gain_index)];
+        fc2 = q->gain_table[15 + (gain_index_next - gain_index)];
         for (i = 0; i < q->gain_size_factor; i++) {
             buffer[i] *= fc1;
             fc1       *= fc2;
@@ -759,7 +759,7 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
         for (i = 0; i < length; i++)
             decouple_tab[start + i] = get_vlc2(&q->gb,
                                                p->channel_coupling.table,
-                                               p->channel_coupling.bits, 2);
+                                               p->channel_coupling.bits, 3);
     else
         for (i = 0; i < length; i++) {
             int v = get_bits(&q->gb, p->js_vlc_bits);
@@ -1075,6 +1075,9 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (avctx->block_align >= INT_MAX / 8)
+        return AVERROR(EINVAL);
+
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);
 
@@ -1217,6 +1220,15 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             return AVERROR_PATCHWELCOME;
         }
     }
+
+    /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
+    if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
+        q->samples_per_channel != 1024) {
+        avpriv_request_sample(avctx, "samples_per_channel = %d",
+                              q->samples_per_channel);
+        return AVERROR_PATCHWELCOME;
+    }
+
     /* Generate tables */
     init_pow2table();
     init_gain_table(q);
@@ -1224,10 +1236,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
     if ((ret = init_cook_vlc_tables(q)))
         return ret;
-
-
-    if (avctx->block_align >= UINT_MAX / 2)
-        return AVERROR(EINVAL);
 
     /* Pad the databuffer with:
        DECODE_BYTES_PAD1 or DECODE_BYTES_PAD2 for decode_bytes(),
@@ -1250,14 +1258,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->imlt_window     = imlt_window_float;
         q->interpolate     = interpolate_float;
         q->saturate_output = saturate_output_float;
-    }
-
-    /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
-    if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
-        q->samples_per_channel != 1024) {
-        avpriv_request_sample(avctx, "samples_per_channel = %d",
-                              q->samples_per_channel);
-        return AVERROR_PATCHWELCOME;
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;

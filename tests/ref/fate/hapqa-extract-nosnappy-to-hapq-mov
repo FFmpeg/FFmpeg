@@ -26,6 +26,7 @@ width=127
 height=71
 coded_width=128
 coded_height=72
+closed_captions=0
 has_b_frames=0
 sample_aspect_ratio=1:1
 display_aspect_ratio=127:71

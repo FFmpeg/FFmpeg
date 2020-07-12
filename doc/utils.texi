@@ -110,11 +110,13 @@ maximum of 2 digits. The @var{m} at the end expresses decimal value for
 @emph{or}
 
 @example
-[-]@var{S}+[.@var{m}...]
+[-]@var{S}+[.@var{m}...][s|ms|us]
 @end example
 
 @var{S} expresses the number of seconds, with the optional decimal part
-@var{m}.
+@var{m}.  The optional literal suffixes @samp{s}, @samp{ms} or @samp{us}
+indicate to interpret the value as seconds, milliseconds or microseconds,
+respectively.
 
 In both expressions, the optional @samp{-} indicates negative duration.
 
@@ -125,6 +127,15 @@ The following examples are all valid time duration:
 @table @samp
 @item 55
 55 seconds
+
+@item 0.2
+0.2 seconds
+
+@item 200ms
+200 milliseconds, that's 0.2s
+
+@item 200000us
+200000 microseconds, that's 0.2s
 
 @item 12:03:45
 12 hours, 03 minutes and 45 seconds
@@ -704,6 +715,8 @@ FL+FR+FC+LFE+BL+BR+FLC+FRC
 FL+FR+FC+LFE+FLC+FRC+SL+SR
 @item octagonal
 FL+FR+FC+BL+BR+BC+SL+SR
+@item hexadecagonal
+FL+FR+FC+BL+BR+BC+SL+SR+WL+WR+TBL+TBR+TBC+TFC+TFL+TFR
 @item downmix
 DL+DR
 @end table
@@ -919,6 +932,9 @@ corresponding input value will be returned.
 
 @item round(expr)
 Round the value of expression @var{expr} to the nearest integer. For example, "round(1.5)" is "2.0".
+
+@item sgn(x)
+Compute sign of @var{x}.
 
 @item sin(x)
 Compute sine of @var{x}.

@@ -1390,7 +1390,7 @@ static const AVOption options[] = {
     { "4444xq",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_4444XQ },
         0, 0, VE, "profile" },
     { "vendor", "vendor ID", OFFSET(vendor),
-        AV_OPT_TYPE_STRING, { .str = "Lavc" }, CHAR_MIN, CHAR_MAX, VE },
+        AV_OPT_TYPE_STRING, { .str = "Lavc" }, 0, 0, VE },
     { "bits_per_mb", "desired bits per macroblock", OFFSET(bits_per_mb),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8192, VE },
     { "quant_mat", "quantiser matrix", OFFSET(quant_sel), AV_OPT_TYPE_INT,
@@ -1428,7 +1428,7 @@ AVCodec ff_prores_ks_encoder = {
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
                           AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE

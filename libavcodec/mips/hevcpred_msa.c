@@ -83,7 +83,7 @@ static void hevc_intra_pred_vert_4x4_msa(const uint8_t *src_top,
         vec2 -= vec0;
         vec2 >>= 1;
         vec2 += vec1;
-        vec2 = CLIP_SH_0_255(vec2);
+        CLIP_SH_0_255(vec2);
 
         for (col = 0; col < 4; col++) {
             dst[stride * col] = (uint8_t) vec2[col];
@@ -122,7 +122,7 @@ static void hevc_intra_pred_vert_8x8_msa(const uint8_t *src_top,
         vec2 -= vec0;
         vec2 >>= 1;
         vec2 += vec1;
-        vec2 = CLIP_SH_0_255(vec2);
+        CLIP_SH_0_255(vec2);
 
         val0 = vec2[0];
         val1 = vec2[1];
@@ -214,7 +214,7 @@ static void hevc_intra_pred_horiz_4x4_msa(const uint8_t *src_top,
         src0_r -= src_top_val;
         src0_r >>= 1;
         src0_r += src_left_val;
-        src0_r = CLIP_SH_0_255(src0_r);
+        CLIP_SH_0_255(src0_r);
         src0 = __msa_pckev_b((v16i8) src0_r, (v16i8) src0_r);
         val0 = __msa_copy_s_w((v4i32) src0, 0);
         SW(val0, dst);
@@ -254,7 +254,7 @@ static void hevc_intra_pred_horiz_8x8_msa(const uint8_t *src_top,
         src0_r -= src_top_val;
         src0_r >>= 1;
         src0_r += src_left_val;
-        src0_r = CLIP_SH_0_255(src0_r);
+        CLIP_SH_0_255(src0_r);
         src0 = __msa_pckev_b((v16i8) src0_r, (v16i8) src0_r);
         val0 = __msa_copy_s_d((v2i64) src0, 0);
         SD(val0, dst);
@@ -998,7 +998,8 @@ static void hevc_intra_pred_angular_upper_4width_msa(const uint8_t *src_top,
     ILVR_D2_SH(fact3, fact1, fact7, fact5, fact1, fact3);
     ILVR_B4_SH(zero, top0, zero, top1, zero, top2, zero, top3,
                diff0, diff2, diff4, diff6);
-    SLDI_B4_0_SH(diff0, diff2, diff4, diff6, diff1, diff3, diff5, diff7, 2);
+    SLDI_B4_SH(zero, diff0, zero, diff2, zero, diff4, zero, diff6, 2,
+               diff1, diff3, diff5, diff7);
     ILVR_D2_SH(diff2, diff0, diff6, diff4, diff0, diff2);
     ILVR_D2_SH(diff3, diff1, diff7, diff5, diff1, diff3);
     MUL2(diff1, fact0, diff3, fact2, diff1, diff3);
@@ -1093,8 +1094,8 @@ static void hevc_intra_pred_angular_upper_8width_msa(const uint8_t *src_top,
         UNPCK_UB_SH(top2, diff4, diff5);
         UNPCK_UB_SH(top3, diff6, diff7);
 
-        SLDI_B2_SH(diff1, diff3, diff0, diff2, diff1, diff3, 2);
-        SLDI_B2_SH(diff5, diff7, diff4, diff6, diff5, diff7, 2);
+        SLDI_B4_SH(diff1, diff0, diff3, diff2, diff5, diff4, diff7, diff6, 2,
+                   diff1, diff3, diff5, diff7);
         MUL4(diff1, fact0, diff3, fact2, diff5, fact4, diff7, fact6,
              diff1, diff3, diff5, diff7);
 
@@ -1186,8 +1187,8 @@ static void hevc_intra_pred_angular_upper_16width_msa(const uint8_t *src_top,
         fact6 = __msa_fill_h(fact_val3);
         fact7 = __msa_fill_h(32 - fact_val3);
 
-        SLDI_B2_UB(top1, top3, top0, top2, top1, top3, 1);
-        SLDI_B2_UB(top5, top7, top4, top6, top5, top7, 1);
+        SLDI_B4_UB(top1, top0, top3, top2, top5, top4, top7, top6, 1,
+                   top1, top3, top5, top7);
         UNPCK_UB_SH(top0, diff0, diff1);
         UNPCK_UB_SH(top1, diff2, diff3);
         UNPCK_UB_SH(top2, diff4, diff5);
@@ -1297,8 +1298,8 @@ static void hevc_intra_pred_angular_upper_32width_msa(const uint8_t *src_top,
         top2 = top1;
         top6 = top5;
 
-        SLDI_B2_UB(top1, top3, top0, top2, top1, top3, 1);
-        SLDI_B2_UB(top5, top7, top4, top6, top5, top7, 1);
+        SLDI_B4_UB(top1, top0, top3, top2, top5, top4, top7, top6, 1,
+                   top1, top3, top5, top7);
         UNPCK_UB_SH(top0, diff0, diff1);
         UNPCK_UB_SH(top1, diff2, diff3);
         UNPCK_UB_SH(top2, diff4, diff5);
@@ -1407,7 +1408,8 @@ static void hevc_intra_pred_angular_lower_4width_msa(const uint8_t *src_top,
     ILVR_D2_SH(fact3, fact1, fact7, fact5, fact1, fact3);
     ILVR_B4_SH(zero, top0, zero, top1, zero, top2, zero, top3,
                diff0, diff2, diff4, diff6);
-    SLDI_B4_0_SH(diff0, diff2, diff4, diff6, diff1, diff3, diff5, diff7, 2);
+    SLDI_B4_SH(zero, diff0, zero, diff2, zero, diff4, zero, diff6, 2,
+               diff1, diff3, diff5, diff7);
     ILVR_D2_SH(diff2, diff0, diff6, diff4, diff0, diff2);
     ILVR_D2_SH(diff3, diff1, diff7, diff5, diff1, diff3);
     MUL2(diff1, fact0, diff3, fact2, diff1, diff3);
@@ -1511,8 +1513,8 @@ static void hevc_intra_pred_angular_lower_8width_msa(const uint8_t *src_top,
         UNPCK_UB_SH(top1, diff2, diff3);
         UNPCK_UB_SH(top2, diff4, diff5);
         UNPCK_UB_SH(top3, diff6, diff7);
-        SLDI_B2_SH(diff1, diff3, diff0, diff2, diff1, diff3, 2);
-        SLDI_B2_SH(diff5, diff7, diff4, diff6, diff5, diff7, 2);
+        SLDI_B4_SH(diff1, diff0, diff3, diff2, diff5, diff4, diff7, diff6, 2,
+                   diff1, diff3, diff5, diff7);
         MUL4(diff1, fact0, diff3, fact2, diff5, fact4, diff7, fact6,
              diff1, diff3, diff5, diff7);
 
@@ -1606,8 +1608,8 @@ static void hevc_intra_pred_angular_lower_16width_msa(const uint8_t *src_top,
         fact6 = __msa_fill_h(fact_val3);
         fact7 = __msa_fill_h(32 - fact_val3);
 
-        SLDI_B2_SB(top1, top3, top0, top2, top1, top3, 1);
-        SLDI_B2_SB(top5, top7, top4, top6, top5, top7, 1);
+        SLDI_B4_SB(top1, top0, top3, top2, top5, top4, top7, top6, 1,
+                   top1, top3, top5, top7);
 
         UNPCK_UB_SH(top0, diff0, diff1);
         UNPCK_UB_SH(top1, diff2, diff3);
@@ -1713,8 +1715,8 @@ static void hevc_intra_pred_angular_lower_32width_msa(const uint8_t *src_top,
         top2 = top1;
         top6 = top5;
 
-        SLDI_B2_SB(top1, top3, top0, top2, top1, top3, 1);
-        SLDI_B2_SB(top5, top7, top4, top6, top5, top7, 1);
+        SLDI_B4_SB(top1, top0, top3, top2, top5, top4, top7, top6, 1,
+                   top1, top3, top5, top7);
 
         UNPCK_UB_SH(top0, diff0, diff1);
         UNPCK_UB_SH(top1, diff2, diff3);

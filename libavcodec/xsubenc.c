@@ -63,7 +63,7 @@ static int xsub_encode_rle(PutBitContext *pb, const uint8_t *bitmap,
         while (x0 < w) {
             // Make sure we have enough room for at least one run and padding
             if (pb->size_in_bits - put_bits_count(pb) < 7*8)
-                return -1;
+                return AVERROR_BUFFER_TOO_SMALL;
 
             x1 = x0;
             color = bitmap[x1++] & 3;
@@ -124,7 +124,7 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
 
     if (bufsize < 27 + 7*2 + 4*3) {
         av_log(avctx, AV_LOG_ERROR, "Buffer too small for XSUB header.\n");
-        return -1;
+        return AVERROR_BUFFER_TOO_SMALL;
     }
 
     // TODO: support multiple rects
@@ -147,7 +147,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     // TODO: render text-based subtitles into bitmaps
     if (!h->rects[0]->data[0] || !h->rects[0]->data[1]) {
         av_log(avctx, AV_LOG_WARNING, "No subtitle bitmap available.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     // TODO: color reduction, similar to dvdsub encoder
@@ -160,7 +160,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (make_tc(startTime, start_tc) || make_tc(endTime, end_tc)) {
         av_log(avctx, AV_LOG_WARNING, "Time code >= 100 hours.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     snprintf(buf, 28,
@@ -195,13 +195,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (xsub_encode_rle(&pb, h->rects[0]->data[0],
                         h->rects[0]->linesize[0] * 2,
                         h->rects[0]->w, (h->rects[0]->h + 1) >> 1))
-        return -1;
+        return AVERROR_BUFFER_TOO_SMALL;
     bytestream_put_le16(&rlelenptr, put_bits_count(&pb) >> 3); // Length of first field
 
     if (xsub_encode_rle(&pb, h->rects[0]->data[0] + h->rects[0]->linesize[0],
                         h->rects[0]->linesize[0] * 2,
                         h->rects[0]->w, h->rects[0]->h >> 1))
-        return -1;
+        return AVERROR_BUFFER_TOO_SMALL;
 
     // Enforce total height to be a multiple of 2
     if (h->rects[0]->h & 1) {

@@ -133,8 +133,9 @@ This option has been deprecated in favor of private options, try -pixel_format.
 @item -stats
 Print several playback statistics, in particular show the stream
 duration, the codec parameters, the current position in the stream and
-the audio/video synchronisation drift. It is on by default, to
-explicitly disable it you need to specify @code{-nostats}.
+the audio/video synchronisation drift. It is shown by default, unless the
+log level is lower than @code{info}. Its display can be forced by manually
+specifying this option. To disable it, you need to specify @code{-nostats}.
 
 @item -fast
 Non-spec-compliant optimizations.

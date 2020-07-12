@@ -53,7 +53,7 @@
 //rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
-#define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
+#define ROUNDED_DIV(a,b) (((a)>=0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
 /* Fast a/(1<<b) rounded toward +inf. Assume a>=0 and b>=0 */
 #define AV_CEIL_RSHIFT(a,b) (!av_builtin_constant_p(b) ? -((-(a)) >> (b)) \
                                                        : ((a) + (1<<(b)) - 1) >> (b))
@@ -240,7 +240,7 @@ static av_always_inline av_const unsigned av_clip_uintp2_c(int a, int p)
  */
 static av_always_inline av_const unsigned av_mod_uintp2_c(unsigned a, unsigned p)
 {
-    return a & ((1 << p) - 1);
+    return a & ((1U << p) - 1);
 }
 
 /**
@@ -292,6 +292,46 @@ static av_always_inline int av_sat_dsub32_c(int a, int b)
 }
 
 /**
+ * Add two signed 64-bit values with saturation.
+ *
+ * @param  a one value
+ * @param  b another value
+ * @return sum with signed saturation
+ */
+static av_always_inline int64_t av_sat_add64_c(int64_t a, int64_t b) {
+#if (!defined(__INTEL_COMPILER) && AV_GCC_VERSION_AT_LEAST(5,1)) || AV_HAS_BUILTIN(__builtin_add_overflow)
+    int64_t tmp;
+    return !__builtin_add_overflow(a, b, &tmp) ? tmp : (tmp < 0 ? INT64_MAX : INT64_MIN);
+#else
+    if (b >= 0 && a >= INT64_MAX - b)
+        return INT64_MAX;
+    if (b <= 0 && a <= INT64_MIN - b)
+        return INT64_MIN;
+    return a + b;
+#endif
+}
+
+/**
+ * Subtract two signed 64-bit values with saturation.
+ *
+ * @param  a one value
+ * @param  b another value
+ * @return difference with signed saturation
+ */
+static av_always_inline int64_t av_sat_sub64_c(int64_t a, int64_t b) {
+#if (!defined(__INTEL_COMPILER) && AV_GCC_VERSION_AT_LEAST(5,1)) || AV_HAS_BUILTIN(__builtin_sub_overflow)
+    int64_t tmp;
+    return !__builtin_sub_overflow(a, b, &tmp) ? tmp : (tmp < 0 ? INT64_MAX : INT64_MIN);
+#else
+    if (b <= 0 && a >= INT64_MAX + b)
+        return INT64_MAX;
+    if (b >= 0 && a <= INT64_MIN + b)
+        return INT64_MIN;
+    return a - b;
+#endif
+}
+
+/**
  * Clip a float value into the amin-amax range.
  * @param a value to clip
  * @param amin minimum value of the clip range
@@ -331,7 +371,7 @@ static av_always_inline av_const double av_clipd_c(double a, double amin, double
  */
 static av_always_inline av_const int av_ceil_log2_c(int x)
 {
-    return av_log2((x - 1) << 1);
+    return av_log2((x - 1U) << 1);
 }
 
 /**
@@ -373,7 +413,9 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
  * @param GET_BYTE Expression reading one byte from the input.
  *                 Evaluated up to 7 times (4 for the currently
  *                 assigned Unicode range).  With a memory buffer
- *                 input, this could be *ptr++.
+ *                 input, this could be *ptr++, or if you want to make sure
+ *                 that *ptr stops at the end of a NULL terminated string then
+ *                 *ptr ? *ptr++ : 0
  * @param ERROR    Expression to be evaluated on invalid input,
  *                 typically a goto statement.
  *
@@ -387,11 +429,11 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
     {\
         uint32_t top = (val & 128) >> 1;\
         if ((val & 0xc0) == 0x80 || val >= 0xFE)\
-            ERROR\
+            {ERROR}\
         while (val & top) {\
-            int tmp= (GET_BYTE) - 128;\
+            unsigned int tmp = (GET_BYTE) - 128;\
             if(tmp>>6)\
-                ERROR\
+                {ERROR}\
             val= (val<<6) + tmp;\
             top <<= 5;\
         }\
@@ -408,13 +450,13 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
  *                  typically a goto statement.
  */
 #define GET_UTF16(val, GET_16BIT, ERROR)\
-    val = GET_16BIT;\
+    val = (GET_16BIT);\
     {\
         unsigned int hi = val - 0xD800;\
         if (hi < 0x800) {\
-            val = GET_16BIT - 0xDC00;\
+            val = (GET_16BIT) - 0xDC00;\
             if (val > 0x3FFU || hi > 0x3FFU)\
-                ERROR\
+                {ERROR}\
             val += (hi<<10) + 0x10000;\
         }\
     }\
@@ -542,6 +584,12 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
 #endif
 #ifndef av_sat_dsub32
 #   define av_sat_dsub32    av_sat_dsub32_c
+#endif
+#ifndef av_sat_add64
+#   define av_sat_add64     av_sat_add64_c
+#endif
+#ifndef av_sat_sub64
+#   define av_sat_sub64     av_sat_sub64_c
 #endif
 #ifndef av_clipf
 #   define av_clipf         av_clipf_c

@@ -30,11 +30,7 @@ follows.
 
 Advanced Audio Coding (AAC) encoder.
 
-This encoder is the default AAC encoder, natively implemented into FFmpeg. Its
-quality is on par or better than libfdk_aac at the default bitrate of 128kbps.
-This encoder also implements more options, profiles and samplerates than
-other encoders (with only the AAC-HE profile pending to be implemented) so this
-encoder has become the default and is the recommended choice.
+This encoder is the default AAC encoder, natively implemented into FFmpeg.
 
 @subsection Options
 
@@ -651,10 +647,7 @@ configuration. You need to explicitly configure the build with
 so if you allow the use of GPL, you should configure with
 @code{--enable-gpl --enable-nonfree --enable-libfdk-aac}.
 
-This encoder is considered to produce output on par or worse at 128kbps to the
-@ref{aacenc,,the native FFmpeg AAC encoder} but can often produce better
-sounding audio at identical or lower bitrates and has support for the
-AAC-HE profiles.
+This encoder has support for the AAC-HE profiles.
 
 VBR encoding, enabled through the @option{vbr} or @option{flags
 +qscale} options, is experimental and only works with some
@@ -1378,6 +1371,49 @@ makes it possible to store non-rgb pix_fmts.
 
 @end table
 
+@section librav1e
+
+rav1e AV1 encoder wrapper.
+
+Requires the presence of the rav1e headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-librav1e}.
+
+@subsection Options
+
+@table @option
+@item qmax
+Sets the maximum quantizer to use when using bitrate mode.
+
+@item qmin
+Sets the minimum quantizer to use when using bitrate mode.
+
+@item qp
+Uses quantizer mode to encode at the given quantizer (0-255).
+
+@item speed
+Selects the speed preset (0-10) to encode with.
+
+@item tiles
+Selects how many tiles to encode with.
+
+@item tile-rows
+Selects how many rows of tiles to encode with.
+
+@item tile-columns
+Selects how many columns of tiles to encode with.
+
+@item rav1e-params
+Set rav1e options using a list of @var{key}=@var{value} pairs separated
+by ":". See @command{rav1e --help} for a list of options.
+
+For example to specify librav1e encoding options with @option{-rav1e-params}:
+
+@example
+ffmpeg -i input -c:v librav1e -b:v 500K -rav1e-params speed=5:low_latency=true output.mp4
+@end example
+
+@end table
+
 @section libaom-av1
 
 libaom AV1 encoder wrapper.
@@ -1465,6 +1501,15 @@ Complexity-based.
 Cyclic refresh.
 @end table
 
+@item tune (@emph{tune})
+Set the distortion metric the encoder is tuned with. Default is @code{psnr}.
+
+@table @samp
+@item psnr (@emph{0})
+
+@item ssim (@emph{1})
+@end table
+
 @item lag-in-frames
 Set the maximum number of frames which the encoder may keep in flight
 at any one time for lookahead purposes.  Defaults to the internal
@@ -1544,12 +1589,45 @@ Enable row based multi-threading. Disabled by default.
 Enable Constrained Directional Enhancement Filter. The libaom-av1
 encoder enables CDEF by default.
 
+@item enable-restoration (@emph{boolean})
+Enable Loop Restoration Filter. Default is true for libaom-av1.
+
 @item enable-global-motion (@emph{boolean})
 Enable the use of global motion for block prediction. Default is true.
 
 @item enable-intrabc (@emph{boolean})
 Enable block copy mode for intra block prediction. This mode is
 useful for screen content. Default is true.
+
+@item enable-rect-partitions (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable rectangular partitions. Default is true.
+
+@item enable-1to4-partitions (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable 1:4/4:1 partitions. Default is true.
+
+@item enable-ab-partitions (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable AB shape partitions. Default is true.
+
+@item enable-angle-delta (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable angle delta intra prediction. Default is true.
+
+@item enable-cfl-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable chroma predicted from luma intra prediction. Default is true.
+
+@item enable-filter-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable filter intra predictor. Default is true.
+
+@item enable-intra-edge-filter (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable intra edge filter. Default is true.
+
+@item enable-smooth-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable smooth intra prediction mode. Default is true.
+
+@item enable-paeth-intra (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable paeth predictor in intra prediction. Default is true.
+
+@item enable-palette (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable palette prediction mode. Default is true.
 
 @end table
 
@@ -1842,16 +1920,14 @@ Enable error resiliency features.
 Increase sharpness at the expense of lower PSNR.
 The valid range is [0, 7].
 
-@item VP8-specific options
-@table @option
 @item ts-parameters
 Sets the temporal scalability configuration using a :-separated list of
 key=value pairs. For example, to specify temporal scalability parameters
 with @code{ffmpeg}:
 @example
 ffmpeg -i INPUT -c:v libvpx -ts-parameters ts_number_layers=3:\
-ts_target_bitrate=250000,500000,1000000:ts_rate_decimator=4,2,1:\
-ts_periodicity=4:ts_layer_id=0,2,1,2 OUTPUT
+ts_target_bitrate=250,500,1000:ts_rate_decimator=4,2,1:\
+ts_periodicity=4:ts_layer_id=0,2,1,2:ts_layering_mode=3 OUTPUT
 @end example
 Below is a brief explanation of each of the parameters, please
 refer to @code{struct vpx_codec_enc_cfg} in @code{vpx/vpx_encoder.h} for more
@@ -1860,13 +1936,38 @@ details.
 @item ts_number_layers
 Number of temporal coding layers.
 @item ts_target_bitrate
-Target bitrate for each temporal layer.
+Target bitrate for each temporal layer (in kbps).
+(bitrate should be inclusive of the lower temporal layer).
 @item ts_rate_decimator
 Frame rate decimation factor for each temporal layer.
 @item ts_periodicity
 Length of the sequence defining frame temporal layer membership.
 @item ts_layer_id
 Template defining the membership of frames to temporal layers.
+@item ts_layering_mode
+(optional) Selecting the temporal structure from a set of pre-defined temporal layering modes.
+Currently supports the following options.
+@table @option
+@item 0
+No temporal layering flags are provided internally,
+relies on flags being passed in using @code{metadata} field in @code{AVFrame}
+with following keys.
+@table @option
+@item vp8-flags
+Sets the flags passed into the encoder to indicate the referencing scheme for
+the current frame.
+Refer to function @code{vpx_codec_encode} in @code{vpx/vpx_encoder.h} for more
+details.
+@item temporal_id
+Explicitly sets the temporal id of the current frame to encode.
+@end table
+@item 2
+Two temporal layers. 0-1...
+@item 3
+Three temporal layers. 0-2-1-2...; with single reference frame.
+@item 4
+Same as option "3", except there is a dependency between
+the two temporal layer 2 frames within the temporal period.
 @end table
 @end table
 
@@ -2371,6 +2472,20 @@ during configuration. You need to explicitly configure the build with
 @subsection Options
 
 @table @option
+@item b
+Sets target video bitrate.
+
+@item bf
+
+@item g
+Set the GOP size.
+
+@item keyint_min
+Minimum GOP size.
+
+@item refs
+Number of reference frames each P-frame can use. The range is from @var{1-16}.
+
 @item preset
 Set the x265 preset.
 
@@ -2382,6 +2497,28 @@ Set profile restrictions.
 
 @item crf
 Set the quality for constant quality mode.
+
+@item qp
+Set constant quantization rate control method parameter.
+
+@item qmin
+Minimum quantizer scale.
+
+@item qmax
+Maximum quantizer scale.
+
+@item qdiff
+Maximum difference between quantizer scales.
+
+@item qblur
+Quantizer curve blur
+
+@item qcomp
+Quantizer curve compression factor
+
+@item i_qfactor
+
+@item b_qfactor
 
 @item forced-idr
 Normally, when forcing a I-frame type, the encoder can select any type
@@ -2618,6 +2755,14 @@ fastest.
 
 @end table
 
+@section MediaFoundation
+
+This provides wrappers to encoders (both audio and video) in the
+MediaFoundation framework. It can access both SW and HW encoders.
+Video encoders can take input in either of nv12 or yuv420p form
+(some encoders support both, some support only either - in practice,
+nv12 is the safer choice, especially among HW encoders).
+
 @section mpeg2
 
 MPEG-2 video encoder.
@@ -2625,6 +2770,20 @@ MPEG-2 video encoder.
 @subsection Options
 
 @table @option
+@item profile
+Select the mpeg2 profile to encode:
+
+@table @samp
+@item 422
+@item high
+@item ss
+Spatially Scalable
+@item snr
+SNR Scalable
+@item main
+@item simple
+@end table
+
 @item seq_disp_ext @var{integer}
 Specifies if the encoder should write a sequence_display_extension to the
 output.
@@ -2733,7 +2892,7 @@ recommended value) and do not set a size constraint.
 
 @section QSV encoders
 
-The family of Intel QuickSync Video encoders (MPEG-2, H.264 and HEVC)
+The family of Intel QuickSync Video encoders (MPEG-2, H.264, HEVC, JPEG/MJPEG and VP9)
 
 The ratecontrol method is selected as follows:
 
@@ -3116,6 +3275,14 @@ and they can also be used in Matroska files.
 @subsection Options
 
 @table @option
+@item palette
+Specify the global palette used by the bitmaps.
+
+The format for this option is a string containing 16 24-bits hexadecimal
+numbers (without 0x prefix) separated by commas, for example @code{0d00ee,
+ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
+7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
+
 @item even_rows_fix
 When set to 1, enable a work-around that makes the number of pixel rows
 even in all subtitles.  This fixes a problem with some players that

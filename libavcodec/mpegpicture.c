@@ -78,20 +78,15 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size, EMU_EDGE_HEIGHT,
-                      fail);
-
-    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, me->scratchpad, alloc_size, 4 * 16 * 2,
-                      fail)
+    if (!FF_ALLOCZ_TYPED_ARRAY(sc->edge_emu_buffer, alloc_size * EMU_EDGE_HEIGHT) ||
+        !FF_ALLOCZ_TYPED_ARRAY(me->scratchpad,      alloc_size * 4 * 16 * 2))
+        return AVERROR(ENOMEM);
     me->temp            = me->scratchpad;
     sc->rd_scratchpad   = me->scratchpad;
     sc->b_scratchpad    = me->scratchpad;
     sc->obmc_scratchpad = me->scratchpad + 16;
 
     return 0;
-fail:
-    av_freep(&sc->edge_emu_buffer);
-    return AVERROR(ENOMEM);
 }
 
 /**
@@ -211,7 +206,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
 #if FF_API_DEBUG_MV
         avctx->debug_mv ||
 #endif
-        (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS)) {
+        (avctx->export_side_data & AV_CODEC_EXPORT_DATA_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
 

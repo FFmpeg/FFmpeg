@@ -252,7 +252,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
             if (i == 2) {
                 // This codebook can be cut off at places other than
                 // powers of 2, leaving some of the entries undefined.
-                cb_size = get_bits_long(&gb, 20);
+                cb_size = get_bits(&gb, 20);
                 if (!cb_size) {
                     av_log(avctx, AV_LOG_ERROR, "Invalid codebook size 0.\n");
                     return AVERROR_INVALIDDATA;

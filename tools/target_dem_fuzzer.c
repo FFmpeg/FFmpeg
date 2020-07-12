@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
@@ -70,6 +71,8 @@ static int64_t io_seek(void *opaque, int64_t offset, int whence)
         if (offset > INT64_MAX - c->filesize)
             return -1;
         offset += c->filesize;
+    } else if (whence == AVSEEK_SIZE) {
+        return c->filesize;
     }
     if (offset < 0 || offset > c->filesize)
         return -1;
@@ -108,14 +111,38 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         error("Failed avformat_alloc_context()");
 
     if (size > 2048) {
+        int flags;
+        char extension[64];
+
         GetByteContext gbc;
         memcpy (filename, data + size - 1024, 1024);
         bytestream2_init(&gbc, data + size - 2048, 1024);
         size -= 2048;
 
         io_buffer_size = bytestream2_get_le32(&gbc) & 0xFFFFFFF;
-        seekable       = bytestream2_get_byte(&gbc) & 1;
+        flags          = bytestream2_get_byte(&gbc);
+        seekable       = flags & 1;
         filesize       = bytestream2_get_le64(&gbc) & 0x7FFFFFFFFFFFFFFF;
+
+        if ((flags & 2) && strlen(filename) < sizeof(filename) / 2) {
+            AVInputFormat *avif = NULL;
+            int avif_count = 0;
+            while ((avif = av_iformat_next(avif))) {
+                if (avif->extensions)
+                    avif_count ++;
+            }
+            avif_count =  bytestream2_get_le32(&gbc) % avif_count;
+
+            while ((avif = av_iformat_next(avif))) {
+                if (avif->extensions)
+                    if (!avif_count--)
+                        break;
+            }
+            av_strlcpy(extension, avif->extensions, sizeof(extension));
+            if (strchr(extension, ','))
+                *strchr(extension, ',') = 0;
+            av_strlcatf(filename, sizeof(filename), ".%s", extension);
+        }
     }
     io_buffer = av_malloc(io_buffer_size);
     if (!io_buffer)

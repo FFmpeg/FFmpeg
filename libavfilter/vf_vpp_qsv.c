@@ -118,10 +118,10 @@ static const AVOption options[] = {
         { "hflip",         "flip horizontally",                              0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_HFLIP       }, .flags=FLAGS, .unit = "transpose" },
         { "vflip",         "flip vertically",                                0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_VFLIP       }, .flags=FLAGS, .unit = "transpose" },
 
-    { "cw",   "set the width crop area expression",   OFFSET(cw), AV_OPT_TYPE_STRING, { .str = "iw" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "ch",   "set the height crop area expression",  OFFSET(ch), AV_OPT_TYPE_STRING, { .str = "ih" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "cx",   "set the x crop area expression",       OFFSET(cx), AV_OPT_TYPE_STRING, { .str = "(in_w-out_w)/2" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "cy",   "set the y crop area expression",       OFFSET(cy), AV_OPT_TYPE_STRING, { .str = "(in_h-out_h)/2" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cw",   "set the width crop area expression",   OFFSET(cw), AV_OPT_TYPE_STRING, { .str = "iw" }, 0, 0, FLAGS },
+    { "ch",   "set the height crop area expression",  OFFSET(ch), AV_OPT_TYPE_STRING, { .str = "ih" }, 0, 0, FLAGS },
+    { "cx",   "set the x crop area expression",       OFFSET(cx), AV_OPT_TYPE_STRING, { .str = "(in_w-out_w)/2" }, 0, 0, FLAGS },
+    { "cy",   "set the y crop area expression",       OFFSET(cy), AV_OPT_TYPE_STRING, { .str = "(in_h-out_h)/2" }, 0, 0, FLAGS },
 
     { "w",      "Output video width",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
     { "width",  "Output video width",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
@@ -312,7 +312,9 @@ static int config_output(AVFilterLink *outlink)
     } else
         in_format = inlink->format;
 
-    param.out_sw_format  = (vpp->out_format == AV_PIX_FMT_NONE) ? in_format : vpp->out_format;
+    if (vpp->out_format == AV_PIX_FMT_NONE)
+        vpp->out_format = in_format;
+    param.out_sw_format  = vpp->out_format;
 
     if (vpp->use_crop) {
         crop.in_idx = 0;
@@ -454,7 +456,7 @@ static int config_output(AVFilterLink *outlink)
 
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
         vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||
-        inlink->w != outlink->w || inlink->h != outlink->h)
+        inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format)
         return ff_qsvvpp_create(ctx, &vpp->qsv, &param);
     else {
         av_log(ctx, AV_LOG_VERBOSE, "qsv vpp pass through mode.\n");

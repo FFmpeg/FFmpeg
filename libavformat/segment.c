@@ -75,7 +75,6 @@ typedef struct SegmentContext {
     ff_const59 AVOutputFormat *oformat;
     AVFormatContext *avf;
     char *format;              ///< format to use for output segment files
-    char *format_options_str;  ///< format options to use for output segment files
     AVDictionary *format_options;
     char *list;            ///< filename for the segment list file
     int   list_flags;      ///< flags affecting list generation
@@ -163,12 +162,11 @@ static int segment_mux_init(AVFormatContext *s)
     oc->flags              = s->flags;
 
     for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st;
-        AVCodecParameters *ipar, *opar;
+        AVStream *st, *ist = s->streams[i];
+        AVCodecParameters *ipar = ist->codecpar, *opar;
 
         if (!(st = avformat_new_stream(oc, NULL)))
             return AVERROR(ENOMEM);
-        ipar = s->streams[i]->codecpar;
         opar = st->codecpar;
         avcodec_parameters_copy(opar, ipar);
         if (!oc->oformat->codec_tag ||
@@ -178,16 +176,17 @@ static int segment_mux_init(AVFormatContext *s)
         } else {
             opar->codec_tag = 0;
         }
-        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
-        st->time_base = s->streams[i]->time_base;
-        st->avg_frame_rate = s->streams[i]->avg_frame_rate;
+        st->sample_aspect_ratio = ist->sample_aspect_ratio;
+        st->time_base           = ist->time_base;
+        st->avg_frame_rate      = ist->avg_frame_rate;
+        st->disposition         = ist->disposition;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
-        if (s->streams[i]->codecpar->codec_tag == MKTAG('t','m','c','d'))
-            st->codec->time_base = s->streams[i]->codec->time_base;
+        if (ipar->codec_tag == MKTAG('t','m','c','d'))
+            st->codec->time_base = ist->codec->time_base;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
+        av_dict_copy(&st->metadata, ist->metadata, 0);
     }
 
     return 0;
@@ -720,15 +719,6 @@ static int seg_init(AVFormatContext *s)
         }
     }
 
-    if (seg->format_options_str) {
-        ret = av_dict_parse_string(&seg->format_options, seg->format_options_str, "=", ":", 0);
-        if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n",
-                   seg->format_options_str);
-            return ret;
-        }
-    }
-
     if (seg->list) {
         if (seg->list_type == LIST_TYPE_UNDEFINED) {
             if      (av_match_ext(seg->list, "csv" )) seg->list_type = LIST_TYPE_CSV;
@@ -791,7 +781,7 @@ static int seg_init(AVFormatContext *s)
     ret = avformat_init_output(oc, &options);
     if (av_dict_count(options)) {
         av_log(s, AV_LOG_ERROR,
-               "Some of the provided format options in '%s' are not recognized\n", seg->format_options_str);
+               "Some of the provided format options are not recognized\n");
         av_dict_free(&options);
         return AVERROR(EINVAL);
     }
@@ -883,7 +873,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
 
     if (!st->codecpar->extradata_size) {
-        int pkt_extradata_size = 0;
+        int pkt_extradata_size;
         uint8_t *pkt_extradata = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &pkt_extradata_size);
         if (pkt_extradata && pkt_extradata_size > 0) {
             ret = ff_alloc_extradata(st->codecpar, pkt_extradata_size);
@@ -892,7 +882,6 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
                 goto calc_times;
             }
             memcpy(st->codecpar->extradata, pkt_extradata, pkt_extradata_size);
-            st->codecpar->extradata_size = pkt_extradata_size;
         }
     }
 
@@ -982,7 +971,8 @@ calc_times:
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
-    ret = ff_write_chained(seg->avf, pkt->stream_index, pkt, s, seg->initial_offset || seg->reset_timestamps);
+    ret = ff_write_chained(seg->avf, pkt->stream_index, pkt, s,
+                           seg->initial_offset || seg->reset_timestamps || seg->avf->oformat->interleave_packet);
 
 fail:
     if (pkt->stream_index == seg->reference_stream_index) {
@@ -1017,7 +1007,6 @@ fail:
     if (seg->list)
         ff_format_io_close(s, &seg->list_pb);
 
-    av_dict_free(&seg->format_options);
     av_opt_free(seg);
     av_freep(&seg->times);
     av_freep(&seg->frames);
@@ -1045,10 +1034,8 @@ static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
         if (ret == 1) {
             AVStream *st = s->streams[pkt->stream_index];
             AVStream *ost = oc->streams[pkt->stream_index];
-            st->internal->bsfcs = ost->internal->bsfcs;
-            st->internal->nb_bsfcs = ost->internal->nb_bsfcs;
-            ost->internal->bsfcs = NULL;
-            ost->internal->nb_bsfcs = 0;
+            st->internal->bsfc = ost->internal->bsfc;
+            ost->internal->bsfc = NULL;
         }
         return ret;
     }
@@ -1058,9 +1045,9 @@ static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "reference_stream",  "set reference stream", OFFSET(reference_stream_specifier), AV_OPT_TYPE_STRING, {.str = "auto"}, CHAR_MIN, CHAR_MAX, E },
+    { "reference_stream",  "set reference stream", OFFSET(reference_stream_specifier), AV_OPT_TYPE_STRING, {.str = "auto"}, 0, 0, E },
     { "segment_format",    "set container format used for the segments", OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
-    { "segment_format_options", "set list of options for the container format used for the segments", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "segment_format_options", "set list of options for the container format used for the segments", OFFSET(format_options), AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, E },
     { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_header_filename", "write a single file containing the header", OFFSET(header_filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
 

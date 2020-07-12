@@ -188,8 +188,10 @@ static int jacosub_read_header(AVFormatContext *s)
             AVPacket *sub;
 
             sub = ff_subtitles_queue_insert(&jacosub->q, line, len, merge_line);
-            if (!sub)
-                return AVERROR(ENOMEM);
+            if (!sub) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             sub->pos = pos;
             merge_line = len > 1 && !strcmp(&line[len - 2], "\\\n");
             continue;

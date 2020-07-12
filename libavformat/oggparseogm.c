@@ -43,6 +43,7 @@ ogm_header(AVFormatContext *s, int idx)
     uint64_t time_unit;
     uint64_t spu;
     uint32_t size;
+    int ret;
 
     bytestream2_init(&p, os->buf + os->pstart, os->psize);
     if (!(bytestream2_peek_byte(&p) & 1))
@@ -108,9 +109,8 @@ ogm_header(AVFormatContext *s, int idx)
                 size -= 52;
                 if (bytestream2_get_bytes_left(&p) < size)
                     return AVERROR_INVALIDDATA;
-                av_freep(&st->codecpar->extradata);
-                if (ff_alloc_extradata(st->codecpar, size) < 0)
-                    return AVERROR(ENOMEM);
+                if ((ret = ff_alloc_extradata(st->codecpar, size)) < 0)
+                    return ret;
                 bytestream2_get_buffer(&p, st->codecpar->extradata, st->codecpar->extradata_size);
             }
         }

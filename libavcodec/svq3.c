@@ -43,6 +43,8 @@
 #include <inttypes.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/crc.h"
+
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegutils.h"
@@ -1293,7 +1295,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
                 ret = -1;
                 goto fail;
             }
-            s->watermark_key = ff_svq1_packet_checksum(buf, buf_len, 0);
+            s->watermark_key = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_CCITT), 0, buf, buf_len));
+
             s->watermark_key = s->watermark_key << 16 | s->watermark_key;
             av_log(avctx, AV_LOG_DEBUG,
                    "watermark key %#"PRIx32"\n", s->watermark_key);

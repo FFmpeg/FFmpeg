@@ -34,7 +34,6 @@ static int mpjpeg_write_header(AVFormatContext *s)
 {
     MPJPEGContext *mpj = s->priv_data;
     avio_printf(s->pb, "--%s\r\n", mpj->boundary_tag);
-    avio_flush(s->pb);
     return 0;
 }
 
@@ -47,11 +46,6 @@ static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_write(s->pb, pkt->data, pkt->size);
 
     avio_printf(s->pb, "\r\n--%s\r\n", mpj->boundary_tag);
-    return 0;
-}
-
-static int mpjpeg_write_trailer(AVFormatContext *s)
-{
     return 0;
 }
 
@@ -77,7 +71,6 @@ AVOutputFormat ff_mpjpeg_muxer = {
     .video_codec       = AV_CODEC_ID_MJPEG,
     .write_header      = mpjpeg_write_header,
     .write_packet      = mpjpeg_write_packet,
-    .write_trailer     = mpjpeg_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class        = &mpjpeg_muxer_class,
 };

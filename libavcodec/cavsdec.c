@@ -1101,11 +1101,20 @@ static int decode_pic(AVSContext *h)
         do {
             if (check_for_slice(h))
                 skip_count = -1;
-            if (h->skip_mode_flag && (skip_count < 0))
+            if (h->skip_mode_flag && (skip_count < 0)) {
+                if (get_bits_left(&h->gb) < 1) {
+                    ret = AVERROR_INVALIDDATA;
+                    break;
+                }
                 skip_count = get_ue_golomb(&h->gb);
+            }
             if (h->skip_mode_flag && skip_count--) {
                 decode_mb_p(h, P_SKIP);
             } else {
+                if (get_bits_left(&h->gb) < 1) {
+                    ret = AVERROR_INVALIDDATA;
+                    break;
+                }
                 mb_type = get_ue_golomb(&h->gb) + P_SKIP + h->skip_mode_flag;
                 if (mb_type > P_8X8)
                     ret = decode_mb_i(h, mb_type - P_8X8 - 1);
@@ -1119,11 +1128,20 @@ static int decode_pic(AVSContext *h)
         do {
             if (check_for_slice(h))
                 skip_count = -1;
-            if (h->skip_mode_flag && (skip_count < 0))
+            if (h->skip_mode_flag && (skip_count < 0)) {
+                if (get_bits_left(&h->gb) < 1) {
+                    ret = AVERROR_INVALIDDATA;
+                    break;
+                }
                 skip_count = get_ue_golomb(&h->gb);
+            }
             if (h->skip_mode_flag && skip_count--) {
                 ret = decode_mb_b(h, B_SKIP);
             } else {
+                if (get_bits_left(&h->gb) < 1) {
+                    ret = AVERROR_INVALIDDATA;
+                    break;
+                }
                 mb_type = get_ue_golomb(&h->gb) + B_SKIP + h->skip_mode_flag;
                 if (mb_type > B_8X8)
                     ret = decode_mb_i(h, mb_type - B_8X8 - 1);
@@ -1215,6 +1233,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int input_size, ret;
     const uint8_t *buf_end;
     const uint8_t *buf_ptr;
+    int frame_start = 0;
 
     if (buf_size == 0) {
         if (!h->low_delay && h->DPB[0].f->data[0]) {
@@ -1248,6 +1267,9 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 h->got_keyframe = 1;
             }
         case PIC_PB_START_CODE:
+            if (frame_start > 1)
+                return AVERROR_INVALIDDATA;
+            frame_start ++;
             if (*got_frame)
                 av_frame_unref(data);
             *got_frame = 0;

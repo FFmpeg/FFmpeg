@@ -6,7 +6,7 @@ FATE_LAVF_VIDEO-$(call ENCDEC,  FITS,       FITS)               += gbrp.fits
 FATE_LAVF_VIDEO-$(call ENCDEC,  FITS,       FITS)               += gbrap.fits
 FATE_LAVF_VIDEO-$(call ENCDEC,  FITS,       FITS)               += gbrp16be.fits
 FATE_LAVF_VIDEO-$(call ENCDEC,  FITS,       FITS)               += gbrap16be.fits
-FATE_LAVF_VIDEO-$(call ENCDEC,  GIF,        FITS)               += gif
+FATE_LAVF_VIDEO-$(call ENCDEC,  GIF,         GIF)               += gif
 FATE_LAVF_VIDEO-$(CONFIG_YUV4MPEGPIPE_MUXER)                    += y4m
 
 FATE_LAVF_VIDEO = $(FATE_LAVF_VIDEO-yes:%=fate-lavf-%)
