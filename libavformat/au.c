@@ -107,11 +107,11 @@ static int au_read_annotation(AVFormatContext *s, int size)
                     av_log(s, AV_LOG_ERROR, "Memory error while parsing AU metadata.\n");
                 } else {
                     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
-                    for (i = 0; i < FF_ARRAY_ELEMS(keys) && key != NULL; i++) {
+                    for (i = 0; i < FF_ARRAY_ELEMS(keys); i++) {
                         if (av_strcasecmp(keys[i], key) == 0) {
                             av_dict_set(&(s->metadata), keys[i], value, AV_DICT_DONT_STRDUP_VAL);
-                            av_freep(&key);
                             value = NULL;
+                            break;
                         }
                     }
                 }
