@@ -262,13 +262,11 @@ static int au_get_annotations(AVFormatContext *s, char **buffer)
         if (t != NULL) {
             if (cnt++)
                 av_bprint_chars(&bprint, '\n', 1);
-            av_bprint_append_data(&bprint, keys[i], strlen(keys[i]));
-            av_bprint_chars(&bprint, '=', 1);
-            av_bprint_append_data(&bprint, t->value, strlen(t->value));
+            av_bprintf(&bprint, "%s=%s", keys[i], t->value);
         }
     }
     /* pad with 0's */
-    av_bprint_append_data(&bprint, "\0\0\0\0\0\0\0\0", 8);
+    av_bprint_chars(&bprint, '\0', 8);
     return av_bprint_finalize(&bprint, buffer);
 }
 
