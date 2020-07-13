@@ -894,7 +894,7 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             (frame_duration_code == 3) ? 4096 : 0;
 
     if (channel_layout_code > 0xff) {
-        av_log(c->fc, AV_LOG_WARNING, "Unsupported DTS audio channel layout");
+        av_log(c->fc, AV_LOG_WARNING, "Unsupported DTS audio channel layout\n");
     }
     st->codecpar->channel_layout =
             ((channel_layout_code & 0x1) ? AV_CH_FRONT_CENTER : 0) |
@@ -5219,7 +5219,7 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         } else {
             edit_count = atom.size / elst_entry_size;
             if (edit_count * elst_entry_size != atom.size) {
-                av_log(c->fc, AV_LOG_WARNING, "ELST atom of %"PRId64" bytes, bigger than %d entries.", atom.size, edit_count);
+                av_log(c->fc, AV_LOG_WARNING, "ELST atom of %"PRId64" bytes, bigger than %d entries.\n", atom.size, edit_count);
             }
         }
     }
