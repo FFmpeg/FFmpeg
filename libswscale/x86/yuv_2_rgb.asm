@@ -268,9 +268,9 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     por    m2, m7
     por    m1, m6          ; g5  b5  r6  g6  b6  r7  g7  b7  r8  g8  b8  r9  g9  b9  r10 g10
     por    m2, m3          ; b10 r11 g11 b11 r12 g12 b12 r13 g13 b13 r14 g14 b14 r15 g15 b15
-    mova [imageq], m0
-    mova [imageq + 16], m1
-    mova [imageq + 32], m2
+    movu [imageq], m0
+    movu [imageq + 16], m1
+    movu [imageq + 32], m2
 %endif ; mmsize = 16
 %else ; PACK RGB15/16/32
     packuswb m0, m1
@@ -300,10 +300,10 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     punpckhwd m_green, m_red
     punpcklwd m5, m6
     punpckhwd m_alpha, m6
-    mova [imageq + 0], m_blue
-    mova [imageq + 8  * time_num], m_green
-    mova [imageq + 16 * time_num], m5
-    mova [imageq + 24 * time_num], m_alpha
+    movu [imageq + 0], m_blue
+    movu [imageq + 8  * time_num], m_green
+    movu [imageq + 16 * time_num], m5
+    movu [imageq + 24 * time_num], m_alpha
 %else ; PACK RGB15/16
 %define depth 2
 %if cpuflag(ssse3)
@@ -342,8 +342,8 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     mova m2, m0
     punpcklbw m0, m1
     punpckhbw m2, m1
-    mova [imageq], m0
-    mova [imageq + 8 * time_num], m2
+    movu [imageq], m0
+    movu [imageq + 8 * time_num], m2
 %endif ; PACK RGB15/16
 %endif ; PACK RGB15/16/32
 
