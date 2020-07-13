@@ -68,13 +68,13 @@ static int au_probe(const AVProbeData *p)
 
 static int au_read_annotation(AVFormatContext *s, int size)
 {
-    static const char * keys[] = {
+    static const char keys[][7] = {
         "title",
         "artist",
         "album",
         "track",
         "genre",
-        NULL };
+    };
     AVIOContext *pb = s->pb;
     enum { PARSE_KEY, PARSE_VALUE, PARSE_FINISHED } state = PARSE_KEY;
     char c;
@@ -107,7 +107,7 @@ static int au_read_annotation(AVFormatContext *s, int size)
                     av_log(s, AV_LOG_ERROR, "Memory error while parsing AU metadata.\n");
                 } else {
                     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
-                    for (i = 0; keys[i] != NULL && key != NULL; i++) {
+                    for (i = 0; i < FF_ARRAY_ELEMS(keys) && key != NULL; i++) {
                         if (av_strcasecmp(keys[i], key) == 0) {
                             av_dict_set(&(s->metadata), keys[i], value, AV_DICT_DONT_STRDUP_VAL);
                             av_freep(&key);
@@ -243,14 +243,13 @@ typedef struct AUContext {
 
 static int au_get_annotations(AVFormatContext *s, char **buffer)
 {
-    static const char * keys[] = {
+    static const char keys[][7] = {
         "Title",
         "Artist",
         "Album",
         "Track",
         "Genre",
-        NULL };
-    int i;
+    };
     int cnt = 0;
     AVDictionary *m = s->metadata;
     AVDictionaryEntry *t = NULL;
@@ -258,7 +257,7 @@ static int au_get_annotations(AVFormatContext *s, char **buffer)
 
     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
 
-    for (i = 0; keys[i] != NULL; i++) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(keys); i++) {
         t = av_dict_get(m, keys[i], NULL, 0);
         if (t != NULL) {
             if (cnt++)
