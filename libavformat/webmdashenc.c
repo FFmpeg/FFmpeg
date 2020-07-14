@@ -171,8 +171,7 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
     AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
     AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
     const char *bandwidth_str;
-    if ((w->is_live && (!filename)) ||
-        (!w->is_live && (!irange || !cues_start || !cues_end || !filename || !bandwidth))) {
+    if (!w->is_live && (!irange || !cues_start || !cues_end || !filename || !bandwidth)) {
         return AVERROR_INVALIDDATA;
     }
     avio_printf(s->pb, "<Representation id=\"%s\"", id);
@@ -380,7 +379,10 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
             av_dict_get(s->streams[as->streams[0]]->metadata, FILENAME, NULL, 0);
         char *initialization_pattern = NULL;
         char *media_pattern = NULL;
-        int ret = parse_filename(filename->value, NULL, &initialization_pattern,
+        int ret;
+        if (!filename)
+            return AVERROR(EINVAL);
+        ret = parse_filename(filename->value, NULL, &initialization_pattern,
                                  &media_pattern);
         if (ret) return ret;
         avio_printf(s->pb, "<ContentComponent id=\"1\" type=\"%s\"/>\n",
