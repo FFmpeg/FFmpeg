@@ -116,7 +116,8 @@ static inline unsigned get_ue_golomb_long(GetBitContext *gb)
 
 /**
  * read unsigned exp golomb code, constraint to a max of 31.
- * the return value is undefined if the stored value exceeds 31.
+ * If the value encountered is not in 0..31, the return value
+ * is outside the range 0..30.
  */
 static inline int get_ue_golomb_31(GetBitContext *gb)
 {
