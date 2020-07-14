@@ -614,5 +614,5 @@ AVOutputFormat ff_tee_muxer = {
     .write_trailer     = tee_write_trailer,
     .write_packet      = tee_write_packet,
     .priv_class        = &tee_muxer_class,
-    .flags             = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
+    .flags             = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
 };
