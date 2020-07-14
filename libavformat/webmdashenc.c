@@ -260,65 +260,24 @@ static void free_adaptation_sets(AVFormatContext *s) {
 }
 
 /*
- * Parses a live header filename and computes the representation id,
- * initialization pattern and the media pattern. Pass NULL if you don't want to
- * compute any of those 3. Returns 0 on success and non-zero on failure.
+ * Parses a live header filename and returns the position of the '_' and '.'
+ * delimiting <file_description> and <representation_id>.
  *
  * Name of the header file should conform to the following pattern:
  * <file_description>_<representation_id>.hdr where <file_description> can be
  * anything. The chunks should be named according to the following pattern:
  * <file_description>_<representation_id>_<chunk_number>.chk
  */
-static int parse_filename(char *filename, char **representation_id,
-                          char **initialization_pattern, char **media_pattern) {
-    char *underscore_pos = NULL;
-    char *period_pos = NULL;
-    char *filename_str = av_strdup(filename);
-    int ret = 0;
-
-    if (!filename_str) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-    underscore_pos = strrchr(filename_str, '_');
-    if (!underscore_pos) {
-        ret = AVERROR_INVALIDDATA;
-        goto end;
-    }
-    period_pos = strchr(++underscore_pos, '.');
-    if (!period_pos) {
-        ret = AVERROR_INVALIDDATA;
-        goto end;
-    }
-    *(underscore_pos - 1) = 0;
-    if (representation_id) {
-        *representation_id = av_malloc(period_pos - underscore_pos + 1);
-        if (!(*representation_id)) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-        av_strlcpy(*representation_id, underscore_pos, period_pos - underscore_pos + 1);
-    }
-    if (initialization_pattern) {
-        *initialization_pattern = av_asprintf("%s_$RepresentationID$.hdr",
-                                              filename_str);
-        if (!(*initialization_pattern)) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-    }
-    if (media_pattern) {
-        *media_pattern = av_asprintf("%s_$RepresentationID$_$Number$.chk",
-                                     filename_str);
-        if (!(*media_pattern)) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-    }
-
-end:
-    av_freep(&filename_str);
-    return ret;
+static int split_filename(char *filename, char **underscore_pos,
+                          char **period_pos)
+{
+    *underscore_pos = strrchr(filename, '_');
+    if (!*underscore_pos)
+        return AVERROR(EINVAL);
+    *period_pos = strchr(*underscore_pos, '.');
+    if (!*period_pos)
+        return AVERROR(EINVAL);
+    return 0;
 }
 
 /*
@@ -377,46 +336,49 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     if (w->is_live) {
         AVDictionaryEntry *filename =
             av_dict_get(s->streams[as->streams[0]]->metadata, FILENAME, NULL, 0);
-        char *initialization_pattern = NULL;
-        char *media_pattern = NULL;
+        char *underscore_pos, *period_pos;
         int ret;
         if (!filename)
             return AVERROR(EINVAL);
-        ret = parse_filename(filename->value, NULL, &initialization_pattern,
-                                 &media_pattern);
+        ret = split_filename(filename->value, &underscore_pos, &period_pos);
         if (ret) return ret;
+        *underscore_pos = '\0';
         avio_printf(s->pb, "<ContentComponent id=\"1\" type=\"%s\"/>\n",
                     par->codec_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
         avio_printf(s->pb, "<SegmentTemplate");
         avio_printf(s->pb, " timescale=\"1000\"");
         avio_printf(s->pb, " duration=\"%d\"", w->chunk_duration);
-        avio_printf(s->pb, " media=\"%s\"", media_pattern);
+        avio_printf(s->pb, " media=\"%s_$RepresentationID$_$Number$.chk\"",
+                    filename->value);
         avio_printf(s->pb, " startNumber=\"%d\"", w->chunk_start_index);
-        avio_printf(s->pb, " initialization=\"%s\"", initialization_pattern);
+        avio_printf(s->pb, " initialization=\"%s_$RepresentationID$.hdr\"",
+                    filename->value);
         avio_printf(s->pb, "/>\n");
-        av_free(initialization_pattern);
-        av_free(media_pattern);
+        *underscore_pos = '_';
     }
 
     for (i = 0; i < as->nb_streams; i++) {
-        char *representation_id = NULL;
+        char buf[25], *representation_id = buf, *underscore_pos, *period_pos;
         int ret;
         if (w->is_live) {
             AVDictionaryEntry *filename =
                 av_dict_get(s->streams[as->streams[i]]->metadata, FILENAME, NULL, 0);
             if (!filename)
                 return AVERROR(EINVAL);
-            if (ret = parse_filename(filename->value, &representation_id, NULL, NULL))
+            ret = split_filename(filename->value, &underscore_pos, &period_pos);
+            if (ret < 0)
                 return ret;
+            representation_id = underscore_pos + 1;
+            *period_pos       = '\0';
         } else {
-            representation_id = av_asprintf("%d", w->representation_id++);
-            if (!representation_id) return AVERROR(ENOMEM);
+            snprintf(buf, sizeof(buf), "%d", w->representation_id++);
         }
         ret = write_representation(s, s->streams[as->streams[i]],
                                    representation_id, !width_in_as,
                                    !height_in_as, !sample_rate_in_as);
-        av_free(representation_id);
         if (ret) return ret;
+        if (w->is_live)
+            *period_pos = '.';
     }
     avio_printf(s->pb, "</AdaptationSet>\n");
     return 0;
