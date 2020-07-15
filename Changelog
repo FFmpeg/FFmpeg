@@ -14,6 +14,7 @@ version <next>:
 - ADPCM Argonaut Games encoder
 - Argonaut Games ASF muxer
 - AV1 Low overhead bitstream format demuxer
+- RPZA video encoder
 
 
 version 4.3:
