@@ -156,11 +156,7 @@ struct decklink_ctx {
 typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;
 
 #ifdef _WIN32
-#if BLACKMAGIC_DECKLINK_API_VERSION < 0x0a040000
-typedef unsigned long buffercount_type;
-#else
 typedef unsigned int buffercount_type;
-#endif
 IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
 #else
 typedef uint32_t buffercount_type;
