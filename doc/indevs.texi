@@ -296,15 +296,30 @@ supports it.
 Set the pixel format of the captured video.
 Available values are:
 @table @samp
+@item auto
+
+This is the default which means 8-bit YUV 422 or 8-bit ARGB if format
+autodetection is used, 8-bit YUV 422 otherwise.
+
 @item uyvy422
+
+8-bit YUV 422.
 
 @item yuv422p10
 
+10-bit YUV 422.
+
 @item argb
+
+8-bit RGB.
 
 @item bgra
 
+8-bit RGB.
+
 @item rgb10
+
+10-bit RGB.
 
 @end table
 

@@ -1044,9 +1044,13 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
 HRESULT decklink_input_callback::VideoInputFormatChanged(
     BMDVideoInputFormatChangedEvents events, IDeckLinkDisplayMode *mode,
-    BMDDetectedVideoInputFormatFlags)
+    BMDDetectedVideoInputFormatFlags formatFlags)
 {
+    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     ctx->bmd_mode = mode->GetDisplayMode();
+    // check the C context member to make sure we set both raw_format and bmd_mode with data from the same format change callback
+    if (!cctx->raw_format)
+        ctx->raw_format = (formatFlags & bmdDetectedVideoInputRGB444) ? bmdFormat8BitARGB : bmdFormat8BitYUV;
     return S_OK;
 }
 
@@ -1228,6 +1232,8 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         }
         av_log(avctx, AV_LOG_INFO, "Autodetected the input mode\n");
     }
+    if (ctx->raw_format == bmdFormatUnspecified)
+        ctx->raw_format = bmdFormat8BitYUV;
     if (ff_decklink_set_format(avctx, DIRECTION_IN) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not set format code %s for %s\n",
             cctx->format_code ? cctx->format_code : "(unset)", avctx->url);
