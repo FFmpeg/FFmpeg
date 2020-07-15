@@ -2561,6 +2561,10 @@ static void eit_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     MpegTSContext *ts = filter->u.section_filter.opaque;
     const uint8_t *p, *p_end;
     SectionHeader h1, *h = &h1;
+    
+    // Something in kodi breaks with seeking when EIT EPG data is included in the stream
+    // As we figure this out lets just skip any EIT data.
+    return;
 
     /*
      * Sometimes we receive EPG packets but SDT table do not have
