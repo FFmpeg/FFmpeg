@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-07-xx - xxxxxxxxxx - lavc 58.96.100 - packet.h
+  Add AV_PKT_DATA_S12M_TIMECODE.
+
 2020-06-12 - b09fb030c1 - lavu 56.55.100 - pixdesc.h
   Add AV_PIX_FMT_X2RGB10.
 

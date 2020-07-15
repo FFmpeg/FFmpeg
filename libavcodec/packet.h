@@ -283,6 +283,14 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_DOVI_CONF,
 
     /**
+     * Timecode which conforms to SMPTE ST 12-1:2014. The data is an array of 4 uint32_t
+     * where the first uint32_t describes how many (1-3) of the other timecodes are used.
+     * The timecode format is described in the documentation of av_timecode_get_smpte_from_framenum()
+     * function in libavutil/timecode.h.
+     */
+    AV_PKT_DATA_S12M_TIMECODE,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
