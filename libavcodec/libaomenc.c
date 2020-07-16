@@ -310,6 +310,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
         *img_fmt = AOM_IMG_FMT_I422;
         return 0;
     case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_GBRP:
         enccfg->g_profile = FF_PROFILE_AV1_HIGH;
         *img_fmt = AOM_IMG_FMT_I444;
         return 0;
@@ -338,9 +339,13 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
         break;
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
-            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV444P10 ? 10 : 12;
+            enccfg->g_bit_depth = enccfg->g_input_bit_depth = 10;
+            if (avctx->pix_fmt == AV_PIX_FMT_YUV444P12 ||
+                avctx->pix_fmt == AV_PIX_FMT_GBRP12)
+                enccfg->g_bit_depth = enccfg->g_input_bit_depth = 12;
             enccfg->g_profile =
                 enccfg->g_bit_depth == 10 ? FF_PROFILE_AV1_HIGH : FF_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I44416;
@@ -749,9 +754,16 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (ctx->tune >= 0)
         codecctl_int(avctx, AOME_SET_TUNING, ctx->tune);
 
-    codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, avctx->color_primaries);
-    codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
-    codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, avctx->color_trc);
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRP || avctx->pix_fmt == AV_PIX_FMT_GBRP10 ||
+        avctx->pix_fmt == AV_PIX_FMT_GBRP12) {
+        codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, AVCOL_PRI_BT709);
+        codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, AVCOL_SPC_RGB);
+        codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, AVCOL_TRC_IEC61966_2_1);
+    } else {
+        codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, avctx->color_primaries);
+        codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
+        codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, avctx->color_trc);
+    }
     if (ctx->aq_mode >= 0)
         codecctl_int(avctx, AV1E_SET_AQ_MODE, ctx->aq_mode);
     if (ctx->frame_parallel >= 0)
@@ -1077,6 +1089,7 @@ static const enum AVPixelFormat av1_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
 };
 
@@ -1084,12 +1097,15 @@ static const enum AVPixelFormat av1_pix_fmts_highbd[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUV420P12,
     AV_PIX_FMT_YUV422P12,
     AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12,
     AV_PIX_FMT_NONE
 };
 
