@@ -248,7 +248,7 @@ end:
         if (dstStride[i])
             av_free(dst[i]);
 
-    return res;
+    return !!res;
 }
 
 static void selfTest(const uint8_t * const ref[4], int refStride[4],
