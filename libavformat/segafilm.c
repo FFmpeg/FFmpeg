@@ -40,8 +40,8 @@
 
 typedef struct film_sample {
   int stream;
-  int64_t sample_offset;
   unsigned int sample_size;
+  int64_t sample_offset;
   int64_t pts;
   int keyframe;
 } film_sample;
