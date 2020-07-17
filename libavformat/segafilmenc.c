@@ -119,7 +119,6 @@ static int film_write_packet(AVFormatContext *format_context, AVPacket *pkt)
         if (encoded_buf_size != pkt->size && (pkt->size % encoded_buf_size) != 0) {
             avio_write(pb, pkt->data, pkt->size);
         } else {
-            uint8_t padding[2] = {0, 0};
             /* In Sega Cinepak, the reported size in the Cinepak header is
              * 8 bytes too short. However, the size in the STAB section of the header
              * is correct, taking into account the extra two bytes. */
@@ -127,7 +126,7 @@ static int film_write_packet(AVFormatContext *format_context, AVPacket *pkt)
             metadata->size += 2;
 
             avio_write(pb, pkt->data, 10);
-            avio_write(pb, padding, 2);
+            avio_wb16(pb, 0);
             avio_write(pb, &pkt->data[10], pkt->size - 10);
         }
     } else {
