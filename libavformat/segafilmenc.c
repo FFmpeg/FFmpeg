@@ -29,7 +29,9 @@
  *   http://wiki.multimedia.cx/index.php?title=Sega_FILM
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -160,11 +162,13 @@ static int film_init(AVFormatContext *format_context)
     }
     if ((ret = avio_open_dyn_buf(&film->header)) < 0)
         return ret;
+    ffio_fill(film->header, 0, 16 + 32 + 16);
 
     return 0;
 }
 
-static int shift_data(AVFormatContext *format_context, int64_t shift_size)
+static int write_header(AVFormatContext *format_context, uint8_t *header,
+                        unsigned header_size)
 {
     int ret = 0;
     int64_t pos, pos_end;
@@ -173,11 +177,12 @@ static int shift_data(AVFormatContext *format_context, int64_t shift_size)
     int read_size[2];
     AVIOContext *read_pb;
 
-    buf = av_malloc(shift_size * 2);
+    buf = av_malloc(header_size);
     if (!buf)
         return AVERROR(ENOMEM);
     read_buf[0] = buf;
-    read_buf[1] = buf + shift_size;
+    read_buf[1]  = header;
+    read_size[1] = header_size;
 
     /* Write the header at the beginning of the file, shifting all content as necessary;
      * based on the approach used by MOV faststart. */
@@ -190,25 +195,20 @@ static int shift_data(AVFormatContext *format_context, int64_t shift_size)
         return ret;
     }
 
-    /* mark the end of the shift to up to the last data we wrote, and get ready
-     * for writing */
-    pos_end = avio_tell(format_context->pb);
-    avio_seek(format_context->pb, shift_size, SEEK_SET);
+    /* Mark the end of the shift to up to the last data we are going to write,
+     * and get ready for writing */
+    pos_end = avio_tell(format_context->pb) + header_size;
+    pos = avio_seek(format_context->pb, 0, SEEK_SET);
 
     /* start reading at where the new header will be placed */
     avio_seek(read_pb, 0, SEEK_SET);
-    pos = avio_tell(read_pb);
 
-#define READ_BLOCK do {                                                             \
-    read_size[read_buf_id] = avio_read(read_pb, read_buf[read_buf_id], shift_size);  \
-    read_buf_id ^= 1;                                                               \
-} while (0)
-
-    /* shift data by chunk of at most shift_size */
-    READ_BLOCK;
+    /* shift data by chunk of at most header_size */
     do {
         int n;
-        READ_BLOCK;
+        read_size[read_buf_id] = avio_read(read_pb, read_buf[read_buf_id],
+                                           header_size);
+        read_buf_id ^= 1;
         n = read_size[read_buf_id];
         if (n <= 0)
             break;
@@ -224,81 +224,75 @@ static int shift_data(AVFormatContext *format_context, int64_t shift_size)
 static int film_write_header(AVFormatContext *format_context)
 {
     int ret = 0;
-    unsigned sample_table_size, stabsize, headersize, packet_count;
-    AVIOContext *pb = format_context->pb;
+    unsigned stabsize, headersize, packet_count;
     FILMOutputContext *film = format_context->priv_data;
     AVStream *video = NULL;
-    uint8_t *sample_table;
+    uint8_t *header, *ptr;
 
     /* Calculate how much we need to reserve for the header;
      * this is the amount the rest of the data will be shifted up by. */
-    sample_table_size = avio_get_dyn_buf(film->header, &sample_table);
-    packet_count      = sample_table_size / 16;
-    sample_table_size = packet_count * 16;
-    stabsize = 16 + sample_table_size;
+    headersize = avio_get_dyn_buf(film->header, &header);
+    if (headersize < 64) {
+        av_assert1(film->header->error < 0);
+        return film->header->error;
+    }
+    packet_count = (headersize - 64) / 16;
+    stabsize = 16 + 16 * packet_count;
     headersize = 16 + /* FILM header base */
                  32 + /* FDSC chunk */
                  stabsize;
 
-    ret = shift_data(format_context, headersize);
-    if (ret < 0)
-        return ret;
-    /* Seek back to the beginning to start writing the header now */
-    avio_seek(pb, 0, SEEK_SET);
-
-    /* First, write the FILM header; this is very simple */
-
-    ffio_wfourcc(pb, "FILM");
-    avio_wb32(pb, 48 + stabsize);
+    /* Write the header at the position in the buffer reserved for it.
+     * First, write the FILM header; this is very simple */
+    ptr = header;
+    bytestream_put_be32(&ptr, MKBETAG('F', 'I', 'L', 'M'));
+    bytestream_put_be32(&ptr, headersize);
     /* This seems to be okay to hardcode, since this muxer targets 1.09 features;
      * videos produced by this muxer are readable by 1.08 and lower players. */
-    ffio_wfourcc(pb, "1.09");
-    /* I have no idea what this field does, might be reserved */
-    avio_wb32(pb, 0);
+    bytestream_put_be32(&ptr, MKBETAG('1', '.', '0', '9'));
+    /* I have no idea what the next four bytes do, might be reserved */
+    ptr += 4;
 
     /* Next write the FDSC (file description) chunk */
-    ffio_wfourcc(pb, "FDSC");
-    avio_wb32(pb, 0x20); /* Size of FDSC chunk */
+    bytestream_put_be32(&ptr, MKBETAG('F', 'D', 'S', 'C'));
+    bytestream_put_be32(&ptr, 0x20); /* Size of FDSC chunk */
 
     video = format_context->streams[film->video_index];
 
     /* The only two supported codecs; raw video is rare */
     switch (video->codecpar->codec_id) {
     case AV_CODEC_ID_CINEPAK:
-        ffio_wfourcc(pb, "cvid");
+        bytestream_put_be32(&ptr, MKBETAG('c', 'v', 'i', 'd'));
         break;
     case AV_CODEC_ID_RAWVIDEO:
-        ffio_wfourcc(pb, "raw ");
+        bytestream_put_be32(&ptr, MKBETAG('r', 'a', 'w', ' '));
         break;
     }
 
-    avio_wb32(pb, video->codecpar->height);
-    avio_wb32(pb, video->codecpar->width);
-    avio_w8(pb, 24); /* Bits per pixel - observed to always be 24 */
+    bytestream_put_be32(&ptr, video->codecpar->height);
+    bytestream_put_be32(&ptr, video->codecpar->width);
+    bytestream_put_byte(&ptr, 24); /* Bits per pixel - observed to always be 24 */
 
     if (film->audio_index > -1) {
         AVStream *audio = format_context->streams[film->audio_index];
         int audio_codec = get_audio_codec_id(audio->codecpar->codec_id);
 
-        avio_w8(pb, audio->codecpar->channels); /* Audio channels */
-        avio_w8(pb, audio->codecpar->bits_per_coded_sample); /* Audio bit depth */
-        avio_w8(pb, audio_codec); /* Compression - 0 is PCM, 2 is ADX */
-        avio_wb16(pb, audio->codecpar->sample_rate); /* Audio sampling rate */
+        bytestream_put_byte(&ptr, audio->codecpar->channels); /* Audio channels */
+        bytestream_put_byte(&ptr, audio->codecpar->bits_per_coded_sample); /* Audio bit depth */
+        bytestream_put_byte(&ptr, audio_codec); /* Compression - 0 is PCM, 2 is ADX */
+        bytestream_put_be16(&ptr, audio->codecpar->sample_rate); /* Audio sampling rate */
     } else {
-        /* Set all these fields to 0 if there's no audio */
-        avio_w8(pb, 0);
-        avio_w8(pb, 0);
-        avio_w8(pb, 0);
-        avio_wb16(pb, 0);
+        /* If there is no audio, all the audio fields should be set to zero.
+         * ffio_fill() already did this for us. */
+        ptr += 1 + 1 + 1 + 2;
     }
 
     /* I have no idea what this pair of fields does either, might be reserved */
-    avio_wb32(pb, 0);
-    avio_wb16(pb, 0);
+    ptr += 4 + 2;
 
     /* Finally, write the STAB (sample table) chunk */
-    ffio_wfourcc(pb, "STAB");
-    avio_wb32(pb, stabsize);
+    bytestream_put_be32(&ptr, MKBETAG('S', 'T', 'A', 'B'));
+    bytestream_put_be32(&ptr, stabsize);
     /* Framerate base frequency. Here we're assuming that the frame rate is even.
      * In real world Sega FILM files, there are usually a couple of approaches:
      * a) framerate base frequency is the same as the framerate, and ticks
@@ -308,12 +302,14 @@ static int film_write_header(AVFormatContext *format_context)
      * The latter occurs even in cases where the frame rate is even; for example, in
      * Lunar: Silver Star Story, the base frequency is 600 and each frame, the ticks
      * are incremented by 25 for an evenly spaced framerate of 24fps. */
-    avio_wb32(pb, av_q2d(av_inv_q(video->time_base)));
+    bytestream_put_be32(&ptr, av_q2d(av_inv_q(video->time_base)));
 
-    avio_wb32(pb, packet_count);
+    bytestream_put_be32(&ptr, packet_count);
 
-    /* Finally, write out each packet's data to the header */
-    avio_write(pb, sample_table, sample_table_size);
+    /* Finally, shift the data and write out the header. */
+    ret = write_header(format_context, header, headersize);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
