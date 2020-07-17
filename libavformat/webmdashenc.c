@@ -165,21 +165,16 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
                                 int output_width, int output_height,
                                 int output_sample_rate) {
     WebMDashMuxContext *w = s->priv_data;
-    AVDictionaryEntry *irange = av_dict_get(stream->metadata, INITIALIZATION_RANGE, NULL, 0);
-    AVDictionaryEntry *cues_start = av_dict_get(stream->metadata, CUES_START, NULL, 0);
-    AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
-    AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
     AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
     const char *bandwidth_str;
-    if (!w->is_live && (!irange || !cues_start || !cues_end || !filename || !bandwidth)) {
-        return AVERROR_INVALIDDATA;
-    }
     avio_printf(s->pb, "<Representation id=\"%s\"", id);
-    // if bandwidth for live was not provided, use a default
-    if (w->is_live && !bandwidth) {
+    if (bandwidth) {
+        bandwidth_str = bandwidth->value;
+    } else if (w->is_live) {
+        // if bandwidth for live was not provided, use a default
         bandwidth_str = (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ? "128000" : "1000000";
     } else {
-        bandwidth_str = bandwidth->value;
+        return AVERROR(EINVAL);
     }
     avio_printf(s->pb, " bandwidth=\"%s\"", bandwidth_str);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_width)
@@ -198,6 +193,13 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
         avio_printf(s->pb, " startsWithSAP=\"1\"");
         avio_printf(s->pb, ">");
     } else {
+    AVDictionaryEntry *irange = av_dict_get(stream->metadata, INITIALIZATION_RANGE, NULL, 0);
+    AVDictionaryEntry *cues_start = av_dict_get(stream->metadata, CUES_START, NULL, 0);
+    AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
+    AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
+        if (!irange || !cues_start || !cues_end || !filename)
+            return AVERROR(EINVAL);
+
         avio_printf(s->pb, ">\n");
         avio_printf(s->pb, "<BaseURL>%s</BaseURL>\n", filename->value);
         avio_printf(s->pb, "<SegmentBase\n");
