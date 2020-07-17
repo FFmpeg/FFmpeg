@@ -57,7 +57,7 @@ typedef struct BilateralContext {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption bilateral_options[] = {
-    { "sigmaS", "set spatial sigma",    OFFSET(sigmaS), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0,  10, FLAGS },
+    { "sigmaS", "set spatial sigma",    OFFSET(sigmaS), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0, 512, FLAGS },
     { "sigmaR", "set range sigma",      OFFSET(sigmaR), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0,   1, FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1},     0, 0xF, FLAGS },
     { NULL }
@@ -145,7 +145,7 @@ static void bilateral_##name(BilateralContext *s, const uint8_t *ssrc, uint8_t *
     float *slice_factor_a = s->slice_factor_a, *slice_factor_b = s->slice_factor_b;     \
     float *line_factor_a = s->line_factor_a, *line_factor_b = s->line_factor_b;         \
     float *range_table = s->range_table;                                                \
-    float alpha = expf(-sqrtf(2.f) / (sigma_spatial * width));                          \
+    float alpha = expf(-sqrtf(2.f) / sigma_spatial);                                    \
     float ypr, ycr, *ycy, *ypy, *xcy, fp, fc;                                           \
     float inv_alpha_ = 1 - alpha;                                                       \
     float *ycf, *ypf, *xcf, *in_factor;                                                 \
@@ -206,7 +206,7 @@ static void bilateral_##name(BilateralContext *s, const uint8_t *ssrc, uint8_t *
     }                                                                                     \
     memcpy(img_out_f, img_temp, sizeof(float) * width);                                   \
                                                                                           \
-    alpha = expf(-sqrtf(2.f) / (sigma_spatial * height));                                 \
+    alpha = expf(-sqrtf(2.f) / sigma_spatial);                                            \
     inv_alpha_ = 1 - alpha;                                                               \
     in_factor = map_factor_a;                                                             \
     memcpy(map_factor_b, in_factor, sizeof(float) * width);                               \
