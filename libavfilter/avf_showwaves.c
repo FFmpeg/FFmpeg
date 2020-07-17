@@ -57,6 +57,12 @@ enum ShowWavesDrawMode {
     DRAW_NB,
 };
 
+enum ShowWavesFilterMode {
+    FILTER_AVERAGE,
+    FILTER_PEAK,
+    FILTER_NB,
+};
+
 struct frame_node {
     AVFrame *frame;
     struct frame_node *next;
@@ -77,6 +83,7 @@ typedef struct ShowWavesContext {
     int scale;                  ///< ShowWavesScale
     int draw_mode;              ///< ShowWavesDrawMode
     int split_channels;
+    int filter_mode;
     uint8_t *fg;
 
     int (*get_h)(int16_t sample, int height);
@@ -590,12 +597,21 @@ static int push_single_pic(AVFilterLink *outlink)
             int64_t max_samples = col == outlink->w - 1 ? last_column_samples: column_max_samples;
             int ch;
 
-            for (ch = 0; ch < nb_channels; ch++)
-                sum[ch] += abs(p[ch + i*nb_channels]) << 1;
+            switch (showwaves->filter_mode) {
+            case FILTER_AVERAGE:
+                for (ch = 0; ch < nb_channels; ch++)
+                    sum[ch] += abs(p[ch + i*nb_channels]) << 1;
+                break;
+            case FILTER_PEAK:
+                for (ch = 0; ch < nb_channels; ch++)
+                    sum[ch] = FFMAX(sum[ch], abs(p[ch + i*nb_channels]));
+                break;
+            }
+
             n++;
             if (n == max_samples) {
                 for (ch = 0; ch < nb_channels; ch++) {
-                    int16_t sample = sum[ch] / max_samples;
+                    int16_t sample = sum[ch] / (showwaves->filter_mode == FILTER_AVERAGE ? max_samples : 1);
                     uint8_t *buf = out->data[0] + col * pixstep;
                     int h;
 
@@ -792,6 +808,9 @@ static const AVOption showwavespic_options[] = {
     { "draw", "set draw mode", OFFSET(draw_mode), AV_OPT_TYPE_INT, {.i64 = DRAW_SCALE}, 0, DRAW_NB-1, FLAGS, .unit="draw" },
         { "scale", "scale pixel values for each drawn sample", 0, AV_OPT_TYPE_CONST, {.i64=DRAW_SCALE}, .flags=FLAGS, .unit="draw"},
         { "full",  "draw every pixel for sample directly",     0, AV_OPT_TYPE_CONST, {.i64=DRAW_FULL},  .flags=FLAGS, .unit="draw"},
+    { "filter", "set filter mode", OFFSET(filter_mode), AV_OPT_TYPE_INT, {.i64 = FILTER_AVERAGE}, 0, FILTER_NB-1, FLAGS, .unit="filter" },
+        { "average", "use average samples", 0, AV_OPT_TYPE_CONST, {.i64=FILTER_AVERAGE}, .flags=FLAGS, .unit="filter"},
+        { "peak",    "use peak samples",    0, AV_OPT_TYPE_CONST, {.i64=FILTER_PEAK},    .flags=FLAGS, .unit="filter"},
     { NULL }
 };
 
