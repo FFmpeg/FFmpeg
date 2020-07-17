@@ -66,12 +66,11 @@ static int libdav1d_picture_allocator(Dav1dPicture *p, void *cookie)
 {
     Libdav1dContext *dav1d = cookie;
     enum AVPixelFormat format = pix_fmt[p->p.layout][p->seq_hdr->hbd];
-    int ret, linesize[4], h = FFALIGN(p->p.h, 128);
+    int ret, linesize[4], h = FFALIGN(p->p.h, 128), w = FFALIGN(p->p.w, 128);
     uint8_t *aligned_ptr, *data[4];
     AVBufferRef *buf;
 
-    ret = av_image_fill_arrays(data, linesize, NULL, format, FFALIGN(p->p.w, 128),
-                               h, DAV1D_PICTURE_ALIGNMENT);
+    ret = av_image_get_buffer_size(format, w, h, DAV1D_PICTURE_ALIGNMENT);
     if (ret < 0)
         return ret;
 
@@ -94,7 +93,8 @@ static int libdav1d_picture_allocator(Dav1dPicture *p, void *cookie)
     // Use the extra DAV1D_PICTURE_ALIGNMENT padding bytes in the buffer to align it
     // if required.
     aligned_ptr = (uint8_t *)FFALIGN((uintptr_t)buf->data, DAV1D_PICTURE_ALIGNMENT);
-    ret = av_image_fill_pointers(data, format, h, aligned_ptr, linesize);
+    ret = av_image_fill_arrays(data, linesize, aligned_ptr, format, w, h,
+                               DAV1D_PICTURE_ALIGNMENT);
     if (ret < 0) {
         av_buffer_unref(&buf);
         return ret;
