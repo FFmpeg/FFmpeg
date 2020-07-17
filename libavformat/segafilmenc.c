@@ -47,7 +47,6 @@ typedef struct FILMPacket {
 typedef struct FILMOutputContext {
     int audio_index;
     int video_index;
-    int64_t stab_pos;
     FILMPacket *start;
     FILMPacket *last;
     int64_t packet_count;
@@ -158,7 +157,6 @@ static int film_init(AVFormatContext *format_context)
     FILMOutputContext *film = format_context->priv_data;
     film->audio_index = -1;
     film->video_index = -1;
-    film->stab_pos = 0;
     film->packet_count = 0;
     film->start = NULL;
     film->last = NULL;
