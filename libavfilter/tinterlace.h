@@ -67,7 +67,6 @@ typedef struct TInterlaceContext {
     AVRational preout_time_base;
     int flags;                  ///< flags affecting interlacing algorithm
     int lowpass;                ///< legacy interlace filter lowpass mode
-    int frame;                  ///< number of the output frame
     int vsub;                   ///< chroma vertical subsampling
     AVFrame *cur;
     AVFrame *next;
