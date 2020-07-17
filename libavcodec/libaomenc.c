@@ -299,7 +299,8 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
                        aom_img_fmt_t *img_fmt)
 {
     AOMContext av_unused *ctx = avctx->priv_data;
-    enccfg->g_bit_depth = enccfg->g_input_bit_depth = 8;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    enccfg->g_bit_depth = enccfg->g_input_bit_depth = desc->comp[0].depth;
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
         enccfg->g_profile = FF_PROFILE_AV1_MAIN;
@@ -317,8 +318,6 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV420P12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
-            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV420P10 ? 10 : 12;
             enccfg->g_profile =
                 enccfg->g_bit_depth == 10 ? FF_PROFILE_AV1_MAIN : FF_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I42016;
@@ -329,8 +328,6 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV422P12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
-            enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 10 : 12;
             enccfg->g_profile = FF_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I42216;
             *flags |= AOM_CODEC_USE_HIGHBITDEPTH;
@@ -342,10 +339,6 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
-            enccfg->g_bit_depth = enccfg->g_input_bit_depth = 10;
-            if (avctx->pix_fmt == AV_PIX_FMT_YUV444P12 ||
-                avctx->pix_fmt == AV_PIX_FMT_GBRP12)
-                enccfg->g_bit_depth = enccfg->g_input_bit_depth = 12;
             enccfg->g_profile =
                 enccfg->g_bit_depth == 10 ? FF_PROFILE_AV1_HIGH : FF_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I44416;
@@ -543,6 +536,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
                             const struct aom_codec_iface *iface)
 {
     AOMContext *ctx = avctx->priv_data;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     struct aom_codec_enc_cfg enccfg = { 0 };
 #ifdef AOM_FRAME_IS_INTRAONLY
     aom_codec_flags_t flags =
@@ -754,8 +748,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (ctx->tune >= 0)
         codecctl_int(avctx, AOME_SET_TUNING, ctx->tune);
 
-    if (avctx->pix_fmt == AV_PIX_FMT_GBRP || avctx->pix_fmt == AV_PIX_FMT_GBRP10 ||
-        avctx->pix_fmt == AV_PIX_FMT_GBRP12) {
+    if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
         codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, AVCOL_PRI_BT709);
         codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, AVCOL_SPC_RGB);
         codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, AVCOL_TRC_IEC61966_2_1);
