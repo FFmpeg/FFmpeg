@@ -34,80 +34,20 @@
 #include "internal.h"
 #include "avio_internal.h"
 
-typedef struct FILMPacket {
-    int audio;
-    int keyframe;
-    int32_t pts;
-    int32_t duration;
-    int32_t size;
-    int32_t index;
-    struct FILMPacket *next;
-} FILMPacket;
-
 typedef struct FILMOutputContext {
+    AVIOContext *header;
+    unsigned index;
     int audio_index;
     int video_index;
-    FILMPacket *start;
-    FILMPacket *last;
-    int64_t packet_count;
 } FILMOutputContext;
-
-static int film_write_packet_to_header(AVFormatContext *format_context, FILMPacket *pkt)
-{
-    AVIOContext *pb = format_context->pb;
-    /* The bits in these two 32-bit integers contain info about the contents of this sample */
-    int32_t info1 = 0;
-    int32_t info2 = 0;
-
-    if (pkt->audio) {
-        /* Always the same, carries no more information than "this is audio" */
-        info1 = 0xFFFFFFFF;
-        info2 = 1;
-    } else {
-        info1 = pkt->pts;
-        info2 = pkt->duration;
-        /* The top bit being set indicates a key frame */
-        if (!pkt->keyframe)
-            info1 |= 1U << 31;
-    }
-
-    /* Write the 16-byte sample info packet to the STAB chunk in the header */
-    avio_wb32(pb, pkt->index);
-    avio_wb32(pb, pkt->size);
-    avio_wb32(pb, info1);
-    avio_wb32(pb, info2);
-
-    return 0;
-}
 
 static int film_write_packet(AVFormatContext *format_context, AVPacket *pkt)
 {
-    FILMPacket *metadata;
     AVIOContext *pb = format_context->pb;
     FILMOutputContext *film = format_context->priv_data;
-    int encoded_buf_size = 0;
+    int encoded_buf_size, size = pkt->size;
+    uint32_t info1, info2;
     enum AVCodecID codec_id;
-
-    /* Track the metadata used to write the header and add it to the linked list */
-    metadata = av_mallocz(sizeof(FILMPacket));
-    if (!metadata)
-        return AVERROR(ENOMEM);
-    metadata->audio = pkt->stream_index == film->audio_index;
-    metadata->keyframe = pkt->flags & AV_PKT_FLAG_KEY;
-    metadata->pts = pkt->pts;
-    metadata->duration = pkt->duration;
-    metadata->size = pkt->size;
-    if (film->last == NULL) {
-        metadata->index = 0;
-    } else {
-        metadata->index = film->last->index + film->last->size;
-        film->last->next = metadata;
-    }
-    metadata->next = NULL;
-    if (film->start == NULL)
-        film->start = metadata;
-    film->packet_count++;
-    film->last = metadata;
 
     codec_id = format_context->streams[pkt->stream_index]->codecpar->codec_id;
 
@@ -123,7 +63,7 @@ static int film_write_packet(AVFormatContext *format_context, AVPacket *pkt)
              * 8 bytes too short. However, the size in the STAB section of the header
              * is correct, taking into account the extra two bytes. */
             AV_WB24(&pkt->data[1], pkt->size - 8 + 2);
-            metadata->size += 2;
+            size += 2;
 
             avio_write(pb, pkt->data, 10);
             avio_wb16(pb, 0);
@@ -134,7 +74,27 @@ static int film_write_packet(AVFormatContext *format_context, AVPacket *pkt)
         avio_write(pb, pkt->data, pkt->size);
     }
 
-    return 0;
+    /* Add the 16-byte sample info entry to the dynamic buffer
+     * for the STAB chunk in the header */
+    pb = film->header;
+    avio_wb32(pb, film->index);
+    film->index += size;
+    avio_wb32(pb, size);
+    if (film->audio_index == pkt->stream_index) {
+        /* Always the same, carries no more information than "this is audio" */
+        info1 = 0xFFFFFFFF;
+        info2 = 1;
+    } else {
+        info1 = pkt->pts;
+        info2 = pkt->duration;
+        /* The top bit being set indicates a key frame */
+        if (!(pkt->flags & AV_PKT_FLAG_KEY))
+            info1 |= 1U << 31;
+    }
+    avio_wb32(pb, info1);
+    avio_wb32(pb, info2);
+
+    return pb->error;
 }
 
 static int get_audio_codec_id(enum AVCodecID codec_id)
@@ -154,11 +114,10 @@ static int get_audio_codec_id(enum AVCodecID codec_id)
 static int film_init(AVFormatContext *format_context)
 {
     FILMOutputContext *film = format_context->priv_data;
+    int ret;
+
     film->audio_index = -1;
     film->video_index = -1;
-    film->packet_count = 0;
-    film->start = NULL;
-    film->last = NULL;
 
     for (int i = 0; i < format_context->nb_streams; i++) {
         AVStream *st = format_context->streams[i];
@@ -199,6 +158,8 @@ static int film_init(AVFormatContext *format_context)
         av_log(format_context, AV_LOG_ERROR, "No video stream present.\n");
         return AVERROR(EINVAL);
     }
+    if ((ret = avio_open_dyn_buf(&film->header)) < 0)
+        return ret;
 
     return 0;
 }
@@ -263,15 +224,17 @@ static int shift_data(AVFormatContext *format_context, int64_t shift_size)
 static int film_write_header(AVFormatContext *format_context)
 {
     int ret = 0;
-    int64_t sample_table_size, stabsize, headersize;
+    unsigned sample_table_size, stabsize, headersize, packet_count;
     AVIOContext *pb = format_context->pb;
     FILMOutputContext *film = format_context->priv_data;
-    FILMPacket *prev, *packet;
     AVStream *video = NULL;
+    uint8_t *sample_table;
 
     /* Calculate how much we need to reserve for the header;
      * this is the amount the rest of the data will be shifted up by. */
-    sample_table_size = film->packet_count * 16;
+    sample_table_size = avio_get_dyn_buf(film->header, &sample_table);
+    packet_count      = sample_table_size / 16;
+    sample_table_size = packet_count * 16;
     stabsize = 16 + sample_table_size;
     headersize = 16 + /* FILM header base */
                  32 + /* FDSC chunk */
@@ -335,7 +298,7 @@ static int film_write_header(AVFormatContext *format_context)
 
     /* Finally, write the STAB (sample table) chunk */
     ffio_wfourcc(pb, "STAB");
-    avio_wb32(pb, 16 + (film->packet_count * 16));
+    avio_wb32(pb, stabsize);
     /* Framerate base frequency. Here we're assuming that the frame rate is even.
      * In real world Sega FILM files, there are usually a couple of approaches:
      * a) framerate base frequency is the same as the framerate, and ticks
@@ -347,17 +310,10 @@ static int film_write_header(AVFormatContext *format_context)
      * are incremented by 25 for an evenly spaced framerate of 24fps. */
     avio_wb32(pb, av_q2d(av_inv_q(video->time_base)));
 
-    avio_wb32(pb, film->packet_count);
+    avio_wb32(pb, packet_count);
 
     /* Finally, write out each packet's data to the header */
-    packet = film->start;
-    while (packet != NULL) {
-        film_write_packet_to_header(format_context, packet);
-        prev = packet;
-        packet = packet->next;
-        av_freep(&prev);
-    }
-    film->start = film->last = NULL;
+    avio_write(pb, sample_table, sample_table_size);
 
     return 0;
 }
@@ -365,13 +321,8 @@ static int film_write_header(AVFormatContext *format_context)
 static void film_deinit(AVFormatContext *format_context)
 {
     FILMOutputContext *film = format_context->priv_data;
-    FILMPacket *packet = film->start;
-    while (packet != NULL) {
-        FILMPacket *next = packet->next;
-        av_free(packet);
-        packet = next;
-    }
-    film->start = film->last = NULL;
+
+    ffio_free_dyn_buf(&film->header);
 }
 
 AVOutputFormat ff_segafilm_muxer = {
