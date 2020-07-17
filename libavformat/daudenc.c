@@ -21,7 +21,7 @@
 
 #include "avformat.h"
 
-static int daud_write_header(struct AVFormatContext *s)
+static int daud_init(struct AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
     if (par->channels!=6 || par->sample_rate!=96000)
@@ -48,7 +48,7 @@ AVOutputFormat ff_daud_muxer = {
     .extensions   = "302",
     .audio_codec  = AV_CODEC_ID_PCM_S24DAUD,
     .video_codec  = AV_CODEC_ID_NONE,
-    .write_header = daud_write_header,
+    .init         = daud_init,
     .write_packet = daud_write_packet,
     .flags        = AVFMT_NOTIMESTAMPS,
 };
