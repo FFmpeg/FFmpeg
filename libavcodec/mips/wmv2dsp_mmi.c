@@ -95,7 +95,7 @@ static void wmv2_idct_col_mmi(short * b)
     b[56] = (a0 + a2 - a1 - a5 + 8192) >> 14;
 }
 
-void ff_wmv2_idct_add_mmi(uint8_t *dest, int line_size, int16_t *block)
+void ff_wmv2_idct_add_mmi(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     int i;
     double ftmp[11];
@@ -212,7 +212,7 @@ void ff_wmv2_idct_add_mmi(uint8_t *dest, int line_size, int16_t *block)
     );
 }
 
-void ff_wmv2_idct_put_mmi(uint8_t *dest, int line_size, int16_t *block)
+void ff_wmv2_idct_put_mmi(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     int i;
     double ftmp[8];

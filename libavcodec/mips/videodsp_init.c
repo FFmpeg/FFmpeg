@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mips/cpu.h"
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/mips/asmdefs.h"
 #include "libavcodec/videodsp.h"
 
-#if HAVE_MSA
 static void prefetch_mips(uint8_t *mem, ptrdiff_t stride, int h)
 {
     register const uint8_t *p = mem;
@@ -41,11 +41,11 @@ static void prefetch_mips(uint8_t *mem, ptrdiff_t stride, int h)
         : [stride] "r" (stride)
     );
 }
-#endif  // #if HAVE_MSA
 
 av_cold void ff_videodsp_init_mips(VideoDSPContext *ctx, int bpc)
 {
-#if HAVE_MSA
-    ctx->prefetch = prefetch_mips;
-#endif  // #if HAVE_MSA
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_msa(cpu_flags))
+        ctx->prefetch = prefetch_mips;
 }

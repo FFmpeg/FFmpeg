@@ -18,23 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mips/cpu.h"
 #include "libavcodec/bit_depth_template.c"
 #include "h263dsp_mips.h"
-
-#if HAVE_MSA
-static av_cold void mpegvideoencdsp_init_msa(MpegvideoEncDSPContext *c,
-                                             AVCodecContext *avctx)
-{
-#if BIT_DEPTH == 8
-    c->pix_sum = ff_pix_sum_msa;
-#endif
-}
-#endif  // #if HAVE_MSA
 
 av_cold void ff_mpegvideoencdsp_init_mips(MpegvideoEncDSPContext *c,
                                           AVCodecContext *avctx)
 {
-#if HAVE_MSA
-    mpegvideoencdsp_init_msa(c, avctx);
-#endif  // #if HAVE_MSA
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_msa(cpu_flags)) {
+#if BIT_DEPTH == 8
+        c->pix_sum = ff_pix_sum_msa;
+#endif
+    }
 }
