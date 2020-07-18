@@ -2092,7 +2092,8 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 
         marker = bytestream2_get_be16u(&s->g);
         oldpos = bytestream2_tell(&s->g);
-
+        if (marker >= 0xFF30 && marker <= 0xFF3F)
+            continue;
         if (marker == JPEG2000_SOD) {
             Jpeg2000Tile *tile;
             Jpeg2000TilePart *tp;
