@@ -35,8 +35,6 @@
 
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
-/* the specification requires an annotation field of at least eight bytes */
-#define AU_DEFAULT_HEADER_SIZE (24+8)
 
 static const AVCodecTag codec_au_tags[] = {
     { AV_CODEC_ID_PCM_MULAW,  1 },
@@ -68,13 +66,13 @@ static int au_probe(const AVProbeData *p)
 
 static int au_read_annotation(AVFormatContext *s, int size)
 {
-    static const char * keys[] = {
+    static const char keys[][7] = {
         "title",
         "artist",
         "album",
         "track",
         "genre",
-        NULL };
+    };
     AVIOContext *pb = s->pb;
     enum { PARSE_KEY, PARSE_VALUE, PARSE_FINISHED } state = PARSE_KEY;
     char c;
@@ -107,11 +105,11 @@ static int au_read_annotation(AVFormatContext *s, int size)
                     av_log(s, AV_LOG_ERROR, "Memory error while parsing AU metadata.\n");
                 } else {
                     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
-                    for (i = 0; keys[i] != NULL && key != NULL; i++) {
+                    for (i = 0; i < FF_ARRAY_ELEMS(keys); i++) {
                         if (av_strcasecmp(keys[i], key) == 0) {
                             av_dict_set(&(s->metadata), keys[i], value, AV_DICT_DONT_STRDUP_VAL);
-                            av_freep(&key);
                             value = NULL;
+                            break;
                         }
                     }
                 }
@@ -241,36 +239,31 @@ typedef struct AUContext {
 
 #include "rawenc.h"
 
-static int au_get_annotations(AVFormatContext *s, char **buffer)
+static int au_get_annotations(AVFormatContext *s, AVBPrint *annotations)
 {
-    static const char * keys[] = {
+    static const char keys[][7] = {
         "Title",
         "Artist",
         "Album",
         "Track",
         "Genre",
-        NULL };
-    int i;
+    };
     int cnt = 0;
     AVDictionary *m = s->metadata;
     AVDictionaryEntry *t = NULL;
-    AVBPrint bprint;
 
-    av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
-
-    for (i = 0; keys[i] != NULL; i++) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(keys); i++) {
         t = av_dict_get(m, keys[i], NULL, 0);
         if (t != NULL) {
             if (cnt++)
-                av_bprint_chars(&bprint, '\n', 1);
-            av_bprint_append_data(&bprint, keys[i], strlen(keys[i]));
-            av_bprint_chars(&bprint, '=', 1);
-            av_bprint_append_data(&bprint, t->value, strlen(t->value));
+                av_bprint_chars(annotations, '\n', 1);
+            av_bprintf(annotations, "%s=%s", keys[i], t->value);
         }
     }
-    /* pad with 0's */
-    av_bprint_append_data(&bprint, "\0\0\0\0\0\0\0\0", 8);
-    return av_bprint_finalize(&bprint, buffer);
+    /* The specification requires the annotation field to be zero-terminated
+     * and its length to be a multiple of eight, so pad with 0's */
+    av_bprint_chars(annotations, '\0', 8);
+    return av_bprint_is_complete(annotations) ? 0 : AVERROR(ENOMEM);
 }
 
 static int au_write_header(AVFormatContext *s)
@@ -279,9 +272,7 @@ static int au_write_header(AVFormatContext *s)
     AUContext *au = s->priv_data;
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
-    char *annotations = NULL;
-
-    au->header_size = AU_DEFAULT_HEADER_SIZE;
+    AVBPrint annotations;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
@@ -294,30 +285,24 @@ static int au_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (av_dict_count(s->metadata) > 0) {
-        ret = au_get_annotations(s, &annotations);
-        if (ret < 0)
-            return ret;
-        if (annotations != NULL) {
-            au->header_size = (24 + strlen(annotations) + 8) & ~7;
-            if (au->header_size < AU_DEFAULT_HEADER_SIZE)
-                au->header_size = AU_DEFAULT_HEADER_SIZE;
-        }
-    }
+    av_bprint_init(&annotations, 0, INT_MAX - 24);
+    ret = au_get_annotations(s, &annotations);
+    if (ret < 0)
+        goto fail;
+    au->header_size = 24 + annotations.len & ~7;
+
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, au->header_size);             /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
     avio_wb32(pb, par->codec_tag);              /* codec ID */
     avio_wb32(pb, par->sample_rate);
     avio_wb32(pb, par->channels);
-    if (annotations != NULL) {
-        avio_write(pb, annotations, au->header_size - 24);
-        av_freep(&annotations);
-    } else {
-        avio_wb64(pb, 0); /* annotation field */
-    }
+    avio_write(pb, annotations.str, annotations.len & ~7);
 
-    return 0;
+fail:
+    av_bprint_finalize(&annotations, NULL);
+
+    return ret;
 }
 
 static int au_write_trailer(AVFormatContext *s)
