@@ -2704,6 +2704,7 @@ static int hls_init(AVFormatContext *s)
     char *p = NULL;
     int http_base_proto = ff_is_http_proto(s->url);
     int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
+    double initial_program_date_time = av_gettime() / 1000000.0;
 
     if (hls->use_localtime) {
         pattern = get_default_pattern_localtime_fmt(s);
@@ -2798,12 +2799,7 @@ static int hls_init(AVFormatContext *s)
         vs->start_pts = AV_NOPTS_VALUE;
         vs->end_pts   = AV_NOPTS_VALUE;
         vs->current_segment_final_filename_fmt[0] = '\0';
-
-        if (hls->flags & HLS_PROGRAM_DATE_TIME) {
-            time_t now0;
-            time(&now0);
-            vs->initial_prog_date_time = now0;
-        }
+        vs->initial_prog_date_time = initial_program_date_time;
 
         for (j = 0; j < vs->nb_streams; j++) {
             vs->has_video += vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO;
