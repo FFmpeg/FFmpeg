@@ -213,6 +213,9 @@ static const struct {
     { "ALTIVEC",  "altivec",  AV_CPU_FLAG_ALTIVEC },
     { "VSX",      "vsx",      AV_CPU_FLAG_VSX },
     { "POWER8",   "power8",   AV_CPU_FLAG_POWER8 },
+#elif ARCH_MIPS
+    { "MMI",      "mmi",      AV_CPU_FLAG_MMI },
+    { "MSA",      "msa",      AV_CPU_FLAG_MSA },
 #elif ARCH_X86
     { "MMX",      "mmx",      AV_CPU_FLAG_MMX|AV_CPU_FLAG_CMOV },
     { "MMXEXT",   "mmxext",   AV_CPU_FLAG_MMXEXT },

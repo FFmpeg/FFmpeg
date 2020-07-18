@@ -51,6 +51,8 @@ static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
 
 static int get_cpu_flags(void)
 {
+    if (ARCH_MIPS)
+        return ff_get_cpu_flags_mips();
     if (ARCH_AARCH64)
         return ff_get_cpu_flags_aarch64();
     if (ARCH_ARM)
@@ -169,6 +171,9 @@ int av_parse_cpu_flags(const char *s)
         { "armv8",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV8    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
+#elif ARCH_MIPS
+        { "mmi",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_MMI      },    .unit = "flags" },
+        { "msa",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_MSA      },    .unit = "flags" },
 #endif
         { NULL },
     };
@@ -250,6 +255,9 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
         { "armv8",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV8    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
+#elif ARCH_MIPS
+        { "mmi",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_MMI      },    .unit = "flags" },
+        { "msa",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_MSA      },    .unit = "flags" },
 #endif
         { NULL },
     };
@@ -308,6 +316,8 @@ int av_cpu_count(void)
 
 size_t av_cpu_max_align(void)
 {
+    if (ARCH_MIPS)
+        return ff_get_cpu_max_align_mips();
     if (ARCH_AARCH64)
         return ff_get_cpu_max_align_aarch64();
     if (ARCH_ARM)

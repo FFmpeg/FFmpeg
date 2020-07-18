@@ -49,6 +49,9 @@ static const struct {
     { AV_CPU_FLAG_SETEND,    "setend"     },
 #elif ARCH_PPC
     { AV_CPU_FLAG_ALTIVEC,   "altivec"    },
+#elif ARCH_MIPS
+    { AV_CPU_FLAG_MMI,       "mmi"        },
+    { AV_CPU_FLAG_MSA,       "msa"        },
 #elif ARCH_X86
     { AV_CPU_FLAG_MMX,       "mmx"        },
     { AV_CPU_FLAG_MMXEXT,    "mmxext"     },
