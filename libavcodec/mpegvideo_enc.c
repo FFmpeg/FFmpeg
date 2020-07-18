@@ -3914,7 +3914,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     s->avctx->execute(s->avctx, encode_thread, &s->thread_context[0], NULL, context_count, sizeof(void*));
     for(i=1; i<context_count; i++){
         if (s->pb.buf_end == s->thread_context[i]->pb.buf)
-            set_put_bits_buffer_size(&s->pb, FFMIN(s->thread_context[i]->pb.buf_end - s->pb.buf, INT_MAX/8-32));
+            set_put_bits_buffer_size(&s->pb, FFMIN(s->thread_context[i]->pb.buf_end - s->pb.buf, INT_MAX/8-BUF_BITS));
         merge_context_after_encode(s, s->thread_context[i]);
     }
     emms_c();
