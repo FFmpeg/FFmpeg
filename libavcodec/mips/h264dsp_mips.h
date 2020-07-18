@@ -25,21 +25,21 @@
 #include "libavcodec/h264dec.h"
 #include "constants.h"
 
-void ff_h264_h_lpf_luma_inter_msa(uint8_t *src, int stride,
+void ff_h264_h_lpf_luma_inter_msa(uint8_t *src, ptrdiff_t stride,
                                   int alpha, int beta, int8_t *tc0);
-void ff_h264_v_lpf_luma_inter_msa(uint8_t *src, int stride,
+void ff_h264_v_lpf_luma_inter_msa(uint8_t *src, ptrdiff_t stride,
                                   int alpha, int beta, int8_t *tc0);
-void ff_h264_h_lpf_chroma_inter_msa(uint8_t *src, int stride,
+void ff_h264_h_lpf_chroma_inter_msa(uint8_t *src, ptrdiff_t stride,
                                     int alpha, int beta, int8_t *tc0);
-void ff_h264_v_lpf_chroma_inter_msa(uint8_t *src, int stride,
+void ff_h264_v_lpf_chroma_inter_msa(uint8_t *src, ptrdiff_t stride,
                                     int alpha, int beta, int8_t *tc0);
-void ff_h264_h_loop_filter_chroma422_msa(uint8_t *src, int32_t stride,
+void ff_h264_h_loop_filter_chroma422_msa(uint8_t *src, ptrdiff_t stride,
                                          int32_t alpha, int32_t beta,
                                          int8_t *tc0);
-void ff_h264_h_loop_filter_chroma422_mbaff_msa(uint8_t *src, int32_t stride,
+void ff_h264_h_loop_filter_chroma422_mbaff_msa(uint8_t *src, ptrdiff_t stride,
                                                int32_t alpha, int32_t beta,
                                                int8_t *tc0);
-void ff_h264_h_loop_filter_luma_mbaff_msa(uint8_t *src, int32_t stride,
+void ff_h264_h_loop_filter_luma_mbaff_msa(uint8_t *src, ptrdiff_t stride,
                                           int32_t alpha, int32_t beta,
                                           int8_t *tc0);
 
@@ -67,15 +67,15 @@ void ff_h264_idct8_add4_msa(uint8_t *dst, const int *blk_offset,
                             int16_t *blk, int dst_stride,
                             const uint8_t nnzc[15 * 8]);
 
-void ff_h264_h_lpf_luma_intra_msa(uint8_t *src, int stride,
+void ff_h264_h_lpf_luma_intra_msa(uint8_t *src, ptrdiff_t stride,
                                   int alpha, int beta);
-void ff_h264_v_lpf_luma_intra_msa(uint8_t *src, int stride,
+void ff_h264_v_lpf_luma_intra_msa(uint8_t *src, ptrdiff_t stride,
                                   int alpha, int beta);
-void ff_h264_h_lpf_chroma_intra_msa(uint8_t *src, int stride,
+void ff_h264_h_lpf_chroma_intra_msa(uint8_t *src, ptrdiff_t stride,
                                     int alpha, int beta);
-void ff_h264_v_lpf_chroma_intra_msa(uint8_t *src, int stride,
+void ff_h264_v_lpf_chroma_intra_msa(uint8_t *src, ptrdiff_t stride,
                                     int alpha, int beta);
-void ff_h264_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src, int stride,
+void ff_h264_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src, ptrdiff_t stride,
                                                 int alpha, int beta);
 
 void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
