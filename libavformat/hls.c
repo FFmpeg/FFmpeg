@@ -1984,6 +1984,7 @@ static int hls_read_header(AVFormatContext *s)
                           read_data, NULL, NULL);
         pls->ctx->probesize = s->probesize > 0 ? s->probesize : 1024 * 4;
         pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
+        pls->ctx->interrupt_callback = s->interrupt_callback;
         url = av_strdup(pls->segments[0]->url);
         ret = av_probe_input_buffer(&pls->pb, &in_fmt, url, NULL, 0, 0);
         av_free(url);
