@@ -29,12 +29,20 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "config.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 
+#if ARCH_X86_64
+// TODO: Benchmark and optionally enable on other 64-bit architectures.
+typedef uint64_t BitBuf;
+#define AV_WBBUF AV_WB64
+#define AV_WLBUF AV_WL64
+#else
 typedef uint32_t BitBuf;
 #define AV_WBBUF AV_WB32
 #define AV_WLBUF AV_WL32
+#endif
 
 static const int BUF_BITS = 8 * sizeof(BitBuf);
 
@@ -163,16 +171,10 @@ void avpriv_put_string(PutBitContext *pb, const char *string,
 void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 #endif
 
-/**
- * Write up to 31 bits into a bitstream.
- * Use put_bits32 to write 32 bits.
- */
-static inline void put_bits(PutBitContext *s, int n, BitBuf value)
+static inline void put_bits_no_assert(PutBitContext *s, int n, BitBuf value)
 {
     BitBuf bit_buf;
     int bit_left;
-
-    av_assert2(n <= 31 && value < (1UL << n));
 
     bit_buf  = s->bit_buf;
     bit_left = s->bit_left;
@@ -213,6 +215,16 @@ static inline void put_bits(PutBitContext *s, int n, BitBuf value)
 
     s->bit_buf  = bit_buf;
     s->bit_left = bit_left;
+}
+
+/**
+ * Write up to 31 bits into a bitstream.
+ * Use put_bits32 to write 32 bits.
+ */
+static inline void put_bits(PutBitContext *s, int n, BitBuf value)
+{
+    av_assert2(n <= 31 && value < (1UL << n));
+    put_bits_no_assert(s, n, value);
 }
 
 static inline void put_bits_le(PutBitContext *s, int n, BitBuf value)
@@ -257,6 +269,11 @@ static void av_unused put_bits32(PutBitContext *s, uint32_t value)
 {
     BitBuf bit_buf;
     int bit_left;
+
+    if (BUF_BITS > 32) {
+        put_bits_no_assert(s, 32, value);
+        return;
+    }
 
     bit_buf  = s->bit_buf;
     bit_left = s->bit_left;
