@@ -357,23 +357,23 @@ void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src,
 
 void ff_deblock_v_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0);
-void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta);
-void ff_deblock_h_chroma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_h_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0);
-void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta);
-void ff_deblock_v_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_v_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0);
-void ff_deblock_v_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_v_luma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta);
-void ff_deblock_h_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_h_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0);
-void ff_deblock_h_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_h_luma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta);
-void ff_deblock_v8_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_v8_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0);
-void ff_deblock_v8_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_v8_luma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta);
 
 void ff_put_h264_qpel16_mc00_mmi(uint8_t *dst, const uint8_t *src,

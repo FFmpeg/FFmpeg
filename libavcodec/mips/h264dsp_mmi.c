@@ -1433,7 +1433,7 @@ void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_deblock_v8_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_v8_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0)
 {
     double ftmp[12];
@@ -1561,7 +1561,7 @@ void ff_deblock_v8_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
     );
 }
 
-static void deblock_v8_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+static void deblock_v8_luma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta)
 {
     DECLARE_ALIGNED(8, const uint64_t, stack[0x0a]);
@@ -1871,7 +1871,7 @@ void ff_deblock_v_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
     );
 }
 
-void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta)
 {
     double ftmp[9];
@@ -1949,7 +1949,7 @@ void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
     );
 }
 
-void ff_deblock_h_chroma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_h_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0)
 {
     double ftmp[11];
@@ -2089,7 +2089,7 @@ void ff_deblock_h_chroma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
     );
 }
 
-void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta)
 {
     double ftmp[11];
@@ -2222,7 +2222,7 @@ void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
     );
 }
 
-void ff_deblock_v_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_v_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0)
 {
     if ((tc0[0] & tc0[1]) >= 0)
@@ -2231,14 +2231,14 @@ void ff_deblock_v_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
         ff_deblock_v8_luma_8_mmi(pix + 8, stride, alpha, beta, tc0 + 2);
 }
 
-void ff_deblock_v_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_v_luma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta)
 {
     deblock_v8_luma_intra_8_mmi(pix + 0, stride, alpha, beta);
     deblock_v8_luma_intra_8_mmi(pix + 8, stride, alpha, beta);
 }
 
-void ff_deblock_h_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_h_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0)
 {
     DECLARE_ALIGNED(8, const uint64_t, stack[0x0d]);
@@ -2457,7 +2457,7 @@ void ff_deblock_h_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
     );
 }
 
-void ff_deblock_h_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+void ff_deblock_h_luma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
         int beta)
 {
     DECLARE_ALIGNED(8, const uint64_t, ptmp[0x11]);

@@ -240,13 +240,13 @@ void ff_xvid_idct_mmi(int16_t *block)
     );
 }
 
-void ff_xvid_idct_put_mmi(uint8_t *dest, int32_t line_size, int16_t *block)
+void ff_xvid_idct_put_mmi(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct_mmi(block);
     ff_put_pixels_clamped_mmi(block, dest, line_size);
 }
 
-void ff_xvid_idct_add_mmi(uint8_t *dest, int32_t line_size, int16_t *block)
+void ff_xvid_idct_add_mmi(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct_mmi(block);
     ff_add_pixels_clamped_mmi(block, dest, line_size);
