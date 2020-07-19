@@ -73,6 +73,16 @@ typedef struct Wc3DemuxContext {
 
 } Wc3DemuxContext;
 
+static int wc3_read_close(AVFormatContext *s)
+{
+    Wc3DemuxContext *wc3 = s->priv_data;
+
+    if (wc3->vpkt.size > 0)
+        av_packet_unref(&wc3->vpkt);
+
+    return 0;
+}
+
 static int wc3_probe(AVProbeData *p)
 {
     if (p->buf_size < 12)
@@ -288,16 +298,6 @@ static int wc3_read_packet(AVFormatContext *s,
     }
 
     return ret;
-}
-
-static int wc3_read_close(AVFormatContext *s)
-{
-    Wc3DemuxContext *wc3 = s->priv_data;
-
-    if (wc3->vpkt.size > 0)
-        av_packet_unref(&wc3->vpkt);
-
-    return 0;
 }
 
 AVInputFormat ff_wc3_demuxer = {
