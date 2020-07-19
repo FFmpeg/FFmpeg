@@ -219,7 +219,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 bytestream2_put_be32(&taboff_pcb, bytestream2_tell_p(&pbc));
 
                 for (x = 0; x < width * bytes_per_channel; x += bytes_per_channel)
-                    encode_buf[x] = in_buf[depth * x];
+                    if (bytes_per_channel == 1) {
+                        encode_buf[x]     = in_buf[depth * x];
+                    } else if (HAVE_BIGENDIAN ^ put_be) {
+                        encode_buf[x + 1] = in_buf[depth * x];
+                        encode_buf[x]     = in_buf[depth * x + 1];
+                    } else {
+                        encode_buf[x]     = in_buf[depth * x];
+                        encode_buf[x + 1] = in_buf[depth * x + 1];
+                    }
 
                 length = sgi_rle_encode(&pbc, encode_buf, width,
                                         bytes_per_channel);
