@@ -138,10 +138,14 @@ static int wc3_read_header(AVFormatContext *s)
         case BNAM_TAG:
             /* load up the name */
             buffer = av_malloc(size+1);
-            if (!buffer)
-                return AVERROR(ENOMEM);
-            if ((ret = avio_read(pb, buffer, size)) != size)
-                return AVERROR(EIO);
+            if (!buffer) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            if ((ret = avio_read(pb, buffer, size)) != size) {
+                ret =  AVERROR(EIO);
+                goto fail;
+            }
             buffer[size] = 0;
             av_dict_set(&s->metadata, "title", buffer,
                                    AV_DICT_DONT_STRDUP_VAL);
@@ -162,21 +166,26 @@ static int wc3_read_header(AVFormatContext *s)
         default:
             av_log(s, AV_LOG_ERROR, "unrecognized WC3 chunk: %s\n",
                    av_fourcc2str(fourcc_tag));
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         fourcc_tag = avio_rl32(pb);
         /* chunk sizes are 16-bit aligned */
         size = (avio_rb32(pb) + 1) & (~1);
-        if (avio_feof(pb))
-            return AVERROR(EIO);
+        if (avio_feof(pb)) {
+            ret = AVERROR(EIO);
+            goto fail;
+        }
 
     } while (fourcc_tag != BRCH_TAG);
 
     /* initialize the decoder streams */
     st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     avpriv_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->video_stream_index = st->index;
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -186,8 +195,10 @@ static int wc3_read_header(AVFormatContext *s)
     st->codecpar->height = wc3->height;
 
     st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     avpriv_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->audio_stream_index = st->index;
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -202,6 +213,9 @@ static int wc3_read_header(AVFormatContext *s)
     st->codecpar->block_align = WC3_AUDIO_BITS * WC3_AUDIO_CHANNELS;
 
     return 0;
+fail:
+    wc3_read_close(s);
+    return ret;
 }
 
 static int wc3_read_packet(AVFormatContext *s,
