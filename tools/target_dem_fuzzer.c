@@ -76,6 +76,10 @@ static int64_t io_seek(void *opaque, int64_t offset, int whence)
     }
     if (offset < 0 || offset > c->filesize)
         return -1;
+    if (IO_FLAT) {
+        c->fuzz      += offset - c->pos;
+        c->fuzz_size -= offset - c->pos;
+    }
     c->pos = offset;
     return 0;
 }
@@ -110,7 +114,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (!avfmt)
         error("Failed avformat_alloc_context()");
 
-    if (size > 2048) {
+    if (IO_FLAT) {
+        seekable = 1;
+        io_buffer_size = size;
+    } else if (size > 2048) {
         int flags;
         char extension[64];
 

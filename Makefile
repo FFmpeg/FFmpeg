@@ -56,6 +56,9 @@ tools/target_bsf_%_fuzzer$(EXESUF): tools/target_bsf_%_fuzzer.o $(FF_DEP_LIBS)
 tools/target_dem_fuzzer$(EXESUF): tools/target_dem_fuzzer.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
 
+tools/target_io_dem_fuzzer$(EXESUF): tools/target_io_dem_fuzzer.o $(FF_DEP_LIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
+
 tools/sofa2wavs$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
 tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
