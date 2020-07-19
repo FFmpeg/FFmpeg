@@ -295,6 +295,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     while (put_bits_count(&a->pb) & 31)
         put_bits(&a->pb, 8, 0);
 
+    flush_put_bits(&a->pb);
     size = put_bits_count(&a->pb) / 32;
 
     if (avctx->codec_id == AV_CODEC_ID_ASV1) {

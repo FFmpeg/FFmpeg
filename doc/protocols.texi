@@ -392,11 +392,6 @@ string describing the libavformat build. ("Lavf/<version>")
 @item user-agent
 This is a deprecated option, you can use user_agent instead it.
 
-@item timeout
-Set timeout in microseconds of socket I/O operations used by the underlying low level
-operation. By default it is set to -1, which means that the timeout is
-not specified.
-
 @item reconnect_at_eof
 If set then eof is treated like an error and causes reconnection, this is useful
 for live / endless streams.
@@ -480,6 +475,28 @@ wget --post-file=somefile.ogg http://@var{server}:@var{port}
 Send an Expect: 100-continue header for POST. If set to 1 it will send, if set
 to 0 it won't, if set to -1 it will try to send if it is applicable. Default
 value is -1.
+
+@item auth_type
+
+Set HTTP authentication type. No option for Digest, since this method requires
+getting nonce parameters from the server first and can't be used straight away like
+Basic.
+
+@table @option
+@item none
+Choose the HTTP authentication type automatically. This is the default.
+@item basic
+
+Choose the HTTP basic authentication.
+
+Basic authentication sends a Base64-encoded string that contains a user name and password
+for the client. Base64 is not a form of encryption and should be considered the same as
+sending the user name and password in clear text (Base64 is a reversible encoding).
+If a resource needs to be protected, strongly consider using an authentication scheme
+other than basic authentication. HTTPS/TLS should be used with basic authentication.
+Without these additional security enhancements, basic authentication should not be used
+to protect sensitive or valuable information.
+@end table
 
 @end table
 

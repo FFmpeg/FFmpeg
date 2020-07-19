@@ -1900,6 +1900,9 @@ static av_cold int vaapi_encode_init_slice_structure(AVCodecContext *avctx)
         req_slices = avctx->slices;
     }
     if (slice_structure & VA_ENC_SLICE_STRUCTURE_ARBITRARY_ROWS ||
+#if VA_CHECK_VERSION(1, 8, 0)
+        slice_structure & VA_ENC_SLICE_STRUCTURE_EQUAL_MULTI_ROWS ||
+#endif
         slice_structure & VA_ENC_SLICE_STRUCTURE_ARBITRARY_MACROBLOCKS) {
         ctx->nb_slices  = req_slices;
         ctx->slice_size = ctx->slice_block_rows / ctx->nb_slices;
