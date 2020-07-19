@@ -344,7 +344,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     bytestream_put_byte(bytestream, 0x08);
 
     ff_lzw_encode_init(s->lzw, s->buf, s->buf_size,
-                       12, FF_LZW_GIF, put_bits);
+                       12, FF_LZW_GIF, 1);
 
     ptr = buf + y_start*linesize + x_start;
     if (honor_transparency) {
@@ -366,7 +366,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
             ptr += linesize;
         }
     }
-    len += ff_lzw_encode_flush(s->lzw, flush_put_bits);
+    len += ff_lzw_encode_flush(s->lzw);
 
     ptr = s->buf;
     while (len > 0) {
