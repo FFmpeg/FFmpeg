@@ -49,7 +49,7 @@ static int read_header(AVFormatContext *s)
     if (ret < 0) {
         av_log(s, AV_LOG_WARNING, "Cannot calculate duration as file size cannot be determined\n");
     } else
-        vst->duration = (ret * vst->time_base.den) / (CDG_PACKET_SIZE * 300);
+        vst->duration = (ret * (int64_t)vst->time_base.den) / (CDG_PACKET_SIZE * 300);
 
     return 0;
 }
