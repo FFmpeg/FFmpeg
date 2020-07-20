@@ -126,8 +126,8 @@ static int apm_read_header(AVFormatContext *s)
     if (avio_rl32(s->pb) != APM_FILE_EXTRADATA_SIZE)
         return AVERROR_INVALIDDATA;
 
-    /* I've never seen files greater than this. */
-    if (par->sample_rate > 44100)
+    /* 8 = bits per sample * max channels */
+    if (par->sample_rate > (INT_MAX / 8))
         return AVERROR_INVALIDDATA;
 
     if (par->bits_per_coded_sample != 4)
