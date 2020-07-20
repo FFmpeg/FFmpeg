@@ -510,12 +510,9 @@ static int concat_read_header(AVFormatContext *avf)
                                                MATCH_ONE_TO_ONE;
     if ((ret = open_file(avf, 0)) < 0)
         goto fail;
-    av_bprint_finalize(&bp, NULL);
-    return 0;
 
 fail:
     av_bprint_finalize(&bp, NULL);
-    concat_read_close(avf);
     return ret;
 }
 
@@ -779,6 +776,7 @@ const AVInputFormat ff_concat_demuxer = {
     .name           = "concat",
     .long_name      = NULL_IF_CONFIG_SMALL("Virtual concatenation script"),
     .priv_data_size = sizeof(ConcatContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = concat_probe,
     .read_header    = concat_read_header,
     .read_packet    = concat_read_packet,
