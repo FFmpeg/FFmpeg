@@ -244,11 +244,12 @@ rgb48funcs(bgr, BE, AV_PIX_FMT_BGR48BE)
 #define input_pixel(i) ((origin == AV_PIX_FMT_RGBA ||                      \
                          origin == AV_PIX_FMT_BGRA ||                      \
                          origin == AV_PIX_FMT_ARGB ||                      \
-                         origin == AV_PIX_FMT_ABGR ||                      \
-                         origin == AV_PIX_FMT_X2RGB10)                     \
-                        ? AV_RN32A(&src[(i) * 4])                       \
-                        : (isBE(origin) ? AV_RB16(&src[(i) * 2])        \
-                                        : AV_RL16(&src[(i) * 2])))
+                         origin == AV_PIX_FMT_ABGR)                        \
+                        ? AV_RN32A(&src[(i) * 4])                          \
+                        : ((origin == AV_PIX_FMT_X2RGB10LE)                \
+                           ? AV_RL32(&src[(i) * 4])                        \
+                           : (isBE(origin) ? AV_RB16(&src[(i) * 2])        \
+                              : AV_RL16(&src[(i) * 2]))))
 
 static av_always_inline void rgb16_32ToY_c_template(int16_t *dst,
                                                     const uint8_t *src,
