@@ -115,6 +115,9 @@ RMStream *ff_rm_alloc_rmstream (void)
 
 void ff_rm_free_rmstream (RMStream *rms)
 {
+    if (!rms)
+        return;
+
     av_packet_unref(&rms->pkt);
 }
 
