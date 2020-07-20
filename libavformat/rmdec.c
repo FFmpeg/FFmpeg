@@ -538,7 +538,7 @@ static int rm_read_header(AVFormatContext *s)
     unsigned int data_off = 0, indx_off = 0;
     char buf[128], mime[128];
     int flags = 0;
-    int ret = -1;
+    int ret;
     unsigned size, v;
     int64_t codec_pos;
 
@@ -554,6 +554,7 @@ static int rm_read_header(AVFormatContext *s)
     avio_skip(pb, tag_size - 8);
 
     for(;;) {
+        ret = AVERROR_INVALIDDATA;
         if (avio_feof(pb))
             goto fail;
         tag = avio_rl32(pb);
@@ -619,8 +620,9 @@ static int rm_read_header(AVFormatContext *s)
                 avio_seek(pb, codec_pos + size, SEEK_SET);
             } else {
                 avio_skip(pb, -4);
-                if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
-                                              size, mime) < 0)
+                ret = ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
+                                                size, mime);
+                if (ret < 0)
                     goto fail;
             }
 
