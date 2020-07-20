@@ -850,6 +850,7 @@ static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, i
 static int mxf_read_strong_ref_array(AVIOContext *pb, UID **refs, int *count)
 {
     *count = avio_rb32(pb);
+    av_free(*refs);
     *refs = av_calloc(*count, sizeof(UID));
     if (!*refs) {
         *count = 0;
@@ -903,10 +904,8 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
     case 0x1901:
         if (mxf->packages_refs)
             av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple packages_refs\n");
-        av_free(mxf->packages_refs);
         return mxf_read_strong_ref_array(pb, &mxf->packages_refs, &mxf->packages_count);
     case 0x1902:
-        av_free(mxf->essence_container_data_refs);
         return mxf_read_strong_ref_array(pb, &mxf->essence_container_data_refs, &mxf->essence_container_data_count);
     }
     return 0;
