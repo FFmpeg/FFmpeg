@@ -65,20 +65,7 @@ uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
     ss = framenum / fps      % 60;
     mm = framenum / (fps*60) % 60;
     hh = framenum / (fps*3600) % 24;
-    return 0         << 31 | // color frame flag (0: unsync mode, 1: sync mode)
-           drop      << 30 | // drop  frame flag (0: non drop,    1: drop)
-           (ff / 10) << 28 | // tens  of frames
-           (ff % 10) << 24 | // units of frames
-           0         << 23 | // PC (NTSC) or BGF0 (PAL)
-           (ss / 10) << 20 | // tens  of seconds
-           (ss % 10) << 16 | // units of seconds
-           0         << 15 | // BGF0 (NTSC) or BGF2 (PAL)
-           (mm / 10) << 12 | // tens  of minutes
-           (mm % 10) <<  8 | // units of minutes
-           0         <<  7 | // BGF2 (NTSC) or PC (PAL)
-           0         <<  6 | // BGF1
-           (hh / 10) <<  4 | // tens  of hours
-           (hh % 10);        // units of hours
+    return av_timecode_get_smpte(tc->rate, drop, hh, mm, ss, ff);
 }
 
 uint32_t av_timecode_get_smpte(AVRational rate, int drop, int hh, int mm, int ss, int ff)
