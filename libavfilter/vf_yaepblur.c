@@ -323,7 +323,7 @@ static const AVFilterPad yaep_outputs[] = {
 #define OFFSET(x) offsetof(YAEPContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
-static const AVOption yaep_options[] = {
+static const AVOption yaepblur_options[] = {
     { "radius", "set window radius",    OFFSET(radius), AV_OPT_TYPE_INT, {.i64=3},   0, INT_MAX, .flags=FLAGS },
     { "r"     , "set window radius",    OFFSET(radius), AV_OPT_TYPE_INT, {.i64=3},   0, INT_MAX, .flags=FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT, {.i64=1},   0,     0xF, .flags=FLAGS },
@@ -333,13 +333,13 @@ static const AVOption yaep_options[] = {
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(yaep);
+AVFILTER_DEFINE_CLASS(yaepblur);
 
 AVFilter ff_vf_yaepblur = {
     .name            = "yaepblur",
     .description     = NULL_IF_CONFIG_SMALL("Yet another edge preserving blur filter."),
     .priv_size       = sizeof(YAEPContext),
-    .priv_class      = &yaep_class,
+    .priv_class      = &yaepblur_class,
     .uninit          = uninit,
     .query_formats   = query_formats,
     .inputs          = yaep_inputs,

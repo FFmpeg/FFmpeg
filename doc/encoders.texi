@@ -3145,6 +3145,19 @@ Include HDR metadata if the input frames have it
 messages).
 @end table
 
+@item tiles
+Set the number of tiles to encode the input video with, as rows x columns.
+Larger numbers allow greater parallelism in both encoding and decoding, but
+may decrease coding efficiency.
+
+@item tile_rows
+Selects how many rows of tiles to encode with. For example, 4 tile rows would
+be requested by setting the tile_rows option to 4.
+
+@item tile_cols
+Selects how many columns of tiles to encode with. For example, 5 tile columns
+would be requested by setting the tile_cols option to 5.
+
 @end table
 
 @item mjpeg_vaapi
