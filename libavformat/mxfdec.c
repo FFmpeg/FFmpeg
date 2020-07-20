@@ -2714,6 +2714,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
 
 static int mxf_metadataset_init(MXFMetadataSet *ctx, enum MXFMetadataSetType type)
 {
+    ctx->type = type;
     switch (type){
     case MultipleDescriptor:
     case Descriptor:
@@ -2734,7 +2735,8 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 
     if (!ctx)
         return AVERROR(ENOMEM);
-    mxf_metadataset_init(ctx, type);
+    if (ctx_size)
+        mxf_metadataset_init(ctx, type);
     while (avio_tell(pb) + 4 < klv_end && !avio_feof(pb)) {
         int ret;
         int tag = avio_rb16(pb);
@@ -2770,7 +2772,6 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
          * it extending past the end of the KLV though (zzuf5.mxf). */
         if (avio_tell(pb) > klv_end) {
             if (ctx_size) {
-                ctx->type = type;
                 mxf_free_metadataset(&ctx, 1);
             }
 
@@ -2781,7 +2782,6 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
             avio_seek(pb, next, SEEK_SET);
     }
-    if (ctx_size) ctx->type = type;
     return ctx_size ? mxf_add_metadata_set(mxf, &ctx) : 0;
 }
 
