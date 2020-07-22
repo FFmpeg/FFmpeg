@@ -106,6 +106,12 @@ typedef struct AOMEncoderContext {
     int enable_intra_edge_filter;
     int enable_palette;
     int enable_filter_intra;
+    int enable_flip_idtx;
+    int enable_tx64;
+    int reduced_tx_type_set;
+    int use_intra_dct_only;
+    int use_inter_dct_only;
+    int use_intra_default_tx_only;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -156,6 +162,12 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_PAETH_INTRA]       = "AV1E_SET_ENABLE_PAETH_INTRA",
     [AV1E_SET_ENABLE_SMOOTH_INTRA]      = "AV1E_SET_ENABLE_SMOOTH_INTRA",
     [AV1E_SET_ENABLE_PALETTE]           = "AV1E_SET_ENABLE_PALETTE",
+    [AV1E_SET_ENABLE_FLIP_IDTX]      = "AV1E_SET_ENABLE_FLIP_IDTX",
+    [AV1E_SET_ENABLE_TX64]           = "AV1E_SET_ENABLE_TX64",
+    [AV1E_SET_INTRA_DCT_ONLY]        = "AV1E_SET_INTRA_DCT_ONLY",
+    [AV1E_SET_INTER_DCT_ONLY]        = "AV1E_SET_INTER_DCT_ONLY",
+    [AV1E_SET_INTRA_DEFAULT_TX_ONLY] = "AV1E_SET_INTRA_DEFAULT_TX_ONLY",
+    [AV1E_SET_REDUCED_TX_TYPE_SET]   = "AV1E_SET_REDUCED_TX_TYPE_SET",
 #endif
 };
 
@@ -740,6 +752,18 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTRA, ctx->enable_smooth_intra);
     if (ctx->enable_palette >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_PALETTE, ctx->enable_palette);
+    if (ctx->enable_tx64 >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_TX64, ctx->enable_tx64);
+    if (ctx->enable_flip_idtx >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_FLIP_IDTX, ctx->enable_flip_idtx);
+    if (ctx->use_intra_dct_only >= 0)
+        codecctl_int(avctx, AV1E_SET_INTRA_DCT_ONLY, ctx->use_intra_dct_only);
+    if (ctx->use_inter_dct_only >= 0)
+        codecctl_int(avctx, AV1E_SET_INTER_DCT_ONLY, ctx->use_inter_dct_only);
+    if (ctx->use_intra_default_tx_only >= 0)
+        codecctl_int(avctx, AV1E_SET_INTRA_DEFAULT_TX_ONLY, ctx->use_intra_default_tx_only);
+    if (ctx->reduced_tx_type_set >= 0)
+        codecctl_int(avctx, AV1E_SET_REDUCED_TX_TYPE_SET, ctx->reduced_tx_type_set);
 #endif
 
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
@@ -1171,6 +1195,12 @@ static const AVOption options[] = {
     { "enable-smooth-intra",      "Enable smooth intra prediction mode",                OFFSET(enable_smooth_intra),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-paeth-intra",       "Enable paeth predictor in intra prediction",         OFFSET(enable_paeth_intra),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-palette",           "Enable palette prediction mode",                     OFFSET(enable_palette),           AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-flip-idtx",          "Enable extended transform type",             OFFSET(enable_flip_idtx),          AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-tx64",               "Enable 64-pt transform",                     OFFSET(enable_tx64),               AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "reduced-tx-type-set",       "Use reduced set of transform types",         OFFSET(reduced_tx_type_set),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "use-intra-dct-only",        "Use DCT only for INTRA modes",               OFFSET(use_intra_dct_only),        AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "use-inter-dct-only",        "Use DCT only for INTER modes",               OFFSET(use_inter_dct_only),        AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "use-intra-default-tx-only", "Use default-transform only for INTRA modes", OFFSET(use_intra_default_tx_only), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { NULL },
 };
 

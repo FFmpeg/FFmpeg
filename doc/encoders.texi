@@ -1629,6 +1629,26 @@ Enable paeth predictor in intra prediction. Default is true.
 @item enable-palette (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable palette prediction mode. Default is true.
 
+@item enable-flip-idtx (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable extended transform type, including FLIPADST_DCT, DCT_FLIPADST,
+FLIPADST_FLIPADST, ADST_FLIPADST, FLIPADST_ADST, IDTX, V_DCT, H_DCT,
+V_ADST, H_ADST, V_FLIPADST, H_FLIPADST. Default is true.
+
+@item enable-tx64 (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable 64-pt transform. Default is true.
+
+@item reduced-tx-type-set (@emph{boolean}) (Requires libaom >= v2.0.0)
+Use reduced set of transform types. Default is false.
+
+@item use-intra-dct-only (@emph{boolean}) (Requires libaom >= v2.0.0)
+Use DCT only for INTRA modes. Default is false.
+
+@item use-inter-dct-only (@emph{boolean}) (Requires libaom >= v2.0.0)
+Use DCT only for INTER modes. Default is false.
+
+@item use-intra-default-tx-only (@emph{boolean}) (Requires libaom >= v2.0.0)
+Use Default-transform only for INTRA modes. Default is false.
+
 @end table
 
 @section libkvazaar
