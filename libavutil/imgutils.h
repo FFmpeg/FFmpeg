@@ -68,6 +68,20 @@ int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane);
 int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int width);
 
 /**
+ * Fill plane sizes for an image with pixel format pix_fmt and height height.
+ *
+ * @param size the array to be filled with the size of each image plane
+ * @param linesizes the array containing the linesize for each
+ *        plane, should be filled by av_image_fill_linesizes()
+ * @return >= 0 in case of success, a negative error code otherwise
+ *
+ * @note The linesize parameters have the type ptrdiff_t here, while they are
+ *       int for av_image_fill_linesizes().
+ */
+int av_image_fill_plane_sizes(size_t size[4], enum AVPixelFormat pix_fmt,
+                              int height, const ptrdiff_t linesizes[4]);
+
+/**
  * Fill plane data pointers for an image with pixel format pix_fmt and
  * height height.
  *
