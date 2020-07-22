@@ -65,6 +65,7 @@ enum XFadeTransitions {
     HRSLICE,
     VUSLICE,
     VDSLICE,
+    HBLUR,
     NB_TRANSITIONS,
 };
 
@@ -182,6 +183,7 @@ static const AVOption xfade_options[] = {
     {   "hrslice",    "hr slice transition",    0, AV_OPT_TYPE_CONST, {.i64=HRSLICE},    0, 0, FLAGS, "transition" },
     {   "vuslice",    "vu slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VUSLICE},    0, 0, FLAGS, "transition" },
     {   "vdslice",    "vd slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VDSLICE},    0, 0, FLAGS, "transition" },
+    {   "hblur",      "hblur transition",       0, AV_OPT_TYPE_CONST, {.i64=HBLUR},      0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1299,6 +1301,50 @@ static void vdslice##name##_transition(AVFilterContext *ctx,                    
 VDSLICE_TRANSITION(8, uint8_t, 1)
 VDSLICE_TRANSITION(16, uint16_t, 2)
 
+#define HBLUR_TRANSITION(name, type, div)                                            \
+static void hblur##name##_transition(AVFilterContext *ctx,                           \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const float prog = progress <= 0.5f ? progress * 2.f : (1.f - progress) * 2.f;   \
+    const int size = 1 + (width / 2) * prog;                                         \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int p = 0; p < s->nb_planes; p++) {                                     \
+            const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);       \
+            const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);       \
+            type *dst = (type *)(out->data[p] + y * out->linesize[p]);               \
+            float sum0 = 0.f;                                                        \
+            float sum1 = 0.f;                                                        \
+            float cnt = size;                                                        \
+                                                                                     \
+            for (int x = 0; x < size; x++) {                                         \
+                sum0 += xf0[x];                                                      \
+                sum1 += xf1[x];                                                      \
+            }                                                                        \
+                                                                                     \
+            for (int x = 0; x < width; x++) {                                        \
+                dst[x] = mix(sum0 / cnt, sum1 / cnt, progress);                      \
+                                                                                     \
+                if (x + size < width) {                                              \
+                    sum0 += xf0[x + size] - xf0[x];                                  \
+                    sum1 += xf1[x + size] - xf1[x];                                  \
+                } else {                                                             \
+                    sum0 -= xf0[x];                                                  \
+                    sum1 -= xf1[x];                                                  \
+                    cnt--;                                                           \
+                }                                                                    \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+HBLUR_TRANSITION(8, uint8_t, 1)
+HBLUR_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1425,6 +1471,7 @@ static int config_output(AVFilterLink *outlink)
     case HRSLICE:    s->transitionf = s->depth <= 8 ? hrslice8_transition    : hrslice16_transition;    break;
     case VUSLICE:    s->transitionf = s->depth <= 8 ? vuslice8_transition    : vuslice16_transition;    break;
     case VDSLICE:    s->transitionf = s->depth <= 8 ? vdslice8_transition    : vdslice16_transition;    break;
+    case HBLUR:      s->transitionf = s->depth <= 8 ? hblur8_transition      : hblur16_transition;      break;
     }
 
     if (s->transition == CUSTOM) {

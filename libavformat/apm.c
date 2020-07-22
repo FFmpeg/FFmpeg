@@ -1,5 +1,5 @@
 /*
- * Rayman 2 APM Demuxer
+ * Rayman 2 APM (De)muxer
  *
  * Copyright (C) 2020 Zane van Iperen (zane@zanevaniperen.com)
  *
@@ -21,6 +21,8 @@
  */
 #include "avformat.h"
 #include "internal.h"
+#include "rawenc.h"
+#include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
@@ -55,6 +57,7 @@ typedef struct APMExtraData {
     uint32_t    data;
 } APMExtraData;
 
+#if CONFIG_APM_DEMUXER
 static void apm_parse_extradata(APMExtraData *ext, const uint8_t *buf)
 {
     ext->magic              = AV_RL32(buf + 0);
@@ -205,3 +208,110 @@ AVInputFormat ff_apm_demuxer = {
     .read_header    = apm_read_header,
     .read_packet    = apm_read_packet
 };
+#endif
+
+#if CONFIG_APM_MUXER
+static int apm_write_init(AVFormatContext *s)
+{
+    AVCodecParameters *par;
+
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "APM files have exactly one stream\n");
+        return AVERROR(EINVAL);
+    }
+
+    par = s->streams[0]->codecpar;
+
+    if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_APM) {
+        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
+               avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
+    if (par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "APM files only support up to 2 channels\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (par->sample_rate > (INT_MAX / 8)) {
+        av_log(s, AV_LOG_ERROR, "Sample rate too large\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (par->extradata_size != APM_EXTRADATA_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Invalid/missing extradata\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(s, AV_LOG_ERROR, "Stream not seekable, unable to write output file\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+static int apm_write_header(AVFormatContext *s)
+{
+    uint8_t buf[APM_FILE_EXTRADATA_SIZE] = { 0 };
+    AVCodecParameters *par = s->streams[0]->codecpar;
+
+    /*
+     * Bodge a WAVEFORMATEX manually, ff_put_wav_header() can't
+     * be used because of the extra 2 bytes.
+     */
+    avio_wl16(s->pb, APM_TAG_CODEC);
+    avio_wl16(s->pb, par->channels);
+    avio_wl32(s->pb, par->sample_rate);
+    /* This is the wrong calculation, but it's what the orginal files have. */
+    avio_wl32(s->pb, par->sample_rate * par->channels * 2);
+    avio_wl16(s->pb, par->block_align);
+    avio_wl16(s->pb, par->bits_per_coded_sample);
+    avio_wl32(s->pb, APM_FILE_EXTRADATA_SIZE);
+
+    /*
+     * Build the extradata. Assume the codec's given us correct data.
+     * File and data sizes are fixed later.
+     */
+    AV_WL32(buf +  0, APM_TAG_VS12); /* magic */
+    AV_WL32(buf + 12, 0xFFFFFFFF);   /* unk1  */
+    memcpy( buf + 20, par->extradata, APM_EXTRADATA_SIZE);
+    AV_WL32(buf + 76, APM_TAG_DATA); /* data */
+
+    avio_write(s->pb, buf, APM_FILE_EXTRADATA_SIZE);
+    return 0;
+}
+
+static int apm_write_trailer(AVFormatContext *s)
+{
+    int64_t file_size, data_size;
+
+    file_size = avio_tell(s->pb);
+    data_size = file_size - (APM_FILE_HEADER_SIZE + 2 + APM_FILE_EXTRADATA_SIZE);
+
+    if (file_size >= UINT32_MAX) {
+        av_log(s, AV_LOG_ERROR,
+               "Filesize %"PRId64" invalid for APM, output file will be broken\n",
+               file_size);
+        return AVERROR(ERANGE);
+    }
+
+    avio_seek(s->pb, 24, SEEK_SET);
+    avio_wl32(s->pb, (uint32_t)file_size);
+    avio_wl32(s->pb, (uint32_t)data_size);
+
+    return 0;
+}
+
+AVOutputFormat ff_apm_muxer = {
+    .name           = "apm",
+    .long_name      = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
+    .extensions     = "apm",
+    .audio_codec    = AV_CODEC_ID_ADPCM_IMA_APM,
+    .video_codec    = AV_CODEC_ID_NONE,
+    .init           = apm_write_init,
+    .write_header   = apm_write_header,
+    .write_packet   = ff_raw_write_packet,
+    .write_trailer  = apm_write_trailer
+};
+#endif

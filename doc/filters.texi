@@ -20447,6 +20447,7 @@ Set one of available transition effects:
 @item hrslice
 @item vuslice
 @item vdslice
+@item hblur
 @end table
 Default transition effect is fade.
 
