@@ -1291,7 +1291,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
      * as would be expected. Wrong offset received from the server will not be
      * noticed without the call, though.
      */
-    if (ret == 0 && !is_http && seg->key_type == KEY_NONE && seg->url_offset) {
+    if (ret == 0 && !is_http && seg->url_offset) {
         int64_t seekret = avio_seek(*in, seg->url_offset, SEEK_SET);
         if (seekret < 0) {
             av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
