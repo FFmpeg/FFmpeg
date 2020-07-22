@@ -1649,6 +1649,42 @@ Use DCT only for INTER modes. Default is false.
 @item use-intra-default-tx-only (@emph{boolean}) (Requires libaom >= v2.0.0)
 Use Default-transform only for INTRA modes. Default is false.
 
+@item enable-ref-frame-mvs (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable temporal mv prediction. Default is true.
+
+@item enable-reduced-reference-set (@emph{boolean}) (Requires libaom >= v2.0.0)
+Use reduced set of single and compound references. Default is false.
+
+@item enable-obmc (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable obmc. Default is true.
+
+@item enable-dual-filter (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable dual filter. Default is true.
+
+@item enable-diff-wtd-comp (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable difference-weighted compound. Default is true.
+
+@item enable-dist-wtd-comp (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable distance-weighted compound. Default is true.
+
+@item enable-onesided-comp (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable one sided compound. Default is true.
+
+@item enable-interinter-wedge (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable interinter wedge compound. Default is true.
+
+@item enable-interintra-wedge (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable interintra wedge compound. Default is true.
+
+@item enable-masked-comp (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable masked compound. Default is true.
+
+@item enable-interintra-comp (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable interintra compound. Default is true.
+
+@item enable-smooth-interintra (@emph{boolean}) (Requires libaom >= v2.0.0)
+Enable smooth interintra mode. Default is true.
+
 @end table
 
 @section libkvazaar
