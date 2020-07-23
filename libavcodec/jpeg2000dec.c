@@ -102,6 +102,7 @@ typedef struct Jpeg2000DecoderContext {
     uint8_t         cbps[4];    // bits per sample in particular components
     uint8_t         sgnd[4];    // if a component is signed
     uint8_t         properties[4];
+    uint8_t         in_tile_headers;
     int             cdx[4], cdy[4];
     int             precision;
     int             ncomponents;
@@ -2165,6 +2166,9 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_poc(s, len, poc);
             break;
         case JPEG2000_SOT:
+            if (!s->in_tile_headers) {
+                s->in_tile_headers = 1;
+            }
             if (!(ret = get_sot(s, len))) {
                 av_assert1(s->curtileno >= 0);
                 codsty = s->tile[s->curtileno].codsty;
