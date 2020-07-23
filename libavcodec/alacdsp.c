@@ -34,7 +34,7 @@ static void decorrelate_stereo(int32_t *buffer[2], int nb_samples,
         a = buffer[0][i];
         b = buffer[1][i];
 
-        a -= (b * decorr_left_weight) >> decorr_shift;
+        a -= (int)(b * (unsigned)decorr_left_weight) >> decorr_shift;
         b += a;
 
         buffer[0][i] = b;
