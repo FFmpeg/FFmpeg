@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-07-xx - xxxxxxxxxx - lavu 56.57.100 - cpu.h
+  Add AV_CPU_FLAG_MMI and AV_CPU_FLAG_MSA.
+
 2020-07-xx - xxxxxxxxxx - lavu 56.56.100 - imgutils.h
   Add av_image_fill_plane_sizes().
 
