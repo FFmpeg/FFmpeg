@@ -671,37 +671,23 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         for(i = 0; i <= stereo; i++)
             *samples++ = pred[i];
         for(; i < unp_size / 2; i++) {
+            unsigned idx = 2 * (i & stereo);
             if (get_bits_left(&gb) < 0) {
                 ret = AVERROR_INVALIDDATA;
                 goto error;
             }
-            if(i & stereo) {
-                if(vlc[2].table)
-                    res = get_vlc2(&gb, vlc[2].table, SMKTREE_BITS, 3);
-                else
-                    res = values[2];
-                val  = res;
-                if(vlc[3].table)
-                    res = get_vlc2(&gb, vlc[3].table, SMKTREE_BITS, 3);
-                else
-                    res = values[3];
-                val |= res << 8;
-                pred[1] += val;
-                *samples++ = pred[1];
-            } else {
-                if(vlc[0].table)
-                    res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
-                else
-                    res = values[0];
-                val  = res;
-                if(vlc[1].table)
-                    res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
-                else
-                    res = values[1];
-                val |= res << 8;
-                pred[0] += val;
-                *samples++ = pred[0];
-            }
+            if (vlc[idx].table)
+                res = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
+            else
+                res = values[idx];
+            val  = res;
+            if (vlc[++idx].table)
+                res = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
+            else
+                res = values[idx];
+            val |= res << 8;
+            pred[idx / 2] += val;
+            *samples++ = pred[idx / 2];
         }
     } else { //8-bit data
         for(i = stereo; i >= 0; i--)
@@ -709,25 +695,17 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         for(i = 0; i <= stereo; i++)
             *samples8++ = pred[i];
         for(; i < unp_size; i++) {
+            unsigned idx = i & stereo;
             if (get_bits_left(&gb) < 0) {
                 ret = AVERROR_INVALIDDATA;
                 goto error;
             }
-            if(i & stereo){
-                if(vlc[1].table)
-                    res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
-                else
-                    res = values[1];
-                pred[1] += res;
-                *samples8++ = pred[1];
-            } else {
-                if(vlc[0].table)
-                    res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
-                else
-                    res = values[0];
-                pred[0] += res;
-                *samples8++ = pred[0];
-            }
+            if (vlc[idx].table)
+                val = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
+            else
+                val = values[idx];
+            pred[idx] += val;
+            *samples8++ = pred[idx];
         }
     }
 
