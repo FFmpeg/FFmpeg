@@ -112,6 +112,23 @@ char *av_timecode_make_string(const AVTimecode *tc, char *buf, int framenum);
 /**
  * Get the timecode string from the SMPTE timecode format.
  *
+ * In contrast to av_timecode_make_smpte_tc_string this function supports 50/60
+ * fps timecodes by using the field bit.
+ *
+ * @param buf        destination buffer, must be at least AV_TIMECODE_STR_SIZE long
+ * @param rate       frame rate of the timecode
+ * @param tcsmpte    the 32-bit SMPTE timecode
+ * @param prevent_df prevent the use of a drop flag when it is known the DF bit
+ *                   is arbitrary
+ * @param skip_field prevent the use of a field flag when it is known the field
+ *                   bit is arbitrary (e.g. because it is used as PC flag)
+ * @return           the buf parameter
+ */
+char *av_timecode_make_smpte_tc_string2(char *buf, AVRational rate, uint32_t tcsmpte, int prevent_df, int skip_field);
+
+/**
+ * Get the timecode string from the SMPTE timecode format.
+ *
  * @param buf        destination buffer, must be at least AV_TIMECODE_STR_SIZE long
  * @param tcsmpte    the 32-bit SMPTE timecode
  * @param prevent_df prevent the use of a drop flag when it is known the DF bit

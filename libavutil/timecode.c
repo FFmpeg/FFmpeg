@@ -136,16 +136,33 @@ static unsigned bcd2uint(uint8_t bcd)
    return low + 10*high;
 }
 
-char *av_timecode_make_smpte_tc_string(char *buf, uint32_t tcsmpte, int prevent_df)
+char *av_timecode_make_smpte_tc_string2(char *buf, AVRational rate, uint32_t tcsmpte, int prevent_df, int skip_field)
 {
     unsigned hh   = bcd2uint(tcsmpte     & 0x3f);    // 6-bit hours
     unsigned mm   = bcd2uint(tcsmpte>>8  & 0x7f);    // 7-bit minutes
     unsigned ss   = bcd2uint(tcsmpte>>16 & 0x7f);    // 7-bit seconds
     unsigned ff   = bcd2uint(tcsmpte>>24 & 0x3f);    // 6-bit frames
     unsigned drop = tcsmpte & 1<<30 && !prevent_df;  // 1-bit drop if not arbitrary bit
+
+    if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
+        ff <<= 1;
+        if (!skip_field) {
+            if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
+                ff += !!(tcsmpte & 1 << 7);
+            else
+                ff += !!(tcsmpte & 1 << 23);
+        }
+    }
+
     snprintf(buf, AV_TIMECODE_STR_SIZE, "%02u:%02u:%02u%c%02u",
              hh, mm, ss, drop ? ';' : ':', ff);
     return buf;
+
+}
+
+char *av_timecode_make_smpte_tc_string(char *buf, uint32_t tcsmpte, int prevent_df)
+{
+    return av_timecode_make_smpte_tc_string2(buf, (AVRational){30, 1}, tcsmpte, prevent_df, 1);
 }
 
 char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit)
