@@ -268,14 +268,24 @@ static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
             }
 
             for (i = j = 0; i < attr_count; i++) {
+                int k;
+
                 if (attr_list[i].type != VASurfaceAttribPixelFormat)
                     continue;
                 fourcc = attr_list[i].value.value.i;
                 pix_fmt = vaapi_pix_fmt_from_fourcc(fourcc);
-                if (pix_fmt != AV_PIX_FMT_NONE)
+
+                if (pix_fmt == AV_PIX_FMT_NONE)
+                    continue;
+
+                for (k = 0; k < j; k++) {
+                    if (constraints->valid_sw_formats[k] == pix_fmt)
+                        break;
+                }
+
+                if (k == j)
                     constraints->valid_sw_formats[j++] = pix_fmt;
             }
-            av_assert0(j == pix_fmt_count);
             constraints->valid_sw_formats[j] = AV_PIX_FMT_NONE;
         }
     } else {
@@ -287,9 +297,19 @@ static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        for (i = 0; i < ctx->nb_formats; i++)
-            constraints->valid_sw_formats[i] = ctx->formats[i].pix_fmt;
-        constraints->valid_sw_formats[i] = AV_PIX_FMT_NONE;
+        for (i = j = 0; i < ctx->nb_formats; i++) {
+            int k;
+
+            for (k = 0; k < j; k++) {
+                if (constraints->valid_sw_formats[k] == ctx->formats[i].pix_fmt)
+                    break;
+            }
+
+            if (k == j)
+                constraints->valid_sw_formats[j++] = ctx->formats[i].pix_fmt;
+        }
+
+        constraints->valid_sw_formats[j] = AV_PIX_FMT_NONE;
     }
 
     constraints->valid_hw_formats = av_malloc_array(2, sizeof(pix_fmt));
