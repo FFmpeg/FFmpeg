@@ -822,15 +822,17 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     return 0;
 }
 
-static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
+static int mxf_add_metadata_set(MXFContext *mxf, MXFMetadataSet **metadata_set)
 {
     MXFMetadataSet **tmp;
 
     tmp = av_realloc_array(mxf->metadata_sets, mxf->metadata_sets_count + 1, sizeof(*mxf->metadata_sets));
-    if (!tmp)
+    if (!tmp) {
+        mxf_free_metadataset(metadata_set, 1);
         return AVERROR(ENOMEM);
+    }
     mxf->metadata_sets = tmp;
-    mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
+    mxf->metadata_sets[mxf->metadata_sets_count] = *metadata_set;
     mxf->metadata_sets_count++;
     return 0;
 }
@@ -848,6 +850,7 @@ static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, i
 static int mxf_read_strong_ref_array(AVIOContext *pb, UID **refs, int *count)
 {
     *count = avio_rb32(pb);
+    av_free(*refs);
     *refs = av_calloc(*count, sizeof(UID));
     if (!*refs) {
         *count = 0;
@@ -901,10 +904,8 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
     case 0x1901:
         if (mxf->packages_refs)
             av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple packages_refs\n");
-        av_free(mxf->packages_refs);
         return mxf_read_strong_ref_array(pb, &mxf->packages_refs, &mxf->packages_count);
     case 0x1902:
-        av_free(mxf->essence_container_data_refs);
         return mxf_read_strong_ref_array(pb, &mxf->essence_container_data_refs, &mxf->essence_container_data_count);
     }
     return 0;
@@ -2712,6 +2713,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
 
 static int mxf_metadataset_init(MXFMetadataSet *ctx, enum MXFMetadataSetType type)
 {
+    ctx->type = type;
     switch (type){
     case MultipleDescriptor:
     case Descriptor:
@@ -2732,7 +2734,8 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 
     if (!ctx)
         return AVERROR(ENOMEM);
-    mxf_metadataset_init(ctx, type);
+    if (ctx_size)
+        mxf_metadataset_init(ctx, type);
     while (avio_tell(pb) + 4 < klv_end && !avio_feof(pb)) {
         int ret;
         int tag = avio_rb16(pb);
@@ -2768,7 +2771,6 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
          * it extending past the end of the KLV though (zzuf5.mxf). */
         if (avio_tell(pb) > klv_end) {
             if (ctx_size) {
-                ctx->type = type;
                 mxf_free_metadataset(&ctx, 1);
             }
 
@@ -2779,8 +2781,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
             avio_seek(pb, next, SEEK_SET);
     }
-    if (ctx_size) ctx->type = type;
-    return ctx_size ? mxf_add_metadata_set(mxf, ctx) : 0;
+    return ctx_size ? mxf_add_metadata_set(mxf, &ctx) : 0;
 }
 
 /**
@@ -3083,10 +3084,8 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf, AVStream *st)
     if (!(segment = av_mallocz(sizeof(*segment))))
         return AVERROR(ENOMEM);
 
-    if ((ret = mxf_add_metadata_set(mxf, segment))) {
-        mxf_free_metadataset((MXFMetadataSet**)&segment, 1);
+    if ((ret = mxf_add_metadata_set(mxf, (MXFMetadataSet**)&segment)))
         return ret;
-    }
 
     /* Make sure we have nonzero unique index_sid, body_sid will be ok, because
      * using the same SID for index is forbidden in MXF. */

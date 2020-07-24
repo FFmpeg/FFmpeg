@@ -1137,6 +1137,10 @@ static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
     { FF_PROFILE_HEVC_MAIN_10, 10, 3, 1, 1, VAProfileHEVCMain10     },
     { FF_PROFILE_HEVC_REXT,    10, 3, 1, 1, VAProfileHEVCMain10     },
 #endif
+#if VA_CHECK_VERSION(1, 2, 0)
+    { FF_PROFILE_HEVC_REXT,     8, 3, 1, 0, VAProfileHEVCMain422_10 },
+    { FF_PROFILE_HEVC_REXT,    10, 3, 1, 0, VAProfileHEVCMain422_10 },
+#endif
     { FF_PROFILE_UNKNOWN }
 };
 
