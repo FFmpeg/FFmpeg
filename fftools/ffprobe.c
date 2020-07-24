@@ -2225,7 +2225,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                 writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST);
                 for (int j = 1; j <= m ; j++) {
                     char tcbuf[AV_TIMECODE_STR_SIZE];
-                    av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
+                    av_timecode_make_smpte_tc_string2(tcbuf, stream->avg_frame_rate, tc[j], 0, 0);
                     writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE);
                     print_str("value", tcbuf);
                     writer_print_section_footer(w);
