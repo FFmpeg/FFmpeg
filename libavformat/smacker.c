@@ -52,6 +52,7 @@ typedef struct SmackerContext {
     int cur_frame;
     int videoindex;
     int indexes[7];
+    int duration_size[7];
     /* current frame for demuxing */
     uint32_t frame_size;
     int flags;
@@ -197,6 +198,8 @@ static int smacker_read_header(AVFormatContext *s)
             if (par->bits_per_coded_sample == 16 &&
                 par->codec_id == AV_CODEC_ID_PCM_U8)
                 par->codec_id = AV_CODEC_ID_PCM_S16LE;
+            else
+                smk->duration_size[i] = 4;
             avpriv_set_pts_info(ast, 64, 1, par->sample_rate * par->channels
                                             * par->bits_per_coded_sample / 8);
         }
@@ -297,7 +300,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             uint32_t size;
 
             size = avio_rl32(s->pb);
-            if ((int)size < 8 || size > smk->frame_size) {
+            if ((int)size < 4 + smk->duration_size[i] || size > smk->frame_size) {
                 av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
                 ret = AVERROR_INVALIDDATA;
                 goto next_frame;
@@ -315,7 +318,8 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             pkt->stream_index = smk->indexes[i];
             pkt->pts          = smk->aud_pts[i];
-            pkt->duration     = AV_RL32(pkt->data);
+            pkt->duration     = smk->duration_size[i] ? AV_RL32(pkt->data)
+                                                      : size;
             smk->aud_pts[i]  += pkt->duration;
             smk->next_audio_index = i + 1;
             return 0;
