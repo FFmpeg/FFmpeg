@@ -315,7 +315,8 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             pkt->stream_index = smk->indexes[i];
             pkt->pts          = smk->aud_pts[i];
-            smk->aud_pts[i]  += AV_RL32(pkt->data);
+            pkt->duration     = AV_RL32(pkt->data);
+            smk->aud_pts[i]  += pkt->duration;
             smk->next_audio_index = i + 1;
             return 0;
         }
