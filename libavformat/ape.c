@@ -253,7 +253,7 @@ static int ape_read_header(AVFormatContext * s)
             avio_skip(pb, ape->wavheaderlength);
     }
 
-    if(!ape->totalframes){
+    if(!ape->totalframes || pb->eof_reached){
         av_log(s, AV_LOG_ERROR, "No frames in the file!\n");
         return AVERROR(EINVAL);
     }
@@ -298,8 +298,11 @@ static int ape_read_header(AVFormatContext * s)
             for (i = 0; i < ape->totalframes && !pb->eof_reached; i++)
                 ape->bittable[i] = avio_r8(pb);
         }
-        if (pb->eof_reached)
-            av_log(s, AV_LOG_WARNING, "File truncated\n");
+        if (pb->eof_reached) {
+            av_log(s, AV_LOG_ERROR, "File truncated\n");
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     }
 
     ape->frames[0].pos     = ape->firstframe;
