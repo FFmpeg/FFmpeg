@@ -1678,8 +1678,13 @@ static int vaapi_device_derive(AVHWDeviceContext *ctx,
 #endif
 
         priv = av_mallocz(sizeof(*priv));
-        if (!priv)
+        if (!priv) {
+            if (fd != src_hwctx->fd) {
+                // The fd was opened in this function.
+                close(fd);
+            }
             return AVERROR(ENOMEM);
+        }
 
         if (fd == src_hwctx->fd) {
             // The fd is inherited from the source context and we are holding
