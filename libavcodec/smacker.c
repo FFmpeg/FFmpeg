@@ -140,8 +140,6 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
         int val, i1, i2;
         i1 = ctx->v1->table ? get_vlc2(gb, ctx->v1->table, SMKTREE_BITS, 3) : 0;
         i2 = ctx->v2->table ? get_vlc2(gb, ctx->v2->table, SMKTREE_BITS, 3) : 0;
-        if (i1 < 0 || i2 < 0)
-            return AVERROR_INVALIDDATA;
         val = ctx->recode1[i1] | (ctx->recode2[i2] << 8);
         if(val == ctx->escapes[0]) {
             ctx->last[0] = hc->current;
@@ -678,21 +676,11 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     res = get_vlc2(&gb, vlc[2].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                if (res < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "invalid vlc\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto error;
-                }
                 val  = h[2].values[res];
                 if(vlc[3].table)
                     res = get_vlc2(&gb, vlc[3].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                if (res < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "invalid vlc\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto error;
-                }
                 val |= h[3].values[res] << 8;
                 pred[1] += (unsigned)sign_extend(val, 16);
                 *samples++ = pred[1];
@@ -701,21 +689,11 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                if (res < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "invalid vlc\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto error;
-                }
                 val  = h[0].values[res];
                 if(vlc[1].table)
                     res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                if (res < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "invalid vlc\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto error;
-                }
                 val |= h[1].values[res] << 8;
                 pred[0] += (unsigned)sign_extend(val, 16);
                 *samples++ = pred[0];
@@ -736,11 +714,6 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                if (res < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "invalid vlc\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto error;
-                }
                 pred[1] += sign_extend(h[1].values[res], 8);
                 *samples8++ = pred[1];
             } else {
@@ -748,11 +721,6 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                if (res < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "invalid vlc\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto error;
-                }
                 pred[0] += sign_extend(h[0].values[res], 8);
                 *samples8++ = pred[0];
             }
