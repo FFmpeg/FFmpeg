@@ -77,10 +77,6 @@ typedef struct APEContext {
     uint16_t bps;
     uint16_t channels;
     uint32_t samplerate;
-
-    /* Seektable */
-    uint32_t *seektable;
-    uint8_t  *bittable;
 } APEContext;
 
 static int ape_read_close(AVFormatContext * s);
@@ -130,20 +126,6 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     av_log(s, AV_LOG_DEBUG, "\nSeektable\n\n");
     if ((ape_ctx->seektablelength / sizeof(uint32_t)) != ape_ctx->totalframes) {
         av_log(s, AV_LOG_DEBUG, "No seektable\n");
-    } else {
-        for (i = 0; i < ape_ctx->seektablelength / sizeof(uint32_t); i++) {
-            if (i < ape_ctx->totalframes - 1) {
-                av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32" (%"PRIu32" bytes)",
-                       i, ape_ctx->seektable[i],
-                       ape_ctx->seektable[i + 1] - ape_ctx->seektable[i]);
-                if (ape_ctx->bittable)
-                    av_log(s, AV_LOG_DEBUG, " + %2d bits\n",
-                           ape_ctx->bittable[i]);
-                av_log(s, AV_LOG_DEBUG, "\n");
-            } else {
-                av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32"\n", i, ape_ctx->seektable[i]);
-            }
-        }
     }
 
     av_log(s, AV_LOG_DEBUG, "\nFrames\n\n");
@@ -262,10 +244,10 @@ static int ape_read_header(AVFormatContext * s)
                ape->totalframes);
         return AVERROR_INVALIDDATA;
     }
-    if (ape->seektablelength / sizeof(*ape->seektable) < ape->totalframes) {
+    if (ape->seektablelength / sizeof(uint32_t) < ape->totalframes) {
         av_log(s, AV_LOG_ERROR,
                "Number of seek entries is less than number of frames: %"SIZE_SPECIFIER" vs. %"PRIu32"\n",
-               ape->seektablelength / sizeof(*ape->seektable), ape->totalframes);
+               ape->seektablelength / sizeof(uint32_t), ape->totalframes);
         return AVERROR_INVALIDDATA;
     }
     ape->frames       = av_malloc_array(ape->totalframes, sizeof(APEFrame));
@@ -281,39 +263,26 @@ static int ape_read_header(AVFormatContext * s)
     if (ape->totalframes > 1)
         ape->totalsamples += ape->blocksperframe * (ape->totalframes - 1);
 
-    if (ape->seektablelength > 0) {
-        ape->seektable = av_mallocz(ape->seektablelength);
-        if (!ape->seektable) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        for (i = 0; i < ape->seektablelength / sizeof(uint32_t) && !pb->eof_reached; i++)
-            ape->seektable[i] = avio_rl32(pb);
-        if (ape->fileversion < 3810) {
-            ape->bittable = av_mallocz(ape->totalframes);
-            if (!ape->bittable) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            for (i = 0; i < ape->totalframes && !pb->eof_reached; i++)
-                ape->bittable[i] = avio_r8(pb);
-        }
-        if (pb->eof_reached) {
-            av_log(s, AV_LOG_ERROR, "File truncated\n");
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
-    }
-
     ape->frames[0].pos     = ape->firstframe;
     ape->frames[0].nblocks = ape->blocksperframe;
     ape->frames[0].skip    = 0;
+    avio_rl32(pb); // seektable[0]
     for (i = 1; i < ape->totalframes; i++) {
-        ape->frames[i].pos      = ape->seektable[i] + ape->junklength;
+        uint32_t seektable_entry = avio_rl32(pb);
+        ape->frames[i].pos      = seektable_entry + ape->junklength;
         ape->frames[i].nblocks  = ape->blocksperframe;
         ape->frames[i - 1].size = ape->frames[i].pos - ape->frames[i - 1].pos;
         ape->frames[i].skip     = (ape->frames[i].pos - ape->frames[0].pos) & 3;
+
+        if (pb->eof_reached) {
+            av_log(s, AV_LOG_ERROR, "seektable truncated\n");
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+        ff_dlog(s, "seektable: %8d   %"PRIu32"\n", i, seektable_entry);
     }
+    avio_skip(pb, ape->seektablelength / sizeof(uint32_t) - ape->totalframes);
+
     ape->frames[ape->totalframes - 1].nblocks = ape->finalframeblocks;
     /* calculate final packet size from total file size, if available */
     file_size = avio_size(pb);
@@ -335,10 +304,18 @@ static int ape_read_header(AVFormatContext * s)
     }
     if (ape->fileversion < 3810) {
         for (i = 0; i < ape->totalframes; i++) {
-            if (i < ape->totalframes - 1 && ape->bittable[i + 1])
-                ape->frames[i].size += 4;
+            int bits = avio_r8(pb);
+            if (i && bits)
+                ape->frames[i - 1].size += 4;
+
             ape->frames[i].skip <<= 3;
-            ape->frames[i].skip  += ape->bittable[i];
+            ape->frames[i].skip  += bits;
+            ff_dlog(s, "bittable: %2d\n", bits);
+            if (pb->eof_reached) {
+                av_log(s, AV_LOG_ERROR, "bittable truncated\n");
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
         }
     }
 
@@ -454,8 +431,6 @@ static int ape_read_close(AVFormatContext * s)
     APEContext *ape = s->priv_data;
 
     av_freep(&ape->frames);
-    av_freep(&ape->seektable);
-    av_freep(&ape->bittable);
     return 0;
 }
 
