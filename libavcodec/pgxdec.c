@@ -102,7 +102,7 @@ error:
         for (i = 0; i < height; i++) {                                                      \
             PIXEL *line = (PIXEL*)frame->data[0] + i*frame->linesize[0]/sizeof(PIXEL);      \
             for (j = 0; j < width; j++) {                                                   \
-                int val;                                                                    \
+                unsigned val;                                                               \
                 if (sign)                                                                   \
                     val = (PIXEL)bytestream2_get_ ##suffix(g) + (1 << (depth - 1));         \
                 else                                                                        \
