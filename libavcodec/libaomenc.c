@@ -106,6 +106,24 @@ typedef struct AOMEncoderContext {
     int enable_intra_edge_filter;
     int enable_palette;
     int enable_filter_intra;
+    int enable_flip_idtx;
+    int enable_tx64;
+    int reduced_tx_type_set;
+    int use_intra_dct_only;
+    int use_inter_dct_only;
+    int use_intra_default_tx_only;
+    int enable_ref_frame_mvs;
+    int enable_interinter_wedge;
+    int enable_interintra_wedge;
+    int enable_interintra_comp;
+    int enable_masked_comp;
+    int enable_obmc;
+    int enable_onesided_comp;
+    int enable_reduced_reference_set;
+    int enable_smooth_interintra;
+    int enable_diff_wtd_comp;
+    int enable_dist_wtd_comp;
+    int enable_dual_filter;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -156,6 +174,24 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_PAETH_INTRA]       = "AV1E_SET_ENABLE_PAETH_INTRA",
     [AV1E_SET_ENABLE_SMOOTH_INTRA]      = "AV1E_SET_ENABLE_SMOOTH_INTRA",
     [AV1E_SET_ENABLE_PALETTE]           = "AV1E_SET_ENABLE_PALETTE",
+    [AV1E_SET_ENABLE_FLIP_IDTX]      = "AV1E_SET_ENABLE_FLIP_IDTX",
+    [AV1E_SET_ENABLE_TX64]           = "AV1E_SET_ENABLE_TX64",
+    [AV1E_SET_INTRA_DCT_ONLY]        = "AV1E_SET_INTRA_DCT_ONLY",
+    [AV1E_SET_INTER_DCT_ONLY]        = "AV1E_SET_INTER_DCT_ONLY",
+    [AV1E_SET_INTRA_DEFAULT_TX_ONLY] = "AV1E_SET_INTRA_DEFAULT_TX_ONLY",
+    [AV1E_SET_REDUCED_TX_TYPE_SET]   = "AV1E_SET_REDUCED_TX_TYPE_SET",
+    [AV1E_SET_ENABLE_DIFF_WTD_COMP]     = "AV1E_SET_ENABLE_DIFF_WTD_COMP",
+    [AV1E_SET_ENABLE_DIST_WTD_COMP]     = "AV1E_SET_ENABLE_DIST_WTD_COMP",
+    [AV1E_SET_ENABLE_DUAL_FILTER]       = "AV1E_SET_ENABLE_DUAL_FILTER",
+    [AV1E_SET_ENABLE_INTERINTER_WEDGE]  = "AV1E_SET_ENABLE_INTERINTER_WEDGE",
+    [AV1E_SET_ENABLE_INTERINTRA_WEDGE]  = "AV1E_SET_ENABLE_INTERINTRA_WEDGE",
+    [AV1E_SET_ENABLE_MASKED_COMP]       = "AV1E_SET_ENABLE_MASKED_COMP",
+    [AV1E_SET_ENABLE_INTERINTRA_COMP]   = "AV1E_SET_ENABLE_INTERINTRA_COMP",
+    [AV1E_SET_ENABLE_OBMC]              = "AV1E_SET_ENABLE_OBMC",
+    [AV1E_SET_ENABLE_ONESIDED_COMP]     = "AV1E_SET_ENABLE_ONESIDED_COMP",
+    [AV1E_SET_REDUCED_REFERENCE_SET]    = "AV1E_SET_REDUCED_REFERENCE_SET",
+    [AV1E_SET_ENABLE_SMOOTH_INTERINTRA] = "AV1E_SET_ENABLE_SMOOTH_INTERINTRA",
+    [AV1E_SET_ENABLE_REF_FRAME_MVS]     = "AV1E_SET_ENABLE_REF_FRAME_MVS",
 #endif
 };
 
@@ -740,6 +776,42 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTRA, ctx->enable_smooth_intra);
     if (ctx->enable_palette >= 0)
         codecctl_int(avctx, AV1E_SET_ENABLE_PALETTE, ctx->enable_palette);
+    if (ctx->enable_tx64 >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_TX64, ctx->enable_tx64);
+    if (ctx->enable_flip_idtx >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_FLIP_IDTX, ctx->enable_flip_idtx);
+    if (ctx->use_intra_dct_only >= 0)
+        codecctl_int(avctx, AV1E_SET_INTRA_DCT_ONLY, ctx->use_intra_dct_only);
+    if (ctx->use_inter_dct_only >= 0)
+        codecctl_int(avctx, AV1E_SET_INTER_DCT_ONLY, ctx->use_inter_dct_only);
+    if (ctx->use_intra_default_tx_only >= 0)
+        codecctl_int(avctx, AV1E_SET_INTRA_DEFAULT_TX_ONLY, ctx->use_intra_default_tx_only);
+    if (ctx->reduced_tx_type_set >= 0)
+        codecctl_int(avctx, AV1E_SET_REDUCED_TX_TYPE_SET, ctx->reduced_tx_type_set);
+    if (ctx->enable_ref_frame_mvs >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_REF_FRAME_MVS, ctx->enable_ref_frame_mvs);
+    if (ctx->enable_reduced_reference_set >= 0)
+        codecctl_int(avctx, AV1E_SET_REDUCED_REFERENCE_SET, ctx->enable_reduced_reference_set);
+    if (ctx->enable_diff_wtd_comp >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_DIFF_WTD_COMP, ctx->enable_diff_wtd_comp);
+    if (ctx->enable_dist_wtd_comp >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_DIST_WTD_COMP, ctx->enable_dist_wtd_comp);
+    if (ctx->enable_dual_filter >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_DUAL_FILTER, ctx->enable_dual_filter);
+    if (ctx->enable_interinter_wedge >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_INTERINTER_WEDGE, ctx->enable_interinter_wedge);
+    if (ctx->enable_masked_comp >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_MASKED_COMP, ctx->enable_masked_comp);
+    if (ctx->enable_interintra_comp >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_INTERINTRA_COMP, ctx->enable_interintra_comp);
+    if (ctx->enable_interintra_wedge >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_INTERINTRA_WEDGE, ctx->enable_interintra_wedge);
+    if (ctx->enable_obmc >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_OBMC, ctx->enable_obmc);
+    if (ctx->enable_onesided_comp >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_ONESIDED_COMP, ctx->enable_onesided_comp);
+    if (ctx->enable_smooth_interintra >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTERINTRA, ctx->enable_smooth_interintra);
 #endif
 
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
@@ -1171,6 +1243,24 @@ static const AVOption options[] = {
     { "enable-smooth-intra",      "Enable smooth intra prediction mode",                OFFSET(enable_smooth_intra),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-paeth-intra",       "Enable paeth predictor in intra prediction",         OFFSET(enable_paeth_intra),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-palette",           "Enable palette prediction mode",                     OFFSET(enable_palette),           AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-flip-idtx",          "Enable extended transform type",             OFFSET(enable_flip_idtx),          AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-tx64",               "Enable 64-pt transform",                     OFFSET(enable_tx64),               AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "reduced-tx-type-set",       "Use reduced set of transform types",         OFFSET(reduced_tx_type_set),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "use-intra-dct-only",        "Use DCT only for INTRA modes",               OFFSET(use_intra_dct_only),        AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "use-inter-dct-only",        "Use DCT only for INTER modes",               OFFSET(use_inter_dct_only),        AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "use-intra-default-tx-only", "Use default-transform only for INTRA modes", OFFSET(use_intra_default_tx_only), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-ref-frame-mvs",         "Enable temporal mv prediction",                     OFFSET(enable_ref_frame_mvs),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-reduced-reference-set", "Use reduced set of single and compound references", OFFSET(enable_reduced_reference_set), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-obmc",                  "Enable obmc",                                       OFFSET(enable_obmc),                  AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-dual-filter",           "Enable dual filter",                                OFFSET(enable_dual_filter),           AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-diff-wtd-comp",         "Enable difference-weighted compound",               OFFSET(enable_diff_wtd_comp),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-dist-wtd-comp",         "Enable distance-weighted compound",                 OFFSET(enable_dist_wtd_comp),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-onesided-comp",         "Enable one sided compound",                         OFFSET(enable_onesided_comp),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-interinter-wedge",      "Enable interinter wedge compound",                  OFFSET(enable_interinter_wedge),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-interintra-wedge",      "Enable interintra wedge compound",                  OFFSET(enable_interintra_wedge),      AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-masked-comp",           "Enable masked compound",                            OFFSET(enable_masked_comp),           AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-interintra-comp",       "Enable interintra compound",                        OFFSET(enable_interintra_comp),       AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-smooth-interintra",     "Enable smooth interintra mode",                     OFFSET(enable_smooth_interintra),     AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { NULL },
 };
 
