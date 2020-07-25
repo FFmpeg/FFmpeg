@@ -33,18 +33,26 @@
 
 #include "libavutil/channel_layout.h"
 
-#define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "bytestream.h"
-#include "get_bits.h"
-#include "internal.h"
-#include "mathops.h"
 
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000
 
-#define SMKTREE_DECODE_MAX_RECURSION 32
+#define SMKTREE_DECODE_MAX_RECURSION FFMIN(32, 3 * SMKTREE_BITS)
 #define SMKTREE_DECODE_BIG_MAX_RECURSION 500
+
+/* The maximum possible unchecked overread happens in decode_header_trees:
+ * Decoding the MMAP tree can overread by 6 * SMKTREE_BITS + 1, followed by
+ * three get_bits1, followed by at most 2 + 3 * 16 read bits when reading
+ * the TYPE tree before the next check. 64 is because of 64 bit reads. */
+#if (6 * SMKTREE_BITS + 1 + 3 + (2 + 3 * 16) + 64) <= 8 * AV_INPUT_BUFFER_PADDING_SIZE
+#define UNCHECKED_BITSTREAM_READER 1
+#endif
+#define BITSTREAM_READER_LE
+#include "bytestream.h"
+#include "get_bits.h"
+#include "internal.h"
+#include "mathops.h"
 
 typedef struct SmackVContext {
     AVCodecContext *avctx;
@@ -92,6 +100,9 @@ enum SmkBlockTypes {
 
 /**
  * Decode local frame tree
+ *
+ * Can read SMKTREE_DECODE_MAX_RECURSION before the first check;
+ * does not overread gb on success.
  */
 static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t prefix, int length)
 {
@@ -105,6 +116,8 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
             av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
             return AVERROR_INVALIDDATA;
         }
+        if (get_bits_left(gb) < 8)
+            return AVERROR_INVALIDDATA;
         hc->bits[hc->current]    = prefix;
         hc->lengths[hc->current] = length;
         hc->values[hc->current] = get_bits(gb, 8);
@@ -122,6 +135,8 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
 
 /**
  * Decode header tree
+ *
+ * Checks before the first read, can overread by 6 * SMKTREE_BITS on success.
  */
 static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
                                   DBCtx *ctx, int length)
@@ -136,6 +151,8 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
         av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
         return AVERROR_INVALIDDATA;
     }
+    if (get_bits_left(gb) <= 0)
+        return AVERROR_INVALIDDATA;
     if(!get_bits1(gb)){ //Leaf
         int val, i1, i2;
         i1 = ctx->v1->table ? get_vlc2(gb, ctx->v1->table, SMKTREE_BITS, 3) : 0;
@@ -172,6 +189,9 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
 
 /**
  * Store large tree as FFmpeg's vlc codes
+ *
+ * Can read FFMAX(1 + SMKTREE_DECODE_MAX_RECURSION, 2 + 3 * 16) bits
+ * before the first check; can overread by 6 * SMKTREE_BITS + 1 on success.
  */
 static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int **recodes, int *last, int size)
 {
@@ -329,7 +349,7 @@ static int decode_header_trees(SmackVContext *smk) {
         if (ret < 0)
             return ret;
     }
-    if (skip == 4)
+    if (skip == 4 || get_bits_left(&gb) < 0)
         return AVERROR_INVALIDDATA;
 
     return 0;
@@ -339,7 +359,8 @@ static av_always_inline void last_reset(int *recode, int *last) {
     recode[last[0]] = recode[last[1]] = recode[last[2]] = 0;
 }
 
-/* get code and update history */
+/* Get code and update history.
+ * Checks before reading, does not overread. */
 static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *last) {
     register int *table = recode;
     int v;
@@ -545,7 +566,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     /* decode huffman trees from extradata */
-    if(avctx->extradata_size < 16){
+    if (avctx->extradata_size <= 16){
         av_log(avctx, AV_LOG_ERROR, "Extradata missing!\n");
         return AVERROR(EINVAL);
     }
