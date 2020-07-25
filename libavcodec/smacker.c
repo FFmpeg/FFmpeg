@@ -182,13 +182,12 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
  */
 static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int **recodes, int *last, int size)
 {
-    int res;
     HuffContext huff;
     HuffContext h[2] = { 0 };
     VLC vlc[2] = { { 0 } };
     int escapes[3];
     DBCtx ctx;
-    int err = 0;
+    int err;
 
     if(size >= UINT_MAX>>4){ // (((size + 3) >> 2) + 3) << 2 must not overflow
         av_log(smk->avctx, AV_LOG_ERROR, "size too large\n");
@@ -210,20 +209,17 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
                    i ? "high" : "low");
             continue;
         }
-        res = smacker_decode_tree(gb, &h[i], 0, 0);
-        if (res < 0) {
-            err = res;
+        err = smacker_decode_tree(gb, &h[i], 0, 0);
+        if (err < 0)
             goto error;
-        }
         skip_bits1(gb);
         if (h[i].current > 1) {
-            res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
+            err = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
                            INIT_VLC_DEFAULT_SIZES(h[i].lengths),
                            INIT_VLC_DEFAULT_SIZES(h[i].bits),
                            INIT_VLC_LE);
-            if(res < 0) {
+            if (err < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-                err = res;
                 goto error;
             }
         }
@@ -253,16 +249,15 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     }
     *recodes = huff.values;
 
-    res = smacker_decode_bigtree(gb, &huff, &ctx, 0);
-    if (res < 0) {
-        err = res;
+    err = smacker_decode_bigtree(gb, &huff, &ctx, 0);
+    if (err < 0)
         goto error;
-    }
     skip_bits1(gb);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
     if(ctx.last[2] == -1) ctx.last[2] = huff.current++;
 
+    err = 0;
 error:
     for (int i = 0; i < 2; i++) {
         if (vlc[i].table)
