@@ -184,7 +184,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
 {
     int res;
     HuffContext huff;
-    HuffContext tmp1, tmp2;
+    HuffContext h[2] = { 0 };
     VLC vlc[2] = { { 0 } };
     int escapes[3];
     DBCtx ctx;
@@ -195,62 +195,38 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         return AVERROR_INVALIDDATA;
     }
 
-    tmp1.length = 256;
-    tmp1.current = 0;
-    tmp1.bits = av_mallocz(256 * 4);
-    tmp1.lengths = av_mallocz(256 * sizeof(int));
-    tmp1.values = av_mallocz(256 * sizeof(int));
-
-    tmp2.length = 256;
-    tmp2.current = 0;
-    tmp2.bits = av_mallocz(256 * 4);
-    tmp2.lengths = av_mallocz(256 * sizeof(int));
-    tmp2.values = av_mallocz(256 * sizeof(int));
-    if (!tmp1.bits || !tmp1.lengths || !tmp1.values ||
-        !tmp2.bits || !tmp2.lengths || !tmp2.values) {
-        err = AVERROR(ENOMEM);
-        goto error;
-    }
-
-    if(get_bits1(gb)) {
-        res = smacker_decode_tree(gb, &tmp1, 0, 0);
+    for (int i = 0; i < 2; i++) {
+        h[i].length  = 256;
+        h[i].current = 0;
+        h[i].bits    = av_mallocz(256 * sizeof(h[i].bits[0]));
+        h[i].lengths = av_mallocz(256 * sizeof(h[i].lengths[0]));
+        h[i].values  = av_mallocz(256 * sizeof(h[i].values[0]));
+        if (!h[i].bits || !h[i].lengths || !h[i].values) {
+            err = AVERROR(ENOMEM);
+            goto error;
+        }
+        if (!get_bits1(gb)) {
+            av_log(smk->avctx, AV_LOG_ERROR, "Skipping %s bytes tree\n",
+                   i ? "high" : "low");
+            continue;
+        }
+        res = smacker_decode_tree(gb, &h[i], 0, 0);
         if (res < 0) {
             err = res;
             goto error;
         }
         skip_bits1(gb);
-        if(tmp1.current > 1) {
-            res = init_vlc(&vlc[0], SMKTREE_BITS, tmp1.length,
-                        tmp1.lengths, sizeof(int), sizeof(int),
-                        tmp1.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
+        if (h[i].current > 1) {
+            res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
+                           INIT_VLC_DEFAULT_SIZES(h[i].lengths),
+                           INIT_VLC_DEFAULT_SIZES(h[i].bits),
+                           INIT_VLC_LE);
             if(res < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
                 err = res;
                 goto error;
             }
         }
-    } else {
-        av_log(smk->avctx, AV_LOG_ERROR, "Skipping low bytes tree\n");
-    }
-    if(get_bits1(gb)){
-        res = smacker_decode_tree(gb, &tmp2, 0, 0);
-        if (res < 0) {
-            err = res;
-            goto error;
-        }
-        skip_bits1(gb);
-        if(tmp2.current > 1) {
-            res = init_vlc(&vlc[1], SMKTREE_BITS, tmp2.length,
-                        tmp2.lengths, sizeof(int), sizeof(int),
-                        tmp2.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
-            if(res < 0) {
-                av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-                err = res;
-                goto error;
-            }
-        }
-    } else {
-        av_log(smk->avctx, AV_LOG_ERROR, "Skipping high bytes tree\n");
     }
 
     escapes[0]  = get_bits(gb, 16);
@@ -264,8 +240,8 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     ctx.escapes[2] = escapes[2];
     ctx.v1 = &vlc[0];
     ctx.v2 = &vlc[1];
-    ctx.recode1 = tmp1.values;
-    ctx.recode2 = tmp2.values;
+    ctx.recode1 = h[0].values;
+    ctx.recode2 = h[1].values;
     ctx.last = last;
 
     huff.length = ((size + 3) >> 2) + 4;
@@ -293,16 +269,13 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     *recodes = huff.values;
 
 error:
-    if(vlc[0].table)
-        ff_free_vlc(&vlc[0]);
-    if(vlc[1].table)
-        ff_free_vlc(&vlc[1]);
-    av_free(tmp1.bits);
-    av_free(tmp1.lengths);
-    av_free(tmp1.values);
-    av_free(tmp2.bits);
-    av_free(tmp2.lengths);
-    av_free(tmp2.values);
+    for (int i = 0; i < 2; i++) {
+        if (vlc[i].table)
+            ff_free_vlc(&vlc[i]);
+        av_free(h[i].bits);
+        av_free(h[i].lengths);
+        av_free(h[i].values);
+    }
 
     return err;
 }
