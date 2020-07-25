@@ -40,34 +40,6 @@
 #define ALPHA_COMPAND_DC_OFFSET 256
 #define ALPHA_COMPAND_GAIN 9400
 
-enum CFHDParam {
-    SampleType       =   1,
-    SampleIndexTable =   2,
-    BitstreamMarker  =   4,
-    TransformType    =  10,
-    ChannelCount     =  12,
-    SubbandCount     =  14,
-    ImageWidth       =  20,
-    ImageHeight      =  21,
-    LowpassWidth     =  27,
-    LowpassHeight    =  28,
-    LowpassPrecision =  35,
-    HighpassWidth    =  41,
-    HighpassHeight   =  42,
-    SubbandNumber    =  48,
-    Quantization     =  53,
-    BandHeader       =  55,
-    ChannelNumber    =  62,
-    SampleFlags      =  68,
-    EncodedFormat    =  84,
-    BitsPerComponent = 101,
-    ChannelWidth     = 104,
-    ChannelHeight    = 105,
-    PrescaleShift    = 109,
-};
-
-
-
 static av_cold int cfhd_init(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
