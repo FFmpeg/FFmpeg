@@ -229,8 +229,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
                 goto error;
             }
         }
-    }
-    if (!vlc[0].table) {
+    } else {
         av_log(smk->avctx, AV_LOG_ERROR, "Skipping low bytes tree\n");
     }
     if(get_bits1(gb)){
@@ -250,8 +249,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
                 goto error;
             }
         }
-    }
-    if (!vlc[1].table) {
+    } else {
         av_log(smk->avctx, AV_LOG_ERROR, "Skipping high bytes tree\n");
     }
 
