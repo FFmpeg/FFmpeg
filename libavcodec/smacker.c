@@ -251,16 +251,17 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         err = AVERROR(ENOMEM);
         goto error;
     }
+    *recodes = huff.values;
 
     res = smacker_decode_bigtree(gb, &huff, &ctx, 0);
-    if (res < 0)
+    if (res < 0) {
         err = res;
+        goto error;
+    }
     skip_bits1(gb);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
     if(ctx.last[2] == -1) ctx.last[2] = huff.current++;
-
-    *recodes = huff.values;
 
 error:
     for (int i = 0; i < 2; i++) {
