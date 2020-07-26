@@ -254,8 +254,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     err = 0;
 error:
     for (int i = 0; i < 2; i++) {
-        if (vlc[i].table)
-            ff_free_vlc(&vlc[i]);
+        ff_free_vlc(&vlc[i]);
         av_free(h[i].bits);
         av_free(h[i].lengths);
         av_free(h[i].values);
@@ -732,8 +731,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
 error:
     for(i = 0; i < 4; i++) {
-        if(vlc[i].table)
-            ff_free_vlc(&vlc[i]);
+        ff_free_vlc(&vlc[i]);
         av_free(h[i].bits);
         av_free(h[i].lengths);
         av_free(h[i].values);
