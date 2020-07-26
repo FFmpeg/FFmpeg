@@ -1401,11 +1401,11 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                         if (!s->cdx[compno] || !s->cdy[compno])
                             return AVERROR_INVALIDDATA;
 
-                        trx0 = ff_jpeg2000_ceildiv(tile->coord[0][0], s->cdx[compno] << reducedresno);
-                        try0 = ff_jpeg2000_ceildiv(tile->coord[1][0], s->cdy[compno] << reducedresno);
-
                         if (reslevelno >= codsty->nreslevels)
                             continue;
+
+                        trx0 = ff_jpeg2000_ceildiv(tile->coord[0][0], s->cdx[compno] << reducedresno);
+                        try0 = ff_jpeg2000_ceildiv(tile->coord[1][0], s->cdy[compno] << reducedresno);
 
                         if (!(y % ((uint64_t)s->cdy[compno] << (rlevel->log2_prec_height + reducedresno)) == 0 ||
                              (y == tile->coord[1][0] && (try0 << reducedresno) % (1U << (reducedresno + rlevel->log2_prec_height)))))
