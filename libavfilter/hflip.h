@@ -27,6 +27,7 @@
 typedef struct FlipContext {
     const AVClass *class;
     int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes
+    int bayer_plus1;    ///< 1 .. not a Bayer input format, 2 .. Bayer input format
     int planewidth[4];  ///< width of each plane
     int planeheight[4]; ///< height of each plane
 
