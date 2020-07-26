@@ -209,10 +209,10 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
 void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par,
                        int for_asf, int ignore_extradata, int rgb_frame_is_flipped)
 {
-    int keep_height = (par->extradata_size >= 9 &&
-                      !memcmp(par->extradata + par->extradata_size - 9, "BottomUp", 9)) ||
-                      rgb_frame_is_flipped;
-    int extradata_size = par->extradata_size - 9*keep_height;
+    int flipped_extradata = (par->extradata_size >= 9 &&
+                            !memcmp(par->extradata + par->extradata_size - 9, "BottomUp", 9));
+    int keep_height = flipped_extradata || rgb_frame_is_flipped;
+    int extradata_size = par->extradata_size - 9*flipped_extradata;
     enum AVPixelFormat pix_fmt = par->format;
     int pal_avi;
 
