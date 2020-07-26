@@ -138,6 +138,7 @@ static int config_props(AVFilterLink *inlink)
     s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
+    s->bayer_plus1    = !!(pix_desc->flags & AV_PIX_FMT_FLAG_BAYER) + 1;
 
     nb_planes = av_pix_fmt_count_planes(inlink->format);
 
@@ -149,6 +150,7 @@ int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
     int i;
 
     for (i = 0; i < nb_planes; i++) {
+        step[i] *= s->bayer_plus1;
         switch (step[i]) {
         case 1: s->flip_line[i] = hflip_byte_c;  break;
         case 2: s->flip_line[i] = hflip_short_c; break;
@@ -180,7 +182,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     int i, plane, step;
 
     for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
-        const int width  = s->planewidth[plane];
+        const int width  = s->planewidth[plane] / s->bayer_plus1;
         const int height = s->planeheight[plane];
         const int start = (height *  job   ) / nb_jobs;
         const int end   = (height * (job+1)) / nb_jobs;
