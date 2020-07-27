@@ -80,6 +80,7 @@ typedef const struct CodedBitstreamUnitTypeDescriptor {
     size_t ref_offsets[CBS_MAX_REF_OFFSETS];
 
     void (*content_free)(void *opaque, uint8_t *data);
+    int  (*content_clone)(AVBufferRef **ref, CodedBitstreamUnit *unit);
 } CodedBitstreamUnitTypeDescriptor;
 
 typedef struct CodedBitstreamType {

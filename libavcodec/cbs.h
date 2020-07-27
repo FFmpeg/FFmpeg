@@ -400,4 +400,33 @@ void ff_cbs_delete_unit(CodedBitstreamFragment *frag,
                         int position);
 
 
+/**
+ * Make the content of a unit refcounted.
+ *
+ * If the unit is not refcounted, this will do a deep copy of the unit
+ * content to new refcounted buffers.
+ *
+ * It is not valid to call this function on a unit which does not have
+ * decomposed content.
+ */
+int ff_cbs_make_unit_refcounted(CodedBitstreamContext *ctx,
+                                CodedBitstreamUnit *unit);
+
+/**
+ * Make the content of a unit writable so that internal fields can be
+ * modified.
+ *
+ * If it is known that there are no other references to the content of
+ * the unit, does nothing and returns success.  Otherwise (including the
+ * case where the unit content is not refcounted), it does a full clone
+ * of the content (including any internal buffers) to make a new copy,
+ * and replaces the existing references inside the unit with that.
+ *
+ * It is not valid to call this function on a unit which does not have
+ * decomposed content.
+ */
+int ff_cbs_make_unit_writable(CodedBitstreamContext *ctx,
+                              CodedBitstreamUnit *unit);
+
+
 #endif /* AVCODEC_CBS_H */
