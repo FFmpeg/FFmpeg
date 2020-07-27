@@ -802,3 +802,72 @@ void ff_cbs_delete_unit(CodedBitstreamFragment *frag,
                 frag->units + position + 1,
                 (frag->nb_units - position) * sizeof(*frag->units));
 }
+
+static void cbs_default_free_unit_content(void *opaque, uint8_t *data)
+{
+    const CodedBitstreamUnitTypeDescriptor *desc = opaque;
+    if (desc->content_type == CBS_CONTENT_TYPE_INTERNAL_REFS) {
+        int i;
+        for (i = 0; i < desc->nb_ref_offsets; i++) {
+            void **ptr = (void**)(data + desc->ref_offsets[i]);
+            av_buffer_unref((AVBufferRef**)(ptr + 1));
+        }
+    }
+    av_free(data);
+}
+
+static const CodedBitstreamUnitTypeDescriptor
+    *cbs_find_unit_type_desc(CodedBitstreamContext *ctx,
+                             CodedBitstreamUnit *unit)
+{
+    const CodedBitstreamUnitTypeDescriptor *desc;
+    int i, j;
+
+    if (!ctx->codec->unit_types)
+        return NULL;
+
+    for (i = 0;; i++) {
+        desc = &ctx->codec->unit_types[i];
+        if (desc->nb_unit_types == 0)
+            break;
+        if (desc->nb_unit_types == CBS_UNIT_TYPE_RANGE) {
+            if (unit->type >= desc->unit_type_range_start &&
+                unit->type <= desc->unit_type_range_end)
+                return desc;
+        } else {
+            for (j = 0; j < desc->nb_unit_types; j++) {
+                if (desc->unit_types[j] == unit->type)
+                    return desc;
+            }
+        }
+    }
+    return NULL;
+}
+
+int ff_cbs_alloc_unit_content2(CodedBitstreamContext *ctx,
+                               CodedBitstreamUnit *unit)
+{
+    const CodedBitstreamUnitTypeDescriptor *desc;
+
+    av_assert0(!unit->content && !unit->content_ref);
+
+    desc = cbs_find_unit_type_desc(ctx, unit);
+    if (!desc)
+        return AVERROR(ENOSYS);
+
+    unit->content = av_mallocz(desc->content_size);
+    if (!unit->content)
+        return AVERROR(ENOMEM);
+
+    unit->content_ref =
+        av_buffer_create(unit->content, desc->content_size,
+                         desc->content_free ? desc->content_free
+                                            : cbs_default_free_unit_content,
+                         (void*)desc, 0);
+    if (!unit->content_ref) {
+        av_freep(&unit->content);
+        return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}

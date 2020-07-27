@@ -350,6 +350,15 @@ int ff_cbs_alloc_unit_content(CodedBitstreamUnit *unit,
                               void (*free)(void *opaque, uint8_t *content));
 
 /**
+ * Allocate a new internal content buffer matching the type of the unit.
+ *
+ * The content will be zeroed.
+ */
+int ff_cbs_alloc_unit_content2(CodedBitstreamContext *ctx,
+                               CodedBitstreamUnit *unit);
+
+
+/**
  * Allocate a new internal data buffer of the given size in the unit.
  *
  * The data buffer will have input padding.
