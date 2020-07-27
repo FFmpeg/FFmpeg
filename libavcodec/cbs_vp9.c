@@ -479,13 +479,6 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_vp9_free_frame(void *opaque, uint8_t *content)
-{
-    VP9RawFrame *frame = (VP9RawFrame*)content;
-    av_buffer_unref(&frame->data_ref);
-    av_freep(&frame);
-}
-
 static int cbs_vp9_read_unit(CodedBitstreamContext *ctx,
                              CodedBitstreamUnit *unit)
 {
@@ -497,8 +490,7 @@ static int cbs_vp9_read_unit(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
-    err = ff_cbs_alloc_unit_content(unit, sizeof(*frame),
-                                    &cbs_vp9_free_frame);
+    err = ff_cbs_alloc_unit_content2(ctx, unit);
     if (err < 0)
         return err;
     frame = unit->content;
@@ -642,10 +634,17 @@ static int cbs_vp9_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static const CodedBitstreamUnitTypeDescriptor cbs_vp9_unit_types[] = {
+    CBS_UNIT_TYPE_INTERNAL_REF(0, VP9RawFrame, data),
+    CBS_UNIT_TYPE_END_OF_LIST
+};
+
 const CodedBitstreamType ff_cbs_type_vp9 = {
     .codec_id          = AV_CODEC_ID_VP9,
 
     .priv_data_size    = sizeof(CodedBitstreamVP9Context),
+
+    .unit_types        = cbs_vp9_unit_types,
 
     .split_fragment    = &cbs_vp9_split_fragment,
     .read_unit         = &cbs_vp9_read_unit,
