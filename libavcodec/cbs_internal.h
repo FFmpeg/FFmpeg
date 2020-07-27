@@ -167,6 +167,30 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define MIN_INT_BITS(length) (-(INT64_C(1) << ((length) - 1)))
 
 
+#define CBS_UNIT_TYPE_POD(type, structure) { \
+        .nb_unit_types  = 1, \
+        .unit_types     = { type }, \
+        .content_type   = CBS_CONTENT_TYPE_POD, \
+        .content_size   = sizeof(structure), \
+    }
+#define CBS_UNIT_TYPE_INTERNAL_REF(type, structure, ref_field) { \
+        .nb_unit_types  = 1, \
+        .unit_types     = { type }, \
+        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS, \
+        .content_size   = sizeof(structure), \
+        .nb_ref_offsets = 1, \
+        .ref_offsets    = { offsetof(structure, ref_field) }, \
+    }
+#define CBS_UNIT_TYPE_COMPLEX(type, structure, free_func) { \
+        .nb_unit_types  = 1, \
+        .unit_types     = { type }, \
+        .content_type   = CBS_CONTENT_TYPE_COMPLEX, \
+        .content_size   = sizeof(structure), \
+        .content_free   = free_func, \
+    }
+#define CBS_UNIT_TYPE_END_OF_LIST { .nb_unit_types = 0 }
+
+
 extern const CodedBitstreamType ff_cbs_type_av1;
 extern const CodedBitstreamType ff_cbs_type_h264;
 extern const CodedBitstreamType ff_cbs_type_h265;
