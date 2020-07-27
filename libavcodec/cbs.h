@@ -45,8 +45,10 @@ struct CodedBitstreamType;
 /**
  * The codec-specific type of a bitstream unit.
  *
+ * AV1: obu_type
  * H.264 / AVC: nal_unit_type
  * H.265 / HEVC: nal_unit_type
+ * JPEG: marker value (without 0xff prefix)
  * MPEG-2: start code value (without prefix)
  * VP9: unused, set to zero (every unit is a frame)
  */
