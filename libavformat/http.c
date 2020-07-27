@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbool.h>
+
 #include "config.h"
 #include "config_components.h"
 
@@ -1747,6 +1749,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     read_ret = http_buf_read(h, buf, size);
     while (read_ret < 0) {
         uint64_t target = h->is_streamed ? 0 : s->off;
+        bool is_premature = s->filesize > 0 && s->off < s->filesize;
 
         if (read_ret == AVERROR_EXIT)
             break;
@@ -1754,9 +1757,13 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
         if (h->is_streamed && !s->reconnect_streamed)
             break;
 
-        if (!(s->reconnect && s->filesize > 0 && s->off < s->filesize) &&
-            !(s->reconnect_at_eof && read_ret == AVERROR_EOF))
-            break;
+        if (!(s->reconnect && is_premature) &&
+            !(s->reconnect_at_eof && read_ret == AVERROR_EOF)) {
+            if (is_premature)
+                return AVERROR(EIO);
+            else
+                break;
+        }
 
         if (reconnect_delay > s->reconnect_delay_max || (s->reconnect_max_retries >= 0 && conn_attempts > s->reconnect_max_retries) ||
             reconnect_delay_total > s->reconnect_delay_total_max)
