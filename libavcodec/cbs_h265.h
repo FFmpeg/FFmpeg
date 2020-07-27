@@ -183,9 +183,9 @@ typedef struct H265RawVUI {
 } H265RawVUI;
 
 typedef struct H265RawExtensionData {
-    uint8_t *data;
-    size_t bit_length;
+    uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       bit_length;
 } H265RawExtensionData;
 
 typedef struct H265RawVPS {
@@ -541,10 +541,10 @@ typedef struct  H265RawSliceHeader {
 typedef struct H265RawSlice {
     H265RawSliceHeader header;
 
-    uint8_t *data;
-    size_t   data_size;
-    int      data_bit_start;
+    uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       data_size;
+    int          data_bit_start;
 } H265RawSlice;
 
 
@@ -600,15 +600,15 @@ typedef struct H265RawSEIUserDataRegistered {
     uint8_t itu_t_t35_country_code;
     uint8_t itu_t_t35_country_code_extension_byte;
     uint8_t     *data;
-    size_t       data_length;
     AVBufferRef *data_ref;
+    size_t       data_length;
 } H265RawSEIUserDataRegistered;
 
 typedef struct H265RawSEIUserDataUnregistered {
     uint8_t uuid_iso_iec_11578[16];
     uint8_t     *data;
-    size_t       data_length;
     AVBufferRef *data_ref;
+    size_t       data_length;
 } H265RawSEIUserDataUnregistered;
 
 typedef struct H265RawSEIRecoveryPoint {
@@ -710,9 +710,9 @@ typedef struct H265RawSEIPayload {
             alternative_transfer_characteristics;
         H265RawSEIAlphaChannelInfo alpha_channel_info;
         struct {
-            uint8_t *data;
-            size_t data_length;
+            uint8_t     *data;
             AVBufferRef *data_ref;
+            size_t       data_length;
         } other;
     } payload;
     H265RawExtensionData extension_data;

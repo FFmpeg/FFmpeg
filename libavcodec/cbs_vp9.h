@@ -165,8 +165,8 @@ typedef struct VP9RawFrame {
     VP9RawFrameHeader header;
 
     uint8_t     *data;
-    size_t       data_size;
     AVBufferRef *data_ref;
+    size_t       data_size;
 } VP9RawFrame;
 
 typedef struct VP9RawSuperframeIndex {

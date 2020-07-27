@@ -76,9 +76,9 @@ typedef struct MPEG2RawSequenceHeader {
 typedef struct MPEG2RawUserData {
     uint8_t user_data_start_code;
 
-    uint8_t *user_data;
-    size_t user_data_length;
+    uint8_t     *user_data;
     AVBufferRef *user_data_ref;
+    size_t       user_data_length;
 } MPEG2RawUserData;
 
 typedef struct MPEG2RawSequenceExtension {
@@ -206,10 +206,10 @@ typedef struct MPEG2RawSliceHeader {
 typedef struct MPEG2RawSlice {
     MPEG2RawSliceHeader header;
 
-    uint8_t *data;
-    size_t   data_size;
-    int      data_bit_start;
+    uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       data_size;
+    int          data_bit_start;
 } MPEG2RawSlice;
 
 typedef struct MPEG2RawSequenceEnd {

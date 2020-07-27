@@ -277,16 +277,16 @@ typedef struct H264RawSEIPanScanRect {
 typedef struct H264RawSEIUserDataRegistered {
     uint8_t itu_t_t35_country_code;
     uint8_t itu_t_t35_country_code_extension_byte;
-    uint8_t *data;
-    size_t data_length;
+    uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       data_length;
 } H264RawSEIUserDataRegistered;
 
 typedef struct H264RawSEIUserDataUnregistered {
     uint8_t uuid_iso_iec_11578[16];
-    uint8_t *data;
-    size_t data_length;
+    uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       data_length;
 } H264RawSEIUserDataUnregistered;
 
 typedef struct H264RawSEIRecoveryPoint {
@@ -334,9 +334,9 @@ typedef struct H264RawSEIPayload {
         H264RawSEIAlternativeTransferCharacteristics
             alternative_transfer_characteristics;
         struct {
-            uint8_t *data;
-            size_t data_length;
+            uint8_t     *data;
             AVBufferRef *data_ref;
+            size_t       data_length;
         } other;
     } payload;
 } H264RawSEIPayload;
@@ -429,10 +429,10 @@ typedef struct H264RawSliceHeader {
 typedef struct H264RawSlice {
     H264RawSliceHeader header;
 
-    uint8_t *data;
-    size_t   data_size;
-    int      data_bit_start;
+    uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       data_size;
+    int          data_bit_start;
 } H264RawSlice;
 
 typedef struct H264RawFiller {
