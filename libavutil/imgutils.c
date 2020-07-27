@@ -150,6 +150,8 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
     ptrdiff_t linesizes1[4];
     size_t sizes[4];
 
+    memset(data     , 0, sizeof(data[0])*4);
+
     for (i = 0; i < 4; i++)
         linesizes1[i] = linesizes[i];
 
@@ -163,8 +165,6 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
             return AVERROR(EINVAL);
         ret += sizes[i];
     }
-
-    memset(data , 0, sizeof(data[0])*4);
 
     data[0] = ptr;
     for (i = 1; i < 4 && sizes[i]; i++)
