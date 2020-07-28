@@ -307,8 +307,8 @@ typedef struct VAAPIEncodeContext {
     int slice_size;
 
     // Tile encoding.
-    int tile_rows;
     int tile_cols;
+    int tile_rows;
     // Tile width of the i-th column.
     int col_width[MAX_TILE_COLS];
     // Tile height of i-th row.

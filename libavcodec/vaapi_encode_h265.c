@@ -63,9 +63,6 @@ typedef struct VAAPIEncodeH265Context {
     int level;
     int sei;
 
-    int trows;
-    int tcols;
-
     // Derived settings.
     int fixed_qp_idr;
     int fixed_qp_p;
@@ -1208,11 +1205,6 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     if (priv->qp > 0)
         ctx->explicit_qp = priv->qp;
 
-    if (priv->trows && priv->tcols) {
-        ctx->tile_rows = priv->trows;
-        ctx->tile_cols = priv->tcols;
-    }
-
     return ff_vaapi_encode_init(avctx);
 }
 
@@ -1289,8 +1281,9 @@ static const AVOption vaapi_encode_h265_options[] = {
       { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
       INT_MIN, INT_MAX, FLAGS, "sei" },
 
-    { "tiles", "Tile rows x cols",
-      OFFSET(trows), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, FLAGS },
+    { "tiles", "Tile columns x rows",
+      OFFSET(common.tile_cols), AV_OPT_TYPE_IMAGE_SIZE,
+      { .str = NULL }, 0, 0, FLAGS },
 
     { NULL },
 };

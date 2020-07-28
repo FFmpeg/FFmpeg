@@ -3264,7 +3264,7 @@ messages).
 @end table
 
 @item tiles
-Set the number of tiles to encode the input video with, as rows x columns.
+Set the number of tiles to encode the input video with, as columns x rows.
 Larger numbers allow greater parallelism in both encoding and decoding, but
 may decrease coding efficiency.
 
