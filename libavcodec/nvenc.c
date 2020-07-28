@@ -424,7 +424,7 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 
 #ifdef NVENC_HAVE_BFRAME_REF_MODE
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE);
-    if (ctx->b_ref_mode == NV_ENC_BFRAME_REF_MODE_EACH && ret != 1) {
+    if (ctx->b_ref_mode == NV_ENC_BFRAME_REF_MODE_EACH && ret != 1 && ret != 3) {
         av_log(avctx, AV_LOG_WARNING, "Each B frame as reference is not supported\n");
         return AVERROR(ENOSYS);
     } else if (ctx->b_ref_mode != NV_ENC_BFRAME_REF_MODE_DISABLED && ret == 0) {
