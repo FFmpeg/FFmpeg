@@ -1291,10 +1291,6 @@ static const AVOption vaapi_encode_h265_options[] = {
 
     { "tiles", "Tile rows x cols",
       OFFSET(trows), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, FLAGS },
-    { "tile_rows", "Number of rows for tile encoding",
-      OFFSET(trows), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
-    { "tile_cols", "Number of cols for tile encoding",
-      OFFSET(tcols), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
 
     { NULL },
 };
