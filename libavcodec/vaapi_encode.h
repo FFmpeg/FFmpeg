@@ -64,7 +64,6 @@ typedef struct VAAPIEncodeSlice {
     int             row_size;
     int             block_start;
     int             block_size;
-    void           *priv_data;
     void           *codec_slice_params;
 } VAAPIEncodeSlice;
 
