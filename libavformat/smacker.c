@@ -52,6 +52,7 @@ typedef struct SmackerContext {
     int cur_frame;
     int videoindex;
     int indexes[7];
+    int duration_size[7];
     /* current frame for demuxing */
     uint32_t frame_size;
     int flags;
@@ -197,6 +198,8 @@ static int smacker_read_header(AVFormatContext *s)
             if (par->bits_per_coded_sample == 16 &&
                 par->codec_id == AV_CODEC_ID_PCM_U8)
                 par->codec_id = AV_CODEC_ID_PCM_S16LE;
+            else
+                smk->duration_size[i] = 4;
             avpriv_set_pts_info(ast, 64, 1, par->sample_rate * par->channels
                                             * par->bits_per_coded_sample / 8);
         }
@@ -297,7 +300,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             uint32_t size;
 
             size = avio_rl32(s->pb);
-            if ((int)size < 8 || size > smk->frame_size) {
+            if ((int)size < 4 + smk->duration_size[i] || size > smk->frame_size) {
                 av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
                 ret = AVERROR_INVALIDDATA;
                 goto next_frame;
@@ -305,8 +308,11 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             smk->frame_size -= size;
             size            -= 4;
 
-            if (smk->indexes[i] < 0) {
-                avio_skip(s->pb, size);
+            if (smk->indexes[i] < 0 ||
+                s->streams[smk->indexes[i]]->discard >= AVDISCARD_ALL) {
+                smk->aud_pts[i] += smk->duration_size[i] ? avio_rl32(s->pb)
+                                                         : size;
+                avio_skip(s->pb, size - smk->duration_size[i]);
                 continue;
             }
             if ((ret = av_get_packet(s->pb, pkt, size)) != size) {
@@ -315,12 +321,18 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             pkt->stream_index = smk->indexes[i];
             pkt->pts          = smk->aud_pts[i];
-            smk->aud_pts[i]  += AV_RL32(pkt->data);
+            pkt->duration     = smk->duration_size[i] ? AV_RL32(pkt->data)
+                                                      : size;
+            smk->aud_pts[i]  += pkt->duration;
             smk->next_audio_index = i + 1;
             return 0;
         }
     }
 
+    if (s->streams[smk->videoindex]->discard >= AVDISCARD_ALL) {
+        ret = FFERROR_REDO;
+        goto next_frame;
+    }
     if (smk->frame_size >= INT_MAX/2) {
         ret = AVERROR_INVALIDDATA;
         goto next_frame;
@@ -349,6 +361,31 @@ next_frame:
     return ret;
 }
 
+static int smacker_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t timestamp, int flags)
+{
+    SmackerContext *smk = s->priv_data;
+    int64_t ret;
+
+    /* only rewinding to start is supported */
+    if (timestamp != 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Random seeks are not supported (can only seek to start).\n");
+        return AVERROR(EINVAL);
+    }
+
+    if ((ret = avio_seek(s->pb, s->internal->data_offset, SEEK_SET)) < 0)
+        return ret;
+
+    smk->cur_frame = 0;
+    smk->next_audio_index = 0;
+    smk->new_palette = 0;
+    memset(smk->pal, 0, sizeof(smk->pal));
+    memset(smk->aud_pts, 0, sizeof(smk->aud_pts));
+
+    return 0;
+}
+
 AVInputFormat ff_smacker_demuxer = {
     .name           = "smk",
     .long_name      = NULL_IF_CONFIG_SMALL("Smacker"),
@@ -356,4 +393,5 @@ AVInputFormat ff_smacker_demuxer = {
     .read_probe     = smacker_probe,
     .read_header    = smacker_read_header,
     .read_packet    = smacker_read_packet,
+    .read_seek      = smacker_read_seek,
 };
