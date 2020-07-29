@@ -137,7 +137,7 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
         return AVERROR_INVALIDDATA;
     }
 
-    if (hc->current + 1 >= hc->length) {
+    if (hc->current >= hc->length) {
         av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
         return AVERROR_INVALIDDATA;
     }
@@ -244,9 +244,9 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     ctx.recode2 = h[1].values;
     ctx.last = last;
 
-    huff.length = ((size + 3) >> 2) + 4;
+    huff.length = (size + 3) >> 2;
     huff.current = 0;
-    huff.values = av_mallocz_array(huff.length, sizeof(int));
+    huff.values = av_mallocz_array(huff.length + 3, sizeof(huff.values[0]));
     if (!huff.values) {
         err = AVERROR(ENOMEM);
         goto error;
@@ -259,12 +259,6 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
     if(ctx.last[2] == -1) ctx.last[2] = huff.current++;
-    if (ctx.last[0] >= huff.length ||
-        ctx.last[1] >= huff.length ||
-        ctx.last[2] >= huff.length) {
-        av_log(smk->avctx, AV_LOG_ERROR, "Huffman codes out of range\n");
-        err = AVERROR_INVALIDDATA;
-    }
 
     *recodes = huff.values;
 
