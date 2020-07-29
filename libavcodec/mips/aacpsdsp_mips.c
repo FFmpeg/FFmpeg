@@ -293,16 +293,17 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
     float phi_fract0 = phi_fract[0];
     float phi_fract1 = phi_fract[1];
     float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9;
+    float f1, f2, f3;
 
     float *p_delay_end = (p_delay + (len << 1));
 
     /* merged 2 loops */
+    f1 = 0.65143905753106;
+    f2 = 0.56471812200776;
+    f3 = 0.48954165955695;
     __asm__ volatile(
         ".set    push                                                    \n\t"
         ".set    noreorder                                               \n\t"
-        "li.s    %[ag0],        0.65143905753106                         \n\t"
-        "li.s    %[ag1],        0.56471812200776                         \n\t"
-        "li.s    %[ag2],        0.48954165955695                         \n\t"
         "mul.s   %[ag0],        %[ag0],        %[g_decay_slope]          \n\t"
         "mul.s   %[ag1],        %[ag1],        %[g_decay_slope]          \n\t"
         "mul.s   %[ag2],        %[ag2],        %[g_decay_slope]          \n\t"
@@ -378,10 +379,10 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
           [temp3]"=&f"(temp3), [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
           [temp6]"=&f"(temp6), [temp7]"=&f"(temp7), [temp8]"=&f"(temp8),
           [temp9]"=&f"(temp9), [p_delay]"+r"(p_delay), [p_ap_delay]"+r"(p_ap_delay),
-          [p_Q_fract]"+r"(p_Q_fract), [p_t_gain]"+r"(p_t_gain), [p_out]"+r"(p_out),
-          [ag0]"=&f"(ag0), [ag1]"=&f"(ag1), [ag2]"=&f"(ag2)
+          [p_Q_fract]"+r"(p_Q_fract), [p_t_gain]"+r"(p_t_gain), [p_out]"+r"(p_out)
         : [phi_fract0]"f"(phi_fract0), [phi_fract1]"f"(phi_fract1),
-          [p_delay_end]"r"(p_delay_end), [g_decay_slope]"f"(g_decay_slope)
+          [p_delay_end]"r"(p_delay_end), [g_decay_slope]"f"(g_decay_slope),
+          [ag0]"f"(f1), [ag1]"f"(f2), [ag2]"f"(f3)
         : "memory"
     );
 }

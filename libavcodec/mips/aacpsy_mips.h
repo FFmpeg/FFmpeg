@@ -135,11 +135,11 @@ static void psy_hp_filter_mips(const float *firbuf, float *hpfsmpl, const float 
     float coeff3 = psy_fir_coeffs[7];
     float coeff4 = psy_fir_coeffs[9];
 
+    float f1 = 32768.0;
     __asm__ volatile (
         ".set push                                          \n\t"
         ".set noreorder                                     \n\t"
 
-        "li.s   $f12,       32768                           \n\t"
         "1:                                                 \n\t"
         "lwc1   $f0,        40(%[fb])                       \n\t"
         "lwc1   $f1,        4(%[fb])                        \n\t"
@@ -203,14 +203,14 @@ static void psy_hp_filter_mips(const float *firbuf, float *hpfsmpl, const float 
         "madd.s %[sum2],    %[sum2],    $f9,    %[coeff4]   \n\t"
         "madd.s %[sum4],    %[sum4],    $f6,    %[coeff4]   \n\t"
         "madd.s %[sum3],    %[sum3],    $f3,    %[coeff4]   \n\t"
-        "mul.s  %[sum1],    %[sum1],    $f12                \n\t"
-        "mul.s  %[sum2],    %[sum2],    $f12                \n\t"
+        "mul.s  %[sum1],    %[sum1],    %[f1]               \n\t"
+        "mul.s  %[sum2],    %[sum2],    %[f1]               \n\t"
         "madd.s %[sum4],    %[sum4],    $f11,   %[coeff4]   \n\t"
         "madd.s %[sum3],    %[sum3],    $f8,    %[coeff4]   \n\t"
         "swc1   %[sum1],    0(%[hp])                        \n\t"
         "swc1   %[sum2],    4(%[hp])                        \n\t"
-        "mul.s  %[sum4],    %[sum4],    $f12                \n\t"
-        "mul.s  %[sum3],    %[sum3],    $f12                \n\t"
+        "mul.s  %[sum4],    %[sum4],    %[f1]               \n\t"
+        "mul.s  %[sum3],    %[sum3],    %[f1]               \n\t"
         "swc1   %[sum4],    12(%[hp])                       \n\t"
         "swc1   %[sum3],    8(%[hp])                        \n\t"
         "bne    %[fb],      %[fb_end],  1b                  \n\t"
@@ -223,9 +223,9 @@ static void psy_hp_filter_mips(const float *firbuf, float *hpfsmpl, const float 
           [fb]"+r"(fb), [hp]"+r"(hp)
         : [coeff0]"f"(coeff0), [coeff1]"f"(coeff1),
           [coeff2]"f"(coeff2), [coeff3]"f"(coeff3),
-          [coeff4]"f"(coeff4), [fb_end]"r"(fb_end)
+          [coeff4]"f"(coeff4), [fb_end]"r"(fb_end), [f1]"f"(f1)
         : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5", "$f6",
-          "$f7", "$f8", "$f9", "$f10", "$f11", "$f12",
+          "$f7", "$f8", "$f9", "$f10", "$f11",
           "memory"
     );
 }
