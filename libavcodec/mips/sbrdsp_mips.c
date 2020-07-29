@@ -796,9 +796,9 @@ static void sbr_hf_apply_noise_2_mips(float (*Y)[2], const float *s_m,
                                  const float *q_filt, int noise,
                                  int kx, int m_max)
 {
-    int m;
+    int m, temp0, temp1;
     float *ff_table;
-    float y0,y1, temp0, temp1, temp2, temp3, temp4, temp5;
+    float y0, y1, temp2, temp3, temp4, temp5;
 
     for (m = 0; m < m_max; m++) {
 
@@ -808,14 +808,14 @@ static void sbr_hf_apply_noise_2_mips(float (*Y)[2], const float *s_m,
 
         __asm__ volatile(
             "lwc1   %[y0],       0(%[Y1])                                  \n\t"
-            "lwc1   %[temp1],    0(%[s_m1])                                \n\t"
+            "lwc1   %[temp3],    0(%[s_m1])                                \n\t"
             "addiu  %[noise],    %[noise],              1                  \n\t"
             "andi   %[noise],    %[noise],              0x1ff              \n\t"
             "sll    %[temp0],    %[noise],              3                  \n\t"
             PTR_ADDU "%[ff_table],%[ff_sbr_noise_table],%[temp0]           \n\t"
-            "sub.s  %[y0],       %[y0],                 %[temp1]           \n\t"
-            "mfc1   %[temp3],    %[temp1]                                  \n\t"
-            "bne    %[temp3],    $0,                    1f                 \n\t"
+            "sub.s  %[y0],       %[y0],                 %[temp3]           \n\t"
+            "mfc1   %[temp1],    %[temp3]                                  \n\t"
+            "bne    %[temp1],    $0,                    1f                 \n\t"
             "lwc1   %[y1],       4(%[Y1])                                  \n\t"
             "lwc1   %[temp2],    0(%[q_filt1])                             \n\t"
             "lwc1   %[temp4],    0(%[ff_table])                            \n\t"
@@ -826,9 +826,10 @@ static void sbr_hf_apply_noise_2_mips(float (*Y)[2], const float *s_m,
         "1:                                                                \n\t"
             "swc1   %[y0],       0(%[Y1])                                  \n\t"
 
-            : [temp0]"=&r"(temp0), [ff_table]"=&r"(ff_table), [y0]"=&f"(y0),
-              [y1]"=&f"(y1), [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
-              [temp3]"=&r"(temp3), [temp4]"=&f"(temp4), [temp5]"=&f"(temp5)
+            : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1), [y0]"=&f"(y0),
+              [y1]"=&f"(y1), [ff_table]"=&r"(ff_table),
+              [temp2]"=&f"(temp2), [temp3]"=&f"(temp3),
+              [temp4]"=&f"(temp4), [temp5]"=&f"(temp5)
             : [ff_sbr_noise_table]"r"(ff_sbr_noise_table), [noise]"r"(noise),
               [Y1]"r"(Y1), [s_m1]"r"(s_m1), [q_filt1]"r"(q_filt1)
             : "memory"
