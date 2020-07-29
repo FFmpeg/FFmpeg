@@ -66,9 +66,12 @@ static inline int get_ue_golomb(GetBitContext *gb)
         return ff_ue_golomb_vlc_code[buf];
     } else {
         int log = 2 * av_log2(buf) - 31;
+
+        skip_bits_long(gb, 32 - log);
+        if (log < 7)
+            return AVERROR_INVALIDDATA;
         buf >>= log;
         buf--;
-        skip_bits_long(gb, 32 - log);
 
         return buf;
     }
@@ -113,7 +116,8 @@ static inline unsigned get_ue_golomb_long(GetBitContext *gb)
 
 /**
  * read unsigned exp golomb code, constraint to a max of 31.
- * the return value is undefined if the stored value exceeds 31.
+ * If the value encountered is not in 0..31, the return value
+ * is outside the range 0..30.
  */
 static inline int get_ue_golomb_31(GetBitContext *gb)
 {

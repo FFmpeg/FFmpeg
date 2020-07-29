@@ -676,7 +676,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
         }
         h->pred_mode_Y[pos] = predpred;
     }
-    pred_mode_uv = get_ue_golomb(gb);
+    pred_mode_uv = get_ue_golomb_31(gb);
     if (pred_mode_uv > 6) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal intra chroma pred mode\n");
         return AVERROR_INVALIDDATA;

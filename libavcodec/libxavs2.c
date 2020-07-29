@@ -223,6 +223,12 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pkt->pts = cae->packet.pts;
         pkt->dts = cae->packet.dts;
 
+        if (cae->packet.type == XAVS2_TYPE_IDR ||
+            cae->packet.type == XAVS2_TYPE_I ||
+            cae->packet.type == XAVS2_TYPE_KEYFRAME) {
+            pkt->flags |= AV_PKT_FLAG_KEY;
+        }
+
         memcpy(pkt->data, cae->packet.stream, cae->packet.len);
         pkt->size = cae->packet.len;
 

@@ -136,7 +136,7 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
     for (i = 0; i < ps->pps->num_extra_slice_header_bits; i++)
         skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
 
-    slice_type = get_ue_golomb(gb);
+    slice_type = get_ue_golomb_31(gb);
     if (!(slice_type == HEVC_SLICE_I || slice_type == HEVC_SLICE_P ||
           slice_type == HEVC_SLICE_B)) {
         av_log(avctx, AV_LOG_ERROR, "Unknown slice type: %d.\n",

@@ -181,8 +181,8 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
     /* chroma_location_info_present_flag */
     if (get_bits1(gb)) {
         /* chroma_sample_location_type_top_field */
-        sps->chroma_location = get_ue_golomb(gb) + 1;
-        get_ue_golomb(gb);  /* chroma_sample_location_type_bottom_field */
+        sps->chroma_location = get_ue_golomb_31(gb) + 1;
+        get_ue_golomb_31(gb);  /* chroma_sample_location_type_bottom_field */
     } else
         sps->chroma_location = AVCHROMA_LOC_LEFT;
 
@@ -224,12 +224,12 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
     sps->bitstream_restriction_flag = get_bits1(gb);
     if (sps->bitstream_restriction_flag) {
         get_bits1(gb);     /* motion_vectors_over_pic_boundaries_flag */
-        get_ue_golomb(gb); /* max_bytes_per_pic_denom */
-        get_ue_golomb(gb); /* max_bits_per_mb_denom */
-        get_ue_golomb(gb); /* log2_max_mv_length_horizontal */
-        get_ue_golomb(gb); /* log2_max_mv_length_vertical */
-        sps->num_reorder_frames = get_ue_golomb(gb);
-        get_ue_golomb(gb); /*max_dec_frame_buffering*/
+        get_ue_golomb_31(gb); /* max_bytes_per_pic_denom */
+        get_ue_golomb_31(gb); /* max_bits_per_mb_denom */
+        get_ue_golomb_31(gb); /* log2_max_mv_length_horizontal */
+        get_ue_golomb_31(gb); /* log2_max_mv_length_vertical */
+        sps->num_reorder_frames = get_ue_golomb_31(gb);
+        get_ue_golomb_31(gb); /*max_dec_frame_buffering*/
 
         if (get_bits_left(gb) < 0) {
             sps->num_reorder_frames         = 0;
@@ -403,8 +403,8 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                 goto fail;
             }
         }
-        sps->bit_depth_luma   = get_ue_golomb(gb) + 8;
-        sps->bit_depth_chroma = get_ue_golomb(gb) + 8;
+        sps->bit_depth_luma   = get_ue_golomb_31(gb) + 8;
+        sps->bit_depth_chroma = get_ue_golomb_31(gb) + 8;
         if (sps->bit_depth_chroma != sps->bit_depth_luma) {
             avpriv_request_sample(avctx,
                                   "Different chroma and luma bit depth");
@@ -428,7 +428,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
         sps->bit_depth_chroma  = 8;
     }
 
-    log2_max_frame_num_minus4 = get_ue_golomb(gb);
+    log2_max_frame_num_minus4 = get_ue_golomb_31(gb);
     if (log2_max_frame_num_minus4 < MIN_LOG2_MAX_FRAME_NUM - 4 ||
         log2_max_frame_num_minus4 > MAX_LOG2_MAX_FRAME_NUM - 4) {
         av_log(avctx, AV_LOG_ERROR,
@@ -441,7 +441,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     sps->poc_type = get_ue_golomb_31(gb);
 
     if (sps->poc_type == 0) { // FIXME #define
-        unsigned t = get_ue_golomb(gb);
+        unsigned t = get_ue_golomb_31(gb);
         if (t>12) {
             av_log(avctx, AV_LOG_ERROR, "log2_max_poc_lsb (%d) is out of range\n", t);
             goto fail;
