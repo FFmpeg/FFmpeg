@@ -1,3 +1,48 @@
+Testing ff_url_decompose:
+
+http://user:pass@ffmpeg:8080/dir/file?query#fragment =>
+  scheme: http:
+  authority: //
+  userinfo: user:pass@
+  host: ffmpeg
+  port: :8080
+  path: /dir/file
+  query: ?query
+  fragment: #fragment
+
+http://ffmpeg/dir/file =>
+  scheme: http:
+  authority: //
+  host: ffmpeg
+  path: /dir/file
+
+file:///dev/null =>
+  scheme: file:
+  authority: //
+  path: /dev/null
+
+file:/dev/null =>
+  scheme: file:
+  path: /dev/null
+
+http://[::1]/dev/null =>
+  scheme: http:
+  authority: //
+  host: [::1]
+  path: /dev/null
+
+http://[::1]:8080/dev/null =>
+  scheme: http:
+  authority: //
+  host: [::1]
+  port: :8080
+  path: /dev/null
+
+//ffmpeg/dev/null =>
+  authority: //
+  host: ffmpeg
+  path: /dev/null
+
 Testing ff_make_absolute_url:
                                             (null) baz                  => baz
                                           /foo/bar baz                  => /foo/baz

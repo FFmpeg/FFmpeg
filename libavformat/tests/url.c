@@ -21,6 +21,31 @@
 #include "libavformat/url.h"
 #include "libavformat/avformat.h"
 
+static void test_decompose(const char *url)
+{
+    URLComponents uc;
+    int len, ret;
+
+    printf("%s =>\n", url);
+    ret = ff_url_decompose(&uc, url, NULL);
+    if (ret < 0) {
+        printf("  error: %s\n", av_err2str(ret));
+        return;
+    }
+#define PRINT_COMPONENT(comp) \
+    len = uc.url_component_end_##comp - uc.comp; \
+    if (len) printf("  "#comp": %.*s\n", len, uc.comp);
+    PRINT_COMPONENT(scheme);
+    PRINT_COMPONENT(authority);
+    PRINT_COMPONENT(userinfo);
+    PRINT_COMPONENT(host);
+    PRINT_COMPONENT(port);
+    PRINT_COMPONENT(path);
+    PRINT_COMPONENT(query);
+    PRINT_COMPONENT(fragment);
+    printf("\n");
+}
+
 static void test(const char *base, const char *rel)
 {
     char buf[200], buf2[200];
@@ -51,6 +76,15 @@ static void test2(const char *url)
 
 int main(void)
 {
+    printf("Testing ff_url_decompose:\n\n");
+    test_decompose("http://user:pass@ffmpeg:8080/dir/file?query#fragment");
+    test_decompose("http://ffmpeg/dir/file");
+    test_decompose("file:///dev/null");
+    test_decompose("file:/dev/null");
+    test_decompose("http://[::1]/dev/null");
+    test_decompose("http://[::1]:8080/dev/null");
+    test_decompose("//ffmpeg/dev/null");
+
     printf("Testing ff_make_absolute_url:\n");
     test(NULL, "baz");
     test("/foo/bar", "baz");
