@@ -298,7 +298,7 @@ static int put_siz(Jpeg2000EncoderContext *s)
     bytestream_put_be16(&s->buf, s->ncomponents); // CSiz
 
     for (i = 0; i < s->ncomponents; i++){ // Ssiz_i XRsiz_i, YRsiz_i
-        bytestream_put_byte(&s->buf, 7);
+        bytestream_put_byte(&s->buf, s->cbps[i] - 1);
         bytestream_put_byte(&s->buf, i?1<<s->chroma_shift[0]:1);
         bytestream_put_byte(&s->buf, i?1<<s->chroma_shift[1]:1);
     }
@@ -447,43 +447,49 @@ static int init_tiles(Jpeg2000EncoderContext *s)
     return 0;
 }
 
-static void copy_frame(Jpeg2000EncoderContext *s)
-{
-    int tileno, compno, i, y, x;
-    uint8_t *line;
-    for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
-        Jpeg2000Tile *tile = s->tile + tileno;
-        if (s->planar){
-            for (compno = 0; compno < s->ncomponents; compno++){
-                Jpeg2000Component *comp = tile->comp + compno;
-                int *dst = comp->i_data;
-                line = s->picture->data[compno]
-                       + comp->coord[1][0] * s->picture->linesize[compno]
-                       + comp->coord[0][0];
-                for (y = comp->coord[1][0]; y < comp->coord[1][1]; y++){
-                    uint8_t *ptr = line;
-                    for (x = comp->coord[0][0]; x < comp->coord[0][1]; x++)
-                        *dst++ = *ptr++ - (1 << 7);
-                    line += s->picture->linesize[compno];
-                }
-            }
-        } else{
-            line = s->picture->data[0] + tile->comp[0].coord[1][0] * s->picture->linesize[0]
-                   + tile->comp[0].coord[0][0] * s->ncomponents;
-
-            i = 0;
-            for (y = tile->comp[0].coord[1][0]; y < tile->comp[0].coord[1][1]; y++){
-                uint8_t *ptr = line;
-                for (x = tile->comp[0].coord[0][0]; x < tile->comp[0].coord[0][1]; x++, i++){
-                    for (compno = 0; compno < s->ncomponents; compno++){
-                        tile->comp[compno].i_data[i] = *ptr++  - (1 << 7);
-                    }
-                }
-                line += s->picture->linesize[0];
-            }
-        }
+#define COPY_FRAME(D, PIXEL)                                                                                                \
+    static void copy_frame_ ##D(Jpeg2000EncoderContext *s)                                                                  \
+    {                                                                                                                       \
+        int tileno, compno, i, y, x;                                                                                        \
+        PIXEL *line;                                                                                                        \
+        for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){                                                   \
+            Jpeg2000Tile *tile = s->tile + tileno;                                                                          \
+            if (s->planar){                                                                                                 \
+                for (compno = 0; compno < s->ncomponents; compno++){                                                        \
+                    Jpeg2000Component *comp = tile->comp + compno;                                                          \
+                    int *dst = comp->i_data;                                                                                \
+                    int cbps = s->cbps[compno];                                                                             \
+                    line = (PIXEL*)s->picture->data[compno]                                                                 \
+                           + comp->coord[1][0] * (s->picture->linesize[compno] / sizeof(PIXEL))                             \
+                           + comp->coord[0][0];                                                                             \
+                    for (y = comp->coord[1][0]; y < comp->coord[1][1]; y++){                                                \
+                        PIXEL *ptr = line;                                                                                  \
+                        for (x = comp->coord[0][0]; x < comp->coord[0][1]; x++)                                             \
+                            *dst++ = *ptr++ - (1 << (cbps - 1));                                                            \
+                        line += s->picture->linesize[compno] / sizeof(PIXEL);                                               \
+                    }                                                                                                       \
+                }                                                                                                           \
+            } else{                                                                                                         \
+                line = (PIXEL*)s->picture->data[0] + tile->comp[0].coord[1][0] * (s->picture->linesize[0] / sizeof(PIXEL))  \
+                       + tile->comp[0].coord[0][0] * s->ncomponents;                                                        \
+                                                                                                                            \
+                i = 0;                                                                                                      \
+                for (y = tile->comp[0].coord[1][0]; y < tile->comp[0].coord[1][1]; y++){                                    \
+                    PIXEL *ptr = line;                                                                                      \
+                    for (x = tile->comp[0].coord[0][0]; x < tile->comp[0].coord[0][1]; x++, i++){                           \
+                        for (compno = 0; compno < s->ncomponents; compno++){                                                \
+                            int cbps = s->cbps[compno];                                                                     \
+                            tile->comp[compno].i_data[i] = *ptr++  - (1 << (cbps - 1));                                     \
+                        }                                                                                                   \
+                    }                                                                                                       \
+                    line += s->picture->linesize[0] / sizeof(PIXEL);                                                        \
+                }                                                                                                           \
+            }                                                                                                               \
+        }                                                                                                                   \
     }
-}
+
+COPY_FRAME(8, uint8_t)
+COPY_FRAME(16, uint16_t)
 
 static void init_quantization(Jpeg2000EncoderContext *s)
 {
@@ -1015,7 +1021,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     s->lambda = s->picture->quality * LAMBDA_SCALE;
 
-    copy_frame(s);
+    if (avctx->pix_fmt == AV_PIX_FMT_BGR48 || avctx->pix_fmt == AV_PIX_FMT_GRAY16)
+        copy_frame_16(s);
+    else
+        copy_frame_8(s);
+
     reinit(s);
 
     if (s->format == CODEC_JP2) {
@@ -1180,12 +1190,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->width = avctx->width;
     s->height = avctx->height;
 
-    for (i = 0; i < 3; i++)
-        s->cbps[i] = 8;
+    for (i = 0; i < 3; i++) {
+        if (avctx->pix_fmt == AV_PIX_FMT_GRAY16 || avctx->pix_fmt == AV_PIX_FMT_RGB48)
+            s->cbps[i] = 16;
+        else
+            s->cbps[i] = 8;
+    }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_RGB24){
+    if (avctx->pix_fmt == AV_PIX_FMT_RGB24 || avctx->pix_fmt == AV_PIX_FMT_RGB48){
         s->ncomponents = 3;
-    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 || avctx->pix_fmt == AV_PIX_FMT_PAL8){
+    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 || avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_GRAY16){
         s->ncomponents = 1;
     } else{ // planar YUV
         s->planar = 1;
@@ -1255,6 +1269,7 @@ AVCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_PAL8,
+        AV_PIX_FMT_RGB48, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     },
     .priv_class     = &j2k_class,
