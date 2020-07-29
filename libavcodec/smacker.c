@@ -653,18 +653,15 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
             goto error;
         }
         skip_bits1(&gb);
-        if (smacker_decode_tree(&gb, &h[i], 0, 0) < 0) {
-            ret = AVERROR_INVALIDDATA;
+        if ((ret = smacker_decode_tree(&gb, &h[i], 0, 0)) < 0)
             goto error;
-        }
         skip_bits1(&gb);
         if(h[i].current > 1) {
-            res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
+            ret = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
                     h[i].lengths, sizeof(int), sizeof(int),
                     h[i].bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
-            if(res < 0) {
+            if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-                ret = AVERROR_INVALIDDATA;
                 goto error;
             }
         }
