@@ -312,8 +312,8 @@ int ff_url_join(char *str, int size, const char *proto,
  * @param base the base url, may be equal to buf.
  * @param rel the new url, which is interpreted relative to base
  */
-void ff_make_absolute_url(char *buf, int size, const char *base,
-                          const char *rel);
+int ff_make_absolute_url(char *buf, int size, const char *base,
+                         const char *rel);
 
 /**
  * Allocate directory entry with default values.
