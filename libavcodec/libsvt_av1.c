@@ -67,8 +67,6 @@ typedef struct SvtContext {
     int scd;
     int qp;
 
-    int forced_idr;
-
     int tier;
 
     int tile_columns;
@@ -212,7 +210,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->min_qp_allowed       = avctx->qmin;
     }
 
-    param->intra_refresh_type       = svt_enc->forced_idr + 1;
+    param->intra_refresh_type       = 2; /* Real keyframes only */
 
     if (svt_enc->la_depth >= 0)
         param->look_ahead_distance  = svt_enc->la_depth;
@@ -537,9 +535,6 @@ static const AVOption options[] = {
 
     { "sc_detection", "Scene change detection", OFFSET(scd),
       AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-
-    { "forced-idr", "If forcing keyframes, force them as IDR frames", OFFSET(forced_idr),
-      AV_OPT_TYPE_BOOL,   { .i64 = 1 }, 0, 1, VE },
 
     { "tile-columns", "Log2 of number of tile columns to use", OFFSET(tile_columns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, VE},
     { "tile-rows", "Log2 of number of tile rows to use", OFFSET(tile_rows), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 6, VE},
