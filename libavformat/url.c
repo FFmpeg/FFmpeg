@@ -27,6 +27,7 @@
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 
 /**
@@ -76,6 +77,76 @@ int ff_url_join(char *str, int size, const char *proto,
         va_end(vl);
     }
     return strlen(str);
+}
+
+static const char *find_delim(const char *delim, const char *cur, const char *end)
+{
+    while (cur < end && !strchr(delim, *cur))
+        cur++;
+    return cur;
+}
+
+int ff_url_decompose(URLComponents *uc, const char *url, const char *end)
+{
+    const char *cur, *aend, *p;
+
+    av_assert0(url);
+    if (!end)
+        end = url + strlen(url);
+    cur = uc->url = url;
+
+    /* scheme */
+    uc->scheme = cur;
+    p = find_delim(":/", cur, end); /* lavf "schemes" can contain options */
+    if (*p == ':')
+        cur = p + 1;
+
+    /* authority */
+    uc->authority = cur;
+    if (end - cur >= 2 && cur[0] == '/' && cur[1] == '/') {
+        cur += 2;
+        aend = find_delim("/?#", cur, end);
+
+        /* userinfo */
+        uc->userinfo = cur;
+        p = find_delim("@", cur, aend);
+        if (*p == '@')
+            cur = p + 1;
+
+        /* host */
+        uc->host = cur;
+        if (*cur == '[') { /* hello IPv6, thanks for using colons! */
+            p = find_delim("]", cur, aend);
+            if (*p != ']')
+                return AVERROR(EINVAL);
+            if (p + 1 < aend && p[1] != ':')
+                return AVERROR(EINVAL);
+            cur = p + 1;
+        } else {
+            cur = find_delim(":", cur, aend);
+        }
+
+        /* port */
+        uc->port = cur;
+        cur = aend;
+    } else {
+        uc->userinfo = uc->host = uc->port = cur;
+    }
+
+    /* path */
+    uc->path = cur;
+    cur = find_delim("?#", cur, end);
+
+    /* query */
+    uc->query = cur;
+    if (*cur == '?')
+        cur = find_delim("#", cur, end);
+
+    /* fragment */
+    uc->fragment = cur;
+
+    uc->end = end;
+    return 0;
 }
 
 static void trim_double_dot_url(char *buf, const char *rel, int size)
