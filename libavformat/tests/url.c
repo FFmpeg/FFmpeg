@@ -49,7 +49,13 @@ static void test_decompose(const char *url)
 static void test(const char *base, const char *rel)
 {
     char buf[200], buf2[200];
-    ff_make_absolute_url(buf, sizeof(buf), base, rel);
+    int ret;
+
+    ret = ff_make_absolute_url(buf, sizeof(buf), base, rel);
+    if (ret < 0) {
+        printf("%50s %-20s => error %s\n", base, rel, av_err2str(ret));
+        return;
+    }
     printf("%50s %-20s => %s\n", base, rel, buf);
     if (base) {
         /* Test in-buffer replacement */
@@ -104,6 +110,58 @@ int main(void)
     test("http://server/foo/bar", "/../../../../../other/url");
     test("http://server/foo/bar", "/test/../../../../../other/url");
     test("http://server/foo/bar", "/test/../../test/../../../other/url");
+    test("http://server/foo/bar", "file:../baz/qux");
+    test("http://server/foo//bar/", "../../");
+    test("file:../tmp/foo", "../bar/");
+    test("file:../tmp/foo", "file:../bar/");
+    test("http://server/foo/bar", "./");
+    test("http://server/foo/bar", ".dotfile");
+    test("http://server/foo/bar", "..doubledotfile");
+    test("http://server/foo/bar", "double..dotfile");
+    test("http://server/foo/bar", "doubledotfile..");
+
+    /* From https://tools.ietf.org/html/rfc3986#section-5.4 */
+    test("http://a/b/c/d;p?q", "g:h");           // g:h
+    test("http://a/b/c/d;p?q", "g");             // http://a/b/c/g
+    test("http://a/b/c/d;p?q", "./g");           // http://a/b/c/g
+    test("http://a/b/c/d;p?q", "g/");            // http://a/b/c/g/
+    test("http://a/b/c/d;p?q", "/g");            // http://a/g
+    test("http://a/b/c/d;p?q", "//g");           // http://g
+    test("http://a/b/c/d;p?q", "?y");            // http://a/b/c/d;p?y
+    test("http://a/b/c/d;p?q", "g?y");           // http://a/b/c/g?y
+    test("http://a/b/c/d;p?q", "#s");            // http://a/b/c/d;p?q#s
+    test("http://a/b/c/d;p?q", "g#s");           // http://a/b/c/g#s
+    test("http://a/b/c/d;p?q", "g?y#s");         // http://a/b/c/g?y#s
+    test("http://a/b/c/d;p?q", ";x");            // http://a/b/c/;x
+    test("http://a/b/c/d;p?q", "g;x");           // http://a/b/c/g;x
+    test("http://a/b/c/d;p?q", "g;x?y#s");       // http://a/b/c/g;x?y#s
+    test("http://a/b/c/d;p?q", "");              // http://a/b/c/d;p?q
+    test("http://a/b/c/d;p?q", ".");             // http://a/b/c/
+    test("http://a/b/c/d;p?q", "./");            // http://a/b/c/
+    test("http://a/b/c/d;p?q", "..");            // http://a/b/
+    test("http://a/b/c/d;p?q", "../");           // http://a/b/
+    test("http://a/b/c/d;p?q", "../g");          // http://a/b/g
+    test("http://a/b/c/d;p?q", "../..");         // http://a/
+    test("http://a/b/c/d;p?q", "../../");        // http://a/
+    test("http://a/b/c/d;p?q", "../../g");       // http://a/g
+    test("http://a/b/c/d;p?q", "../../../g");    // http://a/g
+    test("http://a/b/c/d;p?q", "../../../../g"); // http://a/g
+    test("http://a/b/c/d;p?q", "/./g");          // http://a/g
+    test("http://a/b/c/d;p?q", "/../g");         // http://a/g
+    test("http://a/b/c/d;p?q", "g.");            // http://a/b/c/g.
+    test("http://a/b/c/d;p?q", ".g");            // http://a/b/c/.g
+    test("http://a/b/c/d;p?q", "g..");           // http://a/b/c/g..
+    test("http://a/b/c/d;p?q", "..g");           // http://a/b/c/..g
+    test("http://a/b/c/d;p?q", "./../g");        // http://a/b/g
+    test("http://a/b/c/d;p?q", "./g/.");         // http://a/b/c/g/
+    test("http://a/b/c/d;p?q", "g/./h");         // http://a/b/c/g/h
+    test("http://a/b/c/d;p?q", "g/../h");        // http://a/b/c/h
+    test("http://a/b/c/d;p?q", "g;x=1/./y");     // http://a/b/c/g;x=1/y
+    test("http://a/b/c/d;p?q", "g;x=1/../y");    // http://a/b/c/y
+    test("http://a/b/c/d;p?q", "g?y/./x");       // http://a/b/c/g?y/./x
+    test("http://a/b/c/d;p?q", "g?y/../x");      // http://a/b/c/g?y/../x
+    test("http://a/b/c/d;p?q", "g#s/./x");       // http://a/b/c/g#s/./x
+    test("http://a/b/c/d;p?q", "g#s/../x");      // http://a/b/c/g#s/../x
 
     printf("\nTesting av_url_split:\n");
     test2("/foo/bar");
