@@ -26,7 +26,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
-#define APM_FILE_HEADER_SIZE    18
+#define APM_FILE_HEADER_SIZE    20
 #define APM_FILE_EXTRADATA_SIZE 80
 #define APM_EXTRADATA_SIZE      28
 
@@ -287,7 +287,7 @@ static int apm_write_trailer(AVFormatContext *s)
     int64_t file_size, data_size;
 
     file_size = avio_tell(s->pb);
-    data_size = file_size - (APM_FILE_HEADER_SIZE + 2 + APM_FILE_EXTRADATA_SIZE);
+    data_size = file_size - (APM_FILE_HEADER_SIZE + APM_FILE_EXTRADATA_SIZE);
 
     if (file_size >= UINT32_MAX) {
         av_log(s, AV_LOG_ERROR,
