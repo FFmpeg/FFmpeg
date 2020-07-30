@@ -121,7 +121,7 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
         r = smacker_decode_tree(gb, hc, prefix, length);
         if(r)
             return r;
-        return smacker_decode_tree(gb, hc, prefix | (1 << (length - 1)), length);
+        return smacker_decode_tree(gb, hc, prefix | (1U << (length - 1)), length);
     }
 }
 
