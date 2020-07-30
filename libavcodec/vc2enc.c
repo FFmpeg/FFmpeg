@@ -780,7 +780,6 @@ static int encode_slices(VC2EncContext *s)
     int slice_x, slice_y, skip = 0;
     SliceArgs *enc_args = s->slice_args;
 
-    avpriv_align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
     buf = put_bits_ptr(&s->pb);
 

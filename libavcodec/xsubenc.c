@@ -206,7 +206,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     // Enforce total height to be a multiple of 2
     if (h->rects[0]->h & 1) {
         put_xsub_rle(&pb, h->rects[0]->w, PADDING_COLOR);
-        avpriv_align_put_bits(&pb);
     }
 
     flush_put_bits(&pb);

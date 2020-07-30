@@ -559,7 +559,6 @@ static int binary_export(AVFilterContext *ctx, StreamContext *sc, const char* fi
         }
     }
 
-    avpriv_align_put_bits(&buf);
     flush_put_bits(&buf);
     fwrite(buffer, 1, put_bits_count(&buf)/8, f);
     fclose(f);
