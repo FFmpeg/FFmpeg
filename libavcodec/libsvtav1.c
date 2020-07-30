@@ -489,7 +489,7 @@ static const AVOption options[] = {
     { "preset", "Encoding preset [0, 8]",
       OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = MAX_ENC_PRESET }, 0, MAX_ENC_PRESET, VE },
 
-    { "tier", "Set tier (general_tier_flag)", OFFSET(tier),
+    { "tier", "Set operating point tier", OFFSET(tier),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE, "tier" },
         { "main", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, VE, "tier" },
         { "high", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "tier" },
@@ -526,11 +526,11 @@ static const AVOption options[] = {
 
     { "rc", "Bit rate control mode", OFFSET(rc_mode),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 3, VE , "rc"},
-        { "cqp", "Const Quantization Parameter", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "rc" },
+        { "cqp", "Constant quantizer", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "rc" },
         { "vbr", "Variable Bit Rate, use a target bitrate for the entire stream", 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "rc" },
         { "cvbr", "Constrained Variable Bit Rate, use a target bitrate for each GOP", 0, AV_OPT_TYPE_CONST,{ .i64 = 2 },  INT_MIN, INT_MAX, VE, "rc" },
 
-    { "qp", "QP value for intra frames", OFFSET(qp),
+    { "qp", "Quantizer to use with cqp rate control mode", OFFSET(qp),
       AV_OPT_TYPE_INT, { .i64 = 50 }, 0, 63, VE },
 
     { "sc_detection", "Scene change detection", OFFSET(scd),
