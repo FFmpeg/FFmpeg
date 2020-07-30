@@ -543,7 +543,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass class = {
-    .class_name = "libsvt_av1",
+    .class_name = "libsvtav1",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -557,8 +557,8 @@ static const AVCodecDefault eb_enc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libsvt_av1_encoder = {
-    .name           = "libsvt_av1",
+AVCodec ff_libsvtav1_encoder = {
+    .name           = "libsvtav1",
     .long_name      = NULL_IF_CONFIG_SMALL("SVT-AV1(Scalable Video Technology for AV1) encoder"),
     .priv_data_size = sizeof(SvtContext),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -573,5 +573,5 @@ AVCodec ff_libsvt_av1_encoder = {
     .priv_class     = &class,
     .defaults       = eb_enc_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name   = "libsvt_av1",
+    .wrapper_name   = "libsvtav1",
 };
