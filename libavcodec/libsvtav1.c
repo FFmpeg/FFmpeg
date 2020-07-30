@@ -536,8 +536,8 @@ static const AVOption options[] = {
     { "sc_detection", "Scene change detection", OFFSET(scd),
       AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
 
-    { "tile-columns", "Log2 of number of tile columns to use", OFFSET(tile_columns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, VE},
-    { "tile-rows", "Log2 of number of tile rows to use", OFFSET(tile_rows), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 6, VE},
+    { "tile_columns", "Log2 of number of tile columns to use", OFFSET(tile_columns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, VE},
+    { "tile_rows", "Log2 of number of tile rows to use", OFFSET(tile_rows), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 6, VE},
 
     {NULL},
 };
