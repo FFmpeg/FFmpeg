@@ -263,6 +263,14 @@ Go to @url{https://github.com/xiph/rav1e/} and follow the instructions to build
 the C library. To enable using rav1e in FFmpeg, pass @code{--enable-librav1e}
 to @file{./configure}.
 
+@section SVT-AV1
+
+FFmpeg can make use of the Scalable Video Technology for AV1 library for AV1 encoding.
+
+Go to @url{https://github.com/OpenVisualCloud/SVT-AV1/} and follow the instructions
+for installing the library. Then pass @code{--enable-libsvtav1} to configure to
+enable it.
+
 @section TwoLAME
 
 FFmpeg can make use of the TwoLAME library for MP2 encoding.
@@ -822,7 +830,7 @@ following image formats are supported:
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
 @item AV1                    @tab  E  @tab  E
-    @tab Supported through external libraries libaom, libdav1d and librav1e
+    @tab Supported through external libraries libaom, libdav1d, librav1e and libsvtav1
 @item Avid 1:1 10-bit RGB Packer  @tab  X  @tab  X
     @tab fourcc: AVrp
 @item AVS (Audio Video Standard) video  @tab     @tab  X

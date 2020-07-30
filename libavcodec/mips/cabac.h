@@ -109,7 +109,7 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
       [lps_off]"i"(H264_LPS_RANGE_OFFSET),
       [mlps_off]"i"(H264_MLPS_STATE_OFFSET + 128),
       [norm_off]"i"(H264_NORM_SHIFT_OFFSET),
-      [cabac_mask]"i"(CABAC_MASK)
+      [cabac_mask]"r"(CABAC_MASK)
     : "memory"
     );
 

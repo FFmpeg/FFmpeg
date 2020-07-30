@@ -71,6 +71,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
     float temp, temp1, temp3, temp4;
     FFTComplex * tmpz_n2, * tmpz_n34, * tmpz_n4;
     FFTComplex * tmpz_n2_i, * tmpz_n34_i, * tmpz_n4_i, * tmpz_i;
+    float f1 = 0.7071067812;
 
     num_transforms = (21845 >> (17 - s->nbits)) | 1;
 
@@ -148,7 +149,6 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
             "swc1  %[pom2], 4(%[tmpz])                      \n\t"  // tmpz[0].im = tmpz[0].im + tmp6;
             "lwc1  %[pom1], 16(%[tmpz])                     \n\t"
             "lwc1  %[pom3], 20(%[tmpz])                     \n\t"
-            "li.s  %[pom],  0.7071067812                    \n\t"  // float pom = 0.7071067812f;
             "add.s %[temp1],%[tmp1],    %[tmp2]             \n\t"
             "sub.s %[temp], %[pom1],    %[tmp8]             \n\t"
             "add.s %[pom2], %[pom3],    %[tmp7]             \n\t"
@@ -159,10 +159,10 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
             "add.s %[pom1], %[pom1],    %[tmp8]             \n\t"
             "sub.s %[pom3], %[pom3],    %[tmp7]             \n\t"
             "add.s %[tmp3], %[tmp3],    %[tmp4]             \n\t"
-            "mul.s %[tmp5], %[pom],     %[temp1]            \n\t"  // tmp5 = pom * (tmp1 + tmp2);
-            "mul.s %[tmp7], %[pom],     %[temp3]            \n\t"  // tmp7 = pom * (tmp3 - tmp4);
-            "mul.s %[tmp6], %[pom],     %[temp4]            \n\t"  // tmp6 = pom * (tmp2 - tmp1);
-            "mul.s %[tmp8], %[pom],     %[tmp3]             \n\t"  // tmp8 = pom * (tmp3 + tmp4);
+            "mul.s %[tmp5], %[f1],      %[temp1]            \n\t"  // tmp5 = pom * (tmp1 + tmp2);
+            "mul.s %[tmp7], %[f1],      %[temp3]            \n\t"  // tmp7 = pom * (tmp3 - tmp4);
+            "mul.s %[tmp6], %[f1],      %[temp4]            \n\t"  // tmp6 = pom * (tmp2 - tmp1);
+            "mul.s %[tmp8], %[f1],      %[tmp3]             \n\t"  // tmp8 = pom * (tmp3 + tmp4);
             "swc1  %[pom1], 16(%[tmpz])                     \n\t"  // tmpz[2].re = tmpz[2].re + tmp8;
             "swc1  %[pom3], 20(%[tmpz])                     \n\t"  // tmpz[2].im = tmpz[2].im - tmp7;
             "add.s %[tmp1], %[tmp5],    %[tmp7]             \n\t"  // tmp1 = tmp5 + tmp7;
@@ -193,7 +193,7 @@ static void ff_fft_calc_mips(FFTContext *s, FFTComplex *z)
               [tmp3]"=&f"(tmp3), [tmp2]"=&f"(tmp2), [tmp4]"=&f"(tmp4), [tmp5]"=&f"(tmp5),  [tmp7]"=&f"(tmp7),
               [tmp6]"=&f"(tmp6), [tmp8]"=&f"(tmp8), [pom3]"=&f"(pom3),[temp]"=&f"(temp), [temp1]"=&f"(temp1),
               [temp3]"=&f"(temp3), [temp4]"=&f"(temp4)
-            : [tmpz]"r"(tmpz)
+            : [tmpz]"r"(tmpz), [f1]"f"(f1)
             : "memory"
         );
     }

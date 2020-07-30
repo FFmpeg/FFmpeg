@@ -228,6 +228,7 @@ static void init_options(OptionsContext *o)
     o->limit_filesize = UINT64_MAX;
     o->chapters_input_file = INT_MAX;
     o->accurate_seek  = 1;
+    o->thread_queue_size = -1;
 }
 
 static int show_hwaccels(void *optctx, const char *opt, const char *arg)
@@ -1270,7 +1271,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->duration = 0;
     f->time_base = (AVRational){ 1, 1 };
 #if HAVE_THREADS
-    f->thread_queue_size = o->thread_queue_size > 0 ? o->thread_queue_size : 8;
+    f->thread_queue_size = o->thread_queue_size;
 #endif
 
     /* check if all codec options have been used */

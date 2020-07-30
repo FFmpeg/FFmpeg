@@ -137,7 +137,7 @@ static int pgx_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         bpp = 8;
     } else if (depth <= 16) {
-        avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
+        avctx->pix_fmt = AV_PIX_FMT_GRAY16;
         bpp = 16;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Maximum depth of 16 bits supported.\n");
