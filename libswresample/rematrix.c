@@ -88,7 +88,7 @@ static int even(int64_t layout){
     return 0;
 }
 
-static int clean_layout(void *s, int64_t layout){
+static int64_t clean_layout(void *s, int64_t layout){
     if(layout && layout != AV_CH_FRONT_CENTER && !(layout&(layout-1))) {
         char buf[128];
         av_get_channel_layout_string(buf, sizeof(buf), -1, layout);
