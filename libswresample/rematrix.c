@@ -141,6 +141,16 @@ av_cold int swr_build_matrix(uint64_t in_ch_layout_param, uint64_t out_ch_layout
     )
         in_ch_layout = AV_CH_LAYOUT_STEREO;
 
+    if (in_ch_layout == AV_CH_LAYOUT_22POINT2 &&
+        out_ch_layout != AV_CH_LAYOUT_22POINT2) {
+        in_ch_layout = AV_CH_LAYOUT_5POINT1_BACK;
+        av_get_channel_layout_string(buf, sizeof(buf), -1, in_ch_layout);
+        av_log(log_context, AV_LOG_WARNING,
+               "Full-on remixing from 22.2 has not yet been implemented! "
+               "Processing the input as '%s'\n",
+               buf);
+    }
+
     if(!sane_layout(in_ch_layout)){
         av_get_channel_layout_string(buf, sizeof(buf), -1, in_ch_layout_param);
         av_log(log_context, AV_LOG_ERROR, "Input channel layout '%s' is not supported\n", buf);
