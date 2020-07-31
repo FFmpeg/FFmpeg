@@ -1030,7 +1030,7 @@ static int pack_bitstream(G723_1_ChannelContext *p, AVPacket *avpkt)
     put_bits(&pb, 1, p->subframe[3].grid_index);
 
     if (p->cur_rate == RATE_6300) {
-        skip_put_bits(&pb, 1); /* reserved bit */
+        put_bits(&pb, 1, 0); /* reserved bit */
 
         /* Write 13 bit combined position index */
         temp = (p->subframe[0].pulse_pos >> 16) * 810 +
