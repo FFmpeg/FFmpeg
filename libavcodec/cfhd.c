@@ -394,7 +394,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == ImageHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Height %"PRIu16"\n", data);
             s->coded_height = data;
-        } else if (tag == 101) {
+        } else if (tag == BitsPerComponent) {
             av_log(avctx, AV_LOG_DEBUG, "Bits per component: %"PRIu16"\n", data);
             if (data < 1 || data > 31) {
                 av_log(avctx, AV_LOG_ERROR, "Bits per component %d is invalid\n", data);
@@ -441,7 +441,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 ret = AVERROR(EINVAL);
                 break;
             }
-        } else if (tag == 51) {
+        } else if (tag == SubbandBand) {
             av_log(avctx, AV_LOG_DEBUG, "Subband number actual %"PRIu16"\n", data);
             s->subband_num_actual = data;
             if (s->subband_num_actual >= 10) {
@@ -524,7 +524,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].height = data;
-        } else if (tag == 49) {
+        } else if (tag == BandWidth) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass width2 %i\n", data);
             if (data < 3) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width2\n");
@@ -533,7 +533,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
-        } else if (tag == 50) {
+        } else if (tag == BandHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass height2 %i\n", data);
             if (data < 3) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass height2\n");
@@ -544,12 +544,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == 71) {
             s->codebook = data;
             av_log(avctx, AV_LOG_DEBUG, "Codebook %i\n", s->codebook);
-        } else if (tag == 72) {
+        } else if (tag == BandCodingFlags) {
             s->codebook = data & 0xf;
             s->difference_coding = (data >> 4) & 1;
             av_log(avctx, AV_LOG_DEBUG, "Other codebook? %i\n", s->codebook);
-        } else if (tag == 70) {
-            av_log(avctx, AV_LOG_DEBUG, "Subsampling or bit-depth flag? %i\n", data);
+        } else if (tag == Precision) {
+            av_log(avctx, AV_LOG_DEBUG, "Precision %i\n", data);
             if (!(data == 10 || data == 12)) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid bits per channel\n");
                 ret = AVERROR(EINVAL);
