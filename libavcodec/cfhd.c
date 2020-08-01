@@ -117,8 +117,8 @@ static inline int dequant_and_decompand(int level, int quantisation, int codeboo
 {
     if (codebook == 0 || codebook == 1) {
         int64_t abslevel = abs(level);
-        if (level < 264)
-            return (abslevel + ((768 * abslevel * abslevel * abslevel) / (255 * 255 * 255))) *
+        if (abslevel < 256)
+            return (abslevel + ((768 * abslevel * abslevel * abslevel) / (256 * 256 * 256))) *
                FFSIGN(level) * quantisation;
         else
             return level * quantisation;
