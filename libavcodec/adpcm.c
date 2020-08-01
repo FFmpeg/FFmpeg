@@ -1987,7 +1987,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
          *   uint4_t right_samples[nb_samples];
          *
          * Format of the control byte:
-         * MSB [SSSSDRRR] LSB
+         * MSB [SSSSRDRR] LSB
          *   S = (Shift Amount - 2)
          *   D = Decoder flag.
          *   R = Reserved
