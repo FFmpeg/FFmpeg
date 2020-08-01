@@ -273,23 +273,17 @@ static av_cold int eb_enc_init(AVCodecContext *avctx)
 
     ret = config_enc_params(&svt_enc->enc_params, avctx);
     if (ret < 0) {
-        svt_av1_enc_deinit_handle(svt_enc->svt_handle);
-        svt_enc->svt_handle = NULL;
         av_log(avctx, AV_LOG_ERROR, "Error configuring encoder parameters\n");
         return ret;
     }
 
     svt_ret = svt_av1_enc_set_parameter(svt_enc->svt_handle, &svt_enc->enc_params);
     if (svt_ret != EB_ErrorNone) {
-        svt_av1_enc_deinit_handle(svt_enc->svt_handle);
-        svt_enc->svt_handle = NULL;
         return svt_print_error(avctx, svt_ret, "Error setting encoder parameters");
     }
 
     svt_ret = svt_av1_enc_init(svt_enc->svt_handle);
     if (svt_ret != EB_ErrorNone) {
-        svt_av1_enc_deinit_handle(svt_enc->svt_handle);
-        svt_enc->svt_handle = NULL;
         return svt_print_error(avctx, svt_ret, "Error initializing encoder");
     }
 
