@@ -470,19 +470,15 @@ static int dv_read_timecode(AVFormatContext *s) {
     int64_t pos = avio_tell(s->pb);
 
     // Read 3 DIF blocks: Header block and 2 Subcode blocks.
-    int partial_frame_size = 3 * 80;
-    uint8_t *partial_frame = av_mallocz(sizeof(*partial_frame) *
-                                        partial_frame_size);
-
+#define PARTIAL_FRAME_SIZE (3 * 80)
+    uint8_t partial_frame[PARTIAL_FRAME_SIZE];
     RawDVContext *c = s->priv_data;
-    if (!partial_frame)
-        return AVERROR(ENOMEM);
 
-    ret = avio_read(s->pb, partial_frame, partial_frame_size);
+    ret = avio_read(s->pb, partial_frame, PARTIAL_FRAME_SIZE);
     if (ret < 0)
         goto finish;
 
-    if (ret < partial_frame_size) {
+    if (ret < PARTIAL_FRAME_SIZE) {
         ret = -1;
         goto finish;
     }
@@ -494,7 +490,6 @@ static int dv_read_timecode(AVFormatContext *s) {
         av_log(s, AV_LOG_ERROR, "Detected timecode is invalid\n");
 
 finish:
-    av_free(partial_frame);
     avio_seek(s->pb, pos, SEEK_SET);
     return ret;
 }
