@@ -1108,7 +1108,7 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_dict_set_int(&c->fc->metadata, "minor_version", minor_ver, 0);
 
     comp_brand_size = atom.size - 8;
-    if (comp_brand_size < 0)
+    if (comp_brand_size < 0 || comp_brand_size == INT_MAX)
         return AVERROR_INVALIDDATA;
     comp_brands_str = av_malloc(comp_brand_size + 1); /* Add null terminator */
     if (!comp_brands_str)
