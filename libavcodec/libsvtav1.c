@@ -489,7 +489,7 @@ static const AVOption options[] = {
     { "preset", "Encoding preset [0, 8]",
       OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = MAX_ENC_PRESET }, 0, MAX_ENC_PRESET, VE },
 
-    { "tier", "Set tier (general_tier_flag)", OFFSET(tier),
+    { "tier", "Set operating point tier", OFFSET(tier),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE, "tier" },
         { "main", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, VE, "tier" },
         { "high", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "tier" },
@@ -526,24 +526,24 @@ static const AVOption options[] = {
 
     { "rc", "Bit rate control mode", OFFSET(rc_mode),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 3, VE , "rc"},
-        { "cqp", "Const Quantization Parameter", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "rc" },
+        { "cqp", "Constant quantizer", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "rc" },
         { "vbr", "Variable Bit Rate, use a target bitrate for the entire stream", 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "rc" },
         { "cvbr", "Constrained Variable Bit Rate, use a target bitrate for each GOP", 0, AV_OPT_TYPE_CONST,{ .i64 = 2 },  INT_MIN, INT_MAX, VE, "rc" },
 
-    { "qp", "QP value for intra frames", OFFSET(qp),
+    { "qp", "Quantizer to use with cqp rate control mode", OFFSET(qp),
       AV_OPT_TYPE_INT, { .i64 = 50 }, 0, 63, VE },
 
     { "sc_detection", "Scene change detection", OFFSET(scd),
       AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
 
-    { "tile-columns", "Log2 of number of tile columns to use", OFFSET(tile_columns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, VE},
-    { "tile-rows", "Log2 of number of tile rows to use", OFFSET(tile_rows), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 6, VE},
+    { "tile_columns", "Log2 of number of tile columns to use", OFFSET(tile_columns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, VE},
+    { "tile_rows", "Log2 of number of tile rows to use", OFFSET(tile_rows), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 6, VE},
 
     {NULL},
 };
 
 static const AVClass class = {
-    .class_name = "libsvt_av1",
+    .class_name = "libsvtav1",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -557,8 +557,8 @@ static const AVCodecDefault eb_enc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libsvt_av1_encoder = {
-    .name           = "libsvt_av1",
+AVCodec ff_libsvtav1_encoder = {
+    .name           = "libsvtav1",
     .long_name      = NULL_IF_CONFIG_SMALL("SVT-AV1(Scalable Video Technology for AV1) encoder"),
     .priv_data_size = sizeof(SvtContext),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -573,5 +573,5 @@ AVCodec ff_libsvt_av1_encoder = {
     .priv_class     = &class,
     .defaults       = eb_enc_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name   = "libsvt_av1",
+    .wrapper_name   = "libsvtav1",
 };
