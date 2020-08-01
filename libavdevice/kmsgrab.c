@@ -367,6 +367,7 @@ static const struct {
     enum AVPixelFormat pixfmt;
     uint32_t drm_format;
 } kmsgrab_formats[] = {
+    // Monochrome.
 #ifdef DRM_FORMAT_R8
     { AV_PIX_FMT_GRAY8,    DRM_FORMAT_R8       },
 #endif
@@ -374,6 +375,7 @@ static const struct {
     { AV_PIX_FMT_GRAY16LE, DRM_FORMAT_R16      },
     { AV_PIX_FMT_GRAY16BE, DRM_FORMAT_R16      | DRM_FORMAT_BIG_ENDIAN },
 #endif
+    // <8-bit RGB.
     { AV_PIX_FMT_BGR8,     DRM_FORMAT_BGR233   },
     { AV_PIX_FMT_RGB555LE, DRM_FORMAT_XRGB1555 },
     { AV_PIX_FMT_RGB555BE, DRM_FORMAT_XRGB1555 | DRM_FORMAT_BIG_ENDIAN },
@@ -383,6 +385,7 @@ static const struct {
     { AV_PIX_FMT_RGB565BE, DRM_FORMAT_RGB565   | DRM_FORMAT_BIG_ENDIAN },
     { AV_PIX_FMT_BGR565LE, DRM_FORMAT_BGR565   },
     { AV_PIX_FMT_BGR565BE, DRM_FORMAT_BGR565   | DRM_FORMAT_BIG_ENDIAN },
+    // 8-bit RGB.
     { AV_PIX_FMT_RGB24,    DRM_FORMAT_RGB888   },
     { AV_PIX_FMT_BGR24,    DRM_FORMAT_BGR888   },
     { AV_PIX_FMT_0RGB,     DRM_FORMAT_BGRX8888 },
@@ -393,6 +396,12 @@ static const struct {
     { AV_PIX_FMT_ABGR,     DRM_FORMAT_RGBA8888 },
     { AV_PIX_FMT_RGBA,     DRM_FORMAT_ABGR8888 },
     { AV_PIX_FMT_BGRA,     DRM_FORMAT_ARGB8888 },
+    // 10-bit RGB.
+    { AV_PIX_FMT_X2RGB10LE, DRM_FORMAT_XRGB2101010 },
+    { AV_PIX_FMT_X2RGB10BE, DRM_FORMAT_XRGB2101010 | DRM_FORMAT_BIG_ENDIAN },
+    // 8-bit YUV 4:2:0.
+    { AV_PIX_FMT_NV12,     DRM_FORMAT_NV12     },
+    // 8-bit YUV 4:2:2.
     { AV_PIX_FMT_YUYV422,  DRM_FORMAT_YUYV     },
     { AV_PIX_FMT_YVYU422,  DRM_FORMAT_YVYU     },
     { AV_PIX_FMT_UYVY422,  DRM_FORMAT_UYVY     },
