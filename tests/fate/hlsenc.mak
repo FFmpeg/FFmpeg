@@ -85,8 +85,8 @@ FATE_HLSENC-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILT
 fate-hls-list-size: tests/data/hls_list_size.m3u8
 fate-hls-list-size: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_list_size.m3u8 -vf setpts=N*23
 
-tests/data/hls_segment_type_fmp4.m3u8: TAG = GEN
-tests/data/hls_segment_type_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+tests/data/hls_fmp4.m3u8: TAG = GEN
+tests/data/hls_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
 	-f lavfi -re -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=5" -map 0 -codec:a mp2fixed \
 	-hls_segment_type mpegts -hls_fmp4_init_filename now.mp4 -hls_list_size 0 \
@@ -94,7 +94,7 @@ tests/data/hls_segment_type_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(TARGET_PATH)/tests/data/hls_fmp4.m3u8 2>/dev/null
 
 FATE_HLSENC-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-hls-fmp4
-fate-hls-fmp4: tests/data/hls_segment_type_fmp4.m3u8
+fate-hls-fmp4: tests/data/hls_fmp4.m3u8
 fate-hls-fmp4: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_fmp4.m3u8 -vf setpts=N*23
 
 tests/data/hls_fmp4_ac3.m3u8: TAG = GEN
