@@ -2818,7 +2818,6 @@ static void write_slice_end(MpegEncContext *s){
         ff_mjpeg_encode_stuffing(s);
     }
 
-    avpriv_align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
 
     if ((s->avctx->flags & AV_CODEC_FLAG_PASS1) && !s->partitioned_frame)

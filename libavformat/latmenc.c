@@ -211,7 +211,6 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else
         avpriv_copy_bits(&bs, pkt->data, 8*pkt->size);
 
-    avpriv_align_put_bits(&bs);
     flush_put_bits(&bs);
 
     len = put_bits_count(&bs) >> 3;

@@ -113,10 +113,9 @@ int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
     put_bits(&pb, 1, 0);    // extension flag
 
     put_bits(&pb, 1, 1);    // stop bit
-    avpriv_align_put_bits(&pb);
+    flush_put_bits(&pb);
 
     data_size = put_bits_count(&pb) / 8;
-    flush_put_bits(&pb);
 
     return data_size;
 }

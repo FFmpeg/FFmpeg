@@ -63,9 +63,6 @@ typedef struct VAAPIEncodeH265Context {
     int level;
     int sei;
 
-    int trows;
-    int tcols;
-
     // Derived settings.
     int fixed_qp_idr;
     int fixed_qp_p;
@@ -558,22 +555,41 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     pps->cu_qp_delta_enabled_flag = (ctx->va_rc_mode != VA_RC_CQP);
     pps->diff_cu_qp_delta_depth   = 0;
 
-    pps->pps_loop_filter_across_slices_enabled_flag = 1;
-
     if (ctx->tile_rows && ctx->tile_cols) {
-        pps->tiles_enabled_flag         = 1;
-        pps->uniform_spacing_flag       = 1;
+        int uniform_spacing;
 
-        pps->num_tile_rows_minus1       = ctx->tile_rows - 1;
-        pps->num_tile_columns_minus1    = ctx->tile_cols - 1;
+        pps->tiles_enabled_flag      = 1;
+        pps->num_tile_columns_minus1 = ctx->tile_cols - 1;
+        pps->num_tile_rows_minus1    = ctx->tile_rows - 1;
 
-        pps->loop_filter_across_tiles_enabled_flag = 1;
+        // Test whether the spacing provided matches the H.265 uniform
+        // spacing, and set the flag if it does.
+        uniform_spacing = 1;
+        for (i = 0; i <= pps->num_tile_columns_minus1 &&
+                    uniform_spacing; i++) {
+            if (ctx->col_width[i] !=
+                (i + 1) * ctx->slice_block_cols / ctx->tile_cols -
+                 i      * ctx->slice_block_cols / ctx->tile_cols)
+                uniform_spacing = 0;
+        }
+        for (i = 0; i <= pps->num_tile_rows_minus1 &&
+                    uniform_spacing; i++) {
+            if (ctx->row_height[i] !=
+                (i + 1) * ctx->slice_block_rows / ctx->tile_rows -
+                 i      * ctx->slice_block_rows / ctx->tile_rows)
+                uniform_spacing = 0;
+        }
+        pps->uniform_spacing_flag = uniform_spacing;
 
-        for (i = 0; i <= pps->num_tile_rows_minus1; i++)
-            pps->row_height_minus1[i]   = ctx->row_height[i] - 1;
         for (i = 0; i <= pps->num_tile_columns_minus1; i++)
             pps->column_width_minus1[i] = ctx->col_width[i] - 1;
+        for (i = 0; i <= pps->num_tile_rows_minus1; i++)
+            pps->row_height_minus1[i]   = ctx->row_height[i] - 1;
+
+        pps->loop_filter_across_tiles_enabled_flag = 1;
     }
+
+    pps->pps_loop_filter_across_slices_enabled_flag = 1;
 
     // Fill VAAPI parameter buffers.
 
@@ -1208,11 +1224,6 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     if (priv->qp > 0)
         ctx->explicit_qp = priv->qp;
 
-    if (priv->trows && priv->tcols) {
-        ctx->tile_rows = priv->trows;
-        ctx->tile_cols = priv->tcols;
-    }
-
     return ff_vaapi_encode_init(avctx);
 }
 
@@ -1289,12 +1300,9 @@ static const AVOption vaapi_encode_h265_options[] = {
       { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
       INT_MIN, INT_MAX, FLAGS, "sei" },
 
-    { "tiles", "Tile rows x cols",
-      OFFSET(trows), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, FLAGS },
-    { "tile_rows", "Number of rows for tile encoding",
-      OFFSET(trows), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
-    { "tile_cols", "Number of cols for tile encoding",
-      OFFSET(tcols), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "tiles", "Tile columns x rows",
+      OFFSET(common.tile_cols), AV_OPT_TYPE_IMAGE_SIZE,
+      { .str = NULL }, 0, 0, FLAGS },
 
     { NULL },
 };

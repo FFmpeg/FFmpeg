@@ -40,39 +40,10 @@
 #define ALPHA_COMPAND_DC_OFFSET 256
 #define ALPHA_COMPAND_GAIN 9400
 
-enum CFHDParam {
-    SampleType       =   1,
-    SampleIndexTable =   2,
-    BitstreamMarker  =   4,
-    TransformType    =  10,
-    ChannelCount     =  12,
-    SubbandCount     =  14,
-    ImageWidth       =  20,
-    ImageHeight      =  21,
-    LowpassWidth     =  27,
-    LowpassHeight    =  28,
-    LowpassPrecision =  35,
-    HighpassWidth    =  41,
-    HighpassHeight   =  42,
-    SubbandNumber    =  48,
-    Quantization     =  53,
-    BandHeader       =  55,
-    ChannelNumber    =  62,
-    SampleFlags      =  68,
-    EncodedFormat    =  84,
-    BitsPerComponent = 101,
-    ChannelWidth     = 104,
-    ChannelHeight    = 105,
-    PrescaleShift    = 109,
-};
-
-
-
 static av_cold int cfhd_init(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
 
-    avctx->bits_per_raw_sample = 10;
     s->avctx                   = avctx;
 
     return ff_cfhd_init_vlcs(s);
@@ -117,8 +88,8 @@ static inline int dequant_and_decompand(int level, int quantisation, int codeboo
 {
     if (codebook == 0 || codebook == 1) {
         int64_t abslevel = abs(level);
-        if (level < 264)
-            return (abslevel + ((768 * abslevel * abslevel * abslevel) / (255 * 255 * 255))) *
+        if (abslevel < 256)
+            return (abslevel + ((768 * abslevel * abslevel * abslevel) / (256 * 256 * 256))) *
                FFSIGN(level) * quantisation;
         else
             return level * quantisation;
@@ -211,39 +182,37 @@ static inline void filter(int16_t *output, ptrdiff_t out_stride,
     int16_t tmp;
     int i;
 
-    for (i = 0; i < len; i++) {
-        if (i == 0) {
-            tmp = (11*low[0*low_stride] - 4*low[1*low_stride] + low[2*low_stride] + 4) >> 3;
-            output[(2*i+0)*out_stride] = (tmp + high[0*high_stride]) >> 1;
-            if (clip)
-                output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
+    tmp = (11*low[0*low_stride] - 4*low[1*low_stride] + low[2*low_stride] + 4) >> 3;
+    output[(2*0+0)*out_stride] = (tmp + high[0*high_stride]) >> 1;
+    if (clip)
+        output[(2*0+0)*out_stride] = av_clip_uintp2_c(output[(2*0+0)*out_stride], clip);
 
-            tmp = ( 5*low[0*low_stride] + 4*low[1*low_stride] - low[2*low_stride] + 4) >> 3;
-            output[(2*i+1)*out_stride] = (tmp - high[0*high_stride]) >> 1;
-            if (clip)
-                output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
-        } else if (i == len-1) {
-            tmp = ( 5*low[i*low_stride] + 4*low[(i-1)*low_stride] - low[(i-2)*low_stride] + 4) >> 3;
-            output[(2*i+0)*out_stride] = (tmp + high[i*high_stride]) >> 1;
-            if (clip)
-                output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
+    tmp = ( 5*low[0*low_stride] + 4*low[1*low_stride] - low[2*low_stride] + 4) >> 3;
+    output[(2*0+1)*out_stride] = (tmp - high[0*high_stride]) >> 1;
+    if (clip)
+        output[(2*0+1)*out_stride] = av_clip_uintp2_c(output[(2*0+1)*out_stride], clip);
 
-            tmp = (11*low[i*low_stride] - 4*low[(i-1)*low_stride] + low[(i-2)*low_stride] + 4) >> 3;
-            output[(2*i+1)*out_stride] = (tmp - high[i*high_stride]) >> 1;
-            if (clip)
-                output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
-        } else {
-            tmp = (low[(i-1)*low_stride] - low[(i+1)*low_stride] + 4) >> 3;
-            output[(2*i+0)*out_stride] = (tmp + low[i*low_stride] + high[i*high_stride]) >> 1;
-            if (clip)
-                output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
+    for (i = 1; i < len - 1; i++) {
+        tmp = (low[(i-1)*low_stride] - low[(i+1)*low_stride] + 4) >> 3;
+        output[(2*i+0)*out_stride] = (tmp + low[i*low_stride] + high[i*high_stride]) >> 1;
+        if (clip)
+            output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
 
-            tmp = (low[(i+1)*low_stride] - low[(i-1)*low_stride] + 4) >> 3;
-            output[(2*i+1)*out_stride] = (tmp + low[i*low_stride] - high[i*high_stride]) >> 1;
-            if (clip)
-                output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
-        }
+        tmp = (low[(i+1)*low_stride] - low[(i-1)*low_stride] + 4) >> 3;
+        output[(2*i+1)*out_stride] = (tmp + low[i*low_stride] - high[i*high_stride]) >> 1;
+        if (clip)
+            output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
     }
+
+    tmp = ( 5*low[i*low_stride] + 4*low[(i-1)*low_stride] - low[(i-2)*low_stride] + 4) >> 3;
+    output[(2*i+0)*out_stride] = (tmp + high[i*high_stride]) >> 1;
+    if (clip)
+        output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
+
+    tmp = (11*low[i*low_stride] - 4*low[(i-1)*low_stride] + low[(i-2)*low_stride] + 4) >> 3;
+    output[(2*i+1)*out_stride] = (tmp - high[i*high_stride]) >> 1;
+    if (clip)
+        output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
 }
 
 static inline void interlaced_vertical_filter(int16_t *output, int16_t *low, int16_t *high,
@@ -340,16 +309,16 @@ static int alloc_buffers(AVCodecContext *avctx)
         s->plane[i].stride = stride;
 
         w8 = FFALIGN(s->plane[i].width  / 8, 8);
-        h8 = height / 8;
+        h8 = FFALIGN(height, 8) / 8;
         w4 = w8 * 2;
         h4 = h8 * 2;
         w2 = w4 * 2;
         h2 = h4 * 2;
 
         s->plane[i].idwt_buf =
-            av_mallocz_array(height * stride, sizeof(*s->plane[i].idwt_buf));
+            av_mallocz_array(FFALIGN(height, 8) * stride, sizeof(*s->plane[i].idwt_buf));
         s->plane[i].idwt_tmp =
-            av_malloc_array(height * stride, sizeof(*s->plane[i].idwt_tmp));
+            av_malloc_array(FFALIGN(height, 8) * stride, sizeof(*s->plane[i].idwt_tmp));
         if (!s->plane[i].idwt_buf || !s->plane[i].idwt_tmp)
             return AVERROR(ENOMEM);
 
@@ -424,7 +393,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == ImageHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Height %"PRIu16"\n", data);
             s->coded_height = data;
-        } else if (tag == 101) {
+        } else if (tag == BitsPerComponent) {
             av_log(avctx, AV_LOG_DEBUG, "Bits per component: %"PRIu16"\n", data);
             if (data < 1 || data > 31) {
                 av_log(avctx, AV_LOG_ERROR, "Bits per component %d is invalid\n", data);
@@ -471,7 +440,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 ret = AVERROR(EINVAL);
                 break;
             }
-        } else if (tag == 51) {
+        } else if (tag == SubbandBand) {
             av_log(avctx, AV_LOG_DEBUG, "Subband number actual %"PRIu16"\n", data);
             s->subband_num_actual = data;
             if (s->subband_num_actual >= 10) {
@@ -554,7 +523,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].height = data;
-        } else if (tag == 49) {
+        } else if (tag == BandWidth) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass width2 %i\n", data);
             if (data < 3) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass width2\n");
@@ -563,7 +532,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].width  = data;
             s->plane[s->channel_num].band[s->level][s->subband_num].stride = FFALIGN(data, 8);
-        } else if (tag == 50) {
+        } else if (tag == BandHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass height2 %i\n", data);
             if (data < 3) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid highpass height2\n");
@@ -574,18 +543,18 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == 71) {
             s->codebook = data;
             av_log(avctx, AV_LOG_DEBUG, "Codebook %i\n", s->codebook);
-        } else if (tag == 72) {
+        } else if (tag == BandCodingFlags) {
             s->codebook = data & 0xf;
             s->difference_coding = (data >> 4) & 1;
             av_log(avctx, AV_LOG_DEBUG, "Other codebook? %i\n", s->codebook);
-        } else if (tag == 70) {
-            av_log(avctx, AV_LOG_DEBUG, "Subsampling or bit-depth flag? %i\n", data);
+        } else if (tag == Precision) {
+            av_log(avctx, AV_LOG_DEBUG, "Precision %i\n", data);
             if (!(data == 10 || data == 12)) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid bits per channel\n");
                 ret = AVERROR(EINVAL);
                 break;
             }
-            s->bpc = data;
+            avctx->bits_per_raw_sample = s->bpc = data;
         } else if (tag == EncodedFormat) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
             if (data == 1) {

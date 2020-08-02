@@ -70,6 +70,7 @@ extern AVCodec ff_cavs_decoder;
 extern AVCodec ff_cdgraphics_decoder;
 extern AVCodec ff_cdtoons_decoder;
 extern AVCodec ff_cdxl_decoder;
+extern AVCodec ff_cfhd_encoder;
 extern AVCodec ff_cfhd_decoder;
 extern AVCodec ff_cinepak_encoder;
 extern AVCodec ff_cinepak_decoder;

@@ -607,11 +607,9 @@ fail_with_picture:
 fail:
     for(i = 0; i < pic->nb_param_buffers; i++)
         vaDestroyBuffer(ctx->hwctx->display, pic->param_buffers[i]);
-    for (i = 0; i < pic->nb_slices; i++) {
-        if (pic->slices) {
-            av_freep(&pic->slices[i].priv_data);
+    if (pic->slices) {
+        for (i = 0; i < pic->nb_slices; i++)
             av_freep(&pic->slices[i].codec_slice_params);
-        }
     }
 fail_at_end:
     av_freep(&pic->codec_picture_params);
@@ -742,11 +740,9 @@ static int vaapi_encode_free(AVCodecContext *avctx,
     if (pic->encode_issued)
         vaapi_encode_discard(avctx, pic);
 
-    for (i = 0; i < pic->nb_slices; i++) {
-        if (pic->slices) {
-            av_freep(&pic->slices[i].priv_data);
+    if (pic->slices) {
+        for (i = 0; i < pic->nb_slices; i++)
             av_freep(&pic->slices[i].codec_slice_params);
-        }
     }
     av_freep(&pic->codec_picture_params);
 
