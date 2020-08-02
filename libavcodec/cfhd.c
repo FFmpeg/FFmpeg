@@ -44,7 +44,6 @@ static av_cold int cfhd_init(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
 
-    avctx->bits_per_raw_sample = 10;
     s->avctx                   = avctx;
 
     return ff_cfhd_init_vlcs(s);
@@ -555,7 +554,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 ret = AVERROR(EINVAL);
                 break;
             }
-            s->bpc = data;
+            avctx->bits_per_raw_sample = s->bpc = data;
         } else if (tag == EncodedFormat) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
             if (data == 1) {
