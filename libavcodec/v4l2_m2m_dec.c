@@ -205,9 +205,6 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
     ret = ff_v4l2_m2m_codec_init(priv);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "can't configure decoder\n");
-        s->self_ref = NULL;
-        av_buffer_unref(&priv->context_ref);
-
         return ret;
     }
 
@@ -216,10 +213,7 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
 
 static av_cold int v4l2_decode_close(AVCodecContext *avctx)
 {
-    V4L2m2mPriv *priv = avctx->priv_data;
-    V4L2m2mContext *s = priv->context;
-    av_packet_unref(&s->buf_pkt);
-    return ff_v4l2_m2m_codec_end(priv);
+    return ff_v4l2_m2m_codec_end(avctx->priv_data);
 }
 
 #define OFFSET(x) offsetof(V4L2m2mPriv, x)
@@ -254,7 +248,7 @@ static const AVOption options[] = {
         .close          = v4l2_decode_close, \
         .bsfs           = bsf_name, \
         .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
-        .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS, \
+        .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_CLEANUP, \
         .wrapper_name   = "v4l2m2m", \
     }
 
