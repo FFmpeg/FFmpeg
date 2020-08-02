@@ -27,6 +27,7 @@
 #define ASF_TAG                 MKTAG('A', 'S', 'F', '\0')
 #define ASF_FILE_HEADER_SIZE    24
 #define ASF_CHUNK_HEADER_SIZE   20
+#define ASF_SAMPLE_COUNT        32
 
 typedef struct ArgoASFFileHeader {
     uint32_t    magic;          /*< Magic Number, {'A', 'S', 'F', '\0'} */
@@ -39,7 +40,7 @@ typedef struct ArgoASFFileHeader {
 
 typedef struct ArgoASFChunkHeader {
     uint32_t    num_blocks;     /*< No. blocks in the chunk. */
-    uint32_t    num_samples;    /*< No. samples per channel in a block. */
+    uint32_t    num_samples;    /*< No. samples per channel in a block. Always 32. */
     uint32_t    unk1;           /*< Unknown */
     uint16_t    sample_rate;    /*< Sample rate. */
     uint16_t    unk2;           /*< Unknown. */
@@ -157,6 +158,12 @@ static int argo_asf_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     argo_asf_parse_chunk_header(&asf->ckhdr, buf);
+
+    if (asf->ckhdr.num_samples != ASF_SAMPLE_COUNT) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample count. Got %u, expected %d\n",
+               asf->ckhdr.num_samples, ASF_SAMPLE_COUNT);
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((asf->ckhdr.flags & ASF_CF_ALWAYS1) != ASF_CF_ALWAYS1 || (asf->ckhdr.flags & ASF_CF_ALWAYS0) != 0) {
         avpriv_request_sample(s, "Nonstandard flags (0x%08X)", asf->ckhdr.flags);
