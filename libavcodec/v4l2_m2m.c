@@ -344,13 +344,13 @@ int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
         return 0;
 
     if (s->fd >= 0) {
-    ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
-    if (ret)
-        av_log(s->avctx, AV_LOG_ERROR, "VIDIOC_STREAMOFF %s\n", s->output.name);
+        ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
+        if (ret)
+            av_log(s->avctx, AV_LOG_ERROR, "VIDIOC_STREAMOFF %s\n", s->output.name);
 
-    ret = ff_v4l2_context_set_status(&s->capture, VIDIOC_STREAMOFF);
-    if (ret)
-        av_log(s->avctx, AV_LOG_ERROR, "VIDIOC_STREAMOFF %s\n", s->capture.name);
+        ret = ff_v4l2_context_set_status(&s->capture, VIDIOC_STREAMOFF);
+        if (ret)
+            av_log(s->avctx, AV_LOG_ERROR, "VIDIOC_STREAMOFF %s\n", s->capture.name);
     }
 
     ff_v4l2_context_release(&s->output);
