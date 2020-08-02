@@ -2902,6 +2902,16 @@ SNR Scalable
 @item simple
 @end table
 
+@item level
+Select the mpeg2 level to encode:
+
+@table @samp
+@item high
+@item high1440
+@item main
+@item low
+@end table
+
 @item seq_disp_ext @var{integer}
 Specifies if the encoder should write a sequence_display_extension to the
 output.
