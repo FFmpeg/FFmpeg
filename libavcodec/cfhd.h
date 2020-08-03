@@ -73,6 +73,7 @@ enum CFHDParam {
     ChannelNumber    =  62,
     SampleFlags      =  68,
     Precision        =  70,
+    InputFormat      =  71,
     BandCodingFlags  =  72,
     PrescaleTable    =  83,
     EncodedFormat    =  84,

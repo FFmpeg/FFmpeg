@@ -555,9 +555,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].height = data;
-        } else if (tag == 71) {
-            s->codebook = data;
-            av_log(avctx, AV_LOG_DEBUG, "Codebook %i\n", s->codebook);
+        } else if (tag == InputFormat) {
+            av_log(avctx, AV_LOG_DEBUG, "Input format %i\n", data);
         } else if (tag == BandCodingFlags) {
             s->codebook = data & 0xf;
             s->difference_coding = (data >> 4) & 1;
