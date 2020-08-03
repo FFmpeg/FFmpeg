@@ -525,7 +525,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 10 : 12);
 
     bytestream2_put_be16(pby, PrescaleTable);
-    bytestream2_put_be16(pby, 0x2800);
+    bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 0x2000 : 0x2800);
 
     bytestream2_put_be16(pby, SampleFlags);
     bytestream2_put_be16(pby, 1);
