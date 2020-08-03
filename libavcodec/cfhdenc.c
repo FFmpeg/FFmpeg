@@ -242,10 +242,11 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
     }
 
     s->planes = av_pix_fmt_count_planes(avctx->pix_fmt);
+    s->compression = avctx->compression_level;
 
-    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
+    if (s->compression == FF_COMPRESSION_DEFAULT)
         s->compression = 2;
-    s->compression = av_clip(avctx->compression_level, 0, 10);
+    s->compression = av_clip(s->compression, 0, 10);
 
     for (int i = 0; i < s->planes; i++) {
         int w8, h8, w4, h4, w2, h2;
