@@ -136,6 +136,8 @@ typedef struct CFHDContext {
     CFHD_RL_VLC_ELEM table_18_rl_vlc[4572];
     VLC vlc_18;
 
+    int lut[2][256];
+
     GetBitContext gb;
 
     int coded_width;
