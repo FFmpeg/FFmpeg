@@ -1566,7 +1566,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
 
     init_get_bits(&s->gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE) * 8);
 
-    if (s->error_protection && s->layer == 3) {
+    if (s->error_protection) {
         uint16_t crc = get_bits(&s->gb, 16);
         if (s->err_recognition & AV_EF_CRCCHECK) {
             const int sec_len = s->lsf ? ((s->nb_channels == 1) ? 9  : 17) :
