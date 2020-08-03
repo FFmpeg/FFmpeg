@@ -429,6 +429,7 @@ static const AVCodecDefault v4l2_m2m_defaults[] = {
         .close          = v4l2_encode_close, \
         .defaults       = v4l2_m2m_defaults, \
         .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
+        .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP, \
         .wrapper_name   = "v4l2m2m", \
     }
 
