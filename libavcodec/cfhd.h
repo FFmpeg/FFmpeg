@@ -42,8 +42,10 @@ enum CFHDParam {
     NumSpatial       =  15,
     FirstWavelet     =  16,
     GroupTrailer     =  18,
+    FrameType        =  19,
     ImageWidth       =  20,
     ImageHeight      =  21,
+    FrameIndex       =  23,
     LowpassSubband   =  25,
     NumLevels        =  26,
     LowpassWidth     =  27,
@@ -76,9 +78,9 @@ enum CFHDParam {
     Precision        =  70,
     InputFormat      =  71,
     BandCodingFlags  =  72,
+    BandSecondPass   =  82,
     PrescaleTable    =  83,
     EncodedFormat    =  84,
-    BitsPerComponent = 101,
     ChannelWidth     = 104,
     ChannelHeight    = 105,
     PrescaleShift    = 109,
@@ -86,6 +88,7 @@ enum CFHDParam {
 
 #define VLC_BITS       9
 #define SUBBAND_COUNT 10
+#define SUBBAND_COUNT_3D 17
 
 typedef struct CFHD_RL_VLC_ELEM {
     int16_t level;
@@ -94,6 +97,7 @@ typedef struct CFHD_RL_VLC_ELEM {
 } CFHD_RL_VLC_ELEM;
 
 #define DWT_LEVELS 3
+#define DWT_LEVELS_3D 6
 
 typedef struct SubBand {
     ptrdiff_t stride;
@@ -110,12 +114,13 @@ typedef struct Plane {
 
     int16_t *idwt_buf;
     int16_t *idwt_tmp;
+    int      idwt_size;
 
     /* TODO: merge this into SubBand structure */
-    int16_t *subband[SUBBAND_COUNT];
-    int16_t *l_h[8];
+    int16_t *subband[SUBBAND_COUNT_3D];
+    int16_t *l_h[10];
 
-    SubBand band[DWT_LEVELS][4];
+    SubBand band[DWT_LEVELS_3D][4];
 } Plane;
 
 typedef struct Peak {
@@ -137,6 +142,11 @@ typedef struct CFHDContext {
 
     GetBitContext gb;
 
+    int planes;
+    int frame_type;
+    int frame_index;
+    int sample_type;
+    int transform_type;
     int coded_width;
     int coded_height;
     int cropped_height;
@@ -150,6 +160,7 @@ typedef struct CFHDContext {
     int bpc; // bits per channel/component
     int channel_cnt;
     int subband_cnt;
+    int band_encoding;
     int channel_num;
     uint8_t lowpass_precision;
     uint16_t quantisation;
