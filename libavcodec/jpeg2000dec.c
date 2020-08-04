@@ -1465,20 +1465,20 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                         if (reslevelno >= codsty->nreslevels)
                             continue;
 
-                        trx0 = ff_jpeg2000_ceildiv(tile->coord[0][0], s->cdx[compno] << reducedresno);
-                        try0 = ff_jpeg2000_ceildiv(tile->coord[1][0], s->cdy[compno] << reducedresno);
+                        trx0 = ff_jpeg2000_ceildiv(tile->coord[0][0], (int64_t)s->cdx[compno] << reducedresno);
+                        try0 = ff_jpeg2000_ceildiv(tile->coord[1][0], (int64_t)s->cdy[compno] << reducedresno);
 
                         if (!(y % ((uint64_t)s->cdy[compno] << (rlevel->log2_prec_height + reducedresno)) == 0 ||
-                             (y == tile->coord[1][0] && (try0 << reducedresno) % (1U << (reducedresno + rlevel->log2_prec_height)))))
+                             (y == tile->coord[1][0] && ((int64_t)try0 << reducedresno) % (1ULL << (reducedresno + rlevel->log2_prec_height)))))
                             continue;
 
                         if (!(x % ((uint64_t)s->cdx[compno] << (rlevel->log2_prec_width + reducedresno)) == 0 ||
-                             (x == tile->coord[0][0] && (trx0 << reducedresno) % (1U << (reducedresno + rlevel->log2_prec_width)))))
+                             (x == tile->coord[0][0] && ((int64_t)trx0 << reducedresno) % (1ULL << (reducedresno + rlevel->log2_prec_width)))))
                             continue;
 
                         // check if a precinct exists
-                        prcx   = ff_jpeg2000_ceildiv(x, s->cdx[compno] << reducedresno) >> rlevel->log2_prec_width;
-                        prcy   = ff_jpeg2000_ceildiv(y, s->cdy[compno] << reducedresno) >> rlevel->log2_prec_height;
+                        prcx   = ff_jpeg2000_ceildiv(x, (int64_t)s->cdx[compno] << reducedresno) >> rlevel->log2_prec_width;
+                        prcy   = ff_jpeg2000_ceildiv(y, (int64_t)s->cdy[compno] << reducedresno) >> rlevel->log2_prec_height;
                         prcx  -= ff_jpeg2000_ceildivpow2(comp->coord_o[0][0], reducedresno) >> rlevel->log2_prec_width;
                         prcy  -= ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], reducedresno) >> rlevel->log2_prec_height;
 
@@ -1543,20 +1543,20 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
                         Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
                         int trx0, try0;
 
-                        trx0 = ff_jpeg2000_ceildiv(tile->coord[0][0], s->cdx[compno] << reducedresno);
-                        try0 = ff_jpeg2000_ceildiv(tile->coord[1][0], s->cdy[compno] << reducedresno);
+                        trx0 = ff_jpeg2000_ceildiv(tile->coord[0][0], (int64_t)s->cdx[compno] << reducedresno);
+                        try0 = ff_jpeg2000_ceildiv(tile->coord[1][0], (int64_t)s->cdy[compno] << reducedresno);
 
                         if (!(y % ((uint64_t)s->cdy[compno] << (rlevel->log2_prec_height + reducedresno)) == 0 ||
-                             (y == tile->coord[1][0] && (try0 << reducedresno) % (1U << (reducedresno + rlevel->log2_prec_height)))))
+                             (y == tile->coord[1][0] && ((int64_t)try0 << reducedresno) % (1ULL << (reducedresno + rlevel->log2_prec_height)))))
                              continue;
 
                         if (!(x % ((uint64_t)s->cdx[compno] << (rlevel->log2_prec_width + reducedresno)) == 0 ||
-                             (x == tile->coord[0][0] && (trx0 << reducedresno) % (1U << (reducedresno + rlevel->log2_prec_width)))))
+                             (x == tile->coord[0][0] && ((int64_t)trx0 << reducedresno) % (1ULL << (reducedresno + rlevel->log2_prec_width)))))
                              continue;
 
                         // check if a precinct exists
-                        prcx   = ff_jpeg2000_ceildiv(x, s->cdx[compno] << reducedresno) >> rlevel->log2_prec_width;
-                        prcy   = ff_jpeg2000_ceildiv(y, s->cdy[compno] << reducedresno) >> rlevel->log2_prec_height;
+                        prcx   = ff_jpeg2000_ceildiv(x, (int64_t)s->cdx[compno] << reducedresno) >> rlevel->log2_prec_width;
+                        prcy   = ff_jpeg2000_ceildiv(y, (int64_t)s->cdy[compno] << reducedresno) >> rlevel->log2_prec_height;
                         prcx  -= ff_jpeg2000_ceildivpow2(comp->coord_o[0][0], reducedresno) >> rlevel->log2_prec_width;
                         prcy  -= ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], reducedresno) >> rlevel->log2_prec_height;
 
