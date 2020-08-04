@@ -65,7 +65,7 @@ static av_cold int cfhd_init(AVCodecContext *avctx)
     }
 
     for (int i = 0; i < 256; i++)
-        s->lut[1][i] = i + ((768 * i * i * i) / (256 * 256 * 256));
+        s->lut[1][i] = i + ((768LL * i * i * i) / (256 * 256 * 256));
 
     return ff_cfhd_init_vlcs(s);
 }
