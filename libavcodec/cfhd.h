@@ -96,16 +96,11 @@ typedef struct CFHD_RL_VLC_ELEM {
 #define DWT_LEVELS 3
 
 typedef struct SubBand {
-    int level;
-    int orientation;
     ptrdiff_t stride;
     int a_width;
     int width;
     int a_height;
     int height;
-    int pshift;
-    int quant;
-    uint8_t *ibuf;
 } SubBand;
 
 typedef struct Plane {
@@ -158,8 +153,6 @@ typedef struct CFHDContext {
     int channel_num;
     uint8_t lowpass_precision;
     uint16_t quantisation;
-    int wavelet_depth;
-    int pshift;
 
     int codebook;
     int difference_coding;
