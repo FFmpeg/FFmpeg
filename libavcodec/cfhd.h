@@ -72,6 +72,7 @@ enum CFHDParam {
     BandTrailer      =  56,
     ChannelNumber    =  62,
     SampleFlags      =  68,
+    FrameNumber      =  69,
     Precision        =  70,
     InputFormat      =  71,
     BandCodingFlags  =  72,

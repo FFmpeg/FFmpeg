@@ -542,7 +542,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    ret = ff_alloc_packet2(avctx, pkt, 60LL + s->planes * (2LL * avctx->width * avctx->height + 1000LL), 0);
+    ret = ff_alloc_packet2(avctx, pkt, 64LL + s->planes * (2LL * avctx->width * avctx->height + 1000LL), 0);
     if (ret < 0)
         return ret;
 
@@ -586,6 +586,9 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     bytestream2_put_be16(pby, ImageHeight);
     bytestream2_put_be16(pby, avctx->height);
+
+    bytestream2_put_be16(pby, -FrameNumber);
+    bytestream2_put_be16(pby, avctx->frame_number);
 
     bytestream2_put_be16(pby, Precision);
     bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 10 : 12);
