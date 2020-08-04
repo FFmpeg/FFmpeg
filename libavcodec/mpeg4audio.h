@@ -46,7 +46,7 @@ typedef struct MPEG4AudioConfig {
 } MPEG4AudioConfig;
 
 extern av_export_avcodec const int avpriv_mpeg4audio_sample_rates[16];
-extern const uint8_t ff_mpeg4audio_channels[8];
+extern const uint8_t ff_mpeg4audio_channels[14];
 
 /**
  * Parse MPEG-4 systems extradata from a potentially unaligned GetBitContext to retrieve audio configuration.

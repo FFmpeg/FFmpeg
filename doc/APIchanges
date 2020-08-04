@@ -15,6 +15,11 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-08-04 - xxxxxxxxxx - lavu 56.58.100 - channel_layout.h
+  Add AV_CH_LAYOUT_22POINT2 together with its newly required pieces:
+  AV_CH_TOP_SIDE_LEFT, AV_CH_TOP_SIDE_RIGHT, AV_CH_BOTTOM_FRONT_CENTER,
+  AV_CH_BOTTOM_FRONT_LEFT, AV_CH_BOTTOM_FRONT_RIGHT.
+
 2020-07-xx - xxxxxxxxxx - lavu 56.57.100 - cpu.h
   Add AV_CPU_FLAG_MMI and AV_CPU_FLAG_MSA.
 

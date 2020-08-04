@@ -73,6 +73,7 @@ enum CFHDParam {
     ChannelNumber    =  62,
     SampleFlags      =  68,
     Precision        =  70,
+    InputFormat      =  71,
     BandCodingFlags  =  72,
     PrescaleTable    =  83,
     EncodedFormat    =  84,
@@ -135,6 +136,8 @@ typedef struct CFHDContext {
 
     CFHD_RL_VLC_ELEM table_18_rl_vlc[4572];
     VLC vlc_18;
+
+    int lut[2][256];
 
     GetBitContext gb;
 

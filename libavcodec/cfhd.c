@@ -46,6 +46,27 @@ static av_cold int cfhd_init(AVCodecContext *avctx)
 
     s->avctx                   = avctx;
 
+    for (int i = 0; i < 64; i++) {
+        int val = i;
+
+        if (val >= 40) {
+            if (val >= 54) {
+                val -= 54;
+                val <<= 2;
+                val += 54;
+            }
+
+            val -= 40;
+            val <<= 2;
+            val += 40;
+        }
+
+        s->lut[0][i] = val;
+    }
+
+    for (int i = 0; i < 256; i++)
+        s->lut[1][i] = i + ((768 * i * i * i) / (256 * 256 * 256));
+
     return ff_cfhd_init_vlcs(s);
 }
 
@@ -83,16 +104,10 @@ static void init_frame_defaults(CFHDContext *s)
     init_peak_table_defaults(s);
 }
 
-/* TODO: merge with VLC tables or use LUT */
-static inline int dequant_and_decompand(int level, int quantisation, int codebook)
+static inline int dequant_and_decompand(CFHDContext *s, int level, int quantisation, int codebook)
 {
     if (codebook == 0 || codebook == 1) {
-        int64_t abslevel = abs(level);
-        if (abslevel < 256)
-            return (abslevel + ((768 * abslevel * abslevel * abslevel) / (256 * 256 * 256))) *
-               FFSIGN(level) * quantisation;
-        else
-            return level * quantisation;
+        return s->lut[codebook][abs(level)] * FFSIGN(level) * quantisation;
     } else
         return level * quantisation;
 }
@@ -540,9 +555,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->plane[s->channel_num].band[s->level][s->subband_num].height = data;
-        } else if (tag == 71) {
-            s->codebook = data;
-            av_log(avctx, AV_LOG_DEBUG, "Codebook %i\n", s->codebook);
+        } else if (tag == InputFormat) {
+            av_log(avctx, AV_LOG_DEBUG, "Input format %i\n", data);
         } else if (tag == BandCodingFlags) {
             s->codebook = data & 0xf;
             s->difference_coding = (data >> 4) & 1;
@@ -708,7 +722,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                         if (count > expected)
                             break;
 
-                        coeff = dequant_and_decompand(level, s->quantisation, 0);
+                        coeff = dequant_and_decompand(s, level, s->quantisation, 0);
                         for (i = 0; i < run; i++)
                             *coeff_data++ = coeff;
                     }
@@ -727,7 +741,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                         if (count > expected)
                             break;
 
-                        coeff = dequant_and_decompand(level, s->quantisation, s->codebook);
+                        coeff = dequant_and_decompand(s, level, s->quantisation, s->codebook);
                         for (i = 0; i < run; i++)
                             *coeff_data++ = coeff;
                     }
