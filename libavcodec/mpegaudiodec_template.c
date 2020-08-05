@@ -118,9 +118,9 @@ static INTFLOAT is_table[2][16];
 static INTFLOAT is_table_lsf[2][2][16];
 static INTFLOAT csa_table[8][4];
 
-static int16_t division_tab3[1<<6 ];
-static int16_t division_tab5[1<<8 ];
-static int16_t division_tab9[1<<11];
+static int16_t division_tab3[1 << 6 ];
+static int16_t division_tab5[1 << 8 ];
+static int16_t division_tab9[1 << 11];
 
 static int16_t * const division_tabs[4] = {
     division_tab3, division_tab5, NULL, division_tab9
@@ -255,7 +255,7 @@ static inline int l3_unscale(int value, int exponent)
 #endif
     if (e > (SUINT)31)
         return 0;
-    m = (m + ((1U << e)>>1)) >> e;
+    m = (m + ((1U << e) >> 1)) >> e;
 
     return m;
 }
@@ -304,8 +304,8 @@ static av_cold void decode_init_static(void)
         j = 0;
         for (x = 0; x < xsize; x++) {
             for (y = 0; y < xsize; y++) {
-                tmp_bits [(x << 5) | y | ((x&&y)<<4)]= h->bits [j  ];
-                tmp_codes[(x << 5) | y | ((x&&y)<<4)]= h->codes[j++];
+                tmp_bits [(x << 5) | y | ((x && y) << 4)]= h->bits [j  ];
+                tmp_codes[(x << 5) | y | ((x && y) << 4)]= h->codes[j++];
             }
         }
 
@@ -345,7 +345,7 @@ static av_cold void decode_init_static(void)
 
     for (i = 0; i < 4; i++) {
         if (ff_mpa_quant_bits[i] < 0) {
-            for (j = 0; j < (1 << (-ff_mpa_quant_bits[i]+1)); j++) {
+            for (j = 0; j < (1 << (-ff_mpa_quant_bits[i] + 1)); j++) {
                 int val1, val2, val3, steps;
                 int val = j;
                 steps   = ff_mpa_quant_steps[i];
@@ -513,8 +513,8 @@ static int handle_crc(MPADecodeContext *s, int sec_len)
         crc_val = av_crc(crc_tab, crc_val, &buf[6], sec_byte_len);
 
         AV_WB32(tmp_buf,
-            ((buf[6 + sec_byte_len] & (0xFF00>>sec_rem_bits))<<24) +
-            ((s->crc<<16) >> sec_rem_bits));
+                ((buf[6 + sec_byte_len] & (0xFF00 >> sec_rem_bits)) << 24) +
+                ((s->crc << 16) >> sec_rem_bits));
 
         crc_val = av_crc(crc_tab, crc_val, tmp_buf, 3);
 
@@ -735,7 +735,7 @@ static int mp_decode_layer2(MPADecodeContext *s)
                     int mant, scale0, scale1;
                     scale0 = scale_factors[0][i][k];
                     scale1 = scale_factors[1][i][k];
-                    qindex = alloc_table[j+b];
+                    qindex = alloc_table[j + b];
                     bits = ff_mpa_quant_bits[qindex];
                     if (bits < 0) {
                         /* 3 values at the same time */
@@ -929,8 +929,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             y = get_vlc2(&s->gb, vlc->table, 7, 3);
 
             if (!y) {
-                g->sb_hybrid[s_index  ] =
-                g->sb_hybrid[s_index+1] = 0;
+                g->sb_hybrid[s_index    ] =
+                g->sb_hybrid[s_index + 1] = 0;
                 s_index += 2;
                 continue;
             }
@@ -958,7 +958,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                     v  = l3_unscale(y, exponent);
                     if (get_bits1(&s->gb))
                         v = -v;
-                    g->sb_hybrid[s_index+1] = v;
+                    g->sb_hybrid[s_index + 1] = v;
                 }
             } else {
                 x = y >> 5;
@@ -1004,10 +1004,10 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
         code = get_vlc2(&s->gb, vlc->table, vlc->bits, 1);
         ff_dlog(s->avctx, "t=%d code=%d\n", g->count1table_select, code);
-        g->sb_hybrid[s_index+0] =
-        g->sb_hybrid[s_index+1] =
-        g->sb_hybrid[s_index+2] =
-        g->sb_hybrid[s_index+3] = 0;
+        g->sb_hybrid[s_index + 0] =
+        g->sb_hybrid[s_index + 1] =
+        g->sb_hybrid[s_index + 2] =
+        g->sb_hybrid[s_index + 3] = 0;
         while (code) {
             static const int idxtab[16] = { 3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0 };
             int v;
@@ -1433,7 +1433,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 
     if (!s->adu_mode) {
         int skip;
-        const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
+        const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb) >> 3);
         s->extrasize = av_clip((get_bits_left(&s->gb) >> 3) - s->extrasize, 0,
                                FFMAX(0, LAST_BUF_SIZE - s->last_buf_size));
         av_assert1((get_bits_count(&s->gb) & 7) == 0);
@@ -1629,7 +1629,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
             align_get_bits(&s->gb);
             i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
             if (i >= 0 && i <= BACKSTEP_SIZE) {
-                memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), i);
+                memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb) >> 3), i);
                 s->last_buf_size=i;
             } else
                 av_log(s->avctx, AV_LOG_ERROR, "invalid old backstep %d\n", i);
@@ -1706,7 +1706,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
         return AVERROR_INVALIDDATA;
 
     header = AV_RB32(buf);
-    if (header>>8 == AV_RB32("TAG")>>8) {
+    if (header >> 8 == AV_RB32("TAG") >> 8) {
         av_log(avctx, AV_LOG_DEBUG, "discarding ID3 tag\n");
         return buf_size + skipped;
     }
