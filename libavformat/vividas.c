@@ -432,19 +432,20 @@ static int track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *bu
     AVIOContext pb0, *pb = &pb0;
     int i;
     int64_t filesize = avio_size(s->pb);
+    uint64_t n_sb_blocks_tmp;
 
     ffio_init_context(pb, buf, size, 0, NULL, NULL, NULL, NULL);
 
     ffio_read_varlen(pb); // track_index_len
     avio_r8(pb); // 'c'
-    viv->n_sb_blocks = ffio_read_varlen(pb);
-    if (viv->n_sb_blocks < 0 || viv->n_sb_blocks > size / 2)
+    n_sb_blocks_tmp = ffio_read_varlen(pb);
+    if (n_sb_blocks_tmp > size / 2)
         goto error;
-    viv->sb_blocks = av_calloc(viv->n_sb_blocks, sizeof(VIV_SB_block));
+    viv->sb_blocks = av_calloc(n_sb_blocks_tmp, sizeof(*viv->sb_blocks));
     if (!viv->sb_blocks) {
-        viv->n_sb_blocks = 0;
         return AVERROR(ENOMEM);
     }
+    viv->n_sb_blocks = n_sb_blocks_tmp;
 
     off = 0;
     poff = 0;
