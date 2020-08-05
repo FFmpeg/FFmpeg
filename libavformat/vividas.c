@@ -440,7 +440,7 @@ static int track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *bu
     avio_r8(pb); // 'c'
     n_sb_blocks_tmp = ffio_read_varlen(pb);
     if (n_sb_blocks_tmp > size / 2)
-        goto error;
+        return AVERROR_INVALIDDATA;
     viv->sb_blocks = av_calloc(n_sb_blocks_tmp, sizeof(*viv->sb_blocks));
     if (!viv->sb_blocks) {
         return AVERROR(ENOMEM);
@@ -455,7 +455,7 @@ static int track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *bu
         uint64_t n_packets_tmp = ffio_read_varlen(pb);
 
         if (size_tmp > INT_MAX || n_packets_tmp > INT_MAX)
-            goto error;
+            return AVERROR_INVALIDDATA;
 
         viv->sb_blocks[i].byte_offset = off;
         viv->sb_blocks[i].packet_offset = poff;
@@ -471,15 +471,13 @@ static int track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *bu
     }
 
     if (filesize > 0 && poff > filesize)
-        goto error;
+        return AVERROR_INVALIDDATA;
 
     viv->sb_entries = av_calloc(maxnp, sizeof(VIV_SB_entry));
+    if (!viv->sb_entries)
+        return AVERROR(ENOMEM);
 
     return 0;
-error:
-    viv->n_sb_blocks = 0;
-    av_freep(&viv->sb_blocks);
-    return AVERROR_INVALIDDATA;
 }
 
 static void load_sb_block(AVFormatContext *s, VividasDemuxContext *viv, unsigned expected_size)
@@ -608,7 +606,7 @@ static int viv_read_header(AVFormatContext *s)
     ret = track_index(viv, s, buf, v);
     av_free(buf);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     viv->sb_offset = avio_tell(pb);
     if (viv->n_sb_blocks > 0) {
@@ -619,6 +617,9 @@ static int viv_read_header(AVFormatContext *s)
     }
 
     return 0;
+fail:
+    av_freep(&viv->sb_blocks);
+    return ret;
 }
 
 static int viv_read_packet(AVFormatContext *s,
