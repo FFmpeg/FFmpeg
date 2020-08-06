@@ -220,9 +220,9 @@ static inline int ff_jpeg2000_ceildivpow2(int a, int b)
     return -((-(int64_t)a) >> b);
 }
 
-static inline int ff_jpeg2000_ceildiv(int a, int b)
+static inline int ff_jpeg2000_ceildiv(int a, int64_t b)
 {
-    return (a + (int64_t)b - 1) / b;
+    return (a + b - 1) / b;
 }
 
 /* TIER-1 routines */

@@ -91,6 +91,9 @@ extern const MXFCodecUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
 extern const MXFCodecUL ff_mxf_pixel_format_uls[];
 extern const MXFCodecUL ff_mxf_codec_tag_uls[];
+extern const MXFCodecUL ff_mxf_color_primaries_uls[];
+extern const MXFCodecUL ff_mxf_color_trc_uls[];
+extern const MXFCodecUL ff_mxf_color_space_uls[];
 
 int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *pix_fmt);
 int ff_mxf_get_content_package_rate(AVRational time_base);

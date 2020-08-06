@@ -129,6 +129,8 @@ typedef struct {
 
     int format;
     int pred;
+    int sop;
+    int eph;
 } Jpeg2000EncoderContext;
 
 
@@ -308,13 +310,18 @@ static int put_siz(Jpeg2000EncoderContext *s)
 static int put_cod(Jpeg2000EncoderContext *s)
 {
     Jpeg2000CodingStyle *codsty = &s->codsty;
+    uint8_t scod = 0;
 
     if (s->buf_end - s->buf < 14)
         return -1;
 
     bytestream_put_be16(&s->buf, JPEG2000_COD);
     bytestream_put_be16(&s->buf, 12); // Lcod
-    bytestream_put_byte(&s->buf, 0);  // Scod
+    if (s->sop)
+        scod |= JPEG2000_CSTY_SOP;
+    if (s->eph)
+        scod |= JPEG2000_CSTY_EPH;
+    bytestream_put_byte(&s->buf, scod);  // Scod
     // SGcod
     bytestream_put_byte(&s->buf, 0); // progression level
     bytestream_put_be16(&s->buf, 1); // num of layers
@@ -719,14 +726,18 @@ static void putnumpasses(Jpeg2000EncoderContext *s, int n)
 
 
 static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, int precno,
-                          uint8_t *expn, int numgbits)
+                          uint8_t *expn, int numgbits, int packetno)
 {
     int bandno, empty = 1;
-
     // init bitstream
     *s->buf = 0;
     s->bit_index = 0;
 
+    if (s->sop) {
+        bytestream_put_be16(&s->buf, JPEG2000_SOP);
+        bytestream_put_be16(&s->buf, 4);
+        bytestream_put_be16(&s->buf, packetno);
+    }
     // header
 
     // is the packet empty?
@@ -794,6 +805,10 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
         }
     }
     j2k_flush(s);
+    if (s->eph) {
+        bytestream_put_be16(&s->buf, JPEG2000_EPH);
+    }
+
     for (bandno = 0; bandno < rlevel->nbands; bandno++){
         Jpeg2000Band *band = rlevel->band + bandno;
         Jpeg2000Prec *prec = band->prec + precno;
@@ -821,7 +836,7 @@ static int encode_packets(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int til
     int compno, reslevelno, ret;
     Jpeg2000CodingStyle *codsty = &s->codsty;
     Jpeg2000QuantStyle  *qntsty = &s->qntsty;
-
+    int packetno = 0;
     av_log(s->avctx, AV_LOG_DEBUG, "tier2\n");
     // lay-rlevel-comp-pos progression
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++){
@@ -830,7 +845,7 @@ static int encode_packets(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int til
             Jpeg2000ResLevel *reslevel = s->tile[tileno].comp[compno].reslevel + reslevelno;
             for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++){
                 if ((ret = encode_packet(s, reslevel, precno, qntsty->expn + (reslevelno ? 3*reslevelno-2 : 0),
-                              qntsty->nguardbits)) < 0)
+                              qntsty->nguardbits, packetno++)) < 0)
                     return ret;
             }
         }
@@ -1244,7 +1259,8 @@ static const AVOption options[] = {
     { "pred",          "DWT Type",          OFFSET(pred),          AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, "pred"        },
     { "dwt97int",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 0           }, INT_MIN, INT_MAX,       VE, "pred"        },
     { "dwt53",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 0           }, INT_MIN, INT_MAX,       VE, "pred"        },
-
+    { "sop",           "SOP marker",        OFFSET(sop),           AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, },
+    { "eph",           "EPH marker",        OFFSET(eph),           AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, },
     { NULL }
 };
 
