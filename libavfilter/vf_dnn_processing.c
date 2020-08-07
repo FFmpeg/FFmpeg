@@ -41,6 +41,7 @@ typedef struct DnnProcessingContext {
     DNNBackendType backend_type;
     char *model_inputname;
     char *model_outputname;
+    char *backend_options;
 
     DNNModule *dnn_module;
     DNNModel *model;
@@ -69,6 +70,7 @@ static const AVOption dnn_processing_options[] = {
     { "model",       "path to model file",         OFFSET(model_filename),   AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { "input",       "input name of the model",    OFFSET(model_inputname),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { "output",      "output name of the model",   OFFSET(model_outputname), AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
+    { "options",     "backend options",            OFFSET(backend_options),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { NULL }
 };
 
@@ -101,7 +103,7 @@ static av_cold int init(AVFilterContext *context)
         return AVERROR(EINVAL);
     }
 
-    ctx->model = (ctx->dnn_module->load_model)(ctx->model_filename);
+    ctx->model = (ctx->dnn_module->load_model)(ctx->model_filename, ctx->backend_options);
     if (!ctx->model) {
         av_log(ctx, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EINVAL);

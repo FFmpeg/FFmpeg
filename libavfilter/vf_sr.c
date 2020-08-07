@@ -81,7 +81,7 @@ static av_cold int init(AVFilterContext *context)
         av_log(context, AV_LOG_ERROR, "load_model for network was not specified\n");
         return AVERROR(EIO);
     }
-    sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename);
+    sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename, NULL);
     if (!sr_context->model){
         av_log(context, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EIO);

@@ -572,7 +572,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     return DNN_SUCCESS;
 }
 
-DNNModel *ff_dnn_load_model_tf(const char *model_filename)
+DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options)
 {
     DNNModel *model = NULL;
     TFModel *tf_model = NULL;
@@ -600,6 +600,7 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename)
     model->model = (void *)tf_model;
     model->set_input_output = &set_input_output_tf;
     model->get_input = &get_input_tf;
+    model->options = options;
 
     return model;
 }
