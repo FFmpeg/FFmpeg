@@ -64,7 +64,6 @@ static int query_formats(AVFilterContext *ctx)
             if (i != 4)
                 continue;
             if ((ret = ff_add_format(&formats, fmt)) < 0) {
-                ff_formats_unref(&formats);
                 return ret;
             }
         }
