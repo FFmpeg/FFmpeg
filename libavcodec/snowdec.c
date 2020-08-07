@@ -369,7 +369,10 @@ static int decode_header(SnowContext *s){
                 htaps = htaps*2 + 2;
                 p->htaps= htaps;
                 for(i= htaps/2; i; i--){
-                    p->hcoeff[i]= get_symbol(&s->c, s->header_state, 0) * (1-2*(i&1));
+                    unsigned hcoeff = get_symbol(&s->c, s->header_state, 0);
+                    if (hcoeff > 127)
+                        return AVERROR_INVALIDDATA;
+                    p->hcoeff[i]= hcoeff * (1-2*(i&1));
                     sum += p->hcoeff[i];
                 }
                 p->hcoeff[0]= 32-sum;

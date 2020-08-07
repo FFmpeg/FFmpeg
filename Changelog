@@ -11,6 +11,8 @@ version <next>:
 - Rayman 2 APM muxer
 - AV1 encoding support SVT-AV1
 - Cineform HD encoder
+- ADPCM Argonaut Games encoder
+- Argonaut Games ASF muxer
 
 
 version 4.3:
