@@ -68,6 +68,7 @@ typedef struct ArgoASFMuxContext {
     const AVClass *class;
     int            version_major;
     int            version_minor;
+    const char    *name;
 } ArgoASFMuxContext;
 
 #if CONFIG_ARGO_ASF_DEMUXER
@@ -328,7 +329,10 @@ static int argo_asf_write_header(AVFormatContext *s)
     fhdr.version_minor = (uint16_t)ctx->version_minor;
     fhdr.num_chunks    = 1;
     fhdr.chunk_offset  = ASF_FILE_HEADER_SIZE;
-    strncpy(fhdr.name, av_basename(s->url), FF_ARRAY_ELEMS(fhdr.name));
+    if (ctx->name)
+        strncpy(fhdr.name, ctx->name, sizeof(fhdr.name));
+    else
+        strncpy(fhdr.name, av_basename(s->url), sizeof(fhdr.name));
 
     chdr.num_blocks    = 0;
     chdr.num_samples   = ASF_SAMPLE_COUNT;
@@ -387,6 +391,14 @@ static const AVOption argo_asf_options[] = {
         .default_val = {.i64 = 1},
         .min         = 0,
         .max         = UINT16_MAX,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    {
+        .name        = "name",
+        .help        = "embedded file name (max 8 characters)",
+        .offset      = offsetof(ArgoASFMuxContext, name),
+        .type        = AV_OPT_TYPE_STRING,
+        .default_val = {.str = NULL},
         .flags       = AV_OPT_FLAG_ENCODING_PARAM
     },
     { NULL }
