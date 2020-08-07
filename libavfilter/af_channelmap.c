@@ -280,28 +280,18 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
 static int channelmap_query_formats(AVFilterContext *ctx)
 {
     ChannelMapContext *s = ctx->priv;
-    AVFilterChannelLayouts *layouts;
     AVFilterChannelLayouts *channel_layouts = NULL;
     int ret;
 
-    layouts = ff_all_channel_counts();
-    if (!layouts) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    if ((ret = ff_add_channel_layout     (&channel_layouts, s->output_layout                    )) < 0 ||
-        (ret = ff_set_common_formats     (ctx             , ff_planar_sample_fmts()             )) < 0 ||
+    if ((ret = ff_set_common_formats    (ctx,  ff_planar_sample_fmts()))  < 0 ||
         (ret = ff_set_common_samplerates (ctx             , ff_all_samplerates()                )) < 0 ||
-        (ret = ff_channel_layouts_ref    (layouts         , &ctx->inputs[0]->out_channel_layouts)) < 0 ||
-        (ret = ff_channel_layouts_ref    (channel_layouts , &ctx->outputs[0]->in_channel_layouts)) < 0)
-            goto fail;
+        (ret = ff_add_channel_layout(&channel_layouts, s->output_layout)) < 0 ||
+        (ret = ff_channel_layouts_ref(channel_layouts,
+                                      &ctx->outputs[0]->in_channel_layouts)) < 0)
+        return ret;
 
-    return 0;
-fail:
-    if (layouts)
-        av_freep(&layouts->channel_layouts);
-    av_freep(&layouts);
-    return ret;
+    return ff_channel_layouts_ref(ff_all_channel_counts(),
+                                  &ctx->inputs[0]->out_channel_layouts);
 }
 
 static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
