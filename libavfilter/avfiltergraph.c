@@ -419,10 +419,8 @@ static int can_merge_formats(AVFilterFormats *a_arg,
         av_freep(&ret);
         return 1;
     } else {
-        if (a)
-            av_freep(&a->formats);
-        if (b)
-            av_freep(&b->formats);
+        av_freep(&a->formats);
+        av_freep(&b->formats);
         av_freep(&a);
         av_freep(&b);
         return 0;
