@@ -593,25 +593,13 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
-    AVFilterChannelLayouts *layouts;
     int ret;
 
-    layouts = ff_all_channel_counts();
-    if (!layouts) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     if ((ret = ff_set_common_formats(ctx, ff_make_format_list(sample_fmts))) < 0 ||
-        (ret = ff_set_common_channel_layouts(ctx, layouts))          < 0 ||
         (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
-        goto fail;
-    return 0;
-fail:
-    if (layouts)
-        av_freep(&layouts->channel_layouts);
-    av_freep(&layouts);
-    return ret;
+        return ret;
+
+    return ff_set_common_channel_layouts(ctx, ff_all_channel_counts());
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
