@@ -55,27 +55,15 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat alpha_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
-    AVFilterFormats *main_formats = NULL, *alpha_formats = NULL;
+    AVFilterFormats *main_formats = ff_make_format_list(main_fmts);
     int ret;
 
-    if (!(main_formats = ff_make_format_list(main_fmts)) ||
-        !(alpha_formats = ff_make_format_list(alpha_fmts))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-    if ((ret = ff_formats_ref(main_formats , &ctx->inputs[0]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(alpha_formats, &ctx->inputs[1]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(main_formats , &ctx->outputs[0]->in_formats)) < 0)
-            goto fail;
-    return 0;
-fail:
-    if (main_formats)
-        av_freep(&main_formats->formats);
-    av_freep(&main_formats);
-    if (alpha_formats)
-        av_freep(&alpha_formats->formats);
-    av_freep(&alpha_formats);
-    return ret;
+    if ((ret = ff_formats_ref(main_formats, &ctx->inputs[0]->out_formats)) < 0 ||
+        (ret = ff_formats_ref(main_formats, &ctx->outputs[0]->in_formats)) < 0)
+            return ret;
+
+    return ff_formats_ref(ff_make_format_list(alpha_fmts),
+                          &ctx->inputs[1]->out_formats);
 }
 
 static int config_input_main(AVFilterLink *inlink)
