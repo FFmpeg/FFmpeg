@@ -37,26 +37,13 @@ typedef struct HWDownloadContext {
 
 static int hwdownload_query_formats(AVFilterContext *avctx)
 {
-    AVFilterFormats  *infmts = NULL;
-    AVFilterFormats *outfmts = NULL;
-    const AVPixFmtDescriptor *desc;
+    AVFilterFormats *fmts;
     int err;
 
-    for (desc = av_pix_fmt_desc_next(NULL); desc;
-         desc = av_pix_fmt_desc_next(desc)) {
-        if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
-            err = ff_add_format(&infmts,  av_pix_fmt_desc_get_id(desc));
-        else
-            err = ff_add_format(&outfmts, av_pix_fmt_desc_get_id(desc));
-        if (err) {
-            ff_formats_unref(&infmts);
-            ff_formats_unref(&outfmts);
-            return err;
-        }
-    }
-
-    if ((err = ff_formats_ref(infmts,  &avctx->inputs[0]->out_formats)) < 0 ||
-        (err = ff_formats_ref(outfmts, &avctx->outputs[0]->in_formats)) < 0)
+    if ((err = ff_formats_pixdesc_filter(&fmts, AV_PIX_FMT_FLAG_HWACCEL, 0)) ||
+        (err = ff_formats_ref(fmts, &avctx->inputs[0]->out_formats))         ||
+        (err = ff_formats_pixdesc_filter(&fmts, 0, AV_PIX_FMT_FLAG_HWACCEL)) ||
+        (err = ff_formats_ref(fmts, &avctx->outputs[0]->in_formats)))
         return err;
 
     return 0;
