@@ -140,10 +140,10 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
     return ret;
 fail:
     if (ret) {
-        av_freep(&ret->refs);
+        av_assert1(!ret->refs);
         av_freep(&ret->formats);
+        av_freep(&ret);
     }
-    av_freep(&ret);
     return NULL;
 }
 
@@ -167,10 +167,10 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
     return ret;
 fail:
     if (ret) {
-        av_freep(&ret->refs);
+        av_assert1(!ret->refs);
         av_freep(&ret->formats);
+        av_freep(&ret);
     }
-    av_freep(&ret);
     return NULL;
 }
 
@@ -260,10 +260,10 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
 
 fail:
     if (ret) {
-        av_freep(&ret->refs);
+        av_assert1(!ret->refs);
         av_freep(&ret->channel_layouts);
+        av_freep(&ret);
     }
-    av_freep(&ret);
     return NULL;
 }
 
