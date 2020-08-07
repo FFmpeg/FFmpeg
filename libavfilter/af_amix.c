@@ -588,7 +588,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats = NULL;
+    static const enum AVSampleFormat sample_fmts[] = {
+        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+        AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
+        AV_SAMPLE_FMT_NONE
+    };
     AVFilterChannelLayouts *layouts;
     int ret;
 
@@ -598,11 +602,7 @@ static int query_formats(AVFilterContext *ctx)
         goto fail;
     }
 
-    if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT ))          < 0 ||
-        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP))          < 0 ||
-        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL ))          < 0 ||
-        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBLP))          < 0 ||
-        (ret = ff_set_common_formats        (ctx, formats))          < 0 ||
+    if ((ret = ff_set_common_formats(ctx, ff_make_format_list(sample_fmts))) < 0 ||
         (ret = ff_set_common_channel_layouts(ctx, layouts))          < 0 ||
         (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
         goto fail;
