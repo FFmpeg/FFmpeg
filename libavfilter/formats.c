@@ -33,17 +33,11 @@
 
 /**
  * Add all refs from a to ret and destroy a.
+ * ret->refs must have enough spare room left for this.
  */
-#define MERGE_REF(ret, a, fmts, type, fail)                                \
+#define MERGE_REF_NO_ALLOC(ret, a, fmts)                                   \
 do {                                                                       \
-    type ***tmp;                                                           \
     int i;                                                                 \
-                                                                           \
-    if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
-                                 sizeof(*tmp))))                           \
-        goto fail;                                                         \
-    ret->refs = tmp;                                                       \
-                                                                           \
     for (i = 0; i < a->refcount; i ++) {                                   \
         ret->refs[ret->refcount] = a->refs[i];                             \
         *ret->refs[ret->refcount++] = ret;                                 \
@@ -54,6 +48,17 @@ do {                                                                       \
     av_freep(&a);                                                          \
 } while (0)
 
+#define MERGE_REF(ret, a, fmts, type, fail)                                \
+do {                                                                       \
+    type ***tmp;                                                           \
+                                                                           \
+    if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
+                                 sizeof(*tmp))))                           \
+        goto fail;                                                         \
+    ret->refs = tmp;                                                       \
+    MERGE_REF_NO_ALLOC(ret, a, fmts);                                      \
+} while (0)
+
 /**
  * Add all formats common for a and b to ret, copy the refs and destroy
  * a and b.
@@ -61,6 +66,7 @@ do {                                                                       \
 #define MERGE_FORMATS(ret, a, b, fmts, nb, type, fail)                          \
 do {                                                                            \
     int i, j, k = 0, count = FFMIN(a->nb, b->nb);                               \
+    type ***tmp;                                                                \
                                                                                 \
     if (!(ret = av_mallocz(sizeof(*ret))))                                      \
         goto fail;                                                              \
@@ -85,8 +91,13 @@ do {                                                                            
     if (!ret->nb)                                                               \
         goto fail;                                                              \
                                                                                 \
-    MERGE_REF(ret, a, fmts, type, fail);                                        \
-    MERGE_REF(ret, b, fmts, type, fail);                                        \
+    tmp = av_realloc_array(NULL, a->refcount + b->refcount, sizeof(*tmp));      \
+    if (!tmp)                                                                   \
+        goto fail;                                                              \
+    ret->refs = tmp;                                                            \
+                                                                                \
+    MERGE_REF_NO_ALLOC(ret, a, fmts);                                           \
+    MERGE_REF_NO_ALLOC(ret, b, fmts);                                           \
 } while (0)
 
 AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
@@ -238,8 +249,13 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
     ret->nb_channel_layouts = ret_nb;
     if (!ret->nb_channel_layouts)
         goto fail;
-    MERGE_REF(ret, a, channel_layouts, AVFilterChannelLayouts, fail);
-    MERGE_REF(ret, b, channel_layouts, AVFilterChannelLayouts, fail);
+
+    ret->refs = av_realloc_array(NULL, a->refcount + b->refcount,
+                                 sizeof(*ret->refs));
+    if (!ret->refs)
+        goto fail;
+    MERGE_REF_NO_ALLOC(ret, a, channel_layouts);
+    MERGE_REF_NO_ALLOC(ret, b, channel_layouts);
     return ret;
 
 fail:
