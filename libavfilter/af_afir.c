@@ -742,13 +742,13 @@ static int query_formats(AVFilterContext *ctx)
     } else {
         AVFilterChannelLayouts *mono = NULL;
 
-        ret = ff_add_channel_layout(&mono, AV_CH_LAYOUT_MONO);
-        if (ret)
-            return ret;
-
         if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->out_channel_layouts)) < 0)
             return ret;
         if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts)) < 0)
+            return ret;
+
+        ret = ff_add_channel_layout(&mono, AV_CH_LAYOUT_MONO);
+        if (ret)
             return ret;
         for (int i = 1; i < ctx->nb_inputs; i++) {
             if ((ret = ff_channel_layouts_ref(mono, &ctx->inputs[i]->out_channel_layouts)) < 0)
