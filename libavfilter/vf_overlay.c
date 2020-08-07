@@ -205,76 +205,44 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *main_formats = NULL;
-    AVFilterFormats *overlay_formats = NULL;
+    const enum AVPixelFormat *main_formats, *overlay_formats;
+    AVFilterFormats *formats;
     int ret;
 
     switch (s->format) {
     case OVERLAY_FORMAT_YUV420:
-        if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv420)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv420))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+        main_formats    = main_pix_fmts_yuv420;
+        overlay_formats = overlay_pix_fmts_yuv420;
         break;
     case OVERLAY_FORMAT_YUV422:
-        if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv422)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv422))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+        main_formats    = main_pix_fmts_yuv422;
+        overlay_formats = overlay_pix_fmts_yuv422;
         break;
     case OVERLAY_FORMAT_YUV444:
-        if (!(main_formats    = ff_make_format_list(main_pix_fmts_yuv444)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv444))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+        main_formats    = main_pix_fmts_yuv444;
+        overlay_formats = overlay_pix_fmts_yuv444;
         break;
     case OVERLAY_FORMAT_RGB:
-        if (!(main_formats    = ff_make_format_list(main_pix_fmts_rgb)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_rgb))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+        main_formats    = main_pix_fmts_rgb;
+        overlay_formats = overlay_pix_fmts_rgb;
         break;
     case OVERLAY_FORMAT_GBRP:
-        if (!(main_formats    = ff_make_format_list(main_pix_fmts_gbrp)) ||
-            !(overlay_formats = ff_make_format_list(overlay_pix_fmts_gbrp))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+        main_formats    = main_pix_fmts_gbrp;
+        overlay_formats = overlay_pix_fmts_gbrp;
         break;
     case OVERLAY_FORMAT_AUTO:
-        if (!(main_formats    = ff_make_format_list(alpha_pix_fmts))) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        break;
+        return ff_set_common_formats(ctx, ff_make_format_list(alpha_pix_fmts));
     default:
         av_assert0(0);
     }
 
-    if (s->format == OVERLAY_FORMAT_AUTO) {
-        ret = ff_set_common_formats(ctx, main_formats);
-        if (ret < 0)
-            goto fail;
-    } else {
-        if ((ret = ff_formats_ref(main_formats   , &ctx->inputs[MAIN]->out_formats   )) < 0 ||
-            (ret = ff_formats_ref(overlay_formats, &ctx->inputs[OVERLAY]->out_formats)) < 0 ||
-            (ret = ff_formats_ref(main_formats   , &ctx->outputs[MAIN]->in_formats   )) < 0)
-                goto fail;
-    }
+    formats = ff_make_format_list(main_formats);
+    if ((ret = ff_formats_ref(formats, &ctx->inputs[MAIN]->out_formats)) < 0 ||
+        (ret = ff_formats_ref(formats, &ctx->outputs[MAIN]->in_formats)) < 0)
+        return ret;
 
-    return 0;
-fail:
-    if (main_formats)
-        av_freep(&main_formats->formats);
-    av_freep(&main_formats);
-    if (overlay_formats)
-        av_freep(&overlay_formats->formats);
-    av_freep(&overlay_formats);
-    return ret;
+    return ff_formats_ref(ff_make_format_list(overlay_formats),
+                          &ctx->inputs[OVERLAY]->out_formats);
 }
 
 static int config_input_overlay(AVFilterLink *inlink)
