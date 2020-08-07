@@ -83,11 +83,10 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     if ((ret = ff_set_common_formats         (ctx, ff_all_formats              (AVMEDIA_TYPE_AUDIO))) < 0 ||
-        (ret = ff_set_common_channel_layouts (ctx, avfilter_make_format64_list (chlayouts         ))) < 0 ||
         (ret = ff_set_common_samplerates     (ctx, ff_make_format_list         (sample_rates      ))) < 0)
         return ret;
 
-    return 0;
+    return ff_set_common_channel_layouts(ctx, ff_make_format64_list(chlayouts));
 }
 
 static int config_props(AVFilterLink *outlink)

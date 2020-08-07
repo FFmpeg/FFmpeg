@@ -113,7 +113,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    layouts = avfilter_make_format64_list(chlayouts);
+    layouts = ff_make_format64_list(chlayouts);
     if (!layouts)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);

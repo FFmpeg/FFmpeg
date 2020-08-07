@@ -1334,7 +1334,7 @@ static int query_formats(AVFilterContext *ctx)
     if ((ret = ff_formats_ref(formats, &inlink->out_formats)) < 0)
         return ret;
 
-    layouts = avfilter_make_format64_list(channel_layouts);
+    layouts = ff_make_format64_list(channel_layouts);
     if ((ret = ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts)) < 0)
         return ret;
 

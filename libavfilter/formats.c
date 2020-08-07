@@ -289,7 +289,7 @@ AVFilterFormats *ff_make_format_list(const int *fmts)
     return formats;
 }
 
-AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
+AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts)
 {
     MAKE_FORMAT_LIST(AVFilterChannelLayouts,
                      channel_layouts, nb_channel_layouts);
@@ -299,6 +299,13 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
 
     return formats;
 }
+
+#if LIBAVFILTER_VERSION_MAJOR < 8
+AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
+{
+    return ff_make_format64_list(fmts);
+}
+#endif
 
 #define ADD_FORMAT(f, fmt, unref_fn, type, list, nb)        \
 do {                                                        \
