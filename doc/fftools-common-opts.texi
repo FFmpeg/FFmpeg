@@ -113,6 +113,10 @@ Print detailed information about the filter named @var{filter_name}. Use the
 @item bsf=@var{bitstream_filter_name}
 Print detailed information about the bitstream filter named @var{bitstream_filter_name}.
 Use the @option{-bsfs} option to get a list of all bitstream filters.
+
+@item protocol=@var{protocol_name}
+Print detailed information about the protocol named @var{protocol_name}.
+Use the @option{-protocols} option to get a list of all protocols.
 @end table
 
 @item -version
