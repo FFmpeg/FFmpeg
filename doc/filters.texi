@@ -5798,7 +5798,7 @@ Below is a description of the currently available audio sources.
 Buffer audio frames, and make them available to the filter chain.
 
 This source is mainly intended for a programmatic use, in particular
-through the interface defined in @file{libavfilter/asrc_abuffer.h}.
+through the interface defined in @file{libavfilter/buffersrc.h}.
 
 It accepts the following parameters:
 @table @option
@@ -22232,7 +22232,7 @@ Below is a description of the currently available video sources.
 Buffer video frames, and make them available to the filter chain.
 
 This source is mainly intended for a programmatic use, in particular
-through the interface defined in @file{libavfilter/vsrc_buffer.h}.
+through the interface defined in @file{libavfilter/buffersrc.h}.
 
 It accepts the following parameters:
 

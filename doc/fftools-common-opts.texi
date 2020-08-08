@@ -107,12 +107,16 @@ Print detailed information about the muxer named @var{muxer_name}. Use the
 @option{-formats} option to get a list of all muxers and demuxers.
 
 @item filter=@var{filter_name}
-Print detailed information about the filter name @var{filter_name}. Use the
+Print detailed information about the filter named @var{filter_name}. Use the
 @option{-filters} option to get a list of all filters.
 
 @item bsf=@var{bitstream_filter_name}
-Print detailed information about the bitstream filter name @var{bitstream_filter_name}.
+Print detailed information about the bitstream filter named @var{bitstream_filter_name}.
 Use the @option{-bsfs} option to get a list of all bitstream filters.
+
+@item protocol=@var{protocol_name}
+Print detailed information about the protocol named @var{protocol_name}.
+Use the @option{-protocols} option to get a list of all protocols.
 @end table
 
 @item -version

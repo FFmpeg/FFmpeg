@@ -364,13 +364,13 @@ static inline void skip_put_bytes(PutBitContext *s, int n)
 /**
  * Skip the given number of bits.
  * Must only be used if the actual values in the bitstream do not matter.
- * If n is 0 the behavior is undefined.
+ * If n is < 0 the behavior is undefined.
  */
 static inline void skip_put_bits(PutBitContext *s, int n)
 {
-    s->bit_left -= n;
-    s->buf_ptr  -= sizeof(BitBuf) * ((unsigned)s->bit_left / BUF_BITS);
-    s->bit_left &= (BUF_BITS - 1);
+    unsigned bits = BUF_BITS - s->bit_left + n;
+    s->buf_ptr += sizeof(BitBuf) * (bits / BUF_BITS);
+    s->bit_left = BUF_BITS - (bits & (BUF_BITS - 1));
 }
 
 /**
