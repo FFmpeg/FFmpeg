@@ -356,6 +356,9 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
             s->lut[i] = last;
     }
 
+    if (s->planes != 4)
+        return 0;
+
     s->alpha = av_calloc(avctx->width * avctx->height, sizeof(*s->alpha));
     if (!s->alpha)
         return AVERROR(ENOMEM);
@@ -863,6 +866,8 @@ static av_cold int cfhd_encode_close(AVCodecContext *avctx)
         for (int j = 0; j < 8; j++)
             s->plane[i].l_h[j] = NULL;
     }
+
+    av_freep(&s->alpha);
 
     return 0;
 }
