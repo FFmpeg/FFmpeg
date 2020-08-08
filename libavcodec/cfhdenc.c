@@ -235,6 +235,7 @@ typedef struct CFHDEncContext {
     uint16_t lut[1024];
     Runbook  rb[321];
     Codebook cb[513];
+    int16_t *alpha;
 } CFHDEncContext;
 
 static av_cold int cfhd_encode_init(AVCodecContext *avctx)
@@ -355,6 +356,10 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
             s->lut[i] = last;
     }
 
+    s->alpha = av_calloc(avctx->width * avctx->height, sizeof(*s->alpha));
+    if (!s->alpha)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -418,6 +423,27 @@ static int put_runcode(PutBitContext *pb, int count, const Runbook *const rb)
     return 0;
 }
 
+static void process_alpha(const int16_t *src, int width, int height, ptrdiff_t stride, int16_t *dst)
+{
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            int alpha = src[j];
+
+            if (alpha > 0 && alpha < 4080) {
+                alpha *= 223;
+                alpha += 128;
+                alpha >>= 8;
+                alpha += 256;
+            }
+
+            dst[j] = av_clip_uintp2(alpha, 12);
+        }
+
+        src += stride;
+        dst += width;
+    }
+}
+
 static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *frame, int *got_packet)
 {
@@ -428,9 +454,9 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const Runbook *const rb = s->rb;
     const uint16_t *lut = s->lut;
     unsigned pos;
-    int ret = 0;
+    int ret;
 
-    for (int plane = 0; plane < s->planes && !ret; plane++) {
+    for (int plane = 0; plane < s->planes; plane++) {
         int width = s->plane[plane].band[2][0].width;
         int a_width = s->plane[plane].band[2][0].a_width;
         int height = s->plane[plane].band[2][0].height;
@@ -438,8 +464,15 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int16_t *input = (int16_t *)frame->data[act_plane];
         int16_t *low = s->plane[plane].l_h[6];
         int16_t *high = s->plane[plane].l_h[7];
-        const ptrdiff_t in_stride = frame->linesize[act_plane] / 2;
+        ptrdiff_t in_stride = frame->linesize[act_plane] / 2;
         int low_stride, high_stride;
+
+        if (plane == 3) {
+            process_alpha(input, avctx->width, avctx->height,
+                          in_stride, s->alpha);
+            input = s->alpha;
+            in_stride = avctx->width;
+        }
 
         for (int i = 0; i < height * 2; i++) {
             horiz_filter(input, low, high, width * 2);
@@ -590,7 +623,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_put_be16(pby, s->planes);
 
     bytestream2_put_be16(pby, EncodedFormat);
-    bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 1 : 3);
+    bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 1 : 3 + (s->planes == 4));
 
     bytestream2_put_be16(pby, WaveletCount);
     bytestream2_put_be16(pby, 3);
@@ -676,7 +709,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (int l = 0; l < 3; l++) {
             for (int i = 0; i < 3; i++) {
-                s->plane[p].quantization[1 + l * 3 + i] = quantization_per_subband[avctx->pix_fmt != AV_PIX_FMT_YUV422P10][p][s->quality][l * 3 + i];
+                s->plane[p].quantization[1 + l * 3 + i] = quantization_per_subband[avctx->pix_fmt != AV_PIX_FMT_YUV422P10][p >= 3 ? 0 : p][s->quality][l * 3 + i];
             }
         }
 
@@ -875,6 +908,7 @@ AVCodec ff_cfhd_encoder = {
     .pix_fmts         = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10,
                           AV_PIX_FMT_GBRP12,
+                          AV_PIX_FMT_GBRAP12,
                           AV_PIX_FMT_NONE
                         },
 };
