@@ -112,6 +112,15 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    AFormatContext *s = ctx->priv;
+
+    ff_formats_unref(&s->formats);
+    ff_formats_unref(&s->sample_rates);
+    ff_channel_layouts_unref(&s->channel_layouts);
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     AFormatContext *s = ctx->priv;
@@ -119,14 +128,18 @@ static int query_formats(AVFilterContext *ctx)
 
     ret = ff_set_common_formats(ctx, s->formats ? s->formats :
                                             ff_all_formats(AVMEDIA_TYPE_AUDIO));
+    s->formats = NULL;
     if (ret < 0)
         return ret;
     ret = ff_set_common_samplerates(ctx, s->sample_rates ? s->sample_rates :
                                                      ff_all_samplerates());
+    s->sample_rates = NULL;
     if (ret < 0)
         return ret;
-    return ff_set_common_channel_layouts(ctx, s->channel_layouts ? s->channel_layouts :
+    ret = ff_set_common_channel_layouts(ctx, s->channel_layouts ? s->channel_layouts :
                                                             ff_all_channel_counts());
+    s->channel_layouts = NULL;
+    return ret;
 }
 
 static const AVFilterPad avfilter_af_aformat_inputs[] = {
@@ -149,6 +162,7 @@ AVFilter ff_af_aformat = {
     .name          = "aformat",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to one of the specified formats."),
     .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AFormatContext),
     .priv_class    = &aformat_class,
