@@ -43,10 +43,12 @@ typedef enum {
     DLT_MAXIMUM = 4,
     DLT_MATH_BINARY = 5,
     DLT_MATH_UNARY = 6,
+    DLT_AVG_POOL = 7,
     DLT_COUNT
 } DNNLayerType;
 
 typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_OUTPUT} DNNOperandType;
+typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNPaddingParam;
 
 typedef struct Layer{
     DNNLayerType type;
