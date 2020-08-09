@@ -136,13 +136,6 @@ static int argo_asf_read_header(AVFormatContext *s)
 
     argo_asf_parse_file_header(&asf->fhdr, buf);
 
-    if (!argo_asf_is_known_version(&asf->fhdr)) {
-        avpriv_request_sample(s, "Version %hu.%hu",
-            asf->fhdr.version_major, asf->fhdr.version_minor
-        );
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (asf->fhdr.num_chunks == 0) {
         return AVERROR_INVALIDDATA;
     } else if (asf->fhdr.num_chunks > 1) {
