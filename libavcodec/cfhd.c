@@ -566,16 +566,15 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "Frame index %"PRIu16"\n", data);
             s->frame_index = data;
         } else if (tag == SampleIndexTable) {
-            av_log(avctx, AV_LOG_DEBUG, "tag=2 header - skipping %i tag/value pairs\n", data);
+            av_log(avctx, AV_LOG_DEBUG, "Sample index table - skipping %i values\n", data);
             if (data > bytestream2_get_bytes_left(&gb) / 4) {
-                av_log(avctx, AV_LOG_ERROR, "too many tag/value pairs (%d)\n", data);
+                av_log(avctx, AV_LOG_ERROR, "too many values (%d)\n", data);
                 ret = AVERROR_INVALIDDATA;
                 break;
             }
             for (i = 0; i < data; i++) {
-                uint16_t tag2 = bytestream2_get_be16(&gb);
-                uint16_t val2 = bytestream2_get_be16(&gb);
-                av_log(avctx, AV_LOG_DEBUG, "Tag/Value = %x %x\n", tag2, val2);
+                uint32_t offset = bytestream2_get_be32(&gb);
+                av_log(avctx, AV_LOG_DEBUG, "Offset = %"PRIu32"\n", offset);
             }
         } else if (tag == HighpassWidth) {
             av_log(avctx, AV_LOG_DEBUG, "Highpass width %i channel %i level %i subband %i\n", data, s->channel_num, s->level, s->subband_num);
