@@ -50,6 +50,7 @@ OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += x86/g722dsp_init.o
 OBJS-$(CONFIG_ALAC_DECODER)            += x86/alacdsp_init.o
 OBJS-$(CONFIG_APNG_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
+OBJS-$(CONFIG_CFHD_DECODER)            += x86/cfhddsp_init.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o x86/synth_filter_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_EXR_DECODER)             += x86/exrdsp_init.o
@@ -153,6 +154,7 @@ X86ASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
 X86ASM-OBJS-$(CONFIG_ALAC_DECODER)     += x86/alacdsp.o
 X86ASM-OBJS-$(CONFIG_APNG_DECODER)     += x86/pngdsp.o
 X86ASM-OBJS-$(CONFIG_CAVS_DECODER)     += x86/cavsidct.o
+X86ASM-OBJS-$(CONFIG_CFHD_DECODER)     += x86/cfhddsp.o
 X86ASM-OBJS-$(CONFIG_DCA_DECODER)      += x86/dcadsp.o x86/synth_filter.o
 X86ASM-OBJS-$(CONFIG_DIRAC_DECODER)    += x86/diracdsp.o                \
                                           x86/dirac_dwt.o
