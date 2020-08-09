@@ -523,6 +523,11 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->prescale_shift[2] = (data >> 6) & 0x7;
             av_log(avctx, AV_LOG_DEBUG, "Prescale shift (VC-5): %x\n", data);
         } else if (tag == BandEncoding) {
+            if (!data || data > 5) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid band encoding\n");
+                ret = AVERROR(EINVAL);
+                break;
+            }
             s->band_encoding = data;
             av_log(avctx, AV_LOG_DEBUG, "Encode Method for Subband %d : %x\n", s->subband_num_actual, data);
         } else if (tag == LowpassWidth) {
@@ -814,8 +819,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             {
                 OPEN_READER(re, &s->gb);
 
-                const int lossless = (s->sample_type == 2 || s->sample_type == 3 || s->frame_type) &&
-                                      s->subband_num_actual == 7 && s->band_encoding == 5;
+                const int lossless = s->band_encoding == 5;
 
                 if (s->codebook == 0 && s->transform_type == 2 && s->subband_num_actual == 7)
                     s->codebook = 1;
