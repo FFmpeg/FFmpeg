@@ -28,6 +28,11 @@ fate-dnn-layer-mathunary: $(DNNTESTSDIR)/dnn-layer-mathunary-test$(EXESUF)
 fate-dnn-layer-mathunary: CMD = run $(DNNTESTSDIR)/dnn-layer-mathunary-test$(EXESUF)
 fate-dnn-layer-mathunary: CMP = null
 
+FATE_DNN += fate-dnn-layer-avgpool
+fate-dnn-layer-avgpool: $(DNNTESTSDIR)/dnn-layer-avgpool-test$(EXESUF)
+fate-dnn-layer-avgpool: CMD = run $(DNNTESTSDIR)/dnn-layer-avgpool-test$(EXESUF)
+fate-dnn-layer-avgpool: CMP = null
+
 FATE-yes += $(FATE_DNN)
 
 fate-dnn: $(FATE_DNN)
