@@ -457,6 +457,16 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == FrameType) {
             s->frame_type = data;
             av_log(avctx, AV_LOG_DEBUG, "Frame type %"PRIu16"\n", data);
+        } else if (abstag == VersionMajor) {
+            av_log(avctx, AV_LOG_DEBUG, "Version major %"PRIu16"\n", data);
+        } else if (abstag == VersionMinor) {
+            av_log(avctx, AV_LOG_DEBUG, "Version minor %"PRIu16"\n", data);
+        } else if (abstag == VersionRevision) {
+            av_log(avctx, AV_LOG_DEBUG, "Version revision %"PRIu16"\n", data);
+        } else if (abstag == VersionEdit) {
+            av_log(avctx, AV_LOG_DEBUG, "Version edit %"PRIu16"\n", data);
+        } else if (abstag == Version) {
+            av_log(avctx, AV_LOG_DEBUG, "Version %"PRIu16"\n", data);
         } else if (tag == ImageWidth) {
             av_log(avctx, AV_LOG_DEBUG, "Width %"PRIu16"\n", data);
             s->coded_width = data;
