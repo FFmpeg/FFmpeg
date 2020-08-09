@@ -815,7 +815,9 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
             av_log(avctx, AV_LOG_DEBUG, "Start subband coeffs plane %i level %i codebook %i expected %i\n", s->channel_num, s->level, s->codebook, expected);
 
-            init_get_bits(&s->gb, gb.buffer, bytestream2_get_bytes_left(&gb) * 8);
+            ret = init_get_bits8(&s->gb, gb.buffer, bytestream2_get_bytes_left(&gb));
+            if (ret < 0)
+                goto end;
             {
                 OPEN_READER(re, &s->gb);
 
