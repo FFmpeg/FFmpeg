@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "atsc_a53.h"
 #include "golomb.h"
 #include "hevc_ps.h"
 #include "hevc_sei.h"
@@ -164,51 +165,17 @@ static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb, const HEVCPa
 static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s, GetBitContext *gb,
                                                       int size)
 {
-    int flag;
-    int user_data_type_code;
-    int cc_count;
+    int ret;
 
     if (size < 3)
        return AVERROR(EINVAL);
 
-    user_data_type_code = get_bits(gb, 8);
-    if (user_data_type_code == 0x3) {
-        skip_bits(gb, 1); // reserved
+    ret = ff_parse_a53_cc(&s->buf_ref, gb->buffer + get_bits_count(gb) / 8, size);
 
-        flag = get_bits(gb, 1); // process_cc_data_flag
-        if (flag) {
-            skip_bits(gb, 1);
-            cc_count = get_bits(gb, 5);
-            skip_bits(gb, 8); // reserved
-            size -= 2;
+    if (ret < 0)
+        return ret;
 
-            if (cc_count && size >= cc_count * 3) {
-                int old_size = s->buf_ref ? s->buf_ref->size : 0;
-                const uint64_t new_size = (old_size + cc_count
-                                           * UINT64_C(3));
-                int i, ret;
-
-                if (new_size > INT_MAX)
-                    return AVERROR(EINVAL);
-
-                /* Allow merging of the cc data from two fields. */
-                ret = av_buffer_realloc(&s->buf_ref, new_size);
-                if (ret < 0)
-                    return ret;
-
-                for (i = 0; i < cc_count; i++) {
-                    s->buf_ref->data[old_size++] = get_bits(gb, 8);
-                    s->buf_ref->data[old_size++] = get_bits(gb, 8);
-                    s->buf_ref->data[old_size++] = get_bits(gb, 8);
-                }
-                skip_bits(gb, 8); // marker_bits
-            }
-        }
-    } else {
-        int i;
-        for (i = 0; i < size - 1; i++)
-            skip_bits(gb, 8);
-    }
+    skip_bits_long(gb, size * 8);
 
     return 0;
 }
