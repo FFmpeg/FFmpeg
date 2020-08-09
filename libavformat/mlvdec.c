@@ -411,6 +411,10 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     }
 
     pb = mlv->pb[st->index_entries[index].size];
+    if (!pb) {
+        ret = FFERROR_REDO;
+        goto next_packet;
+    }
     avio_seek(pb, st->index_entries[index].pos, SEEK_SET);
 
     avio_skip(pb, 4); // blockType
@@ -439,12 +443,14 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->stream_index = mlv->stream_index;
     pkt->pts = mlv->pts;
 
+    ret = 0;
+next_packet:
     mlv->stream_index++;
     if (mlv->stream_index == avctx->nb_streams) {
         mlv->stream_index = 0;
         mlv->pts++;
     }
-    return 0;
+    return ret;
 }
 
 static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp, int flags)
