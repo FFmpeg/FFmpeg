@@ -87,9 +87,12 @@ static void argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *
 
 /*
  * Known versions:
- * 1.1: The sample files in /game-formats/brender/part2.zip
+ * 1.1: https://samples.ffmpeg.org/game-formats/brender/part2.zip
+ *      FX Fighter
  * 1.2: Croc! Legend of the Gobbos
  * 2.1: Croc 2
+ *      The Emperor's New Groove
+ *      Disney's Aladdin in Nasira's Revenge
  */
 static int argo_asf_is_known_version(const ArgoASFFileHeader *hdr)
 {
