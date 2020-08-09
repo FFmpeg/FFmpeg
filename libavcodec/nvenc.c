@@ -31,6 +31,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
+#include "atsc_a53.h"
 #include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"

@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "packet_internal.h"
+#include "atsc_a53.h"
 
 #if defined(_MSC_VER)
 #define X264_API_IMPORTS 1
