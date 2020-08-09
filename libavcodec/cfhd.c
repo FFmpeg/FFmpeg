@@ -517,11 +517,10 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         else if (tag == Quantization) {
             s->quantisation = data;
             av_log(avctx, AV_LOG_DEBUG, "Quantisation: %"PRIu16"\n", data);
-        } else if (tag == PrescaleShift) {
-            s->prescale_shift[0] = (data >> 0) & 0x7;
-            s->prescale_shift[1] = (data >> 3) & 0x7;
-            s->prescale_shift[2] = (data >> 6) & 0x7;
-            av_log(avctx, AV_LOG_DEBUG, "Prescale shift (VC-5): %x\n", data);
+        } else if (tag == PrescaleTable) {
+            for (i = 0; i < 8; i++)
+                s->prescale_table[i] = (data >> (14 - i * 2)) & 0x3;
+            av_log(avctx, AV_LOG_DEBUG, "Prescale table: %x\n", data);
         } else if (tag == BandEncoding) {
             if (!data || data > 5) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid band encoding\n");

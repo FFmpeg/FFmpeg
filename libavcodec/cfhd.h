@@ -83,7 +83,6 @@ enum CFHDParam {
     EncodedFormat    =  84,
     ChannelWidth     = 104,
     ChannelHeight    = 105,
-    PrescaleShift    = 109,
 };
 
 #define VLC_BITS       9
@@ -171,7 +170,7 @@ typedef struct CFHDContext {
     int level;
     int subband_num_actual;
 
-    uint8_t prescale_shift[3];
+    uint8_t prescale_table[8];
     Plane plane[4];
     Peak peak;
 } CFHDContext;
