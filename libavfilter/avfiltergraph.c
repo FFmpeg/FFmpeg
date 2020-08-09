@@ -687,7 +687,7 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
     return 0;
 }
 
-#define REDUCE_FORMATS(fmt_type, list_type, list, var, nb, add_format, unref_format) \
+#define REDUCE_FORMATS(fmt_type, list_type, list, var, nb, add_format) \
 do {                                                                   \
     for (i = 0; i < filter->nb_inputs; i++) {                          \
         AVFilterLink *link = filter->inputs[i];                        \
@@ -729,9 +729,9 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     int i, j, k, ret = 0;
 
     REDUCE_FORMATS(int,      AVFilterFormats,        formats,         formats,
-                   nb_formats, ff_add_format, ff_formats_unref);
+                   nb_formats, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        samplerates,     formats,
-                   nb_formats, ff_add_format, ff_formats_unref);
+                   nb_formats, ff_add_format);
 
     /* reduce channel layouts */
     for (i = 0; i < filter->nb_inputs; i++) {
