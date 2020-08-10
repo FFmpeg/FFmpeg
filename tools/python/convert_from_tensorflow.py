@@ -67,10 +67,12 @@ class TFConverter:
         self.edges = {}
         self.conv_activations = {'Relu':0, 'Tanh':1, 'Sigmoid':2, 'None':3, 'LeakyRelu':4}
         self.conv_paddings = {'VALID':0, 'SAME':1}
+        self.pool_paddings = {'VALID':0, 'SAME':1}
         self.converted_nodes = set()
         self.conv2d_scope_names = set()
         self.conv2d_scopename_inputname_dict = {}
-        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4, 'MathBinary':5, 'MathUnary':6}
+        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4,
+                        'MathBinary':5, 'MathUnary':6, 'AvgPool':7}
         self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4}
         self.mathun2code  = {'Abs':0, 'Sin':1, 'Cos':2, 'Tan':3, 'Asin':4,
                 'Acos':5, 'Atan':6, 'Sinh':7, 'Cosh':8, 'Tanh':9, 'Asinh':10,
@@ -300,6 +302,37 @@ class TFConverter:
         np.array([output_operand_index],dtype=np.uint32).tofile(f)
 
 
+    def dump_avg_pool_to_file(self, node, f):
+        assert(node.op == 'AvgPool')
+        self.layer_number = self.layer_number + 1
+        self.converted_nodes.add(node.name)
+        node0 = self.name_node_dict[node.input[0]]
+        strides = node.attr['strides']
+
+        # Tensorflow do not support pooling strides in batch dimension and
+        # current native NN do not support pooling strides in channel dimension, added assert() here.
+        assert(strides.list.i[1]==strides.list.i[2])
+        assert(strides.list.i[0]==1)
+        assert(strides.list.i[3]==1)
+        strides = strides.list.i[1]
+        filter_node = node.attr['ksize']
+        input_name = node.input[0]
+
+        # Tensorflow do not support pooling ksize in batch dimension and channel dimension.
+        assert(filter_node.list.i[0]==1)
+        assert(filter_node.list.i[3]==1)
+        filter_height = filter_node.list.i[1]
+        filter_width = filter_node.list.i[2]
+
+        padding = node.attr['padding'].s.decode("utf-8")
+        np.array([self.op2code[node.op], strides, self.pool_paddings[padding], filter_height],
+                 dtype=np.uint32).tofile(f)
+
+        input_operand_index = self.add_operand(input_name, Operand.IOTYPE_INPUT)
+        output_operand_index = self.add_operand(node.name, Operand.IOTYPE_OUTPUT)
+        np.array([input_operand_index, output_operand_index],dtype=np.uint32).tofile(f)
+
+
     def dump_layers_to_file(self, f):
         for node in self.nodes:
             if node.name in self.converted_nodes:
@@ -313,6 +346,8 @@ class TFConverter:
 
             if node.op == 'Conv2D':
                 self.dump_simple_conv2d_to_file(node, f)
+            if node.op == 'AvgPool':
+                self.dump_avg_pool_to_file(node, f)
             elif node.op == 'DepthToSpace':
                 self.dump_depth2space_to_file(node, f)
             elif node.op == 'MirrorPad':

@@ -2184,7 +2184,9 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             }
 
             if (s->has_ppm) {
-                uint32_t tp_header_size = bytestream2_get_be32u(&s->packed_headers_stream);
+                uint32_t tp_header_size = bytestream2_get_be32(&s->packed_headers_stream);
+                if (bytestream2_get_bytes_left(&s->packed_headers_stream) < tp_header_size)
+                    return AVERROR_INVALIDDATA;
                 bytestream2_init(&tp->header_tpg, s->packed_headers_stream.buffer, tp_header_size);
                 bytestream2_skip(&s->packed_headers_stream, tp_header_size);
             }

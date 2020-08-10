@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Sergey Lavrushkin
+ * Copyright (c) 2020
  *
  * This file is part of FFmpeg.
  *
@@ -18,24 +18,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_CONV2D_H
-#define AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_CONV2D_H
+/**
+ * @file
+ * DNN inference functions interface for native backend.
+ */
+
+#ifndef AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_AVGPOOL_H
+#define AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_AVGPOOL_H
 
 #include "dnn_backend_native.h"
 
-typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
-
-typedef struct ConvolutionalParams{
-    int32_t input_num, output_num, kernel_size;
-    DNNActivationFunc activation;
+typedef struct AvgPoolParams{
+    int32_t strides, kernel_size;
     DNNPaddingParam padding_method;
-    int32_t dilation;
-    int32_t has_bias;
-    float *kernel;
-    float *biases;
-} ConvolutionalParams;
+} AvgPoolParams;
 
-int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
-int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
+int dnn_load_layer_avg_pool(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
+int dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_operand_indexes,
                              int32_t output_operand_index, const void *parameters);
+
 #endif
