@@ -34,6 +34,10 @@ enum CFHDParam {
     SampleType       =   1,
     SampleIndexTable =   2,
     BitstreamMarker  =   4,
+    VersionMajor     =   5,
+    VersionMinor     =   6,
+    VersionRevision  =   7,
+    VersionEdit      =   8,
     TransformType    =  10,
     NumFrames        =  11,
     ChannelCount     =  12,
@@ -78,12 +82,12 @@ enum CFHDParam {
     Precision        =  70,
     InputFormat      =  71,
     BandCodingFlags  =  72,
+    Version          =  79,
     BandSecondPass   =  82,
     PrescaleTable    =  83,
     EncodedFormat    =  84,
     ChannelWidth     = 104,
     ChannelHeight    = 105,
-    PrescaleShift    = 109,
 };
 
 #define VLC_BITS       9
@@ -171,7 +175,7 @@ typedef struct CFHDContext {
     int level;
     int subband_num_actual;
 
-    uint8_t prescale_shift[3];
+    uint8_t prescale_table[8];
     Plane plane[4];
     Peak peak;
 } CFHDContext;

@@ -174,6 +174,8 @@ static int vmd_read_header(AVFormatContext *s)
             avpriv_set_pts_info(vst, 33, num, den);
         avpriv_set_pts_info(st, 33, num, den);
     }
+    if (!s->nb_streams)
+        return AVERROR_INVALIDDATA;
 
     toc_offset = AV_RL32(&vmd->vmd_header[812]);
     vmd->frame_count = AV_RL16(&vmd->vmd_header[6]);
@@ -241,6 +243,8 @@ static int vmd_read_header(AVFormatContext *s)
                     current_audio_pts++;
                 break;
             case 2: /* Video Chunk */
+                if (!vst)
+                    break;
                 vmd->frame_table[total_frames].frame_offset = current_offset;
                 vmd->frame_table[total_frames].stream_index = vmd->video_stream_index;
                 vmd->frame_table[total_frames].frame_size = size;

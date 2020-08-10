@@ -2325,6 +2325,7 @@ HAVE_LIST="
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
+    libdrm_getfb2
     makeinfo
     makeinfo_html
     opencl_d3d11
@@ -6656,6 +6657,9 @@ test_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
 #error no family set
 #endif
 EOF
+
+enabled libdrm &&
+    check_pkg_config libdrm_getfb2 libdrm "xf86drmMode.h" drmModeGetFB2
 
 enabled vaapi &&
     check_pkg_config vaapi "libva >= 0.35.0" "va/va.h" vaInitialize
