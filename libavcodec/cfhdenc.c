@@ -94,8 +94,11 @@ static const unsigned codebook[256][2] = {
 };
 
 /* Derived by extracting runcodes from existing tables from decoder */
-static const uint16_t runbook[8][3] = {
-    {1,  0x0000,   1}, {7,  0x0069,  12}, {8,  0x00D1,  20}, {9,  0x018A,  32},
+static const uint16_t runbook[18][3] = {
+    {1,  0x0000,   1}, {2,  0x0000,   2}, {3,  0x0000,   3}, {4,  0x0000,   4},
+    {5,  0x0000,   5}, {6,  0x0000,   6}, {7,  0x0000,   7}, {8,  0x0000,   8},
+    {9,  0x0000,   9}, {10, 0x0000,  10}, {11, 0x0000,  11},
+    {7,  0x0069,  12}, {8,  0x00D1,  20}, {9,  0x018A,  32},
     {10, 0x0343,  60}, {11, 0x0685, 100}, {13, 0x18BF, 180}, {13, 0x1BA5, 320},
 };
 
@@ -329,7 +332,7 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
 
     s->rb[0].run = 0;
 
-    for (int i = 1, j = 0; i < 320 && j < 7; j++) {
+    for (int i = 1, j = 0; i < 320 && j < 17; j++) {
         int run = runbook[j][2];
         int end = runbook[j+1][2];
 
@@ -340,8 +343,8 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
         }
     }
 
-    s->rb[320].bits = runbook[7][1];
-    s->rb[320].size = runbook[7][0];
+    s->rb[320].bits = runbook[17][1];
+    s->rb[320].size = runbook[17][0];
     s->rb[320].run = 320;
 
     for (int i = 0; i < 256; i++) {
