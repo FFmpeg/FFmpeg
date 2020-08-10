@@ -52,6 +52,8 @@ typedef struct {
     uint64_t pts;
 } MlvContext;
 
+static int read_close(AVFormatContext *s);
+
 static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('M','L','V','I') &&
@@ -376,6 +378,7 @@ static int read_header(AVFormatContext *avctx)
 
     if ((vst && !vst->nb_index_entries) || (ast && !ast->nb_index_entries)) {
         av_log(avctx, AV_LOG_ERROR, "no index entries found\n");
+        read_close(avctx);
         return AVERROR_INVALIDDATA;
     }
 
