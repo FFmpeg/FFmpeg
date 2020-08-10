@@ -1365,9 +1365,41 @@ can be selected with @code{-pred 1}.
 @subsection Options
 
 @table @option
-@item format
+@item format @var{integer}
 Can be set to either @code{j2k} or @code{jp2} (the default) that
 makes it possible to store non-rgb pix_fmts.
+
+@item tile_width @var{integer}
+Sets tile width. Range is 1 to 1073741824. Default is 256.
+
+@item tile_height @var{integer}
+Sets tile height. Range is 1 to 1073741824. Default is 256.
+
+@item pred @var{integer}
+Allows setting the discrete wavelet transform (DWT) type
+@table @option
+@item dwt97int (Lossy)
+@item dwt53 (Lossless)
+@end table
+Default is @code{dwt97int}
+
+@item sop @var{boolean}
+Enable this to add SOP marker at the start of each packet. Disabled by default.
+
+@item eph @var{boolean}
+Enable this to add EPH marker at the end of each packet header. Disabled by default.
+
+@item prog @var{integer}
+Sets the progression order to be used by the encoder.
+Possible values are:
+@table @option
+@item lrcp
+@item rlcp
+@item rpcl
+@item pcrl
+@item cprl
+@end table
+Set to @code{lrcp} by default.
 
 @end table
 
