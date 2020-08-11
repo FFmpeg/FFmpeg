@@ -131,6 +131,8 @@
 #define STREAM_TYPE_VIDEO_CAVS      0x42
 #define STREAM_TYPE_VIDEO_VC1       0xea
 #define STREAM_TYPE_VIDEO_DIRAC     0xd1
+#define STREAM_TYPE_VIDEO_AVS2      0xd2
+#define STREAM_TYPE_VIDEO_AVS3      0xd4
 
 #define STREAM_TYPE_AUDIO_AC3       0x81
 #define STREAM_TYPE_AUDIO_DTS       0x82

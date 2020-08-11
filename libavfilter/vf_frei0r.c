@@ -42,6 +42,10 @@
 #include "internal.h"
 #include "video.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
 typedef void (*f0r_destruct_f)(f0r_instance_t instance);
 typedef void (*f0r_deinit_f)(void);
@@ -240,11 +244,31 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         if (ret < 0)
             return ret;
     }
+#ifdef _WIN32
+    if (!s->dl_handle) {
+        char *ls, prefix[MAX_PATH + 1];
+
+        if (!GetModuleFileNameA(NULL, prefix, MAX_PATH))
+            return AVERROR(EINVAL);
+        prefix[MAX_PATH] = 0;
+
+        if (!(ls = strrchr(prefix, '\\')))
+            return AVERROR(EINVAL);
+
+        *ls = 0;
+        strncat(prefix, "\\frei0r-1\\", sizeof(prefix) - 1 - strlen(prefix));
+
+        ret = load_path(ctx, &s->dl_handle, prefix, dl_name);
+        if (ret < 0)
+            return ret;
+    }
+#else
     for (i = 0; !s->dl_handle && i < FF_ARRAY_ELEMS(frei0r_pathlist); i++) {
         ret = load_path(ctx, &s->dl_handle, frei0r_pathlist[i], dl_name);
         if (ret < 0)
             return ret;
     }
+#endif
     if (!s->dl_handle) {
         av_log(ctx, AV_LOG_ERROR, "Could not find module '%s'.\n", dl_name);
         return AVERROR(EINVAL);

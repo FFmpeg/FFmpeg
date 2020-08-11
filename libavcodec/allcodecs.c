@@ -707,6 +707,7 @@ extern AVCodec ff_libcodec2_encoder;
 extern AVCodec ff_libcodec2_decoder;
 extern AVCodec ff_libdav1d_decoder;
 extern AVCodec ff_libdavs2_decoder;
+extern AVCodec ff_libuavs3d_decoder;
 extern AVCodec ff_libfdk_aac_encoder;
 extern AVCodec ff_libfdk_aac_decoder;
 extern AVCodec ff_libgsm_encoder;
@@ -748,6 +749,7 @@ extern AVCodec ff_libx264rgb_encoder;
 extern AVCodec ff_libx265_encoder;
 extern AVCodec ff_libxavs_encoder;
 extern AVCodec ff_libxavs2_encoder;
+extern AVCodec ff_libuavs3e_encoder;
 extern AVCodec ff_libxvid_encoder;
 extern AVCodec ff_libzvbi_teletext_decoder;
 

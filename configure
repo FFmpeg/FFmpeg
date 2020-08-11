@@ -229,6 +229,7 @@ External library support:
   --enable-libcodec2       enable codec2 en/decoding using libcodec2 [no]
   --enable-libdav1d        enable AV1 decoding via libdav1d [no]
   --enable-libdavs2        enable AVS2 decoding via libdavs2 [no]
+  --enable-libuavs3d       enable AVS3 decoding via libuavs3d [no]
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
@@ -290,6 +291,7 @@ External library support:
   --enable-libx265         enable HEVC encoding via x265 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxavs2        enable AVS2 encoding via xavs2 [no]
+  --enable-libuavs3e       enable AVS3 encoding via uavs3e [no]
   --enable-libxcb          enable X11 grabbing using XCB [autodetect]
   --enable-libxcb-shm      enable X11 grabbing shm communication [autodetect]
   --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [autodetect]
@@ -1728,6 +1730,8 @@ EXTERNAL_LIBRARY_GPL_LIST="
     libx265
     libxavs
     libxavs2
+    libuavs3e
+    libuavs3d
     libxvid
 "
 
@@ -1811,6 +1815,8 @@ EXTERNAL_LIBRARY_LIST="
     libtesseract
     libtheora
     libtwolame
+    libuavs3d
+    libuavs3e
     libv4l2
     libvmaf
     libvorbis
@@ -3210,6 +3216,7 @@ libcodec2_decoder_deps="libcodec2"
 libcodec2_encoder_deps="libcodec2"
 libdav1d_decoder_deps="libdav1d"
 libdavs2_decoder_deps="libdavs2"
+libuavs3d_decoder_deps="libuavs3d"
 libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
@@ -3267,6 +3274,7 @@ libx264rgb_encoder_select="libx264_encoder"
 libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
 libxavs2_encoder_deps="libxavs2"
+libuavs3e_encoder_deps="libuavs3e"
 libxvid_encoder_deps="libxvid"
 libzvbi_teletext_decoder_deps="libzvbi"
 vapoursynth_demuxer_deps="vapoursynth"
@@ -6328,6 +6336,7 @@ enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_
 enabled libcodec2         && require libcodec2 codec2/codec2.h codec2_create -lcodec2
 enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.4.0" "dav1d/dav1d.h" dav1d_version
 enabled libdavs2          && require_pkg_config libdavs2 "davs2 >= 1.6.0" davs2.h davs2_decoder_open
+enabled libuavs3d         && require_pkg_config libuavs3d uavs3d "uavs3d.h" uavs3d_decode
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdrm            && require_pkg_config libdrm libdrm xf86drm.h drmGetVersion
 enabled libfdk_aac        && { check_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
@@ -6451,6 +6460,7 @@ enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get
                              require_cpp_condition libx265 x265.h "X265_BUILD >= 70"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
 enabled libxavs2          && require_pkg_config libxavs2 "xavs2 >= 1.3.0" "stdint.h xavs2.h" xavs2_api_get
+enabled libuavs3e         && require_pkg_config libuavs3e uavs3e "uavs3e/uavs3e.h" uavs3e_enc
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config libzimg "zimg >= 2.7.0" zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq "libzmq >= 4.2.1" zmq.h zmq_ctx_new

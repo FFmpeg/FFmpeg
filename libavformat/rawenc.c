@@ -129,6 +129,19 @@ AVOutputFormat ff_aptx_hd_muxer = {
 };
 #endif
 
+#if CONFIG_AVS3_MUXER
+AVOutputFormat ff_avs3_muxer = {
+    .name              = "avs3",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw AVS3-P2 video"),
+    .extensions        = "avs3",
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_AVS3,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_AVS2_MUXER
 AVOutputFormat ff_avs2_muxer = {
     .name              = "avs2",
