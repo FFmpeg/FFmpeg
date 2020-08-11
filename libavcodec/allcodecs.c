@@ -591,6 +591,7 @@ extern AVCodec ff_adpcm_afc_decoder;
 extern AVCodec ff_adpcm_agm_decoder;
 extern AVCodec ff_adpcm_aica_decoder;
 extern AVCodec ff_adpcm_argo_decoder;
+extern AVCodec ff_adpcm_argo_encoder;
 extern AVCodec ff_adpcm_ct_decoder;
 extern AVCodec ff_adpcm_dtk_decoder;
 extern AVCodec ff_adpcm_ea_decoder;

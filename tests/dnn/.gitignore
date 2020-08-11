@@ -4,3 +4,4 @@
 /dnn-layer-pad-test
 /dnn-layer-mathbinary-test
 /dnn-layer-mathunary-test
+/dnn-layer-avgpool-test

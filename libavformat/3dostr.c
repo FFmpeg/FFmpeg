@@ -110,15 +110,12 @@ static int threedostr_read_header(AVFormatContext *s)
 
 static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    unsigned chunk, size, found_ssmp = 0;
+    unsigned chunk, size;
     AVStream *st = s->streams[0];
     int64_t pos;
     int ret = 0;
 
-    while (!found_ssmp) {
-        if (avio_feof(s->pb))
-            return AVERROR_EOF;
-
+    while (!avio_feof(s->pb)) {
         pos   = avio_tell(s->pb);
         chunk = avio_rl32(s->pb);
         size  = avio_rb32(s->pb);
@@ -143,9 +140,7 @@ static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->pos = pos;
             pkt->stream_index = 0;
             pkt->duration = size / st->codecpar->channels;
-            size = 0;
-            found_ssmp = 1;
-            break;
+            return ret;
         default:
             av_log(s, AV_LOG_DEBUG, "skipping unknown chunk: %X\n", chunk);
             break;
@@ -154,7 +149,7 @@ static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
         avio_skip(s->pb, size);
     }
 
-    return ret;
+    return AVERROR_EOF;
 }
 
 AVInputFormat ff_threedostr_demuxer = {

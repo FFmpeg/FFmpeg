@@ -442,7 +442,7 @@ library:
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
 @item Phantom Cine              @tab   @tab X
-@item Cineform HD               @tab   @tab X
+@item Cineform HD               @tab X @tab X
 @item Commodore CDXL            @tab   @tab X
     @tab Amiga CD video format
 @item Core Audio Format         @tab X @tab X
@@ -806,6 +806,7 @@ following image formats are supported:
 @item Amazing Studio PAF Video @tab     @tab  X
 @item American Laser Games MM  @tab    @tab X
     @tab Used in games like Mad Dog McCree.
+@item Amuse Graphics Movie   @tab     @tab  X
 @item AMV Video              @tab  X  @tab  X
     @tab Used in Chinese MP3 players.
 @item ANSI/ASCII art         @tab     @tab  X
@@ -1098,7 +1099,8 @@ following image formats are supported:
 @item ACELP.KELVIN           @tab     @tab  X
 @item ADPCM 4X Movie         @tab     @tab  X
 @item APDCM Yamaha AICA      @tab     @tab  X
-@item ADPCM Argonaut Games   @tab     @tab  X
+@item ADPCM AmuseGraphics Movie @tab    @tab  X
+@item ADPCM Argonaut Games   @tab X   @tab  X
 @item ADPCM CDROM XA         @tab     @tab  X
 @item ADPCM Creative Technology @tab     @tab  X
     @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2

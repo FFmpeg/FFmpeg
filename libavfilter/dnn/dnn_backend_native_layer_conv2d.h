@@ -24,12 +24,11 @@
 #include "dnn_backend_native.h"
 
 typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
-typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNConvPaddingParam;
 
 typedef struct ConvolutionalParams{
     int32_t input_num, output_num, kernel_size;
     DNNActivationFunc activation;
-    DNNConvPaddingParam padding_method;
+    DNNPaddingParam padding_method;
     int32_t dilation;
     int32_t has_bias;
     float *kernel;

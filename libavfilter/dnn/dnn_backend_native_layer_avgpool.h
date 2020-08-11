@@ -23,37 +23,18 @@
  * DNN inference functions interface for native backend.
  */
 
-#ifndef AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_MATHUNARY_H
-#define AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_MATHUNARY_H
+#ifndef AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_AVGPOOL_H
+#define AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_AVGPOOL_H
 
-#include "libavformat/avio.h"
 #include "dnn_backend_native.h"
 
-typedef enum {
-    DMUO_ABS = 0,
-    DMUO_SIN = 1,
-    DMUO_COS = 2,
-    DMUO_TAN = 3,
-    DMUO_ASIN = 4,
-    DMUO_ACOS = 5,
-    DMUO_ATAN = 6,
-    DMUO_SINH = 7,
-    DMUO_COSH = 8,
-    DMUO_TANH = 9,
-    DMUO_ASINH = 10,
-    DMUO_ACOSH = 11,
-    DMUO_ATANH = 12,
-    DMUO_CEIL = 13,
-    DMUO_FLOOR = 14,
-    DMUO_COUNT
-} DNNMathUnaryOperation;
+typedef struct AvgPoolParams{
+    int32_t strides, kernel_size;
+    DNNPaddingParam padding_method;
+} AvgPoolParams;
 
-typedef struct DnnLayerMathUnaryParams{
-    DNNMathUnaryOperation un_op;
-} DnnLayerMathUnaryParams;
-
-int dnn_load_layer_math_unary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
-int dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_operand_indexes,
-                                int32_t output_operand_index, const void *parameters);
+int dnn_load_layer_avg_pool(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
+int dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_operand_indexes,
+                             int32_t output_operand_index, const void *parameters);
 
 #endif

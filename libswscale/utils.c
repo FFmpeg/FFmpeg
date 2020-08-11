@@ -1536,8 +1536,9 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     if (isBayer(srcFormat)) {
         if (!unscaled ||
-            (dstFormat != AV_PIX_FMT_RGB24 && dstFormat != AV_PIX_FMT_YUV420P)) {
-            enum AVPixelFormat tmpFormat = AV_PIX_FMT_RGB24;
+            (dstFormat != AV_PIX_FMT_RGB24 && dstFormat != AV_PIX_FMT_YUV420P &&
+             dstFormat != AV_PIX_FMT_RGB48)) {
+            enum AVPixelFormat tmpFormat = isBayer16BPS(srcFormat) ? AV_PIX_FMT_RGB48 : AV_PIX_FMT_RGB24;
 
             ret = av_image_alloc(c->cascaded_tmp, c->cascaded_tmpStride,
                                 srcW, srcH, tmpFormat, 64);

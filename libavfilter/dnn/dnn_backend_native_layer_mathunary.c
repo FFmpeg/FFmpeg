@@ -130,6 +130,14 @@ int dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_oper
         for (int i = 0; i < dims_count; ++i)
             dst[i] = atanh(src[i]);
         return 0;
+    case DMUO_CEIL:
+        for (int i = 0; i < dims_count; ++i)
+            dst[i] = ceil(src[i]);
+        return 0;
+    case DMUO_FLOOR:
+        for (int i = 0; i < dims_count; ++i)
+            dst[i] = floor(src[i]);
+        return 0;
     default:
         return -1;
     }

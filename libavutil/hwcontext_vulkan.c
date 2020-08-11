@@ -3025,7 +3025,8 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     for (int i = 0; i < planes; i++) {
         int h = src->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-        size_t p_size = FFABS(src->linesize[i]) * p_height;
+        size_t p_size = FFALIGN(FFABS(src->linesize[i]) * p_height,
+                                p->hprops.minImportedHostPointerAlignment);
 
         VkImportMemoryHostPointerInfoEXT import_desc = {
             .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
@@ -3036,7 +3037,6 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         /* We can only map images with positive stride and alignment appropriate
          * for the device. */
         host_mapped[i] = map_host && src->linesize[i] > 0 &&
-                         !(p_size % p->hprops.minImportedHostPointerAlignment) &&
                          !(((uintptr_t)import_desc.pHostPointer) %
                            p->hprops.minImportedHostPointerAlignment);
         p_size = host_mapped[i] ? p_size : 0;
@@ -3209,7 +3209,8 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
     for (int i = 0; i < planes; i++) {
         int h = dst->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-        size_t p_size = FFABS(dst->linesize[i]) * p_height;
+        size_t p_size = FFALIGN(FFABS(dst->linesize[i]) * p_height,
+                                p->hprops.minImportedHostPointerAlignment);
 
         VkImportMemoryHostPointerInfoEXT import_desc = {
             .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
@@ -3220,7 +3221,6 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         /* We can only map images with positive stride and alignment appropriate
          * for the device. */
         host_mapped[i] = map_host && dst->linesize[i] > 0 &&
-                         !(p_size % p->hprops.minImportedHostPointerAlignment) &&
                          !(((uintptr_t)import_desc.pHostPointer) %
                            p->hprops.minImportedHostPointerAlignment);
         p_size = host_mapped[i] ? p_size : 0;

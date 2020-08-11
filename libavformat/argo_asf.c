@@ -1,5 +1,5 @@
 /*
- * Argonaut Games ASF demuxer
+ * Argonaut Games ASF (de)muxer
  *
  * Copyright (C) 2020 Zane van Iperen (zane@zanevaniperen.com)
  *
@@ -23,10 +23,12 @@
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 
 #define ASF_TAG                 MKTAG('A', 'S', 'F', '\0')
 #define ASF_FILE_HEADER_SIZE    24
 #define ASF_CHUNK_HEADER_SIZE   20
+#define ASF_SAMPLE_COUNT        32
 
 typedef struct ArgoASFFileHeader {
     uint32_t    magic;          /*< Magic Number, {'A', 'S', 'F', '\0'} */
@@ -39,7 +41,7 @@ typedef struct ArgoASFFileHeader {
 
 typedef struct ArgoASFChunkHeader {
     uint32_t    num_blocks;     /*< No. blocks in the chunk. */
-    uint32_t    num_samples;    /*< No. samples per channel in a block. */
+    uint32_t    num_samples;    /*< No. samples per channel in a block. Always 32. */
     uint32_t    unk1;           /*< Unknown */
     uint16_t    sample_rate;    /*< Sample rate. */
     uint16_t    unk2;           /*< Unknown. */
@@ -62,6 +64,14 @@ typedef struct ArgoASFDemuxContext {
     uint32_t            blocks_read;
 } ArgoASFDemuxContext;
 
+typedef struct ArgoASFMuxContext {
+    const AVClass *class;
+    int            version_major;
+    int            version_minor;
+    const char    *name;
+} ArgoASFMuxContext;
+
+#if CONFIG_ARGO_ASF_DEMUXER
 static void argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *buf)
 {
     hdr->magic          = AV_RL32(buf + 0);
@@ -85,9 +95,12 @@ static void argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *
 
 /*
  * Known versions:
- * 1.1: The sample files in /game-formats/brender/part2.zip
+ * 1.1: https://samples.ffmpeg.org/game-formats/brender/part2.zip
+ *      FX Fighter
  * 1.2: Croc! Legend of the Gobbos
  * 2.1: Croc 2
+ *      The Emperor's New Groove
+ *      Disney's Aladdin in Nasira's Revenge
  */
 static int argo_asf_is_known_version(const ArgoASFFileHeader *hdr)
 {
@@ -131,13 +144,6 @@ static int argo_asf_read_header(AVFormatContext *s)
 
     argo_asf_parse_file_header(&asf->fhdr, buf);
 
-    if (!argo_asf_is_known_version(&asf->fhdr)) {
-        avpriv_request_sample(s, "Version %hu.%hu",
-            asf->fhdr.version_major, asf->fhdr.version_minor
-        );
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (asf->fhdr.num_chunks == 0) {
         return AVERROR_INVALIDDATA;
     } else if (asf->fhdr.num_chunks > 1) {
@@ -157,6 +163,12 @@ static int argo_asf_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     argo_asf_parse_chunk_header(&asf->ckhdr, buf);
+
+    if (asf->ckhdr.num_samples != ASF_SAMPLE_COUNT) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample count. Got %u, expected %d\n",
+               asf->ckhdr.num_samples, ASF_SAMPLE_COUNT);
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((asf->ckhdr.flags & ASF_CF_ALWAYS1) != ASF_CF_ALWAYS1 || (asf->ckhdr.flags & ASF_CF_ALWAYS0) != 0) {
         avpriv_request_sample(s, "Nonstandard flags (0x%08X)", asf->ckhdr.flags);
@@ -247,3 +259,186 @@ AVInputFormat ff_argo_asf_demuxer = {
     .read_header    = argo_asf_read_header,
     .read_packet    = argo_asf_read_packet
 };
+#endif
+
+#if CONFIG_ARGO_ASF_MUXER
+static int argo_asf_write_init(AVFormatContext *s)
+{
+    const AVCodecParameters *par;
+
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "ASF files have exactly one stream\n");
+        return AVERROR(EINVAL);
+    }
+
+    par = s->streams[0]->codecpar;
+
+    if (par->codec_id != AV_CODEC_ID_ADPCM_ARGO) {
+        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
+               avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
+    if (par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "ASF files only support up to 2 channels\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (par->sample_rate > UINT16_MAX) {
+        av_log(s, AV_LOG_ERROR, "Sample rate too large\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(s, AV_LOG_ERROR, "Stream not seekable, unable to write output file\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+static void argo_asf_write_file_header(const ArgoASFFileHeader *fhdr, AVIOContext *pb)
+{
+    avio_wl32( pb, fhdr->magic);
+    avio_wl16( pb, fhdr->version_major);
+    avio_wl16( pb, fhdr->version_minor);
+    avio_wl32( pb, fhdr->num_chunks);
+    avio_wl32( pb, fhdr->chunk_offset);
+    avio_write(pb, fhdr->name, sizeof(fhdr->name));
+}
+
+static void argo_asf_write_chunk_header(const ArgoASFChunkHeader *ckhdr, AVIOContext *pb)
+{
+    avio_wl32(pb, ckhdr->num_blocks);
+    avio_wl32(pb, ckhdr->num_samples);
+    avio_wl32(pb, ckhdr->unk1);
+    avio_wl16(pb, ckhdr->sample_rate);
+    avio_wl16(pb, ckhdr->unk2);
+    avio_wl32(pb, ckhdr->flags);
+}
+
+static int argo_asf_write_header(AVFormatContext *s)
+{
+    const AVCodecParameters  *par = s->streams[0]->codecpar;
+    ArgoASFMuxContext        *ctx = s->priv_data;
+    ArgoASFFileHeader  fhdr;
+    ArgoASFChunkHeader chdr;
+
+    fhdr.magic         = ASF_TAG;
+    fhdr.version_major = (uint16_t)ctx->version_major;
+    fhdr.version_minor = (uint16_t)ctx->version_minor;
+    fhdr.num_chunks    = 1;
+    fhdr.chunk_offset  = ASF_FILE_HEADER_SIZE;
+    /*
+     * If the user specified a name, use it as is. Otherwise take the
+     * basename and lop off the extension (if any).
+     */
+    if (ctx->name) {
+        strncpy(fhdr.name, ctx->name, sizeof(fhdr.name));
+    } else {
+        const char *start = av_basename(s->url);
+        const char *end   = strrchr(start, '.');
+        size_t      len;
+
+        if(end)
+            len = end - start;
+        else
+            len = strlen(start);
+
+        memcpy(fhdr.name, start, FFMIN(len, sizeof(fhdr.name)));
+    }
+
+    chdr.num_blocks    = 0;
+    chdr.num_samples   = ASF_SAMPLE_COUNT;
+    chdr.unk1          = 0;
+    chdr.sample_rate   = par->sample_rate;
+    chdr.unk2          = ~0;
+    chdr.flags         = ASF_CF_BITS_PER_SAMPLE | ASF_CF_ALWAYS1;
+
+    if (par->channels == 2)
+        chdr.flags |= ASF_CF_STEREO;
+
+    argo_asf_write_file_header(&fhdr, s->pb);
+    argo_asf_write_chunk_header(&chdr, s->pb);
+    return 0;
+}
+
+static int argo_asf_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    if (pkt->size != 17 * s->streams[0]->codecpar->channels)
+        return AVERROR_INVALIDDATA;
+
+    if (s->streams[0]->nb_frames >= UINT32_MAX)
+        return AVERROR_INVALIDDATA;
+
+    avio_write(s->pb, pkt->data, pkt->size);
+    return 0;
+}
+
+static int argo_asf_write_trailer(AVFormatContext *s)
+{
+    int64_t ret;
+
+    if ((ret = avio_seek(s->pb, ASF_FILE_HEADER_SIZE, SEEK_SET) < 0))
+        return ret;
+
+    avio_wl32(s->pb, (uint32_t)s->streams[0]->nb_frames);
+    return 0;
+}
+
+static const AVOption argo_asf_options[] = {
+    {
+        .name        = "version_major",
+        .help        = "override file major version",
+        .offset      = offsetof(ArgoASFMuxContext, version_major),
+        .type        = AV_OPT_TYPE_INT,
+        .default_val = {.i64 = 2},
+        .min         = 0,
+        .max         = UINT16_MAX,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    {
+        .name        = "version_minor",
+        .help        = "override file minor version",
+        .offset      = offsetof(ArgoASFMuxContext, version_minor),
+        .type        = AV_OPT_TYPE_INT,
+        .default_val = {.i64 = 1},
+        .min         = 0,
+        .max         = UINT16_MAX,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    {
+        .name        = "name",
+        .help        = "embedded file name (max 8 characters)",
+        .offset      = offsetof(ArgoASFMuxContext, name),
+        .type        = AV_OPT_TYPE_STRING,
+        .default_val = {.str = NULL},
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    { NULL }
+};
+
+static const AVClass argo_asf_muxer_class = {
+    .class_name = "argo_asf_muxer",
+    .item_name  = av_default_item_name,
+    .option     = argo_asf_options,
+    .version    = LIBAVUTIL_VERSION_INT
+};
+
+AVOutputFormat ff_argo_asf_muxer = {
+    .name           = "argo_asf",
+    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games ASF"),
+    /*
+     * NB: Can't do this as it conflicts with the actual ASF format.
+     * .extensions  = "asf",
+     */
+    .audio_codec    = AV_CODEC_ID_ADPCM_ARGO,
+    .video_codec    = AV_CODEC_ID_NONE,
+    .init           = argo_asf_write_init,
+    .write_header   = argo_asf_write_header,
+    .write_packet   = argo_asf_write_packet,
+    .write_trailer  = argo_asf_write_trailer,
+    .priv_class     = &argo_asf_muxer_class,
+    .priv_data_size = sizeof(ArgoASFMuxContext)
+};
+#endif

@@ -44,14 +44,15 @@ fate-acodec-pcm-u%be: FMT = nut
 fate-acodec-pcm-u%le: FMT = nut
 fate-acodec-pcm-f%be: FMT = au
 
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_ADX,     ADX)  += adx
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_APM, APM)  += ima_apm
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_QT,  AIFF) += ima_qt
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_SSI, KVAG) += ima_ssi
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_WAV, WAV)  += ima_wav
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_MS,      WAV)  += ms
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_SWF,     FLV)  += swf
-FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_YAMAHA,  WAV)  += yamaha
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_ADX,     ADX)      += adx
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_ARGO,    ARGO_ASF) += argo
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_APM, APM)      += ima_apm
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_QT,  AIFF)     += ima_qt
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_SSI, KVAG)     += ima_ssi
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_IMA_WAV, WAV)      += ima_wav
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_MS,      WAV)      += ms
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_SWF,     FLV)      += swf
+FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_YAMAHA,  WAV)      += yamaha
 
 FATE_ACODEC_ADPCM := $(FATE_ACODEC_ADPCM-yes:%=fate-acodec-adpcm-%)
 FATE_ACODEC += $(FATE_ACODEC_ADPCM)
@@ -60,6 +61,7 @@ fate-acodec-adpcm: $(FATE_ACODEC_ADPCM)
 fate-acodec-adpcm-%: CODEC = adpcm_$(@:fate-acodec-adpcm-%=%)
 
 fate-acodec-adpcm-adx:     FMT = adx
+fate-acodec-adpcm-argo:    FMT = argo_asf
 fate-acodec-adpcm-ima_apm: FMT = apm
 fate-acodec-adpcm-ima_qt:  FMT = aiff
 fate-acodec-adpcm-ima_ssi: FMT = kvag

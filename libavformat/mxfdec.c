@@ -207,6 +207,9 @@ typedef struct MXFDescriptor {
     uint8_t *extradata;
     int extradata_size;
     enum AVPixelFormat pix_fmt;
+    UID color_primaries_ul;
+    UID color_trc_ul;
+    UID color_space_ul;
 } MXFDescriptor;
 
 typedef struct MXFIndexTableSegment {
@@ -1201,8 +1204,17 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         descriptor->aspect_ratio.num = avio_rb32(pb);
         descriptor->aspect_ratio.den = avio_rb32(pb);
         break;
+    case 0x3210:
+        avio_read(pb, descriptor->color_trc_ul, 16);
+        break;
     case 0x3212:
         descriptor->field_dominance = avio_r8(pb);
+        break;
+    case 0x3219:
+        avio_read(pb, descriptor->color_primaries_ul, 16);
+        break;
+    case 0x321A:
+        avio_read(pb, descriptor->color_space_ul, 16);
         break;
     case 0x3301:
         descriptor->component_depth = avio_rb32(pb);
@@ -2480,6 +2492,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
             if (descriptor->aspect_ratio.num && descriptor->aspect_ratio.den)
                 st->display_aspect_ratio = descriptor->aspect_ratio;
+            st->codecpar->color_primaries = mxf_get_codec_ul(ff_mxf_color_primaries_uls, &descriptor->color_primaries_ul)->id;
+            st->codecpar->color_trc       = mxf_get_codec_ul(ff_mxf_color_trc_uls, &descriptor->color_trc_ul)->id;
+            st->codecpar->color_space     = mxf_get_codec_ul(ff_mxf_color_space_uls, &descriptor->color_space_ul)->id;
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             /* Only overwrite existing codec ID if it is unset or A-law, which is the default according to SMPTE RP 224. */

@@ -94,8 +94,11 @@ static const unsigned codebook[256][2] = {
 };
 
 /* Derived by extracting runcodes from existing tables from decoder */
-static const uint16_t runbook[8][3] = {
-    {1,  0x0000,   1}, {7,  0x0069,  12}, {8,  0x00D1,  20}, {9,  0x018A,  32},
+static const uint16_t runbook[18][3] = {
+    {1,  0x0000,   1}, {2,  0x0000,   2}, {3,  0x0000,   3}, {4,  0x0000,   4},
+    {5,  0x0000,   5}, {6,  0x0000,   6}, {7,  0x0000,   7}, {8,  0x0000,   8},
+    {9,  0x0000,   9}, {10, 0x0000,  10}, {11, 0x0000,  11},
+    {7,  0x0069,  12}, {8,  0x00D1,  20}, {9,  0x018A,  32},
     {10, 0x0343,  60}, {11, 0x0685, 100}, {13, 0x18BF, 180}, {13, 0x1BA5, 320},
 };
 
@@ -103,17 +106,97 @@ static const uint16_t runbook[8][3] = {
  * Derived by inspecting various quality encodes
  * and adding some more from scratch.
  */
-static const uint16_t quantization_per_subband[10][9] = {
-    { 12, 12,  6, 12, 12,  6,  12,  12,  18, },
-    { 14, 14,  7, 14, 14,  7,  18,  18,  24, },
-    { 16, 16,  8, 16, 16,  8,  24,  24,  36, },
-    { 16, 16,  8, 16, 16,  8,  48,  48,  96, },
-    { 24, 24, 16, 24, 24, 16,  64,  64, 128, },
-    { 24, 24, 16, 24, 24, 16, 128, 128, 256, },
-    { 64, 64, 48, 64, 64, 48, 256, 256, 512, },
-    { 64, 64, 48, 64, 64, 48, 512, 512, 768, },
-    { 64, 64, 48, 64, 64, 48,1024,1024,1536, },
-    {160,160,168,172,172,180,2048,2048,3072, },
+static const uint16_t quantization_per_subband[2][3][13][9] = {
+    {{
+        { 16, 16,  8,  4,  4,  2,   6,   6,   9, }, // film3+
+        { 16, 16,  8,  4,  4,  2,   6,   6,   9, }, // film3
+        { 16, 16,  8,  4,  4,  2,   7,   7,  10, }, // film2+
+        { 16, 16,  8,  4,  4,  2,   8,   8,  12, }, // film2
+        { 16, 16,  8,  4,  4,  2,  16,  16,  26, }, // film1++
+        { 24, 24, 12,  6,  6,  3,  24,  24,  36, }, // film1+
+        { 24, 24, 12,  6,  6,  3,  24,  24,  36, }, // film1
+        { 32, 32, 24,  8,  8,  6,  32,  32,  48, }, // high+
+        { 32, 32, 24,  8,  8,  6,  32,  32,  48, }, // high
+        { 48, 48, 32, 12, 12,  8,  64,  64,  96, }, // medium+
+        { 48, 48, 32, 12, 12,  8,  64,  64,  96, }, // medium
+        { 64, 64, 48, 16, 16, 12,  96,  96, 144, }, // low+
+        { 64, 64, 48, 16, 16, 12, 128, 128, 192, }, // low
+    },
+    {
+        { 16, 16,  8,  4,  4,  2,   6,   6,   9, }, // film3+
+        { 16, 16,  8,  4,  4,  2,   6,   6,  12, }, // film3
+        { 16, 16,  8,  4,  4,  2,   7,   7,  14, }, // film2+
+        { 16, 16,  8,  4,  4,  2,   8,   8,  16, }, // film2
+        { 16, 16,  8,  4,  4,  2,  16,  16,  26, }, // film1++
+        { 24, 24, 12,  6,  6,  3,  24,  24,  36, }, // film1+
+        { 24, 24, 12,  6,  6,  3,  24,  24,  48, }, // film1
+        { 32, 32, 24,  8,  8,  6,  32,  32,  48, }, // high+
+        { 48, 48, 32, 12, 12,  8,  32,  32,  64, }, // high
+        { 48, 48, 32, 12, 12,  8,  64,  64,  96, }, // medium+
+        { 48, 48, 32, 12, 12,  8,  64,  64, 128, }, // medium
+        { 64, 64, 48, 16, 16, 12,  96,  96, 160, }, // low+
+        { 64, 64, 48, 16, 16, 12, 128, 128, 192, }, // low
+    },
+    {
+        { 16, 16,  8,  4,  4,  2,   6,   6,   9, }, // film3+
+        { 16, 16,  8,  4,  4,  2,   6,   6,  12, }, // film3
+        { 16, 16,  8,  4,  4,  2,   7,   7,  14, }, // film2+
+        { 16, 16,  8,  4,  4,  2,   8,   8,  16, }, // film2
+        { 16, 16,  8,  4,  4,  2,  16,  16,  26, }, // film1++
+        { 24, 24, 12,  6,  6,  3,  24,  24,  36, }, // film1+
+        { 24, 24, 12,  6,  6,  3,  24,  24,  48, }, // film1
+        { 32, 32, 24,  8,  8,  6,  32,  32,  48, }, // high+
+        { 48, 48, 32, 12, 12,  8,  32,  32,  64, }, // high
+        { 48, 48, 32, 12, 12,  8,  64,  64,  96, }, // medium+
+        { 48, 48, 32, 12, 12,  8,  64,  64, 128, }, // medium
+        { 64, 64, 48, 16, 16, 12,  96,  96, 160, }, // low+
+        { 64, 64, 48, 16, 16, 12, 128, 128, 192, }, // low
+    }},
+    {{
+        { 16, 16,  8, 16, 16,  8,  24,  24,  36, }, // film3+
+        { 16, 16,  8, 16, 16,  8,  24,  24,  36, }, // film3
+        { 16, 16,  8, 16, 16,  8,  32,  32,  48, }, // film2+
+        { 16, 16,  8, 16, 16,  8,  32,  32,  48, }, // film2
+        { 16, 16,  8, 20, 20, 10,  80,  80, 128, }, // film1++
+        { 24, 24, 12, 24, 24, 12,  96,  96, 144, }, // film1+
+        { 24, 24, 12, 24, 24, 12,  96,  96, 144, }, // film1
+        { 32, 32, 24, 32, 32, 24, 128, 128, 192, }, // high+
+        { 32, 32, 24, 32, 32, 24, 128, 128, 192, }, // high
+        { 48, 48, 32, 48, 48, 32, 256, 256, 384, }, // medium+
+        { 48, 48, 32, 48, 48, 32, 256, 256, 384, }, // medium
+        { 56, 56, 40, 56, 56, 40, 512, 512, 768, }, // low+
+        { 64, 64, 48, 64, 64, 48, 512, 512, 768, }, // low
+    },
+    {
+        { 16, 16,  8, 16, 16,  8,  24,  24,  36, }, // film3+
+        { 16, 16,  8, 16, 16,  8,  48,  48,  72, }, // film3
+        { 16, 16,  8, 16, 16,  8,  48,  48,  72, }, // film2+
+        { 16, 16,  8, 16, 16,  8,  64,  64,  96, }, // film2
+        { 16, 16,  8, 20, 20, 10,  80,  80, 128, }, // film1++
+        { 24, 24, 12, 24, 24, 12,  96,  96, 144, }, // film1+
+        { 24, 24, 12, 24, 24, 12, 192, 192, 288, }, // film1
+        { 32, 32, 24, 32, 32, 24, 128, 128, 192, }, // high+
+        { 32, 32, 24, 32, 32, 24, 256, 256, 384, }, // high
+        { 48, 48, 32, 48, 48, 32, 256, 256, 384, }, // medium+
+        { 48, 48, 32, 48, 48, 32, 512, 512, 768, }, // medium
+        { 56, 56, 40, 56, 56, 40, 512, 512, 768, }, // low+
+        { 64, 64, 48, 64, 64, 48,1024,1024,1536, }, // low
+    },
+    {
+        { 16, 16,  8, 16, 16,  8,  24,  24,  36, }, // film3+
+        { 16, 16,  8, 16, 16,  8,  48,  48,  72, }, // film3
+        { 16, 16,  8, 16, 16,  8,  48,  48,  72, }, // film2+
+        { 16, 16,  8, 16, 16,  8,  64,  64,  96, }, // film2
+        { 16, 16, 10, 20, 20, 10,  80,  80, 128, }, // film1++
+        { 24, 24, 12, 24, 24, 12,  96,  96, 144, }, // film1+
+        { 24, 24, 12, 24, 24, 12, 192, 192, 288, }, // film1
+        { 32, 32, 24, 32, 32, 24, 128, 128, 192, }, // high+
+        { 32, 32, 24, 32, 32, 24, 256, 256, 384, }, // high
+        { 48, 48, 32, 48, 48, 32, 256, 256, 384, }, // medium+
+        { 48, 48, 32, 48, 48, 32, 512, 512, 768, }, // medium
+        { 56, 56, 40, 56, 56, 40, 512, 512, 768, }, // low+
+        { 64, 64, 48, 64, 64, 48,1024,1024,1536, }, // low
+    }},
 };
 
 typedef struct Codebook {
@@ -141,18 +224,21 @@ typedef struct PlaneEnc {
 } PlaneEnc;
 
 typedef struct CFHDEncContext {
+    const AVClass *class;
+
     PutBitContext       pb;
     PutByteContext      pby;
 
-    unsigned quantization_div;
-    int compression;
+    int quality;
     int planes;
     int chroma_h_shift;
     int chroma_v_shift;
     PlaneEnc plane[4];
 
+    uint16_t lut[1024];
     Runbook  rb[321];
     Codebook cb[513];
+    int16_t *alpha;
 } CFHDEncContext;
 
 static av_cold int cfhd_encode_init(AVCodecContext *avctx)
@@ -161,9 +247,7 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
     const int sign_mask = 256;
     const int twos_complement = -sign_mask;
     const int mag_mask = sign_mask - 1;
-    int ret;
-
-    s->quantization_div = avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 2 : 1;
+    int ret, last = 0;
 
     ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
                                            &s->chroma_h_shift,
@@ -177,10 +261,6 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
     }
 
     s->planes = av_pix_fmt_count_planes(avctx->pix_fmt);
-
-    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
-        s->compression = 2;
-    s->compression = av_clip(avctx->compression_level, 0, 9);
 
     for (int i = 0; i < s->planes; i++) {
         int w8, h8, w4, h4, w2, h2;
@@ -252,7 +332,7 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
 
     s->rb[0].run = 0;
 
-    for (int i = 1, j = 0; i < 320 && j < 7; j++) {
+    for (int i = 1, j = 0; i < 320 && j < 17; j++) {
         int run = runbook[j][2];
         int end = runbook[j+1][2];
 
@@ -263,14 +343,33 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
         }
     }
 
-    s->rb[320].bits = runbook[7][1];
-    s->rb[320].size = runbook[7][0];
+    s->rb[320].bits = runbook[17][1];
+    s->rb[320].size = runbook[17][0];
     s->rb[320].run = 320;
+
+    for (int i = 0; i < 256; i++) {
+        int idx = i + ((768LL * i * i * i) / (256 * 256 * 256));
+
+        s->lut[idx] = i;
+    }
+    for (int i = 0; i < 1024; i++) {
+        if (s->lut[i])
+            last = s->lut[i];
+        else
+            s->lut[i] = last;
+    }
+
+    if (s->planes != 4)
+        return 0;
+
+    s->alpha = av_calloc(avctx->width * avctx->height, sizeof(*s->alpha));
+    if (!s->alpha)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
 
-static inline void filter(int16_t *input, ptrdiff_t in_stride,
+static av_always_inline void filter(int16_t *input, ptrdiff_t in_stride,
                           int16_t *low, ptrdiff_t low_stride,
                           int16_t *high, ptrdiff_t high_stride,
                           int len)
@@ -309,11 +408,11 @@ static void vert_filter(int16_t *input, ptrdiff_t in_stride,
 static void quantize_band(int16_t *input, int width, int a_width,
                           int height, unsigned quantization)
 {
-    const int factor = (1 << 16) / quantization;
+    const int16_t factor = (uint32_t)(1U << 15) / quantization;
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++)
-            input[j] = av_clip_intp2((input[j] * factor) / 65536, 8);
+            input[j] = av_clip_intp2(((input[j] * factor + 16384 * FFSIGN(input[j])) / 32768), 10);
         input += a_width;
     }
 }
@@ -330,6 +429,27 @@ static int put_runcode(PutBitContext *pb, int count, const Runbook *const rb)
     return 0;
 }
 
+static void process_alpha(const int16_t *src, int width, int height, ptrdiff_t stride, int16_t *dst)
+{
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            int alpha = src[j];
+
+            if (alpha > 0 && alpha < 4080) {
+                alpha *= 223;
+                alpha += 128;
+                alpha >>= 8;
+                alpha += 256;
+            }
+
+            dst[j] = av_clip_uintp2(alpha, 12);
+        }
+
+        src += stride;
+        dst += width;
+    }
+}
+
 static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *frame, int *got_packet)
 {
@@ -338,10 +458,11 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     PutBitContext *pb = &s->pb;
     const Codebook *const cb = s->cb;
     const Runbook *const rb = s->rb;
+    const uint16_t *lut = s->lut;
     unsigned pos;
-    int ret = 0;
+    int ret;
 
-    for (int plane = 0; plane < s->planes && !ret; plane++) {
+    for (int plane = 0; plane < s->planes; plane++) {
         int width = s->plane[plane].band[2][0].width;
         int a_width = s->plane[plane].band[2][0].a_width;
         int height = s->plane[plane].band[2][0].height;
@@ -349,8 +470,15 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int16_t *input = (int16_t *)frame->data[act_plane];
         int16_t *low = s->plane[plane].l_h[6];
         int16_t *high = s->plane[plane].l_h[7];
-        const ptrdiff_t in_stride = frame->linesize[act_plane] / 2;
+        ptrdiff_t in_stride = frame->linesize[act_plane] / 2;
         int low_stride, high_stride;
+
+        if (plane == 3) {
+            process_alpha(input, avctx->width, avctx->height,
+                          in_stride, s->alpha);
+            input = s->alpha;
+            in_stride = avctx->width;
+        }
 
         for (int i = 0; i < height * 2; i++) {
             horiz_filter(input, low, high, width * 2);
@@ -476,7 +604,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    ret = ff_alloc_packet2(avctx, pkt, 60LL + s->planes * (2LL * avctx->width * avctx->height + 1000LL), 0);
+    ret = ff_alloc_packet2(avctx, pkt, 64LL + s->planes * (2LL * avctx->width * avctx->height + 1000LL), 0);
     if (ret < 0)
         return ret;
 
@@ -501,7 +629,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_put_be16(pby, s->planes);
 
     bytestream2_put_be16(pby, EncodedFormat);
-    bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 1 : 3);
+    bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 1 : 3 + (s->planes == 4));
 
     bytestream2_put_be16(pby, WaveletCount);
     bytestream2_put_be16(pby, 3);
@@ -521,11 +649,14 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_put_be16(pby, ImageHeight);
     bytestream2_put_be16(pby, avctx->height);
 
+    bytestream2_put_be16(pby, -FrameNumber);
+    bytestream2_put_be16(pby, avctx->frame_number);
+
     bytestream2_put_be16(pby, Precision);
     bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 10 : 12);
 
     bytestream2_put_be16(pby, PrescaleTable);
-    bytestream2_put_be16(pby, 0x2800);
+    bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 0x2000 : 0x2800);
 
     bytestream2_put_be16(pby, SampleFlags);
     bytestream2_put_be16(pby, 1);
@@ -584,7 +715,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (int l = 0; l < 3; l++) {
             for (int i = 0; i < 3; i++) {
-                s->plane[p].quantization[1 + l * 3 + i] = quantization_per_subband[s->compression][l * 3 + i] / s->quantization_div;
+                s->plane[p].quantization[1 + l * 3 + i] = quantization_per_subband[avctx->pix_fmt != AV_PIX_FMT_YUV422P10][p >= 3 ? 0 : p][s->quality][l * 3 + i];
             }
         }
 
@@ -638,7 +769,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream2_put_be16(pby, i + 1);
 
                 bytestream2_put_be16(pby, BandCodingFlags);
-                bytestream2_put_be16(pby, 2);
+                bytestream2_put_be16(pby, 1);
 
                 bytestream2_put_be16(pby, BandWidth);
                 bytestream2_put_be16(pby, width);
@@ -668,7 +799,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
                 for (int m = 0; m < height; m++) {
                     for (int j = 0; j < stride; j++) {
-                        int16_t index = data[j];
+                        int16_t index = FFSIGN(data[j]) * lut[FFABS(data[j])];
 
                         if (index < 0)
                             index += 512;
@@ -739,8 +870,37 @@ static av_cold int cfhd_encode_close(AVCodecContext *avctx)
             s->plane[i].l_h[j] = NULL;
     }
 
+    av_freep(&s->alpha);
+
     return 0;
 }
+
+#define OFFSET(x) offsetof(CFHDEncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "quality", "set quality", OFFSET(quality), AV_OPT_TYPE_INT,   {.i64= 0}, 0, 12, VE, "q" },
+    { "film3+",   NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 0}, 0,  0, VE, "q" },
+    { "film3",    NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 1}, 0,  0, VE, "q" },
+    { "film2+",   NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 2}, 0,  0, VE, "q" },
+    { "film2",    NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 3}, 0,  0, VE, "q" },
+    { "film1.5",  NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 4}, 0,  0, VE, "q" },
+    { "film1+",   NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 5}, 0,  0, VE, "q" },
+    { "film1",    NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 6}, 0,  0, VE, "q" },
+    { "high+",    NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 7}, 0,  0, VE, "q" },
+    { "high",     NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 8}, 0,  0, VE, "q" },
+    { "medium+",  NULL,         0,               AV_OPT_TYPE_CONST, {.i64= 9}, 0,  0, VE, "q" },
+    { "medium",   NULL,         0,               AV_OPT_TYPE_CONST, {.i64=10}, 0,  0, VE, "q" },
+    { "low+",     NULL,         0,               AV_OPT_TYPE_CONST, {.i64=11}, 0,  0, VE, "q" },
+    { "low",      NULL,         0,               AV_OPT_TYPE_CONST, {.i64=12}, 0,  0, VE, "q" },
+    { NULL},
+};
+
+static const AVClass cfhd_class = {
+    .class_name = "cfhd",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_cfhd_encoder = {
     .name             = "cfhd",
@@ -748,6 +908,7 @@ AVCodec ff_cfhd_encoder = {
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_CFHD,
     .priv_data_size   = sizeof(CFHDEncContext),
+    .priv_class       = &cfhd_class,
     .init             = cfhd_encode_init,
     .close            = cfhd_encode_close,
     .encode2          = cfhd_encode_frame,
@@ -755,6 +916,7 @@ AVCodec ff_cfhd_encoder = {
     .pix_fmts         = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10,
                           AV_PIX_FMT_GBRP12,
+                          AV_PIX_FMT_GBRAP12,
                           AV_PIX_FMT_NONE
                         },
 };
