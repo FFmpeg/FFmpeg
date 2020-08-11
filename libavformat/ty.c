@@ -72,11 +72,6 @@ typedef enum {
     TIVO_AUDIO_MPEG
 } TiVo_audio;
 
-typedef struct TySeqTable {
-    uint64_t    timestamp;
-    uint8_t     chunk_bitmask[8];
-} TySeqTable;
-
 typedef struct TYDemuxContext {
     unsigned        cur_chunk;
     unsigned        cur_chunk_pos;
@@ -90,7 +85,6 @@ typedef struct TYDemuxContext {
     int             pes_buf_cnt;      /* how many bytes in our buffer */
     size_t          ac3_pkt_size;     /* length of ac3 pkt we've seen so far */
     uint64_t        last_ty_pts;      /* last TY timestamp we've seen */
-    unsigned        seq_table_size;   /* number of entries in SEQ table */
 
     int64_t         first_audio_pts;
     int64_t         last_audio_pts;
@@ -99,8 +93,6 @@ typedef struct TYDemuxContext {
     TyRecHdr       *rec_hdrs;         /* record headers array */
     int             cur_rec;          /* current record in this chunk */
     int             num_recs;         /* number of recs in this chunk */
-    int             seq_rec;          /* record number where seq start is */
-    TySeqTable     *seq_table;        /* table of SEQ entries from mstr chk */
     int             first_chunk;
 
     uint8_t         chunk[CHUNK_SIZE];
@@ -339,58 +331,6 @@ static int ty_read_header(AVFormatContext *s)
     return 0;
 }
 
-/* parse a master chunk, filling the SEQ table and other variables.
- * We assume the stream is currently pointing to it.
- */
-static void parse_master(AVFormatContext *s)
-{
-    TYDemuxContext *ty = s->priv_data;
-    unsigned map_size;  /* size of bitmask, in bytes */
-    unsigned i, j;
-
-    /* Note that the entries in the SEQ table in the stream may have
-       different sizes depending on the bits per entry.  We store them
-       all in the same size structure, so we have to parse them out one
-       by one.  If we had a dynamic structure, we could simply read the
-       entire table directly from the stream into memory in place. */
-
-    /* clear the SEQ table */
-    av_freep(&ty->seq_table);
-
-    /* parse header info */
-
-    map_size = AV_RB32(ty->chunk + 20);  /* size of bitmask, in bytes */
-    i = AV_RB32(ty->chunk + 28);   /* size of SEQ table, in bytes */
-
-    ty->seq_table_size = i / (8LL + map_size);
-
-    if (ty->seq_table_size == 0) {
-        ty->seq_table = NULL;
-        return;
-    }
-
-    /* parse all the entries */
-    ty->seq_table = av_calloc(ty->seq_table_size, sizeof(TySeqTable));
-    if (ty->seq_table == NULL) {
-        ty->seq_table_size = 0;
-        return;
-    }
-
-    ty->cur_chunk_pos = 32;
-    for (j = 0; j < ty->seq_table_size; j++) {
-        if (ty->cur_chunk_pos >= CHUNK_SIZE - 8)
-            return;
-        ty->seq_table[j].timestamp = AV_RB64(ty->chunk + ty->cur_chunk_pos);
-        ty->cur_chunk_pos += 8;
-        if (map_size > 8) {
-            av_log(s, AV_LOG_ERROR, "Unsupported SEQ bitmap size in master chunk.\n");
-            ty->cur_chunk_pos += map_size;
-        } else {
-            memcpy(ty->seq_table[j].chunk_bitmask, ty->chunk + ty->cur_chunk_pos, map_size);
-        }
-    }
-}
-
 static int get_chunk(AVFormatContext *s)
 {
     TYDemuxContext *ty = s->priv_data;
@@ -413,7 +353,7 @@ static int get_chunk(AVFormatContext *s)
 
     /* check if it's a PART Header */
     if (AV_RB32(ty->chunk) == TIVO_PES_FILEID) {
-        parse_master(s); /* parse master chunk */
+        /* skip master chunk and read new chunk */
         return get_chunk(s);
     }
 
@@ -421,14 +361,9 @@ static int get_chunk(AVFormatContext *s)
     if (ty->chunk[3] & 0x80) {
         /* 16 bit rec cnt */
         ty->num_recs = num_recs = (ty->chunk[1] << 8) + ty->chunk[0];
-        ty->seq_rec = (ty->chunk[3] << 8) + ty->chunk[2];
-        if (ty->seq_rec != 0xffff) {
-            ty->seq_rec &= ~0x8000;
-        }
     } else {
         /* 8 bit reclen - TiVo 1.3 format */
         ty->num_recs = num_recs = ty->chunk[0];
-        ty->seq_rec = ty->chunk[1];
     }
     ty->cur_rec = 0;
     ty->first_chunk = 0;
@@ -770,7 +705,6 @@ static int ty_read_close(AVFormatContext *s)
 {
     TYDemuxContext *ty = s->priv_data;
 
-    av_freep(&ty->seq_table);
     av_freep(&ty->rec_hdrs);
 
     return 0;
