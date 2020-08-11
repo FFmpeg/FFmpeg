@@ -23,6 +23,7 @@
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 
 #define ASF_TAG                 MKTAG('A', 'S', 'F', '\0')
 #define ASF_FILE_HEADER_SIZE    24
@@ -63,6 +64,13 @@ typedef struct ArgoASFDemuxContext {
     uint32_t            blocks_read;
 } ArgoASFDemuxContext;
 
+typedef struct ArgoASFMuxContext {
+    const AVClass *class;
+    int            version_major;
+    int            version_minor;
+    const char    *name;
+} ArgoASFMuxContext;
+
 #if CONFIG_ARGO_ASF_DEMUXER
 static void argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *buf)
 {
@@ -87,9 +95,12 @@ static void argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *
 
 /*
  * Known versions:
- * 1.1: The sample files in /game-formats/brender/part2.zip
+ * 1.1: https://samples.ffmpeg.org/game-formats/brender/part2.zip
+ *      FX Fighter
  * 1.2: Croc! Legend of the Gobbos
  * 2.1: Croc 2
+ *      The Emperor's New Groove
+ *      Disney's Aladdin in Nasira's Revenge
  */
 static int argo_asf_is_known_version(const ArgoASFFileHeader *hdr)
 {
@@ -132,13 +143,6 @@ static int argo_asf_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     argo_asf_parse_file_header(&asf->fhdr, buf);
-
-    if (!argo_asf_is_known_version(&asf->fhdr)) {
-        avpriv_request_sample(s, "Version %hu.%hu",
-            asf->fhdr.version_major, asf->fhdr.version_minor
-        );
-        return AVERROR_PATCHWELCOME;
-    }
 
     if (asf->fhdr.num_chunks == 0) {
         return AVERROR_INVALIDDATA;
@@ -316,15 +320,33 @@ static void argo_asf_write_chunk_header(const ArgoASFChunkHeader *ckhdr, AVIOCon
 static int argo_asf_write_header(AVFormatContext *s)
 {
     const AVCodecParameters  *par = s->streams[0]->codecpar;
+    ArgoASFMuxContext        *ctx = s->priv_data;
     ArgoASFFileHeader  fhdr;
     ArgoASFChunkHeader chdr;
 
     fhdr.magic         = ASF_TAG;
-    fhdr.version_major = 2;
-    fhdr.version_minor = 1;
+    fhdr.version_major = (uint16_t)ctx->version_major;
+    fhdr.version_minor = (uint16_t)ctx->version_minor;
     fhdr.num_chunks    = 1;
     fhdr.chunk_offset  = ASF_FILE_HEADER_SIZE;
-    strncpy(fhdr.name, av_basename(s->url), FF_ARRAY_ELEMS(fhdr.name));
+    /*
+     * If the user specified a name, use it as is. Otherwise take the
+     * basename and lop off the extension (if any).
+     */
+    if (ctx->name) {
+        strncpy(fhdr.name, ctx->name, sizeof(fhdr.name));
+    } else {
+        const char *start = av_basename(s->url);
+        const char *end   = strrchr(start, '.');
+        size_t      len;
+
+        if(end)
+            len = end - start;
+        else
+            len = strlen(start);
+
+        memcpy(fhdr.name, start, FFMIN(len, sizeof(fhdr.name)));
+    }
 
     chdr.num_blocks    = 0;
     chdr.num_samples   = ASF_SAMPLE_COUNT;
@@ -364,6 +386,45 @@ static int argo_asf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static const AVOption argo_asf_options[] = {
+    {
+        .name        = "version_major",
+        .help        = "override file major version",
+        .offset      = offsetof(ArgoASFMuxContext, version_major),
+        .type        = AV_OPT_TYPE_INT,
+        .default_val = {.i64 = 2},
+        .min         = 0,
+        .max         = UINT16_MAX,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    {
+        .name        = "version_minor",
+        .help        = "override file minor version",
+        .offset      = offsetof(ArgoASFMuxContext, version_minor),
+        .type        = AV_OPT_TYPE_INT,
+        .default_val = {.i64 = 1},
+        .min         = 0,
+        .max         = UINT16_MAX,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    {
+        .name        = "name",
+        .help        = "embedded file name (max 8 characters)",
+        .offset      = offsetof(ArgoASFMuxContext, name),
+        .type        = AV_OPT_TYPE_STRING,
+        .default_val = {.str = NULL},
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    { NULL }
+};
+
+static const AVClass argo_asf_muxer_class = {
+    .class_name = "argo_asf_muxer",
+    .item_name  = av_default_item_name,
+    .option     = argo_asf_options,
+    .version    = LIBAVUTIL_VERSION_INT
+};
+
 AVOutputFormat ff_argo_asf_muxer = {
     .name           = "argo_asf",
     .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games ASF"),
@@ -376,6 +437,8 @@ AVOutputFormat ff_argo_asf_muxer = {
     .init           = argo_asf_write_init,
     .write_header   = argo_asf_write_header,
     .write_packet   = argo_asf_write_packet,
-    .write_trailer  = argo_asf_write_trailer
+    .write_trailer  = argo_asf_write_trailer,
+    .priv_class     = &argo_asf_muxer_class,
+    .priv_data_size = sizeof(ArgoASFMuxContext)
 };
 #endif
