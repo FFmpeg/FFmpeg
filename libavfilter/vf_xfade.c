@@ -1411,6 +1411,22 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
+    if (!inlink0->frame_rate.num || !inlink0->frame_rate.den) {
+        av_log(ctx, AV_LOG_ERROR, "The inputs needs to be a constant frame rate; "
+               "current rate of %d/%d is invalid\n", inlink0->frame_rate.num, inlink0->frame_rate.den);
+        return AVERROR(EINVAL);
+    }
+
+    if (inlink0->frame_rate.num != inlink1->frame_rate.num ||
+        inlink0->frame_rate.den != inlink1->frame_rate.den) {
+        av_log(ctx, AV_LOG_ERROR, "First input link %s frame rate "
+               "(%d/%d) do not match the corresponding "
+               "second input link %s frame rate (%d/%d)\n",
+               ctx->input_pads[0].name, inlink0->frame_rate.num, inlink0->frame_rate.den,
+               ctx->input_pads[1].name, inlink1->frame_rate.num, inlink1->frame_rate.den);
+        return AVERROR(EINVAL);
+    }
+
     outlink->w = inlink0->w;
     outlink->h = inlink0->h;
     outlink->time_base = inlink0->time_base;
