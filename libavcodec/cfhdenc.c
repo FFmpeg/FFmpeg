@@ -369,7 +369,7 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static inline void filter(int16_t *input, ptrdiff_t in_stride,
+static av_always_inline void filter(int16_t *input, ptrdiff_t in_stride,
                           int16_t *low, ptrdiff_t low_stride,
                           int16_t *high, ptrdiff_t high_stride,
                           int len)
