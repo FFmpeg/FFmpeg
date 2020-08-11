@@ -201,6 +201,8 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (c->curstrm == -1) {
             c->pktsize = avio_rl32(s->pb) - 4;
             c->flags   = avio_rl16(s->pb);
+            if (c->flags & VB_HAS_AUDIO && !c->has_audio)
+                return AVERROR_INVALIDDATA;
             c->gmcsize = (c->flags & VB_HAS_GMC) ? 4 : 0;
             if (c->gmcsize)
                 avio_read(s->pb, c->gmc, c->gmcsize);
