@@ -219,8 +219,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     YADIFContext *yadif = &s->yadif;
     ThreadData *td  = arg;
     int linesize = yadif->cur->linesize[td->plane];
-    int clip_max = (1 << (yadif->csp->comp[td->plane].depth)) - 1;
-    int df = (yadif->csp->comp[td->plane].depth + 7) / 8;
+    int clip_max = (1 << (yadif->depth)) - 1;
+    int df = (yadif->depth + 7) / 8;
     int refs = linesize / df;
     int slice_start = (td->h *  jobnr   ) / nb_jobs;
     int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
@@ -267,13 +267,13 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
     ThreadData td = { .frame = dstpic, .parity = parity, .tff = tff };
     int i;
 
-    for (i = 0; i < yadif->csp->nb_components; i++) {
+    for (i = 0; i < yadif->nb_components; i++) {
         int w = dstpic->width;
         int h = dstpic->height;
 
         if (i == 1 || i == 2) {
-            w = AV_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
-            h = AV_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, yadif->hsub);
+            h = AV_CEIL_RSHIFT(h, yadif->vsub);
         }
 
         td.w     = w;
@@ -348,9 +348,8 @@ static int config_props(AVFilterLink *link)
         return AVERROR(EINVAL);
     }
 
-    yadif->csp = av_pix_fmt_desc_get(link->format);
     yadif->filter = filter;
-    if (yadif->csp->comp[0].depth > 8) {
+    if (yadif->depth > 8) {
         s->filter_intra = filter_intra_16bit;
         s->filter_line  = filter_line_c_16bit;
         s->filter_edge  = filter_edge_16bit;
