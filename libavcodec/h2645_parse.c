@@ -501,6 +501,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         if (ret < 0)
             return ret;
 
+        /* Reset type in case it contains a stale value from a previously parsed NAL */
+        nal->type = 0;
+
         if (codec_id == AV_CODEC_ID_HEVC)
             ret = hevc_parse_nal_header(nal, logctx);
         else
