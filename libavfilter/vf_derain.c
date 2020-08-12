@@ -161,7 +161,7 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    dr_context->model = (dr_context->dnn_module->load_model)(dr_context->model_filename);
+    dr_context->model = (dr_context->dnn_module->load_model)(dr_context->model_filename, NULL);
     if (!dr_context->model) {
         av_log(ctx, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EINVAL);
