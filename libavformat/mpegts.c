@@ -1343,7 +1343,8 @@ skip:
                         }
                     }
 
-                    if (!pcr_found) {
+                    if (pes->st->codecpar->codec_id == AV_CODEC_ID_DVB_TELETEXT &&
+                        !pcr_found) {
                         av_log(pes->stream, AV_LOG_VERBOSE,
                                "Forcing DTS/PTS to be unset for a "
                                "non-trustworthy PES packet for PID %d as "
