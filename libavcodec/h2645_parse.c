@@ -287,7 +287,7 @@ static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
 
 /**
  * @return AVERROR_INVALIDDATA if the packet is not a valid NAL unit,
- * 0 if the unit should be skipped, 1 otherwise
+ * 0 otherwise
  */
 static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
 {
@@ -307,7 +307,7 @@ static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
            "nal_unit_type: %d(%s), nuh_layer_id: %d, temporal_id: %d\n",
            nal->type, hevc_nal_unit_name(nal->type), nal->nuh_layer_id, nal->temporal_id);
 
-    return 1;
+    return 0;
 }
 
 static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
@@ -324,7 +324,7 @@ static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
            "nal_unit_type: %d(%s), nal_ref_idc: %d\n",
            nal->type, h264_nal_unit_name(nal->type), nal->ref_idc);
 
-    return 1;
+    return 0;
 }
 
 static int find_next_start_code(const uint8_t *buf, const uint8_t *next_avc)
@@ -504,7 +504,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = hevc_parse_nal_header(nal, logctx);
         else
             ret = h264_parse_nal_header(nal, logctx);
-        if (ret <= 0 || nal->size <= 0 || nal->size_bits <= 0) {
+        if (ret < 0 || nal->size <= 0 || nal->size_bits <= 0) {
             if (ret < 0) {
                 av_log(logctx, AV_LOG_WARNING, "Invalid NAL unit %d, skipping.\n",
                        nal->type);
