@@ -485,8 +485,6 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                    "NALFF: Consumed only %d bytes instead of %d\n",
                    consumed, extract_length);
 
-        pkt->nb_nals++;
-
         bytestream2_skip(&bc, consumed);
 
         /* see commit 3566042a0 */
@@ -496,6 +494,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
         nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
 
+        if (nal->size <= 0 || nal->size_bits <= 0)
+            continue;
+
         ret = init_get_bits(&nal->gb, nal->data, nal->size_bits);
         if (ret < 0)
             return ret;
@@ -504,13 +505,13 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = hevc_parse_nal_header(nal, logctx);
         else
             ret = h264_parse_nal_header(nal, logctx);
-        if (ret < 0 || nal->size <= 0 || nal->size_bits <= 0) {
-            if (ret < 0) {
-                av_log(logctx, AV_LOG_WARNING, "Invalid NAL unit %d, skipping.\n",
-                       nal->type);
-            }
-            pkt->nb_nals--;
+        if (ret < 0) {
+            av_log(logctx, AV_LOG_WARNING, "Invalid NAL unit %d, skipping.\n",
+                   nal->type);
+            continue;
         }
+
+        pkt->nb_nals++;
     }
 
     return 0;
