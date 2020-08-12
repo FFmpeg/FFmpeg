@@ -48,13 +48,13 @@ do {                                                                       \
     av_freep(&a);                                                          \
 } while (0)
 
-#define MERGE_REF(ret, a, fmts, type, fail)                                \
+#define MERGE_REF(ret, a, fmts, type, fail_statement)                      \
 do {                                                                       \
     type ***tmp;                                                           \
                                                                            \
     if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
                                  sizeof(*tmp))))                           \
-        goto fail;                                                         \
+        { fail_statement }                                                 \
     ret->refs = tmp;                                                       \
     MERGE_REF_NO_ALLOC(ret, a, fmts);                                      \
 } while (0)
@@ -157,10 +157,10 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
     if (a->nb_formats && b->nb_formats) {
         MERGE_FORMATS(ret, a, b, formats, nb_formats, AVFilterFormats, fail);
     } else if (a->nb_formats) {
-        MERGE_REF(a, b, formats, AVFilterFormats, fail);
+        MERGE_REF(a, b, formats, AVFilterFormats, return NULL;);
         ret = a;
     } else {
-        MERGE_REF(b, a, formats, AVFilterFormats, fail);
+        MERGE_REF(b, a, formats, AVFilterFormats, return NULL;);
         ret = b;
     }
 
@@ -177,7 +177,7 @@ fail:
 AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
                                                  AVFilterChannelLayouts *b)
 {
-    AVFilterChannelLayouts *ret = NULL;
+    uint64_t *channel_layouts;
     unsigned a_all = a->all_layouts + a->all_counts;
     unsigned b_all = b->all_layouts + b->all_counts;
     int ret_max, ret_nb = 0, i, j, round;
@@ -201,15 +201,13 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
                 return NULL;
             b->nb_channel_layouts = j;
         }
-        MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, fail);
+        MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, return NULL;);
         return b;
     }
 
     ret_max = a->nb_channel_layouts + b->nb_channel_layouts;
-    if (!(ret = av_mallocz(sizeof(*ret))) ||
-        !(ret->channel_layouts = av_malloc_array(ret_max,
-                                                 sizeof(*ret->channel_layouts))))
-        goto fail;
+    if (!(channel_layouts = av_malloc_array(ret_max, sizeof(*channel_layouts))))
+        return NULL;
 
     /* a[known] intersect b[known] */
     for (i = 0; i < a->nb_channel_layouts; i++) {
@@ -217,7 +215,7 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             continue;
         for (j = 0; j < b->nb_channel_layouts; j++) {
             if (a->channel_layouts[i] == b->channel_layouts[j]) {
-                ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
+                channel_layouts[ret_nb++] = a->channel_layouts[i];
                 a->channel_layouts[i] = b->channel_layouts[j] = 0;
                 break;
             }
@@ -233,7 +231,7 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             bfmt = FF_COUNT2LAYOUT(av_get_channel_layout_nb_channels(fmt));
             for (j = 0; j < b->nb_channel_layouts; j++)
                 if (b->channel_layouts[j] == bfmt)
-                    ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
+                    channel_layouts[ret_nb++] = a->channel_layouts[i];
         }
         /* 1st round: swap to prepare 2nd round; 2nd round: put it back */
         FFSWAP(AVFilterChannelLayouts *, a, b);
@@ -244,27 +242,23 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             continue;
         for (j = 0; j < b->nb_channel_layouts; j++)
             if (a->channel_layouts[i] == b->channel_layouts[j])
-                ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
+                channel_layouts[ret_nb++] = a->channel_layouts[i];
     }
 
-    ret->nb_channel_layouts = ret_nb;
-    if (!ret->nb_channel_layouts)
+    if (!ret_nb)
         goto fail;
 
-    ret->refs = av_realloc_array(NULL, a->refcount + b->refcount,
-                                 sizeof(*ret->refs));
-    if (!ret->refs)
-        goto fail;
-    MERGE_REF_NO_ALLOC(ret, a, channel_layouts);
-    MERGE_REF_NO_ALLOC(ret, b, channel_layouts);
-    return ret;
+    if (a->refcount > b->refcount)
+        FFSWAP(AVFilterChannelLayouts *, a, b);
+
+    MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, goto fail;);
+    av_freep(&b->channel_layouts);
+    b->channel_layouts    = channel_layouts;
+    b->nb_channel_layouts = ret_nb;
+    return b;
 
 fail:
-    if (ret) {
-        av_assert1(!ret->refs);
-        av_freep(&ret->channel_layouts);
-        av_freep(&ret);
-    }
+    av_free(channel_layouts);
     return NULL;
 }
 
