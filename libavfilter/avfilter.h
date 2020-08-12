@@ -493,8 +493,7 @@ struct AVFilterLink {
     /**
      * Audio only, the destination filter sets this to a non-zero value to
      * request that buffers with the given number of samples should be sent to
-     * it. AVFilterPad.needs_fifo must also be set on the corresponding input
-     * pad.
+     * it.
      * Last buffer before EOF will be padded with silence.
      */
     int request_samples;
