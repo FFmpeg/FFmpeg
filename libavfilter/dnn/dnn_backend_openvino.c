@@ -34,8 +34,6 @@ typedef struct OVModel{
     ie_executable_network_t *exe_network;
     ie_infer_request_t *infer_request;
     ie_blob_t *input_blob;
-    ie_blob_t **output_blobs;
-    uint32_t nb_output;
 } OVModel;
 
 static DNNDataType precision_to_datatype(precision_e precision)
@@ -93,7 +91,7 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
     return DNN_ERROR;
 }
 
-static DNNReturnType set_input_output_ov(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
+static DNNReturnType set_input_ov(void *model, DNNData *input, const char *input_name)
 {
     OVModel *ov_model = (OVModel *)model;
     IEStatusCode status;
@@ -124,30 +122,9 @@ static DNNReturnType set_input_output_ov(void *model, DNNData *input, const char
         goto err;
     input->data = blob_buffer.buffer;
 
-    // outputs
-    ov_model->nb_output = 0;
-    av_freep(&ov_model->output_blobs);
-    ov_model->output_blobs = av_mallocz_array(nb_output, sizeof(*ov_model->output_blobs));
-    if (!ov_model->output_blobs)
-        goto err;
-
-    for (int i = 0; i < nb_output; i++) {
-        const char *output_name = output_names[i];
-        status = ie_infer_request_get_blob(ov_model->infer_request, output_name, &(ov_model->output_blobs[i]));
-        if (status != OK)
-            goto err;
-        ov_model->nb_output++;
-    }
-
     return DNN_SUCCESS;
 
 err:
-    if (ov_model->output_blobs) {
-        for (uint32_t i = 0; i < ov_model->nb_output; i++) {
-            ie_blob_free(&(ov_model->output_blobs[i]));
-        }
-        av_freep(&ov_model->output_blobs);
-    }
     if (ov_model->input_blob)
         ie_blob_free(&ov_model->input_blob);
     if (ov_model->infer_request)
@@ -184,7 +161,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options)
         goto err;
 
     model->model = (void *)ov_model;
-    model->set_input_output = &set_input_output_ov;
+    model->set_input = &set_input_ov;
     model->get_input = &get_input_ov;
     model->options = options;
 
@@ -205,24 +182,29 @@ err:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, uint32_t nb_output)
+DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output)
 {
     dimensions_t dims;
     precision_e precision;
     ie_blob_buffer_t blob_buffer;
     OVModel *ov_model = (OVModel *)model->model;
-    uint32_t nb = FFMIN(nb_output, ov_model->nb_output);
     IEStatusCode status = ie_infer_request_infer(ov_model->infer_request);
     if (status != OK)
         return DNN_ERROR;
 
-    for (uint32_t i = 0; i < nb; ++i) {
-        status = ie_blob_get_buffer(ov_model->output_blobs[i], &blob_buffer);
+    for (uint32_t i = 0; i < nb_output; ++i) {
+        const char *output_name = output_names[i];
+        ie_blob_t *output_blob = NULL;
+        status = ie_infer_request_get_blob(ov_model->infer_request, output_name, &output_blob);
         if (status != OK)
             return DNN_ERROR;
 
-        status |= ie_blob_get_dims(ov_model->output_blobs[i], &dims);
-        status |= ie_blob_get_precision(ov_model->output_blobs[i], &precision);
+        status = ie_blob_get_buffer(output_blob, &blob_buffer);
+        if (status != OK)
+            return DNN_ERROR;
+
+        status |= ie_blob_get_dims(output_blob, &dims);
+        status |= ie_blob_get_precision(output_blob, &precision);
         if (status != OK)
             return DNN_ERROR;
 
@@ -240,12 +222,6 @@ void ff_dnn_free_model_ov(DNNModel **model)
 {
     if (*model){
         OVModel *ov_model = (OVModel *)(*model)->model;
-        if (ov_model->output_blobs) {
-            for (uint32_t i = 0; i < ov_model->nb_output; i++) {
-                ie_blob_free(&(ov_model->output_blobs[i]));
-            }
-            av_freep(&ov_model->output_blobs);
-        }
         if (ov_model->input_blob)
             ie_blob_free(&ov_model->input_blob);
         if (ov_model->infer_request)

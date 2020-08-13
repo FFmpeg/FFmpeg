@@ -218,9 +218,8 @@ static int config_input(AVFilterLink *inlink)
     ctx->input.channels = model_input.channels;
     ctx->input.dt = model_input.dt;
 
-    result = (ctx->model->set_input_output)(ctx->model->model,
-                                        &ctx->input, ctx->model_inputname,
-                                        (const char **)&ctx->model_outputname, 1);
+    result = (ctx->model->set_input)(ctx->model->model,
+                                     &ctx->input, ctx->model_inputname);
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not set input and output for the model\n");
         return AVERROR(EIO);
@@ -309,7 +308,7 @@ static int config_output(AVFilterLink *outlink)
     DNNReturnType result;
 
     // have a try run in case that the dnn model resize the frame
-    result = (ctx->dnn_module->execute_model)(ctx->model, &ctx->output, 1);
+    result = (ctx->dnn_module->execute_model)(ctx->model, &ctx->output, (const char **)&ctx->model_outputname, 1);
     if (result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         return AVERROR(EIO);
@@ -456,7 +455,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     copy_from_frame_to_dnn(ctx, in);
 
-    dnn_result = (ctx->dnn_module->execute_model)(ctx->model, &ctx->output, 1);
+    dnn_result = (ctx->dnn_module->execute_model)(ctx->model, &ctx->output, (const char **)&ctx->model_outputname, 1);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         av_frame_free(&in);

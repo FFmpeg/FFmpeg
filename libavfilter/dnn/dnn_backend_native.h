@@ -112,13 +112,11 @@ typedef struct NativeModel{
     int32_t layers_num;
     DnnOperand *operands;
     int32_t operands_num;
-    int32_t *output_indexes;
-    uint32_t nb_output;
 } NativeModel;
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *options);
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output);
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output);
 
 void ff_dnn_free_model_native(DNNModel **model);
 

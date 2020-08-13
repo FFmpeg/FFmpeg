@@ -50,7 +50,7 @@ static DNNReturnType get_input_native(void *model, DNNData *input, const char *i
     return DNN_ERROR;
 }
 
-static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
+static DNNReturnType set_input_native(void *model, DNNData *input, const char *input_name)
 {
     NativeModel *native_model = (NativeModel *)model;
     DnnOperand *oprd = NULL;
@@ -86,27 +86,6 @@ static DNNReturnType set_input_output_native(void *model, DNNData *input, const 
         return DNN_ERROR;
 
     input->data = oprd->data;
-
-    /* outputs */
-    native_model->nb_output = 0;
-    av_freep(&native_model->output_indexes);
-    native_model->output_indexes = av_mallocz_array(nb_output, sizeof(*native_model->output_indexes));
-    if (!native_model->output_indexes)
-        return DNN_ERROR;
-
-    for (uint32_t i = 0; i < nb_output; ++i) {
-        const char *output_name = output_names[i];
-        for (int j = 0; j < native_model->operands_num; ++j) {
-            oprd = &native_model->operands[j];
-            if (strcmp(oprd->name, output_name) == 0) {
-                native_model->output_indexes[native_model->nb_output++] = j;
-                break;
-            }
-        }
-    }
-
-    if (native_model->nb_output != nb_output)
-        return DNN_ERROR;
 
     return DNN_SUCCESS;
 }
@@ -243,7 +222,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
         return NULL;
     }
 
-    model->set_input_output = &set_input_output_native;
+    model->set_input = &set_input_native;
     model->get_input = &get_input_native;
     model->options = options;
 
@@ -255,11 +234,10 @@ fail:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output)
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output)
 {
     NativeModel *native_model = (NativeModel *)model->model;
     int32_t layer;
-    uint32_t nb = FFMIN(nb_output, native_model->nb_output);
 
     if (native_model->layers_num <= 0 || native_model->operands_num <= 0)
         return DNN_ERROR;
@@ -274,8 +252,19 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
                                         native_model->layers[layer].params);
     }
 
-    for (uint32_t i = 0; i < nb; ++i) {
-        DnnOperand *oprd = &native_model->operands[native_model->output_indexes[i]];
+    for (uint32_t i = 0; i < nb_output; ++i) {
+        DnnOperand *oprd = NULL;
+        const char *output_name = output_names[i];
+        for (int j = 0; j < native_model->operands_num; ++j) {
+            if (strcmp(native_model->operands[j].name, output_name) == 0) {
+                oprd = &native_model->operands[j];
+                break;
+            }
+        }
+
+        if (oprd == NULL)
+            return DNN_ERROR;
+
         outputs[i].data = oprd->data;
         outputs[i].height = oprd->dims[1];
         outputs[i].width = oprd->dims[2];
@@ -335,7 +324,6 @@ void ff_dnn_free_model_native(DNNModel **model)
                 av_freep(&native_model->operands);
             }
 
-            av_freep(&native_model->output_indexes);
             av_freep(&native_model);
         }
         av_freep(model);
