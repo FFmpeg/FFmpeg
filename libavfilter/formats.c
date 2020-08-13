@@ -65,7 +65,7 @@ do {                                                                       \
  */
 #define MERGE_FORMATS(ret, a, b, fmts, nb, type, fail)                          \
 do {                                                                            \
-    int i, j, k = 0, count = FFMIN(a->nb, b->nb);                               \
+    int i, j, k = 0, count = a->nb;                                             \
     type ***tmp;                                                                \
                                                                                 \
     if (!(ret = av_mallocz(sizeof(*ret))))                                      \
@@ -77,13 +77,8 @@ do {                                                                            
         for (i = 0; i < a->nb; i++)                                             \
             for (j = 0; j < b->nb; j++)                                         \
                 if (a->fmts[i] == b->fmts[j]) {                                 \
-                    if(k >= FFMIN(a->nb, b->nb)){                               \
-                        av_log(NULL, AV_LOG_ERROR, "Duplicate formats in %s detected\n", __FUNCTION__); \
-                        av_free(ret->fmts);                                     \
-                        av_free(ret);                                           \
-                        return NULL;                                            \
-                    }                                                           \
                     ret->fmts[k++] = a->fmts[i];                                \
+                    break;                                                      \
                 }                                                               \
     }                                                                           \
     ret->nb = k;                                                                \
