@@ -29,6 +29,70 @@
 #include "avio_internal.h"
 #include "internal.h"
 
+//return < 0 if we need more data
+static int get_score(int type, int *seq)
+{
+    switch (type) {
+    case AV1_OBU_SEQUENCE_HEADER:
+        *seq = 1;
+        return -1;
+    case AV1_OBU_FRAME:
+    case AV1_OBU_FRAME_HEADER:
+        return *seq ? AVPROBE_SCORE_EXTENSION + 1 : 0;
+    case AV1_OBU_METADATA:
+    case AV1_OBU_PADDING:
+        return -1;
+    default:
+        break;
+    }
+    return 0;
+}
+
+static int read_header(AVFormatContext *s, const AVRational *framerate, AVBSFContext **bsf, void *logctx)
+{
+    const AVBitStreamFilter *filter = av_bsf_get_by_name("av1_frame_merge");
+    AVStream *st;
+    int ret;
+
+    if (!filter) {
+        av_log(logctx, AV_LOG_ERROR, "av1_frame_merge bitstream filter "
+               "not found. This is a bug, please report it.\n");
+        return AVERROR_BUG;
+    }
+
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_AV1;
+    st->need_parsing = AVSTREAM_PARSE_HEADERS;
+
+    st->internal->avctx->framerate = *framerate;
+    // taken from rawvideo demuxers
+    avpriv_set_pts_info(st, 64, 1, 1200000);
+
+    ret = av_bsf_alloc(filter, bsf);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_parameters_copy((*bsf)->par_in, st->codecpar);
+    if (ret < 0) {
+        av_bsf_free(bsf);
+        return ret;
+    }
+
+    ret = av_bsf_init(*bsf);
+    if (ret < 0)
+        av_bsf_free(bsf);
+
+    return ret;
+
+}
+
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+
+#if CONFIG_AV1_DEMUXER
 typedef struct AnnexBContext {
     const AVClass *class;
     AVBSFContext *bsf;
@@ -68,25 +132,6 @@ static int read_obu(const uint8_t *buf, int size, int64_t *obu_size, int *type)
     if (len < 0)
         return len;
 
-    return 0;
-}
-
-//return < 0 if we need more data
-static int get_score(int type, int *seq)
-{
-    switch (type) {
-    case AV1_OBU_SEQUENCE_HEADER:
-        *seq = 1;
-        return -1;
-    case AV1_OBU_FRAME:
-    case AV1_OBU_FRAME_HEADER:
-        return *seq ? AVPROBE_SCORE_EXTENSION + 1 : 0;
-    case AV1_OBU_METADATA:
-    case AV1_OBU_PADDING:
-        return -1;
-    default:
-        break;
-    }
     return 0;
 }
 
@@ -152,48 +197,6 @@ static int annexb_probe(const AVProbeData *p)
     } while (frame_unit_size);
 
     return 0;
-}
-
-static int read_header(AVFormatContext *s, const AVRational *framerate, AVBSFContext **bsf, void *logctx)
-{
-    const AVBitStreamFilter *filter = av_bsf_get_by_name("av1_frame_merge");
-    AVStream *st;
-    int ret;
-
-    if (!filter) {
-        av_log(logctx, AV_LOG_ERROR, "av1_frame_merge bitstream filter "
-               "not found. This is a bug, please report it.\n");
-        return AVERROR_BUG;
-    }
-
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-
-    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codecpar->codec_id = AV_CODEC_ID_AV1;
-    st->need_parsing = AVSTREAM_PARSE_HEADERS;
-
-    st->internal->avctx->framerate = *framerate;
-    // taken from rawvideo demuxers
-    avpriv_set_pts_info(st, 64, 1, 1200000);
-
-    ret = av_bsf_alloc(filter, bsf);
-    if (ret < 0)
-        return ret;
-
-    ret = avcodec_parameters_copy((*bsf)->par_in, st->codecpar);
-    if (ret < 0) {
-        av_bsf_free(bsf);
-        return ret;
-    }
-
-    ret = av_bsf_init(*bsf);
-    if (ret < 0)
-        av_bsf_free(bsf);
-
-    return ret;
-
 }
 
 static int annexb_read_header(AVFormatContext *s)
@@ -267,6 +270,35 @@ static int annexb_read_close(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(AnnexBContext, x)
+static const AVOption annexb_options[] = {
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
+    { NULL },
+};
+#undef OFFSET
+
+static const AVClass annexb_demuxer_class = {
+    .class_name = "AV1 Annex B demuxer",
+    .item_name  = av_default_item_name,
+    .option     = annexb_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVInputFormat ff_av1_demuxer = {
+    .name           = "av1",
+    .long_name      = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
+    .priv_data_size = sizeof(AnnexBContext),
+    .read_probe     = annexb_probe,
+    .read_header    = annexb_read_header,
+    .read_packet    = annexb_read_packet,
+    .read_close     = annexb_read_close,
+    .extensions     = "obu",
+    .flags          = AVFMT_GENERIC_INDEX,
+    .priv_class     = &annexb_demuxer_class,
+};
+#endif
+
+#if CONFIG_OBU_DEMUXER
 typedef struct ObuContext {
     const AVClass *class;
     AVBSFContext *bsf;
@@ -439,41 +471,12 @@ static int obu_read_close(AVFormatContext *s)
     return 0;
 }
 
-#define DEC AV_OPT_FLAG_DECODING_PARAM
-
-#define OFFSET(x) offsetof(AnnexBContext, x)
-static const AVOption annexb_options[] = {
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
-    { NULL },
-};
-#undef OFFSET
-
 #define OFFSET(x) offsetof(ObuContext, x)
 static const AVOption obu_options[] = {
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
     { NULL },
 };
 #undef OFFSET
-
-static const AVClass annexb_demuxer_class = {
-    .class_name = "AV1 Annex B demuxer",
-    .item_name  = av_default_item_name,
-    .option     = annexb_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVInputFormat ff_av1_demuxer = {
-    .name           = "av1",
-    .long_name      = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
-    .priv_data_size = sizeof(AnnexBContext),
-    .read_probe     = annexb_probe,
-    .read_header    = annexb_read_header,
-    .read_packet    = annexb_read_packet,
-    .read_close     = annexb_read_close,
-    .extensions     = "obu",
-    .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &annexb_demuxer_class,
-};
 
 static const AVClass obu_demuxer_class = {
     .class_name = "AV1 low overhead OBU demuxer",
@@ -494,3 +497,4 @@ AVInputFormat ff_obu_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .priv_class     = &obu_demuxer_class,
 };
+#endif
