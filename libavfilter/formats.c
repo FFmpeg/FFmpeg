@@ -219,6 +219,7 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             if (a->channel_layouts[i] == b->channel_layouts[j]) {
                 ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
                 a->channel_layouts[i] = b->channel_layouts[j] = 0;
+                break;
             }
         }
     }
