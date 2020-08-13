@@ -78,14 +78,13 @@ static int config_inputs(AVFilterLink *inlink)
 {
     AVFilterContext *ctx          = inlink->dst;
     DRContext *dr_context         = ctx->priv;
-    const char *model_output_name = "y";
     DNNReturnType result;
 
     dr_context->input.width    = inlink->w;
     dr_context->input.height   = inlink->h;
     dr_context->input.channels = 3;
 
-    result = (dr_context->model->set_input_output)(dr_context->model->model, &dr_context->input, "x", &model_output_name, 1);
+    result = (dr_context->model->set_input)(dr_context->model->model, &dr_context->input, "x");
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not set input and output for the model\n");
         return AVERROR(EIO);
@@ -100,6 +99,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     DRContext *dr_context = ctx->priv;
     DNNReturnType dnn_result;
+    const char *model_output_name = "y";
 
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -118,7 +118,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    dnn_result = (dr_context->dnn_module->execute_model)(dr_context->model, &dr_context->output, 1);
+    dnn_result = (dr_context->dnn_module->execute_model)(dr_context->model, &dr_context->output, &model_output_name, 1);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         return AVERROR(EIO);
