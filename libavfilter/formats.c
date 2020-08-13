@@ -56,11 +56,21 @@ do {                                                                       \
 
 /**
  * Add all formats common to a and b to a, add b's refs to a and destroy b.
+ * If empty_allowed is set and one of a,b->nb is zero, the lists are
+ * merged; otherwise, it is treated as error.
  */
-#define MERGE_FORMATS(a, b, fmts, nb, type, fail_statement)                \
+#define MERGE_FORMATS(a, b, fmts, nb, type, fail_statement, empty_allowed) \
 do {                                                                            \
-    int i, j, k = 0;                                                       \
+    int i, j, k = 0, skip = 0;                                             \
                                                                                 \
+    if (empty_allowed) {                                                   \
+        if (!a->nb || !b->nb) {                                            \
+            if (!a->nb)                                                    \
+                FFSWAP(type *, a, b);                                      \
+            skip = 1;                                                      \
+        }                                                                  \
+    }                                                                      \
+    if (!skip) {                                                           \
         for (i = 0; i < a->nb; i++)                                             \
             for (j = 0; j < b->nb; j++)                                         \
                 if (a->fmts[i] == b->fmts[j]) {                                 \
@@ -72,7 +82,8 @@ do {                                                                            
     if (!k)                                                                \
         { fail_statement }                                                 \
     a->nb = k;                                                             \
-                                                                                \
+    }                                                                      \
+                                                                           \
     MERGE_REF(a, b, fmts, type, fail_statement);                           \
 } while (0)
 
@@ -110,7 +121,7 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
     if (alpha2 > alpha1 || chroma2 > chroma1)
         return NULL;
 
-    MERGE_FORMATS(a, b, formats, nb_formats, AVFilterFormats, return NULL;);
+    MERGE_FORMATS(a, b, formats, nb_formats, AVFilterFormats, return NULL;, 0);
 
     return a;
 }
@@ -120,16 +131,8 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
 {
     if (a == b) return a;
 
-    if (a->nb_formats && b->nb_formats) {
-        MERGE_FORMATS(a, b, formats, nb_formats, AVFilterFormats, return NULL;);
-        return a;
-    } else if (a->nb_formats) {
-        MERGE_REF(a, b, formats, AVFilterFormats, return NULL;);
-        return a;
-    } else {
-        MERGE_REF(b, a, formats, AVFilterFormats, return NULL;);
-        return b;
-    }
+    MERGE_FORMATS(a, b, formats, nb_formats, AVFilterFormats, return NULL;, 1);
+    return a;
 }
 
 AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
