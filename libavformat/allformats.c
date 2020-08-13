@@ -293,6 +293,7 @@ extern AVOutputFormat ff_null_muxer;
 extern AVInputFormat  ff_nut_demuxer;
 extern AVOutputFormat ff_nut_muxer;
 extern AVInputFormat  ff_nuv_demuxer;
+extern AVInputFormat  ff_obu_demuxer;
 extern AVOutputFormat ff_oga_muxer;
 extern AVInputFormat  ff_ogg_demuxer;
 extern AVOutputFormat ff_ogg_muxer;
