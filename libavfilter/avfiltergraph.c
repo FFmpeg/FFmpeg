@@ -313,6 +313,53 @@ static void sanitize_channel_layouts(void *log, AVFilterChannelLayouts *l)
     }
 }
 
+static int filter_link_check_formats(void *log, AVFilterLink *link, AVFilterFormatsConfig *cfg)
+{
+    int ret;
+
+    switch (link->type) {
+
+    case AVMEDIA_TYPE_VIDEO:
+        if ((ret = ff_formats_check_pixel_formats(log, cfg->formats)) < 0)
+            return ret;
+        break;
+
+    case AVMEDIA_TYPE_AUDIO:
+        if ((ret = ff_formats_check_sample_formats(log, cfg->formats)) < 0 ||
+            (ret = ff_formats_check_sample_rates(log, cfg->samplerates)) < 0 ||
+            (ret = ff_formats_check_channel_layouts(log, cfg->channel_layouts)) < 0)
+            return ret;
+        break;
+
+    default:
+        av_assert0(!"reached");
+    }
+    return 0;
+}
+
+/**
+ * Check the validity of the formats / etc. lists set by query_formats().
+ *
+ * In particular, check they do not contain any redundant element.
+ */
+static int filter_check_formats(AVFilterContext *ctx)
+{
+    unsigned i;
+    int ret;
+
+    for (i = 0; i < ctx->nb_inputs; i++) {
+        ret = filter_link_check_formats(ctx, ctx->inputs[i], &ctx->inputs[i]->outcfg);
+        if (ret < 0)
+            return ret;
+    }
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = filter_link_check_formats(ctx, ctx->outputs[i], &ctx->outputs[i]->incfg);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 static int filter_query_formats(AVFilterContext *ctx)
 {
     int ret, i;
@@ -329,6 +376,9 @@ static int filter_query_formats(AVFilterContext *ctx)
                    ctx->name, av_err2str(ret));
         return ret;
     }
+    ret = filter_check_formats(ctx);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < ctx->nb_inputs; i++)
         sanitize_channel_layouts(ctx, ctx->inputs[i]->outcfg.channel_layouts);

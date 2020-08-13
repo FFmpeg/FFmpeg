@@ -662,3 +662,73 @@ int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
 
     return 0;
 }
+
+static int check_list(void *log, const char *name, const AVFilterFormats *fmts)
+{
+    unsigned i, j;
+
+    if (!fmts)
+        return 0;
+    if (!fmts->nb_formats) {
+        av_log(log, AV_LOG_ERROR, "Empty %s list\n", name);
+        return AVERROR(EINVAL);
+    }
+    for (i = 0; i < fmts->nb_formats; i++) {
+        for (j = i + 1; j < fmts->nb_formats; j++) {
+            if (fmts->formats[i] == fmts->formats[j]) {
+                av_log(log, AV_LOG_ERROR, "Duplicated %s\n", name);
+                return AVERROR(EINVAL);
+            }
+        }
+    }
+    return 0;
+}
+
+int ff_formats_check_pixel_formats(void *log, const AVFilterFormats *fmts)
+{
+    return check_list(log, "pixel format", fmts);
+}
+
+int ff_formats_check_sample_formats(void *log, const AVFilterFormats *fmts)
+{
+    return check_list(log, "sample format", fmts);
+}
+
+int ff_formats_check_sample_rates(void *log, const AVFilterFormats *fmts)
+{
+    if (!fmts || !fmts->nb_formats)
+        return 0;
+    return check_list(log, "sample rate", fmts);
+}
+
+static int layouts_compatible(uint64_t a, uint64_t b)
+{
+    return a == b ||
+           (KNOWN(a) && !KNOWN(b) && av_get_channel_layout_nb_channels(a) == FF_LAYOUT2COUNT(b)) ||
+           (KNOWN(b) && !KNOWN(a) && av_get_channel_layout_nb_channels(b) == FF_LAYOUT2COUNT(a));
+}
+
+int ff_formats_check_channel_layouts(void *log, const AVFilterChannelLayouts *fmts)
+{
+    unsigned i, j;
+
+    if (!fmts)
+        return 0;
+    if (fmts->all_layouts < fmts->all_counts) {
+        av_log(log, AV_LOG_ERROR, "Inconsistent generic list\n");
+        return AVERROR(EINVAL);
+    }
+    if (!fmts->all_layouts && !fmts->nb_channel_layouts) {
+        av_log(log, AV_LOG_ERROR, "Empty channel layout list\n");
+        return AVERROR(EINVAL);
+    }
+    for (i = 0; i < fmts->nb_channel_layouts; i++) {
+        for (j = i + 1; j < fmts->nb_channel_layouts; j++) {
+            if (layouts_compatible(fmts->channel_layouts[i], fmts->channel_layouts[j])) {
+                av_log(log, AV_LOG_ERROR, "Duplicated or redundant channel layout\n");
+                return AVERROR(EINVAL);
+            }
+        }
+    }
+    return 0;
+}
