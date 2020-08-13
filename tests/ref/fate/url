@@ -1,9 +1,54 @@
+Testing ff_url_decompose:
+
+http://user:pass@ffmpeg:8080/dir/file?query#fragment =>
+  scheme: http:
+  authority: //
+  userinfo: user:pass@
+  host: ffmpeg
+  port: :8080
+  path: /dir/file
+  query: ?query
+  fragment: #fragment
+
+http://ffmpeg/dir/file =>
+  scheme: http:
+  authority: //
+  host: ffmpeg
+  path: /dir/file
+
+file:///dev/null =>
+  scheme: file:
+  authority: //
+  path: /dev/null
+
+file:/dev/null =>
+  scheme: file:
+  path: /dev/null
+
+http://[::1]/dev/null =>
+  scheme: http:
+  authority: //
+  host: [::1]
+  path: /dev/null
+
+http://[::1]:8080/dev/null =>
+  scheme: http:
+  authority: //
+  host: [::1]
+  port: :8080
+  path: /dev/null
+
+//ffmpeg/dev/null =>
+  authority: //
+  host: ffmpeg
+  path: /dev/null
+
 Testing ff_make_absolute_url:
                                             (null) baz                  => baz
                                           /foo/bar baz                  => /foo/baz
-                                          /foo/bar ../baz               => /baz
+                                          /foo/bar ../baz               => /foo/../baz
                                           /foo/bar /baz                 => /baz
-                                          /foo/bar ../../../baz         => /baz
+                                          /foo/bar ../../../baz         => /foo/../../../baz
                                 http://server/foo/ baz                  => http://server/foo/baz
                              http://server/foo/bar baz                  => http://server/foo/baz
                                 http://server/foo/ ../baz               => http://server/baz
@@ -17,6 +62,56 @@ Testing ff_make_absolute_url:
                              http://server/foo/bar /../../../../../other/url => http://server/other/url
                              http://server/foo/bar /test/../../../../../other/url => http://server/other/url
                              http://server/foo/bar /test/../../test/../../../other/url => http://server/other/url
+                             http://server/foo/bar file:../baz/qux      => file:../baz/qux
+                           http://server/foo//bar/ ../../               => http://server/foo/
+                                   file:../tmp/foo ../bar/              => file:../tmp/../bar/
+                                   file:../tmp/foo file:../bar/         => file:../bar/
+                             http://server/foo/bar ./                   => http://server/foo/
+                             http://server/foo/bar .dotfile             => http://server/foo/.dotfile
+                             http://server/foo/bar ..doubledotfile      => http://server/foo/..doubledotfile
+                             http://server/foo/bar double..dotfile      => http://server/foo/double..dotfile
+                             http://server/foo/bar doubledotfile..      => http://server/foo/doubledotfile..
+                                http://a/b/c/d;p?q g:h                  => g:h
+                                http://a/b/c/d;p?q g                    => http://a/b/c/g
+                                http://a/b/c/d;p?q ./g                  => http://a/b/c/g
+                                http://a/b/c/d;p?q g/                   => http://a/b/c/g/
+                                http://a/b/c/d;p?q /g                   => http://a/g
+                                http://a/b/c/d;p?q //g                  => http://g
+                                http://a/b/c/d;p?q ?y                   => http://a/b/c/d;p?y
+                                http://a/b/c/d;p?q g?y                  => http://a/b/c/g?y
+                                http://a/b/c/d;p?q #s                   => http://a/b/c/d;p?q#s
+                                http://a/b/c/d;p?q g#s                  => http://a/b/c/g#s
+                                http://a/b/c/d;p?q g?y#s                => http://a/b/c/g?y#s
+                                http://a/b/c/d;p?q ;x                   => http://a/b/c/;x
+                                http://a/b/c/d;p?q g;x                  => http://a/b/c/g;x
+                                http://a/b/c/d;p?q g;x?y#s              => http://a/b/c/g;x?y#s
+                                http://a/b/c/d;p?q                      => http://a/b/c/d;p?q
+                                http://a/b/c/d;p?q .                    => http://a/b/c/
+                                http://a/b/c/d;p?q ./                   => http://a/b/c/
+                                http://a/b/c/d;p?q ..                   => http://a/b/
+                                http://a/b/c/d;p?q ../                  => http://a/b/
+                                http://a/b/c/d;p?q ../g                 => http://a/b/g
+                                http://a/b/c/d;p?q ../..                => http://a/
+                                http://a/b/c/d;p?q ../../               => http://a/
+                                http://a/b/c/d;p?q ../../g              => http://a/g
+                                http://a/b/c/d;p?q ../../../g           => http://a/g
+                                http://a/b/c/d;p?q ../../../../g        => http://a/g
+                                http://a/b/c/d;p?q /./g                 => http://a/g
+                                http://a/b/c/d;p?q /../g                => http://a/g
+                                http://a/b/c/d;p?q g.                   => http://a/b/c/g.
+                                http://a/b/c/d;p?q .g                   => http://a/b/c/.g
+                                http://a/b/c/d;p?q g..                  => http://a/b/c/g..
+                                http://a/b/c/d;p?q ..g                  => http://a/b/c/..g
+                                http://a/b/c/d;p?q ./../g               => http://a/b/g
+                                http://a/b/c/d;p?q ./g/.                => http://a/b/c/g/
+                                http://a/b/c/d;p?q g/./h                => http://a/b/c/g/h
+                                http://a/b/c/d;p?q g/../h               => http://a/b/c/h
+                                http://a/b/c/d;p?q g;x=1/./y            => http://a/b/c/g;x=1/y
+                                http://a/b/c/d;p?q g;x=1/../y           => http://a/b/c/y
+                                http://a/b/c/d;p?q g?y/./x              => http://a/b/c/g?y/./x
+                                http://a/b/c/d;p?q g?y/../x             => http://a/b/c/g?y/../x
+                                http://a/b/c/d;p?q g#s/./x              => http://a/b/c/g#s/./x
+                                http://a/b/c/d;p?q g#s/../x             => http://a/b/c/g#s/../x
 
 Testing av_url_split:
 /foo/bar                                                     =>                                                    -1 /foo/bar

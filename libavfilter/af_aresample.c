@@ -126,7 +126,7 @@ static int query_formats(AVFilterContext *ctx)
 
     if(out_layout) {
         int64_t layout_list[] = { out_layout, -1 };
-        out_layouts = avfilter_make_format64_list(layout_list);
+        out_layouts = ff_make_format64_list(layout_list);
     } else
         out_layouts = ff_all_channel_counts();
 

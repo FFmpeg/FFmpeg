@@ -27,6 +27,7 @@
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 
 /**
@@ -78,146 +79,219 @@ int ff_url_join(char *str, int size, const char *proto,
     return strlen(str);
 }
 
-static void trim_double_dot_url(char *buf, const char *rel, int size)
+static const char *find_delim(const char *delim, const char *cur, const char *end)
 {
-    const char *p = rel;
-    const char *root = rel;
-    char tmp_path[MAX_URL_SIZE] = {0, };
-    char *sep;
-    char *node;
-
-    /* Get the path root of the url which start by "://" */
-    if (p && (sep = strstr(p, "://"))) {
-        sep += 3;
-        root = strchr(sep, '/');
-        if (!root)
-            return;
-    }
-
-    /* set new current position if the root node is changed */
-    p = root;
-    while (p && (node = strstr(p, ".."))) {
-        av_strlcat(tmp_path, p, node - p + strlen(tmp_path));
-        p = node + 3;
-        sep = strrchr(tmp_path, '/');
-        if (sep)
-            sep[0] = '\0';
-        else
-            tmp_path[0] = '\0';
-    }
-
-    if (!av_stristart(p, "/", NULL) && root != rel)
-        av_strlcat(tmp_path, "/", size);
-
-    av_strlcat(tmp_path, p, size);
-    /* start set buf after temp path process. */
-    av_strlcpy(buf, rel, root - rel + 1);
-
-    if (!av_stristart(tmp_path, "/", NULL) && root != rel)
-        av_strlcat(buf, "/", size);
-
-    av_strlcat(buf, tmp_path, size);
+    while (cur < end && !strchr(delim, *cur))
+        cur++;
+    return cur;
 }
 
-void ff_make_absolute_url(char *buf, int size, const char *base,
+int ff_url_decompose(URLComponents *uc, const char *url, const char *end)
+{
+    const char *cur, *aend, *p;
+
+    av_assert0(url);
+    if (!end)
+        end = url + strlen(url);
+    cur = uc->url = url;
+
+    /* scheme */
+    uc->scheme = cur;
+    p = find_delim(":/", cur, end); /* lavf "schemes" can contain options */
+    if (*p == ':')
+        cur = p + 1;
+
+    /* authority */
+    uc->authority = cur;
+    if (end - cur >= 2 && cur[0] == '/' && cur[1] == '/') {
+        cur += 2;
+        aend = find_delim("/?#", cur, end);
+
+        /* userinfo */
+        uc->userinfo = cur;
+        p = find_delim("@", cur, aend);
+        if (*p == '@')
+            cur = p + 1;
+
+        /* host */
+        uc->host = cur;
+        if (*cur == '[') { /* hello IPv6, thanks for using colons! */
+            p = find_delim("]", cur, aend);
+            if (*p != ']')
+                return AVERROR(EINVAL);
+            if (p + 1 < aend && p[1] != ':')
+                return AVERROR(EINVAL);
+            cur = p + 1;
+        } else {
+            cur = find_delim(":", cur, aend);
+        }
+
+        /* port */
+        uc->port = cur;
+        cur = aend;
+    } else {
+        uc->userinfo = uc->host = uc->port = cur;
+    }
+
+    /* path */
+    uc->path = cur;
+    cur = find_delim("?#", cur, end);
+
+    /* query */
+    uc->query = cur;
+    if (*cur == '?')
+        cur = find_delim("#", cur, end);
+
+    /* fragment */
+    uc->fragment = cur;
+
+    uc->end = end;
+    return 0;
+}
+
+static int append_path(char *root, char *out_end, char **rout,
+                       const char *in, const char *in_end)
+{
+    char *out = *rout;
+    const char *d, *next;
+
+    if (in < in_end && *in == '/')
+        in++; /* already taken care of */
+    while (in < in_end) {
+        d = find_delim("/", in, in_end);
+        next = d + (d < in_end && *d == '/');
+        if (d - in == 1 && in[0] == '.') {
+            /* skip */
+        } else if (d - in == 2 && in[0] == '.' && in[1] == '.') {
+            av_assert1(out[-1] == '/');
+            if (out - root > 1)
+                while (out > root && (--out)[-1] != '/');
+        } else {
+            if (out_end - out < next - in)
+                return AVERROR(ENOMEM);
+            memmove(out, in, next - in);
+            out += next - in;
+        }
+        in = next;
+    }
+    *rout = out;
+    return 0;
+}
+
+int ff_make_absolute_url(char *buf, int size, const char *base,
                           const char *rel)
 {
-    char *sep, *path_query;
-    char *root, *p;
-    char tmp_path[MAX_URL_SIZE];
+    URLComponents ub, uc;
+    char *out, *out_end, *path;
+    const char *keep, *base_path_end;
+    int use_base_path, simplify_path = 0, ret;
 
-    memset(tmp_path, 0, sizeof(tmp_path));
-    /* Absolute path, relative to the current server */
-    if (base && strstr(base, "://") && rel[0] == '/') {
-        if (base != buf)
-            av_strlcpy(buf, base, size);
-        sep = strstr(buf, "://");
-        if (sep) {
-            /* Take scheme from base url */
-            if (rel[1] == '/') {
-                sep[1] = '\0';
-            } else {
-                /* Take scheme and host from base url */
-                sep += 3;
-                sep = strchr(sep, '/');
-                if (sep)
-                    *sep = '\0';
-            }
+    /* This is tricky.
+       For HTTP, http://server/site/page + ../media/file
+       should resolve into http://server/media/file
+       but for filesystem access, dir/playlist + ../media/file
+       should resolve into dir/../media/file
+       because dir could be a symlink, and .. points to
+       the actual parent of the target directory.
+
+       We'll consider that URLs with an actual scheme and authority,
+       i.e. starting with scheme://, need parent dir simplification,
+       while bare paths or pseudo-URLs starting with proto: without
+       the double slash do not.
+
+       For real URLs, the processing is similar to the algorithm described
+       here:
+       https://tools.ietf.org/html/rfc3986#section-5
+     */
+
+    if (!size)
+        return AVERROR(ENOMEM);
+    out = buf;
+    out_end = buf + size - 1;
+
+    if (!base)
+        base = "";
+    if ((ret = ff_url_decompose(&ub, base, NULL) < 0) ||
+        (ret = ff_url_decompose(&uc, rel,  NULL) < 0))
+        goto error;
+
+    keep = ub.url;
+#define KEEP(component, also) do { \
+        if (uc.url_component_end_##component == uc.url && \
+            ub.url_component_end_##component > keep) { \
+            keep = ub.url_component_end_##component; \
+            also \
+        } \
+    } while (0)
+    KEEP(scheme, );
+    KEEP(authority_full, simplify_path = 1;);
+    KEEP(path,);
+    KEEP(query,);
+    KEEP(fragment,);
+#undef KEEP
+#define COPY(start, end) do { \
+        size_t len = end - start; \
+        if (len > out_end - out) { \
+            ret = AVERROR(ENOMEM);  \
+            goto error; \
+        } \
+        memmove(out, start, len); \
+        out += len; \
+    } while (0)
+    COPY(ub.url, keep);
+    COPY(uc.url, uc.path);
+
+    use_base_path = URL_COMPONENT_HAVE(ub, path) && keep <= ub.path;
+    if (uc.path > uc.url)
+        use_base_path = 0;
+    if (URL_COMPONENT_HAVE(uc, path) && uc.path[0] == '/')
+        use_base_path = 0;
+    if (use_base_path) {
+        base_path_end = ub.url_component_end_path;
+        if (URL_COMPONENT_HAVE(uc, path))
+            while (base_path_end > ub.path && base_path_end[-1] != '/')
+                base_path_end--;
+    }
+    if (keep > ub.path)
+        simplify_path = 0;
+    if (URL_COMPONENT_HAVE(uc, scheme))
+        simplify_path = 0;
+    if (URL_COMPONENT_HAVE(uc, authority))
+        simplify_path = 1;
+    /* No path at all, leave it */
+    if (!use_base_path && !URL_COMPONENT_HAVE(uc, path))
+        simplify_path = 0;
+
+    if (simplify_path) {
+        const char *root = "/";
+        COPY(root, root + 1);
+        path = out;
+        if (use_base_path) {
+            ret = append_path(path, out_end, &out, ub.path, base_path_end);
+            if (ret < 0)
+                goto error;
         }
-        av_strlcat(buf, rel, size);
-        trim_double_dot_url(tmp_path, buf, size);
-        memset(buf, 0, size);
-        av_strlcpy(buf, tmp_path, size);
-        return;
-    }
-    /* If rel actually is an absolute url, just copy it */
-    if (!base || strstr(rel, "://") || rel[0] == '/') {
-        memset(buf, 0, size);
-        trim_double_dot_url(buf, rel, size);
-        return;
-    }
-    if (base != buf)
-        av_strlcpy(buf, base, size);
-
-    /* Strip off any query string from base */
-    path_query = strchr(buf, '?');
-    if (path_query)
-        *path_query = '\0';
-
-    /* Is relative path just a new query part? */
-    if (rel[0] == '?') {
-        av_strlcat(buf, rel, size);
-        trim_double_dot_url(tmp_path, buf, size);
-        memset(buf, 0, size);
-        av_strlcpy(buf, tmp_path, size);
-        return;
-    }
-
-    root = p = buf;
-    /* Get the path root of the url which start by "://" */
-    if (p && strstr(p, "://")) {
-        sep = strstr(p, "://");
-        if (sep) {
-            sep += 3;
-            root = strchr(sep, '/');
-            if (!root)
-                return;
+        if (URL_COMPONENT_HAVE(uc, path)) {
+            ret = append_path(path, out_end, &out, uc.path, uc.url_component_end_path);
+            if (ret < 0)
+                goto error;
         }
+    } else {
+        if (use_base_path)
+            COPY(ub.path, base_path_end);
+        COPY(uc.path, uc.url_component_end_path);
     }
 
-    /* Remove the file name from the base url */
-    sep = strrchr(buf, '/');
-    if (sep && sep <= root)
-        sep = root;
+    COPY(uc.url_component_end_path, uc.end);
+#undef COPY
+    *out = 0;
+    return 0;
 
-    if (sep)
-        sep[1] = '\0';
-    else
-        buf[0] = '\0';
-    while (av_strstart(rel, "..", NULL) && sep) {
-        /* Remove the path delimiter at the end */
-        if (sep > root) {
-            sep[0] = '\0';
-            sep = strrchr(buf, '/');
-        }
-
-        /* If the next directory name to pop off is "..", break here */
-        if (!strcmp(sep ? &sep[1] : buf, "..")) {
-            /* Readd the slash we just removed */
-            av_strlcat(buf, "/", size);
-            break;
-        }
-        /* Cut off the directory name */
-        if (sep)
-            sep[1] = '\0';
-        else
-            buf[0] = '\0';
-        rel += 3;
-    }
-    av_strlcat(buf, rel, size);
-    trim_double_dot_url(tmp_path, buf, size);
-    memset(buf, 0, size);
-    av_strlcpy(buf, tmp_path, size);
+error:
+    snprintf(buf, size, "invalid:%s",
+             ret == AVERROR(ENOMEM) ? "truncated" :
+             ret == AVERROR(EINVAL) ? "syntax_error" : "");
+    return ret;
 }
 
 AVIODirEntry *ff_alloc_dir_entry(void)

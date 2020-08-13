@@ -33,17 +33,11 @@
 
 /**
  * Add all refs from a to ret and destroy a.
+ * ret->refs must have enough spare room left for this.
  */
-#define MERGE_REF(ret, a, fmts, type, fail)                                \
+#define MERGE_REF_NO_ALLOC(ret, a, fmts)                                   \
 do {                                                                       \
-    type ***tmp;                                                           \
     int i;                                                                 \
-                                                                           \
-    if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
-                                 sizeof(*tmp))))                           \
-        goto fail;                                                         \
-    ret->refs = tmp;                                                       \
-                                                                           \
     for (i = 0; i < a->refcount; i ++) {                                   \
         ret->refs[ret->refcount] = a->refs[i];                             \
         *ret->refs[ret->refcount++] = ret;                                 \
@@ -54,6 +48,17 @@ do {                                                                       \
     av_freep(&a);                                                          \
 } while (0)
 
+#define MERGE_REF(ret, a, fmts, type, fail_statement)                      \
+do {                                                                       \
+    type ***tmp;                                                           \
+                                                                           \
+    if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
+                                 sizeof(*tmp))))                           \
+        { fail_statement }                                                 \
+    ret->refs = tmp;                                                       \
+    MERGE_REF_NO_ALLOC(ret, a, fmts);                                      \
+} while (0)
+
 /**
  * Add all formats common for a and b to ret, copy the refs and destroy
  * a and b.
@@ -61,6 +66,7 @@ do {                                                                       \
 #define MERGE_FORMATS(ret, a, b, fmts, nb, type, fail)                          \
 do {                                                                            \
     int i, j, k = 0, count = FFMIN(a->nb, b->nb);                               \
+    type ***tmp;                                                                \
                                                                                 \
     if (!(ret = av_mallocz(sizeof(*ret))))                                      \
         goto fail;                                                              \
@@ -85,8 +91,13 @@ do {                                                                            
     if (!ret->nb)                                                               \
         goto fail;                                                              \
                                                                                 \
-    MERGE_REF(ret, a, fmts, type, fail);                                        \
-    MERGE_REF(ret, b, fmts, type, fail);                                        \
+    tmp = av_realloc_array(NULL, a->refcount + b->refcount, sizeof(*tmp));      \
+    if (!tmp)                                                                   \
+        goto fail;                                                              \
+    ret->refs = tmp;                                                            \
+                                                                                \
+    MERGE_REF_NO_ALLOC(ret, a, fmts);                                           \
+    MERGE_REF_NO_ALLOC(ret, b, fmts);                                           \
 } while (0)
 
 AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
@@ -129,10 +140,10 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
     return ret;
 fail:
     if (ret) {
-        av_freep(&ret->refs);
+        av_assert1(!ret->refs);
         av_freep(&ret->formats);
+        av_freep(&ret);
     }
-    av_freep(&ret);
     return NULL;
 }
 
@@ -146,27 +157,27 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
     if (a->nb_formats && b->nb_formats) {
         MERGE_FORMATS(ret, a, b, formats, nb_formats, AVFilterFormats, fail);
     } else if (a->nb_formats) {
-        MERGE_REF(a, b, formats, AVFilterFormats, fail);
+        MERGE_REF(a, b, formats, AVFilterFormats, return NULL;);
         ret = a;
     } else {
-        MERGE_REF(b, a, formats, AVFilterFormats, fail);
+        MERGE_REF(b, a, formats, AVFilterFormats, return NULL;);
         ret = b;
     }
 
     return ret;
 fail:
     if (ret) {
-        av_freep(&ret->refs);
+        av_assert1(!ret->refs);
         av_freep(&ret->formats);
+        av_freep(&ret);
     }
-    av_freep(&ret);
     return NULL;
 }
 
 AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
                                                  AVFilterChannelLayouts *b)
 {
-    AVFilterChannelLayouts *ret = NULL;
+    uint64_t *channel_layouts;
     unsigned a_all = a->all_layouts + a->all_counts;
     unsigned b_all = b->all_layouts + b->all_counts;
     int ret_max, ret_nb = 0, i, j, round;
@@ -190,15 +201,13 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
                 return NULL;
             b->nb_channel_layouts = j;
         }
-        MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, fail);
+        MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, return NULL;);
         return b;
     }
 
     ret_max = a->nb_channel_layouts + b->nb_channel_layouts;
-    if (!(ret = av_mallocz(sizeof(*ret))) ||
-        !(ret->channel_layouts = av_malloc_array(ret_max,
-                                                 sizeof(*ret->channel_layouts))))
-        goto fail;
+    if (!(channel_layouts = av_malloc_array(ret_max, sizeof(*channel_layouts))))
+        return NULL;
 
     /* a[known] intersect b[known] */
     for (i = 0; i < a->nb_channel_layouts; i++) {
@@ -206,8 +215,9 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             continue;
         for (j = 0; j < b->nb_channel_layouts; j++) {
             if (a->channel_layouts[i] == b->channel_layouts[j]) {
-                ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
+                channel_layouts[ret_nb++] = a->channel_layouts[i];
                 a->channel_layouts[i] = b->channel_layouts[j] = 0;
+                break;
             }
         }
     }
@@ -221,7 +231,7 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             bfmt = FF_COUNT2LAYOUT(av_get_channel_layout_nb_channels(fmt));
             for (j = 0; j < b->nb_channel_layouts; j++)
                 if (b->channel_layouts[j] == bfmt)
-                    ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
+                    channel_layouts[ret_nb++] = a->channel_layouts[i];
         }
         /* 1st round: swap to prepare 2nd round; 2nd round: put it back */
         FFSWAP(AVFilterChannelLayouts *, a, b);
@@ -232,22 +242,23 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             continue;
         for (j = 0; j < b->nb_channel_layouts; j++)
             if (a->channel_layouts[i] == b->channel_layouts[j])
-                ret->channel_layouts[ret_nb++] = a->channel_layouts[i];
+                channel_layouts[ret_nb++] = a->channel_layouts[i];
     }
 
-    ret->nb_channel_layouts = ret_nb;
-    if (!ret->nb_channel_layouts)
+    if (!ret_nb)
         goto fail;
-    MERGE_REF(ret, a, channel_layouts, AVFilterChannelLayouts, fail);
-    MERGE_REF(ret, b, channel_layouts, AVFilterChannelLayouts, fail);
-    return ret;
+
+    if (a->refcount > b->refcount)
+        FFSWAP(AVFilterChannelLayouts *, a, b);
+
+    MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, goto fail;);
+    av_freep(&b->channel_layouts);
+    b->channel_layouts    = channel_layouts;
+    b->nb_channel_layouts = ret_nb;
+    return b;
 
 fail:
-    if (ret) {
-        av_freep(&ret->refs);
-        av_freep(&ret->channel_layouts);
-    }
-    av_freep(&ret);
+    av_free(channel_layouts);
     return NULL;
 }
 
@@ -289,7 +300,7 @@ AVFilterFormats *ff_make_format_list(const int *fmts)
     return formats;
 }
 
-AVFilterChannelLayouts *ff_make_formatu64_list(const uint64_t *fmts)
+AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts)
 {
     MAKE_FORMAT_LIST(AVFilterChannelLayouts,
                      channel_layouts, nb_channel_layouts);
@@ -300,16 +311,12 @@ AVFilterChannelLayouts *ff_make_formatu64_list(const uint64_t *fmts)
     return formats;
 }
 
+#if LIBAVFILTER_VERSION_MAJOR < 8
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
 {
-    MAKE_FORMAT_LIST(AVFilterChannelLayouts,
-                     channel_layouts, nb_channel_layouts);
-    if (count)
-        memcpy(formats->channel_layouts, fmts,
-               sizeof(*formats->channel_layouts) * count);
-
-    return formats;
+    return ff_make_format64_list(fmts);
 }
+#endif
 
 #define ADD_FORMAT(f, fmt, unref_fn, type, list, nb)        \
 do {                                                        \

@@ -376,7 +376,7 @@ static int movie_query_formats(AVFilterContext *ctx)
             if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->in_samplerates)) < 0)
                 return ret;
             list64[0] = c->channel_layout;
-            if ((ret = ff_channel_layouts_ref(avfilter_make_format64_list(list64),
+            if ((ret = ff_channel_layouts_ref(ff_make_format64_list(list64),
                                    &outlink->in_channel_layouts)) < 0)
                 return ret;
             break;

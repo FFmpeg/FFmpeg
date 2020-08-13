@@ -1948,6 +1948,11 @@ static const AVOption options[] = {
     { "pred",           "Spatial decomposition type",                                OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 0 }, DWT_97, DWT_53, VE, "pred" },
         { "dwt97", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, VE, "pred" },
         { "dwt53", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
+    { "rc_eq", "Set rate control equation. When computing the expression, besides the standard functions "
+     "defined in the section 'Expression Evaluation', the following functions are available: "
+     "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "
+     "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",
+                                                                                  OFFSET(m.rc_eq), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     { NULL },
 };
 

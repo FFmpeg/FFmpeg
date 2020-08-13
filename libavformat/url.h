@@ -312,8 +312,8 @@ int ff_url_join(char *str, int size, const char *proto,
  * @param base the base url, may be equal to buf.
  * @param rel the new url, which is interpreted relative to base
  */
-void ff_make_absolute_url(char *buf, int size, const char *base,
-                          const char *rel);
+int ff_make_absolute_url(char *buf, int size, const char *base,
+                         const char *rel);
 
 /**
  * Allocate directory entry with default values.
@@ -343,5 +343,46 @@ const AVClass *ff_urlcontext_child_class_iterate(void **iter);
  */
 const URLProtocol **ffurl_get_protocols(const char *whitelist,
                                         const char *blacklist);
+
+typedef struct URLComponents {
+    const char *url;        /**< whole URL, for reference */
+    const char *scheme;     /**< possibly including lavf-specific options */
+    const char *authority;  /**< "//" if it is a real URL */
+    const char *userinfo;   /**< including final '@' if present */
+    const char *host;
+    const char *port;       /**< including initial ':' if present */
+    const char *path;
+    const char *query;      /**< including initial '?' if present */
+    const char *fragment;   /**< including initial '#' if present */
+    const char *end;
+} URLComponents;
+
+#define url_component_end_scheme      authority
+#define url_component_end_authority   userinfo
+#define url_component_end_userinfo    host
+#define url_component_end_host        port
+#define url_component_end_port        path
+#define url_component_end_path        query
+#define url_component_end_query       fragment
+#define url_component_end_fragment    end
+#define url_component_end_authority_full path
+
+#define URL_COMPONENT_HAVE(uc, component) \
+    ((uc).url_component_end_##component > (uc).component)
+
+/**
+ * Parse an URL to find the components.
+ *
+ * Each component runs until the start of the next component,
+ * possibly including a mandatory delimiter.
+ *
+ * @param uc   structure to fill with pointers to the components.
+ * @param url  URL to parse.
+ * @param end  end of the URL, or NULL to parse to the end of string.
+ *
+ * @return  >= 0 for success or an AVERROR code, especially if the URL is
+ *          malformed.
+ */
+int ff_url_decompose(URLComponents *uc, const char *url, const char *end);
 
 #endif /* AVFORMAT_URL_H */
