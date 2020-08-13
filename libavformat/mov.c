@@ -5017,8 +5017,9 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
+    int64_t stream_size = avio_size(pb);
     int64_t offset = avio_tell(pb) + atom.size, pts, timestamp;
-    uint8_t version;
+    uint8_t version, is_complete;
     unsigned i, j, track_id, item_count;
     AVStream *st = NULL;
     AVStream *ref_st = NULL;
@@ -5091,7 +5092,22 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->has_sidx = 1;
 
-    if (offset == avio_size(pb)) {
+    // See if the remaining bytes are just an mfra which we can ignore.
+    is_complete = offset == stream_size;
+    if (!is_complete) {
+        int ret;
+        int64_t original_pos = avio_tell(pb);
+        int32_t mfra_size;
+        if ((ret = avio_seek(pb, stream_size - 4, SEEK_SET)) < 0)
+            return ret;
+        mfra_size = avio_rb32(pb);
+        if (offset + mfra_size == stream_size)
+            is_complete = 1;
+        if ((ret = avio_seek(pb, original_pos, SEEK_SET)) < 0)
+            return ret;
+    }
+
+    if (is_complete) {
         // Find first entry in fragment index that came from an sidx.
         // This will pretty much always be the first entry.
         for (i = 0; i < c->frag_index.nb_items; i++) {
