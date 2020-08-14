@@ -372,61 +372,6 @@ static int formats_declared(AVFilterContext *f)
     return 1;
 }
 
-static AVFilterFormats *clone_filter_formats(AVFilterFormats *arg)
-{
-    AVFilterFormats *a = av_memdup(arg, sizeof(*arg));
-    if (a) {
-        a->refcount = 0;
-        a->refs     = NULL;
-        a->formats  = av_memdup(a->formats, sizeof(*a->formats) * a->nb_formats);
-        if (!a->formats && arg->formats)
-            av_freep(&a);
-    }
-    return a;
-}
-
-static int can_merge_formats(AVFilterFormats *a_arg,
-                             AVFilterFormats *b_arg,
-                             enum AVMediaType type,
-                             int is_sample_rate)
-{
-    AVFilterFormats *a, *b, *ret;
-    if (a_arg == b_arg)
-        return 1;
-    a = clone_filter_formats(a_arg);
-    b = clone_filter_formats(b_arg);
-
-    if (!a || !b) {
-        if (a)
-            av_freep(&a->formats);
-        if (b)
-            av_freep(&b->formats);
-
-        av_freep(&a);
-        av_freep(&b);
-
-        return 0;
-    }
-
-    if (is_sample_rate) {
-        ret = ff_merge_samplerates(a, b);
-    } else {
-        ret = ff_merge_formats(a, b, type);
-    }
-    if (ret) {
-        av_freep(&ret->formats);
-        av_freep(&ret->refs);
-        av_freep(&ret);
-        return 1;
-    } else {
-        av_freep(&a->formats);
-        av_freep(&b->formats);
-        av_freep(&a);
-        av_freep(&b);
-        return 0;
-    }
-}
-
 /**
  * Perform one round of query_formats() and merging formats lists on the
  * filter graph.
@@ -473,45 +418,40 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
             if (link->in_formats != link->out_formats
                 && link->in_formats && link->out_formats)
-                if (!can_merge_formats(link->in_formats, link->out_formats,
-                                      link->type, 0))
+                if (!ff_can_merge_formats(link->in_formats, link->out_formats,
+                                          link->type))
                     convert_needed = 1;
             if (link->type == AVMEDIA_TYPE_AUDIO) {
                 if (link->in_samplerates != link->out_samplerates
                     && link->in_samplerates && link->out_samplerates)
-                    if (!can_merge_formats(link->in_samplerates,
-                                           link->out_samplerates,
-                                           0, 1))
+                    if (!ff_can_merge_samplerates(link->in_samplerates,
+                                                  link->out_samplerates))
                         convert_needed = 1;
             }
 
-#define MERGE_DISPATCH(field, statement)                                     \
+#define CHECKED_MERGE(field, ...) ((ret = ff_merge_ ## field(__VA_ARGS__)) <= 0)
+#define MERGE_DISPATCH(field, ...)                                           \
             if (!(link->in_ ## field && link->out_ ## field)) {              \
                 count_delayed++;                                             \
             } else if (link->in_ ## field == link->out_ ## field) {          \
                 count_already_merged++;                                      \
             } else if (!convert_needed) {                                    \
                 count_merged++;                                              \
-                statement                                                    \
+                if (CHECKED_MERGE(field, __VA_ARGS__)) {                     \
+                    if (ret < 0)                                             \
+                        return ret;                                          \
+                    convert_needed = 1;                                      \
+                }                                                            \
             }
 
             if (link->type == AVMEDIA_TYPE_AUDIO) {
-                MERGE_DISPATCH(channel_layouts,
-                    if (!ff_merge_channel_layouts(link->in_channel_layouts,
-                                                  link->out_channel_layouts))
-                        convert_needed = 1;
-                )
-                MERGE_DISPATCH(samplerates,
-                    if (!ff_merge_samplerates(link->in_samplerates,
-                                              link->out_samplerates))
-                        convert_needed = 1;
-                )
+                MERGE_DISPATCH(channel_layouts, link->in_channel_layouts,
+                                                link->out_channel_layouts)
+                MERGE_DISPATCH(samplerates, link->in_samplerates,
+                                            link->out_samplerates)
             }
-            MERGE_DISPATCH(formats,
-                if (!ff_merge_formats(link->in_formats, link->out_formats,
-                                      link->type))
-                    convert_needed = 1;
-            )
+            MERGE_DISPATCH(formats, link->in_formats,
+                           link->out_formats, link->type)
 #undef MERGE_DISPATCH
 
             if (convert_needed) {
@@ -585,27 +525,26 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     av_assert0(outlink-> in_channel_layouts->refcount > 0);
                     av_assert0(outlink->out_channel_layouts->refcount > 0);
                 }
-                if (!ff_merge_formats( inlink->in_formats,  inlink->out_formats,  inlink->type) ||
-                    !ff_merge_formats(outlink->in_formats, outlink->out_formats, outlink->type))
-                    ret = AVERROR(ENOSYS);
-                if (inlink->type == AVMEDIA_TYPE_AUDIO &&
-                    (!ff_merge_samplerates(inlink->in_samplerates,
-                                           inlink->out_samplerates) ||
-                     !ff_merge_channel_layouts(inlink->in_channel_layouts,
-                                               inlink->out_channel_layouts)))
-                    ret = AVERROR(ENOSYS);
-                if (outlink->type == AVMEDIA_TYPE_AUDIO &&
-                    (!ff_merge_samplerates(outlink->in_samplerates,
-                                           outlink->out_samplerates) ||
-                     !ff_merge_channel_layouts(outlink->in_channel_layouts,
-                                               outlink->out_channel_layouts)))
-                    ret = AVERROR(ENOSYS);
-
-                if (ret < 0) {
+                if (CHECKED_MERGE(formats, inlink->in_formats,
+                                  inlink->out_formats, inlink->type)         ||
+                    CHECKED_MERGE(formats, outlink->in_formats,
+                                  outlink->out_formats, outlink->type)       ||
+                    inlink->type == AVMEDIA_TYPE_AUDIO &&
+                    (CHECKED_MERGE(samplerates, inlink->in_samplerates,
+                                                inlink->out_samplerates)  ||
+                     CHECKED_MERGE(channel_layouts, inlink->in_channel_layouts,
+                                   inlink->out_channel_layouts))             ||
+                    outlink->type == AVMEDIA_TYPE_AUDIO &&
+                    (CHECKED_MERGE(samplerates, outlink->in_samplerates,
+                                                outlink->out_samplerates) ||
+                     CHECKED_MERGE(channel_layouts, outlink->in_channel_layouts,
+                                                    outlink->out_channel_layouts))) {
+                    if (ret < 0)
+                        return ret;
                     av_log(log_ctx, AV_LOG_ERROR,
                            "Impossible to convert between the formats supported by the filter "
                            "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-                    return ret;
+                    return AVERROR(ENOSYS);
                 }
             }
         }
