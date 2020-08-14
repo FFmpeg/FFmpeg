@@ -490,7 +490,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     DNNModel *native_model = NULL;
     ConvolutionalNetwork *conv_network;
 
-    native_model = ff_dnn_load_model_native(model_filename);
+    native_model = ff_dnn_load_model_native(model_filename, NULL);
     if (!native_model){
         return DNN_ERROR;
     }

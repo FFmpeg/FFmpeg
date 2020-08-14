@@ -13,6 +13,7 @@ version <next>:
 - Cineform HD encoder
 - ADPCM Argonaut Games encoder
 - Argonaut Games ASF muxer
+- AV1 Low overhead bitstream format demuxer
 
 
 version 4.3:
