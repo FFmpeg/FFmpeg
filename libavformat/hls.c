@@ -311,8 +311,10 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
         return NULL;
     reset_packet(&pls->pkt);
     ff_make_absolute_url(pls->url, sizeof(pls->url), base, url);
-    if (!pls->url[0])
+    if (!pls->url[0]) {
+        av_free(pls);
         return NULL;
+    }
     pls->seek_timestamp = AV_NOPTS_VALUE;
 
     pls->is_id3_timestamped = -1;
