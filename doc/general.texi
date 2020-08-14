@@ -436,13 +436,9 @@ library:
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
 @item Digital Speech Standard (DSS) @tab   @tab X
-@item Canopus HQ                @tab   @tab X
-@item Canopus HQA               @tab   @tab X
-@item Canopus HQX               @tab   @tab X
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
 @item Phantom Cine              @tab   @tab X
-@item Cineform HD               @tab X @tab X
 @item Commodore CDXL            @tab   @tab X
     @tab Amiga CD video format
 @item Core Audio Format         @tab X @tab X
@@ -864,6 +860,10 @@ following image formats are supported:
 @item Delphine Software International CIN video  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item Discworld II BMV Video @tab     @tab  X
+@item CineForm HD            @tab  X  @tab  X
+@item Canopus HQ             @tab     @tab  X
+@item Canopus HQA            @tab     @tab  X
+@item Canopus HQX            @tab     @tab  X
 @item Canopus Lossless Codec @tab     @tab  X
 @item CDToons                @tab     @tab  X
     @tab Codec used in various Broderbund games.
