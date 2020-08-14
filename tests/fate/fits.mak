@@ -46,7 +46,7 @@ fate-fitsdec: $(FATE_FITS_DEC-yes)
 
 fate-fitsenc%: PIXFMT = $(word 3, $(subst -, ,$(@)))
 fate-fitsenc%: SRC = $(TARGET_PATH)/tests/data/fits-multi.fits
-fate-fitsenc%: CMD = framecrc -i $(SRC) -c:v fits -pix_fmt $(PIXFMT)
+fate-fitsenc%: CMD = framecrc -auto_conversion_filters -i $(SRC) -c:v fits -pix_fmt $(PIXFMT)
 
 FATE_FITS_ENC_PIXFMT = gray gray16be gbrp gbrap gbrp16be gbrap16be
 $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%): tests/data/fits-multi.fits

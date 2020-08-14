@@ -4,7 +4,7 @@ fate-mapchan-6ch-extract-2: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-220
 
 FATE_MAPCHAN-$(CONFIG_CHANNELMAP_FILTER) += fate-mapchan-6ch-extract-2-downmix-mono
 fate-mapchan-6ch-extract-2-downmix-mono: tests/data/asynth-22050-6.wav
-fate-mapchan-6ch-extract-2-downmix-mono: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-22050-6.wav -map_channel 0.0.1 -map_channel 0.0.0 -ac 1 -fflags +bitexact -f wav
+fate-mapchan-6ch-extract-2-downmix-mono: CMD = md5 -auto_conversion_filters -i $(TARGET_PATH)/tests/data/asynth-22050-6.wav -map_channel 0.0.1 -map_channel 0.0.0 -ac 1 -fflags +bitexact -f wav
 
 FATE_MAPCHAN-$(CONFIG_CHANNELMAP_FILTER) += fate-mapchan-silent-mono
 fate-mapchan-silent-mono: tests/data/asynth-22050-1.wav
@@ -28,15 +28,15 @@ fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5 -fflags
 
 # Ticket 6603
 FATE_FFMPEG-$(call ALLYES, AEVALSRC_FILTER ASETNSAMPLES_FILTER AC3_FIXED_ENCODER) += fate-ffmpeg-filter_complex_audio
-fate-ffmpeg-filter_complex_audio: CMD = framecrc -filter_complex "aevalsrc=0:d=0.1,asetnsamples=1537" -c ac3_fixed
+fate-ffmpeg-filter_complex_audio: CMD = framecrc -auto_conversion_filters -filter_complex "aevalsrc=0:d=0.1,asetnsamples=1537" -c ac3_fixed
 
 # Ticket 6375, use case of NoX
 FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER PNG_DECODER ALAC_DECODER PCM_S16LE_ENCODER RAWVIDEO_ENCODER) += fate-ffmpeg-attached_pics
-fate-ffmpeg-attached_pics: CMD = threads=2 framecrc -i $(TARGET_SAMPLES)/lossless-audio/inside.m4a -c:a pcm_s16le -max_muxing_queue_size 16
+fate-ffmpeg-attached_pics: CMD = threads=2 framecrc -i $(TARGET_SAMPLES)/lossless-audio/inside.m4a -c:a pcm_s16le -max_muxing_queue_size 16 -af aresample
 
 FATE_SAMPLES_FFMPEG-$(CONFIG_COLORKEY_FILTER) += fate-ffmpeg-filter_colorkey
 fate-ffmpeg-filter_colorkey: tests/data/filtergraphs/colorkey
-fate-ffmpeg-filter_colorkey: CMD = framecrc -idct simple -fflags +bitexact -flags +bitexact  -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/cavs/cavs.mpg -fflags +bitexact -flags +bitexact -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/lena.pnm -an -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/colorkey -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -qscale 2 -frames:v 10
+fate-ffmpeg-filter_colorkey: CMD = framecrc -auto_conversion_filters -idct simple -fflags +bitexact -flags +bitexact  -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/cavs/cavs.mpg -fflags +bitexact -flags +bitexact -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/lena.pnm -an -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/colorkey -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -qscale 2 -frames:v 10
 
 FATE_FFMPEG-$(CONFIG_COLOR_FILTER) += fate-ffmpeg-lavfi
 fate-ffmpeg-lavfi: CMD = framecrc -lavfi color=d=1:r=5 -fflags +bitexact
@@ -50,7 +50,7 @@ fate-force_key_frames: CMD = enc_dec \
 
 FATE_SAMPLES_FFMPEG-$(call ALLYES, VOBSUB_DEMUXER DVDSUB_DECODER AVFILTER OVERLAY_FILTER DVDSUB_ENCODER) += fate-sub2video
 fate-sub2video: tests/data/vsynth_lena.yuv
-fate-sub2video: CMD = framecrc \
+fate-sub2video: CMD = framecrc -auto_conversion_filters \
   -f rawvideo -r 5 -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv \
   -ss 132 -i $(TARGET_SAMPLES)/sub/vobsub.idx \
   -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:0]scale=720:480[v]\;[v][1:0]overlay[v2]" \
@@ -59,7 +59,7 @@ fate-sub2video: CMD = framecrc \
 # Very basic sub2video example, decode and convert to AVFrame with sub2video.
 # Attempt to not touch timestamps.
 FATE_SAMPLES_FFMPEG-$(call ALLYES, VOBSUB_DEMUXER DVDSUB_DECODER AVFILTER) += fate-sub2video_basic
-fate-sub2video_basic: CMD = framecrc \
+fate-sub2video_basic: CMD = framecrc -auto_conversion_filters \
   -i $(TARGET_SAMPLES)/sub/vobsub.idx \
   -vsync passthrough -copyts \
   -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:s:0]scale" \
@@ -68,7 +68,7 @@ fate-sub2video_basic: CMD = framecrc \
 # Time-limited run with a sample that doesn't require seeking and
 # contains samples within the initial period.
 FATE_SAMPLES_FFMPEG-$(call ALLYES, SUP_DEMUXER PGSSUB_DECODER AVFILTER) += fate-sub2video_time_limited
-fate-sub2video_time_limited: CMD = framecrc \
+fate-sub2video_time_limited: CMD = framecrc -auto_conversion_filters \
   -i $(TARGET_SAMPLES)/sub/pgs_sub.sup \
   -vsync passthrough -copyts \
   -t 15 \
@@ -82,7 +82,7 @@ fate-unknown_layout-pcm: CMD = md5 \
 
 FATE_FFMPEG-$(call ALLYES, PCM_S16LE_DEMUXER AC3_MUXER PCM_S16LE_DECODER AC3_FIXED_ENCODER) += fate-unknown_layout-ac3
 fate-unknown_layout-ac3: $(AREF)
-fate-unknown_layout-ac3: CMD = md5 \
+fate-unknown_layout-ac3: CMD = md5 -auto_conversion_filters \
   -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
   -f ac3 -flags +bitexact -c ac3_fixed
 
@@ -100,12 +100,12 @@ fate-copy-trac236: CMD = transcode mov $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
 FATE_STREAMCOPY-$(call ALLYES, MPEGTS_DEMUXER MXF_MUXER PCM_S16LE_ENCODER) += fate-copy-trac4914
 fate-copy-trac4914: $(SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts
 fate-copy-trac4914: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
-                      mxf "-c:a pcm_s16le -c:v copy"
+                      mxf "-c:a pcm_s16le -af aresample -c:v copy"
 
 FATE_STREAMCOPY-$(call ALLYES, MPEGTS_DEMUXER AVI_MUXER) += fate-copy-trac4914-avi
 fate-copy-trac4914-avi: $(SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts
 fate-copy-trac4914-avi: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
-                          avi "-c:a copy -c:v copy"
+                          avi "-c:a copy -c:v copy" "-af aresample"
 
 FATE_STREAMCOPY-$(call ALLYES, H264_DEMUXER AVI_MUXER) += fate-copy-trac2211-avi
 fate-copy-trac2211-avi: $(SAMPLES)/h264/bbc2.sample.h264

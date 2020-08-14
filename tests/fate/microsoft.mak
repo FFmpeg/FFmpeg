@@ -29,10 +29,10 @@ FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MTS2) += $(FATE_MTS2)
 fate-mts2: $(FATE_MTS2)
 
 FATE_MSVIDEO1 += fate-msvideo1-8bit
-fate-msvideo1-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/skating.avi -t 1 -pix_fmt rgb24
+fate-msvideo1-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/skating.avi -t 1 -pix_fmt rgb24 -vf scale
 
 FATE_MSVIDEO1 += fate-msvideo1-16bit
-fate-msvideo1-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/clock-cram16.avi -pix_fmt rgb24
+fate-msvideo1-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/clock-cram16.avi -pix_fmt rgb24 -vf scale
 
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSVIDEO1) += $(FATE_MSVIDEO1)
 fate-msvideo1: $(FATE_MSVIDEO1)

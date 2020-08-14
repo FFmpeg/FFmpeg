@@ -1,6 +1,6 @@
 # FIXME dropped frames in this test because of coarse timebase
 FATE_SCREEN-$(call DEMDEC, AVI, CSCD) += fate-cscd
-fate-cscd: CMD = framecrc -i $(TARGET_SAMPLES)/CSCD/sample_video.avi -an -pix_fmt rgb24
+fate-cscd: CMD = framecrc -i $(TARGET_SAMPLES)/CSCD/sample_video.avi -an -pix_fmt rgb24 -vf scale
 
 FATE_SCREEN-$(call DEMDEC, AVI, DXTORY) += fate-dxtory
 fate-dxtory: CMD = framecrc -i $(TARGET_SAMPLES)/dxtory/dxtory_mic.avi -an
@@ -27,7 +27,7 @@ FATE_FRAPS += fate-fraps-v2
 fate-fraps-v2: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/test3-nosound-partial.avi
 
 FATE_FRAPS += fate-fraps-v3
-fate-fraps-v3: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/psclient-partial.avi -pix_fmt rgb24
+fate-fraps-v3: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/psclient-partial.avi -pix_fmt rgb24 -vf scale
 
 FATE_FRAPS += fate-fraps-v4
 fate-fraps-v4: CMD = framecrc -i $(TARGET_SAMPLES)/fraps/WoW_2006-11-03_14-58-17-19-nosound-partial.avi
@@ -54,7 +54,7 @@ FATE_RSCC += fate-iscc
 fate-iscc: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/pip.avi -an
 
 FATE_RSCC += fate-rscc-8bit
-fate-rscc-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/8bpp.avi -an -pix_fmt rgb24
+fate-rscc-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/8bpp.avi -an -pix_fmt rgb24 -vf scale
 
 FATE_RSCC += fate-rscc-16bit
 fate-rscc-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/16bpp_555.avi -an
@@ -84,10 +84,10 @@ FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, TDSC) += fate-tdsc
 fate-tdsc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/tdsc/tdsc.asf -an -pix_fmt bgr24
 
 FATE_TSCC += fate-tscc-15bit
-fate-tscc-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/oneminute.avi -t 15 -pix_fmt rgb24
+fate-tscc-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/oneminute.avi -t 15 -pix_fmt rgb24 -vf scale
 
 FATE_TSCC += fate-tscc-32bit
-fate-tscc-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/2004-12-17-uebung9-partial.avi -pix_fmt rgb24 -an
+fate-tscc-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/tscc/2004-12-17-uebung9-partial.avi -pix_fmt rgb24 -an -vf scale
 
 FATE_SCREEN-$(call DEMDEC, AVI, TSCC) += $(FATE_TSCC)
 fate-tscc: $(FATE_TSCC)
@@ -102,25 +102,25 @@ FATE_SAMPLES_AVCONV-$(CONFIG_TSCC2_DECODER) += $(FATE_TSCC2-yes)
 fate-tscc2: $(FATE_TSCC2-yes)
 
 FATE_VMNC += fate-vmnc-16bit
-fate-vmnc-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/VMnc/test.avi -pix_fmt rgb24
+fate-vmnc-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/VMnc/test.avi -pix_fmt rgb24 -vf scale
 
 FATE_VMNC += fate-vmnc-32bit
-fate-vmnc-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/VMnc/VS2k5DebugDemo-01-partial.avi -pix_fmt rgb24
+fate-vmnc-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/VMnc/VS2k5DebugDemo-01-partial.avi -pix_fmt rgb24 -vf scale
 
 FATE_SCREEN-$(call DEMDEC, AVI, VMNC) += $(FATE_VMNC)
 fate-vmnc: $(FATE_VMNC)
 
 FATE_ZMBV += fate-zmbv-8bit
-fate-zmbv-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/wc2_001-partial.avi -an -pix_fmt rgb24
+fate-zmbv-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/wc2_001-partial.avi -an -pix_fmt rgb24 -vf scale
 
 FATE_ZMBV += fate-zmbv-15bit
-fate-zmbv-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/zmbv_15bit.avi -pix_fmt rgb24 -t 25
+fate-zmbv-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/zmbv_15bit.avi -pix_fmt rgb24 -t 25 -vf scale
 
 FATE_ZMBV += fate-zmbv-16bit
-fate-zmbv-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/zmbv_16bit.avi -pix_fmt rgb24 -t 25
+fate-zmbv-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/zmbv_16bit.avi -pix_fmt rgb24 -t 25 -vf scale
 
 FATE_ZMBV += fate-zmbv-32bit
-fate-zmbv-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/zmbv_32bit.avi -pix_fmt rgb24 -t 25
+fate-zmbv-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/zmbv/zmbv_32bit.avi -pix_fmt rgb24 -t 25 -vf scale
 
 FATE_SCREEN-$(call DEMDEC, AVI, ZMBV) += $(FATE_ZMBV)
 fate-zmbv: $(FATE_ZMBV)
