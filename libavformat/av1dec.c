@@ -411,7 +411,7 @@ static int obu_read_data(AVFormatContext *s, AVPacket *pkt, int len)
         ret = avio_read(s->pb, pkt->data + size, left);
         if (ret != left) {
             av_log(c, AV_LOG_ERROR, "Failed to read %d frome file\n", left);
-            return ret;
+            return ret < 0 ? ret : AVERROR_INVALIDDATA;
         }
     }
     return 0;
@@ -426,7 +426,7 @@ static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = obu_prefetch(s, header);
     if (!ret)
-        return AVERROR(EOF);
+        return 0;
 
     ret = read_obu_with_size(header, ret, &obu_size, &type);
     if (ret < 0) {
