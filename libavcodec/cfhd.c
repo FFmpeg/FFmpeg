@@ -1583,7 +1583,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
 AVCodec ff_cfhd_decoder = {
     .name             = "cfhd",
-    .long_name        = NULL_IF_CONFIG_SMALL("Cineform HD"),
+    .long_name        = NULL_IF_CONFIG_SMALL("GoPro CineForm HD"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_CFHD,
     .priv_data_size   = sizeof(CFHDContext),
