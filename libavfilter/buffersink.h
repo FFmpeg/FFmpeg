@@ -61,7 +61,7 @@ int av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flag
 
 #if FF_API_NEXT
 /**
- * Struct to use for initializing a buffersink context.
+ * Deprecated and unused struct to use for initializing a buffersink context.
  */
 typedef struct AVBufferSinkParams {
     const enum AVPixelFormat *pixel_fmts; ///< list of allowed pixel formats, terminated by AV_PIX_FMT_NONE
@@ -76,7 +76,7 @@ attribute_deprecated
 AVBufferSinkParams *av_buffersink_params_alloc(void);
 
 /**
- * Struct to use for initializing an abuffersink context.
+ * Deprecated and unused struct to use for initializing an abuffersink context.
  */
 typedef struct AVABufferSinkParams {
     const enum AVSampleFormat *sample_fmts; ///< list of allowed sample formats, terminated by AV_SAMPLE_FMT_NONE
