@@ -62,9 +62,9 @@ do {                                                                       \
  * merged; otherwise, it is treated as error.
  */
 #define MERGE_FORMATS(a, b, fmts, nb, type, check, empty_allowed)          \
-do {                                                                            \
+do {                                                                       \
     int i, j, k = 0, skip = 0;                                             \
-                                                                                \
+                                                                           \
     if (empty_allowed) {                                                   \
         if (!a->nb || !b->nb) {                                            \
             if (check)                                                     \
@@ -75,20 +75,20 @@ do {                                                                            
         }                                                                  \
     }                                                                      \
     if (!skip) {                                                           \
-        for (i = 0; i < a->nb; i++)                                             \
-            for (j = 0; j < b->nb; j++)                                         \
-                if (a->fmts[i] == b->fmts[j]) {                                 \
+        for (i = 0; i < a->nb; i++)                                        \
+            for (j = 0; j < b->nb; j++)                                    \
+                if (a->fmts[i] == b->fmts[j]) {                            \
                     if (check)                                             \
                         return 1;                                          \
                     a->fmts[k++] = a->fmts[i];                             \
-                    break;                                                      \
-                }                                                               \
-    /* Check that there was at least one common format.                    \
-     * Notice that both a and b are unchanged if not. */                   \
-    if (!k)                                                                \
-        return 0;                                                          \
-    av_assert2(!check);                                                    \
-    a->nb = k;                                                             \
+                    break;                                                 \
+                }                                                          \
+        /* Check that there was at least one common format.                \
+         * Notice that both a and b are unchanged if not. */               \
+        if (!k)                                                            \
+            return 0;                                                      \
+        av_assert2(!check);                                                \
+        a->nb = k;                                                         \
     }                                                                      \
                                                                            \
     MERGE_REF(a, b, fmts, type, return AVERROR(ENOMEM););                  \
