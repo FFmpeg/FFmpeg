@@ -2162,7 +2162,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if (ret < 0) {
                     if (!avio_feof(&pls->pb) && ret != AVERROR_EOF)
                         return ret;
-                    reset_packet(&pls->pkt);
                     break;
                 } else {
                     /* stream_index check prevents matching picture attachments etc. */
