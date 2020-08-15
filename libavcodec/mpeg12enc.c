@@ -1167,6 +1167,12 @@ static const AVOption mpeg2_options[] = {
     {     "secam",        NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_SECAM      },  0, 0, VE, "video_format" },
     {     "mac",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_MAC        },  0, 0, VE, "video_format" },
     {     "unspecified",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_UNSPECIFIED},  0, 0, VE, "video_format" },
+#define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, { .i64 = value }, 0, 0, VE, "avctx.level"
+    { LEVEL("high",     4) },
+    { LEVEL("high1440", 6) },
+    { LEVEL("main",     8) },
+    { LEVEL("low",     10) },
+#undef LEVEL
     FF_MPV_COMMON_OPTS
     FF_MPEG2_PROFILE_OPTS
     { NULL },
