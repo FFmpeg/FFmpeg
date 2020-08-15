@@ -3936,8 +3936,11 @@ int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
         if (c == '%') {
             do {
                 nd = 0;
-                while (av_isdigit(*p))
+                while (av_isdigit(*p)) {
+                    if (nd >= INT_MAX / 10 - 255)
+                        goto fail;
                     nd = nd * 10 + *p++ - '0';
+                }
                 c = *p++;
             } while (av_isdigit(c));
 
