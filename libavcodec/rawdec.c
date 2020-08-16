@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "raw.h"

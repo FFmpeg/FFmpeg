@@ -354,11 +354,6 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
 /**
- * Set various frame properties from the codec context / packet data.
- */
-int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
-
-/**
  * Add a CPB properties side data to an encoding context.
  */
 AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);

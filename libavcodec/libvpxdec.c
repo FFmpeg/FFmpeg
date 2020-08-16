@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 #include "libvpx.h"
 #include "profiles.h"
