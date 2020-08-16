@@ -31,6 +31,7 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 #include <pthread.h>
+#include "atsc_a53.h"
 #include "h264.h"
 #include "h264_sei.h"
 #include <dlfcn.h>

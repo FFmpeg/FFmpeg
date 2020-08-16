@@ -26,7 +26,9 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
+#include "atsc_a53.h"
 #include "avcodec.h"
+#include "bytestream.h"
 #include "decode.h"
 #include "internal.h"
 
@@ -363,6 +365,34 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         light->MaxCLL = p->content_light->max_content_light_level;
         light->MaxFALL = p->content_light->max_frame_average_light_level;
+    }
+    if (p->itut_t35) {
+        GetByteContext gb;
+        unsigned int user_identifier;
+
+        bytestream2_init(&gb, p->itut_t35->payload, p->itut_t35->payload_size);
+        bytestream2_skip(&gb, 1); // terminal provider code
+        bytestream2_skip(&gb, 1); // terminal provider oriented code
+        user_identifier = bytestream2_get_be32(&gb);
+        switch (user_identifier) {
+        case MKBETAG('G', 'A', '9', '4'): { // closed captions
+            AVBufferRef *buf = NULL;
+
+            res = ff_parse_a53_cc(&buf, gb.buffer, bytestream2_get_bytes_left(&gb));
+            if (res < 0)
+                goto fail;
+            if (!res)
+                break;
+
+            if (!av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_A53_CC, buf))
+                av_buffer_unref(&buf);
+
+            c->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+            break;
+        }
+        default: // ignore unsupported identifiers
+            break;
+        }
     }
 
     res = 0;

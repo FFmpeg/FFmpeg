@@ -154,13 +154,11 @@ static int annexb_probe(const AVProbeData *p)
     if (ret < 0 || ((int64_t)frame_unit_size + ret) > temporal_unit_size)
         return 0;
     cnt += ret;
-    temporal_unit_size -= ret;
     ret = leb(&pb, &obu_unit_size);
     if (ret < 0 || ((int64_t)obu_unit_size + ret) >= frame_unit_size)
         return 0;
     cnt += ret;
 
-    temporal_unit_size -= obu_unit_size + ret;
     frame_unit_size -= obu_unit_size + ret;
 
     avio_skip(&pb, obu_unit_size);
@@ -192,7 +190,6 @@ static int annexb_probe(const AVProbeData *p)
         if (ret >= 0)
             return ret;
 
-        temporal_unit_size -= obu_unit_size + ret;
         frame_unit_size -= obu_unit_size + ret;
     } while (frame_unit_size);
 
@@ -382,58 +379,44 @@ static int obu_read_header(AVFormatContext *s)
     return read_header(s, &c->framerate, &c->bsf, c);
 }
 
-static int obu_prefetch(AVFormatContext *s, uint8_t* dest)
+static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ObuContext *c = s->priv_data;
+    uint8_t header[MAX_OBU_HEADER_SIZE];
+    int64_t obu_size;
     int size = av_fifo_space(c->fifo);
+    int ret, len, type;
+
     av_fifo_generic_write(c->fifo, s->pb, size,
                           (int (*)(void*, void*, int))avio_read);
     size = av_fifo_size(c->fifo);
-    if (size > 0) {
-        av_fifo_generic_peek(c->fifo, dest, size, NULL);
-    }
-    return size;
-}
+    if (!size)
+        return 0;
 
-static int obu_read_data(AVFormatContext *s, AVPacket *pkt, int len)
-{
-    int size, left;
-    ObuContext *c = s->priv_data;
-    int ret = av_new_packet(pkt, len);
+    av_fifo_generic_peek(c->fifo, header, size, NULL);
+
+    len = read_obu_with_size(header, size, &obu_size, &type);
+    if (len < 0) {
+        av_log(c, AV_LOG_ERROR, "Failed to read obu\n");
+        return len;
+    }
+
+    ret = av_new_packet(pkt, len);
     if (ret < 0) {
         av_log(c, AV_LOG_ERROR, "Failed to allocate packet for obu\n");
         return ret;
     }
-    size = FFMIN(av_fifo_size(c->fifo), len);
+    size = FFMIN(size, len);
     av_fifo_generic_read(c->fifo, pkt->data, size, NULL);
-    left = len - size;
-    if (left > 0) {
-        ret = avio_read(s->pb, pkt->data + size, left);
-        if (ret != left) {
-            av_log(c, AV_LOG_ERROR, "Failed to read %d frome file\n", left);
+    len -= size;
+    if (len > 0) {
+        ret = avio_read(s->pb, pkt->data + size, len);
+        if (ret != len) {
+            av_log(c, AV_LOG_ERROR, "Failed to read %d frome file\n", len);
             return ret < 0 ? ret : AVERROR_INVALIDDATA;
         }
     }
     return 0;
-}
-
-static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    ObuContext *c = s->priv_data;
-    int64_t obu_size;
-    int ret, type;
-    uint8_t header[MAX_OBU_HEADER_SIZE];
-
-    ret = obu_prefetch(s, header);
-    if (!ret)
-        return 0;
-
-    ret = read_obu_with_size(header, ret, &obu_size, &type);
-    if (ret < 0) {
-        av_log(c, AV_LOG_ERROR, "Failed to read obu\n");
-        return ret;
-    }
-    return obu_read_data(s, pkt, ret);
 }
 
 static int obu_read_packet(AVFormatContext *s, AVPacket *pkt)

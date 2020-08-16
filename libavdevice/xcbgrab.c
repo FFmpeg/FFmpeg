@@ -425,7 +425,16 @@ static int xcbgrab_read_packet(AVFormatContext *s, AVPacket *pkt)
         pc  = xcb_query_pointer(c->conn, c->screen->root);
         gc  = xcb_get_geometry(c->conn, c->screen->root);
         p   = xcb_query_pointer_reply(c->conn, pc, NULL);
+        if (!p) {
+            av_log(s, AV_LOG_ERROR, "Failed to query xcb pointer\n");
+            return AVERROR_EXTERNAL;
+        }
         geo = xcb_get_geometry_reply(c->conn, gc, NULL);
+        if (!geo) {
+            av_log(s, AV_LOG_ERROR, "Failed to get xcb geometry\n");
+            free(p);
+            return AVERROR_EXTERNAL;
+        }
     }
 
     if (c->follow_mouse && p->same_screen)
