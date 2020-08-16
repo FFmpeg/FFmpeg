@@ -168,7 +168,11 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         avio_rb16(pb); /* version2 */
         avio_rb32(pb); /* header size */
         flavor= avio_rb16(pb); /* add codec info / flavor */
-        ast->coded_framesize = coded_framesize = avio_rb32(pb); /* coded frame size */
+        coded_framesize = avio_rb32(pb); /* coded frame size */
+        if (coded_framesize < 0)
+            return AVERROR_INVALIDDATA;
+        ast->coded_framesize = coded_framesize;
+
         avio_rb32(pb); /* ??? */
         bytes_per_minute = avio_rb32(pb);
         if (version == 4) {
