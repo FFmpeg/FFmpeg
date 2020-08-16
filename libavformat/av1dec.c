@@ -154,13 +154,11 @@ static int annexb_probe(const AVProbeData *p)
     if (ret < 0 || ((int64_t)frame_unit_size + ret) > temporal_unit_size)
         return 0;
     cnt += ret;
-    temporal_unit_size -= ret;
     ret = leb(&pb, &obu_unit_size);
     if (ret < 0 || ((int64_t)obu_unit_size + ret) >= frame_unit_size)
         return 0;
     cnt += ret;
 
-    temporal_unit_size -= obu_unit_size + ret;
     frame_unit_size -= obu_unit_size + ret;
 
     avio_skip(&pb, obu_unit_size);
@@ -192,7 +190,6 @@ static int annexb_probe(const AVProbeData *p)
         if (ret >= 0)
             return ret;
 
-        temporal_unit_size -= obu_unit_size + ret;
         frame_unit_size -= obu_unit_size + ret;
     } while (frame_unit_size);
 
