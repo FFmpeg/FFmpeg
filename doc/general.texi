@@ -1098,7 +1098,7 @@ following image formats are supported:
 @item AC-3                   @tab IX  @tab  IX
 @item ACELP.KELVIN           @tab     @tab  X
 @item ADPCM 4X Movie         @tab     @tab  X
-@item APDCM Yamaha AICA      @tab     @tab  X
+@item ADPCM Yamaha AICA      @tab     @tab  X
 @item ADPCM AmuseGraphics Movie @tab    @tab  X
 @item ADPCM Argonaut Games   @tab X   @tab  X
 @item ADPCM CDROM XA         @tab     @tab  X
@@ -1140,7 +1140,7 @@ following image formats are supported:
 @item ADPCM Nintendo Gamecube AFC  @tab     @tab  X
 @item ADPCM Nintendo Gamecube DTK  @tab     @tab  X
 @item ADPCM Nintendo THP  @tab     @tab  X
-@item APDCM Playstation      @tab     @tab  X
+@item ADPCM Playstation      @tab     @tab  X
 @item ADPCM QT IMA           @tab  X  @tab  X
 @item ADPCM SEGA CRI ADX     @tab  X  @tab  X
     @tab Used in Sega Dreamcast games.
