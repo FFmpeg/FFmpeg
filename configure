@@ -60,7 +60,6 @@ show_help(){
     cat <<EOF
 Usage: configure [options]
 Options: [defaults in brackets after descriptions]
-
 Help options:
   --help                   print this message
   --quiet                  Suppress showing informative output
@@ -75,7 +74,6 @@ Help options:
   --list-indevs            show all available input devices
   --list-outdevs           show all available output devices
   --list-filters           show all available filters
-
 Standard options:
   --logfile=FILE           log tests and output to FILE [ffbuild/config.log]
   --disable-logging        do not log configure debug information
@@ -93,14 +91,12 @@ Standard options:
                            not part of the dynamic linker search path
                            use rpath when linking programs (USE WITH CARE)
   --install-name-dir=DIR   Darwin directory name for installed targets
-
 Licensing options:
   --enable-gpl             allow use of GPL code, the resulting libs
                            and binaries will be under GPL [no]
   --enable-version3        upgrade (L)GPL to version 3 [no]
   --enable-nonfree         allow use of nonfree code, the resulting libs
                            and binaries will be unredistributable [no]
-
 Configuration options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
@@ -110,20 +106,17 @@ Configuration options:
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
   --disable-autodetect     disable automatically detected external libraries [no]
-
 Program options:
   --disable-programs       do not build command line programs
   --disable-ffmpeg         disable ffmpeg build
   --disable-ffplay         disable ffplay build
   --disable-ffprobe        disable ffprobe build
-
 Documentation options:
   --disable-doc            do not build documentation
   --disable-htmlpages      do not build HTML documentation pages
   --disable-manpages       do not build man documentation pages
   --disable-podpages       do not build POD documentation pages
   --disable-txtpages       do not build text documentation pages
-
 Component options:
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
@@ -147,7 +140,6 @@ Component options:
   --disable-fft            disable FFT code
   --disable-faan           disable floating point AAN (I)DCT code
   --disable-pixelutils     disable pixel utils in libavutil
-
 Individual component options:
   --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
@@ -184,22 +176,17 @@ Individual component options:
   --enable-filter=NAME     enable filter NAME
   --disable-filter=NAME    disable filter NAME
   --disable-filters        disable all filters
-
 External library support:
-
   Using any of the following switches will allow FFmpeg to link to the
   corresponding external library. All the components depending on that library
   will become enabled, if all their other dependencies are met and they are not
   explicitly disabled. E.g. --enable-libwavpack will enable linking to
   libwavpack and allow the libwavpack encoder to be built, unless it is
   specifically disabled with --disable-encoder=libwavpack.
-
   Note that only the system libraries are auto-detected. All the other external
   libraries must be explicitly enabled.
-
   Also note that the following help text describes the purpose of the libraries
   themselves, not all their features will necessarily be usable by FFmpeg.
-
   --disable-alsa           disable ALSA support [autodetect]
   --disable-appkit         disable Apple AppKit framework [autodetect]
   --disable-avfoundation   disable Apple AVFoundation framework [autodetect]
@@ -325,7 +312,6 @@ External library support:
   --enable-vulkan          enable Vulkan code [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
-
   The following libraries provide various hardware acceleration features:
   --disable-amf            disable AMF video encoding code [autodetect]
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
@@ -348,7 +334,6 @@ External library support:
   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
   --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
   --disable-videotoolbox   disable VideoToolbox code [autodetect]
-
 Toolchain options:
   --arch=ARCH              select architecture [$arch]
   --cpu=CPU                select the minimum required CPU (affects
@@ -407,7 +392,6 @@ Toolchain options:
   --enable-thumb           compile for Thumb instruction set
   --enable-lto             use link-time optimization
   --env="ENV=override"     override the environment variables
-
 Advanced options (experts only):
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
   --custom-allocator=NAME  use a supported custom allocator
@@ -417,7 +401,6 @@ Advanced options (experts only):
                            disable buffer boundary checking in bitreaders
                            (faster, but may crash)
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
-
 Optimization options (experts only):
   --disable-asm            disable all assembly optimizations
   --disable-altivec        disable AltiVec optimizations
@@ -454,7 +437,6 @@ Optimization options (experts only):
   --disable-mipsfpu        disable floating point MIPS optimizations
   --disable-mmi            disable Loongson SIMD optimizations
   --disable-fast-unaligned consider unaligned accesses slow
-
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
   --enable-debug=LEVEL     set the debug level [$debuglevel]
@@ -490,7 +472,6 @@ Developer options (useful when working on FFmpeg itself):
                            in the name) of tests whose result is ignored
   --enable-linux-perf      enable Linux Performance Monitor API
   --disable-large-tests    disable tests that use a large amount of memory
-
 NOTE: Object files are built at the place where configure is launched.
 EOF
   exit 0
@@ -532,7 +513,6 @@ die(){
     log "$@"
     echo "$error_color$bold_color$@$reset_color"
     cat <<EOF
-
 If you think configure made a mistake, make sure you are using the latest
 version from Git.  If the latest version fails, report the problem to the
 ffmpeg-user@ffmpeg.org mailing list or IRC #ffmpeg on irc.freenode.net.
@@ -2344,6 +2324,7 @@ CONFIG_EXTRA="
     aandcttables
     ac3dsp
     adts_header
+    atsc_a53
     audio_frame_queue
     audiodsp
     blockdsp
@@ -2737,12 +2718,12 @@ h263_encoder_select="h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="cabac golomb h264chroma h264dsp h264parse h264pred h264qpel videodsp"
+h264_decoder_select="atsc_a53 cabac golomb h264chroma h264dsp h264parse h264pred h264qpel videodsp"
 h264_decoder_suggest="error_resilience"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
 hap_encoder_select="texturedspenc"
-hevc_decoder_select="bswapdsp cabac golomb hevcparse videodsp"
+hevc_decoder_select="atsc_a53 bswapdsp cabac golomb hevcparse videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llvidencdsp"
 hymt_decoder_select="huffyuv_decoder"
@@ -3059,9 +3040,10 @@ h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mf_encoder_deps="mediafoundation"
 h264_mmal_decoder_deps="mmal"
 h264_nvenc_encoder_deps="nvenc"
+h264_nvenc_encoder_select="atsc_a53"
 h264_omx_encoder_deps="omx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf qsvdec"
-h264_qsv_encoder_select="qsvenc"
+h264_qsv_encoder_select="atsc_a53 qsvenc"
 h264_rkmpp_decoder_deps="rkmpp"
 h264_rkmpp_decoder_select="h264_mp4toannexb_bsf"
 h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
@@ -3075,6 +3057,7 @@ hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
 hevc_mf_encoder_deps="mediafoundation"
 hevc_nvenc_encoder_deps="nvenc"
+hevc_nvenc_encoder_select="atsc_a53"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
@@ -3199,9 +3182,9 @@ pcm_mulaw_at_encoder_deps="audiotoolbox"
 pcm_mulaw_at_encoder_select="audio_frame_queue"
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="pthreads"
-h264_videotoolbox_encoder_select="videotoolbox_encoder"
+h264_videotoolbox_encoder_select="atsc_a53 videotoolbox_encoder"
 hevc_videotoolbox_encoder_deps="pthreads"
-hevc_videotoolbox_encoder_select="videotoolbox_encoder"
+hevc_videotoolbox_encoder_select="atsc_a53 videotoolbox_encoder"
 libaom_av1_decoder_deps="libaom"
 libaom_av1_encoder_deps="libaom"
 libaom_av1_encoder_select="extract_extradata_bsf"
@@ -3210,6 +3193,7 @@ libcelt_decoder_deps="libcelt"
 libcodec2_decoder_deps="libcodec2"
 libcodec2_encoder_deps="libcodec2"
 libdav1d_decoder_deps="libdav1d"
+libdav1d_decoder_select="atsc_a53"
 libdavs2_decoder_deps="libdavs2"
 libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
@@ -3263,6 +3247,7 @@ libwebp_encoder_deps="libwebp"
 libwebp_anim_encoder_deps="libwebp"
 libx262_encoder_deps="libx262"
 libx264_encoder_deps="libx264"
+libx264_encoder_select="atsc_a53"
 libx264rgb_encoder_deps="libx264 x264_csp_bgr"
 libx264rgb_encoder_select="libx264_encoder"
 libx265_encoder_deps="libx265"
@@ -6328,7 +6313,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_canvas
 enabled libcodec2         && require libcodec2 codec2/codec2.h codec2_create -lcodec2
-enabled libdav1d          && require libdav1d dav1d/dav1d.h dav1d_version -llibdav1d
+enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.5.0" "dav1d/dav1d.h" dav1d_version
 enabled libdavs2          && require_pkg_config libdavs2 "davs2 >= 1.6.0" davs2.h davs2_decoder_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdrm            && require_pkg_config libdrm libdrm xf86drm.h drmGetVersion
