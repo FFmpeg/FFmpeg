@@ -50,6 +50,7 @@
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
+#include "packet_internal.h"
 #include "put_bits.h"
 #include "raw.h"
 #include "bytestream.h"
@@ -1149,6 +1150,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_packet_free(&avctx->internal->compat_encode_packet);
         av_packet_free(&avctx->internal->buffer_pkt);
         av_packet_free(&avctx->internal->last_pkt_props);
+        avpriv_packet_list_free(&avctx->internal->pkt_props,
+                                &avctx->internal->pkt_props_tail);
 
         av_packet_free(&avctx->internal->ds.in_pkt);
         av_frame_free(&avctx->internal->es.in_frame);
