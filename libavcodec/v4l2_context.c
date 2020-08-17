@@ -599,7 +599,7 @@ int ff_v4l2_context_enqueue_frame(V4L2Context* ctx, const AVFrame* frame)
 
     avbuf = v4l2_getfree_v4l2buf(ctx);
     if (!avbuf)
-        return AVERROR(ENOMEM);
+        return AVERROR(EAGAIN);
 
     ret = ff_v4l2_buffer_avframe_to_buf(frame, avbuf);
     if (ret)
