@@ -38,6 +38,8 @@
 #define IS_SYSTEM_MEMORY(mode) (mode & MFX_MEMTYPE_SYSTEM_MEMORY)
 #define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
 
+#define QSV_HAVE_AUDIO         !QSV_ONEVPL
+
 static const AVRational default_tb = { 1, 90000 };
 
 typedef struct QSVAsyncFrame {
@@ -100,10 +102,12 @@ static const struct {
     { MFX_ERR_INVALID_VIDEO_PARAM,      AVERROR(EINVAL), "invalid video parameters"             },
     { MFX_ERR_UNDEFINED_BEHAVIOR,       AVERROR_BUG,     "undefined behavior"                   },
     { MFX_ERR_DEVICE_FAILED,            AVERROR(EIO),    "device failed"                        },
-    { MFX_ERR_GPU_HANG,                 AVERROR(EIO),    "GPU Hang"                             },
-    { MFX_ERR_REALLOC_SURFACE,          AVERROR_UNKNOWN, "need bigger surface for output"       },
+#if QSV_HAVE_AUDIO
     { MFX_ERR_INCOMPATIBLE_AUDIO_PARAM, AVERROR(EINVAL), "incompatible audio parameters"        },
     { MFX_ERR_INVALID_AUDIO_PARAM,      AVERROR(EINVAL), "invalid audio parameters"             },
+#endif
+    { MFX_ERR_GPU_HANG,                 AVERROR(EIO),    "GPU Hang"                             },
+    { MFX_ERR_REALLOC_SURFACE,          AVERROR_UNKNOWN, "need bigger surface for output"       },
 
     { MFX_WRN_IN_EXECUTION,             0,               "operation in execution"               },
     { MFX_WRN_DEVICE_BUSY,              0,               "device busy"                          },
@@ -113,7 +117,9 @@ static const struct {
     { MFX_WRN_VALUE_NOT_CHANGED,        0,               "value is saturated"                   },
     { MFX_WRN_OUT_OF_RANGE,             0,               "value out of range"                   },
     { MFX_WRN_FILTER_SKIPPED,           0,               "filter skipped"                       },
+#if QSV_HAVE_AUDIO
     { MFX_WRN_INCOMPATIBLE_AUDIO_PARAM, 0,               "incompatible audio parameters"        },
+#endif
 
 #if QSV_VERSION_ATLEAST(1, 31)
     { MFX_ERR_NONE_PARTIAL_OUTPUT,      0,               "partial output"                       },
