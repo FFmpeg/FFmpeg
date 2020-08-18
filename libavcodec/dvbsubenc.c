@@ -374,7 +374,6 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
             bytestream_put_be16(&pseg_len, q - pseg_len - 2);
             buf_size -= 6 + h->rects[clut_id]->nb_colors * 6;
         }
-    }
 
     if (buf_size < h->num_rects * 22)
         return AVERROR_BUFFER_TOO_SMALL;
@@ -418,8 +417,6 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
         bytestream_put_be16(&pseg_len, q - pseg_len - 2);
     }
     buf_size -= h->num_rects * 22;
-
-    if (h->num_rects) {
 
         for (object_id = 0; object_id < h->num_rects; object_id++) {
             int (*dvb_encode_rle)(uint8_t **pq, int buf_size,
