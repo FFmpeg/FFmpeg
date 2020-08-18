@@ -266,6 +266,7 @@ static int count_paired_channels(uint8_t (*layout_map)[3], int tags, int pos,
     return num_pos_channels;
 }
 
+#define PREFIX_FOR_22POINT2 (AV_CH_LAYOUT_7POINT1_WIDE_BACK|AV_CH_BACK_CENTER|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT|AV_CH_LOW_FREQUENCY_2)
 static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 {
     int i, n, total_non_cc_elements;
@@ -401,7 +402,14 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
     }
 
     // The previous checks would end up at 8 at this point for 22.2
-    if (tags == 16 && i == 8) {
+    if (layout == PREFIX_FOR_22POINT2 && tags == 16 && i == 8) {
+        const uint8_t (*reference_layout_map)[3] = aac_channel_layout_map[12];
+        for (int j = 0; j < tags; j++) {
+            if (layout_map[j][0] != reference_layout_map[j][0] ||
+                layout_map[j][2] != reference_layout_map[j][2])
+                goto end_of_layout_definition;
+        }
+
         e2c_vec[i] = (struct elem_to_channel) {
             .av_position  = AV_CH_TOP_FRONT_CENTER,
             .syn_ele      = layout_map[i][0],
@@ -448,9 +456,11 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
                          &layout);
     }
 
+end_of_layout_definition:
+
     total_non_cc_elements = n = i;
 
-    if (tags == 16 && total_non_cc_elements == 16) {
+    if (layout == AV_CH_LAYOUT_22POINT2) {
         // For 22.2 reorder the result as needed
         FFSWAP(struct elem_to_channel, e2c_vec[2], e2c_vec[0]);   // FL & FR first (final), FC third
         FFSWAP(struct elem_to_channel, e2c_vec[2], e2c_vec[1]);   // FC second (final), FLc & FRc third
