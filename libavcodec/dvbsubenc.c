@@ -449,7 +449,7 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
 
             bytestream_put_be16(&q, object_id);
             *q++ = (s->object_version << 4) | (0 << 2) | (0 << 1) | 1; /* version = 0,
-                                                                       onject_coding_method,
+                                                                       object_coding_method,
                                                                        non_modifying_color_flag */
             {
                 uint8_t *ptop_field_len, *pbottom_field_len, *top_ptr, *bottom_ptr;
