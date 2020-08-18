@@ -123,8 +123,8 @@ fate-filter-framerate-12bit-up: CMD = framecrc -lavfi testsrc2=r=50:d=1,format=p
 fate-filter-framerate-12bit-down: CMD = framecrc -lavfi testsrc2=r=60:d=1,format=pix_fmts=yuv422p12le,framerate=fps=50 -t 1 -pix_fmt yuv422p12le
 
 FATE_FILTER-$(call ALLYES, MINTERPOLATE_FILTER TESTSRC2_FILTER) += fate-filter-minterpolate-up fate-filter-minterpolate-down
-fate-filter-minterpolate-up: CMD = framecrc -lavfi testsrc2=r=2:d=10,framerate=fps=10 -t 1
-fate-filter-minterpolate-down: CMD = framecrc -lavfi testsrc2=r=2:d=10,framerate=fps=1 -t 1
+fate-filter-minterpolate-up: CMD = framecrc -lavfi testsrc2=r=2:d=10,minterpolate=fps=10 -t 1
+fate-filter-minterpolate-down: CMD = framecrc -lavfi testsrc2=r=2:d=10,minterpolate=fps=1 -t 1
 
 FATE_FILTER_VSYNTH-$(CONFIG_BOXBLUR_FILTER) += fate-filter-boxblur
 fate-filter-boxblur: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf boxblur=2:1
