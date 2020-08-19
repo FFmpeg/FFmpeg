@@ -44,7 +44,7 @@
 #else
 #define QSV_HAVE_AVBR   0
 #define QSV_HAVE_VCM    0
-#define QSV_HAVE_MF     1
+#define QSV_HAVE_MF     !QSV_ONEVPL
 #endif
 
 #define QSV_COMMON_OPTS \
