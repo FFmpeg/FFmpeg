@@ -293,26 +293,18 @@ static void free_rendition_list(HLSContext *c)
     c->n_renditions = 0;
 }
 
-/*
- * Used to reset a statically allocated AVPacket to a clean state,
- * containing no data.
- */
-static void reset_packet(AVPacket *pkt)
-{
-    av_init_packet(pkt);
-    pkt->data = NULL;
-}
-
 static struct playlist *new_playlist(HLSContext *c, const char *url,
                                      const char *base)
 {
     struct playlist *pls = av_mallocz(sizeof(struct playlist));
     if (!pls)
         return NULL;
-    reset_packet(&pls->pkt);
     ff_make_absolute_url(pls->url, sizeof(pls->url), base, url);
-    if (!pls->url[0])
+    if (!pls->url[0]) {
+        av_free(pls);
         return NULL;
+    }
+    av_init_packet(&pls->pkt);
     pls->seek_timestamp = AV_NOPTS_VALUE;
 
     pls->is_id3_timestamped = -1;
@@ -2160,7 +2152,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if (ret < 0) {
                     if (!avio_feof(&pls->pb) && ret != AVERROR_EOF)
                         return ret;
-                    reset_packet(&pls->pkt);
                     break;
                 } else {
                     /* stream_index check prevents matching picture attachments etc. */

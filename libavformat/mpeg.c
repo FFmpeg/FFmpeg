@@ -147,9 +147,12 @@ static int mpegps_read_header(AVFormatContext *s)
 static int64_t get_pts(AVIOContext *pb, int c)
 {
     uint8_t buf[5];
+    int ret;
 
     buf[0] = c < 0 ? avio_r8(pb) : c;
-    avio_read(pb, buf + 1, 4);
+    ret = avio_read(pb, buf + 1, 4);
+    if (ret < 4)
+        return AV_NOPTS_VALUE;
 
     return ff_parse_pes_pts(buf);
 }

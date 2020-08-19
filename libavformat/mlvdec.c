@@ -52,6 +52,8 @@ typedef struct {
     uint64_t pts;
 } MlvContext;
 
+static int read_close(AVFormatContext *s);
+
 static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('M','L','V','I') &&
@@ -130,23 +132,25 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             break;
         size -= 16;
         if (vst && type == MKTAG('R','A','W','I') && size >= 164) {
-            vst->codecpar->width  = avio_rl16(pb);
-            vst->codecpar->height = avio_rl16(pb);
-            ret = av_image_check_size(vst->codecpar->width, vst->codecpar->height, 0, avctx);
+            unsigned width  = avio_rl16(pb);
+            unsigned height = avio_rl16(pb);
+            unsigned bits_per_coded_sample;
+            ret = av_image_check_size(width, height, 0, avctx);
             if (ret < 0)
                 return ret;
             if (avio_rl32(pb) != 1)
                 avpriv_request_sample(avctx, "raw api version");
             avio_skip(pb, 20); // pointer, width, height, pitch, frame_size
-            vst->codecpar->bits_per_coded_sample = avio_rl32(pb);
-            if (vst->codecpar->bits_per_coded_sample < 0 ||
-                vst->codecpar->bits_per_coded_sample > (INT_MAX - 7) / (vst->codecpar->width * vst->codecpar->height)) {
+            bits_per_coded_sample = avio_rl32(pb);
+            if (bits_per_coded_sample > (INT_MAX - 7) / (width * height)) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "invalid bits_per_coded_sample %d (size: %dx%d)\n",
-                       vst->codecpar->bits_per_coded_sample,
-                       vst->codecpar->width, vst->codecpar->height);
+                       "invalid bits_per_coded_sample %u (size: %ux%u)\n",
+                       bits_per_coded_sample, width, height);
                 return AVERROR_INVALIDDATA;
             }
+            vst->codecpar->width  = width;
+            vst->codecpar->height = height;
+            vst->codecpar->bits_per_coded_sample = bits_per_coded_sample;
             avio_skip(pb, 8 + 16 + 24); // black_level, white_level, xywh, active_area, exposure_bias
             if (avio_rl32(pb) != 0x2010100) /* RGGB */
                 avpriv_request_sample(avctx, "cfa_pattern");
@@ -376,6 +380,7 @@ static int read_header(AVFormatContext *avctx)
 
     if ((vst && !vst->nb_index_entries) || (ast && !ast->nb_index_entries)) {
         av_log(avctx, AV_LOG_ERROR, "no index entries found\n");
+        read_close(avctx);
         return AVERROR_INVALIDDATA;
     }
 
@@ -411,6 +416,10 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     }
 
     pb = mlv->pb[st->index_entries[index].size];
+    if (!pb) {
+        ret = FFERROR_REDO;
+        goto next_packet;
+    }
     avio_seek(pb, st->index_entries[index].pos, SEEK_SET);
 
     avio_skip(pb, 4); // blockType
@@ -439,12 +448,14 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->stream_index = mlv->stream_index;
     pkt->pts = mlv->pts;
 
+    ret = 0;
+next_packet:
     mlv->stream_index++;
     if (mlv->stream_index == avctx->nb_streams) {
         mlv->stream_index = 0;
         mlv->pts++;
     }
-    return 0;
+    return ret;
 }
 
 static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp, int flags)
