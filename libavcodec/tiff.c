@@ -709,7 +709,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
             if (is_dng) {
                 int is_u16, pixel_size_bytes, pixel_size_bits, elements;
 
-                is_u16 = (s->bpp > 8);
+                is_u16 = (s->bpp / s->bppcount > 8);
                 pixel_size_bits = (is_u16 ? 16 : 8);
                 pixel_size_bytes = (is_u16 ? sizeof(uint16_t) : sizeof(uint8_t));
 
