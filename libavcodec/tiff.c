@@ -73,6 +73,7 @@ typedef struct TiffContext {
     int fill_order;
     uint32_t res[4];
     int is_thumbnail;
+    unsigned last_tag;
 
     int is_bayer;
     uint8_t pattern[4];
@@ -933,6 +934,12 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     if (ret < 0) {
         goto end;
     }
+    if (tag <= s->last_tag)
+        return AVERROR_INVALIDDATA;
+
+    // We ignore TIFF_STRIP_SIZE as it is sometimes in the logic but wrong order around TIFF_STRIP_OFFS
+    if (tag != TIFF_STRIP_SIZE)
+        s->last_tag = tag;
 
     off = bytestream2_tell(&s->gb);
     if (count == 1) {
@@ -1430,6 +1437,7 @@ again:
     s->is_bayer    = 0;
     s->cur_page    = 0;
     s->tiff_type   = TIFF_TYPE_TIFF;
+    s->last_tag    = 0;
     free_geotags(s);
 
     // Reset these offsets so we can tell if they were set this frame
