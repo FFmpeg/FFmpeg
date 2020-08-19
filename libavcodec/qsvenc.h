@@ -137,9 +137,11 @@ typedef struct QSVEncContext {
     mfxExtHEVCTiles exthevctiles;
     mfxExtVP9Param  extvp9param;
 
+#if QSV_HAVE_OPAQUE
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
+#endif
 
     mfxExtVideoSignalInfo extvsi;
 

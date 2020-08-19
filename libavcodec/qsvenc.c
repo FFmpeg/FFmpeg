@@ -1176,6 +1176,7 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
     return 0;
 }
 
+#if QSV_HAVE_OPAQUE
 static int qsv_init_opaque_alloc(AVCodecContext *avctx, QSVEncContext *q)
 {
     AVQSVContext *qsv = avctx->hwaccel_context;
@@ -1212,6 +1213,7 @@ static int qsv_init_opaque_alloc(AVCodecContext *avctx, QSVEncContext *q)
 
     return 0;
 }
+#endif
 
 static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
 {
@@ -1227,7 +1229,11 @@ static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
 
         ret = ff_qsv_init_session_frames(avctx, &q->internal_qs.session,
                                          &q->frames_ctx, q->load_plugins,
+#if QSV_HAVE_OPAQUE
                                          q->param.IOPattern == MFX_IOPATTERN_IN_OPAQUE_MEMORY,
+#else
+                                         0,
+#endif
                                          MFX_GPUCOPY_OFF);
         if (ret < 0) {
             av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
@@ -1279,11 +1285,17 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
 
         if (!iopattern) {
+#if QSV_HAVE_OPAQUE
             if (frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME)
                 iopattern = MFX_IOPATTERN_IN_OPAQUE_MEMORY;
             else if (frames_hwctx->frame_type &
                      (MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET | MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET))
                 iopattern = MFX_IOPATTERN_IN_VIDEO_MEMORY;
+#else
+            if (frames_hwctx->frame_type &
+                (MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET | MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET))
+                iopattern = MFX_IOPATTERN_IN_VIDEO_MEMORY;
+#endif
         }
     }
 
@@ -1357,9 +1369,16 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
                                   "Error querying (IOSurf) the encoding parameters");
 
     if (opaque_alloc) {
+#if QSV_HAVE_OPAQUE
         ret = qsv_init_opaque_alloc(avctx, q);
         if (ret < 0)
             return ret;
+#else
+        av_log(avctx, AV_LOG_ERROR, "User is requesting to allocate OPAQUE surface, "
+               "however libmfx %d.%d doesn't support OPAQUE memory.\n",
+               q->ver.Major, q->ver.Minor);
+        return AVERROR_UNKNOWN;
+#endif
     }
 
     ret = MFXVideoENCODE_Init(q->session, &q->param);
@@ -1913,8 +1932,10 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
         av_fifo_freep2(&q->async_fifo);
     }
 
+#if QSV_HAVE_OPAQUE
     av_freep(&q->opaque_surfaces);
     av_buffer_unref(&q->opaque_alloc_buf);
+#endif
 
     av_freep(&q->extparam);
 

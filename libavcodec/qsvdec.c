@@ -187,7 +187,11 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
 
         ret = ff_qsv_init_session_frames(avctx, &q->internal_qs.session,
                                          &q->frames_ctx, q->load_plugins,
+#if QSV_HAVE_OPAQUE
                                          q->iopattern == MFX_IOPATTERN_OUT_OPAQUE_MEMORY,
+#else
+                                         0,
+#endif
                                          q->gpu_copy);
         if (ret < 0) {
             av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
@@ -300,10 +304,15 @@ static int qsv_decode_preinit(AVCodecContext *avctx, QSVContext *q, enum AVPixel
         AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
 
         if (!iopattern) {
+#if QSV_HAVE_OPAQUE
             if (frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME)
                 iopattern = MFX_IOPATTERN_OUT_OPAQUE_MEMORY;
             else if (frames_hwctx->frame_type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
                 iopattern = MFX_IOPATTERN_OUT_VIDEO_MEMORY;
+#else
+            if (frames_hwctx->frame_type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
+                iopattern = MFX_IOPATTERN_OUT_VIDEO_MEMORY;
+#endif
         }
     }
 

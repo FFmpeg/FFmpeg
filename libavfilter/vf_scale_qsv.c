@@ -89,7 +89,9 @@ typedef struct QSVScaleContext {
     mfxFrameSurface1 **surface_ptrs_out;
     int             nb_surface_ptrs_out;
 
+#if QSV_HAVE_OPAQUE
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
+#endif
 
     mfxExtVPPScaling         scale_conf;
     int                      mode;
@@ -268,7 +270,7 @@ static int init_out_session(AVFilterContext *ctx)
     AVQSVFramesContext *out_frames_hwctx = out_frames_ctx->hwctx;
     AVQSVDeviceContext     *device_hwctx = in_frames_ctx->device_ctx->hwctx;
 
-    int opaque = !!(in_frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
+    int opaque = 0;
 
     mfxHDL handle = NULL;
     mfxHandleType handle_type;
@@ -278,6 +280,9 @@ static int init_out_session(AVFilterContext *ctx)
     mfxStatus err;
     int i;
 
+#if QSV_HAVE_OPAQUE
+    opaque = !!(in_frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
+#endif
     s->num_ext_buf = 0;
 
     /* extract the properties of the "master" session given to us */
@@ -330,38 +335,7 @@ static int init_out_session(AVFilterContext *ctx)
 
     memset(&par, 0, sizeof(par));
 
-    if (opaque) {
-        s->surface_ptrs_in = av_calloc(in_frames_hwctx->nb_surfaces,
-                                       sizeof(*s->surface_ptrs_in));
-        if (!s->surface_ptrs_in)
-            return AVERROR(ENOMEM);
-        for (i = 0; i < in_frames_hwctx->nb_surfaces; i++)
-            s->surface_ptrs_in[i] = in_frames_hwctx->surfaces + i;
-        s->nb_surface_ptrs_in = in_frames_hwctx->nb_surfaces;
-
-        s->surface_ptrs_out = av_calloc(out_frames_hwctx->nb_surfaces,
-                                        sizeof(*s->surface_ptrs_out));
-        if (!s->surface_ptrs_out)
-            return AVERROR(ENOMEM);
-        for (i = 0; i < out_frames_hwctx->nb_surfaces; i++)
-            s->surface_ptrs_out[i] = out_frames_hwctx->surfaces + i;
-        s->nb_surface_ptrs_out = out_frames_hwctx->nb_surfaces;
-
-        s->opaque_alloc.In.Surfaces   = s->surface_ptrs_in;
-        s->opaque_alloc.In.NumSurface = s->nb_surface_ptrs_in;
-        s->opaque_alloc.In.Type       = in_frames_hwctx->frame_type;
-
-        s->opaque_alloc.Out.Surfaces   = s->surface_ptrs_out;
-        s->opaque_alloc.Out.NumSurface = s->nb_surface_ptrs_out;
-        s->opaque_alloc.Out.Type       = out_frames_hwctx->frame_type;
-
-        s->opaque_alloc.Header.BufferId = MFX_EXTBUFF_OPAQUE_SURFACE_ALLOCATION;
-        s->opaque_alloc.Header.BufferSz = sizeof(s->opaque_alloc);
-
-        s->ext_buffers[s->num_ext_buf++] = (mfxExtBuffer*)&s->opaque_alloc;
-
-        par.IOPattern = MFX_IOPATTERN_IN_OPAQUE_MEMORY | MFX_IOPATTERN_OUT_OPAQUE_MEMORY;
-    } else {
+    if (!opaque) {
         mfxFrameAllocator frame_allocator = {
             .pthis  = ctx,
             .Alloc  = frame_alloc,
@@ -393,6 +367,40 @@ static int init_out_session(AVFilterContext *ctx)
 
         par.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY | MFX_IOPATTERN_OUT_VIDEO_MEMORY;
     }
+#if QSV_HAVE_OPAQUE
+    else {
+        s->surface_ptrs_in = av_calloc(in_frames_hwctx->nb_surfaces,
+                                       sizeof(*s->surface_ptrs_in));
+        if (!s->surface_ptrs_in)
+            return AVERROR(ENOMEM);
+        for (i = 0; i < in_frames_hwctx->nb_surfaces; i++)
+            s->surface_ptrs_in[i] = in_frames_hwctx->surfaces + i;
+        s->nb_surface_ptrs_in = in_frames_hwctx->nb_surfaces;
+
+        s->surface_ptrs_out = av_calloc(out_frames_hwctx->nb_surfaces,
+                                        sizeof(*s->surface_ptrs_out));
+        if (!s->surface_ptrs_out)
+            return AVERROR(ENOMEM);
+        for (i = 0; i < out_frames_hwctx->nb_surfaces; i++)
+            s->surface_ptrs_out[i] = out_frames_hwctx->surfaces + i;
+        s->nb_surface_ptrs_out = out_frames_hwctx->nb_surfaces;
+
+        s->opaque_alloc.In.Surfaces   = s->surface_ptrs_in;
+        s->opaque_alloc.In.NumSurface = s->nb_surface_ptrs_in;
+        s->opaque_alloc.In.Type       = in_frames_hwctx->frame_type;
+
+        s->opaque_alloc.Out.Surfaces   = s->surface_ptrs_out;
+        s->opaque_alloc.Out.NumSurface = s->nb_surface_ptrs_out;
+        s->opaque_alloc.Out.Type       = out_frames_hwctx->frame_type;
+
+        s->opaque_alloc.Header.BufferId = MFX_EXTBUFF_OPAQUE_SURFACE_ALLOCATION;
+        s->opaque_alloc.Header.BufferSz = sizeof(s->opaque_alloc);
+
+        s->ext_buffers[s->num_ext_buf++] = (mfxExtBuffer*)&s->opaque_alloc;
+
+        par.IOPattern = MFX_IOPATTERN_IN_OPAQUE_MEMORY | MFX_IOPATTERN_OUT_OPAQUE_MEMORY;
+    }
+#endif
 
     memset(&s->scale_conf, 0, sizeof(mfxExtVPPScaling));
     s->scale_conf.Header.BufferId     = MFX_EXTBUFF_VPP_SCALING;
