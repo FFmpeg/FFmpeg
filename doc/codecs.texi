@@ -1110,6 +1110,12 @@ BT.2020 NCL
 BT.2020 CL
 @item smpte2085
 SMPTE 2085
+@item chroma-derived-nc
+Chroma-derived NCL
+@item chroma-derived-c
+Chroma-derived CL
+@item ictcp
+ICtCp
 @end table
 
 @item color_range @var{integer} (@emph{decoding/encoding,video})
