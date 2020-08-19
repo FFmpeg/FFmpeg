@@ -17806,6 +17806,33 @@ ffmpeg -i INPUT -vf "shuffleframes=9 1 2 3 4 5 6 7 8 0" OUTPUT
 @end example
 @end itemize
 
+@section shufflepixels
+
+Reorder pixels in video frames.
+
+This filter accepts the following options:
+
+@table @option
+@item direction, d
+Set shuffle direction. Can be forward or inverse direction.
+Default direction is forward.
+
+@item mode, m
+Set shuffle mode. Can be horizontal, vertical or block mode.
+
+@item width, w
+@item height, h
+Set shuffle block_size. In case of horizontal shuffle mode only width
+part of size is used, and in case of vertical shuffle mode only height
+part of size is used.
+
+@item seed, s
+Set random seed used with shuffling pixels. Mainly useful to set to be able
+to reverse filtering process to get original input.
+For example, to reverse forward shuffle you need to use same parameters
+and exact same seed and to set direction to inverse.
+@end table
+
 @section shuffleplanes
 
 Reorder and/or duplicate video planes.

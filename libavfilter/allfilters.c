@@ -385,6 +385,7 @@ extern AVFilter ff_vf_sharpness_vaapi;
 extern AVFilter ff_vf_showinfo;
 extern AVFilter ff_vf_showpalette;
 extern AVFilter ff_vf_shuffleframes;
+extern AVFilter ff_vf_shufflepixels;
 extern AVFilter ff_vf_shuffleplanes;
 extern AVFilter ff_vf_sidedata;
 extern AVFilter ff_vf_signalstats;

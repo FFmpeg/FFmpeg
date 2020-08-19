@@ -404,6 +404,7 @@ OBJS-$(CONFIG_SHARPNESS_VAAPI_FILTER)        += vf_misc_vaapi.o vaapi_vpp.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
 OBJS-$(CONFIG_SHOWPALETTE_FILTER)            += vf_showpalette.o
 OBJS-$(CONFIG_SHUFFLEFRAMES_FILTER)          += vf_shuffleframes.o
+OBJS-$(CONFIG_SHUFFLEPIXELS_FILTER)          += vf_shufflepixels.o
 OBJS-$(CONFIG_SHUFFLEPLANES_FILTER)          += vf_shuffleplanes.o
 OBJS-$(CONFIG_SIDEDATA_FILTER)               += f_sidedata.o
 OBJS-$(CONFIG_SIGNALSTATS_FILTER)            += vf_signalstats.o
