@@ -919,6 +919,11 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
 
     /* Copy the outputted tile's pixels from 'jpgframe' to 'frame' (final buffer) */
 
+    if (s->jpgframe->width  != s->avctx_mjpeg->width  ||
+        s->jpgframe->height != s->avctx_mjpeg->height ||
+        s->jpgframe->format != s->avctx_mjpeg->pix_fmt)
+        return AVERROR_INVALIDDATA;
+
     /* See dng_blit for explanation */
     if (s->avctx_mjpeg->width  == w * 2 &&
         s->avctx_mjpeg->height == h / 2 &&
