@@ -289,7 +289,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         }
         permute(ctx->qmat_chroma, ctx->prodsp.idct_permutation, ptr);
     } else {
-        memset(ctx->qmat_chroma, 4, 64);
+        memcpy(ctx->qmat_chroma, ctx->qmat_luma, 64);
     }
 
     return hdr_size;
