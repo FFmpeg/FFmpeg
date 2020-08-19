@@ -64,6 +64,7 @@ typedef struct TiffContext {
     int predictor;
     int fill_order;
     uint32_t res[4];
+    unsigned last_tag;
 
     int strips, rps, sstype;
     int sot;
@@ -789,6 +790,12 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     if (ret < 0) {
         goto end;
     }
+    if (tag <= s->last_tag)
+        return AVERROR_INVALIDDATA;
+
+    // We ignore TIFF_STRIP_SIZE as it is sometimes in the logic but wrong order around TIFF_STRIP_OFFS
+    if (tag != TIFF_STRIP_SIZE)
+        s->last_tag = tag;
 
     off = bytestream2_tell(&s->gb);
     if (count == 1) {
@@ -1221,6 +1228,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->photometric = TIFF_PHOTOMETRIC_NONE;
     s->compr       = TIFF_RAW;
     s->fill_order  = 0;
+    s->last_tag    = 0;
     free_geotags(s);
 
     // Reset these offsets so we can tell if they were set this frame
