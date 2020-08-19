@@ -715,7 +715,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     if (!strcmp(buffer, "onCaptionInfo"))
         return TYPE_ONCAPTIONINFO;
 
-    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) {
+    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint") && strcmp(buffer, "|RtmpSampleAccess")) {
         av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
         return TYPE_UNKNOWN;
     }
