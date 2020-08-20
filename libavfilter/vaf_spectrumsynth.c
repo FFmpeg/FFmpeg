@@ -34,6 +34,7 @@
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
+#include "filters.h"
 #include "internal.h"
 #include "window_func.h"
 
@@ -219,25 +220,6 @@ static int config_output(AVFilterLink *outlink)
     }
     s->factor = (factor / s->win_size) / FFMAX(1 / (1 - s->overlap) - 1, 1);
 
-    return 0;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    SpectrumSynthContext *s = ctx->priv;
-    int ret;
-
-    if (!s->magnitude) {
-        ret = ff_request_frame(ctx->inputs[0]);
-        if (ret < 0)
-            return ret;
-    }
-    if (!s->phase) {
-        ret = ff_request_frame(ctx->inputs[1]);
-        if (ret < 0)
-            return ret;
-    }
     return 0;
 }
 
@@ -470,22 +452,43 @@ static int try_push_frames(AVFilterContext *ctx)
     return ret;
 }
 
-static int filter_frame_magnitude(AVFilterLink *inlink, AVFrame *magnitude)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = inlink->dst;
     SpectrumSynthContext *s = ctx->priv;
+    AVFrame **staging[2] = { &s->magnitude, &s->phase };
+    int64_t pts;
+    int i, ret;
 
-    s->magnitude = magnitude;
-    return try_push_frames(ctx);
-}
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
 
-static int filter_frame_phase(AVFilterLink *inlink, AVFrame *phase)
-{
-    AVFilterContext *ctx = inlink->dst;
-    SpectrumSynthContext *s = ctx->priv;
+    for (i = 0; i < 2; i++) {
+        if (*staging[i])
+            continue;
+        ret = ff_inlink_consume_frame(ctx->inputs[i], staging[i]);
+        if (ret < 0)
+            return ret;
+        if (ret) {
+            ff_filter_set_ready(ctx, 10);
+            return try_push_frames(ctx);
+        }
+    }
 
-    s->phase = phase;
-    return try_push_frames(ctx);
+    for (i = 0; i < 2; i++) {
+        if (ff_inlink_acknowledge_status(ctx->inputs[i], &ret, &pts)) {
+            ff_outlink_set_status(ctx->outputs[0], ret, pts);
+            ff_inlink_set_status(ctx->inputs[1 - i], ret);
+            return 0;
+        }
+    }
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+        for (i = 0; i < 2; i++) {
+            if (!*staging[i])
+                ff_inlink_request_frame(ctx->inputs[i]);
+        }
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -509,14 +512,10 @@ static const AVFilterPad spectrumsynth_inputs[] = {
     {
         .name         = "magnitude",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_magnitude,
-        .needs_fifo   = 1,
     },
     {
         .name         = "phase",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_phase,
-        .needs_fifo   = 1,
     },
     { NULL }
 };
@@ -526,7 +525,6 @@ static const AVFilterPad spectrumsynth_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -536,6 +534,7 @@ AVFilter ff_vaf_spectrumsynth = {
     .description   = NULL_IF_CONFIG_SMALL("Convert input spectrum videos to audio output."),
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .priv_size     = sizeof(SpectrumSynthContext),
     .inputs        = spectrumsynth_inputs,
     .outputs       = spectrumsynth_outputs,

@@ -118,14 +118,6 @@ struct AVFilterPad {
     int (*config_props)(AVFilterLink *link);
 
     /**
-     * The filter expects a fifo to be inserted on its input link,
-     * typically because it has a delay.
-     *
-     * input pads only.
-     */
-    int needs_fifo;
-
-    /**
      * The filter expects writable frames from its input link,
      * duplicating data buffers if needed.
      *

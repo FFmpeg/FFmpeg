@@ -37,6 +37,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "packet_internal.h"
 
 typedef struct LibkvazaarContext {
     const AVClass *class;
@@ -170,6 +171,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
     kvz_data_chunk *data_out = NULL;
     uint32_t len_out = 0;
     int retval = 0;
+    int pict_type;
 
     *got_packet_ptr = 0;
 
@@ -256,6 +258,34 @@ static int libkvazaar_encode(AVCodecContext *avctx,
             frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
             avpkt->flags |= AV_PKT_FLAG_KEY;
         }
+
+        switch (frame_info.slice_type) {
+        case KVZ_SLICE_I:
+            pict_type = AV_PICTURE_TYPE_I;
+            break;
+        case KVZ_SLICE_P:
+            pict_type = AV_PICTURE_TYPE_P;
+            break;
+        case KVZ_SLICE_B:
+            pict_type = AV_PICTURE_TYPE_B;
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Unknown picture type encountered.\n");
+            return AVERROR_EXTERNAL;
+        }
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+        avctx->coded_frame->pict_type = pict_type;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+        ff_side_data_set_encoder_stats(avpkt, frame_info.qp * FF_QP2LAMBDA, NULL, 0, pict_type);
+
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+        avctx->coded_frame->quality = frame_info.qp * FF_QP2LAMBDA;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         *got_packet_ptr = 1;
     }

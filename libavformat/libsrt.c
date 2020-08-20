@@ -53,6 +53,7 @@ enum SRTMode {
 typedef struct SRTContext {
     const AVClass *class;
     int fd;
+    int listen_fd;
     int eid;
     int64_t rw_timeout;
     int64_t listen_timeout;
@@ -362,7 +363,7 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
 static int libsrt_setup(URLContext *h, const char *uri, int flags)
 {
     struct addrinfo hints = { 0 }, *ai, *cur_ai;
-    int port, fd = -1;
+    int port, fd = -1, listen_fd = -1;
     SRTContext *s = h->priv_data;
     const char *p;
     char buf[256];
@@ -439,6 +440,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
         // multi-client
         if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, s->listen_timeout)) < 0)
             goto fail1;
+        listen_fd = fd;
         fd = ret;
     } else {
         if (s->mode == SRT_MODE_RENDEZVOUS) {
@@ -471,6 +473,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
 
     h->is_streamed = 1;
     s->fd = fd;
+    s->listen_fd = listen_fd;
 
     freeaddrinfo(ai);
     return 0;
@@ -481,12 +484,16 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
         cur_ai = cur_ai->ai_next;
         if (fd >= 0)
             srt_close(fd);
+        if (listen_fd >= 0)
+            srt_close(listen_fd);
         ret = 0;
         goto restart;
     }
  fail1:
     if (fd >= 0)
         srt_close(fd);
+    if (listen_fd >= 0)
+        srt_close(listen_fd);
     freeaddrinfo(ai);
     return ret;
 }
@@ -675,6 +682,9 @@ static int libsrt_close(URLContext *h)
     SRTContext *s = h->priv_data;
 
     srt_close(s->fd);
+
+    if (s->listen_fd >= 0)
+        srt_close(s->listen_fd);
 
     srt_epoll_release(s->eid);
 

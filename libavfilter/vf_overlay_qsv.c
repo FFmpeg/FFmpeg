@@ -398,13 +398,11 @@ static const AVFilterPad overlay_qsv_inputs[] = {
         .name          = "main",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_main_input,
-        .needs_fifo    = 1,
     },
     {
         .name          = "overlay",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_overlay_input,
-        .needs_fifo    = 1,
     },
     { NULL }
 };

@@ -34,6 +34,7 @@
 #include <stdatomic.h>
 
 #include "avcodec.h"
+#include "decode.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
