@@ -1160,7 +1160,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     if (st->codecpar->color_range != AVCOL_RANGE_UNSPECIFIED) {
         int black = 0,
             white = (1<<sc->component_depth) - 1,
-            color = (1<<sc->component_depth) - 1;
+            color = (1<<sc->component_depth);
         if (st->codecpar->color_range == AVCOL_RANGE_MPEG) {
             black = 1   << (sc->component_depth - 4);
             white = 235 << (sc->component_depth - 8);
