@@ -21,10 +21,10 @@
 
 #include "parser.h"
 
-#define SLICE_MAX_START_CODE    0x000001af
+#define AVS2_SLICE_MAX_START_CODE 0x000001AF
 
-#define ISPIC(x)  ((x) == 0xB3 || (x) == 0xB6)
-#define ISUNIT(x) ((x) == 0xB0 || (x) == 0xB1 || (x) == 0xB2 || ISPIC(x))
+#define AVS2_ISPIC(x)  ((x) == 0xB3 || (x) == 0xB6)
+#define AVS2_ISUNIT(x) ((x) == 0xB0 || (x) == 0xB1 || (x) == 0xB2 || AVS2_ISPIC(x))
 
 static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 {
@@ -35,7 +35,7 @@ static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_siz
     if (!pic_found) {
         for (; cur < buf_size; ++cur) {
             state = (state<<8) | buf[cur];
-            if (ISUNIT(buf[cur])){
+            if (AVS2_ISUNIT(buf[cur])){
                 ++cur;
                 pic_found = 1;
                 break;
@@ -48,7 +48,7 @@ static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_siz
             return END_NOT_FOUND;
         for (; cur < buf_size; ++cur) {
             state = (state << 8) | buf[cur];
-            if ((state & 0xFFFFFF00) == 0x100 && state > SLICE_MAX_START_CODE) {
+            if ((state & 0xFFFFFF00) == 0x100 && state > AVS2_SLICE_MAX_START_CODE) {
                 pc->frame_start_found = 0;
                 pc->state = -1;
                 return cur - 3;
