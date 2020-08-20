@@ -199,6 +199,9 @@ typedef struct MXFDescriptor {
     int bits_per_sample;
     int64_t duration; /* ContainerDuration optional property */
     unsigned int component_depth;
+    unsigned int black_ref_level;
+    unsigned int white_ref_level;
+    unsigned int color_range;
     unsigned int horiz_subsampling;
     unsigned int vert_subsampling;
     UID *sub_descriptors_refs;
@@ -1222,6 +1225,15 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     case 0x3302:
         descriptor->horiz_subsampling = avio_rb32(pb);
         break;
+    case 0x3304:
+        descriptor->black_ref_level = avio_rb32(pb);
+        break;
+    case 0x3305:
+        descriptor->white_ref_level = avio_rb32(pb);
+        break;
+    case 0x3306:
+        descriptor->color_range = avio_rb32(pb);
+        break;
     case 0x3308:
         descriptor->vert_subsampling = avio_rb32(pb);
         break;
@@ -2157,6 +2169,30 @@ static int mxf_add_metadata_stream(MXFContext *mxf, MXFTrack *track)
     return 0;
 }
 
+static enum AVColorRange mxf_get_color_range(MXFContext *mxf, MXFDescriptor *descriptor)
+{
+    if (descriptor->black_ref_level || descriptor->white_ref_level || descriptor->color_range) {
+        /* CDCI range metadata */
+        if (!descriptor->component_depth)
+            return AVCOL_RANGE_UNSPECIFIED;
+        if (descriptor->black_ref_level == 0 &&
+            descriptor->white_ref_level == ((1<<descriptor->component_depth) - 1) &&
+            (descriptor->color_range    == (1<<descriptor->component_depth) ||
+             descriptor->color_range    == ((1<<descriptor->component_depth) - 1)))
+            return AVCOL_RANGE_JPEG;
+        if (descriptor->component_depth >= 8 &&
+            descriptor->black_ref_level == (1  <<(descriptor->component_depth - 4)) &&
+            descriptor->white_ref_level == (235<<(descriptor->component_depth - 8)) &&
+            descriptor->color_range     == ((14<<(descriptor->component_depth - 4)) + 1))
+            return AVCOL_RANGE_MPEG;
+        avpriv_request_sample(mxf->fc, "Unrecognized CDCI color range (color diff range %d, b %d, w %d, depth %d)",
+                              descriptor->color_range, descriptor->black_ref_level,
+                              descriptor->white_ref_level, descriptor->component_depth);
+    }
+
+    return AVCOL_RANGE_UNSPECIFIED;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
@@ -2492,6 +2528,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
             if (descriptor->aspect_ratio.num && descriptor->aspect_ratio.den)
                 st->display_aspect_ratio = descriptor->aspect_ratio;
+            st->codecpar->color_range     = mxf_get_color_range(mxf, descriptor);
             st->codecpar->color_primaries = mxf_get_codec_ul(ff_mxf_color_primaries_uls, &descriptor->color_primaries_ul)->id;
             st->codecpar->color_trc       = mxf_get_codec_ul(ff_mxf_color_trc_uls, &descriptor->color_trc_ul)->id;
             st->codecpar->color_space     = mxf_get_codec_ul(ff_mxf_color_space_uls, &descriptor->color_space_ul)->id;
