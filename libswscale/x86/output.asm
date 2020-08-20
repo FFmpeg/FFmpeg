@@ -543,7 +543,9 @@ nv12_inner_%1:
     RET
 %endmacro
 
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 yuv2nv12cX_fn yuv2nv12
 yuv2nv12cX_fn yuv2nv21
+%endif
 %endif ; ARCH_X86_64
