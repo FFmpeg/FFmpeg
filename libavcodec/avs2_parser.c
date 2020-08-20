@@ -34,9 +34,9 @@ static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_siz
 
     if (!pic_found) {
         for (; cur < buf_size; ++cur) {
-            state = (state<<8) | buf[cur];
+            state = (state << 8) | buf[cur];
             if (AVS2_ISUNIT(buf[cur])){
-                ++cur;
+                cur++;
                 pic_found = 1;
                 break;
             }
@@ -46,7 +46,7 @@ static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_siz
     if (pic_found) {
         if (!buf_size)
             return END_NOT_FOUND;
-        for (; cur < buf_size; ++cur) {
+        for (; cur < buf_size; cur++) {
             state = (state << 8) | buf[cur];
             if ((state & 0xFFFFFF00) == 0x100 && state > AVS2_SLICE_MAX_START_CODE) {
                 pc->frame_start_found = 0;
