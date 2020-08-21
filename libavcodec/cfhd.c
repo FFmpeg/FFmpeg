@@ -1256,7 +1256,7 @@ finish:
 
     if (s->transform_type == 2 && s->sample_type == 1) {
         int16_t *low, *high, *dst;
-        int output_stride, lowpass_height, lowpass_width, highpass_stride;
+        int output_stride, lowpass_height, lowpass_width;
         ptrdiff_t dst_linesize;
 
         for (plane = 0; plane < s->planes; plane++) {
@@ -1272,7 +1272,6 @@ finish:
             lowpass_height  = s->plane[plane].band[4][1].height;
             output_stride   = s->plane[plane].band[4][1].a_width;
             lowpass_width   = s->plane[plane].band[4][1].width;
-            highpass_stride = s->plane[plane].band[4][1].stride;
 
             if (s->progressive) {
                 dst = (int16_t *)pic->data[act_plane];
