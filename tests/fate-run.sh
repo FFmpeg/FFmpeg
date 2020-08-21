@@ -86,15 +86,15 @@ runecho(){
 }
 
 probefmt(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 "$@"
 }
 
 probeaudiostream(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout "$@"
 }
 
 probetags(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries format_tags -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries format_tags "$@"
 }
 
 runlocal(){
@@ -103,24 +103,24 @@ runlocal(){
 }
 
 probeframes(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_frames -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_frames "$@"
 }
 
 probechapters(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_chapters -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_chapters "$@"
 }
 
 probegaplessinfo(){
     filename="$1"
     shift
-    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -show_entries format=start_time,duration:stream=index,start_pts,duration_ts -v 0 "$filename" "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -show_entries format=start_time,duration:stream=index,start_pts,duration_ts "$filename" "$@"
     pktfile1="${outdir}/${test}.pkts"
     framefile1="${outdir}/${test}.frames"
     cleanfiles="$cleanfiles $pktfile1 $framefile1"
-    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -of compact -count_packets -show_entries packet=pts,dts,duration,flags:stream=nb_read_packets -v 0 "$filename" "$@" > "$pktfile1"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -of compact -count_packets -show_entries packet=pts,dts,duration,flags:stream=nb_read_packets "$filename" "$@" > "$pktfile1"
     head -n 8 "$pktfile1"
     tail -n 9 "$pktfile1"
-    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -of compact -count_frames -show_entries frame=pkt_pts,pkt_dts,best_effort_timestamp,pkt_duration,nb_samples:stream=nb_read_frames -v 0 "$filename" "$@" > "$framefile1"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -of compact -count_frames -show_entries frame=pkt_pts,pkt_dts,best_effort_timestamp,pkt_duration,nb_samples:stream=nb_read_frames "$filename" "$@" > "$framefile1"
     head -n 8 "$framefile1"
     tail -n 9 "$framefile1"
 }
@@ -213,7 +213,7 @@ enc_dec(){
     do_md5sum $decfile
     tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
     test -z $ffprobe_opts || \
-        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts $tencfile || return
 }
 
 transcode(){
@@ -234,7 +234,7 @@ transcode(){
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
     test -z $ffprobe_opts || \
-        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts $tencfile || return
 }
 
 stream_remux(){
@@ -253,7 +253,7 @@ stream_remux(){
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
     test -z $ffprobe_opts || \
-        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts -v 0 $tencfile || return
+        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts $tencfile || return
 }
 
 # FIXME: There is a certain duplication between the avconv-related helper
@@ -484,10 +484,10 @@ concat(){
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
     if [ "$mode" = "md5" ]; then
-        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -safe 0 $extra_args $(target_path $concatfile) | tr -d '\r' > $packetfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -safe 0 $extra_args $(target_path $concatfile) | tr -d '\r' > $packetfile
         do_md5sum $packetfile
     else
-        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -safe 0 $extra_args $(target_path $concatfile)
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -of compact=p=0:nk=1 -safe 0 $extra_args $(target_path $concatfile)
     fi
 }
 
