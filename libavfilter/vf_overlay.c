@@ -595,8 +595,8 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
         dap += (1 << vsub) * dst->linesize[3] / bytes;                                                     \
     }                                                                                                      \
 }
-DEFINE_BLEND_PLANE(8, 8);
-DEFINE_BLEND_PLANE(16, 10);
+DEFINE_BLEND_PLANE(8, 8)
+DEFINE_BLEND_PLANE(16, 10)
 
 #define DEFINE_ALPHA_COMPOSITE(depth, nbits)                                                               \
 static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, const AVFrame *dst,         \
@@ -647,8 +647,8 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
         sa += src->linesize[3] / bytes;                                                                    \
     }                                                                                                      \
 }
-DEFINE_ALPHA_COMPOSITE(8, 8);
-DEFINE_ALPHA_COMPOSITE(16, 10);
+DEFINE_ALPHA_COMPOSITE(8, 8)
+DEFINE_ALPHA_COMPOSITE(16, 10)
 
 #define DEFINE_BLEND_SLICE_YUV(depth, nbits)                                                               \
 static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterContext *ctx,                 \
@@ -679,8 +679,8 @@ static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterCon
         alpha_composite_##depth##_##nbits##bits(src, dst, src_w, src_h, dst_w, dst_h, x, y,                \
                                                 jobnr, nb_jobs);                                           \
 }
-DEFINE_BLEND_SLICE_YUV(8, 8);
-DEFINE_BLEND_SLICE_YUV(16, 10);
+DEFINE_BLEND_SLICE_YUV(8, 8)
+DEFINE_BLEND_SLICE_YUV(16, 10)
 
 static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
                                                     AVFrame *dst, const AVFrame *src,
