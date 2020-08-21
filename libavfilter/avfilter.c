@@ -857,16 +857,16 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
                 return ret;
             }
         } else {
-        av_dict_set(options, key, value, 0);
-        if ((ret = av_opt_set(ctx->priv, key, value, AV_OPT_SEARCH_CHILDREN)) < 0) {
-            if (!av_opt_find(ctx->priv, key, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
-            if (ret == AVERROR_OPTION_NOT_FOUND)
-                av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
-            av_free(value);
-            av_free(parsed_key);
-            return ret;
+            av_dict_set(options, key, value, 0);
+            if ((ret = av_opt_set(ctx->priv, key, value, AV_OPT_SEARCH_CHILDREN)) < 0) {
+                if (!av_opt_find(ctx->priv, key, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
+                    if (ret == AVERROR_OPTION_NOT_FOUND)
+                        av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
+                    av_free(value);
+                    av_free(parsed_key);
+                    return ret;
+                }
             }
-        }
         }
 
         av_free(value);
