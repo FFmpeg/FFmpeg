@@ -91,7 +91,7 @@ int dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_operan
         output_height = ceil(height / (kernel_strides * 1.0));
         output_width = ceil(width / (kernel_strides * 1.0));
     } else {
-        assert(avgpool_params->padding_method = VALID);
+        av_assert0(avgpool_params->padding_method == VALID);
         height_end = height - avgpool_params->kernel_size + 1;
         width_end = width - avgpool_params->kernel_size + 1;
         height_radius = 0;
