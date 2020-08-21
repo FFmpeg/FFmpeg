@@ -643,8 +643,7 @@ post_skip :
         if (update_block_stats(s, &bi, &src_pixels[block_offset],
                                min_color, max_color,
                                total_rgb, &pixel_count, avg_color, 1)) {
-            int first_block_offset;
-            first_block_offset = prev_block_offset = block_offset;
+            prev_block_offset = block_offset;
 
             n_blocks = 1;
 
