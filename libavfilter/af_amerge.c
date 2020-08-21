@@ -69,6 +69,14 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
+    static const enum AVSampleFormat packed_sample_fmts[] = {
+        AV_SAMPLE_FMT_U8,
+        AV_SAMPLE_FMT_S16,
+        AV_SAMPLE_FMT_S32,
+        AV_SAMPLE_FMT_FLT,
+        AV_SAMPLE_FMT_DBL,
+        AV_SAMPLE_FMT_NONE
+    };
     AMergeContext *s = ctx->priv;
     int64_t inlayout[SWR_CH_MAX], outlayout = 0;
     AVFilterFormats *formats;
@@ -124,7 +132,7 @@ static int query_formats(AVFilterContext *ctx)
                 if ((inlayout[i] >> c) & 1)
                     *(route[i]++) = out_ch_number++;
     }
-    formats = ff_make_format_list(ff_packed_sample_fmts_array);
+    formats = ff_make_format_list(packed_sample_fmts);
     if ((ret = ff_set_common_formats(ctx, formats)) < 0)
         return ret;
     for (i = 0; i < s->nb_inputs; i++) {

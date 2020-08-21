@@ -25,24 +25,6 @@
 #include "avfilter.h"
 #include "internal.h"
 
-static const enum AVSampleFormat ff_packed_sample_fmts_array[] = {
-    AV_SAMPLE_FMT_U8,
-    AV_SAMPLE_FMT_S16,
-    AV_SAMPLE_FMT_S32,
-    AV_SAMPLE_FMT_FLT,
-    AV_SAMPLE_FMT_DBL,
-    AV_SAMPLE_FMT_NONE
-};
-
-static const enum AVSampleFormat ff_planar_sample_fmts_array[] = {
-    AV_SAMPLE_FMT_U8P,
-    AV_SAMPLE_FMT_S16P,
-    AV_SAMPLE_FMT_S32P,
-    AV_SAMPLE_FMT_FLTP,
-    AV_SAMPLE_FMT_DBLP,
-    AV_SAMPLE_FMT_NONE
-};
-
 /** default handler for get_audio_buffer() for audio inputs */
 AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples);
 
