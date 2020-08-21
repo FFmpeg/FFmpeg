@@ -49,16 +49,16 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN }
 };
 
-static const int qp_start_table[6] = {  8, 3, 2, 1, 1, 1};
-static const int qp_end_table[6]   = { 13, 9, 6, 6, 5, 4};
-static const int bitrate_table[6]  = { 1000, 2100, 3500, 5400, 7000, 10000};
+static const int qp_start_table[] = {  8, 3, 2, 1, 1, 1};
+static const int qp_end_table[]   = { 13, 9, 6, 6, 5, 4};
+static const int bitrate_table[]  = { 1000, 2100, 3500, 5400, 7000, 10000};
 
-static const int valid_primaries[9]  = { AVCOL_PRI_RESERVED0, AVCOL_PRI_BT709, AVCOL_PRI_UNSPECIFIED, AVCOL_PRI_BT470BG,
-                                         AVCOL_PRI_SMPTE170M, AVCOL_PRI_BT2020, AVCOL_PRI_SMPTE431, AVCOL_PRI_SMPTE432,INT_MAX };
-static const int valid_trc[6]        = { AVCOL_TRC_RESERVED0, AVCOL_TRC_BT709, AVCOL_TRC_UNSPECIFIED, AVCOL_TRC_SMPTE2084,
-                                         AVCOL_TRC_ARIB_STD_B67, INT_MAX };
-static const int valid_colorspace[5] = { AVCOL_SPC_BT709, AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_SMPTE170M,
-                                         AVCOL_SPC_BT2020_NCL, INT_MAX };
+static const int valid_primaries[]  = { AVCOL_PRI_RESERVED0, AVCOL_PRI_BT709, AVCOL_PRI_UNSPECIFIED, AVCOL_PRI_BT470BG,
+                                        AVCOL_PRI_SMPTE170M, AVCOL_PRI_BT2020, AVCOL_PRI_SMPTE431, AVCOL_PRI_SMPTE432, INT_MAX };
+static const int valid_trc[]        = { AVCOL_TRC_RESERVED0, AVCOL_TRC_BT709, AVCOL_TRC_UNSPECIFIED, AVCOL_TRC_SMPTE2084,
+                                        AVCOL_TRC_ARIB_STD_B67, INT_MAX };
+static const int valid_colorspace[] = { AVCOL_SPC_BT709, AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_SMPTE170M,
+                                        AVCOL_SPC_BT2020_NCL, INT_MAX };
 
 static const uint8_t QMAT_LUMA[6][64] = {
     {
