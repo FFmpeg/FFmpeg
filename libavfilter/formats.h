@@ -110,17 +110,32 @@ typedef struct AVFilterChannelLayouts {
                            (int)((l) & 0x7FFFFFFF) : 0)
 
 /**
- * Return a channel layouts/samplerates list which contains the intersection of
- * the layouts/samplerates of a and b. Also, all the references of a, all the
- * references of b, and a and b themselves will be deallocated.
+ * Check the formats/samplerates lists for compatibility for merging
+ * without actually merging.
  *
- * If a and b do not share any common elements, neither is modified, and NULL
- * is returned.
+ * @return 1 if they are compatible, 0 if not.
  */
-AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
-                                                 AVFilterChannelLayouts *b);
-AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
-                                      AVFilterFormats *b);
+int ff_can_merge_formats(const AVFilterFormats *a, const AVFilterFormats *b,
+                         enum AVMediaType type);
+int ff_can_merge_samplerates(const AVFilterFormats *a, const AVFilterFormats *b);
+
+/**
+ * Merge the formats/channel layouts/samplerates lists if they are compatible
+ * and update all the references of a and b to point to the combined list and
+ * free the old lists as needed. The combined list usually contains the
+ * intersection of the lists of a and b.
+ *
+ * Both a and b must have owners (i.e. refcount > 0) for these functions.
+ *
+ * @return 1 if merging succeeded, 0 if a and b are incompatible
+ *         and negative AVERROR code on failure.
+ *         a and b are unmodified if 0 is returned.
+ */
+int ff_merge_channel_layouts(AVFilterChannelLayouts *a,
+                             AVFilterChannelLayouts *b);
+int ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
+                     enum AVMediaType type);
+int ff_merge_samplerates(AVFilterFormats *a, AVFilterFormats *b);
 
 /**
  * Construct an empty AVFilterChannelLayouts/AVFilterFormats struct --
@@ -237,17 +252,6 @@ int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned r
  */
 av_warn_unused_result
 AVFilterFormats *ff_planar_sample_fmts(void);
-
-/**
- * Return a format list which contains the intersection of the formats of
- * a and b. Also, all the references of a, all the references of b, and
- * a and b themselves will be deallocated.
- *
- * If a and b do not share any common formats, neither is modified, and NULL
- * is returned.
- */
-AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
-                                  enum AVMediaType type);
 
 /**
  * Add *ref as a new reference to formats.

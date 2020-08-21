@@ -487,15 +487,15 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     int64_t transpose_perm_shape[] = {4};
     int64_t input_shape[] = {1, -1, -1, -1};
     DNNReturnType layer_add_res;
-    DNNModel *native_model = NULL;
-    ConvolutionalNetwork *conv_network;
+    DNNModel *model = NULL;
+    NativeModel *native_model;
 
-    native_model = ff_dnn_load_model_native(model_filename, NULL);
-    if (!native_model){
+    model = ff_dnn_load_model_native(model_filename, NULL);
+    if (!model){
         return DNN_ERROR;
     }
 
-    conv_network = (ConvolutionalNetwork *)native_model->model;
+    native_model = (NativeModel *)model->model;
     tf_model->graph = TF_NewGraph();
     tf_model->status = TF_NewStatus();
 
@@ -528,26 +528,26 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     }
     transpose_op = TF_FinishOperation(op_desc, tf_model->status);
 
-    for (layer = 0; layer < conv_network->layers_num; ++layer){
-        switch (conv_network->layers[layer].type){
+    for (layer = 0; layer < native_model->layers_num; ++layer){
+        switch (native_model->layers[layer].type){
         case DLT_INPUT:
             layer_add_res = DNN_SUCCESS;
             break;
         case DLT_CONV2D:
             layer_add_res = add_conv_layer(tf_model, transpose_op, &op,
-                                           (ConvolutionalParams *)conv_network->layers[layer].params, layer);
+                                           (ConvolutionalParams *)native_model->layers[layer].params, layer);
             break;
         case DLT_DEPTH_TO_SPACE:
             layer_add_res = add_depth_to_space_layer(tf_model, &op,
-                                                     (DepthToSpaceParams *)conv_network->layers[layer].params, layer);
+                                                     (DepthToSpaceParams *)native_model->layers[layer].params, layer);
             break;
         case DLT_MIRROR_PAD:
             layer_add_res = add_pad_layer(tf_model, &op,
-                                          (LayerPadParams *)conv_network->layers[layer].params, layer);
+                                          (LayerPadParams *)native_model->layers[layer].params, layer);
             break;
         case DLT_MAXIMUM:
             layer_add_res = add_maximum_layer(tf_model, &op,
-                                          (DnnLayerMaximumParams *)conv_network->layers[layer].params, layer);
+                                          (DnnLayerMaximumParams *)native_model->layers[layer].params, layer);
             break;
         default:
             CLEANUP_ON_ERROR(tf_model);
@@ -567,7 +567,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
         CLEANUP_ON_ERROR(tf_model);
     }
 
-    ff_dnn_free_model_native(&native_model);
+    ff_dnn_free_model_native(&model);
 
     return DNN_SUCCESS;
 }

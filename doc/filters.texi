@@ -12870,7 +12870,7 @@ Default value: @code{"/usr/local/share/model/vmaf_v0.6.1.pkl"}
 Set the file path to be used to store logs.
 
 @item log_fmt
-Set the format of the log file (xml or json).
+Set the format of the log file (csv, json or xml).
 
 @item enable_transform
 This option can enable/disable the @code{score_transform} applied to the final predicted VMAF score,

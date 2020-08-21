@@ -214,10 +214,10 @@ static av_cold void qdmc_init_static_data(void)
     INIT_VLC_STATIC_LE(&vtable[1], 10, FF_ARRAY_ELEMS(noise_segment_length_bits),
                        noise_segment_length_bits, 1, 1, noise_segment_length_codes, 2, 2,
                        noise_segment_length_symbols, 1, 1, 1024);
-    INIT_VLC_STATIC_LE(&vtable[2], 13, FF_ARRAY_ELEMS(amplitude_bits),
-                       amplitude_bits, 1, 1, amplitude_codes, 2, 2, NULL, 0, 0, 8192);
-    INIT_VLC_STATIC_LE(&vtable[3], 18, FF_ARRAY_ELEMS(freq_diff_bits),
-                       freq_diff_bits, 1, 1, freq_diff_codes, 4, 4, NULL, 0, 0, 262144);
+    INIT_VLC_STATIC_LE(&vtable[2], 12, FF_ARRAY_ELEMS(amplitude_bits),
+                       amplitude_bits, 1, 1, amplitude_codes, 2, 2, NULL, 0, 0, 4098);
+    INIT_VLC_STATIC_LE(&vtable[3], 12, FF_ARRAY_ELEMS(freq_diff_bits),
+                       freq_diff_bits, 1, 1, freq_diff_codes, 4, 4, NULL, 0, 0, 4160);
     INIT_VLC_STATIC_LE(&vtable[4], 8, FF_ARRAY_ELEMS(amplitude_diff_bits),
                        amplitude_diff_bits, 1, 1, amplitude_diff_codes, 1, 1, NULL, 0, 0, 256);
     INIT_VLC_STATIC_LE(&vtable[5], 6, FF_ARRAY_ELEMS(phase_diff_bits),
@@ -369,7 +369,7 @@ static int qdmc_get_vlc(GetBitContext *gb, VLC *table, int flag)
 
     if (get_bits_left(gb) < 1)
         return AVERROR_INVALIDDATA;
-    v = get_vlc2(gb, table->table, table->bits, 1);
+    v = get_vlc2(gb, table->table, table->bits, 2);
     if (v < 0)
         return AVERROR_INVALIDDATA;
     if (v)
