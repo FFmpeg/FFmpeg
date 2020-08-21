@@ -24,7 +24,6 @@
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -604,8 +603,7 @@ int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
                        ff_formats_ref, ff_formats_unref, formats);
 }
 
-static int default_query_formats_common(AVFilterContext *ctx,
-                                        AVFilterChannelLayouts *(layouts)(void))
+int ff_default_query_formats(AVFilterContext *ctx)
 {
     int ret;
     enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
@@ -616,7 +614,7 @@ static int default_query_formats_common(AVFilterContext *ctx,
     if (ret < 0)
         return ret;
     if (type == AVMEDIA_TYPE_AUDIO) {
-        ret = ff_set_common_channel_layouts(ctx, layouts());
+        ret = ff_set_common_channel_layouts(ctx, ff_all_channel_counts());
         if (ret < 0)
             return ret;
         ret = ff_set_common_samplerates(ctx, ff_all_samplerates());
@@ -625,16 +623,6 @@ static int default_query_formats_common(AVFilterContext *ctx,
     }
 
     return 0;
-}
-
-int ff_default_query_formats(AVFilterContext *ctx)
-{
-    return default_query_formats_common(ctx, ff_all_channel_counts);
-}
-
-int ff_query_formats_all_layouts(AVFilterContext *ctx)
-{
-    return default_query_formats_common(ctx, ff_all_channel_layouts);
 }
 
 /* internal functions for parsing audio format arguments */
@@ -651,32 +639,6 @@ int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ct
         }
     }
     *ret = pix_fmt;
-    return 0;
-}
-
-int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx)
-{
-    char *tail;
-    int sfmt = av_get_sample_fmt(arg);
-    if (sfmt == AV_SAMPLE_FMT_NONE) {
-        sfmt = strtol(arg, &tail, 0);
-        if (*tail || av_get_bytes_per_sample(sfmt)<=0) {
-            av_log(log_ctx, AV_LOG_ERROR, "Invalid sample format '%s'\n", arg);
-            return AVERROR(EINVAL);
-        }
-    }
-    *ret = sfmt;
-    return 0;
-}
-
-int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx)
-{
-    AVRational r;
-    if(av_parse_ratio(&r, arg, INT_MAX, 0, log_ctx) < 0 ||r.num<=0  ||r.den<=0) {
-        av_log(log_ctx, AV_LOG_ERROR, "Invalid time base '%s'\n", arg);
-        return AVERROR(EINVAL);
-    }
-    *ret = r;
     return 0;
 }
 

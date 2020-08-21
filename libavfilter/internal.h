@@ -172,28 +172,6 @@ av_warn_unused_result
 int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
 
 /**
- * Parse a time base.
- *
- * @param ret unsigned AVRational pointer to where the value should be written
- * @param arg string to parse
- * @param log_ctx log context
- * @return >= 0 in case of success, a negative AVERROR code on error
- */
-av_warn_unused_result
-int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx);
-
-/**
- * Parse a sample format name or a corresponding integer representation.
- *
- * @param ret integer pointer to where the value should be written
- * @param arg string to parse
- * @param log_ctx log context
- * @return >= 0 in case of success, a negative AVERROR code on error
- */
-av_warn_unused_result
-int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
-
-/**
  * Parse a channel layout or a corresponding integer representation.
  *
  * @param ret 64bit integer pointer to where the value should be written.
