@@ -23,16 +23,12 @@
  * FIFO buffering filter
  */
 
-#include "libavutil/avassert.h"
-#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/samplefmt.h"
 
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "video.h"
 
 typedef struct Buf {
     AVFrame *frame;
@@ -96,51 +92,6 @@ static void queue_pop(FifoContext *s)
         s->last = &s->root;
     av_freep(&s->root.next);
     s->root.next = tmp;
-}
-
-/**
- * Move data pointers and pts offset samples forward.
- */
-static void buffer_offset(AVFilterLink *link, AVFrame *frame,
-                          int offset)
-{
-    int nb_channels = link->channels;
-    int planar = av_sample_fmt_is_planar(link->format);
-    int planes = planar ? nb_channels : 1;
-    int block_align = av_get_bytes_per_sample(link->format) * (planar ? 1 : nb_channels);
-    int i;
-
-    av_assert0(frame->nb_samples > offset);
-
-    for (i = 0; i < planes; i++)
-        frame->extended_data[i] += block_align * offset;
-    if (frame->data != frame->extended_data)
-        memcpy(frame->data, frame->extended_data,
-               FFMIN(planes, FF_ARRAY_ELEMS(frame->data)) * sizeof(*frame->data));
-    frame->linesize[0] -= block_align*offset;
-    frame->nb_samples -= offset;
-
-    if (frame->pts != AV_NOPTS_VALUE) {
-        frame->pts += av_rescale_q(offset, (AVRational){1, link->sample_rate},
-                                   link->time_base);
-    }
-}
-
-static int calc_ptr_alignment(AVFrame *frame)
-{
-    int planes = av_sample_fmt_is_planar(frame->format) ?
-                 frame->channels : 1;
-    int min_align = 128;
-    int p;
-
-    for (p = 0; p < planes; p++) {
-        int cur_align = 128;
-        while ((intptr_t)frame->extended_data[p] % cur_align)
-            cur_align >>= 1;
-        if (cur_align < min_align)
-            min_align = cur_align;
-    }
-    return min_align;
 }
 
 static int request_frame(AVFilterLink *outlink)
