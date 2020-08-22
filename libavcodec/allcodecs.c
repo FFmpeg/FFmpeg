@@ -267,6 +267,7 @@ extern AVCodec ff_rawvideo_decoder;
 extern AVCodec ff_rl2_decoder;
 extern AVCodec ff_roq_encoder;
 extern AVCodec ff_roq_decoder;
+extern AVCodec ff_rpza_encoder;
 extern AVCodec ff_rpza_decoder;
 extern AVCodec ff_rscc_decoder;
 extern AVCodec ff_rv10_encoder;

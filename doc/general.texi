@@ -1008,7 +1008,7 @@ following image formats are supported:
     @tab fourcc: 'rle '
 @item QuickTime Graphics (SMC)  @tab     @tab  X
     @tab fourcc: 'smc '
-@item QuickTime video (RPZA) @tab     @tab  X
+@item QuickTime video (RPZA) @tab  X  @tab  X
     @tab fourcc: rpza
 @item R10K AJA Kona 10-bit RGB Codec     @tab  X  @tab  X
 @item R210 Quicktime Uncompressed RGB 10-bit     @tab  X  @tab  X

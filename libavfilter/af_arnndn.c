@@ -413,8 +413,7 @@ static void inverse_transform(DenoiseState *st, float *out, const AVComplexFloat
     AVComplexFloat x[WINDOW_SIZE];
     AVComplexFloat y[WINDOW_SIZE];
 
-    for (int i = 0; i < FREQ_SIZE; i++)
-        x[i] = in[i];
+    RNN_COPY(x, in, FREQ_SIZE);
 
     for (int i = FREQ_SIZE; i < WINDOW_SIZE; i++) {
         x[i].re =  x[WINDOW_SIZE - i].re;

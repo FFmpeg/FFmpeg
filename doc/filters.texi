@@ -1573,6 +1573,14 @@ Enabling it will normalize magnitude response at DC to 0dB.
 
 @item order, o
 Set the filter order, can be 1 or 2. Default is 2.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Commands
@@ -2693,6 +2701,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Commands
@@ -2756,6 +2772,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Commands
@@ -2826,6 +2850,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Commands
@@ -2884,6 +2916,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @section bs2b
@@ -3607,6 +3647,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Examples
@@ -4084,6 +4132,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Commands
@@ -4410,6 +4466,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Examples
@@ -5530,6 +5594,14 @@ Specify which channels to filter, by default all available are filtered.
 @item normalize, n
 Normalize biquad coefficients, by default is disabled.
 Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdii
+@end table
 @end table
 
 @subsection Commands
