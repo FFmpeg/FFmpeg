@@ -2050,6 +2050,7 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @ifset config-avfilter
 @include filters.texi
 @end ifset
+@include general_contents.texi
 @end ifset
 
 @chapter See Also

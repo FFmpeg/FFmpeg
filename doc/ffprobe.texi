@@ -642,6 +642,7 @@ DV, GXF and AVI timecodes are available in format metadata
 @ifset config-avfilter
 @include filters.texi
 @end ifset
+@include general_contents.texi
 @end ifset
 
 @chapter See Also
