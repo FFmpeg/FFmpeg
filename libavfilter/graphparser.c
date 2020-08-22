@@ -303,8 +303,10 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
         char *name = parse_link_name(buf, log_ctx);
         AVFilterInOut *match;
 
-        if (!name)
+        if (!name) {
+            avfilter_inout_free(&parsed_inputs);
             return AVERROR(EINVAL);
+        }
 
         /* First check if the label is not in the open_outputs list */
         match = extract_inout(name, open_outputs);
@@ -314,6 +316,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
         } else {
             /* Not in the list, so add it as an input */
             if (!(match = av_mallocz(sizeof(AVFilterInOut)))) {
+                avfilter_inout_free(&parsed_inputs);
                 av_free(name);
                 return AVERROR(ENOMEM);
             }
