@@ -63,7 +63,7 @@ static char *parse_link_name(const char **buf, void *log_ctx)
 
     name = av_get_token(buf, "]");
     if (!name)
-        goto fail;
+        return NULL;
 
     if (!name[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
@@ -71,12 +71,14 @@ static char *parse_link_name(const char **buf, void *log_ctx)
         goto fail;
     }
 
-    if (*(*buf)++ != ']') {
+    if (**buf != ']') {
         av_log(log_ctx, AV_LOG_ERROR,
                "Mismatched '[' found in the following: \"%s\".\n", start);
     fail:
         av_freep(&name);
+        return NULL;
     }
+    (*buf)++;
 
     return name;
 }
