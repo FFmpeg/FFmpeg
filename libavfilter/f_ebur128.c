@@ -527,30 +527,22 @@ static av_cold int init(AVFilterContext *ctx)
     /* insert output pads */
     if (ebur128->do_video) {
         pad = (AVFilterPad){
-            .name         = av_strdup("out0"),
+            .name         = "out0",
             .type         = AVMEDIA_TYPE_VIDEO,
             .config_props = config_video_output,
         };
-        if (!pad.name)
-            return AVERROR(ENOMEM);
         ret = ff_insert_outpad(ctx, 0, &pad);
-        if (ret < 0) {
-            av_freep(&pad.name);
+        if (ret < 0)
             return ret;
-        }
     }
     pad = (AVFilterPad){
-        .name         = av_asprintf("out%d", ebur128->do_video),
+        .name         = ebur128->do_video ? "out1" : "out0",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_audio_output,
     };
-    if (!pad.name)
-        return AVERROR(ENOMEM);
     ret = ff_insert_outpad(ctx, ebur128->do_video, &pad);
-    if (ret < 0) {
-        av_freep(&pad.name);
+    if (ret < 0)
         return ret;
-    }
 
     /* summary */
     av_log(ctx, AV_LOG_VERBOSE, "EBU +%d scale\n", ebur128->meter);
@@ -990,8 +982,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&ebur128->i400.cache[i]);
         av_freep(&ebur128->i3000.cache[i]);
     }
-    for (i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
     av_frame_free(&ebur128->outpicref);
 #if CONFIG_SWRESAMPLE
     av_freep(&ebur128->swr_buf);
