@@ -800,11 +800,9 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_frame_free(&s->ir[i]);
     }
 
-    for (int i = 0; i < ctx->nb_inputs; i++)
+    for (unsigned i = 1; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
 
-    for (int i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
     av_frame_free(&s->video);
 }
 
@@ -842,18 +840,13 @@ static av_cold int init(AVFilterContext *ctx)
     int ret;
 
     pad = (AVFilterPad) {
-        .name = av_strdup("main"),
+        .name = "main",
         .type = AVMEDIA_TYPE_AUDIO,
     };
 
-    if (!pad.name)
-        return AVERROR(ENOMEM);
-
     ret = ff_insert_inpad(ctx, 0, &pad);
-    if (ret < 0) {
-        av_freep(&pad.name);
+    if (ret < 0)
         return ret;
-    }
 
     for (int n = 0; n < s->nb_irs; n++) {
         pad = (AVFilterPad) {
@@ -872,34 +865,25 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     pad = (AVFilterPad) {
-        .name          = av_strdup("default"),
+        .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     };
 
-    if (!pad.name)
-        return AVERROR(ENOMEM);
-
     ret = ff_insert_outpad(ctx, 0, &pad);
-    if (ret < 0) {
-        av_freep(&pad.name);
+    if (ret < 0)
         return ret;
-    }
 
     if (s->response) {
         vpad = (AVFilterPad){
-            .name         = av_strdup("filter_response"),
+            .name         = "filter_response",
             .type         = AVMEDIA_TYPE_VIDEO,
             .config_props = config_video,
         };
-        if (!vpad.name)
-            return AVERROR(ENOMEM);
 
         ret = ff_insert_outpad(ctx, 1, &vpad);
-        if (ret < 0) {
-            av_freep(&vpad.name);
+        if (ret < 0)
             return ret;
-        }
     }
 
     s->fdsp = avpriv_float_dsp_alloc(0);
