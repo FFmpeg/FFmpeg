@@ -964,28 +964,20 @@ static av_cold int fieldmatch_init(AVFilterContext *ctx)
 {
     const FieldMatchContext *fm = ctx->priv;
     AVFilterPad pad = {
-        .name         = av_strdup("main"),
+        .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
     };
     int ret;
 
-    if (!pad.name)
-        return AVERROR(ENOMEM);
-    if ((ret = ff_insert_inpad(ctx, INPUT_MAIN, &pad)) < 0) {
-        av_freep(&pad.name);
+    if ((ret = ff_insert_inpad(ctx, INPUT_MAIN, &pad)) < 0)
         return ret;
-    }
 
     if (fm->ppsrc) {
-        pad.name = av_strdup("clean_src");
+        pad.name = "clean_src";
         pad.config_props = NULL;
-        if (!pad.name)
-            return AVERROR(ENOMEM);
-        if ((ret = ff_insert_inpad(ctx, INPUT_CLEANSRC, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_insert_inpad(ctx, INPUT_CLEANSRC, &pad)) < 0)
             return ret;
-        }
     }
 
     if ((fm->blockx & (fm->blockx - 1)) ||
@@ -1004,7 +996,6 @@ static av_cold int fieldmatch_init(AVFilterContext *ctx)
 
 static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
 {
-    int i;
     FieldMatchContext *fm = ctx->priv;
 
     if (fm->prv != fm->src)
@@ -1021,8 +1012,6 @@ static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
     av_freep(&fm->cmask_data[0]);
     av_freep(&fm->tbuffer);
     av_freep(&fm->c_array);
-    for (i = 0; i < ctx->nb_inputs; i++)
-        av_freep(&ctx->input_pads[i].name);
 }
 
 static int config_output(AVFilterLink *outlink)
