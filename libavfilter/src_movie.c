@@ -213,7 +213,6 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
     int64_t timestamp;
     int nb_streams = 1, ret, i;
     char default_streams[16], *stream_specs, *spec, *cursor;
-    char name[16];
     AVStream *st;
 
     if (!movie->file_name) {
@@ -305,9 +304,8 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
     for (i = 0; i < nb_streams; i++) {
         AVFilterPad pad = { 0 };
         movie->out_index[movie->st[i].st->index] = i;
-        snprintf(name, sizeof(name), "out%d", i);
         pad.type          = movie->st[i].st->codecpar->codec_type;
-        pad.name          = av_strdup(name);
+        pad.name          = av_asprintf("out%d", i);
         if (!pad.name)
             return AVERROR(ENOMEM);
         pad.config_props  = movie_config_output_props;
