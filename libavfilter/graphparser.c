@@ -186,9 +186,16 @@ static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGr
     char *name = av_get_token(buf, "=,;[");
     int ret;
 
+    if (!name)
+        return AVERROR(ENOMEM);
+
     if (**buf == '=') {
         (*buf)++;
         opts = av_get_token(buf, "[],;");
+        if (!opts) {
+            av_free(name);
+            return AVERROR(ENOMEM);
+        }
     }
 
     ret = create_filter(filt_ctx, graph, index, name, opts, log_ctx);
