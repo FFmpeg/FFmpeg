@@ -1772,6 +1772,10 @@ A file containing the private key for the certificate.
 If enabled, listen for connections on the provided port, and assume
 the server role in the handshake instead of the client role.
 
+@item http_proxy
+The HTTP proxy to tunnel through, e.g. @code{http://example.com:1234}.
+The proxy must support the CONNECT method.
+
 @end table
 
 Example command lines:

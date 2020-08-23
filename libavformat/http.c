@@ -214,6 +214,12 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
         use_proxy   = 0;
         if (port < 0)
             port = 443;
+        /* pass http_proxy to underlying protocol */
+        if (s->http_proxy) {
+            err = av_dict_set(options, "http_proxy", s->http_proxy, 0);
+            if (err < 0)
+                return err;
+        }
     }
     if (port < 0)
         port = 80;

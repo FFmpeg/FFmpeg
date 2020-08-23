@@ -89,7 +89,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     if (!c->host && !(c->host = av_strdup(c->underlying_host)))
         return AVERROR(ENOMEM);
 
-    proxy_path = getenv("http_proxy");
+    proxy_path = c->http_proxy ? c->http_proxy : getenv("http_proxy");
     use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), c->underlying_host) &&
                 proxy_path && av_strstart(proxy_path, "http://", NULL);
 
