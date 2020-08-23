@@ -372,15 +372,14 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
         match = extract_inout(name, open_inputs);
 
         if (match) {
-            if ((ret = link_filter(input->filter_ctx, input->pad_idx,
-                                   match->filter_ctx, match->pad_idx, log_ctx)) < 0) {
-                av_free(name);
-                return ret;
-            }
+            ret = link_filter(input->filter_ctx, input->pad_idx,
+                              match->filter_ctx, match->pad_idx, log_ctx);
             av_freep(&match->name);
             av_freep(&name);
             av_freep(&match);
             av_freep(&input);
+            if (ret < 0)
+                return ret;
         } else {
             /* Not in the list, so add the first input as an open_output */
             input->name = name;
