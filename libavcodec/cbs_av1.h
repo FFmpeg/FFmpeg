@@ -158,8 +158,8 @@ typedef struct AV1RawFrameHeader {
     uint8_t  use_superres;
     uint8_t  coded_denom;
     uint8_t  render_and_frame_size_different;
-    uint8_t  render_width_minus_1;
-    uint8_t  render_height_minus_1;
+    uint16_t render_width_minus_1;
+    uint16_t render_height_minus_1;
 
     uint8_t found_ref[AV1_REFS_PER_FRAME];
 
