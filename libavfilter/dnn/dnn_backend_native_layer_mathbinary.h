@@ -36,6 +36,7 @@ typedef enum {
     DMBO_MUL = 2,
     DMBO_REALDIV = 3,
     DMBO_MINIMUM = 4,
+    DMBO_FLOORMOD = 5,
     DMBO_COUNT
 } DNNMathBinaryOperation;
 
