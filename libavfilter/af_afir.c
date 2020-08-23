@@ -64,6 +64,16 @@ static void direct(const float *in, const FFTComplex *ir, int len, float *out)
             out[n] += ir[m].re * in[n - m];
 }
 
+static void fir_fadd(AudioFIRContext *s, float *dst, const float *src, int nb_samples)
+{
+    if ((nb_samples & 15) == 0 && nb_samples >= 16) {
+        s->fdsp->vector_fmac_scalar(dst, src, 1.f, nb_samples);
+    } else {
+        for (int n = 0; n < nb_samples; n++)
+            dst[n] += src[n];
+    }
+}
+
 static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
 {
     AudioFIRContext *s = ctx->priv;
@@ -93,9 +103,7 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
             memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
 
             dst += seg->output_offset[ch];
-            for (n = 0; n < nb_samples; n++) {
-                ptr[n] += dst[n];
-            }
+            fir_fadd(s, ptr, dst, nb_samples);
             continue;
         }
 
@@ -153,9 +161,7 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
         av_rdft_calc(seg->irdft[ch], sum);
 
         buf = (float *)seg->buffer->extended_data[ch];
-        for (n = 0; n < seg->part_size; n++) {
-            buf[n] += sum[n];
-        }
+        fir_fadd(s, buf, sum, seg->part_size);
 
         memcpy(dst, buf, seg->part_size * sizeof(*dst));
 
@@ -166,9 +172,7 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
 
         memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
 
-        for (n = 0; n < nb_samples; n++) {
-            ptr[n] += dst[n];
-        }
+        fir_fadd(s, ptr, dst, nb_samples);
     }
 
     if (s->min_part_size >= 8) {
