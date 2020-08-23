@@ -19,6 +19,7 @@
 static int FUNC(obu_header)(CodedBitstreamContext *ctx, RWContext *rw,
                             AV1RawOBUHeader *current)
 {
+    CodedBitstreamAV1Context *priv = ctx->priv_data;
     int err;
 
     HEADER("OBU header");
@@ -35,7 +36,13 @@ static int FUNC(obu_header)(CodedBitstreamContext *ctx, RWContext *rw,
         fb(3, temporal_id);
         fb(2, spatial_id);
         fc(3, extension_header_reserved_3bits, 0, 0);
+    } else {
+        infer(temporal_id, 0);
+        infer(spatial_id, 0);
     }
+
+    priv->temporal_id = current->temporal_id;
+    priv->spatial_id  = current->spatial_id;
 
     return 0;
 }
