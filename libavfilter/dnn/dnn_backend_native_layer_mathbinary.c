@@ -50,6 +50,10 @@ static float minimum(float src0, float src1)
 {
     return FFMIN(src0, src1);
 }
+static float floormod(float src0, float src1)
+{
+    return (float)((int)(src0) % (int)(src1));
+}
 
 static void math_binary_commutative(FunType pfun, const DnnLayerMathBinaryParams *params, const DnnOperand *input, DnnOperand *output, DnnOperand *operands, const int32_t *input_operand_indexes)
 {
@@ -177,6 +181,9 @@ int dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_ope
         return 0;
     case DMBO_MINIMUM:
         math_binary_commutative(minimum, params, input, output, operands, input_operand_indexes);
+        return 0;
+    case DMBO_FLOORMOD:
+        math_binary_not_commutative(floormod, params, input, output, operands, input_operand_indexes);
         return 0;
     default:
         return -1;
