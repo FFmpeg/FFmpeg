@@ -577,7 +577,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
                    "No trailing CRLF found in HTTP header. Adding it.\n");
             ret = av_reallocp(&s->headers, len + 3);
             if (ret < 0)
-                return ret;
+                goto bail_out;
             s->headers[len]     = '\r';
             s->headers[len + 1] = '\n';
             s->headers[len + 2] = '\0';
@@ -588,6 +588,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
         return http_listen(h, uri, flags, options);
     }
     ret = http_open_cnx(h, options);
+bail_out:
     if (ret < 0)
         av_dict_free(&s->chained_options);
     return ret;
