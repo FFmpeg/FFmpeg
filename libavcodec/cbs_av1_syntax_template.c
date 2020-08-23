@@ -1388,7 +1388,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                     int in_temporal_layer = (op_pt_idc >>  priv->temporal_id    ) & 1;
                     int in_spatial_layer  = (op_pt_idc >> (priv->spatial_id + 8)) & 1;
                     if (seq->operating_point_idc[i] == 0 ||
-                        in_temporal_layer || in_spatial_layer) {
+                        (in_temporal_layer && in_spatial_layer)) {
                         fbs(seq->decoder_model_info.buffer_removal_time_length_minus_1 + 1,
                             buffer_removal_time[i], 1, i);
                     }
