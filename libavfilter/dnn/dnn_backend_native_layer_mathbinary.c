@@ -27,6 +27,74 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_mathbinary.h"
 
+typedef float (*FunType)(float src0, float src1);
+FunType pfun;
+
+static float sub(float src0, float src1)
+{
+    return src0 - src1;
+}
+static float add(float src0, float src1)
+{
+    return src0 + src1;
+}
+static float mul(float src0, float src1)
+{
+    return src0 * src1;
+}
+static float realdiv(float src0, float src1)
+{
+    return src0 / src1;
+}
+static float minimum(float src0, float src1)
+{
+    return FFMIN(src0, src1);
+}
+
+static void math_binary_commutative(FunType pfun, const DnnLayerMathBinaryParams *params, const DnnOperand *input, DnnOperand *output, DnnOperand *operands, const int32_t *input_operand_indexes)
+{
+    int dims_count;
+    const float *src;
+    float *dst;
+    dims_count = calculate_operand_dims_count(output);
+    src = input->data;
+    dst = output->data;
+    if (params->input0_broadcast || params->input1_broadcast) {
+        for (int i = 0; i < dims_count; ++i) {
+            dst[i] = pfun(params->v, src[i]);
+        }
+    } else {
+        const DnnOperand *input1 = &operands[input_operand_indexes[1]];
+        const float *src1 = input1->data;
+        for (int i = 0; i < dims_count; ++i) {
+            dst[i] = pfun(src[i], src1[i]);
+        }
+    }
+}
+static void math_binary_not_commutative(FunType pfun, const DnnLayerMathBinaryParams *params, const DnnOperand *input, DnnOperand *output, DnnOperand *operands, const int32_t *input_operand_indexes)
+{
+    int dims_count;
+    const float *src;
+    float *dst;
+    dims_count = calculate_operand_dims_count(output);
+    src = input->data;
+    dst = output->data;
+    if (params->input0_broadcast) {
+        for (int i = 0; i < dims_count; ++i) {
+            dst[i] = pfun(params->v, src[i]);
+        }
+    } else if (params->input1_broadcast) {
+        for (int i = 0; i < dims_count; ++i) {
+            dst[i] = pfun(src[i], params->v);
+        }
+    } else {
+        const DnnOperand *input1 = &operands[input_operand_indexes[1]];
+        const float *src1 = input1->data;
+        for (int i = 0; i < dims_count; ++i) {
+            dst[i] = pfun(src[i], src1[i]);
+        }
+    }
+}
 int dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
     DnnLayerMathBinaryParams *params;
@@ -82,9 +150,6 @@ int dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_ope
     const DnnOperand *input = &operands[input_operand_indexes[0]];
     DnnOperand *output = &operands[output_operand_index];
     const DnnLayerMathBinaryParams *params = (const DnnLayerMathBinaryParams *)parameters;
-    int dims_count;
-    const float *src;
-    float *dst;
 
     for (int i = 0; i < 4; ++i)
         output->dims[i] = input->dims[i];
@@ -97,83 +162,21 @@ int dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_ope
     if (!output->data)
         return DNN_ERROR;
 
-    dims_count = calculate_operand_dims_count(output);
-    src = input->data;
-    dst = output->data;
-
     switch (params->bin_op) {
     case DMBO_SUB:
-        if (params->input0_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = params->v - src[i];
-            }
-        } else if (params->input1_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = src[i] - params->v;
-            }
-        } else {
-            const DnnOperand *input1 = &operands[input_operand_indexes[1]];
-            const float *src1 = input1->data;
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = src[i] - src1[i];
-            }
-        }
+        math_binary_not_commutative(sub, params, input, output, operands, input_operand_indexes);
         return 0;
     case DMBO_ADD:
-        if (params->input0_broadcast || params->input1_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = params->v + src[i];
-            }
-        } else {
-            const DnnOperand *input1 = &operands[input_operand_indexes[1]];
-            const float *src1 = input1->data;
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = src[i] + src1[i];
-            }
-        }
+        math_binary_commutative(add, params, input, output, operands, input_operand_indexes);
         return 0;
     case DMBO_MUL:
-        if (params->input0_broadcast || params->input1_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = params->v * src[i];
-            }
-        } else {
-            const DnnOperand *input1 = &operands[input_operand_indexes[1]];
-            const float *src1 = input1->data;
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = src[i] * src1[i];
-            }
-        }
+        math_binary_commutative(mul, params, input, output, operands, input_operand_indexes);
         return 0;
     case DMBO_REALDIV:
-        if (params->input0_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = params->v / src[i];
-            }
-        } else if (params->input1_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = src[i] / params->v;
-            }
-        } else {
-            const DnnOperand *input1 = &operands[input_operand_indexes[1]];
-            const float *src1 = input1->data;
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = src[i] / src1[i];
-            }
-        }
+        math_binary_not_commutative(realdiv, params, input, output, operands, input_operand_indexes);
         return 0;
     case DMBO_MINIMUM:
-        if (params->input0_broadcast || params->input1_broadcast) {
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = FFMIN(params->v, src[i]);
-            }
-        } else {
-            const DnnOperand *input1 = &operands[input_operand_indexes[1]];
-            const float *src1 = input1->data;
-            for (int i = 0; i < dims_count; ++i) {
-                dst[i] = FFMIN(src[i], src1[i]);
-            }
-        }
+        math_binary_commutative(minimum, params, input, output, operands, input_operand_indexes);
         return 0;
     default:
         return -1;
