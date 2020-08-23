@@ -1280,6 +1280,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             else
                 infer(refresh_frame_flags, 0);
 
+            infer(frame_type,            frame->frame_type);
             return 0;
         }
 
