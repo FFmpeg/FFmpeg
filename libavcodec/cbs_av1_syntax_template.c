@@ -541,7 +541,7 @@ static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
             }
 
             priv->upscaled_width = ref->upscaled_width;
-            priv->frame_width    = ref->frame_width;
+            priv->frame_width    = priv->upscaled_width;
             priv->frame_height   = ref->frame_height;
             priv->render_width   = ref->render_width;
             priv->render_height  = ref->render_height;
