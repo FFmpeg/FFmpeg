@@ -594,8 +594,8 @@ int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 int ff_default_query_formats(AVFilterContext *ctx)
 {
     int ret;
-    enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
-                            ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
+    enum AVMediaType type = ctx->nb_inputs  ? ctx->inputs [0]->type :
+                            ctx->nb_outputs ? ctx->outputs[0]->type :
                             AVMEDIA_TYPE_VIDEO;
 
     ret = ff_set_common_formats(ctx, ff_all_formats(type));
