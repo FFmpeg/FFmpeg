@@ -175,6 +175,22 @@ typedef struct Mp4Descr {
     SLConfigDescr sl;
 } Mp4Descr;
 
+/*
+ * ETSI 300 468 descriptor 0x6A(AC-3)
+ * Refer to: ETSI EN 300 468 V1.11.1 (2010-04) (SI in DVB systems)
+ */
+typedef struct DVBAC3Descriptor {
+    uint8_t  component_type_flag;
+    uint8_t  bsid_flag;
+    uint8_t  mainid_flag;
+    uint8_t  asvc_flag;
+    uint8_t  reserved_flags;
+    uint8_t  component_type;
+    uint8_t  bsid;
+    uint8_t  mainid;
+    uint8_t  asvc;
+} DVBAC3Descriptor;
+
 /**
  * Parse an MPEG-2 descriptor
  * @param[in] fc                    Format context (used for logging only)

@@ -1032,11 +1032,15 @@ static int dvbsub_parse_object_segment(AVCodecContext *avctx,
             dvbsub_parse_pixel_data_block(avctx, display, block, bfl, 1,
                                             non_modifying_color);
         }
-
-/*  } else if (coding_method == 1) {*/
-
+    } else if (coding_method == 1) {
+        avpriv_report_missing_feature(avctx, "coded as a string of characters");
+        return AVERROR_PATCHWELCOME;
+    } else if (coding_method == 2) {
+        avpriv_report_missing_feature(avctx, "progressive coding of pixels");
+        return AVERROR_PATCHWELCOME;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Unknown object coding %d\n", coding_method);
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;

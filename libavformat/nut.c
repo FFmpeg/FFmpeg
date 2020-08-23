@@ -27,6 +27,8 @@
 
 const AVCodecTag ff_nut_subtitle_tags[] = {
     { AV_CODEC_ID_TEXT,             MKTAG('U', 'T', 'F', '8') },
+    { AV_CODEC_ID_ASS,              MKTAG('S', 'S', 'A',  0 ) },
+    { AV_CODEC_ID_ASS,              MKTAG('A', 'S', 'S',  0 ) },
     { AV_CODEC_ID_DVD_SUBTITLE,     MKTAG('D', 'V', 'D', 'S') },
     { AV_CODEC_ID_DVB_SUBTITLE,     MKTAG('D', 'V', 'B', 'S') },
     { AV_CODEC_ID_DVB_TELETEXT,     MKTAG('D', 'V', 'B', 'T') },

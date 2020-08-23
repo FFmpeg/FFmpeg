@@ -268,9 +268,8 @@ static int dvb_encode_rle8(uint8_t **pq, int buf_size,
     return len;
 }
 
-static int encode_dvb_subtitles(AVCodecContext *avctx,
-                                uint8_t *outbuf, int buf_size,
-                                const AVSubtitle *h)
+static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
+                         const AVSubtitle *h)
 {
     DVBSubtitleContext *s = avctx->priv_data;
     uint8_t *q, *pseg_len;
@@ -375,52 +374,49 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
             bytestream_put_be16(&pseg_len, q - pseg_len - 2);
             buf_size -= 6 + h->rects[clut_id]->nb_colors * 6;
         }
-    }
 
-    if (buf_size < h->num_rects * 22)
-        return AVERROR_BUFFER_TOO_SMALL;
-    for (region_id = 0; region_id < h->num_rects; region_id++) {
+        if (buf_size < h->num_rects * 22)
+            return AVERROR_BUFFER_TOO_SMALL;
+        for (region_id = 0; region_id < h->num_rects; region_id++) {
 
-        /* region composition segment */
+            /* region composition segment */
 
-        if (h->rects[region_id]->nb_colors <= 4) {
-            /* 2 bpp, some decoders do not support it correctly */
-            bpp_index = 0;
-        } else if (h->rects[region_id]->nb_colors <= 16) {
-            /* 4 bpp, standard encoding */
-            bpp_index = 1;
-        } else if (h->rects[region_id]->nb_colors <= 256) {
-            /* 8 bpp, standard encoding */
-            bpp_index = 2;
-        } else {
-            return AVERROR(EINVAL);
+            if (h->rects[region_id]->nb_colors <= 4) {
+                /* 2 bpp, some decoders do not support it correctly */
+                bpp_index = 0;
+            } else if (h->rects[region_id]->nb_colors <= 16) {
+                /* 4 bpp, standard encoding */
+                bpp_index = 1;
+            } else if (h->rects[region_id]->nb_colors <= 256) {
+                /* 8 bpp, standard encoding */
+                bpp_index = 2;
+            } else {
+                return AVERROR(EINVAL);
+            }
+
+            *q++ = 0x0f; /* sync_byte */
+            *q++ = 0x11; /* segment_type */
+            bytestream_put_be16(&q, page_id);
+            pseg_len = q;
+            q += 2; /* segment length */
+            *q++ = region_id;
+            *q++ = (s->object_version << 4) | (0 << 3) | 0x07; /* version , no fill */
+            bytestream_put_be16(&q, h->rects[region_id]->w); /* region width */
+            bytestream_put_be16(&q, h->rects[region_id]->h); /* region height */
+            *q++ = ((1 + bpp_index) << 5) | ((1 + bpp_index) << 2) | 0x03;
+            *q++ = region_id; /* clut_id == region_id */
+            *q++ = 0; /* 8 bit fill colors */
+            *q++ = 0x03; /* 4 bit and 2 bit fill colors */
+
+            bytestream_put_be16(&q, region_id); /* object_id == region_id */
+            *q++ = (0 << 6) | (0 << 4);
+            *q++ = 0;
+            *q++ = 0xf0;
+            *q++ = 0;
+
+            bytestream_put_be16(&pseg_len, q - pseg_len - 2);
         }
-
-        *q++ = 0x0f; /* sync_byte */
-        *q++ = 0x11; /* segment_type */
-        bytestream_put_be16(&q, page_id);
-        pseg_len = q;
-        q += 2; /* segment length */
-        *q++ = region_id;
-        *q++ = (s->object_version << 4) | (0 << 3) | 0x07; /* version , no fill */
-        bytestream_put_be16(&q, h->rects[region_id]->w); /* region width */
-        bytestream_put_be16(&q, h->rects[region_id]->h); /* region height */
-        *q++ = ((1 + bpp_index) << 5) | ((1 + bpp_index) << 2) | 0x03;
-        *q++ = region_id; /* clut_id == region_id */
-        *q++ = 0; /* 8 bit fill colors */
-        *q++ = 0x03; /* 4 bit and 2 bit fill colors */
-
-        bytestream_put_be16(&q, region_id); /* object_id == region_id */
-        *q++ = (0 << 6) | (0 << 4);
-        *q++ = 0;
-        *q++ = 0xf0;
-        *q++ = 0;
-
-        bytestream_put_be16(&pseg_len, q - pseg_len - 2);
-    }
-    buf_size -= h->num_rects * 22;
-
-    if (h->num_rects) {
+        buf_size -= h->num_rects * 22;
 
         for (object_id = 0; object_id < h->num_rects; object_id++) {
             int (*dvb_encode_rle)(uint8_t **pq, int buf_size,
@@ -453,7 +449,7 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
 
             bytestream_put_be16(&q, object_id);
             *q++ = (s->object_version << 4) | (0 << 2) | (0 << 1) | 1; /* version = 0,
-                                                                       onject_coding_method,
+                                                                       object_coding_method,
                                                                        non_modifying_color_flag */
             {
                 uint8_t *ptop_field_len, *pbottom_field_len, *top_ptr, *bottom_ptr;
@@ -507,16 +503,6 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
 
     s->object_version = (s->object_version + 1) & 0xf;
     return q - outbuf;
-}
-
-static int dvbsub_encode(AVCodecContext *avctx,
-                         unsigned char *buf, int buf_size,
-                         const AVSubtitle *sub)
-{
-    int ret;
-
-    ret = encode_dvb_subtitles(avctx, buf, buf_size, sub);
-    return ret;
 }
 
 AVCodec ff_dvbsub_encoder = {

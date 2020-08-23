@@ -71,6 +71,7 @@ static const AVOption filt_name##_options[] = { \
     {   "S12M_TIMECOD",               "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_S12M_TIMECODE              }, 0, 0, FLAGS, "type" }, \
     {   "DYNAMIC_HDR_PLUS",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DYNAMIC_HDR_PLUS           }, 0, 0, FLAGS, "type" }, \
     {   "REGIONS_OF_INTEREST",        "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_REGIONS_OF_INTEREST        }, 0, 0, FLAGS, "type" }, \
+    {   "SEI_UNREGISTERED",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_SEI_UNREGISTERED           }, 0, 0, FLAGS, "type" }, \
     { NULL } \
 }
 #else
@@ -99,6 +100,7 @@ static const AVOption filt_name##_options[] = { \
     {   "S12M_TIMECOD",               "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_S12M_TIMECODE              }, 0, 0, FLAGS, "type" }, \
     {   "DYNAMIC_HDR_PLUS",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DYNAMIC_HDR_PLUS           }, 0, 0, FLAGS, "type" }, \
     {   "REGIONS_OF_INTEREST",        "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_REGIONS_OF_INTEREST        }, 0, 0, FLAGS, "type" }, \
+    {   "SEI_UNREGISTERED",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_SEI_UNREGISTERED           }, 0, 0, FLAGS, "type" }, \
     { NULL } \
 }
 #endif
