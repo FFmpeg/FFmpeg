@@ -18,6 +18,7 @@ version <next>:
 - ADPCM IMA MOFLEX decoder
 - MobiClip FastAudio decoder
 - MobiClip video decoder
+- MOFLEX demuxer
 
 
 version 4.3:
