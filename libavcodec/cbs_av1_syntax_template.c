@@ -1299,6 +1299,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             else
                 infer(refresh_frame_flags, 0);
 
+            infer(frame_type,            frame->frame_type);
             infer(frame_width_minus_1,   frame->upscaled_width - 1);
             infer(frame_height_minus_1,  frame->frame_height - 1);
             infer(render_width_minus_1,  frame->render_width - 1);
