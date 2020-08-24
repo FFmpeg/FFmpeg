@@ -45,6 +45,8 @@ typedef struct DNNModel{
     void *model;
     // Stores options when the model is executed by the backend
     const char *options;
+    // Stores userdata used for the interaction between AVFrame and DNNData
+    void *userdata;
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
     DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
@@ -56,7 +58,7 @@ typedef struct DNNModel{
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
-    DNNModel *(*load_model)(const char *model_filename, const char *options);
+    DNNModel *(*load_model)(const char *model_filename, const char *options, void *userdata);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
     DNNReturnType (*execute_model)(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output);
     // Frees memory allocated for model.

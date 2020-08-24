@@ -29,7 +29,7 @@
 
 #include "../dnn_interface.h"
 
-DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options);
+DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, void *userdata);
 
 DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output);
 

@@ -502,7 +502,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     DNNModel *model = NULL;
     NativeModel *native_model;
 
-    model = ff_dnn_load_model_native(model_filename, NULL);
+    model = ff_dnn_load_model_native(model_filename, NULL, NULL);
     if (!model){
         av_log(ctx, AV_LOG_ERROR, "Failed to load native model\n");
         return DNN_ERROR;
@@ -586,7 +586,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     return DNN_SUCCESS;
 }
 
-DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options)
+DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, void *userdata)
 {
     DNNModel *model = NULL;
     TFModel *tf_model = NULL;
@@ -616,6 +616,7 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options)
     model->set_input = &set_input_tf;
     model->get_input = &get_input_tf;
     model->options = options;
+    model->userdata = userdata;
 
     return model;
 }

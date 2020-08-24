@@ -174,7 +174,7 @@ err:
     return DNN_ERROR;
 }
 
-DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options)
+DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, void *userdata)
 {
     char *all_dev_names = NULL;
     DNNModel *model = NULL;
@@ -230,6 +230,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options)
     model->set_input = &set_input_ov;
     model->get_input = &get_input_ov;
     model->options = options;
+    model->userdata = userdata;
 
     return model;
 

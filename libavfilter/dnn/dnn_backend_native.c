@@ -123,7 +123,7 @@ static DNNReturnType set_input_native(void *model, DNNData *input, const char *i
 // layers_num,layer_type,layer_parameterss,layer_type,layer_parameters...
 // For CONV layer: activation_function, input_num, output_num, kernel_size, kernel, biases
 // For DEPTH_TO_SPACE layer: block_size
-DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *options)
+DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *options, void *userdata)
 {
     DNNModel *model = NULL;
     char header_expected[] = "FFMPEGDNNNATIVE";
@@ -265,6 +265,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
 
     model->set_input = &set_input_native;
     model->get_input = &get_input_native;
+    model->userdata = userdata;
 
     return model;
 
