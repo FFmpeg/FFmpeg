@@ -100,16 +100,13 @@ static int parse_channel_name(const char *arg, uint64_t *rchannel)
 static void parse_map(AVFilterContext *ctx)
 {
     HeadphoneContext *s = ctx->priv;
-    char *arg, *tokenizer, *p, *args = av_strdup(s->map);
+    char *arg, *tokenizer, *p;
     uint64_t used_channels = 0;
-
-    if (!args)
-        return;
-    p = args;
 
     s->lfe_channel = -1;
     s->nb_inputs = 1;
 
+    p = s->map;
     while ((arg = av_strtok(p, "|", &tokenizer))) {
         uint64_t out_channel;
 
@@ -133,8 +130,6 @@ static void parse_map(AVFilterContext *ctx)
         s->nb_inputs = 2;
     else
         s->nb_inputs = s->nb_irs + 1;
-
-    av_free(args);
 }
 
 typedef struct ThreadData {
