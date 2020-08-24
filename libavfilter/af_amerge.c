@@ -58,13 +58,10 @@ AVFILTER_DEFINE_CLASS(amerge);
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AMergeContext *s = ctx->priv;
-    int i;
 
-    for (i = 0; i < s->nb_inputs; i++) {
-        if (ctx->input_pads)
-            av_freep(&ctx->input_pads[i].name);
-    }
     av_freep(&s->in);
+    for (unsigned i = 0; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
 }
 
 static int query_formats(AVFilterContext *ctx)
