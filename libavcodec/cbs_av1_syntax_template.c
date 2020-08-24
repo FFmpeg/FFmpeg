@@ -1275,12 +1275,12 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             if (seq->frame_id_numbers_present_flag)
                 fb(id_len, display_frame_id);
 
-            if (frame->frame_type == AV1_FRAME_KEY)
+            infer(frame_type, frame->frame_type);
+            if (current->frame_type == AV1_FRAME_KEY)
                 infer(refresh_frame_flags, all_frames);
             else
                 infer(refresh_frame_flags, 0);
 
-            infer(frame_type,            frame->frame_type);
             return 0;
         }
 
