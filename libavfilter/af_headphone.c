@@ -812,7 +812,6 @@ static int config_output(AVFilterLink *outlink)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     HeadphoneContext *s = ctx->priv;
-    int i;
 
     av_fft_end(s->ifft[0]);
     av_fft_end(s->ifft[1]);
@@ -834,11 +833,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->data_hrtf[1]);
     av_freep(&s->fdsp);
 
-    for (i = 0; i < s->nb_inputs; i++) {
-        if (ctx->input_pads && i)
-            av_freep(&ctx->input_pads[i].name);
-    }
     av_freep(&s->in);
+    for (unsigned i = 1; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
 }
 
 #define OFFSET(x) offsetof(HeadphoneContext, x)
