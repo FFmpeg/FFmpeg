@@ -705,6 +705,9 @@ static int query_formats(AVFilterContext *ctx)
     ret = ff_add_channel_layout(&stereo_layout, AV_CH_LAYOUT_STEREO);
     if (ret)
         return ret;
+    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->in_channel_layouts);
+    if (ret)
+        return ret;
 
     if (s->hrir_fmt == HRIR_MULTI) {
         hrir_layouts = ff_all_channel_counts();
@@ -720,10 +723,6 @@ static int query_formats(AVFilterContext *ctx)
                 return ret;
         }
     }
-
-    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->in_channel_layouts);
-    if (ret)
-        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
