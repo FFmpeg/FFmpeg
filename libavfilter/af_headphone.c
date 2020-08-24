@@ -88,15 +88,13 @@ typedef struct HeadphoneContext {
     } *in;
 } HeadphoneContext;
 
-static int parse_channel_name(HeadphoneContext *s, int x, char **arg, int *rchannel, char *buf)
+static int parse_channel_name(char **arg, int *rchannel, char *buf)
 {
     int len, i, channel_id = 0;
     int64_t layout, layout0;
 
     if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
         layout0 = layout = av_get_channel_layout(buf);
-        if (layout == AV_CH_LOW_FREQUENCY)
-            s->lfe_channel = x;
         for (i = 32; i > 0; i >>= 1) {
             if (layout >= 1LL << i) {
                 channel_id += i;
@@ -116,6 +114,7 @@ static void parse_map(AVFilterContext *ctx)
 {
     HeadphoneContext *s = ctx->priv;
     char *arg, *tokenizer, *p, *args = av_strdup(s->map);
+    uint64_t used_channels = 0;
     int i;
 
     if (!args)
@@ -134,10 +133,17 @@ static void parse_map(AVFilterContext *ctx)
         char buf[8];
 
         p = NULL;
-        if (parse_channel_name(s, s->nb_irs, &arg, &out_ch_id, buf)) {
+        if (parse_channel_name(&arg, &out_ch_id, buf)) {
             av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", arg);
             continue;
         }
+        if (used_channels & (1ULL << out_ch_id)) {
+            av_log(ctx, AV_LOG_WARNING, "Ignoring duplicate channel '%s'.\n", buf);
+            continue;
+        }
+        used_channels |= 1ULL << out_ch_id;
+        if (out_ch_id == av_log2(AV_CH_LOW_FREQUENCY))
+            s->lfe_channel = s->nb_irs;
         s->mapping[s->nb_irs] = out_ch_id;
         s->nb_irs++;
     }
