@@ -132,8 +132,9 @@ static uint64_t get_block_sum(StreamContext *sc, uint64_t intpic[32][32], const 
     return sum;
 }
 
-static int cmp(const uint64_t *a, const uint64_t *b)
+static int cmp(const void *x, const void *y)
 {
+    const uint64_t *a = x, *b = y;
     return *a < *b ? -1 : ( *a > *b ? 1 : 0 );
 }
 
@@ -291,7 +292,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         }
 
         /* get threshold */
-        qsort(sortsignature, elemcat->elem_count, sizeof(uint64_t), (void*) cmp);
+        qsort(sortsignature, elemcat->elem_count, sizeof(uint64_t), cmp);
         th = sortsignature[(int) (elemcat->elem_count*0.333)];
 
         /* ternarize */
@@ -317,7 +318,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     }
 
     /* confidence */
-    qsort(conflist, DIFFELEM_SIZE, sizeof(uint64_t), (void*) cmp);
+    qsort(conflist, DIFFELEM_SIZE, sizeof(uint64_t), cmp);
     fs->confidence = FFMIN(conflist[DIFFELEM_SIZE/2], 255);
 
     /* coarsesignature */
