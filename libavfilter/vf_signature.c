@@ -730,6 +730,8 @@ static av_cold void uninit(AVFilterContext *ctx)
         }
         av_freep(&sic->streamcontexts);
     }
+    for (unsigned i = 0; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
 }
 
 static int config_output(AVFilterLink *outlink)
