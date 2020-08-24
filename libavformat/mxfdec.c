@@ -3615,7 +3615,7 @@ static int mxf_probe(const AVProbeData *p) {
                 AV_RN32(bufp+ 4) == AV_RN32(mxf_header_partition_pack_key+ 4) &&
                 AV_RN32(bufp+ 8) == AV_RN32(mxf_header_partition_pack_key+ 8) &&
                 AV_RN16(bufp+12) == AV_RN16(mxf_header_partition_pack_key+12))
-                return AVPROBE_SCORE_MAX;
+                return bufp == p->buf ? AVPROBE_SCORE_MAX : AVPROBE_SCORE_MAX - 1;
             bufp ++;
         } else
             bufp += 10;
