@@ -504,6 +504,7 @@ enum AVCodecID {
     AV_CODEC_ID_MPEGH_3D_AUDIO,
     AV_CODEC_ID_SIREN,
     AV_CODEC_ID_HCA,
+    AV_CODEC_ID_FASTAUDIO,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

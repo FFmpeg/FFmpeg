@@ -430,6 +430,7 @@ extern AVCodec ff_dst_decoder;
 extern AVCodec ff_eac3_encoder;
 extern AVCodec ff_eac3_decoder;
 extern AVCodec ff_evrc_decoder;
+extern AVCodec ff_fastaudio_decoder;
 extern AVCodec ff_ffwavesynth_decoder;
 extern AVCodec ff_flac_encoder;
 extern AVCodec ff_flac_decoder;
