@@ -135,7 +135,7 @@ static void parse_map(AVFilterContext *ctx)
 
         p = NULL;
         if (parse_channel_name(s, s->nb_irs, &arg, &out_ch_id, buf)) {
-            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", buf);
+            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", arg);
             continue;
         }
         s->mapping[s->nb_irs] = out_ch_id;
