@@ -373,7 +373,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     for (i = 0; i < AV1_NUM_REF_FRAMES; i++)
         shifted_order_hints[i] = cur_frame_hint +
                                  cbs_av1_get_relative_dist(seq, priv->ref[i].order_hint,
-                                                           current->order_hint);
+                                                           priv->order_hint);
 
     latest_order_hint = shifted_order_hints[current->last_frame_idx];
     earliest_order_hint = shifted_order_hints[current->golden_frame_idx];
@@ -1005,7 +1005,7 @@ static int FUNC(skip_mode_params)(CodedBitstreamContext *ctx, RWContext *rw,
         for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
             ref_hint = priv->ref[current->ref_frame_idx[i]].order_hint;
             dist = cbs_av1_get_relative_dist(seq, ref_hint,
-                                             current->order_hint);
+                                             priv->order_hint);
             if (dist < 0) {
                 if (forward_idx < 0 ||
                     cbs_av1_get_relative_dist(seq, ref_hint,
@@ -1397,6 +1397,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
         fb(order_hint_bits, order_hint);
     else
         infer(order_hint, 0);
+    priv->order_hint = current->order_hint;
 
     if (frame_is_intra || current->error_resilient_mode)
         infer(primary_ref_frame, AV1_PRIMARY_REF_NONE);
@@ -1586,14 +1587,14 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 .subsampling_x  = seq->color_config.subsampling_x,
                 .subsampling_y  = seq->color_config.subsampling_y,
                 .bit_depth      = priv->bit_depth,
-                .order_hint     = current->order_hint,
+                .order_hint     = priv->order_hint,
             };
         }
     }
 
     av_log(ctx->log_ctx, AV_LOG_DEBUG, "Frame %d:  size %dx%d  "
            "upscaled %d  render %dx%d  subsample %dx%d  "
-           "bitdepth %d  tiles %dx%d.\n", current->order_hint,
+           "bitdepth %d  tiles %dx%d.\n", priv->order_hint,
            priv->frame_width, priv->frame_height, priv->upscaled_width,
            priv->render_width, priv->render_height,
            seq->color_config.subsampling_x + 1,
