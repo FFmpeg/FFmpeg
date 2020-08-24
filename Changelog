@@ -15,6 +15,7 @@ version <next>:
 - Argonaut Games ASF muxer
 - AV1 Low overhead bitstream format demuxer
 - RPZA video encoder
+- ADPCM IMA MOFLEX decoder
 
 
 version 4.3:

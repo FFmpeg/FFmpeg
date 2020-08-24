@@ -2376,6 +2376,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Cunning Developments"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_ADPCM_IMA_MOFLEX,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_ima_moflex",
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA MobiClip MOFLEX"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
 
     /* AMR */
     {
