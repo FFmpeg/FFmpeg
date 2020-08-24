@@ -295,16 +295,20 @@ static int v4l2_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     if (s->draining)
         goto dequeue;
 
-    ret = ff_encode_get_frame(avctx, frame);
-    if (ret < 0 && ret != AVERROR_EOF)
-        return ret;
+    if (!frame->buf[0]) {
+        ret = ff_encode_get_frame(avctx, frame);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
 
-    if (ret == AVERROR_EOF)
-        frame = NULL;
+        if (ret == AVERROR_EOF)
+            frame = NULL;
+    }
 
     ret = v4l2_send_frame(avctx, frame);
-    av_frame_unref(frame);
-    if (ret < 0)
+    if (ret != AVERROR(EAGAIN))
+        av_frame_unref(frame);
+
+    if (ret < 0 && ret != AVERROR(EAGAIN))
         return ret;
 
     if (!output->streamon) {

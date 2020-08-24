@@ -40,6 +40,8 @@ static float get_expected(float f1, float f2, DNNMathBinaryOperation op)
         return f1 / f2;
     case DMBO_MINIMUM:
         return (f1 < f2) ? f1 : f2;
+    case DMBO_FLOORMOD:
+        return (float)((int)(f1) % (int)(f2));
     default:
         av_assert0(!"not supported yet");
         return 0.f;
@@ -203,6 +205,9 @@ int main(int argc, char **argv)
         return 1;
 
     if (test(DMBO_MINIMUM))
+        return 1;
+
+    if (test(DMBO_FLOORMOD))
         return 1;
 
     return 0;

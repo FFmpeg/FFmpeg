@@ -19,6 +19,7 @@
 static int FUNC(obu_header)(CodedBitstreamContext *ctx, RWContext *rw,
                             AV1RawOBUHeader *current)
 {
+    CodedBitstreamAV1Context *priv = ctx->priv_data;
     int err;
 
     HEADER("OBU header");
@@ -35,7 +36,13 @@ static int FUNC(obu_header)(CodedBitstreamContext *ctx, RWContext *rw,
         fb(3, temporal_id);
         fb(2, spatial_id);
         fc(3, extension_header_reserved_3bits, 0, 0);
+    } else {
+        infer(temporal_id, 0);
+        infer(spatial_id, 0);
     }
+
+    priv->temporal_id = current->temporal_id;
+    priv->spatial_id  = current->spatial_id;
 
     return 0;
 }
@@ -485,13 +492,13 @@ static int FUNC(frame_size)(CodedBitstreamContext *ctx, RWContext *rw,
     if (current->frame_size_override_flag) {
         fb(seq->frame_width_bits_minus_1 + 1,  frame_width_minus_1);
         fb(seq->frame_height_bits_minus_1 + 1, frame_height_minus_1);
-
-        priv->frame_width  = current->frame_width_minus_1  + 1;
-        priv->frame_height = current->frame_height_minus_1 + 1;
     } else {
-        priv->frame_width  = seq->max_frame_width_minus_1  + 1;
-        priv->frame_height = seq->max_frame_height_minus_1 + 1;
+        infer(frame_width_minus_1,  seq->max_frame_width_minus_1);
+        infer(frame_height_minus_1, seq->max_frame_height_minus_1);
     }
+
+    priv->frame_width  = current->frame_width_minus_1  + 1;
+    priv->frame_height = current->frame_height_minus_1 + 1;
 
     CHECK(FUNC(superres_params)(ctx, rw, current));
 
@@ -509,13 +516,13 @@ static int FUNC(render_size)(CodedBitstreamContext *ctx, RWContext *rw,
     if (current->render_and_frame_size_different) {
         fb(16, render_width_minus_1);
         fb(16, render_height_minus_1);
-
-        priv->render_width  = current->render_width_minus_1  + 1;
-        priv->render_height = current->render_height_minus_1 + 1;
     } else {
-        priv->render_width  = priv->upscaled_width;
-        priv->render_height = priv->frame_height;
+        infer(render_width_minus_1,  current->frame_width_minus_1);
+        infer(render_height_minus_1, current->frame_height_minus_1);
     }
+
+    priv->render_width  = current->render_width_minus_1  + 1;
+    priv->render_height = current->render_height_minus_1 + 1;
 
     return 0;
 }
@@ -539,6 +546,11 @@ static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
                        i, current->ref_frame_idx[i]);
                 return AVERROR_INVALIDDATA;
             }
+
+            infer(frame_width_minus_1,   ref->upscaled_width - 1);
+            infer(frame_height_minus_1,  ref->frame_height - 1);
+            infer(render_width_minus_1,  ref->render_width - 1);
+            infer(render_height_minus_1, ref->render_height - 1);
 
             priv->upscaled_width = ref->upscaled_width;
             priv->frame_width    = ref->frame_width;
@@ -1266,6 +1278,13 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             fb(3, frame_to_show_map_idx);
             frame = &priv->ref[current->frame_to_show_map_idx];
 
+            if (!frame->valid) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "Missing reference frame needed for "
+                       "show_existing_frame (frame_to_show_map_idx = %d).\n",
+                       current->frame_to_show_map_idx);
+                return AVERROR_INVALIDDATA;
+            }
+
             if (seq->decoder_model_info_present_flag &&
                 !seq->timing_info.equal_picture_interval) {
                 fb(seq->decoder_model_info.frame_presentation_time_length_minus_1 + 1,
@@ -1279,6 +1298,18 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 infer(refresh_frame_flags, all_frames);
             else
                 infer(refresh_frame_flags, 0);
+
+            infer(frame_type,            frame->frame_type);
+            infer(frame_width_minus_1,   frame->upscaled_width - 1);
+            infer(frame_height_minus_1,  frame->frame_height - 1);
+            infer(render_width_minus_1,  frame->render_width - 1);
+            infer(render_height_minus_1, frame->render_height - 1);
+
+            priv->upscaled_width = frame->upscaled_width;
+            priv->frame_width    = frame->frame_width;
+            priv->frame_height   = frame->frame_height;
+            priv->render_width   = frame->render_width;
+            priv->render_height  = frame->render_height;
 
             return 0;
         }
@@ -1381,7 +1412,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                     int in_temporal_layer = (op_pt_idc >>  priv->temporal_id    ) & 1;
                     int in_spatial_layer  = (op_pt_idc >> (priv->spatial_id + 8)) & 1;
                     if (seq->operating_point_idc[i] == 0 ||
-                        in_temporal_layer || in_spatial_layer) {
+                        (in_temporal_layer && in_spatial_layer)) {
                         fbs(seq->decoder_model_info.buffer_removal_time_length_minus_1 + 1,
                             buffer_removal_time[i], 1, i);
                     }

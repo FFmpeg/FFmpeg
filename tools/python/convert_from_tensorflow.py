@@ -73,7 +73,7 @@ class TFConverter:
         self.conv2d_scopename_inputname_dict = {}
         self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4,
                         'MathBinary':5, 'MathUnary':6, 'AvgPool':7}
-        self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4}
+        self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4, 'FloorMod':5}
         self.mathun2code  = {'Abs':0, 'Sin':1, 'Cos':2, 'Tan':3, 'Asin':4,
                 'Acos':5, 'Atan':6, 'Sinh':7, 'Cosh':8, 'Tanh':9, 'Asinh':10,
                 'Acosh':11, 'Atanh':12, 'Ceil':13, 'Floor':14, 'Round':15}

@@ -63,7 +63,7 @@ static char *parse_link_name(const char **buf, void *log_ctx)
 
     name = av_get_token(buf, "]");
     if (!name)
-        goto fail;
+        return NULL;
 
     if (!name[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
@@ -71,12 +71,14 @@ static char *parse_link_name(const char **buf, void *log_ctx)
         goto fail;
     }
 
-    if (*(*buf)++ != ']') {
+    if (**buf != ']') {
         av_log(log_ctx, AV_LOG_ERROR,
                "Mismatched '[' found in the following: \"%s\".\n", start);
     fail:
         av_freep(&name);
+        return NULL;
     }
+    (*buf)++;
 
     return name;
 }
@@ -184,9 +186,16 @@ static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGr
     char *name = av_get_token(buf, "=,;[");
     int ret;
 
+    if (!name)
+        return AVERROR(ENOMEM);
+
     if (**buf == '=') {
         (*buf)++;
         opts = av_get_token(buf, "[],;");
+        if (!opts) {
+            av_free(name);
+            return AVERROR(ENOMEM);
+        }
     }
 
     ret = create_filter(filt_ctx, graph, index, name, opts, log_ctx);
@@ -303,8 +312,10 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
         char *name = parse_link_name(buf, log_ctx);
         AVFilterInOut *match;
 
-        if (!name)
+        if (!name) {
+            avfilter_inout_free(&parsed_inputs);
             return AVERROR(EINVAL);
+        }
 
         /* First check if the label is not in the open_outputs list */
         match = extract_inout(name, open_outputs);
@@ -314,6 +325,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
         } else {
             /* Not in the list, so add it as an input */
             if (!(match = av_mallocz(sizeof(AVFilterInOut)))) {
+                avfilter_inout_free(&parsed_inputs);
                 av_free(name);
                 return AVERROR(ENOMEM);
             }
@@ -360,15 +372,14 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
         match = extract_inout(name, open_inputs);
 
         if (match) {
-            if ((ret = link_filter(input->filter_ctx, input->pad_idx,
-                                   match->filter_ctx, match->pad_idx, log_ctx)) < 0) {
-                av_free(name);
-                return ret;
-            }
+            ret = link_filter(input->filter_ctx, input->pad_idx,
+                              match->filter_ctx, match->pad_idx, log_ctx);
             av_freep(&match->name);
             av_freep(&name);
             av_freep(&match);
             av_freep(&input);
+            if (ret < 0)
+                return ret;
         } else {
             /* Not in the list, so add the first input as an open_output */
             input->name = name;

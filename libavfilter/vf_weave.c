@@ -60,7 +60,6 @@ static int query_formats(AVFilterContext *ctx)
         if (!(desc->flags & AV_PIX_FMT_FLAG_PAL) &&
             !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
             if ((ret = ff_add_format(&formats, fmt)) < 0) {
-                ff_formats_unref(&formats);
                 return ret;
             }
         }
