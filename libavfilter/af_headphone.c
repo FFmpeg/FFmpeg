@@ -52,8 +52,6 @@ typedef struct HeadphoneContext {
     int ir_len;
     int air_len;
 
-    int mapping[64];
-
     int nb_inputs;
 
     int nb_irs;
@@ -86,12 +84,13 @@ typedef struct HeadphoneContext {
         int          delay_r;
         int          eof;
     } *in;
+    uint64_t mapping[64];
 } HeadphoneContext;
 
-static int parse_channel_name(char **arg, int *rchannel, char *buf)
+static int parse_channel_name(char **arg, uint64_t *rchannel, char *buf)
 {
     int len, i, channel_id = 0;
-    int64_t layout, layout0;
+    uint64_t layout, layout0;
 
     if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
         layout0 = layout = av_get_channel_layout(buf);
@@ -101,9 +100,9 @@ static int parse_channel_name(char **arg, int *rchannel, char *buf)
                 layout >>= i;
             }
         }
-        if (channel_id >= 64 || layout0 != 1LL << channel_id)
+        if (channel_id >= 64 || layout0 != 1ULL << channel_id)
             return AVERROR(EINVAL);
-        *rchannel = channel_id;
+        *rchannel = layout0;
         *arg += len;
         return 0;
     }
@@ -115,7 +114,6 @@ static void parse_map(AVFilterContext *ctx)
     HeadphoneContext *s = ctx->priv;
     char *arg, *tokenizer, *p, *args = av_strdup(s->map);
     uint64_t used_channels = 0;
-    int i;
 
     if (!args)
         return;
@@ -124,27 +122,23 @@ static void parse_map(AVFilterContext *ctx)
     s->lfe_channel = -1;
     s->nb_inputs = 1;
 
-    for (i = 0; i < 64; i++) {
-        s->mapping[i] = -1;
-    }
-
     while ((arg = av_strtok(p, "|", &tokenizer))) {
-        int out_ch_id;
+        uint64_t out_channel;
         char buf[8];
 
         p = NULL;
-        if (parse_channel_name(&arg, &out_ch_id, buf)) {
+        if (parse_channel_name(&arg, &out_channel, buf)) {
             av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", arg);
             continue;
         }
-        if (used_channels & (1ULL << out_ch_id)) {
+        if (used_channels & out_channel) {
             av_log(ctx, AV_LOG_WARNING, "Ignoring duplicate channel '%s'.\n", buf);
             continue;
         }
-        used_channels |= 1ULL << out_ch_id;
-        if (out_ch_id == av_log2(AV_CH_LOW_FREQUENCY))
+        used_channels        |= out_channel;
+        if (out_channel == AV_CH_LOW_FREQUENCY)
             s->lfe_channel = s->nb_irs;
-        s->mapping[s->nb_irs] = out_ch_id;
+        s->mapping[s->nb_irs] = out_channel;
         s->nb_irs++;
     }
 
@@ -499,11 +493,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
             int idx = -1;
 
             for (j = 0; j < inlink->channels; j++) {
-                if (s->mapping[i] < 0) {
-                    continue;
-                }
-
-                if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == (1LL << s->mapping[i])) {
+                if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == s->mapping[i]) {
                     idx = i;
                     break;
                 }
@@ -541,11 +531,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                 int idx = -1;
 
                 for (j = 0; j < inlink->channels; j++) {
-                    if (s->mapping[k] < 0) {
-                        continue;
-                    }
-
-                    if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == (1LL << s->mapping[k])) {
+                    if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == s->mapping[k]) {
                         idx = k;
                         break;
                     }
