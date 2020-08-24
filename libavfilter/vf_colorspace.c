@@ -896,7 +896,7 @@ static int query_formats(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     if (s->user_format == AV_PIX_FMT_NONE)
         return ff_set_common_formats(ctx, formats);
-    res = ff_formats_ref(formats, &ctx->inputs[0]->out_formats);
+    res = ff_formats_ref(formats, &ctx->inputs[0]->outcfg.formats);
     if (res < 0)
         return res;
     formats = NULL;
@@ -904,7 +904,7 @@ static int query_formats(AVFilterContext *ctx)
     if (res < 0)
         return res;
 
-    return ff_formats_ref(formats, &ctx->outputs[0]->in_formats);
+    return ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats);
 }
 
 static int config_props(AVFilterLink *outlink)

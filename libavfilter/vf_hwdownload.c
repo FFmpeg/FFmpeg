@@ -41,9 +41,9 @@ static int hwdownload_query_formats(AVFilterContext *avctx)
     int err;
 
     if ((err = ff_formats_pixdesc_filter(&fmts, AV_PIX_FMT_FLAG_HWACCEL, 0)) ||
-        (err = ff_formats_ref(fmts, &avctx->inputs[0]->out_formats))         ||
+        (err = ff_formats_ref(fmts, &avctx->inputs[0]->outcfg.formats))      ||
         (err = ff_formats_pixdesc_filter(&fmts, 0, AV_PIX_FMT_FLAG_HWACCEL)) ||
-        (err = ff_formats_ref(fmts, &avctx->outputs[0]->in_formats)))
+        (err = ff_formats_ref(fmts, &avctx->outputs[0]->incfg.formats)))
         return err;
 
     return 0;

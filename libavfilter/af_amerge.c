@@ -81,14 +81,14 @@ static int query_formats(AVFilterContext *ctx)
     int i, ret, overlap = 0, nb_ch = 0;
 
     for (i = 0; i < s->nb_inputs; i++) {
-        if (!ctx->inputs[i]->in_channel_layouts ||
-            !ctx->inputs[i]->in_channel_layouts->nb_channel_layouts) {
+        if (!ctx->inputs[i]->incfg.channel_layouts ||
+            !ctx->inputs[i]->incfg.channel_layouts->nb_channel_layouts) {
             av_log(ctx, AV_LOG_WARNING,
                    "No channel layout for input %d\n", i + 1);
             return AVERROR(EAGAIN);
         }
-        inlayout[i] = ctx->inputs[i]->in_channel_layouts->channel_layouts[0];
-        if (ctx->inputs[i]->in_channel_layouts->nb_channel_layouts > 1) {
+        inlayout[i] = ctx->inputs[i]->incfg.channel_layouts->channel_layouts[0];
+        if (ctx->inputs[i]->incfg.channel_layouts->nb_channel_layouts > 1) {
             char buf[256];
             av_get_channel_layout_string(buf, sizeof(buf), 0, inlayout[i]);
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
@@ -136,13 +136,13 @@ static int query_formats(AVFilterContext *ctx)
         layouts = NULL;
         if ((ret = ff_add_channel_layout(&layouts, inlayout[i])) < 0)
             return ret;
-        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts)) < 0)
+        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->outcfg.channel_layouts)) < 0)
             return ret;
     }
     layouts = NULL;
     if ((ret = ff_add_channel_layout(&layouts, outlayout)) < 0)
         return ret;
-    if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts)) < 0)
+    if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
         return ret;
 
     return ff_set_common_samplerates(ctx, ff_all_samplerates());

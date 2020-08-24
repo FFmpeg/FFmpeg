@@ -40,7 +40,7 @@ static void print_formats(AVFilterContext *filter_ctx)
     for (i = 0; i < filter_ctx->nb_##inout##puts; i++) {                     \
         if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_VIDEO) {   \
             AVFilterFormats *fmts =                                     \
-                filter_ctx->inout##puts[i]->outin##_formats;            \
+                filter_ctx->inout##puts[i]->outin##cfg.formats;            \
             for (j = 0; j < fmts->nb_formats; j++)                    \
                 if(av_get_pix_fmt_name(fmts->formats[j]))               \
                 printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
@@ -50,13 +50,13 @@ static void print_formats(AVFilterContext *filter_ctx)
             AVFilterFormats *fmts;                                      \
             AVFilterChannelLayouts *layouts;                            \
                                                                         \
-            fmts = filter_ctx->inout##puts[i]->outin##_formats;         \
+            fmts = filter_ctx->inout##puts[i]->outin##cfg.formats;         \
             for (j = 0; j < fmts->nb_formats; j++)                    \
                 printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
                        i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i),      \
                        av_get_sample_fmt_name(fmts->formats[j]));       \
                                                                         \
-            layouts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
+            layouts = filter_ctx->inout##puts[i]->outin##cfg.channel_layouts; \
             for (j = 0; j < layouts->nb_channel_layouts; j++) {                  \
                 char buf[256];                                          \
                 av_get_channel_layout_string(buf, sizeof(buf), -1,      \

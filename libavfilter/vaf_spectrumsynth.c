@@ -115,28 +115,28 @@ static int query_formats(AVFilterContext *ctx)
     int ret, sample_rates[] = { 48000, -1 };
 
     formats = ff_make_format_list(sample_fmts);
-    if ((ret = ff_formats_ref         (formats, &outlink->in_formats        )) < 0 ||
+    if ((ret = ff_formats_ref         (formats, &outlink->incfg.formats        )) < 0 ||
         (ret = ff_add_channel_layout  (&layout, FF_COUNT2LAYOUT(s->channels))) < 0 ||
-        (ret = ff_channel_layouts_ref (layout , &outlink->in_channel_layouts)) < 0)
+        (ret = ff_channel_layouts_ref (layout , &outlink->incfg.channel_layouts)) < 0)
         return ret;
 
     sample_rates[0] = s->sample_rate;
     formats = ff_make_format_list(sample_rates);
     if (!formats)
         return AVERROR(ENOMEM);
-    if ((ret = ff_formats_ref(formats, &outlink->in_samplerates)) < 0)
+    if ((ret = ff_formats_ref(formats, &outlink->incfg.samplerates)) < 0)
         return ret;
 
     formats = ff_make_format_list(pix_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    if ((ret = ff_formats_ref(formats, &magnitude->out_formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &magnitude->outcfg.formats)) < 0)
         return ret;
 
     formats = ff_make_format_list(pix_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    if ((ret = ff_formats_ref(formats, &phase->out_formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &phase->outcfg.formats)) < 0)
         return ret;
 
     return 0;

@@ -103,12 +103,12 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *main_formats = ff_make_format_list(main_fmts);
     int ret;
 
-    if ((ret = ff_formats_ref(main_formats, &ctx->inputs[0]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(main_formats, &ctx->outputs[0]->in_formats)) < 0)
+    if ((ret = ff_formats_ref(main_formats, &ctx->inputs[0]->outcfg.formats)) < 0 ||
+        (ret = ff_formats_ref(main_formats, &ctx->outputs[0]->incfg.formats)) < 0)
             return ret;
 
     return ff_formats_ref(ff_make_format_list(alpha_fmts),
-                          &ctx->inputs[1]->out_formats);
+                          &ctx->inputs[1]->outcfg.formats);
 }
 
 static int config_input_main(AVFilterLink *inlink)

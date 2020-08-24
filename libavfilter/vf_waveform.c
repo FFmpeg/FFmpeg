@@ -319,8 +319,8 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *avff, *avff2;
     int depth, depth2, rgb, i, ret, ncomp, ncomp2;
 
-    if (!ctx->inputs[0]->in_formats ||
-        !ctx->inputs[0]->in_formats->nb_formats) {
+    if (!ctx->inputs[0]->incfg.formats ||
+        !ctx->inputs[0]->incfg.formats->nb_formats) {
         return AVERROR(EAGAIN);
     }
 
@@ -336,13 +336,13 @@ static int query_formats(AVFilterContext *ctx)
     default: return AVERROR_BUG;
     }
 
-    if (!ctx->inputs[0]->out_formats) {
-        if ((ret = ff_formats_ref(ff_make_format_list(in_pix_fmts), &ctx->inputs[0]->out_formats)) < 0)
+    if (!ctx->inputs[0]->outcfg.formats) {
+        if ((ret = ff_formats_ref(ff_make_format_list(in_pix_fmts), &ctx->inputs[0]->outcfg.formats)) < 0)
             return ret;
     }
 
-    avff = ctx->inputs[0]->in_formats;
-    avff2 = ctx->inputs[0]->out_formats;
+    avff = ctx->inputs[0]->incfg.formats;
+    avff2 = ctx->inputs[0]->outcfg.formats;
     desc = av_pix_fmt_desc_get(avff->formats[0]);
     desc2 = av_pix_fmt_desc_get(avff2->formats[0]);
     ncomp = desc->nb_components;
@@ -385,7 +385,7 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = out_yuv12_lowpass_pix_fmts;
     else
         return AVERROR(EAGAIN);
-    if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
+    if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->incfg.formats)) < 0)
         return ret;
 
     return 0;

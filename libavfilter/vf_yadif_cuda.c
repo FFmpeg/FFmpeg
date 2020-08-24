@@ -216,10 +216,10 @@ static int deint_cuda_query_formats(AVFilterContext *ctx)
     int ret;
 
     if ((ret = ff_formats_ref(ff_make_format_list(pix_fmts),
-                              &ctx->inputs[0]->out_formats)) < 0)
+                              &ctx->inputs[0]->outcfg.formats)) < 0)
         return ret;
     if ((ret = ff_formats_ref(ff_make_format_list(pix_fmts),
-                              &ctx->outputs[0]->in_formats)) < 0)
+                              &ctx->outputs[0]->incfg.formats)) < 0)
         return ret;
 
     return 0;

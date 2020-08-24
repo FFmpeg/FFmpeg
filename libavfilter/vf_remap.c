@@ -116,14 +116,14 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     pix_formats = ff_make_format_list(s->format ? gray_pix_fmts : pix_fmts);
-    if ((ret = ff_formats_ref(pix_formats, &ctx->inputs[0]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(pix_formats, &ctx->outputs[0]->in_formats)) < 0)
+    if ((ret = ff_formats_ref(pix_formats, &ctx->inputs[0]->outcfg.formats)) < 0 ||
+        (ret = ff_formats_ref(pix_formats, &ctx->outputs[0]->incfg.formats)) < 0)
         return ret;
 
     map_formats = ff_make_format_list(map_fmts);
-    if ((ret = ff_formats_ref(map_formats, &ctx->inputs[1]->out_formats)) < 0)
+    if ((ret = ff_formats_ref(map_formats, &ctx->inputs[1]->outcfg.formats)) < 0)
         return ret;
-    return ff_formats_ref(map_formats, &ctx->inputs[2]->out_formats);
+    return ff_formats_ref(map_formats, &ctx->inputs[2]->outcfg.formats);
 }
 
 /**

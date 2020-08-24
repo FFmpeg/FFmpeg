@@ -353,20 +353,20 @@ static int scquery_formats(AVFilterContext *ctx)
     };
     int ret, i;
 
-    if (!ctx->inputs[0]->in_channel_layouts ||
-        !ctx->inputs[0]->in_channel_layouts->nb_channel_layouts) {
+    if (!ctx->inputs[0]->incfg.channel_layouts ||
+        !ctx->inputs[0]->incfg.channel_layouts->nb_channel_layouts) {
         av_log(ctx, AV_LOG_WARNING,
                "No channel layout for input 1\n");
             return AVERROR(EAGAIN);
     }
 
-    if ((ret = ff_add_channel_layout(&layouts, ctx->inputs[0]->in_channel_layouts->channel_layouts[0])) < 0 ||
-        (ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts)) < 0)
+    if ((ret = ff_add_channel_layout(&layouts, ctx->inputs[0]->incfg.channel_layouts->channel_layouts[0])) < 0 ||
+        (ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
         return ret;
 
     for (i = 0; i < 2; i++) {
         layouts = ff_all_channel_counts();
-        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts)) < 0)
+        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->outcfg.channel_layouts)) < 0)
             return ret;
     }
 

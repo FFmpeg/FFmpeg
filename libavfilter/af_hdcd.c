@@ -1638,12 +1638,12 @@ static int query_formats(AVFilterContext *ctx)
         return ret;
 
     in_formats = ff_make_format_list(sample_fmts_in);
-    ret = ff_formats_ref(in_formats, &inlink->out_formats);
+    ret = ff_formats_ref(in_formats, &inlink->outcfg.formats);
     if (ret < 0)
         return ret;
 
     out_formats = ff_make_format_list(sample_fmts_out);
-    ret = ff_formats_ref(out_formats, &outlink->in_formats);
+    ret = ff_formats_ref(out_formats, &outlink->incfg.formats);
     if (ret < 0)
         return ret;
 

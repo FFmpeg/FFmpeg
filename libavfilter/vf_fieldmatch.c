@@ -917,14 +917,14 @@ static int query_formats(AVFilterContext *ctx)
         return ff_set_common_formats(ctx, fmts_list);
     }
 
-    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_MAIN]->out_formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_MAIN]->outcfg.formats)) < 0)
         return ret;
     fmts_list = ff_make_format_list(unproc_pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
-    if ((ret = ff_formats_ref(fmts_list, &ctx->outputs[0]->in_formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &ctx->outputs[0]->incfg.formats)) < 0)
         return ret;
-    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_CLEANSRC]->out_formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_CLEANSRC]->outcfg.formats)) < 0)
         return ret;
     return 0;
 }

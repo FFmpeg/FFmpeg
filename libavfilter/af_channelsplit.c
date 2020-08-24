@@ -117,7 +117,7 @@ static int query_formats(AVFilterContext *ctx)
         return ret;
 
     if ((ret = ff_add_channel_layout(&in_layouts, s->channel_layout)) < 0 ||
-        (ret = ff_channel_layouts_ref(in_layouts, &ctx->inputs[0]->out_channel_layouts)) < 0)
+        (ret = ff_channel_layouts_ref(in_layouts, &ctx->inputs[0]->outcfg.channel_layouts)) < 0)
         return ret;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
@@ -125,7 +125,7 @@ static int query_formats(AVFilterContext *ctx)
         uint64_t channel = av_channel_layout_extract_channel(s->channel_layout, s->map[i]);
 
         if ((ret = ff_add_channel_layout(&out_layouts, channel)) < 0 ||
-            (ret = ff_channel_layouts_ref(out_layouts, &ctx->outputs[i]->in_channel_layouts)) < 0)
+            (ret = ff_channel_layouts_ref(out_layouts, &ctx->outputs[i]->incfg.channel_layouts)) < 0)
             return ret;
     }
 

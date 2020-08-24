@@ -216,23 +216,23 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *avff;
     int depth, rgb, i, ret;
 
-    if (!ctx->inputs[0]->in_formats ||
-        !ctx->inputs[0]->in_formats->nb_formats) {
+    if (!ctx->inputs[0]->incfg.formats ||
+        !ctx->inputs[0]->incfg.formats->nb_formats) {
         return AVERROR(EAGAIN);
     }
 
-    if (!ctx->inputs[0]->out_formats) {
+    if (!ctx->inputs[0]->outcfg.formats) {
         const enum AVPixelFormat *in_pix_fmts;
 
         if ((s->x == 1 && s->y == 2) || (s->x == 2 && s->y == 1))
             in_pix_fmts = in2_pix_fmts;
         else
             in_pix_fmts = in1_pix_fmts;
-        if ((ret = ff_formats_ref(ff_make_format_list(in_pix_fmts), &ctx->inputs[0]->out_formats)) < 0)
+        if ((ret = ff_formats_ref(ff_make_format_list(in_pix_fmts), &ctx->inputs[0]->outcfg.formats)) < 0)
             return ret;
     }
 
-    avff = ctx->inputs[0]->in_formats;
+    avff = ctx->inputs[0]->incfg.formats;
     desc = av_pix_fmt_desc_get(avff->formats[0]);
     rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
     depth = desc->comp[0].depth;
@@ -261,7 +261,7 @@ static int query_formats(AVFilterContext *ctx)
         out_pix_fmts = out_yuv12_pix_fmts;
     else
         return AVERROR(EAGAIN);
-    if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats)) < 0)
+    if ((ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->incfg.formats)) < 0)
         return ret;
 
     return 0;

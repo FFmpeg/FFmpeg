@@ -569,14 +569,14 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 int ff_set_common_channel_layouts(AVFilterContext *ctx,
                                   AVFilterChannelLayouts *layouts)
 {
-    SET_COMMON_FORMATS(ctx, layouts, in_channel_layouts, out_channel_layouts,
+    SET_COMMON_FORMATS(ctx, layouts, incfg.channel_layouts, outcfg.channel_layouts,
                        ff_channel_layouts_ref, ff_channel_layouts_unref);
 }
 
 int ff_set_common_samplerates(AVFilterContext *ctx,
                               AVFilterFormats *samplerates)
 {
-    SET_COMMON_FORMATS(ctx, samplerates, in_samplerates, out_samplerates,
+    SET_COMMON_FORMATS(ctx, samplerates, incfg.samplerates, outcfg.samplerates,
                        ff_formats_ref, ff_formats_unref);
 }
 
@@ -587,7 +587,7 @@ int ff_set_common_samplerates(AVFilterContext *ctx,
  */
 int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
-    SET_COMMON_FORMATS(ctx, formats, in_formats, out_formats,
+    SET_COMMON_FORMATS(ctx, formats, incfg.formats, outcfg.formats,
                        ff_formats_ref, ff_formats_unref);
 }
 
