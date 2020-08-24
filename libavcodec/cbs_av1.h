@@ -429,6 +429,7 @@ typedef struct CodedBitstreamAV1Context {
     int operating_point_idc;
 
     int bit_depth;
+    int order_hint;
     int frame_width;
     int frame_height;
     int upscaled_width;
