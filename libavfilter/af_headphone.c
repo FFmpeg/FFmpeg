@@ -367,9 +367,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     const int ir_len = s->ir_len;
     int nb_input_channels = ctx->inputs[0]->channels;
     float gain_lin = expf((s->gain - 3 * nb_input_channels) / 20 * M_LN10);
-    FFTComplex *fft_in_l = NULL;
-    FFTComplex *fft_in_r = NULL;
-    int offset = 0, ret = 0;
+    int ret = 0;
     int n_fft;
     int i, j, k;
 
@@ -381,13 +379,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     s->n_fft = n_fft = 1 << (32 - ff_clz(ir_len + s->size));
 
     if (s->type == FREQUENCY_DOMAIN) {
-        fft_in_l = av_calloc(n_fft, sizeof(*fft_in_l));
-        fft_in_r = av_calloc(n_fft, sizeof(*fft_in_r));
-        if (!fft_in_l || !fft_in_r) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
         s->fft[0] = av_fft_init(av_log2(s->n_fft), 0);
         s->fft[1] = av_fft_init(av_log2(s->n_fft), 0);
         s->ifft[0] = av_fft_init(av_log2(s->n_fft), 1);
@@ -464,10 +455,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                     data_ir_r[j] = ptr[len * 2 - j * 2 - 1] * gain_lin;
                 }
             } else {
-                memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
-                memset(fft_in_r, 0, n_fft * sizeof(*fft_in_r));
+                FFTComplex *fft_in_l = s->data_hrtf[0] + idx * n_fft;
+                FFTComplex *fft_in_r = s->data_hrtf[1] + idx * n_fft;
 
-                offset = idx * n_fft;
                 for (j = 0; j < len; j++) {
                     fft_in_l[j].re = ptr[j * 2    ] * gain_lin;
                     fft_in_r[j].re = ptr[j * 2 + 1] * gain_lin;
@@ -475,10 +465,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                 av_fft_permute(s->fft[0], fft_in_l);
                 av_fft_calc(s->fft[0], fft_in_l);
-                memcpy(s->data_hrtf[0] + offset, fft_in_l, n_fft * sizeof(*fft_in_l));
                 av_fft_permute(s->fft[0], fft_in_r);
                 av_fft_calc(s->fft[0], fft_in_r);
-                memcpy(s->data_hrtf[1] + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
             }
         } else {
             int I, N = ctx->inputs[1]->channels;
@@ -499,10 +487,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                         data_ir_r[j] = ptr[len * N - j * N - N + I + 1] * gain_lin;
                     }
                 } else {
-                    memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
-                    memset(fft_in_r, 0, n_fft * sizeof(*fft_in_r));
+                    FFTComplex *fft_in_l = s->data_hrtf[0] + idx * n_fft;
+                    FFTComplex *fft_in_r = s->data_hrtf[1] + idx * n_fft;
 
-                    offset = idx * n_fft;
                     for (j = 0; j < len; j++) {
                         fft_in_l[j].re = ptr[j * N + I    ] * gain_lin;
                         fft_in_r[j].re = ptr[j * N + I + 1] * gain_lin;
@@ -510,10 +497,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                     av_fft_permute(s->fft[0], fft_in_l);
                     av_fft_calc(s->fft[0], fft_in_l);
-                    memcpy(s->data_hrtf[0] + offset, fft_in_l, n_fft * sizeof(*fft_in_l));
                     av_fft_permute(s->fft[0], fft_in_r);
                     av_fft_calc(s->fft[0], fft_in_r);
-                    memcpy(s->data_hrtf[1] + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
                 }
             }
         }
@@ -527,9 +512,6 @@ fail:
 
     for (i = 0; i < s->nb_inputs - 1; i++)
         av_frame_free(&s->in[i + 1].frame);
-
-    av_freep(&fft_in_l);
-    av_freep(&fft_in_r);
 
     return ret;
 }
