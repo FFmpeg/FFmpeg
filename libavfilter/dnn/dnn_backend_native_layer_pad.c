@@ -112,10 +112,10 @@ int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_ind
     output_operand->data_type = operands[input_operand_index].data_type;
     output_operand->length = calculate_operand_data_length(output_operand);
     if (output_operand->length <= 0)
-        return -1;
+        return DNN_ERROR;
     output_operand->data = av_realloc(output_operand->data, output_operand->length);
     if (!output_operand->data)
-        return -1;
+        return DNN_ERROR;
     output = output_operand->data;
 
     // copy the original data

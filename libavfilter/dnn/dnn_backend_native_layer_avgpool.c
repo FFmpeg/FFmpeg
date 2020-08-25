@@ -109,7 +109,7 @@ int dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_operan
     output_operand->length = calculate_operand_data_length(output_operand);
     output_operand->data = av_realloc(output_operand->data, output_operand->length);
     if (!output_operand->data)
-        return -1;
+        return DNN_ERROR;
     output = output_operand->data;
 
     for (int y = 0; y < height_end; y += kernel_strides) {
