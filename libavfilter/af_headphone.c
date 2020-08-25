@@ -375,8 +375,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     FFTComplex *data_hrtf_r = NULL;
     FFTComplex *fft_in_l = NULL;
     FFTComplex *fft_in_r = NULL;
-    float *data_ir_l = NULL;
-    float *data_ir_r = NULL;
     int offset = 0, ret = 0;
     int n_fft;
     int i, j, k;
@@ -408,9 +406,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         }
     }
 
-    s->data_ir[0] = av_calloc(s->air_len, sizeof(float) * s->nb_irs);
-    s->data_ir[1] = av_calloc(s->air_len, sizeof(float) * s->nb_irs);
-
     if (s->type == TIME_DOMAIN) {
         s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
         s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
@@ -428,8 +423,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         }
     }
 
-    if (!s->data_ir[0] || !s->data_ir[1] ||
-        !s->ringbuffer[0] || !s->ringbuffer[1]) {
+    if (!s->ringbuffer[0] || !s->ringbuffer[1]) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
@@ -438,9 +432,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         s->temp_src[0] = av_calloc(s->air_len, sizeof(float));
         s->temp_src[1] = av_calloc(s->air_len, sizeof(float));
 
-        data_ir_l = av_calloc(nb_irs * s->air_len, sizeof(*data_ir_l));
-        data_ir_r = av_calloc(nb_irs * s->air_len, sizeof(*data_ir_r));
-        if (!data_ir_r || !data_ir_l || !s->temp_src[0] || !s->temp_src[1]) {
+        s->data_ir[0] = av_calloc(nb_irs * s->air_len, sizeof(*s->data_ir[0]));
+        s->data_ir[1] = av_calloc(nb_irs * s->air_len, sizeof(*s->data_ir[1]));
+        if (!s->data_ir[0] || !s->data_ir[1] || !s->temp_src[0] || !s->temp_src[1]) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -475,10 +469,12 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
             if (idx == -1)
                 continue;
             if (s->type == TIME_DOMAIN) {
-                offset = idx * s->air_len;
+                float *data_ir_l = s->data_ir[0] + idx * s->air_len;
+                float *data_ir_r = s->data_ir[1] + idx * s->air_len;
+
                 for (j = 0; j < len; j++) {
-                    data_ir_l[offset + j] = ptr[len * 2 - j * 2 - 2] * gain_lin;
-                    data_ir_r[offset + j] = ptr[len * 2 - j * 2 - 1] * gain_lin;
+                    data_ir_l[j] = ptr[len * 2 - j * 2 - 2] * gain_lin;
+                    data_ir_r[j] = ptr[len * 2 - j * 2 - 1] * gain_lin;
                 }
             } else {
                 memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
@@ -514,10 +510,12 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                 I = idx * 2;
                 if (s->type == TIME_DOMAIN) {
-                    offset = idx * s->air_len;
+                    float *data_ir_l = s->data_ir[0] + idx * s->air_len;
+                    float *data_ir_r = s->data_ir[1] + idx * s->air_len;
+
                     for (j = 0; j < len; j++) {
-                        data_ir_l[offset + j] = ptr[len * N - j * N - N + I    ] * gain_lin;
-                        data_ir_r[offset + j] = ptr[len * N - j * N - N + I + 1] * gain_lin;
+                        data_ir_l[j] = ptr[len * N - j * N - N + I    ] * gain_lin;
+                        data_ir_r[j] = ptr[len * N - j * N - N + I + 1] * gain_lin;
                     }
                 } else {
                     memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
@@ -542,10 +540,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         av_frame_free(&s->in[i + 1].frame);
     }
 
-    if (s->type == TIME_DOMAIN) {
-        memcpy(s->data_ir[0], data_ir_l, sizeof(float) * nb_irs * s->air_len);
-        memcpy(s->data_ir[1], data_ir_r, sizeof(float) * nb_irs * s->air_len);
-    } else {
+    if (s->type == FREQUENCY_DOMAIN) {
         s->data_hrtf[0] = av_calloc(n_fft * s->nb_irs, sizeof(FFTComplex));
         s->data_hrtf[1] = av_calloc(n_fft * s->nb_irs, sizeof(FFTComplex));
         if (!s->data_hrtf[0] || !s->data_hrtf[1]) {
@@ -565,9 +560,6 @@ fail:
 
     for (i = 0; i < s->nb_inputs - 1; i++)
         av_frame_free(&s->in[i + 1].frame);
-
-    av_freep(&data_ir_l);
-    av_freep(&data_ir_r);
 
     av_freep(&data_hrtf_l);
     av_freep(&data_hrtf_r);
