@@ -371,8 +371,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     int nb_irs = s->nb_irs;
     int nb_input_channels = ctx->inputs[0]->channels;
     float gain_lin = expf((s->gain - 3 * nb_input_channels) / 20 * M_LN10);
-    FFTComplex *data_hrtf_l = NULL;
-    FFTComplex *data_hrtf_r = NULL;
     FFTComplex *fft_in_l = NULL;
     FFTComplex *fft_in_r = NULL;
     int offset = 0, ret = 0;
@@ -439,9 +437,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
             goto fail;
         }
     } else {
-        data_hrtf_l = av_calloc(n_fft, sizeof(*data_hrtf_l) * nb_irs);
-        data_hrtf_r = av_calloc(n_fft, sizeof(*data_hrtf_r) * nb_irs);
-        if (!data_hrtf_r || !data_hrtf_l) {
+        s->data_hrtf[0] = av_calloc(n_fft, sizeof(*s->data_hrtf[0]) * nb_irs);
+        s->data_hrtf[1] = av_calloc(n_fft, sizeof(*s->data_hrtf[1]) * nb_irs);
+        if (!s->data_hrtf[0] || !s->data_hrtf[1]) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -488,10 +486,10 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                 av_fft_permute(s->fft[0], fft_in_l);
                 av_fft_calc(s->fft[0], fft_in_l);
-                memcpy(data_hrtf_l + offset, fft_in_l, n_fft * sizeof(*fft_in_l));
+                memcpy(s->data_hrtf[0] + offset, fft_in_l, n_fft * sizeof(*fft_in_l));
                 av_fft_permute(s->fft[0], fft_in_r);
                 av_fft_calc(s->fft[0], fft_in_r);
-                memcpy(data_hrtf_r + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
+                memcpy(s->data_hrtf[1] + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
             }
         } else {
             int I, N = ctx->inputs[1]->channels;
@@ -529,29 +527,15 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                     av_fft_permute(s->fft[0], fft_in_l);
                     av_fft_calc(s->fft[0], fft_in_l);
-                    memcpy(data_hrtf_l + offset, fft_in_l, n_fft * sizeof(*fft_in_l));
+                    memcpy(s->data_hrtf[0] + offset, fft_in_l, n_fft * sizeof(*fft_in_l));
                     av_fft_permute(s->fft[0], fft_in_r);
                     av_fft_calc(s->fft[0], fft_in_r);
-                    memcpy(data_hrtf_r + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
+                    memcpy(s->data_hrtf[1] + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
                 }
             }
         }
 
         av_frame_free(&s->in[i + 1].frame);
-    }
-
-    if (s->type == FREQUENCY_DOMAIN) {
-        s->data_hrtf[0] = av_calloc(n_fft * s->nb_irs, sizeof(FFTComplex));
-        s->data_hrtf[1] = av_calloc(n_fft * s->nb_irs, sizeof(FFTComplex));
-        if (!s->data_hrtf[0] || !s->data_hrtf[1]) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        memcpy(s->data_hrtf[0], data_hrtf_l,
-            sizeof(FFTComplex) * nb_irs * n_fft);
-        memcpy(s->data_hrtf[1], data_hrtf_r,
-            sizeof(FFTComplex) * nb_irs * n_fft);
     }
 
     s->have_hrirs = 1;
@@ -560,9 +544,6 @@ fail:
 
     for (i = 0; i < s->nb_inputs - 1; i++)
         av_frame_free(&s->in[i + 1].frame);
-
-    av_freep(&data_hrtf_l);
-    av_freep(&data_hrtf_r);
 
     av_freep(&fft_in_l);
     av_freep(&fft_in_r);
