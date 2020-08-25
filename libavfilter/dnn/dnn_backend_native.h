@@ -106,8 +106,13 @@ typedef struct InputParams{
     int height, width, channels;
 } InputParams;
 
+typedef struct NativeContext {
+    const AVClass *class;
+} NativeContext;
+
 // Represents simple feed-forward convolutional network.
 typedef struct NativeModel{
+    NativeContext ctx;
     Layer *layers;
     int32_t layers_num;
     DnnOperand *operands;

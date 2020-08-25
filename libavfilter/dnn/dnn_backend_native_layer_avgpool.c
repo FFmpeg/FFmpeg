@@ -56,7 +56,7 @@ int dnn_load_layer_avg_pool(Layer *layer, AVIOContext *model_file_context, int f
 }
 
 int dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_operand_indexes,
-                             int32_t output_operand_index, const void *parameters)
+                             int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     float *output;
     int height_end, width_end, height_radius, width_radius, output_height, output_width, kernel_area;
@@ -107,9 +107,15 @@ int dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_operan
     output_operand->dims[3] = channel;
     output_operand->data_type = operands[input_operand_index].data_type;
     output_operand->length = calculate_operand_data_length(output_operand);
-    output_operand->data = av_realloc(output_operand->data, output_operand->length);
-    if (!output_operand->data)
+    if (output_operand->length <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;
+    }
+    output_operand->data = av_realloc(output_operand->data, output_operand->length);
+    if (!output_operand->data) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
+        return DNN_ERROR;
+    }
     output = output_operand->data;
 
     for (int y = 0; y < height_end; y += kernel_strides) {
