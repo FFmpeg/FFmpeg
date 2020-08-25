@@ -1261,10 +1261,10 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(show_existing_frame);
 
         if (current->show_existing_frame) {
-            AV1ReferenceFrameState *frame;
+            AV1ReferenceFrameState *ref;
 
             fb(3, frame_to_show_map_idx);
-            frame = &priv->ref[current->frame_to_show_map_idx];
+            ref = &priv->ref[current->frame_to_show_map_idx];
 
             if (seq->decoder_model_info_present_flag &&
                 !seq->timing_info.equal_picture_interval) {
@@ -1275,19 +1275,19 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             if (seq->frame_id_numbers_present_flag)
                 fb(id_len, display_frame_id);
 
-            infer(frame_type, frame->frame_type);
+            infer(frame_type, ref->frame_type);
             if (current->frame_type == AV1_FRAME_KEY) {
                 infer(refresh_frame_flags, all_frames);
 
                 // Section 7.21
-                infer(current_frame_id, frame->frame_id);
-                priv->upscaled_width  = frame->upscaled_width;
-                priv->frame_width     = frame->frame_width;
-                priv->frame_height    = frame->frame_height;
-                priv->render_width    = frame->render_width;
-                priv->render_height   = frame->render_height;
-                priv->bit_depth       = frame->bit_depth;
-                priv->order_hint      = frame->order_hint;
+                infer(current_frame_id, ref->frame_id);
+                priv->upscaled_width  = ref->upscaled_width;
+                priv->frame_width     = ref->frame_width;
+                priv->frame_height    = ref->frame_height;
+                priv->render_width    = ref->render_width;
+                priv->render_height   = ref->render_height;
+                priv->bit_depth       = ref->bit_depth;
+                priv->order_hint      = ref->order_hint;
             } else
                 infer(refresh_frame_flags, 0);
 
