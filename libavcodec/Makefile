@@ -453,6 +453,7 @@ OBJS-$(CONFIG_MJPEG_VAAPI_ENCODER)     += vaapi_encode_mjpeg.o
 OBJS-$(CONFIG_MLP_DECODER)             += mlpdec.o mlpdsp.o
 OBJS-$(CONFIG_MLP_ENCODER)             += mlpenc.o mlp.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
+OBJS-$(CONFIG_MOBICLIP_DECODER)        += mobiclip.o
 OBJS-$(CONFIG_MOTIONPIXELS_DECODER)    += motionpixels.o
 OBJS-$(CONFIG_MOVTEXT_DECODER)         += movtextdec.o ass.o
 OBJS-$(CONFIG_MOVTEXT_ENCODER)         += movtextenc.o ass_split.o

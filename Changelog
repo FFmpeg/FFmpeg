@@ -17,6 +17,7 @@ version <next>:
 - RPZA video encoder
 - ADPCM IMA MOFLEX decoder
 - MobiClip FastAudio decoder
+- MobiClip video decoder
 
 
 version 4.3:

@@ -1784,6 +1784,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_MOBICLIP,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "mobiclip",
+        .long_name = NULL_IF_CONFIG_SMALL("MobiClip Video"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {
