@@ -67,7 +67,6 @@ typedef struct HeadphoneContext {
     int size;
     int hrir_fmt;
 
-    int *delay[2];
     float *data_ir[2];
     float *temp_src[2];
     FFTComplex *temp_fft[2];
@@ -135,7 +134,6 @@ static void parse_map(AVFilterContext *ctx)
 typedef struct ThreadData {
     AVFrame *in, *out;
     int *write;
-    int **delay;
     float **ir;
     int *n_clippings;
     float **ringbuffer;
@@ -151,7 +149,6 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     AVFrame *in = td->in, *out = td->out;
     int offset = jobnr;
     int *write = &td->write[jobnr];
-    const int *const delay = td->delay[jobnr];
     const float *const ir = td->ir[jobnr];
     int *n_clippings = &td->n_clippings[jobnr];
     float *ringbuffer = td->ringbuffer[jobnr];
@@ -190,7 +187,7 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 continue;
             }
 
-            read = (wr - *(delay + l) - (ir_len - 1) + buffer_length) & modulo;
+            read = (wr - (ir_len - 1) + buffer_length) & modulo;
 
             if (read + ir_len < buffer_length) {
                 memcpy(temp_src, bptr + read, ir_len * sizeof(*temp_src));
@@ -348,7 +345,7 @@ static int headphone_frame(HeadphoneContext *s, AVFrame *in, AVFilterLink *outli
     out->pts = in->pts;
 
     td.in = in; td.out = out; td.write = s->write;
-    td.delay = s->delay; td.ir = s->data_ir; td.n_clippings = n_clippings;
+    td.ir = s->data_ir; td.n_clippings = n_clippings;
     td.ringbuffer = s->ringbuffer; td.temp_src = s->temp_src;
     td.temp_fft = s->temp_fft;
     td.temp_afft = s->temp_afft;
@@ -415,8 +412,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
     s->data_ir[0] = av_calloc(s->air_len, sizeof(float) * s->nb_irs);
     s->data_ir[1] = av_calloc(s->air_len, sizeof(float) * s->nb_irs);
-    s->delay[0] = av_calloc(s->nb_irs, sizeof(float));
-    s->delay[1] = av_calloc(s->nb_irs, sizeof(float));
 
     if (s->type == TIME_DOMAIN) {
         s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
@@ -782,8 +777,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_fft_end(s->ifft[1]);
     av_fft_end(s->fft[0]);
     av_fft_end(s->fft[1]);
-    av_freep(&s->delay[0]);
-    av_freep(&s->delay[1]);
     av_freep(&s->data_ir[0]);
     av_freep(&s->data_ir[1]);
     av_freep(&s->ringbuffer[0]);
