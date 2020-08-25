@@ -50,7 +50,7 @@ int dnn_load_layer_maximum(Layer *layer, AVIOContext *model_file_context, int fi
 }
 
 int dnn_execute_layer_maximum(DnnOperand *operands, const int32_t *input_operand_indexes,
-                              int32_t output_operand_index, const void *parameters)
+                              int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     const DnnOperand *input = &operands[input_operand_indexes[0]];
     DnnOperand *output = &operands[output_operand_index];
@@ -64,11 +64,15 @@ int dnn_execute_layer_maximum(DnnOperand *operands, const int32_t *input_operand
 
     output->data_type = input->data_type;
     output->length = calculate_operand_data_length(output);
-    if (output->length <= 0)
+    if (output->length <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;
+    }
     output->data = av_realloc(output->data, output->length);
-    if (!output->data)
+    if (!output->data) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
         return DNN_ERROR;
+    }
 
     dims_count = calculate_operand_dims_count(output);
     src = input->data;

@@ -76,7 +76,7 @@ static int after_get_buddy(int given, int border, LayerPadModeParam mode)
 }
 
 int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_indexes,
-                          int32_t output_operand_index, const void *parameters)
+                          int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     int32_t before_paddings;
     int32_t after_paddings;
@@ -111,11 +111,15 @@ int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_ind
     output_operand->dims[3] = new_channel;
     output_operand->data_type = operands[input_operand_index].data_type;
     output_operand->length = calculate_operand_data_length(output_operand);
-    if (output_operand->length <= 0)
-        return -1;
+    if (output_operand->length <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
+        return DNN_ERROR;
+    }
     output_operand->data = av_realloc(output_operand->data, output_operand->length);
-    if (!output_operand->data)
-        return -1;
+    if (!output_operand->data) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
+        return DNN_ERROR;
+    }
     output = output_operand->data;
 
     // copy the original data

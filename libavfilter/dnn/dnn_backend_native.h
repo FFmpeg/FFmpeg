@@ -106,19 +106,22 @@ typedef struct InputParams{
     int height, width, channels;
 } InputParams;
 
+typedef struct NativeContext {
+    const AVClass *class;
+} NativeContext;
+
 // Represents simple feed-forward convolutional network.
 typedef struct NativeModel{
+    NativeContext ctx;
     Layer *layers;
     int32_t layers_num;
     DnnOperand *operands;
     int32_t operands_num;
-    int32_t *output_indexes;
-    uint32_t nb_output;
 } NativeModel;
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *options);
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output);
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output);
 
 void ff_dnn_free_model_native(DNNModel **model);
 
