@@ -246,10 +246,12 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
 
     for (layer = 0; layer < native_model->layers_num; ++layer){
         DNNLayerType layer_type = native_model->layers[layer].type;
-        layer_funcs[layer_type].pf_exec(native_model->operands,
-                                        native_model->layers[layer].input_operand_indexes,
-                                        native_model->layers[layer].output_operand_index,
-                                        native_model->layers[layer].params);
+        if (layer_funcs[layer_type].pf_exec(native_model->operands,
+                                            native_model->layers[layer].input_operand_indexes,
+                                            native_model->layers[layer].output_operand_index,
+                                            native_model->layers[layer].params) == DNN_ERROR) {
+            return DNN_ERROR;
+        }
     }
 
     for (uint32_t i = 0; i < nb_output; ++i) {

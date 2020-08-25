@@ -186,6 +186,6 @@ int dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_ope
         math_binary_not_commutative(floormod, params, input, output, operands, input_operand_indexes);
         return 0;
     default:
-        return -1;
+        return DNN_ERROR;
     }
 }
