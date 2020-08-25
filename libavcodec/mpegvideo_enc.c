@@ -418,16 +418,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & AV_CODEC_FLAG_QSCALE);
 
-    s->adaptive_quant = (s->avctx->lumi_masking ||
-                         s->avctx->dark_masking ||
-                         s->avctx->temporal_cplx_masking ||
-                         s->avctx->spatial_cplx_masking  ||
-                         s->avctx->p_masking      ||
+    s->adaptive_quant = (avctx->lumi_masking ||
+                         avctx->dark_masking ||
+                         avctx->temporal_cplx_masking ||
+                         avctx->spatial_cplx_masking  ||
+                         avctx->p_masking      ||
                          s->border_masking ||
                          (s->mpv_flags & FF_MPV_FLAG_QP_RD)) &&
                         !s->fixed_qscale;
 
-    s->loop_filter = !!(s->avctx->flags & AV_CODEC_FLAG_LOOP_FILTER);
+    s->loop_filter = !!(avctx->flags & AV_CODEC_FLAG_LOOP_FILTER);
 
     if (avctx->rc_max_rate && !avctx->rc_buffer_size) {
         switch(avctx->codec_id) {
@@ -497,25 +497,25 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->bit_rate_tolerance = 5 * avctx->bit_rate * av_q2d(avctx->time_base);
     }
 
-    if (s->avctx->rc_max_rate &&
-        s->avctx->rc_min_rate == s->avctx->rc_max_rate &&
+    if (avctx->rc_max_rate &&
+        avctx->rc_min_rate == avctx->rc_max_rate &&
         (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
          s->codec_id == AV_CODEC_ID_MPEG2VIDEO) &&
         90000LL * (avctx->rc_buffer_size - 1) >
-            s->avctx->rc_max_rate * 0xFFFFLL) {
+            avctx->rc_max_rate * 0xFFFFLL) {
         av_log(avctx, AV_LOG_INFO,
                "Warning vbv_delay will be set to 0xFFFF (=VBR) as the "
                "specified vbv buffer is too large for the given bitrate!\n");
     }
 
-    if ((s->avctx->flags & AV_CODEC_FLAG_4MV) && s->codec_id != AV_CODEC_ID_MPEG4 &&
+    if ((avctx->flags & AV_CODEC_FLAG_4MV) && s->codec_id != AV_CODEC_ID_MPEG4 &&
         s->codec_id != AV_CODEC_ID_H263 && s->codec_id != AV_CODEC_ID_H263P &&
         s->codec_id != AV_CODEC_ID_FLV1) {
         av_log(avctx, AV_LOG_ERROR, "4MV not supported by codec\n");
         return AVERROR(EINVAL);
     }
 
-    if (s->obmc && s->avctx->mb_decision != FF_MB_DECISION_SIMPLE) {
+    if (s->obmc && avctx->mb_decision != FF_MB_DECISION_SIMPLE) {
         av_log(avctx, AV_LOG_ERROR,
                "OBMC is only supported with simple mb decision\n");
         return AVERROR(EINVAL);
@@ -601,7 +601,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-    if ((s->avctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME)) &&
+    if ((avctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME)) &&
         s->codec_id != AV_CODEC_ID_MPEG4 && s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
         return AVERROR(EINVAL);
@@ -628,7 +628,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
-        s->avctx->mb_decision != FF_MB_DECISION_RD) {
+        avctx->mb_decision != FF_MB_DECISION_RD) {
         av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
         return AVERROR(EINVAL);
     }
@@ -650,14 +650,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     if (s->scenechange_threshold < 1000000000 &&
-        (s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP)) {
+        (avctx->flags & AV_CODEC_FLAG_CLOSED_GOP)) {
         av_log(avctx, AV_LOG_ERROR,
                "closed gop with scene change detection are not supported yet, "
                "set threshold to 1000000000\n");
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY) {
+    if (avctx->flags & AV_CODEC_FLAG_LOW_DELAY) {
         if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
             s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
             av_log(avctx, AV_LOG_ERROR,
@@ -686,7 +686,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-    if (s->avctx->thread_count > 1         &&
+    if (avctx->thread_count > 1         &&
         s->codec_id != AV_CODEC_ID_MPEG4      &&
         s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
         s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
@@ -697,7 +697,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->avctx->thread_count < 1) {
+    if (avctx->thread_count < 1) {
         av_log(avctx, AV_LOG_ERROR,
                "automatic thread number detection not supported by codec, "
                "patch welcome\n");
@@ -750,25 +750,25 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_log(avctx, AV_LOG_DEBUG, "intra_quant_bias = %d inter_quant_bias = %d\n",s->intra_quant_bias,s->inter_quant_bias);
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
-        s->avctx->time_base.den > (1 << 16) - 1) {
+        avctx->time_base.den > (1 << 16) - 1) {
         av_log(avctx, AV_LOG_ERROR,
                "timebase %d/%d not supported by MPEG 4 standard, "
                "the maximum admitted value for the timebase denominator "
-               "is %d\n", s->avctx->time_base.num, s->avctx->time_base.den,
+               "is %d\n", avctx->time_base.num, avctx->time_base.den,
                (1 << 16) - 1);
         return AVERROR(EINVAL);
     }
-    s->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
+    s->time_increment_bits = av_log2(avctx->time_base.den - 1) + 1;
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
-        s->low_delay  = !!(s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
+        s->low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
     case AV_CODEC_ID_MPEG2VIDEO:
         s->out_format = FMT_MPEG1;
-        s->low_delay  = !!(s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
+        s->low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         s->rtp_mode   = 1;
         break;
@@ -930,7 +930,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return AVERROR(ENOMEM);
     }
 
-    if (!(s->avctx->stats_out = av_mallocz(256))               ||
+    if (!(avctx->stats_out = av_mallocz(256))               ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix,          32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix,   32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix,          32) ||
@@ -973,7 +973,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      s->avctx->ildct_cmp);
+    ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
     ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
 
     if (CONFIG_H261_ENCODER && s->out_format == FMT_H261)
@@ -1003,10 +1003,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->intra_matrix[j] = ff_mpeg1_default_intra_matrix[i];
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }
-        if (s->avctx->intra_matrix)
-            s->intra_matrix[j] = s->avctx->intra_matrix[i];
-        if (s->avctx->inter_matrix)
-            s->inter_matrix[j] = s->avctx->inter_matrix[i];
+        if (avctx->intra_matrix)
+            s->intra_matrix[j] = avctx->intra_matrix[i];
+        if (avctx->inter_matrix)
+            s->inter_matrix[j] = avctx->inter_matrix[i];
     }
 
     /* precompute matrix */
@@ -1078,9 +1078,9 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
         av_frame_free(&s->tmp_frames[i]);
 
     ff_free_picture_tables(&s->new_picture);
-    ff_mpeg_unref_picture(s->avctx, &s->new_picture);
+    ff_mpeg_unref_picture(avctx, &s->new_picture);
 
-    av_freep(&s->avctx->stats_out);
+    av_freep(&avctx->stats_out);
     av_freep(&s->ac_stats);
 
     if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
@@ -1892,7 +1892,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (avctx->rc_buffer_size) {
             RateControlContext *rcc = &s->rc_context;
             int max_size = FFMAX(rcc->buffer_index * avctx->rc_max_available_vbv_use, rcc->buffer_index - 500);
-            int hq = (s->avctx->mb_decision == FF_MB_DECISION_RD || s->avctx->trellis);
+            int hq = (avctx->mb_decision == FF_MB_DECISION_RD || avctx->trellis);
             int min_step = hq ? 1 : (1<<(FF_LAMBDA_SHIFT + 7))/139;
 
             if (put_bits_count(&s->pb) > max_size &&
@@ -1924,14 +1924,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     init_put_bits(pb, pb->buf, pb->buf_end - pb->buf);
                 }
                 s->vbv_ignore_qmax = 1;
-                av_log(s->avctx, AV_LOG_VERBOSE, "reencoding frame due to VBV\n");
+                av_log(avctx, AV_LOG_VERBOSE, "reencoding frame due to VBV\n");
                 goto vbv_retry;
             }
 
-            av_assert0(s->avctx->rc_max_rate);
+            av_assert0(avctx->rc_max_rate);
         }
 
-        if (s->avctx->flags & AV_CODEC_FLAG_PASS1)
+        if (avctx->flags & AV_CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
 
         for (i = 0; i < 4; i++) {
@@ -1940,10 +1940,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality,
                                        s->current_picture_ptr->encoding_error,
-                                       (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
+                                       (avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
                                        s->pict_type);
 
-        if (s->avctx->flags & AV_CODEC_FLAG_PASS1)
+        if (avctx->flags & AV_CODEC_FLAG_PASS1)
             assert(put_bits_count(&s->pb) == s->header_bits + s->mv_bits +
                                              s->misc_bits + s->i_tex_bits +
                                              s->p_tex_bits);
@@ -1955,7 +1955,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (stuffing_count) {
             if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) <
                     stuffing_count + 50) {
-                av_log(s->avctx, AV_LOG_ERROR, "stuffing too large\n");
+                av_log(avctx, AV_LOG_ERROR, "stuffing too large\n");
                 return -1;
             }
 
@@ -1975,37 +1975,37 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 }
             break;
             default:
-                av_log(s->avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
+                av_log(avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
             }
             flush_put_bits(&s->pb);
             s->frame_bits  = put_bits_count(&s->pb);
         }
 
         /* update MPEG-1/2 vbv_delay for CBR */
-        if (s->avctx->rc_max_rate                          &&
-            s->avctx->rc_min_rate == s->avctx->rc_max_rate &&
+        if (avctx->rc_max_rate                          &&
+            avctx->rc_min_rate == avctx->rc_max_rate &&
             s->out_format == FMT_MPEG1                     &&
             90000LL * (avctx->rc_buffer_size - 1) <=
-                s->avctx->rc_max_rate * 0xFFFFLL) {
+                avctx->rc_max_rate * 0xFFFFLL) {
             AVCPBProperties *props;
             size_t props_size;
 
             int vbv_delay, min_delay;
-            double inbits  = s->avctx->rc_max_rate *
-                             av_q2d(s->avctx->time_base);
+            double inbits  = avctx->rc_max_rate *
+                             av_q2d(avctx->time_base);
             int    minbits = s->frame_bits - 8 *
                              (s->vbv_delay_ptr - s->pb.buf - 1);
             double bits    = s->rc_context.buffer_index + minbits - inbits;
 
             if (bits < 0)
-                av_log(s->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "Internal error, negative bits\n");
 
             av_assert1(s->repeat_first_field == 0);
 
-            vbv_delay = bits * 90000 / s->avctx->rc_max_rate;
-            min_delay = (minbits * 90000LL + s->avctx->rc_max_rate - 1) /
-                        s->avctx->rc_max_rate;
+            vbv_delay = bits * 90000 / avctx->rc_max_rate;
+            min_delay = (minbits * 90000LL + avctx->rc_max_rate - 1) /
+                        avctx->rc_max_rate;
 
             vbv_delay = FFMAX(vbv_delay, min_delay);
 
@@ -2063,7 +2063,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* release non-reference frames */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         if (!s->picture[i].reference)
-            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
+            ff_mpeg_unref_picture(avctx, &s->picture[i]);
     }
 
     av_assert1((s->frame_bits & 7) == 0);
