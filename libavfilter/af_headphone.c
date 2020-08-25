@@ -79,8 +79,6 @@ typedef struct HeadphoneContext {
     struct headphone_inputs {
         AVFrame     *frame;
         int          ir_len;
-        int          delay_l;
-        int          delay_r;
         int          eof;
     } *in;
     uint64_t mapping[64];
@@ -457,8 +455,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
     for (i = 0; i < s->nb_inputs - 1; i++) {
         int len = s->in[i + 1].ir_len;
-        int delay_l = s->in[i + 1].delay_l;
-        int delay_r = s->in[i + 1].delay_r;
         float *ptr;
 
         ret = ff_inlink_consume_samples(ctx->inputs[i + 1], len, len, &s->in[i + 1].frame);
@@ -490,8 +486,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                 offset = idx * n_fft;
                 for (j = 0; j < len; j++) {
-                    fft_in_l[delay_l + j].re = ptr[j * 2    ] * gain_lin;
-                    fft_in_r[delay_r + j].re = ptr[j * 2 + 1] * gain_lin;
+                    fft_in_l[j].re = ptr[j * 2    ] * gain_lin;
+                    fft_in_r[j].re = ptr[j * 2 + 1] * gain_lin;
                 }
 
                 av_fft_permute(s->fft[0], fft_in_l);
@@ -529,8 +525,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                     offset = idx * n_fft;
                     for (j = 0; j < len; j++) {
-                        fft_in_l[delay_l + j].re = ptr[j * N + I    ] * gain_lin;
-                        fft_in_r[delay_r + j].re = ptr[j * N + I + 1] * gain_lin;
+                        fft_in_l[j].re = ptr[j * N + I    ] * gain_lin;
+                        fft_in_r[j].re = ptr[j * N + I + 1] * gain_lin;
                     }
 
                     av_fft_permute(s->fft[0], fft_in_l);
