@@ -274,6 +274,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
               frame->height * (int64_t)p->frame_hdr->render_width,
               frame->width  * (int64_t)p->frame_hdr->render_height,
               INT_MAX);
+    ff_set_sar(c, frame->sample_aspect_ratio);
 
     switch (p->seq_hdr->chr) {
     case DAV1D_CHR_VERTICAL:
