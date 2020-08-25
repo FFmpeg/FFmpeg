@@ -81,7 +81,7 @@ static int test(void)
 
     input_indexes[0] = 0;
     params.block_size = 2;
-    dnn_execute_layer_depth2space(operands, input_indexes, 1, &params);
+    dnn_execute_layer_depth2space(operands, input_indexes, 1, &params, NULL);
 
     output = operands[1].data;
     for (int i = 0; i < sizeof(expected_output) / sizeof(float); i++) {

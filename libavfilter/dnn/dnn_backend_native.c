@@ -28,15 +28,26 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layers.h"
 
+static const AVClass dnn_native_class = {
+    .class_name = "dnn_native",
+    .item_name  = av_default_item_name,
+    .option     = NULL,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
+};
+
 static DNNReturnType get_input_native(void *model, DNNData *input, const char *input_name)
 {
     NativeModel *native_model = (NativeModel *)model;
+    NativeContext *ctx = &native_model->ctx;
 
     for (int i = 0; i < native_model->operands_num; ++i) {
         DnnOperand *oprd = &native_model->operands[i];
         if (strcmp(oprd->name, input_name) == 0) {
-            if (oprd->type != DOT_INPUT)
+            if (oprd->type != DOT_INPUT) {
+                av_log(ctx, AV_LOG_ERROR, "Found \"%s\" in model, but it is not input node\n", input_name);
                 return DNN_ERROR;
+            }
             input->dt = oprd->data_type;
             av_assert0(oprd->dims[0] == 1);
             input->height = oprd->dims[1];
@@ -47,30 +58,37 @@ static DNNReturnType get_input_native(void *model, DNNData *input, const char *i
     }
 
     // do not find the input operand
+    av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
     return DNN_ERROR;
 }
 
 static DNNReturnType set_input_native(void *model, DNNData *input, const char *input_name)
 {
     NativeModel *native_model = (NativeModel *)model;
+    NativeContext *ctx = &native_model->ctx;
     DnnOperand *oprd = NULL;
 
-    if (native_model->layers_num <= 0 || native_model->operands_num <= 0)
+    if (native_model->layers_num <= 0 || native_model->operands_num <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "No operands or layers in model\n");
         return DNN_ERROR;
+    }
 
     /* inputs */
     for (int i = 0; i < native_model->operands_num; ++i) {
         oprd = &native_model->operands[i];
         if (strcmp(oprd->name, input_name) == 0) {
-            if (oprd->type != DOT_INPUT)
+            if (oprd->type != DOT_INPUT) {
+                av_log(ctx, AV_LOG_ERROR, "Found \"%s\" in model, but it is not input node\n", input_name);
                 return DNN_ERROR;
+            }
             break;
         }
         oprd = NULL;
     }
-
-    if (!oprd)
+    if (!oprd) {
+        av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
         return DNN_ERROR;
+    }
 
     oprd->dims[0] = 1;
     oprd->dims[1] = input->height;
@@ -79,11 +97,15 @@ static DNNReturnType set_input_native(void *model, DNNData *input, const char *i
 
     av_freep(&oprd->data);
     oprd->length = calculate_operand_data_length(oprd);
-    if (oprd->length <= 0)
+    if (oprd->length <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "The input data length overflow\n");
         return DNN_ERROR;
+    }
     oprd->data = av_malloc(oprd->length);
-    if (!oprd->data)
+    if (!oprd->data) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to malloc memory for input data\n");
         return DNN_ERROR;
+    }
 
     input->data = oprd->data;
 
@@ -150,6 +172,8 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
     if (!native_model){
         goto fail;
     }
+
+    native_model->ctx.class = &dnn_native_class;
     model->model = (void *)native_model;
 
     avio_seek(model_file_context, file_size - 8, SEEK_SET);
@@ -237,19 +261,26 @@ fail:
 DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output)
 {
     NativeModel *native_model = (NativeModel *)model->model;
+    NativeContext *ctx = &native_model->ctx;
     int32_t layer;
 
-    if (native_model->layers_num <= 0 || native_model->operands_num <= 0)
+    if (native_model->layers_num <= 0 || native_model->operands_num <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "No operands or layers in model\n");
         return DNN_ERROR;
-    if (!native_model->operands[0].data)
+    }
+    if (!native_model->operands[0].data) {
+        av_log(ctx, AV_LOG_ERROR, "Empty model input data\n");
         return DNN_ERROR;
+    }
 
     for (layer = 0; layer < native_model->layers_num; ++layer){
         DNNLayerType layer_type = native_model->layers[layer].type;
         if (layer_funcs[layer_type].pf_exec(native_model->operands,
                                             native_model->layers[layer].input_operand_indexes,
                                             native_model->layers[layer].output_operand_index,
-                                            native_model->layers[layer].params) == DNN_ERROR) {
+                                            native_model->layers[layer].params,
+                                            &native_model->ctx) == DNN_ERROR) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to execuet model\n");
             return DNN_ERROR;
         }
     }
@@ -264,8 +295,10 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
             }
         }
 
-        if (oprd == NULL)
+        if (oprd == NULL) {
+            av_log(ctx, AV_LOG_ERROR, "Could not find output in model\n");
             return DNN_ERROR;
+        }
 
         outputs[i].data = oprd->data;
         outputs[i].height = oprd->dims[1];
