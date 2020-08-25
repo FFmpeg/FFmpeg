@@ -425,12 +425,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
             goto fail;
         }
 
-        av_fft_end(s->fft[0]);
-        av_fft_end(s->fft[1]);
         s->fft[0] = av_fft_init(av_log2(s->n_fft), 0);
         s->fft[1] = av_fft_init(av_log2(s->n_fft), 0);
-        av_fft_end(s->ifft[0]);
-        av_fft_end(s->ifft[1]);
         s->ifft[0] = av_fft_init(av_log2(s->n_fft), 1);
         s->ifft[1] = av_fft_init(av_log2(s->n_fft), 1);
 
@@ -657,13 +653,12 @@ static int activate(AVFilterContext *ctx)
         if (!eof)
             return 0;
         s->eof_hrirs = 1;
-    }
 
-    if (!s->have_hrirs && s->eof_hrirs) {
         ret = convert_coeffs(ctx, inlink);
         if (ret < 0)
             return ret;
-    }
+    } else if (!s->have_hrirs)
+        return AVERROR_EOF;
 
     if ((ret = ff_inlink_consume_samples(ctx->inputs[0], s->size, s->size, &in)) > 0) {
         ret = headphone_frame(s, in, outlink);
