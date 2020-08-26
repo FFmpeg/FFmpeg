@@ -77,7 +77,6 @@ typedef struct HeadphoneContext {
 
     AVFloatDSPContext *fdsp;
     struct headphone_inputs {
-        AVFrame     *frame;
         int          ir_len;
         int          eof;
     } *in;
@@ -367,6 +366,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     const int ir_len = s->ir_len;
     int nb_input_channels = ctx->inputs[0]->channels;
     float gain_lin = expf((s->gain - 3 * nb_input_channels) / 20 * M_LN10);
+    AVFrame *frame;
     int ret = 0;
     int n_fft;
     int i, j, k;
@@ -432,14 +432,14 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         }
     }
 
-    for (i = 0; i < s->nb_inputs - 1; i++) {
+    for (i = 0; i < s->nb_inputs - 1; av_frame_free(&frame), i++) {
         int len = s->in[i + 1].ir_len;
         float *ptr;
 
-        ret = ff_inlink_consume_samples(ctx->inputs[i + 1], len, len, &s->in[i + 1].frame);
+        ret = ff_inlink_consume_samples(ctx->inputs[i + 1], len, len, &frame);
         if (ret < 0)
             goto fail;
-        ptr = (float *)s->in[i + 1].frame->extended_data[0];
+        ptr = (float *)frame->extended_data[0];
 
         if (s->hrir_fmt == HRIR_STEREO) {
             int idx = av_get_channel_layout_channel_index(inlink->channel_layout,
@@ -502,17 +502,11 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                 }
             }
         }
-
-        av_frame_free(&s->in[i + 1].frame);
     }
 
     s->have_hrirs = 1;
 
 fail:
-
-    for (i = 0; i < s->nb_inputs - 1; i++)
-        av_frame_free(&s->in[i + 1].frame);
-
     return ret;
 }
 
