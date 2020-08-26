@@ -60,8 +60,7 @@ void ff_yadif_filter_line_10bit_ssse3(void *dst, void *prev, void *cur,
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
     int cpu_flags = av_get_cpu_flags();
-    int bit_depth = (!yadif->csp) ? 8
-                                  : yadif->csp->comp[0].depth;
+    int bit_depth = yadif->depth;
 
     if (bit_depth >= 15) {
 #if ARCH_X86_32

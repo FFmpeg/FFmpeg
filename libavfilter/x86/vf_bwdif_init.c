@@ -55,7 +55,7 @@ av_cold void ff_bwdif_init_x86(BWDIFContext *bwdif)
 {
     YADIFContext *yadif = &bwdif->yadif;
     int cpu_flags = av_get_cpu_flags();
-    int bit_depth = (!yadif->csp) ? 8 : yadif->csp->comp[0].depth;
+    int bit_depth = yadif->depth;
 
     if (bit_depth <= 8) {
 #if ARCH_X86_32

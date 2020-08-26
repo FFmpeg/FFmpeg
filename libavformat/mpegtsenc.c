@@ -487,6 +487,10 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
+            if (codec_id == AV_CODEC_ID_AC3)
+                put_registration_descriptor(&q, MKTAG('A', 'C', '-', '3'));
+            if (codec_id == AV_CODEC_ID_EAC3)
+                put_registration_descriptor(&q, MKTAG('E', 'A', 'C', '3'));
             if (ts->flags & MPEGTS_FLAG_SYSTEM_B) {
                 if (codec_id == AV_CODEC_ID_AC3) {
                     DVBAC3Descriptor *dvb_ac3_desc = ts_st->dvb_ac3_desc;
@@ -1740,24 +1744,24 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_ERROR, "AAC bitstream not in ADTS format "
                                         "and extradata missing\n");
             } else {
-            av_init_packet(&pkt2);
-            pkt2.data = pkt->data;
-            pkt2.size = pkt->size;
-            av_assert0(pkt->dts != AV_NOPTS_VALUE);
-            pkt2.dts = av_rescale_q(pkt->dts, st->time_base, ts_st->amux->streams[0]->time_base);
+                av_init_packet(&pkt2);
+                pkt2.data = pkt->data;
+                pkt2.size = pkt->size;
+                av_assert0(pkt->dts != AV_NOPTS_VALUE);
+                pkt2.dts = av_rescale_q(pkt->dts, st->time_base, ts_st->amux->streams[0]->time_base);
 
-            ret = avio_open_dyn_buf(&ts_st->amux->pb);
-            if (ret < 0)
-                return ret;
+                ret = avio_open_dyn_buf(&ts_st->amux->pb);
+                if (ret < 0)
+                    return ret;
 
-            ret = av_write_frame(ts_st->amux, &pkt2);
-            if (ret < 0) {
-                ffio_free_dyn_buf(&ts_st->amux->pb);
-                return ret;
-            }
-            size            = avio_close_dyn_buf(ts_st->amux->pb, &data);
-            ts_st->amux->pb = NULL;
-            buf             = data;
+                ret = av_write_frame(ts_st->amux, &pkt2);
+                if (ret < 0) {
+                    ffio_free_dyn_buf(&ts_st->amux->pb);
+                    return ret;
+                }
+                size            = avio_close_dyn_buf(ts_st->amux->pb, &data);
+                ts_st->amux->pb = NULL;
+                buf             = data;
             }
         }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
