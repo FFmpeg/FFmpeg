@@ -117,8 +117,6 @@ static void parse_map(AVFilterContext *ctx)
             continue;
         }
         used_channels        |= out_channel;
-        if (out_channel == AV_CH_LOW_FREQUENCY)
-            s->lfe_channel = s->nb_irs;
         s->mapping[s->nb_irs] = out_channel;
         s->nb_irs++;
     }
@@ -368,7 +366,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 {
     struct HeadphoneContext *s = ctx->priv;
     const int ir_len = s->ir_len;
-    int nb_irs = s->nb_irs;
     int nb_input_channels = ctx->inputs[0]->channels;
     float gain_lin = expf((s->gain - 3 * nb_input_channels) / 20 * M_LN10);
     FFTComplex *fft_in_l = NULL;
@@ -430,15 +427,15 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         s->temp_src[0] = av_calloc(s->air_len, sizeof(float));
         s->temp_src[1] = av_calloc(s->air_len, sizeof(float));
 
-        s->data_ir[0] = av_calloc(nb_irs * s->air_len, sizeof(*s->data_ir[0]));
-        s->data_ir[1] = av_calloc(nb_irs * s->air_len, sizeof(*s->data_ir[1]));
+        s->data_ir[0] = av_calloc(nb_input_channels * s->air_len, sizeof(*s->data_ir[0]));
+        s->data_ir[1] = av_calloc(nb_input_channels * s->air_len, sizeof(*s->data_ir[1]));
         if (!s->data_ir[0] || !s->data_ir[1] || !s->temp_src[0] || !s->temp_src[1]) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
     } else {
-        s->data_hrtf[0] = av_calloc(n_fft, sizeof(*s->data_hrtf[0]) * nb_irs);
-        s->data_hrtf[1] = av_calloc(n_fft, sizeof(*s->data_hrtf[1]) * nb_irs);
+        s->data_hrtf[0] = av_calloc(n_fft, sizeof(*s->data_hrtf[0]) * nb_input_channels);
+        s->data_hrtf[1] = av_calloc(n_fft, sizeof(*s->data_hrtf[1]) * nb_input_channels);
         if (!s->data_hrtf[0] || !s->data_hrtf[1]) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -459,7 +456,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
             for (j = 0; j < inlink->channels; j++) {
                 if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == s->mapping[i]) {
-                    idx = i;
+                    idx = j;
+                    if (s->mapping[i] == AV_CH_LOW_FREQUENCY)
+                        s->lfe_channel = j;
                     break;
                 }
             }
@@ -499,14 +498,16 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
                 for (j = 0; j < inlink->channels; j++) {
                     if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == s->mapping[k]) {
-                        idx = k;
+                        idx = j;
+                        if (s->mapping[k] == AV_CH_LOW_FREQUENCY)
+                            s->lfe_channel = j;
                         break;
                     }
                 }
                 if (idx == -1)
                     continue;
 
-                I = idx * 2;
+                I = k * 2;
                 if (s->type == TIME_DOMAIN) {
                     float *data_ir_l = s->data_ir[0] + idx * s->air_len;
                     float *data_ir_r = s->data_ir[1] + idx * s->air_len;
