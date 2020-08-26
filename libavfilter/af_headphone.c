@@ -52,7 +52,7 @@ typedef struct HeadphoneContext {
     int ir_len;
     int air_len;
 
-    int nb_inputs;
+    int nb_hrir_inputs;
 
     int nb_irs;
 
@@ -76,10 +76,10 @@ typedef struct HeadphoneContext {
     FFTComplex *data_hrtf[2];
 
     AVFloatDSPContext *fdsp;
-    struct headphone_inputs {
+    struct hrir_inputs {
         int          ir_len;
         int          eof;
-    } *in;
+    } *hrir_in;
     uint64_t mapping[64];
 } HeadphoneContext;
 
@@ -98,8 +98,6 @@ static void parse_map(AVFilterContext *ctx)
     HeadphoneContext *s = ctx->priv;
     char *arg, *tokenizer, *p;
     uint64_t used_channels = 0;
-
-    s->nb_inputs = 1;
 
     p = s->map;
     while ((arg = av_strtok(p, "|", &tokenizer))) {
@@ -120,9 +118,9 @@ static void parse_map(AVFilterContext *ctx)
     }
 
     if (s->hrir_fmt == HRIR_MULTI)
-        s->nb_inputs = 2;
+        s->nb_hrir_inputs = 1;
     else
-        s->nb_inputs = s->nb_irs + 1;
+        s->nb_hrir_inputs = s->nb_irs;
 }
 
 typedef struct ThreadData {
@@ -318,7 +316,7 @@ static int check_ir(AVFilterLink *inlink, int input_number)
         av_log(ctx, AV_LOG_ERROR, "Too big length of IRs: %d > %d.\n", ir_len, max_ir_len);
         return AVERROR(EINVAL);
     }
-    s->in[input_number].ir_len = ir_len;
+    s->hrir_in[input_number].ir_len = ir_len;
     s->ir_len = FFMAX(ir_len, s->ir_len);
 
     return 0;
@@ -432,8 +430,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         }
     }
 
-    for (i = 0; i < s->nb_inputs - 1; av_frame_free(&frame), i++) {
-        int len = s->in[i + 1].ir_len;
+    for (i = 0; i < s->nb_hrir_inputs; av_frame_free(&frame), i++) {
+        int len = s->hrir_in[i].ir_len;
         float *ptr;
 
         ret = ff_inlink_consume_samples(ctx->inputs[i + 1], len, len, &frame);
@@ -521,23 +519,25 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
     if (!s->eof_hrirs) {
         int eof = 1;
-        for (i = 1; i < s->nb_inputs; i++) {
-            if (s->in[i].eof)
+        for (i = 0; i < s->nb_hrir_inputs; i++) {
+            AVFilterLink *input = ctx->inputs[i + 1];
+
+            if (s->hrir_in[i].eof)
                 continue;
 
-            if ((ret = check_ir(ctx->inputs[i], i)) < 0)
+            if ((ret = check_ir(input, i)) < 0)
                 return ret;
 
-            if (ff_outlink_get_status(ctx->inputs[i]) == AVERROR_EOF) {
-                if (!ff_inlink_queued_samples(ctx->inputs[i])) {
+            if (ff_outlink_get_status(input) == AVERROR_EOF) {
+                if (!ff_inlink_queued_samples(input)) {
                     av_log(ctx, AV_LOG_ERROR, "No samples provided for "
-                           "HRIR stream %d.\n", i - 1);
+                           "HRIR stream %d.\n", i);
                     return AVERROR_INVALIDDATA;
                 }
-                    s->in[i].eof = 1;
+                s->hrir_in[i].eof = 1;
             } else {
                 if (ff_outlink_frame_wanted(ctx->outputs[0]))
-                    ff_inlink_request_frame(ctx->inputs[i]);
+                    ff_inlink_request_frame(input);
                 eof = 0;
             }
         }
@@ -606,7 +606,7 @@ static int query_formats(AVFilterContext *ctx)
         if (ret)
             return ret;
     } else {
-        for (i = 1; i < s->nb_inputs; i++) {
+        for (i = 1; i <= s->nb_hrir_inputs; i++) {
             ret = ff_channel_layouts_ref(stereo_layout, &ctx->inputs[i]->outcfg.channel_layouts);
             if (ret)
                 return ret;
@@ -654,19 +654,19 @@ static av_cold int init(AVFilterContext *ctx)
 
     parse_map(ctx);
 
-    s->in = av_calloc(s->nb_inputs, sizeof(*s->in));
-    if (!s->in)
+    s->hrir_in = av_calloc(s->nb_hrir_inputs, sizeof(*s->hrir_in));
+    if (!s->hrir_in)
         return AVERROR(ENOMEM);
 
-    for (i = 1; i < s->nb_inputs; i++) {
-        char *name = av_asprintf("hrir%d", i - 1);
+    for (i = 0; i < s->nb_hrir_inputs; i++) {
+        char *name = av_asprintf("hrir%d", i);
         AVFilterPad pad = {
             .name         = name,
             .type         = AVMEDIA_TYPE_AUDIO,
         };
         if (!name)
             return AVERROR(ENOMEM);
-        if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
+        if ((ret = ff_insert_inpad(ctx, i + 1, &pad)) < 0) {
             av_freep(&pad.name);
             return ret;
         }
@@ -721,7 +721,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->data_hrtf[1]);
     av_freep(&s->fdsp);
 
-    av_freep(&s->in);
+    av_freep(&s->hrir_in);
     for (unsigned i = 1; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
 }
