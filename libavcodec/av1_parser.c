@@ -110,7 +110,7 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         if (obu->header.spatial_id > 0)
             continue;
 
-        if (!frame->show_frame)
+        if (!frame->show_frame && !frame->show_existing_frame)
             continue;
 
         ctx->width  = frame->frame_width_minus_1 + 1;

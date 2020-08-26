@@ -112,7 +112,7 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
     jpeg_put_marker(&pbc, APP0);
     bytestream2_put_be16(&pbc, 16);
     bytestream2_put_buffer(&pbc, "JFIF", 5);
-    bytestream2_put_be16(&pbc, 0x0201);
+    bytestream2_put_be16(&pbc, 0x0102);
     bytestream2_put_byte(&pbc, 0);
     bytestream2_put_be16(&pbc, 1);
     bytestream2_put_be16(&pbc, 1);
