@@ -163,19 +163,18 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     }
 
     for (i = 0; i < in->nb_samples; i++) {
-        const float *temp_ir = ir;
+        const float *cur_ir = ir;
 
         *dst = 0;
         for (l = 0; l < in_channels; l++) {
             *(buffer[l] + wr) = src[l];
         }
 
-        for (l = 0; l < in_channels; l++) {
+        for (l = 0; l < in_channels; cur_ir += air_len, l++) {
             const float *const bptr = buffer[l];
 
             if (l == s->lfe_channel) {
                 *dst += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
-                temp_ir += air_len;
                 continue;
             }
 
@@ -190,8 +189,7 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 memcpy(temp_src + len, bptr, (air_len - len) * sizeof(*temp_src));
             }
 
-            dst[0] += s->scalarproduct_float(temp_ir, temp_src, FFALIGN(ir_len, 32));
-            temp_ir += air_len;
+            dst[0] += s->scalarproduct_float(cur_ir, temp_src, FFALIGN(ir_len, 32));
         }
 
         if (fabsf(dst[0]) > 1)
