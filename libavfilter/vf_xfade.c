@@ -66,6 +66,7 @@ enum XFadeTransitions {
     VUSLICE,
     VDSLICE,
     HBLUR,
+    FADEGRAYS,
     NB_TRANSITIONS,
 };
 
@@ -79,6 +80,7 @@ typedef struct XFadeContext {
 
     int nb_planes;
     int depth;
+    int is_rgb;
 
     int64_t duration_pts;
     int64_t offset_pts;
@@ -184,6 +186,7 @@ static const AVOption xfade_options[] = {
     {   "vuslice",    "vu slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VUSLICE},    0, 0, FLAGS, "transition" },
     {   "vdslice",    "vd slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VDSLICE},    0, 0, FLAGS, "transition" },
     {   "hblur",      "hblur transition",       0, AV_OPT_TYPE_CONST, {.i64=HBLUR},      0, 0, FLAGS, "transition" },
+    {   "fadegrays",  "fadegrays transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEGRAYS},  0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1345,6 +1348,74 @@ static void hblur##name##_transition(AVFilterContext *ctx,                      
 HBLUR_TRANSITION(8, uint8_t, 1)
 HBLUR_TRANSITION(16, uint16_t, 2)
 
+#define FADEGRAYS_TRANSITION(name, type, div)                                        \
+static void fadegrays##name##_transition(AVFilterContext *ctx,                       \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+    const int is_rgb = s->is_rgb;                                                    \
+    const int mid = (s->max_value + 1) / 2;                                          \
+    const float phase = 0.2f;                                                        \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        for (int x = 0; x < width; x++) {                                            \
+            int bg[2][4];                                                            \
+            if (is_rgb) {                                                            \
+                for (int p = 0; p < s->nb_planes; p++) {                             \
+                    const type *xf0 = (const type *)(a->data[p] +                    \
+                                                     y * a->linesize[p]);            \
+                    const type *xf1 = (const type *)(b->data[p] +                    \
+                                                     y * b->linesize[p]);            \
+                    bg[0][0] += xf0[x];                                              \
+                    bg[1][0] += xf1[x];                                              \
+                    if (p == 3) {                                                    \
+                        bg[0][3] = xf0[x];                                           \
+                        bg[1][3] = xf1[x];                                           \
+                    }                                                                \
+                }                                                                    \
+                bg[0][0] = bg[0][0] / s->nb_planes;                                  \
+                bg[1][0] = bg[1][0] / s->nb_planes;                                  \
+                bg[0][1] = bg[0][2] = bg[0][0];                                      \
+                bg[1][1] = bg[1][2] = bg[1][0];                                      \
+            } else {                                                                 \
+                const type *yf0 = (const type *)(a->data[0] +                        \
+                                                 y * a->linesize[0]);                \
+                const type *yf1 = (const type *)(b->data[0] +                        \
+                                                 y * a->linesize[0]);                \
+                bg[0][0] = yf0[x];                                                   \
+                bg[1][0] = yf1[x];                                                   \
+                if (s->nb_planes == 4) {                                             \
+                    const type *af0 = (const type *)(a->data[3] +                    \
+                                                     y * a->linesize[3]);            \
+                    const type *af1 = (const type *)(b->data[3] +                    \
+                                                     y * a->linesize[3]);            \
+                    bg[0][3] = af0[x];                                               \
+                    bg[1][3] = af1[x];                                               \
+                }                                                                    \
+                bg[0][1] = bg[1][1] = mid;                                           \
+                bg[0][2] = bg[1][2] = mid;                                           \
+            }                                                                        \
+                                                                                     \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(mix(xf0[x], bg[0][p],                                   \
+                                 smoothstep(1.f-phase, 1.f, progress)),              \
+                         mix(bg[1][p], xf1[x], smoothstep(phase, 1.f, progress)),    \
+                             progress);                                              \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+FADEGRAYS_TRANSITION(8, uint8_t, 1)
+FADEGRAYS_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1386,7 +1457,6 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink1 = ctx->inputs[1];
     XFadeContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink0->format);
-    int is_rgb;
 
     if (inlink0->format != inlink1->format) {
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
@@ -1434,14 +1504,14 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = inlink0->frame_rate;
 
     s->depth = pix_desc->comp[0].depth;
-    is_rgb = !!(pix_desc->flags & AV_PIX_FMT_FLAG_RGB);
+    s->is_rgb = !!(pix_desc->flags & AV_PIX_FMT_FLAG_RGB);
     s->nb_planes = av_pix_fmt_count_planes(inlink0->format);
     s->max_value = (1 << s->depth) - 1;
     s->black[0] = 0;
-    s->black[1] = s->black[2] = is_rgb ? 0 : s->max_value / 2;
+    s->black[1] = s->black[2] = s->is_rgb ? 0 : s->max_value / 2;
     s->black[3] = s->max_value;
     s->white[0] = s->white[3] = s->max_value;
-    s->white[1] = s->white[2] = is_rgb ? s->max_value : s->max_value / 2;
+    s->white[1] = s->white[2] = s->is_rgb ? s->max_value : s->max_value / 2;
 
     s->first_pts = s->last_pts = s->pts = AV_NOPTS_VALUE;
 
@@ -1488,6 +1558,7 @@ static int config_output(AVFilterLink *outlink)
     case VUSLICE:    s->transitionf = s->depth <= 8 ? vuslice8_transition    : vuslice16_transition;    break;
     case VDSLICE:    s->transitionf = s->depth <= 8 ? vdslice8_transition    : vdslice16_transition;    break;
     case HBLUR:      s->transitionf = s->depth <= 8 ? hblur8_transition      : hblur16_transition;      break;
+    case FADEGRAYS:  s->transitionf = s->depth <= 8 ? fadegrays8_transition  : fadegrays16_transition;  break;
     }
 
     if (s->transition == CUSTOM) {

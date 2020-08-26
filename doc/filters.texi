@@ -20520,6 +20520,7 @@ Set one of available transition effects:
 @item vuslice
 @item vdslice
 @item hblur
+@item fadegrays
 @end table
 Default transition effect is fade.
 
