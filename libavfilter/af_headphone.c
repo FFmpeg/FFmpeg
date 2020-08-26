@@ -187,7 +187,7 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int in_channels = in->channels;
     const int buffer_length = s->buffer_length;
     const uint32_t modulo = (uint32_t)buffer_length - 1;
-    float *buffer[16];
+    float *buffer[64];
     int wr = *write;
     int read;
     int i, l;
