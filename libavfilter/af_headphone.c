@@ -79,7 +79,7 @@ typedef struct HeadphoneContext {
     struct hrir_inputs {
         int          ir_len;
         int          eof;
-    } *hrir_in;
+    } hrir_in[64];
     uint64_t mapping[64];
 } HeadphoneContext;
 
@@ -654,10 +654,6 @@ static av_cold int init(AVFilterContext *ctx)
 
     parse_map(ctx);
 
-    s->hrir_in = av_calloc(s->nb_hrir_inputs, sizeof(*s->hrir_in));
-    if (!s->hrir_in)
-        return AVERROR(ENOMEM);
-
     for (i = 0; i < s->nb_hrir_inputs; i++) {
         char *name = av_asprintf("hrir%d", i);
         AVFilterPad pad = {
@@ -721,7 +717,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->data_hrtf[1]);
     av_freep(&s->fdsp);
 
-    av_freep(&s->hrir_in);
     for (unsigned i = 1; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
 }
