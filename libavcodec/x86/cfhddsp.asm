@@ -410,7 +410,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     punpcklwd  m0, m1
     punpckhwd  m2, m1
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     pmaddwd    m0, m13
     pmaddwd    m2, m13
 %else
@@ -478,7 +478,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     mova       m6, m4
     mova       m7, m5
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     pmaddwd    m4, m8
     pmaddwd    m5, m8
     pmaddwd    m6, m9
@@ -520,7 +520,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     mova       m1, m0
     mova       m3, m2
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     pmaddwd    m0, m10
     pmaddwd    m2, m10
     pmaddwd    m1, m8
@@ -568,7 +568,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     punpcklwd  m0, m1
     punpckhwd  m2, m1
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     pmaddwd    m0, m13
     pmaddwd    m2, m13
 %else
@@ -589,7 +589,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     psubd      m0, m4
     psubd      m2, m3
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     paddd      m0, m11
     paddd      m2, m11
 %else
@@ -636,7 +636,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     punpcklwd  m0, m1
     punpckhwd  m2, m1
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     pmaddwd    m0, m12
     pmaddwd    m2, m12
 %else
@@ -657,7 +657,7 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     paddd      m0, m4
     paddd      m2, m3
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     paddd      m0, m11
     paddd      m2, m11
 %else
