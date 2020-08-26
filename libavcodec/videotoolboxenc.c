@@ -226,7 +226,9 @@ typedef struct VTEncContext {
     bool flushing;
     bool has_b_frames;
     bool warned_color_range;
-    bool a53_cc;
+
+    /* can't be bool type since AVOption will access it as int */
+    int a53_cc;
 } VTEncContext;
 
 static int vtenc_populate_extradata(AVCodecContext   *avctx,
