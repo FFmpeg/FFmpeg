@@ -192,7 +192,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     YADIFContext *s = ctx->priv;
     ThreadData *td  = arg;
     int refs = s->cur->linesize[td->plane];
-    int df = (s->depth + 7) / 8;
+    int df = (s->csp->comp[td->plane].depth + 7) / 8;
     int pix_3 = 3 * df;
     int slice_start = (td->h *  jobnr   ) / nb_jobs;
     int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
@@ -233,13 +233,13 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
     ThreadData td = { .frame = dstpic, .parity = parity, .tff = tff };
     int i;
 
-    for (i = 0; i < yadif->nb_components; i++) {
+    for (i = 0; i < yadif->csp->nb_components; i++) {
         int w = dstpic->width;
         int h = dstpic->height;
 
         if (i == 1 || i == 2) {
-            w = AV_CEIL_RSHIFT(w, yadif->hsub);
-            h = AV_CEIL_RSHIFT(h, yadif->vsub);
+            w = AV_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
 
@@ -292,7 +292,6 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     YADIFContext *s = ctx->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
 
     outlink->time_base.num = ctx->inputs[0]->time_base.num;
     outlink->time_base.den = ctx->inputs[0]->time_base.den * 2;
@@ -308,12 +307,9 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
+    s->csp = av_pix_fmt_desc_get(outlink->format);
     s->filter = filter;
-    s->depth         = desc->comp[0].depth;
-    s->nb_components = desc->nb_components;
-    s->hsub          = desc->log2_chroma_w;
-    s->vsub          = desc->log2_chroma_h;
-    if (s->depth > 8) {
+    if (s->csp->comp[0].depth > 8) {
         s->filter_line  = filter_line_c_16bit;
         s->filter_edges = filter_edges_16bit;
     } else {

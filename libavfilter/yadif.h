@@ -72,10 +72,7 @@ typedef struct YADIFContext {
     void (*filter_edges)(void *dst, void *prev, void *cur, void *next,
                          int w, int prefs, int mrefs, int parity, int mode);
 
-    int nb_components;
-    int depth;
-    int hsub;
-    int vsub;
+    const AVPixFmtDescriptor *csp;
     int eof;
     uint8_t *temp_line;
     int temp_line_size;
