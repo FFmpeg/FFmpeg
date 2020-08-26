@@ -3028,8 +3028,12 @@ static int read_thread(void *arg)
                     packet_queue_put_nullpacket(&is->subtitleq, is->subtitle_stream);
                 is->eof = 1;
             }
-            if (ic->pb && ic->pb->error)
-                break;
+            if (ic->pb && ic->pb->error) {
+                if (autoexit)
+                    goto fail;
+                else
+                    break;
+            }
             SDL_LockMutex(wait_mutex);
             SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
             SDL_UnlockMutex(wait_mutex);
