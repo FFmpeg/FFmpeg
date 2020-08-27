@@ -67,6 +67,10 @@ enum XFadeTransitions {
     VDSLICE,
     HBLUR,
     FADEGRAYS,
+    WIPETL,
+    WIPETR,
+    WIPEBL,
+    WIPEBR,
     NB_TRANSITIONS,
 };
 
@@ -187,6 +191,10 @@ static const AVOption xfade_options[] = {
     {   "vdslice",    "vd slice transition",    0, AV_OPT_TYPE_CONST, {.i64=VDSLICE},    0, 0, FLAGS, "transition" },
     {   "hblur",      "hblur transition",       0, AV_OPT_TYPE_CONST, {.i64=HBLUR},      0, 0, FLAGS, "transition" },
     {   "fadegrays",  "fadegrays transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEGRAYS},  0, 0, FLAGS, "transition" },
+    {   "wipetl",     "wipe tl transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPETL},     0, 0, FLAGS, "transition" },
+    {   "wipetr",     "wipe tr transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPETR},     0, 0, FLAGS, "transition" },
+    {   "wipebl",     "wipe bl transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPEBL},     0, 0, FLAGS, "transition" },
+    {   "wipebr",     "wipe br transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPEBR},     0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1416,6 +1424,134 @@ static void fadegrays##name##_transition(AVFilterContext *ctx,                  
 FADEGRAYS_TRANSITION(8, uint8_t, 1)
 FADEGRAYS_TRANSITION(16, uint16_t, 2)
 
+#define WIPETL_TRANSITION(name, type, div)                                           \
+static void wipetl##name##_transition(AVFilterContext *ctx,                          \
+                                const AVFrame *a, const AVFrame *b, AVFrame *out,    \
+                                float progress,                                      \
+                                int slice_start, int slice_end, int jobnr)           \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int height = slice_end - slice_start;                                      \
+    const int zw = out->width * progress;                                            \
+    const int zh = out->height * progress;                                           \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p] + slice_start * a->linesize[p]); \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            for (int x = 0; x < out->width; x++) {                                   \
+                dst[x] = slice_start + y <= zh &&                                    \
+                         x <= zw ? xf0[x] : xf1[x];                                  \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf0 += a->linesize[p] / div;                                             \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+WIPETL_TRANSITION(8, uint8_t, 1)
+WIPETL_TRANSITION(16, uint16_t, 2)
+
+#define WIPETR_TRANSITION(name, type, div)                                           \
+static void wipetr##name##_transition(AVFilterContext *ctx,                          \
+                                const AVFrame *a, const AVFrame *b, AVFrame *out,    \
+                                float progress,                                      \
+                                int slice_start, int slice_end, int jobnr)           \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int height = slice_end - slice_start;                                      \
+    const int zw = out->width * (1.f - progress);                                    \
+    const int zh = out->height * progress;                                           \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p] + slice_start * a->linesize[p]); \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            for (int x = 0; x < out->width; x++) {                                   \
+                dst[x] = slice_start + y <= zh &&                                    \
+                         x > zw ? xf0[x] : xf1[x];                                   \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf0 += a->linesize[p] / div;                                             \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+WIPETR_TRANSITION(8, uint8_t, 1)
+WIPETR_TRANSITION(16, uint16_t, 2)
+
+#define WIPEBL_TRANSITION(name, type, div)                                           \
+static void wipebl##name##_transition(AVFilterContext *ctx,                          \
+                                const AVFrame *a, const AVFrame *b, AVFrame *out,    \
+                                float progress,                                      \
+                                int slice_start, int slice_end, int jobnr)           \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int height = slice_end - slice_start;                                      \
+    const int zw = out->width * progress;                                            \
+    const int zh = out->height * (1.f - progress);                                   \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p] + slice_start * a->linesize[p]); \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            for (int x = 0; x < out->width; x++) {                                   \
+                dst[x] = slice_start + y > zh &&                                     \
+                         x <= zw ? xf0[x] : xf1[x];                                  \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf0 += a->linesize[p] / div;                                             \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+WIPEBL_TRANSITION(8, uint8_t, 1)
+WIPEBL_TRANSITION(16, uint16_t, 2)
+
+#define WIPEBR_TRANSITION(name, type, div)                                           \
+static void wipebr##name##_transition(AVFilterContext *ctx,                          \
+                                const AVFrame *a, const AVFrame *b, AVFrame *out,    \
+                                float progress,                                      \
+                                int slice_start, int slice_end, int jobnr)           \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int height = slice_end - slice_start;                                      \
+    const int zh = out->height * (1.f - progress);                                   \
+    const int zw = out->width * (1.f - progress);                                    \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p] + slice_start * a->linesize[p]); \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            for (int x = 0; x < out->width; x++) {                                   \
+                dst[x] = slice_start + y > zh &&                                     \
+                         x > zw ? xf0[x] : xf1[x];                                   \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf0 += a->linesize[p] / div;                                             \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+WIPEBR_TRANSITION(8, uint8_t, 1)
+WIPEBR_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1559,6 +1695,10 @@ static int config_output(AVFilterLink *outlink)
     case VDSLICE:    s->transitionf = s->depth <= 8 ? vdslice8_transition    : vdslice16_transition;    break;
     case HBLUR:      s->transitionf = s->depth <= 8 ? hblur8_transition      : hblur16_transition;      break;
     case FADEGRAYS:  s->transitionf = s->depth <= 8 ? fadegrays8_transition  : fadegrays16_transition;  break;
+    case WIPETL:     s->transitionf = s->depth <= 8 ? wipetl8_transition     : wipetl16_transition;     break;
+    case WIPETR:     s->transitionf = s->depth <= 8 ? wipetr8_transition     : wipetr16_transition;     break;
+    case WIPEBL:     s->transitionf = s->depth <= 8 ? wipebl8_transition     : wipebl16_transition;     break;
+    case WIPEBR:     s->transitionf = s->depth <= 8 ? wipebr8_transition     : wipebr16_transition;     break;
     }
 
     if (s->transition == CUSTOM) {
