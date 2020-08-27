@@ -242,27 +242,36 @@ static void j2k_flush(Jpeg2000EncoderContext *s)
 static void tag_tree_code(Jpeg2000EncoderContext *s, Jpeg2000TgtNode *node, int threshold)
 {
     Jpeg2000TgtNode *stack[30];
-    int sp = 1, curval = 0;
-    stack[0] = node;
+    int sp = -1, curval = 0;
 
-    node = node->parent;
-    while(node){
-        if (node->vis){
-            curval = node->val;
-            break;
-        }
-        node->vis++;
-        stack[sp++] = node;
+    while(node->parent){
+        stack[++sp] = node;
         node = node->parent;
     }
-    while(--sp >= 0){
-        if (stack[sp]->val >= threshold){
-            put_bits(s, 0, threshold - curval);
-            break;
+
+    while (1) {
+        if (curval > node->temp_val)
+            node->temp_val = curval;
+        else {
+            curval = node->temp_val;
         }
-        put_bits(s, 0, stack[sp]->val - curval);
-        put_bits(s, 1, 1);
-        curval = stack[sp]->val;
+
+        if (node->val >= threshold) {
+            put_bits(s, 0, threshold - curval);
+            curval = threshold;
+        } else {
+            put_bits(s, 0, node->val - curval);
+            curval = node->val;
+            if (!node->vis) {
+                put_bits(s, 1, 1);
+                node->vis = 1;
+            }
+        }
+
+        node->temp_val = curval;
+        if (sp < 0)
+            break;
+        node = stack[sp--];
     }
 }
 

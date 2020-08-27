@@ -127,6 +127,7 @@ typedef struct Jpeg2000T1Context {
 
 typedef struct Jpeg2000TgtNode {
     uint8_t val;
+    uint8_t temp_val;
     uint8_t vis;
     struct Jpeg2000TgtNode *parent;
 } Jpeg2000TgtNode;

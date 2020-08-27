@@ -88,6 +88,7 @@ void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
 
     for (i = 0; i < siz; i++) {
         t[i].val = 0;
+        t[i].temp_val = 0;
         t[i].vis = 0;
     }
 }
