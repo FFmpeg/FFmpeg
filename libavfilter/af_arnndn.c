@@ -1320,21 +1320,19 @@ static void compute_rnn(AudioRNNContext *s, RNNState *rnn, float *gains, float *
     compute_gru(s, rnn->model->vad_gru, rnn->vad_gru_state, dense_out);
     compute_dense(rnn->model->vad_output, vad, rnn->vad_gru_state);
 
-    for (int i = 0; i < rnn->model->input_dense_size; i++)
-        noise_input[i] = dense_out[i];
-    for (int i = 0; i < rnn->model->vad_gru_size; i++)
-        noise_input[i + rnn->model->input_dense_size] = rnn->vad_gru_state[i];
-    for (int i = 0; i < INPUT_SIZE; i++)
-        noise_input[i + rnn->model->input_dense_size + rnn->model->vad_gru_size] = input[i];
+    memcpy(noise_input, dense_out, rnn->model->input_dense_size * sizeof(float));
+    memcpy(noise_input + rnn->model->input_dense_size,
+           rnn->vad_gru_state, rnn->model->vad_gru_size * sizeof(float));
+    memcpy(noise_input + rnn->model->input_dense_size + rnn->model->vad_gru_size,
+           input, INPUT_SIZE * sizeof(float));
 
     compute_gru(s, rnn->model->noise_gru, rnn->noise_gru_state, noise_input);
 
-    for (int i = 0; i < rnn->model->vad_gru_size; i++)
-        denoise_input[i] = rnn->vad_gru_state[i];
-    for (int i = 0; i < rnn->model->noise_gru_size; i++)
-        denoise_input[i + rnn->model->vad_gru_size] = rnn->noise_gru_state[i];
-    for (int i = 0; i < INPUT_SIZE; i++)
-        denoise_input[i + rnn->model->vad_gru_size + rnn->model->noise_gru_size] = input[i];
+    memcpy(denoise_input, rnn->vad_gru_state, rnn->model->vad_gru_size * sizeof(float));
+    memcpy(denoise_input + rnn->model->vad_gru_size,
+           rnn->noise_gru_state, rnn->model->noise_gru_size * sizeof(float));
+    memcpy(denoise_input + rnn->model->vad_gru_size + rnn->model->noise_gru_size,
+           input, INPUT_SIZE * sizeof(float));
 
     compute_gru(s, rnn->model->denoise_gru, rnn->denoise_gru_state, denoise_input);
     compute_dense(rnn->model->denoise_output, gains, rnn->denoise_gru_state);
