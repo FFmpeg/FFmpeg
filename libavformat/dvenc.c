@@ -311,10 +311,20 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if (vst) return NULL;
+            if (st->codecpar->codec_id != AV_CODEC_ID_DVVIDEO)
+                goto bail_out;
             vst = st;
             break;
         case AVMEDIA_TYPE_AUDIO:
             if (c->n_ast > 1) return NULL;
+            /* Some checks -- DV format is very picky about its incoming streams */
+            if(st->codecpar->codec_id    != AV_CODEC_ID_PCM_S16LE ||
+               st->codecpar->channels    != 2)
+                goto bail_out;
+            if (st->codecpar->sample_rate != 48000 &&
+                st->codecpar->sample_rate != 44100 &&
+                st->codecpar->sample_rate != 32000    )
+                goto bail_out;
             c->ast[c->n_ast++] = st;
             break;
         default:
@@ -322,20 +332,9 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         }
     }
 
-    /* Some checks -- DV format is very picky about its incoming streams */
-    if (!vst || vst->codecpar->codec_id != AV_CODEC_ID_DVVIDEO)
+    if (!vst)
         goto bail_out;
-    for (i=0; i<c->n_ast; i++) {
-        if (c->ast[i]) {
-            if(c->ast[i]->codecpar->codec_id    != AV_CODEC_ID_PCM_S16LE ||
-               c->ast[i]->codecpar->channels    != 2)
-                goto bail_out;
-            if (c->ast[i]->codecpar->sample_rate != 48000 &&
-                c->ast[i]->codecpar->sample_rate != 44100 &&
-                c->ast[i]->codecpar->sample_rate != 32000    )
-                goto bail_out;
-        }
-    }
+
     c->sys = av_dv_codec_profile2(vst->codecpar->width, vst->codecpar->height,
                                   vst->codecpar->format, vst->time_base);
     if (!c->sys)
