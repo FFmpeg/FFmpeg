@@ -1377,15 +1377,16 @@ static void fadegrays##name##_transition(AVFilterContext *ctx,                  
                                                      y * a->linesize[p]);            \
                     const type *xf1 = (const type *)(b->data[p] +                    \
                                                      y * b->linesize[p]);            \
-                    bg[0][0] += xf0[x];                                              \
-                    bg[1][0] += xf1[x];                                              \
                     if (p == 3) {                                                    \
                         bg[0][3] = xf0[x];                                           \
                         bg[1][3] = xf1[x];                                           \
+                    } else  {                                                        \
+                        bg[0][0] += xf0[x];                                          \
+                        bg[1][0] += xf1[x];                                          \
                     }                                                                \
                 }                                                                    \
-                bg[0][0] = bg[0][0] / s->nb_planes;                                  \
-                bg[1][0] = bg[1][0] / s->nb_planes;                                  \
+                bg[0][0] = bg[0][0] / 3;                                             \
+                bg[1][0] = bg[1][0] / 3;                                             \
                 bg[0][1] = bg[0][2] = bg[0][0];                                      \
                 bg[1][1] = bg[1][2] = bg[1][0];                                      \
             } else {                                                                 \
