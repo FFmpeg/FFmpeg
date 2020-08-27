@@ -290,4 +290,7 @@ static inline int needs_termination(int style, int passno) {
     return 0;
 }
 
+int32_t ff_tag_tree_size(int w, int h);
+void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h);
+
 #endif /* AVCODEC_JPEG2000_H */

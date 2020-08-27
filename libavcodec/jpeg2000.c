@@ -39,7 +39,7 @@
 /* tag tree routines */
 
 /* allocate the memory for tag tree */
-static int32_t tag_tree_size(int w, int h)
+int32_t ff_tag_tree_size(int w, int h)
 {
     int64_t res = 0;
     while (w > 1 || h > 1) {
@@ -57,7 +57,7 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     Jpeg2000TgtNode *res, *t, *t2;
     int32_t tt_size;
 
-    tt_size = tag_tree_size(w, h);
+    tt_size = ff_tag_tree_size(w, h);
 
     t = res = av_mallocz_array(tt_size, sizeof(*t));
     if (!res)
@@ -82,9 +82,9 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     return res;
 }
 
-static void tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
+void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
 {
-    int i, siz = tag_tree_size(w, h);
+    int i, siz = ff_tag_tree_size(w, h);
 
     for (i = 0; i < siz; i++) {
         t[i].val = 0;
@@ -567,8 +567,8 @@ void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
             Jpeg2000Band *band = rlevel->band + bandno;
             for(precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++) {
                 Jpeg2000Prec *prec = band->prec + precno;
-                tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
-                tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                ff_tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                ff_tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
                 for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
                     Jpeg2000Cblk *cblk = prec->cblk + cblkno;
                     cblk->length = 0;
