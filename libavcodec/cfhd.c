@@ -503,6 +503,10 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 avpriv_report_missing_feature(avctx, "Transform type of %"PRIu16, data);
                 ret = AVERROR_PATCHWELCOME;
                 break;
+            } else if (data == 1) {
+                av_log(avctx, AV_LOG_ERROR, "unsupported transform type\n");
+                ret = AVERROR_PATCHWELCOME;
+                break;
             }
             av_log(avctx, AV_LOG_DEBUG, "Transform-type? %"PRIu16"\n", data);
         } else if (abstag >= 0x4000 && abstag <= 0x40ff) {
