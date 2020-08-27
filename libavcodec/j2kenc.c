@@ -802,8 +802,8 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
                 Jpeg2000Prec *prec = band->prec + precno;
                 int nb_cblks = prec->nb_codeblocks_height * prec->nb_codeblocks_width;
                 int pos;
-                ff_tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
-                ff_tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                ff_tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height, 99);
+                ff_tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height, 99);
                 for (pos = 0; pos < nb_cblks; pos++) {
                     Jpeg2000Cblk *cblk = &prec->cblk[pos];
                     prec->zerobits[pos].val = expn[bandno] + numgbits - 1 - cblk->nonzerobits;
