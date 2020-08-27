@@ -490,6 +490,10 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR, "Invalid transform type\n");
                 ret = AVERROR(EINVAL);
                 break;
+            } else if (data == 1) {
+                av_log(avctx, AV_LOG_ERROR, "unsupported transform type\n");
+                ret = AVERROR_PATCHWELCOME;
+                break;
             }
             s->transform_type = data;
             av_log(avctx, AV_LOG_DEBUG, "Transform type %"PRIu16"\n", data);
