@@ -6,6 +6,8 @@
  * RF64 demuxer
  * Copyright (c) 2009 Daniel Verkamp
  *
+ * BW64 demuxer
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -140,7 +142,8 @@ static int wav_probe(const AVProbeData *p)
              * its own, the returned score is decreased to avoid a probe
              * conflict between ACT and WAV. */
             return AVPROBE_SCORE_MAX - 1;
-        else if (!memcmp(p->buf,      "RF64", 4) &&
+        else if ((!memcmp(p->buf,      "RF64", 4) ||
+                  !memcmp(p->buf,      "BW64", 4)) &&
                  !memcmp(p->buf + 12, "ds64", 4))
             return AVPROBE_SCORE_MAX;
     }
@@ -330,7 +333,7 @@ static int wav_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
     int64_t sample_count = 0;
-    int rf64 = 0;
+    int rf64 = 0, bw64 = 0;
     uint32_t tag;
     AVIOContext *pb      = s->pb;
     AVStream *st         = NULL;
@@ -353,6 +356,9 @@ static int wav_read_header(AVFormatContext *s)
     case MKTAG('R', 'F', '6', '4'):
         rf64 = 1;
         break;
+    case MKTAG('B', 'W', '6', '4'):
+        bw64 = 1;
+        break;
     default:
         av_log(s, AV_LOG_ERROR, "invalid start code %s in RIFF header\n",
                av_fourcc2str(tag));
@@ -368,7 +374,7 @@ static int wav_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (rf64) {
+    if (rf64 || bw64) {
         if (avio_rl32(pb) != MKTAG('d', 's', '6', '4'))
             return AVERROR_INVALIDDATA;
         size = avio_rl32(pb);
@@ -423,7 +429,7 @@ static int wav_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
 
-            if (rf64) {
+            if (rf64 || bw64) {
                 next_tag_ofs = wav->data_end = avio_tell(pb) + data_size;
             } else if (size != 0xFFFFFFFF) {
                 data_size    = size;
@@ -440,7 +446,7 @@ static int wav_read_header(AVFormatContext *s)
             /* don't look for footer metadata if we can't seek or if we don't
              * know where the data tag ends
              */
-            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || (!rf64 && !size))
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || (!(rf64 && !bw64) && !size))
                 goto break_loop;
             break;
         case MKTAG('f', 'a', 'c', 't'):
