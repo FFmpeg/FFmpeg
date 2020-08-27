@@ -127,7 +127,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const unsigned delay = s->delay;
     const double dry = s->dry;
     const double wet = s->wet;
-    unsigned r_ptr, w_ptr;
+    unsigned r_ptr, w_ptr = 0;
     AVFrame *out;
     int n, ch;
 

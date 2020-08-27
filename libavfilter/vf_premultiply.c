@@ -673,27 +673,19 @@ static av_cold int init(AVFilterContext *ctx)
         s->inverse = 1;
 
     pad.type         = AVMEDIA_TYPE_VIDEO;
-    pad.name         = av_strdup("main");
+    pad.name         = "main";
     pad.config_props = config_input;
-    if (!pad.name)
-        return AVERROR(ENOMEM);
 
-    if ((ret = ff_insert_inpad(ctx, 0, &pad)) < 0) {
-        av_freep(&pad.name);
+    if ((ret = ff_insert_inpad(ctx, 0, &pad)) < 0)
         return ret;
-    }
 
     if (!s->inplace) {
         pad.type         = AVMEDIA_TYPE_VIDEO;
-        pad.name         = av_strdup("alpha");
+        pad.name         = "alpha";
         pad.config_props = NULL;
-        if (!pad.name)
-            return AVERROR(ENOMEM);
 
-        if ((ret = ff_insert_inpad(ctx, 1, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_insert_inpad(ctx, 1, &pad)) < 0)
             return ret;
-        }
     }
 
     return 0;

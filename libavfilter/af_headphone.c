@@ -705,6 +705,9 @@ static int query_formats(AVFilterContext *ctx)
     ret = ff_add_channel_layout(&stereo_layout, AV_CH_LAYOUT_STEREO);
     if (ret)
         return ret;
+    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->in_channel_layouts);
+    if (ret)
+        return ret;
 
     if (s->hrir_fmt == HRIR_MULTI) {
         hrir_layouts = ff_all_channel_counts();
@@ -720,10 +723,6 @@ static int query_formats(AVFilterContext *ctx)
                 return ret;
         }
     }
-
-    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->in_channel_layouts);
-    if (ret)
-        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
@@ -812,7 +811,6 @@ static int config_output(AVFilterLink *outlink)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     HeadphoneContext *s = ctx->priv;
-    int i;
 
     av_fft_end(s->ifft[0]);
     av_fft_end(s->ifft[1]);
@@ -834,11 +832,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->data_hrtf[1]);
     av_freep(&s->fdsp);
 
-    for (i = 0; i < s->nb_inputs; i++) {
-        if (ctx->input_pads && i)
-            av_freep(&ctx->input_pads[i].name);
-    }
     av_freep(&s->in);
+    for (unsigned i = 1; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
 }
 
 #define OFFSET(x) offsetof(HeadphoneContext, x)

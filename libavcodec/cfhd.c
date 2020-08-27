@@ -190,47 +190,6 @@ static inline void process_bayer(AVFrame *frame, int bpc)
     }
 }
 
-static inline void filter(int16_t *output, ptrdiff_t out_stride,
-                          int16_t *low, ptrdiff_t low_stride,
-                          int16_t *high, ptrdiff_t high_stride,
-                          int len, int clip)
-{
-    int16_t tmp;
-    int i;
-
-    tmp = (11*low[0*low_stride] - 4*low[1*low_stride] + low[2*low_stride] + 4) >> 3;
-    output[(2*0+0)*out_stride] = (tmp + high[0*high_stride]) >> 1;
-    if (clip)
-        output[(2*0+0)*out_stride] = av_clip_uintp2_c(output[(2*0+0)*out_stride], clip);
-
-    tmp = ( 5*low[0*low_stride] + 4*low[1*low_stride] - low[2*low_stride] + 4) >> 3;
-    output[(2*0+1)*out_stride] = (tmp - high[0*high_stride]) >> 1;
-    if (clip)
-        output[(2*0+1)*out_stride] = av_clip_uintp2_c(output[(2*0+1)*out_stride], clip);
-
-    for (i = 1; i < len - 1; i++) {
-        tmp = (low[(i-1)*low_stride] - low[(i+1)*low_stride] + 4) >> 3;
-        output[(2*i+0)*out_stride] = (tmp + low[i*low_stride] + high[i*high_stride]) >> 1;
-        if (clip)
-            output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
-
-        tmp = (low[(i+1)*low_stride] - low[(i-1)*low_stride] + 4) >> 3;
-        output[(2*i+1)*out_stride] = (tmp + low[i*low_stride] - high[i*high_stride]) >> 1;
-        if (clip)
-            output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
-    }
-
-    tmp = ( 5*low[i*low_stride] + 4*low[(i-1)*low_stride] - low[(i-2)*low_stride] + 4) >> 3;
-    output[(2*i+0)*out_stride] = (tmp + high[i*high_stride]) >> 1;
-    if (clip)
-        output[(2*i+0)*out_stride] = av_clip_uintp2_c(output[(2*i+0)*out_stride], clip);
-
-    tmp = (11*low[i*low_stride] - 4*low[(i-1)*low_stride] + low[(i-2)*low_stride] + 4) >> 3;
-    output[(2*i+1)*out_stride] = (tmp - high[i*high_stride]) >> 1;
-    if (clip)
-        output[(2*i+1)*out_stride] = av_clip_uintp2_c(output[(2*i+1)*out_stride], clip);
-}
-
 static inline void interlaced_vertical_filter(int16_t *output, int16_t *low, int16_t *high,
                          int width, int linesize, int plane)
 {
@@ -244,8 +203,7 @@ static inline void interlaced_vertical_filter(int16_t *output, int16_t *low, int
     }
 }
 
-static inline void inverse_temporal_filter(int16_t *output, int16_t *low, int16_t *high,
-                                           int width)
+static inline void inverse_temporal_filter(int16_t *low, int16_t *high, int width)
 {
     for (int i = 0; i < width; i++) {
         int even = (low[i] - high[i]) / 2;
@@ -254,31 +212,6 @@ static inline void inverse_temporal_filter(int16_t *output, int16_t *low, int16_
         low[i]  = even;
         high[i] = odd;
     }
-}
-
-static void horiz_filter(int16_t *output, int16_t *low, int16_t *high,
-                         int width)
-{
-    filter(output, 1, low, 1, high, 1, width, 0);
-}
-
-static void horiz_filter_clip(int16_t *output, int16_t *low, int16_t *high,
-                              int width, int clip)
-{
-    filter(output, 1, low, 1, high, 1, width, clip);
-}
-
-static void horiz_filter_clip_bayer(int16_t *output, int16_t *low, int16_t *high,
-                                    int width, int clip)
-{
-    filter(output, 2, low, 1, high, 1, width, clip);
-}
-
-static void vert_filter(int16_t *output, ptrdiff_t out_stride,
-                        int16_t *low, ptrdiff_t low_stride,
-                        int16_t *high, ptrdiff_t high_stride, int len)
-{
-    filter(output, out_stride, low, low_stride, high, high_stride, len, 0);
 }
 
 static void free_buffers(CFHDContext *s)
@@ -311,6 +244,8 @@ static int alloc_buffers(AVCodecContext *avctx)
         return ret;
     avctx->pix_fmt = s->coded_format;
 
+    ff_cfhddsp_init(&s->dsp, s->bpc, avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16);
+
     if ((ret = av_pix_fmt_get_chroma_sub_sample(s->coded_format,
                                                 &chroma_x_shift,
                                                 &chroma_y_shift)) < 0)
@@ -327,7 +262,7 @@ static int alloc_buffers(AVCodecContext *avctx)
         int w8, h8, w4, h4, w2, h2;
         int width  = (i || bayer) ? s->coded_width  >> chroma_x_shift : s->coded_width;
         int height = (i || bayer) ? s->coded_height >> chroma_y_shift : s->coded_height;
-        ptrdiff_t stride = FFALIGN(width  / 8, 8) * 8;
+        ptrdiff_t stride = (FFALIGN(width  / 8, 8) + 64) * 8;
 
         if (chroma_y_shift && !bayer)
             height = FFALIGN(height / 8, 2) * 8;
@@ -335,7 +270,7 @@ static int alloc_buffers(AVCodecContext *avctx)
         s->plane[i].height = height;
         s->plane[i].stride = stride;
 
-        w8 = FFALIGN(s->plane[i].width  / 8, 8);
+        w8 = FFALIGN(s->plane[i].width  / 8, 8) + 64;
         h8 = FFALIGN(height, 8) / 8;
         w4 = w8 * 2;
         h4 = h8 * 2;
@@ -430,6 +365,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                        AVPacket *avpkt)
 {
     CFHDContext *s = avctx->priv_data;
+    CFHDDSPContext *dsp = &s->dsp;
     GetByteContext gb;
     ThreadFrame frame = { .f = data };
     AVFrame *pic = data;
@@ -770,7 +706,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
 
             if (lowpass_height > lowpass_a_height || lowpass_width > lowpass_a_width ||
-                lowpass_a_width * lowpass_a_height * sizeof(int16_t) > bytestream2_get_bytes_left(&gb)) {
+                lowpass_width * lowpass_height * sizeof(int16_t) > bytestream2_get_bytes_left(&gb)) {
                 av_log(avctx, AV_LOG_ERROR, "Too many lowpass coefficients\n");
                 ret = AVERROR(EINVAL);
                 goto end;
@@ -921,13 +857,6 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
 finish:
             if (s->subband_num_actual != 255)
                 s->codebook = 0;
-
-            /* Copy last line of coefficients if odd height */
-            if (highpass_height & 1) {
-                memcpy(&coeff_data[highpass_height * highpass_stride],
-                       &coeff_data[(highpass_height - 1) * highpass_stride],
-                       highpass_stride * sizeof(*coeff_data));
-            }
         }
     }
 
@@ -956,6 +885,7 @@ finish:
         for (plane = 0; plane < s->planes && !ret; plane++) {
             /* level 1 */
             int lowpass_height  = s->plane[plane].band[0][0].height;
+            int output_stride   = s->plane[plane].band[0][0].a_width;
             int lowpass_width   = s->plane[plane].band[0][0].width;
             int highpass_stride = s->plane[plane].band[0][1].stride;
             int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : plane;
@@ -981,46 +911,31 @@ finish:
             low    = s->plane[plane].subband[0];
             high   = s->plane[plane].subband[2];
             output = s->plane[plane].l_h[0];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, lowpass_width, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].subband[1];
             high   = s->plane[plane].subband[3];
             output = s->plane[plane].l_h[1];
 
-            for (i = 0; i < lowpass_width; i++) {
-                // note the stride of "low" is highpass_stride
-                vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].l_h[0];
             high   = s->plane[plane].l_h[1];
             output = s->plane[plane].subband[0];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                horiz_filter(output, low, high, lowpass_width);
-                low    += lowpass_width;
-                high   += lowpass_width;
-                output += lowpass_width * 2;
-            }
+            dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
             if (s->bpc == 12) {
                 output = s->plane[plane].subband[0];
                 for (i = 0; i < lowpass_height * 2; i++) {
                     for (j = 0; j < lowpass_width * 2; j++)
                         output[j] *= 4;
 
-                    output += lowpass_width * 2;
+                    output += output_stride * 2;
                 }
             }
 
             /* level 2 */
             lowpass_height  = s->plane[plane].band[1][1].height;
+            output_stride   = s->plane[plane].band[1][1].a_width;
             lowpass_width   = s->plane[plane].band[1][1].width;
             highpass_stride = s->plane[plane].band[1][1].stride;
 
@@ -1036,43 +951,29 @@ finish:
             low    = s->plane[plane].subband[0];
             high   = s->plane[plane].subband[5];
             output = s->plane[plane].l_h[3];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].subband[4];
             high   = s->plane[plane].subband[6];
             output = s->plane[plane].l_h[4];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].l_h[3];
             high   = s->plane[plane].l_h[4];
             output = s->plane[plane].subband[0];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                horiz_filter(output, low, high, lowpass_width);
-                low    += lowpass_width;
-                high   += lowpass_width;
-                output += lowpass_width * 2;
-            }
+            dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
 
             output = s->plane[plane].subband[0];
             for (i = 0; i < lowpass_height * 2; i++) {
                 for (j = 0; j < lowpass_width * 2; j++)
                     output[j] *= 4;
 
-                output += lowpass_width * 2;
+                output += output_stride * 2;
             }
 
             /* level 3 */
             lowpass_height  = s->plane[plane].band[2][1].height;
+            output_stride   = s->plane[plane].band[2][1].a_width;
             lowpass_width   = s->plane[plane].band[2][1].width;
             highpass_stride = s->plane[plane].band[2][1].stride;
 
@@ -1088,22 +989,12 @@ finish:
                 low    = s->plane[plane].subband[0];
                 high   = s->plane[plane].subband[8];
                 output = s->plane[plane].l_h[6];
-                for (i = 0; i < lowpass_width; i++) {
-                    vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                    low++;
-                    high++;
-                    output++;
-                }
+                dsp->vert_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].subband[7];
                 high   = s->plane[plane].subband[9];
                 output = s->plane[plane].l_h[7];
-                for (i = 0; i < lowpass_width; i++) {
-                    vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                    low++;
-                    high++;
-                    output++;
-                }
+                dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 dst = (int16_t *)pic->data[act_plane];
                 if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16) {
@@ -1124,14 +1015,11 @@ finish:
                 }
 
                 for (i = 0; i < lowpass_height * 2; i++) {
-                    if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16)
-                        horiz_filter_clip_bayer(dst, low, high, lowpass_width, s->bpc);
-                    else
-                        horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+                    dsp->horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
                     if (avctx->pix_fmt == AV_PIX_FMT_GBRAP12 && act_plane == 3)
                         process_alpha(dst, lowpass_width * 2);
-                    low  += lowpass_width;
-                    high += lowpass_width;
+                    low  += output_stride;
+                    high += output_stride;
                     dst  += dst_linesize;
                 }
             } else {
@@ -1140,30 +1028,20 @@ finish:
                 low    = s->plane[plane].subband[0];
                 high   = s->plane[plane].subband[7];
                 output = s->plane[plane].l_h[6];
-                for (i = 0; i < lowpass_height; i++) {
-                    horiz_filter(output, low, high, lowpass_width);
-                    low    += lowpass_width;
-                    high   += lowpass_width;
-                    output += lowpass_width * 2;
-                }
+                dsp->horiz_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].subband[8];
                 high   = s->plane[plane].subband[9];
                 output = s->plane[plane].l_h[7];
-                for (i = 0; i < lowpass_height; i++) {
-                    horiz_filter(output, low, high, lowpass_width);
-                    low    += lowpass_width;
-                    high   += lowpass_width;
-                    output += lowpass_width * 2;
-                }
+                dsp->horiz_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 dst  = (int16_t *)pic->data[act_plane];
                 low  = s->plane[plane].l_h[6];
                 high = s->plane[plane].l_h[7];
                 for (i = 0; i < lowpass_height; i++) {
                     interlaced_vertical_filter(dst, low, high, lowpass_width * 2,  pic->linesize[act_plane]/2, act_plane);
-                    low  += lowpass_width * 2;
-                    high += lowpass_width * 2;
+                    low  += output_stride * 2;
+                    high += output_stride * 2;
                     dst  += pic->linesize[act_plane];
                 }
             }
@@ -1171,6 +1049,7 @@ finish:
     } else if (s->transform_type == 2 && (avctx->internal->is_copy || s->frame_index == 1 || s->sample_type != 1)) {
         for (plane = 0; plane < s->planes && !ret; plane++) {
             int lowpass_height  = s->plane[plane].band[0][0].height;
+            int output_stride   = s->plane[plane].band[0][0].a_width;
             int lowpass_width   = s->plane[plane].band[0][0].width;
             int highpass_stride = s->plane[plane].band[0][1].stride;
             int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : plane;
@@ -1196,43 +1075,29 @@ finish:
             low    = s->plane[plane].subband[0];
             high   = s->plane[plane].subband[2];
             output = s->plane[plane].l_h[0];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, lowpass_width, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].subband[1];
             high   = s->plane[plane].subband[3];
             output = s->plane[plane].l_h[1];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].l_h[0];
             high   = s->plane[plane].l_h[1];
             output = s->plane[plane].l_h[7];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                horiz_filter(output, low, high, lowpass_width);
-                low    += lowpass_width;
-                high   += lowpass_width;
-                output += lowpass_width * 2;
-            }
+            dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
             if (s->bpc == 12) {
                 output = s->plane[plane].l_h[7];
                 for (i = 0; i < lowpass_height * 2; i++) {
                     for (j = 0; j < lowpass_width * 2; j++)
                         output[j] *= 4;
 
-                    output += lowpass_width * 2;
+                    output += output_stride * 2;
                 }
             }
 
             lowpass_height  = s->plane[plane].band[1][1].height;
+            output_stride   = s->plane[plane].band[1][1].a_width;
             lowpass_width   = s->plane[plane].band[1][1].width;
             highpass_stride = s->plane[plane].band[1][1].stride;
 
@@ -1248,71 +1113,42 @@ finish:
             low    = s->plane[plane].l_h[7];
             high   = s->plane[plane].subband[5];
             output = s->plane[plane].l_h[3];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].subband[4];
             high   = s->plane[plane].subband[6];
             output = s->plane[plane].l_h[4];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].l_h[3];
             high   = s->plane[plane].l_h[4];
             output = s->plane[plane].l_h[7];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                horiz_filter(output, low, high, lowpass_width);
-                low    += lowpass_width;
-                high   += lowpass_width;
-                output += lowpass_width * 2;
-            }
+            dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
 
             output = s->plane[plane].l_h[7];
             for (i = 0; i < lowpass_height * 2; i++) {
                 for (j = 0; j < lowpass_width * 2; j++)
                     output[j] *= 4;
-                output += lowpass_width * 2;
+                output += output_stride * 2;
             }
 
             low    = s->plane[plane].subband[7];
             high   = s->plane[plane].subband[9];
             output = s->plane[plane].l_h[3];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].subband[8];
             high   = s->plane[plane].subband[10];
             output = s->plane[plane].l_h[4];
-            for (i = 0; i < lowpass_width; i++) {
-                vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                low++;
-                high++;
-                output++;
-            }
+            dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
             low    = s->plane[plane].l_h[3];
             high   = s->plane[plane].l_h[4];
             output = s->plane[plane].l_h[9];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                horiz_filter(output, low, high, lowpass_width);
-                low    += lowpass_width;
-                high   += lowpass_width;
-                output += lowpass_width * 2;
-            }
+            dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
 
             lowpass_height  = s->plane[plane].band[4][1].height;
+            output_stride   = s->plane[plane].band[4][1].a_width;
             lowpass_width   = s->plane[plane].band[4][1].width;
             highpass_stride = s->plane[plane].band[4][1].stride;
             av_log(avctx, AV_LOG_DEBUG, "temporal level %i %i %i %i\n", plane, lowpass_height, lowpass_width, highpass_stride);
@@ -1328,50 +1164,30 @@ finish:
             high   = s->plane[plane].l_h[9];
             output = s->plane[plane].l_h[7];
             for (i = 0; i < lowpass_height; i++) {
-                inverse_temporal_filter(output, low, high, lowpass_width);
-                low    += lowpass_width;
-                high   += lowpass_width;
+                inverse_temporal_filter(low, high, lowpass_width);
+                low    += output_stride;
+                high   += output_stride;
             }
             if (s->progressive) {
                 low    = s->plane[plane].l_h[7];
                 high   = s->plane[plane].subband[15];
                 output = s->plane[plane].l_h[6];
-                for (i = 0; i < lowpass_width; i++) {
-                    vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                    low++;
-                    high++;
-                    output++;
-                }
+                dsp->vert_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].subband[14];
                 high   = s->plane[plane].subband[16];
                 output = s->plane[plane].l_h[7];
-                for (i = 0; i < lowpass_width; i++) {
-                    vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                    low++;
-                    high++;
-                    output++;
-                }
+                dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].l_h[9];
                 high   = s->plane[plane].subband[12];
                 output = s->plane[plane].l_h[8];
-                for (i = 0; i < lowpass_width; i++) {
-                    vert_filter(output, lowpass_width, low, lowpass_width, high, highpass_stride, lowpass_height);
-                    low++;
-                    high++;
-                    output++;
-                }
+                dsp->vert_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].subband[11];
                 high   = s->plane[plane].subband[13];
                 output = s->plane[plane].l_h[9];
-                for (i = 0; i < lowpass_width; i++) {
-                    vert_filter(output, lowpass_width, low, highpass_stride, high, highpass_stride, lowpass_height);
-                    low++;
-                    high++;
-                    output++;
-                }
+                dsp->vert_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 if (s->sample_type == 1)
                     continue;
@@ -1395,12 +1211,9 @@ finish:
                 low  = s->plane[plane].l_h[6];
                 high = s->plane[plane].l_h[7];
                 for (i = 0; i < lowpass_height * 2; i++) {
-                    if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16)
-                        horiz_filter_clip_bayer(dst, low, high, lowpass_width, s->bpc);
-                    else
-                        horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
-                    low  += lowpass_width;
-                    high += lowpass_width;
+                    dsp->horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+                    low  += output_stride;
+                    high += output_stride;
                     dst  += dst_linesize;
                 }
             } else {
@@ -1408,42 +1221,22 @@ finish:
                 low    = s->plane[plane].l_h[7];
                 high   = s->plane[plane].subband[14];
                 output = s->plane[plane].l_h[6];
-                for (i = 0; i < lowpass_height; i++) {
-                    horiz_filter(output, low, high, lowpass_width);
-                    low    += lowpass_width;
-                    high   += lowpass_width;
-                    output += lowpass_width * 2;
-                }
+                dsp->horiz_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].subband[15];
                 high   = s->plane[plane].subband[16];
                 output = s->plane[plane].l_h[7];
-                for (i = 0; i < lowpass_height; i++) {
-                    horiz_filter(output, low, high, lowpass_width);
-                    low    += lowpass_width;
-                    high   += lowpass_width;
-                    output += lowpass_width * 2;
-                }
+                dsp->horiz_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].l_h[9];
                 high   = s->plane[plane].subband[11];
                 output = s->plane[plane].l_h[8];
-                for (i = 0; i < lowpass_height; i++) {
-                    horiz_filter(output, low, high, lowpass_width);
-                    low    += lowpass_width;
-                    high   += lowpass_width;
-                    output += lowpass_width * 2;
-                }
+                dsp->horiz_filter(output, output_stride, low, output_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 low    = s->plane[plane].subband[12];
                 high   = s->plane[plane].subband[13];
                 output = s->plane[plane].l_h[9];
-                for (i = 0; i < lowpass_height; i++) {
-                    horiz_filter(output, low, high, lowpass_width);
-                    low    += lowpass_width;
-                    high   += lowpass_width;
-                    output += lowpass_width * 2;
-                }
+                dsp->horiz_filter(output, output_stride, low, highpass_stride, high, highpass_stride, lowpass_width, lowpass_height);
 
                 if (s->sample_type == 1)
                     continue;
@@ -1453,8 +1246,8 @@ finish:
                 high = s->plane[plane].l_h[7];
                 for (i = 0; i < lowpass_height; i++) {
                     interlaced_vertical_filter(dst, low, high, lowpass_width * 2,  pic->linesize[act_plane]/2, act_plane);
-                    low  += lowpass_width * 2;
-                    high += lowpass_width * 2;
+                    low  += output_stride * 2;
+                    high += output_stride * 2;
                     dst  += pic->linesize[act_plane];
                 }
             }
@@ -1463,7 +1256,7 @@ finish:
 
     if (s->transform_type == 2 && s->sample_type == 1) {
         int16_t *low, *high, *dst;
-        int lowpass_height, lowpass_width, highpass_stride;
+        int output_stride, lowpass_height, lowpass_width, highpass_stride;
         ptrdiff_t dst_linesize;
 
         for (plane = 0; plane < s->planes; plane++) {
@@ -1477,6 +1270,7 @@ finish:
             }
 
             lowpass_height  = s->plane[plane].band[4][1].height;
+            output_stride   = s->plane[plane].band[4][1].a_width;
             lowpass_width   = s->plane[plane].band[4][1].width;
             highpass_stride = s->plane[plane].band[4][1].stride;
 
@@ -1501,12 +1295,9 @@ finish:
                 }
 
                 for (i = 0; i < lowpass_height * 2; i++) {
-                    if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16)
-                        horiz_filter_clip_bayer(dst, low, high, lowpass_width, s->bpc);
-                    else
-                        horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
-                    low  += lowpass_width;
-                    high += lowpass_width;
+                    dsp->horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+                    low  += output_stride;
+                    high += output_stride;
                     dst  += dst_linesize;
                 }
             } else {
@@ -1515,8 +1306,8 @@ finish:
                 high = s->plane[plane].l_h[9];
                 for (i = 0; i < lowpass_height; i++) {
                     interlaced_vertical_filter(dst, low, high, lowpass_width * 2,  pic->linesize[act_plane]/2, act_plane);
-                    low  += lowpass_width * 2;
-                    high += lowpass_width * 2;
+                    low  += output_stride * 2;
+                    high += output_stride * 2;
                     dst  += pic->linesize[act_plane];
                 }
             }
