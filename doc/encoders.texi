@@ -1401,6 +1401,22 @@ Possible values are:
 @end table
 Set to @code{lrcp} by default.
 
+@item layer_rates @var{string}
+By default, when this option is not used, compression is done using the quality metric.
+This option allows for compression using compression ratio. The compression ratio for each
+level could be specified. The compression ratio of a layer @code{l} species the what ratio of
+total file size is contained in the first @code{l} layers.
+
+Example usage:
+
+@example
+ffmpeg -i input.bmp -c:v jpeg2000 -layer_rates "100,10,1" output.j2k
+@end example
+
+This would compress the image to contain 3 layers, where the data contained in the
+first layer would be compressed by 1000 times, compressed by 100 in the first two layers,
+and shall contain all data while using all 3 layers.
+
 @end table
 
 @section librav1e

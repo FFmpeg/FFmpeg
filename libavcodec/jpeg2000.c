@@ -261,9 +261,11 @@ static void init_band_stepsize(AVCodecContext *avctx,
         band->f_stepsize *= 0.5;
 }
 
-static int init_prec(Jpeg2000Band *band,
+static int init_prec(AVCodecContext *avctx,
+                     Jpeg2000Band *band,
                      Jpeg2000ResLevel *reslevel,
                      Jpeg2000Component *comp,
+                     Jpeg2000CodingStyle *codsty,
                      int precno, int bandno, int reslevelno,
                      int log2_band_prec_width,
                      int log2_band_prec_height)
@@ -366,6 +368,11 @@ static int init_prec(Jpeg2000Band *band,
         cblk->lblock    = 3;
         cblk->length    = 0;
         cblk->npasses   = 0;
+        if (av_codec_is_encoder(avctx->codec)) {
+            cblk->layers = av_mallocz_array(codsty->nlayers, sizeof(*cblk->layers));
+            if (!cblk->layers)
+                return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
@@ -439,7 +446,7 @@ static int init_band(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
 
     for (precno = 0; precno < nb_precincts; precno++) {
-        ret = init_prec(band, reslevel, comp,
+        ret = init_prec(avctx, band, reslevel, comp, codsty,
                         precno, bandno, reslevelno,
                         log2_band_prec_width, log2_band_prec_height);
         if (ret < 0)
@@ -614,6 +621,7 @@ void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
                             av_freep(&cblk->passes);
                             av_freep(&cblk->lengthinc);
                             av_freep(&cblk->data_start);
+                            av_freep(&cblk->layers);
                         }
                         av_freep(&prec->cblk);
                     }
