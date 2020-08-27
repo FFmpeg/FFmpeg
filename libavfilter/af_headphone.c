@@ -100,7 +100,6 @@ static void parse_map(AVFilterContext *ctx)
     char *arg, *tokenizer, *p;
     uint64_t used_channels = 0;
 
-    s->lfe_channel = -1;
     s->nb_inputs = 1;
 
     p = s->map;
@@ -452,18 +451,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         ptr = (float *)s->in[i + 1].frame->extended_data[0];
 
         if (s->hrir_fmt == HRIR_STEREO) {
-            int idx = -1;
-
-            for (j = 0; j < inlink->channels; j++) {
-                if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == s->mapping[i]) {
-                    idx = j;
-                    if (s->mapping[i] == AV_CH_LOW_FREQUENCY)
-                        s->lfe_channel = j;
-                    break;
-                }
-            }
-
-            if (idx == -1)
+            int idx = av_get_channel_layout_channel_index(inlink->channel_layout,
+                                                          s->mapping[i]);
+            if (idx < 0)
                 continue;
             if (s->type == TIME_DOMAIN) {
                 float *data_ir_l = s->data_ir[0] + idx * s->air_len;
@@ -494,17 +484,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
             int I, N = ctx->inputs[1]->channels;
 
             for (k = 0; k < N / 2; k++) {
-                int idx = -1;
-
-                for (j = 0; j < inlink->channels; j++) {
-                    if ((av_channel_layout_extract_channel(inlink->channel_layout, j)) == s->mapping[k]) {
-                        idx = j;
-                        if (s->mapping[k] == AV_CH_LOW_FREQUENCY)
-                            s->lfe_channel = j;
-                        break;
-                    }
-                }
-                if (idx == -1)
+                int idx = av_get_channel_layout_channel_index(inlink->channel_layout,
+                                                              s->mapping[k]);
+                if (idx < 0)
                     continue;
 
                 I = k * 2;
@@ -671,6 +653,8 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
+    s->lfe_channel = av_get_channel_layout_channel_index(inlink->channel_layout,
+                                                         AV_CH_LOW_FREQUENCY);
     return 0;
 }
 
