@@ -294,7 +294,7 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, E
         return 0;
     }
 
-    while (!vtctx->q_head && !vtctx->async_error && wait) {
+    while (!vtctx->q_head && !vtctx->async_error && wait && !vtctx->flushing) {
         pthread_cond_wait(&vtctx->cv_sample_sent, &vtctx->lock);
     }
 
@@ -310,6 +310,7 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, E
         vtctx->q_tail = NULL;
     }
 
+    vtctx->frame_ct_out++;
     pthread_mutex_unlock(&vtctx->lock);
 
     *buf = info->cm_buffer;
@@ -321,7 +322,6 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, E
     }
     av_free(info);
 
-    vtctx->frame_ct_out++;
 
     return 0;
 }
