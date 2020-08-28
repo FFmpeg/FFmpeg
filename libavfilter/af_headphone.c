@@ -633,6 +633,7 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
     if (!s->eof_hrirs) {
+        int eof = 1;
         for (i = 1; i < s->nb_inputs; i++) {
             if (s->in[i].eof)
                 continue;
@@ -647,26 +648,15 @@ static int activate(AVFilterContext *ctx)
                     return AVERROR_INVALIDDATA;
                 }
                     s->in[i].eof = 1;
+            } else {
+                if (ff_outlink_frame_wanted(ctx->outputs[0]))
+                    ff_inlink_request_frame(ctx->inputs[i]);
+                eof = 0;
             }
         }
-
-        for (i = 1; i < s->nb_inputs; i++) {
-            if (!s->in[i].eof)
-                break;
-        }
-
-        if (i != s->nb_inputs) {
-            if (ff_outlink_frame_wanted(ctx->outputs[0])) {
-                for (i = 1; i < s->nb_inputs; i++) {
-                    if (!s->in[i].eof)
-                        ff_inlink_request_frame(ctx->inputs[i]);
-                }
-            }
-
+        if (!eof)
             return 0;
-        } else {
-            s->eof_hrirs = 1;
-        }
+        s->eof_hrirs = 1;
     }
 
     if (!s->have_hrirs && s->eof_hrirs) {
