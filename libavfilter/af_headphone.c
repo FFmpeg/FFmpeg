@@ -631,10 +631,8 @@ static int activate(AVFilterContext *ctx)
             if ((ret = check_ir(ctx->inputs[i], i)) < 0)
                 return ret;
 
-            if (!s->in[i].eof) {
                 if (ff_outlink_get_status(ctx->inputs[i]) == AVERROR_EOF)
                     s->in[i].eof = 1;
-            }
         }
 
         for (i = 1; i < s->nb_inputs; i++) {
