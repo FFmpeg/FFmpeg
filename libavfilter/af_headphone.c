@@ -405,6 +405,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     int i, j, k;
 
     s->air_len = 1 << (32 - ff_clz(ir_len));
+    if (s->type == TIME_DOMAIN) {
+        s->air_len = FFALIGN(s->air_len, 32);
+    }
     s->buffer_length = 1 << (32 - ff_clz(s->air_len));
     s->n_fft = n_fft = 1 << (32 - ff_clz(ir_len + s->size));
 
