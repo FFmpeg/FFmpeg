@@ -56,6 +56,7 @@ typedef struct WAVDemuxContext {
     int smv_eof;
     int audio_eof;
     int ignore_length;
+    int max_size;
     int spdif;
     int smv_cur_pt;
     int smv_given_first;
@@ -628,8 +629,6 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     return AVERROR_EOF;
 }
 
-#define MAX_SIZE 4096
-
 static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
@@ -706,7 +705,7 @@ smv_out:
         wav->data_end = avio_tell(s->pb) + left;
     }
 
-    size = MAX_SIZE;
+    size = wav->max_size;
     if (st->codecpar->block_align > 1) {
         if (size < st->codecpar->block_align)
             size = st->codecpar->block_align;
@@ -759,6 +758,7 @@ static int wav_read_seek(AVFormatContext *s,
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption demux_options[] = {
     { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
+    { "max_size",      "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
     { NULL },
 };
 
@@ -906,6 +906,20 @@ static int w64_read_header(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(WAVDemuxContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption w64_demux_options[] = {
+    { "max_size", "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
+    { NULL }
+};
+
+static const AVClass w64_demuxer_class = {
+    .class_name = "W64 demuxer",
+    .item_name  = av_default_item_name,
+    .option     = w64_demux_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_w64_demuxer = {
     .name           = "w64",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony Wave64"),
@@ -916,5 +930,6 @@ AVInputFormat ff_w64_demuxer = {
     .read_seek      = wav_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
     .codec_tag      = (const AVCodecTag * const []) { ff_codec_wav_tags, 0 },
+    .priv_class     = &w64_demuxer_class,
 };
 #endif /* CONFIG_W64_DEMUXER */
