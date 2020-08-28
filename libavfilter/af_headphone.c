@@ -631,8 +631,14 @@ static int activate(AVFilterContext *ctx)
             if ((ret = check_ir(ctx->inputs[i], i)) < 0)
                 return ret;
 
-                if (ff_outlink_get_status(ctx->inputs[i]) == AVERROR_EOF)
+            if (ff_outlink_get_status(ctx->inputs[i]) == AVERROR_EOF) {
+                if (!ff_inlink_queued_samples(ctx->inputs[i])) {
+                    av_log(ctx, AV_LOG_ERROR, "No samples provided for "
+                           "HRIR stream %d.\n", i - 1);
+                    return AVERROR_INVALIDDATA;
+                }
                     s->in[i].eof = 1;
+            }
         }
 
         for (i = 1; i < s->nb_inputs; i++) {
