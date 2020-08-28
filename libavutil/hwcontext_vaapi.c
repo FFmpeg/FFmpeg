@@ -1677,20 +1677,24 @@ static int vaapi_device_derive(AVHWDeviceContext *ctx,
             } else {
                 render_node = drmGetRenderDeviceNameFromFd(src_hwctx->fd);
                 if (!render_node) {
-                    av_log(ctx, AV_LOG_ERROR, "Failed to find a render node "
-                           "matching the DRM device.\n");
-                    return AVERROR(ENODEV);
-                }
-                fd = open(render_node, O_RDWR);
-                if (fd < 0) {
-                    av_log(ctx, AV_LOG_ERROR, "Failed to open render node %s"
-                           "matching the DRM device.\n", render_node);
+                    av_log(ctx, AV_LOG_VERBOSE, "Using non-render node "
+                           "because the device does not have an "
+                           "associated render node.\n");
+                    fd = src_hwctx->fd;
+                } else {
+                    fd = open(render_node, O_RDWR);
+                    if (fd < 0) {
+                        av_log(ctx, AV_LOG_VERBOSE, "Using non-render node "
+                               "because the associated render node "
+                               "could not be opened.\n");
+                        fd = src_hwctx->fd;
+                    } else {
+                        av_log(ctx, AV_LOG_VERBOSE, "Using render node %s "
+                               "in place of non-render DRM device.\n",
+                               render_node);
+                    }
                     free(render_node);
-                    return AVERROR(errno);
                 }
-                av_log(ctx, AV_LOG_VERBOSE, "Using render node %s in place "
-                       "of non-render DRM device.\n", render_node);
-                free(render_node);
             }
         }
 #else
