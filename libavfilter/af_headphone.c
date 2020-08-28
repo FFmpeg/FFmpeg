@@ -75,7 +75,7 @@ typedef struct HeadphoneContext {
     FFTContext *fft[2], *ifft[2];
     FFTComplex *data_hrtf[2];
 
-    AVFloatDSPContext *fdsp;
+    float (*scalarproduct_float)(const float *v1, const float *v2, int len);
     struct hrir_inputs {
         int          ir_len;
         int          eof;
@@ -190,7 +190,7 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 memcpy(temp_src + len, bptr, (air_len - len) * sizeof(*temp_src));
             }
 
-            dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, FFALIGN(ir_len, 32));
+            dst[0] += s->scalarproduct_float(temp_ir, temp_src, FFALIGN(ir_len, 32));
             temp_ir += air_len;
         }
 
@@ -668,9 +668,13 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
-    s->fdsp = avpriv_float_dsp_alloc(0);
-    if (!s->fdsp)
-        return AVERROR(ENOMEM);
+    if (s->type == TIME_DOMAIN) {
+        AVFloatDSPContext *fdsp = avpriv_float_dsp_alloc(0);
+        if (!fdsp)
+            return AVERROR(ENOMEM);
+        s->scalarproduct_float = fdsp->scalarproduct_float;
+        av_free(fdsp);
+    }
 
     return 0;
 }
@@ -715,7 +719,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->temp_afft[1]);
     av_freep(&s->data_hrtf[0]);
     av_freep(&s->data_hrtf[1]);
-    av_freep(&s->fdsp);
 
     for (unsigned i = 1; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
