@@ -274,7 +274,7 @@ static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
     return ret;
 }
 
-static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, int offset, AVBufferRef* bref)
+static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, int offset)
 {
     unsigned int bytesused, length;
 
@@ -386,7 +386,7 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
                 h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
             }
             size = frame->linesize[i] * h;
-            ret = v4l2_bufref_to_buf(out, 0, frame->data[i], size, offset, frame->buf[i]);
+            ret = v4l2_bufref_to_buf(out, 0, frame->data[i], size, offset);
             if (ret)
                 return ret;
             offset += size;
@@ -395,7 +395,7 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
     }
 
     for (i = 0; i < out->num_planes; i++) {
-        ret = v4l2_bufref_to_buf(out, i, frame->buf[i]->data, frame->buf[i]->size, 0, frame->buf[i]);
+        ret = v4l2_bufref_to_buf(out, i, frame->buf[i]->data, frame->buf[i]->size, 0);
         if (ret)
             return ret;
     }
@@ -479,7 +479,7 @@ int ff_v4l2_buffer_avpkt_to_buf(const AVPacket *pkt, V4L2Buffer *out)
 {
     int ret;
 
-    ret = v4l2_bufref_to_buf(out, 0, pkt->data, pkt->size, 0, pkt->buf);
+    ret = v4l2_bufref_to_buf(out, 0, pkt->data, pkt->size, 0);
     if (ret)
         return ret;
 
