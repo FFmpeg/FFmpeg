@@ -37,29 +37,26 @@ SECTION .text
 
 %macro CFHD_HORIZ_FILTER 1
 %if %1 == 1023
-cglobal cfhd_horiz_filter_clip10, 5, 6, 8 + 4 * ARCH_X86_64, output, low, high, width, bpc
-    DEFINE_ARGS    output, low, high, width, x, temp
+cglobal cfhd_horiz_filter_clip10, 5, 6, 8 + 4 * ARCH_X86_64, output, low, high, width, x, temp
     shl        widthd, 1
 %define ostrideq widthq
 %define lwidthq  widthq
 %define hwidthq  widthq
 %elif %1 == 4095
-cglobal cfhd_horiz_filter_clip12, 5, 6, 8 + 4 * ARCH_X86_64, output, low, high, width, bpc
-    DEFINE_ARGS    output, low, high, width, x, temp
+cglobal cfhd_horiz_filter_clip12, 5, 6, 8 + 4 * ARCH_X86_64, output, low, high, width, x, temp
     shl        widthd, 1
 %define ostrideq widthq
 %define lwidthq  widthq
 %define hwidthq  widthq
 %else
 %if ARCH_X86_64
-cglobal cfhd_horiz_filter, 11, 11, 12, output, ostride, low, lwidth, high, hwidth, width, height
-DEFINE_ARGS    output, ostride, low, lwidth, high, hwidth, width, height, x, y, temp
+cglobal cfhd_horiz_filter, 8, 11, 12, output, ostride, low, lwidth, high, hwidth, width, height, x, y, temp
     shl  ostrided, 1
     shl   lwidthd, 1
     shl   hwidthd, 1
     shl    widthd, 1
 
-    mov        yq, heightq
+    mov        yd, heightd
     neg        yq
 %else
 cglobal cfhd_horiz_filter, 7, 7, 8, output, x, low, y, high, temp, width, height
@@ -307,14 +304,13 @@ CFHD_HORIZ_FILTER 4095
 
 INIT_XMM sse2
 %if ARCH_X86_64
-cglobal cfhd_vert_filter, 11, 11, 14, output, ostride, low, lwidth, high, hwidth, width, height
-DEFINE_ARGS    output, ostride, low, lwidth, high, hwidth, width, height, x, y, pos
+cglobal cfhd_vert_filter, 8, 11, 14, output, ostride, low, lwidth, high, hwidth, width, height, x, y, pos
     shl        ostrided, 1
     shl         lwidthd, 1
     shl         hwidthd, 1
     shl          widthd, 1
 
-    dec   heightq
+    dec   heightd
 
     mova       m8, [factor_p1_n1]
     mova       m9, [factor_n1_p1]
