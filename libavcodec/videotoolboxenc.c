@@ -340,7 +340,6 @@ static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer, ExtraSEI
     info->next = NULL;
 
     pthread_mutex_lock(&vtctx->lock);
-    pthread_cond_signal(&vtctx->cv_sample_sent);
 
     if (!vtctx->q_head) {
         vtctx->q_head = info;
@@ -350,6 +349,7 @@ static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer, ExtraSEI
 
     vtctx->q_tail = info;
 
+    pthread_cond_signal(&vtctx->cv_sample_sent);
     pthread_mutex_unlock(&vtctx->lock);
 }
 
