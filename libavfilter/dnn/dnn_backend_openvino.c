@@ -24,6 +24,7 @@
  */
 
 #include "dnn_backend_openvino.h"
+#include "dnn_io_proc.h"
 #include "libavformat/avio.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
@@ -42,6 +43,7 @@ typedef struct OVContext {
 
 typedef struct OVModel{
     OVContext ctx;
+    DNNModel *model;
     ie_core_t *core;
     ie_network_t *network;
     ie_executable_network_t *exe_network;
@@ -131,7 +133,7 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
     return DNN_ERROR;
 }
 
-static DNNReturnType set_input_ov(void *model, DNNData *input, const char *input_name)
+static DNNReturnType set_input_ov(void *model, AVFrame *frame, const char *input_name)
 {
     OVModel *ov_model = (OVModel *)model;
     OVContext *ctx = &ov_model->ctx;
@@ -139,10 +141,7 @@ static DNNReturnType set_input_ov(void *model, DNNData *input, const char *input
     dimensions_t dims;
     precision_e precision;
     ie_blob_buffer_t blob_buffer;
-
-    status = ie_exec_network_create_infer_request(ov_model->exe_network, &ov_model->infer_request);
-    if (status != OK)
-        goto err;
+    DNNData input;
 
     status = ie_infer_request_get_blob(ov_model->infer_request, input_name, &ov_model->input_blob);
     if (status != OK)
@@ -153,23 +152,26 @@ static DNNReturnType set_input_ov(void *model, DNNData *input, const char *input
     if (status != OK)
         goto err;
 
-    av_assert0(input->channels == dims.dims[1]);
-    av_assert0(input->height   == dims.dims[2]);
-    av_assert0(input->width    == dims.dims[3]);
-    av_assert0(input->dt       == precision_to_datatype(precision));
-
     status = ie_blob_get_buffer(ov_model->input_blob, &blob_buffer);
     if (status != OK)
         goto err;
-    input->data = blob_buffer.buffer;
+
+    input.height = dims.dims[2];
+    input.width = dims.dims[3];
+    input.channels = dims.dims[1];
+    input.data = blob_buffer.buffer;
+    input.dt = precision_to_datatype(precision);
+    if (ov_model->model->pre_proc != NULL) {
+        ov_model->model->pre_proc(frame, &input, ov_model->model->userdata);
+    } else {
+        proc_from_frame_to_dnn(frame, &input, ctx);
+    }
 
     return DNN_SUCCESS;
 
 err:
     if (ov_model->input_blob)
         ie_blob_free(&ov_model->input_blob);
-    if (ov_model->infer_request)
-        ie_infer_request_free(&ov_model->infer_request);
     av_log(ctx, AV_LOG_ERROR, "Failed to create inference instance or get input data/dims/precision/memory\n");
     return DNN_ERROR;
 }
@@ -184,7 +186,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
     ie_config_t config = {NULL, NULL, NULL};
     ie_available_devices_t a_dev;
 
-    model = av_malloc(sizeof(DNNModel));
+    model = av_mallocz(sizeof(DNNModel));
     if (!model){
         return NULL;
     }
@@ -192,6 +194,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
     ov_model = av_mallocz(sizeof(OVModel));
     if (!ov_model)
         goto err;
+    ov_model->model = model;
     ov_model->ctx.class = &dnn_openvino_class;
     ctx = &ov_model->ctx;
 
@@ -226,6 +229,10 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
         goto err;
     }
 
+    status = ie_exec_network_create_infer_request(ov_model->exe_network, &ov_model->infer_request);
+    if (status != OK)
+        goto err;
+
     model->model = (void *)ov_model;
     model->set_input = &set_input_ov;
     model->get_input = &get_input_ov;
@@ -238,6 +245,8 @@ err:
     if (model)
         av_freep(&model);
     if (ov_model) {
+        if (ov_model->infer_request)
+            ie_infer_request_free(&ov_model->infer_request);
         if (ov_model->exe_network)
             ie_exec_network_free(&ov_model->exe_network);
         if (ov_model->network)
@@ -249,7 +258,7 @@ err:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output)
+DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
     char *model_output_name = NULL;
     char *all_output_names = NULL;
@@ -258,8 +267,18 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, c
     ie_blob_buffer_t blob_buffer;
     OVModel *ov_model = (OVModel *)model->model;
     OVContext *ctx = &ov_model->ctx;
-    IEStatusCode status = ie_infer_request_infer(ov_model->infer_request);
+    IEStatusCode status;
     size_t model_output_count = 0;
+    DNNData output;
+
+    if (nb_output != 1) {
+        // currently, the filter does not need multiple outputs,
+        // so we just pending the support until we really need it.
+        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
+        return DNN_ERROR;
+    }
+
+    status = ie_infer_request_infer(ov_model->infer_request);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to start synchronous model inference\n");
         return DNN_ERROR;
@@ -296,11 +315,21 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, c
             return DNN_ERROR;
         }
 
-        outputs[i].channels = dims.dims[1];
-        outputs[i].height   = dims.dims[2];
-        outputs[i].width    = dims.dims[3];
-        outputs[i].dt       = precision_to_datatype(precision);
-        outputs[i].data     = blob_buffer.buffer;
+        output.channels = dims.dims[1];
+        output.height   = dims.dims[2];
+        output.width    = dims.dims[3];
+        output.dt       = precision_to_datatype(precision);
+        output.data     = blob_buffer.buffer;
+        if (out_frame->width != output.width || out_frame->height != output.height) {
+            out_frame->width = output.width;
+            out_frame->height = output.height;
+        } else {
+            if (ov_model->model->post_proc != NULL) {
+                ov_model->model->post_proc(out_frame, &output, ov_model->model->userdata);
+            } else {
+                proc_from_dnn_to_frame(out_frame, &output, ctx);
+            }
+        }
     }
 
     return DNN_SUCCESS;

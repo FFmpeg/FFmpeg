@@ -20,19 +20,17 @@
 
 /**
  * @file
- * DNN inference functions interface for OpenVINO backend.
+ * DNN input&output process between AVFrame and DNNData.
  */
 
 
-#ifndef AVFILTER_DNN_DNN_BACKEND_OPENVINO_H
-#define AVFILTER_DNN_DNN_BACKEND_OPENVINO_H
+#ifndef AVFILTER_DNN_DNN_IO_PROC_H
+#define AVFILTER_DNN_DNN_IO_PROC_H
 
 #include "../dnn_interface.h"
+#include "libavutil/frame.h"
 
-DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, void *userdata);
-
-DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame);
-
-void ff_dnn_free_model_ov(DNNModel **model);
+DNNReturnType proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx);
+DNNReturnType proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx);
 
 #endif

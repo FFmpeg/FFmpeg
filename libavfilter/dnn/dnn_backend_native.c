@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layers.h"
+#include "dnn_io_proc.h"
 
 #define OFFSET(x) offsetof(NativeContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
@@ -69,11 +70,12 @@ static DNNReturnType get_input_native(void *model, DNNData *input, const char *i
     return DNN_ERROR;
 }
 
-static DNNReturnType set_input_native(void *model, DNNData *input, const char *input_name)
+static DNNReturnType set_input_native(void *model, AVFrame *frame, const char *input_name)
 {
     NativeModel *native_model = (NativeModel *)model;
     NativeContext *ctx = &native_model->ctx;
     DnnOperand *oprd = NULL;
+    DNNData input;
 
     if (native_model->layers_num <= 0 || native_model->operands_num <= 0) {
         av_log(ctx, AV_LOG_ERROR, "No operands or layers in model\n");
@@ -97,10 +99,8 @@ static DNNReturnType set_input_native(void *model, DNNData *input, const char *i
         return DNN_ERROR;
     }
 
-    oprd->dims[0] = 1;
-    oprd->dims[1] = input->height;
-    oprd->dims[2] = input->width;
-    oprd->dims[3] = input->channels;
+    oprd->dims[1] = frame->height;
+    oprd->dims[2] = frame->width;
 
     av_freep(&oprd->data);
     oprd->length = calculate_operand_data_length(oprd);
@@ -114,7 +114,16 @@ static DNNReturnType set_input_native(void *model, DNNData *input, const char *i
         return DNN_ERROR;
     }
 
-    input->data = oprd->data;
+    input.height = oprd->dims[1];
+    input.width = oprd->dims[2];
+    input.channels = oprd->dims[3];
+    input.data = oprd->data;
+    input.dt = oprd->data_type;
+    if (native_model->model->pre_proc != NULL) {
+        native_model->model->pre_proc(frame, &input, native_model->model->userdata);
+    } else {
+        proc_from_frame_to_dnn(frame, &input, ctx);
+    }
 
     return DNN_SUCCESS;
 }
@@ -185,6 +194,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
     if (av_opt_set_from_string(&native_model->ctx, model->options, NULL, "=", "&") < 0)
         goto fail;
     model->model = (void *)native_model;
+    native_model->model = model;
 
 #if !HAVE_PTHREAD_CANCEL
     if (native_model->ctx.options.conv2d_threads > 1){
@@ -275,11 +285,19 @@ fail:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output)
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
     NativeModel *native_model = (NativeModel *)model->model;
     NativeContext *ctx = &native_model->ctx;
     int32_t layer;
+    DNNData output;
+
+    if (nb_output != 1) {
+        // currently, the filter does not need multiple outputs,
+        // so we just pending the support until we really need it.
+        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
+        return DNN_ERROR;
+    }
 
     if (native_model->layers_num <= 0 || native_model->operands_num <= 0) {
         av_log(ctx, AV_LOG_ERROR, "No operands or layers in model\n");
@@ -317,11 +335,22 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
             return DNN_ERROR;
         }
 
-        outputs[i].data = oprd->data;
-        outputs[i].height = oprd->dims[1];
-        outputs[i].width = oprd->dims[2];
-        outputs[i].channels = oprd->dims[3];
-        outputs[i].dt = oprd->data_type;
+        output.data = oprd->data;
+        output.height = oprd->dims[1];
+        output.width = oprd->dims[2];
+        output.channels = oprd->dims[3];
+        output.dt = oprd->data_type;
+
+        if (out_frame->width != output.width || out_frame->height != output.height) {
+            out_frame->width = output.width;
+            out_frame->height = output.height;
+        } else {
+            if (native_model->model->post_proc != NULL) {
+                native_model->model->post_proc(out_frame, &output, native_model->model->userdata);
+            } else {
+                proc_from_dnn_to_frame(out_frame, &output, ctx);
+            }
+        }
     }
 
     return DNN_SUCCESS;

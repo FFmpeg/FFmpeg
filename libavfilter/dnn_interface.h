@@ -27,6 +27,7 @@
 #define AVFILTER_DNN_INTERFACE_H
 
 #include <stdint.h>
+#include "libavutil/frame.h"
 
 typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
@@ -50,17 +51,23 @@ typedef struct DNNModel{
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
     DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
-    // Sets model input and output.
-    // Should be called at least once before model execution.
-    DNNReturnType (*set_input)(void *model, DNNData *input, const char *input_name);
+    // Sets model input.
+    // Should be called every time before model execution.
+    DNNReturnType (*set_input)(void *model, AVFrame *frame, const char *input_name);
+    // set the pre process to transfer data from AVFrame to DNNData
+    // the default implementation within DNN is used if it is not provided by the filter
+    int (*pre_proc)(AVFrame *frame_in, DNNData *model_input, void *user_data);
+    // set the post process to transfer data from DNNData to AVFrame
+    // the default implementation within DNN is used if it is not provided by the filter
+    int (*post_proc)(AVFrame *frame_out, DNNData *model_output, void *user_data);
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
     DNNModel *(*load_model)(const char *model_filename, const char *options, void *userdata);
-    // Executes model with specified input and output. Returns DNN_ERROR otherwise.
-    DNNReturnType (*execute_model)(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output);
+    // Executes model with specified output. Returns DNN_ERROR otherwise.
+    DNNReturnType (*execute_model)(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame);
     // Frees memory allocated for model.
     void (*free_model)(DNNModel **model);
 } DNNModule;
