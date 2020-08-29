@@ -200,8 +200,6 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     /* convert codes to vlc_table */
     if (res >= 0) {
-        int i;
-
         res = init_vlc(&code->vlc, huff.max_bits, huff.max_num,
                        huff.lens, sizeof(int), sizeof(int),
                        huff.bits, sizeof(uint32_t), sizeof(uint32_t), 0);
@@ -210,13 +208,8 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
         else {
             code->bits = huff.max_bits;
             code->length = huff.max_num;
-            code->recode = av_malloc_array(code->length, sizeof(int));
-            if (!code->recode) {
-                res = AVERROR(ENOMEM);
-                goto out;
-            }
-            for (i = 0; i < code->length; i++)
-                code->recode[i] = huff.nums[i];
+            code->recode = huff.nums;
+            huff.nums = NULL;
         }
     }
 
