@@ -1160,7 +1160,6 @@ static void ipvideo_decode_format_11_opcodes(IpvideoContext *s, AVFrame *frame)
 static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 {
     IpvideoContext *s = avctx->priv_data;
-    int ret;
 
     s->avctx = avctx;
 
@@ -1175,8 +1174,7 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     s->prev_decode_frame = av_frame_alloc();
     if (!s->last_frame || !s->second_last_frame ||
         !s->cur_decode_frame || !s->prev_decode_frame) {
-        ret = AVERROR(ENOMEM);
-        goto error;
+        return AVERROR(ENOMEM);
     }
 
     s->cur_decode_frame->width   = avctx->width;
@@ -1187,12 +1185,6 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     s->prev_decode_frame->format = avctx->pix_fmt;
 
     return 0;
-error:
-    av_frame_free(&s->last_frame);
-    av_frame_free(&s->second_last_frame);
-    av_frame_free(&s->cur_decode_frame);
-    av_frame_free(&s->prev_decode_frame);
-    return ret;
 }
 
 static int ipvideo_decode_frame(AVCodecContext *avctx,
@@ -1381,4 +1373,5 @@ AVCodec ff_interplay_video_decoder = {
     .close          = ipvideo_decode_end,
     .decode         = ipvideo_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
