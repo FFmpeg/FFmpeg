@@ -30,11 +30,6 @@
 #include "internal.h"
 
 
-typedef struct WNV1Context {
-    int shift;
-    GetBitContext gb;
-} WNV1Context;
-
 static const uint16_t code_tab[16][2] = {
     { 0x17F, 9 }, { 0xBF, 8 }, { 0x5F, 7 }, { 0x2F, 6 }, { 0x17, 5 }, { 0x0B, 4 }, { 0x005, 3 },
     { 0x000, 1 },
@@ -45,26 +40,26 @@ static const uint16_t code_tab[16][2] = {
 static VLC code_vlc;
 
 /* returns modified base_value */
-static inline int wnv1_get_code(WNV1Context *w, int base_value)
+static inline int wnv1_get_code(GetBitContext *gb, int shift, int base_value)
 {
-    int v = get_vlc2(&w->gb, code_vlc.table, CODE_VLC_BITS, 1);
+    int v = get_vlc2(gb, code_vlc.table, CODE_VLC_BITS, 1);
 
     if (v == 15)
-        return get_bits(&w->gb, 8 - w->shift) << w->shift;
+        return get_bits(gb, 8 - shift) << shift;
     else
-        return base_value + ((v - 7U) << w->shift);
+        return base_value + ((v - 7U) << shift);
 }
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    WNV1Context * const l = avctx->priv_data;
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
     AVFrame * const p     = data;
+    GetBitContext gb;
     unsigned char *Y,*U,*V;
-    int i, j, ret;
+    int i, j, ret, shift;
     int prev_y = 0, prev_u = 0, prev_v = 0;
 
     if (buf_size < 8 + avctx->height * (avctx->width/2)/8) {
@@ -76,24 +71,24 @@ static int decode_frame(AVCodecContext *avctx,
         return ret;
     p->key_frame = 1;
 
-    if ((ret = init_get_bits8(&l->gb, buf + 8, buf_size - 8)) < 0)
+    if ((ret = init_get_bits8(&gb, buf + 8, buf_size - 8)) < 0)
         return ret;
 
     if (buf[2] >> 4 == 6)
-        l->shift = 2;
+        shift = 2;
     else {
-        l->shift = 8 - (buf[2] >> 4);
-        if (l->shift > 4) {
+        shift = 8 - (buf[2] >> 4);
+        if (shift > 4) {
             avpriv_request_sample(avctx,
                                   "Unknown WNV1 frame header value %i",
                                   buf[2] >> 4);
-            l->shift = 4;
+            shift = 4;
         }
-        if (l->shift < 1) {
+        if (shift < 1) {
             avpriv_request_sample(avctx,
                                   "Unknown WNV1 frame header value %i",
                                   buf[2] >> 4);
-            l->shift = 1;
+            shift = 1;
         }
     }
 
@@ -102,10 +97,10 @@ static int decode_frame(AVCodecContext *avctx,
     V = p->data[2];
     for (j = 0; j < avctx->height; j++) {
         for (i = 0; i < avctx->width / 2; i++) {
-            Y[i * 2] = wnv1_get_code(l, prev_y);
-            prev_u = U[i] = wnv1_get_code(l, prev_u);
-            prev_y = Y[(i * 2) + 1] = wnv1_get_code(l, Y[i * 2]);
-            prev_v = V[i] = wnv1_get_code(l, prev_v);
+            Y[i * 2] = wnv1_get_code(&gb, shift, prev_y);
+            prev_u = U[i] = wnv1_get_code(&gb, shift, prev_u);
+            prev_y = Y[(i * 2) + 1] = wnv1_get_code(&gb, shift, Y[i * 2]);
+            prev_v = V[i] = wnv1_get_code(&gb, shift, prev_v);
         }
         Y += p->linesize[0];
         U += p->linesize[1];
@@ -138,7 +133,6 @@ AVCodec ff_wnv1_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Winnov WNV1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WNV1,
-    .priv_data_size = sizeof(WNV1Context),
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
