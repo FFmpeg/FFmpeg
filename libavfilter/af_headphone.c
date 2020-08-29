@@ -281,20 +281,14 @@ static int headphone_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
     for (j = 0; j < in->nb_samples; j++) {
         dst[2 * j] += fft_acc[j].re * fft_scale;
+        if (fabsf(dst[2 * j]) > 1)
+            n_clippings[0]++;
     }
 
     for (j = 0; j < ir_len - 1; j++) {
         int write_pos = (wr + j) & modulo;
 
         *(ringbuffer + write_pos) += fft_acc[in->nb_samples + j].re * fft_scale;
-    }
-
-    for (i = 0; i < out->nb_samples; i++) {
-        if (fabsf(dst[0]) > 1) {
-            n_clippings[0]++;
-        }
-
-        dst += 2;
     }
 
     *write = wr;
