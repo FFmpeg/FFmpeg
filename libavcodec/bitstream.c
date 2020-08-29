@@ -266,9 +266,6 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
 
    'wrap' and 'size' make it possible to use any memory configuration and types
    (byte/word/long) to store the 'bits', 'codes', and 'symbols' tables.
-
-   'use_static' should be set to 1 for tables, which should be freed
-   with av_free_static(), 0 if ff_free_vlc() will be used.
 */
 int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
