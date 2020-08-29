@@ -141,6 +141,7 @@ HEVC_SAMPLES_8BIT =             \
     WPP_D_ericsson_MAIN_2       \
     WPP_E_ericsson_MAIN_2       \
     WPP_F_ericsson_MAIN_2       \
+    WPP_HIGH_TP_444_8BIT_RExt_Apple_2 \
 
 HEVC_SAMPLES_10BIT =            \
     DBLK_A_MAIN10_VIXS_3        \
