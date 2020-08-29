@@ -1004,10 +1004,8 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
 
     enc->last_frame    = av_frame_alloc();
     enc->current_frame = av_frame_alloc();
-    if (!enc->last_frame || !enc->current_frame) {
-        roq_encode_end(avctx);
+    if (!enc->last_frame || !enc->current_frame)
         return AVERROR(ENOMEM);
-    }
 
     enc->tmpData      = av_malloc(sizeof(RoqTempdata));
 
@@ -1024,10 +1022,8 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
         av_malloc_array ((enc->width*enc->height/64), sizeof(motion_vect));
 
     if (!enc->tmpData || !enc->this_motion4 || !enc->last_motion4 ||
-        !enc->this_motion8 || !enc->last_motion8) {
-        roq_encode_end(avctx);
+        !enc->this_motion8 || !enc->last_motion8)
         return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -1135,4 +1131,5 @@ AVCodec ff_roq_encoder = {
     .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ444P,
                                                         AV_PIX_FMT_NONE },
     .priv_class     = &roq_class,
+    .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
 };
