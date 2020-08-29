@@ -241,6 +241,7 @@ extern AVCodec ff_pgm_decoder;
 extern AVCodec ff_pgmyuv_encoder;
 extern AVCodec ff_pgmyuv_decoder;
 extern AVCodec ff_pgx_decoder;
+extern AVCodec ff_photocd_decoder;
 extern AVCodec ff_pictor_decoder;
 extern AVCodec ff_pixlet_decoder;
 extern AVCodec ff_png_encoder;

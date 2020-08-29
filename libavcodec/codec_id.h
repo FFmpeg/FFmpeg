@@ -297,6 +297,7 @@ enum AVCodecID {
     AV_CODEC_ID_NOTCHLC,
     AV_CODEC_ID_PFM,
     AV_CODEC_ID_MOBICLIP,
+    AV_CODEC_ID_PHOTOCD,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

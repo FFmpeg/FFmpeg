@@ -20,6 +20,7 @@ version <next>:
 - MobiClip video decoder
 - MOFLEX demuxer
 - MODS demuxer
+- PhotoCD decoder
 
 
 version 4.3:
