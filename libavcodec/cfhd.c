@@ -589,20 +589,20 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             s->planes = data == 2 ? 4 : av_pix_fmt_count_planes(s->coded_format);
-        } else if (tag == -85) {
+        } else if (tag == -DisplayHeight) {
             av_log(avctx, AV_LOG_DEBUG, "Cropped height %"PRIu16"\n", data);
             s->cropped_height = data;
-        } else if (tag == -75) {
+        } else if (tag == -PeakOffsetLow) {
             s->peak.offset &= ~0xffff;
             s->peak.offset |= (data & 0xffff);
             s->peak.base    = gb;
             s->peak.level   = 0;
-        } else if (tag == -76) {
+        } else if (tag == -PeakOffsetHigh) {
             s->peak.offset &= 0xffff;
             s->peak.offset |= (data & 0xffffU)<<16;
             s->peak.base    = gb;
             s->peak.level   = 0;
-        } else if (tag == -74 && s->peak.offset) {
+        } else if (tag == -PeakLevel && s->peak.offset) {
             s->peak.level = data;
             bytestream2_seek(&s->peak.base, s->peak.offset - 4, SEEK_CUR);
         } else
