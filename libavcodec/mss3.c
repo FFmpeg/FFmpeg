@@ -844,7 +844,6 @@ static av_cold int mss3_decode_init(AVCodecContext *avctx)
                                             b_width * b_height);
         if (!c->dct_coder[i].prev_dc) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate buffer\n");
-            av_frame_free(&c->pic);
             while (i >= 0) {
                 av_freep(&c->dct_coder[i].prev_dc);
                 i--;
