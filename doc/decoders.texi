@@ -107,7 +107,7 @@ the undocumented RealAudio 3 (a.k.a. dnet).
 
 @item -drc_scale @var{value}
 Dynamic Range Scale Factor. The factor to apply to dynamic range values
-from the AC-3 stream. This factor is applied exponentially.
+from the AC-3 stream. This factor is applied exponentially. The default value is 1.
 There are 3 notable scale factor ranges:
 @table @option
 @item drc_scale == 0
