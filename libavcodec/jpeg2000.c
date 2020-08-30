@@ -39,7 +39,7 @@
 /* tag tree routines */
 
 /* allocate the memory for tag tree */
-static int32_t tag_tree_size(int w, int h)
+int32_t ff_tag_tree_size(int w, int h)
 {
     int64_t res = 0;
     while (w > 1 || h > 1) {
@@ -57,7 +57,7 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     Jpeg2000TgtNode *res, *t, *t2;
     int32_t tt_size;
 
-    tt_size = tag_tree_size(w, h);
+    tt_size = ff_tag_tree_size(w, h);
 
     t = res = av_mallocz_array(tt_size, sizeof(*t));
     if (!res)
@@ -82,12 +82,13 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     return res;
 }
 
-static void tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
+void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h, int val)
 {
-    int i, siz = tag_tree_size(w, h);
+    int i, siz = ff_tag_tree_size(w, h);
 
     for (i = 0; i < siz; i++) {
-        t[i].val = 0;
+        t[i].val = val;
+        t[i].temp_val = 0;
         t[i].vis = 0;
     }
 }
@@ -260,9 +261,11 @@ static void init_band_stepsize(AVCodecContext *avctx,
         band->f_stepsize *= 0.5;
 }
 
-static int init_prec(Jpeg2000Band *band,
+static int init_prec(AVCodecContext *avctx,
+                     Jpeg2000Band *band,
                      Jpeg2000ResLevel *reslevel,
                      Jpeg2000Component *comp,
+                     Jpeg2000CodingStyle *codsty,
                      int precno, int bandno, int reslevelno,
                      int log2_band_prec_width,
                      int log2_band_prec_height)
@@ -365,6 +368,11 @@ static int init_prec(Jpeg2000Band *band,
         cblk->lblock    = 3;
         cblk->length    = 0;
         cblk->npasses   = 0;
+        if (av_codec_is_encoder(avctx->codec)) {
+            cblk->layers = av_mallocz_array(codsty->nlayers, sizeof(*cblk->layers));
+            if (!cblk->layers)
+                return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
@@ -438,7 +446,7 @@ static int init_band(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
 
     for (precno = 0; precno < nb_precincts; precno++) {
-        ret = init_prec(band, reslevel, comp,
+        ret = init_prec(avctx, band, reslevel, comp, codsty,
                         precno, bandno, reslevelno,
                         log2_band_prec_width, log2_band_prec_height);
         if (ret < 0)
@@ -567,8 +575,8 @@ void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
             Jpeg2000Band *band = rlevel->band + bandno;
             for(precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++) {
                 Jpeg2000Prec *prec = band->prec + precno;
-                tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
-                tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                ff_tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height, 0);
+                ff_tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height, 0);
                 for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
                     Jpeg2000Cblk *cblk = prec->cblk + cblkno;
                     cblk->length = 0;
@@ -613,6 +621,7 @@ void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
                             av_freep(&cblk->passes);
                             av_freep(&cblk->lengthinc);
                             av_freep(&cblk->data_start);
+                            av_freep(&cblk->layers);
                         }
                         av_freep(&prec->cblk);
                     }

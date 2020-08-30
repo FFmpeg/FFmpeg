@@ -184,11 +184,8 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
 
     s->last_frame    = av_frame_alloc();
     s->current_frame = av_frame_alloc();
-    if (!s->current_frame || !s->last_frame) {
-        av_frame_free(&s->current_frame);
-        av_frame_free(&s->last_frame);
+    if (!s->current_frame || !s->last_frame)
         return AVERROR(ENOMEM);
-    }
 
     avctx->pix_fmt = AV_PIX_FMT_YUVJ444P;
     avctx->color_range = AVCOL_RANGE_JPEG;
@@ -248,4 +245,5 @@ AVCodec ff_roq_decoder = {
     .close          = roq_decode_end,
     .decode         = roq_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

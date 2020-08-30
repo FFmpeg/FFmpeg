@@ -3312,7 +3312,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             break;
 
         case TYPE_PCE: {
-            uint8_t layout_map[MAX_ELEM_ID*4][3];
+            uint8_t layout_map[MAX_ELEM_ID*4][3] = {{0}};
             int tags;
 
             int pushed = push_output_configuration(ac);

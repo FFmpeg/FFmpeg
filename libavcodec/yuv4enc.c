@@ -23,11 +23,6 @@
 #include "avcodec.h"
 #include "internal.h"
 
-static av_cold int yuv4_encode_init(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)
 {
@@ -62,18 +57,11 @@ static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int yuv4_encode_close(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 AVCodec ff_yuv4_encoder = {
     .name         = "yuv4",
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:2:0"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_YUV4,
-    .init         = yuv4_encode_init,
     .encode2      = yuv4_encode_frame,
-    .close        = yuv4_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
 };

@@ -127,6 +127,7 @@ typedef struct Jpeg2000T1Context {
 
 typedef struct Jpeg2000TgtNode {
     uint8_t val;
+    uint8_t temp_val;
     uint8_t vis;
     struct Jpeg2000TgtNode *parent;
 } Jpeg2000TgtNode;
@@ -161,10 +162,19 @@ typedef struct Jpeg2000Pass {
     int flushed_len;
 } Jpeg2000Pass;
 
+typedef struct Jpeg2000Layer {
+    uint8_t *data_start;
+    int data_len;
+    int npasses;
+    double disto;
+    int cum_passes;
+} Jpeg2000Layer;
+
 typedef struct Jpeg2000Cblk {
     uint8_t npasses;
     uint8_t ninclpasses; // number coding of passes included in codestream
     uint8_t nonzerobits;
+    uint8_t incl;
     uint16_t length;
     uint16_t *lengthinc;
     uint8_t nb_lengthinc;
@@ -175,6 +185,7 @@ typedef struct Jpeg2000Cblk {
     int nb_terminationsinc;
     int *data_start;
     Jpeg2000Pass *passes;
+    Jpeg2000Layer *layers;
     int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 
@@ -289,5 +300,8 @@ static inline int needs_termination(int style, int passno) {
         return 1;
     return 0;
 }
+
+int32_t ff_tag_tree_size(int w, int h);
+void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h, int val);
 
 #endif /* AVCODEC_JPEG2000_H */

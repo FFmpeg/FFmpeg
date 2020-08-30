@@ -844,20 +844,13 @@ static av_cold int mss3_decode_init(AVCodecContext *avctx)
                                             b_width * b_height);
         if (!c->dct_coder[i].prev_dc) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate buffer\n");
-            av_frame_free(&c->pic);
-            while (i >= 0) {
-                av_freep(&c->dct_coder[i].prev_dc);
-                i--;
-            }
             return AVERROR(ENOMEM);
         }
     }
 
     c->pic = av_frame_alloc();
-    if (!c->pic) {
-        mss3_decode_end(avctx);
+    if (!c->pic)
         return AVERROR(ENOMEM);
-    }
 
     avctx->pix_fmt     = AV_PIX_FMT_YUV420P;
 
@@ -876,4 +869,5 @@ AVCodec ff_msa1_decoder = {
     .close          = mss3_decode_end,
     .decode         = mss3_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
