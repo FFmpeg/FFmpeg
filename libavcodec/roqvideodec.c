@@ -39,7 +39,6 @@ static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)
     unsigned long chunk_size = 0;
     int i, j, k, nv1, nv2, vqflg = 0, vqflg_pos = -1;
     int vqid, xpos, ypos, xp, yp, x, y, mx, my;
-    int frame_stats[2][4] = {{0},{0}};
     roq_qcell *qcell;
     int64_t chunk_start;
 
@@ -89,7 +88,6 @@ static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)
                     vqflg_pos = 7;
                 }
                 vqid = (vqflg >> (vqflg_pos * 2)) & 0x3;
-                frame_stats[0][vqid]++;
                 vqflg_pos--;
 
                 switch(vqid) {
@@ -124,7 +122,6 @@ static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)
                             vqflg_pos = 7;
                         }
                         vqid = (vqflg >> (vqflg_pos * 2)) & 0x3;
-                        frame_stats[1][vqid]++;
                         vqflg_pos--;
                         switch(vqid) {
                         case RoQ_ID_MOT:
