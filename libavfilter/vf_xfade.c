@@ -1779,10 +1779,9 @@ static int xfade_activate(AVFilterContext *ctx)
             ff_outlink_set_status(outlink, status, s->pts);
             return 0;
         } else if (!ret) {
-            if (ff_outlink_frame_wanted(outlink)) {
+            if (ff_outlink_frame_wanted(outlink))
                 ff_inlink_request_frame(ctx->inputs[1]);
-                return 0;
-            }
+            return 0;
         }
     }
 
@@ -1832,14 +1831,17 @@ static int xfade_activate(AVFilterContext *ctx)
         if (!s->eof[1] && ff_outlink_get_status(ctx->inputs[1])) {
             s->eof[1] = 1;
         }
-        if (!s->eof[0] && !s->xf[0])
+        if (!s->eof[0] && !s->xf[0] && ff_inlink_queued_frames(ctx->inputs[0]) == 0)
             ff_inlink_request_frame(ctx->inputs[0]);
-        if (!s->eof[1] && (s->need_second || s->eof[0]))
+        if (!s->eof[1] && (s->need_second || s->eof[0]) && ff_inlink_queued_frames(ctx->inputs[1]) == 0)
             ff_inlink_request_frame(ctx->inputs[1]);
         if (s->eof[0] && s->eof[1] && (
-            ff_inlink_queued_frames(ctx->inputs[0]) <= 0 ||
-            ff_inlink_queued_frames(ctx->inputs[1]) <= 0))
+            ff_inlink_queued_frames(ctx->inputs[0]) <= 0 &&
+            ff_inlink_queued_frames(ctx->inputs[1]) <= 0)) {
             ff_outlink_set_status(outlink, AVERROR_EOF, AV_NOPTS_VALUE);
+        } else if (s->xfade_is_over) {
+            ff_filter_set_ready(ctx, 100);
+        }
         return 0;
     }
 
