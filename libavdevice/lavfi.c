@@ -444,25 +444,16 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     frame_metadata = frame->metadata;
     if (frame_metadata) {
-        uint8_t *metadata;
-        AVDictionaryEntry *e = NULL;
-        AVBPrint meta_buf;
+        int size;
+        uint8_t *metadata = av_packet_pack_dictionary(frame_metadata, &size);
 
-        av_bprint_init(&meta_buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-        while ((e = av_dict_get(frame_metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
-            av_bprintf(&meta_buf, "%s", e->key);
-            av_bprint_chars(&meta_buf, '\0', 1);
-            av_bprintf(&meta_buf, "%s", e->value);
-            av_bprint_chars(&meta_buf, '\0', 1);
-        }
-        if (!av_bprint_is_complete(&meta_buf) ||
-            !(metadata = av_packet_new_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
-                                                 meta_buf.len))) {
-            av_bprint_finalize(&meta_buf, NULL);
+        if (!metadata)
             return AVERROR(ENOMEM);
+        if ((ret = av_packet_add_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
+                                           metadata, size)) < 0) {
+            av_freep(&metadata);
+            return ret;
         }
-        memcpy(metadata, meta_buf.str, meta_buf.len);
-        av_bprint_finalize(&meta_buf, NULL);
     }
 
     if ((ret = create_subcc_packet(avctx, frame, min_pts_sink_idx)) < 0) {
