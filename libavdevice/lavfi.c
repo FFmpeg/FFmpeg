@@ -474,7 +474,6 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->stream_index = stream_idx;
     pkt->pts = frame->pts;
     pkt->pos = frame->pkt_pos;
-    pkt->size = size;
     av_frame_unref(frame);
     return size;
 }
