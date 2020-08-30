@@ -458,7 +458,6 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     if ((ret = create_subcc_packet(avctx, frame, min_pts_sink_idx)) < 0) {
         av_frame_unref(frame);
-        av_packet_unref(pkt);
         return ret;
     }
 
