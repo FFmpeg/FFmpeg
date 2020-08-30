@@ -392,10 +392,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     int size = 0;
 
     if (lavfi->subcc_packet.size) {
-        *pkt = lavfi->subcc_packet;
-        av_init_packet(&lavfi->subcc_packet);
-        lavfi->subcc_packet.size = 0;
-        lavfi->subcc_packet.data = NULL;
+        av_packet_move_ref(pkt, &lavfi->subcc_packet);
         return pkt->size;
     }
 
