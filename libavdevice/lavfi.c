@@ -362,16 +362,12 @@ static int create_subcc_packet(AVFormatContext *avctx, AVFrame *frame,
 {
     LavfiContext *lavfi = avctx->priv_data;
     AVFrameSideData *sd;
-    int stream_idx, i, ret;
+    int stream_idx, ret;
 
     if ((stream_idx = lavfi->sink_stream_subcc_map[sink_idx]) < 0)
         return 0;
-    for (i = 0; i < frame->nb_side_data; i++)
-        if (frame->side_data[i]->type == AV_FRAME_DATA_A53_CC)
-            break;
-    if (i >= frame->nb_side_data)
+    if (!(sd = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)))
         return 0;
-    sd = frame->side_data[i];
     if ((ret = av_new_packet(&lavfi->subcc_packet, sd->size)) < 0)
         return ret;
     memcpy(lavfi->subcc_packet.data, sd->data, sd->size);
