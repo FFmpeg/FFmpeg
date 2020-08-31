@@ -152,7 +152,7 @@ static int huff_build12(VLC *vlc, uint8_t *len)
     }
 
     ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 14), 4096,
+    return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 12), 4096,
                               bits,  sizeof(*bits),  sizeof(*bits),
                               codes, sizeof(*codes), sizeof(*codes),
                               syms,  sizeof(*syms),  sizeof(*syms), 0);
