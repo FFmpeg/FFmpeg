@@ -36,7 +36,8 @@ typedef struct GradientsContext {
     int w, h;
     int type;
     AVRational frame_rate;
-    uint64_t pts;
+    int64_t pts;
+    int64_t duration;           ///< duration expressed in microseconds
 
     uint8_t color_rgba[8][4];
     int nb_colors;
@@ -72,6 +73,8 @@ static const AVOption gradients_options[] = {
     {"nb_colors", "set the number of colors", OFFSET(nb_colors), AV_OPT_TYPE_INT,  {.i64=2},          2, 8, FLAGS },
     {"n",         "set the number of colors", OFFSET(nb_colors), AV_OPT_TYPE_INT,  {.i64=2},          2, 8, FLAGS },
     {"seed",      "set the seed",   OFFSET(seed),          AV_OPT_TYPE_INT64,      {.i64=-1},        -1, UINT32_MAX, FLAGS },
+    {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
+    {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
     {NULL},
 };
 
@@ -251,6 +254,10 @@ static int gradients_request_frame(AVFilterLink *outlink)
     const float w2 = s->w / 2.f;
     const float h2 = s->h / 2.f;
 
+    if (s->duration >= 0 &&
+        av_rescale_q(s->pts, outlink->time_base, AV_TIME_BASE_Q) >= s->duration)
+        return AVERROR_EOF;
+
     s->fx0 = (s->x0 - w2) * cosf(angle) - (s->y0 - h2) * sinf(angle) + w2;
     s->fy0 = (s->x0 - w2) * sinf(angle) + (s->y0 - h2) * cosf(angle) + h2;
 
@@ -260,6 +267,9 @@ static int gradients_request_frame(AVFilterLink *outlink)
     if (!frame)
         return AVERROR(ENOMEM);
 
+    frame->key_frame           = 1;
+    frame->interlaced_frame    = 0;
+    frame->pict_type           = AV_PICTURE_TYPE_I;
     frame->sample_aspect_ratio = (AVRational) {1, 1};
     frame->pts = s->pts++;
 
