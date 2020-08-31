@@ -98,20 +98,20 @@ static uint32_t lerp_color(uint8_t c0[4], uint8_t c1[4], float x)
 {
     const float y = 1.f - x;
 
-    return (lrint(c0[0] * y + c1[0] * x)) << 0  |
-           (lrint(c0[1] * y + c1[1] * x)) << 8  |
-           (lrint(c0[2] * y + c1[2] * x)) << 16 |
-           (lrint(c0[3] * y + c1[3] * x)) << 24;
+    return (lrintf(c0[0] * y + c1[0] * x)) << 0  |
+           (lrintf(c0[1] * y + c1[1] * x)) << 8  |
+           (lrintf(c0[2] * y + c1[2] * x)) << 16 |
+           (lrintf(c0[3] * y + c1[3] * x)) << 24;
 }
 
 static uint64_t lerp_color16(uint8_t c0[4], uint8_t c1[4], float x)
 {
     const float y = 1.f - x;
 
-    return (llrint((c0[0] * y + c1[0] * x) * 256)) << 0  |
-           (llrint((c0[1] * y + c1[1] * x) * 256)) << 16 |
-           (llrint((c0[2] * y + c1[2] * x) * 256)) << 32 |
-           (llrint((c0[3] * y + c1[3] * x) * 256)) << 48;
+    return (llrintf((c0[0] * y + c1[0] * x) * 256)) << 0  |
+           (llrintf((c0[1] * y + c1[1] * x) * 256)) << 16 |
+           (llrintf((c0[2] * y + c1[2] * x) * 256)) << 32 |
+           (llrintf((c0[3] * y + c1[3] * x) * 256)) << 48;
 }
 
 static uint32_t lerp_colors(uint8_t arr[3][4], int nb_colors, float step)
