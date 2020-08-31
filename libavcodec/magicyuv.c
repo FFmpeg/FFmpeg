@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define CACHED_BITSTREAM_READER !ARCH_X86_32
+
 #include "libavutil/pixdesc.h"
 #include "libavutil/qsort.h"
 
