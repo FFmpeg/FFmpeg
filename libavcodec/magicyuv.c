@@ -97,9 +97,6 @@ static int huff_cmp_len12(const void *a, const void *b)
 static int huff_build10(VLC *vlc, uint8_t *len)
 {
     HuffEntry he[1024];
-    uint32_t codes[1024];
-    uint8_t bits[1024];
-    uint16_t syms[1024];
     uint32_t code;
     int i;
 
@@ -113,25 +110,20 @@ static int huff_build10(VLC *vlc, uint8_t *len)
 
     code = 1;
     for (i = 1023; i >= 0; i--) {
-        codes[i] = code >> (32 - he[i].len);
-        bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
+        he[i].code = code >> (32 - he[i].len);
         code += 0x80000000u >> (he[i].len - 1);
     }
 
     ff_free_vlc(vlc);
     return ff_init_vlc_sparse(vlc, FFMIN(he[1023].len, 12), 1024,
-                              bits,  sizeof(*bits),  sizeof(*bits),
-                              codes, sizeof(*codes), sizeof(*codes),
-                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+                              &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
+                              &he[0].code, sizeof(he[0]), sizeof(he[0].code),
+                              &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
 }
 
 static int huff_build12(VLC *vlc, uint8_t *len)
 {
     HuffEntry he[4096];
-    uint32_t codes[4096];
-    uint8_t bits[4096];
-    uint16_t syms[4096];
     uint32_t code;
     int i;
 
@@ -145,25 +137,20 @@ static int huff_build12(VLC *vlc, uint8_t *len)
 
     code = 1;
     for (i = 4095; i >= 0; i--) {
-        codes[i] = code >> (32 - he[i].len);
-        bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
+        he[i].code = code >> (32 - he[i].len);
         code += 0x80000000u >> (he[i].len - 1);
     }
 
     ff_free_vlc(vlc);
     return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 12), 4096,
-                              bits,  sizeof(*bits),  sizeof(*bits),
-                              codes, sizeof(*codes), sizeof(*codes),
-                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+                              &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
+                              &he[0].code, sizeof(he[0]), sizeof(he[0].code),
+                              &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
 }
 
 static int huff_build(VLC *vlc, uint8_t *len)
 {
     HuffEntry he[256];
-    uint32_t codes[256];
-    uint8_t bits[256];
-    uint8_t syms[256];
     uint32_t code;
     int i;
 
@@ -177,17 +164,15 @@ static int huff_build(VLC *vlc, uint8_t *len)
 
     code = 1;
     for (i = 255; i >= 0; i--) {
-        codes[i] = code >> (32 - he[i].len);
-        bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
+        he[i].code = code >> (32 - he[i].len);
         code += 0x80000000u >> (he[i].len - 1);
     }
 
     ff_free_vlc(vlc);
     return ff_init_vlc_sparse(vlc, FFMIN(he[255].len, 12), 256,
-                              bits,  sizeof(*bits),  sizeof(*bits),
-                              codes, sizeof(*codes), sizeof(*codes),
-                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+                              &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
+                              &he[0].code, sizeof(he[0]), sizeof(he[0].code),
+                              &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
 }
 
 static void magicyuv_median_pred16(uint16_t *dst, const uint16_t *src1,
