@@ -79,19 +79,19 @@ typedef struct MagicYUVContext {
 static int huff_cmp_len(const void *a, const void *b)
 {
     const HuffEntry *aa = a, *bb = b;
-    return (aa->len - bb->len) * 256 + aa->sym - bb->sym;
+    return (aa->len - bb->len) * 256 + bb->sym - aa->sym;
 }
 
 static int huff_cmp_len10(const void *a, const void *b)
 {
     const HuffEntry *aa = a, *bb = b;
-    return (aa->len - bb->len) * 1024 + aa->sym - bb->sym;
+    return (aa->len - bb->len) * 1024 + bb->sym - aa->sym;
 }
 
 static int huff_cmp_len12(const void *a, const void *b)
 {
     const HuffEntry *aa = a, *bb = b;
-    return (aa->len - bb->len) * 4096 + aa->sym - bb->sym;
+    return (aa->len - bb->len) * 4096 + bb->sym - aa->sym;
 }
 
 static int huff_build10(VLC *vlc, uint8_t *len)
@@ -104,7 +104,7 @@ static int huff_build10(VLC *vlc, uint8_t *len)
     int i;
 
     for (i = 0; i < 1024; i++) {
-        he[i].sym = 1023 - i;
+        he[i].sym = i;
         he[i].len = len[i];
         if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
@@ -115,7 +115,7 @@ static int huff_build10(VLC *vlc, uint8_t *len)
     for (i = 1023; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
-        syms[i]  = 1023 - he[i].sym;
+        syms[i]  = he[i].sym;
         code += 0x80000000u >> (he[i].len - 1);
     }
 
@@ -136,7 +136,7 @@ static int huff_build12(VLC *vlc, uint8_t *len)
     int i;
 
     for (i = 0; i < 4096; i++) {
-        he[i].sym = 4095 - i;
+        he[i].sym = i;
         he[i].len = len[i];
         if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
@@ -147,7 +147,7 @@ static int huff_build12(VLC *vlc, uint8_t *len)
     for (i = 4095; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
-        syms[i]  = 4095 - he[i].sym;
+        syms[i]  = he[i].sym;
         code += 0x80000000u >> (he[i].len - 1);
     }
 
@@ -168,7 +168,7 @@ static int huff_build(VLC *vlc, uint8_t *len)
     int i;
 
     for (i = 0; i < 256; i++) {
-        he[i].sym = 255 - i;
+        he[i].sym = i;
         he[i].len = len[i];
         if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
@@ -179,7 +179,7 @@ static int huff_build(VLC *vlc, uint8_t *len)
     for (i = 255; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
-        syms[i]  = 255 - he[i].sym;
+        syms[i]  = he[i].sym;
         code += 0x80000000u >> (he[i].len - 1);
     }
 
