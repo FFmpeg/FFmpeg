@@ -500,6 +500,7 @@ static int wav_read_header(AVFormatContext *s)
             wav->smv_cur_pt = 0;
             goto break_loop;
         case MKTAG('L', 'I', 'S', 'T'):
+        case MKTAG('l', 'i', 's', 't'):
             if (size < 4) {
                 av_log(s, AV_LOG_ERROR, "too short LIST tag\n");
                 return AVERROR_INVALIDDATA;
@@ -507,6 +508,33 @@ static int wav_read_header(AVFormatContext *s)
             switch (avio_rl32(pb)) {
             case MKTAG('I', 'N', 'F', 'O'):
                 ff_read_riff_info(s, size - 4);
+                break;
+            case MKTAG('a', 'd', 't', 'l'):
+                if (s->nb_chapters > 0) {
+                    while (avio_tell(pb) < next_tag_ofs &&
+                           !avio_feof(pb)) {
+                        char cue_label[512];
+                        unsigned id, sub_size;
+
+                        if (avio_rl32(pb) != MKTAG('l', 'a', 'b', 'l'))
+                            break;
+
+                        sub_size = avio_rl32(pb);
+                        if (sub_size < 5)
+                            break;
+                        id       = avio_rl32(pb);
+                        avio_get_str(pb, sub_size - 4, cue_label, sizeof(cue_label));
+                        avio_skip(pb, avio_tell(pb) & 1);
+
+                        for (int i = 0; i < s->nb_chapters; i++) {
+                            if (s->chapters[i]->id == id) {
+                                av_dict_set(&s->chapters[i]->metadata, "title", cue_label, 0);
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
             }
             break;
         case MKTAG('I', 'D', '3', ' '):
@@ -519,6 +547,24 @@ static int wav_read_header(AVFormatContext *s)
                 ff_id3v2_parse_priv(s, id3v2_extra_meta);
             }
             ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+            }
+            break;
+        case MKTAG('c', 'u', 'e', ' '):
+            if (size >= 4 && got_fmt && st->codecpar->sample_rate > 0) {
+                AVRational tb = {1, st->codecpar->sample_rate};
+                unsigned nb_cues = avio_rl32(pb);
+
+                if (size >= nb_cues * 24LL + 4LL) {
+                    for (int i = 0; i < nb_cues; i++) {
+                        unsigned offset, id = avio_rl32(pb);
+
+                        avio_skip(pb, 16);
+                        offset = avio_rl32(pb);
+
+                        if (!avpriv_new_chapter(s, id, tb, offset, AV_NOPTS_VALUE, NULL))
+                            return AVERROR(ENOMEM);
+                    }
+                }
             }
             break;
         }
