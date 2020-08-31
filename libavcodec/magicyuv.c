@@ -70,7 +70,6 @@ typedef struct MagicYUVContext {
     unsigned int      slices_size[4]; // slice sizes for each plane
     uint8_t           len[4096];      // scratch table of code lengths
     VLC               vlc[4];         // VLC for each plane
-    int (*huff_build)(VLC *vlc, uint8_t *len);
     int (*magy_decode_slice)(AVCodecContext *avctx, void *tdata,
                              int j, int threadnr);
     LLVidDSPContext   llviddsp;
@@ -82,82 +81,28 @@ static int huff_cmp_len(const void *a, const void *b)
     return (aa->len - bb->len) * 4096 + bb->sym - aa->sym;
 }
 
-static int huff_build10(VLC *vlc, uint8_t *len)
-{
-    HuffEntry he[1024];
-    uint32_t code;
-    int i;
-
-    for (i = 0; i < 1024; i++) {
-        he[i].sym = i;
-        he[i].len = len[i];
-        if (len[i] == 0 || len[i] > 32)
-            return AVERROR_INVALIDDATA;
-    }
-    AV_QSORT(he, 1024, HuffEntry, huff_cmp_len);
-
-    code = 1;
-    for (i = 1023; i >= 0; i--) {
-        he[i].code = code >> (32 - he[i].len);
-        code += 0x80000000u >> (he[i].len - 1);
-    }
-
-    ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[1023].len, 12), 1024,
-                              &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
-                              &he[0].code, sizeof(he[0]), sizeof(he[0].code),
-                              &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
-}
-
-static int huff_build12(VLC *vlc, uint8_t *len)
+static int huff_build(VLC *vlc, uint8_t *len, int nb_elems)
 {
     HuffEntry he[4096];
     uint32_t code;
     int i;
 
-    for (i = 0; i < 4096; i++) {
+    for (i = 0; i < nb_elems; i++) {
         he[i].sym = i;
         he[i].len = len[i];
         if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
-    AV_QSORT(he, 4096, HuffEntry, huff_cmp_len);
+    AV_QSORT(he, nb_elems, HuffEntry, huff_cmp_len);
 
     code = 1;
-    for (i = 4095; i >= 0; i--) {
+    for (i = nb_elems - 1; i >= 0; i--) {
         he[i].code = code >> (32 - he[i].len);
         code += 0x80000000u >> (he[i].len - 1);
     }
 
     ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 12), 4096,
-                              &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
-                              &he[0].code, sizeof(he[0]), sizeof(he[0].code),
-                              &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
-}
-
-static int huff_build(VLC *vlc, uint8_t *len)
-{
-    HuffEntry he[256];
-    uint32_t code;
-    int i;
-
-    for (i = 0; i < 256; i++) {
-        he[i].sym = i;
-        he[i].len = len[i];
-        if (len[i] == 0 || len[i] > 32)
-            return AVERROR_INVALIDDATA;
-    }
-    AV_QSORT(he, 256, HuffEntry, huff_cmp_len);
-
-    code = 1;
-    for (i = 255; i >= 0; i--) {
-        he[i].code = code >> (32 - he[i].len);
-        code += 0x80000000u >> (he[i].len - 1);
-    }
-
-    ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[255].len, 12), 256,
+    return ff_init_vlc_sparse(vlc, FFMIN(he[nb_elems - 1].len, 12), nb_elems,
                               &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
                               &he[0].code, sizeof(he[0]), sizeof(he[0].code),
                               &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
@@ -469,7 +414,7 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
 
         if (j == max) {
             j = 0;
-            if (s->huff_build(&s->vlc[i], s->len)) {
+            if (huff_build(&s->vlc[i], s->len, max)) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -595,10 +540,6 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     }
     s->max = 1 << s->bps;
     s->magy_decode_slice = s->bps == 8 ? magy_decode_slice : magy_decode_slice10;
-    if ( s->bps == 8)
-        s->huff_build = huff_build;
-    else
-        s->huff_build = s->bps == 10 ? huff_build10 : huff_build12;
     s->planes = av_pix_fmt_count_planes(avctx->pix_fmt);
 
     bytestream2_skip(&gbyte, 1);
