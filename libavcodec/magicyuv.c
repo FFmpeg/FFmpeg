@@ -453,7 +453,6 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
     MagicYUVContext *s = avctx->priv_data;
     int i = 0, j = 0, k;
 
-    memset(s->len, 0, sizeof(s->len));
     while (get_bits_left(gbit) >= 8) {
         int b = get_bits(gbit, 1);
         int x = get_bits(gbit, 7);
