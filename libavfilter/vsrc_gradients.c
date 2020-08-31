@@ -36,7 +36,9 @@ typedef struct GradientsContext {
     int w, h;
     int type;
     AVRational frame_rate;
-    uint64_t pts;
+    int64_t pts;
+    int64_t duration;           ///< duration expressed in microseconds
+    float speed;
 
     uint8_t color_rgba[8][4];
     int nb_colors;
@@ -72,6 +74,9 @@ static const AVOption gradients_options[] = {
     {"nb_colors", "set the number of colors", OFFSET(nb_colors), AV_OPT_TYPE_INT,  {.i64=2},          2, 8, FLAGS },
     {"n",         "set the number of colors", OFFSET(nb_colors), AV_OPT_TYPE_INT,  {.i64=2},          2, 8, FLAGS },
     {"seed",      "set the seed",   OFFSET(seed),          AV_OPT_TYPE_INT64,      {.i64=-1},        -1, UINT32_MAX, FLAGS },
+    {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
+    {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
+    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },\
     {NULL},
 };
 
@@ -95,20 +100,20 @@ static uint32_t lerp_color(uint8_t c0[4], uint8_t c1[4], float x)
 {
     const float y = 1.f - x;
 
-    return (lrint(c0[0] * y + c1[0] * x)) << 0  |
-           (lrint(c0[1] * y + c1[1] * x)) << 8  |
-           (lrint(c0[2] * y + c1[2] * x)) << 16 |
-           (lrint(c0[3] * y + c1[3] * x)) << 24;
+    return (lrintf(c0[0] * y + c1[0] * x)) << 0  |
+           (lrintf(c0[1] * y + c1[1] * x)) << 8  |
+           (lrintf(c0[2] * y + c1[2] * x)) << 16 |
+           (lrintf(c0[3] * y + c1[3] * x)) << 24;
 }
 
 static uint64_t lerp_color16(uint8_t c0[4], uint8_t c1[4], float x)
 {
     const float y = 1.f - x;
 
-    return (llrint((c0[0] * y + c1[0] * x) * 256)) << 0  |
-           (llrint((c0[1] * y + c1[1] * x) * 256)) << 16 |
-           (llrint((c0[2] * y + c1[2] * x) * 256)) << 32 |
-           (llrint((c0[3] * y + c1[3] * x) * 256)) << 48;
+    return (llrintf((c0[0] * y + c1[0] * x) * 256)) << 0  |
+           (llrintf((c0[1] * y + c1[1] * x) * 256)) << 16 |
+           (llrintf((c0[2] * y + c1[2] * x) * 256)) << 32 |
+           (llrintf((c0[3] * y + c1[3] * x) * 256)) << 48;
 }
 
 static uint32_t lerp_colors(uint8_t arr[3][4], int nb_colors, float step)
@@ -247,9 +252,13 @@ static int gradients_request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     GradientsContext *s = ctx->priv;
     AVFrame *frame = ff_get_video_buffer(outlink, s->w, s->h);
-    float angle = fmodf(s->pts / 100.f, 2.f * M_PI);
+    float angle = fmodf(s->pts * s->speed, 2.f * M_PI);
     const float w2 = s->w / 2.f;
     const float h2 = s->h / 2.f;
+
+    if (s->duration >= 0 &&
+        av_rescale_q(s->pts, outlink->time_base, AV_TIME_BASE_Q) >= s->duration)
+        return AVERROR_EOF;
 
     s->fx0 = (s->x0 - w2) * cosf(angle) - (s->y0 - h2) * sinf(angle) + w2;
     s->fy0 = (s->x0 - w2) * sinf(angle) + (s->y0 - h2) * cosf(angle) + h2;
@@ -260,6 +269,9 @@ static int gradients_request_frame(AVFilterLink *outlink)
     if (!frame)
         return AVERROR(ENOMEM);
 
+    frame->key_frame           = 1;
+    frame->interlaced_frame    = 0;
+    frame->pict_type           = AV_PICTURE_TYPE_I;
     frame->sample_aspect_ratio = (AVRational) {1, 1};
     frame->pts = s->pts++;
 
