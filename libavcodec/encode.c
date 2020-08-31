@@ -242,7 +242,9 @@ static int encode_receive_packet_internal(AVCodecContext *avctx, AVPacket *avpkt
 
     if (avctx->codec->receive_packet) {
         ret = avctx->codec->receive_packet(avctx, avpkt);
-        if (!ret)
+        if (ret < 0)
+            av_packet_unref(avpkt);
+        else
             // Encoders must always return ref-counted buffers.
             // Side-data only packets have no data and can be not ref-counted.
             av_assert0(!avpkt->data || avpkt->buf);
