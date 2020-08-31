@@ -68,7 +68,7 @@ typedef struct MagicYUVContext {
     int               vshift[4];
     Slice            *slices[4];      // slice bitstream positions for each plane
     unsigned int      slices_size[4]; // slice sizes for each plane
-    uint8_t           len[4][4096];   // table of code lengths for each plane
+    uint8_t           len[4096];      // scratch table of code lengths
     VLC               vlc[4];         // VLC for each plane
     int (*huff_build)(VLC *vlc, uint8_t *len);
     int (*magy_decode_slice)(AVCodecContext *avctx, void *tdata,
@@ -465,11 +465,11 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
         }
 
         for (; j < k; j++)
-            s->len[i][j] = x;
+            s->len[j] = x;
 
         if (j == max) {
             j = 0;
-            if (s->huff_build(&s->vlc[i], s->len[i])) {
+            if (s->huff_build(&s->vlc[i], s->len)) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
                 return AVERROR_INVALIDDATA;
             }
