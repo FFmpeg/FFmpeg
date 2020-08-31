@@ -22577,6 +22577,9 @@ for the accepted syntax.
 
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.
+
+@item speed
+Set speed of gradients rotation.
 @end table
 
 

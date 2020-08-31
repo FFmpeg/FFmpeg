@@ -38,6 +38,7 @@ typedef struct GradientsContext {
     AVRational frame_rate;
     int64_t pts;
     int64_t duration;           ///< duration expressed in microseconds
+    float speed;
 
     uint8_t color_rgba[8][4];
     int nb_colors;
@@ -75,6 +76,7 @@ static const AVOption gradients_options[] = {
     {"seed",      "set the seed",   OFFSET(seed),          AV_OPT_TYPE_INT64,      {.i64=-1},        -1, UINT32_MAX, FLAGS },
     {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
     {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
+    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },\
     {NULL},
 };
 
@@ -250,7 +252,7 @@ static int gradients_request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     GradientsContext *s = ctx->priv;
     AVFrame *frame = ff_get_video_buffer(outlink, s->w, s->h);
-    float angle = fmodf(s->pts / 100.f, 2.f * M_PI);
+    float angle = fmodf(s->pts * s->speed, 2.f * M_PI);
     const float w2 = s->w / 2.f;
     const float h2 = s->h / 2.f;
 
