@@ -101,8 +101,11 @@ static void qpeg_decode_intra(QpegContext *qctx, uint8_t *dst,
         } else {
             if (bytestream2_get_bytes_left(&qctx->buffer) < copy)
                 copy = bytestream2_get_bytes_left(&qctx->buffer);
-            for(i = 0; i < copy; i++) {
-                dst[filled++] = bytestream2_get_byte(&qctx->buffer);
+            while (copy > 0) {
+                int step = FFMIN(copy, width - filled);
+                bytestream2_get_bufferu(&qctx->buffer, dst + filled, step);
+                filled += step;
+                copy -= step;
                 if (filled >= width) {
                     filled = 0;
                     dst -= stride;
