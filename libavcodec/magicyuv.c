@@ -68,7 +68,6 @@ typedef struct MagicYUVContext {
     int               vshift[4];
     Slice            *slices[4];      // slice bitstream positions for each plane
     unsigned int      slices_size[4]; // slice sizes for each plane
-    uint8_t           len[4096];      // scratch table of code lengths
     VLC               vlc[4];         // VLC for each plane
     int (*magy_decode_slice)(AVCodecContext *avctx, void *tdata,
                              int j, int threadnr);
@@ -81,18 +80,11 @@ static int huff_cmp_len(const void *a, const void *b)
     return (aa->len - bb->len) * 4096 + bb->sym - aa->sym;
 }
 
-static int huff_build(VLC *vlc, uint8_t *len, int nb_elems)
+static int huff_build(HuffEntry he[], VLC *vlc, int nb_elems)
 {
-    HuffEntry he[4096];
     uint32_t code;
     int i;
 
-    for (i = 0; i < nb_elems; i++) {
-        he[i].sym = i;
-        he[i].len = len[i];
-        if (len[i] == 0 || len[i] > 32)
-            return AVERROR_INVALIDDATA;
-    }
     AV_QSORT(he, nb_elems, HuffEntry, huff_cmp_len);
 
     code = 1;
@@ -396,6 +388,7 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
 static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
 {
     MagicYUVContext *s = avctx->priv_data;
+    HuffEntry he[4096];
     int i = 0, j = 0, k;
 
     while (get_bits_left(gbit) >= 8) {
@@ -404,17 +397,19 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
         int l = get_bitsz(gbit, b * 8) + 1;
 
         k = j + l;
-        if (k > max) {
+        if (k > max || x == 0 || x > 32) {
             av_log(avctx, AV_LOG_ERROR, "Invalid Huffman codes\n");
             return AVERROR_INVALIDDATA;
         }
 
-        for (; j < k; j++)
-            s->len[j] = x;
+        for (; j < k; j++) {
+            he[j].sym = j;
+            he[j].len = x;
+        }
 
         if (j == max) {
             j = 0;
-            if (huff_build(&s->vlc[i], s->len, max)) {
+            if (huff_build(he, &s->vlc[i], max)) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
                 return AVERROR_INVALIDDATA;
             }
