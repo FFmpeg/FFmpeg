@@ -1686,7 +1686,7 @@ static int dash_init(AVFormatContext *s)
                       1024 * 1024);
 
             if (as->par.num && av_cmp_q(par, as->par)) {
-                av_log(s, AV_LOG_ERROR, "Conflicting stream par values in Adaptation Set %d\n", os->as_idx);
+                av_log(s, AV_LOG_ERROR, "Conflicting stream aspect ratios values in Adaptation Set %d. Please ensure all adaptation sets have the same aspect ratio\n", os->as_idx);
                 return AVERROR(EINVAL);
             }
             as->par = par;
