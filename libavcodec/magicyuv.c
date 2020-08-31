@@ -79,18 +79,6 @@ typedef struct MagicYUVContext {
 static int huff_cmp_len(const void *a, const void *b)
 {
     const HuffEntry *aa = a, *bb = b;
-    return (aa->len - bb->len) * 256 + bb->sym - aa->sym;
-}
-
-static int huff_cmp_len10(const void *a, const void *b)
-{
-    const HuffEntry *aa = a, *bb = b;
-    return (aa->len - bb->len) * 1024 + bb->sym - aa->sym;
-}
-
-static int huff_cmp_len12(const void *a, const void *b)
-{
-    const HuffEntry *aa = a, *bb = b;
     return (aa->len - bb->len) * 4096 + bb->sym - aa->sym;
 }
 
@@ -106,7 +94,7 @@ static int huff_build10(VLC *vlc, uint8_t *len)
         if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
-    AV_QSORT(he, 1024, HuffEntry, huff_cmp_len10);
+    AV_QSORT(he, 1024, HuffEntry, huff_cmp_len);
 
     code = 1;
     for (i = 1023; i >= 0; i--) {
@@ -133,7 +121,7 @@ static int huff_build12(VLC *vlc, uint8_t *len)
         if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
-    AV_QSORT(he, 4096, HuffEntry, huff_cmp_len12);
+    AV_QSORT(he, 4096, HuffEntry, huff_cmp_len);
 
     code = 1;
     for (i = 4095; i >= 0; i--) {
