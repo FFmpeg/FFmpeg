@@ -459,11 +459,15 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
         int x = get_bits(gbit, 7);
         int l = get_bitsz(gbit, b * 8) + 1;
 
-        for (k = 0; k < l; k++)
-            if (j + k < max)
-                s->len[i][j + k] = x;
+        k = j + l;
+        if (k > max) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid Huffman codes\n");
+            return AVERROR_INVALIDDATA;
+        }
 
-        j += l;
+        for (; j < k; j++)
+            s->len[i][j] = x;
+
         if (j == max) {
             j = 0;
             if (s->huff_build(&s->vlc[i], s->len[i])) {
@@ -474,9 +478,6 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
             if (i == s->planes) {
                 break;
             }
-        } else if (j > max) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid Huffman codes\n");
-            return AVERROR_INVALIDDATA;
         }
     }
 
