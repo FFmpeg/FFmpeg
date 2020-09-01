@@ -6,6 +6,8 @@
  * RF64 demuxer
  * Copyright (c) 2009 Daniel Verkamp
  *
+ * BW64 demuxer
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -54,6 +56,7 @@ typedef struct WAVDemuxContext {
     int smv_eof;
     int audio_eof;
     int ignore_length;
+    int max_size;
     int spdif;
     int smv_cur_pt;
     int smv_given_first;
@@ -140,7 +143,8 @@ static int wav_probe(const AVProbeData *p)
              * its own, the returned score is decreased to avoid a probe
              * conflict between ACT and WAV. */
             return AVPROBE_SCORE_MAX - 1;
-        else if (!memcmp(p->buf,      "RF64", 4) &&
+        else if ((!memcmp(p->buf,      "RF64", 4) ||
+                  !memcmp(p->buf,      "BW64", 4)) &&
                  !memcmp(p->buf + 12, "ds64", 4))
             return AVPROBE_SCORE_MAX;
     }
@@ -330,7 +334,7 @@ static int wav_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
     int64_t sample_count = 0;
-    int rf64 = 0;
+    int rf64 = 0, bw64 = 0;
     uint32_t tag;
     AVIOContext *pb      = s->pb;
     AVStream *st         = NULL;
@@ -353,6 +357,9 @@ static int wav_read_header(AVFormatContext *s)
     case MKTAG('R', 'F', '6', '4'):
         rf64 = 1;
         break;
+    case MKTAG('B', 'W', '6', '4'):
+        bw64 = 1;
+        break;
     default:
         av_log(s, AV_LOG_ERROR, "invalid start code %s in RIFF header\n",
                av_fourcc2str(tag));
@@ -368,7 +375,7 @@ static int wav_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (rf64) {
+    if (rf64 || bw64) {
         if (avio_rl32(pb) != MKTAG('d', 's', '6', '4'))
             return AVERROR_INVALIDDATA;
         size = avio_rl32(pb);
@@ -423,7 +430,7 @@ static int wav_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
 
-            if (rf64) {
+            if (rf64 || bw64) {
                 next_tag_ofs = wav->data_end = avio_tell(pb) + data_size;
             } else if (size != 0xFFFFFFFF) {
                 data_size    = size;
@@ -440,7 +447,7 @@ static int wav_read_header(AVFormatContext *s)
             /* don't look for footer metadata if we can't seek or if we don't
              * know where the data tag ends
              */
-            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || (!rf64 && !size))
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || (!(rf64 && !bw64) && !size))
                 goto break_loop;
             break;
         case MKTAG('f', 'a', 'c', 't'):
@@ -493,6 +500,7 @@ static int wav_read_header(AVFormatContext *s)
             wav->smv_cur_pt = 0;
             goto break_loop;
         case MKTAG('L', 'I', 'S', 'T'):
+        case MKTAG('l', 'i', 's', 't'):
             if (size < 4) {
                 av_log(s, AV_LOG_ERROR, "too short LIST tag\n");
                 return AVERROR_INVALIDDATA;
@@ -500,6 +508,33 @@ static int wav_read_header(AVFormatContext *s)
             switch (avio_rl32(pb)) {
             case MKTAG('I', 'N', 'F', 'O'):
                 ff_read_riff_info(s, size - 4);
+                break;
+            case MKTAG('a', 'd', 't', 'l'):
+                if (s->nb_chapters > 0) {
+                    while (avio_tell(pb) < next_tag_ofs &&
+                           !avio_feof(pb)) {
+                        char cue_label[512];
+                        unsigned id, sub_size;
+
+                        if (avio_rl32(pb) != MKTAG('l', 'a', 'b', 'l'))
+                            break;
+
+                        sub_size = avio_rl32(pb);
+                        if (sub_size < 5)
+                            break;
+                        id       = avio_rl32(pb);
+                        avio_get_str(pb, sub_size - 4, cue_label, sizeof(cue_label));
+                        avio_skip(pb, avio_tell(pb) & 1);
+
+                        for (int i = 0; i < s->nb_chapters; i++) {
+                            if (s->chapters[i]->id == id) {
+                                av_dict_set(&s->chapters[i]->metadata, "title", cue_label, 0);
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
             }
             break;
         case MKTAG('I', 'D', '3', ' '):
@@ -512,6 +547,24 @@ static int wav_read_header(AVFormatContext *s)
                 ff_id3v2_parse_priv(s, id3v2_extra_meta);
             }
             ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+            }
+            break;
+        case MKTAG('c', 'u', 'e', ' '):
+            if (size >= 4 && got_fmt && st->codecpar->sample_rate > 0) {
+                AVRational tb = {1, st->codecpar->sample_rate};
+                unsigned nb_cues = avio_rl32(pb);
+
+                if (size >= nb_cues * 24LL + 4LL) {
+                    for (int i = 0; i < nb_cues; i++) {
+                        unsigned offset, id = avio_rl32(pb);
+
+                        avio_skip(pb, 16);
+                        offset = avio_rl32(pb);
+
+                        if (!avpriv_new_chapter(s, id, tb, offset, AV_NOPTS_VALUE, NULL))
+                            return AVERROR(ENOMEM);
+                    }
+                }
             }
             break;
         }
@@ -622,8 +675,6 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     return AVERROR_EOF;
 }
 
-#define MAX_SIZE 4096
-
 static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
@@ -700,7 +751,7 @@ smv_out:
         wav->data_end = avio_tell(s->pb) + left;
     }
 
-    size = MAX_SIZE;
+    size = wav->max_size;
     if (st->codecpar->block_align > 1) {
         if (size < st->codecpar->block_align)
             size = st->codecpar->block_align;
@@ -753,6 +804,7 @@ static int wav_read_seek(AVFormatContext *s,
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption demux_options[] = {
     { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
+    { "max_size",      "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
     { NULL },
 };
 
@@ -900,6 +952,20 @@ static int w64_read_header(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(WAVDemuxContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption w64_demux_options[] = {
+    { "max_size", "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
+    { NULL }
+};
+
+static const AVClass w64_demuxer_class = {
+    .class_name = "W64 demuxer",
+    .item_name  = av_default_item_name,
+    .option     = w64_demux_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_w64_demuxer = {
     .name           = "w64",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony Wave64"),
@@ -910,5 +976,6 @@ AVInputFormat ff_w64_demuxer = {
     .read_seek      = wav_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
     .codec_tag      = (const AVCodecTag * const []) { ff_codec_wav_tags, 0 },
+    .priv_class     = &w64_demuxer_class,
 };
 #endif /* CONFIG_W64_DEMUXER */
