@@ -7499,22 +7499,22 @@ static int mov_read_mfra(MOVContext *c, AVIOContext *f)
     int64_t stream_size = avio_size(f);
     int64_t original_pos = avio_tell(f);
     int64_t seek_ret;
-    int32_t mfra_size;
     int ret = -1;
     if ((seek_ret = avio_seek(f, stream_size - 4, SEEK_SET)) < 0) {
         ret = seek_ret;
         goto fail;
     }
-    mfra_size = avio_rb32(f);
-    if (mfra_size < 0 || mfra_size > stream_size) {
+    c->mfra_size = avio_rb32(f);
+    c->have_read_mfra_size = 1;
+    if (!c->mfra_size || c->mfra_size > stream_size) {
         av_log(c->fc, AV_LOG_DEBUG, "doesn't look like mfra (unreasonable size)\n");
         goto fail;
     }
-    if ((seek_ret = avio_seek(f, -mfra_size, SEEK_CUR)) < 0) {
+    if ((seek_ret = avio_seek(f, -((int64_t) c->mfra_size), SEEK_CUR)) < 0) {
         ret = seek_ret;
         goto fail;
     }
-    if (avio_rb32(f) != mfra_size) {
+    if (avio_rb32(f) != c->mfra_size) {
         av_log(c->fc, AV_LOG_DEBUG, "doesn't look like mfra (size mismatch)\n");
         goto fail;
     }
