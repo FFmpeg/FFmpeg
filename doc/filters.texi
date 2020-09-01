@@ -11936,6 +11936,9 @@ Display video size or number of audio channels in case of audio used by filter l
 
 @item rate
 Display video frame rate or sample rate in case of audio used by filter link.
+
+@item eof
+Display link output status.
 @end table
 
 @item rate, r

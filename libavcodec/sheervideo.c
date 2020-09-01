@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define CACHED_BITSTREAM_READER !ARCH_X86_32
+
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "get_bits.h"

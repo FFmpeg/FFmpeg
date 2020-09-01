@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define CACHED_BITSTREAM_READER !ARCH_X86_32
+
 #include "libavutil/pixdesc.h"
 #include "libavutil/qsort.h"
 
@@ -113,7 +115,7 @@ static int huff_build10(VLC *vlc, uint8_t *len)
     for (i = 1023; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
+        syms[i]  = 1023 - he[i].sym;
         code += 0x80000000u >> (he[i].len - 1);
     }
 
@@ -145,12 +147,12 @@ static int huff_build12(VLC *vlc, uint8_t *len)
     for (i = 4095; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
+        syms[i]  = 4095 - he[i].sym;
         code += 0x80000000u >> (he[i].len - 1);
     }
 
     ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 14), 4096,
+    return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 12), 4096,
                               bits,  sizeof(*bits),  sizeof(*bits),
                               codes, sizeof(*codes), sizeof(*codes),
                               syms,  sizeof(*syms),  sizeof(*syms), 0);
@@ -177,7 +179,7 @@ static int huff_build(VLC *vlc, uint8_t *len)
     for (i = 255; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
+        syms[i]  = 255 - he[i].sym;
         code += 0x80000000u >> (he[i].len - 1);
     }
 
@@ -259,7 +261,7 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
                     if (pix < 0)
                         return AVERROR_INVALIDDATA;
 
-                    dst[x] = max - pix;
+                    dst[x] = pix;
                 }
                 dst += stride;
             }
@@ -389,7 +391,7 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
                     if (pix < 0)
                         return AVERROR_INVALIDDATA;
 
-                    dst[x] = 255 - pix;
+                    dst[x] = pix;
                 }
                 dst += stride;
             }
