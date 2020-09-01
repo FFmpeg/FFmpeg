@@ -5097,14 +5097,16 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!is_complete && (pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         int64_t ret;
         int64_t original_pos = avio_tell(pb);
-        int32_t mfra_size;
-        if ((ret = avio_seek(pb, stream_size - 4, SEEK_SET)) < 0)
-            return ret;
-        mfra_size = avio_rb32(pb);
-        if (offset + mfra_size == stream_size)
+        if (!c->have_read_mfra_size) {
+            if ((ret = avio_seek(pb, stream_size - 4, SEEK_SET)) < 0)
+                return ret;
+            c->mfra_size = avio_rb32(pb);
+            c->have_read_mfra_size = 1;
+            if ((ret = avio_seek(pb, original_pos, SEEK_SET)) < 0)
+                return ret;
+        }
+        if (offset + c->mfra_size == stream_size)
             is_complete = 1;
-        if ((ret = avio_seek(pb, original_pos, SEEK_SET)) < 0)
-            return ret;
     }
 
     if (is_complete) {
