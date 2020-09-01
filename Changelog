@@ -19,6 +19,7 @@ version <next>:
 - MobiClip FastAudio decoder
 - MobiClip video decoder
 - MOFLEX demuxer
+- MODS demuxer
 
 
 version 4.3:
