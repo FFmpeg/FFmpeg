@@ -5094,7 +5094,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     // See if the remaining bytes are just an mfra which we can ignore.
     is_complete = offset == stream_size;
-    if (!is_complete) {
+    if (!is_complete && (pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         int64_t ret;
         int64_t original_pos = avio_tell(pb);
         int32_t mfra_size;
