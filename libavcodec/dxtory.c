@@ -32,9 +32,44 @@
 #include "internal.h"
 #include "unary.h"
 
+static void do_vflip(AVCodecContext *avctx, AVFrame *pic, int vflip)
+{
+    if (!vflip)
+        return;
+
+    switch (pic->format) {
+    case AV_PIX_FMT_YUV444P:
+        pic->data[1] += (avctx->height - 1) * pic->linesize[1];
+        pic->linesize[1] = -pic->linesize[1];
+        pic->data[2] += (avctx->height - 1) * pic->linesize[2];
+        pic->linesize[2] = -pic->linesize[2];
+    case AV_PIX_FMT_BGR24:
+    case AV_PIX_FMT_RGB24:
+        pic->data[0] += (avctx->height - 1) * pic->linesize[0];
+        pic->linesize[0] = -pic->linesize[0];
+        break;
+    case AV_PIX_FMT_YUV410P:
+        pic->data[0] += (avctx->height - 1) * pic->linesize[0];
+        pic->linesize[0] = -pic->linesize[0];
+        pic->data[1] += ((avctx->height >> 2) - 1) * pic->linesize[1];
+        pic->linesize[1] = -pic->linesize[1];
+        pic->data[2] += ((avctx->height >> 2) - 1) * pic->linesize[2];
+        pic->linesize[2] = -pic->linesize[2];
+        break;
+    case AV_PIX_FMT_YUV420P:
+        pic->data[0] += (avctx->height - 1) * pic->linesize[0];
+        pic->linesize[0] = -pic->linesize[0];
+        pic->data[1] += ((avctx->height >> 1) - 1) * pic->linesize[1];
+        pic->linesize[1] = -pic->linesize[1];
+        pic->data[2] += ((avctx->height >> 1) - 1) * pic->linesize[2];
+        pic->linesize[2] = -pic->linesize[2];
+        break;
+    }
+}
+
 static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
-                                int id, int bpp)
+                                int id, int bpp, uint32_t vflipped)
 {
     int h;
     uint8_t *dst;
@@ -49,6 +84,8 @@ static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
+    do_vflip(avctx, pic, vflipped);
+
     dst = pic->data[0];
     for (h = 0; h < avctx->height; h++) {
         memcpy(dst, src, avctx->width * bpp);
@@ -56,11 +93,14 @@ static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
         dst += pic->linesize[0];
     }
 
+    do_vflip(avctx, pic, vflipped);
+
     return 0;
 }
 
 static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     int h, w;
     uint8_t *Y1, *Y2, *Y3, *Y4, *U, *V;
@@ -74,6 +114,8 @@ static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
+
+    do_vflip(avctx, pic, vflipped);
 
     Y1 = pic->data[0];
     Y2 = pic->data[0] + pic->linesize[0];
@@ -99,11 +141,14 @@ static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
         V  += pic->linesize[2];
     }
 
+    do_vflip(avctx, pic, vflipped);
+
     return 0;
 }
 
 static int dxtory_decode_v1_420(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     int h, w;
     uint8_t *Y1, *Y2, *U, *V;
@@ -117,6 +162,8 @@ static int dxtory_decode_v1_420(AVCodecContext *avctx, AVFrame *pic,
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
+
+    do_vflip(avctx, pic, vflipped);
 
     Y1 = pic->data[0];
     Y2 = pic->data[0] + pic->linesize[0];
@@ -136,11 +183,14 @@ static int dxtory_decode_v1_420(AVCodecContext *avctx, AVFrame *pic,
         V  += pic->linesize[2];
     }
 
+    do_vflip(avctx, pic, vflipped);
+
     return 0;
 }
 
 static int dxtory_decode_v1_444(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     int h, w;
     uint8_t *Y, *U, *V;
@@ -155,6 +205,8 @@ static int dxtory_decode_v1_444(AVCodecContext *avctx, AVFrame *pic,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
+    do_vflip(avctx, pic, vflipped);
+
     Y = pic->data[0];
     U = pic->data[1];
     V = pic->data[2];
@@ -168,6 +220,8 @@ static int dxtory_decode_v1_444(AVCodecContext *avctx, AVFrame *pic,
         U += pic->linesize[1];
         V += pic->linesize[2];
     }
+
+    do_vflip(avctx, pic, vflipped);
 
     return 0;
 }
@@ -270,7 +324,8 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
                             const uint8_t *src, int src_size,
                             decode_slice_func decode_slice,
                             setup_lru_func setup_lru,
-                            enum AVPixelFormat fmt)
+                            enum AVPixelFormat fmt,
+                            uint32_t vflipped)
 {
     GetByteContext gb, gb_check;
     GetBitContext  gb2;
@@ -301,6 +356,8 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
+    do_vflip(avctx, pic, vflipped);
+
     for (slice = 0; slice < nslices; slice++) {
         slice_size = bytestream2_get_le32(&gb);
 
@@ -321,6 +378,8 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
     if (avctx->height - line) {
         avpriv_request_sample(avctx, "Not enough slice data available");
     }
+
+    do_vflip(avctx, pic, vflipped);
 
     return 0;
 }
@@ -379,19 +438,20 @@ static int dx2_decode_slice_565(GetBitContext *gb, AVFrame *frame,
 }
 
 static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size, int is_565)
+                                const uint8_t *src, int src_size, int is_565,
+                                uint32_t vflipped)
 {
     enum AVPixelFormat fmt = AV_PIX_FMT_RGB24;
     if (is_565)
         return dxtory_decode_v2(avctx, pic, src, src_size,
                                 dx2_decode_slice_565,
                                 setup_lru_565,
-                                fmt);
+                                fmt, vflipped);
     else
         return dxtory_decode_v2(avctx, pic, src, src_size,
                                 dx2_decode_slice_555,
                                 setup_lru_555,
-                                fmt);
+                                fmt, vflipped);
 }
 
 static int dx2_decode_slice_rgb(GetBitContext *gb, AVFrame *frame,
@@ -424,12 +484,13 @@ static void default_setup_lru(uint8_t lru[3][8])
 }
 
 static int dxtory_decode_v2_rgb(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     return dxtory_decode_v2(avctx, pic, src, src_size,
                             dx2_decode_slice_rgb,
                             default_setup_lru,
-                            AV_PIX_FMT_BGR24);
+                            AV_PIX_FMT_BGR24, vflipped);
 }
 
 static int dx2_decode_slice_410(GetBitContext *gb, AVFrame *frame,
@@ -466,12 +527,13 @@ static int dx2_decode_slice_410(GetBitContext *gb, AVFrame *frame,
 
 
 static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     return dxtory_decode_v2(avctx, pic, src, src_size,
                             dx2_decode_slice_410,
                             default_setup_lru,
-                            AV_PIX_FMT_YUV410P);
+                            AV_PIX_FMT_YUV410P, vflipped);
 }
 
 static int dx2_decode_slice_420(GetBitContext *gb, AVFrame *frame,
@@ -510,12 +572,13 @@ static int dx2_decode_slice_420(GetBitContext *gb, AVFrame *frame,
 }
 
 static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     return dxtory_decode_v2(avctx, pic, src, src_size,
                             dx2_decode_slice_420,
                             default_setup_lru,
-                            AV_PIX_FMT_YUV420P);
+                            AV_PIX_FMT_YUV420P, vflipped);
 }
 
 static int dx2_decode_slice_444(GetBitContext *gb, AVFrame *frame,
@@ -550,12 +613,13 @@ static int dx2_decode_slice_444(GetBitContext *gb, AVFrame *frame,
 }
 
 static int dxtory_decode_v2_444(AVCodecContext *avctx, AVFrame *pic,
-                                const uint8_t *src, int src_size)
+                                const uint8_t *src, int src_size,
+                                uint32_t vflipped)
 {
     return dxtory_decode_v2(avctx, pic, src, src_size,
                             dx2_decode_slice_444,
                             default_setup_lru,
-                            AV_PIX_FMT_YUV444P);
+                            AV_PIX_FMT_YUV444P, vflipped);
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -563,57 +627,75 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 {
     AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
-    int ret;
+    uint32_t type;
+    int vflipped, ret;
 
     if (avpkt->size < 16) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
         return AVERROR_INVALIDDATA;
     }
 
-    switch (AV_RB32(src)) {
+    type = AV_RB32(src);
+    vflipped = !!(type & 0x20);
+
+    switch (type) {
+    case 0x01000021:
     case 0x01000001:
         ret = dxtory_decode_v1_rgb(avctx, pic, src + 16, avpkt->size - 16,
-                                   AV_PIX_FMT_BGR24, 3);
+                                   AV_PIX_FMT_BGR24, 3, vflipped);
         break;
+    case 0x01000029:
     case 0x01000009:
-        ret = dxtory_decode_v2_rgb(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v2_rgb(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x02000021:
     case 0x02000001:
-        ret = dxtory_decode_v1_420(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v1_420(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x02000029:
     case 0x02000009:
-        ret = dxtory_decode_v2_420(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v2_420(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x03000021:
     case 0x03000001:
-        ret = dxtory_decode_v1_410(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v1_410(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x03000029:
     case 0x03000009:
-        ret = dxtory_decode_v2_410(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v2_410(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x04000021:
     case 0x04000001:
-        ret = dxtory_decode_v1_444(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v1_444(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x04000029:
     case 0x04000009:
-        ret = dxtory_decode_v2_444(avctx, pic, src + 16, avpkt->size - 16);
+        ret = dxtory_decode_v2_444(avctx, pic, src + 16, avpkt->size - 16, vflipped);
         break;
+    case 0x17000021:
     case 0x17000001:
         ret = dxtory_decode_v1_rgb(avctx, pic, src + 16, avpkt->size - 16,
-                                   AV_PIX_FMT_RGB565LE, 2);
+                                   AV_PIX_FMT_RGB565LE, 2, vflipped);
         break;
+    case 0x17000029:
     case 0x17000009:
-        ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 1);
+        ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 1, vflipped);
         break;
+    case 0x18000021:
+    case 0x19000021:
     case 0x18000001:
     case 0x19000001:
         ret = dxtory_decode_v1_rgb(avctx, pic, src + 16, avpkt->size - 16,
-                                   AV_PIX_FMT_RGB555LE, 2);
+                                   AV_PIX_FMT_RGB555LE, 2, vflipped);
         break;
+    case 0x18000029:
+    case 0x19000029:
     case 0x18000009:
     case 0x19000009:
-        ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 0);
+        ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 0, vflipped);
         break;
     default:
-        avpriv_request_sample(avctx, "Frame header %"PRIX32, AV_RB32(src));
+        avpriv_request_sample(avctx, "Frame header %"PRIX32, type);
         return AVERROR_PATCHWELCOME;
     }
 
