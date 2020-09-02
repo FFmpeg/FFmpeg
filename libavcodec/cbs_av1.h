@@ -284,8 +284,8 @@ typedef struct AV1RawFrameHeader {
 
 typedef struct AV1RawTileData {
     uint8_t     *data;
-    size_t       data_size;
     AVBufferRef *data_ref;
+    size_t       data_size;
 } AV1RawTileData;
 
 typedef struct AV1RawTileGroup {
@@ -346,8 +346,8 @@ typedef struct AV1RawMetadataITUTT35 {
     uint8_t itu_t_t35_country_code_extension_byte;
 
     uint8_t     *payload;
-    size_t       payload_size;
     AVBufferRef *payload_ref;
+    size_t       payload_size;
 } AV1RawMetadataITUTT35;
 
 typedef struct AV1RawMetadataTimecode {
@@ -379,8 +379,8 @@ typedef struct AV1RawMetadata {
 
 typedef struct AV1RawPadding {
     uint8_t     *payload;
-    size_t       payload_size;
     AVBufferRef *payload_ref;
+    size_t       payload_size;
 } AV1RawPadding;
 
 

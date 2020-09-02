@@ -140,28 +140,6 @@
 #undef infer
 
 
-static void cbs_mpeg2_free_picture_header(void *opaque, uint8_t *content)
-{
-    MPEG2RawPictureHeader *picture = (MPEG2RawPictureHeader*)content;
-    av_buffer_unref(&picture->extra_information_picture.extra_information_ref);
-    av_freep(&content);
-}
-
-static void cbs_mpeg2_free_user_data(void *opaque, uint8_t *content)
-{
-    MPEG2RawUserData *user = (MPEG2RawUserData*)content;
-    av_buffer_unref(&user->user_data_ref);
-    av_freep(&content);
-}
-
-static void cbs_mpeg2_free_slice(void *opaque, uint8_t *content)
-{
-    MPEG2RawSlice *slice = (MPEG2RawSlice*)content;
-    av_buffer_unref(&slice->header.extra_information_slice.extra_information_ref);
-    av_buffer_unref(&slice->data_ref);
-    av_freep(&content);
-}
-
 static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
                                     CodedBitstreamFragment *frag,
                                     int header)
@@ -231,15 +209,13 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
-    if (MPEG2_START_IS_SLICE(unit->type)) {
-        MPEG2RawSlice *slice;
-        int pos, len;
+    err = ff_cbs_alloc_unit_content2(ctx, unit);
+    if (err < 0)
+        return err;
 
-        err = ff_cbs_alloc_unit_content(unit, sizeof(*slice),
-                                        &cbs_mpeg2_free_slice);
-        if (err < 0)
-            return err;
-        slice = unit->content;
+    if (MPEG2_START_IS_SLICE(unit->type)) {
+        MPEG2RawSlice *slice = unit->content;
+        int pos, len;
 
         err = cbs_mpeg2_read_slice_header(ctx, &gbc, &slice->header);
         if (err < 0)
@@ -264,12 +240,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
 #define START(start_code, type, read_func, free_func) \
         case start_code: \
             { \
-                type *header; \
-                err = ff_cbs_alloc_unit_content(unit, \
-                                                sizeof(*header), free_func); \
-                if (err < 0) \
-                    return err; \
-                header = unit->content; \
+                type *header = unit->content; \
                 err = cbs_mpeg2_read_ ## read_func(ctx, &gbc, header); \
                 if (err < 0) \
                     return err; \
@@ -420,10 +391,39 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static const CodedBitstreamUnitTypeDescriptor cbs_mpeg2_unit_types[] = {
+    CBS_UNIT_TYPE_INTERNAL_REF(MPEG2_START_PICTURE, MPEG2RawPictureHeader,
+                               extra_information_picture.extra_information),
+
+    {
+        .nb_unit_types         = CBS_UNIT_TYPE_RANGE,
+        .unit_type_range_start = 0x01,
+        .unit_type_range_end   = 0xaf,
+
+        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS,
+        .content_size   = sizeof(MPEG2RawSlice),
+        .nb_ref_offsets = 2,
+        .ref_offsets    = { offsetof(MPEG2RawSlice, header.extra_information_slice.extra_information),
+                            offsetof(MPEG2RawSlice, data) },
+    },
+
+    CBS_UNIT_TYPE_INTERNAL_REF(MPEG2_START_USER_DATA, MPEG2RawUserData,
+                               user_data),
+
+    CBS_UNIT_TYPE_POD(MPEG2_START_SEQUENCE_HEADER, MPEG2RawSequenceHeader),
+    CBS_UNIT_TYPE_POD(MPEG2_START_EXTENSION,       MPEG2RawExtensionData),
+    CBS_UNIT_TYPE_POD(MPEG2_START_SEQUENCE_END,    MPEG2RawSequenceEnd),
+    CBS_UNIT_TYPE_POD(MPEG2_START_GROUP,           MPEG2RawGroupOfPicturesHeader),
+
+    CBS_UNIT_TYPE_END_OF_LIST
+};
+
 const CodedBitstreamType ff_cbs_type_mpeg2 = {
     .codec_id          = AV_CODEC_ID_MPEG2VIDEO,
 
     .priv_data_size    = sizeof(CodedBitstreamMPEG2Context),
+
+    .unit_types        = cbs_mpeg2_unit_types,
 
     .split_fragment    = &cbs_mpeg2_split_fragment,
     .read_unit         = &cbs_mpeg2_read_unit,

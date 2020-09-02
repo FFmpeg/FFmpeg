@@ -25,10 +25,72 @@
 #include "put_bits.h"
 
 
+enum CBSContentType {
+    // Unit content is a simple structure.
+    CBS_CONTENT_TYPE_POD,
+    // Unit content contains some references to other structures, but all
+    // managed via buffer reference counting.  The descriptor defines the
+    // structure offsets of every buffer reference.
+    CBS_CONTENT_TYPE_INTERNAL_REFS,
+    // Unit content is something more complex.  The descriptor defines
+    // special functions to manage the content.
+    CBS_CONTENT_TYPE_COMPLEX,
+};
+
+enum {
+      // Maximum number of unit types described by the same unit type
+      // descriptor.
+      CBS_MAX_UNIT_TYPES  = 3,
+      // Maximum number of reference buffer offsets in any one unit.
+      CBS_MAX_REF_OFFSETS = 2,
+      // Special value used in a unit type descriptor to indicate that it
+      // applies to a large range of types rather than a set of discrete
+      // values.
+      CBS_UNIT_TYPE_RANGE = -1,
+};
+
+typedef const struct CodedBitstreamUnitTypeDescriptor {
+    // Number of entries in the unit_types array, or the special value
+    // CBS_UNIT_TYPE_RANGE to indicate that the range fields should be
+    // used instead.
+    int nb_unit_types;
+
+    // Array of unit types that this entry describes.
+    const CodedBitstreamUnitType unit_types[CBS_MAX_UNIT_TYPES];
+
+    // Start and end of unit type range, used if nb_unit_types is
+    // CBS_UNIT_TYPE_RANGE.
+    const CodedBitstreamUnitType unit_type_range_start;
+    const CodedBitstreamUnitType unit_type_range_end;
+
+    // The type of content described.
+    enum CBSContentType content_type;
+    // The size of the structure which should be allocated to contain
+    // the decomposed content of this type of unit.
+    size_t content_size;
+
+    // Number of entries in the ref_offsets array.  Only used if the
+    // content_type is CBS_CONTENT_TYPE_INTERNAL_REFS.
+    int nb_ref_offsets;
+    // The structure must contain two adjacent elements:
+    //   type        *field;
+    //   AVBufferRef *field_ref;
+    // where field points to something in the buffer referred to by
+    // field_ref.  This offset is then set to offsetof(struct, field).
+    size_t ref_offsets[CBS_MAX_REF_OFFSETS];
+
+    void (*content_free)(void *opaque, uint8_t *data);
+    int  (*content_clone)(AVBufferRef **ref, CodedBitstreamUnit *unit);
+} CodedBitstreamUnitTypeDescriptor;
+
 typedef struct CodedBitstreamType {
     enum AVCodecID codec_id;
 
     size_t priv_data_size;
+
+    // List of unit type descriptors for this codec.
+    // Terminated by a descriptor with nb_unit_types equal to zero.
+    const CodedBitstreamUnitTypeDescriptor *unit_types;
 
     // Split frag->data into coded bitstream units, creating the
     // frag->units array.  Fill data but not content on each unit.
@@ -104,6 +166,30 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 // The smallest signed value representable in N bits, suitable for use as
 // range_min in the above functions.
 #define MIN_INT_BITS(length) (-(INT64_C(1) << ((length) - 1)))
+
+
+#define CBS_UNIT_TYPE_POD(type, structure) { \
+        .nb_unit_types  = 1, \
+        .unit_types     = { type }, \
+        .content_type   = CBS_CONTENT_TYPE_POD, \
+        .content_size   = sizeof(structure), \
+    }
+#define CBS_UNIT_TYPE_INTERNAL_REF(type, structure, ref_field) { \
+        .nb_unit_types  = 1, \
+        .unit_types     = { type }, \
+        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS, \
+        .content_size   = sizeof(structure), \
+        .nb_ref_offsets = 1, \
+        .ref_offsets    = { offsetof(structure, ref_field) }, \
+    }
+#define CBS_UNIT_TYPE_COMPLEX(type, structure, free_func) { \
+        .nb_unit_types  = 1, \
+        .unit_types     = { type }, \
+        .content_type   = CBS_CONTENT_TYPE_COMPLEX, \
+        .content_size   = sizeof(structure), \
+        .content_free   = free_func, \
+    }
+#define CBS_UNIT_TYPE_END_OF_LIST { .nb_unit_types = 0 }
 
 
 extern const CodedBitstreamType ff_cbs_type_av1;
