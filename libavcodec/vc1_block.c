@@ -1056,7 +1056,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
                     if (q1 < 1)
                         return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
-                        ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        ac_val2[k] = (int)(ac_val2[k] * (unsigned)q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
             }
         } else { // top
@@ -1068,7 +1068,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
                     if (q1 < 1)
                         return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
-                        ac_val2[k + 8] = (ac_val2[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        ac_val2[k + 8] = (int)(ac_val2[k + 8] * (unsigned)q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
             }
         }
