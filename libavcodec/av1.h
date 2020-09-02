@@ -160,4 +160,12 @@ enum {
     AV1_SCALABILITY_L4T7_KEY_SHIFT = 28,
 };
 
+// Frame Restoration types (section 6.10.15)
+enum {
+    AV1_RESTORE_NONE       = 0,
+    AV1_RESTORE_WIENER     = 1,
+    AV1_RESTORE_SGRPROJ    = 2,
+    AV1_RESTORE_SWITCHABLE = 3,
+};
+
 #endif /* AVCODEC_AV1_H */
