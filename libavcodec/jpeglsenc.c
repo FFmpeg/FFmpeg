@@ -279,7 +279,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *buf2 = NULL;
     const uint8_t *in;
     uint8_t *last = NULL;
-    JLSState *state = NULL;
+    JLSState state = { 0 };
     int i, size, ret;
     int comps;
 
@@ -332,17 +332,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream2_put_byteu(&pb, (comps > 1) ? 1 : 0);  // interleaving: 0 - plane, 1 - line
     bytestream2_put_byteu(&pb, 0);  // point transform: none
 
-    state = av_mallocz(sizeof(JLSState));
-    if (!state)
-        goto memfail;
-
     /* initialize JPEG-LS state from JPEG parameters */
-    state->near = ctx->pred;
-    state->bpp  = (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8;
-    ff_jpegls_reset_coding_parameters(state, 0);
-    ff_jpegls_init_state(state);
+    state.near = ctx->pred;
+    state.bpp  = (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8;
+    ff_jpegls_reset_coding_parameters(&state, 0);
+    ff_jpegls_init_state(&state);
 
-    ls_store_lse(state, &pb);
+    ls_store_lse(&state, &pb);
 
     last = av_mallocz(FFABS(p->linesize[0]));
     if (!last)
@@ -354,7 +350,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         for (i = 0; i < avctx->height; i++) {
             int last0 = last[0];
-            ls_encode_line(state, &pb2, last, in, t, avctx->width, 1, 0, 8);
+            ls_encode_line(&state, &pb2, last, in, t, avctx->width, 1, 0, 8);
             t   = last0;
             in += p->linesize[0];
         }
@@ -363,7 +359,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         for (i = 0; i < avctx->height; i++) {
             int last0 = *((uint16_t *)last);
-            ls_encode_line(state, &pb2, last, in, t, avctx->width, 1, 0, 16);
+            ls_encode_line(&state, &pb2, last, in, t, avctx->width, 1, 0, 16);
             t   = last0;
             in += p->linesize[0];
         }
@@ -375,7 +371,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         for (i = 0; i < avctx->height; i++) {
             for (j = 0; j < 3; j++) {
                 int last0 = last[j];
-                ls_encode_line(state, &pb2, last + j, in + j, Rc[j],
+                ls_encode_line(&state, &pb2, last + j, in + j, Rc[j],
                                width, 3, j, 8);
                 Rc[j] = last0;
             }
@@ -389,7 +385,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         for (i = 0; i < avctx->height; i++) {
             for (j = 2; j >= 0; j--) {
                 int last0 = last[j];
-                ls_encode_line(state, &pb2, last + j, in + j, Rc[j],
+                ls_encode_line(&state, &pb2, last + j, in + j, Rc[j],
                                width, 3, j, 8);
                 Rc[j] = last0;
             }
@@ -398,7 +394,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     av_freep(&last);
-    av_freep(&state);
 
     /* the specification says that after doing 0xff escaping unused bits in
      * the last byte must be set to 0, so just append 7 "optional" zero bits
@@ -432,7 +427,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 memfail:
     av_freep(&buf2);
-    av_freep(&state);
     av_freep(&last);
     return AVERROR(ENOMEM);
 }
