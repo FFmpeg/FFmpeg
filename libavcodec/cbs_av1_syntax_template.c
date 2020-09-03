@@ -940,7 +940,7 @@ static int FUNC(lr_params)(CodedBitstreamContext *ctx, RWContext *rw,
     for (i = 0; i < priv->num_planes; i++) {
         fbs(2, lr_type[i], 1, i);
 
-        if (current->lr_type[i] != 0) {
+        if (current->lr_type[i] != AV1_RESTORE_NONE) {
             uses_lr = 1;
             if (i > 0)
                 uses_chroma_lr = 1;
