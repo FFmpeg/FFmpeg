@@ -276,7 +276,6 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     PutByteContext pb;
     PutBitContext pb2;
     GetBitContext gb;
-    uint8_t *buf2 = NULL;
     const uint8_t *in;
     uint8_t *last = NULL;
     JLSState state = { 0 };
@@ -300,12 +299,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                 AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
-    buf2 = av_malloc(pkt->size);
-    if (!buf2)
-        goto memfail;
+    last = av_malloc((unsigned)pkt->size + FFABS(p->linesize[0]));
+    if (!last)
+        return AVERROR(ENOMEM);
+    memset(last, 0, FFABS(p->linesize[0]));
 
     bytestream2_init_writer(&pb, pkt->data, pkt->size);
-    init_put_bits(&pb2, buf2, pkt->size);
+    init_put_bits(&pb2, last + FFABS(p->linesize[0]), pkt->size);
 
     /* write our own JPEG header, can't use mjpeg_picture_header */
     put_marker_byteu(&pb, SOI);
@@ -339,10 +339,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_jpegls_init_state(&state);
 
     ls_store_lse(&state, &pb);
-
-    last = av_mallocz(FFABS(p->linesize[0]));
-    if (!last)
-        goto memfail;
 
     in = p->data[0];
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
@@ -393,8 +389,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    av_freep(&last);
-
     /* the specification says that after doing 0xff escaping unused bits in
      * the last byte must be set to 0, so just append 7 "optional" zero bits
      * to avoid special-casing. */
@@ -402,7 +396,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     size = put_bits_count(&pb2);
     flush_put_bits(&pb2);
     /* do escape coding */
-    init_get_bits(&gb, buf2, size);
+    init_get_bits(&gb, pb2.buf, size);
     size -= 7;
     while (get_bits_count(&gb) < size) {
         int v;
@@ -413,7 +407,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             bytestream2_put_byte(&pb, v);
         }
     }
-    av_freep(&buf2);
+    av_freep(&last);
 
     /* End of image */
     put_marker_byte(&pb, EOI);
@@ -424,11 +418,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
-
-memfail:
-    av_freep(&buf2);
-    av_freep(&last);
-    return AVERROR(ENOMEM);
 }
 
 static av_cold int encode_init_ls(AVCodecContext *ctx)
