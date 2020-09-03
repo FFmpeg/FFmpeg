@@ -141,19 +141,19 @@ static inline void ls_encode_run(JLSState *state, PutBitContext *pb, int run,
  * Encode one line of image
  */
 static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
-                                  void *last, void *cur, const void *in, int last2, int w,
+                                  void *tmp, const void *in, int last2, int w,
                                   int stride, int comp, int bits)
 {
     int x = 0;
-    int Ra = R(last, 0), Rb, Rc = last2, Rd;
+    int Ra = R(tmp, 0), Rb, Rc = last2, Rd;
     int D0, D1, D2;
 
     while (x < w) {
         int err, pred, sign;
 
         /* compute gradients */
-        Rb = R(last, x);
-        Rd = (x >= w - stride) ? R(last, x) : R(last, x + stride);
+        Rb = R(tmp, x);
+        Rd = (x >= w - stride) ? R(tmp, x) : R(tmp, x + stride);
         D0 = Rd - Rb;
         D1 = Rb - Rc;
         D2 = Rc - Ra;
@@ -168,13 +168,13 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
             RUNval = Ra;
             while (x < w && (FFABS(R(in, x) - RUNval) <= state->near)) {
                 run++;
-                W(cur, x, Ra);
+                W(tmp, x, Ra);
                 x += stride;
             }
             ls_encode_run(state, pb, run, comp, x < w);
             if (x >= w)
                 return;
-            Rb     = R(last, x);
+            Rb     = R(tmp, x);
             RItype = FFABS(Ra - Rb) <= state->near;
             pred   = RItype ? Ra : Rb;
             err    = R(in, x) - pred;
@@ -194,7 +194,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                     Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
             } else
                 Ra = R(in, x);
-            W(cur, x, Ra);
+            W(tmp, x, Ra);
 
             if (err < 0)
                 err += state->range;
@@ -236,7 +236,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                     Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
             } else
                 Ra = R(in, x);
-            W(cur, x, Ra);
+            W(tmp, x, Ra);
 
             ls_encode_regular(state, pb, context, err);
         }
@@ -277,9 +277,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     PutBitContext pb2;
     GetBitContext gb;
     uint8_t *buf2 = NULL;
-    uint8_t *zero = NULL;
     const uint8_t *in;
-    uint8_t *last, *cur;
+    uint8_t *last = NULL;
     JLSState *state = NULL;
     int i, size, ret;
     int comps;
@@ -345,28 +344,27 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ls_store_lse(state, &pb);
 
-    zero = last = av_calloc(FFABS(p->linesize[0]), 2);
-    if (!zero)
+    last = av_mallocz(FFABS(p->linesize[0]));
+    if (!last)
         goto memfail;
-    cur = zero + FFABS(p->linesize[0]);
 
     in = p->data[0];
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
         int t = 0;
 
         for (i = 0; i < avctx->height; i++) {
-            ls_encode_line(state, &pb2, last, cur, in, t, avctx->width, 1, 0, 8);
-            t    = last[0];
-            FFSWAP(void *, last, cur);
+            int last0 = last[0];
+            ls_encode_line(state, &pb2, last, in, t, avctx->width, 1, 0, 8);
+            t   = last0;
             in += p->linesize[0];
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY16) {
         int t = 0;
 
         for (i = 0; i < avctx->height; i++) {
-            ls_encode_line(state, &pb2, last, cur, in, t, avctx->width, 1, 0, 16);
-            t    = *((uint16_t *)last);
-            FFSWAP(void *, last, cur);
+            int last0 = *((uint16_t *)last);
+            ls_encode_line(state, &pb2, last, in, t, avctx->width, 1, 0, 16);
+            t   = last0;
             in += p->linesize[0];
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
@@ -376,11 +374,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         width = avctx->width * 3;
         for (i = 0; i < avctx->height; i++) {
             for (j = 0; j < 3; j++) {
-                ls_encode_line(state, &pb2, last + j, cur + j, in + j, Rc[j],
+                int last0 = last[j];
+                ls_encode_line(state, &pb2, last + j, in + j, Rc[j],
                                width, 3, j, 8);
-                Rc[j] = last[j];
+                Rc[j] = last0;
             }
-            FFSWAP(void *, last, cur);
             in += p->linesize[0];
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_BGR24) {
@@ -390,16 +388,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         width = avctx->width * 3;
         for (i = 0; i < avctx->height; i++) {
             for (j = 2; j >= 0; j--) {
-                ls_encode_line(state, &pb2, last + j, cur + j, in + j, Rc[j],
+                int last0 = last[j];
+                ls_encode_line(state, &pb2, last + j, in + j, Rc[j],
                                width, 3, j, 8);
-                Rc[j] = last[j];
+                Rc[j] = last0;
             }
-            FFSWAP(void *, last, cur);
             in += p->linesize[0];
         }
     }
 
-    av_freep(&zero);
+    av_freep(&last);
     av_freep(&state);
 
     /* the specification says that after doing 0xff escaping unused bits in
@@ -435,7 +433,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 memfail:
     av_freep(&buf2);
     av_freep(&state);
-    av_freep(&zero);
+    av_freep(&last);
     return AVERROR(ENOMEM);
 }
 
