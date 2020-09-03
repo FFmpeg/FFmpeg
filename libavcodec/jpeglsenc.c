@@ -145,16 +145,14 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                                   int stride, int comp, int bits)
 {
     int x = 0;
-    int Ra, Rb, Rc, Rd;
+    int Ra = R(last, 0), Rb, Rc = last2, Rd;
     int D0, D1, D2;
 
     while (x < w) {
         int err, pred, sign;
 
         /* compute gradients */
-        Ra = x ? R(cur, x - stride) : R(last, x);
         Rb = R(last, x);
-        Rc = x ? R(last, x - stride) : last2;
         Rd = (x >= w - stride) ? R(last, x) : R(last, x + stride);
         D0 = Rd - Rb;
         D1 = Rb - Rc;
@@ -194,9 +192,9 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                     Ra = av_clip(pred + err * state->twonear, 0, state->maxval);
                 else
                     Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
-                W(cur, x, Ra);
             } else
-                W(cur, x, R(in, x));
+                Ra = R(in, x);
+            W(cur, x, Ra);
 
             if (err < 0)
                 err += state->range;
@@ -236,12 +234,13 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                     Ra = av_clip(pred + err * state->twonear, 0, state->maxval);
                 else
                     Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
-                W(cur, x, Ra);
             } else
-                W(cur, x, R(in, x));
+                Ra = R(in, x);
+            W(cur, x, Ra);
 
             ls_encode_regular(state, pb, context, err);
         }
+        Rc = Rb;
         x += stride;
     }
 }
