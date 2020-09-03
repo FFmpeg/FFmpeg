@@ -42,6 +42,10 @@
 #define cudaVideoSurfaceFormat_YUV444_16Bit 3
 #endif
 
+#if NVDECAPI_CHECK_VERSION(11, 0)
+#define CUVID_HAS_AV1_SUPPORT
+#endif
+
 typedef struct CuvidContext
 {
     AVClass *avclass;
@@ -940,6 +944,11 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         ctx->cuparseinfo.CodecType = cudaVideoCodec_VC1;
         break;
 #endif
+#if CONFIG_AV1_CUVID_DECODER && defined(CUVID_HAS_AV1_SUPPORT)
+    case AV_CODEC_ID_AV1:
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_AV1;
+        break;
+#endif
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid CUVID codec!\n");
         return AVERROR_BUG;
@@ -1133,6 +1142,10 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
         .hw_configs     = cuvid_hw_configs, \
         .wrapper_name   = "cuvid", \
     };
+
+#if CONFIG_AV1_CUVID_DECODER && defined(CUVID_HAS_AV1_SUPPORT)
+DEFINE_CUVID_CODEC(av1, AV1, NULL)
+#endif
 
 #if CONFIG_HEVC_CUVID_DECODER
 DEFINE_CUVID_CODEC(hevc, HEVC, "hevc_mp4toannexb")
