@@ -21,6 +21,7 @@ version <next>:
 - MOFLEX demuxer
 - MODS demuxer
 - PhotoCD decoder
+- MCA demuxer
 
 
 version 4.3:
