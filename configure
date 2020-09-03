@@ -5026,8 +5026,6 @@ elif enabled mips; then
         disable loongson3
         disable mipsdsp
         disable mipsdspr2
-        disable msa
-        disable mmi
 
         cpuflags="-march=$cpu"
 
@@ -5036,17 +5034,13 @@ elif enabled mips; then
             mips1|mips3)
             ;;
             mips32r2)
-                enable msa
                 enable mips32r2
             ;;
             mips32r5)
-                enable msa
                 enable mips32r2
                 enable mips32r5
             ;;
             mips64r2|mips64r5)
-                enable msa
-                enable mmi
                 enable mips64r2
                 enable loongson3
             ;;
@@ -5063,7 +5057,6 @@ elif enabled mips; then
                 enable mips32r2
             ;;
             p5600)
-                enable msa
                 enable mips32r2
                 enable mips32r5
                 check_cflags "-mtune=p5600" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops"
@@ -5078,7 +5071,6 @@ elif enabled mips; then
             ;;
             # Cores from Loongson
             loongson2e|loongson2f|loongson3*)
-                enable mmi
                 enable local_aligned
                 enable simd_align_16
                 enable fast_64bit
@@ -5101,7 +5093,6 @@ elif enabled mips; then
                 case $cpu in
                     loongson3*)
                         enable loongson3
-                        enable msa
                         cpuflags="-march=loongson3a -mhard-float $expensive_optimization_flag"
                     ;;
                     loongson2e)
