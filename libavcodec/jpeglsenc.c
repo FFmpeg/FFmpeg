@@ -141,7 +141,7 @@ static inline void ls_encode_run(JLSState *state, PutBitContext *pb, int run,
  * Encode one line of image
  */
 static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
-                                  void *last, void *cur, int last2, int w,
+                                  void *last, void *cur, const void *in, int last2, int w,
                                   int stride, int comp, int bits)
 {
     int x = 0;
@@ -168,7 +168,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
 
             run    = 0;
             RUNval = Ra;
-            while (x < w && (FFABS(R(cur, x) - RUNval) <= state->near)) {
+            while (x < w && (FFABS(R(in, x) - RUNval) <= state->near)) {
                 run++;
                 W(cur, x, Ra);
                 x += stride;
@@ -179,7 +179,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
             Rb     = R(last, x);
             RItype = FFABS(Ra - Rb) <= state->near;
             pred   = RItype ? Ra : Rb;
-            err    = R(cur, x) - pred;
+            err    = R(in, x) - pred;
 
             if (!RItype && Ra > Rb)
                 err = -err;
@@ -195,7 +195,9 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                 else
                     Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
                 W(cur, x, Ra);
-            }
+            } else
+                W(cur, x, R(in, x));
+
             if (err < 0)
                 err += state->range;
             if (err >= state->range + 1 >> 1)
@@ -218,11 +220,11 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                 context = -context;
                 sign    = 1;
                 pred    = av_clip(pred - state->C[context], 0, state->maxval);
-                err     = pred - R(cur, x);
+                err     = pred - R(in, x);
             } else {
                 sign = 0;
                 pred = av_clip(pred + state->C[context], 0, state->maxval);
-                err  = R(cur, x) - pred;
+                err  = R(in, x) - pred;
             }
 
             if (state->near) {
@@ -235,7 +237,8 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
                 else
                     Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
                 W(cur, x, Ra);
-            }
+            } else
+                W(cur, x, R(in, x));
 
             ls_encode_regular(state, pb, context, err);
         }
@@ -276,8 +279,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     GetBitContext gb;
     uint8_t *buf2 = NULL;
     uint8_t *zero = NULL;
-    uint8_t *cur  = NULL;
-    uint8_t *last = NULL;
+    const uint8_t *in;
+    uint8_t *last, *cur;
     JLSState *state = NULL;
     int i, size, ret;
     int comps;
@@ -343,28 +346,29 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ls_store_lse(state, &pb);
 
-    zero = last = av_mallocz(FFABS(p->linesize[0]));
+    zero = last = av_calloc(FFABS(p->linesize[0]), 2);
     if (!zero)
         goto memfail;
+    cur = zero + FFABS(p->linesize[0]);
 
-    cur  = p->data[0];
+    in = p->data[0];
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
         int t = 0;
 
         for (i = 0; i < avctx->height; i++) {
-            ls_encode_line(state, &pb2, last, cur, t, avctx->width, 1, 0, 8);
+            ls_encode_line(state, &pb2, last, cur, in, t, avctx->width, 1, 0, 8);
             t    = last[0];
-            last = cur;
-            cur += p->linesize[0];
+            FFSWAP(void *, last, cur);
+            in += p->linesize[0];
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY16) {
         int t = 0;
 
         for (i = 0; i < avctx->height; i++) {
-            ls_encode_line(state, &pb2, last, cur, t, avctx->width, 1, 0, 16);
+            ls_encode_line(state, &pb2, last, cur, in, t, avctx->width, 1, 0, 16);
             t    = *((uint16_t *)last);
-            last = cur;
-            cur += p->linesize[0];
+            FFSWAP(void *, last, cur);
+            in += p->linesize[0];
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
         int j, width;
@@ -373,12 +377,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         width = avctx->width * 3;
         for (i = 0; i < avctx->height; i++) {
             for (j = 0; j < 3; j++) {
-                ls_encode_line(state, &pb2, last + j, cur + j, Rc[j],
+                ls_encode_line(state, &pb2, last + j, cur + j, in + j, Rc[j],
                                width, 3, j, 8);
                 Rc[j] = last[j];
             }
-            last = cur;
-            cur += p->linesize[0];
+            FFSWAP(void *, last, cur);
+            in += p->linesize[0];
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_BGR24) {
         int j, width;
@@ -387,12 +391,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         width = avctx->width * 3;
         for (i = 0; i < avctx->height; i++) {
             for (j = 2; j >= 0; j--) {
-                ls_encode_line(state, &pb2, last + j, cur + j, Rc[j],
+                ls_encode_line(state, &pb2, last + j, cur + j, in + j, Rc[j],
                                width, 3, j, 8);
                 Rc[j] = last[j];
             }
-            last = cur;
-            cur += p->linesize[0];
+            FFSWAP(void *, last, cur);
+            in += p->linesize[0];
         }
     }
 
