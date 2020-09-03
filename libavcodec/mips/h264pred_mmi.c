@@ -178,7 +178,9 @@ void ff_pred8x8l_top_dc_8_mmi(uint8_t *src, int has_topleft,
 
         "1:                                                             \n\t"
         "bnez       %[has_topright],            2f                      \n\t"
-        "pinsrh_3   %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "dli        %[tmp0],    0xa4                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp1]                                \n\t"
+        "pshufh     %[ftmp2],   %[ftmp2],       %[ftmp1]                \n\t"
 
         "2:                                                             \n\t"
         "dli        %[tmp0],    0x02                                    \n\t"
@@ -370,7 +372,9 @@ void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
 
         "1:                                                             \n\t"
         "bnez       %[has_topright],            2f                      \n\t"
-        "pinsrh_3   %[ftmp11],  %[ftmp11],      %[ftmp9]                \n\t"
+        "dli        %[tmp0],    0xa4                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp1]                                \n\t"
+        "pshufh     %[ftmp11],  %[ftmp11],      %[ftmp1]                \n\t"
 
         "2:                                                             \n\t"
         "dli        %[tmp0],    0x02                                    \n\t"
