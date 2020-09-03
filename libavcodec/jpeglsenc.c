@@ -26,6 +26,7 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "golomb.h"
@@ -40,6 +41,18 @@ typedef struct JPEGLSContext {
 
     int pred;
 } JPEGLSContext;
+
+static inline void put_marker_byteu(PutByteContext *pb, enum JpegMarker code)
+{
+    bytestream2_put_byteu(pb, 0xff);
+    bytestream2_put_byteu(pb, code);
+}
+
+static inline void put_marker_byte(PutByteContext *pb, enum JpegMarker code)
+{
+    bytestream2_put_byte(pb, 0xff);
+    bytestream2_put_byte(pb, code);
+}
 
 /**
  * Encode error from regular symbol
@@ -230,7 +243,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb,
     }
 }
 
-static void ls_store_lse(JLSState *state, PutBitContext *pb)
+static void ls_store_lse(JLSState *state, PutByteContext *pb)
 {
     /* Test if we have default params and don't need to store LSE */
     JLSState state2 = { 0 };
@@ -243,14 +256,14 @@ static void ls_store_lse(JLSState *state, PutBitContext *pb)
         state->reset == state2.reset)
         return;
     /* store LSE type 1 */
-    put_marker(pb, LSE);
-    put_bits(pb, 16, 13);
-    put_bits(pb, 8, 1);
-    put_bits(pb, 16, state->maxval);
-    put_bits(pb, 16, state->T1);
-    put_bits(pb, 16, state->T2);
-    put_bits(pb, 16, state->T3);
-    put_bits(pb, 16, state->reset);
+    put_marker_byteu(pb, LSE);
+    bytestream2_put_be16u(pb, 13);
+    bytestream2_put_byteu(pb, 1);
+    bytestream2_put_be16u(pb, state->maxval);
+    bytestream2_put_be16u(pb, state->T1);
+    bytestream2_put_be16u(pb, state->T2);
+    bytestream2_put_be16u(pb, state->T3);
+    bytestream2_put_be16u(pb, state->reset);
 }
 
 static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
@@ -258,7 +271,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 {
     JPEGLSContext *ctx = avctx->priv_data;
     const AVFrame *const p = pict;
-    PutBitContext pb, pb2;
+    PutByteContext pb;
+    PutBitContext pb2;
     GetBitContext gb;
     uint8_t *buf2 = NULL;
     uint8_t *zero = NULL;
@@ -289,33 +303,33 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!buf2)
         goto memfail;
 
-    init_put_bits(&pb, pkt->data, pkt->size);
+    bytestream2_init_writer(&pb, pkt->data, pkt->size);
     init_put_bits(&pb2, buf2, pkt->size);
 
     /* write our own JPEG header, can't use mjpeg_picture_header */
-    put_marker(&pb, SOI);
-    put_marker(&pb, SOF48);
-    put_bits(&pb, 16, 8 + comps * 3); // header size depends on components
-    put_bits(&pb, 8, (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8);  // bpp
-    put_bits(&pb, 16, avctx->height);
-    put_bits(&pb, 16, avctx->width);
-    put_bits(&pb, 8, comps);          // components
+    put_marker_byteu(&pb, SOI);
+    put_marker_byteu(&pb, SOF48);
+    bytestream2_put_be16u(&pb, 8 + comps * 3); // header size depends on components
+    bytestream2_put_byteu(&pb, (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8);  // bpp
+    bytestream2_put_be16u(&pb, avctx->height);
+    bytestream2_put_be16u(&pb, avctx->width);
+    bytestream2_put_byteu(&pb, comps);          // components
     for (i = 1; i <= comps; i++) {
-        put_bits(&pb, 8, i);     // component ID
-        put_bits(&pb, 8, 0x11);  // subsampling: none
-        put_bits(&pb, 8, 0);     // Tiq, used by JPEG-LS ext
+        bytestream2_put_byteu(&pb, i);     // component ID
+        bytestream2_put_byteu(&pb, 0x11);  // subsampling: none
+        bytestream2_put_byteu(&pb, 0);     // Tiq, used by JPEG-LS ext
     }
 
-    put_marker(&pb, SOS);
-    put_bits(&pb, 16, 6 + comps * 2);
-    put_bits(&pb, 8, comps);
+    put_marker_byteu(&pb, SOS);
+    bytestream2_put_be16u(&pb, 6 + comps * 2);
+    bytestream2_put_byteu(&pb, comps);
     for (i = 1; i <= comps; i++) {
-        put_bits(&pb, 8, i);   // component ID
-        put_bits(&pb, 8, 0);   // mapping index: none
+        bytestream2_put_byteu(&pb, i);   // component ID
+        bytestream2_put_byteu(&pb, 0);   // mapping index: none
     }
-    put_bits(&pb, 8, ctx->pred);
-    put_bits(&pb, 8, (comps > 1) ? 1 : 0);  // interleaving: 0 - plane, 1 - line
-    put_bits(&pb, 8, 0);  // point transform: none
+    bytestream2_put_byteu(&pb, ctx->pred);
+    bytestream2_put_byteu(&pb, (comps > 1) ? 1 : 0);  // interleaving: 0 - plane, 1 - line
+    bytestream2_put_byteu(&pb, 0);  // point transform: none
 
     state = av_mallocz(sizeof(JLSState));
     if (!state)
@@ -397,22 +411,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
     while (get_bits_count(&gb) < size) {
         int v;
         v = get_bits(&gb, 8);
-        put_bits(&pb, 8, v);
+        bytestream2_put_byte(&pb, v);
         if (v == 0xFF) {
             v = get_bits(&gb, 7);
-            put_bits(&pb, 8, v);
+            bytestream2_put_byte(&pb, v);
         }
     }
-    align_put_bits(&pb);
     av_freep(&buf2);
 
     /* End of image */
-    put_marker(&pb, EOI);
-    flush_put_bits(&pb);
+    put_marker_byte(&pb, EOI);
 
     emms_c();
 
-    pkt->size   = put_bits_count(&pb) >> 3;
+    pkt->size   = bytestream2_tell_p(&pb);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
