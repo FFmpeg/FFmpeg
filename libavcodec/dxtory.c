@@ -62,6 +62,8 @@ static void do_vflip(AVCodecContext *avctx, AVFrame *pic, int vflip)
         pic->linesize[1] = -pic->linesize[1];
         pic->data[2] += (avctx->height - 1) * pic->linesize[2];
         pic->linesize[2] = -pic->linesize[2];
+    case AV_PIX_FMT_RGB555LE:
+    case AV_PIX_FMT_RGB565LE:
     case AV_PIX_FMT_BGR24:
     case AV_PIX_FMT_RGB24:
         pic->data[0] += (avctx->height - 1) * pic->linesize[0];
