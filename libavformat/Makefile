@@ -7,6 +7,11 @@ HEADERS = avformat.h                                                    \
           avc.h                                                         \
           url.h                                                         \
           internal.h                                                    \
+          avio_internal.h                                               \
+          flv.h                                                         \
+          id3v2.h                                                       \
+          os_support.h                                                  \
+          metadata.h                                                  \
 
 OBJS = allformats.o         \
        avio.o               \
