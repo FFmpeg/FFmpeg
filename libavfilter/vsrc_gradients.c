@@ -19,6 +19,7 @@
  */
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "video.h"
 #include "internal.h"
@@ -247,44 +248,51 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     return 0;
 }
 
-static int gradients_request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
     GradientsContext *s = ctx->priv;
-    AVFrame *frame = ff_get_video_buffer(outlink, s->w, s->h);
-    float angle = fmodf(s->pts * s->speed, 2.f * M_PI);
-    const float w2 = s->w / 2.f;
-    const float h2 = s->h / 2.f;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     if (s->duration >= 0 &&
-        av_rescale_q(s->pts, outlink->time_base, AV_TIME_BASE_Q) >= s->duration)
-        return AVERROR_EOF;
+        av_rescale_q(s->pts, outlink->time_base, AV_TIME_BASE_Q) >= s->duration) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
 
-    s->fx0 = (s->x0 - w2) * cosf(angle) - (s->y0 - h2) * sinf(angle) + w2;
-    s->fy0 = (s->x0 - w2) * sinf(angle) + (s->y0 - h2) * cosf(angle) + h2;
+    if (ff_outlink_frame_wanted(outlink)) {
+        AVFrame *frame = ff_get_video_buffer(outlink, s->w, s->h);
+        float angle = fmodf(s->pts * s->speed, 2.f * M_PI);
+        const float w2 = s->w / 2.f;
+        const float h2 = s->h / 2.f;
 
-    s->fx1 = (s->x1 - w2) * cosf(angle) - (s->y1 - h2) * sinf(angle) + w2;
-    s->fy1 = (s->x1 - w2) * sinf(angle) + (s->y1 - h2) * cosf(angle) + h2;
+        s->fx0 = (s->x0 - w2) * cosf(angle) - (s->y0 - h2) * sinf(angle) + w2;
+        s->fy0 = (s->x0 - w2) * sinf(angle) + (s->y0 - h2) * cosf(angle) + h2;
 
-    if (!frame)
-        return AVERROR(ENOMEM);
+        s->fx1 = (s->x1 - w2) * cosf(angle) - (s->y1 - h2) * sinf(angle) + w2;
+        s->fy1 = (s->x1 - w2) * sinf(angle) + (s->y1 - h2) * cosf(angle) + h2;
 
-    frame->key_frame           = 1;
-    frame->interlaced_frame    = 0;
-    frame->pict_type           = AV_PICTURE_TYPE_I;
-    frame->sample_aspect_ratio = (AVRational) {1, 1};
-    frame->pts = s->pts++;
+        if (!frame)
+            return AVERROR(ENOMEM);
 
-    ctx->internal->execute(ctx, s->draw_slice, frame, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+        frame->key_frame           = 1;
+        frame->interlaced_frame    = 0;
+        frame->pict_type           = AV_PICTURE_TYPE_I;
+        frame->sample_aspect_ratio = (AVRational) {1, 1};
+        frame->pts = s->pts++;
 
-    return ff_filter_frame(outlink, frame);
+        ctx->internal->execute(ctx, s->draw_slice, frame, NULL,
+                               FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+
+        return ff_filter_frame(outlink, frame);
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad gradients_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = gradients_request_frame,
         .config_props  = config_output,
     },
     { NULL }
@@ -298,5 +306,6 @@ AVFilter ff_vsrc_gradients = {
     .query_formats = query_formats,
     .inputs        = NULL,
     .outputs       = gradients_outputs,
+    .activate      = activate,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
