@@ -24,18 +24,15 @@
 #include "internal.h"
 #include "yuv4mpeg.h"
 
-#define Y4M_LINE_MAX 256
-
 static int yuv4_write_header(AVFormatContext *s)
 {
     AVStream *st;
     AVIOContext *pb = s->pb;
     int width, height;
-    int raten, rated, aspectn, aspectd, n;
+    int raten, rated, aspectn, aspectd, ret;
     char inter;
     const char *colorspace = "";
     const char *colorrange = "";
-    char buf[Y4M_LINE_MAX + 1];
     int field_order;
 
     st     = s->streams[0];
@@ -170,18 +167,14 @@ static int yuv4_write_header(AVFormatContext *s)
         break;
     }
 
-    /* construct stream header, if this is the first frame */
-    n = snprintf(buf, Y4M_LINE_MAX, "%s W%d H%d F%d:%d I%c A%d:%d%s%s\n",
-                 Y4M_MAGIC, width, height, raten, rated, inter,
-                 aspectn, aspectd, colorspace, colorrange);
-
-    if (n < 0) {
+    ret = avio_printf(pb, Y4M_MAGIC " W%d H%d F%d:%d I%c A%d:%d%s%s\n",
+                      width, height, raten, rated, inter,
+                      aspectn, aspectd, colorspace, colorrange);
+    if (ret < 0) {
         av_log(s, AV_LOG_ERROR,
                "Error. YUV4MPEG stream header write failed.\n");
-        return AVERROR(EIO);
+        return ret;
     }
-
-    avio_write(pb, buf, strlen(buf));
 
     return 0;
 }
@@ -200,7 +193,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* construct frame header */
 
-    avio_printf(s->pb, "%s\n", Y4M_FRAME_MAGIC);
+    avio_printf(s->pb, Y4M_FRAME_MAGIC "\n");
 
     width  = st->codecpar->width;
     height = st->codecpar->height;
