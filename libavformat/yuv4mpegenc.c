@@ -184,12 +184,10 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
     AVIOContext *pb = s->pb;
-    AVFrame *frame;
+    const AVFrame *frame = (const AVFrame *)pkt->data;
     int width, height, h_chroma_shift, v_chroma_shift;
     int i;
-    uint8_t *ptr, *ptr1, *ptr2;
-
-    frame = (AVFrame *)pkt->data;
+    const uint8_t *ptr, *ptr1, *ptr2;
 
     /* construct frame header */
 
