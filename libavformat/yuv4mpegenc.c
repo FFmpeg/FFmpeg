@@ -24,13 +24,12 @@
 #include "internal.h"
 #include "yuv4mpeg.h"
 
-#define Y4M_LINE_MAX 256
-
-static int yuv4_generate_header(AVFormatContext *s, char* buf)
+static int yuv4_write_header(AVFormatContext *s)
 {
     AVStream *st;
+    AVIOContext *pb = s->pb;
     int width, height;
-    int raten, rated, aspectn, aspectd, n;
+    int raten, rated, aspectn, aspectd, ret;
     char inter;
     const char *colorspace = "";
     const char *colorrange = "";
@@ -168,12 +167,16 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
         break;
     }
 
-    /* construct stream header, if this is the first frame */
-    n = snprintf(buf, Y4M_LINE_MAX, "%s W%d H%d F%d:%d I%c A%d:%d%s%s\n",
-                 Y4M_MAGIC, width, height, raten, rated, inter,
-                 aspectn, aspectd, colorspace, colorrange);
+    ret = avio_printf(pb, Y4M_MAGIC " W%d H%d F%d:%d I%c A%d:%d%s%s\n",
+                      width, height, raten, rated, inter,
+                      aspectn, aspectd, colorspace, colorrange);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Error. YUV4MPEG stream header write failed.\n");
+        return ret;
+    }
 
-    return n;
+    return 0;
 }
 
 
@@ -181,30 +184,14 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
     AVIOContext *pb = s->pb;
-    AVFrame *frame;
-    int* first_pkt = s->priv_data;
+    const AVFrame *frame = (const AVFrame *)pkt->data;
     int width, height, h_chroma_shift, v_chroma_shift;
     int i;
-    char buf2[Y4M_LINE_MAX + 1];
-    uint8_t *ptr, *ptr1, *ptr2;
-
-    frame = (AVFrame *)pkt->data;
-
-    /* for the first packet we have to output the header as well */
-    if (*first_pkt) {
-        *first_pkt = 0;
-        if (yuv4_generate_header(s, buf2) < 0) {
-            av_log(s, AV_LOG_ERROR,
-                   "Error. YUV4MPEG stream header write failed.\n");
-            return AVERROR(EIO);
-        } else {
-            avio_write(pb, buf2, strlen(buf2));
-        }
-    }
+    const uint8_t *ptr, *ptr1, *ptr2;
 
     /* construct frame header */
 
-    avio_printf(s->pb, "%s\n", Y4M_FRAME_MAGIC);
+    avio_printf(s->pb, Y4M_FRAME_MAGIC "\n");
 
     width  = st->codecpar->width;
     height = st->codecpar->height;
@@ -279,10 +266,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int yuv4_write_header(AVFormatContext *s)
+static int yuv4_init(AVFormatContext *s)
 {
-    int *first_pkt = s->priv_data;
-
     if (s->nb_streams != 1)
         return AVERROR(EIO);
 
@@ -347,7 +332,6 @@ static int yuv4_write_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
-    *first_pkt = 1;
     return 0;
 }
 
@@ -355,9 +339,9 @@ AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .name              = "yuv4mpegpipe",
     .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
     .extensions        = "y4m",
-    .priv_data_size    = sizeof(int),
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_WRAPPED_AVFRAME,
+    .init              = yuv4_init,
     .write_header      = yuv4_write_header,
     .write_packet      = yuv4_write_packet,
 };

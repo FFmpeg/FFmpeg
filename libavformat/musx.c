@@ -20,12 +20,23 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
 
 static int musx_probe(const AVProbeData *p)
 {
-    if (memcmp(p->buf, "MUSX", 4))
+    unsigned version;
+
+    if (AV_RB32(p->buf) != MKBETAG('M','U','S','X'))
+        return 0;
+
+    version = AV_RL32(p->buf + 8);
+    if (version != 10 &&
+        version != 6 &&
+        version != 5 &&
+        version != 4 &&
+        version != 201)
         return 0;
 
     return AVPROBE_SCORE_MAX / 5 * 2;

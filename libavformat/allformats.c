@@ -249,6 +249,8 @@ extern AVInputFormat  ff_mlv_demuxer;
 extern AVInputFormat  ff_mm_demuxer;
 extern AVInputFormat  ff_mmf_demuxer;
 extern AVOutputFormat ff_mmf_muxer;
+extern AVInputFormat  ff_mods_demuxer;
+extern AVInputFormat  ff_moflex_demuxer;
 extern AVInputFormat  ff_mov_demuxer;
 extern AVOutputFormat ff_mov_muxer;
 extern AVOutputFormat ff_mp2_muxer;

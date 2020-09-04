@@ -296,6 +296,8 @@ enum AVCodecID {
     AV_CODEC_ID_MV30,
     AV_CODEC_ID_NOTCHLC,
     AV_CODEC_ID_PFM,
+    AV_CODEC_ID_MOBICLIP,
+    AV_CODEC_ID_PHOTOCD,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -388,6 +390,7 @@ enum AVCodecID {
     AV_CODEC_ID_ADPCM_IMA_ALP,
     AV_CODEC_ID_ADPCM_IMA_MTF,
     AV_CODEC_ID_ADPCM_IMA_CUNNING,
+    AV_CODEC_ID_ADPCM_IMA_MOFLEX,
 
     /* AMR */
     AV_CODEC_ID_AMR_NB = 0x12000,
@@ -503,6 +506,7 @@ enum AVCodecID {
     AV_CODEC_ID_MPEGH_3D_AUDIO,
     AV_CODEC_ID_SIREN,
     AV_CODEC_ID_HCA,
+    AV_CODEC_ID_FASTAUDIO,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

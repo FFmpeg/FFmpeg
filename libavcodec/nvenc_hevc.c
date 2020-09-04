@@ -202,6 +202,7 @@ AVCodec ff_nvenc_hevc_encoder = {
     .init           = nvenc_old_init,
     .receive_packet = ff_nvenc_receive_packet,
     .close          = ff_nvenc_encode_close,
+    .flush          = ff_nvenc_encode_flush,
     .priv_data_size = sizeof(NvencContext),
     .priv_class     = &nvenc_hevc_class,
     .defaults       = defaults,
