@@ -178,17 +178,20 @@ static void init_lengths(BinkContext *c, int width, int bw)
 static av_cold int init_bundles(BinkContext *c)
 {
     int bw, bh, blocks;
+    uint8_t *tmp;
     int i;
 
     bw = (c->avctx->width  + 7) >> 3;
     bh = (c->avctx->height + 7) >> 3;
     blocks = bw * bh;
 
+    tmp = av_calloc(blocks, 64 * BINKB_NB_SRC);
+    if (!tmp)
+        return AVERROR(ENOMEM);
     for (i = 0; i < BINKB_NB_SRC; i++) {
-        c->bundle[i].data = av_mallocz(blocks * 64);
-        if (!c->bundle[i].data)
-            return AVERROR(ENOMEM);
-        c->bundle[i].data_end = c->bundle[i].data + blocks * 64;
+        c->bundle[i].data     = tmp;
+        tmp                  += blocks * 64;
+        c->bundle[i].data_end = tmp;
     }
 
     return 0;
@@ -201,9 +204,7 @@ static av_cold int init_bundles(BinkContext *c)
  */
 static av_cold void free_bundles(BinkContext *c)
 {
-    int i;
-    for (i = 0; i < BINKB_NB_SRC; i++)
-        av_freep(&c->bundle[i].data);
+    av_freep(&c->bundle[0].data);
 }
 
 /**
