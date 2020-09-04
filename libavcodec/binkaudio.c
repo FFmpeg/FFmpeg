@@ -54,7 +54,6 @@ typedef struct BinkAudioContext {
     int num_bands;
     unsigned int *bands;
     float root;
-    DECLARE_ALIGNED(32, FFTSample, coeffs)[BINK_BLOCK_MAX_SIZE];
     float previous[MAX_CHANNELS][BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
     float quant_table[96];
     AVPacket *pkt;
