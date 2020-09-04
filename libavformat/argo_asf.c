@@ -182,7 +182,7 @@ static int argo_asf_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st;
     ArgoASFDemuxContext *asf = s->priv_data;
-    uint8_t buf[FFMAX(ASF_FILE_HEADER_SIZE, ASF_CHUNK_HEADER_SIZE)];
+    uint8_t buf[ASF_MIN_BUFFER_SIZE];
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);

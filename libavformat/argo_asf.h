@@ -24,11 +24,13 @@
 #define AVFORMAT_ARGO_ASF_H
 
 #include <stdint.h>
+#include "libavutil/common.h"
 
 #define ASF_TAG                 MKTAG('A', 'S', 'F', '\0')
 #define ASF_FILE_HEADER_SIZE    24
 #define ASF_CHUNK_HEADER_SIZE   20
 #define ASF_SAMPLE_COUNT        32
+#define ASF_MIN_BUFFER_SIZE     FFMAX(ASF_FILE_HEADER_SIZE, ASF_CHUNK_HEADER_SIZE)
 
 typedef struct ArgoASFFileHeader {
     uint32_t    magic;          /*< Magic Number, {'A', 'S', 'F', '\0'} */
