@@ -40,6 +40,7 @@ typedef struct ANullContext {
     uint64_t channel_layout;
     char   *sample_rate_str;
     int     sample_rate;
+    int64_t duration;
     int nb_samples;             ///< number of samples per requested frame
     int64_t pts;
 } ANullContext;
@@ -54,6 +55,8 @@ static const AVOption anullsrc_options[]= {
     { "r",              "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0, FLAGS },
     { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 0, INT_MAX, FLAGS },
     { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 0, INT_MAX, FLAGS },
+    { "duration",       "set the audio duration",                        OFFSET(duration),   AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
+    { "d",              "set the audio duration",                        OFFSET(duration),   AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
     { NULL }
 };
 
@@ -107,6 +110,10 @@ static int request_frame(AVFilterLink *outlink)
     int ret;
     ANullContext *null = outlink->src->priv;
     AVFrame *samplesref;
+
+    if (null->duration >= 0 &&
+        av_rescale_q(null->pts, outlink->time_base, AV_TIME_BASE_Q) >= null->duration)
+        return AVERROR_EOF;
 
     samplesref = ff_get_audio_buffer(outlink, null->nb_samples);
     if (!samplesref)
