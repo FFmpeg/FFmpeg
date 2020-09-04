@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct ANullContext {
@@ -105,28 +106,35 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    int ret;
-    ANullContext *null = outlink->src->priv;
-    AVFrame *samplesref;
+    ANullContext *null = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     if (null->duration >= 0 &&
-        av_rescale_q(null->pts, outlink->time_base, AV_TIME_BASE_Q) >= null->duration)
-        return AVERROR_EOF;
+        av_rescale_q(null->pts, outlink->time_base, AV_TIME_BASE_Q) >= null->duration) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, null->pts);
+        return 0;
+    }
 
-    samplesref = ff_get_audio_buffer(outlink, null->nb_samples);
-    if (!samplesref)
-        return AVERROR(ENOMEM);
+    if (ff_outlink_frame_wanted(outlink)) {
+        AVFrame *samplesref = ff_get_audio_buffer(outlink, null->nb_samples);
+        int ret;
 
-    samplesref->pts = null->pts;
+        if (!samplesref)
+            return AVERROR(ENOMEM);
 
-    ret = ff_filter_frame(outlink, samplesref);
-    if (ret < 0)
-        return ret;
+        samplesref->pts = null->pts;
 
-    null->pts += null->nb_samples;
-    return ret;
+        ret = ff_filter_frame(outlink, samplesref);
+        if (ret < 0)
+            return ret;
+
+        null->pts += null->nb_samples;
+        return 0;
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
@@ -134,7 +142,6 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_props,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -147,5 +154,6 @@ AVFilter ff_asrc_anullsrc = {
     .priv_size     = sizeof(ANullContext),
     .inputs        = NULL,
     .outputs       = avfilter_asrc_anullsrc_outputs,
+    .activate      = activate,
     .priv_class    = &anullsrc_class,
 };
