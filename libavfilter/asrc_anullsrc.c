@@ -93,19 +93,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_channel_layouts(ctx, ff_make_format64_list(chlayouts));
 }
 
-static int config_props(AVFilterLink *outlink)
-{
-    ANullContext *null = outlink->src->priv;
-    char buf[128];
-
-    av_get_channel_layout_string(buf, sizeof(buf), 0, null->channel_layout);
-    av_log(outlink->src, AV_LOG_VERBOSE,
-           "sample_rate:%d channel_layout:'%s' nb_samples:%d\n",
-           null->sample_rate, buf, null->nb_samples);
-
-    return 0;
-}
-
 static int activate(AVFilterContext *ctx)
 {
     ANullContext *null = ctx->priv;
@@ -141,7 +128,6 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_props,
     },
     { NULL }
 };
