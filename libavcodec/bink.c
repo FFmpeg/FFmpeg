@@ -114,7 +114,7 @@ typedef struct Bundle {
 typedef struct BinkContext {
     AVCodecContext *avctx;
     BlockDSPContext bdsp;
-    HpelDSPContext hdsp;
+    op_pixels_func put_pixels_tab;
     BinkDSPContext binkdsp;
     AVFrame        *last;
     int            version;              ///< internal Bink file version
@@ -927,7 +927,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 if (ref < ref_start || ref + 8*stride > ref_end) {
                     av_log(c->avctx, AV_LOG_WARNING, "Reference block is out of bounds\n");
                 } else if (ref + 8*stride < dst || ref >= dst + 8*stride) {
-                    c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+                    c->put_pixels_tab(dst, ref, stride, 8);
                 } else {
                     put_pixels8x8_overlapped(dst, ref, stride);
                 }
@@ -943,7 +943,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 if (ref < ref_start || ref + 8 * stride > ref_end) {
                     av_log(c->avctx, AV_LOG_WARNING, "Reference block is out of bounds\n");
                 } else if (ref + 8*stride < dst || ref >= dst + 8*stride) {
-                    c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+                    c->put_pixels_tab(dst, ref, stride, 8);
                 } else {
                     put_pixels8x8_overlapped(dst, ref, stride);
                 }
@@ -975,7 +975,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 if (ref < ref_start || ref + 8 * stride > ref_end) {
                     av_log(c->avctx, AV_LOG_WARNING, "Reference block is out of bounds\n");
                 } else if (ref + 8*stride < dst || ref >= dst + 8*stride) {
-                    c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+                    c->put_pixels_tab(dst, ref, stride, 8);
                 } else {
                     put_pixels8x8_overlapped(dst, ref, stride);
                 }
@@ -1010,7 +1010,7 @@ static int bink_put_pixels(BinkContext *c,
                xoff, yoff);
         return AVERROR_INVALIDDATA;
     }
-    c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+    c->put_pixels_tab(dst, ref, stride, 8);
 
     return 0;
 }
@@ -1093,7 +1093,7 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
             }
             switch (blk) {
             case SKIP_BLOCK:
-                c->hdsp.put_pixels_tab[1][0](dst, prev, stride, 8);
+                c->put_pixels_tab(dst, prev, stride, 8);
                 break;
             case SCALED_BLOCK:
                 blk = get_value(c, BINK_SRC_SUB_BLOCK_TYPES);
@@ -1345,6 +1345,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     BinkContext * const c = avctx->priv_data;
     static VLC_TYPE table[16 * 128][2];
     static int binkb_initialised = 0;
+    HpelDSPContext hdsp;
     int i, ret;
     int flags;
 
@@ -1379,7 +1380,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->color_range = c->version == 'k' ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 
     ff_blockdsp_init(&c->bdsp, avctx);
-    ff_hpeldsp_init(&c->hdsp, avctx->flags);
+    ff_hpeldsp_init(&hdsp, avctx->flags);
+    c->put_pixels_tab = hdsp.put_pixels_tab[1][0];
     ff_binkdsp_init(&c->binkdsp);
 
     if ((ret = init_bundles(c)) < 0)
