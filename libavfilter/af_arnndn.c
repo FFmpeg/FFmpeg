@@ -780,7 +780,7 @@ static float compute_pitch_gain(float xy, float xx, float yy)
     return xy / sqrtf(1.f + xx * yy);
 }
 
-static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
+static const uint8_t second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
 static float remove_doubling(float *x, int maxperiod, int minperiod, int N,
                              int *T0_, int prev_period, float prev_gain)
 {
