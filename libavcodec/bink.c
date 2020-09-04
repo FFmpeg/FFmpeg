@@ -1381,10 +1381,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_hpeldsp_init(&c->hdsp, avctx->flags);
     ff_binkdsp_init(&c->binkdsp);
 
-    if ((ret = init_bundles(c)) < 0) {
-        free_bundles(c);
+    if ((ret = init_bundles(c)) < 0)
         return ret;
-    }
 
     if (c->version == 'b') {
         if (!binkb_initialised) {
@@ -1424,4 +1422,5 @@ AVCodec ff_bink_decoder = {
     .decode         = decode_frame,
     .flush          = flush,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
