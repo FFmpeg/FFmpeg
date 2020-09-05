@@ -353,6 +353,11 @@ Timecode type to include in the frame and video stream metadata. Must be
 @samp{rp188hfr}, @samp{rp188any}, @samp{vitc}, @samp{vitc2}, or @samp{serial}.
 Defaults to @samp{none} (not included).
 
+In order to properly support 50/60 fps timecodes, the ordering of the queried
+timecode types for @samp{rp188any} is HFR, VITC1, VITC2 and LTC for >30 fps
+content. Note that this is slightly different to the ordering used by the
+DeckLink API, which is HFR, VITC1, LTC, VITC2.
+
 @item video_input
 Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},
 @samp{optical_sdi}, @samp{component}, @samp{composite} or @samp{s_video}.
