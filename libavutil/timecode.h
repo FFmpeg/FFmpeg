@@ -49,9 +49,9 @@ typedef struct {
  * Adjust frame number for NTSC drop frame time code.
  *
  * @param framenum frame number to adjust
- * @param fps      frame per second, 30 or 60
+ * @param fps      frame per second, multiples of 30
  * @return         adjusted frame number
- * @warning        adjustment is only valid in NTSC 29.97 and 59.94
+ * @warning        adjustment is only valid for multiples of NTSC 29.97
  */
 int av_timecode_adjust_ntsc_framenum2(int framenum, int fps);
 
