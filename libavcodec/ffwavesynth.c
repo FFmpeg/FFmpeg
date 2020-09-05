@@ -373,7 +373,7 @@ static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
         in->amp  += in->damp;
         switch (in->type) {
             case WS_SINE:
-                val = amp * ws->sin[in->phi >> (64 - SIN_BITS)];
+                val = amp * (unsigned)ws->sin[in->phi >> (64 - SIN_BITS)];
                 in->phi  += in->dphi;
                 in->dphi += in->ddphi;
                 break;
