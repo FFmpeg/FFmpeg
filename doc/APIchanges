@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-12-03 - xxxxxxxxxx - lavu 56.62.100 - timecode.h
+  Add av_timecode_init_from_components.
+
 2020-xx-xx - xxxxxxxxxx - lavc 58.114.100 - avcodec.h
   Deprecate AVCodecContext.thread_safe_callbacks. Starting with
   LIBAVCODEC_VERSION_MAJOR=60, user callbacks must always be
