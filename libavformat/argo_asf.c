@@ -187,7 +187,11 @@ static int argo_asf_read_header(AVFormatContext *s)
         st->codecpar->channels              = 1;
     }
 
-    st->codecpar->sample_rate               = asf->ckhdr.sample_rate;
+    /* v1.1 files (FX Fighter) are all marked as 44100, but are actually 22050. */
+    if (asf->fhdr.version_major == 1 && asf->fhdr.version_minor == 1)
+        st->codecpar->sample_rate           = 22050;
+    else
+        st->codecpar->sample_rate           = asf->ckhdr.sample_rate;
 
     st->codecpar->bits_per_coded_sample     = 4;
 
@@ -264,6 +268,7 @@ AVInputFormat ff_argo_asf_demuxer = {
 #if CONFIG_ARGO_ASF_MUXER
 static int argo_asf_write_init(AVFormatContext *s)
 {
+    ArgoASFMuxContext *ctx = s->priv_data;
     const AVCodecParameters *par;
 
     if (s->nb_streams != 1) {
@@ -276,6 +281,11 @@ static int argo_asf_write_init(AVFormatContext *s)
     if (par->codec_id != AV_CODEC_ID_ADPCM_ARGO) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
                avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
+    if (ctx->version_major == 1 && ctx->version_minor == 1 && par->sample_rate != 22050) {
+        av_log(s, AV_LOG_ERROR, "ASF v1.1 files only support a sample rate of 22050\n");
         return AVERROR(EINVAL);
     }
 
@@ -351,7 +361,12 @@ static int argo_asf_write_header(AVFormatContext *s)
     chdr.num_blocks    = 0;
     chdr.num_samples   = ASF_SAMPLE_COUNT;
     chdr.unk1          = 0;
-    chdr.sample_rate   = par->sample_rate;
+
+    if (ctx->version_major == 1 && ctx->version_minor == 1)
+        chdr.sample_rate = 44100;
+    else
+        chdr.sample_rate = par->sample_rate;
+
     chdr.unk2          = ~0;
     chdr.flags         = ASF_CF_BITS_PER_SAMPLE | ASF_CF_ALWAYS1;
 
