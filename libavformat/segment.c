@@ -663,6 +663,8 @@ static void seg_free(AVFormatContext *s)
     ff_format_io_close(seg->avf, &seg->list_pb);
     avformat_free_context(seg->avf);
     seg->avf = NULL;
+    av_freep(&seg->times);
+    av_freep(&seg->frames);
 }
 
 static int seg_init(AVFormatContext *s)
@@ -991,8 +993,6 @@ fail:
         ff_format_io_close(s, &seg->list_pb);
 
     av_opt_free(seg);
-    av_freep(&seg->times);
-    av_freep(&seg->frames);
     av_freep(&seg->cur_entry.filename);
 
     cur = seg->segment_list_entries;
