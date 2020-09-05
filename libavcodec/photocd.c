@@ -227,9 +227,9 @@ static av_noinline int decode_huff(AVCodecContext *avctx, AVFrame *frame,
     PhotoCDContext *s = avctx->priv_data;
     GetBitContext g;
     GetByteContext *gb = &s->gb;
-    int ret, y = 0, type, height, y2;
+    int ret, y = 0, type, height;
     int start = s->streampos;
-    unsigned shiftreg, bit;
+    unsigned shiftreg;
     const int scaling = target_res - curr_res;
     const uint8_t type2idx[] = { 0, 0xff, 1, 2 };
 
@@ -239,13 +239,11 @@ static av_noinline int decode_huff(AVCodecContext *avctx, AVFrame *frame,
         return ret;
 
     height = img_info[curr_res].height;
-    y2 = avctx->height >> scaling;
 
     while (y < height) {
         uint8_t *data;
         int x2, idx;
 
-        bit = 0;
         for (; get_bits_left(&g) > 0;) {
             if ((show_bits(&g, 24) & 0xfff000) == 0xfff000)
                 break;

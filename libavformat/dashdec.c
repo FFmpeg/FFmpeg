@@ -29,7 +29,7 @@
 #include "dash.h"
 
 #define INITIAL_BUFFER_SIZE 32768
-#define MAX_MANIFEST_SIZE 50 * 1024
+#define MAX_BPRINT_READ_SIZE (UINT_MAX - 1)
 #define DEFAULT_MANIFEST_SIZE 8 * 1024
 
 struct fragment {
@@ -1256,14 +1256,16 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     }
 
     filesize = avio_size(in);
-    if (filesize > MAX_MANIFEST_SIZE) {
+    filesize = filesize > 0 ? filesize : DEFAULT_MANIFEST_SIZE;
+
+    if (filesize > MAX_BPRINT_READ_SIZE) {
         av_log(s, AV_LOG_ERROR, "Manifest too large: %"PRId64"\n", filesize);
         return AVERROR_INVALIDDATA;
     }
 
-    av_bprint_init(&buf, (filesize > 0) ? filesize + 1 : DEFAULT_MANIFEST_SIZE, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&buf, filesize + 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    if ((ret = avio_read_to_bprint(in, &buf, MAX_MANIFEST_SIZE)) < 0 ||
+    if ((ret = avio_read_to_bprint(in, &buf, MAX_BPRINT_READ_SIZE)) < 0 ||
         !avio_feof(in) ||
         (filesize = buf.len) == 0) {
         av_log(s, AV_LOG_ERROR, "Unable to read to manifest '%s'\n", url);

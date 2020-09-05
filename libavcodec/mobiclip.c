@@ -1333,13 +1333,15 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         setup_qtables(avctx, s->quantizer + get_se_golomb(gb));
         for (int y = 0; y < avctx->height; y += 16) {
             for (int x = 0; x < avctx->width; x += 16) {
+                int idx;
+
                 motion[0].x = mid_pred(motion[x / 16 + 1].x, motion[x / 16 + 2].x, motion[x / 16 + 3].x);
                 motion[0].y = mid_pred(motion[x / 16 + 1].y, motion[x / 16 + 2].y, motion[x / 16 + 3].y);
                 motion[x / 16 + 2].x = 0;
                 motion[x / 16 + 2].y = 0;
 
-                int idx = get_vlc2(gb, s->mv_vlc[s->moflex][0].table,
-                                       s->mv_vlc[s->moflex][0].bits, 1);
+                idx = get_vlc2(gb, s->mv_vlc[s->moflex][0].table,
+                                   s->mv_vlc[s->moflex][0].bits, 1);
                 if (idx < 0)
                     return AVERROR_INVALIDDATA;
 

@@ -108,8 +108,7 @@ static int lz4_decompress(AVCodecContext *avctx,
         if (bytestream2_get_bytes_left(gb) <= 0)
             break;
 
-        delta = bytestream2_get_byte(gb);
-        delta |= (unsigned)bytestream2_get_byte(gb) << 8;
+        delta = bytestream2_get_le16(gb);
         if (delta == 0)
             return 0;
         match_length = 4 + (token & 0x0F);

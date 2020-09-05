@@ -40,8 +40,6 @@
 #include "rdft.h"
 #include "wma_freqs.h"
 
-static float quant_table[96];
-
 #define MAX_CHANNELS 2
 #define BINK_BLOCK_MAX_SIZE (MAX_CHANNELS << 11)
 
@@ -54,10 +52,10 @@ typedef struct BinkAudioContext {
     int overlap_len;        ///< overlap size (samples)
     int block_size;
     int num_bands;
-    unsigned int *bands;
     float root;
-    DECLARE_ALIGNED(32, FFTSample, coeffs)[BINK_BLOCK_MAX_SIZE];
+    unsigned int bands[26];
     float previous[MAX_CHANNELS][BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
+    float quant_table[96];
     AVPacket *pkt;
     union {
         RDFTContext rdft;
@@ -116,17 +114,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->root = s->frame_len / (sqrt(s->frame_len) * 32768.0);
     for (i = 0; i < 96; i++) {
         /* constant is result of 0.066399999/log10(M_E) */
-        quant_table[i] = expf(i * 0.15289164787221953823f) * s->root;
+        s->quant_table[i] = expf(i * 0.15289164787221953823f) * s->root;
     }
 
     /* calculate number of bands */
     for (s->num_bands = 1; s->num_bands < 25; s->num_bands++)
         if (sample_rate_half <= ff_wma_critical_freqs[s->num_bands - 1])
             break;
-
-    s->bands = av_malloc((s->num_bands + 1) * sizeof(*s->bands));
-    if (!s->bands)
-        return AVERROR(ENOMEM);
 
     /* populate bands data */
     s->bands[0] = 2;
@@ -197,7 +191,7 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
             return AVERROR_INVALIDDATA;
         for (i = 0; i < s->num_bands; i++) {
             int value = get_bits(gb, 8);
-            quant[i]  = quant_table[FFMIN(value, 95)];
+            quant[i]  = s->quant_table[FFMIN(value, 95)];
         }
 
         k = 0;
@@ -275,7 +269,6 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     BinkAudioContext * s = avctx->priv_data;
-    av_freep(&s->bands);
     if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_end(&s->trans.rdft);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
