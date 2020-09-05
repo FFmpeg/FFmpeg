@@ -84,6 +84,11 @@ uint32_t av_timecode_get_smpte(AVRational rate, int drop, int hh, int mm, int ss
         ff /= 2;
     }
 
+    hh = hh % 24;
+    mm = av_clip(mm, 0, 59);
+    ss = av_clip(ss, 0, 59);
+    ff = ff % 40;
+
     tc |= drop << 30;
     tc |= (ff / 10) << 28;
     tc |= (ff % 10) << 24;
