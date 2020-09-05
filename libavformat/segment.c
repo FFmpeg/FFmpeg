@@ -659,7 +659,7 @@ static int select_reference_stream(AVFormatContext *s)
 static void seg_free(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-    ff_format_io_close(seg->avf, &seg->list_pb);
+    ff_format_io_close(s, &seg->list_pb);
     avformat_free_context(seg->avf);
     seg->avf = NULL;
     av_freep(&seg->times);
