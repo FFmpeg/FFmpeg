@@ -175,7 +175,11 @@ static int argo_asf_read_header(AVFormatContext *s)
         st->codecpar->channels              = 1;
     }
 
-    st->codecpar->sample_rate               = asf->ckhdr.sample_rate;
+    /* v1.1 files (FX Fighter) are all marked as 44100, but are actually 22050. */
+    if (asf->fhdr.version_major == 1 && asf->fhdr.version_minor == 1)
+        st->codecpar->sample_rate           = 22050;
+    else
+        st->codecpar->sample_rate           = asf->ckhdr.sample_rate;
 
     st->codecpar->bits_per_coded_sample     = 4;
 
