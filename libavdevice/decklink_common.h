@@ -191,6 +191,11 @@ static const BMDTimecodeFormat decklink_timecode_format_map[] = {
     bmdTimecodeVITC,
     bmdTimecodeVITCField2,
     bmdTimecodeSerial,
+#if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
+    bmdTimecodeRP188HighFrameRate,
+#else
+    (BMDTimecodeFormat)0,
+#endif
 };
 
 int ff_decklink_set_configs(AVFormatContext *avctx, decklink_direction_t direction);
