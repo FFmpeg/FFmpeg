@@ -80,6 +80,7 @@ typedef struct SegmentContext {
     int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
 
+    int is_nullctx;       ///< whether avf->pb is a nullctx
     int use_clocktime;    ///< flag to cut segments at regular clock time
     int64_t clocktime_offset; //< clock offset for cutting the segments at regular clock time
     int64_t clocktime_wrap_duration; //< wrapping duration considered for starting a new segment
@@ -660,8 +661,14 @@ static void seg_free(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     ff_format_io_close(s, &seg->list_pb);
-    avformat_free_context(seg->avf);
-    seg->avf = NULL;
+    if (seg->avf) {
+        if (seg->is_nullctx)
+            close_null_ctxp(&seg->avf->pb);
+        else
+            ff_format_io_close(s, &seg->avf->pb);
+        avformat_free_context(seg->avf);
+        seg->avf = NULL;
+    }
     av_freep(&seg->times);
     av_freep(&seg->frames);
     av_freep(&seg->cur_entry.filename);
@@ -767,6 +774,7 @@ static int seg_init(AVFormatContext *s)
     } else {
         if ((ret = open_null_ctx(&oc->pb)) < 0)
             return ret;
+        seg->is_nullctx = 1;
     }
 
     av_dict_copy(&options, seg->format_options, 0);
@@ -781,7 +789,6 @@ static int seg_init(AVFormatContext *s)
     av_dict_free(&options);
 
     if (ret < 0) {
-        ff_format_io_close(oc, &oc->pb);
         return ret;
     }
     seg->segment_frame_count = 0;
@@ -824,6 +831,7 @@ static int seg_write_header(AVFormatContext *s)
             ff_format_io_close(oc, &oc->pb);
         } else {
             close_null_ctxp(&oc->pb);
+            seg->is_nullctx = 0;
         }
         if ((ret = oc->io_open(oc, &oc->pb, oc->url, AVIO_FLAG_WRITE, NULL)) < 0)
             return ret;
@@ -974,6 +982,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
             goto fail;
         if ((ret = open_null_ctx(&oc->pb)) < 0)
             goto fail;
+        seg->is_nullctx = 1;
         ret = av_write_trailer(oc);
         close_null_ctxp(&oc->pb);
     } else {
