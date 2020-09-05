@@ -660,6 +660,8 @@ static int select_reference_stream(AVFormatContext *s)
 static void seg_free(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
+    SegmentListEntry *cur;
+
     ff_format_io_close(s, &seg->list_pb);
     if (seg->avf) {
         if (seg->is_nullctx)
@@ -672,6 +674,14 @@ static void seg_free(AVFormatContext *s)
     av_freep(&seg->times);
     av_freep(&seg->frames);
     av_freep(&seg->cur_entry.filename);
+
+    cur = seg->segment_list_entries;
+    while (cur) {
+        SegmentListEntry *next = cur->next;
+        av_freep(&cur->filename);
+        av_free(cur);
+        cur = next;
+    }
 }
 
 static int seg_init(AVFormatContext *s)
@@ -971,7 +981,6 @@ static int seg_write_trailer(struct AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    SegmentListEntry *cur, *next;
     int ret = 0;
 
     if (!oc)
@@ -993,14 +1002,6 @@ fail:
         ff_format_io_close(s, &seg->list_pb);
 
     av_opt_free(seg);
-
-    cur = seg->segment_list_entries;
-    while (cur) {
-        next = cur->next;
-        av_freep(&cur->filename);
-        av_free(cur);
-        cur = next;
-    }
 
     avformat_free_context(oc);
     seg->avf = NULL;
