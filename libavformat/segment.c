@@ -981,30 +981,21 @@ static int seg_write_trailer(struct AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret = 0;
+    int ret;
 
     if (!oc)
-        goto fail;
+        return 0;
 
     if (!seg->write_header_trailer) {
         if ((ret = segment_end(s, 0, 1)) < 0)
-            goto fail;
+            return ret;
         if ((ret = open_null_ctx(&oc->pb)) < 0)
-            goto fail;
+            return ret;
         seg->is_nullctx = 1;
         ret = av_write_trailer(oc);
-        close_null_ctxp(&oc->pb);
     } else {
         ret = segment_end(s, 1, 1);
     }
-fail:
-    if (seg->list)
-        ff_format_io_close(s, &seg->list_pb);
-
-    av_opt_free(seg);
-
-    avformat_free_context(oc);
-    seg->avf = NULL;
     return ret;
 }
 
