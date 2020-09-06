@@ -510,7 +510,7 @@ static int parse_times(void *log_ctx, int64_t **times, int *nb_times,
         /* check on monotonicity */
         if (i && (*times)[i-1] > (*times)[i]) {
             av_log(log_ctx, AV_LOG_ERROR,
-                   "Specified time %f is greater than the following time %f\n",
+                   "Specified time %f is smaller than the last time %f\n",
                    (float)((*times)[i])/1000000, (float)((*times)[i-1])/1000000);
             FAIL(AVERROR(EINVAL));
         }
@@ -560,7 +560,7 @@ static int parse_frames(void *log_ctx, int **frames, int *nb_frames,
         f = strtol(fstr, &tailptr, 10);
         if (*tailptr || f <= 0 || f >= INT_MAX) {
             av_log(log_ctx, AV_LOG_ERROR,
-                   "Invalid argument '%s', must be a positive integer <= INT64_MAX\n",
+                   "Invalid argument '%s', must be a positive integer < INT_MAX\n",
                    fstr);
             FAIL(AVERROR(EINVAL));
         }
@@ -569,7 +569,7 @@ static int parse_frames(void *log_ctx, int **frames, int *nb_frames,
         /* check on monotonicity */
         if (i && (*frames)[i-1] > (*frames)[i]) {
             av_log(log_ctx, AV_LOG_ERROR,
-                   "Specified frame %d is greater than the following frame %d\n",
+                   "Specified frame %d is smaller than the last frame %d\n",
                    (*frames)[i], (*frames)[i-1]);
             FAIL(AVERROR(EINVAL));
         }
