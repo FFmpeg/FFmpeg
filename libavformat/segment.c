@@ -817,26 +817,9 @@ static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret, i;
+    int ret;
 
     if (!seg->header_written) {
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = oc->streams[i];
-            AVCodecParameters *ipar, *opar;
-
-            ipar = s->streams[i]->codecpar;
-            opar = oc->streams[i]->codecpar;
-            avcodec_parameters_copy(opar, ipar);
-            if (!oc->oformat->codec_tag ||
-                av_codec_get_id (oc->oformat->codec_tag, ipar->codec_tag) == opar->codec_id ||
-                av_codec_get_tag(oc->oformat->codec_tag, ipar->codec_id) <= 0) {
-                opar->codec_tag = ipar->codec_tag;
-            } else {
-                opar->codec_tag = 0;
-            }
-            st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
-            st->time_base = s->streams[i]->time_base;
-        }
         ret = avformat_write_header(oc, NULL);
         if (ret < 0)
             return ret;
