@@ -28,10 +28,17 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layers.h"
 
-static const AVClass dnn_native_class = {
+#define OFFSET(x) offsetof(NativeContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption dnn_native_options[] = {
+    { "conv2d_threads", "threads num for conv2d layer", OFFSET(options.conv2d_threads), AV_OPT_TYPE_INT,  { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
+    { NULL },
+};
+
+const AVClass dnn_native_class = {
     .class_name = "dnn_native",
     .item_name  = av_default_item_name,
-    .option     = NULL,
+    .option     = dnn_native_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
@@ -174,7 +181,17 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
     }
 
     native_model->ctx.class = &dnn_native_class;
+    model->options = options;
+    if (av_opt_set_from_string(&native_model->ctx, model->options, NULL, "=", "&") < 0)
+        goto fail;
     model->model = (void *)native_model;
+
+#if !HAVE_PTHREAD_CANCEL
+    if (native_model->ctx.options.conv2d_threads > 1){
+        av_log(&native_model->ctx, AV_LOG_WARNING, "'conv2d_threads' option was set but it is not supported "
+                       "on this build (pthread support is required)\n");
+    }
+#endif
 
     avio_seek(model_file_context, file_size - 8, SEEK_SET);
     native_model->layers_num = (int32_t)avio_rl32(model_file_context);
@@ -248,7 +265,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
 
     model->set_input = &set_input_native;
     model->get_input = &get_input_native;
-    model->options = options;
 
     return model;
 
