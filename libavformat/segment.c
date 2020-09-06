@@ -90,7 +90,6 @@ typedef struct SegmentContext {
     char *entry_prefix;    ///< prefix to add to list entry filenames
     int list_type;         ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
-    char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
     int use_strftime;      ///< flag to expand filename with strftime
     int increment_tc;      ///< flag to increment timecode if found
@@ -689,7 +688,7 @@ static int seg_init(AVFormatContext *s)
                "you can use output_ts_offset instead of it\n");
     }
 
-    if (!!seg->time_str + !!seg->times_str + !!seg->frames_str > 1) {
+    if ((seg->time != 2000000) + !!seg->times_str + !!seg->frames_str > 1) {
         av_log(s, AV_LOG_ERROR,
                "segment_time, segment_times, and segment_frames options "
                "are mutually exclusive, select just one of them\n");
@@ -703,15 +702,6 @@ static int seg_init(AVFormatContext *s)
         if ((ret = parse_frames(s, &seg->frames, &seg->nb_frames, seg->frames_str)) < 0)
             return ret;
     } else {
-        /* set default value if not specified */
-        if (!seg->time_str)
-            seg->time_str = av_strdup("2");
-        if ((ret = av_parse_time(&seg->time, seg->time_str, 1)) < 0) {
-            av_log(s, AV_LOG_ERROR,
-                   "Invalid time duration specification '%s' for segment_time option\n",
-                   seg->time_str);
-            return ret;
-        }
         if (seg->use_clocktime) {
             if (seg->time <= 0) {
                 av_log(s, AV_LOG_ERROR, "Invalid negative segment_time with segment_atclocktime option set\n");
@@ -1051,7 +1041,7 @@ static const AVOption options[] = {
     { "segment_atclocktime",      "set segment to be cut at clocktime",  OFFSET(use_clocktime), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
     { "segment_clocktime_offset", "set segment clocktime offset",        OFFSET(clocktime_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 86400000000LL, E},
     { "segment_clocktime_wrap_duration", "set segment clocktime wrapping duration", OFFSET(clocktime_wrap_duration), AV_OPT_TYPE_DURATION, {.i64 = INT64_MAX}, 0, INT64_MAX, E},
-    { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+    { "segment_time",      "set segment duration",                       OFFSET(time),AV_OPT_TYPE_DURATION, {.i64 = 2000000}, INT64_MIN, INT64_MAX,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_frames",    "set segment split frame numbers",            OFFSET(frames_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
