@@ -144,6 +144,9 @@ static int argo_asf_read_header(AVFormatContext *s)
 
     argo_asf_parse_file_header(&asf->fhdr, buf);
 
+    if (asf->fhdr.magic != ASF_TAG)
+        return AVERROR_INVALIDDATA;
+
     if (asf->fhdr.num_chunks == 0) {
         return AVERROR_INVALIDDATA;
     } else if (asf->fhdr.num_chunks > 1) {
