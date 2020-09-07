@@ -1869,10 +1869,8 @@ static int save_avio_options(AVFormatContext *s)
         if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
             if (buf[0] != '\0') {
                 ret = av_dict_set(&c->avio_opts, *opt, buf, AV_DICT_DONT_STRDUP_VAL);
-                if (ret < 0) {
-                    av_freep(&buf);
+                if (ret < 0)
                     return ret;
-                }
             } else {
                 av_freep(&buf);
             }
