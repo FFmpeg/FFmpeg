@@ -616,9 +616,9 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
         if (initialization_val || range_val) {
             free_fragment(&rep->init_section);
             rep->init_section = get_Fragment(range_val);
+            xmlFree(range_val);
             if (!rep->init_section) {
                 xmlFree(initialization_val);
-                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
             rep->init_section->url = get_content_url(baseurl_nodes, 4,
@@ -626,24 +626,20 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                                                      rep_id_val,
                                                      rep_bandwidth_val,
                                                      initialization_val);
-
+            xmlFree(initialization_val);
             if (!rep->init_section->url) {
                 av_freep(&rep->init_section);
-                xmlFree(initialization_val);
-                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
-            xmlFree(initialization_val);
-            xmlFree(range_val);
         }
     } else if (!av_strcasecmp(fragmenturl_node->name, (const char *)"SegmentURL")) {
         media_val = xmlGetProp(fragmenturl_node, "media");
         range_val = xmlGetProp(fragmenturl_node, "mediaRange");
         if (media_val || range_val) {
             struct fragment *seg = get_Fragment(range_val);
+            xmlFree(range_val);
             if (!seg) {
                 xmlFree(media_val);
-                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
             seg->url = get_content_url(baseurl_nodes, 4,
@@ -651,15 +647,12 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                                        rep_id_val,
                                        rep_bandwidth_val,
                                        media_val);
+            xmlFree(media_val);
             if (!seg->url) {
                 av_free(seg);
-                xmlFree(media_val);
-                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
             dynarray_add(&rep->fragments, &rep->n_fragments, seg);
-            xmlFree(media_val);
-            xmlFree(range_val);
         }
     }
 
