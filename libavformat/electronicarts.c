@@ -561,14 +561,14 @@ static int ea_read_header(AVFormatContext *s)
                                               st->codecpar->bits_per_coded_sample;
         ea->audio_stream_index           = st->index;
         st->start_time                   = 0;
-        return 1;
+        return 0;
     }
 no_audio:
     ea->audio_codec = AV_CODEC_ID_NONE;
 
     if (!ea->video.codec)
         return AVERROR_INVALIDDATA;
-    return 1;
+    return 0;
 }
 
 static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
