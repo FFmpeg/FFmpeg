@@ -1183,7 +1183,6 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     DASHContext *c = s->priv_data;
     int ret = 0;
     int close_in = 0;
-    uint8_t *new_url = NULL;
     int64_t filesize = 0;
     AVBPrint buf;
     AVDictionary *opts = NULL;
@@ -1212,11 +1211,8 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
             return ret;
     }
 
-    if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, &new_url) >= 0) {
-        c->base_url = av_strdup(new_url);
-    } else {
+    if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, (uint8_t**)&c->base_url) < 0)
         c->base_url = av_strdup(url);
-    }
 
     filesize = avio_size(in);
     filesize = filesize > 0 ? filesize : DEFAULT_MANIFEST_SIZE;
@@ -1359,7 +1355,6 @@ cleanup:
         xmlFreeNode(mpd_baseurl_node);
     }
 
-    av_free(new_url);
     av_bprint_finalize(&buf, NULL);
     if (close_in) {
         avio_close(in);
