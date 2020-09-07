@@ -627,7 +627,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                                                      initialization_val);
 
             if (!rep->init_section->url) {
-                av_free(rep->init_section);
+                av_freep(&rep->init_section);
                 xmlFree(initialization_val);
                 xmlFree(range_val);
                 return AVERROR(ENOMEM);
