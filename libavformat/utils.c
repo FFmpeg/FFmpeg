@@ -3567,9 +3567,6 @@ static int extract_extradata(AVStream *st, const AVPacket *pkt)
     }
 
     while (ret >= 0 && !sti->avctx->extradata) {
-        int extradata_size;
-        uint8_t *extradata;
-
         ret = av_bsf_receive_packet(sti->extract_extradata.bsf, pkt_ref);
         if (ret < 0) {
             if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
@@ -3577,19 +3574,15 @@ static int extract_extradata(AVStream *st, const AVPacket *pkt)
             continue;
         }
 
-        extradata = av_packet_get_side_data(pkt_ref, AV_PKT_DATA_NEW_EXTRADATA,
-                                            &extradata_size);
-
-        if (extradata) {
-            av_assert0(!sti->avctx->extradata);
-            if ((unsigned)extradata_size < FF_MAX_EXTRADATA_SIZE)
-                sti->avctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!sti->avctx->extradata) {
-                av_packet_unref(pkt_ref);
-                return AVERROR(ENOMEM);
+        for (int i = 0; i < pkt_ref->side_data_elems; i++) {
+            AVPacketSideData *side_data = &pkt_ref->side_data[i];
+            if (side_data->type == AV_PKT_DATA_NEW_EXTRADATA) {
+                sti->avctx->extradata      = side_data->data;
+                sti->avctx->extradata_size = side_data->size;
+                side_data->data = NULL;
+                side_data->size = 0;
+                break;
             }
-            memcpy(sti->avctx->extradata, extradata, extradata_size);
-            sti->avctx->extradata_size = extradata_size;
         }
         av_packet_unref(pkt_ref);
     }
