@@ -1682,9 +1682,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
         break;
     case TIFF_ICC_PROFILE:
-        if (type != TIFF_UNDEFINED)
-            return AVERROR_INVALIDDATA;
-
         gb_temp = s->gb;
         bytestream2_seek(&gb_temp, SEEK_SET, off);
 
