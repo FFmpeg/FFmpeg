@@ -400,7 +400,7 @@ static void free_subtitle_list(DASHContext *c)
 }
 
 static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
-                    AVDictionary *opts, AVDictionary *opts2, int *is_http)
+                    AVDictionary **opts, AVDictionary *opts2, int *is_http)
 {
     DASHContext *c = s->priv_data;
     AVDictionary *tmp = NULL;
@@ -440,7 +440,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         return AVERROR_INVALIDDATA;
 
     av_freep(pb);
-    av_dict_copy(&tmp, opts, 0);
+    av_dict_copy(&tmp, *opts, 0);
     av_dict_copy(&tmp, opts2, 0);
     ret = avio_open2(pb, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
     if (ret >= 0) {
@@ -451,7 +451,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
             av_opt_get(*pb, "cookies", AV_OPT_SEARCH_CHILDREN, (uint8_t**)&new_cookies);
 
         if (new_cookies) {
-            av_dict_set(&opts, "cookies", new_cookies, AV_DICT_DONT_STRDUP_VAL);
+            av_dict_set(opts, "cookies", new_cookies, AV_DICT_DONT_STRDUP_VAL);
         }
 
     }
@@ -1712,7 +1712,7 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     ff_make_absolute_url(url, c->max_url_size, c->base_url, seg->url);
     av_log(pls->parent, AV_LOG_VERBOSE, "DASH request for url '%s', offset %"PRId64", playlist %d\n",
            url, seg->url_offset, pls->rep_idx);
-    ret = open_url(pls->parent, &pls->input, url, c->avio_opts, opts, NULL);
+    ret = open_url(pls->parent, &pls->input, url, &c->avio_opts, opts, NULL);
 
 cleanup:
     av_free(url);
