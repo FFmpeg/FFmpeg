@@ -922,7 +922,7 @@ static av_cold int init(AVFilterContext *ctx)
     int dims1offset = 0;
     int ret = 0, i, j, k;
 
-    weights_file = fopen(s->weights_file, "rb");
+    weights_file = av_fopen_utf8(s->weights_file, "rb");
     if (!weights_file) {
         av_log(ctx, AV_LOG_ERROR, "No weights file provided, aborting!\n");
         return AVERROR(EINVAL);
