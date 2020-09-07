@@ -407,9 +407,6 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     const char *proto_name = NULL;
     int ret;
 
-    av_dict_copy(&tmp, opts, 0);
-    av_dict_copy(&tmp, opts2, 0);
-
     if (av_strstart(url, "crypto", NULL)) {
         if (url[6] == '+' || url[6] == ':')
             proto_name = avio_find_protocol_name(url + 7);
@@ -443,6 +440,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         return AVERROR_INVALIDDATA;
 
     av_freep(pb);
+    av_dict_copy(&tmp, opts, 0);
+    av_dict_copy(&tmp, opts2, 0);
     ret = avio_open2(pb, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
     if (ret >= 0) {
         // update cookies on http response with setcookies.
