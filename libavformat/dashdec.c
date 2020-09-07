@@ -472,11 +472,9 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
     char *text;
     char *url = NULL;
     char *tmp_str = av_mallocz(max_url_size);
-    char *tmp_str_2 = av_mallocz(max_url_size);
 
-    if (!tmp_str || !tmp_str_2) {
+    if (!tmp_str)
         return NULL;
-    }
 
     for (i = 0; i < n_baseurl_nodes; ++i) {
         if (baseurl_nodes[i] &&
@@ -485,9 +483,7 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
             text = xmlNodeGetContent(baseurl_nodes[i]->children);
             if (text) {
                 memset(tmp_str, 0, max_url_size);
-                memset(tmp_str_2, 0, max_url_size);
-                ff_make_absolute_url(tmp_str_2, max_url_size, tmp_str, text);
-                av_strlcpy(tmp_str, tmp_str_2, max_url_size);
+                ff_make_absolute_url(tmp_str, max_url_size, "", text);
                 xmlFree(text);
             }
         }
@@ -513,7 +509,6 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
     }
 end:
     av_free(tmp_str);
-    av_free(tmp_str_2);
     return url;
 }
 
