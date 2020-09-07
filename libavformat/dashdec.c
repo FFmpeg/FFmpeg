@@ -80,12 +80,8 @@ struct representation {
     AVIOContext *input;
     AVFormatContext *parent;
     AVFormatContext *ctx;
-    AVPacket pkt;
-    int rep_idx;
-    int rep_count;
     int stream_index;
 
-    enum AVMediaType type;
     char id[20];
     char *lang;
     int bandwidth;
@@ -827,9 +823,6 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr adaptionset_supplementalproperty_node)
 {
     int32_t ret = 0;
-    int32_t subtitle_rep_idx = 0;
-    int32_t audio_rep_idx = 0;
-    int32_t video_rep_idx = 0;
     DASHContext *c = s->priv_data;
     struct representation *rep = NULL;
     struct fragment *seg = NULL;
@@ -1073,15 +1066,12 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             switch (type) {
                 case AVMEDIA_TYPE_VIDEO:
-                    rep->rep_idx = video_rep_idx;
                     dynarray_add(&c->videos, &c->n_videos, rep);
                     break;
                 case AVMEDIA_TYPE_AUDIO:
-                    rep->rep_idx = audio_rep_idx;
                     dynarray_add(&c->audios, &c->n_audios, rep);
                     break;
                 case AVMEDIA_TYPE_SUBTITLE:
-                    rep->rep_idx = subtitle_rep_idx;
                     dynarray_add(&c->subtitles, &c->n_subtitles, rep);
                     break;
                 default:
@@ -1090,10 +1080,6 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             }
         }
     }
-
-    video_rep_idx += type == AVMEDIA_TYPE_VIDEO;
-    audio_rep_idx += type == AVMEDIA_TYPE_AUDIO;
-    subtitle_rep_idx += type == AVMEDIA_TYPE_SUBTITLE;
 
 end:
     if (rep_id_val)
@@ -1636,10 +1622,10 @@ static struct fragment *get_current_fragment(struct representation *pls)
             refresh_manifest(pls->parent);
         }
         if (pls->cur_seq_no <= min_seq_no) {
-            av_log(pls->parent, AV_LOG_VERBOSE, "old fragment: cur[%"PRId64"] min[%"PRId64"] max[%"PRId64"], playlist %d\n", (int64_t)pls->cur_seq_no, min_seq_no, max_seq_no, (int)pls->rep_idx);
+            av_log(pls->parent, AV_LOG_VERBOSE, "old fragment: cur[%"PRId64"] min[%"PRId64"] max[%"PRId64"]\n", (int64_t)pls->cur_seq_no, min_seq_no, max_seq_no);
             pls->cur_seq_no = calc_cur_seg_no(pls->parent, pls);
         } else if (pls->cur_seq_no > max_seq_no) {
-            av_log(pls->parent, AV_LOG_VERBOSE, "new fragment: min[%"PRId64"] max[%"PRId64"], playlist %d\n", min_seq_no, max_seq_no, (int)pls->rep_idx);
+            av_log(pls->parent, AV_LOG_VERBOSE, "new fragment: min[%"PRId64"] max[%"PRId64"]\n", min_seq_no, max_seq_no);
         }
         seg = av_mallocz(sizeof(struct fragment));
         if (!seg) {
@@ -1710,8 +1696,8 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     }
 
     ff_make_absolute_url(url, c->max_url_size, c->base_url, seg->url);
-    av_log(pls->parent, AV_LOG_VERBOSE, "DASH request for url '%s', offset %"PRId64", playlist %d\n",
-           url, seg->url_offset, pls->rep_idx);
+    av_log(pls->parent, AV_LOG_VERBOSE, "DASH request for url '%s', offset %"PRId64"\n",
+           url, seg->url_offset);
     ret = open_url(pls->parent, &pls->input, url, &c->avio_opts, opts, NULL);
 
 cleanup:
@@ -1736,8 +1722,7 @@ static int update_init_section(struct representation *pls)
     ret = open_input(c, pls, pls->init_section);
     if (ret < 0) {
         av_log(pls->parent, AV_LOG_WARNING,
-               "Failed to open an initialization section in playlist %d\n",
-               pls->rep_idx);
+               "Failed to open an initialization section\n");
         return ret;
     }
 
@@ -1805,7 +1790,7 @@ restart:
                 ret = AVERROR_EXIT;
                 goto end;
             }
-            av_log(v->parent, AV_LOG_WARNING, "Failed to open fragment of playlist %d\n", v->rep_idx);
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open fragment of playlist\n");
             v->cur_seq_no++;
             goto restart;
         }
@@ -1930,7 +1915,7 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
     ret = av_probe_input_buffer(&pls->pb, &in_fmt, "", NULL, 0, 0);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Error when loading first fragment, playlist %d\n", (int)pls->rep_idx);
+        av_log(s, AV_LOG_ERROR, "Error when loading first fragment of playlist\n");
         avformat_free_context(pls->ctx);
         pls->ctx = NULL;
         goto fail;
@@ -2272,8 +2257,8 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
     int j = 0;
     int64_t duration = 0;
 
-    av_log(pls->parent, AV_LOG_VERBOSE, "DASH seek pos[%"PRId64"ms], playlist %d%s\n",
-           seek_pos_msec, pls->rep_idx, dry_run ? " (dry)" : "");
+    av_log(pls->parent, AV_LOG_VERBOSE, "DASH seek pos[%"PRId64"ms] %s\n",
+           seek_pos_msec, dry_run ? " (dry)" : "");
 
     // single fragment mode
     if (pls->n_fragments == 1) {
@@ -2291,8 +2276,8 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
     if (pls->n_timelines > 0 && pls->fragment_timescale > 0) {
         int64_t num = pls->first_seq_no;
         av_log(pls->parent, AV_LOG_VERBOSE, "dash_seek with SegmentTimeline start n_timelines[%d] "
-               "last_seq_no[%"PRId64"], playlist %d.\n",
-               (int)pls->n_timelines, (int64_t)pls->last_seq_no, (int)pls->rep_idx);
+               "last_seq_no[%"PRId64"].\n",
+               (int)pls->n_timelines, (int64_t)pls->last_seq_no);
         for (i = 0; i < pls->n_timelines; i++) {
             if (pls->timelines[i]->starttime > 0) {
                 duration = pls->timelines[i]->starttime;
@@ -2313,8 +2298,8 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
 
 set_seq_num:
         pls->cur_seq_no = num > pls->last_seq_no ? pls->last_seq_no : num;
-        av_log(pls->parent, AV_LOG_VERBOSE, "dash_seek with SegmentTimeline end cur_seq_no[%"PRId64"], playlist %d.\n",
-               (int64_t)pls->cur_seq_no, (int)pls->rep_idx);
+        av_log(pls->parent, AV_LOG_VERBOSE, "dash_seek with SegmentTimeline end cur_seq_no[%"PRId64"].\n",
+               (int64_t)pls->cur_seq_no);
     } else if (pls->fragment_duration > 0) {
         pls->cur_seq_no = pls->first_seq_no + ((seek_pos_msec * pls->fragment_timescale) / pls->fragment_duration) / 1000;
     } else {
