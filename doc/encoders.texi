@@ -1185,53 +1185,6 @@ transient response is a higher bitrate.
 
 @end table
 
-@anchor{libwavpack}
-@section libwavpack
-
-A wrapper providing WavPack encoding through libwavpack.
-
-Only lossless mode using 32-bit integer samples is supported currently.
-
-Requires the presence of the libwavpack headers and library during
-configuration. You need to explicitly configure the build with
-@code{--enable-libwavpack}.
-
-Note that a libavcodec-native encoder for the WavPack codec exists so users can
-encode audios with this codec without using this encoder. See @ref{wavpackenc}.
-
-@subsection Options
-
-@command{wavpack} command line utility's corresponding options are listed in
-parentheses, if any.
-
-@table @option
-@item frame_size (@emph{--blocksize})
-Default is 32768.
-
-@item compression_level
-Set speed vs. compression tradeoff. Acceptable arguments are listed below:
-
-@table @samp
-@item 0 (@emph{-f})
-Fast mode.
-
-@item 1
-Normal (default) settings.
-
-@item 2 (@emph{-h})
-High quality.
-
-@item 3 (@emph{-hh})
-Very high quality.
-
-@item 4-8 (@emph{-hh -x}@var{EXTRAPROC})
-Same as @samp{3}, but with extra processing enabled.
-
-@samp{4} is the same as @option{-x2} and @samp{8} is the same as @option{-x6}.
-
-@end table
-@end table
-
 @anchor{mjpegenc}
 @section mjpeg
 
@@ -1258,11 +1211,6 @@ Compute and use optimal huffman tables.
 
 WavPack lossless audio encoder.
 
-This is a libavcodec-native WavPack encoder. There is also an encoder based on
-libwavpack, but there is virtually no reason to use that encoder.
-
-See also @ref{libwavpack}.
-
 @subsection Options
 
 The equivalent options for @command{wavpack} command line utility are listed in
@@ -1283,7 +1231,6 @@ For the complete formula of calculating default, see
 @file{libavcodec/wavpackenc.c}.
 
 @item compression_level (@emph{-f}, @emph{-h}, @emph{-hh}, and @emph{-x})
-This option's syntax is consistent with @ref{libwavpack}'s.
 @end table
 
 @subsubsection Private options

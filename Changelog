@@ -30,6 +30,7 @@ version <next>:
 - IPU decoder, parser and demuxer
 - Intel QSV-accelerated AV1 decoding
 - Argonaut Games Video decoder
+- libwavpack encoder removed
 
 
 version 4.3:

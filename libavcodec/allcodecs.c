@@ -746,7 +746,6 @@ extern AVCodec ff_libvpx_vp8_encoder;
 extern AVCodec ff_libvpx_vp8_decoder;
 extern AVCodec ff_libvpx_vp9_encoder;
 extern AVCodec ff_libvpx_vp9_decoder;
-extern AVCodec ff_libwavpack_encoder;
 /* preferred over libwebp */
 extern AVCodec ff_libwebp_anim_encoder;
 extern AVCodec ff_libwebp_encoder;

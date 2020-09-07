@@ -278,14 +278,6 @@ Due to security concerns, Vapoursynth scripts will not
 be autodetected so the input format has to be forced. For ff* CLI tools,
 add @code{-f vapoursynth} before the input @code{-i yourscript.vpy}.
 
-@section WavPack
-
-FFmpeg can make use of the libwavpack library for WavPack encoding.
-
-Go to @url{http://www.wavpack.com/} and follow the instructions for
-installing the library. Then pass @code{--enable-libwavpack} to configure to
-enable it.
-
 @section x264
 
 FFmpeg can make use of the x264 library for H.264 encoding.
