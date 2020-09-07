@@ -497,7 +497,7 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
         ff_make_absolute_url(tmp_str, max_url_size, tmp_str, val);
 
     if (rep_id_val) {
-        url = av_strireplace(tmp_str, "$RepresentationID$", (const char*)rep_id_val);
+        url = av_strireplace(tmp_str, "$RepresentationID$", rep_id_val);
         if (!url) {
             goto end;
         }
@@ -506,7 +506,7 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
     if (rep_bandwidth_val && tmp_str[0] != '\0') {
         // free any previously assigned url before reassigning
         av_free(url);
-        url = av_strireplace(tmp_str, "$Bandwidth$", (const char*)rep_bandwidth_val);
+        url = av_strireplace(tmp_str, "$Bandwidth$", rep_bandwidth_val);
         if (!url) {
             goto end;
         }
@@ -562,11 +562,11 @@ static enum AVMediaType get_content_type(xmlNodePtr node)
             attr = i ? "mimeType" : "contentType";
             val = xmlGetProp(node, attr);
             if (val) {
-                if (av_stristr((const char *)val, "video")) {
+                if (av_stristr(val, "video")) {
                     type = AVMEDIA_TYPE_VIDEO;
-                } else if (av_stristr((const char *)val, "audio")) {
+                } else if (av_stristr(val, "audio")) {
                     type = AVMEDIA_TYPE_AUDIO;
-                } else if (av_stristr((const char *)val, "text")) {
+                } else if (av_stristr(val, "text")) {
                     type = AVMEDIA_TYPE_SUBTITLE;
                 }
                 xmlFree(val);
@@ -607,7 +607,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
     int max_url_size = c ? c->max_url_size: MAX_URL_SIZE;
     int err;
 
-    if (!av_strcasecmp(fragmenturl_node->name, (const char *)"Initialization")) {
+    if (!av_strcasecmp(fragmenturl_node->name, "Initialization")) {
         initialization_val = xmlGetProp(fragmenturl_node, "sourceURL");
         range_val = xmlGetProp(fragmenturl_node, "range");
         if (initialization_val || range_val) {
@@ -629,7 +629,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                 return AVERROR(ENOMEM);
             }
         }
-    } else if (!av_strcasecmp(fragmenturl_node->name, (const char *)"SegmentURL")) {
+    } else if (!av_strcasecmp(fragmenturl_node->name, "SegmentURL")) {
         media_val = xmlGetProp(fragmenturl_node, "media");
         range_val = xmlGetProp(fragmenturl_node, "mediaRange");
         if (media_val || range_val) {
@@ -667,7 +667,7 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
     char *val  = NULL;
     int err;
 
-    if (!av_strcasecmp(fragment_timeline_node->name, (const char *)"S")) {
+    if (!av_strcasecmp(fragment_timeline_node->name, "S")) {
         struct timeline *tml = av_mallocz(sizeof(struct timeline));
         if (!tml) {
             return AVERROR(ENOMEM);
@@ -681,11 +681,11 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
                 continue;
             }
 
-            if (!av_strcasecmp(attr->name, (const char *)"t")) {
+            if (!av_strcasecmp(attr->name, "t")) {
                 tml->starttime = (int64_t)strtoll(val, NULL, 10);
-            } else if (!av_strcasecmp(attr->name, (const char *)"r")) {
+            } else if (!av_strcasecmp(attr->name, "r")) {
                 tml->repeat =(int64_t) strtoll(val, NULL, 10);
-            } else if (!av_strcasecmp(attr->name, (const char *)"d")) {
+            } else if (!av_strcasecmp(attr->name, "d")) {
                 tml->duration = (int64_t)strtoll(val, NULL, 10);
             }
             attr = attr->next;
@@ -1044,7 +1044,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 }
             }
         } else {
-            av_log(s, AV_LOG_ERROR, "Unknown format of Representation node id[%s] \n", (const char *)rep_id_val);
+            av_log(s, AV_LOG_ERROR, "Unknown format of Representation node id[%s] \n", rep_id_val);
             goto free;
         }
 
@@ -1126,17 +1126,17 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
 
     node = xmlFirstElementChild(adaptionset_node);
     while (node) {
-        if (!av_strcasecmp(node->name, (const char *)"SegmentTemplate")) {
+        if (!av_strcasecmp(node->name, "SegmentTemplate")) {
             fragment_template_node = node;
-        } else if (!av_strcasecmp(node->name, (const char *)"ContentComponent")) {
+        } else if (!av_strcasecmp(node->name, "ContentComponent")) {
             content_component_node = node;
-        } else if (!av_strcasecmp(node->name, (const char *)"BaseURL")) {
+        } else if (!av_strcasecmp(node->name, "BaseURL")) {
             adaptionset_baseurl_node = node;
-        } else if (!av_strcasecmp(node->name, (const char *)"SegmentList")) {
+        } else if (!av_strcasecmp(node->name, "SegmentList")) {
             adaptionset_segmentlist_node = node;
-        } else if (!av_strcasecmp(node->name, (const char *)"SupplementalProperty")) {
+        } else if (!av_strcasecmp(node->name, "SupplementalProperty")) {
             adaptionset_supplementalproperty_node = node;
-        } else if (!av_strcasecmp(node->name, (const char *)"Representation")) {
+        } else if (!av_strcasecmp(node->name, "Representation")) {
             ret = parse_manifest_representation(s, url, node,
                                                 adaptionset_node,
                                                 mpd_baseurl_node,
@@ -1258,7 +1258,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         }
 
         if (node->type != XML_ELEMENT_NODE ||
-            av_strcasecmp(node->name, (const char *)"MPD")) {
+            av_strcasecmp(node->name, "MPD")) {
             ret = AVERROR_INVALIDDATA;
             av_log(s, AV_LOG_ERROR, "Unable to parse '%s' - wrong root node name[%s] type[%d]\n", url, node->name, (int)node->type);
             goto cleanup;
@@ -1270,7 +1270,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
             ret = AVERROR_INVALIDDATA;
             goto cleanup;
         }
-        if (!av_strcasecmp(val, (const char *)"dynamic"))
+        if (!av_strcasecmp(val, "dynamic"))
             c->is_live = 1;
         xmlFree(val);
 
@@ -1278,29 +1278,29 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         while (attr) {
             val = xmlGetProp(node, attr->name);
 
-            if (!av_strcasecmp(attr->name, (const char *)"availabilityStartTime")) {
-                c->availability_start_time = get_utc_date_time_insec(s, (const char *)val);
+            if (!av_strcasecmp(attr->name, "availabilityStartTime")) {
+                c->availability_start_time = get_utc_date_time_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->availability_start_time = [%"PRId64"]\n", c->availability_start_time);
-            } else if (!av_strcasecmp(attr->name, (const char *)"availabilityEndTime")) {
-                c->availability_end_time = get_utc_date_time_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "availabilityEndTime")) {
+                c->availability_end_time = get_utc_date_time_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->availability_end_time = [%"PRId64"]\n", c->availability_end_time);
-            } else if (!av_strcasecmp(attr->name, (const char *)"publishTime")) {
-                c->publish_time = get_utc_date_time_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "publishTime")) {
+                c->publish_time = get_utc_date_time_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->publish_time = [%"PRId64"]\n", c->publish_time);
-            } else if (!av_strcasecmp(attr->name, (const char *)"minimumUpdatePeriod")) {
-                c->minimum_update_period = get_duration_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "minimumUpdatePeriod")) {
+                c->minimum_update_period = get_duration_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->minimum_update_period = [%"PRId64"]\n", c->minimum_update_period);
-            } else if (!av_strcasecmp(attr->name, (const char *)"timeShiftBufferDepth")) {
-                c->time_shift_buffer_depth = get_duration_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "timeShiftBufferDepth")) {
+                c->time_shift_buffer_depth = get_duration_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->time_shift_buffer_depth = [%"PRId64"]\n", c->time_shift_buffer_depth);
-            } else if (!av_strcasecmp(attr->name, (const char *)"minBufferTime")) {
-                c->min_buffer_time = get_duration_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "minBufferTime")) {
+                c->min_buffer_time = get_duration_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->min_buffer_time = [%"PRId64"]\n", c->min_buffer_time);
-            } else if (!av_strcasecmp(attr->name, (const char *)"suggestedPresentationDelay")) {
-                c->suggested_presentation_delay = get_duration_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "suggestedPresentationDelay")) {
+                c->suggested_presentation_delay = get_duration_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->suggested_presentation_delay = [%"PRId64"]\n", c->suggested_presentation_delay);
-            } else if (!av_strcasecmp(attr->name, (const char *)"mediaPresentationDuration")) {
-                c->media_presentation_duration = get_duration_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, "mediaPresentationDuration")) {
+                c->media_presentation_duration = get_duration_insec(s, val);
                 av_log(s, AV_LOG_TRACE, "c->media_presentation_duration = [%"PRId64"]\n", c->media_presentation_duration);
             }
             attr = attr->next;
@@ -1317,16 +1317,16 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         // at now we can handle only one period, with the longest duration
         node = xmlFirstElementChild(node);
         while (node) {
-            if (!av_strcasecmp(node->name, (const char *)"Period")) {
+            if (!av_strcasecmp(node->name, "Period")) {
                 period_duration_sec = 0;
                 period_start_sec = 0;
                 attr = node->properties;
                 while (attr) {
                     val = xmlGetProp(node, attr->name);
-                    if (!av_strcasecmp(attr->name, (const char *)"duration")) {
-                        period_duration_sec = get_duration_insec(s, (const char *)val);
-                    } else if (!av_strcasecmp(attr->name, (const char *)"start")) {
-                        period_start_sec = get_duration_insec(s, (const char *)val);
+                    if (!av_strcasecmp(attr->name, "duration")) {
+                        period_duration_sec = get_duration_insec(s, val);
+                    } else if (!av_strcasecmp(attr->name, "start")) {
+                        period_start_sec    = get_duration_insec(s, val);
                     }
                     attr = attr->next;
                     xmlFree(val);
@@ -1351,13 +1351,13 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
 
         adaptionset_node = xmlFirstElementChild(period_node);
         while (adaptionset_node) {
-            if (!av_strcasecmp(adaptionset_node->name, (const char *)"BaseURL")) {
+            if (!av_strcasecmp(adaptionset_node->name, "BaseURL")) {
                 period_baseurl_node = adaptionset_node;
-            } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"SegmentTemplate")) {
+            } else if (!av_strcasecmp(adaptionset_node->name, "SegmentTemplate")) {
                 period_segmenttemplate_node = adaptionset_node;
-            } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"SegmentList")) {
+            } else if (!av_strcasecmp(adaptionset_node->name, "SegmentList")) {
                 period_segmentlist_node = adaptionset_node;
-            } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"AdaptationSet")) {
+            } else if (!av_strcasecmp(adaptionset_node->name, "AdaptationSet")) {
                 parse_manifest_adaptationset(s, url, adaptionset_node, mpd_baseurl_node, period_baseurl_node, period_segmenttemplate_node, period_segmentlist_node);
             }
             adaptionset_node = xmlNextElementSibling(adaptionset_node);
