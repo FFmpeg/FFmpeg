@@ -275,7 +275,6 @@ static int extract_extradata_mpeg12(AVBSFContext *ctx, AVPacket *pkt,
         if (state == 0x1B3)
             found = 1;
         else if (found && state != 0x1B5 && state < 0x200 && state >= 0x100) {
-            if (i > 3) {
                 *size = i - 3;
                 *data = av_malloc(*size + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!*data)
@@ -287,7 +286,6 @@ static int extract_extradata_mpeg12(AVBSFContext *ctx, AVPacket *pkt,
                     pkt->data += *size;
                     pkt->size -= *size;
                 }
-            }
             break;
         }
     }
