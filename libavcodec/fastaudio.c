@@ -89,7 +89,7 @@ static int read_bits(int bits, int *ppos, unsigned *src)
 
     pos = *ppos;
     pos += bits;
-    r = src[(pos - 1) / 32] >> (32 - pos % 32);
+    r = src[(pos - 1) / 32] >> ((-pos) & 31);
     *ppos = pos;
 
     return r & ((1 << bits) - 1);
