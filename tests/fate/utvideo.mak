@@ -67,7 +67,7 @@ fate-utvideo_yuv444_709_int_gradient: CMD = framecrc -i $(TARGET_SAMPLES)/utvide
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, UTVIDEO) += $(FATE_UTVIDEO)
 fate-utvideo: $(FATE_UTVIDEO)
 
-fate-utvideoenc%: CMD = framemd5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -c:v utvideo -slices 1 -sws_flags +accurate_rnd+bitexact ${OPTS}
+fate-utvideoenc%: CMD = framemd5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -c:v utvideo -slices 1 -sws_flags +accurate_rnd+bitexact ${OPTS} -vf scale
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgba_left
 fate-utvideoenc_rgba_left: OPTS = -pix_fmt gbrap -pred left

@@ -88,7 +88,7 @@ fate-ac3-encode fate-eac3-encode: REF = $(SAMPLES)/audio-reference/luckynight_2c
 FATE_AC3-$(call ENCMUX, AC3_FIXED, AC3) += fate-ac3-fixed-encode
 fate-ac3-fixed-encode: tests/data/asynth-44100-2.wav
 fate-ac3-fixed-encode: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +bitexact
+fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +bitexact -af aresample
 fate-ac3-fixed-encode: CMP = oneline
 fate-ac3-fixed-encode: REF = a1d1fc116463b771abf5aef7ed37d7b1
 

@@ -261,12 +261,12 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     formats = ff_make_format_list(main_formats);
-    if ((ret = ff_formats_ref(formats, &ctx->inputs[MAIN]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(formats, &ctx->outputs[MAIN]->in_formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &ctx->inputs[MAIN]->outcfg.formats)) < 0 ||
+        (ret = ff_formats_ref(formats, &ctx->outputs[MAIN]->incfg.formats)) < 0)
         return ret;
 
     return ff_formats_ref(ff_make_format_list(overlay_formats),
-                          &ctx->inputs[OVERLAY]->out_formats);
+                          &ctx->inputs[OVERLAY]->outcfg.formats);
 }
 
 static int config_input_overlay(AVFilterLink *inlink)

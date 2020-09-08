@@ -42,9 +42,9 @@ static int hwmap_query_formats(AVFilterContext *avctx)
     int ret;
 
     if ((ret = ff_formats_ref(ff_all_formats(AVMEDIA_TYPE_VIDEO),
-                              &avctx->inputs[0]->out_formats)) < 0 ||
+                              &avctx->inputs[0]->outcfg.formats)) < 0 ||
         (ret = ff_formats_ref(ff_all_formats(AVMEDIA_TYPE_VIDEO),
-                              &avctx->outputs[0]->in_formats)) < 0)
+                              &avctx->outputs[0]->incfg.formats)) < 0)
         return ret;
 
     return 0;

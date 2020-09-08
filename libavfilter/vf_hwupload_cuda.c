@@ -71,13 +71,13 @@ static int cudaupload_query_formats(AVFilterContext *ctx)
     AVFilterFormats *in_fmts  = ff_make_format_list(input_pix_fmts);
     AVFilterFormats *out_fmts;
 
-    ret = ff_formats_ref(in_fmts, &ctx->inputs[0]->out_formats);
+    ret = ff_formats_ref(in_fmts, &ctx->inputs[0]->outcfg.formats);
     if (ret < 0)
         return ret;
 
     out_fmts = ff_make_format_list(output_pix_fmts);
 
-    ret = ff_formats_ref(out_fmts, &ctx->outputs[0]->in_formats);
+    ret = ff_formats_ref(out_fmts, &ctx->outputs[0]->incfg.formats);
     if (ret < 0)
         return ret;
 

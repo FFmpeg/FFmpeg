@@ -108,12 +108,12 @@ fate-acodec-alac: CODEC = alac -compression_level 1
 FATE_ACODEC-$(call ENCDEC, DCA, DTS) += fate-acodec-dca
 fate-acodec-dca: tests/data/asynth-44100-2.wav
 fate-acodec-dca: SRC = tests/data/asynth-44100-2.wav
-fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
+fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact -af aresample
 fate-acodec-dca: CMP = oneline
 fate-acodec-dca: REF = 2aa580ac67820fce4f581b96ebb34acc
 
 FATE_ACODEC-$(call ENCDEC, DCA, WAV) += fate-acodec-dca2
-fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact
+fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact -af aresample
 fate-acodec-dca2: REF = $(SRC)
 fate-acodec-dca2: CMP = stddev
 fate-acodec-dca2: CMP_SHIFT = -2048

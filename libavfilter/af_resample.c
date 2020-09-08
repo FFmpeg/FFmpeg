@@ -102,12 +102,12 @@ static int query_formats(AVFilterContext *ctx)
         !(out_layouts     = ff_all_channel_layouts (                  )))
         return AVERROR(ENOMEM);
 
-    if ((ret = ff_formats_ref         (in_formats,      &inlink->out_formats        )) < 0 ||
-        (ret = ff_formats_ref         (out_formats,     &outlink->in_formats        )) < 0 ||
-        (ret = ff_formats_ref         (in_samplerates,  &inlink->out_samplerates    )) < 0 ||
-        (ret = ff_formats_ref         (out_samplerates, &outlink->in_samplerates    )) < 0 ||
-        (ret = ff_channel_layouts_ref (in_layouts,      &inlink->out_channel_layouts)) < 0 ||
-        (ret = ff_channel_layouts_ref (out_layouts,     &outlink->in_channel_layouts)) < 0)
+    if ((ret = ff_formats_ref         (in_formats,      &inlink->outcfg.formats        )) < 0 ||
+        (ret = ff_formats_ref         (out_formats,     &outlink->incfg.formats        )) < 0 ||
+        (ret = ff_formats_ref         (in_samplerates,  &inlink->outcfg.samplerates    )) < 0 ||
+        (ret = ff_formats_ref         (out_samplerates, &outlink->incfg.samplerates    )) < 0 ||
+        (ret = ff_channel_layouts_ref (in_layouts,      &inlink->outcfg.channel_layouts)) < 0 ||
+        (ret = ff_channel_layouts_ref (out_layouts,     &outlink->incfg.channel_layouts)) < 0)
         return ret;
 
     return 0;

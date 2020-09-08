@@ -100,8 +100,8 @@ static int query_formats(AVFilterContext *ctx)
             AV_PIX_FMT_PAL8,
             AV_PIX_FMT_NONE
         };
-        if ((ret = ff_formats_ref(ff_make_format_list(pix_fmts), &ctx->inputs[0]->out_formats)) < 0 ||
-            (ret = ff_formats_ref(ff_make_format_list(pal8_fmt), &ctx->outputs[0]->in_formats)) < 0)
+        if ((ret = ff_formats_ref(ff_make_format_list(pix_fmts), &ctx->inputs[0]->outcfg.formats)) < 0 ||
+            (ret = ff_formats_ref(ff_make_format_list(pal8_fmt), &ctx->outputs[0]->incfg.formats)) < 0)
             return ret;
     }
     return 0;

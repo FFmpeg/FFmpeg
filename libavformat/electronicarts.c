@@ -530,20 +530,17 @@ static int ea_read_header(AVFormatContext *s)
         if (ea->num_channels <= 0 || ea->num_channels > 2) {
             av_log(s, AV_LOG_WARNING,
                    "Unsupported number of channels: %d\n", ea->num_channels);
-            ea->audio_codec = 0;
-            return 1;
+            goto no_audio;
         }
         if (ea->sample_rate <= 0) {
             av_log(s, AV_LOG_ERROR,
                    "Unsupported sample rate: %d\n", ea->sample_rate);
-            ea->audio_codec = 0;
-            return 1;
+            goto no_audio;
         }
         if (ea->bytes <= 0 || ea->bytes > 2) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid number of bytes per sample: %d\n", ea->bytes);
-            ea->audio_codec = AV_CODEC_ID_NONE;
-            return 1;
+            goto no_audio;
         }
 
         /* initialize the audio decoder stream */
@@ -564,9 +561,14 @@ static int ea_read_header(AVFormatContext *s)
                                               st->codecpar->bits_per_coded_sample;
         ea->audio_stream_index           = st->index;
         st->start_time                   = 0;
+        return 0;
     }
+no_audio:
+    ea->audio_codec = AV_CODEC_ID_NONE;
 
-    return 1;
+    if (!ea->video.codec)
+        return AVERROR_INVALIDDATA;
+    return 0;
 }
 
 static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)

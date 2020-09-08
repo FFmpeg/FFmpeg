@@ -287,11 +287,11 @@ static int channelmap_query_formats(AVFilterContext *ctx)
         (ret = ff_set_common_samplerates (ctx             , ff_all_samplerates()                )) < 0 ||
         (ret = ff_add_channel_layout(&channel_layouts, s->output_layout)) < 0 ||
         (ret = ff_channel_layouts_ref(channel_layouts,
-                                      &ctx->outputs[0]->in_channel_layouts)) < 0)
+                                      &ctx->outputs[0]->incfg.channel_layouts)) < 0)
         return ret;
 
     return ff_channel_layouts_ref(ff_all_channel_counts(),
-                                  &ctx->inputs[0]->out_channel_layouts);
+                                  &ctx->inputs[0]->outcfg.channel_layouts);
 }
 
 static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)

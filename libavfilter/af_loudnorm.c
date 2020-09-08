@@ -714,10 +714,10 @@ static int query_formats(AVFilterContext *ctx)
         formats = ff_make_format_list(input_srate);
         if (!formats)
             return AVERROR(ENOMEM);
-        ret = ff_formats_ref(formats, &inlink->out_samplerates);
+        ret = ff_formats_ref(formats, &inlink->outcfg.samplerates);
         if (ret < 0)
             return ret;
-        ret = ff_formats_ref(formats, &outlink->in_samplerates);
+        ret = ff_formats_ref(formats, &outlink->incfg.samplerates);
         if (ret < 0)
             return ret;
     }

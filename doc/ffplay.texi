@@ -295,6 +295,7 @@ Toggle full screen.
 @ifset config-avfilter
 @include filters.texi
 @end ifset
+@include general_contents.texi
 @end ifset
 
 @chapter See Also

@@ -32,10 +32,10 @@ int ff_vaapi_vpp_query_formats(AVFilterContext *avctx)
     int err;
 
     if ((err = ff_formats_ref(ff_make_format_list(pix_fmts),
-                              &avctx->inputs[0]->out_formats)) < 0)
+                              &avctx->inputs[0]->outcfg.formats)) < 0)
         return err;
     if ((err = ff_formats_ref(ff_make_format_list(pix_fmts),
-                              &avctx->outputs[0]->in_formats)) < 0)
+                              &avctx->outputs[0]->incfg.formats)) < 0)
         return err;
 
     return 0;

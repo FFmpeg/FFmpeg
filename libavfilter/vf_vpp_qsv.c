@@ -505,11 +505,11 @@ static int query_formats(AVFilterContext *ctx)
     };
 
     ret = ff_formats_ref(ff_make_format_list(in_pix_fmts),
-                         &ctx->inputs[0]->out_formats);
+                         &ctx->inputs[0]->outcfg.formats);
     if (ret < 0)
         return ret;
     return ff_formats_ref(ff_make_format_list(out_pix_fmts),
-                          &ctx->outputs[0]->in_formats);
+                          &ctx->outputs[0]->incfg.formats);
 }
 
 static av_cold void vpp_uninit(AVFilterContext *ctx)

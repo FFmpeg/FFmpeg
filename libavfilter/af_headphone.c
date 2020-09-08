@@ -698,14 +698,14 @@ static int query_formats(AVFilterContext *ctx)
     if (!layouts)
         return AVERROR(ENOMEM);
 
-    ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->out_channel_layouts);
+    ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->outcfg.channel_layouts);
     if (ret)
         return ret;
 
     ret = ff_add_channel_layout(&stereo_layout, AV_CH_LAYOUT_STEREO);
     if (ret)
         return ret;
-    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->in_channel_layouts);
+    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->incfg.channel_layouts);
     if (ret)
         return ret;
 
@@ -713,12 +713,12 @@ static int query_formats(AVFilterContext *ctx)
         hrir_layouts = ff_all_channel_counts();
         if (!hrir_layouts)
             return AVERROR(ENOMEM);
-        ret = ff_channel_layouts_ref(hrir_layouts, &ctx->inputs[1]->out_channel_layouts);
+        ret = ff_channel_layouts_ref(hrir_layouts, &ctx->inputs[1]->outcfg.channel_layouts);
         if (ret)
             return ret;
     } else {
         for (i = 1; i < s->nb_inputs; i++) {
-            ret = ff_channel_layouts_ref(stereo_layout, &ctx->inputs[i]->out_channel_layouts);
+            ret = ff_channel_layouts_ref(stereo_layout, &ctx->inputs[i]->outcfg.channel_layouts);
             if (ret)
                 return ret;
         }

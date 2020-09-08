@@ -25,10 +25,10 @@ FATE_SAMPLES_FFMPEG-$(call DEMDEC, AVI, HQ_HQA) += $(FATE_CANOPUS_HQ_HQA)
 fate-canopus-hq_hqa: $(FATE_CANOPUS_HQ_HQA)
 
 FATE_CANOPUS_HQX += fate-canopus-hqx422
-fate-canopus-hqx422: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422.avi -pix_fmt yuv422p16be -an
+fate-canopus-hqx422: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422.avi -pix_fmt yuv422p16be -an -vf scale
 
 FATE_CANOPUS_HQX += fate-canopus-hqx422a
-fate-canopus-hqx422a: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422a.avi -pix_fmt yuv422p16be -an
+fate-canopus-hqx422a: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422a.avi -pix_fmt yuv422p16be -an -vf scale
 
 FATE_SAMPLES_FFMPEG-$(call DEMDEC, AVI, HQX) += $(FATE_CANOPUS_HQX)
 fate-canopus-hqx: $(FATE_CANOPUS_HQX)

@@ -36,3 +36,8 @@ fate-lavf-peak_only.wav: CMD = lavf_audio "" "-write_peak only"
 
 FATE_AVCONV += $(FATE_LAVF_AUDIO)
 fate-lavf-audio fate-lavf: $(FATE_LAVF_AUDIO)
+
+FATE_WAV_FFPROBE-$(CONFIG_WAV_DEMUXER) += fate-wav-chapters
+fate-wav-chapters: CMD = probechapters $(TARGET_SAMPLES)/wav/200828-005.wav
+
+FATE_SAMPLES_FFPROBE += $(FATE_WAV_FFPROBE-yes)

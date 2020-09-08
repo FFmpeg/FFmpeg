@@ -362,19 +362,19 @@ static int movie_query_formats(AVFilterContext *ctx)
         switch (c->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             list[0] = c->format;
-            if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->in_formats)) < 0)
+            if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->incfg.formats)) < 0)
                 return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
             list[0] = c->format;
-            if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->in_formats)) < 0)
+            if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->incfg.formats)) < 0)
                 return ret;
             list[0] = c->sample_rate;
-            if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->in_samplerates)) < 0)
+            if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->incfg.samplerates)) < 0)
                 return ret;
             list64[0] = c->channel_layout;
             if ((ret = ff_channel_layouts_ref(ff_make_format64_list(list64),
-                                   &outlink->in_channel_layouts)) < 0)
+                                   &outlink->incfg.channel_layouts)) < 0)
                 return ret;
             break;
         }

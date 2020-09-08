@@ -122,12 +122,12 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     for (i = 0; i < s->nb_inputs; i++)
-        if ((ret = ff_formats_ref(formats, &ctx->inputs[i]->out_formats)) < 0)
+        if ((ret = ff_formats_ref(formats, &ctx->inputs[i]->outcfg.formats)) < 0)
             return ret;
 
     formats = NULL;
     if ((ret = ff_add_format(&formats, s->out_fmt)) < 0 ||
-        (ret = ff_formats_ref(formats, &ctx->outputs[0]->in_formats)) < 0)
+        (ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
         return ret;
 
     return 0;

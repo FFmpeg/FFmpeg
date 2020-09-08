@@ -10,28 +10,28 @@ FATE_VOICE-yes += $(FATE_G722-yes)
 fate-g722: $(FATE_G722-yes)
 
 FATE_G723_1 += fate-g723_1-dec-1
-fate-g723_1-dec-1: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/ineqd53.tco
+fate-g723_1-dec-1: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/ineqd53.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-2
-fate-g723_1-dec-2: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/overd53.tco
+fate-g723_1-dec-2: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/overd53.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-3
-fate-g723_1-dec-3: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/overd63p.tco
+fate-g723_1-dec-3: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/overd63p.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-4
-fate-g723_1-dec-4: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/pathd53.tco
+fate-g723_1-dec-4: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/pathd53.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-5
-fate-g723_1-dec-5: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/pathd63p.tco
+fate-g723_1-dec-5: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/pathd63p.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-6
-fate-g723_1-dec-6: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/tamed63p.tco
+fate-g723_1-dec-6: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/tamed63p.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-7
-fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63b.tco
+fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63b.tco -af aresample
 
 FATE_G723_1 += fate-g723_1-dec-8
-fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63e.tco
+fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63e.tco -af aresample
 
 FATE_VOICE-$(call DEMDEC, G723_1, G723_1) += $(FATE_G723_1)
 fate-g723_1: $(FATE_G723_1)

@@ -291,4 +291,32 @@ void ff_formats_unref(AVFilterFormats **ref);
  */
 void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref);
 
+/**
+ * Check that fmts is a valid pixel formats list.
+ *
+ * In particular, check for duplicates.
+ */
+int ff_formats_check_pixel_formats(void *log, const AVFilterFormats *fmts);
+
+/**
+ * Check that fmts is a valid sample formats list.
+ *
+ * In particular, check for duplicates.
+ */
+int ff_formats_check_sample_formats(void *log, const AVFilterFormats *fmts);
+
+/**
+ * Check that fmts is a valid sample rates list.
+ *
+ * In particular, check for duplicates.
+ */
+int ff_formats_check_sample_rates(void *log, const AVFilterFormats *fmts);
+
+/**
+ * Check that fmts is a valid channel layouts list.
+ *
+ * In particular, check for duplicates.
+ */
+int ff_formats_check_channel_layouts(void *log, const AVFilterChannelLayouts *fmts);
+
 #endif /* AVFILTER_FORMATS_H */
