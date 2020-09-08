@@ -21,7 +21,7 @@
  * deinterlace video filter - QSV
  */
 
-#include <mfx/mfxvideo.h>
+#include <mfxvideo.h>
 
 #include <stdio.h>
 #include <string.h>

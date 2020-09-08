@@ -24,7 +24,7 @@
 #ifndef AVFILTER_QSVVPP_H
 #define AVFILTER_QSVVPP_H
 
-#include <mfx/mfxvideo.h>
+#include <mfxvideo.h>
 
 #include "avfilter.h"
 #include "libavutil/fifo.h"

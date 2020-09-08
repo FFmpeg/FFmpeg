@@ -39,7 +39,7 @@
 #include "libavutil/hwcontext_vaapi.h"
 #endif
 
-#include <mfx/mfxvideo.h>
+#include <mfxvideo.h>
 
 #include "libavutil/frame.h"
 
