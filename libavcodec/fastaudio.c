@@ -92,7 +92,7 @@ static int read_bits(int bits, int *ppos, unsigned *src)
     r = src[(pos - 1) / 32] >> (32 - pos % 32);
     *ppos = pos;
 
-    return r & ((1 << (bits % 32)) - 1);
+    return r & ((1 << bits) - 1);
 }
 
 static const uint8_t bits[8] = { 6, 6, 5, 5, 4, 0, 3, 3, };
