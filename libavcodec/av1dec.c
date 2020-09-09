@@ -580,14 +580,8 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
                             const AVPacket *pkt, int *got_frame)
 {
     AV1DecContext *s = avctx->priv_data;
-    const AV1RawFrameHeader *header = s->raw_frame_header;
-    const AVFrame *srcframe;
+    const AVFrame *srcframe = s->cur_frame.tf.f;
     int ret;
-
-    if (header->show_existing_frame)
-        srcframe = s->ref[header->frame_to_show_map_idx].tf.f;
-    else
-        srcframe = s->cur_frame.tf.f;
 
     ret = av_frame_ref(frame, srcframe);
     if (ret < 0)
@@ -733,6 +727,22 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                 s->raw_frame_header = &obu->obu.frame_header;
 
             if (s->raw_frame_header->show_existing_frame) {
+                if (s->cur_frame.tf.f->buf[0])
+                    av1_frame_unref(avctx, &s->cur_frame);
+
+                ret = av1_frame_ref(avctx, &s->cur_frame,
+                                    &s->ref[s->raw_frame_header->frame_to_show_map_idx]);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Failed to get reference frame.\n");
+                    goto end;
+                }
+
+                ret = update_reference_list(avctx);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Failed to update reference list.\n");
+                    goto end;
+                }
+
                 ret = set_output_frame(avctx, frame, pkt, got_frame);
                 if (ret < 0)
                     av_log(avctx, AV_LOG_ERROR, "Set output frame error.\n");
