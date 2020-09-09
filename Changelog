@@ -22,6 +22,7 @@ version <next>:
 - MODS demuxer
 - PhotoCD decoder
 - MCA demuxer
+- AV1 decoder (Hardware acceleration used only)
 
 
 version 4.3:
