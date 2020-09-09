@@ -79,6 +79,7 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
     OVModel *ov_model = (OVModel *)model;
     OVContext *ctx = &ov_model->ctx;
     char *model_input_name = NULL;
+    char *all_input_names = NULL;
     IEStatusCode status;
     size_t model_input_count = 0;
     dimensions_t dims;
@@ -118,12 +119,15 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
             input->width    = dims.dims[3];
             input->dt       = precision_to_datatype(precision);
             return DNN_SUCCESS;
+        } else {
+            //incorrect input name
+            APPEND_STRING(all_input_names, model_input_name)
         }
 
         ie_network_name_free(&model_input_name);
     }
 
-    av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", model_input_name);
+    av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model, all input(s) are: \"%s\"\n", input_name, all_input_names);
     return DNN_ERROR;
 }
 
@@ -246,12 +250,15 @@ err:
 
 DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, const char **output_names, uint32_t nb_output)
 {
+    char *model_output_name = NULL;
+    char *all_output_names = NULL;
     dimensions_t dims;
     precision_e precision;
     ie_blob_buffer_t blob_buffer;
     OVModel *ov_model = (OVModel *)model->model;
     OVContext *ctx = &ov_model->ctx;
     IEStatusCode status = ie_infer_request_infer(ov_model->infer_request);
+    size_t model_output_count = 0;
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to start synchronous model inference\n");
         return DNN_ERROR;
@@ -262,7 +269,16 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNData *outputs, c
         ie_blob_t *output_blob = NULL;
         status = ie_infer_request_get_blob(ov_model->infer_request, output_name, &output_blob);
         if (status != OK) {
+            //incorrect output name
             av_log(ctx, AV_LOG_ERROR, "Failed to get model output data\n");
+            status = ie_network_get_outputs_number(ov_model->network, &model_output_count);
+            for (size_t i = 0; i < model_output_count; i++) {
+                status = ie_network_get_output_name(ov_model->network, i, &model_output_name);
+                APPEND_STRING(all_output_names, model_output_name)
+            }
+            av_log(ctx, AV_LOG_ERROR,
+                   "output \"%s\" may not correct, all output(s) are: \"%s\"\n",
+                   output_name, all_output_names);
             return DNN_ERROR;
         }
 
