@@ -72,10 +72,10 @@ static void cleanup_redundant_layouts(AVFilterContext *ctx)
 
     for (i = 0; i < nb_counts; i++)
         if (buf->channel_counts[i] < 64)
-            counts |= 1 << buf->channel_counts[i];
+            counts |= (uint64_t)1 << buf->channel_counts[i];
     for (i = lc = 0; i < nb_layouts; i++) {
         n = av_get_channel_layout_nb_channels(buf->channel_layouts[i]);
-        if (n < 64 && (counts & (1 << n)))
+        if (n < 64 && (counts & ((uint64_t)1 << n)))
             av_log(ctx, AV_LOG_WARNING,
                    "Removing channel layout 0x%"PRIx64", redundant with %d channels\n",
                    buf->channel_layouts[i], n);

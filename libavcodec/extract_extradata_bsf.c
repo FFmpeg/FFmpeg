@@ -103,7 +103,6 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
             av_buffer_unref(&filtered_buf);
             return AVERROR(ENOMEM);
         }
-        memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         *data = extradata;
         *size = extradata_size;
@@ -198,7 +197,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
             av_buffer_unref(&filtered_buf);
             return AVERROR(ENOMEM);
         }
-        memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         *data = extradata;
         *size = extradata_size;
@@ -254,7 +252,6 @@ static int extract_extradata_vc1(AVBSFContext *ctx, AVPacket *pkt,
             return AVERROR(ENOMEM);
 
         memcpy(*data, pkt->data, extradata_size);
-        memset(*data + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         *size = extradata_size;
 
         if (s->remove) {
@@ -285,7 +282,6 @@ static int extract_extradata_mpeg12(AVBSFContext *ctx, AVPacket *pkt,
                     return AVERROR(ENOMEM);
 
                 memcpy(*data, pkt->data, *size);
-                memset(*data + *size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
                 if (s->remove) {
                     pkt->data += *size;
@@ -315,7 +311,6 @@ static int extract_extradata_mpeg4(AVBSFContext *ctx, AVPacket *pkt,
                     return AVERROR(ENOMEM);
 
                 memcpy(*data, pkt->data, *size);
-                memset(*data + *size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
                 if (s->remove) {
                     pkt->data += *size;
@@ -377,6 +372,7 @@ static int extract_extradata_filter(AVBSFContext *ctx, AVPacket *pkt)
         goto fail;
 
     if (extradata) {
+        memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                       extradata, extradata_size);
         if (ret < 0) {
