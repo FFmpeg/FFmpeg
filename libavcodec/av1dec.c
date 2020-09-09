@@ -417,6 +417,15 @@ static int set_context_with_sequence(AVCodecContext *avctx,
     avctx->colorspace = seq->color_config.color_primaries;
     avctx->color_trc = seq->color_config.transfer_characteristics;
 
+    switch (seq->color_config.chroma_sample_position) {
+    case AV1_CSP_VERTICAL:
+        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
+        break;
+    case AV1_CSP_COLOCATED:
+        avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
+        break;
+    }
+
     if (seq->timing_info.num_units_in_display_tick &&
         seq->timing_info.time_scale) {
         av_reduce(&avctx->framerate.den, &avctx->framerate.num,
