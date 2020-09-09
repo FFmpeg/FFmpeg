@@ -535,7 +535,8 @@ AVCodec ff_ralf_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .flush          = decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+                      AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

@@ -774,7 +774,8 @@ AVCodec ff_siren_decoder = {
     .close          = siren_close,
     .decode         = siren_decode,
     .flush          = siren_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+                      AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };
