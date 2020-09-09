@@ -228,7 +228,7 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
 
     //create threads
     for (int i = 0; i < thread_num; i++){
-        thread_param[i] = av_malloc(sizeof(thread_param));
+        thread_param[i] = av_malloc(sizeof(**thread_param));
         thread_param[i]->thread_common_param = &thread_common_param;
         thread_param[i]->thread_index = i;
         pthread_create(&thread_id[i], NULL, dnn_execute_layer_conv2d_thread, (void *)thread_param[i]);
