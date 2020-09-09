@@ -33,6 +33,10 @@ FATE_MXF_PROBE-$(call ENCDEC2, DVVIDEO, PCM_S16LE, MXF) += fate-mxf-probe-dv25
 fate-mxf-probe-dv25: SRC = $(TARGET_SAMPLES)/mxf/Avid-00005.mxf
 fate-mxf-probe-dv25: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
 
+FATE_MXF_PROBE-$(call ENCDEC2, PRORES, PCM_S24LE, MXF) += fate-mxf-probe-applehdr10
+fate-mxf-probe-applehdr10: SRC = $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf
+fate-mxf-probe-applehdr10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
+
 FATE_MXF_REEL_NAME-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-reel_name
 fate-mxf-reel_name: $(SAMPLES)/mxf/Sony-00001.mxf
 fate-mxf-reel_name: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf  -c copy -timecode 00:00:00:00 -metadata "reel_name=test_reel" -fflags +bitexact -f mxf

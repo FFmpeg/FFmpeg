@@ -216,6 +216,8 @@ typedef struct MXFDescriptor {
     UID color_trc_ul;
     UID color_space_ul;
     AVMasteringDisplayMetadata *mastering;
+    AVContentLightMetadata *coll;
+    size_t coll_size;
 } MXFDescriptor;
 
 typedef struct MXFIndexTableSegment {
@@ -321,6 +323,7 @@ static const uint8_t mxf_canopus_essence_element_key[]     = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_system_item_key_cp[]              = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x03,0x01,0x04 };
 static const uint8_t mxf_system_item_key_gc[]              = { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x03,0x01,0x14 };
 static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x34 };
+static const uint8_t mxf_apple_coll_prefix[]               = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01 };
 /* complete keys to match */
 static const uint8_t mxf_crypto_source_container_ul[]      = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x02,0x02,0x00,0x00,0x00 };
 static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
@@ -331,6 +334,8 @@ static const uint8_t mxf_avid_project_name[]               = { 0xa5,0xfb,0x7b,0x
 static const uint8_t mxf_jp2k_rsiz[]                       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x01,0x00 };
 static const uint8_t mxf_indirect_value_utf16le[]          = { 0x4c,0x00,0x02,0x10,0x01,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
 static const uint8_t mxf_indirect_value_utf16be[]          = { 0x42,0x01,0x10,0x02,0x00,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
+static const uint8_t mxf_apple_coll_max_cll[]              = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01,0x01 };
+static const uint8_t mxf_apple_coll_max_fall[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01,0x02 };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -341,6 +346,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     case Descriptor:
         av_freep(&((MXFDescriptor *)*ctx)->extradata);
         av_freep(&((MXFDescriptor *)*ctx)->mastering);
+        av_freep(&((MXFDescriptor *)*ctx)->coll);
         break;
     case MultipleDescriptor:
         av_freep(&((MXFDescriptor *)*ctx)->sub_descriptors_refs);
@@ -1310,6 +1316,19 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
                 /* Check we have seen mxf_mastering_display_maximum_luminance */
                 if (descriptor->mastering->max_luminance.den != 0)
                     descriptor->mastering->has_luminance = 1;
+            }
+        }
+        if (IS_KLV_KEY(uid, mxf_apple_coll_prefix)) {
+            if (!descriptor->coll) {
+                descriptor->coll = av_content_light_metadata_alloc(&descriptor->coll_size);
+                if (!descriptor->coll)
+                    return AVERROR(ENOMEM);
+            }
+            if (IS_KLV_KEY(uid, mxf_apple_coll_max_cll)) {
+                descriptor->coll->MaxCLL = avio_rb16(pb);
+            }
+            if (IS_KLV_KEY(uid, mxf_apple_coll_max_fall)) {
+                descriptor->coll->MaxFALL = avio_rb16(pb);
             }
         }
         break;
@@ -2579,6 +2598,14 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 if (ret < 0)
                     goto fail_and_free;
                 descriptor->mastering = NULL;
+            }
+            if (descriptor->coll) {
+                ret = av_stream_add_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
+                                              (uint8_t *)descriptor->coll,
+                                              descriptor->coll_size);
+                if (ret < 0)
+                    goto fail_and_free;
+                descriptor->coll = NULL;
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
