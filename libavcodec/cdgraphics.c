@@ -365,6 +365,15 @@ static int cdg_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+static void cdg_decode_flush(AVCodecContext *avctx)
+{
+    CDGraphicsContext *cc = avctx->priv_data;
+
+    memset(cc->frame->data[0], 0, cc->frame->linesize[0] * avctx->height);
+    if (!avctx->frame_number)
+        memset(cc->frame->data[1], 0, AVPALETTE_SIZE);
+}
+
 static av_cold int cdg_decode_end(AVCodecContext *avctx)
 {
     CDGraphicsContext *cc = avctx->priv_data;
@@ -383,5 +392,6 @@ AVCodec ff_cdgraphics_decoder = {
     .init           = cdg_decode_init,
     .close          = cdg_decode_end,
     .decode         = cdg_decode_frame,
+    .flush          = cdg_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
