@@ -451,8 +451,7 @@ static int update_context_with_frame_header(AVCodecContext *avctx,
               (int64_t)width * r_height,
               INT_MAX);
 
-    if (avctx->sample_aspect_ratio.num != aspect_ratio.num ||
-        avctx->sample_aspect_ratio.den != aspect_ratio.den) {
+    if (av_cmp_q(avctx->sample_aspect_ratio, aspect_ratio)) {
         ret = ff_set_sar(avctx, aspect_ratio);
         if (ret < 0)
             return ret;
