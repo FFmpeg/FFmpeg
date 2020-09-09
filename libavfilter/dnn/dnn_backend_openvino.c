@@ -26,10 +26,18 @@
 #include "dnn_backend_openvino.h"
 #include "libavformat/avio.h"
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
+#include "libavutil/avstring.h"
+#include "../internal.h"
 #include <c_api/ie_c_api.h>
+
+typedef struct OVOptions{
+    char *device_type;
+} OVOptions;
 
 typedef struct OVContext {
     const AVClass *class;
+    OVOptions options;
 } OVContext;
 
 typedef struct OVModel{
@@ -41,13 +49,18 @@ typedef struct OVModel{
     ie_blob_t *input_blob;
 } OVModel;
 
-static const AVClass dnn_openvino_class = {
-    .class_name = "dnn_openvino",
-    .item_name  = av_default_item_name,
-    .option     = NULL,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
+#define APPEND_STRING(generated_string, iterate_string)                                            \
+    generated_string = generated_string ? av_asprintf("%s %s", generated_string, iterate_string) : \
+                                          av_asprintf("%s", iterate_string);
+
+#define OFFSET(x) offsetof(OVContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption dnn_openvino_options[] = {
+    { "device", "device to run model", OFFSET(options.device_type), AV_OPT_TYPE_STRING, { .str = "CPU" }, 0, 0, FLAGS },
+    { NULL }
 };
+
+AVFILTER_DEFINE_CLASS(dnn_openvino);
 
 static DNNDataType precision_to_datatype(precision_e precision)
 {
@@ -159,10 +172,13 @@ err:
 
 DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options)
 {
+    char *all_dev_names = NULL;
     DNNModel *model = NULL;
     OVModel *ov_model = NULL;
+    OVContext *ctx = NULL;
     IEStatusCode status;
     ie_config_t config = {NULL, NULL, NULL};
+    ie_available_devices_t a_dev;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -173,6 +189,14 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options)
     if (!ov_model)
         goto err;
     ov_model->ctx.class = &dnn_openvino_class;
+    ctx = &ov_model->ctx;
+
+    //parse options
+    av_opt_set_defaults(ctx);
+    if (av_opt_set_from_string(ctx, options, NULL, "=", "&") < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to parse options \"%s\"\n", options);
+        goto err;
+    }
 
     status = ie_core_create("", &ov_model->core);
     if (status != OK)
@@ -182,9 +206,21 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options)
     if (status != OK)
         goto err;
 
-    status = ie_core_load_network(ov_model->core, ov_model->network, "CPU", &config, &ov_model->exe_network);
-    if (status != OK)
+    status = ie_core_load_network(ov_model->core, ov_model->network, ctx->options.device_type, &config, &ov_model->exe_network);
+    if (status != OK) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to init OpenVINO model\n");
+        status = ie_core_get_available_devices(ov_model->core, &a_dev);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get available devices\n");
+            goto err;
+        }
+        for (int i = 0; i < a_dev.num_devices; i++) {
+            APPEND_STRING(all_dev_names, a_dev.devices[i])
+        }
+        av_log(ctx, AV_LOG_ERROR,"device %s may not be supported, all available devices are: \"%s\"\n",
+               ctx->options.device_type, all_dev_names);
         goto err;
+    }
 
     model->model = (void *)ov_model;
     model->set_input = &set_input_ov;
