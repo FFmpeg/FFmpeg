@@ -29,6 +29,7 @@
 
 #include "../dnn_interface.h"
 #include "libavformat/avio.h"
+#include "libavutil/opt.h"
 
 /**
  * the enum value of DNNLayerType should not be changed,
@@ -106,8 +107,13 @@ typedef struct InputParams{
     int height, width, channels;
 } InputParams;
 
+typedef struct NativeOptions{
+    uint32_t conv2d_threads;
+} NativeOptions;
+
 typedef struct NativeContext {
     const AVClass *class;
+    NativeOptions options;
 } NativeContext;
 
 // Represents simple feed-forward convolutional network.

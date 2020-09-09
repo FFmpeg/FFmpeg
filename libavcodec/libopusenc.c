@@ -34,6 +34,7 @@ typedef struct LibopusEncOpts {
     int vbr;
     int application;
     int packet_loss;
+    int fec;
     int complexity;
     float frame_duration;
     int packet_size;
@@ -147,6 +148,13 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
     if (ret != OPUS_OK)
         av_log(avctx, AV_LOG_WARNING,
                "Unable to set expected packet loss percentage: %s\n",
+               opus_strerror(ret));
+
+    ret = opus_multistream_encoder_ctl(enc,
+                                       OPUS_SET_INBAND_FEC(opts->fec));
+    if (ret != OPUS_OK)
+        av_log(avctx, AV_LOG_WARNING,
+               "Unable to set inband FEC: %s\n",
                opus_strerror(ret));
 
     if (avctx->cutoff) {
@@ -544,6 +552,7 @@ static const AVOption libopus_options[] = {
         { "lowdelay",       "Restrict to only the lowest delay modes", 0, AV_OPT_TYPE_CONST, { .i64 = OPUS_APPLICATION_RESTRICTED_LOWDELAY }, 0, 0, FLAGS, "application" },
     { "frame_duration", "Duration of a frame in milliseconds", OFFSET(frame_duration), AV_OPT_TYPE_FLOAT, { .dbl = 20.0 }, 2.5, 120.0, FLAGS },
     { "packet_loss",    "Expected packet loss percentage",     OFFSET(packet_loss),    AV_OPT_TYPE_INT,   { .i64 = 0 },    0,   100,  FLAGS },
+    { "fec",             "Enable inband FEC. Expected packet loss must be non-zero",     OFFSET(fec),    AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, FLAGS },
     { "vbr",            "Variable bit rate mode",              OFFSET(vbr),            AV_OPT_TYPE_INT,   { .i64 = 1 },    0,   2,    FLAGS, "vbr" },
         { "off",            "Use constant bit rate", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "vbr" },
         { "on",             "Use variable bit rate", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "vbr" },

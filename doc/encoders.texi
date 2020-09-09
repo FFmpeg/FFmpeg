@@ -953,6 +953,11 @@ The default is 20ms.
 @item packet_loss (@emph{expect-loss})
 Set expected packet loss percentage. The default is 0.
 
+@item fec (@emph{n/a})
+Enable inband forward error correction. @option{packet_loss} must be non-zero
+to take advantage - frequency of FEC 'side-data' is proportional to expected packet loss.
+Default is disabled.
+
 @item application (N.A.)
 Set intended application type. Valid options are listed below:
 
