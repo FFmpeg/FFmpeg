@@ -65,11 +65,6 @@ extern AVOutputFormat ff_mxf_opatom_muxer;
 #define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
 
-typedef struct MXFLocalTagPair {
-    int local_tag;
-    UID uid;
-} MXFLocalTagPair;
-
 typedef struct MXFIndexEntry {
     uint64_t offset;
     unsigned slice_offset; ///< offset of audio slice

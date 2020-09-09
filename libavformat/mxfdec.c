@@ -28,6 +28,7 @@
  * SMPTE 381M Mapping MPEG Streams into the MXF Generic Container
  * SMPTE 382M Mapping AES3 and Broadcast Wave Audio into the MXF Generic Container
  * SMPTE 383M Mapping DV-DIF Data to the MXF Generic Container
+ * SMPTE 2067-21 Interoperable Master Format — Application #2E
  *
  * Principle
  * Search for Track numbers which will identify essence element KLV packets.
@@ -47,6 +48,7 @@
 
 #include "libavutil/aes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
 #include "libavutil/intreadwrite.h"
@@ -213,6 +215,7 @@ typedef struct MXFDescriptor {
     UID color_primaries_ul;
     UID color_trc_ul;
     UID color_space_ul;
+    AVMasteringDisplayMetadata *mastering;
 } MXFDescriptor;
 
 typedef struct MXFIndexTableSegment {
@@ -337,6 +340,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     switch ((*ctx)->type) {
     case Descriptor:
         av_freep(&((MXFDescriptor *)*ctx)->extradata);
+        av_freep(&((MXFDescriptor *)*ctx)->mastering);
         break;
     case MultipleDescriptor:
         av_freep(&((MXFDescriptor *)*ctx)->sub_descriptors_refs);
@@ -1271,6 +1275,42 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
             if (rsiz == FF_PROFILE_JPEG2000_DCINEMA_2K ||
                 rsiz == FF_PROFILE_JPEG2000_DCINEMA_4K)
                 descriptor->pix_fmt = AV_PIX_FMT_XYZ12;
+        }
+        if (IS_KLV_KEY(uid, ff_mxf_mastering_display_prefix)) {
+            if (!descriptor->mastering) {
+                descriptor->mastering = av_mastering_display_metadata_alloc();
+                if (!descriptor->mastering)
+                    return AVERROR(ENOMEM);
+            }
+            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[0].uid)) {
+                for (int i = 0; i < 3; i++) {
+                    /* Order: large x, large y, other (i.e. RGB) */
+                    descriptor->mastering->display_primaries[i][0] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
+                    descriptor->mastering->display_primaries[i][1] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
+                }
+                /* Check we have seen mxf_mastering_display_white_point_chromaticity */
+                if (descriptor->mastering->white_point[0].den != 0)
+                    descriptor->mastering->has_primaries = 1;
+            }
+            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[1].uid)) {
+                descriptor->mastering->white_point[0] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
+                descriptor->mastering->white_point[1] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
+                /* Check we have seen mxf_mastering_display_primaries */
+                if (descriptor->mastering->display_primaries[0][0].den != 0)
+                    descriptor->mastering->has_primaries = 1;
+            }
+            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[2].uid)) {
+                descriptor->mastering->max_luminance = av_make_q(avio_rb32(pb), FF_MXF_MASTERING_LUMA_DEN);
+                /* Check we have seen mxf_mastering_display_minimum_luminance */
+                if (descriptor->mastering->min_luminance.den != 0)
+                    descriptor->mastering->has_luminance = 1;
+            }
+            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[3].uid)) {
+                descriptor->mastering->min_luminance = av_make_q(avio_rb32(pb), FF_MXF_MASTERING_LUMA_DEN);
+                /* Check we have seen mxf_mastering_display_maximum_luminance */
+                if (descriptor->mastering->max_luminance.den != 0)
+                    descriptor->mastering->has_luminance = 1;
+            }
         }
         break;
     }
@@ -2532,6 +2572,14 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codecpar->color_primaries = mxf_get_codec_ul(ff_mxf_color_primaries_uls, &descriptor->color_primaries_ul)->id;
             st->codecpar->color_trc       = mxf_get_codec_ul(ff_mxf_color_trc_uls, &descriptor->color_trc_ul)->id;
             st->codecpar->color_space     = mxf_get_codec_ul(ff_mxf_color_space_uls, &descriptor->color_space_ul)->id;
+            if (descriptor->mastering) {
+                ret = av_stream_add_side_data(st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+                                              (uint8_t *)descriptor->mastering,
+                                              sizeof(*descriptor->mastering));
+                if (ret < 0)
+                    goto fail_and_free;
+                descriptor->mastering = NULL;
+            }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             /* Only overwrite existing codec ID if it is unset or A-law, which is the default according to SMPTE RP 224. */
