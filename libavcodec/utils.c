@@ -1852,7 +1852,7 @@ unsigned int avpriv_toupper4(unsigned int x)
 ((unsigned)av_toupper((x >> 24) & 0xFF) << 24);
 }
 
-int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
+int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
 {
     int ret;
 
