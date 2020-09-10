@@ -446,7 +446,11 @@ static int read_seek(AVFormatContext *s, int stream_index,
     BRSTMDemuxContext *b = s->priv_data;
     int64_t ret = 0;
 
+    if (timestamp < 0)
+        timestamp = 0;
     timestamp /= b->samples_per_block;
+    if (timestamp >= b->block_count)
+        timestamp = b->block_count - 1;
     ret = avio_seek(s->pb, b->data_start + timestamp * b->block_size *
                            st->codecpar->channels, SEEK_SET);
     if (ret < 0)

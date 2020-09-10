@@ -1424,9 +1424,6 @@ static int ff_filter_activate_default(AVFilterContext *filter)
      Rationale: checking frame_blocked_in is necessary to avoid requesting
      repeatedly on a blocked input if another is not blocked (example:
      [buffersrc1][testsrc1][buffersrc2][testsrc2]concat=v=2).
-
-     TODO: respect needs_fifo and remove auto-inserted fifos.
-
  */
 
 int ff_filter_activate(AVFilterContext *filter)

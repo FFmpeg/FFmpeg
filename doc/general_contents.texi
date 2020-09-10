@@ -512,6 +512,8 @@ library:
     @tab Metadata in text format.
 @item MAXIS XA                  @tab   @tab X
     @tab Used in Sim City 3000; file extension .xa.
+@item MCA                       @tab   @tab X
+    @tab Used in some games from Capcom; file extension .mca.
 @item MD Studio                 @tab   @tab X
 @item Metal Gear Solid: The Twin Snakes @tab @tab X
 @item Megalux Frame             @tab   @tab X
