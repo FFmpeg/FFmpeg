@@ -384,13 +384,15 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     if (!dec) {
         av_log(ctx, AV_LOG_ERROR, "Failed to find subtitle codec %s\n",
                avcodec_get_name(st->codecpar->codec_id));
-        return AVERROR(EINVAL);
+        ret = AVERROR_DECODER_NOT_FOUND;
+        goto end;
     }
     dec_desc = avcodec_descriptor_get(st->codecpar->codec_id);
     if (dec_desc && !(dec_desc->props & AV_CODEC_PROP_TEXT_SUB)) {
         av_log(ctx, AV_LOG_ERROR,
                "Only text based subtitles are currently supported\n");
-        return AVERROR_PATCHWELCOME;
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
     }
     if (ass->charenc)
         av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
@@ -398,8 +400,10 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
         av_dict_set(&codec_opts, "sub_text_format", "ass", 0);
 
     dec_ctx = avcodec_alloc_context3(dec);
-    if (!dec_ctx)
-        return AVERROR(ENOMEM);
+    if (!dec_ctx) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
     if (ret < 0)
