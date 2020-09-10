@@ -362,9 +362,9 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->global_quality = 123;
         av_dict_set(&opts, "no_bitstream", "1", 0);
         ret = avcodec_open2(avctx_enc, enc, &opts);
+        av_dict_free(&opts);
         if (ret < 0)
             return ret;
-        av_dict_free(&opts);
         av_assert0(avctx_enc->codec);
     }
 
