@@ -344,6 +344,7 @@ static av_cold void movie_uninit(AVFilterContext *ctx)
     }
     av_freep(&movie->st);
     av_freep(&movie->out_index);
+    av_packet_unref(&movie->pkt);
     if (movie->format_ctx)
         avformat_close_input(&movie->format_ctx);
 }
