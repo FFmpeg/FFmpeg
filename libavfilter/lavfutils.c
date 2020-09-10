@@ -28,9 +28,9 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     AVInputFormat *iformat = NULL;
     AVFormatContext *format_ctx = NULL;
     AVCodec *codec;
-    AVCodecContext *codec_ctx;
+    AVCodecContext *codec_ctx = NULL;
     AVCodecParameters *par;
-    AVFrame *frame;
+    AVFrame *frame = NULL;
     int frame_decoded, ret = 0;
     AVPacket pkt;
     AVDictionary *opt=NULL;
