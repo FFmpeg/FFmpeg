@@ -495,7 +495,6 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         } else {
             ret = av_read_frame(movie->format_ctx, &movie->pkt0);
             if (ret < 0) {
-                av_init_packet(&movie->pkt0); /* ready for flushing */
                 *pkt = movie->pkt0;
                 if (ret == AVERROR_EOF) {
                     movie->eof = 1;
