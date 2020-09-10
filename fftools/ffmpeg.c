@@ -947,6 +947,28 @@ early_exit:
     return float_pts;
 }
 
+static int init_output_stream(OutputStream *ost, char *error, int error_len);
+
+static int init_output_stream_wrapper(OutputStream *ost, unsigned int fatal)
+{
+    int ret = AVERROR_BUG;
+    char error[1024] = {0};
+
+    if (ost->initialized)
+        return 0;
+
+    ret = init_output_stream(ost, error, sizeof(error));
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error initializing output stream %d:%d -- %s\n",
+               ost->file_index, ost->index, error);
+
+        if (fatal)
+            exit_program(1);
+    }
+
+    return ret;
+}
+
 static void do_audio_out(OutputFile *of, OutputStream *ost,
                          AVFrame *frame)
 {
@@ -957,6 +979,8 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
+
+    adjust_frame_pts_to_encoder_tb(of, ost, frame);
 
     if (!check_recording_time(ost))
         return;
@@ -1092,8 +1116,7 @@ static void do_subtitle_out(OutputFile *of,
 
 static void do_video_out(OutputFile *of,
                          OutputStream *ost,
-                         AVFrame *next_picture,
-                         double sync_ipts)
+                         AVFrame *next_picture)
 {
     int ret, format_video_sync;
     AVPacket pkt;
@@ -1103,9 +1126,13 @@ static void do_video_out(OutputFile *of,
     int nb_frames, nb0_frames, i;
     double delta, delta0;
     double duration = 0;
+    double sync_ipts = AV_NOPTS_VALUE;
     int frame_size = 0;
     InputStream *ist = NULL;
     AVFilterContext *filter = ost->filter->filter;
+
+    init_output_stream_wrapper(ost, 1);
+    sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
 
     if (ost->source_index >= 0)
         ist = input_streams[ost->source_index];
@@ -1440,28 +1467,6 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     }
 }
 
-static int init_output_stream(OutputStream *ost, char *error, int error_len);
-
-static int init_output_stream_wrapper(OutputStream *ost, unsigned int fatal)
-{
-    int ret = AVERROR_BUG;
-    char error[1024] = {0};
-
-    if (ost->initialized)
-        return 0;
-
-    ret = init_output_stream(ost, error, sizeof(error));
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error initializing output stream %d:%d -- %s\n",
-               ost->file_index, ost->index, error);
-
-        if (fatal)
-            exit_program(1);
-    }
-
-    return ret;
-}
-
 static void finish_output_stream(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
@@ -1498,7 +1503,17 @@ static int reap_filters(int flush)
             continue;
         filter = ost->filter->filter;
 
-        init_output_stream_wrapper(ost, 1);
+        /*
+         * Unlike video, with audio the audio frame size matters.
+         * Currently we are fully reliant on the lavfi filter chain to
+         * do the buffering deed for us, and thus the frame size parameter
+         * needs to be set accordingly. Where does one get the required
+         * frame size? From the initialized AVCodecContext of an audio
+         * encoder. Thus, if we have gotten to an audio stream, initialize
+         * the encoder earlier than receiving the first AVFrame.
+         */
+        if (av_buffersink_get_type(filter) == AVMEDIA_TYPE_AUDIO)
+            init_output_stream_wrapper(ost, 1);
 
         if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
             return AVERROR(ENOMEM);
@@ -1506,7 +1521,6 @@ static int reap_filters(int flush)
         filtered_frame = ost->filtered_frame;
 
         while (1) {
-            double float_pts = AV_NOPTS_VALUE; // this is identical to filtered_frame.pts but with higher precision
             ret = av_buffersink_get_frame_flags(filter, filtered_frame,
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret < 0) {
@@ -1515,7 +1529,7 @@ static int reap_filters(int flush)
                            "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
                 } else if (flush && ret == AVERROR_EOF) {
                     if (av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO)
-                        do_video_out(of, ost, NULL, AV_NOPTS_VALUE);
+                        do_video_out(of, ost, NULL);
                 }
                 break;
             }
@@ -1524,15 +1538,12 @@ static int reap_filters(int flush)
                 continue;
             }
 
-            float_pts = adjust_frame_pts_to_encoder_tb(of, ost,
-                                                       filtered_frame);
-
             switch (av_buffersink_get_type(filter)) {
             case AVMEDIA_TYPE_VIDEO:
                 if (!ost->frame_aspect_ratio.num)
                     enc->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
 
-                do_video_out(of, ost, filtered_frame, float_pts);
+                do_video_out(of, ost, filtered_frame);
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
@@ -3698,10 +3709,19 @@ static int transcode_init(void)
             goto dump_format;
         }
 
-    /* open each encoder */
+    /*
+     * initialize stream copy and subtitle/data streams.
+     * Encoded AVFrame based streams will get initialized as follows:
+     * - when the first AVFrame is received in do_video_out
+     * - just before the first AVFrame is received in either transcode_step
+     *   or reap_filters due to us requiring the filter chain buffer sink
+     *   to be configured with the correct audio frame size, which is only
+     *   known after the encoder is initialized.
+     */
     for (i = 0; i < nb_output_streams; i++) {
-        // skip streams fed from filtergraphs until we have a frame for them
-        if (output_streams[i]->filter)
+        if (!output_streams[i]->stream_copy &&
+            (output_streams[i]->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+             output_streams[i]->enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO))
             continue;
 
         ret = init_output_stream_wrapper(output_streams[i], 0);
@@ -4615,7 +4635,29 @@ static int transcode_step(void)
     }
 
     if (ost->filter && ost->filter->graph->graph) {
-        init_output_stream_wrapper(ost, 1);
+        /*
+         * Similar case to the early audio initialization in reap_filters.
+         * Audio is special in ffmpeg.c currently as we depend on lavfi's
+         * audio frame buffering/creation to get the output audio frame size
+         * in samples correct. The audio frame size for the filter chain is
+         * configured during the output stream initialization.
+         *
+         * Apparently avfilter_graph_request_oldest (called in
+         * transcode_from_filter just down the line) peeks. Peeking already
+         * puts one frame "ready to be given out", which means that any
+         * update in filter buffer sink configuration afterwards will not
+         * help us. And yes, even if it would be utilized,
+         * av_buffersink_get_samples is affected, as it internally utilizes
+         * the same early exit for peeked frames.
+         *
+         * In other words, if avfilter_graph_request_oldest would not make
+         * further filter chain configuration or usage of
+         * av_buffersink_get_samples useless (by just causing the return
+         * of the peeked AVFrame as-is), we could get rid of this additional
+         * early encoder initialization.
+         */
+        if (av_buffersink_get_type(ost->filter->filter) == AVMEDIA_TYPE_AUDIO)
+            init_output_stream_wrapper(ost, 1);
 
         if ((ret = transcode_from_filter(ost->filter->graph, &ist)) < 0)
             return ret;
