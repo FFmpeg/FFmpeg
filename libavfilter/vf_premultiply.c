@@ -73,7 +73,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
-        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRPF32,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
@@ -82,7 +82,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16, AV_PIX_FMT_GBRAPF32,
         AV_PIX_FMT_NONE
     };
 
@@ -215,6 +215,54 @@ static void premultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
         dst  += dlinesize / 2;
         msrc += mlinesize / 2;
         asrc += alinesize / 2;
+    }
+}
+
+static void premultiplyf32(const uint8_t *mmsrc, const uint8_t *aasrc,
+                          uint8_t *ddst,
+                          ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                          ptrdiff_t dlinesize,
+                          int w, int h,
+                          int half, int shift, int offset)
+{
+    const float *msrc = (const float *)mmsrc;
+    const float *asrc = (const float *)aasrc;
+    float *dst = (float *)ddst;
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            dst[x] = msrc[x] * asrc[x];
+        }
+
+        dst  += dlinesize / 4;
+        msrc += mlinesize / 4;
+        asrc += alinesize / 4;
+    }
+}
+
+static void premultiplyf32offset(const uint8_t *mmsrc, const uint8_t *aasrc,
+                                uint8_t *ddst,
+                                ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                                ptrdiff_t dlinesize,
+                                int w, int h,
+                                int half, int shift, int offset)
+{
+    const float *msrc = (const float *)mmsrc;
+    const float *asrc = (const float *)aasrc;
+    float *dst = (float *)ddst;
+    int x, y;
+
+    float offsetf = offset / 65535.0f;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            dst[x] = ((msrc[x] - offsetf) * asrc[x]) + offsetf;
+        }
+
+        dst  += dlinesize / 4;
+        msrc += mlinesize / 4;
+        asrc += alinesize / 4;
     }
 }
 
@@ -365,6 +413,62 @@ static void unpremultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
     }
 }
 
+static void unpremultiplyf32(const uint8_t *mmsrc, const uint8_t *aasrc,
+                            uint8_t *ddst,
+                            ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                            ptrdiff_t dlinesize,
+                            int w, int h,
+                            int half, int max, int offset)
+{
+    const float *msrc = (const float *)mmsrc;
+    const float *asrc = (const float *)aasrc;
+
+    float *dst = (float *)ddst;
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0.0f)
+                dst[x] = msrc[x] / asrc[x];
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize / 4;
+        msrc += mlinesize / 4;
+        asrc += alinesize / 4;
+    }
+}
+
+static void unpremultiplyf32offset(const uint8_t *mmsrc, const uint8_t *aasrc,
+                            uint8_t *ddst,
+                            ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                            ptrdiff_t dlinesize,
+                            int w, int h,
+                            int half, int max, int offset)
+{
+    const float *msrc = (const float *)mmsrc;
+    const float *asrc = (const float *)aasrc;
+
+    float *dst = (float *)ddst;
+    int x, y;
+
+    float offsetf = offset / 65535.0f;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0.0f)
+                dst[x] = (msrc[x] - offsetf) / asrc[x] + offsetf;
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize / 4;
+        msrc += mlinesize / 4;
+        asrc += alinesize / 4;
+    }
+}
+
 static int premultiply_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     PreMultiplyContext *s = ctx->priv;
@@ -458,6 +562,10 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_GBRAP16:
                 s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? unpremultiply16offset : unpremultiply16;
                 break;
+            case AV_PIX_FMT_GBRPF32:
+            case AV_PIX_FMT_GBRAPF32:
+                s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? unpremultiplyf32offset : unpremultiplyf32;
+                break;
             case AV_PIX_FMT_GRAY8:
                 s->premultiply[0] = limited ? unpremultiply8offset : unpremultiply8;
                 break;
@@ -504,6 +612,10 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_GBRP16:
             case AV_PIX_FMT_GBRAP16:
                 s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? premultiply16offset : premultiply16;
+                break;
+            case AV_PIX_FMT_GBRPF32:
+            case AV_PIX_FMT_GBRAPF32:
+                s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? premultiplyf32offset: premultiplyf32;
                 break;
             case AV_PIX_FMT_GRAY8:
                 s->premultiply[0] = limited ? premultiply8offset : premultiply8;
@@ -567,7 +679,7 @@ static int config_input(AVFilterLink *inlink)
     s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->width[0]  = s->width[3]  = inlink->w;
 
-    s->depth = desc->comp[0].depth;
+    s->depth = desc->flags & AV_PIX_FMT_FLAG_FLOAT ? 16 : desc->comp[0].depth;
     s->max = (1 << s->depth) - 1;
     s->half = (1 << s->depth) / 2;
     s->offset = 16 << (s->depth - 8);
