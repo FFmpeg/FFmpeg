@@ -71,7 +71,7 @@ typedef struct MovieContext {
 
     AVFormatContext *format_ctx;
     int eof;
-    AVPacket pkt, pkt0;
+    AVPacket pkt;
 
     int max_stream_index; /**< max stream # actually used for output */
     MovieStream *st; /**< array of all streams, one per output */
@@ -493,25 +493,21 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
             pkt->stream_index = movie->st[out_id].st->index;
             /* packet is already ready for flushing */
         } else {
-            ret = av_read_frame(movie->format_ctx, &movie->pkt0);
+            ret = av_read_frame(movie->format_ctx, pkt);
             if (ret < 0) {
-                *pkt = movie->pkt0;
                 if (ret == AVERROR_EOF) {
                     movie->eof = 1;
                     return 0; /* start flushing */
                 }
                 return ret;
             }
-            *pkt = movie->pkt0;
         }
     }
 
     pkt_out_id = pkt->stream_index > movie->max_stream_index ? -1 :
                  movie->out_index[pkt->stream_index];
     if (pkt_out_id < 0) {
-        av_packet_unref(&movie->pkt0);
-        pkt->size = 0; /* ready for next run */
-        pkt->data = NULL;
+        av_packet_unref(pkt);
         return 0;
     }
     st = &movie->st[pkt_out_id];
@@ -536,9 +532,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     if (ret < 0) {
         av_log(ctx, AV_LOG_WARNING, "Decode error: %s\n", av_err2str(ret));
         av_frame_free(&frame);
-        av_packet_unref(&movie->pkt0);
-        movie->pkt.size = 0;
-        movie->pkt.data = NULL;
+        av_packet_unref(pkt);
         return 0;
     }
     if (!ret || st->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
@@ -546,11 +540,8 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
 
     pkt->data += ret;
     pkt->size -= ret;
-    if (pkt->size <= 0) {
-        av_packet_unref(&movie->pkt0);
-        pkt->size = 0; /* ready for next run */
-        pkt->data = NULL;
-    }
+    if (pkt->size <= 0)
+        av_packet_unref(pkt);
     if (!got_frame) {
         if (!ret)
             st->done = 1;
