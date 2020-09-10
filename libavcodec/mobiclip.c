@@ -1323,6 +1323,10 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         }
     } else {
         MotionXY *motion = s->motion;
+        int quantizer = s->quantizer + get_se_golomb(gb);
+
+        if (quantizer < 12 || quantizer > 161)
+            return AVERROR_INVALIDDATA;
 
         memset(motion, 0, s->motion_size);
 
@@ -1330,7 +1334,7 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         frame->key_frame = 0;
         s->dct_tab_idx = 0;
 
-        setup_qtables(avctx, s->quantizer + get_se_golomb(gb));
+        setup_qtables(avctx, quantizer);
         for (int y = 0; y < avctx->height; y += 16) {
             for (int x = 0; x < avctx->width; x += 16) {
                 int idx;
