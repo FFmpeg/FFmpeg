@@ -202,10 +202,13 @@ static int read_seek(AVFormatContext *s, int stream_index,
     MCADemuxContext *m = s->priv_data;
     int64_t ret = 0;
 
+    if (timestamp < 0)
+        timestamp = 0;
     timestamp /= m->samples_per_block;
+    if (timestamp >= m->block_count)
+        timestamp = m->block_count - 1;
     ret = avio_seek(s->pb, m->data_start + timestamp * m->block_size *
                     st->codecpar->channels, SEEK_SET);
-
     if (ret < 0)
         return ret;
 
