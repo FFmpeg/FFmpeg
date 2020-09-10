@@ -327,7 +327,13 @@ static int moflex_read_packet(AVFormatContext *s, AVPacket *pkt)
                 av_packet_move_ref(pkt, packet);
                 pkt->pos = m->pos;
                 pkt->stream_index = stream_index;
-                pkt->flags |= AV_PKT_FLAG_KEY;
+                if (s->streams[stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                    pkt->duration = 1;
+                    if (pkt->data[0] & 0x80)
+                        pkt->flags |= AV_PKT_FLAG_KEY;
+                } else {
+                    pkt->flags |= AV_PKT_FLAG_KEY;
+                }
                 return ret;
             }
         }
@@ -339,6 +345,16 @@ static int moflex_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     return AVERROR_EOF;
+}
+
+static int moflex_read_seek(AVFormatContext *s, int stream_index,
+                            int64_t pts, int flags)
+{
+    MOFLEXDemuxContext *m = s->priv_data;
+
+    m->in_block = 0;
+
+    return -1;
 }
 
 static int moflex_read_close(AVFormatContext *s)
@@ -360,6 +376,7 @@ AVInputFormat ff_moflex_demuxer = {
     .read_probe     = moflex_probe,
     .read_header    = moflex_read_header,
     .read_packet    = moflex_read_packet,
+    .read_seek      = moflex_read_seek,
     .read_close     = moflex_read_close,
     .extensions     = "moflex",
     .flags          = AVFMT_GENERIC_INDEX,
