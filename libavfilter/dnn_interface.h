@@ -51,9 +51,6 @@ typedef struct DNNModel{
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
     DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
-    // Sets model input.
-    // Should be called every time before model execution.
-    DNNReturnType (*set_input)(void *model, AVFrame *frame, const char *input_name);
     // set the pre process to transfer data from AVFrame to DNNData
     // the default implementation within DNN is used if it is not provided by the filter
     int (*pre_proc)(AVFrame *frame_in, DNNData *model_input, void *user_data);
@@ -66,8 +63,9 @@ typedef struct DNNModel{
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
     DNNModel *(*load_model)(const char *model_filename, const char *options, void *userdata);
-    // Executes model with specified output. Returns DNN_ERROR otherwise.
-    DNNReturnType (*execute_model)(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame);
+    // Executes model with specified input and output. Returns DNN_ERROR otherwise.
+    DNNReturnType (*execute_model)(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                   const char **output_names, uint32_t nb_output, AVFrame *out_frame);
     // Frees memory allocated for model.
     void (*free_model)(DNNModel **model);
 } DNNModule;

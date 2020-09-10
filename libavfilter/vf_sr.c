@@ -114,16 +114,11 @@ static int config_output(AVFilterLink *outlink)
     AVFrame *out = NULL;
     const char *model_output_name = "y";
 
-    AVFrame *fake_in = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    result = (ctx->model->set_input)(ctx->model->model, fake_in, "x");
-    if (result != DNN_SUCCESS) {
-        av_log(context, AV_LOG_ERROR, "could not set input for the model\n");
-        return AVERROR(EIO);
-    }
-
     // have a try run in case that the dnn model resize the frame
+    AVFrame *fake_in = ff_get_video_buffer(inlink, inlink->w, inlink->h);
     out = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    result = (ctx->dnn_module->execute_model)(ctx->model, (const char **)&model_output_name, 1, out);
+    result = (ctx->dnn_module->execute_model)(ctx->model, "x", fake_in,
+                                              (const char **)&model_output_name, 1, out);
     if (result != DNN_SUCCESS){
         av_log(context, AV_LOG_ERROR, "failed to execute loaded model\n");
         return AVERROR(EIO);
@@ -178,19 +173,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         sws_scale(ctx->sws_pre_scale,
                     (const uint8_t **)in->data, in->linesize, 0, in->height,
                     out->data, out->linesize);
-        dnn_result = (ctx->model->set_input)(ctx->model->model, out, "x");
+        dnn_result = (ctx->dnn_module->execute_model)(ctx->model, "x", out,
+                                                      (const char **)&model_output_name, 1, out);
     } else {
-        dnn_result = (ctx->model->set_input)(ctx->model->model, in, "x");
+        dnn_result = (ctx->dnn_module->execute_model)(ctx->model, "x", in,
+                                                      (const char **)&model_output_name, 1, out);
     }
 
-    if (dnn_result != DNN_SUCCESS) {
-        av_frame_free(&in);
-        av_frame_free(&out);
-        av_log(context, AV_LOG_ERROR, "could not set input for the model\n");
-        return AVERROR(EIO);
-    }
-
-    dnn_result = (ctx->dnn_module->execute_model)(ctx->model, (const char **)&model_output_name, 1, out);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute loaded model\n");
         av_frame_free(&in);

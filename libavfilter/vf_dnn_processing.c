@@ -236,15 +236,11 @@ static int config_output(AVFilterLink *outlink)
     AVFrame *out = NULL;
 
     AVFrame *fake_in = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    result = (ctx->model->set_input)(ctx->model->model, fake_in, ctx->model_inputname);
-    if (result != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "could not set input for the model\n");
-        return AVERROR(EIO);
-    }
 
     // have a try run in case that the dnn model resize the frame
     out = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    result = (ctx->dnn_module->execute_model)(ctx->model, (const char **)&ctx->model_outputname, 1, out);
+    result = (ctx->dnn_module->execute_model)(ctx->model, ctx->model_inputname, fake_in,
+                                              (const char **)&ctx->model_outputname, 1, out);
     if (result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         return AVERROR(EIO);
@@ -293,13 +289,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     DNNReturnType dnn_result;
     AVFrame *out;
 
-    dnn_result = (ctx->model->set_input)(ctx->model->model, in, ctx->model_inputname);
-    if (dnn_result != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "could not set input for the model\n");
-        av_frame_free(&in);
-        return AVERROR(EIO);
-    }
-
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
@@ -307,7 +296,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    dnn_result = (ctx->dnn_module->execute_model)(ctx->model, (const char **)&ctx->model_outputname, 1, out);
+    dnn_result = (ctx->dnn_module->execute_model)(ctx->model, ctx->model_inputname, in,
+                                                  (const char **)&ctx->model_outputname, 1, out);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         av_frame_free(&in);

@@ -70,64 +70,6 @@ static DNNReturnType get_input_native(void *model, DNNData *input, const char *i
     return DNN_ERROR;
 }
 
-static DNNReturnType set_input_native(void *model, AVFrame *frame, const char *input_name)
-{
-    NativeModel *native_model = (NativeModel *)model;
-    NativeContext *ctx = &native_model->ctx;
-    DnnOperand *oprd = NULL;
-    DNNData input;
-
-    if (native_model->layers_num <= 0 || native_model->operands_num <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "No operands or layers in model\n");
-        return DNN_ERROR;
-    }
-
-    /* inputs */
-    for (int i = 0; i < native_model->operands_num; ++i) {
-        oprd = &native_model->operands[i];
-        if (strcmp(oprd->name, input_name) == 0) {
-            if (oprd->type != DOT_INPUT) {
-                av_log(ctx, AV_LOG_ERROR, "Found \"%s\" in model, but it is not input node\n", input_name);
-                return DNN_ERROR;
-            }
-            break;
-        }
-        oprd = NULL;
-    }
-    if (!oprd) {
-        av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
-        return DNN_ERROR;
-    }
-
-    oprd->dims[1] = frame->height;
-    oprd->dims[2] = frame->width;
-
-    av_freep(&oprd->data);
-    oprd->length = calculate_operand_data_length(oprd);
-    if (oprd->length <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "The input data length overflow\n");
-        return DNN_ERROR;
-    }
-    oprd->data = av_malloc(oprd->length);
-    if (!oprd->data) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to malloc memory for input data\n");
-        return DNN_ERROR;
-    }
-
-    input.height = oprd->dims[1];
-    input.width = oprd->dims[2];
-    input.channels = oprd->dims[3];
-    input.data = oprd->data;
-    input.dt = oprd->data_type;
-    if (native_model->model->pre_proc != NULL) {
-        native_model->model->pre_proc(frame, &input, native_model->model->userdata);
-    } else {
-        proc_from_frame_to_dnn(frame, &input, ctx);
-    }
-
-    return DNN_SUCCESS;
-}
-
 // Loads model and its parameters that are stored in a binary file with following structure:
 // layers_num,layer_type,layer_parameterss,layer_type,layer_parameters...
 // For CONV layer: activation_function, input_num, output_num, kernel_size, kernel, biases
@@ -273,7 +215,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
         return NULL;
     }
 
-    model->set_input = &set_input_native;
     model->get_input = &get_input_native;
     model->userdata = userdata;
 
@@ -285,26 +226,66 @@ fail:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
     NativeModel *native_model = (NativeModel *)model->model;
     NativeContext *ctx = &native_model->ctx;
     int32_t layer;
-    DNNData output;
-
-    if (nb_output != 1) {
-        // currently, the filter does not need multiple outputs,
-        // so we just pending the support until we really need it.
-        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
-        return DNN_ERROR;
-    }
+    DNNData input, output;
+    DnnOperand *oprd = NULL;
 
     if (native_model->layers_num <= 0 || native_model->operands_num <= 0) {
         av_log(ctx, AV_LOG_ERROR, "No operands or layers in model\n");
         return DNN_ERROR;
     }
-    if (!native_model->operands[0].data) {
-        av_log(ctx, AV_LOG_ERROR, "Empty model input data\n");
+
+    for (int i = 0; i < native_model->operands_num; ++i) {
+        oprd = &native_model->operands[i];
+        if (strcmp(oprd->name, input_name) == 0) {
+            if (oprd->type != DOT_INPUT) {
+                av_log(ctx, AV_LOG_ERROR, "Found \"%s\" in model, but it is not input node\n", input_name);
+                return DNN_ERROR;
+            }
+            break;
+        }
+        oprd = NULL;
+    }
+    if (!oprd) {
+        av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
+        return DNN_ERROR;
+    }
+
+    oprd->dims[1] = in_frame->height;
+    oprd->dims[2] = in_frame->width;
+
+    av_freep(&oprd->data);
+    oprd->length = calculate_operand_data_length(oprd);
+    if (oprd->length <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "The input data length overflow\n");
+        return DNN_ERROR;
+    }
+    oprd->data = av_malloc(oprd->length);
+    if (!oprd->data) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to malloc memory for input data\n");
+        return DNN_ERROR;
+    }
+
+    input.height = oprd->dims[1];
+    input.width = oprd->dims[2];
+    input.channels = oprd->dims[3];
+    input.data = oprd->data;
+    input.dt = oprd->data_type;
+    if (native_model->model->pre_proc != NULL) {
+        native_model->model->pre_proc(in_frame, &input, native_model->model->userdata);
+    } else {
+        proc_from_frame_to_dnn(in_frame, &input, ctx);
+    }
+
+    if (nb_output != 1) {
+        // currently, the filter does not need multiple outputs,
+        // so we just pending the support until we really need it.
+        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
         return DNN_ERROR;
     }
 

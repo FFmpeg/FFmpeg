@@ -80,13 +80,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const char *model_output_name = "y";
     AVFrame *out;
 
-    dnn_result = (dr_context->model->set_input)(dr_context->model->model, in, "x");
-    if (dnn_result != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "could not set input for the model\n");
-        av_frame_free(&in);
-        return AVERROR(EIO);
-    }
-
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_log(ctx, AV_LOG_ERROR, "could not allocate memory for output frame\n");
@@ -95,7 +88,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    dnn_result = (dr_context->dnn_module->execute_model)(dr_context->model, &model_output_name, 1, out);
+    dnn_result = (dr_context->dnn_module->execute_model)(dr_context->model, "x", in, &model_output_name, 1, out);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         av_frame_free(&in);

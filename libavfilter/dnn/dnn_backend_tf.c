@@ -45,8 +45,6 @@ typedef struct TFModel{
     TF_Graph *graph;
     TF_Session *session;
     TF_Status *status;
-    TF_Output input;
-    TF_Tensor *input_tensor;
 } TFModel;
 
 static const AVClass dnn_tensorflow_class = {
@@ -152,48 +150,33 @@ static DNNReturnType get_input_tf(void *model, DNNData *input, const char *input
     return DNN_SUCCESS;
 }
 
-static DNNReturnType set_input_tf(void *model, AVFrame *frame, const char *input_name)
+static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename)
 {
-    TFModel *tf_model = (TFModel *)model;
     TFContext *ctx = &tf_model->ctx;
-    DNNData input;
+    TF_Buffer *graph_def;
+    TF_ImportGraphDefOptions *graph_opts;
     TF_SessionOptions *sess_opts;
-    const TF_Operation *init_op = TF_GraphOperationByName(tf_model->graph, "init");
+    const TF_Operation *init_op;
 
-    if (get_input_tf(model, &input, input_name) != DNN_SUCCESS)
-        return DNN_ERROR;
-    input.height = frame->height;
-    input.width = frame->width;
-
-    // Input operation
-    tf_model->input.oper = TF_GraphOperationByName(tf_model->graph, input_name);
-    if (!tf_model->input.oper){
-        av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
+    graph_def = read_graph(model_filename);
+    if (!graph_def){
+        av_log(ctx, AV_LOG_ERROR, "Failed to read model \"%s\" graph\n", model_filename);
         return DNN_ERROR;
     }
-    tf_model->input.index = 0;
-    if (tf_model->input_tensor){
-        TF_DeleteTensor(tf_model->input_tensor);
-    }
-    tf_model->input_tensor = allocate_input_tensor(&input);
-    if (!tf_model->input_tensor){
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for input tensor\n");
+    tf_model->graph = TF_NewGraph();
+    tf_model->status = TF_NewStatus();
+    graph_opts = TF_NewImportGraphDefOptions();
+    TF_GraphImportGraphDef(tf_model->graph, graph_def, graph_opts, tf_model->status);
+    TF_DeleteImportGraphDefOptions(graph_opts);
+    TF_DeleteBuffer(graph_def);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        TF_DeleteGraph(tf_model->graph);
+        TF_DeleteStatus(tf_model->status);
+        av_log(ctx, AV_LOG_ERROR, "Failed to import serialized graph to model graph\n");
         return DNN_ERROR;
     }
-    input.data = (float *)TF_TensorData(tf_model->input_tensor);
 
-    if (tf_model->model->pre_proc != NULL) {
-        tf_model->model->pre_proc(frame, &input, tf_model->model->userdata);
-    } else {
-        proc_from_frame_to_dnn(frame, &input, ctx);
-    }
-
-    // session
-    if (tf_model->session){
-        TF_CloseSession(tf_model->session, tf_model->status);
-        TF_DeleteSession(tf_model->session, tf_model->status);
-    }
-
+    init_op = TF_GraphOperationByName(tf_model->graph, "init");
     sess_opts = TF_NewSessionOptions();
     tf_model->session = TF_NewSession(tf_model->graph, sess_opts, tf_model->status);
     TF_DeleteSessionOptions(sess_opts);
@@ -214,33 +197,6 @@ static DNNReturnType set_input_tf(void *model, AVFrame *frame, const char *input
             av_log(ctx, AV_LOG_ERROR, "Failed to run session when initializing\n");
             return DNN_ERROR;
         }
-    }
-
-    return DNN_SUCCESS;
-}
-
-static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename)
-{
-    TFContext *ctx = &tf_model->ctx;
-    TF_Buffer *graph_def;
-    TF_ImportGraphDefOptions *graph_opts;
-
-    graph_def = read_graph(model_filename);
-    if (!graph_def){
-        av_log(ctx, AV_LOG_ERROR, "Failed to read model \"%s\" graph\n", model_filename);
-        return DNN_ERROR;
-    }
-    tf_model->graph = TF_NewGraph();
-    tf_model->status = TF_NewStatus();
-    graph_opts = TF_NewImportGraphDefOptions();
-    TF_GraphImportGraphDef(tf_model->graph, graph_def, graph_opts, tf_model->status);
-    TF_DeleteImportGraphDefOptions(graph_opts);
-    TF_DeleteBuffer(graph_def);
-    if (TF_GetCode(tf_model->status) != TF_OK){
-        TF_DeleteGraph(tf_model->graph);
-        TF_DeleteStatus(tf_model->status);
-        av_log(ctx, AV_LOG_ERROR, "Failed to import serialized graph to model graph\n");
-        return DNN_ERROR;
     }
 
     return DNN_SUCCESS;
@@ -626,7 +582,6 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, 
     }
 
     model->model = (void *)tf_model;
-    model->set_input = &set_input_tf;
     model->get_input = &get_input_tf;
     model->options = options;
     model->userdata = userdata;
@@ -634,13 +589,40 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, 
     return model;
 }
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
     TF_Output *tf_outputs;
     TFModel *tf_model = (TFModel *)model->model;
     TFContext *ctx = &tf_model->ctx;
-    DNNData output;
+    DNNData input, output;
     TF_Tensor **output_tensors;
+    TF_Output tf_input;
+    TF_Tensor *input_tensor;
+
+    if (get_input_tf(tf_model, &input, input_name) != DNN_SUCCESS)
+        return DNN_ERROR;
+    input.height = in_frame->height;
+    input.width = in_frame->width;
+
+    tf_input.oper = TF_GraphOperationByName(tf_model->graph, input_name);
+    if (!tf_input.oper){
+        av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
+        return DNN_ERROR;
+    }
+    tf_input.index = 0;
+    input_tensor = allocate_input_tensor(&input);
+    if (!input_tensor){
+        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for input tensor\n");
+        return DNN_ERROR;
+    }
+    input.data = (float *)TF_TensorData(input_tensor);
+
+    if (tf_model->model->pre_proc != NULL) {
+        tf_model->model->pre_proc(in_frame, &input, tf_model->model->userdata);
+    } else {
+        proc_from_frame_to_dnn(in_frame, &input, ctx);
+    }
 
     if (nb_output != 1) {
         // currently, the filter does not need multiple outputs,
@@ -674,7 +656,7 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char **output
     }
 
     TF_SessionRun(tf_model->session, NULL,
-                  &tf_model->input, &tf_model->input_tensor, 1,
+                  &tf_input, &input_tensor, 1,
                   tf_outputs, output_tensors, nb_output,
                   NULL, 0, NULL, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK) {
@@ -708,6 +690,7 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char **output
             TF_DeleteTensor(output_tensors[i]);
         }
     }
+    TF_DeleteTensor(input_tensor);
     av_freep(&output_tensors);
     av_freep(&tf_outputs);
     return DNN_SUCCESS;
@@ -728,9 +711,6 @@ void ff_dnn_free_model_tf(DNNModel **model)
         }
         if (tf_model->status){
             TF_DeleteStatus(tf_model->status);
-        }
-        if (tf_model->input_tensor){
-            TF_DeleteTensor(tf_model->input_tensor);
         }
         av_freep(&tf_model);
         av_freep(model);
