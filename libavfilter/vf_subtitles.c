@@ -449,9 +449,6 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
         ass_process_codec_private(ass->track,
                                   dec_ctx->subtitle_header,
                                   dec_ctx->subtitle_header_size);
-    av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
     while (av_read_frame(fmt, &pkt) >= 0) {
         int i, got_subtitle;
         AVSubtitle sub = {0};
