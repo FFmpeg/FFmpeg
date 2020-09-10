@@ -396,8 +396,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     }
     if (ass->charenc)
         av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
-    if (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,26,100))
-        av_dict_set(&codec_opts, "sub_text_format", "ass", 0);
+    av_dict_set(&codec_opts, "sub_text_format", "ass", 0);
 
     dec_ctx = avcodec_alloc_context3(dec);
     if (!dec_ctx) {
@@ -465,11 +464,8 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
                     char *ass_line = sub.rects[i]->ass;
                     if (!ass_line)
                         break;
-                    if (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57,25,100))
-                        ass_process_data(ass->track, ass_line, strlen(ass_line));
-                    else
-                        ass_process_chunk(ass->track, ass_line, strlen(ass_line),
-                                          start_time, duration);
+                    ass_process_chunk(ass->track, ass_line, strlen(ass_line),
+                                      start_time, duration);
                 }
             }
         }
