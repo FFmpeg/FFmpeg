@@ -316,7 +316,7 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
 
-    AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
+    const AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
     if (!enc) {
         av_log(ctx, AV_LOG_ERROR, "SNOW encoder not found.\n");
         return AVERROR(EINVAL);

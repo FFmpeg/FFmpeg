@@ -155,7 +155,7 @@ static AVStream *find_stream(void *log, AVFormatContext *avf, const char *spec)
 
 static int open_stream(AVFilterContext *ctx, MovieStream *st)
 {
-    AVCodec *codec;
+    const AVCodec *codec;
     int ret;
 
     codec = avcodec_find_decoder(st->st->codecpar->codec_id);
