@@ -31,6 +31,9 @@ extern const uint8_t  ff_celt_band_end[];
 
 extern const uint8_t  ff_opus_default_coupled_streams[];
 
+extern const uint16_t ff_silk_model_lbrr_flags_40[];
+extern const uint16_t ff_silk_model_lbrr_flags_60[];
+
 extern const uint16_t ff_silk_model_stereo_s1[];
 extern const uint16_t ff_silk_model_stereo_s2[];
 extern const uint16_t ff_silk_model_stereo_s3[];

@@ -26,6 +26,9 @@ const uint8_t ff_opus_default_coupled_streams[] = { 0, 1, 1, 2, 2, 2, 2, 3 };
 
 const uint8_t ff_celt_band_end[] = { 13, 17, 17, 19, 21 };
 
+const uint16_t ff_silk_model_lbrr_flags_40[] = { 256, 0, 53, 106, 256 };
+const uint16_t ff_silk_model_lbrr_flags_60[] = { 256, 0, 41, 61, 90, 131, 146, 174, 256 };
+
 const uint16_t ff_silk_model_stereo_s1[] = {
     256,   7,   9,  10,  11,  12,  22,  46,  54,  55,  56,  59,  82, 174, 197, 200,
     201, 202, 210, 234, 244, 245, 246, 247, 249, 256
