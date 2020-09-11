@@ -51,6 +51,9 @@ typedef struct DNNModel{
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
     DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
+    // Gets model output width/height with given input w/h
+    DNNReturnType (*get_output)(void *model, const char *input_name, int input_width, int input_height,
+                                const char *output_name, int *output_width, int *output_height);
     // set the pre process to transfer data from AVFrame to DNNData
     // the default implementation within DNN is used if it is not provided by the filter
     int (*pre_proc)(AVFrame *frame_in, DNNData *model_input, void *user_data);

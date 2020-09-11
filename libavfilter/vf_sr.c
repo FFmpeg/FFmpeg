@@ -111,23 +111,20 @@ static int config_output(AVFilterLink *outlink)
     SRContext *ctx = context->priv;
     DNNReturnType result;
     AVFilterLink *inlink = context->inputs[0];
-    AVFrame *out = NULL;
-    const char *model_output_name = "y";
+    int out_width, out_height;
 
     // have a try run in case that the dnn model resize the frame
-    AVFrame *fake_in = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    out = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    result = (ctx->dnn_module->execute_model)(ctx->model, "x", fake_in,
-                                              (const char **)&model_output_name, 1, out);
-    if (result != DNN_SUCCESS){
-        av_log(context, AV_LOG_ERROR, "failed to execute loaded model\n");
+    result = ctx->model->get_output(ctx->model->model, "x", inlink->w, inlink->h,
+                                    "y", &out_width, &out_height);
+    if (result != DNN_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
         return AVERROR(EIO);
     }
 
-    if (fake_in->width != out->width || fake_in->height != out->height) {
+    if (inlink->w != out_width || inlink->h != out_height) {
         //espcn
-        outlink->w = out->width;
-        outlink->h = out->height;
+        outlink->w = out_width;
+        outlink->h = out_height;
         if (inlink->format != AV_PIX_FMT_GRAY8){
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
             int sws_src_h = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
@@ -141,15 +138,13 @@ static int config_output(AVFilterLink *outlink)
         }
     } else {
         //srcnn
-        outlink->w = out->width * ctx->scale_factor;
-        outlink->h = out->height * ctx->scale_factor;
+        outlink->w = out_width * ctx->scale_factor;
+        outlink->h = out_height * ctx->scale_factor;
         ctx->sws_pre_scale = sws_getContext(inlink->w, inlink->h, inlink->format,
                                         outlink->w, outlink->h, outlink->format,
                                         SWS_BICUBIC, NULL, NULL, NULL);
     }
 
-    av_frame_free(&fake_in);
-    av_frame_free(&out);
     return 0;
 }
 

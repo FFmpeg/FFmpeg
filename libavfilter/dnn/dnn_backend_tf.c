@@ -55,6 +55,10 @@ static const AVClass dnn_tensorflow_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
+static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame,
+                                      int do_ioproc);
+
 static void free_buffer(void *data, size_t length)
 {
     av_freep(&data);
@@ -148,6 +152,25 @@ static DNNReturnType get_input_tf(void *model, DNNData *input, const char *input
     input->channels = dims[3];
 
     return DNN_SUCCESS;
+}
+
+static DNNReturnType get_output_tf(void *model, const char *input_name, int input_width, int input_height,
+                                   const char *output_name, int *output_width, int *output_height)
+{
+    DNNReturnType ret;
+    TFModel *tf_model = (TFModel *)model;
+    AVFrame *in_frame = av_frame_alloc();
+    AVFrame *out_frame = av_frame_alloc();
+    in_frame->width = input_width;
+    in_frame->height = input_height;
+
+    ret = execute_model_tf(tf_model->model, input_name, in_frame, &output_name, 1, out_frame, 0);
+    *output_width = out_frame->width;
+    *output_height = out_frame->height;
+
+    av_frame_free(&out_frame);
+    av_frame_free(&in_frame);
+    return ret;
 }
 
 static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename)
@@ -583,14 +606,16 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, 
 
     model->model = (void *)tf_model;
     model->get_input = &get_input_tf;
+    model->get_output = &get_output_tf;
     model->options = options;
     model->userdata = userdata;
 
     return model;
 }
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame,
+                                      int do_ioproc)
 {
     TF_Output *tf_outputs;
     TFModel *tf_model = (TFModel *)model->model;
@@ -618,10 +643,12 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_n
     }
     input.data = (float *)TF_TensorData(input_tensor);
 
-    if (tf_model->model->pre_proc != NULL) {
-        tf_model->model->pre_proc(in_frame, &input, tf_model->model->userdata);
-    } else {
-        proc_from_frame_to_dnn(in_frame, &input, ctx);
+    if (do_ioproc) {
+        if (tf_model->model->pre_proc != NULL) {
+            tf_model->model->pre_proc(in_frame, &input, tf_model->model->userdata);
+        } else {
+            proc_from_frame_to_dnn(in_frame, &input, ctx);
+        }
     }
 
     if (nb_output != 1) {
@@ -673,15 +700,15 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_n
         output.data = TF_TensorData(output_tensors[i]);
         output.dt = TF_TensorType(output_tensors[i]);
 
-        if (out_frame->width != output.width || out_frame->height != output.height) {
-            out_frame->width = output.width;
-            out_frame->height = output.height;
-        } else {
+        if (do_ioproc) {
             if (tf_model->model->post_proc != NULL) {
                 tf_model->model->post_proc(out_frame, &output, tf_model->model->userdata);
             } else {
                 proc_from_dnn_to_frame(out_frame, &output, ctx);
             }
+        } else {
+            out_frame->width = output.width;
+            out_frame->height = output.height;
         }
     }
 
@@ -694,6 +721,25 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_n
     av_freep(&output_tensors);
     av_freep(&tf_outputs);
     return DNN_SUCCESS;
+}
+
+DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+{
+    TFModel *tf_model = (TFModel *)model->model;
+    TFContext *ctx = &tf_model->ctx;
+
+    if (!in_frame) {
+        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
+        return DNN_ERROR;
+    }
+
+    if (!out_frame) {
+        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
+        return DNN_ERROR;
+    }
+
+    return execute_model_tf(model, input_name, in_frame, output_names, nb_output, out_frame, 1);
 }
 
 void ff_dnn_free_model_tf(DNNModel **model)

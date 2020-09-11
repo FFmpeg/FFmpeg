@@ -63,6 +63,10 @@ static const AVOption dnn_openvino_options[] = {
 
 AVFILTER_DEFINE_CLASS(dnn_openvino);
 
+static DNNReturnType execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame,
+                                      int do_ioproc);
+
 static DNNDataType precision_to_datatype(precision_e precision)
 {
     switch (precision)
@@ -132,6 +136,25 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
     return DNN_ERROR;
 }
 
+static DNNReturnType get_output_ov(void *model, const char *input_name, int input_width, int input_height,
+                                   const char *output_name, int *output_width, int *output_height)
+{
+    DNNReturnType ret;
+    OVModel *ov_model = (OVModel *)model;
+    AVFrame *in_frame = av_frame_alloc();
+    AVFrame *out_frame = av_frame_alloc();
+    in_frame->width = input_width;
+    in_frame->height = input_height;
+
+    ret = execute_model_ov(ov_model->model, input_name, in_frame, &output_name, 1, out_frame, 0);
+    *output_width = out_frame->width;
+    *output_height = out_frame->height;
+
+    av_frame_free(&out_frame);
+    av_frame_free(&in_frame);
+    return ret;
+}
+
 DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, void *userdata)
 {
     char *all_dev_names = NULL;
@@ -191,6 +214,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
 
     model->model = (void *)ov_model;
     model->get_input = &get_input_ov;
+    model->get_output = &get_output_ov;
     model->options = options;
     model->userdata = userdata;
 
@@ -213,8 +237,9 @@ err:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+static DNNReturnType execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame,
+                                      int do_ioproc)
 {
     char *model_output_name = NULL;
     char *all_output_names = NULL;
@@ -252,10 +277,12 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     input.channels = dims.dims[1];
     input.data = blob_buffer.buffer;
     input.dt = precision_to_datatype(precision);
-    if (ov_model->model->pre_proc != NULL) {
-        ov_model->model->pre_proc(in_frame, &input, ov_model->model->userdata);
-    } else {
-        proc_from_frame_to_dnn(in_frame, &input, ctx);
+    if (do_ioproc) {
+        if (ov_model->model->pre_proc != NULL) {
+            ov_model->model->pre_proc(in_frame, &input, ov_model->model->userdata);
+        } else {
+            proc_from_frame_to_dnn(in_frame, &input, ctx);
+        }
     }
     ie_blob_free(&input_blob);
 
@@ -308,20 +335,39 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
         output.width    = dims.dims[3];
         output.dt       = precision_to_datatype(precision);
         output.data     = blob_buffer.buffer;
-        if (out_frame->width != output.width || out_frame->height != output.height) {
-            out_frame->width = output.width;
-            out_frame->height = output.height;
-        } else {
+        if (do_ioproc) {
             if (ov_model->model->post_proc != NULL) {
                 ov_model->model->post_proc(out_frame, &output, ov_model->model->userdata);
             } else {
                 proc_from_dnn_to_frame(out_frame, &output, ctx);
             }
+        } else {
+            out_frame->width = output.width;
+            out_frame->height = output.height;
         }
         ie_blob_free(&output_blob);
     }
 
     return DNN_SUCCESS;
+}
+
+DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+{
+    OVModel *ov_model = (OVModel *)model->model;
+    OVContext *ctx = &ov_model->ctx;
+
+    if (!in_frame) {
+        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
+        return DNN_ERROR;
+    }
+
+    if (!out_frame) {
+        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
+        return DNN_ERROR;
+    }
+
+    return execute_model_ov(model, input_name, in_frame, output_names, nb_output, out_frame, 1);
 }
 
 void ff_dnn_free_model_ov(DNNModel **model)

@@ -44,6 +44,10 @@ const AVClass dnn_native_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
+static DNNReturnType execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame,
+                                          int do_ioproc);
+
 static DNNReturnType get_input_native(void *model, DNNData *input, const char *input_name)
 {
     NativeModel *native_model = (NativeModel *)model;
@@ -68,6 +72,25 @@ static DNNReturnType get_input_native(void *model, DNNData *input, const char *i
     // do not find the input operand
     av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model\n", input_name);
     return DNN_ERROR;
+}
+
+static DNNReturnType get_output_native(void *model, const char *input_name, int input_width, int input_height,
+                                       const char *output_name, int *output_width, int *output_height)
+{
+    DNNReturnType ret;
+    NativeModel *native_model = (NativeModel *)model;
+    AVFrame *in_frame = av_frame_alloc();
+    AVFrame *out_frame = av_frame_alloc();
+    in_frame->width = input_width;
+    in_frame->height = input_height;
+
+    ret = execute_model_native(native_model->model, input_name, in_frame, &output_name, 1, out_frame, 0);
+    *output_width = out_frame->width;
+    *output_height = out_frame->height;
+
+    av_frame_free(&out_frame);
+    av_frame_free(&in_frame);
+    return ret;
 }
 
 // Loads model and its parameters that are stored in a binary file with following structure:
@@ -216,6 +239,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *optio
     }
 
     model->get_input = &get_input_native;
+    model->get_output = &get_output_native;
     model->userdata = userdata;
 
     return model;
@@ -226,8 +250,9 @@ fail:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+static DNNReturnType execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame,
+                                          int do_ioproc)
 {
     NativeModel *native_model = (NativeModel *)model->model;
     NativeContext *ctx = &native_model->ctx;
@@ -276,10 +301,12 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *inp
     input.channels = oprd->dims[3];
     input.data = oprd->data;
     input.dt = oprd->data_type;
-    if (native_model->model->pre_proc != NULL) {
-        native_model->model->pre_proc(in_frame, &input, native_model->model->userdata);
-    } else {
-        proc_from_frame_to_dnn(in_frame, &input, ctx);
+    if (do_ioproc) {
+        if (native_model->model->pre_proc != NULL) {
+            native_model->model->pre_proc(in_frame, &input, native_model->model->userdata);
+        } else {
+            proc_from_frame_to_dnn(in_frame, &input, ctx);
+        }
     }
 
     if (nb_output != 1) {
@@ -322,19 +349,38 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *inp
         output.channels = oprd->dims[3];
         output.dt = oprd->data_type;
 
-        if (out_frame->width != output.width || out_frame->height != output.height) {
-            out_frame->width = output.width;
-            out_frame->height = output.height;
-        } else {
+        if (do_ioproc) {
             if (native_model->model->post_proc != NULL) {
                 native_model->model->post_proc(out_frame, &output, native_model->model->userdata);
             } else {
                 proc_from_dnn_to_frame(out_frame, &output, ctx);
             }
+        } else {
+            out_frame->width = output.width;
+            out_frame->height = output.height;
         }
     }
 
     return DNN_SUCCESS;
+}
+
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+{
+    NativeModel *native_model = (NativeModel *)model->model;
+    NativeContext *ctx = &native_model->ctx;
+
+    if (!in_frame) {
+        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
+        return DNN_ERROR;
+    }
+
+    if (!out_frame) {
+        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
+        return DNN_ERROR;
+    }
+
+    return execute_model_native(model, input_name, in_frame, output_names, nb_output, out_frame, 1);
 }
 
 int32_t calculate_operand_dims_count(const DnnOperand *oprd)

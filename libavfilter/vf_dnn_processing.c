@@ -233,24 +233,15 @@ static int config_output(AVFilterLink *outlink)
     DnnProcessingContext *ctx = context->priv;
     DNNReturnType result;
     AVFilterLink *inlink = context->inputs[0];
-    AVFrame *out = NULL;
-
-    AVFrame *fake_in = ff_get_video_buffer(inlink, inlink->w, inlink->h);
 
     // have a try run in case that the dnn model resize the frame
-    out = ff_get_video_buffer(inlink, inlink->w, inlink->h);
-    result = (ctx->dnn_module->execute_model)(ctx->model, ctx->model_inputname, fake_in,
-                                              (const char **)&ctx->model_outputname, 1, out);
-    if (result != DNN_SUCCESS){
-        av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
+    result = ctx->model->get_output(ctx->model->model, ctx->model_inputname, inlink->w, inlink->h,
+                                    ctx->model_outputname, &outlink->w, &outlink->h);
+    if (result != DNN_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
         return AVERROR(EIO);
     }
 
-    outlink->w = out->width;
-    outlink->h = out->height;
-
-    av_frame_free(&fake_in);
-    av_frame_free(&out);
     prepare_uv_scale(outlink);
 
     return 0;
