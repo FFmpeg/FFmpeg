@@ -519,6 +519,7 @@ OBJS-$(CONFIG_SUBVIEWER_DEMUXER)         += subviewerdec.o subtitles.o
 OBJS-$(CONFIG_SUP_DEMUXER)               += supdec.o
 OBJS-$(CONFIG_SUP_MUXER)                 += supenc.o
 OBJS-$(CONFIG_SVAG_DEMUXER)              += svag.o
+OBJS-$(CONFIG_SVS_DEMUXER)               += svs.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swfdec.o swf.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swfenc.o swf.o
 OBJS-$(CONFIG_TAK_DEMUXER)               += takdec.o apetag.o img2.o rawdec.o

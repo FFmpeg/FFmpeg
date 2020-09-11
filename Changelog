@@ -23,6 +23,7 @@ version <next>:
 - PhotoCD decoder
 - MCA demuxer
 - AV1 decoder (Hardware acceleration used only)
+- SVS demuxer
 
 
 version 4.3:
