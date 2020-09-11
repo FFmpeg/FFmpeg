@@ -227,6 +227,7 @@ extern AVOutputFormat ff_kvag_muxer;
 extern AVOutputFormat ff_latm_muxer;
 extern AVInputFormat  ff_lmlm4_demuxer;
 extern AVInputFormat  ff_loas_demuxer;
+extern AVInputFormat  ff_luodat_demuxer;
 extern AVInputFormat  ff_lrc_demuxer;
 extern AVOutputFormat ff_lrc_muxer;
 extern AVInputFormat  ff_lvf_demuxer;

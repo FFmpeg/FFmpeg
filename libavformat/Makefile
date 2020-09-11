@@ -293,6 +293,7 @@ OBJS-$(CONFIG_KVAG_MUXER)                += kvag.o rawenc.o
 OBJS-$(CONFIG_LATM_MUXER)                += latmenc.o rawenc.o
 OBJS-$(CONFIG_LMLM4_DEMUXER)             += lmlm4.o
 OBJS-$(CONFIG_LOAS_DEMUXER)              += loasdec.o rawdec.o
+OBJS-$(CONFIG_LUODAT_DEMUXER)            += luodatdec.o
 OBJS-$(CONFIG_LRC_DEMUXER)               += lrcdec.o lrc.o subtitles.o
 OBJS-$(CONFIG_LRC_MUXER)                 += lrcenc.o lrc.o
 OBJS-$(CONFIG_LVF_DEMUXER)               += lvfdec.o

@@ -25,6 +25,7 @@ version <next>:
 - AV1 decoder (Hardware acceleration used only)
 - SVS demuxer
 - Argonaut Games BRP demuxer
+- DAT demuxer
 
 
 version 4.3:
