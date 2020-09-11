@@ -1966,11 +1966,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_PSX:
+        for (int block = 0; block < avpkt->size / FFMAX(avctx->block_align, 16 * avctx->channels); block++) {
+            int nb_samples_per_block = 28 * FFMAX(avctx->block_align, 16 * avctx->channels) / (16 * avctx->channels);
         for (channel = 0; channel < avctx->channels; channel++) {
-            samples = samples_p[channel];
+            samples = samples_p[channel] + block * nb_samples_per_block;
 
             /* Read in every sample for this channel.  */
-            for (i = 0; i < nb_samples / 28; i++) {
+            for (i = 0; i < nb_samples_per_block / 28; i++) {
                 int filter, shift, flag, byte;
 
                 filter = bytestream2_get_byteu(&gb);
@@ -2000,6 +2002,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     c->status[channel].sample1 = sample;
                 }
             }
+        }
         }
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
