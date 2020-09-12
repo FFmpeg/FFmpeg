@@ -31,6 +31,7 @@
 extern AVOutputFormat ff_a64_muxer;
 extern AVInputFormat  ff_aa_demuxer;
 extern AVInputFormat  ff_aac_demuxer;
+extern AVInputFormat  ff_aax_demuxer;
 extern AVInputFormat  ff_ac3_demuxer;
 extern AVOutputFormat ff_ac3_muxer;
 extern AVInputFormat  ff_acm_demuxer;

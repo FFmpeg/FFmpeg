@@ -26,6 +26,7 @@ version <next>:
 - SVS demuxer
 - Argonaut Games BRP demuxer
 - DAT demuxer
+- aax demuxer
 
 
 version 4.3:
