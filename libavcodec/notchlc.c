@@ -229,6 +229,9 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p, ThreadFrame *frame,
     bytestream2_seek(&rgb, s->y_data_row_offsets, SEEK_SET);
     bytestream2_seek(gb, s->y_control_data_offset, SEEK_SET);
 
+    if (bytestream2_get_bytes_left(gb) < (avctx->height + 3) / 4 * ((avctx->width + 3) / 4) * 4)
+        return AVERROR_INVALIDDATA;
+
     dsty = (uint16_t *)p->data[0];
     dsta = (uint16_t *)p->data[3];
     ylinesize = p->linesize[0] / 2;
@@ -277,6 +280,9 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p, ThreadFrame *frame,
             dsta += alinesize;
         }
     } else {
+        if (bytestream2_get_bytes_left(gb) < (avctx->height + 15) / 16 * ((avctx->width + 15) / 16) * 8)
+            return AVERROR_INVALIDDATA;
+
         for (int y = 0; y < avctx->height; y += 16) {
             for (int x = 0; x < avctx->width; x += 16) {
                 unsigned m = bytestream2_get_le32(gb);
