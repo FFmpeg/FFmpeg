@@ -155,8 +155,6 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         color->transfer_characteristics  == AVCOL_TRC_IEC61966_2_1)
         ctx->format = pix_fmts_rgb[color->high_bitdepth + color->twelve_bit];
 
-    avctx->pix_fmt = ctx->format;
-
     avctx->profile = seq->seq_profile;
     avctx->level   = seq->seq_level_idx[0];
 
@@ -164,12 +162,6 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
     avctx->color_primaries = (enum AVColorPrimaries) color->color_primaries;
     avctx->color_trc = (enum AVColorTransferCharacteristic) color->transfer_characteristics;
     avctx->color_range = color->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
-
-    if (ctx->width != avctx->width || ctx->height != avctx->height) {
-        ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
-        if (ret < 0)
-            goto end;
-    }
 
     if (avctx->framerate.num)
         avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));

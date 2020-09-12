@@ -75,17 +75,17 @@ void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, int16_t **out,
                 j = 0;
                 mul = (mpc_CC+1)[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][0] & 0xFF];
                 for(; j < 12; j++)
-                    c->sb_samples[ch][j][i] = mul * c->Q[ch][j + off];
+                    c->sb_samples[ch][j][i] = av_clipf(mul * c->Q[ch][j + off], INT32_MIN, INT32_MAX);
                 mul = (mpc_CC+1)[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][1] & 0xFF];
                 for(; j < 24; j++)
-                    c->sb_samples[ch][j][i] = mul * c->Q[ch][j + off];
+                    c->sb_samples[ch][j][i] = av_clipf(mul * c->Q[ch][j + off], INT32_MIN, INT32_MAX);
                 mul = (mpc_CC+1)[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][2] & 0xFF];
                 for(; j < 36; j++)
-                    c->sb_samples[ch][j][i] = mul * c->Q[ch][j + off];
+                    c->sb_samples[ch][j][i] = av_clipf(mul * c->Q[ch][j + off], INT32_MIN, INT32_MAX);
             }
         }
         if(bands[i].msf){
-            int t1, t2;
+            unsigned t1, t2;
             for(j = 0; j < SAMPLES_PER_BAND; j++){
                 t1 = c->sb_samples[0][j][i];
                 t2 = c->sb_samples[1][j][i];
