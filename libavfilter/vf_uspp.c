@@ -316,7 +316,7 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
 
-    AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
+    const AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
     if (!enc) {
         av_log(ctx, AV_LOG_ERROR, "SNOW encoder not found.\n");
         return AVERROR(EINVAL);
@@ -362,9 +362,9 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->global_quality = 123;
         av_dict_set(&opts, "no_bitstream", "1", 0);
         ret = avcodec_open2(avctx_enc, enc, &opts);
+        av_dict_free(&opts);
         if (ret < 0)
             return ret;
-        av_dict_free(&opts);
         av_assert0(avctx_enc->codec);
     }
 

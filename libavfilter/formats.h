@@ -83,7 +83,7 @@ struct AVFilterFormats {
  *   channel count with unknown disposition with the same number of channels
  *   (e.g. AV_CH_LAYOUT_STEREO and FF_COUNT2LAYOUT(2).
  */
-typedef struct AVFilterChannelLayouts {
+struct AVFilterChannelLayouts {
     uint64_t *channel_layouts;  ///< list of channel layouts
     int    nb_channel_layouts;  ///< number of channel layouts
     char all_layouts;           ///< accept any known channel layout
@@ -91,7 +91,7 @@ typedef struct AVFilterChannelLayouts {
 
     unsigned refcount;          ///< number of references to this list
     struct AVFilterChannelLayouts ***refs; ///< references to this list
-} AVFilterChannelLayouts;
+};
 
 /**
  * Encode a channel count as a channel layout.

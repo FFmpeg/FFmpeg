@@ -46,7 +46,7 @@ static av_cold int init(AVCodecContext *avctx)
     }
 
     if(a->is_mjpeg) {
-        AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
+        const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
         AVDictionary *thread_opt = NULL;
         if (!codec) {
             av_log(avctx, AV_LOG_ERROR, "MJPEG codec not found\n");

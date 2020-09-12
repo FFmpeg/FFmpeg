@@ -695,7 +695,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if ((avctx->codec->capabilities & AV_CODEC_CAP_EXPERIMENTAL) &&
         avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         const char *codec_string = av_codec_is_encoder(codec) ? "encoder" : "decoder";
-        AVCodec *codec2;
+        const AVCodec *codec2;
         av_log(avctx, AV_LOG_ERROR,
                "The %s '%s' is experimental but experimental codecs are not enabled, "
                "add '-strict %d' if you want to use it.\n",
@@ -1193,7 +1193,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 const char *avcodec_get_name(enum AVCodecID id)
 {
     const AVCodecDescriptor *cd;
-    AVCodec *codec;
+    const AVCodec *codec;
 
     if (id == AV_CODEC_ID_NONE)
         return "none";
@@ -1852,7 +1852,7 @@ unsigned int avpriv_toupper4(unsigned int x)
 ((unsigned)av_toupper((x >> 24) & 0xFF) << 24);
 }
 
-int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
+int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
 {
     int ret;
 

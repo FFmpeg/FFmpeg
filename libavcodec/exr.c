@@ -134,8 +134,8 @@ typedef struct EXRContext {
     const AVPixFmtDescriptor *desc;
 
     int w, h;
-    uint32_t xmax, xmin;
-    uint32_t ymax, ymin;
+    int32_t xmax, xmin;
+    int32_t ymax, ymin;
     uint32_t xdelta, ydelta;
 
     int scan_lines_per_block;
@@ -995,12 +995,13 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     uint64_t line_offset, uncompressed_size;
     uint8_t *ptr;
     uint32_t data_size;
-    uint64_t line, col = 0;
+    int line, col = 0;
     uint64_t tile_x, tile_y, tile_level_x, tile_level_y;
     const uint8_t *src;
     int step = s->desc->flags & AV_PIX_FMT_FLAG_FLOAT ? 4 : 2 * s->desc->nb_components;
-    int axmax = (avctx->width - (s->xmax + 1)) * step; /* nb pixel to add at the right of the datawindow */
-    int bxmin = s->xmin * step; /* nb pixel to add at the left of the datawindow */
+    int bxmin, axmax, window_xoffset = 0;
+    int window_xmin, window_xmax, window_ymin, window_ymax;
+    int data_xoffset, data_yoffset, data_window_offset, xsize, ysize;
     int i, x, buf_size = s->buf_size;
     int c, rgb_channel_count;
     float one_gamma = 1.0f / s->gamma;
@@ -1029,27 +1030,15 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             return AVERROR_PATCHWELCOME;
         }
 
-        if (s->xmin || s->ymin) {
-            avpriv_report_missing_feature(s->avctx, "Tiles with xmin/ymin");
-            return AVERROR_PATCHWELCOME;
-        }
-
-        line = s->tile_attr.ySize * tile_y;
+        line = s->ymin + s->tile_attr.ySize * tile_y;
         col = s->tile_attr.xSize * tile_x;
 
         if (line < s->ymin || line > s->ymax ||
-            col  < s->xmin || col  > s->xmax)
+            s->xmin + col  < s->xmin ||  s->xmin + col  > s->xmax)
             return AVERROR_INVALIDDATA;
 
         td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tile_y * s->tile_attr.ySize);
         td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tile_x * s->tile_attr.xSize);
-
-        if (col) { /* not the first tile of the line */
-            bxmin = 0; /* doesn't add pixel at the left of the datawindow */
-        }
-
-        if ((col + td->xsize) != s->xdelta)/* not the last tile of the line */
-            axmax = 0; /* doesn't add pixel at the right of the datawindow */
 
         td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
         uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
@@ -1079,6 +1068,33 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                                            line_offset > buf_size - data_size))) {
             return AVERROR_INVALIDDATA;
         }
+    }
+
+    window_xmin = FFMIN(avctx->width, FFMAX(0, s->xmin + col));
+    window_xmax = FFMIN(avctx->width, FFMAX(0, s->xmin + col + td->xsize));
+    window_ymin = FFMIN(avctx->height, FFMAX(0, line ));
+    window_ymax = FFMIN(avctx->height, FFMAX(0, line + td->ysize));
+    xsize = window_xmax - window_xmin;
+    ysize = window_ymax - window_ymin;
+
+    /* tile or scanline not visible skip decoding */
+    if (xsize <= 0 || ysize <= 0)
+        return 0;
+
+    /* is the first tile or is a scanline */
+    if(col == 0) {
+        window_xmin = 0;
+        /* pixels to add at the left of the display window */
+        window_xoffset = FFMAX(0, s->xmin);
+        /* bytes to add at the left of the display window */
+        bxmin = window_xoffset * step;
+    }
+
+    /* is the last tile or is a scanline */
+    if(col + td->xsize == s->xdelta) {
+        window_xmax = avctx->width;
+         /* bytes to add at the right of the display window */
+        axmax = FFMAX(0, (avctx->width - (s->xmax + 1))) * step;
     }
 
     if (data_size < uncompressed_size || s->is_tile) { /* td->tmp is use for tile reorganization */
@@ -1121,17 +1137,22 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         src = td->uncompressed_data;
     }
 
+    /* offsets to crop data outside display window */
+    data_xoffset = FFABS(FFMIN(0, s->xmin + col)) * (s->pixel_type == EXR_HALF ? 2 : 4);
+    data_yoffset = FFABS(FFMIN(0, line));
+    data_window_offset = (data_yoffset * td->channel_line_size) + data_xoffset;
+
     if (!s->is_luma) {
-        channel_buffer[0] = src + td->xsize * s->channel_offsets[0];
-        channel_buffer[1] = src + td->xsize * s->channel_offsets[1];
-        channel_buffer[2] = src + td->xsize * s->channel_offsets[2];
+        channel_buffer[0] = src + (td->xsize * s->channel_offsets[0]) + data_window_offset;
+        channel_buffer[1] = src + (td->xsize * s->channel_offsets[1]) + data_window_offset;
+        channel_buffer[2] = src + (td->xsize * s->channel_offsets[2]) + data_window_offset;
         rgb_channel_count = 3;
     } else { /* put y data in the first channel_buffer */
-        channel_buffer[0] = src + td->xsize * s->channel_offsets[1];
+        channel_buffer[0] = src + (td->xsize * s->channel_offsets[1]) + data_window_offset;
         rgb_channel_count = 1;
     }
-    if (s->channel_offsets[3] >= 0)
-        channel_buffer[3] = src + td->xsize * s->channel_offsets[3];
+     if (s->channel_offsets[3] >= 0)
+        channel_buffer[3] = src + (td->xsize * s->channel_offsets[3]) + data_window_offset;
 
     if (s->desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
 
@@ -1144,9 +1165,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         for (c = 0; c < channel_count; c++) {
             int plane = s->desc->comp[c].plane;
-            ptr = p->data[plane] + line * p->linesize[plane] + (col * 4);
+            ptr = p->data[plane] + window_ymin * p->linesize[plane] + (window_xmin * 4);
 
-            for (i = 0; i < td->ysize; i++, ptr += p->linesize[plane]) {
+            for (i = 0; i < ysize; i++, ptr += p->linesize[plane]) {
                 const uint8_t *src;
                 union av_intfloat32 *ptr_x;
 
@@ -1155,19 +1176,19 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
                 // Zero out the start if xmin is not 0
                 memset(ptr_x, 0, bxmin);
-                ptr_x += s->xmin;
+                ptr_x += window_xoffset;
 
                 if (s->pixel_type == EXR_FLOAT) {
                     // 32-bit
                     union av_intfloat32 t;
                     if (trc_func && c < 3) {
-                        for (x = 0; x < td->xsize; x++) {
+                        for (x = 0; x < xsize; x++) {
                             t.i = bytestream_get_le32(&src);
                             t.f = trc_func(t.f);
                             *ptr_x++ = t;
                         }
                     } else {
-                        for (x = 0; x < td->xsize; x++) {
+                        for (x = 0; x < xsize; x++) {
                             t.i = bytestream_get_le32(&src);
                             if (t.f > 0.0f && c < 3)  /* avoid negative values */
                                 t.f = powf(t.f, one_gamma);
@@ -1177,11 +1198,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                 } else if (s->pixel_type == EXR_HALF) {
                     // 16-bit
                     if (c < 3) {
-                        for (x = 0; x < td->xsize; x++) {
+                        for (x = 0; x < xsize; x++) {
                             *ptr_x++ = s->gamma_table[bytestream_get_le16(&src)];
                         }
                     } else {
-                        for (x = 0; x < td->xsize; x++) {
+                        for (x = 0; x < xsize; x++) {
                             *ptr_x++ = exr_half2float(bytestream_get_le16(&src));;
                         }
                     }
@@ -1195,9 +1216,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     } else {
 
         av_assert1(s->pixel_type == EXR_UINT);
-        ptr = p->data[0] + line * p->linesize[0] + (col * s->desc->nb_components * 2);
+        ptr = p->data[0] + window_ymin * p->linesize[0] + (window_xmin * s->desc->nb_components * 2);
 
-        for (i = 0; i < td->ysize; i++, ptr += p->linesize[0]) {
+        for (i = 0; i < ysize; i++, ptr += p->linesize[0]) {
 
             const uint8_t * a;
             const uint8_t *rgb[3];
@@ -1214,9 +1235,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
             // Zero out the start if xmin is not 0
             memset(ptr_x, 0, bxmin);
-            ptr_x += s->xmin * s->desc->nb_components;
+            ptr_x += window_xoffset * s->desc->nb_components;
 
-            for (x = 0; x < td->xsize; x++) {
+            for (x = 0; x < xsize; x++) {
                 for (c = 0; c < rgb_channel_count; c++) {
                     *ptr_x++ = bytestream_get_le32(&rgb[c]) >> 16;
                 }
@@ -1654,7 +1675,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *picture = data;
     uint8_t *ptr;
 
-    int i, y, ret;
+    int i, y, ret, ymax;
     int planes;
     int out_line_size;
     int nb_blocks;   /* nb scanline or nb tile */
@@ -1728,13 +1749,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_PATCHWELCOME;
     }
 
-    /* Verify the xmin, xmax, ymin, ymax and xdelta before setting
-     * the actual image size. */
-    if (s->xmin > s->xmax                  ||
-        s->ymin > s->ymax                  ||
-        s->xdelta != s->xmax - s->xmin + 1 ||
-        s->xmax >= s->w                    ||
-        s->ymax >= s->h) {
+    /* Verify the xmin, xmax, ymin and ymax before setting the actual image size.
+     * It's possible for the data window can larger or outside the display window */
+    if (s->xmin > s->xmax  || s->ymin > s->ymax) {
         av_log(avctx, AV_LOG_ERROR, "Wrong or missing size information.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1804,10 +1821,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     avctx->execute2(avctx, decode_block, s->thread_data, NULL, nb_blocks);
 
+    ymax = FFMAX(0, s->ymax + 1);
     // Zero out the end if ymax+1 is not h
     for (i = 0; i < planes; i++) {
-        ptr = picture->data[i] + ((s->ymax+1) * picture->linesize[i]);
-        for (y = s->ymax + 1; y < avctx->height; y++) {
+        ptr = picture->data[i] + (ymax * picture->linesize[i]);
+        for (y = ymax; y < avctx->height; y++) {
             memset(ptr, 0, out_line_size);
             ptr += picture->linesize[i];
         }

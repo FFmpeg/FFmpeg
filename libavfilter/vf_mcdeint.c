@@ -102,7 +102,7 @@ static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     MCDeintContext *mcdeint = ctx->priv;
-    AVCodec *enc;
+    const AVCodec *enc;
     AVCodecContext *enc_ctx;
     AVDictionary *opts = NULL;
     int ret;

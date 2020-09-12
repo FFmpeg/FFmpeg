@@ -446,7 +446,7 @@ AVFilterChannelLayouts *ff_all_channel_counts(void)
 #define FORMATS_REF(f, ref, unref_fn)                                           \
     void *tmp;                                                                  \
                                                                                 \
-    if (!f || !ref)                                                             \
+    if (!f)                                                                     \
         return AVERROR(ENOMEM);                                                 \
                                                                                 \
     tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);         \
@@ -483,7 +483,7 @@ do {                                        \
 do {                                                               \
     int idx = -1;                                                  \
                                                                    \
-    if (!ref || !*ref)                                             \
+    if (!*ref)                                                     \
         return;                                                    \
                                                                    \
     FIND_REF_INDEX(ref, idx);                                      \
