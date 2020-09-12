@@ -221,7 +221,7 @@ FATE_EXR += fate-exr-rgb-scanline-pxr24-float-half-l2
 fate-exr-rgb-scanline-pxr24-float-half-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_float_half.exr -pix_fmt gbrapf32le
 
 FATE_EXR += fate-exr-rgb-scanline-pxr24-half-uint32-13x9
-fate-exr-rgb-scanline-pxr24-half-uint32-13x9: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_half_uint32_13x9.exr -pix_fmt rgb48le -vf scale
+fate-exr-rgb-scanline-pxr24-half-uint32-13x9: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_half_uint32_13x9.exr -pix_fmt rgb48le -vf scale
 
 FATE_EXR += fate-exr-rgb-scanline-zip-half-float-l1
 fate-exr-rgb-scanline-zip-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip_half_float.exr -pix_fmt gbrpf32le
