@@ -53,7 +53,6 @@ static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
 static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 {
     ROQDPCMContext *context = avctx->priv_data;
-    int ret;
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be mono or stereo\n");
@@ -70,17 +69,12 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 
     context->frame_buffer = av_malloc(8 * ROQ_FRAME_SIZE * avctx->channels *
                                       sizeof(*context->frame_buffer));
-    if (!context->frame_buffer) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
+    if (!context->frame_buffer)
+        return AVERROR(ENOMEM);
 
     context->lastSample[0] = context->lastSample[1] = 0;
 
     return 0;
-error:
-    roq_dpcm_encode_close(avctx);
-    return ret;
 }
 
 static unsigned char dpcm_predict(short *previous, short current)
