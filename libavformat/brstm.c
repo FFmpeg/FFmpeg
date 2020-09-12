@@ -38,7 +38,7 @@ typedef struct BRSTMDemuxContext {
     uint32_t    last_block_size;
     uint32_t    last_block_samples;
     uint32_t    data_start;
-    uint8_t     *table;
+    uint8_t     table[256 * 32];
     uint8_t     *adpc;
     BRSTMCoeffOffset offsets[256];
     int         little_endian;
@@ -67,7 +67,6 @@ static int read_close(AVFormatContext *s)
 {
     BRSTMDemuxContext *b = s->priv_data;
 
-    av_freep(&b->table);
     av_freep(&b->adpc);
 
     return 0;
@@ -284,9 +283,6 @@ static int read_header(AVFormatContext *s)
         }
 
         avio_skip(s->pb, pos + toffset - avio_tell(s->pb));
-        b->table = av_mallocz(32 * st->codecpar->channels);
-        if (!b->table)
-            return AVERROR(ENOMEM);
 
         for (ch = 0; ch < st->codecpar->channels; ch++) {
             if (!bfstm)
@@ -421,11 +417,6 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!b->adpc) {
             av_log(s, AV_LOG_ERROR, "adpcm_thp requires ADPC chunk, but none was found.\n");
             return AVERROR_INVALIDDATA;
-        }
-        if (!b->table) {
-            b->table = av_mallocz(32 * par->channels);
-            if (!b->table)
-                return AVERROR(ENOMEM);
         }
 
         if (size > (INT_MAX - 32 - 4) ||
