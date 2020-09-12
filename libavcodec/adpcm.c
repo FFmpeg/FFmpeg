@@ -181,7 +181,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
             c->vqa_version = AV_RL16(avctx->extradata);
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
-        if (avctx->bits_per_coded_sample != 4)
+        if (avctx->bits_per_coded_sample != 4 || avctx->block_align != 17 * avctx->channels)
             return AVERROR_INVALIDDATA;
         break;
     case AV_CODEC_ID_ADPCM_ZORK:
@@ -745,11 +745,6 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
             return 0;
         nb_samples = 64;
         break;
-    case AV_CODEC_ID_ADPCM_ARGO:
-        if (buf_size < 17 * ch)
-            return 0;
-        nb_samples = 32;
-        break;
     /* simple 4-bit adpcm */
     case AV_CODEC_ID_ADPCM_CT:
     case AV_CODEC_ID_ADPCM_IMA_APC:
@@ -921,6 +916,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_DTK:
     case AV_CODEC_ID_ADPCM_PSX:
         nb_samples = buf_size / (16 * ch) * 28;
+        break;
+    case AV_CODEC_ID_ADPCM_ARGO:
+        nb_samples = buf_size / avctx->block_align * 32;
         break;
     case AV_CODEC_ID_ADPCM_ZORK:
         nb_samples = buf_size / ch;
@@ -2023,21 +2021,23 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
          * Each block relies on the previous two samples of each channel.
          * They should be 0 initially.
          */
+        for (int block = 0; block < avpkt->size / avctx->block_align; block++) {
         for (channel = 0; channel < avctx->channels; channel++) {
             int control, shift;
 
-            samples = samples_p[channel];
+            samples = samples_p[channel] + block * 32;
             cs = c->status + channel;
 
             /* Get the control byte and decode the samples, 2 at a time. */
             control = bytestream2_get_byteu(&gb);
             shift = (control >> 4) + 2;
 
-            for (n = 0; n < nb_samples / 2; n++) {
+            for (n = 0; n < 16; n++) {
                 int sample = bytestream2_get_byteu(&gb);
                 *samples++ = ff_adpcm_argo_expand_nibble(cs, sample >> 4, shift, control & 0x04);
                 *samples++ = ff_adpcm_argo_expand_nibble(cs, sample >> 0, shift, control & 0x04);
             }
+        }
         }
         break;
     case AV_CODEC_ID_ADPCM_ZORK:
