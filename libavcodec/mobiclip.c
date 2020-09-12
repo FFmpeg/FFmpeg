@@ -1308,7 +1308,7 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
                         (uint16_t *)pkt->data,
                         (pkt->size + 1) >> 1);
 
-    ret = init_get_bits8(gb, s->bitstream, s->bitstream_size);
+    ret = init_get_bits8(gb, s->bitstream, FFALIGN(pkt->size, 2));
     if (ret < 0)
         return ret;
 
