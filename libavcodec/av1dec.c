@@ -257,18 +257,7 @@ static int get_pixel_format(AVCodecContext *avctx)
     int ret;
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 #define HWACCEL_MAX (0)
-    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 1], *fmtp = pix_fmts;
-
-    /**
-     * check if the HW accel is inited correctly. If not, return un-implemented.
-     * Since now the av1 decoder doesn't support native decode, if it will be
-     * implemented in the future, need remove this check.
-     */
-    if (!avctx->hwaccel) {
-        av_log(avctx, AV_LOG_ERROR, "Your platform doesn't suppport"
-               " hardware accelerated AV1 decoding.\n");
-        return AVERROR(ENOSYS);
-    }
+    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
 
     if (seq->seq_profile == 2 && seq->color_config.high_bitdepth)
         bit_depth = seq->color_config.twelve_bit ? 12 : 10;
@@ -328,11 +317,23 @@ static int get_pixel_format(AVCodecContext *avctx)
         return -1;
     s->pix_fmt = pix_fmt;
 
+    *fmtp++ = s->pix_fmt;
     *fmtp = AV_PIX_FMT_NONE;
-    avctx->sw_pix_fmt = s->pix_fmt;
+
     ret = ff_thread_get_format(avctx, pix_fmts);
     if (ret < 0)
         return ret;
+
+    /**
+     * check if the HW accel is inited correctly. If not, return un-implemented.
+     * Since now the av1 decoder doesn't support native decode, if it will be
+     * implemented in the future, need remove this check.
+     */
+    if (!avctx->hwaccel) {
+        av_log(avctx, AV_LOG_ERROR, "Your platform doesn't suppport"
+               " hardware accelerated AV1 decoding.\n");
+        return AVERROR(ENOSYS);
+    }
 
     avctx->pix_fmt = ret;
 
@@ -858,7 +859,7 @@ AVCodec ff_av1_decoder = {
     .init                  = av1_decode_init,
     .close                 = av1_decode_free,
     .decode                = av1_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities          = AV_CODEC_CAP_DR1,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |
                              FF_CODEC_CAP_INIT_CLEANUP |
                              FF_CODEC_CAP_SETS_PKT_DTS,
