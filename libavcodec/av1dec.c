@@ -480,7 +480,6 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
         s->ref[i].tf.f = av_frame_alloc();
         if (!s->ref[i].tf.f) {
-            av1_decode_free(avctx);
             av_log(avctx, AV_LOG_ERROR,
                    "Failed to allocate reference frame buffer %d.\n", i);
             return AVERROR(ENOMEM);
@@ -489,7 +488,6 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
 
     s->cur_frame.tf.f = av_frame_alloc();
     if (!s->cur_frame.tf.f) {
-        av1_decode_free(avctx);
         av_log(avctx, AV_LOG_ERROR,
                "Failed to allocate current frame buffer.\n");
         return AVERROR(ENOMEM);
@@ -504,7 +502,7 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
                           avctx->extradata_size);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "Failed to read extradata.\n");
-            goto end;
+            return ret;
         }
 
         seq = ((CodedBitstreamAV1Context *)(s->cbc->priv_data))->sequence_header;
