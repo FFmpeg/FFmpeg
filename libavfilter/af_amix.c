@@ -309,6 +309,8 @@ static int output_frame(AVFilterLink *outlink)
                 }
             }
         }
+
+        s->next_pts = frame_list_next_pts(s->frame_list);
     } else {
         /* first input closed: use the available samples */
         nb_samples = INT_MAX;
@@ -324,7 +326,6 @@ static int output_frame(AVFilterLink *outlink)
         }
     }
 
-    s->next_pts = frame_list_next_pts(s->frame_list);
     frame_list_remove_samples(s->frame_list, nb_samples);
 
     calculate_scales(s, nb_samples);
