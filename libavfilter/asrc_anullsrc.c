@@ -93,19 +93,28 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_channel_layouts(ctx, ff_make_format64_list(chlayouts));
 }
 
+static av_cold int config_props(AVFilterLink *outlink)
+{
+    ANullContext *null = outlink->src->priv;
+
+    if (null->duration >= 0)
+        null->duration = av_rescale(null->duration, null->sample_rate, AV_TIME_BASE);
+
+    return 0;
+}
+
 static int activate(AVFilterContext *ctx)
 {
     ANullContext *null = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
-    if (null->duration >= 0 &&
-        av_rescale_q(null->pts, outlink->time_base, AV_TIME_BASE_Q) >= null->duration) {
+    if (null->duration >= 0 && null->pts >= null->duration) {
         ff_outlink_set_status(outlink, AVERROR_EOF, null->pts);
         return 0;
     }
 
     if (ff_outlink_frame_wanted(outlink)) {
-        AVFrame *samplesref = ff_get_audio_buffer(outlink, null->nb_samples);
+        AVFrame *samplesref = ff_get_audio_buffer(outlink, null->duration >= 0 ? FFMIN(null->nb_samples, null->duration - null->pts) : null->nb_samples);
         int ret;
 
         if (!samplesref)
@@ -128,6 +137,7 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
     },
     { NULL }
 };
