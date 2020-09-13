@@ -37,8 +37,8 @@ static av_cold int cng_encode_close(AVCodecContext *avctx)
 {
     CNGContext *p = avctx->priv_data;
     ff_lpc_end(&p->lpc);
-    av_free(p->samples32);
-    av_free(p->ref_coef);
+    av_freep(&p->samples32);
+    av_freep(&p->ref_coef);
     return 0;
 }
 
