@@ -657,7 +657,6 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     BC_STATUS bc_ret;
     CHDContext *priv   = avctx->priv_data;
     HANDLE dev         = priv->dev;
-    AVPacket filtered_packet = { 0 };
     int ret = 0;
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: decode_packet\n");
@@ -700,7 +699,6 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
         goto exit;
     }
  exit:
-    av_packet_unref(&filtered_packet);
     return ret;
 }
 

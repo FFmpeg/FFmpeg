@@ -1393,6 +1393,14 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
     return 0;
 }
 
+static void mobiclip_flush(AVCodecContext *avctx)
+{
+    MobiClipContext *s = avctx->priv_data;
+
+    for (int i = 0; i < 6; i++)
+        av_frame_unref(s->pic[i]);
+}
+
 static av_cold int mobiclip_close(AVCodecContext *avctx)
 {
     MobiClipContext *s = avctx->priv_data;
@@ -1425,6 +1433,7 @@ AVCodec ff_mobiclip_decoder = {
     .priv_data_size = sizeof(MobiClipContext),
     .init           = mobiclip_init,
     .decode         = mobiclip_decode,
+    .flush          = mobiclip_flush,
     .close          = mobiclip_close,
     .capabilities   = AV_CODEC_CAP_DR1,
 };

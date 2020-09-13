@@ -296,15 +296,30 @@ supports it.
 Set the pixel format of the captured video.
 Available values are:
 @table @samp
+@item auto
+
+This is the default which means 8-bit YUV 422 or 8-bit ARGB if format
+autodetection is used, 8-bit YUV 422 otherwise.
+
 @item uyvy422
+
+8-bit YUV 422.
 
 @item yuv422p10
 
+10-bit YUV 422.
+
 @item argb
+
+8-bit RGB.
 
 @item bgra
 
+8-bit RGB.
+
 @item rgb10
+
+10-bit RGB.
 
 @end table
 
@@ -335,8 +350,8 @@ Defaults to @samp{unset}.
 @item timecode_format
 Timecode type to include in the frame and video stream metadata. Must be
 @samp{none}, @samp{rp188vitc}, @samp{rp188vitc2}, @samp{rp188ltc},
-@samp{rp188any}, @samp{vitc}, @samp{vitc2}, or @samp{serial}. Defaults to
-@samp{none} (not included).
+@samp{rp188hfr}, @samp{rp188any}, @samp{vitc}, @samp{vitc2}, or @samp{serial}.
+Defaults to @samp{none} (not included).
 
 @item video_input
 Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},

@@ -9,7 +9,10 @@ tools/target_bsf_%_fuzzer.o: tools/target_bsf_fuzzer.c
 	$(COMPILE_C) -DFFMPEG_BSF=$*
 
 tools/target_dem_fuzzer.o: tools/target_dem_fuzzer.c
-	$(COMPILE_C)
+	$(COMPILE_C) -DIO_FLAT=1
+
+tools/target_io_dem_fuzzer.o: tools/target_dem_fuzzer.c
+	$(COMPILE_C) -DIO_FLAT=0
 
 OUTDIRS += tools
 

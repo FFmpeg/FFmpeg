@@ -2843,7 +2843,7 @@ static int set_side_data(HEVCContext *s)
             int   ff = s->sei.timecode.n_frames[i];
 
             tc_sd[i + 1] = av_timecode_get_smpte(s->avctx->framerate, drop, hh, mm, ss, ff);
-            av_timecode_make_smpte_tc_string(tcbuf, tc_sd[i + 1], 0);
+            av_timecode_make_smpte_tc_string2(tcbuf, s->avctx->framerate, tc_sd[i + 1], 0, 0);
             av_dict_set(&out->metadata, "timecode", tcbuf, 0);
         }
 

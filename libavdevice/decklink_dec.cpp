@@ -1044,9 +1044,13 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
 HRESULT decklink_input_callback::VideoInputFormatChanged(
     BMDVideoInputFormatChangedEvents events, IDeckLinkDisplayMode *mode,
-    BMDDetectedVideoInputFormatFlags)
+    BMDDetectedVideoInputFormatFlags formatFlags)
 {
+    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     ctx->bmd_mode = mode->GetDisplayMode();
+    // check the C context member to make sure we set both raw_format and bmd_mode with data from the same format change callback
+    if (!cctx->raw_format)
+        ctx->raw_format = (formatFlags & bmdDetectedVideoInputRGB444) ? bmdFormat8BitARGB : bmdFormat8BitYUV;
     return S_OK;
 }
 
@@ -1148,6 +1152,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->video_pts_source = cctx->video_pts_source;
     ctx->draw_bars = cctx->draw_bars;
     ctx->audio_depth = cctx->audio_depth;
+    ctx->raw_format = (BMDPixelFormat)cctx->raw_format;
     cctx->ctx = ctx;
 
     /* Check audio channel option for valid values: 2, 8 or 16 */
@@ -1227,6 +1232,8 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         }
         av_log(avctx, AV_LOG_INFO, "Autodetected the input mode\n");
     }
+    if (ctx->raw_format == bmdFormatUnspecified)
+        ctx->raw_format = bmdFormat8BitYUV;
     if (ff_decklink_set_format(avctx, DIRECTION_IN) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not set format code %s for %s\n",
             cctx->format_code ? cctx->format_code : "(unset)", avctx->url);
@@ -1270,7 +1277,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     st->time_base.num      = ctx->bmd_tb_num;
     st->r_frame_rate       = av_make_q(st->time_base.den, st->time_base.num);
 
-    switch((BMDPixelFormat)cctx->raw_format) {
+    switch(ctx->raw_format) {
     case bmdFormat8BitYUV:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
         st->codecpar->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
@@ -1303,7 +1310,9 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         st->codecpar->bits_per_coded_sample = 10;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Raw Format %.4s not supported\n", (char*) &cctx->raw_format);
+        char fourcc_str[AV_FOURCC_MAX_STRING_SIZE] = {0};
+        av_fourcc_make_string(fourcc_str, ctx->raw_format);
+        av_log(avctx, AV_LOG_ERROR, "Raw Format %s not supported\n", fourcc_str);
         ret = AVERROR(EINVAL);
         goto error;
     }
@@ -1364,7 +1373,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     }
 
     result = ctx->dli->EnableVideoInput(ctx->bmd_mode,
-                                        (BMDPixelFormat) cctx->raw_format,
+                                        ctx->raw_format,
                                         bmdVideoInputFlagDefault);
 
     if (result != S_OK) {

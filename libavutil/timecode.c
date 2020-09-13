@@ -65,50 +65,39 @@ uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
     ss = framenum / fps      % 60;
     mm = framenum / (fps*60) % 60;
     hh = framenum / (fps*3600) % 24;
-    return 0         << 31 | // color frame flag (0: unsync mode, 1: sync mode)
-           drop      << 30 | // drop  frame flag (0: non drop,    1: drop)
-           (ff / 10) << 28 | // tens  of frames
-           (ff % 10) << 24 | // units of frames
-           0         << 23 | // PC (NTSC) or BGF0 (PAL)
-           (ss / 10) << 20 | // tens  of seconds
-           (ss % 10) << 16 | // units of seconds
-           0         << 15 | // BGF0 (NTSC) or BGF2 (PAL)
-           (mm / 10) << 12 | // tens  of minutes
-           (mm % 10) <<  8 | // units of minutes
-           0         <<  7 | // BGF2 (NTSC) or PC (PAL)
-           0         <<  6 | // BGF1
-           (hh / 10) <<  4 | // tens  of hours
-           (hh % 10);        // units of hours
+    return av_timecode_get_smpte(tc->rate, drop, hh, mm, ss, ff);
 }
 
 uint32_t av_timecode_get_smpte(AVRational rate, int drop, int hh, int mm, int ss, int ff)
 {
     uint32_t tc = 0;
-    uint32_t frames;
 
     /* For SMPTE 12-M timecodes, frame count is a special case if > 30 FPS.
        See SMPTE ST 12-1:2014 Sec 12.1 for more info. */
     if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
-        frames = ff / 2;
         if (ff % 2 == 1) {
             if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
                 tc |= (1 << 7);
             else
                 tc |= (1 << 23);
         }
-    } else {
-        frames = ff;
+        ff /= 2;
     }
 
+    hh = hh % 24;
+    mm = av_clip(mm, 0, 59);
+    ss = av_clip(ss, 0, 59);
+    ff = ff % 40;
+
     tc |= drop << 30;
-    tc |= (frames / 10) << 28;
-    tc |= (frames % 10) << 24;
+    tc |= (ff / 10) << 28;
+    tc |= (ff % 10) << 24;
     tc |= (ss / 10) << 20;
     tc |= (ss % 10) << 16;
     tc |= (mm / 10) << 12;
     tc |= (mm % 10) << 8;
     tc |= (hh / 10) << 4;
-    tc |= (hh  % 10);
+    tc |= (hh % 10);
 
     return tc;
 }
@@ -147,16 +136,33 @@ static unsigned bcd2uint(uint8_t bcd)
    return low + 10*high;
 }
 
-char *av_timecode_make_smpte_tc_string(char *buf, uint32_t tcsmpte, int prevent_df)
+char *av_timecode_make_smpte_tc_string2(char *buf, AVRational rate, uint32_t tcsmpte, int prevent_df, int skip_field)
 {
     unsigned hh   = bcd2uint(tcsmpte     & 0x3f);    // 6-bit hours
     unsigned mm   = bcd2uint(tcsmpte>>8  & 0x7f);    // 7-bit minutes
     unsigned ss   = bcd2uint(tcsmpte>>16 & 0x7f);    // 7-bit seconds
     unsigned ff   = bcd2uint(tcsmpte>>24 & 0x3f);    // 6-bit frames
     unsigned drop = tcsmpte & 1<<30 && !prevent_df;  // 1-bit drop if not arbitrary bit
+
+    if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
+        ff <<= 1;
+        if (!skip_field) {
+            if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
+                ff += !!(tcsmpte & 1 << 7);
+            else
+                ff += !!(tcsmpte & 1 << 23);
+        }
+    }
+
     snprintf(buf, AV_TIMECODE_STR_SIZE, "%02u:%02u:%02u%c%02u",
              hh, mm, ss, drop ? ';' : ':', ff);
     return buf;
+
+}
+
+char *av_timecode_make_smpte_tc_string(char *buf, uint32_t tcsmpte, int prevent_df)
+{
+    return av_timecode_make_smpte_tc_string2(buf, (AVRational){30, 1}, tcsmpte, prevent_df, 1);
 }
 
 char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit)

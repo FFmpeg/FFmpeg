@@ -66,11 +66,11 @@ int av_timecode_adjust_ntsc_framenum2(int framenum, int fps);
  * the format description as follows:
  * bits 0-5:   hours, in BCD(6bits)
  * bits 6:     BGF1
- * bits 7:     BGF2 (NTSC) or PC (PAL)
+ * bits 7:     BGF2 (NTSC) or FIELD (PAL)
  * bits 8-14:  minutes, in BCD(7bits)
  * bits 15:    BGF0 (NTSC) or BGF2 (PAL)
  * bits 16-22: seconds, in BCD(7bits)
- * bits 23:    PC (NTSC) or BGF0 (PAL)
+ * bits 23:    FIELD (NTSC) or BGF0 (PAL)
  * bits 24-29: frames, in BCD(6bits)
  * bits 30:    drop  frame flag (0: non drop,    1: drop)
  * bits 31:    color frame flag (0: unsync mode, 1: sync mode)
@@ -78,8 +78,7 @@ int av_timecode_adjust_ntsc_framenum2(int framenum, int fps);
  * @note Frame number adjustment is automatically done in case of drop timecode,
  *       you do NOT have to call av_timecode_adjust_ntsc_framenum2().
  * @note The frame number is relative to tc->start.
- * @note Color frame (CF), binary group flags (BGF) and biphase mark polarity
- *       correction (PC) bits are set to zero.
+ * @note Color frame (CF) and binary group flags (BGF) bits are set to zero.
  */
 uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum);
 
@@ -109,6 +108,23 @@ uint32_t av_timecode_get_smpte(AVRational rate, int drop, int hh, int mm, int ss
  * @note The frame number is relative to tc->start.
  */
 char *av_timecode_make_string(const AVTimecode *tc, char *buf, int framenum);
+
+/**
+ * Get the timecode string from the SMPTE timecode format.
+ *
+ * In contrast to av_timecode_make_smpte_tc_string this function supports 50/60
+ * fps timecodes by using the field bit.
+ *
+ * @param buf        destination buffer, must be at least AV_TIMECODE_STR_SIZE long
+ * @param rate       frame rate of the timecode
+ * @param tcsmpte    the 32-bit SMPTE timecode
+ * @param prevent_df prevent the use of a drop flag when it is known the DF bit
+ *                   is arbitrary
+ * @param skip_field prevent the use of a field flag when it is known the field
+ *                   bit is arbitrary (e.g. because it is used as PC flag)
+ * @return           the buf parameter
+ */
+char *av_timecode_make_smpte_tc_string2(char *buf, AVRational rate, uint32_t tcsmpte, int prevent_df, int skip_field);
 
 /**
  * Get the timecode string from the SMPTE timecode format.

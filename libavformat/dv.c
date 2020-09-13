@@ -315,7 +315,7 @@ static int dv_extract_timecode(DVDemuxContext* c, const uint8_t* frame, char *tc
     tc_pack = dv_extract_pack(frame, dv_timecode);
     if (!tc_pack)
         return 0;
-    av_timecode_make_smpte_tc_string(tc, AV_RB32(tc_pack + 1), prevent_df);
+    av_timecode_make_smpte_tc_string2(tc, av_inv_q(c->sys->time_base), AV_RB32(tc_pack + 1), prevent_df, 1);
     return 1;
 }
 

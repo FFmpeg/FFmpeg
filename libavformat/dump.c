@@ -408,7 +408,7 @@ static void dump_dovi_conf(void *ctx, const AVPacketSideData *sd)
            dovi->dv_bl_signal_compatibility_id);
 }
 
-static void dump_s12m_timecode(void *ctx, const AVPacketSideData *sd)
+static void dump_s12m_timecode(void *ctx, const AVStream *st, const AVPacketSideData *sd)
 {
     const uint32_t *tc = (const uint32_t *)sd->data;
 
@@ -419,7 +419,7 @@ static void dump_s12m_timecode(void *ctx, const AVPacketSideData *sd)
 
     for (int j = 1; j <= tc[0]; j++) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
-        av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
+        av_timecode_make_smpte_tc_string2(tcbuf, st->avg_frame_rate, tc[j], 0, 0);
         av_log(ctx, AV_LOG_INFO, "timecode - %s%s", tcbuf, j != tc[0] ? ", " : "");
     }
 }
@@ -492,7 +492,7 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent)
             break;
         case AV_PKT_DATA_S12M_TIMECODE:
             av_log(ctx, AV_LOG_INFO, "SMPTE ST 12-1:2014: ");
-            dump_s12m_timecode(ctx, sd);
+            dump_s12m_timecode(ctx, st, sd);
             break;
         default:
             av_log(ctx, AV_LOG_INFO,

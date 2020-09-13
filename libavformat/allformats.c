@@ -416,6 +416,7 @@ extern AVInputFormat  ff_subviewer_demuxer;
 extern AVInputFormat  ff_sup_demuxer;
 extern AVOutputFormat ff_sup_muxer;
 extern AVInputFormat  ff_svag_demuxer;
+extern AVInputFormat  ff_svs_demuxer;
 extern AVInputFormat  ff_swf_demuxer;
 extern AVOutputFormat ff_swf_muxer;
 extern AVInputFormat  ff_tak_demuxer;

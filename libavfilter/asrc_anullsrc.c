@@ -54,8 +54,8 @@ static const AVOption anullsrc_options[]= {
     { "cl",             "set channel_layout", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0, FLAGS },
     { "sample_rate",    "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0, FLAGS },
     { "r",              "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0, FLAGS },
-    { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 0, INT_MAX, FLAGS },
-    { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 0, INT_MAX, FLAGS },
+    { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 1, UINT16_MAX, FLAGS },
+    { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 1, UINT16_MAX, FLAGS },
     { "duration",       "set the audio duration",                        OFFSET(duration),   AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
     { "d",              "set the audio duration",                        OFFSET(duration),   AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
     { NULL }
@@ -93,32 +93,36 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_channel_layouts(ctx, ff_make_format64_list(chlayouts));
 }
 
+static av_cold int config_props(AVFilterLink *outlink)
+{
+    ANullContext *null = outlink->src->priv;
+
+    if (null->duration >= 0)
+        null->duration = av_rescale(null->duration, null->sample_rate, AV_TIME_BASE);
+
+    return 0;
+}
+
 static int activate(AVFilterContext *ctx)
 {
     ANullContext *null = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
-    if (null->duration >= 0 &&
-        av_rescale_q(null->pts, outlink->time_base, AV_TIME_BASE_Q) >= null->duration) {
+    if (null->duration >= 0 && null->pts >= null->duration) {
         ff_outlink_set_status(outlink, AVERROR_EOF, null->pts);
         return 0;
     }
 
     if (ff_outlink_frame_wanted(outlink)) {
-        AVFrame *samplesref = ff_get_audio_buffer(outlink, null->nb_samples);
-        int ret;
+        AVFrame *samplesref = ff_get_audio_buffer(outlink, null->duration >= 0 ? FFMIN(null->nb_samples, null->duration - null->pts) : null->nb_samples);
 
         if (!samplesref)
             return AVERROR(ENOMEM);
 
         samplesref->pts = null->pts;
+        null->pts += samplesref->nb_samples;
 
-        ret = ff_filter_frame(outlink, samplesref);
-        if (ret < 0)
-            return ret;
-
-        null->pts += null->nb_samples;
-        return 0;
+        return ff_filter_frame(outlink, samplesref);
     }
 
     return FFERROR_NOT_READY;
@@ -128,6 +132,7 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
     },
     { NULL }
 };

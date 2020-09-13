@@ -202,6 +202,7 @@ static int flic_read_packet(AVFormatContext *s,
     int magic;
     int ret = 0;
     unsigned char preamble[FLIC_PREAMBLE_SIZE];
+    int64_t pos = avio_tell(pb);
 
     while (!packet_read && !avio_feof(pb)) {
 
@@ -219,15 +220,19 @@ static int flic_read_packet(AVFormatContext *s,
                 return ret;
 
             pkt->stream_index = flic->video_stream_index;
-            pkt->pts = flic->frame_number++;
-            pkt->pos = avio_tell(pb);
+            pkt->pos = pos;
             memcpy(pkt->data, preamble, FLIC_PREAMBLE_SIZE);
             ret = avio_read(pb, pkt->data + FLIC_PREAMBLE_SIZE,
                 size - FLIC_PREAMBLE_SIZE);
             if (ret != size - FLIC_PREAMBLE_SIZE) {
                 ret = AVERROR(EIO);
             }
+            pkt->flags = flic->frame_number == 0 ? AV_PKT_FLAG_KEY : 0;
+            pkt->pts = flic->frame_number;
+            if (flic->frame_number == 0)
+                av_add_index_entry(s->streams[flic->video_stream_index], pkt->pos, pkt->pts, pkt->size, 0, AVINDEX_KEYFRAME);
             packet_read = 1;
+            flic->frame_number++;
         } else if (magic == FLIC_TFTD_CHUNK_AUDIO) {
             if ((ret = av_new_packet(pkt, size)) < 0)
                 return ret;
@@ -236,7 +241,8 @@ static int flic_read_packet(AVFormatContext *s,
             avio_skip(pb, 10);
 
             pkt->stream_index = flic->audio_stream_index;
-            pkt->pos = avio_tell(pb);
+            pkt->pos = pos;
+            pkt->flags = AV_PKT_FLAG_KEY;
             ret = avio_read(pb, pkt->data, size);
 
             if (ret != size) {
@@ -254,6 +260,31 @@ static int flic_read_packet(AVFormatContext *s,
     return avio_feof(pb) ? AVERROR_EOF : ret;
 }
 
+static int flic_read_seek(AVFormatContext *s, int stream_index,
+                          int64_t pts, int flags)
+{
+    FlicDemuxContext *flic = s->priv_data;
+    AVStream *st = s->streams[stream_index];
+    int64_t pos, ts;
+    int index;
+
+    if (!st->index_entries || stream_index != flic->video_stream_index)
+        return -1;
+
+    index = av_index_search_timestamp(st, pts, flags);
+
+    if (index < 0)
+        index = av_index_search_timestamp(st, pts, flags ^ AVSEEK_FLAG_BACKWARD);
+    if (index < 0)
+        return -1;
+
+    pos = st->index_entries[index].pos;
+    ts  = st->index_entries[index].timestamp;
+    flic->frame_number = ts;
+    avio_seek(s->pb, pos, SEEK_SET);
+    return 0;
+}
+
 AVInputFormat ff_flic_demuxer = {
     .name           = "flic",
     .long_name      = NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation"),
@@ -261,4 +292,5 @@ AVInputFormat ff_flic_demuxer = {
     .read_probe     = flic_probe,
     .read_header    = flic_read_header,
     .read_packet    = flic_read_packet,
+    .read_seek      = flic_read_seek,
 };

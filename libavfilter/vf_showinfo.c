@@ -114,7 +114,7 @@ static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
 }
 
-static void dump_s12m_timecode(AVFilterContext *ctx, AVFrameSideData *sd)
+static void dump_s12m_timecode(AVFilterContext *ctx, AVRational frame_rate, AVFrameSideData *sd)
 {
     const uint32_t *tc = (const uint32_t *)sd->data;
 
@@ -125,7 +125,7 @@ static void dump_s12m_timecode(AVFilterContext *ctx, AVFrameSideData *sd)
 
     for (int j = 1; j <= tc[0]; j++) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
-        av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
+        av_timecode_make_smpte_tc_string2(tcbuf, frame_rate, tc[j], 0, 0);
         av_log(ctx, AV_LOG_INFO, "timecode - %s%s", tcbuf, j != tc[0]  ? ", " : "");
     }
 }
@@ -380,7 +380,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             dump_stereo3d(ctx, sd);
             break;
         case AV_FRAME_DATA_S12M_TIMECODE: {
-            dump_s12m_timecode(ctx, sd);
+            dump_s12m_timecode(ctx, inlink->frame_rate, sd);
             break;
         }
         case AV_FRAME_DATA_DISPLAYMATRIX:
