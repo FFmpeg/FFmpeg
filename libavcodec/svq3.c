@@ -70,11 +70,10 @@
 typedef struct SVQ3Frame {
     AVFrame *f;
 
-    AVBufferRef *motion_val_buf[2];
+    int16_t (*motion_val_buf[2])[2];
     int16_t (*motion_val[2])[2];
 
-    AVBufferRef *mb_type_buf;
-    uint32_t *mb_type;
+    uint32_t *mb_type_buf, *mb_type;
 } SVQ3Frame;
 
 typedef struct SVQ3Context {
@@ -1325,9 +1324,9 @@ static void free_picture(AVCodecContext *avctx, SVQ3Frame *pic)
 {
     int i;
     for (i = 0; i < 2; i++) {
-        av_buffer_unref(&pic->motion_val_buf[i]);
+        av_freep(&pic->motion_val_buf[i]);
     }
-    av_buffer_unref(&pic->mb_type_buf);
+    av_freep(&pic->mb_type_buf);
 
     av_frame_unref(pic->f);
 }
@@ -1343,19 +1342,19 @@ static int get_buffer(AVCodecContext *avctx, SVQ3Frame *pic)
     if (!pic->motion_val_buf[0]) {
         int i;
 
-        pic->mb_type_buf = av_buffer_allocz((big_mb_num + s->mb_stride) * sizeof(uint32_t));
+        pic->mb_type_buf = av_calloc(big_mb_num + s->mb_stride, sizeof(uint32_t));
         if (!pic->mb_type_buf)
             return AVERROR(ENOMEM);
-        pic->mb_type = (uint32_t*)pic->mb_type_buf->data + 2 * s->mb_stride + 1;
+        pic->mb_type = pic->mb_type_buf + 2 * s->mb_stride + 1;
 
         for (i = 0; i < 2; i++) {
-            pic->motion_val_buf[i] = av_buffer_allocz(2 * (b4_array_size + 4) * sizeof(int16_t));
+            pic->motion_val_buf[i] = av_calloc(b4_array_size + 4, 2 * sizeof(int16_t));
             if (!pic->motion_val_buf[i]) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            pic->motion_val[i] = (int16_t (*)[2])pic->motion_val_buf[i]->data + 4;
+            pic->motion_val[i] = pic->motion_val_buf[i] + 4;
         }
     }
 
