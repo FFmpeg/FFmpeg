@@ -54,6 +54,8 @@ static av_cold int init(AVCodecContext *avctx)
         }
 
         a->mjpeg_avctx = avcodec_alloc_context3(codec);
+        if (!a->mjpeg_avctx)
+            return AVERROR(ENOMEM);
 
         av_dict_set(&thread_opt, "threads", "1", 0); // Is this needed ?
         a->mjpeg_avctx->refcounted_frames = 1;
