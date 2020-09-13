@@ -977,7 +977,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     /* initialize the MDCT transform */
     if ((ret = ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
-        av_freep(&q->decoded_bytes_buffer);
         return ret;
     }
 
@@ -1002,7 +1001,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     q->units = av_mallocz_array(avctx->channels, sizeof(*q->units));
     if (!q->units || !q->fdsp) {
-        atrac3_decode_close(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -1021,6 +1019,7 @@ AVCodec ff_atrac3_decoder = {
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 AVCodec ff_atrac3al_decoder = {
@@ -1035,4 +1034,5 @@ AVCodec ff_atrac3al_decoder = {
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
