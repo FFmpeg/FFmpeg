@@ -147,6 +147,7 @@ typedef struct SVQ3Context {
     DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
     uint32_t dequant4_coeff[QP_MAX_NUM + 1][16];
     int block_offset[2 * (16 * 3)];
+    SVQ3Frame frames[3];
 } SVQ3Context;
 
 #define FULLPEL_MODE  1
@@ -1135,13 +1136,9 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     int marker_found = 0;
     int ret;
 
-    s->cur_pic  = av_mallocz(sizeof(*s->cur_pic));
-    s->last_pic = av_mallocz(sizeof(*s->last_pic));
-    s->next_pic = av_mallocz(sizeof(*s->next_pic));
-    if (!s->next_pic || !s->last_pic || !s->cur_pic) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    s->cur_pic  = &s->frames[0];
+    s->last_pic = &s->frames[1];
+    s->next_pic = &s->frames[2];
 
     s->cur_pic->f  = av_frame_alloc();
     s->last_pic->f = av_frame_alloc();
@@ -1631,9 +1628,6 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
     av_frame_free(&s->cur_pic->f);
     av_frame_free(&s->next_pic->f);
     av_frame_free(&s->last_pic->f);
-    av_freep(&s->cur_pic);
-    av_freep(&s->next_pic);
-    av_freep(&s->last_pic);
     av_freep(&s->slice_buf);
     av_freep(&s->intra4x4_pred_mode);
     av_freep(&s->edge_emu_buffer);
