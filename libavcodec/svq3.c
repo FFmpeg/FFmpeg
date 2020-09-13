@@ -222,8 +222,6 @@ static const uint32_t svq3_dequant_coeff[32] = {
     61694, 68745, 77615, 89113, 100253, 109366, 126635, 141533
 };
 
-static int svq3_decode_end(AVCodecContext *avctx);
-
 static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
     const unsigned qmul = svq3_dequant_coeff[qp];
@@ -1185,10 +1183,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         int w,h;
 
         size = AV_RB32(&extradata[4]);
-        if (size > extradata_end - extradata - 8) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (size > extradata_end - extradata - 8)
+            return AVERROR_INVALIDDATA;
         init_get_bits(&gb, extradata + 8, size * 8);
 
         /* 'frame size code' and optional 'width, height' */
@@ -1229,7 +1225,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         }
         ret = ff_set_dimensions(avctx, w, h);
         if (ret < 0)
-            goto fail;
+            return ret;
 
         s->halfpel_flag  = get_bits1(&gb);
         s->thirdpel_flag = get_bits1(&gb);
@@ -1248,10 +1244,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "Unknown fields %d %d %d %d %d\n",
                unk0, unk1, unk2, unk3, unk4);
 
-        if (skip_1stop_8data_bits(&gb) < 0) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (skip_1stop_8data_bits(&gb) < 0)
+            return AVERROR_INVALIDDATA;
 
         s->has_watermark  = get_bits1(&gb);
         avctx->has_b_frames = !s->low_delay;
@@ -1269,16 +1263,13 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             uint8_t *buf;
 
             if (watermark_height <= 0 ||
-                (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height) {
-                ret = -1;
-                goto fail;
-            }
+                (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height)
+                return AVERROR_INVALIDDATA;
 
             buf = av_malloc(buf_len);
-            if (!buf) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            if (!buf)
+                return AVERROR(ENOMEM);
+
             av_log(avctx, AV_LOG_DEBUG, "watermark size: %ux%u\n",
                    watermark_width, watermark_height);
             av_log(avctx, AV_LOG_DEBUG,
@@ -1289,8 +1280,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_ERROR,
                        "could not uncompress watermark logo\n");
                 av_free(buf);
-                ret = -1;
-                goto fail;
+                return -1;
             }
             s->watermark_key = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_CCITT), 0, buf, buf_len));
 
@@ -1301,8 +1291,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 #else
             av_log(avctx, AV_LOG_ERROR,
                    "this svq3 file contains watermark which need zlib support compiled in\n");
-            ret = -1;
-            goto fail;
+            return AVERROR(ENOSYS);
 #endif
         }
     }
@@ -1334,9 +1323,6 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     init_dequant4_coeff_table(s);
 
     return 0;
-fail:
-    svq3_decode_end(avctx);
-    return ret;
 }
 
 static void free_picture(AVCodecContext *avctx, SVQ3Frame *pic)
@@ -1654,4 +1640,5 @@ AVCodec ff_svq3_decoder = {
                       AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P,
                                                      AV_PIX_FMT_NONE},
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
