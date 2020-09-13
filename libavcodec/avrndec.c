@@ -171,5 +171,5 @@ AVCodec ff_avrn_decoder = {
     .close          = end,
     .decode         = decode_frame,
     .max_lowres     = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
