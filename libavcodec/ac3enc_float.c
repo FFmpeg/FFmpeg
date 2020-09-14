@@ -153,4 +153,5 @@ AVCodec ff_ac3_encoder = {
     .supported_samplerates = ff_ac3_sample_rate_tab,
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ac3_defaults,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
 };
