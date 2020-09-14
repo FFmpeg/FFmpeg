@@ -546,6 +546,7 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_YUV444P10:
             case AV_PIX_FMT_YUVA444P10:
             case AV_PIX_FMT_YUV444P12:
+            case AV_PIX_FMT_YUVA444P12:
             case AV_PIX_FMT_YUV444P14:
             case AV_PIX_FMT_YUV444P16:
             case AV_PIX_FMT_YUVA444P16:
@@ -597,6 +598,7 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_YUV444P10:
             case AV_PIX_FMT_YUVA444P10:
             case AV_PIX_FMT_YUV444P12:
+            case AV_PIX_FMT_YUVA444P12:
             case AV_PIX_FMT_YUV444P14:
             case AV_PIX_FMT_YUV444P16:
             case AV_PIX_FMT_YUVA444P16:
