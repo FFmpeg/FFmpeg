@@ -473,6 +473,8 @@ static av_cold int hnm_decode_init(AVCodecContext *avctx)
     ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
     if (ret < 0)
         return ret;
+    if (avctx->height & 1)
+        return AVERROR(EINVAL);
 
     hnm->version   = avctx->extradata[0];
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
@@ -482,9 +484,7 @@ static av_cold int hnm_decode_init(AVCodecContext *avctx)
     hnm->buffer2   = av_mallocz(avctx->width * avctx->height);
     hnm->processed = av_mallocz(avctx->width * avctx->height);
 
-    if (   !hnm->buffer1 || !hnm->buffer2 || !hnm->processed
-        || avctx->width * avctx->height == 0
-        || avctx->height % 2) {
+    if (!hnm->buffer1 || !hnm->buffer2 || !hnm->processed) {
         av_log(avctx, AV_LOG_ERROR, "av_mallocz() failed\n");
         return AVERROR(ENOMEM);
     }
