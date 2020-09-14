@@ -61,7 +61,6 @@ typedef struct FlashSVContext {
     int             block_width, block_height;
     uint8_t        *encbuffer;
     int             block_size;
-    z_stream        zstream;
     int             last_key_frame;
     uint8_t         tmpblock[3 * 256 * 256];
 } FlashSVContext;
@@ -92,8 +91,6 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
 
-    deflateEnd(&s->zstream);
-
     av_freep(&s->encbuffer);
     av_freep(&s->previous_frame);
 
@@ -111,9 +108,6 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
                "Input dimensions too large, input must be max 4095x4095 !\n");
         return AVERROR_INVALIDDATA;
     }
-
-    // Needed if zlib unused or init aborted before deflateInit
-    memset(&s->zstream, 0, sizeof(z_stream));
 
     s->last_key_frame = 0;
 
@@ -180,7 +174,6 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
                 ret = compress2(ptr + 2, &zsize, s->tmpblock,
                                 3 * cur_blk_width * cur_blk_height, 9);
 
-                //ret = deflateReset(&s->zstream);
                 if (ret != Z_OK)
                     av_log(s->avctx, AV_LOG_ERROR,
                            "error while compressing block %dx%d\n", i, j);
