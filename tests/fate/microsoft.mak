@@ -11,10 +11,10 @@ FATE_MSS2 += fate-mss2-pals
 fate-mss2-pals: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rlepals.wmv
 
 FATE_MSS2 += fate-mss2-rgb555
-fate-mss2-rgb555: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rle555.wmv -pix_fmt rgb555le
+fate-mss2-rgb555: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rle555.wmv -pix_fmt rgb555le -vf scale
 
 FATE_MSS2 += fate-mss2-rgb555s
-fate-mss2-rgb555s: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rle555s.wmv -pix_fmt rgb555le
+fate-mss2-rgb555s: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rle555s.wmv -pix_fmt rgb555le -vf scale
 
 FATE_MSS2 += fate-mss2-wmv
 fate-mss2-wmv: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/msscreencodec.wmv -an -frames 100

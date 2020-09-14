@@ -14,13 +14,13 @@ FATE_BMP += fate-bmp-8bit-os2
 fate-bmp-8bit-os2: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test8os2.bmp -pix_fmt rgb24 -vf scale
 
 FATE_BMP += fate-bmp-15bit
-fate-bmp-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test16.bmp -pix_fmt rgb555le
+fate-bmp-15bit: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test16.bmp -pix_fmt rgb555le -vf scale
 
 FATE_BMP += fate-bmp-15bit-mask
-fate-bmp-15bit-mask: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test16bf555.bmp -pix_fmt rgb555le
+fate-bmp-15bit-mask: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test16bf555.bmp -pix_fmt rgb555le -vf scale
 
 FATE_BMP += fate-bmp-16bit-mask
-fate-bmp-16bit-mask: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test16bf565.bmp -pix_fmt rgb565le
+fate-bmp-16bit-mask: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test16bf565.bmp -pix_fmt rgb565le -vf scale
 
 FATE_BMP += fate-bmp-24bit
 fate-bmp-24bit: CMD = framecrc -i $(TARGET_SAMPLES)/bmp/test24.bmp

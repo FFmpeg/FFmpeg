@@ -8,7 +8,7 @@ FATE_VIDEO-$(call DEMDEC, FOURXM, FOURXM) += $(FATE_4XM)
 fate-4xm: $(FATE_4XM)
 
 FATE_VIDEO-$(call DEMDEC, AVI, ZERO12V) += fate-012v
-fate-012v: CMD = framecrc -i $(TARGET_SAMPLES)/012v/sample.avi -pix_fmt yuv422p16le
+fate-012v: CMD = framecrc -i $(TARGET_SAMPLES)/012v/sample.avi -pix_fmt yuv422p16le -vf scale
 
 FATE_VIDEO-$(call DEMDEC, AVI, AASC) += fate-aasc
 fate-aasc: CMD = framecrc -i $(TARGET_SAMPLES)/aasc/AASC-1.5MB.AVI -pix_fmt rgb24 -vf scale
@@ -70,13 +70,13 @@ FATE_VIDEO-$(call DEMDEC, CDG, CDGRAPHICS) += fate-cdgraphics
 fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgba -t 1 -vf scale
 
 FATE_CFHD-$(CONFIG_AVI_DEMUXER) += fate-cfhd-1
-fate-cfhd-1: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_422.avi -pix_fmt yuv422p10le
+fate-cfhd-1: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_422.avi -pix_fmt yuv422p10le -vf scale
 
 FATE_CFHD-$(CONFIG_AVI_DEMUXER) += fate-cfhd-2
-fate-cfhd-2: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_444.avi -pix_fmt gbrp12le
+fate-cfhd-2: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_444.avi -pix_fmt gbrp12le -vf scale
 
 FATE_CFHD-$(CONFIG_MOV_DEMUXER) += fate-cfhd-3
-fate-cfhd-3: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_odd.mov -pix_fmt yuv422p10le
+fate-cfhd-3: CMD = framecrc -i $(TARGET_SAMPLES)/cfhd/cfhd_odd.mov -pix_fmt yuv422p10le -vf scale
 
 FATE_VIDEO-$(CONFIG_CFHD_DECODER) += $(FATE_CFHD-yes)
 fate-cfhd: $(FATE_CFHD-yes)
@@ -190,7 +190,7 @@ FATE_VIDEO-$(call DEMDEC, IPMOVIE, INTERPLAY_VIDEO) += fate-interplay-mve-16bit
 fate-interplay-mve-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/interplay-mve/descent3-level5-16bit-partial.mve -pix_fmt rgb24 -an -vf scale
 
 FATE_VIDEO-$(call DEMDEC, MXF, JPEG2000) += fate-jpeg2000-dcinema
-fate-jpeg2000-dcinema: CMD = framecrc -flags +bitexact -c:v jpeg2000 -i $(TARGET_SAMPLES)/jpeg2000/chiens_dcinema2K.mxf -pix_fmt xyz12le
+fate-jpeg2000-dcinema: CMD = framecrc -flags +bitexact -c:v jpeg2000 -i $(TARGET_SAMPLES)/jpeg2000/chiens_dcinema2K.mxf -pix_fmt xyz12le -vf scale
 
 FATE_VIDEO-$(call DEMDEC, JV, JV) += fate-jv
 fate-jv: CMD = framecrc -i $(TARGET_SAMPLES)/jv/intro.jv -an -pix_fmt rgb24 -vf scale
@@ -249,10 +249,10 @@ FATE_VIDEO-$(call DEMDEC, MPEGVIDEO, MPEG2VIDEO) += fate-mpeg2-ticket6677
 fate-mpeg2-ticket6677: CMD = framecrc -flags +bitexact -idct simple -vsync drop -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
 
 FATE_VIDEO-$(call DEMDEC, MV, MVC1) += fate-mv-mvc1
-fate-mv-mvc1: CMD = framecrc -i $(TARGET_SAMPLES)/mv/posture.mv -an -frames 25 -pix_fmt rgb555le
+fate-mv-mvc1: CMD = framecrc -i $(TARGET_SAMPLES)/mv/posture.mv -an -frames 25 -pix_fmt rgb555le -vf scale
 
 FATE_VIDEO-$(call DEMDEC, MV, MVC2) += fate-mv-mvc2
-fate-mv-mvc2: CMD = framecrc -i $(TARGET_SAMPLES)/mv/12345.mv -an -frames 30 -pix_fmt bgra
+fate-mv-mvc2: CMD = framecrc -i $(TARGET_SAMPLES)/mv/12345.mv -an -frames 30 -pix_fmt bgra -vf scale
 
 FATE_VIDEO-$(call DEMDEC, MV, SGIRLE) += fate-mv-sgirle
 fate-mv-sgirle: CMD = framecrc -i $(TARGET_SAMPLES)/mv/pet-rle.movie -an
@@ -328,7 +328,7 @@ FATE_VIDEO-$(call DEMDEC, AVI, V210) += fate-v210
 fate-v210: CMD = framecrc -i $(TARGET_SAMPLES)/v210/v210_720p-partial.avi -pix_fmt yuv422p16be -an -vf scale
 
 FATE_VIDEO-$(call DEMDEC, MOV, V410) += fate-v410dec
-fate-v410dec: CMD = framecrc -i $(TARGET_SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le
+fate-v410dec: CMD = framecrc -i $(TARGET_SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le -vf scale
 
 FATE_VIDEO-$(call ENCDEC, V410 PGMYUV, AVI IMAGE2) += fate-v410enc
 fate-v410enc: $(VREF)
