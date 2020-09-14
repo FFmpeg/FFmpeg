@@ -9,7 +9,7 @@ such as audio, video, subtitles and related metadata.
 * `libavcodec` provides implementation of a wider range of codecs.
 * `libavformat` implements streaming protocols, container formats and basic I/O access.
 * `libavutil` includes hashers, decompressors and miscellaneous utility functions.
-* `libavfilter` provides a mean to alter decoded Audio and Video through chain of filters.
+* `libavfilter` provides a means to alter decoded Audio and Video through a chain of filters.
 * `libavdevice` provides an abstraction to access capture and playback devices.
 * `libswresample` implements audio mixing and resampling routines.
 * `libswscale` implements color conversion and scaling routines.
@@ -27,7 +27,7 @@ such as audio, video, subtitles and related metadata.
 
 The offline documentation is available in the **doc/** directory.
 
-The online documentation is available in the main [website](https://ffmpeg.org)
+The online documentation is available on the main [website](https://ffmpeg.org)
 and in the [wiki](https://trac.ffmpeg.org).
 
 ### Examples
