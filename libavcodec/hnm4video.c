@@ -486,9 +486,6 @@ static av_cold int hnm_decode_init(AVCodecContext *avctx)
         || avctx->width * avctx->height == 0
         || avctx->height % 2) {
         av_log(avctx, AV_LOG_ERROR, "av_mallocz() failed\n");
-        av_freep(&hnm->buffer1);
-        av_freep(&hnm->buffer2);
-        av_freep(&hnm->processed);
         return AVERROR(ENOMEM);
     }
 
@@ -519,4 +516,5 @@ AVCodec ff_hnm4_video_decoder = {
     .close          = hnm_decode_end,
     .decode         = hnm_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
