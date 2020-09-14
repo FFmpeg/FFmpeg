@@ -231,6 +231,13 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     s->key_frame     = av_mallocz(s->frame_size);
     s->frame_blocks  = av_mallocz(s->blocks_size);
     s->key_blocks    = av_mallocz(s->blocks_size);
+    if (!s->encbuffer || !s->keybuffer || !s->databuffer
+        || !s->current_frame || !s->key_frame || !s->key_blocks
+        || !s->frame_blocks) {
+        av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
+        cleanup(s);
+        return AVERROR(ENOMEM);
+    }
 
     s->blockbuffer      = NULL;
     s->blockbuffer_size = 0;
@@ -244,14 +251,6 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 
     s->use_custom_palette =  0;
     s->palette_type       = -1;        // so that the palette will be generated in reconfigure_at_keyframe
-
-    if (!s->encbuffer || !s->keybuffer || !s->databuffer
-        || !s->current_frame || !s->key_frame || !s->key_blocks
-        || !s->frame_blocks) {
-        av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-        cleanup(s);
-        return -1;
-    }
 
     return 0;
 }
