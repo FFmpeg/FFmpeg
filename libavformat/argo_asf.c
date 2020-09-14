@@ -24,39 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
-
-#define ASF_TAG                 MKTAG('A', 'S', 'F', '\0')
-#define ASF_FILE_HEADER_SIZE    24
-#define ASF_CHUNK_HEADER_SIZE   20
-#define ASF_SAMPLE_COUNT        32
-
-typedef struct ArgoASFFileHeader {
-    uint32_t    magic;          /*< Magic Number, {'A', 'S', 'F', '\0'} */
-    uint16_t    version_major;  /*< File Major Version. */
-    uint16_t    version_minor;  /*< File Minor Version. */
-    uint32_t    num_chunks;     /*< No. chunks in the file. */
-    uint32_t    chunk_offset;   /*< Offset to the first chunk from the start of the file. */
-    int8_t      name[8];        /*< Name. */
-} ArgoASFFileHeader;
-
-typedef struct ArgoASFChunkHeader {
-    uint32_t    num_blocks;     /*< No. blocks in the chunk. */
-    uint32_t    num_samples;    /*< No. samples per channel in a block. Always 32. */
-    uint32_t    unk1;           /*< Unknown */
-    uint16_t    sample_rate;    /*< Sample rate. */
-    uint16_t    unk2;           /*< Unknown. */
-    uint32_t    flags;          /*< Stream flags. */
-} ArgoASFChunkHeader;
-
-enum {
-    ASF_CF_BITS_PER_SAMPLE  = (1 << 0), /*< 16-bit if set, 8 otherwise.      */
-    ASF_CF_STEREO           = (1 << 1), /*< Stereo if set, mono otherwise.   */
-    ASF_CF_ALWAYS1_1        = (1 << 2), /*< Unknown, always seems to be set. */
-    ASF_CF_ALWAYS1_2        = (1 << 3), /*< Unknown, always seems to be set. */
-
-    ASF_CF_ALWAYS1          = ASF_CF_ALWAYS1_1 | ASF_CF_ALWAYS1_2,
-    ASF_CF_ALWAYS0          = ~(ASF_CF_BITS_PER_SAMPLE | ASF_CF_STEREO | ASF_CF_ALWAYS1)
-};
+#include "argo_asf.h"
 
 typedef struct ArgoASFDemuxContext {
     ArgoASFFileHeader   fhdr;
@@ -71,8 +39,7 @@ typedef struct ArgoASFMuxContext {
     const char    *name;
 } ArgoASFMuxContext;
 
-#if CONFIG_ARGO_ASF_DEMUXER
-static void argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *buf)
+void ff_argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *buf)
 {
     hdr->magic          = AV_RL32(buf + 0);
     hdr->version_major  = AV_RL16(buf + 4);
@@ -83,7 +50,23 @@ static void argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *bu
         hdr->name[i]    = AV_RL8(buf + 16 + i);
 }
 
-static void argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *buf)
+int ff_argo_asf_validate_file_header(AVFormatContext *s, const ArgoASFFileHeader *hdr)
+{
+    if (hdr->magic != ASF_TAG || hdr->num_chunks == 0)
+        return AVERROR_INVALIDDATA;
+
+    if (hdr->num_chunks > 1) {
+        avpriv_request_sample(s, ">1 chunk");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    if (hdr->chunk_offset < ASF_FILE_HEADER_SIZE)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+void ff_argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *buf)
 {
     hdr->num_blocks     = AV_RL32(buf + 0);
     hdr->num_samples    = AV_RL32(buf + 4);
@@ -93,6 +76,73 @@ static void argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *
     hdr->flags          = AV_RL32(buf + 16);
 }
 
+int ff_argo_asf_fill_stream(AVStream *st, const ArgoASFFileHeader *fhdr,
+                            const ArgoASFChunkHeader *ckhdr)
+{
+    if (ckhdr->num_samples != ASF_SAMPLE_COUNT) {
+        av_log(st, AV_LOG_ERROR, "Invalid sample count. Got %u, expected %d\n",
+               ckhdr->num_samples, ASF_SAMPLE_COUNT);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if ((ckhdr->flags & ASF_CF_ALWAYS1) != ASF_CF_ALWAYS1 || (ckhdr->flags & ASF_CF_ALWAYS0) != 0) {
+        avpriv_request_sample(st, "Nonstandard flags (0x%08X)", ckhdr->flags);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    st->codecpar->codec_type                = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id                  = AV_CODEC_ID_ADPCM_ARGO;
+    st->codecpar->format                    = AV_SAMPLE_FMT_S16P;
+
+    if (ckhdr->flags & ASF_CF_STEREO) {
+        st->codecpar->channel_layout        = AV_CH_LAYOUT_STEREO;
+        st->codecpar->channels              = 2;
+    } else {
+        st->codecpar->channel_layout        = AV_CH_LAYOUT_MONO;
+        st->codecpar->channels              = 1;
+    }
+
+    /* v1.1 files (FX Fighter) are all marked as 44100, but are actually 22050. */
+    if (fhdr->version_major == 1 && fhdr->version_minor == 1)
+        st->codecpar->sample_rate           = 22050;
+    else
+        st->codecpar->sample_rate           = ckhdr->sample_rate;
+
+    st->codecpar->bits_per_coded_sample     = 4;
+
+    if (ckhdr->flags & ASF_CF_BITS_PER_SAMPLE)
+        st->codecpar->bits_per_raw_sample   = 16;
+    else
+        st->codecpar->bits_per_raw_sample   = 8;
+
+    if (st->codecpar->bits_per_raw_sample != 16) {
+        /* The header allows for these, but I've never seen any files with them. */
+        avpriv_request_sample(st, "Non 16-bit samples");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    /*
+     * (nchannel control bytes) + ((bytes_per_channel) * nchannel)
+     * For mono, this is 17. For stereo, this is 34.
+     */
+    st->codecpar->frame_size            = st->codecpar->channels +
+                                          (ckhdr->num_samples / 2) *
+                                          st->codecpar->channels;
+
+    st->codecpar->block_align           = st->codecpar->frame_size;
+
+    st->codecpar->bit_rate              = st->codecpar->channels *
+                                          st->codecpar->sample_rate *
+                                          st->codecpar->bits_per_coded_sample;
+
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+    st->start_time      = 0;
+    st->duration        = ckhdr->num_blocks * ckhdr->num_samples;
+    st->nb_frames       = ckhdr->num_blocks;
+    return 0;
+}
+
+#if CONFIG_ARGO_ASF_DEMUXER
 /*
  * Known versions:
  * 1.1: https://samples.ffmpeg.org/game-formats/brender/part2.zip
@@ -115,7 +165,7 @@ static int argo_asf_probe(const AVProbeData *p)
 
     av_assert0(AVPROBE_PADDING_SIZE >= ASF_FILE_HEADER_SIZE);
 
-    argo_asf_parse_file_header(&hdr, p->buf);
+    ff_argo_asf_parse_file_header(&hdr, p->buf);
 
     if (hdr.magic != ASF_TAG)
         return 0;
@@ -132,7 +182,7 @@ static int argo_asf_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st;
     ArgoASFDemuxContext *asf = s->priv_data;
-    uint8_t buf[FFMAX(ASF_FILE_HEADER_SIZE, ASF_CHUNK_HEADER_SIZE)];
+    uint8_t buf[ASF_MIN_BUFFER_SIZE];
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
@@ -142,17 +192,10 @@ static int argo_asf_read_header(AVFormatContext *s)
     else if (ret != ASF_FILE_HEADER_SIZE)
         return AVERROR(EIO);
 
-    argo_asf_parse_file_header(&asf->fhdr, buf);
+    ff_argo_asf_parse_file_header(&asf->fhdr, buf);
 
-    if (asf->fhdr.num_chunks == 0) {
-        return AVERROR_INVALIDDATA;
-    } else if (asf->fhdr.num_chunks > 1) {
-        avpriv_request_sample(s, ">1 chunk");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    if (asf->fhdr.chunk_offset < ASF_FILE_HEADER_SIZE)
-        return AVERROR_INVALIDDATA;
+    if ((ret = ff_argo_asf_validate_file_header(s, &asf->fhdr)) < 0)
+        return ret;
 
     if ((ret = avio_skip(pb, asf->fhdr.chunk_offset - ASF_FILE_HEADER_SIZE)) < 0)
         return ret;
@@ -162,69 +205,9 @@ static int argo_asf_read_header(AVFormatContext *s)
     else if (ret != ASF_CHUNK_HEADER_SIZE)
         return AVERROR(EIO);
 
-    argo_asf_parse_chunk_header(&asf->ckhdr, buf);
+    ff_argo_asf_parse_chunk_header(&asf->ckhdr, buf);
 
-    if (asf->ckhdr.num_samples != ASF_SAMPLE_COUNT) {
-        av_log(s, AV_LOG_ERROR, "Invalid sample count. Got %u, expected %d\n",
-               asf->ckhdr.num_samples, ASF_SAMPLE_COUNT);
-        return AVERROR_INVALIDDATA;
-    }
-
-    if ((asf->ckhdr.flags & ASF_CF_ALWAYS1) != ASF_CF_ALWAYS1 || (asf->ckhdr.flags & ASF_CF_ALWAYS0) != 0) {
-        avpriv_request_sample(s, "Nonstandard flags (0x%08X)", asf->ckhdr.flags);
-        return AVERROR_PATCHWELCOME;
-    }
-
-    st->codecpar->codec_type                = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id                  = AV_CODEC_ID_ADPCM_ARGO;
-    st->codecpar->format                    = AV_SAMPLE_FMT_S16P;
-
-    if (asf->ckhdr.flags & ASF_CF_STEREO) {
-        st->codecpar->channel_layout        = AV_CH_LAYOUT_STEREO;
-        st->codecpar->channels              = 2;
-    } else {
-        st->codecpar->channel_layout        = AV_CH_LAYOUT_MONO;
-        st->codecpar->channels              = 1;
-    }
-
-    /* v1.1 files (FX Fighter) are all marked as 44100, but are actually 22050. */
-    if (asf->fhdr.version_major == 1 && asf->fhdr.version_minor == 1)
-        st->codecpar->sample_rate           = 22050;
-    else
-        st->codecpar->sample_rate           = asf->ckhdr.sample_rate;
-
-    st->codecpar->bits_per_coded_sample     = 4;
-
-    if (asf->ckhdr.flags & ASF_CF_BITS_PER_SAMPLE)
-        st->codecpar->bits_per_raw_sample   = 16;
-    else
-        st->codecpar->bits_per_raw_sample   = 8;
-
-    if (st->codecpar->bits_per_raw_sample != 16) {
-        /* The header allows for these, but I've never seen any files with them. */
-        avpriv_request_sample(s, "Non 16-bit samples");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    /*
-     * (nchannel control bytes) + ((bytes_per_channel) * nchannel)
-     * For mono, this is 17. For stereo, this is 34.
-     */
-    st->codecpar->frame_size            = st->codecpar->channels +
-                                          (asf->ckhdr.num_samples / 2) *
-                                          st->codecpar->channels;
-
-    st->codecpar->block_align           = st->codecpar->frame_size;
-
-    st->codecpar->bit_rate              = st->codecpar->channels *
-                                          st->codecpar->sample_rate *
-                                          st->codecpar->bits_per_coded_sample;
-
-    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-    st->start_time      = 0;
-    st->duration        = asf->ckhdr.num_blocks * asf->ckhdr.num_samples;
-    st->nb_frames       = asf->ckhdr.num_blocks;
-    return 0;
+    return ff_argo_asf_fill_stream(st, &asf->fhdr, &asf->ckhdr);
 }
 
 static int argo_asf_read_packet(AVFormatContext *s, AVPacket *pkt)

@@ -251,6 +251,10 @@ static int send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
 
     if (!rate_tb.den)
         return AVERROR_BUG;
+    if (cat->in[in_no].pts < INT64_MIN + seg_delta)
+        return AVERROR_INVALIDDATA;
+    if (seg_delta < cat->in[in_no].pts)
+        return AVERROR_INVALIDDATA;
     nb_samples = av_rescale_q(seg_delta - cat->in[in_no].pts,
                               outlink->time_base, rate_tb);
     frame_nb_samples = FFMAX(9600, rate_tb.den / 5); /* arbitrary */

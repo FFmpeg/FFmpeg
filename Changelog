@@ -24,6 +24,7 @@ version <next>:
 - MCA demuxer
 - AV1 decoder (Hardware acceleration used only)
 - SVS demuxer
+- Argonaut Games BRP demuxer
 
 
 version 4.3:

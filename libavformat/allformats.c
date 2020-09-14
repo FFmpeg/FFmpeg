@@ -65,6 +65,7 @@ extern AVOutputFormat ff_aptx_hd_muxer;
 extern AVInputFormat  ff_aqtitle_demuxer;
 extern AVInputFormat  ff_argo_asf_demuxer;
 extern AVOutputFormat ff_argo_asf_muxer;
+extern AVInputFormat  ff_argo_brp_demuxer;
 extern AVInputFormat  ff_asf_demuxer;
 extern AVOutputFormat ff_asf_muxer;
 extern AVInputFormat  ff_asf_o_demuxer;

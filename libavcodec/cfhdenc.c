@@ -919,4 +919,5 @@ AVCodec ff_cfhd_encoder = {
                           AV_PIX_FMT_GBRAP12,
                           AV_PIX_FMT_NONE
                         },
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };

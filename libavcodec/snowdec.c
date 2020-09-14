@@ -422,17 +422,6 @@ static int decode_header(SnowContext *s){
     return 0;
 }
 
-static av_cold int decode_init(AVCodecContext *avctx)
-{
-    int ret;
-
-    if ((ret = ff_snow_common_init(avctx)) < 0) {
-        return ret;
-    }
-
-    return 0;
-}
-
 static int decode_blocks(SnowContext *s){
     int x, y;
     int w= s->b_width;
@@ -665,7 +654,7 @@ AVCodec ff_snow_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
-    .init           = decode_init,
+    .init           = ff_snow_common_init,
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
