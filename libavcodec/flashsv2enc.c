@@ -177,6 +177,7 @@ static void reset_stats(FlashSV2Context * s)
 static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 {
     FlashSV2Context *s = avctx->priv_data;
+    int ret;
 
     s->avctx = avctx;
 
@@ -186,23 +187,23 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     if (s->comp < 0 || s->comp > 9) {
         av_log(avctx, AV_LOG_ERROR,
                "Compression level should be 0-9, not %d\n", s->comp);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 
     if ((avctx->width > 4095) || (avctx->height > 4095)) {
         av_log(avctx, AV_LOG_ERROR,
                "Input dimensions too large, input must be max 4095x4095 !\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if ((avctx->width < 16) || (avctx->height < 16)) {
         av_log(avctx, AV_LOG_ERROR,
                "Input dimensions too small, input must be at least 16x16 !\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
-    if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0)
-        return -1;
+    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return ret;
 
 
     s->last_key_frame = 0;
