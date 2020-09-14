@@ -1142,7 +1142,7 @@ const int32_t *const ff_hq_quants[NUM_HQ_QUANTS][2][4] = {
     { { qmat3A, qmat48, qmat4C, qmat4C }, { qmat3B, qmat49, qmat4D, qmat4D } },
 };
 
-const uint8_t ff_hq_ac_bits[NUM_HQ_AC_ENTRIES] = {
+static const uint8_t hq_ac_bits[NUM_HQ_AC_ENTRIES] = {
      3,  3,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,
      6,  6,  6,  7,  7,  7,  7,  7,  7,  7,  7,  8,  8,  8,  8,  8,
      8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,
@@ -1192,7 +1192,7 @@ const uint8_t ff_hq_ac_bits[NUM_HQ_AC_ENTRIES] = {
     16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
 };
 
-const uint16_t ff_hq_ac_codes[NUM_HQ_AC_ENTRIES] = {
+static const uint16_t hq_ac_codes[NUM_HQ_AC_ENTRIES] = {
     0x0000, 0x0001, 0x0004, 0x0005, 0x0006, 0x000E, 0x000F, 0x0010,
     0x0011, 0x0012, 0x0013, 0x0028, 0x0029, 0x002A, 0x002B, 0x002C,
     0x002D, 0x002E, 0x002F, 0x0060, 0x0061, 0x0062, 0x0063, 0x0064,
@@ -8373,5 +8373,5 @@ av_cold int ff_hq_init_vlcs(HQContext *c)
         return ret;
 
     return init_vlc(&c->hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
-                    ff_hq_ac_bits, 1, 1, ff_hq_ac_codes, 2, 2, 0);
+                    hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
 }
