@@ -388,12 +388,10 @@ static av_cold int av1_decode_free(AVCodecContext *avctx)
     AV1DecContext *s = avctx->priv_data;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
-        if (s->ref[i].tf.f->buf[0])
-            av1_frame_unref(avctx, &s->ref[i]);
+        av1_frame_unref(avctx, &s->ref[i]);
         av_frame_free(&s->ref[i].tf.f);
     }
-    if (s->cur_frame.tf.f->buf[0])
-        av1_frame_unref(avctx, &s->cur_frame);
+    av1_frame_unref(avctx, &s->cur_frame);
     av_frame_free(&s->cur_frame.tf.f);
 
     av_buffer_unref(&s->seq_ref);
