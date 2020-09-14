@@ -128,9 +128,6 @@ static av_cold int escape130_decode_init(AVCodecContext *avctx)
     s->buf1      = av_malloc(avctx->width * avctx->height * 3 / 2);
     s->buf2      = av_malloc(avctx->width * avctx->height * 3 / 2);
     if (!s->old_y_avg || !s->buf1 || !s->buf2) {
-        av_freep(&s->old_y_avg);
-        av_freep(&s->buf1);
-        av_freep(&s->buf2);
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -358,4 +355,5 @@ AVCodec ff_escape130_decoder = {
     .close          = escape130_decode_close,
     .decode         = escape130_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
