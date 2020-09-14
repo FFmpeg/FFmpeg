@@ -1354,4 +1354,5 @@ AVCodec ff_ffv1_encoder = {
     .defaults       = ffv1_defaults,
 #endif
     .priv_class     = &ffv1_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
