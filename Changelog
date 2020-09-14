@@ -27,6 +27,7 @@ version <next>:
 - Argonaut Games BRP demuxer
 - DAT demuxer
 - aax demuxer
+- IPU decoder, parser and demuxer
 
 
 version 4.3:
