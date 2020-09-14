@@ -78,18 +78,10 @@ typedef struct ArgoBRPStreamHeader {
 typedef struct ArgoBRPDemuxContext {
     ArgoBRPFileHeader   fhdr;
     ArgoBRPStreamHeader streams[BRP_MAX_STREAMS];
-    /* To know how much of a BASF to give. */
-    int64_t             lastpts;
-    int                 hit_eof;
 
-    /* BASF-specific fields. */
     struct {
         int                 index;
         ArgoASFChunkHeader  ckhdr;
-        int64_t             blocks_read;
-        int64_t             offset;
-        /* ms, not samples. */
-        int64_t             lastpts;
     } basf;
 } ArgoBRPDemuxContext;
 
@@ -255,17 +247,23 @@ static int argo_brp_read_header(AVFormatContext *s)
     }
 
     /*
-     * This is nasty. BASF streams only have one (huge) block.
-     * It should be the first one. It contains the chunk header, so
-     * it needs to be read here.
+     * This is nasty. BASF streams have their chunk header in each block,
+     * so the first one needs to be read to get the stream info. It should
+     * always be the first one.
      */
     if (brp->basf.index >= 0) {
         AVStream *st = s->streams[brp->basf.index];
         ArgoBRPStreamHeader *hdr = brp->streams + brp->basf.index;
         ArgoBRPBlockHeader blk;
+        int64_t offset;
 
         av_assert0(st->codecpar->codec_id == AV_CODEC_ID_ADPCM_ARGO);
         av_assert0(brp->streams[brp->basf.index].extradata_size == ASF_FILE_HEADER_SIZE);
+
+        if ((ret = avio_tell(s->pb)) < 0)
+            return ret;
+
+        offset = ret;
 
         if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
             return ret;
@@ -295,86 +293,25 @@ static int argo_brp_read_header(AVFormatContext *s)
             return ret;
 
         /* Convert ms to samples. */
-        st->start_time = (blk.start_ms * st->codecpar->sample_rate) / 1000;
+        st->start_time = av_rescale_rnd(blk.start_ms, st->codecpar->sample_rate, 1000, AV_ROUND_UP);
+        st->duration   = av_rescale_rnd(hdr->duration_ms, st->codecpar->sample_rate, 1000, AV_ROUND_UP);
 
-        if ((ret = avio_tell(s->pb)) < 0)
-            return ret;
-
-        brp->basf.offset = ret;
-
-        if ((ret = avio_skip(s->pb, blk.size - ASF_CHUNK_HEADER_SIZE)) < 0)
+        if ((ret = avio_seek(s->pb, offset, SEEK_SET)) < 0)
             return ret;
     }
     return 0;
-}
-
-static int argo_brp_read_basf(AVFormatContext *s, AVPacket *pkt,
-                              ArgoBRPDemuxContext *brp, int ignorepts)
-{
-    ArgoASFChunkHeader *ckhdr = &brp->basf.ckhdr;
-    AVCodecParameters *par;
-    int64_t ret, old;
-
-    if (brp->basf.index < 0)
-        return 0;
-
-    par = s->streams[brp->basf.index]->codecpar;
-
-    if (brp->basf.blocks_read >= ckhdr->num_blocks)
-        return 0;
-
-    if (!ignorepts && brp->lastpts < brp->basf.lastpts)
-        return 0;
-
-    if ((ret = avio_tell(s->pb)) < 0)
-        return ret;
-
-    old = ret;
-
-    if ((ret = avio_seek(s->pb, brp->basf.offset, SEEK_SET)) < 0)
-        return ret;
-    else if (ret != brp->basf.offset)
-        return AVERROR(EIO);
-
-    if ((ret = av_get_packet(s->pb, pkt, par->block_align)) < 0)
-        return ret;
-
-    if ((ret = avio_seek(s->pb, old, SEEK_SET)) < 0)
-        return ret;
-    else if (ret != old)
-        return AVERROR(EIO);
-
-    pkt->stream_index      = brp->basf.index;
-    pkt->duration          = ckhdr->num_samples;
-
-    brp->basf.offset      += pkt->size;
-    brp->basf.blocks_read += 1;
-    /* Need the ceil() because ((32 * 1000) / 44100) < 1 */
-    brp->basf.lastpts     += ceilf((ckhdr->num_samples * 1000.0f) / ckhdr->sample_rate);
-    return 1;
 }
 
 static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ArgoBRPDemuxContext *brp = s->priv_data;
     ArgoBRPBlockHeader blk;
-    AVIOContext *pb = s->pb;
-    uint8_t buf[BRP_BLOCK_HEADER_SIZE];
+    AVStream *st;
+    uint8_t buf[BRP_MIN_BUFFER_SIZE];
+    ArgoASFChunkHeader ckhdr;
     int ret;
 
-    /*
-     * Special-case: send some more BASF content if we're running behind.
-     * Grr, why couldn't they just interleave it.
-     */
-    if ((ret = argo_brp_read_basf(s, pkt, brp, brp->hit_eof)) < 0)
-        return ret;
-    else if (ret > 0)
-        return 0;
-
-    if (brp->hit_eof)
-        return AVERROR_EOF;
-
-    if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
+    if ((ret = avio_read(s->pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
         return ret;
     else if (ret != BRP_BLOCK_HEADER_SIZE)
         return AVERROR(EIO);
@@ -383,30 +320,49 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
     blk.start_ms  = AV_RL32(buf + 4);
     blk.size      = AV_RL32(buf + 8);
 
-    /* This is meant to be EOF, but there might be more BASF packets. */
-    if (blk.stream_id == -1) {
-        brp->hit_eof = 1;
-        /* This is nasty, but safe. */
-        return argo_brp_read_packet(s, pkt);
-    }
+    if (blk.stream_id == -1)
+        return AVERROR_EOF;
 
     if (blk.stream_id < -1 || blk.stream_id >= s->nb_streams)
         return AVERROR_INVALIDDATA;
 
-    /* Skip BASF blocks. */
+    st = s->streams[blk.stream_id];
+
     if (blk.stream_id == brp->basf.index) {
-        if ((ret = avio_skip(s->pb, blk.size)) < 0)
+        if (blk.size < ASF_CHUNK_HEADER_SIZE)
+            return AVERROR_INVALIDDATA;
+
+        if ((ret = avio_read(s->pb, buf, ASF_CHUNK_HEADER_SIZE)) < 0)
             return ret;
-    } else {
-        if ((ret = av_get_packet(s->pb, pkt, blk.size)) < 0)
-            return ret;
-        else if (ret != blk.size)
+
+        ff_argo_asf_parse_chunk_header(&ckhdr, buf);
+
+        /* Ensure the chunk attributes are the same. */
+        if (ckhdr.sample_rate != brp->basf.ckhdr.sample_rate ||
+            ckhdr.flags       != brp->basf.ckhdr.flags       ||
+            ckhdr.unk1        != brp->basf.ckhdr.unk1        ||
+            ckhdr.unk2        != brp->basf.ckhdr.unk2)
+            return AVERROR_INVALIDDATA;
+
+        blk.size -= ASF_CHUNK_HEADER_SIZE;
+
+        if (blk.size % st->codecpar->block_align != 0)
             return AVERROR_INVALIDDATA;
     }
 
+    if ((ret = av_get_packet(s->pb, pkt, blk.size)) < 0)
+        return ret;
+    else if (ret != blk.size)
+        return AVERROR_INVALIDDATA;
+
+    if (blk.stream_id == brp->basf.index) {
+        pkt->duration = ckhdr.num_samples * ckhdr.num_blocks;
+        pkt->pts      = av_rescale_rnd(blk.start_ms, ckhdr.sample_rate, 1000, AV_ROUND_UP);
+    } else {
+        pkt->pts      = blk.start_ms;
+    }
+
     pkt->stream_index = blk.stream_id;
-    pkt->pts          = blk.start_ms;
-    brp->lastpts      = FFMAX(brp->lastpts, blk.start_ms);
     return 0;
 }
 
