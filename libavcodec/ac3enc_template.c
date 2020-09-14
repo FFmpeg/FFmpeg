@@ -42,7 +42,7 @@ int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
     int ch;
 
     if (!FF_ALLOC_TYPED_ARRAY(s->windowed_samples, AC3_WINDOW_SIZE) ||
-        !FF_ALLOC_TYPED_ARRAY(s->planar_samples,   s->channels))
+        !FF_ALLOCZ_TYPED_ARRAY(s->planar_samples,  s->channels))
         return AVERROR(ENOMEM);
 
     for (ch = 0; ch < s->channels; ch++) {
