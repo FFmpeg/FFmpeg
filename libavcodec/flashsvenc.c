@@ -59,11 +59,11 @@ typedef struct FlashSVContext {
     uint8_t        *previous_frame;
     int             image_width, image_height;
     int             block_width, block_height;
-    uint8_t        *tmpblock;
     uint8_t        *encbuffer;
     int             block_size;
     z_stream        zstream;
     int             last_key_frame;
+    uint8_t         tmpblock[3 * 256 * 256];
 } FlashSVContext;
 
 static int copy_region_enc(uint8_t *sptr, uint8_t *dptr, int dx, int dy,
@@ -96,7 +96,6 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 
     av_freep(&s->encbuffer);
     av_freep(&s->previous_frame);
-    av_freep(&s->tmpblock);
 
     return 0;
 }
@@ -121,10 +120,9 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
     s->image_width  = avctx->width;
     s->image_height = avctx->height;
 
-    s->tmpblock  = av_mallocz(3 * 256 * 256);
     s->encbuffer = av_mallocz(s->image_width * s->image_height * 3);
 
-    if (!s->tmpblock || !s->encbuffer) {
+    if (!s->encbuffer) {
         av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
         return AVERROR(ENOMEM);
     }
