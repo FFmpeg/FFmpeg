@@ -203,10 +203,8 @@ static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
         ctx->planes[p].buffers[0] = av_malloc(!p ? luma_size : chroma_size);
         ctx->planes[p].buffers[1] = av_malloc(!p ? luma_size : chroma_size);
 
-        if (!ctx->planes[p].buffers[0] || !ctx->planes[p].buffers[1]) {
-            free_frame_buffers(ctx);
+        if (!ctx->planes[p].buffers[0] || !ctx->planes[p].buffers[1])
             return AVERROR(ENOMEM);
-        }
 
         /* fill the INTRA prediction lines with the middle pixel value = 64 */
         memset(ctx->planes[p].buffers[0], 0x40, ctx->planes[p].pitch);
@@ -1143,4 +1141,5 @@ AVCodec ff_indeo3_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
