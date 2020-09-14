@@ -410,7 +410,7 @@ static int init_tiles(Jpeg2000EncoderContext *s)
     s->numXtiles = ff_jpeg2000_ceildiv(s->width, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height, s->tile_height);
 
-    s->tile = av_malloc_array(s->numXtiles, s->numYtiles * sizeof(Jpeg2000Tile));
+    s->tile = av_calloc(s->numXtiles, s->numYtiles * sizeof(Jpeg2000Tile));
     if (!s->tile)
         return AVERROR(ENOMEM);
     for (tileno = 0, tiley = 0; tiley < s->numYtiles; tiley++)
@@ -972,12 +972,16 @@ static void cleanup(Jpeg2000EncoderContext *s)
     int tileno, compno;
     Jpeg2000CodingStyle *codsty = &s->codsty;
 
+    if (!s->tile)
+        return;
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
-        for (compno = 0; compno < s->ncomponents; compno++){
-            Jpeg2000Component *comp = s->tile[tileno].comp + compno;
-            ff_jpeg2000_cleanup(comp, codsty);
+        if (s->tile[tileno].comp) {
+            for (compno = 0; compno < s->ncomponents; compno++){
+                Jpeg2000Component *comp = s->tile[tileno].comp + compno;
+                ff_jpeg2000_cleanup(comp, codsty);
+            }
+            av_freep(&s->tile[tileno].comp);
         }
-        av_freep(&s->tile[tileno].comp);
     }
     av_freep(&s->tile);
 }
@@ -1258,4 +1262,5 @@ AVCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &j2k_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
