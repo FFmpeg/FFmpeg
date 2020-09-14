@@ -95,7 +95,7 @@ typedef struct IMCContext {
     GetBitContext gb;
 
     BswapDSPContext bdsp;
-    AVFloatDSPContext *fdsp;
+    void (*butterflies_float)(float *av_restrict v1, float *av_restrict v2, int len);
     FFTContext fft;
     DECLARE_ALIGNED(32, FFTComplex, samples)[COEFFS / 2];
     float *out_samples;
@@ -179,6 +179,7 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
 {
     int i, j, ret;
     IMCContext *q = avctx->priv_data;
+    AVFloatDSPContext *fdsp;
     double r1, r2;
 
     if (avctx->codec_id == AV_CODEC_ID_IAC && avctx->sample_rate > 96000) {
@@ -252,17 +253,16 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         memcpy(q->weights2, imc_weights2, sizeof(imc_weights2));
     }
 
+    fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!fdsp)
+        return AVERROR(ENOMEM);
+    q->butterflies_float = fdsp->butterflies_float;
+    av_free(fdsp);
     if ((ret = ff_fft_init(&q->fft, 7, 1))) {
         av_log(avctx, AV_LOG_INFO, "FFT init failed\n");
         return ret;
     }
     ff_bswapdsp_init(&q->bdsp);
-    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!q->fdsp) {
-        ff_fft_end(&q->fft);
-
-        return AVERROR(ENOMEM);
-    }
 
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
     avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO
@@ -1050,8 +1050,8 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (avctx->channels == 2) {
-        q->fdsp->butterflies_float((float *)frame->extended_data[0],
-                                  (float *)frame->extended_data[1], COEFFS);
+        q->butterflies_float((float *)frame->extended_data[0],
+                             (float *)frame->extended_data[1], COEFFS);
     }
 
     *got_frame_ptr = 1;
@@ -1064,7 +1064,6 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
     IMCContext *q = avctx->priv_data;
 
     ff_fft_end(&q->fft);
-    av_freep(&q->fdsp);
 
     return 0;
 }
