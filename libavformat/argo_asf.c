@@ -314,14 +314,15 @@ static int argo_asf_write_header(AVFormatContext *s)
 {
     const AVCodecParameters  *par = s->streams[0]->codecpar;
     ArgoASFMuxContext        *ctx = s->priv_data;
-    ArgoASFFileHeader  fhdr;
     ArgoASFChunkHeader chdr;
+    ArgoASFFileHeader  fhdr = {
+        .magic         = ASF_TAG,
+        .version_major = (uint16_t)ctx->version_major,
+        .version_minor = (uint16_t)ctx->version_minor,
+        .num_chunks    = 1,
+        .chunk_offset  = ASF_FILE_HEADER_SIZE
+    };
 
-    fhdr.magic         = ASF_TAG;
-    fhdr.version_major = (uint16_t)ctx->version_major;
-    fhdr.version_minor = (uint16_t)ctx->version_minor;
-    fhdr.num_chunks    = 1;
-    fhdr.chunk_offset  = ASF_FILE_HEADER_SIZE;
     /*
      * If the user specified a name, use it as is. Otherwise take the
      * basename and lop off the extension (if any).
