@@ -1232,7 +1232,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         }
         av_log(avctx, AV_LOG_INFO, "Autodetected the input mode\n");
     }
-    if (ctx->raw_format == bmdFormatUnspecified)
+    if (ctx->raw_format == (BMDPixelFormat)0)
         ctx->raw_format = bmdFormat8BitYUV;
     if (ff_decklink_set_format(avctx, DIRECTION_IN) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not set format code %s for %s\n",
