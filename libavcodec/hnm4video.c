@@ -387,15 +387,6 @@ static void hnm_update_palette(AVCodecContext *avctx, uint8_t *src,
     }
 }
 
-static void hnm_flip_buffers(Hnm4VideoContext *hnm)
-{
-    uint8_t *temp;
-
-    temp          = hnm->current;
-    hnm->current  = hnm->previous;
-    hnm->previous = temp;
-}
-
 static int hnm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
@@ -450,7 +441,7 @@ static int hnm_decode_frame(AVCodecContext *avctx, void *data,
         frame->key_frame = 0;
         memcpy(frame->data[1], hnm->palette, 256 * 4);
         *got_frame = 1;
-        hnm_flip_buffers(hnm);
+        FFSWAP(uint8_t *, hnm->current, hnm->previous);
     } else {
         av_log(avctx, AV_LOG_ERROR, "invalid chunk id: %d\n", chunk_id);
         return AVERROR_INVALIDDATA;
