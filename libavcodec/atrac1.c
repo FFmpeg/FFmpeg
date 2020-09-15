@@ -353,7 +353,6 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
         (ret = ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15))) ||
         (ret = ff_mdct_init(&q->mdct_ctx[2], 9, 1, -1.0/ (1 << 15)))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
-        atrac1_decode_end(avctx);
         return ret;
     }
 
@@ -362,6 +361,9 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     ff_atrac_generate_tables();
 
     q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!q->fdsp) {
+        return AVERROR(ENOMEM);
+    }
 
     q->bands[0] = q->low;
     q->bands[1] = q->mid;
@@ -389,4 +391,5 @@ AVCodec ff_atrac1_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

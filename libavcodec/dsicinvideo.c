@@ -58,7 +58,6 @@ static av_cold int allocate_buffers(CinVideoContext *cin)
         cin->bitmap_table[i] = av_mallocz(cin->bitmap_size);
         if (!cin->bitmap_table[i]) {
             av_log(cin->avctx, AV_LOG_ERROR, "Can't allocate bitmap buffers.\n");
-            destroy_buffers(cin);
             return AVERROR(ENOMEM);
         }
     }

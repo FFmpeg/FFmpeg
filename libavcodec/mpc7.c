@@ -38,25 +38,23 @@
 
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
-static const uint16_t quant_offsets[MPC7_QUANT_VLC_TABLES*2 + 1] =
+static const uint16_t quant_sizes[MPC7_QUANT_VLC_TABLES*2] =
 {
-       0, 512, 1024, 1536, 2052, 2564, 3076, 3588, 4100, 4612, 5124,
-       5636, 6164, 6676, 7224
+    512, 512, 512, 516, 512, 512, 512, 512, 512, 512, 512, 528, 512, 548
 };
 
 
 static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 {
-    int i, j, ret;
+    int i, j;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     LOCAL_ALIGNED_16(uint8_t, buf, [16]);
     static int vlc_initialized = 0;
 
-    static VLC_TYPE scfi_table[1 << MPC7_SCFI_BITS][2];
-    static VLC_TYPE dscf_table[1 << MPC7_DSCF_BITS][2];
-    static VLC_TYPE hdr_table[1 << MPC7_HDR_BITS][2];
     static VLC_TYPE quant_tables[7224][2];
+    VLC_TYPE (*quant_table)[2] = quant_tables;
+    const uint16_t *raw_quant_table = mpc7_quant_vlcs;
 
     /* Musepack SV7 is always stereo */
     if (avctx->channels != 2) {
@@ -95,40 +93,24 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 
     if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
-    scfi_vlc.table = scfi_table;
-    scfi_vlc.table_allocated = 1 << MPC7_SCFI_BITS;
-    if ((ret = init_vlc(&scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
-                &mpc7_scfi[1], 2, 1,
-                &mpc7_scfi[0], 2, 1, INIT_VLC_USE_NEW_STATIC))) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot init SCFI VLC\n");
-        return ret;
-    }
-    dscf_vlc.table = dscf_table;
-    dscf_vlc.table_allocated = 1 << MPC7_DSCF_BITS;
-    if ((ret = init_vlc(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
-                &mpc7_dscf[1], 2, 1,
-                &mpc7_dscf[0], 2, 1, INIT_VLC_USE_NEW_STATIC))) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot init DSCF VLC\n");
-        return ret;
-    }
-    hdr_vlc.table = hdr_table;
-    hdr_vlc.table_allocated = 1 << MPC7_HDR_BITS;
-    if ((ret = init_vlc(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
-                &mpc7_hdr[1], 2, 1,
-                &mpc7_hdr[0], 2, 1, INIT_VLC_USE_NEW_STATIC))) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot init HDR VLC\n");
-        return ret;
-    }
+    INIT_VLC_STATIC(&scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
+                    &mpc7_scfi[1], 2, 1,
+                    &mpc7_scfi[0], 2, 1, 1 << MPC7_SCFI_BITS);
+    INIT_VLC_STATIC(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
+                    &mpc7_dscf[1], 2, 1,
+                    &mpc7_dscf[0], 2, 1, 1 << MPC7_DSCF_BITS);
+    INIT_VLC_STATIC(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
+                    &mpc7_hdr[1], 2, 1,
+                    &mpc7_hdr[0], 2, 1, 1 << MPC7_HDR_BITS);
     for(i = 0; i < MPC7_QUANT_VLC_TABLES; i++){
         for(j = 0; j < 2; j++){
-            quant_vlc[i][j].table = &quant_tables[quant_offsets[i*2 + j]];
-            quant_vlc[i][j].table_allocated = quant_offsets[i*2 + j + 1] - quant_offsets[i*2 + j];
-            if ((ret = init_vlc(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
-                        &mpc7_quant_vlc[i][j][1], 4, 2,
-                        &mpc7_quant_vlc[i][j][0], 4, 2, INIT_VLC_USE_NEW_STATIC))) {
-                av_log(avctx, AV_LOG_ERROR, "Cannot init QUANT VLC %i,%i\n",i,j);
-                return ret;
-            }
+            quant_vlc[i][j].table = quant_table;
+            quant_vlc[i][j].table_allocated = quant_sizes[i * 2 + j];
+            quant_table += quant_sizes[i * 2 + j];
+            init_vlc(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
+                     raw_quant_table + 1, 4, 2,
+                     raw_quant_table, 4, 2, INIT_VLC_USE_NEW_STATIC);
+            raw_quant_table += 2 * mpc7_quant_vlc_sizes[i];
         }
     }
     vlc_initialized = 1;

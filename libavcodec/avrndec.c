@@ -54,6 +54,8 @@ static av_cold int init(AVCodecContext *avctx)
         }
 
         a->mjpeg_avctx = avcodec_alloc_context3(codec);
+        if (!a->mjpeg_avctx)
+            return AVERROR(ENOMEM);
 
         av_dict_set(&thread_opt, "threads", "1", 0); // Is this needed ?
         a->mjpeg_avctx->refcounted_frames = 1;
@@ -168,5 +170,5 @@ AVCodec ff_avrn_decoder = {
     .close          = end,
     .decode         = decode_frame,
     .max_lowres     = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -905,7 +905,7 @@ static int predict_intra(AVCodecContext *avctx, AVFrame *frame, int ax, int ay,
             int arr1[16];
             int arr2[16];
             uint8_t *top = frame->data[plane] + FFMAX(ay - 1, 0) * frame->linesize[plane] + ax;
-            uint8_t *left = frame->data[plane] + ay * frame->linesize[plane] + ax - 1;
+            uint8_t *left = frame->data[plane] + ay * frame->linesize[plane] + FFMAX(ax - 1, 0);
             int bottommost = frame->data[plane][(ay + size - 1) * frame->linesize[plane] + FFMAX(ax - 1, 0)];
             int rightmost = frame->data[plane][FFMAX(ay - 1, 0) * frame->linesize[plane] + ax + size - 1];
             int avg = (bottommost + rightmost + 1) / 2 + 2 * get_se_golomb(gb);
@@ -1436,4 +1436,5 @@ AVCodec ff_mobiclip_decoder = {
     .flush          = mobiclip_flush,
     .close          = mobiclip_close,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

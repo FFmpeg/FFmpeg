@@ -201,7 +201,7 @@ static union av_intfloat32 exr_half2float(uint16_t hf)
             mantissa <<= 1;
             exp = HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
             // check for leading 1 in denorm mantissa
-            while ((mantissa & (1 << 10))) {
+            while (!(mantissa & (1 << 10))) {
                 // for every leading 0, decrement single precision exponent by 1
                 // and shift half-float mantissa value to the left
                 mantissa <<= 1;

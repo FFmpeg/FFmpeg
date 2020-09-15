@@ -497,4 +497,5 @@ AVCodec ff_gif_encoder = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE
     },
     .priv_class     = &gif_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

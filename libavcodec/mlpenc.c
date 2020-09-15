@@ -2391,6 +2391,7 @@ AVCodec ff_mlp_encoder = {
     .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     .channel_layouts        = ff_mlp_channel_layouts,
+    .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 #if CONFIG_TRUEHD_ENCODER
@@ -2407,5 +2408,6 @@ AVCodec ff_truehd_encoder = {
     .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     .channel_layouts        = (const uint64_t[]) {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_5POINT1_BACK, 0},
+    .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

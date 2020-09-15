@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include "libavutil/common.h"
 
+#include "avformat.h"
+
 #define ASF_TAG                 MKTAG('A', 'S', 'F', '\0')
 #define ASF_FILE_HEADER_SIZE    24
 #define ASF_CHUNK_HEADER_SIZE   20

@@ -22,6 +22,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
 
+#include "libavcodec/packet_internal.h"
 #include "apetag.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -93,8 +94,8 @@ static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
     TTAMuxContext *tta = s->priv_data;
     int ret;
 
-    ret = ff_packet_list_put(&tta->queue, &tta->queue_end, pkt,
-                             FF_PACKETLIST_FLAG_REF_PACKET);
+    ret = avpriv_packet_list_put(&tta->queue, &tta->queue_end, pkt,
+                                 av_packet_ref, 0);
     if (ret < 0) {
         return ret;
     }
@@ -125,7 +126,7 @@ static void tta_queue_flush(AVFormatContext *s)
     AVPacket pkt;
 
     while (tta->queue) {
-        ff_packet_list_get(&tta->queue, &tta->queue_end, &pkt);
+        avpriv_packet_list_get(&tta->queue, &tta->queue_end, &pkt);
         avio_write(s->pb, pkt.data, pkt.size);
         av_packet_unref(&pkt);
     }
@@ -161,7 +162,7 @@ static void tta_deinit(AVFormatContext *s)
     TTAMuxContext *tta = s->priv_data;
 
     ffio_free_dyn_buf(&tta->seek_table);
-    ff_packet_list_free(&tta->queue, &tta->queue_end);
+    avpriv_packet_list_free(&tta->queue, &tta->queue_end);
 }
 
 AVOutputFormat ff_tta_muxer = {

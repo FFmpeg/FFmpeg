@@ -65,9 +65,27 @@ static int activate(AVFilterContext *ctx)
     InterleaveContext *s = ctx->priv;
     int64_t q_pts, pts = INT64_MAX;
     int i, nb_eofs = 0, input_idx = -1;
+    int first_eof = 0;
+    int64_t rpts;
+    int status;
     int nb_inputs_with_frames = 0;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
+
+    for (i = 0; i < ctx->nb_inputs; i++) {
+        int is_eof = !!ff_inlink_acknowledge_status(ctx->inputs[i], &status, &rpts);
+
+        nb_eofs += is_eof;
+        if (i == 0)
+            first_eof = is_eof;
+    }
+
+    if ((nb_eofs > 0 && s->duration_mode == DURATION_SHORTEST) ||
+        (nb_eofs == ctx->nb_inputs && s->duration_mode == DURATION_LONGEST) ||
+        (first_eof && s->duration_mode == DURATION_FIRST)) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         if (!ff_inlink_queued_frames(ctx->inputs[i]))
@@ -75,7 +93,7 @@ static int activate(AVFilterContext *ctx)
         nb_inputs_with_frames++;
     }
 
-    if (nb_inputs_with_frames > 0) {
+    if (nb_inputs_with_frames >= ctx->nb_inputs - nb_eofs) {
         for (i = 0; i < ctx->nb_inputs; i++) {
             AVFrame *frame;
 
@@ -115,16 +133,6 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    for (i = 0; i < ctx->nb_inputs; i++)
-        nb_eofs += !!ff_outlink_get_status(ctx->inputs[i]);
-
-    if ((nb_eofs > 0 && s->duration_mode == DURATION_SHORTEST) ||
-        (nb_eofs == ctx->nb_inputs && s->duration_mode == DURATION_LONGEST) ||
-        (ff_outlink_get_status(ctx->inputs[0]) && s->duration_mode == DURATION_FIRST)) {
-        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
-        return 0;
-    }
-
     for (i = 0; i < ctx->nb_inputs; i++) {
         if (ff_inlink_queued_frames(ctx->inputs[i]))
             continue;
@@ -135,7 +143,7 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (i) {
+    if (i == ctx->nb_inputs - nb_eofs && ff_outlink_frame_wanted(outlink)) {
         ff_filter_set_ready(ctx, 100);
         return 0;
     }

@@ -2007,12 +2007,6 @@ void av_format_inject_global_side_data(AVFormatContext *s);
  */
 enum AVDurationEstimationMethod av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx);
 
-typedef struct AVPacketList {
-    AVPacket pkt;
-    struct AVPacketList *next;
-} AVPacketList;
-
-
 /**
  * @defgroup lavf_core Core functions
  * @ingroup libavf
