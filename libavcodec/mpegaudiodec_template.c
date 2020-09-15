@@ -1908,16 +1908,14 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     // Allocate zeroed memory for the first decoder context
     s->mp3decctx[0] = av_mallocz(sizeof(MPADecodeContext));
     if (!s->mp3decctx[0])
-        goto alloc_fail;
+        return AVERROR(ENOMEM);
     // Put decoder context in place to make init_decode() happy
     avctx->priv_data = s->mp3decctx[0];
     ret = decode_init(avctx);
     // Restore mp3on4 context pointer
     avctx->priv_data = s;
-    if (ret < 0) {
-        decode_close_mp3on4(avctx);
+    if (ret < 0)
         return ret;
-    }
     s->mp3decctx[0]->adu_mode = 1; // Set adu mode
 
     /* Create a separate codec/context for each frame (first is already ok).
@@ -1926,7 +1924,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     for (i = 1; i < s->frames; i++) {
         s->mp3decctx[i] = av_mallocz(sizeof(MPADecodeContext));
         if (!s->mp3decctx[i])
-            goto alloc_fail;
+            return AVERROR(ENOMEM);
         s->mp3decctx[i]->adu_mode = 1;
         s->mp3decctx[i]->avctx = avctx;
         s->mp3decctx[i]->mpadsp = s->mp3decctx[0]->mpadsp;
@@ -1934,9 +1932,6 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     }
 
     return 0;
-alloc_fail:
-    decode_close_mp3on4(avctx);
-    return AVERROR(ENOMEM);
 }
 
 
