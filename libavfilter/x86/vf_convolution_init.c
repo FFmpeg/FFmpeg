@@ -36,7 +36,7 @@ av_cold void ff_convolution_init_x86(ConvolutionContext *s)
     int cpu_flags = av_get_cpu_flags();
     for (i = 0; i < 4; i++) {
         if (s->mode[i] == MATRIX_SQUARE) {
-            if (s->matrix_length[i] == 9) {
+            if (s->matrix_length[i] == 9 && s->depth == 8) {
                 if (EXTERNAL_SSE4(cpu_flags))
                     s->filter[i] = ff_filter_3x3_sse4;
             }
