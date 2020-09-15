@@ -87,7 +87,7 @@ typedef struct MPADecodeContext {
     int err_recognition;
     AVCodecContext* avctx;
     MPADSPContext mpadsp;
-    AVFloatDSPContext *fdsp;
+    void (*butterflies_float)(float *av_restrict v1, float *av_restrict v2, int len);
     AVFrame *frame;
     uint32_t crc;
 } MPADecodeContext;
@@ -410,16 +410,6 @@ static av_cold void decode_init_static(void)
     }
 }
 
-#if USE_FLOATS
-static av_cold int decode_close(AVCodecContext * avctx)
-{
-    MPADecodeContext *s = avctx->priv_data;
-    av_freep(&s->fdsp);
-
-    return 0;
-}
-#endif
-
 static av_cold int decode_init(AVCodecContext * avctx)
 {
     static int initialized_tables = 0;
@@ -433,9 +423,14 @@ static av_cold int decode_init(AVCodecContext * avctx)
     s->avctx = avctx;
 
 #if USE_FLOATS
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!s->fdsp)
-        return AVERROR(ENOMEM);
+    {
+        AVFloatDSPContext *fdsp;
+        fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+        if (!fdsp)
+            return AVERROR(ENOMEM);
+        s->butterflies_float = fdsp->butterflies_float;
+        av_free(fdsp);
+    }
 #endif
 
     ff_mpadsp_init(&s->mpadsp);
@@ -1188,7 +1183,7 @@ found2:
         /* NOTE: the 1/sqrt(2) normalization factor is included in the
            global gain */
 #if USE_FLOATS
-       s->fdsp->butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
+       s->butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
 #else
         tab0 = g0->sb_hybrid;
         tab1 = g1->sb_hybrid;
@@ -1871,9 +1866,6 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
     MP3On4DecodeContext *s = avctx->priv_data;
     int i;
 
-    if (s->mp3decctx[0])
-        av_freep(&s->mp3decctx[0]->fdsp);
-
     for (i = 0; i < s->frames; i++)
         av_freep(&s->mp3decctx[i]);
 
@@ -1938,7 +1930,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
         s->mp3decctx[i]->adu_mode = 1;
         s->mp3decctx[i]->avctx = avctx;
         s->mp3decctx[i]->mpadsp = s->mp3decctx[0]->mpadsp;
-        s->mp3decctx[i]->fdsp = s->mp3decctx[0]->fdsp;
+        s->mp3decctx[i]->butterflies_float = s->mp3decctx[0]->butterflies_float;
     }
 
     return 0;
