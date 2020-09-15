@@ -1858,7 +1858,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
     MPEG4AudioConfig cfg;
-    int i;
+    int i, ret;
 
     if ((avctx->extradata_size < 2) || !avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Codec extradata missing or too short.\n");
@@ -1892,9 +1892,13 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
         goto alloc_fail;
     // Put decoder context in place to make init_decode() happy
     avctx->priv_data = s->mp3decctx[0];
-    decode_init(avctx);
+    ret = decode_init(avctx);
     // Restore mp3on4 context pointer
     avctx->priv_data = s;
+    if (ret < 0) {
+        decode_close_mp3on4(avctx);
+        return ret;
+    }
     s->mp3decctx[0]->adu_mode = 1; // Set adu mode
 
     /* Create a separate codec/context for each frame (first is already ok).
