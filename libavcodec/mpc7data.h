@@ -51,7 +51,7 @@ static const uint8_t mpc7_hdr[MPC7_HDR_SIZE * 2] = {
 };
 
 #define MPC7_QUANT_VLC_TABLES 7
-static const uint8_t mpc7_quant_vlc_sizes[MPC7_QUANT_VLC_TABLES * 2] = {
+static const uint8_t mpc7_quant_vlc_sizes[MPC7_QUANT_VLC_TABLES] = {
     27, 25, 7, 9, 15, 31, 63
 };
 

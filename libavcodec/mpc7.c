@@ -97,10 +97,10 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
                     &mpc7_scfi[0], 2, 1, 1 << MPC7_SCFI_BITS);
     INIT_VLC_STATIC(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
                     &mpc7_dscf[1], 2, 1,
-                    &mpc7_dscf[0], 2, 1, 1 << MPC7_DSCF_SIZE);
+                    &mpc7_dscf[0], 2, 1, 1 << MPC7_DSCF_BITS);
     INIT_VLC_STATIC(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
                     &mpc7_hdr[1], 2, 1,
-                    &mpc7_hdr[0], 2, 1, 1 << MPC7_HDR_SIZE);
+                    &mpc7_hdr[0], 2, 1, 1 << MPC7_HDR_BITS);
     for(i = 0; i < MPC7_QUANT_VLC_TABLES; i++){
         for(j = 0; j < 2; j++){
             quant_vlc[i][j].table = &quant_tables[quant_offsets[i*2 + j]];
