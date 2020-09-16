@@ -28,6 +28,7 @@ version <next>:
 - DAT demuxer
 - aax demuxer
 - IPU decoder, parser and demuxer
+- Intel QSV-accelerated AV1 decoding
 
 
 version 4.3:

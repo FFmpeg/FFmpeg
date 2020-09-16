@@ -3140,6 +3140,7 @@ vp9_qsv_encoder_deps="libmfx MFX_CODEC_VP9"
 vp9_qsv_encoder_select="qsvenc"
 vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
 wmv3_crystalhd_decoder_select="crystalhd"
+av1_qsv_decoder_select="qsvdec"
 
 # parsers
 aac_parser_select="adts_header"
