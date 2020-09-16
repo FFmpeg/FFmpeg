@@ -1966,41 +1966,41 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_PSX:
         for (int block = 0; block < avpkt->size / FFMAX(avctx->block_align, 16 * avctx->channels); block++) {
             int nb_samples_per_block = 28 * FFMAX(avctx->block_align, 16 * avctx->channels) / (16 * avctx->channels);
-        for (channel = 0; channel < avctx->channels; channel++) {
-            samples = samples_p[channel] + block * nb_samples_per_block;
+            for (channel = 0; channel < avctx->channels; channel++) {
+                samples = samples_p[channel] + block * nb_samples_per_block;
 
-            /* Read in every sample for this channel.  */
-            for (i = 0; i < nb_samples_per_block / 28; i++) {
-                int filter, shift, flag, byte;
+                /* Read in every sample for this channel.  */
+                for (i = 0; i < nb_samples_per_block / 28; i++) {
+                    int filter, shift, flag, byte;
 
-                filter = bytestream2_get_byteu(&gb);
-                shift  = filter & 0xf;
-                filter = filter >> 4;
-                if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table))
-                    return AVERROR_INVALIDDATA;
-                flag   = bytestream2_get_byteu(&gb);
+                    filter = bytestream2_get_byteu(&gb);
+                    shift  = filter & 0xf;
+                    filter = filter >> 4;
+                    if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table))
+                        return AVERROR_INVALIDDATA;
+                    flag   = bytestream2_get_byteu(&gb);
 
-                /* Decode 28 samples.  */
-                for (n = 0; n < 28; n++) {
-                    int sample = 0, scale;
+                    /* Decode 28 samples.  */
+                    for (n = 0; n < 28; n++) {
+                        int sample = 0, scale;
 
-                    if (flag < 0x07) {
-                        if (n & 1) {
-                            scale = sign_extend(byte >> 4, 4);
-                        } else {
-                            byte  = bytestream2_get_byteu(&gb);
-                            scale = sign_extend(byte, 4);
+                        if (flag < 0x07) {
+                            if (n & 1) {
+                                scale = sign_extend(byte >> 4, 4);
+                            } else {
+                                byte  = bytestream2_get_byteu(&gb);
+                                scale = sign_extend(byte, 4);
+                            }
+
+                            scale  = scale * (1 << 12);
+                            sample = (int)((scale >> shift) + (c->status[channel].sample1 * xa_adpcm_table[filter][0] + c->status[channel].sample2 * xa_adpcm_table[filter][1]) / 64);
                         }
-
-                        scale  = scale * (1 << 12);
-                        sample = (int)((scale >> shift) + (c->status[channel].sample1 * xa_adpcm_table[filter][0] + c->status[channel].sample2 * xa_adpcm_table[filter][1]) / 64);
+                        *samples++ = av_clip_int16(sample);
+                        c->status[channel].sample2 = c->status[channel].sample1;
+                        c->status[channel].sample1 = sample;
                     }
-                    *samples++ = av_clip_int16(sample);
-                    c->status[channel].sample2 = c->status[channel].sample1;
-                    c->status[channel].sample1 = sample;
                 }
             }
-        }
         }
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
@@ -2022,22 +2022,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
          * They should be 0 initially.
          */
         for (int block = 0; block < avpkt->size / avctx->block_align; block++) {
-        for (channel = 0; channel < avctx->channels; channel++) {
-            int control, shift;
+            for (channel = 0; channel < avctx->channels; channel++) {
+                int control, shift;
 
-            samples = samples_p[channel] + block * 32;
-            cs = c->status + channel;
+                samples = samples_p[channel] + block * 32;
+                cs = c->status + channel;
 
-            /* Get the control byte and decode the samples, 2 at a time. */
-            control = bytestream2_get_byteu(&gb);
-            shift = (control >> 4) + 2;
+                /* Get the control byte and decode the samples, 2 at a time. */
+                control = bytestream2_get_byteu(&gb);
+                shift = (control >> 4) + 2;
 
-            for (n = 0; n < 16; n++) {
-                int sample = bytestream2_get_byteu(&gb);
-                *samples++ = ff_adpcm_argo_expand_nibble(cs, sample >> 4, shift, control & 0x04);
-                *samples++ = ff_adpcm_argo_expand_nibble(cs, sample >> 0, shift, control & 0x04);
+                for (n = 0; n < 16; n++) {
+                    int sample = bytestream2_get_byteu(&gb);
+                    *samples++ = ff_adpcm_argo_expand_nibble(cs, sample >> 4, shift, control & 0x04);
+                    *samples++ = ff_adpcm_argo_expand_nibble(cs, sample >> 0, shift, control & 0x04);
+                }
             }
-        }
         }
         break;
     case AV_CODEC_ID_ADPCM_ZORK:
