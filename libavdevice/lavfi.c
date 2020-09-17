@@ -386,6 +386,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     AVDictionary *frame_metadata;
     int ret, i;
     int size = 0;
+    AVStream *st;
 
     if (lavfi->subcc_packet.size) {
         av_packet_move_ref(pkt, &lavfi->subcc_packet);
@@ -426,15 +427,16 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     av_buffersink_get_frame_flags(lavfi->sinks[min_pts_sink_idx], frame, 0);
     stream_idx = lavfi->sink_stream_map[min_pts_sink_idx];
+    st = avctx->streams[stream_idx];
 
-    if (frame->width /* FIXME best way of testing a video */) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         size = av_image_get_buffer_size(frame->format, frame->width, frame->height, 1);
         if ((ret = av_new_packet(pkt, size)) < 0)
             return ret;
 
         av_image_copy_to_buffer(pkt->data, size, (const uint8_t **)frame->data, frame->linesize,
                                 frame->format, frame->width, frame->height, 1);
-    } else if (frame->channels /* FIXME test audio */) {
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         size = frame->nb_samples * av_get_bytes_per_sample(frame->format) *
                                    frame->channels;
         if ((ret = av_new_packet(pkt, size)) < 0)
