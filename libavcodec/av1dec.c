@@ -21,7 +21,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "av1dec.h"
-#include "get_bits.h"
+#include "bytestream.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "profiles.h"
@@ -205,18 +205,12 @@ static int init_tile_data(AV1DecContext *s)
 static int get_tiles_info(AVCodecContext *avctx, const AV1RawTileGroup *tile_group)
 {
     AV1DecContext *s = avctx->priv_data;
-    GetBitContext gb;
+    GetByteContext gb;
     uint16_t tile_num, tile_row, tile_col;
-    uint32_t size = 0, size_bytes = 0, offset = 0;
-    int ret;
+    uint32_t size = 0, size_bytes = 0;
 
-    if ((ret = init_get_bits8(&gb,
-                              tile_group->tile_data.data,
-                              tile_group->tile_data.data_size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to initialize bitstream reader.\n");
-        return ret;
-    }
-
+    bytestream2_init(&gb, tile_group->tile_data.data,
+                     tile_group->tile_data.data_size);
     s->tg_start = tile_group->tg_start;
     s->tg_end = tile_group->tg_end;
 
@@ -225,24 +219,28 @@ static int get_tiles_info(AVCodecContext *avctx, const AV1RawTileGroup *tile_gro
         tile_col = tile_num % s->raw_frame_header->tile_cols;
 
         if (tile_num == tile_group->tg_end) {
-            s->tile_group_info[tile_num].tile_size = get_bits_left(&gb) / 8;
-            s->tile_group_info[tile_num].tile_offset = offset;
+            s->tile_group_info[tile_num].tile_size = bytestream2_get_bytes_left(&gb);
+            s->tile_group_info[tile_num].tile_offset = bytestream2_tell(&gb);
             s->tile_group_info[tile_num].tile_row = tile_row;
             s->tile_group_info[tile_num].tile_column = tile_col;
             return 0;
         }
         size_bytes = s->raw_frame_header->tile_size_bytes_minus1 + 1;
-        size = get_bits_le(&gb, size_bytes * 8) + 1;
-        skip_bits(&gb, size * 8);
-
-        offset += size_bytes;
+        if (bytestream2_get_bytes_left(&gb) < size_bytes)
+            return AVERROR_INVALIDDATA;
+        size = 0;
+        for (int i = 0; i < size_bytes; i++)
+            size |= bytestream2_get_byteu(&gb) << 8 * i;
+        if (bytestream2_get_bytes_left(&gb) <= size)
+            return AVERROR_INVALIDDATA;
+        size++;
 
         s->tile_group_info[tile_num].tile_size = size;
-        s->tile_group_info[tile_num].tile_offset = offset;
+        s->tile_group_info[tile_num].tile_offset = bytestream2_tell(&gb);
         s->tile_group_info[tile_num].tile_row = tile_row;
         s->tile_group_info[tile_num].tile_column = tile_col;
 
-        offset += size;
+        bytestream2_skipu(&gb, size);
     }
 
     return 0;
@@ -778,7 +776,9 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
             else
                 raw_tile_group = &obu->obu.tile_group;
 
-            get_tiles_info(avctx, raw_tile_group);
+            ret = get_tiles_info(avctx, raw_tile_group);
+            if (ret < 0)
+                goto end;
 
             if (avctx->hwaccel) {
                 ret = avctx->hwaccel->decode_slice(avctx,
