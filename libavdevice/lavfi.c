@@ -69,7 +69,7 @@ static int *create_all_formats(int n)
             count++;
     }
 
-    if (!(fmts = av_malloc((count+1) * sizeof(int))))
+    if (!(fmts = av_malloc_array(count + 1, sizeof(*fmts))))
         return NULL;
     for (j = 0, i = 0; i < n; i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
