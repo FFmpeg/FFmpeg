@@ -679,7 +679,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     if (result < 0)
         return result;
 
-    pmv = av_malloc((FFALIGN(s->width, 16) / 8 + 3) * sizeof(*pmv));
+    pmv = av_malloc_array(FFALIGN(s->width, 16) / 8 + 3, sizeof(*pmv));
     if (!pmv)
         return AVERROR(ENOMEM);
 
