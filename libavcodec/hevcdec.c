@@ -3548,6 +3548,25 @@ static int hevc_update_thread_context(AVCodecContext *dst,
             return AVERROR(ENOMEM);
     }
 
+    for (i = 0; i < s->sei.unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&s->sei.unregistered.buf_ref[i]);
+    s->sei.unregistered.nb_buf_ref = 0;
+
+    if (s0->sei.unregistered.nb_buf_ref) {
+        ret = av_reallocp_array(&s->sei.unregistered.buf_ref,
+                                s0->sei.unregistered.nb_buf_ref,
+                                sizeof(*s->sei.unregistered.buf_ref));
+        if (ret < 0)
+            return ret;
+
+        for (i = 0; i < s0->sei.unregistered.nb_buf_ref; i++) {
+            s->sei.unregistered.buf_ref[i] = av_buffer_ref(s0->sei.unregistered.buf_ref[i]);
+            if (!s->sei.unregistered.buf_ref[i])
+                return AVERROR(ENOMEM);
+            s->sei.unregistered.nb_buf_ref++;
+        }
+    }
+
     s->sei.frame_packing        = s0->sei.frame_packing;
     s->sei.display_orientation  = s0->sei.display_orientation;
     s->sei.mastering_display    = s0->sei.mastering_display;
