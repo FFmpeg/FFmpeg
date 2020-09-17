@@ -432,7 +432,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         size = av_image_get_buffer_size(frame->format, frame->width, frame->height, 1);
         if ((ret = av_new_packet(pkt, size)) < 0)
-            return ret;
+            goto fail;
 
         av_image_copy_to_buffer(pkt->data, size, (const uint8_t **)frame->data, frame->linesize,
                                 frame->format, frame->width, frame->height, 1);
@@ -440,7 +440,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         size = frame->nb_samples * av_get_bytes_per_sample(frame->format) *
                                    frame->channels;
         if ((ret = av_new_packet(pkt, size)) < 0)
-            return ret;
+            goto fail;;
         memcpy(pkt->data, frame->data[0], size);
     }
 
@@ -449,18 +449,19 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         int size;
         uint8_t *metadata = av_packet_pack_dictionary(frame_metadata, &size);
 
-        if (!metadata)
-            return AVERROR(ENOMEM);
+        if (!metadata) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         if ((ret = av_packet_add_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
                                            metadata, size)) < 0) {
             av_freep(&metadata);
-            return ret;
+            goto fail;;
         }
     }
 
     if ((ret = create_subcc_packet(avctx, frame, min_pts_sink_idx)) < 0) {
-        av_frame_unref(frame);
-        return ret;
+        goto fail;
     }
 
     pkt->stream_index = stream_idx;
@@ -468,6 +469,10 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->pos = frame->pkt_pos;
     av_frame_unref(frame);
     return size;
+fail:
+    av_frame_unref(frame);
+    return ret;
+
 }
 
 #define OFFSET(x) offsetof(LavfiContext, x)
