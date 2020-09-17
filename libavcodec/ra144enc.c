@@ -65,14 +65,11 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
                       FF_LPC_TYPE_LEVINSON);
     if (ret < 0)
-        goto error;
+        return ret;
 
     ff_af_queue_init(avctx, &ractx->afq);
 
     return 0;
-error:
-    ra144_encode_close(avctx);
-    return ret;
 }
 
 

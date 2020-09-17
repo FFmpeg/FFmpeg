@@ -1095,6 +1095,7 @@ AVCodec ff_sonic_decoder = {
     .close          = sonic_decode_close,
     .decode         = sonic_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif /* CONFIG_SONIC_DECODER */
 
@@ -1109,6 +1110,7 @@ AVCodec ff_sonic_encoder = {
     .encode2        = sonic_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_EXPERIMENTAL,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .close          = sonic_encode_close,
 };
 #endif
@@ -1124,6 +1126,7 @@ AVCodec ff_sonic_ls_encoder = {
     .encode2        = sonic_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_EXPERIMENTAL,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .close          = sonic_encode_close,
 };
 #endif

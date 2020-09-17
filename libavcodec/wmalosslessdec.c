@@ -932,6 +932,8 @@ static int decode_subframe(WmallDecodeCtx *s)
             s->do_lpc = 0;
     }
 
+    if (get_bits_left(&s->gb) < 1)
+        return AVERROR_INVALIDDATA;
 
     if (get_bits1(&s->gb))
         padding_zeroes = get_bits(&s->gb, 5);

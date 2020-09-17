@@ -170,11 +170,6 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static av_cold int pcm_dvd_encode_close(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 AVCodec ff_pcm_dvd_encoder = {
     .name           = "pcm_dvd",
     .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for DVD media"),
@@ -182,7 +177,6 @@ AVCodec ff_pcm_dvd_encoder = {
     .id             = AV_CODEC_ID_PCM_DVD,
     .priv_data_size = sizeof(PCMDVDContext),
     .init           = pcm_dvd_encode_init,
-    .close          = pcm_dvd_encode_close,
     .encode2        = pcm_dvd_encode_frame,
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .supported_samplerates = (const int[]) { 48000, 96000, 0},

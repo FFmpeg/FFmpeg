@@ -531,8 +531,13 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
         for (int x = 0; x < avctx->width; x += 16) {
             if (cnt >= 4)
                 cnt = 0;
-            if (cnt == 0)
+            if (cnt == 0) {
+                if (get_bits_left(&mask) < 8) {
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
                 flags = get_bits(&mask, 8);
+            }
 
             dst[0] = frame->data[0] + linesize[0] * y + x;
             dst[1] = frame->data[0] + linesize[0] * y + x + 8;
