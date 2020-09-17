@@ -19,17 +19,57 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
 
 static int threedostr_probe(const AVProbeData *p)
 {
-    if (memcmp(p->buf, "CTRL", 4) &&
-        memcmp(p->buf, "SHDR", 4) &&
-        memcmp(p->buf, "SNDS", 4))
-        return 0;
+    for (int i = 0; i < p->buf_size;) {
+        unsigned chunk = AV_RL32(p->buf + i);
+        unsigned size  = AV_RB32(p->buf + i + 4);
 
-    return AVPROBE_SCORE_MAX / 3 * 2;
+        i += 8;
+        if (size < 8 || p->buf_size - i < size)
+            return 0;
+
+        size -= 8;
+        switch (chunk) {
+        case MKTAG('C','T','R','L'):
+            break;
+        case MKTAG('S','N','D','S'):
+            if (size < 56)
+                return 0;
+            i += 8;
+            if (AV_RL32(p->buf + i) != MKTAG('S','H','D','R'))
+                return 0;
+            i += 28;
+
+            if (AV_RB32(p->buf + i) <= 0)
+                return 0;
+            i += 4;
+            if (AV_RB32(p->buf + i) <= 0)
+                return 0;
+            i += 4;
+            if (AV_RL32(p->buf + i) == MKTAG('S','D','X','2'))
+                return AVPROBE_SCORE_MAX;
+            else
+                return 0;
+            break;
+        case MKTAG('S','H','D','R'):
+            if (size > 0x78) {
+                i += 0x78;
+                size -= 0x78;
+            }
+            break;
+        default:
+            break;
+        }
+
+        i += size;
+    }
+
+    return 0;
 }
 
 static int threedostr_read_header(AVFormatContext *s)
