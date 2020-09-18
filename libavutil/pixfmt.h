@@ -530,12 +530,60 @@ enum AVColorSpace {
 };
 
 /**
- * MPEG vs JPEG YUV range.
+ * Visual content value range.
+ *
+ * These values are based on definitions that can be found in multiple
+ * specifications, such as ITU-T BT.709 (3.4 - Quantization of RGB, luminance
+ * and colour-difference signals), ITU-T BT.2020 (Table 5 - Digital
+ * Representation) as well as ITU-T BT.2100 (Table 9 - Digital 10- and 12-bit
+ * integer representation). At the time of writing, the BT.2100 one is
+ * recommended, as it also defines the full range representation.
+ *
+ * Common definitions:
+ *   - For RGB and luminance planes such as Y in YCbCr and I in ICtCp,
+ *     'E' is the original value in range of 0.0 to 1.0.
+ *   - For chrominance planes such as Cb,Cr and Ct,Cp, 'E' is the original
+ *     value in range of -0.5 to 0.5.
+ *   - 'n' is the output bit depth.
+ *   - For additional definitions such as rounding and clipping to valid n
+ *     bit unsigned integer range, please refer to BT.2100 (Table 9).
  */
 enum AVColorRange {
     AVCOL_RANGE_UNSPECIFIED = 0,
-    AVCOL_RANGE_MPEG        = 1, ///< the normal 219*2^(n-8) "MPEG" YUV ranges
-    AVCOL_RANGE_JPEG        = 2, ///< the normal     2^n-1   "JPEG" YUV ranges
+
+    /**
+     * Narrow or limited range content.
+     *
+     * - For luminance planes:
+     *
+     *       (219 * E + 16) * 2^(n-8)
+     *
+     *   F.ex. the range of 16-235 for 8 bits
+     *
+     * - For chrominance planes:
+     *
+     *       (224 * E + 128) * 2^(n-8)
+     *
+     *   F.ex. the range of 16-240 for 8 bits
+     */
+    AVCOL_RANGE_MPEG        = 1,
+
+    /**
+     * Full range content.
+     *
+     * - For RGB and luminance planes:
+     *
+     *       (2^n - 1) * E
+     *
+     *   F.ex. the range of 0-255 for 8 bits
+     *
+     * - For chrominance planes:
+     *
+     *       (2^n - 1) * E + 2^(n - 1)
+     *
+     *   F.ex. the range of 1-255 for 8 bits
+     */
+    AVCOL_RANGE_JPEG        = 2,
     AVCOL_RANGE_NB               ///< Not part of ABI
 };
 
