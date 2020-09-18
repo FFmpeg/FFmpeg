@@ -614,6 +614,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
         initialization_val = xmlGetProp(fragmenturl_node, "sourceURL");
         range_val = xmlGetProp(fragmenturl_node, "range");
         if (initialization_val || range_val) {
+            free_fragment(&rep->init_section);
             rep->init_section = get_Fragment(range_val);
             if (!rep->init_section) {
                 xmlFree(initialization_val);
