@@ -44,6 +44,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/timecode.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
@@ -64,11 +65,6 @@ extern AVOutputFormat ff_mxf_opatom_muxer;
 
 #define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
-
-typedef struct MXFLocalTagPair {
-    int local_tag;
-    UID uid;
-} MXFLocalTagPair;
 
 typedef struct MXFIndexEntry {
     uint64_t offset;
@@ -510,6 +506,7 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int local_tag_number, i = 0;
     int avc_tags_count = 0;
+    int mastering_tags_count = 0;
 
     local_tag_number = FF_ARRAY_ELEMS(mxf_local_tag_batch);
     local_tag_number += mxf->store_user_comments * FF_ARRAY_ELEMS(mxf_user_comments_local_tag);
@@ -518,9 +515,14 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         MXFStreamContext *sc = s->streams[i]->priv_data;
         if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
             avc_tags_count = FF_ARRAY_ELEMS(mxf_avc_subdescriptor_local_tags);
-            local_tag_number += avc_tags_count;
+        }
+        if (av_stream_get_side_data(s->streams[i], AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL)) {
+            mastering_tags_count = FF_ARRAY_ELEMS(ff_mxf_mastering_display_local_tags);
         }
     }
+
+    local_tag_number += avc_tags_count;
+    local_tag_number += mastering_tags_count;
 
     avio_write(pb, primer_pack_key, 16);
     klv_encode_ber_length(pb, local_tag_number * 18 + 8);
@@ -539,6 +541,8 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         }
     if (avc_tags_count > 0)
         mxf_write_local_tags(pb, mxf_avc_subdescriptor_local_tags, avc_tags_count);
+    if (mastering_tags_count > 0)
+        mxf_write_local_tags(pb, ff_mxf_mastering_display_local_tags, mastering_tags_count);
 }
 
 static void mxf_write_local_tag(AVIOContext *pb, int size, int tag)
@@ -1048,6 +1052,16 @@ static const UID mxf_generic_sound_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0
 
 static const UID mxf_avc_subdescriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x6E,0x00 };
 
+static inline uint16_t rescale_mastering_chroma(AVRational q)
+{
+    return av_clip_uint16(av_rescale(q.num, FF_MXF_MASTERING_CHROMA_DEN, q.den));
+}
+
+static inline uint32_t rescale_mastering_luma(AVRational q)
+{
+    return av_rescale(q.num, FF_MXF_MASTERING_LUMA_DEN, q.den);
+}
+
 static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID key)
 {
     MXFStreamContext *sc = st->priv_data;
@@ -1060,6 +1074,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     const MXFCodecUL *color_trc_ul;
     const MXFCodecUL *color_space_ul;
     int64_t pos = mxf_write_generic_desc(s, st, key);
+    uint8_t *side_data;
 
     color_primaries_ul = mxf_get_codec_ul_by_id(ff_mxf_color_primaries_uls, st->codecpar->color_primaries);
     color_trc_ul       = mxf_get_codec_ul_by_id(ff_mxf_color_trc_uls, st->codecpar->color_trc);
@@ -1227,6 +1242,34 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 
     mxf_write_local_tag(pb, 16, 0x3201);
     avio_write(pb, *sc->codec_ul, 16);
+
+    // Mastering Display metadata
+    side_data = av_stream_get_side_data(st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
+    if (side_data) {
+        const AVMasteringDisplayMetadata *metadata = (const AVMasteringDisplayMetadata*)side_data;
+        if (metadata->has_primaries) {
+            mxf_write_local_tag(pb, 12, ff_mxf_mastering_display_local_tags[0].local_tag);
+            avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[0][0]));
+            avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[0][1]));
+            avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[1][0]));
+            avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[1][1]));
+            avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[2][0]));
+            avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[2][1]));
+            mxf_write_local_tag(pb, 4, ff_mxf_mastering_display_local_tags[1].local_tag);
+            avio_wb16(pb, rescale_mastering_chroma(metadata->white_point[0]));
+            avio_wb16(pb, rescale_mastering_chroma(metadata->white_point[1]));
+        } else {
+            av_log(NULL, AV_LOG_VERBOSE, "Not writing mastering display primaries. Missing data.\n");
+        }
+        if (metadata->has_luminance) {
+            mxf_write_local_tag(pb, 4, ff_mxf_mastering_display_local_tags[2].local_tag);
+            avio_wb32(pb, rescale_mastering_luma(metadata->max_luminance));
+            mxf_write_local_tag(pb, 4, ff_mxf_mastering_display_local_tags[3].local_tag);
+            avio_wb32(pb, rescale_mastering_luma(metadata->min_luminance));
+        } else {
+            av_log(NULL, AV_LOG_VERBOSE, "Not writing mastering display luminances. Missing data.\n");
+        }
+    }
 
     if (sc->interlaced && sc->field_dominance) {
         mxf_write_local_tag(pb, 1, 0x3212);

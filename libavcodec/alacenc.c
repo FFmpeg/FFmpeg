@@ -498,8 +498,6 @@ static av_cold int alac_encode_close(AVCodecContext *avctx)
 {
     AlacEncodeContext *s = avctx->priv_data;
     ff_lpc_end(&s->lpc_ctx);
-    av_freep(&avctx->extradata);
-    avctx->extradata_size = 0;
     return 0;
 }
 
@@ -537,10 +535,8 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
                                                  avctx->bits_per_raw_sample);
 
     avctx->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!avctx->extradata) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
     avctx->extradata_size = ALAC_EXTRADATA_SIZE;
 
     alac_extradata = avctx->extradata;
@@ -568,8 +564,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
            avctx->min_prediction_order > ALAC_MAX_LPC_ORDER) {
             av_log(avctx, AV_LOG_ERROR, "invalid min prediction order: %d\n",
                    avctx->min_prediction_order);
-            ret = AVERROR(EINVAL);
-            goto error;
+            return AVERROR(EINVAL);
         }
 
         s->min_prediction_order = avctx->min_prediction_order;
@@ -580,8 +575,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
             avctx->max_prediction_order > ALAC_MAX_LPC_ORDER) {
             av_log(avctx, AV_LOG_ERROR, "invalid max prediction order: %d\n",
                    avctx->max_prediction_order);
-            ret = AVERROR(EINVAL);
-            goto error;
+            return AVERROR(EINVAL);
         }
 
         s->max_prediction_order = avctx->max_prediction_order;
@@ -593,8 +587,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR,
                "invalid prediction orders: min=%d max=%d\n",
                s->min_prediction_order, s->max_prediction_order);
-        ret = AVERROR(EINVAL);
-        goto error;
+        return AVERROR(EINVAL);
     }
 
     s->avctx = avctx;
@@ -602,13 +595,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if ((ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
                            s->max_prediction_order,
                            FF_LPC_TYPE_LEVINSON)) < 0) {
-        goto error;
+        return ret;
     }
 
     return 0;
-error:
-    alac_encode_close(avctx);
-    return ret;
 }
 
 static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,

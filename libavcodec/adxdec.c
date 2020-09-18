@@ -103,6 +103,22 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf  = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
     int num_blocks, ch, ret;
+    int new_extradata_size;
+    uint8_t *new_extradata;
+
+    new_extradata = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            &new_extradata_size);
+    if (new_extradata && new_extradata_size > 0) {
+        int header_size;
+        if ((ret = ff_adx_decode_header(avctx, new_extradata,
+                                        new_extradata_size, &header_size,
+                                        c->coeff)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error parsing new ADX extradata\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        c->eof = 0;
+    }
 
     if (c->eof) {
         *got_frame_ptr = 0;

@@ -37,8 +37,8 @@ static av_cold int cng_encode_close(AVCodecContext *avctx)
 {
     CNGContext *p = avctx->priv_data;
     ff_lpc_end(&p->lpc);
-    av_free(p->samples32);
-    av_free(p->ref_coef);
+    av_freep(&p->samples32);
+    av_freep(&p->ref_coef);
     return 0;
 }
 
@@ -58,10 +58,8 @@ static av_cold int cng_encode_init(AVCodecContext *avctx)
         return ret;
     p->samples32 = av_malloc_array(avctx->frame_size, sizeof(*p->samples32));
     p->ref_coef = av_malloc_array(p->order, sizeof(*p->ref_coef));
-    if (!p->samples32 || !p->ref_coef) {
-        cng_encode_close(avctx);
+    if (!p->samples32 || !p->ref_coef)
         return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -113,4 +111,5 @@ AVCodec ff_comfortnoise_encoder = {
     .close          = cng_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

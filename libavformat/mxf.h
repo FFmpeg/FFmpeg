@@ -78,6 +78,17 @@ typedef enum {
     RawVWrap
 } MXFWrappingIndicatorType;
 
+typedef struct MXFLocalTagPair {
+    int local_tag;
+    UID uid;
+} MXFLocalTagPair;
+
+extern const uint8_t ff_mxf_mastering_display_prefix[13];
+extern const MXFLocalTagPair ff_mxf_mastering_display_local_tags[4];
+
+#define FF_MXF_MASTERING_CHROMA_DEN 50000
+#define FF_MXF_MASTERING_LUMA_DEN   10000
+
 typedef struct MXFCodecUL {
     UID uid;
     unsigned matching_len;
