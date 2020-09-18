@@ -53,6 +53,9 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecParameters *par = s->streams[0]->codecpar;
     int ret, size;
 
+    if (avio_feof(s->pb))
+        return AVERROR_EOF;
+
     if (par->channels <= 0) {
         av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", par->channels);
         return AVERROR_INVALIDDATA;
@@ -63,16 +66,21 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = avio_tell(s->pb);
     pkt->stream_index = 0;
 
-    ret = av_get_packet(s->pb, pkt, size);
-    if (ret != size) {
-        return ret < 0 ? ret : AVERROR(EIO);
+    ret = av_get_packet(s->pb, pkt, size * 128);
+    if (ret < 0)
+        return ret;
+    if ((ret % size) && ret >= size) {
+        size = ret - (ret % size);
+        av_shrink_packet(pkt, size);
+        pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
+    } else if (ret < size) {
+        return AVERROR(EIO);
+    } else {
+        size = ret;
     }
-    if (AV_RB16(pkt->data) & 0x8000) {
-        return AVERROR_EOF;
-    }
-    pkt->size     = size;
-    pkt->duration = 1;
-    pkt->pts      = (pkt->pos - c->header_size) / size;
+
+    pkt->duration = size / (BLOCK_SIZE * par->channels);
+    pkt->pts      = (pkt->pos - c->header_size) / (BLOCK_SIZE * par->channels);
 
     return 0;
 }
