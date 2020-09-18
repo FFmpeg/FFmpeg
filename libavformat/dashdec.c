@@ -1047,12 +1047,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 fragmenturl_node = xmlNextElementSibling(fragmenturl_node);
             }
 
-            fragment_timeline_node = find_child_node_by_name(representation_segmenttemplate_node, "SegmentTimeline");
-
-            if (!fragment_timeline_node)
-                fragment_timeline_node = find_child_node_by_name(fragment_template_node, "SegmentTimeline");
-            if (!fragment_timeline_node)
-                fragment_timeline_node = find_child_node_by_name(adaptionset_segmentlist_node, "SegmentTimeline");
+            fragment_timeline_node = find_child_node_by_name(adaptionset_segmentlist_node, "SegmentTimeline");
             if (!fragment_timeline_node)
                 fragment_timeline_node = find_child_node_by_name(period_segmentlist_node, "SegmentTimeline");
             if (fragment_timeline_node) {
@@ -1898,7 +1893,6 @@ static void close_demux_for_component(struct representation *pls)
     memset(&pls->pb, 0x00, sizeof(AVIOContext));
     pls->ctx->pb = NULL;
     avformat_close_input(&pls->ctx);
-    pls->ctx = NULL;
 }
 
 static int reopen_demux_for_component(AVFormatContext *s, struct representation *pls)
