@@ -222,9 +222,9 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         skip_bits1(gb);
         if (h.current > 1) {
             err = ff_init_vlc_sparse(&vlc[i], SMKTREE_BITS, h.current,
-                                     INIT_VLC_DEFAULT_SIZES(h.lengths),
-                                     INIT_VLC_DEFAULT_SIZES(h.bits),
-                                     INIT_VLC_DEFAULT_SIZES(h.values),
+                                     h.lengths, sizeof(*h.lengths), sizeof(*h.lengths),
+                                     h.bits,    sizeof(*h.bits),    sizeof(*h.bits),
+                                     h.values,  sizeof(*h.values),  sizeof(*h.values),
                                      INIT_VLC_LE);
             if (err < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
@@ -653,9 +653,9 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         skip_bits1(&gb);
         if (h.current > 1) {
             ret = ff_init_vlc_sparse(&vlc[i], SMKTREE_BITS, h.current,
-                                     INIT_VLC_DEFAULT_SIZES(h.lengths),
-                                     INIT_VLC_DEFAULT_SIZES(h.bits),
-                                     INIT_VLC_DEFAULT_SIZES(h.values),
+                                     h.lengths, sizeof(*h.lengths), sizeof(*h.lengths),
+                                     h.bits,    sizeof(*h.bits),    sizeof(*h.bits),
+                                     h.values,  sizeof(*h.values),  sizeof(*h.values),
                                      INIT_VLC_LE);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");

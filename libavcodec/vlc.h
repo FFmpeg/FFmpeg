@@ -35,12 +35,7 @@ typedef struct RL_VLC_ELEM {
     uint8_t run;
 } RL_VLC_ELEM;
 
-#define INIT_VLC_DEFAULT_SIZES(ptr) \
-    (ptr), sizeof((ptr)[0]), sizeof((ptr)[0])
-
-#define init_vlc(...) init_vlc2(__VA_ARGS__)
-
-#define init_vlc2(vlc, nb_bits, nb_codes,               \
+#define init_vlc(vlc, nb_bits, nb_codes,                \
                  bits, bits_wrap, bits_size,            \
                  codes, codes_wrap, codes_size,         \
                  flags)                                 \
