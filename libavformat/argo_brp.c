@@ -211,9 +211,7 @@ static int argo_brp_read_header(AVFormatContext *s)
             ArgoBVIDHeader *bvid = &hdr->extradata.bvid;
 
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-
-            /* No decoder for this yet. */
-            st->codecpar->codec_id   = AV_CODEC_ID_NONE;
+            st->codecpar->codec_id   = AV_CODEC_ID_ARGO;
 
             bvid->num_frames = AV_RL32(buf +  0);
             bvid->width      = AV_RL32(buf +  4);
@@ -228,17 +226,8 @@ static int argo_brp_read_header(AVFormatContext *s)
 
             st->codecpar->width  = bvid->width;
             st->codecpar->height = bvid->height;
-
-            if (bvid->depth == 8) {
-                st->codecpar->format = AV_PIX_FMT_PAL8;
-            } else if (bvid->depth == 24) {
-                st->codecpar->format = AV_PIX_FMT_RGB24;
-            } else {
-                avpriv_request_sample(s, "depth == %u", bvid->depth);
-                return AVERROR_PATCHWELCOME;
-            }
-
             st->nb_frames = bvid->num_frames;
+            st->codecpar->bits_per_raw_sample = bvid->depth;
         } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
             /*
              * It would make the demuxer significantly more complicated
