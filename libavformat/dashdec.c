@@ -2120,6 +2120,7 @@ static int dash_read_header(AVFormatContext *s)
         AVProgram *program;
         program = av_new_program(s, 0);
         if (!program) {
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
 
