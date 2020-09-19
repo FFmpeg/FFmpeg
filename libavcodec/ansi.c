@@ -431,7 +431,8 @@ static int decode_frame(AVCodecContext *avctx,
                     s->args[s->nb_args] = FFMAX(s->args[s->nb_args], 0) * 10 + buf[0] - '0';
                 break;
             case ';':
-                s->nb_args++;
+                if (s->nb_args < MAX_NB_ARGS)
+                    s->nb_args++;
                 if (s->nb_args < MAX_NB_ARGS)
                     s->args[s->nb_args] = 0;
                 break;
