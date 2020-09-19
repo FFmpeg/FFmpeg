@@ -474,6 +474,11 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVCodecDefault ansi_defaults[] = {
+    { "max_pixels", "640*480" },
+    { NULL },
+};
+
 AVCodec ff_ansi_decoder = {
     .name           = "ansi",
     .long_name      = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
@@ -485,4 +490,5 @@ AVCodec ff_ansi_decoder = {
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .defaults       = ansi_defaults,
 };
