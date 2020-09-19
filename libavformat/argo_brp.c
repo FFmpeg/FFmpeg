@@ -275,7 +275,7 @@ static int argo_brp_read_header(AVFormatContext *s)
         blk.size      = AV_RL32(buf + 8);
 
         if (blk.stream_id != brp->basf.index) {
-            avpriv_request_sample(st, "first block not BASF");
+            avpriv_request_sample(s, "first block not BASF");
             return AVERROR_PATCHWELCOME;
         }
 
