@@ -938,6 +938,11 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     } else {
         buffer_size = IO_BUFFER_SIZE;
     }
+    if (!(h->flags & AVIO_FLAG_WRITE) && h->is_streamed) {
+        if (buffer_size > INT_MAX/2)
+            return AVERROR(EINVAL);
+        buffer_size *= 2;
+    }
     buffer = av_malloc(buffer_size);
     if (!buffer)
         return AVERROR(ENOMEM);
