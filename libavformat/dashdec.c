@@ -605,6 +605,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
     char *media_val = NULL;
     char *range_val = NULL;
     int max_url_size = c ? c->max_url_size: MAX_URL_SIZE;
+    int err;
 
     if (!av_strcasecmp(fragmenturl_node->name, (const char *)"Initialization")) {
         initialization_val = xmlGetProp(fragmenturl_node, "sourceURL");
@@ -648,7 +649,11 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                 av_free(seg);
                 return AVERROR(ENOMEM);
             }
-            dynarray_add(&rep->fragments, &rep->n_fragments, seg);
+            err = av_dynarray_add_nofree(&rep->fragments, &rep->n_fragments, seg);
+            if (err < 0) {
+                free_fragment(&seg);
+                return err;
+            }
         }
     }
 
@@ -660,6 +665,7 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
 {
     xmlAttrPtr attr = NULL;
     char *val  = NULL;
+    int err;
 
     if (!av_strcasecmp(fragment_timeline_node->name, (const char *)"S")) {
         struct timeline *tml = av_mallocz(sizeof(struct timeline));
@@ -685,7 +691,11 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
             attr = attr->next;
             xmlFree(val);
         }
-        dynarray_add(&rep->timelines, &rep->n_timelines, tml);
+        err = av_dynarray_add_nofree(&rep->timelines, &rep->n_timelines, tml);
+        if (err < 0) {
+            av_free(tml);
+            return err;
+        }
     }
 
     return 0;
@@ -975,13 +985,15 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             seg = av_mallocz(sizeof(struct fragment));
             if (!seg)
                 goto enomem;
-            seg->url = get_content_url(baseurl_nodes, 4, c->max_url_size, rep_id_val, rep_bandwidth_val, NULL);
-            if (!seg->url) {
+            ret = av_dynarray_add_nofree(&rep->fragments, &rep->n_fragments, seg);
+            if (ret < 0) {
                 av_free(seg);
-                goto enomem;
+                goto free;
             }
+            seg->url = get_content_url(baseurl_nodes, 4, c->max_url_size, rep_id_val, rep_bandwidth_val, NULL);
+            if (!seg->url)
+                goto enomem;
             seg->size = -1;
-            dynarray_add(&rep->fragments, &rep->n_fragments, seg);
         } else if (representation_segmentlist_node) {
             // TODO: https://www.brendanlong.com/the-structure-of-an-mpeg-dash-mpd.html
             // http://www-itec.uni-klu.ac.at/dash/ddash/mpdGenerator.php?fragmentlength=15&type=full
@@ -1051,18 +1063,20 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             switch (type) {
                 case AVMEDIA_TYPE_VIDEO:
-                    dynarray_add(&c->videos, &c->n_videos, rep);
+                    ret = av_dynarray_add_nofree(&c->videos, &c->n_videos, rep);
                     break;
                 case AVMEDIA_TYPE_AUDIO:
-                    dynarray_add(&c->audios, &c->n_audios, rep);
+                    ret = av_dynarray_add_nofree(&c->audios, &c->n_audios, rep);
                     break;
                 case AVMEDIA_TYPE_SUBTITLE:
-                    dynarray_add(&c->subtitles, &c->n_subtitles, rep);
+                    ret = av_dynarray_add_nofree(&c->subtitles, &c->n_subtitles, rep);
                     break;
                 default:
                     av_log(s, AV_LOG_WARNING, "Unsupported the stream type %d\n", type);
                     break;
             }
+            if (ret < 0)
+                goto free;
         }
     }
 
