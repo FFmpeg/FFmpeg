@@ -306,6 +306,7 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ArgoBRPDemuxContext *brp = s->priv_data;
     ArgoBRPBlockHeader blk;
+    const ArgoBRPStreamHeader *shdr;
     AVStream *st;
     uint8_t buf[BRP_MIN_BUFFER_SIZE];
     ArgoASFChunkHeader ckhdr;
@@ -327,6 +328,7 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
 
     st = s->streams[blk.stream_id];
+    shdr = brp->streams + blk.stream_id;
 
     if (blk.stream_id == brp->basf.index) {
         if (blk.size < ASF_CHUNK_HEADER_SIZE)
@@ -358,6 +360,9 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (blk.stream_id == brp->basf.index) {
         pkt->duration = ckhdr.num_samples * ckhdr.num_blocks;
         pkt->pts      = av_rescale_rnd(blk.start_ms, ckhdr.sample_rate, 1000, AV_ROUND_UP);
+    } else if (shdr->codec_id == BRP_CODEC_ID_BVID) {
+        pkt->duration = av_rescale_rnd(1, st->duration, shdr->extradata.bvid.num_frames, AV_ROUND_UP);
+        pkt->pts      = blk.start_ms;
     } else {
         pkt->pts      = blk.start_ms;
     }
