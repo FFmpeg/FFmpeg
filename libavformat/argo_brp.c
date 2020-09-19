@@ -77,7 +77,7 @@ typedef struct ArgoBRPStreamHeader {
 
 typedef struct ArgoBRPDemuxContext {
     ArgoBRPFileHeader   fhdr;
-    ArgoBRPStreamHeader *streams;
+    ArgoBRPStreamHeader streams[BRP_MAX_STREAMS];
     /* To know how much of a BASF to give. */
     int64_t             lastpts;
     int                 hit_eof;
@@ -99,16 +99,6 @@ static int argo_brp_probe(const AVProbeData *p)
         return 0;
 
     return AVPROBE_SCORE_EXTENSION + 1;
-}
-
-static int argo_brp_read_close(AVFormatContext *s)
-{
-    ArgoBRPDemuxContext *brp = s->priv_data;
-
-    if (brp->streams != NULL)
-        av_freep(&brp->streams);
-
-    return 0;
 }
 
 static int read_extradata(AVFormatContext *s, const ArgoBRPStreamHeader *hdr,
@@ -173,9 +163,6 @@ static int argo_brp_read_header(AVFormatContext *s)
         avpriv_request_sample(s, ">%d streams", BRP_MAX_STREAMS);
         return AVERROR_PATCHWELCOME;
     }
-
-    if ((brp->streams = av_mallocz_array(brp->fhdr.num_streams, sizeof(ArgoBRPStreamHeader))) == NULL)
-        return AVERROR(ENOMEM);
 
     /* Build the stream info. */
     brp->basf.index = -1;
@@ -331,8 +318,6 @@ static int argo_brp_read_header(AVFormatContext *s)
     return 0;
 
 fail:
-    /* TODO: Remove once AVFMT_HEADER_CLEANUP lands. */
-    argo_brp_read_close(s);
     return ret;
 }
 
@@ -445,5 +430,4 @@ AVInputFormat ff_argo_brp_demuxer = {
     .read_probe     = argo_brp_probe,
     .read_header    = argo_brp_read_header,
     .read_packet    = argo_brp_read_packet,
-    .read_close     = argo_brp_read_close
 };
