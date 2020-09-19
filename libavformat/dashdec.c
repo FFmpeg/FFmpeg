@@ -2257,6 +2257,7 @@ static int dash_close(AVFormatContext *s)
     DASHContext *c = s->priv_data;
     free_audio_list(c);
     free_video_list(c);
+    free_subtitle_list(c);
     av_dict_free(&c->avio_opts);
     av_freep(&c->base_url);
     return 0;
