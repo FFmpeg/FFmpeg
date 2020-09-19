@@ -785,6 +785,11 @@ static int hls_slice_header(HEVCContext *s)
         if (s->ps.pps->pic_slice_level_chroma_qp_offsets_present_flag) {
             sh->slice_cb_qp_offset = get_se_golomb(gb);
             sh->slice_cr_qp_offset = get_se_golomb(gb);
+            if (sh->slice_cb_qp_offset < -12 || sh->slice_cb_qp_offset > 12 ||
+                sh->slice_cr_qp_offset < -12 || sh->slice_cr_qp_offset > 12) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid slice cx qp offset.\n");
+                return AVERROR_INVALIDDATA;
+            }
         } else {
             sh->slice_cb_qp_offset = 0;
             sh->slice_cr_qp_offset = 0;
