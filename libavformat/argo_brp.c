@@ -170,17 +170,13 @@ static int argo_brp_read_header(AVFormatContext *s)
         ArgoBRPStreamHeader *hdr = brp->streams + i;
         AVStream *st;
 
-        if (!(st = avformat_new_stream(s, NULL))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!(st = avformat_new_stream(s, NULL)))
+            return AVERROR(ENOMEM);
 
-        if ((ret = avio_read(pb, buf, BRP_STREAM_HEADER_SIZE)) < 0) {
-            goto fail;
-        } else if (ret != BRP_STREAM_HEADER_SIZE) {
-            ret = AVERROR(EIO);
-            goto fail;
-        }
+        if ((ret = avio_read(pb, buf, BRP_STREAM_HEADER_SIZE)) < 0)
+            return ret;
+        else if (ret != BRP_STREAM_HEADER_SIZE)
+            return AVERROR(EIO);
 
         hdr->codec_id       = AV_RL32(buf + 0);
         hdr->id             = AV_RL32(buf + 4);
@@ -194,7 +190,7 @@ static int argo_brp_read_header(AVFormatContext *s)
         st->codecpar->bit_rate = hdr->byte_rate * 8;
 
         if ((ret = read_extradata(s, hdr, buf, sizeof(buf))) < 0) {
-            goto fail;
+            return ret;
         } else if (ret > 0) {
             st->codecpar->codec_type = AVMEDIA_TYPE_UNKNOWN;
             continue;
@@ -216,8 +212,7 @@ static int argo_brp_read_header(AVFormatContext *s)
             /* These are from 1990's games, sanity check this. */
             if (bvid->width >= 65536 || bvid->height >= 65536 ||
                 bvid->depth > 24     || bvid->depth % 8 != 0) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
+                return AVERROR_INVALIDDATA;
             }
 
             st->codecpar->width  = bvid->width;
@@ -229,8 +224,7 @@ static int argo_brp_read_header(AVFormatContext *s)
                 st->codecpar->format = AV_PIX_FMT_RGB24;
             } else {
                 avpriv_request_sample(s, "depth == %u", bvid->depth);
-                ret = AVERROR_PATCHWELCOME;
-                goto fail;
+                return AVERROR_PATCHWELCOME;
             }
         } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
             /*
@@ -240,8 +234,7 @@ static int argo_brp_read_header(AVFormatContext *s)
              */
             if (brp->basf.index >= 0) {
                 avpriv_request_sample(s, "Multiple BASF streams");
-                ret = AVERROR_PATCHWELCOME;
-                goto fail;
+                return AVERROR_PATCHWELCOME;
             }
 
             st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -250,7 +243,7 @@ static int argo_brp_read_header(AVFormatContext *s)
             ff_argo_asf_parse_file_header(&hdr->extradata.basf, buf);
 
             if ((ret = ff_argo_asf_validate_file_header(s, &hdr->extradata.basf)) < 0)
-                goto fail;
+                return ret;
 
         } else {
             av_assert0(0); /* Caught above, should never happen. */
@@ -271,11 +264,9 @@ static int argo_brp_read_header(AVFormatContext *s)
         av_assert0(brp->streams[brp->basf.index].extradata_size == ASF_FILE_HEADER_SIZE);
 
         if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
-            goto fail;
-        else if (ret != BRP_BLOCK_HEADER_SIZE) {
-            ret = AVERROR(EIO);
-            goto fail;
-        }
+            return ret;
+        else if (ret != BRP_BLOCK_HEADER_SIZE)
+            return AVERROR(EIO);
 
         blk.stream_id = AV_RL32(buf + 0);
         blk.start_ms  = AV_RL32(buf + 4);
@@ -283,42 +274,34 @@ static int argo_brp_read_header(AVFormatContext *s)
 
         if (blk.stream_id != brp->basf.index) {
             avpriv_request_sample(st, "first block not BASF");
-            ret = AVERROR_PATCHWELCOME;
-            goto fail;
+            return AVERROR_PATCHWELCOME;
         }
 
-        if (blk.size < ASF_CHUNK_HEADER_SIZE) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (blk.size < ASF_CHUNK_HEADER_SIZE)
+            return AVERROR_INVALIDDATA;
 
         if ((ret = avio_read(pb, buf, ASF_CHUNK_HEADER_SIZE)) < 0)
-            goto fail;
-        else if (ret != ASF_CHUNK_HEADER_SIZE) {
-            ret = AVERROR(EIO);
-            goto fail;
-        }
+            return ret;
+        else if (ret != ASF_CHUNK_HEADER_SIZE)
+            return AVERROR(EIO);
 
         ff_argo_asf_parse_chunk_header(&brp->basf.ckhdr, buf);
 
         if ((ret = ff_argo_asf_fill_stream(st, &hdr->extradata.basf, &brp->basf.ckhdr)) < 0)
-            goto fail;
+            return ret;
 
         /* Convert ms to samples. */
         st->start_time = (blk.start_ms * st->codecpar->sample_rate) / 1000;
 
         if ((ret = avio_tell(s->pb)) < 0)
-            goto fail;
+            return ret;
 
         brp->basf.offset = ret;
 
         if ((ret = avio_skip(s->pb, blk.size - ASF_CHUNK_HEADER_SIZE)) < 0)
-            goto fail;
+            return ret;
     }
     return 0;
-
-fail:
-    return ret;
 }
 
 static int argo_brp_read_basf(AVFormatContext *s, AVPacket *pkt,
