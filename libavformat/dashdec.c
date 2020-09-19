@@ -897,46 +897,45 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             fragment_templates_tab[3] = period_segmenttemplate_node;
             fragment_templates_tab[4] = period_segmentlist_node;
 
-            presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "presentationTimeOffset");
-            duration_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "duration");
-            startnumber_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "startNumber");
-            timescale_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "timescale");
             initialization_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "initialization");
-            media_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "media");
-
             if (initialization_val) {
                 rep->init_section = av_mallocz(sizeof(struct fragment));
-                if (!rep->init_section)
+                if (!rep->init_section) {
+                    xmlFree(initialization_val);
                     goto enomem;
+                }
                 c->max_url_size = aligned(c->max_url_size  + strlen(initialization_val));
                 rep->init_section->url = get_content_url(baseurl_nodes, 4,  c->max_url_size, rep_id_val, rep_bandwidth_val, initialization_val);
+                xmlFree(initialization_val);
                 if (!rep->init_section->url)
                     goto enomem;
                 rep->init_section->size = -1;
-                xmlFree(initialization_val);
             }
-
+            media_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "media");
             if (media_val) {
                 c->max_url_size = aligned(c->max_url_size  + strlen(media_val));
                 rep->url_template = get_content_url(baseurl_nodes, 4, c->max_url_size, rep_id_val, rep_bandwidth_val, media_val);
                 xmlFree(media_val);
             }
-
+            presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "presentationTimeOffset");
             if (presentation_timeoffset_val) {
                 rep->presentation_timeoffset = (int64_t) strtoll(presentation_timeoffset_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->presentation_timeoffset = [%"PRId64"]\n", rep->presentation_timeoffset);
                 xmlFree(presentation_timeoffset_val);
             }
+            duration_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "duration");
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
                 xmlFree(duration_val);
             }
+            timescale_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "timescale");
             if (timescale_val) {
                 rep->fragment_timescale = (int64_t) strtoll(timescale_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale);
                 xmlFree(timescale_val);
             }
+            startnumber_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "startNumber");
             if (startnumber_val) {
                 rep->start_number = rep->first_seq_no = (int64_t) strtoll(startnumber_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no);
