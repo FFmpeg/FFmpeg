@@ -29,10 +29,9 @@ static int threedostr_probe(const AVProbeData *p)
         unsigned chunk = AV_RL32(p->buf + i);
         unsigned size  = AV_RB32(p->buf + i + 4);
 
-        i += 8;
         if (size < 8 || p->buf_size - i < size)
             return 0;
-
+        i += 8;
         size -= 8;
         switch (chunk) {
         case MKTAG('C','T','R','L'):

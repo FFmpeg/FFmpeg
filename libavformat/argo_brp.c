@@ -364,7 +364,7 @@ static int argo_brp_read_basf(AVFormatContext *s, AVPacket *pkt,
     else if (ret != brp->basf.offset)
         return AVERROR(EIO);
 
-    if ((ret = av_get_packet(s->pb, pkt, par->frame_size)) < 0)
+    if ((ret = av_get_packet(s->pb, pkt, par->block_align)) < 0)
         return ret;
 
     if ((ret = avio_seek(s->pb, old, SEEK_SET)) < 0)

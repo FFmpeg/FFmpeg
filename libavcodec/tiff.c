@@ -1895,8 +1895,14 @@ again:
     if (is_dng) {
         int bps;
 
+        if (s->bpp % s->bppcount)
+            return AVERROR_INVALIDDATA;
+        bps = s->bpp / s->bppcount;
+        if (bps < 8 || bps > 32)
+            return AVERROR_INVALIDDATA;
+
         if (s->white_level == 0)
-            s->white_level = (1 << s->bpp) - 1; /* Default value as per the spec */
+            s->white_level = (1LL << bps) - 1; /* Default value as per the spec */
 
         if (s->white_level <= s->black_level) {
             av_log(avctx, AV_LOG_ERROR, "BlackLevel (%"PRId32") must be less than WhiteLevel (%"PRId32")\n",
@@ -1904,11 +1910,6 @@ again:
             return AVERROR_INVALIDDATA;
         }
 
-        if (s->bpp % s->bppcount)
-            return AVERROR_INVALIDDATA;
-        bps = s->bpp / s->bppcount;
-        if (bps < 8 || bps > 32)
-            return AVERROR_INVALIDDATA;
         if (s->planar)
             return AVERROR_PATCHWELCOME;
     }
