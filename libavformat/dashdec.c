@@ -1049,7 +1049,6 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             goto free;
         }
 
-        if (rep) {
             if (rep->fragment_duration > 0 && !rep->fragment_timescale)
                 rep->fragment_timescale = 1;
             rep->bandwidth = rep_bandwidth_val ? atoi(rep_bandwidth_val) : 0;
@@ -1071,13 +1070,9 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 case AVMEDIA_TYPE_SUBTITLE:
                     ret = av_dynarray_add_nofree(&c->subtitles, &c->n_subtitles, rep);
                     break;
-                default:
-                    av_log(s, AV_LOG_WARNING, "Unsupported the stream type %d\n", type);
-                    break;
             }
             if (ret < 0)
                 goto free;
-        }
     }
 
 end:
@@ -2042,6 +2037,7 @@ static int dash_read_header(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
     struct representation *rep;
+    AVProgram *program;
     int ret = 0;
     int stream_index = 0;
     int i;
@@ -2123,8 +2119,6 @@ static int dash_read_header(AVFormatContext *s)
     }
 
     /* Create a program */
-    if (!ret) {
-        AVProgram *program;
         program = av_new_program(s, 0);
         if (!program) {
             ret = AVERROR(ENOMEM);
@@ -2164,7 +2158,6 @@ static int dash_read_header(AVFormatContext *s)
                 av_freep(&rep->lang);
             }
         }
-    }
 
     return 0;
 fail:
