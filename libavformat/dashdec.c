@@ -359,6 +359,7 @@ static void free_representation(struct representation *pls)
     }
 
     av_freep(&pls->url_template);
+    av_freep(&pls->lang);
     av_freep(&pls);
 }
 
