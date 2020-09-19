@@ -887,9 +887,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         c->max_url_size = aligned(c->max_url_size
                                   + (rep_id_val ? strlen(rep_id_val) : 0)
                                   + (rep_bandwidth_val ? strlen(rep_bandwidth_val) : 0));
-        if (ret == AVERROR(ENOMEM) || ret == 0) {
-            goto end;
-        }
+        if (ret == AVERROR(ENOMEM) || ret == 0)
+            goto free;
         if (representation_segmenttemplate_node || fragment_template_node || period_segmenttemplate_node) {
             fragment_timeline_node = NULL;
             fragment_templates_tab[0] = representation_segmenttemplate_node;
@@ -907,19 +906,12 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             if (initialization_val) {
                 rep->init_section = av_mallocz(sizeof(struct fragment));
-                if (!rep->init_section) {
-                    av_free(rep);
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
+                if (!rep->init_section)
+                    goto enomem;
                 c->max_url_size = aligned(c->max_url_size  + strlen(initialization_val));
                 rep->init_section->url = get_content_url(baseurl_nodes, 4,  c->max_url_size, rep_id_val, rep_bandwidth_val, initialization_val);
-                if (!rep->init_section->url) {
-                    av_free(rep->init_section);
-                    av_free(rep);
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
+                if (!rep->init_section->url)
+                    goto enomem;
                 rep->init_section->size = -1;
                 xmlFree(initialization_val);
             }
@@ -974,23 +966,19 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 fragment_timeline_node = xmlFirstElementChild(fragment_timeline_node);
                 while (fragment_timeline_node) {
                     ret = parse_manifest_segmenttimeline(s, rep, fragment_timeline_node);
-                    if (ret < 0) {
-                        return ret;
-                    }
+                    if (ret < 0)
+                        goto free;
                     fragment_timeline_node = xmlNextElementSibling(fragment_timeline_node);
                 }
             }
         } else if (representation_baseurl_node && !representation_segmentlist_node) {
             seg = av_mallocz(sizeof(struct fragment));
-            if (!seg) {
-                ret = AVERROR(ENOMEM);
-                goto end;
-            }
+            if (!seg)
+                goto enomem;
             seg->url = get_content_url(baseurl_nodes, 4, c->max_url_size, rep_id_val, rep_bandwidth_val, NULL);
             if (!seg->url) {
                 av_free(seg);
-                ret = AVERROR(ENOMEM);
-                goto end;
+                goto enomem;
             }
             seg->size = -1;
             dynarray_add(&rep->fragments, &rep->n_fragments, seg);
@@ -1027,9 +1015,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                                     baseurl_nodes,
                                                     rep_id_val,
                                                     rep_bandwidth_val);
-                if (ret < 0) {
-                    return ret;
-                }
+                if (ret < 0)
+                    goto free;
                 fragmenturl_node = xmlNextElementSibling(fragmenturl_node);
             }
 
@@ -1040,16 +1027,14 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 fragment_timeline_node = xmlFirstElementChild(fragment_timeline_node);
                 while (fragment_timeline_node) {
                     ret = parse_manifest_segmenttimeline(s, rep, fragment_timeline_node);
-                    if (ret < 0) {
-                        return ret;
-                    }
+                    if (ret < 0)
+                        goto free;
                     fragment_timeline_node = xmlNextElementSibling(fragment_timeline_node);
                 }
             }
         } else {
-            free_representation(rep);
-            rep = NULL;
             av_log(s, AV_LOG_ERROR, "Unknown format of Representation node id[%s] \n", (const char *)rep_id_val);
+            goto free;
         }
 
         if (rep) {
@@ -1090,6 +1075,11 @@ end:
         xmlFree(rep_framerate_val);
 
     return ret;
+enomem:
+    ret = AVERROR(ENOMEM);
+free:
+    free_representation(rep);
+    goto end;
 }
 
 static int parse_manifest_adaptationset_attr(AVFormatContext *s, xmlNodePtr adaptionset_node)
