@@ -184,6 +184,10 @@ static int argo_brp_read_header(AVFormatContext *s)
         hdr->byte_rate      = AV_RL32(buf + 12);
         hdr->extradata_size = AV_RL32(buf + 16);
 
+        /* This should always be the case. */
+        if (hdr->id != i)
+            return AVERROR_INVALIDDATA;
+
         /* Timestamps are in milliseconds. */
         avpriv_set_pts_info(st, 64, 1, 1000);
         st->duration           = hdr->duration_ms;
