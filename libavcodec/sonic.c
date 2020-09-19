@@ -1031,6 +1031,9 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     {
         int x = ch;
 
+        if (c.overread > MAX_OVERREAD)
+            return AVERROR_INVALIDDATA;
+
         predictor_init_state(s->predictor_k, s->predictor_state[ch], s->num_taps);
 
         intlist_read(&c, state, s->coded_samples[ch], s->block_align, 1);
