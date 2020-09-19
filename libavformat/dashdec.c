@@ -2047,6 +2047,7 @@ static int copy_init_section(struct representation *rep_dest, struct representat
     return 0;
 }
 
+static int dash_close(AVFormatContext *s);
 
 static int dash_read_header(AVFormatContext *s)
 {
@@ -2178,6 +2179,7 @@ static int dash_read_header(AVFormatContext *s)
 
     return 0;
 fail:
+    dash_close(s);
     return ret;
 }
 
