@@ -129,6 +129,8 @@ retry:
 
     return buf_size - z->avail_out;
 }
+
+static av_cold int swf_read_close(AVFormatContext *avctx);
 #endif
 
 static int swf_read_header(AVFormatContext *s)
@@ -143,24 +145,18 @@ static int swf_read_header(AVFormatContext *s)
     if (tag == MKBETAG('C', 'W', 'S', 0)) {
         av_log(s, AV_LOG_INFO, "SWF compressed file detected\n");
 #if CONFIG_ZLIB
-        swf->zbuf_in  = av_malloc(ZBUF_SIZE);
-        swf->zbuf_out = av_malloc(ZBUF_SIZE);
-        swf->zpb = avio_alloc_context(swf->zbuf_out, ZBUF_SIZE, 0, s,
-                                      zlib_refill, NULL, NULL);
-        if (!swf->zbuf_in || !swf->zbuf_out || !swf->zpb) {
-            av_freep(&swf->zbuf_in);
-            av_freep(&swf->zbuf_out);
-            avio_context_free(&swf->zpb);
+        if (inflateInit(&swf->zstream) != Z_OK) {
+            av_log(s, AV_LOG_ERROR, "Unable to init zlib context\n");
+            return AVERROR(EINVAL);
+        }
+        if (!(swf->zbuf_in  = av_malloc(ZBUF_SIZE)) ||
+            !(swf->zbuf_out = av_malloc(ZBUF_SIZE)) ||
+            !(swf->zpb = avio_alloc_context(swf->zbuf_out, ZBUF_SIZE, 0,
+                                            s, zlib_refill, NULL, NULL))) {
+            swf_read_close(s);
             return AVERROR(ENOMEM);
         }
         swf->zpb->seekable = 0;
-        if (inflateInit(&swf->zstream) != Z_OK) {
-            av_log(s, AV_LOG_ERROR, "Unable to init zlib context\n");
-            av_freep(&swf->zbuf_in);
-            av_freep(&swf->zbuf_out);
-            avio_context_free(&swf->zpb);
-            return AVERROR(EINVAL);
-        }
         pb = swf->zpb;
 #else
         av_log(s, AV_LOG_ERROR, "zlib support is required to read SWF compressed files\n");
