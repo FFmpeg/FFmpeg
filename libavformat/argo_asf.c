@@ -348,7 +348,7 @@ static int argo_asf_write_header(AVFormatContext *s)
         const char *end   = strrchr(start, '.');
         size_t      len;
 
-        if(end)
+        if (end)
             len = end - start;
         else
             len = strlen(start);
