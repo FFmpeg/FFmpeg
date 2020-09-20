@@ -633,12 +633,41 @@ static unsigned compute_avg_bitrate(MOVTrack *track)
     return size * 8 * track->timescale / track->track_duration;
 }
 
+struct mpeg4_bit_rate_values {
+    uint32_t buffer_size;  ///< Size of the decoding buffer for the elementary stream in bytes.
+    uint32_t max_bit_rate; ///< Maximum rate in bits/second over any window of one second.
+    uint32_t avg_bit_rate; ///< Average rate in bits/second over the entire presentation.
+};
+
+static struct mpeg4_bit_rate_values calculate_mpeg4_bit_rates(MOVTrack *track)
+{
+    AVCPBProperties *props =
+        (AVCPBProperties*)av_stream_get_side_data(track->st,
+                                                  AV_PKT_DATA_CPB_PROPERTIES,
+                                                  NULL);
+    struct mpeg4_bit_rate_values bit_rates = { 0 };
+
+    bit_rates.avg_bit_rate = compute_avg_bitrate(track);
+
+    // (FIXME should be max rate in any 1 sec window)
+    bit_rates.max_bit_rate = FFMAX(track->par->bit_rate,
+                                   bit_rates.avg_bit_rate);
+
+    // utilize values from properties if we have them available
+    if (props) {
+        bit_rates.max_bit_rate = FFMAX(bit_rates.max_bit_rate,
+                                       props->max_bitrate);
+        bit_rates.buffer_size = props->buffer_size / 8;
+    }
+
+    return bit_rates;
+}
+
 static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
 {
-    AVCPBProperties *props;
+    struct mpeg4_bit_rate_values bit_rates = calculate_mpeg4_bit_rates(track);
     int64_t pos = avio_tell(pb);
     int decoder_specific_info_len = track->vos_len ? 5 + track->vos_len : 0;
-    unsigned avg_bitrate;
 
     avio_wb32(pb, 0); // size
     ffio_wfourcc(pb, "esds");
@@ -669,14 +698,9 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
     else
         avio_w8(pb, 0x11); // flags (= Visualstream)
 
-    props = (AVCPBProperties*)av_stream_get_side_data(track->st, AV_PKT_DATA_CPB_PROPERTIES,
-                                                      NULL);
-
-    avio_wb24(pb, props ? props->buffer_size / 8 : 0); // Buffersize DB
-
-    avg_bitrate = compute_avg_bitrate(track);
-    avio_wb32(pb, props ? FFMAX3(props->max_bitrate, props->avg_bitrate, avg_bitrate) : FFMAX(track->par->bit_rate, avg_bitrate)); // maxbitrate (FIXME should be max rate in any 1 sec window)
-    avio_wb32(pb, avg_bitrate);
+    avio_wb24(pb, bit_rates.buffer_size); // Buffersize DB
+    avio_wb32(pb, bit_rates.max_bit_rate); // maxbitrate
+    avio_wb32(pb, bit_rates.avg_bit_rate);
 
     if (track->vos_len) {
         // DecoderSpecific info descriptor
