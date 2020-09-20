@@ -540,7 +540,7 @@ static void fill_buffer(AVIOContext *s)
 {
     int max_buffer_size = s->max_packet_size ?
                           s->max_packet_size : IO_BUFFER_SIZE;
-    uint8_t *dst        = s->buf_end - s->buffer + max_buffer_size < s->buffer_size ?
+    uint8_t *dst        = s->buf_end - s->buffer + max_buffer_size <= s->buffer_size ?
                           s->buf_end : s->buffer;
     int len             = s->buffer_size - (dst - s->buffer);
 
