@@ -1123,7 +1123,6 @@ static void do_video_out(OutputFile *of,
     int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->enc_ctx;
-    AVCodecParameters *mux_par = ost->st->codecpar;
     AVRational frame_rate;
     int nb_frames, nb0_frames, i;
     double delta, delta0;
@@ -1284,18 +1283,6 @@ static void do_video_out(OutputFile *of,
 
         if (!check_recording_time(ost))
             return;
-
-        if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
-            ost->top_field_first >= 0)
-            in_picture->top_field_first = !!ost->top_field_first;
-
-        if (in_picture->interlaced_frame) {
-            if (enc->codec->id == AV_CODEC_ID_MJPEG)
-                mux_par->field_order = in_picture->top_field_first ? AV_FIELD_TT:AV_FIELD_BB;
-            else
-                mux_par->field_order = in_picture->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
-        } else
-            mux_par->field_order = AV_FIELD_PROGRESSIVE;
 
         in_picture->quality = enc->global_quality;
         in_picture->pict_type = 0;
@@ -3431,6 +3418,20 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             enc_ctx->field_order = AV_FIELD_BB;
         } else if (ost->top_field_first == 1) {
             enc_ctx->field_order = AV_FIELD_TT;
+        }
+
+        if (frame) {
+            if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
+                ost->top_field_first >= 0)
+                frame->top_field_first = !!ost->top_field_first;
+
+            if (frame->interlaced_frame) {
+                if (enc_ctx->codec->id == AV_CODEC_ID_MJPEG)
+                    enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TT:AV_FIELD_BB;
+                else
+                    enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
+            } else
+                enc_ctx->field_order = AV_FIELD_PROGRESSIVE;
         }
 
         if (ost->forced_keyframes) {
