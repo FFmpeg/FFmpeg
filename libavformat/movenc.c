@@ -1073,6 +1073,25 @@ static int get_samples_per_packet(MOVTrack *track)
     return first_duration;
 }
 
+static int mov_write_btrt_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    struct mpeg4_bit_rate_values bit_rates = calculate_mpeg4_bit_rates(track);
+    if (!bit_rates.max_bit_rate && !bit_rates.avg_bit_rate &&
+        !bit_rates.buffer_size)
+        // no useful data to be written, skip
+        return 0;
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "btrt");
+
+    avio_wb32(pb, bit_rates.buffer_size);
+    avio_wb32(pb, bit_rates.max_bit_rate);
+    avio_wb32(pb, bit_rates.avg_bit_rate);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1220,6 +1239,10 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
             && ((ret = ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid)) < 0)) {
         return ret;
     }
+
+    if (track->mode == MODE_MP4 &&
+            ((ret = mov_write_btrt_tag(pb, track)) < 0))
+        return ret;
 
     ret = update_size(pb, pos);
     return ret;
@@ -1736,6 +1759,7 @@ static int mov_write_fiel_tag(AVIOContext *pb, MOVTrack *track, int field_order)
 
 static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
 {
+    int ret = AVERROR_BUG;
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0);    /* size */
     avio_wl32(pb, track->tag); // store it byteswapped
@@ -1747,6 +1771,10 @@ static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_esds_tag(pb, track);
     else if (track->par->extradata_size)
         avio_write(pb, track->par->extradata, track->par->extradata_size);
+
+    if (track->mode == MODE_MP4 &&
+            ((ret = mov_write_btrt_tag(pb, track)) < 0))
+        return ret;
 
     return update_size(pb, pos);
 }
@@ -2051,6 +2079,7 @@ static void find_compressor(char * compressor_name, int len, MOVTrack *track)
 
 static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
+    int ret = AVERROR_BUG;
     int64_t pos = avio_tell(pb);
     char compressor_name[32] = { 0 };
     int avid = 0;
@@ -2230,6 +2259,10 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     if (mov->encryption_scheme != MOV_ENC_NONE) {
         ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid);
     }
+
+    if (track->mode == MODE_MP4 &&
+            ((ret = mov_write_btrt_tag(pb, track)) < 0))
+        return ret;
 
     /* extra padding for avid stsd */
     /* https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-61112 */
