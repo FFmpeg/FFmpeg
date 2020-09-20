@@ -62,6 +62,8 @@ static int pop_int(BitReader *br, AVIOContext *pb, int n)
 
         if (ret < 0)
             return ret;
+        if (ret > INT_MAX - value - value)
+            return AVERROR_INVALIDDATA;
         value = 2 * value + ret;
     }
 
