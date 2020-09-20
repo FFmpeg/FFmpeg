@@ -23,15 +23,6 @@
 #ifndef AVFORMAT_SWF_H
 #define AVFORMAT_SWF_H
 
-#include "config.h"
-
-#if CONFIG_ZLIB
-#include <zlib.h>
-#endif
-
-#include "libavutil/fifo.h"
-#include "avformat.h"
-#include "avio.h"
 #include "internal.h"
 
 /* should have a generic way to indicate probable size */
@@ -113,34 +104,10 @@ enum {
 #define FLAG_SETFILL0    0x02
 #define FLAG_SETFILL1    0x04
 
-#define AUDIO_FIFO_SIZE 65536
-
 /* character id used */
 #define BITMAP_ID 0
 #define VIDEO_ID 0
 #define SHAPE_ID  1
-
-typedef struct SWFContext {
-    int64_t duration_pos;
-    int64_t tag_pos;
-    int64_t vframes_pos;
-    int samples_per_frame;
-    int sound_samples;
-    int swf_frame_number;
-    int video_frame_number;
-    int frame_rate;
-    int tag;
-    AVFifoBuffer *audio_fifo;
-    AVCodecParameters *audio_par, *video_par;
-    AVStream *video_st;
-#if CONFIG_ZLIB
-#define ZBUF_SIZE 4096
-    AVIOContext *zpb;
-    uint8_t *zbuf_in;
-    uint8_t *zbuf_out;
-    z_stream zstream;
-#endif
-} SWFContext;
 
 extern const AVCodecTag ff_swf_codec_tags[];
 

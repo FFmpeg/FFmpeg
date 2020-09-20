@@ -94,25 +94,20 @@ static int parse_string(AVIOContext *pb, int *cur_byte, AVBPrint *bp, int full)
 {
     int ret;
 
-    av_bprint_init(bp, 0, full ? AV_BPRINT_SIZE_UNLIMITED : AV_BPRINT_SIZE_AUTOMATIC);
     ret = expect_byte(pb, cur_byte, '"');
     if (ret < 0)
-        goto fail;
+        return ret;
     while (*cur_byte > 0 && *cur_byte != '"') {
         if (*cur_byte == '\\') {
             next_byte(pb, cur_byte);
-            if (*cur_byte < 0) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            if (*cur_byte < 0)
+                return AVERROR_INVALIDDATA;
             if ((*cur_byte | 32) == 'u') {
                 unsigned chr = 0, i;
                 for (i = 0; i < 4; i++) {
                     next_byte(pb, cur_byte);
-                    if (!HEX_DIGIT_TEST(*cur_byte)) {
-                        ret = ERR_CODE(*cur_byte);
-                        goto fail;
-                    }
+                    if (!HEX_DIGIT_TEST(*cur_byte))
+                        return ERR_CODE(*cur_byte);
                     chr = chr * 16 + HEX_DIGIT_VAL(*cur_byte);
                 }
                 av_bprint_utf8(bp, chr);
@@ -126,22 +121,18 @@ static int parse_string(AVIOContext *pb, int *cur_byte, AVBPrint *bp, int full)
     }
     ret = expect_byte(pb, cur_byte, '"');
     if (ret < 0)
-        goto fail;
-    if (full && !av_bprint_is_complete(bp)) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    return 0;
+        return ret;
+    if (full && !av_bprint_is_complete(bp))
+        return AVERROR(ENOMEM);
 
-fail:
-    av_bprint_finalize(bp, NULL);
-    return ret;
+    return 0;
 }
 
 static int parse_label(AVIOContext *pb, int *cur_byte, AVBPrint *bp)
 {
     int ret;
 
+    av_bprint_init(bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     ret = parse_string(pb, cur_byte, bp, 0);
     if (ret < 0)
         return ret;
@@ -195,6 +186,8 @@ static int parse_file(AVIOContext *pb, FFDemuxSubtitlesQueue *subs)
     int64_t pos, start, duration;
     AVPacket *pkt;
 
+    av_bprint_init(&content, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     next_byte(pb, &cur_byte);
     ret = expect_byte(pb, &cur_byte, '{');
     if (ret < 0)
@@ -206,34 +199,34 @@ static int parse_file(AVIOContext *pb, FFDemuxSubtitlesQueue *subs)
     if (ret < 0)
         return AVERROR_INVALIDDATA;
     while (1) {
-        content.size = 0;
         start = duration = AV_NOPTS_VALUE;
         ret = expect_byte(pb, &cur_byte, '{');
         if (ret < 0)
-            return ret;
+            goto fail;
         pos = avio_tell(pb) - 1;
         while (1) {
             ret = parse_label(pb, &cur_byte, &label);
             if (ret < 0)
-                return ret;
+                goto fail;
             if (!strcmp(label.str, "startOfParagraph")) {
                 ret = parse_boolean(pb, &cur_byte, &start_of_par);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
             } else if (!strcmp(label.str, "content")) {
                 ret = parse_string(pb, &cur_byte, &content, 1);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
             } else if (!strcmp(label.str, "startTime")) {
                 ret = parse_int(pb, &cur_byte, &start);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
             } else if (!strcmp(label.str, "duration")) {
                 ret = parse_int(pb, &cur_byte, &duration);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
             } else {
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
             skip_spaces(pb, &cur_byte);
             if (cur_byte != ',')
@@ -242,18 +235,22 @@ static int parse_file(AVIOContext *pb, FFDemuxSubtitlesQueue *subs)
         }
         ret = expect_byte(pb, &cur_byte, '}');
         if (ret < 0)
-            return ret;
+            goto fail;
 
         if (!content.size || start == AV_NOPTS_VALUE ||
-            duration == AV_NOPTS_VALUE)
-            return AVERROR_INVALIDDATA;
+            duration == AV_NOPTS_VALUE) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         pkt = ff_subtitles_queue_insert(subs, content.str, content.len, 0);
-        if (!pkt)
-            return AVERROR(ENOMEM);
+        if (!pkt) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         pkt->pos      = pos;
         pkt->pts      = start;
         pkt->duration = duration;
-        av_bprint_finalize(&content, NULL);
+        av_bprint_clear(&content);
 
         skip_spaces(pb, &cur_byte);
         if (cur_byte != ',')
@@ -262,14 +259,16 @@ static int parse_file(AVIOContext *pb, FFDemuxSubtitlesQueue *subs)
     }
     ret = expect_byte(pb, &cur_byte, ']');
     if (ret < 0)
-        return ret;
+        goto fail;
     ret = expect_byte(pb, &cur_byte, '}');
     if (ret < 0)
-        return ret;
+        goto fail;
     skip_spaces(pb, &cur_byte);
     if (cur_byte != AVERROR_EOF)
-        return ERR_CODE(cur_byte);
-    return 0;
+        ret = ERR_CODE(cur_byte);
+fail:
+    av_bprint_finalize(&content, NULL);
+    return ret;
 }
 
 static av_cold int tedcaptions_read_header(AVFormatContext *avf)

@@ -177,6 +177,7 @@ static void reset_stats(FlashSV2Context * s)
 static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 {
     FlashSV2Context *s = avctx->priv_data;
+    int ret;
 
     s->avctx = avctx;
 
@@ -186,23 +187,23 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     if (s->comp < 0 || s->comp > 9) {
         av_log(avctx, AV_LOG_ERROR,
                "Compression level should be 0-9, not %d\n", s->comp);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 
     if ((avctx->width > 4095) || (avctx->height > 4095)) {
         av_log(avctx, AV_LOG_ERROR,
                "Input dimensions too large, input must be max 4095x4095 !\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if ((avctx->width < 16) || (avctx->height < 16)) {
         av_log(avctx, AV_LOG_ERROR,
                "Input dimensions too small, input must be at least 16x16 !\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
-    if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0)
-        return -1;
+    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return ret;
 
 
     s->last_key_frame = 0;
@@ -231,6 +232,12 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     s->key_frame     = av_mallocz(s->frame_size);
     s->frame_blocks  = av_mallocz(s->blocks_size);
     s->key_blocks    = av_mallocz(s->blocks_size);
+    if (!s->encbuffer || !s->keybuffer || !s->databuffer
+        || !s->current_frame || !s->key_frame || !s->key_blocks
+        || !s->frame_blocks) {
+        av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
+        return AVERROR(ENOMEM);
+    }
 
     s->blockbuffer      = NULL;
     s->blockbuffer_size = 0;
@@ -244,14 +251,6 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 
     s->use_custom_palette =  0;
     s->palette_type       = -1;        // so that the palette will be generated in reconfigure_at_keyframe
-
-    if (!s->encbuffer || !s->keybuffer || !s->databuffer
-        || !s->current_frame || !s->key_frame || !s->key_blocks
-        || !s->frame_blocks) {
-        av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-        cleanup(s);
-        return -1;
-    }
 
     return 0;
 }
@@ -919,4 +918,5 @@ AVCodec ff_flashsv2_encoder = {
     .encode2        = flashsv2_encode_frame,
     .close          = flashsv2_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

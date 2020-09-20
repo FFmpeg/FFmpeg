@@ -791,7 +791,7 @@ static void draw_line(FFDrawContext *draw, int x0, int y0, int x1, int y1,
             for (p = 0; p < draw->nb_planes; p++) {
                 if (draw->desc->comp[p].depth == 8) {
                     if (draw->nb_planes == 1) {
-                        for (i = 0; i < 4; i++) {
+                        for (i = 0; i < draw->desc->nb_components; i++) {
                             out->data[0][y0 * out->linesize[0] + x0 * draw->pixelstep[0] + i] = color->comp[0].u8[i];
                         }
                     } else {
@@ -799,8 +799,8 @@ static void draw_line(FFDrawContext *draw, int x0, int y0, int x1, int y1,
                     }
                 } else {
                     if (draw->nb_planes == 1) {
-                        for (i = 0; i < 4; i++) {
-                            AV_WN16(out->data[0] + y0 * out->linesize[0] + 2 * (x0 * draw->pixelstep[0] + i), color->comp[0].u16[i]);
+                        for (i = 0; i < draw->desc->nb_components; i++) {
+                            AV_WN16(out->data[0] + y0 * out->linesize[0] + (x0 * draw->pixelstep[0] + i), color->comp[0].u16[i]);
                         }
                     } else {
                         AV_WN16(out->data[p] + out->linesize[p] * (y0 >> draw->vsub[p]) + (x0 >> draw->hsub[p]) * 2, color->comp[p].u16[0]);
@@ -965,7 +965,7 @@ static void draw_scope(OscilloscopeContext *s, int x0, int y0, int x1, int y1,
                     if (s->draw.nb_planes == 1) {
                         int i;
 
-                        for (i = 0; i < s->draw.pixelstep[0]; i++)
+                        for (i = 0; i < s->nb_comps; i++)
                             out->data[0][out->linesize[0] * y0 + x0 * s->draw.pixelstep[0] + i] = 255 * ((s->nb_values + state) & 1);
                     } else {
                         out->data[0][out->linesize[0] * y0 + x0] = 255 * ((s->nb_values + state) & 1);
@@ -974,8 +974,8 @@ static void draw_scope(OscilloscopeContext *s, int x0, int y0, int x1, int y1,
                     if (s->draw.nb_planes == 1) {
                         int i;
 
-                        for (i = 0; i < s->draw.pixelstep[0]; i++)
-                            AV_WN16(out->data[0] + out->linesize[0] * y0 + 2 * x0 * (s->draw.pixelstep[0] + i), (s->max - 1) * ((s->nb_values + state) & 1));
+                        for (i = 0; i < s->nb_comps; i++)
+                            AV_WN16(out->data[0] + out->linesize[0] * y0 + x0 * s->draw.pixelstep[0] + i, (s->max - 1) * ((s->nb_values + state) & 1));
                     } else {
                         AV_WN16(out->data[0] + out->linesize[0] * y0 + 2 * x0, (s->max - 1) * ((s->nb_values + state) & 1));
                     }

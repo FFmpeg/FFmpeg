@@ -245,7 +245,7 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
 #else
     thread_param[0] = av_malloc(sizeof(**thread_param));
     thread_param[0]->thread_common_param = &thread_common_param;
-    thread_param[0]->thread_start = 0;
+    thread_param[0]->thread_start = pad_size;
     thread_param[0]->thread_end = height - pad_size;
     dnn_execute_layer_conv2d_thread((void *)thread_param[0]);
     av_free(thread_param[0]);

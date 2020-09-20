@@ -309,7 +309,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->scratch = av_malloc_array(avctx->width + 1, sizeof(*s->scratch));
     if (!s->scratch)
-        goto fail;
+        return AVERROR(ENOMEM);
 
     ff_idctdsp_init(&s->idsp, avctx);
     ff_init_scantable(s->idsp.idct_permutation, &s->scantable,
@@ -327,9 +327,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                  avpriv_mjpeg_val_dc);
 
     return 0;
-fail:
-    ljpeg_encode_close(avctx);
-    return AVERROR(ENOMEM);
 }
 
 #define OFFSET(x) offsetof(LJpegEncContext, x)

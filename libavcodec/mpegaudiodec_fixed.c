@@ -116,5 +116,6 @@ AVCodec ff_mp3on4_decoder = {
     .flush          = flush_mp3on4,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

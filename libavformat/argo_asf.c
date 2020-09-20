@@ -59,11 +59,6 @@ int ff_argo_asf_validate_file_header(AVFormatContext *s, const ArgoASFFileHeader
     if (hdr->magic != ASF_TAG || hdr->num_chunks == 0)
         return AVERROR_INVALIDDATA;
 
-    if (hdr->num_chunks > 1) {
-        avpriv_request_sample(s, ">1 chunk");
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (hdr->chunk_offset < ASF_FILE_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
@@ -139,8 +134,12 @@ int ff_argo_asf_fill_stream(AVStream *st, const ArgoASFFileHeader *fhdr,
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     st->start_time      = 0;
-    st->duration        = ckhdr->num_blocks * ckhdr->num_samples;
-    st->nb_frames       = ckhdr->num_blocks;
+
+    if (fhdr->num_chunks == 1) {
+        st->duration        = ckhdr->num_blocks * ckhdr->num_samples;
+        st->nb_frames       = ckhdr->num_blocks;
+    }
+
     return 0;
 }
 
@@ -198,6 +197,10 @@ static int argo_asf_read_header(AVFormatContext *s)
 
     if ((ret = ff_argo_asf_validate_file_header(s, &asf->fhdr)) < 0)
         return ret;
+
+    /* This should only be 1 in ASF files. >1 is fine if in BRP. */
+    if (asf->fhdr.num_chunks != 1)
+        return AVERROR_INVALIDDATA;
 
     if ((ret = avio_skip(pb, asf->fhdr.chunk_offset - ASF_FILE_HEADER_SIZE)) < 0)
         return ret;
@@ -345,7 +348,7 @@ static int argo_asf_write_header(AVFormatContext *s)
         const char *end   = strrchr(start, '.');
         size_t      len;
 
-        if(end)
+        if (end)
             len = end - start;
         else
             len = strlen(start);

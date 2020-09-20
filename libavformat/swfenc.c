@@ -22,12 +22,29 @@
 
 #include "libavcodec/put_bits.h"
 #include "libavutil/avassert.h"
+#include "libavutil/fifo.h"
 #include "avformat.h"
 #include "swf.h"
 
+#define AUDIO_FIFO_SIZE 65536
+
+typedef struct SWFEncContext {
+    int64_t duration_pos;
+    int64_t tag_pos;
+    int64_t vframes_pos;
+    int samples_per_frame;
+    int sound_samples;
+    int swf_frame_number;
+    int video_frame_number;
+    int tag;
+    AVFifoBuffer *audio_fifo;
+    AVCodecParameters *audio_par, *video_par;
+    AVStream *video_st;
+} SWFEncContext;
+
 static void put_swf_tag(AVFormatContext *s, int tag)
 {
-    SWFContext *swf = s->priv_data;
+    SWFEncContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
 
     swf->tag_pos = avio_tell(pb);
@@ -43,7 +60,7 @@ static void put_swf_tag(AVFormatContext *s, int tag)
 
 static void put_swf_end_tag(AVFormatContext *s)
 {
-    SWFContext *swf = s->priv_data;
+    SWFEncContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t pos;
     int tag_len, tag;
@@ -173,7 +190,7 @@ static void put_swf_matrix(AVIOContext *pb,
 
 static int swf_write_header(AVFormatContext *s)
 {
-    SWFContext *swf = s->priv_data;
+    SWFEncContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
     PutBitContext p;
     uint8_t buf1[256];
@@ -343,7 +360,7 @@ static int swf_write_header(AVFormatContext *s)
 static int swf_write_video(AVFormatContext *s,
                            AVCodecParameters *par, const uint8_t *buf, int size)
 {
-    SWFContext *swf = s->priv_data;
+    SWFEncContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
 
     /* Flash Player limit */
@@ -448,7 +465,7 @@ static int swf_write_video(AVFormatContext *s,
 static int swf_write_audio(AVFormatContext *s,
                            AVCodecParameters *par, uint8_t *buf, int size)
 {
-    SWFContext *swf = s->priv_data;
+    SWFEncContext *swf = s->priv_data;
 
     /* Flash Player limit */
     if (swf->swf_frame_number == 16000)
@@ -480,26 +497,15 @@ static int swf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int swf_write_trailer(AVFormatContext *s)
 {
-    SWFContext *swf = s->priv_data;
+    SWFEncContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecParameters *par, *video_par;
-    int file_size, i;
-
-    video_par = NULL;
-    for(i=0;i<s->nb_streams;i++) {
-        par = s->streams[i]->codecpar;
-        if (par->codec_type == AVMEDIA_TYPE_VIDEO)
-            video_par = par;
-        else {
-            av_fifo_freep(&swf->audio_fifo);
-        }
-    }
+    int file_size;
 
     put_swf_tag(s, TAG_END);
     put_swf_end_tag(s);
 
     /* patch file size and number of frames if not streamed */
-    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && video_par) {
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && swf->video_par) {
         file_size = avio_tell(pb);
         avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, file_size);
@@ -514,18 +520,26 @@ static int swf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static void swf_deinit(AVFormatContext *s)
+{
+    SWFEncContext *swf = s->priv_data;
+
+    av_fifo_freep(&swf->audio_fifo);
+}
+
 #if CONFIG_SWF_MUXER
 AVOutputFormat ff_swf_muxer = {
     .name              = "swf",
     .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
     .mime_type         = "application/x-shockwave-flash",
     .extensions        = "swf",
-    .priv_data_size    = sizeof(SWFContext),
+    .priv_data_size    = sizeof(SWFEncContext),
     .audio_codec       = AV_CODEC_ID_MP3,
     .video_codec       = AV_CODEC_ID_FLV1,
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
+    .deinit            = swf_deinit,
     .flags             = AVFMT_TS_NONSTRICT,
 };
 #endif
@@ -534,12 +548,13 @@ AVOutputFormat ff_avm2_muxer = {
     .name              = "avm2",
     .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash) (AVM2)"),
     .mime_type         = "application/x-shockwave-flash",
-    .priv_data_size    = sizeof(SWFContext),
+    .priv_data_size    = sizeof(SWFEncContext),
     .audio_codec       = AV_CODEC_ID_MP3,
     .video_codec       = AV_CODEC_ID_FLV1,
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
+    .deinit            = swf_deinit,
     .flags             = AVFMT_TS_NONSTRICT,
 };
 #endif
