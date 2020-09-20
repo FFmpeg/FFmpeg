@@ -482,24 +482,13 @@ static int swf_write_trailer(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecParameters *par, *video_par;
-    int file_size, i;
-
-    video_par = NULL;
-    for(i=0;i<s->nb_streams;i++) {
-        par = s->streams[i]->codecpar;
-        if (par->codec_type == AVMEDIA_TYPE_VIDEO)
-            video_par = par;
-        else {
-            av_fifo_freep(&swf->audio_fifo);
-        }
-    }
+    int file_size;
 
     put_swf_tag(s, TAG_END);
     put_swf_end_tag(s);
 
     /* patch file size and number of frames if not streamed */
-    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && video_par) {
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && swf->video_par) {
         file_size = avio_tell(pb);
         avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, file_size);
@@ -514,6 +503,13 @@ static int swf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static void swf_deinit(AVFormatContext *s)
+{
+    SWFContext *swf = s->priv_data;
+
+    av_fifo_freep(&swf->audio_fifo);
+}
+
 #if CONFIG_SWF_MUXER
 AVOutputFormat ff_swf_muxer = {
     .name              = "swf",
@@ -526,6 +522,7 @@ AVOutputFormat ff_swf_muxer = {
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
+    .deinit            = swf_deinit,
     .flags             = AVFMT_TS_NONSTRICT,
 };
 #endif
@@ -540,6 +537,7 @@ AVOutputFormat ff_avm2_muxer = {
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
+    .deinit            = swf_deinit,
     .flags             = AVFMT_TS_NONSTRICT,
 };
 #endif
