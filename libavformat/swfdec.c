@@ -158,13 +158,18 @@ static int swf_read_header(AVFormatContext *s)
         swf->zbuf_out = av_malloc(ZBUF_SIZE);
         swf->zpb = avio_alloc_context(swf->zbuf_out, ZBUF_SIZE, 0, s,
                                       zlib_refill, NULL, NULL);
-        if (!swf->zbuf_in || !swf->zbuf_out || !swf->zpb)
+        if (!swf->zbuf_in || !swf->zbuf_out || !swf->zpb) {
+            av_freep(&swf->zbuf_in);
+            av_freep(&swf->zbuf_out);
+            avio_context_free(&swf->zpb);
             return AVERROR(ENOMEM);
+        }
         swf->zpb->seekable = 0;
         if (inflateInit(&swf->zstream) != Z_OK) {
             av_log(s, AV_LOG_ERROR, "Unable to init zlib context\n");
             av_freep(&swf->zbuf_in);
             av_freep(&swf->zbuf_out);
+            avio_context_free(&swf->zpb);
             return AVERROR(EINVAL);
         }
         pb = swf->zpb;
