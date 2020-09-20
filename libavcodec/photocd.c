@@ -323,8 +323,9 @@ static int photocd_decode_frame(AVCodecContext *avctx, void *data,
     else
         s->resolution = av_clip(4 - s->lowres, 0, 4);
 
-    avctx->width  = img_info[s->resolution].width;
-    avctx->height = img_info[s->resolution].height;
+    ret = ff_set_dimensions(avctx, img_info[s->resolution].width, img_info[s->resolution].height);
+    if (ret < 0)
+        return ret;
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
