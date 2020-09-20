@@ -34,6 +34,18 @@
 #include "libavcodec/get_bits.h"
 #include "swf.h"
 
+typedef struct SWFDecContext {
+    int samples_per_frame;
+    int frame_rate;
+#if CONFIG_ZLIB
+#define ZBUF_SIZE 4096
+    AVIOContext *zpb;
+    uint8_t *zbuf_in;
+    uint8_t *zbuf_out;
+    z_stream zstream;
+#endif
+} SWFDecContext;
+
 static const AVCodecTag swf_audio_codec_tags[] = {
     { AV_CODEC_ID_PCM_S16LE,  0x00 },
     { AV_CODEC_ID_ADPCM_SWF,  0x01 },
@@ -101,7 +113,7 @@ static int swf_probe(const AVProbeData *p)
 static int zlib_refill(void *opaque, uint8_t *buf, int buf_size)
 {
     AVFormatContext *s = opaque;
-    SWFContext *swf = s->priv_data;
+    SWFDecContext *swf = s->priv_data;
     z_stream *z = &swf->zstream;
     int ret;
 
@@ -132,7 +144,7 @@ retry:
 
 static int swf_read_header(AVFormatContext *s)
 {
-    SWFContext *swf = s->priv_data;
+    SWFDecContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
     int nbits, len, tag;
 
@@ -202,7 +214,7 @@ static AVStream *create_new_audio_stream(AVFormatContext *s, int id, int info)
 
 static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    SWFContext *swf = s->priv_data;
+    SWFDecContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *vst = NULL, *ast = NULL, *st = 0;
     int tag, len, i, frame, v, res;
@@ -525,7 +537,7 @@ bitmap_end_skip:
 #if CONFIG_ZLIB
 static av_cold int swf_read_close(AVFormatContext *avctx)
 {
-    SWFContext *s = avctx->priv_data;
+    SWFDecContext *s = avctx->priv_data;
     inflateEnd(&s->zstream);
     av_freep(&s->zbuf_in);
     av_freep(&s->zbuf_out);
@@ -537,7 +549,7 @@ static av_cold int swf_read_close(AVFormatContext *avctx)
 AVInputFormat ff_swf_demuxer = {
     .name           = "swf",
     .long_name      = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
-    .priv_data_size = sizeof(SWFContext),
+    .priv_data_size = sizeof(SWFDecContext),
     .read_probe     = swf_probe,
     .read_header    = swf_read_header,
     .read_packet    = swf_read_packet,
