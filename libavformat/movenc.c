@@ -4209,7 +4209,6 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
 {
     int64_t pos = avio_tell(pb);
     int i;
-    int64_t manifest_bit_rate = 0;
 
     static const uint8_t uuid[] = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
@@ -4252,15 +4251,9 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
             continue;
         }
 
-        if (track->par->bit_rate) {
-            manifest_bit_rate = track->par->bit_rate;
-        } else {
-            manifest_bit_rate = bit_rates.max_bit_rate;
-        }
-
-        avio_printf(pb, "<%s systemBitrate=\"%"PRId64"\">\n", type,
-                    manifest_bit_rate);
-        param_write_int(pb, "systemBitrate", manifest_bit_rate);
+        avio_printf(pb, "<%s systemBitrate=\"%"PRIu32"\">\n", type,
+                    bit_rates.avg_bit_rate);
+        param_write_int(pb, "systemBitrate", bit_rates.avg_bit_rate);
         param_write_int(pb, "trackID", track_id);
         param_write_string(pb, "systemLanguage", lang ? lang->value : "und");
 
