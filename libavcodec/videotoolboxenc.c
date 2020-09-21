@@ -1114,15 +1114,12 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         }
     }
 
-    if (vtctx->codec_id == AV_CODEC_ID_H264) {
-        // kVTCompressionPropertyKey_ProfileLevel is not available for HEVC
-        if (profile_level) {
-            status = VTSessionSetProperty(vtctx->session,
-                                        kVTCompressionPropertyKey_ProfileLevel,
-                                        profile_level);
-            if (status) {
-                av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d. Output will be encoded using a supported profile/level combination.\n", status);
-            }
+    if (profile_level) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_ProfileLevel,
+                                      profile_level);
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d. Output will be encoded using a supported profile/level combination.\n", status);
         }
     }
 
