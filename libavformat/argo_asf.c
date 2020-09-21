@@ -238,9 +238,31 @@ static int argo_asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index   = st->index;
     pkt->duration       = asf->ckhdr.num_samples * (ret / st->codecpar->block_align);
+    pkt->pts            = asf->blocks_read * asf->ckhdr.num_samples;
     asf->blocks_read   += (ret / st->codecpar->block_align);
 
     pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
+    return 0;
+}
+
+static int argo_asf_seek(AVFormatContext *s, int stream_index,
+                         int64_t pts, int flags)
+{
+    ArgoASFDemuxContext *asf = s->priv_data;
+    AVStream *st             = s->streams[stream_index];
+    int64_t offset;
+    uint32_t block = pts / asf->ckhdr.num_samples;
+
+    if (block >= asf->ckhdr.num_blocks)
+        return -1;
+
+    offset = asf->fhdr.chunk_offset + ASF_CHUNK_HEADER_SIZE +
+             (block * st->codecpar->block_align);
+
+    if ((offset = avio_seek(s->pb, offset, SEEK_SET)) < 0)
+        return offset;
+
+    asf->blocks_read = block;
     return 0;
 }
 
@@ -255,7 +277,8 @@ AVInputFormat ff_argo_asf_demuxer = {
     .priv_data_size = sizeof(ArgoASFDemuxContext),
     .read_probe     = argo_asf_probe,
     .read_header    = argo_asf_read_header,
-    .read_packet    = argo_asf_read_packet
+    .read_packet    = argo_asf_read_packet,
+    .read_seek      = argo_asf_seek,
 };
 #endif
 
