@@ -789,7 +789,6 @@ static int get_cv_pixel_format(AVCodecContext* avctx,
         *av_pixel_format = range == AVCOL_RANGE_JPEG ?
                                         kCVPixelFormatType_420YpCbCr10BiPlanarFullRange :
                                         kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
-        *av_pixel_format = kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
     } else {
         return AVERROR(EINVAL);
     }
