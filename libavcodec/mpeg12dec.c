@@ -50,6 +50,8 @@
 #include "version.h"
 #include "xvmc_internal.h"
 
+#define A53_MAX_CC_COUNT 2000
+
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
@@ -2240,7 +2242,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                                             * UINT64_C(3));
             int ret;
 
-            if (new_size > INT_MAX)
+            if (new_size > 3*A53_MAX_CC_COUNT)
                 return AVERROR(EINVAL);
 
             ret = av_buffer_realloc(&s1->a53_buf_ref, new_size);
@@ -2263,7 +2265,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             int old_size = s1->a53_buf_ref ? s1->a53_buf_ref->size : 0;
             const uint64_t new_size = (old_size + cc_count
                                             * UINT64_C(3));
-            if (new_size > INT_MAX)
+            if (new_size > 3*A53_MAX_CC_COUNT)
                 return AVERROR(EINVAL);
 
             ret = av_buffer_realloc(&s1->a53_buf_ref, new_size);
@@ -2333,7 +2335,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             int old_size = s1->a53_buf_ref ? s1->a53_buf_ref->size : 0;
             const uint64_t new_size = (old_size + cc_count
                                             * UINT64_C(6));
-            if (new_size > INT_MAX)
+            if (new_size > 3*A53_MAX_CC_COUNT)
                 return AVERROR(EINVAL);
 
             ret = av_buffer_realloc(&s1->a53_buf_ref, new_size);
