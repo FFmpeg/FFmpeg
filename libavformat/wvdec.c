@@ -79,8 +79,9 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
 {
     WVContext *wc = ctx->priv_data;
     int ret;
-    int rate, rate_x, bpp, chan;
+    int rate, bpp, chan;
     uint32_t chmask, flags;
+    unsigned rate_x;
 
     wc->pos = avio_tell(pb);
 
@@ -192,7 +193,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
             if (id & 0x40)
                 avio_skip(pb, 1);
         }
-        if (rate == -1) {
+        if (rate == -1 || rate * (uint64_t)rate_x >= INT_MAX) {
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot determine custom sampling rate\n");
             return AVERROR_INVALIDDATA;

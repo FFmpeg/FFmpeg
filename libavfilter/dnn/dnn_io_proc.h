@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Sergey Lavrushkin
+ * Copyright (c) 2020
  *
  * This file is part of FFmpeg.
  *
@@ -20,20 +20,17 @@
 
 /**
  * @file
- * DNN inference functions interface for TensorFlow backend.
+ * DNN input&output process between AVFrame and DNNData.
  */
 
 
-#ifndef AVFILTER_DNN_DNN_BACKEND_TF_H
-#define AVFILTER_DNN_DNN_BACKEND_TF_H
+#ifndef AVFILTER_DNN_DNN_IO_PROC_H
+#define AVFILTER_DNN_DNN_IO_PROC_H
 
 #include "../dnn_interface.h"
+#include "libavutil/frame.h"
 
-DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, void *userdata);
-
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame);
-
-void ff_dnn_free_model_tf(DNNModel **model);
+DNNReturnType proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx);
+DNNReturnType proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx);
 
 #endif

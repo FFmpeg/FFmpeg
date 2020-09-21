@@ -69,7 +69,7 @@ static int *create_all_formats(int n)
             count++;
     }
 
-    if (!(fmts = av_malloc((count+1) * sizeof(int))))
+    if (!(fmts = av_malloc_array(count + 1, sizeof(*fmts))))
         return NULL;
     for (j = 0, i = 0; i < n; i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
@@ -386,6 +386,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     AVDictionary *frame_metadata;
     int ret, i;
     int size = 0;
+    AVStream *st;
 
     if (lavfi->subcc_packet.size) {
         av_packet_move_ref(pkt, &lavfi->subcc_packet);
@@ -426,19 +427,20 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     av_buffersink_get_frame_flags(lavfi->sinks[min_pts_sink_idx], frame, 0);
     stream_idx = lavfi->sink_stream_map[min_pts_sink_idx];
+    st = avctx->streams[stream_idx];
 
-    if (frame->width /* FIXME best way of testing a video */) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         size = av_image_get_buffer_size(frame->format, frame->width, frame->height, 1);
         if ((ret = av_new_packet(pkt, size)) < 0)
-            return ret;
+            goto fail;
 
         av_image_copy_to_buffer(pkt->data, size, (const uint8_t **)frame->data, frame->linesize,
                                 frame->format, frame->width, frame->height, 1);
-    } else if (frame->channels /* FIXME test audio */) {
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         size = frame->nb_samples * av_get_bytes_per_sample(frame->format) *
                                    frame->channels;
         if ((ret = av_new_packet(pkt, size)) < 0)
-            return ret;
+            goto fail;;
         memcpy(pkt->data, frame->data[0], size);
     }
 
@@ -447,18 +449,19 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         int size;
         uint8_t *metadata = av_packet_pack_dictionary(frame_metadata, &size);
 
-        if (!metadata)
-            return AVERROR(ENOMEM);
+        if (!metadata) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         if ((ret = av_packet_add_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
                                            metadata, size)) < 0) {
             av_freep(&metadata);
-            return ret;
+            goto fail;;
         }
     }
 
     if ((ret = create_subcc_packet(avctx, frame, min_pts_sink_idx)) < 0) {
-        av_frame_unref(frame);
-        return ret;
+        goto fail;
     }
 
     pkt->stream_index = stream_idx;
@@ -466,6 +469,10 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     pkt->pos = frame->pkt_pos;
     av_frame_unref(frame);
     return size;
+fail:
+    av_frame_unref(frame);
+    return ret;
+
 }
 
 #define OFFSET(x) offsetof(LavfiContext, x)

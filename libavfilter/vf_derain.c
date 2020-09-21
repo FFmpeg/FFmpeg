@@ -39,11 +39,8 @@ typedef struct DRContext {
     DNNBackendType     backend_type;
     DNNModule         *dnn_module;
     DNNModel          *model;
-    DNNData            input;
-    DNNData            output;
 } DRContext;
 
-#define CLIP(x, min, max) (x < min ? min : (x > max ? max : x))
 #define OFFSET(x) offsetof(DRContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption derain_options[] = {
@@ -74,25 +71,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, formats);
 }
 
-static int config_inputs(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx          = inlink->dst;
-    DRContext *dr_context         = ctx->priv;
-    DNNReturnType result;
-
-    dr_context->input.width    = inlink->w;
-    dr_context->input.height   = inlink->h;
-    dr_context->input.channels = 3;
-
-    result = (dr_context->model->set_input)(dr_context->model->model, &dr_context->input, "x");
-    if (result != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "could not set input and output for the model\n");
-        return AVERROR(EIO);
-    }
-
-    return 0;
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
@@ -100,41 +78,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     DRContext *dr_context = ctx->priv;
     DNNReturnType dnn_result;
     const char *model_output_name = "y";
+    AVFrame *out;
 
-    AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_log(ctx, AV_LOG_ERROR, "could not allocate memory for output frame\n");
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-
     av_frame_copy_props(out, in);
 
-    for (int i = 0; i < in->height; i++){
-        for(int j = 0; j < in->width * 3; j++){
-            int k = i * in->linesize[0] + j;
-            int t = i * in->width * 3 + j;
-            ((float *)dr_context->input.data)[t] = in->data[0][k] / 255.0;
-        }
-    }
-
-    dnn_result = (dr_context->dnn_module->execute_model)(dr_context->model, &dr_context->output, &model_output_name, 1);
+    dnn_result = (dr_context->dnn_module->execute_model)(dr_context->model, "x", in, &model_output_name, 1, out);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
+        av_frame_free(&in);
         return AVERROR(EIO);
-    }
-
-    out->height = dr_context->output.height;
-    out->width  = dr_context->output.width;
-    outlink->h  = dr_context->output.height;
-    outlink->w  = dr_context->output.width;
-
-    for (int i = 0; i < out->height; i++){
-        for(int j = 0; j < out->width * 3; j++){
-            int k = i * out->linesize[0] + j;
-            int t = i * out->width * 3 + j;
-            out->data[0][k] = CLIP((int)((((float *)dr_context->output.data)[t]) * 255), 0, 255);
-        }
     }
 
     av_frame_free(&in);
@@ -146,7 +104,6 @@ static av_cold int init(AVFilterContext *ctx)
 {
     DRContext *dr_context = ctx->priv;
 
-    dr_context->input.dt = DNN_FLOAT;
     dr_context->dnn_module = ff_get_dnn_module(dr_context->backend_type);
     if (!dr_context->dnn_module) {
         av_log(ctx, AV_LOG_ERROR, "could not create DNN module for requested backend\n");
@@ -161,7 +118,7 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    dr_context->model = (dr_context->dnn_module->load_model)(dr_context->model_filename, NULL);
+    dr_context->model = (dr_context->dnn_module->load_model)(dr_context->model_filename, NULL, NULL);
     if (!dr_context->model) {
         av_log(ctx, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EINVAL);
@@ -184,7 +141,6 @@ static const AVFilterPad derain_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_inputs,
         .filter_frame = filter_frame,
     },
     { NULL }
