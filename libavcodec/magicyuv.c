@@ -529,6 +529,14 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt = AV_PIX_FMT_GRAY10;
         s->bps = 10;
         break;
+    case 0x7b:
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
+        s->hshift[1] =
+        s->vshift[1] =
+        s->hshift[2] =
+        s->vshift[2] = 1;
+        s->bps = 10;
+        break;
     default:
         avpriv_request_sample(avctx, "Format 0x%X", format);
         return AVERROR_PATCHWELCOME;
