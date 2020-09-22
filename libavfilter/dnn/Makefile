@@ -3,6 +3,7 @@ OBJS-$(CONFIG_DNN)                           += dnn/dnn_io_proc.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layers.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_avgpool.o
+OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_dense.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_pad.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_conv2d.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_depth2space.o
