@@ -245,21 +245,20 @@ static av_noinline int decode_huff(AVCodecContext *avctx, AVFrame *frame,
         int x2, idx;
 
         for (; get_bits_left(&g) > 0;) {
-            if ((show_bits(&g, 24) & 0xfff000) == 0xfff000)
+            if (show_bits(&g, 12) == 0xfff)
                 break;
             skip_bits(&g, 8);
         }
 
-        shiftreg = show_bits_long(&g, 32) & 0xffffff00;
-        while (shiftreg != 0xfffffe00) {
+        shiftreg = show_bits(&g, 24);
+        while (shiftreg != 0xfffffe) {
             if (get_bits_left(&g) <= 0)
                 return AVERROR_INVALIDDATA;
             skip_bits(&g, 1);
-            shiftreg = show_bits_long(&g, 32) & 0xffffff00;
+            shiftreg = show_bits(&g, 24);
         }
-        skip_bits(&g, 16);
-        y = show_bits_long(&g, 23) & 0x1fff;
-        skip_bits(&g, 8);
+        skip_bits(&g, 24);
+        y = show_bits(&g, 15) & 0x1fff;
         if (y >= height)
             break;
         type = get_bits(&g, 2);
