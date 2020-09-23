@@ -394,8 +394,13 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
     while (get_bits_left(gbit) >= 8) {
         int b = get_bits(gbit, 1);
         int x = get_bits(gbit, 7);
-        int l = get_bitsz(gbit, b * 8) + 1;
+        int l = 1;
 
+        if (b) {
+            if (get_bits_left(gbit) < 8)
+                break;
+            l += get_bits(gbit, 8);
+        }
         k = j + l;
         if (k > max || x == 0 || x > 32) {
             av_log(avctx, AV_LOG_ERROR, "Invalid Huffman codes\n");
