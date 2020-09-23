@@ -614,6 +614,8 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
                 return AVERROR_INVALIDDATA;
 
             s->slices[i][j].size = next_offset - offset;
+            if (s->slices[i][j].size < 2)
+                return AVERROR_INVALIDDATA;
             offset = next_offset;
         }
 
