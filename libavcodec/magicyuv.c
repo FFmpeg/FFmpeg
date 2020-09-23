@@ -270,27 +270,26 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         int sheight = AV_CEIL_RSHIFT(s->slice_height, s->vshift[i]);
         ptrdiff_t fake_stride = p->linesize[i] * (1 + interlaced);
         ptrdiff_t stride = p->linesize[i];
+        const uint8_t *slice = s->buf + s->slices[i][j].start;
         int flags, pred;
-        int ret = init_get_bits8(&gb, s->buf + s->slices[i][j].start,
-                                 s->slices[i][j].size);
 
-        if (ret < 0)
-            return ret;
-
-        flags = get_bits(&gb, 8);
-        pred  = get_bits(&gb, 8);
+        flags = bytestream_get_byte(&slice);
+        pred  = bytestream_get_byte(&slice);
 
         dst = p->data[i] + j * sheight * stride;
         if (flags & 1) {
-            if (get_bits_left(&gb) < 8* width * height)
+            if (s->slices[i][j].size - 2 < width * height)
                 return AVERROR_INVALIDDATA;
             for (k = 0; k < height; k++) {
-                for (x = 0; x < width; x++)
-                    dst[x] = get_bits(&gb, 8);
-
+                bytestream_get_buffer(&slice, dst, width);
                 dst += stride;
             }
         } else {
+            int ret = init_get_bits8(&gb, slice, s->slices[i][j].size - 2);
+
+            if (ret < 0)
+                return ret;
+
             for (k = 0; k < height; k++) {
                 for (x = 0; x < width; x++) {
                     int pix;
@@ -385,21 +384,25 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
     return 0;
 }
 
-static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
+static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
+                         int table_size, int max)
 {
     MagicYUVContext *s = avctx->priv_data;
+    GetByteContext gb;
     HuffEntry he[4096];
     int i = 0, j = 0, k;
 
-    while (get_bits_left(gbit) >= 8) {
-        int b = get_bits(gbit, 1);
-        int x = get_bits(gbit, 7);
+    bytestream2_init(&gb, table, table_size);
+
+    while (bytestream2_get_bytes_left(&gb) > 0) {
+        int b = bytestream2_peek_byteu(&gb) &  0x80;
+        int x = bytestream2_get_byteu(&gb)  & ~0x80;
         int l = 1;
 
         if (b) {
-            if (get_bits_left(gbit) < 8)
+            if (bytestream2_get_bytes_left(&gb) <= 0)
                 break;
-            l += get_bits(gbit, 8);
+            l += bytestream2_get_byteu(&gb);
         }
         k = j + l;
         if (k > max || x == 0 || x > 32) {
@@ -440,7 +443,6 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     ThreadFrame frame = { .f = data };
     AVFrame *p = data;
     GetByteContext gbyte;
-    GetBitContext gbit;
     uint32_t first_offset, offset, next_offset, header_size, slice_width;
     int width, height, format, version, table_size;
     int ret, i, j;
@@ -632,11 +634,8 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     if (table_size < 2)
         return AVERROR_INVALIDDATA;
 
-    ret = init_get_bits8(&gbit, avpkt->data + bytestream2_tell(&gbyte), table_size);
-    if (ret < 0)
-        return ret;
-
-    ret = build_huffman(avctx, &gbit, s->max);
+    ret = build_huffman(avctx, avpkt->data + bytestream2_tell(&gbyte),
+                        table_size, s->max);
     if (ret < 0)
         return ret;
 
