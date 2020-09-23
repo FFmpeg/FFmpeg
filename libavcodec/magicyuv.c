@@ -442,23 +442,26 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     MagicYUVContext *s = avctx->priv_data;
     ThreadFrame frame = { .f = data };
     AVFrame *p = data;
-    GetByteContext gbyte;
+    GetByteContext gb;
     uint32_t first_offset, offset, next_offset, header_size, slice_width;
     int width, height, format, version, table_size;
     int ret, i, j;
 
-    bytestream2_init(&gbyte, avpkt->data, avpkt->size);
-    if (bytestream2_get_le32(&gbyte) != MKTAG('M', 'A', 'G', 'Y'))
+    if (avpkt->size < 36)
         return AVERROR_INVALIDDATA;
 
-    header_size = bytestream2_get_le32(&gbyte);
+    bytestream2_init(&gb, avpkt->data, avpkt->size);
+    if (bytestream2_get_le32u(&gb) != MKTAG('M', 'A', 'G', 'Y'))
+        return AVERROR_INVALIDDATA;
+
+    header_size = bytestream2_get_le32u(&gb);
     if (header_size < 32 || header_size >= avpkt->size) {
         av_log(avctx, AV_LOG_ERROR,
                "header or packet too small %"PRIu32"\n", header_size);
         return AVERROR_INVALIDDATA;
     }
 
-    version = bytestream2_get_byte(&gbyte);
+    version = bytestream2_get_byteu(&gb);
     if (version != 7) {
         avpriv_request_sample(avctx, "Version %d", version);
         return AVERROR_PATCHWELCOME;
@@ -471,7 +474,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     s->decorrelate = 0;
     s->bps = 8;
 
-    format = bytestream2_get_byte(&gbyte);
+    format = bytestream2_get_byteu(&gb);
     switch (format) {
     case 0x65:
         avctx->pix_fmt = AV_PIX_FMT_GBRP;
@@ -552,34 +555,34 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     s->magy_decode_slice = s->bps == 8 ? magy_decode_slice : magy_decode_slice10;
     s->planes = av_pix_fmt_count_planes(avctx->pix_fmt);
 
-    bytestream2_skip(&gbyte, 1);
-    s->color_matrix = bytestream2_get_byte(&gbyte);
-    s->flags        = bytestream2_get_byte(&gbyte);
+    bytestream2_skipu(&gb, 1);
+    s->color_matrix = bytestream2_get_byteu(&gb);
+    s->flags        = bytestream2_get_byteu(&gb);
     s->interlaced   = !!(s->flags & 2);
-    bytestream2_skip(&gbyte, 3);
+    bytestream2_skipu(&gb, 3);
 
-    width  = bytestream2_get_le32(&gbyte);
-    height = bytestream2_get_le32(&gbyte);
+    width  = bytestream2_get_le32u(&gb);
+    height = bytestream2_get_le32u(&gb);
     ret = ff_set_dimensions(avctx, width, height);
     if (ret < 0)
         return ret;
 
-    slice_width = bytestream2_get_le32(&gbyte);
+    slice_width = bytestream2_get_le32u(&gb);
     if (slice_width != avctx->coded_width) {
         avpriv_request_sample(avctx, "Slice width %"PRIu32, slice_width);
         return AVERROR_PATCHWELCOME;
     }
-    s->slice_height = bytestream2_get_le32(&gbyte);
+    s->slice_height = bytestream2_get_le32u(&gb);
     if (s->slice_height <= 0 || s->slice_height > INT_MAX - avctx->coded_height) {
         av_log(avctx, AV_LOG_ERROR,
                "invalid slice height: %d\n", s->slice_height);
         return AVERROR_INVALIDDATA;
     }
 
-    bytestream2_skip(&gbyte, 4);
+    bytestream2_skipu(&gb, 4);
 
     s->nb_slices = (avctx->coded_height + s->slice_height - 1) / s->slice_height;
-    if (s->nb_slices > INT_MAX / sizeof(Slice)) {
+    if (s->nb_slices > INT_MAX / FFMAX(sizeof(Slice), 4 * 5)) {
         av_log(avctx, AV_LOG_ERROR,
                "invalid number of slices: %d\n", s->nb_slices);
         return AVERROR_INVALIDDATA;
@@ -596,12 +599,14 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+    if (bytestream2_get_bytes_left(&gb) <= s->nb_slices * s->planes * 5)
+        return AVERROR_INVALIDDATA;
     for (i = 0; i < s->planes; i++) {
         av_fast_malloc(&s->slices[i], &s->slices_size[i], s->nb_slices * sizeof(Slice));
         if (!s->slices[i])
             return AVERROR(ENOMEM);
 
-        offset = bytestream2_get_le32(&gbyte);
+        offset = bytestream2_get_le32u(&gb);
         if (offset >= avpkt->size - header_size)
             return AVERROR_INVALIDDATA;
 
@@ -611,7 +616,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         for (j = 0; j < s->nb_slices - 1; j++) {
             s->slices[i][j].start = offset + header_size;
 
-            next_offset = bytestream2_get_le32(&gbyte);
+            next_offset = bytestream2_get_le32u(&gb);
             if (next_offset <= offset || next_offset >= avpkt->size - header_size)
                 return AVERROR_INVALIDDATA;
 
@@ -625,16 +630,16 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         s->slices[i][j].size  = avpkt->size - s->slices[i][j].start;
     }
 
-    if (bytestream2_get_byte(&gbyte) != s->planes)
+    if (bytestream2_get_byteu(&gb) != s->planes)
         return AVERROR_INVALIDDATA;
 
-    bytestream2_skip(&gbyte, s->nb_slices * s->planes);
+    bytestream2_skipu(&gb, s->nb_slices * s->planes);
 
-    table_size = header_size + first_offset - bytestream2_tell(&gbyte);
+    table_size = header_size + first_offset - bytestream2_tell(&gb);
     if (table_size < 2)
         return AVERROR_INVALIDDATA;
 
-    ret = build_huffman(avctx, avpkt->data + bytestream2_tell(&gbyte),
+    ret = build_huffman(avctx, avpkt->data + bytestream2_tell(&gb),
                         table_size, s->max);
     if (ret < 0)
         return ret;
