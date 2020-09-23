@@ -77,24 +77,23 @@ typedef struct MagicYUVContext {
 static int huff_cmp_len(const void *a, const void *b)
 {
     const HuffEntry *aa = a, *bb = b;
-    return (aa->len - bb->len) * 4096 + bb->sym - aa->sym;
+    return (bb->len - aa->len) * 4096 + aa->sym - bb->sym;
 }
 
 static int huff_build(HuffEntry he[], VLC *vlc, int nb_elems)
 {
     uint32_t code;
-    int i;
 
     AV_QSORT(he, nb_elems, HuffEntry, huff_cmp_len);
 
     code = 1;
-    for (i = nb_elems - 1; i >= 0; i--) {
+    for (unsigned i = 0; i < nb_elems; i++) {
         he[i].code = code >> (32 - he[i].len);
         code += 0x80000000u >> (he[i].len - 1);
     }
 
     ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[nb_elems - 1].len, 12), nb_elems,
+    return ff_init_vlc_sparse(vlc, FFMIN(he[0].len, 12), nb_elems,
                               &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
                               &he[0].code, sizeof(he[0]), sizeof(he[0].code),
                               &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
