@@ -25,7 +25,6 @@
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 
 #include "libavutil/pixdesc.h"
-#include "libavutil/qsort.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -74,26 +73,24 @@ typedef struct MagicYUVContext {
     LLVidDSPContext   llviddsp;
 } MagicYUVContext;
 
-static int huff_cmp_len(const void *a, const void *b)
+static int huff_build(HuffEntry he[], uint16_t codes_count[33],
+                      VLC *vlc, int nb_elems)
 {
-    const HuffEntry *aa = a, *bb = b;
-    return (bb->len - aa->len) * 4096 + aa->sym - bb->sym;
-}
+    unsigned nb_codes = 0, max = 0;
 
-static int huff_build(HuffEntry he[], VLC *vlc, int nb_elems)
-{
-    uint32_t code;
-
-    AV_QSORT(he, nb_elems, HuffEntry, huff_cmp_len);
-
-    code = 0;
-    for (unsigned i = 0; i < nb_elems; i++) {
-        he[i].code = code >> (32 - he[i].len);
-        code += 0x80000000u >> (he[i].len - 1);
+    for (int i = 32; i > 0; i--) {
+        uint16_t curr = codes_count[i];   // # of leafs of length i
+        codes_count[i] = nb_codes / 2;    // # of non-leaf nodes on level i
+        nb_codes = codes_count[i] + curr; // # of nodes on level i
+        if (curr && !max)
+            max = i;
     }
 
-    ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, FFMIN(he[0].len, 12), nb_elems,
+    for (unsigned i = 0; i < nb_elems; i++) {
+        he[i].code = codes_count[he[i].len];
+        codes_count[he[i].len]++;
+    }
+    return ff_init_vlc_sparse(vlc, FFMIN(max, 12), nb_elems,
                               &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
                               &he[0].code, sizeof(he[0]), sizeof(he[0].code),
                               &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
@@ -389,6 +386,7 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
     MagicYUVContext *s = avctx->priv_data;
     GetByteContext gb;
     HuffEntry he[4096];
+    uint16_t length_count[33] = { 0 };
     int i = 0, j = 0, k;
 
     bytestream2_init(&gb, table, table_size);
@@ -409,6 +407,7 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
             return AVERROR_INVALIDDATA;
         }
 
+        length_count[x] += l;
         for (; j < k; j++) {
             he[j].sym = j;
             he[j].len = x;
@@ -416,7 +415,7 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
 
         if (j == max) {
             j = 0;
-            if (huff_build(he, &s->vlc[i], max)) {
+            if (huff_build(he, length_count, &s->vlc[i], max)) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -424,6 +423,7 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
             if (i == s->planes) {
                 break;
             }
+            memset(length_count, 0, sizeof(length_count));
         }
     }
 
