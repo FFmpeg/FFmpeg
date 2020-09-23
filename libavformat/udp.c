@@ -650,9 +650,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    if (s->pkt_size > 0)
-        h->max_packet_size = s->pkt_size;
-
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "reuse", p)) {
