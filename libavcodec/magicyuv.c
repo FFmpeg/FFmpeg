@@ -46,9 +46,8 @@ typedef enum Prediction {
 } Prediction;
 
 typedef struct HuffEntry {
-    uint16_t sym;
     uint8_t  len;
-    uint32_t code;
+    uint16_t code;
 } HuffEntry;
 
 typedef struct MagicYUVContext {
@@ -90,10 +89,9 @@ static int huff_build(HuffEntry he[], uint16_t codes_count[33],
         he[i].code = codes_count[he[i].len];
         codes_count[he[i].len]++;
     }
-    return ff_init_vlc_sparse(vlc, FFMIN(max, 12), nb_elems,
-                              &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
-                              &he[0].code, sizeof(he[0]), sizeof(he[0].code),
-                              &he[0].sym,  sizeof(he[0]), sizeof(he[0].sym),  0);
+    return init_vlc(vlc, FFMIN(max, 12), nb_elems,
+                    &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
+                    &he[0].code, sizeof(he[0]), sizeof(he[0].code), 0);
 }
 
 static void magicyuv_median_pred16(uint16_t *dst, const uint16_t *src1,
@@ -408,10 +406,8 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
         }
 
         length_count[x] += l;
-        for (; j < k; j++) {
-            he[j].sym = j;
+        for (; j < k; j++)
             he[j].len = x;
-        }
 
         if (j == max) {
             j = 0;
