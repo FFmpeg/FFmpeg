@@ -86,7 +86,7 @@ static int huff_build(HuffEntry he[], VLC *vlc, int nb_elems)
 
     AV_QSORT(he, nb_elems, HuffEntry, huff_cmp_len);
 
-    code = 1;
+    code = 0;
     for (unsigned i = 0; i < nb_elems; i++) {
         he[i].code = code >> (32 - he[i].len);
         code += 0x80000000u >> (he[i].len - 1);
