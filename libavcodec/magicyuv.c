@@ -63,7 +63,7 @@ typedef struct MagicYUVContext {
     int               color_matrix;   // video color matrix
     int               flags;
     int               interlaced;     // video is interlaced
-    uint8_t          *buf;            // pointer to AVPacket->data
+    const uint8_t    *buf;            // pointer to AVPacket->data
     int               hshift[4];
     int               vshift[4];
     Slice            *slices[4];      // slice bitstream positions for each plane
