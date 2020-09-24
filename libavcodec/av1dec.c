@@ -854,6 +854,8 @@ static void av1_decode_flush(AVCodecContext *avctx)
     av1_frame_unref(avctx, &s->cur_frame);
     s->raw_frame_header = NULL;
     s->raw_seq = NULL;
+
+    ff_cbs_flush(s->cbc);
 }
 
 AVCodec ff_av1_decoder = {
