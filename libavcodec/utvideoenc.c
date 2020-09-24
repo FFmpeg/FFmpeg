@@ -37,6 +37,25 @@
 #include "utvideo.h"
 #include "huffman.h"
 
+typedef struct HuffEntry {
+    uint16_t sym;
+    uint8_t  len;
+    uint32_t code;
+} HuffEntry;
+
+#if FF_API_PRIVATE_OPT
+static const int ut_pred_order[5] = {
+    PRED_LEFT, PRED_MEDIAN, PRED_MEDIAN, PRED_NONE, PRED_GRADIENT
+};
+#endif
+
+/* Compare huffman tree nodes */
+static int ut_huff_cmp_len(const void *a, const void *b)
+{
+    const HuffEntry *aa = a, *bb = b;
+    return (aa->len - bb->len)*256 + aa->sym - bb->sym;
+}
+
 /* Compare huffentry symbols */
 static int huff_cmp_sym(const void *a, const void *b)
 {
@@ -139,7 +158,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 
     /* Convert from libavcodec prediction type to Ut Video's */
     if (avctx->prediction_method)
-        c->frame_pred = ff_ut_pred_order[avctx->prediction_method];
+        c->frame_pred = ut_pred_order[avctx->prediction_method];
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -340,7 +359,7 @@ static void calculate_codes(HuffEntry *he)
     int last, i;
     uint32_t code;
 
-    qsort(he, 256, sizeof(*he), ff_ut_huff_cmp_len);
+    qsort(he, 256, sizeof(*he), ut_huff_cmp_len);
 
     last = 255;
     while (he[last].len == 255 && last)
