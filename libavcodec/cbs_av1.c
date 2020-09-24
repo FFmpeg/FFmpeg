@@ -1194,6 +1194,19 @@ static int cbs_av1_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static void cbs_av1_flush(CodedBitstreamContext *ctx)
+{
+    CodedBitstreamAV1Context *priv = ctx->priv_data;
+
+    av_buffer_unref(&priv->frame_header_ref);
+    priv->sequence_header = NULL;
+    priv->frame_header = NULL;
+
+    memset(priv->ref, 0, sizeof(priv->ref));
+    priv->operating_point_idc = 0;
+    priv->seen_frame_header = 0;
+}
+
 static void cbs_av1_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamAV1Context *priv = ctx->priv_data;
@@ -1250,5 +1263,6 @@ const CodedBitstreamType ff_cbs_type_av1 = {
     .write_unit        = &cbs_av1_write_obu,
     .assemble_fragment = &cbs_av1_assemble_fragment,
 
+    .flush             = &cbs_av1_flush,
     .close             = &cbs_av1_close,
 };
