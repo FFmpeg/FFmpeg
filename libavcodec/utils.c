@@ -1043,7 +1043,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     av_freep(&avctx->subtitle_header);
-    if (avci) {
+
         av_frame_free(&avci->to_free);
         av_frame_free(&avci->compat_decode_frame);
         av_frame_free(&avci->buffer_frame);
@@ -1056,7 +1056,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_bsf_free(&avci->bsf);
 
         av_buffer_unref(&avci->pool);
-    }
     av_freep(&avci);
     avctx->internal = NULL;
     avctx->codec = NULL;
