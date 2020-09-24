@@ -382,10 +382,13 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void setup_qtables(AVCodecContext *avctx, int quantizer)
+static int setup_qtables(AVCodecContext *avctx, int quantizer)
 {
     MobiClipContext *s = avctx->priv_data;
     int qx, qy;
+
+    if (quantizer < 12 || quantizer > 161)
+        return AVERROR_INVALIDDATA;
 
     s->quantizer = quantizer;
 
@@ -400,6 +403,8 @@ static void setup_qtables(AVCodecContext *avctx, int quantizer)
 
     for (int i = 0; i < 20; i++)
         s->pre[i] = 9;
+
+    return 0;
 }
 
 static void inverse4(int *rs)
@@ -1313,7 +1318,10 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         s->moflex = get_bits1(gb);
         s->dct_tab_idx = get_bits1(gb);
 
-        setup_qtables(avctx, get_bits(gb, 6));
+        ret = setup_qtables(avctx, get_bits(gb, 6));
+        if (ret < 0)
+            return ret;
+
         for (int y = 0; y < avctx->height; y += 16) {
             for (int x = 0; x < avctx->width; x += 16) {
                 ret = decode_macroblock(avctx, frame, x, y, get_bits1(gb));
@@ -1323,10 +1331,6 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         }
     } else {
         MotionXY *motion = s->motion;
-        int quantizer = s->quantizer + get_se_golomb(gb);
-
-        if (quantizer < 12 || quantizer > 161)
-            return AVERROR_INVALIDDATA;
 
         memset(motion, 0, s->motion_size);
 
@@ -1334,7 +1338,10 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         frame->key_frame = 0;
         s->dct_tab_idx = 0;
 
-        setup_qtables(avctx, quantizer);
+        ret = setup_qtables(avctx, s->quantizer + get_se_golomb(gb));
+        if (ret < 0)
+            return ret;
+
         for (int y = 0; y < avctx->height; y += 16) {
             for (int x = 0; x < avctx->width; x += 16) {
                 int idx;
