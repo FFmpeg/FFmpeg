@@ -1037,7 +1037,7 @@ free_and_end:
     if (av_codec_is_encoder(avctx->codec)) {
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
-    av_frame_free(&avctx->coded_frame);
+        av_frame_free(&avctx->coded_frame);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         av_freep(&avctx->extradata);
@@ -1048,18 +1048,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_freep(&avctx->priv_data);
     av_freep(&avctx->subtitle_header);
 
-        av_frame_free(&avci->to_free);
-        av_frame_free(&avci->compat_decode_frame);
-        av_frame_free(&avci->buffer_frame);
-        av_packet_free(&avci->compat_encode_packet);
-        av_packet_free(&avci->buffer_pkt);
-        av_packet_free(&avci->last_pkt_props);
+    av_frame_free(&avci->to_free);
+    av_frame_free(&avci->compat_decode_frame);
+    av_frame_free(&avci->buffer_frame);
+    av_packet_free(&avci->compat_encode_packet);
+    av_packet_free(&avci->buffer_pkt);
+    av_packet_free(&avci->last_pkt_props);
 
-        av_packet_free(&avci->ds.in_pkt);
-        av_frame_free(&avci->es.in_frame);
-        av_bsf_free(&avci->bsf);
+    av_packet_free(&avci->ds.in_pkt);
+    av_frame_free(&avci->es.in_frame);
+    av_bsf_free(&avci->bsf);
 
-        av_buffer_unref(&avci->pool);
+    av_buffer_unref(&avci->pool);
     av_freep(&avci);
     avctx->internal = NULL;
     avctx->codec = NULL;
