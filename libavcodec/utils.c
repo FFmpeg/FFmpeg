@@ -1030,7 +1030,7 @@ free_and_end:
     if (HAVE_THREADS && avci->thread_ctx)
         ff_thread_free(avctx);
 
-    if (codec->priv_class && codec->priv_data_size)
+    if (codec->priv_class && avctx->priv_data)
         av_opt_free(avctx->priv_data);
     av_opt_free(avctx);
 
