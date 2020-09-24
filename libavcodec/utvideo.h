@@ -99,6 +99,5 @@ typedef struct HuffEntry {
 
 /* Compare huffman tree nodes */
 int ff_ut_huff_cmp_len(const void *a, const void *b);
-int ff_ut10_huff_cmp_len(const void *a, const void *b);
 
 #endif /* AVCODEC_UTVIDEO_H */

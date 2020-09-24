@@ -43,45 +43,44 @@
 static int build_huff(const uint8_t *src, VLC *vlc, int *fsym, unsigned nb_elems)
 {
     int i;
-    HuffEntry he[1024];
-    int last;
     uint32_t codes[1024];
     uint8_t bits[1024];
-    uint16_t syms[1024];
-    uint32_t code;
+    uint16_t codes_count[33] = { 0 };
 
     *fsym = -1;
     for (i = 0; i < nb_elems; i++) {
-        he[i].sym = i;
-        he[i].len = *src++;
+        if (src[i] == 0) {
+            *fsym = i;
+            return 0;
+        } else if (src[i] == 255) {
+            bits[i] = 0;
+        } else if (src[i] <= 32) {
+            bits[i] = src[i];
+        } else
+            return AVERROR_INVALIDDATA;
+
+        codes_count[bits[i]]++;
     }
-    qsort(he, nb_elems, sizeof(*he), ff_ut10_huff_cmp_len);
+    if (codes_count[0] == nb_elems)
+        return AVERROR_INVALIDDATA;
 
-    if (!he[0].len) {
-        *fsym = he[0].sym;
-        return 0;
+    for (unsigned i = 32, nb_codes = 0; i > 0; i--) {
+        uint16_t curr = codes_count[i];   // # of leafs of length i
+        codes_count[i] = nb_codes / 2;    // # of non-leaf nodes on level i
+        nb_codes = codes_count[i] + curr; // # of nodes on level i
     }
 
-    last = nb_elems - 1;
-    while (he[last].len == 255 && last)
-        last--;
-
-    if (he[last].len > 32) {
-        return -1;
-    }
-
-    code = 0;
-    for (i = last; i >= 0; i--) {
-        codes[i] = code >> (32 - he[i].len);
-        bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
-        code += 0x80000000u >> (he[i].len - 1);
+    for (unsigned i = nb_elems; i-- > 0;) {
+        if (!bits[i]) {
+            codes[i] = 0;
+            continue;
+        }
+        codes[i] = codes_count[bits[i]]++;
     }
 #define VLC_BITS 11
-    return ff_init_vlc_sparse(vlc, VLC_BITS, last + 1,
-                              bits,  sizeof(*bits),  sizeof(*bits),
-                              codes, sizeof(*codes), sizeof(*codes),
-                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+    return init_vlc(vlc, VLC_BITS, nb_elems,
+                    bits,  sizeof(*bits),  sizeof(*bits),
+                    codes, sizeof(*codes), sizeof(*codes), 0);
 }
 
 static int decode_plane10(UtvideoContext *c, int plane_no,
