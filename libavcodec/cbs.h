@@ -237,6 +237,11 @@ int ff_cbs_init(CodedBitstreamContext **ctx,
                 enum AVCodecID codec_id, void *log_ctx);
 
 /**
+ * Reset all internal state in a context.
+ */
+void ff_cbs_flush(CodedBitstreamContext *ctx);
+
+/**
  * Close a context and free all internal state.
  */
 void ff_cbs_close(CodedBitstreamContext **ctx);

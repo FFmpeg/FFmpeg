@@ -112,6 +112,12 @@ int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
     return 0;
 }
 
+void ff_cbs_flush(CodedBitstreamContext *ctx)
+{
+    if (ctx->codec && ctx->codec->flush)
+        ctx->codec->flush(ctx);
+}
+
 void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
 {
     CodedBitstreamContext *ctx = *ctx_ptr;
