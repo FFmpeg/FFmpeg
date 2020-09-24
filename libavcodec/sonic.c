@@ -980,9 +980,7 @@ static av_cold int sonic_decode_close(AVCodecContext *avctx)
     av_freep(&s->int_samples);
     av_freep(&s->tap_quant);
     av_freep(&s->predictor_k);
-
-    for (i = 0; i < s->channels; i++)
-    {
+    for (i = 0; i < MAX_CHANNELS; i++) {
         av_freep(&s->predictor_state[i]);
         av_freep(&s->coded_samples[i]);
     }
