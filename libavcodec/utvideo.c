@@ -32,8 +32,6 @@ const int ff_ut_pred_order[5] = {
 };
 #endif
 
-const int ff_ut_rgb_order[4]  = { 1, 2, 0, 3 }; // G, B, R, A
-
 int ff_ut_huff_cmp_len(const void *a, const void *b)
 {
     const HuffEntry *aa = a, *bb = b;
