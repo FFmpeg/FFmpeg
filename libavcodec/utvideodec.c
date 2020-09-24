@@ -40,7 +40,7 @@
 #include "thread.h"
 #include "utvideo.h"
 
-static int build_huff10(const uint8_t *src, VLC *vlc, int *fsym)
+static int build_huff(const uint8_t *src, VLC *vlc, int *fsym, unsigned nb_elems)
 {
     int i;
     HuffEntry he[1024];
@@ -51,18 +51,18 @@ static int build_huff10(const uint8_t *src, VLC *vlc, int *fsym)
     uint32_t code;
 
     *fsym = -1;
-    for (i = 0; i < 1024; i++) {
+    for (i = 0; i < nb_elems; i++) {
         he[i].sym = i;
         he[i].len = *src++;
     }
-    qsort(he, 1024, sizeof(*he), ff_ut10_huff_cmp_len);
+    qsort(he, nb_elems, sizeof(*he), ff_ut10_huff_cmp_len);
 
     if (!he[0].len) {
         *fsym = he[0].sym;
         return 0;
     }
 
-    last = 1023;
+    last = nb_elems - 1;
     while (he[last].len == 255 && last)
         last--;
 
@@ -84,49 +84,6 @@ static int build_huff10(const uint8_t *src, VLC *vlc, int *fsym)
                               syms,  sizeof(*syms),  sizeof(*syms), 0);
 }
 
-static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
-{
-    int i;
-    HuffEntry he[256];
-    int last;
-    uint32_t codes[256];
-    uint8_t bits[256];
-    uint8_t syms[256];
-    uint32_t code;
-
-    *fsym = -1;
-    for (i = 0; i < 256; i++) {
-        he[i].sym = i;
-        he[i].len = *src++;
-    }
-    qsort(he, 256, sizeof(*he), ff_ut_huff_cmp_len);
-
-    if (!he[0].len) {
-        *fsym = he[0].sym;
-        return 0;
-    }
-
-    last = 255;
-    while (he[last].len == 255 && last)
-        last--;
-
-    if (he[last].len > 32)
-        return -1;
-
-    code = 0;
-    for (i = last; i >= 0; i--) {
-        codes[i] = code >> (32 - he[i].len);
-        bits[i]  = he[i].len;
-        syms[i]  = he[i].sym;
-        code += 0x80000000u >> (he[i].len - 1);
-    }
-
-    return ff_init_vlc_sparse(vlc, VLC_BITS, last + 1,
-                              bits,  sizeof(*bits),  sizeof(*bits),
-                              codes, sizeof(*codes), sizeof(*codes),
-                              syms,  sizeof(*syms),  sizeof(*syms), 0);
-}
-
 static int decode_plane10(UtvideoContext *c, int plane_no,
                           uint16_t *dst, ptrdiff_t stride,
                           int width, int height,
@@ -139,7 +96,7 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
     GetBitContext gb;
     int prev, fsym;
 
-    if ((ret = build_huff10(huff, &vlc, &fsym)) < 0) {
+    if ((ret = build_huff(huff, &vlc, &fsym, 1024)) < 0) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
         return ret;
     }
@@ -299,7 +256,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         return 0;
     }
 
-    if (build_huff(src, &vlc, &fsym)) {
+    if (build_huff(src, &vlc, &fsym, 256)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
         return AVERROR_INVALIDDATA;
     }
