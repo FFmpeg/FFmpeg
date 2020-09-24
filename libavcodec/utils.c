@@ -931,6 +931,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         || avci->frame_thread_encoder)) {
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
+            codec_init_ok = -1;
             goto free_and_end;
         }
         codec_init_ok = 1;
@@ -1022,8 +1023,8 @@ end:
     return ret;
 free_and_end:
     if (avctx->codec && avctx->codec->close &&
-        (codec_init_ok ||
-         (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
+        (codec_init_ok > 0 || (codec_init_ok < 0 &&
+         avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
         avctx->codec->close(avctx);
 
     if (HAVE_THREADS && avci->thread_ctx)
