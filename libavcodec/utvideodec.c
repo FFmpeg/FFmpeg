@@ -70,7 +70,7 @@ static int build_huff10(const uint8_t *src, VLC *vlc, int *fsym)
         return -1;
     }
 
-    code = 1;
+    code = 0;
     for (i = last; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;
@@ -113,7 +113,7 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
     if (he[last].len > 32)
         return -1;
 
-    code = 1;
+    code = 0;
     for (i = last; i >= 0; i--) {
         codes[i] = code >> (32 - he[i].len);
         bits[i]  = he[i].len;

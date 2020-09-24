@@ -346,7 +346,7 @@ static void calculate_codes(HuffEntry *he)
     while (he[last].len == 255 && last)
         last--;
 
-    code = 1;
+    code = 0;
     for (i = last; i >= 0; i--) {
         he[i].code  = code >> (32 - he[i].len);
         code       += 0x80000000u >> (he[i].len - 1);
