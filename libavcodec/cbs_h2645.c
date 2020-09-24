@@ -1296,6 +1296,24 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static void cbs_h264_flush(CodedBitstreamContext *ctx)
+{
+    CodedBitstreamH264Context *h264 = ctx->priv_data;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(h264->sps); i++) {
+        av_buffer_unref(&h264->sps_ref[i]);
+        h264->sps[i] = NULL;
+    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(h264->pps); i++) {
+        av_buffer_unref(&h264->pps_ref[i]);
+        h264->pps[i] = NULL;
+    }
+
+    h264->active_sps = NULL;
+    h264->active_pps = NULL;
+    h264->last_slice_nal_unit_type = 0;
+}
+
 static void cbs_h264_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
@@ -1307,6 +1325,28 @@ static void cbs_h264_close(CodedBitstreamContext *ctx)
         av_buffer_unref(&h264->sps_ref[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(h264->pps); i++)
         av_buffer_unref(&h264->pps_ref[i]);
+}
+
+static void cbs_h265_flush(CodedBitstreamContext *ctx)
+{
+    CodedBitstreamH265Context *h265 = ctx->priv_data;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(h265->vps); i++) {
+        av_buffer_unref(&h265->vps_ref[i]);
+        h265->vps[i] = NULL;
+    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(h265->sps); i++) {
+        av_buffer_unref(&h265->sps_ref[i]);
+        h265->sps[i] = NULL;
+    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(h265->pps); i++) {
+        av_buffer_unref(&h265->pps_ref[i]);
+        h265->pps[i] = NULL;
+    }
+
+    h265->active_vps = NULL;
+    h265->active_sps = NULL;
+    h265->active_pps = NULL;
 }
 
 static void cbs_h265_close(CodedBitstreamContext *ctx)
@@ -1480,6 +1520,7 @@ const CodedBitstreamType ff_cbs_type_h264 = {
     .write_unit        = &cbs_h264_write_nal_unit,
     .assemble_fragment = &cbs_h2645_assemble_fragment,
 
+    .flush             = &cbs_h264_flush,
     .close             = &cbs_h264_close,
 };
 
@@ -1495,6 +1536,7 @@ const CodedBitstreamType ff_cbs_type_h265 = {
     .write_unit        = &cbs_h265_write_nal_unit,
     .assemble_fragment = &cbs_h2645_assemble_fragment,
 
+    .flush             = &cbs_h265_flush,
     .close             = &cbs_h265_close,
 };
 
