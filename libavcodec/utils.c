@@ -610,7 +610,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             avctx->priv_data = av_mallocz(codec->priv_data_size);
             if (!avctx->priv_data) {
                 ret = AVERROR(ENOMEM);
-                goto end;
+                goto free_and_end;
             }
             if (codec->priv_class) {
                 *(const AVClass **)avctx->priv_data = codec->priv_class;
