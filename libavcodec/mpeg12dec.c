@@ -3010,22 +3010,20 @@ static int ipu_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     s->flags = get_bits(gb, 8);
-    if (!(s->flags & 0x80)) {
-        m->intra_dc_precision = s->flags & 3;
-        m->q_scale_type = !!(s->flags & 0x40);
-        m->intra_vlc_format = !!(s->flags & 0x20);
-        m->alternate_scan = !!(s->flags & 0x10);
+    m->intra_dc_precision = s->flags & 3;
+    m->q_scale_type = !!(s->flags & 0x40);
+    m->intra_vlc_format = !!(s->flags & 0x20);
+    m->alternate_scan = !!(s->flags & 0x10);
 
-        if (s->flags & 0x10) {
-            ff_init_scantable(m->idsp.idct_permutation, &m->inter_scantable, ff_alternate_vertical_scan);
-            ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable, ff_alternate_vertical_scan);
-        } else {
-            ff_init_scantable(m->idsp.idct_permutation, &m->inter_scantable, ff_zigzag_direct);
-            ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable, ff_zigzag_direct);
-        }
-
-        m->last_dc[0] = m->last_dc[1] = m->last_dc[2] = 1 << (7 + (s->flags & 3));
+    if (s->flags & 0x10) {
+        ff_init_scantable(m->idsp.idct_permutation, &m->inter_scantable, ff_alternate_vertical_scan);
+        ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable, ff_alternate_vertical_scan);
+    } else {
+        ff_init_scantable(m->idsp.idct_permutation, &m->inter_scantable, ff_zigzag_direct);
+        ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable, ff_zigzag_direct);
     }
+
+    m->last_dc[0] = m->last_dc[1] = m->last_dc[2] = 1 << (7 + (s->flags & 3));
     m->qscale = 1;
 
     for (int y = 0; y < avctx->height; y += 16) {
@@ -3053,10 +3051,24 @@ static int ipu_decode_frame(AVCodecContext *avctx, void *data,
             memset(s->block, 0, sizeof(s->block));
 
             for (int n = 0; n < 6; n++) {
-                if (s->flags & 0x20)
-                    ret = mpeg2_decode_block_intra(m, s->block[n], n);
-                else
-                    ret = mpeg2_decode_block_non_intra(m, s->block[n], n);
+                if (s->flags & 0x80) {
+                    if (s->flags & 0x20)
+                        ret = mpeg1_decode_block_inter(m, s->block[n], n);
+                    else
+                        ret = ff_mpeg1_decode_block_intra(&m->gb,
+                                                          m->intra_matrix,
+                                                          m->intra_scantable.permutated,
+                                                          m->last_dc, s->block[n],
+                                                          n, m->qscale);
+                    if (ret >= 0)
+                        m->block_last_index[n] = ret;
+                } else {
+                    if (s->flags & 0x20)
+                        ret = mpeg2_decode_block_intra(m, s->block[n], n);
+                    else
+                        ret = mpeg2_decode_block_non_intra(m, s->block[n], n);
+                }
+
                 if (ret < 0)
                     return ret;
             }
