@@ -33,13 +33,16 @@
 #define BRP_STREAM_HEADER_SIZE  20
 #define BRP_MAX_STREAMS         32 /* Soft cap, but even this is overkill. */
 #define BVID_HEADER_SIZE        16
-#define BRP_MIN_BUFFER_SIZE     FFMAX(FFMAX3(BRP_FILE_HEADER_SIZE,    \
+#define MASK_HEADER_SIZE        12
+#define BRP_MIN_BUFFER_SIZE     FFMAX3(FFMAX3(BRP_FILE_HEADER_SIZE,    \
                                              BRP_BLOCK_HEADER_SIZE,   \
                                              BRP_STREAM_HEADER_SIZE), \
-                                      BVID_HEADER_SIZE)
+                                      BVID_HEADER_SIZE,                \
+                                      MASK_HEADER_SIZE)
 
 #define BRP_CODEC_ID_BVID       MKTAG('B', 'V', 'I', 'D')
 #define BRP_CODEC_ID_BASF       MKTAG('B', 'A', 'S', 'F')
+#define BRP_CODEC_ID_MASK       MKTAG('M', 'A', 'S', 'K')
 
 typedef struct ArgoBRPFileHeader {
     uint32_t magic;
@@ -60,6 +63,12 @@ typedef struct ArgoBVIDHeader {
     uint32_t depth;
 } ArgoBVIDHeader;
 
+typedef struct ArgoMASKHeader {
+    uint32_t num_frames;
+    uint32_t width;
+    uint32_t height;
+} ArgoMASKHeader;
+
 typedef struct ArgoBRPStreamHeader {
     uint32_t codec_id;
     uint32_t id;
@@ -72,6 +81,8 @@ typedef struct ArgoBRPStreamHeader {
         ArgoBVIDHeader    bvid;
         /* If codec_id == BRP_CODEC_ID_BASF */
         ArgoASFFileHeader basf;
+        /* If codec_id == BRP_CODEC_ID_MASK */
+        ArgoMASKHeader    mask;
     } extradata;
 } ArgoBRPStreamHeader;
 
@@ -106,6 +117,9 @@ static int read_extradata(AVFormatContext *s, const ArgoBRPStreamHeader *hdr,
     } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
         name = "BASF";
         size = ASF_FILE_HEADER_SIZE;
+    } else if (hdr->codec_id == BRP_CODEC_ID_MASK) {
+        name = "MASK";
+        size = MASK_HEADER_SIZE;
     } else {
         avpriv_request_sample(s, "BRP codec id 0x%x", hdr->codec_id);
 
@@ -240,7 +254,16 @@ static int argo_brp_read_header(AVFormatContext *s)
 
             if ((ret = ff_argo_asf_validate_file_header(s, &hdr->extradata.basf)) < 0)
                 return ret;
+        } else if (hdr->codec_id == BRP_CODEC_ID_MASK) {
+            ArgoMASKHeader *mask = &hdr->extradata.mask;
 
+            st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+
+            mask->num_frames = AV_RL32(buf + 0);
+            mask->width      = AV_RL32(buf + 4);
+            mask->height     = AV_RL32(buf + 8);
+
+            st->nb_frames    = mask->num_frames;
         } else {
             av_assert0(0); /* Caught above, should never happen. */
         }
