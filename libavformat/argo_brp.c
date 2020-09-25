@@ -323,6 +323,20 @@ static int argo_brp_read_header(AVFormatContext *s)
 
         ff_argo_asf_parse_chunk_header(&brp->basf.ckhdr, buf);
 
+        /*
+         * Special Case Hack. It seems that in files where the BASF block isn't first,
+         * v1.1 streams are allowed to be non-22050...
+         * Bump the version to 1.2 so ff_argo_asf_fill_stream() doesn't "correct" it.
+         *
+         * Found in Alien Odyssey games files in:
+         * ./GRAPHICS/COMMBUNK/{{COMADD1,COMM2_{1,2,3E},COMM3_{2,3,4,5,6}},FADE{1,2}}.BRP
+         *
+         * Either this format really inconsistent, or FX Fighter and Croc just ignored the
+         * sample rate field...
+         */
+        if (i != 0 && hdr->extradata.basf.version_major == 1 && hdr->extradata.basf.version_minor == 1)
+            hdr->extradata.basf.version_minor = 2;
+
         if ((ret = ff_argo_asf_fill_stream(s, st, &hdr->extradata.basf, &brp->basf.ckhdr)) < 0)
             return ret;
 
