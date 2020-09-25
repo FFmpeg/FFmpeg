@@ -289,7 +289,7 @@ static int argo_brp_read_header(AVFormatContext *s)
 
         ff_argo_asf_parse_chunk_header(&brp->basf.ckhdr, buf);
 
-        if ((ret = ff_argo_asf_fill_stream(st, &hdr->extradata.basf, &brp->basf.ckhdr)) < 0)
+        if ((ret = ff_argo_asf_fill_stream(s, st, &hdr->extradata.basf, &brp->basf.ckhdr)) < 0)
             return ret;
 
         /* Convert ms to samples. */
