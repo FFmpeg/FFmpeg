@@ -36,8 +36,8 @@
 #define BVID_HEADER_SIZE        16
 #define MASK_HEADER_SIZE        12
 #define BRP_MIN_BUFFER_SIZE     FFMAX3(FFMAX3(BRP_FILE_HEADER_SIZE,    \
-                                             BRP_BLOCK_HEADER_SIZE,   \
-                                             BRP_STREAM_HEADER_SIZE), \
+                                              BRP_BLOCK_HEADER_SIZE,   \
+                                              BRP_STREAM_HEADER_SIZE), \
                                       BVID_HEADER_SIZE,                \
                                       MASK_HEADER_SIZE)
 
@@ -289,14 +289,14 @@ static int argo_brp_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_TRACE, "Searching %d blocks for BASF...", BRP_BASF_LOOKAHEAD);
 
         for (i = 0; i < BRP_BASF_LOOKAHEAD; i++) {
-        if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
-            return ret;
-        else if (ret != BRP_BLOCK_HEADER_SIZE)
-            return AVERROR(EIO);
+            if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
+                return ret;
+            else if (ret != BRP_BLOCK_HEADER_SIZE)
+                return AVERROR(EIO);
 
-        blk.stream_id = AV_RL32(buf + 0);
-        blk.start_ms  = AV_RL32(buf + 4);
-        blk.size      = AV_RL32(buf + 8);
+            blk.stream_id = AV_RL32(buf + 0);
+            blk.start_ms  = AV_RL32(buf + 4);
+            blk.size      = AV_RL32(buf + 8);
 
             if (blk.stream_id == brp->basf.index || blk.stream_id == -1)
                 break;
