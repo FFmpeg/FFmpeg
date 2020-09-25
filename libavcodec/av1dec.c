@@ -713,7 +713,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
         // fall-through
         case AV1_OBU_FRAME:
         case AV1_OBU_FRAME_HEADER:
-            if (!s->seq_ref) {
+            if (!s->raw_seq) {
                 av_log(avctx, AV_LOG_ERROR, "Missing Sequence Header.\n");
                 ret = AVERROR_INVALIDDATA;
                 goto end;
