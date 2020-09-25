@@ -44,9 +44,9 @@ static int64_t get_raw_size(enum AVPixelFormat fmt, int width, int height)
     case AV_PIX_FMT_YUV444P:
         return width * height * 3LL;
     case AV_PIX_FMT_YUV420P:
-        return (int64_t)(width * height) + AV_CEIL_RSHIFT(width, 1) * AV_CEIL_RSHIFT(height, 1);
+        return (int64_t)(width * height) + 2 * AV_CEIL_RSHIFT(width, 1) * AV_CEIL_RSHIFT(height, 1);
     case AV_PIX_FMT_YUV410P:
-        return (int64_t)(width * height) + AV_CEIL_RSHIFT(width, 2) * AV_CEIL_RSHIFT(height, 2);
+        return (int64_t)(width * height) + 2 * AV_CEIL_RSHIFT(width, 2) * AV_CEIL_RSHIFT(height, 2);
     }
 
     return 0;
