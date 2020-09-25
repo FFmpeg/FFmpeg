@@ -399,7 +399,7 @@ static int dx2_decode_slice_410(GetBitContext *gb, int width, int height,
             V[x >> 2] = decode_sym(gb, lru[2]) ^ 0x80;
         }
 
-        Y += ystride << 2;
+        Y += ystride * 4;
         U += ustride;
         V += vstride;
     }
