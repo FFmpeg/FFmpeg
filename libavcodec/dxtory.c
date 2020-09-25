@@ -177,10 +177,10 @@ static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
             V[huvborder] = src[1] + 0x80;
             src += 2;
         }
-        Y1 += pic->linesize[0] << 2;
-        Y2 += pic->linesize[0] << 2;
-        Y3 += pic->linesize[0] << 2;
-        Y4 += pic->linesize[0] << 2;
+        Y1 += pic->linesize[0] * 4;
+        Y2 += pic->linesize[0] * 4;
+        Y3 += pic->linesize[0] * 4;
+        Y4 += pic->linesize[0] * 4;
         U  += pic->linesize[1];
         V  += pic->linesize[2];
     }
