@@ -3052,21 +3052,15 @@ static int ipu_decode_frame(AVCodecContext *avctx, void *data,
 
             for (int n = 0; n < 6; n++) {
                 if (s->flags & 0x80) {
-                    if (s->flags & 0x20)
-                        ret = mpeg1_decode_block_inter(m, s->block[n], n);
-                    else
-                        ret = ff_mpeg1_decode_block_intra(&m->gb,
-                                                          m->intra_matrix,
-                                                          m->intra_scantable.permutated,
-                                                          m->last_dc, s->block[n],
-                                                          n, m->qscale);
+                    ret = ff_mpeg1_decode_block_intra(&m->gb,
+                                                      m->intra_matrix,
+                                                      m->intra_scantable.permutated,
+                                                      m->last_dc, s->block[n],
+                                                      n, m->qscale);
                     if (ret >= 0)
                         m->block_last_index[n] = ret;
                 } else {
-                    if (s->flags & 0x20)
-                        ret = mpeg2_decode_block_intra(m, s->block[n], n);
-                    else
-                        ret = mpeg2_decode_block_non_intra(m, s->block[n], n);
+                    ret = mpeg2_decode_block_intra(m, s->block[n], n);
                 }
 
                 if (ret < 0)
