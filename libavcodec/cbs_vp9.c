@@ -634,6 +634,13 @@ static int cbs_vp9_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static void cbs_vp9_flush(CodedBitstreamContext *ctx)
+{
+    CodedBitstreamVP9Context *vp9 = ctx->priv_data;
+
+    memset(vp9->ref, 0, sizeof(vp9->ref));
+}
+
 static const CodedBitstreamUnitTypeDescriptor cbs_vp9_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(0, VP9RawFrame, data),
     CBS_UNIT_TYPE_END_OF_LIST
@@ -649,5 +656,8 @@ const CodedBitstreamType ff_cbs_type_vp9 = {
     .split_fragment    = &cbs_vp9_split_fragment,
     .read_unit         = &cbs_vp9_read_unit,
     .write_unit        = &cbs_vp9_write_unit,
+
+    .flush             = &cbs_vp9_flush,
+
     .assemble_fragment = &cbs_vp9_assemble_fragment,
 };
