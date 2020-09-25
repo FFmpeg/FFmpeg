@@ -344,6 +344,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             if (ec_pixels > maxpixels)
                 goto maximums_reached;
 
+            if (ctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+                frame->nb_samples == 0 && !got_frame &&
+                (avpkt.flags & AV_PKT_FLAG_DISCARD))
+                nb_samples += ctx->max_samples;
+
             nb_samples += frame->nb_samples;
             if (nb_samples > maxsamples)
                 goto maximums_reached;
