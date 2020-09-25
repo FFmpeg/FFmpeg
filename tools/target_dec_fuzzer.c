@@ -185,6 +185,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     case AV_CODEC_ID_ZEROCODEC:   maxpixels  /= 128;   break;
     }
 
+    maxsamples_per_frame = FFMIN(maxsamples_per_frame, maxsamples);
 
     AVCodecContext* ctx = avcodec_alloc_context3(c);
     AVCodecContext* parser_avctx = avcodec_alloc_context3(NULL);
