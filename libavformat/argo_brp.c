@@ -32,6 +32,7 @@
 #define BRP_BLOCK_HEADER_SIZE   12
 #define BRP_STREAM_HEADER_SIZE  20
 #define BRP_MAX_STREAMS         32 /* Soft cap, but even this is overkill. */
+#define BRP_BASF_LOOKAHEAD      10 /* How many blocks to search for the first BASF one. */
 #define BVID_HEADER_SIZE        16
 #define MASK_HEADER_SIZE        12
 #define BRP_MIN_BUFFER_SIZE     FFMAX3(FFMAX3(BRP_FILE_HEADER_SIZE,    \
@@ -269,16 +270,13 @@ static int argo_brp_read_header(AVFormatContext *s)
         }
     }
 
-    /*
-     * This is nasty. BASF streams have their chunk header in each block,
-     * so the first one needs to be read to get the stream info. It should
-     * always be the first one.
-     */
+    /* Try to find the first BASF chunk. */
     if (brp->basf.index >= 0) {
         AVStream *st = s->streams[brp->basf.index];
         ArgoBRPStreamHeader *hdr = brp->streams + brp->basf.index;
         ArgoBRPBlockHeader blk;
         int64_t offset;
+        int i;
 
         av_assert0(st->codecpar->codec_id == AV_CODEC_ID_ADPCM_ARGO);
         av_assert0(brp->streams[brp->basf.index].extradata_size == ASF_FILE_HEADER_SIZE);
@@ -288,6 +286,9 @@ static int argo_brp_read_header(AVFormatContext *s)
 
         offset = ret;
 
+        av_log(s, AV_LOG_TRACE, "Searching %d blocks for BASF...", BRP_BASF_LOOKAHEAD);
+
+        for (i = 0; i < BRP_BASF_LOOKAHEAD; i++) {
         if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
             return ret;
         else if (ret != BRP_BLOCK_HEADER_SIZE)
@@ -297,10 +298,20 @@ static int argo_brp_read_header(AVFormatContext *s)
         blk.start_ms  = AV_RL32(buf + 4);
         blk.size      = AV_RL32(buf + 8);
 
-        if (blk.stream_id != brp->basf.index) {
-            avpriv_request_sample(s, "first block not BASF");
-            return AVERROR_PATCHWELCOME;
+            if (blk.stream_id == brp->basf.index || blk.stream_id == -1)
+                break;
+
+            if ((ret = avio_skip(pb, blk.size)) < 0)
+                return ret;
         }
+
+        if (i == BRP_BASF_LOOKAHEAD || blk.stream_id == -1) {
+            /* Don't error here, as there may still be a valid video stream. */
+            av_log(s, AV_LOG_TRACE, "not found\n");
+            goto done;
+        }
+
+        av_log(s, AV_LOG_TRACE, "found at index %d\n", i);
 
         if (blk.size < ASF_CHUNK_HEADER_SIZE)
             return AVERROR_INVALIDDATA;
@@ -319,6 +330,7 @@ static int argo_brp_read_header(AVFormatContext *s)
         st->start_time = av_rescale_rnd(blk.start_ms, st->codecpar->sample_rate, 1000, AV_ROUND_UP);
         st->duration   = av_rescale_rnd(hdr->duration_ms, st->codecpar->sample_rate, 1000, AV_ROUND_UP);
 
+done:
         if ((ret = avio_seek(s->pb, offset, SEEK_SET)) < 0)
             return ret;
     }
