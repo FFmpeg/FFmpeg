@@ -999,6 +999,9 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
     int filled = s->buf_end - s->buffer;
     ptrdiff_t checksum_ptr_offset = s->checksum_ptr ? s->checksum_ptr - s->buffer : -1;
 
+    if (buf_size <= s->buf_end - s->buf_ptr)
+        return 0;
+
     buf_size += s->buf_ptr - s->buffer + max_buffer_size;
 
     if (buf_size < filled || s->seekable || !s->read_packet)
