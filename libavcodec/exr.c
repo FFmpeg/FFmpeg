@@ -1773,7 +1773,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
 
-    if (bytestream2_get_bytes_left(&s->gb) < nb_blocks * 8)
+    if (bytestream2_get_bytes_left(&s->gb)/8 < nb_blocks)
         return AVERROR_INVALIDDATA;
 
     // check offset table and recreate it if need
