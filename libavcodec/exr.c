@@ -1040,6 +1040,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tile_y * s->tile_attr.ySize);
         td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tile_x * s->tile_attr.xSize);
 
+        if (td->xsize * (uint64_t)s->current_channel_offset > INT_MAX)
+            return AVERROR_INVALIDDATA;
+
         td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
         uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
     } else {
@@ -1058,6 +1061,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         td->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
         td->xsize          = s->xdelta;
+
+        if (td->xsize * (uint64_t)s->current_channel_offset > INT_MAX)
+            return AVERROR_INVALIDDATA;
 
         td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
         uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
