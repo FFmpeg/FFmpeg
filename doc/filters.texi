@@ -18270,6 +18270,29 @@ Show envelope. Default is disabled.
 
 @item ecolor, ec
 Set envelope color. Default is @code{gold}.
+
+@item slide
+Set slide mode.
+
+Available values for slide is:
+@table @samp
+@item frame
+Draw new frame when right border is reached.
+
+@item replace
+Replace old columns with new ones.
+
+@item scroll
+Scroll from right to left.
+
+@item rscroll
+Scroll from left to right.
+
+@item picture
+Draw single picture.
+@end table
+
+Default is @code{replace}.
 @end table
 
 @section threshold
