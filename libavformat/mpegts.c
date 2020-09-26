@@ -3051,10 +3051,11 @@ static int mpegts_read_header(AVFormatContext *s)
     MpegTSContext *ts = s->priv_data;
     AVIOContext *pb   = s->pb;
     int64_t pos, probesize = s->probesize;
+    int64_t seekback = FFMAX(s->probesize, (int64_t)ts->resync_size + PROBE_PACKET_MAX_BUF);
 
     s->internal->prefer_codec_framerate = 1;
 
-    if (ffio_ensure_seekback(pb, probesize) < 0)
+    if (ffio_ensure_seekback(pb, seekback) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");
 
     pos = avio_tell(pb);
