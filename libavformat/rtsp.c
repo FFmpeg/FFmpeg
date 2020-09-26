@@ -1990,7 +1990,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     int *fds = NULL, fdsnum, fdsidx;
 
     if (!p) {
-        p = rt->p = av_malloc_array(2 * (rt->nb_rtsp_streams + 1), sizeof(struct pollfd));
+        p = rt->p = av_malloc_array(2 * rt->nb_rtsp_streams + 1, sizeof(struct pollfd));
         if (!p)
             return AVERROR(ENOMEM);
 
