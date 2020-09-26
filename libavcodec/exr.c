@@ -1751,7 +1751,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     /* Verify the xmin, xmax, ymin and ymax before setting the actual image size.
      * It's possible for the data window can larger or outside the display window */
-    if (s->xmin > s->xmax  || s->ymin > s->ymax) {
+    if (s->xmin > s->xmax  || s->ymin > s->ymax ||
+        s->ydelta == 0xFFFFFFFF || s->xdelta == 0xFFFFFFFF) {
         av_log(avctx, AV_LOG_ERROR, "Wrong or missing size information.\n");
         return AVERROR_INVALIDDATA;
     }
