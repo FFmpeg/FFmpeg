@@ -1734,7 +1734,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         s->ymin > s->ymax                  ||
         s->xdelta != s->xmax - s->xmin + 1 ||
         s->xmax >= s->w                    ||
-        s->ymax >= s->h) {
+        s->ymax >= s->h                    ||
+        s->ydelta == 0xFFFFFFFF || s->xdelta == 0xFFFFFFFF
+    ) {
         av_log(avctx, AV_LOG_ERROR, "Wrong or missing size information.\n");
         return AVERROR_INVALIDDATA;
     }
