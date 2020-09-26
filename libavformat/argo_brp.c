@@ -237,6 +237,8 @@ static int argo_brp_read_header(AVFormatContext *s)
                 avpriv_request_sample(s, "depth == %u", bvid->depth);
                 return AVERROR_PATCHWELCOME;
             }
+
+            st->nb_frames = bvid->num_frames;
         } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
             /*
              * It would make the demuxer significantly more complicated
@@ -255,6 +257,8 @@ static int argo_brp_read_header(AVFormatContext *s)
 
             if ((ret = ff_argo_asf_validate_file_header(s, &hdr->extradata.basf)) < 0)
                 return ret;
+
+            st->nb_frames = hdr->extradata.basf.num_chunks;
         } else if (hdr->codec_id == BRP_CODEC_ID_MASK) {
             ArgoMASKHeader *mask = &hdr->extradata.mask;
 
