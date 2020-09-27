@@ -449,6 +449,9 @@ static int iff_read_header(AVFormatContext *s)
         data_size = iff->is_64bit ? avio_rb64(pb) : avio_rb32(pb);
         orig_pos = avio_tell(pb);
 
+        if (data_size >= INT64_MAX)
+            return AVERROR_INVALIDDATA;
+
         switch(chunk_id) {
         case ID_VHDR:
             st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
