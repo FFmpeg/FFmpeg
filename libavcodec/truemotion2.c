@@ -1016,8 +1016,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     TM2Context * const l = avctx->priv_data;
     int i;
 
-    av_free(l->last);
-    av_free(l->clast);
+    av_freep(&l->last);
+    av_freep(&l->clast);
     for (i = 0; i < TM2_NUM_STREAMS; i++)
         av_freep(&l->tokens[i]);
     if (l->Y1) {
