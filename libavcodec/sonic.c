@@ -500,14 +500,11 @@ static int predictor_calc_error(int *k, int *state, int order, int error)
 // copes better with quantization, and calculates the
 // actual whitened result as it goes.
 
-static int modified_levinson_durbin(int *window, int window_entries,
+static void modified_levinson_durbin(int *window, int window_entries,
         int *out, int out_entries, int channels, int *tap_quant)
 {
     int i;
-    int *state = av_calloc(window_entries, sizeof(*state));
-
-    if (!state)
-        return AVERROR(ENOMEM);
+    int *state = window + window_entries;
 
     memcpy(state, window, window_entries * sizeof(*state));
 
@@ -571,9 +568,6 @@ static int modified_levinson_durbin(int *window, int window_entries,
         }
 #endif
     }
-
-    av_free(state);
-    return 0;
 }
 
 static inline int code_samplerate(int samplerate)
@@ -665,7 +659,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     s->int_samples = av_calloc(s->frame_size, sizeof(*s->int_samples));
 
     s->window_size = ((2*s->tail_size)+s->frame_size);
-    s->window = av_calloc(s->window_size, sizeof(*s->window));
+    s->window = av_calloc(s->window_size, 2 * sizeof(*s->window));
     if (!s->window || !s->int_samples)
         return AVERROR(ENOMEM);
 
@@ -776,10 +770,8 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->tail[i] = s->int_samples[s->frame_size - s->tail_size + i];
 
     // generate taps
-    ret = modified_levinson_durbin(s->window, s->window_size,
+    modified_levinson_durbin(s->window, s->window_size,
                 s->predictor_k, s->num_taps, s->channels, s->tap_quant);
-    if (ret < 0)
-        return ret;
 
     if ((ret = intlist_write(&c, state, s->predictor_k, s->num_taps, 0)) < 0)
         return ret;
