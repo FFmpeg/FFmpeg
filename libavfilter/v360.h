@@ -53,6 +53,7 @@ enum Projections {
     HEQUIRECTANGULAR,
     EQUISOLID,
     ORTHOGRAPHIC,
+    OCTAHEDRON,
     NB_PROJECTIONS,
 };
 

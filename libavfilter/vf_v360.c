@@ -83,6 +83,7 @@ static const AVOption v360_options[] = {
     {        "he", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "in" },
     { "equisolid", "equisolid",                                  0, AV_OPT_TYPE_CONST,  {.i64=EQUISOLID},       0,                   0, FLAGS, "in" },
     {        "og", "orthographic",                               0, AV_OPT_TYPE_CONST,  {.i64=ORTHOGRAPHIC},    0,                   0, FLAGS, "in" },
+    {"octahedron", "octahedron",                                 0, AV_OPT_TYPE_CONST,  {.i64=OCTAHEDRON},      0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -112,6 +113,7 @@ static const AVOption v360_options[] = {
     {        "he", "half equirectangular",                       0, AV_OPT_TYPE_CONST,  {.i64=HEQUIRECTANGULAR},0,                   0, FLAGS, "out" },
     { "equisolid", "equisolid",                                  0, AV_OPT_TYPE_CONST,  {.i64=EQUISOLID},       0,                   0, FLAGS, "out" },
     {        "og", "orthographic",                               0, AV_OPT_TYPE_CONST,  {.i64=ORTHOGRAPHIC},    0,                   0, FLAGS, "out" },
+    {"octahedron", "octahedron",                                 0, AV_OPT_TYPE_CONST,  {.i64=OCTAHEDRON},      0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -3747,6 +3749,91 @@ static int xyz_to_tspyramid(const V360Context *s,
     return 1;
 }
 
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in octahedron format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static int octahedron_to_xyz(const V360Context *s,
+                             int i, int j, int width, int height,
+                             float *vec)
+{
+    float x = ((i + 0.5f) / width)  * 2.f - 1.f;
+    float y = ((j + 0.5f) / height) * 2.f - 1.f;
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    vec[2] = 1.f - (ax + ay);
+    if (ax + ay > 1.f) {
+        vec[0] = (1.f - ay) * FFSIGN(x);
+        vec[1] = (1.f - ax) * FFSIGN(y);
+    } else {
+        vec[0] = x;
+        vec[1] = y;
+    }
+
+    normalize_vector(vec);
+
+    return 1;
+}
+
+/**
+ * Calculate frame position in octahedron format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static int xyz_to_octahedron(const V360Context *s,
+                             const float *vec, int width, int height,
+                             int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
+{
+    float uf, vf, zf;
+    int ui, vi;
+    float div = fabsf(vec[0]) + fabsf(vec[1]) + fabsf(vec[2]);
+
+    uf = vec[0] / div;
+    vf = vec[1] / div;
+    zf = vec[2];
+
+    if (zf < 0.f) {
+        zf = vf;
+        vf = (1.f - fabsf(uf)) * FFSIGN(zf);
+        uf = (1.f - fabsf(zf)) * FFSIGN(uf);
+    }
+
+    uf = uf * 0.5f + 0.5f;
+    vf = vf * 0.5f + 0.5f;
+
+    uf *= width;
+    vf *= height;
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            us[i][j] = av_clip(uf + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vf + i - 1, 0, height - 1);
+        }
+    }
+
+    return 1;
+}
+
 static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
 {
     for (int i = 0; i < 3; i++) {
@@ -4264,6 +4351,12 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 2.f;
         break;
+    case OCTAHEDRON:
+        s->in_transform = xyz_to_octahedron;
+        err = 0;
+        wf = w;
+        hf = h / 2.f;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
         return AVERROR_BUG;
@@ -4409,6 +4502,12 @@ static int config_output(AVFilterLink *outlink)
     case ORTHOGRAPHIC:
         s->out_transform = orthographic_to_xyz;
         prepare_out = prepare_orthographic_out;
+        w = lrintf(wf);
+        h = lrintf(hf * 2.f);
+        break;
+    case OCTAHEDRON:
+        s->out_transform = octahedron_to_xyz;
+        prepare_out = NULL;
         w = lrintf(wf);
         h = lrintf(hf * 2.f);
         break;
