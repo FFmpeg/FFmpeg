@@ -1084,6 +1084,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     ff_audiodsp_init(&q->adsp);
 
     while (bytestream2_get_bytes_left(&gb)) {
+        if (s >= FFMIN(MAX_SUBPACKETS, avctx->block_align)) {
+            avpriv_request_sample(avctx, "subpackets > %d", FFMIN(MAX_SUBPACKETS, avctx->block_align));
+            return AVERROR_PATCHWELCOME;
+        }
         /* 8 for mono, 16 for stereo, ? for multichannel
            Swap to right endianness so we don't need to care later on. */
         q->subpacket[s].cookversion      = bytestream2_get_be32(&gb);
@@ -1215,10 +1219,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
         q->num_subpackets++;
         s++;
-        if (s > FFMIN(MAX_SUBPACKETS, avctx->block_align)) {
-            avpriv_request_sample(avctx, "subpackets > %d", FFMIN(MAX_SUBPACKETS, avctx->block_align));
-            return AVERROR_PATCHWELCOME;
-        }
     }
 
     /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
