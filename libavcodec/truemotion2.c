@@ -950,7 +950,7 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     TM2Context * const l = avctx->priv_data;
-    int i, w = avctx->width, h = avctx->height;
+    int w = avctx->width, h = avctx->height;
 
     if ((avctx->width & 3) || (avctx->height & 3)) {
         av_log(avctx, AV_LOG_ERROR, "Width and height must be multiple of 4\n");
@@ -969,11 +969,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     l->last  = av_malloc_array(w >> 2, 4 * sizeof(*l->last) );
     l->clast = av_malloc_array(w >> 2, 4 * sizeof(*l->clast));
 
-    for (i = 0; i < TM2_NUM_STREAMS; i++) {
-        l->tokens[i] = NULL;
-        l->tok_lens[i] = 0;
-    }
-
     w += 8;
     h += 8;
     l->Y1_base = av_calloc(w * h, sizeof(*l->Y1_base));
@@ -986,7 +981,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     l->U2_base = av_calloc(w * h, sizeof(*l->U2_base));
     l->V2_base = av_calloc(w * h, sizeof(*l->V1_base));
     l->uv_stride = w;
-    l->cur = 0;
     if (!l->Y1_base || !l->Y2_base || !l->U1_base ||
         !l->V1_base || !l->U2_base || !l->V2_base ||
         !l->last    || !l->clast) {
