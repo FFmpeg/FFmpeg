@@ -361,6 +361,7 @@ static int ff_qsv_set_display_handle(AVCodecContext *avctx, QSVSession *qs)
     av_dict_set(&child_device_opts, "driver",        "iHD",  0);
 
     ret = av_hwdevice_ctx_create(&qs->va_device_ref, AV_HWDEVICE_TYPE_VAAPI, NULL, child_device_opts, 0);
+    av_dict_free(&child_device_opts);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create a VAAPI device.\n");
         return ret;
@@ -374,8 +375,6 @@ static int ff_qsv_set_display_handle(AVCodecContext *avctx, QSVSession *qs)
             return ff_qsv_print_error(avctx, ret, "Error during set display handle\n");
         }
     }
-
-    av_dict_free(&child_device_opts);
 
     return 0;
 }
