@@ -1964,11 +1964,7 @@ static int parse_rtsp_message(AVFormatContext *s)
 
     if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
         if (rt->state == RTSP_STATE_STREAMING) {
-            if (!ff_rtsp_parse_streaming_commands(s))
-                return AVERROR_EOF;
-            else
-                av_log(s, AV_LOG_WARNING,
-                       "Unable to answer to TEARDOWN\n");
+            return ff_rtsp_parse_streaming_commands(s);
         } else
             return AVERROR_EOF;
     } else {
