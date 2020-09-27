@@ -1077,6 +1077,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     ff_audiodsp_init(&q->adsp);
 
     while (edata_ptr < edata_ptr_end) {
+        if (s >= FFMIN(MAX_SUBPACKETS, avctx->block_align)) {
+            avpriv_request_sample(avctx, "subpackets > %d", FFMIN(MAX_SUBPACKETS, avctx->block_align));
+            return AVERROR_PATCHWELCOME;
+        }
         /* 8 for mono, 16 for stereo, ? for multichannel
            Swap to right endianness so we don't need to care later on. */
         if (extradata_size >= 8) {
@@ -1216,10 +1220,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
         q->num_subpackets++;
         s++;
-        if (s > FFMIN(MAX_SUBPACKETS, avctx->block_align)) {
-            avpriv_request_sample(avctx, "subpackets > %d", FFMIN(MAX_SUBPACKETS, avctx->block_align));
-            return AVERROR_PATCHWELCOME;
-        }
     }
     /* Generate tables */
     init_pow2table();
