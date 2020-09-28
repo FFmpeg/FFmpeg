@@ -6150,6 +6150,9 @@ static void mov_free(AVFormatContext *s)
     MOVMuxContext *mov = s->priv_data;
     int i;
 
+    if (!mov->tracks)
+        return;
+
     if (mov->chapter_track) {
         if (mov->tracks[mov->chapter_track].par)
             av_freep(&mov->tracks[mov->chapter_track].par->extradata);
