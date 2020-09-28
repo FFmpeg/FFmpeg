@@ -100,7 +100,9 @@ int ffio_realloc_buf(AVIOContext *s, int buf_size);
  *
  * Will ensure that when reading sequentially up to buf_size, seeking
  * within the current pos and pos+buf_size is possible.
- * Once the stream position moves outside this window this guarantee is lost.
+ * Once the stream position moves outside this window or another
+ * ffio_ensure_seekback call requests a buffer outside this window this
+ * guarantee is lost.
  */
 int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size);
 

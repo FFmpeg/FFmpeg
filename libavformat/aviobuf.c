@@ -991,35 +991,42 @@ URLContext* ffio_geturlcontext(AVIOContext *s)
         return NULL;
 }
 
+static void update_checksum(AVIOContext *s)
+{
+    if (s->update_checksum && s->buf_ptr > s->checksum_ptr) {
+        s->checksum = s->update_checksum(s->checksum, s->checksum_ptr,
+                                         s->buf_ptr - s->checksum_ptr);
+    }
+}
+
 int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
 {
     uint8_t *buffer;
     int max_buffer_size = s->max_packet_size ?
                           s->max_packet_size : IO_BUFFER_SIZE;
-    int filled = s->buf_end - s->buffer;
-    ptrdiff_t checksum_ptr_offset = s->checksum_ptr ? s->checksum_ptr - s->buffer : -1;
+    ptrdiff_t filled = s->buf_end - s->buf_ptr;
 
     if (buf_size <= s->buf_end - s->buf_ptr)
         return 0;
 
-    buf_size += s->buf_ptr - s->buffer + max_buffer_size - 1;
+    buf_size += max_buffer_size - 1;
 
-    if (buf_size <= s->buffer_size || s->seekable || !s->read_packet)
+    if (buf_size + s->buf_ptr - s->buffer <= s->buffer_size || s->seekable || !s->read_packet)
         return 0;
     av_assert0(!s->write_flag);
 
+    buf_size = FFMAX(buf_size, s->buffer_size);
     buffer = av_malloc(buf_size);
     if (!buffer)
         return AVERROR(ENOMEM);
-
-    memcpy(buffer, s->buffer, filled);
+    update_checksum(s);
+    memcpy(buffer, s->buf_ptr, filled);
     av_free(s->buffer);
-    s->buf_ptr = buffer + (s->buf_ptr - s->buffer);
-    s->buf_end = buffer + (s->buf_end - s->buffer);
     s->buffer = buffer;
     s->buffer_size = buf_size;
-    if (checksum_ptr_offset >= 0)
-        s->checksum_ptr = s->buffer + checksum_ptr_offset;
+    s->buf_ptr = s->buffer;
+    s->buf_end = s->buffer + filled;
+    s->checksum_ptr = s->buffer;
     return 0;
 }
 
