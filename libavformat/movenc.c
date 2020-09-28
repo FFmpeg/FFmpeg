@@ -6263,9 +6263,7 @@ static void mov_free(AVFormatContext *s)
         return;
 
     if (mov->chapter_track) {
-        if (mov->tracks[mov->chapter_track].par)
-            av_freep(&mov->tracks[mov->chapter_track].par->extradata);
-        av_freep(&mov->tracks[mov->chapter_track].par);
+        avcodec_parameters_free(&mov->tracks[mov->chapter_track].par);
     }
 
     for (i = 0; i < mov->nb_streams; i++) {
