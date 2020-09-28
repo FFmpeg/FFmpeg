@@ -1019,14 +1019,14 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
         update_checksum(s);
         memmove(s->buffer, s->buf_ptr, filled);
     } else {
-    buffer = av_malloc(buf_size);
-    if (!buffer)
-        return AVERROR(ENOMEM);
-    update_checksum(s);
-    memcpy(buffer, s->buf_ptr, filled);
-    av_free(s->buffer);
-    s->buffer = buffer;
-    s->buffer_size = buf_size;
+        buffer = av_malloc(buf_size);
+        if (!buffer)
+            return AVERROR(ENOMEM);
+        update_checksum(s);
+        memcpy(buffer, s->buf_ptr, filled);
+        av_free(s->buffer);
+        s->buffer = buffer;
+        s->buffer_size = buf_size;
     }
     s->buf_ptr = s->buffer;
     s->buf_end = s->buffer + filled;
