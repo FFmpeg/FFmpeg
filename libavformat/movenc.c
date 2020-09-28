@@ -6165,11 +6165,12 @@ static int mov_check_timecode_track(AVFormatContext *s, AVTimecode *tc, int src_
 
 static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, AVTimecode tc)
 {
-    int ret;
     MOVMuxContext *mov  = s->priv_data;
     MOVTrack *track     = &mov->tracks[index];
     AVStream *src_st    = s->streams[src_index];
-    AVPacket pkt    = {.stream_index = index, .flags = AV_PKT_FLAG_KEY, .size = 4};
+    uint8_t data[4];
+    AVPacket pkt    = { .data = data, .stream_index = index,
+                        .flags = AV_PKT_FLAG_KEY, .size = 4 };
     AVRational rate = find_fps(s, src_st);
 
     /* tmcd track based on video stream */
@@ -6192,13 +6193,8 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     track->st->avg_frame_rate = av_inv_q(rate);
 
     /* the tmcd track just contains one packet with the frame number */
-    pkt.data = av_malloc(pkt.size);
-    if (!pkt.data)
-        return AVERROR(ENOMEM);
     AV_WB32(pkt.data, tc.start);
-    ret = ff_mov_write_packet(s, &pkt);
-    av_free(pkt.data);
-    return ret;
+    return ff_mov_write_packet(s, &pkt);
 }
 
 /*
