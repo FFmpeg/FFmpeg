@@ -74,6 +74,9 @@ static const struct profile_names hevc_profiles[] = {
     { MFX_PROFILE_HEVC_MAINSP,                  "hevc mainsp"                },
     { MFX_PROFILE_HEVC_REXT,                    "hevc rext"                  },
 #endif
+#if QSV_VERSION_ATLEAST(1, 32)
+    { MFX_PROFILE_HEVC_SCC,                     "hevc scc"                   },
+#endif
 };
 
 static const struct profile_names vp9_profiles[] = {

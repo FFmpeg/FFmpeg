@@ -3411,12 +3411,15 @@ an internal session.
 Depth of look ahead in number frames, available when extbrc option is enabled.
 
 @item @var{profile}
+Set the encoding profile (scc requires libmfx >= 1.32).
+
 @table @samp
 @item unknown
 @item main
 @item main10
 @item mainsp
 @item rext
+@item scc
 @end table
 
 @item @var{gpb}
