@@ -325,29 +325,22 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     // SPS/PPS
     for (i = 0; i < FF_ARRAY_ELEMS(h->ps.sps_list); i++) {
-        av_buffer_unref(&h->ps.sps_list[i]);
-        if (h1->ps.sps_list[i]) {
-            h->ps.sps_list[i] = av_buffer_ref(h1->ps.sps_list[i]);
-            if (!h->ps.sps_list[i])
-                return AVERROR(ENOMEM);
-        }
+        ret = av_buffer_replace(&h->ps.sps_list[i], h1->ps.sps_list[i]);
+        if (ret < 0)
+            return ret;
     }
     for (i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++) {
-        av_buffer_unref(&h->ps.pps_list[i]);
-        if (h1->ps.pps_list[i]) {
-            h->ps.pps_list[i] = av_buffer_ref(h1->ps.pps_list[i]);
-            if (!h->ps.pps_list[i])
-                return AVERROR(ENOMEM);
-        }
+        ret = av_buffer_replace(&h->ps.pps_list[i], h1->ps.pps_list[i]);
+        if (ret < 0)
+            return ret;
     }
 
-    av_buffer_unref(&h->ps.pps_ref);
+    ret = av_buffer_replace(&h->ps.pps_ref, h1->ps.pps_ref);
+    if (ret < 0)
+        return ret;
     h->ps.pps = NULL;
     h->ps.sps = NULL;
     if (h1->ps.pps_ref) {
-        h->ps.pps_ref = av_buffer_ref(h1->ps.pps_ref);
-        if (!h->ps.pps_ref)
-            return AVERROR(ENOMEM);
         h->ps.pps = (const PPS*)h->ps.pps_ref->data;
         h->ps.sps = h->ps.pps->sps;
     }
@@ -432,12 +425,9 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->frame_recovered       = h1->frame_recovered;
 
-    av_buffer_unref(&h->sei.a53_caption.buf_ref);
-    if (h1->sei.a53_caption.buf_ref) {
-        h->sei.a53_caption.buf_ref = av_buffer_ref(h1->sei.a53_caption.buf_ref);
-        if (!h->sei.a53_caption.buf_ref)
-            return AVERROR(ENOMEM);
-    }
+    ret = av_buffer_replace(&h->sei.a53_caption.buf_ref, h1->sei.a53_caption.buf_ref);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < h->sei.unregistered.nb_buf_ref; i++)
         av_buffer_unref(&h->sei.unregistered.buf_ref[i]);
