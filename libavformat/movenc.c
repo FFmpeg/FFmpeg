@@ -641,10 +641,11 @@ struct mpeg4_bit_rate_values {
 
 static struct mpeg4_bit_rate_values calculate_mpeg4_bit_rates(MOVTrack *track)
 {
-    AVCPBProperties *props =
+    AVCPBProperties *props = track->st ?
         (AVCPBProperties*)av_stream_get_side_data(track->st,
                                                   AV_PKT_DATA_CPB_PROPERTIES,
-                                                  NULL);
+                                                  NULL) :
+        NULL;
     struct mpeg4_bit_rate_values bit_rates = { 0 };
 
     bit_rates.avg_bit_rate = compute_avg_bitrate(track);
