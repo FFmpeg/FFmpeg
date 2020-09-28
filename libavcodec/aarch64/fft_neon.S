@@ -36,6 +36,7 @@
 
 
 function fft4_neon
+        AARCH64_VALID_JUMP_TARGET
         ld1             {v0.2s,v1.2s,v2.2s,v3.2s}, [x0]
 
         fadd            v4.2s,  v0.2s,  v1.2s   // r0+r1,i0+i1
@@ -58,6 +59,7 @@ function fft4_neon
 endfunc
 
 function fft8_neon
+        AARCH64_VALID_JUMP_TARGET
         mov             x1,  x0
         ld1             {v0.2s, v1.2s, v2.2s, v3.2s},  [x0], #32
         ld1             {v16.2s,v17.2s,v18.2s,v19.2s}, [x0]
@@ -108,6 +110,7 @@ function fft8_neon
 endfunc
 
 function fft16_neon
+        AARCH64_VALID_JUMP_TARGET
         mov             x1,  x0
         ld1             {v0.2s, v1.2s, v2.2s, v3.2s},  [x0], #32
         ld1             {v16.2s,v17.2s,v18.2s,v19.2s}, [x0], #32
@@ -337,6 +340,7 @@ endfunc
 
 .macro  def_fft n, n2, n4
 function fft\n\()_neon, align=6
+        AARCH64_VALID_JUMP_TARGET
         sub             sp,  sp,  #16
         stp             x28, x30, [sp]
         add             x28, x0,  #\n4*2*8

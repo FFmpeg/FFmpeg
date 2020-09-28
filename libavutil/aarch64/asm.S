@@ -36,6 +36,35 @@
 #   define __has_feature(x) 0
 #endif
 
+/* Support macros for the Armv8.5-A Branch Target Identification feature which
+ * requires emitting a .note.gnu.property section with the appropriate
+ * architecture-dependent feature bits set.
+ * Read more: "ELF for the Arm® 64-bit Architecture"
+ */
+#if defined(__ARM_FEATURE_BTI_DEFAULT) && (__ARM_FEATURE_BTI_DEFAULT == 1)
+#   define GNU_PROPERTY_AARCH64_BTI (1 << 0)   // Has BTI
+#   define AARCH64_VALID_CALL_TARGET hint #34  // BTI 'c'
+#   define AARCH64_VALID_JUMP_TARGET hint #38  // BTI 'j'
+#else
+#   define GNU_PROPERTY_AARCH64_BTI 0          // No BTI
+#   define AARCH64_VALID_CALL_TARGET
+#   define AARCH64_VALID_JUMP_TARGET
+#endif
+
+#if (GNU_PROPERTY_AARCH64_BTI != 0)
+        .pushsection .note.gnu.property, "a"
+        .balign 8
+        .long 4
+        .long 0x10
+        .long 0x5
+        .asciz "GNU"
+        .long 0xc0000000 /* GNU_PROPERTY_AARCH64_FEATURE_1_AND */
+        .long 4
+        .long GNU_PROPERTY_AARCH64_BTI
+        .long 0
+        .popsection
+#endif
+
 .macro  function name, export=0, align=2
     .macro endfunc
 ELF     .size   \name, . - \name
@@ -49,6 +78,7 @@ FUNC    .endfunc
 ELF     .type   EXTERN_ASM\name, %function
 FUNC    .func   EXTERN_ASM\name
 EXTERN_ASM\name:
+        AARCH64_VALID_CALL_TARGET
     .else
 ELF     .type   \name, %function
 FUNC    .func   \name

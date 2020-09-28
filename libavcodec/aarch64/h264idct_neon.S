@@ -24,6 +24,7 @@
 
 function ff_h264_idct_add_neon, export=1
 .L_ff_h264_idct_add_neon:
+        AARCH64_VALID_CALL_TARGET
         ld1             {v0.4H, v1.4H, v2.4H, v3.4H},  [x1]
         sxtw            x2,     w2
         movi            v30.8H, #0
@@ -79,6 +80,7 @@ endfunc
 
 function ff_h264_idct_dc_add_neon, export=1
 .L_ff_h264_idct_dc_add_neon:
+        AARCH64_VALID_CALL_TARGET
         sxtw            x2,  w2
         mov             w3,       #0
         ld1r            {v2.8H},  [x1]
@@ -266,6 +268,7 @@ endfunc
 
 function ff_h264_idct8_add_neon, export=1
 .L_ff_h264_idct8_add_neon:
+        AARCH64_VALID_CALL_TARGET
         movi            v19.8H,   #0
         sxtw            x2,       w2
         ld1             {v24.8H, v25.8H}, [x1]
@@ -330,6 +333,7 @@ endfunc
 
 function ff_h264_idct8_dc_add_neon, export=1
 .L_ff_h264_idct8_dc_add_neon:
+        AARCH64_VALID_CALL_TARGET
         mov             w3,       #0
         sxtw            x2,       w2
         ld1r            {v31.8H}, [x1]
