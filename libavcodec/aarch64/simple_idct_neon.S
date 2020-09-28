@@ -58,7 +58,7 @@ endconst
 .endm
 
 .macro idct_end
-        br              x10
+        ret             x10
 .endm
 
 .macro smull1 a, b, c

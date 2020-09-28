@@ -57,7 +57,7 @@
         mov             x12, v4.d[1]
         adds            x11, x11, x12
         b.ne            1f
-        br              x10
+        ret             x10
 1:
 
 .if \wd >= 8
@@ -193,7 +193,7 @@
         b.eq            6f
 .else
         b.ne            1f
-        br              x13
+        ret             x13
 1:
 .endif
 
@@ -252,7 +252,7 @@
         b.ne            1f
         // If no pixels needed flat8in nor flat8out, jump to a
         // writeout of the inner 4 pixels
-        br              x14
+        ret             x14
 1:
 
         mov             x11, v7.d[0]
@@ -260,7 +260,7 @@
         adds            x11, x11, x12
         b.ne            1f
         // If no pixels need flat8out, jump to a writeout of the inner 6 pixels
-        br              x15
+        ret             x15
 
 1:
         // flat8out
@@ -434,7 +434,7 @@ function ff_\func\()_\bpp\()_neon, export=1
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x16
+        ret             x16
 .else
         b               \func\()_16_neon
 .endif
@@ -474,7 +474,7 @@ function ff_\func\()_\suffix\()_\bpp\()_neon, export=1
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
 .endif
-        br              x16
+        ret             x16
 endfunc
 .endm
 
@@ -508,7 +508,7 @@ function ff_vp9_loop_filter_\dir\()_\wd1\()\wd2\()_16_\bpp\()_neon, export=1
         lsl             w3,  w14, #\bpp - 8
         lsl             w4,  w15, #\bpp - 8
         bl              vp9_loop_filter_\dir\()_\wd2\()_8_16_neon
-        br              x16
+        ret             x16
 endfunc
 .endm
 
@@ -541,7 +541,7 @@ function vp9_loop_filter_v_4_8_16_neon
         st1             {v25.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #1
 
-        br              x10
+        ret             x10
 endfunc
 
 bpp_frontends vp9_loop_filter_v_4_8
@@ -589,7 +589,7 @@ function vp9_loop_filter_h_4_8_16_neon
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #4
 
-        br              x10
+        ret             x10
 endfunc
 
 bpp_frontends vp9_loop_filter_h_4_8
@@ -620,7 +620,7 @@ function vp9_loop_filter_v_8_8_16_neon
         sub             x0,  x0,  x1, lsl #1
         sub             x0,  x0,  x1
 
-        br              x10
+        ret             x10
 6:
         sub             x9,  x0,  x1, lsl #1
         st1             {v22.8h}, [x9], x1
@@ -628,7 +628,7 @@ function vp9_loop_filter_v_8_8_16_neon
         st1             {v23.8h}, [x9], x1
         st1             {v25.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #1
-        br              x10
+        ret             x10
 endfunc
 
 bpp_frontends vp9_loop_filter_v_8_8
@@ -671,7 +671,7 @@ function vp9_loop_filter_h_8_8_16_neon
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #8
 
-        br              x10
+        ret             x10
 6:
         // If we didn't need to do the flat8in part, we use the same writeback
         // as in loop_filter_h_4_8.
@@ -688,7 +688,7 @@ function vp9_loop_filter_h_8_8_16_neon
         st1             {v25.d}[1], [x0], x1
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #4
-        br              x10
+        ret             x10
 endfunc
 
 bpp_frontends vp9_loop_filter_h_8_8
@@ -743,7 +743,7 @@ function vp9_loop_filter_v_16_8_16_neon
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  x1
 
-        br              x10
+        ret             x10
 8:
         add             x9,  x9,  x1, lsl #2
         // If we didn't do the flat8out part, the output is left in the
@@ -756,7 +756,7 @@ function vp9_loop_filter_v_16_8_16_neon
         st1             {v26.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #1
         sub             x0,  x0,  x1
-        br              x10
+        ret             x10
 7:
         sub             x9,  x0,  x1, lsl #1
         st1             {v22.8h}, [x9], x1
@@ -764,7 +764,7 @@ function vp9_loop_filter_v_16_8_16_neon
         st1             {v23.8h}, [x9], x1
         st1             {v25.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #1
-        br              x10
+        ret             x10
 endfunc
 
 bpp_frontends vp9_loop_filter_v_16_8, push=1
@@ -821,7 +821,7 @@ function vp9_loop_filter_h_16_8_16_neon
         st1             {v31.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #3
 
-        br              x10
+        ret             x10
 8:
         // The same writeback as in loop_filter_h_8_8
         sub             x9,  x0,  #8
@@ -838,7 +838,7 @@ function vp9_loop_filter_h_16_8_16_neon
         st1             {v27.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #8
-        br              x10
+        ret             x10
 7:
         // The same writeback as in loop_filter_h_4_8
         sub             x9,  x0,  #4
@@ -854,7 +854,7 @@ function vp9_loop_filter_h_16_8_16_neon
         st1             {v25.d}[1], [x0], x1
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #4
-        br              x10
+        ret             x10
 endfunc
 
 bpp_frontends vp9_loop_filter_h_16_8, push=1

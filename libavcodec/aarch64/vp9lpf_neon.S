@@ -399,7 +399,7 @@
 .endif
         // If no pixels needed flat8in nor flat8out, jump to a
         // writeout of the inner 4 pixels
-        br              x14
+        ret             x14
 1:
 
         mov             x5,  v7.d[0]
@@ -411,7 +411,7 @@
         cbnz            x5,  1f
 .endif
         // If no pixels need flat8out, jump to a writeout of the inner 6 pixels
-        br              x15
+        ret             x15
 
 1:
         // flat8out
@@ -532,32 +532,32 @@ function vp9_loop_filter_4
         loop_filter     4,  .8b,  0,    v16, v17, v18, v19, v28, v29, v30, v31
         ret
 9:
-        br              x10
+        ret             x10
 endfunc
 
 function vp9_loop_filter_4_16b_mix_44
         loop_filter     4,  .16b, 44,   v16, v17, v18, v19, v28, v29, v30, v31
         ret
 9:
-        br              x10
+        ret             x10
 endfunc
 
 function vp9_loop_filter_8
         loop_filter     8,  .8b,  0,    v16, v17, v18, v19, v28, v29, v30, v31
         ret
 6:
-        br              x13
+        ret             x13
 9:
-        br              x10
+        ret             x10
 endfunc
 
 function vp9_loop_filter_8_16b_mix
         loop_filter     8,  .16b, 88,   v16, v17, v18, v19, v28, v29, v30, v31
         ret
 6:
-        br              x13
+        ret             x13
 9:
-        br              x10
+        ret             x10
 endfunc
 
 function vp9_loop_filter_16
@@ -568,7 +568,7 @@ function vp9_loop_filter_16
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x10
+        ret             x10
 endfunc
 
 function vp9_loop_filter_16_16b
@@ -579,7 +579,7 @@ function vp9_loop_filter_16_16b
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x10
+        ret             x10
 endfunc
 
 .macro loop_filter_4
@@ -648,7 +648,7 @@ function ff_vp9_loop_filter_v_4_8_neon, export=1
         st1             {v23.8b}, [x9], x1
         st1             {v25.8b}, [x0], x1
 
-        br              x10
+        ret             x10
 endfunc
 
 function ff_vp9_loop_filter_v_44_16_neon, export=1
@@ -672,7 +672,7 @@ function ff_vp9_loop_filter_v_44_16_neon, export=1
         st1             {v23.16b}, [x9], x1
         st1             {v25.16b}, [x0], x1
 
-        br              x10
+        ret             x10
 endfunc
 
 function ff_vp9_loop_filter_h_4_8_neon, export=1
@@ -714,7 +714,7 @@ function ff_vp9_loop_filter_h_4_8_neon, export=1
         st1             {v25.s}[0], [x9], x1
         st1             {v25.s}[1], [x0], x1
 
-        br              x10
+        ret             x10
 endfunc
 
 function ff_vp9_loop_filter_h_44_16_neon, export=1
@@ -766,7 +766,7 @@ function ff_vp9_loop_filter_h_44_16_neon, export=1
         st1             {v25.s}[1], [x9], x1
         st1             {v25.s}[3], [x0], x1
 
-        br              x10
+        ret             x10
 endfunc
 
 function ff_vp9_loop_filter_v_8_8_neon, export=1
@@ -793,14 +793,14 @@ function ff_vp9_loop_filter_v_8_8_neon, export=1
         st1             {v23.8b}, [x9], x1
         st1             {v26.8b}, [x0], x1
 
-        br              x10
+        ret             x10
 6:
         sub             x9,  x0,  x1, lsl #1
         st1             {v22.8b}, [x9], x1
         st1             {v24.8b}, [x0], x1
         st1             {v23.8b}, [x9], x1
         st1             {v25.8b}, [x0], x1
-        br              x10
+        ret             x10
 endfunc
 
 .macro mix_v_16 mix
@@ -828,14 +828,14 @@ function ff_vp9_loop_filter_v_\mix\()_16_neon, export=1
         st1             {v23.16b}, [x9], x1
         st1             {v26.16b}, [x0], x1
 
-        br              x10
+        ret             x10
 6:
         sub             x9,  x0,  x1, lsl #1
         st1             {v22.16b}, [x9], x1
         st1             {v24.16b}, [x0], x1
         st1             {v23.16b}, [x9], x1
         st1             {v25.16b}, [x0], x1
-        br              x10
+        ret             x10
 endfunc
 .endm
 
@@ -876,7 +876,7 @@ function ff_vp9_loop_filter_h_8_8_neon, export=1
         st1             {v23.8b}, [x9], x1
         st1             {v27.8b}, [x0], x1
 
-        br              x10
+        ret             x10
 6:
         // If we didn't need to do the flat8in part, we use the same writeback
         // as in loop_filter_h_4_8.
@@ -891,7 +891,7 @@ function ff_vp9_loop_filter_h_8_8_neon, export=1
         st1             {v24.s}[1], [x0], x1
         st1             {v25.s}[0], [x9], x1
         st1             {v25.s}[1], [x0], x1
-        br              x10
+        ret             x10
 endfunc
 
 .macro mix_h_16 mix
@@ -942,7 +942,7 @@ function ff_vp9_loop_filter_h_\mix\()_16_neon, export=1
         st1             {v27.8b},   [x9], x1
         st1             {v27.d}[1], [x0], x1
 
-        br              x10
+        ret             x10
 6:
         add             x9,  x9,  #2
         add             x0,  x0,  #2
@@ -963,7 +963,7 @@ function ff_vp9_loop_filter_h_\mix\()_16_neon, export=1
         st1             {v24.s}[3], [x0], x1
         st1             {v25.s}[1], [x9], x1
         st1             {v25.s}[3], [x0], x1
-        br              x10
+        ret             x10
 endfunc
 .endm
 
@@ -1022,7 +1022,7 @@ function ff_vp9_loop_filter_v_16_8_neon, export=1
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x10
+        ret             x10
 8:
         add             x9,  x9,  x1, lsl #2
         // If we didn't do the flat8out part, the output is left in the
@@ -1091,7 +1091,7 @@ function ff_vp9_loop_filter_v_16_16_neon, export=1
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x10
+        ret             x10
 8:
         add             x9,  x9,  x1, lsl #2
         st1             {v21.16b}, [x9], x1
@@ -1168,7 +1168,7 @@ function ff_vp9_loop_filter_h_16_8_neon, export=1
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x10
+        ret             x10
 8:
         // The same writeback as in loop_filter_h_8_8
         sub             x9,  x0,  #4
@@ -1287,7 +1287,7 @@ function ff_vp9_loop_filter_h_16_16_neon, export=1
         ldp             d10, d11, [sp], 0x10
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
-        br              x10
+        ret             x10
 8:
         sub             x9,  x0,  #4
         add             x0,  x9,  x1, lsl #3

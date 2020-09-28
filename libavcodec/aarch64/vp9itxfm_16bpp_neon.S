@@ -1040,7 +1040,7 @@ function \txfm\()16_1d_4x16_pass1_neon
 .irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
         store           \i,  x0,  #16
 .endr
-        br              x14
+        ret             x14
 1:
         // Special case: For the last input column (x1 == 12),
         // which would be stored as the last row in the temp buffer,
@@ -1068,7 +1068,7 @@ function \txfm\()16_1d_4x16_pass1_neon
         mov             v29.16b, v17.16b
         mov             v30.16b, v18.16b
         mov             v31.16b, v19.16b
-        br              x14
+        ret             x14
 endfunc
 
 // Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
@@ -1098,7 +1098,7 @@ function \txfm\()16_1d_4x16_pass2_neon
         load_add_store  v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
         load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
 
-        br              x14
+        ret             x14
 endfunc
 .endm
 
@@ -1208,7 +1208,7 @@ function vp9_\txfm1\()_\txfm2\()_16x16_add_16_neon
         ldp             d12, d13, [sp], 0x10
         ldp             d14, d15, [sp], 0x10
 .endif
-        br              x15
+        ret             x15
 endfunc
 
 function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_10_neon, export=1
@@ -1264,7 +1264,7 @@ function idct16_1d_4x16_pass1_quarter_neon
         st1             {v23.4s},  [x0], #16
         st1             {v27.4s},  [x0], #16
         st1             {v31.4s},  [x0], #16
-        br              x14
+        ret             x14
 endfunc
 
 function idct16_1d_4x16_pass2_quarter_neon
@@ -1286,7 +1286,7 @@ function idct16_1d_4x16_pass2_quarter_neon
         load_add_store  v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
         load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
 
-        br              x14
+        ret             x14
 endfunc
 
 function idct16_1d_4x16_pass1_half_neon
@@ -1313,7 +1313,7 @@ function idct16_1d_4x16_pass1_half_neon
 .irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
         store           \i,  x0,  #16
 .endr
-        br              x14
+        ret             x14
 1:
         // Special case: For the second input column (r1 == 4),
         // which would be stored as the second row in the temp buffer,
@@ -1341,7 +1341,7 @@ function idct16_1d_4x16_pass1_half_neon
         mov             v21.16b, v17.16b
         mov             v22.16b, v18.16b
         mov             v23.16b, v19.16b
-        br              x14
+        ret             x14
 endfunc
 
 function idct16_1d_4x16_pass2_half_neon
@@ -1364,7 +1364,7 @@ function idct16_1d_4x16_pass2_half_neon
         load_add_store  v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
         load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
 
-        br              x14
+        ret             x14
 endfunc
 
 .macro idct16_partial size
@@ -1390,7 +1390,7 @@ function idct16x16_\size\()_add_16_neon
 
         add             sp,  sp,  #1024
         ldp             d8,  d9,  [sp], 0x10
-        br              x15
+        ret             x15
 endfunc
 .endm
 
@@ -1729,7 +1729,7 @@ function idct32_1d_4x32_pass1\suffix\()_neon
         store_rev       v29.4s, v25.4s, v21.4s, v17.4s, v29.16b, v25.16b
         store_rev       v28.4s, v24.4s, v20.4s, v16.4s, v28.16b, v24.16b
 .purgem store_rev
-        br              x14
+        ret             x14
 endfunc
 
 // This is mostly the same as 4x32_pass1, but without the transpose,
@@ -1849,7 +1849,7 @@ function idct32_1d_4x32_pass2\suffix\()_neon
         load_acc_store  v24.4s, v25.4s, v26.4s, v27.4s, 1
         load_acc_store  v28.4s, v29.4s, v30.4s, v31.4s, 1
 .purgem load_acc_store
-        br              x14
+        ret             x14
 endfunc
 .endm
 
@@ -1943,7 +1943,7 @@ function vp9_idct_idct_32x32_add_16_neon
         ldp             d10, d11, [sp], 0x10
         ldp             d8,  d9,  [sp], 0x10
 
-        br              x15
+        ret             x15
 endfunc
 
 function ff_vp9_idct_idct_32x32_add_10_neon, export=1
@@ -2009,7 +2009,7 @@ function idct32x32_\size\()_add_16_neon
         ldp             d10, d11, [sp], 0x10
         ldp             d8,  d9,  [sp], 0x10
 
-        br              x15
+        ret             x15
 endfunc
 .endm
 
