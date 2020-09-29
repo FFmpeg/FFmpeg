@@ -151,7 +151,6 @@ typedef struct V360Context {
 
     float rot_mat[3][3];
 
-    float input_mirror_modifier[2];
     float output_mirror_modifier[3];
 
     int in_width, in_height;
