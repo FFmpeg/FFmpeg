@@ -215,8 +215,8 @@ static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data,
     if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         int ps = s->ildct_cmp(NULL, data, NULL, linesize, 8) - 400;
         if (ps > 0) {
-            int is = s->ildct_cmp(NULL, data,            NULL, linesize << 1, 4) +
-                     s->ildct_cmp(NULL, data + linesize, NULL, linesize << 1, 4);
+            int is = s->ildct_cmp(NULL, data,            NULL, linesize * 2, 4) +
+                     s->ildct_cmp(NULL, data + linesize, NULL, linesize * 2, 4);
             return ps > is;
         }
     }
@@ -511,7 +511,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 
     if (data) {
         if (DV_PROFILE_IS_HD(s->sys)) {
-            s->get_pixels(blk, data, linesize << bi->dct_mode);
+            s->get_pixels(blk, data, linesize * (1 << bi->dct_mode));
             s->fdct[0](blk);
         } else {
             bi->dct_mode = dv_guess_dct_mode(s, data, linesize);
@@ -860,7 +860,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
 
         qnos[mb_index] = DV_PROFILE_IS_HD(s->sys) ? 1 : 15;
 
-        y_ptr    = s->frame->data[0] + ((mb_y * s->frame->linesize[0] + mb_x) << 3);
+        y_ptr    = s->frame->data[0] + (mb_y * s->frame->linesize[0] + mb_x) * 8;
         linesize = s->frame->linesize[0];
 
         if (s->sys->height == 1080 && mb_y < 134)
@@ -874,12 +874,12 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P)                      ||
             (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
-            y_stride = s->frame->linesize[0] << (3*!enc_blk->dct_mode);
+            y_stride = s->frame->linesize[0] * (1 << (3*!enc_blk->dct_mode));
         } else {
             y_stride = 16;
         }
         y_ptr    = s->frame->data[0] +
-                   ((mb_y * s->frame->linesize[0] + mb_x) << 3);
+                   (mb_y * s->frame->linesize[0] + mb_x) * 8;
         linesize = s->frame->linesize[0];
 
         if (s->sys->video_stype == 4) { /* SD 422 */
@@ -898,17 +898,17 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         enc_blk += 4;
 
         /* initializing chrominance blocks */
-        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->frame->linesize[1] +
-                     (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) << 3);
+        c_offset = ((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->frame->linesize[1] +
+                    (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) * 8;
         for (j = 2; j; j--) {
             uint8_t *c_ptr = s->frame->data[j] + c_offset;
             linesize = s->frame->linesize[j];
-            y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] << (3*!enc_blk->dct_mode));
+            y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] * (1 << (3*!enc_blk->dct_mode)));
             if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t *d;
                 uint8_t *b = scratch;
                 for (i = 0; i < 8; i++) {
-                    d      = c_ptr + (linesize << 3);
+                    d      = c_ptr + linesize * 8;
                     b[0]   = c_ptr[0];
                     b[1]   = c_ptr[1];
                     b[2]   = c_ptr[2];
