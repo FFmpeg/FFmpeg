@@ -1076,6 +1076,10 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
             av_buffer_unref(&priv->sequence_header_ref);
             priv->sequence_header = NULL;
 
+            err = ff_cbs_make_unit_refcounted(ctx, unit);
+            if (err < 0)
+                return err;
+
             priv->sequence_header_ref = av_buffer_ref(unit->content_ref);
             if (!priv->sequence_header_ref)
                 return AVERROR(ENOMEM);
