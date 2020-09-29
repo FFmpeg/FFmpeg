@@ -135,6 +135,8 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     case AV_CODEC_ID_ADPCM_PSX:
         max_channels = 8;
+        if (avctx->block_align % (16 * avctx->channels))
+            return AVERROR_INVALIDDATA;
         break;
     case AV_CODEC_ID_ADPCM_IMA_DAT4:
     case AV_CODEC_ID_ADPCM_THP:
@@ -1968,6 +1970,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             int nb_samples_per_block = 28 * FFMAX(avctx->block_align, 16 * avctx->channels) / (16 * avctx->channels);
             for (channel = 0; channel < avctx->channels; channel++) {
                 samples = samples_p[channel] + block * nb_samples_per_block;
+                av_assert0((block + 1) * nb_samples_per_block <= nb_samples);
 
                 /* Read in every sample for this channel.  */
                 for (i = 0; i < nb_samples_per_block / 28; i++) {
