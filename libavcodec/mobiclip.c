@@ -407,12 +407,12 @@ static int setup_qtables(AVCodecContext *avctx, int quantizer)
     return 0;
 }
 
-static void inverse4(int *rs)
+static void inverse4(unsigned *rs)
 {
-    int a = rs[0] + rs[2];
-    int b = rs[0] - rs[2];
-    int c = rs[1] + (rs[3] >> 1);
-    int d = (rs[1] >> 1) - rs[3];
+    unsigned a = rs[0] + rs[2];
+    unsigned b = rs[0] - rs[2];
+    unsigned c = rs[1] + ((int)rs[3] >> 1);
+    unsigned d = ((int)rs[1] >> 1) - rs[3];
 
     rs[0] = a + c;
     rs[1] = b + d;
@@ -519,7 +519,7 @@ static int add_coefficients(AVCodecContext *avctx, AVFrame *frame,
         if (pos >= size * size)
             return AVERROR_INVALIDDATA;
         qval = qtab[pos];
-        mat[ztab[pos]] = qval * level;
+        mat[ztab[pos]] = qval *(unsigned)level;
 
         if (last)
             break;
