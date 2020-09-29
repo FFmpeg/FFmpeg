@@ -90,7 +90,7 @@ typedef struct CuvidContext
     CUVIDDECODECAPS caps8, caps10, caps12;
 
     CUVIDPARSERPARAMS cuparseinfo;
-    CUVIDEOFORMATEX cuparse_ext;
+    CUVIDEOFORMATEX *cuparse_ext;
 
     CudaFunctions *cudl;
     CuvidFunctions *cvdl;
@@ -714,6 +714,7 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
     av_buffer_unref(&ctx->hwdevice);
 
     av_freep(&ctx->key_frame);
+    av_freep(&ctx->cuparse_ext);
 
     cuvid_free_functions(&ctx->cvdl);
 
@@ -824,6 +825,8 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     CUcontext cuda_ctx = NULL;
     CUcontext dummy;
     const AVBitStreamFilter *bsf;
+    uint8_t *extradata;
+    uint32_t extradata_size;
     int ret = 0;
 
     enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
@@ -920,10 +923,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     ctx->cudl = device_hwctx->internal->cuda_dl;
 
     memset(&ctx->cuparseinfo, 0, sizeof(ctx->cuparseinfo));
-    memset(&ctx->cuparse_ext, 0, sizeof(ctx->cuparse_ext));
     memset(&seq_pkt, 0, sizeof(seq_pkt));
-
-    ctx->cuparseinfo.pExtVideoInfo = &ctx->cuparse_ext;
 
     switch (avctx->codec->id) {
 #if CONFIG_H264_CUVID_DECODER
@@ -994,16 +994,24 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             goto error;
         }
 
-        ctx->cuparse_ext.format.seqhdr_data_length = ctx->bsf->par_out->extradata_size;
-        memcpy(ctx->cuparse_ext.raw_seqhdr_data,
-               ctx->bsf->par_out->extradata,
-               FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), ctx->bsf->par_out->extradata_size));
+        extradata = ctx->bsf->par_out->extradata;
+        extradata_size = ctx->bsf->par_out->extradata_size;
     } else if (avctx->extradata_size > 0) {
-        ctx->cuparse_ext.format.seqhdr_data_length = avctx->extradata_size;
-        memcpy(ctx->cuparse_ext.raw_seqhdr_data,
-               avctx->extradata,
-               FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), avctx->extradata_size));
+        extradata = avctx->extradata;
+        extradata_size = avctx->extradata_size;
     }
+
+    ctx->cuparse_ext = av_mallocz(sizeof(*ctx->cuparse_ext)
+            + FFMAX(extradata_size - sizeof(ctx->cuparse_ext->raw_seqhdr_data), 0));
+    if (!ctx->cuparse_ext) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
+    ctx->cuparse_ext->format.seqhdr_data_length = avctx->extradata_size;
+    memcpy(ctx->cuparse_ext->raw_seqhdr_data, extradata, extradata_size);
+
+    ctx->cuparseinfo.pExtVideoInfo = ctx->cuparse_ext;
 
     ctx->key_frame = av_mallocz(ctx->nb_surfaces * sizeof(int));
     if (!ctx->key_frame) {
@@ -1033,8 +1041,8 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    seq_pkt.payload = ctx->cuparse_ext.raw_seqhdr_data;
-    seq_pkt.payload_size = ctx->cuparse_ext.format.seqhdr_data_length;
+    seq_pkt.payload = ctx->cuparse_ext->raw_seqhdr_data;
+    seq_pkt.payload_size = ctx->cuparse_ext->format.seqhdr_data_length;
 
     if (seq_pkt.payload && seq_pkt.payload_size) {
         ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &seq_pkt));
@@ -1093,8 +1101,8 @@ static void cuvid_flush(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    seq_pkt.payload = ctx->cuparse_ext.raw_seqhdr_data;
-    seq_pkt.payload_size = ctx->cuparse_ext.format.seqhdr_data_length;
+    seq_pkt.payload = ctx->cuparse_ext->raw_seqhdr_data;
+    seq_pkt.payload_size = ctx->cuparse_ext->format.seqhdr_data_length;
 
     if (seq_pkt.payload && seq_pkt.payload_size) {
         ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &seq_pkt));
