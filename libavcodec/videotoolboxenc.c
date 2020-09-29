@@ -573,7 +573,6 @@ static void vtenc_output_callback(
     ExtraSEI *sei = sourceFrameCtx;
 
     if (vtctx->async_error) {
-        if(sample_buffer) CFRelease(sample_buffer);
         return;
     }
 
