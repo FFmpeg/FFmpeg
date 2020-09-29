@@ -279,6 +279,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
 {                                                                                                          \
     ThreadData *td = arg;                                                                                  \
     const V360Context *s = ctx->priv;                                                                      \
+    const SliceXYRemap *r = &s->slice_remap[jobnr];                                                        \
     const AVFrame *in = td->in;                                                                            \
     AVFrame *out = td->out;                                                                                \
                                                                                                            \
@@ -295,7 +296,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const uint8_t *const src = in->data[plane] +                                                   \
                                                    in_offset_h * in_linesize + in_offset_w * (bits >> 3);  \
             uint8_t *dst = out->data[plane] + out_offset_h * out_linesize + out_offset_w * (bits >> 3);    \
-            const uint8_t *mask = plane == 3 ? s->mask : NULL;                                             \
+            const uint8_t *mask = plane == 3 ? r->mask : NULL;                                             \
             const int width = s->pr_width[plane];                                                          \
             const int height = s->pr_height[plane];                                                        \
                                                                                                            \
@@ -303,15 +304,16 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
                                                                                                            \
             for (int y = slice_start; y < slice_end && !mask; y++) {                                       \
-                const int16_t *const u = s->u[map] + y * uv_linesize * ws * ws;                            \
-                const int16_t *const v = s->v[map] + y * uv_linesize * ws * ws;                            \
-                const int16_t *const ker = s->ker[map] + y * uv_linesize * ws * ws;                        \
+                const int16_t *const u = r->u[map] + (y - slice_start) * uv_linesize * ws * ws;            \
+                const int16_t *const v = r->v[map] + (y - slice_start) * uv_linesize * ws * ws;            \
+                const int16_t *const ker = r->ker[map] + (y - slice_start) * uv_linesize * ws * ws;        \
                                                                                                            \
                 s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                 \
             }                                                                                              \
                                                                                                            \
             for (int y = slice_start; y < slice_end && mask; y++) {                                        \
-                memcpy(dst + y * out_linesize, mask + y * width * (bits >> 3), width * (bits >> 3));       \
+                memcpy(dst + y * out_linesize, mask +                                                      \
+                       (y - slice_start) * width * (bits >> 3), width * (bits >> 3));                      \
             }                                                                                              \
         }                                                                                                  \
     }                                                                                                      \
@@ -346,8 +348,9 @@ static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_
         int tmp = 0;                                                                          \
                                                                                               \
         for (int i = 0; i < ws; i++) {                                                        \
+            const int iws = i * ws;                                                           \
             for (int j = 0; j < ws; j++) {                                                    \
-                tmp += kker[i * ws + j] * s[vv[i * ws + j] * in_linesize + uu[i * ws + j]];   \
+                tmp += kker[iws + j] * s[vv[iws + j] * in_linesize + uu[iws + j]];            \
             }                                                                                 \
         }                                                                                     \
                                                                                               \
@@ -3920,24 +3923,33 @@ static inline void mirror(const float *modifier, float *vec)
 
 static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int sizeof_mask, int p)
 {
-    if (!s->u[p])
-        s->u[p] = av_calloc(s->uv_linesize[p] * s->pr_height[p], sizeof_uv);
-    if (!s->v[p])
-        s->v[p] = av_calloc(s->uv_linesize[p] * s->pr_height[p], sizeof_uv);
-    if (!s->u[p] || !s->v[p])
-        return AVERROR(ENOMEM);
-    if (sizeof_ker) {
-        if (!s->ker[p])
-            s->ker[p] = av_calloc(s->uv_linesize[p] * s->pr_height[p], sizeof_ker);
-        if (!s->ker[p])
-            return AVERROR(ENOMEM);
-    }
+    const int pr_height = s->pr_height[p];
 
-    if (sizeof_mask && !p) {
-        if (!s->mask)
-            s->mask = av_calloc(s->pr_width[p] * s->pr_height[p], sizeof_mask);
-        if (!s->mask)
+    for (int n = 0; n < s->nb_threads; n++) {
+        SliceXYRemap *r = &s->slice_remap[n];
+        const int slice_start = (pr_height *  n     ) / s->nb_threads;
+        const int slice_end   = (pr_height * (n + 1)) / s->nb_threads;
+        const int height = slice_end - slice_start;
+
+        if (!r->u[p])
+            r->u[p] = av_calloc(s->uv_linesize[p] * height, sizeof_uv);
+        if (!r->v[p])
+            r->v[p] = av_calloc(s->uv_linesize[p] * height, sizeof_uv);
+        if (!r->u[p] || !r->v[p])
             return AVERROR(ENOMEM);
+        if (sizeof_ker) {
+            if (!r->ker[p])
+                r->ker[p] = av_calloc(s->uv_linesize[p] * height, sizeof_ker);
+            if (!r->ker[p])
+                return AVERROR(ENOMEM);
+        }
+
+        if (sizeof_mask && !p) {
+            if (!r->mask)
+                r->mask = av_calloc(s->pr_width[p] * height, sizeof_mask);
+            if (!r->mask)
+                return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
@@ -4024,6 +4036,7 @@ static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDes
 static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     V360Context *s = ctx->priv;
+    SliceXYRemap *r = &s->slice_remap[jobnr];
 
     for (int p = 0; p < s->nb_allocated; p++) {
         const int max_value = s->max_value;
@@ -4034,17 +4047,18 @@ static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobn
         const int in_height = s->inplaneheight[p];
         const int slice_start = (height *  jobnr     ) / nb_jobs;
         const int slice_end   = (height * (jobnr + 1)) / nb_jobs;
+        const int elements = s->elements;
         float du, dv;
         float vec[3];
         XYRemap rmap;
 
         for (int j = slice_start; j < slice_end; j++) {
             for (int i = 0; i < width; i++) {
-                int16_t *u = s->u[p] + (j * uv_linesize + i) * s->elements;
-                int16_t *v = s->v[p] + (j * uv_linesize + i) * s->elements;
-                int16_t *ker = s->ker[p] + (j * uv_linesize + i) * s->elements;
-                uint8_t *mask8 = p ? NULL : s->mask + (j * s->pr_width[0] + i);
-                uint16_t *mask16 = p ? NULL : (uint16_t *)s->mask + (j * s->pr_width[0] + i);
+                int16_t *u = r->u[p] + ((j - slice_start) * uv_linesize + i) * elements;
+                int16_t *v = r->v[p] + ((j - slice_start) * uv_linesize + i) * elements;
+                int16_t *ker = r->ker[p] + ((j - slice_start) * uv_linesize + i) * elements;
+                uint8_t *mask8 = p ? NULL : r->mask + ((j - slice_start) * s->pr_width[0] + i);
+                uint16_t *mask16 = p ? NULL : (uint16_t *)r->mask + ((j - slice_start) * s->pr_width[0] + i);
                 int in_mask, out_mask;
 
                 if (s->out_transpose)
@@ -4063,7 +4077,7 @@ static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobn
                 av_assert1(!isnan(du) && !isnan(dv));
                 s->calculate_kernel(du, dv, &rmap, u, v, ker);
 
-                if (!p && s->mask) {
+                if (!p && r->mask) {
                     if (s->mask_size == 1) {
                         mask8[0] = 255 * (out_mask & in_mask);
                     } else {
@@ -4580,6 +4594,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = h;
     outlink->w = w;
 
+    s->nb_threads = FFMIN(outlink->h, ff_filter_get_nb_threads(ctx));
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     have_alpha   = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
 
@@ -4592,6 +4607,11 @@ static int config_output(AVFilterLink *outlink)
         s->map[1] = s->map[2] = 1;
     }
 
+    if (!s->slice_remap)
+        s->slice_remap = av_calloc(s->nb_threads, sizeof(*s->slice_remap));
+    if (!s->slice_remap)
+        return AVERROR(ENOMEM);
+
     for (int i = 0; i < s->nb_allocated; i++) {
         err = allocate_plane(s, sizeof_uv, sizeof_ker, sizeof_mask * have_alpha * s->alpha, i);
         if (err < 0)
@@ -4601,7 +4621,7 @@ static int config_output(AVFilterLink *outlink)
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
-    ctx->internal->execute(ctx, v360_slice, NULL, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ctx->internal->execute(ctx, v360_slice, NULL, NULL, s->nb_threads);
 
     return 0;
 }
@@ -4624,7 +4644,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.in = in;
     td.out = out;
 
-    ctx->internal->execute(ctx, s->remap_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ctx->internal->execute(ctx, s->remap_slice, &td, NULL, s->nb_threads);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -4646,12 +4666,19 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
 
-    for (int p = 0; p < s->nb_allocated; p++) {
-        av_freep(&s->u[p]);
-        av_freep(&s->v[p]);
-        av_freep(&s->ker[p]);
+    for (int n = 0; n < s->nb_threads && s->slice_remap; n++) {
+        SliceXYRemap *r = &s->slice_remap[n];
+
+        for (int p = 0; p < s->nb_allocated; p++) {
+            av_freep(&r->u[p]);
+            av_freep(&r->v[p]);
+            av_freep(&r->ker[p]);
+        }
+
+        av_freep(&r->mask);
     }
-    av_freep(&s->mask);
+
+    av_freep(&s->slice_remap);
 }
 
 static const AVFilterPad inputs[] = {
