@@ -707,6 +707,38 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_name(MOVContext* c, AVIOContext* pb, MOVAtom atom)
+{
+    AVStream *st;
+    int64_t name_size;
+    char *name_str;
+    int ret;
+
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    name_size = atom.size;
+    if (name_size > 0) {
+        if (name_size > FFMIN(INT_MAX, SIZE_MAX-1))
+            return AVERROR_INVALIDDATA;
+        name_str = av_malloc(name_size + 1); /* Add null terminator */
+        if (!name_str)
+            return AVERROR(ENOMEM);
+
+        ret = ffio_read_size(pb, name_str, name_size);
+        if (ret < 0) {
+            av_freep(&name_str);
+            return ret;
+        }
+        name_str[name_size] = 0;
+        if (name_str[0]) {
+            av_dict_set(&st->metadata, "name", name_str, AV_DICT_DONT_OVERWRITE);
+        }
+        av_freep(&name_str);
+    }
+
+    return 0;
+}
+
 static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -6862,6 +6894,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('f','t','y','p'), mov_read_ftyp },
 { MKTAG('g','l','b','l'), mov_read_glbl },
 { MKTAG('h','d','l','r'), mov_read_hdlr },
+{ MKTAG('n','a','m','e'), mov_read_name },
 { MKTAG('i','l','s','t'), mov_read_ilst },
 { MKTAG('j','p','2','h'), mov_read_jp2h },
 { MKTAG('m','d','a','t'), mov_read_mdat },
