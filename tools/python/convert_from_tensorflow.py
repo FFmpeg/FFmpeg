@@ -48,9 +48,9 @@ class Operand(object):
             self.used_count = self.used_count + 1
 
     def __str__(self):
-        return "{}: (name: {}, iotype: {}, dtype: {}, dims: ({},{},{},{}) used_count: {})".format(self.index,
+        return "{}: (name: {}, iotype: {}, dtype: {}, dims: {}, used_count: {})".format(self.index,
                             self.name, self.iotype2str[self.iotype], self.dtype2str[self.dtype],
-                            self.dims[0], self.dims[1], self.dims[2], self.dims[3], self.used_count)
+                            self.dims, self.used_count)
 
     def __lt__(self, other):
         return self.index < other.index
@@ -71,8 +71,10 @@ class TFConverter:
         self.converted_nodes = set()
         self.conv2d_scope_names = set()
         self.conv2d_scopename_inputname_dict = {}
+        self.dense_scope_names = set()
+        self.dense_scopename_inputname_dict = {}
         self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3, 'Maximum':4,
-                        'MathBinary':5, 'MathUnary':6, 'AvgPool':7}
+                        'MathBinary':5, 'MathUnary':6, 'AvgPool':7, 'MatMul':8}
         self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4, 'FloorMod':5}
         self.mathun2code  = {'Abs':0, 'Sin':1, 'Cos':2, 'Tan':3, 'Asin':4,
                 'Acos':5, 'Atan':6, 'Sinh':7, 'Cosh':8, 'Tanh':9, 'Asinh':10,
@@ -124,6 +126,22 @@ class TFConverter:
         else:
             anode = None
         return knode, bnode, dnode, anode
+
+
+    def get_dense_params(self, dense_scope_name):
+        knode = self.name_node_dict[dense_scope_name + '/kernel']
+        bnode = self.name_node_dict.get(dense_scope_name + '/bias')
+        # the BiasAdd name is possible be changed into the output name,
+        # if activation is None, and BiasAdd.next is the last op which is Identity
+        anode = None
+        if bnode:
+            if dense_scope_name + '/BiasAdd' in self.edges:
+                anode = self.edges[dense_scope_name + '/BiasAdd'][0]
+                if anode.op not in self.conv_activations:
+                    anode = None
+        else:
+            anode = None
+        return knode, bnode, anode
 
 
     def dump_complex_conv2d_to_file(self, node, f):
@@ -179,6 +197,57 @@ class TFConverter:
             output_operand_index = self.add_operand(anode.name, Operand.IOTYPE_OUTPUT)
         else:
             output_operand_index = self.add_operand(self.edges[bnode.name][0].name, Operand.IOTYPE_OUTPUT)
+        np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
+
+    def dump_dense_to_file(self, node, f):
+        assert(node.op == 'MatMul')
+        self.layer_number = self.layer_number + 1
+        self.converted_nodes.add(node.name)
+
+        scope_name = TFConverter.get_scope_name(node.name)
+        #knode for kernel, bnode for bias, anode for activation
+        knode, bnode, anode = self.get_dense_params(scope_name.split('/')[0])
+
+        if bnode is not None:
+            has_bias = 1
+            btensor = bnode.attr['value'].tensor
+            if btensor.tensor_shape.dim[0].size == 1:
+                bias = struct.pack("f", btensor.float_val[0])
+            else:
+                bias = btensor.tensor_content
+        else:
+            has_bias = 0
+
+        if anode is not None:
+            activation = anode.op
+        else:
+            activation = 'None'
+
+        ktensor = knode.attr['value'].tensor
+        in_channels = ktensor.tensor_shape.dim[0].size
+        out_channels = ktensor.tensor_shape.dim[1].size
+        if in_channels * out_channels == 1:
+            kernel = np.float32(ktensor.float_val[0])
+        else:
+            kernel = np.frombuffer(ktensor.tensor_content, dtype=np.float32)
+        kernel = kernel.reshape(in_channels, out_channels)
+        kernel = np.transpose(kernel, [1, 0])
+
+        np.array([self.op2code[node.op], self.conv_activations[activation], in_channels, out_channels, has_bias], dtype=np.uint32).tofile(f)
+        kernel.tofile(f)
+        if has_bias:
+            f.write(bias)
+
+        input_name = self.dense_scopename_inputname_dict[scope_name.split('/')[0]]
+        input_operand_index = self.add_operand(input_name, Operand.IOTYPE_INPUT)
+
+        if anode is not None:
+            output_operand_index = self.add_operand(anode.name, Operand.IOTYPE_OUTPUT)
+        else:
+            if bnode is not None:
+                output_operand_index = self.add_operand(self.edges[bnode.name][0].name, Operand.IOTYPE_OUTPUT)
+            else:
+                output_operand_index = self.add_operand(self.edges[scope_name+'/concat_1'][0].name, Operand.IOTYPE_OUTPUT)
         np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
 
 
@@ -343,9 +412,19 @@ class TFConverter:
                 if node.op == 'Conv2D':
                     self.dump_complex_conv2d_to_file(node, f)
                 continue
+            if self.in_dense_scope(node.name):
+                if node.op == 'MatMul':
+                    self.dump_dense_to_file(node, f)
+                continue
+
 
             if node.op == 'Conv2D':
                 self.dump_simple_conv2d_to_file(node, f)
+                continue
+            if node.name in self.output_names:
+                input_name = self.id_different_scope_dict[node.name]
+                if TFConverter.get_scope_name(input_name)!=TFConverter.get_scope_name(node.name):
+                    continue
             if node.op == 'AvgPool':
                 self.dump_avg_pool_to_file(node, f)
             elif node.op == 'DepthToSpace':
@@ -367,7 +446,7 @@ class TFConverter:
                 np.array([operand.index, len(operand.name)], dtype=np.uint32).tofile(f)
                 f.write(operand.name.encode('utf-8'))
                 np.array([operand.iotype, operand.dtype], dtype=np.uint32).tofile(f)
-                np.array([operand.dims[0], operand.dims[1], operand.dims[2], operand.dims[3]], dtype=np.uint32).tofile(f)
+                np.array(operand.dims, dtype=np.uint32).tofile(f)
 
 
     def dump_to_file(self):
@@ -396,6 +475,7 @@ class TFConverter:
 
 
     def remove_identity(self):
+        self.id_different_scope_dict = {}
         id_nodes = []
         id_dict = {}
         for node in self.nodes:
@@ -408,6 +488,7 @@ class TFConverter:
                     self.name_node_dict[input].name = name
                     self.name_node_dict[name] = self.name_node_dict[input]
                     del self.name_node_dict[input]
+                    self.id_different_scope_dict[name] = input
                 else:
                     id_dict[name] = input
 
@@ -449,8 +530,18 @@ class TFConverter:
         return False
 
 
-    def generate_conv2d_scope_info(self):
-        # mostly, conv2d is a sub block in graph, get the scope name
+    def in_dense_scope(self, name):
+        inner_scope = TFConverter.get_scope_name(name)
+        if inner_scope == "":
+            return False;
+        for scope in self.dense_scope_names:
+            index = inner_scope.find(scope)
+            if index == 0:
+                return True
+        return False
+
+    def generate_sub_block_op_scope_info(self):
+        # mostly, conv2d/dense is a sub block in graph, get the scope name
         for node in self.nodes:
             if node.op == 'Conv2D':
                 scope = TFConverter.get_scope_name(node.name)
@@ -461,8 +552,17 @@ class TFConverter:
                 if scope + '/kernel' not in self.name_node_dict:
                     continue
                 self.conv2d_scope_names.add(scope)
+            elif node.op == 'MatMul':
+                scope = TFConverter.get_scope_name(node.name)
+                # for the case tf.nn.dense is called directly
+                if scope == '':
+                    continue
+                # for the case tf.nn.dense is called within a scope
+                if scope + '/kernel' not in self.name_node_dict and scope.split('/Tensordot')[0] + '/kernel' not in self.name_node_dict:
+                    continue
+                self.dense_scope_names.add(scope.split('/Tensordot')[0])
 
-        # get the input name to the conv2d sub block
+        # get the input name to the conv2d/dense sub block
         for node in self.nodes:
             scope = TFConverter.get_scope_name(node.name)
             if scope in self.conv2d_scope_names:
@@ -470,6 +570,16 @@ class TFConverter:
                     for inp in node.input:
                         if TFConverter.get_scope_name(inp) != scope:
                             self.conv2d_scopename_inputname_dict[scope] = inp
+            elif scope in self.dense_scope_names:
+                if node.op == 'MatMul' or node.op == 'Shape':
+                    for inp in node.input:
+                        if TFConverter.get_scope_name(inp) != scope:
+                            self.dense_scopename_inputname_dict[scope] = inp
+            elif scope.split('/Tensordot')[0] in self.dense_scope_names:
+                if node.op == 'Transpose':
+                    for inp in node.input:
+                        if TFConverter.get_scope_name(inp).find(scope)<0 and TFConverter.get_scope_name(inp).find(scope.split('/')[0])<0:
+                            self.dense_scopename_inputname_dict[scope.split('/Tensordot')[0]] = inp
 
 
     def run(self):
@@ -477,7 +587,7 @@ class TFConverter:
         self.generate_output_names()
         self.remove_identity()
         self.generate_edges()
-        self.generate_conv2d_scope_info()
+        self.generate_sub_block_op_scope_info()
 
         if self.dump4tb:
             self.dump_for_tensorboard()

@@ -158,7 +158,7 @@ md5pipe(){
 md5(){
     encfile="${outdir}/${test}.out"
     cleanfiles="$cleanfiles $encfile"
-    ffmpeg "$@" $(target_path $encfile)
+    ffmpeg -y "$@" $(target_path $encfile)
     do_md5sum $encfile | awk '{print $1}'
 }
 

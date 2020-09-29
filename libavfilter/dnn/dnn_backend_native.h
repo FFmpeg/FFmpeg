@@ -45,11 +45,13 @@ typedef enum {
     DLT_MATH_BINARY = 5,
     DLT_MATH_UNARY = 6,
     DLT_AVG_POOL = 7,
+    DLT_DENSE = 8,
     DLT_COUNT
 } DNNLayerType;
 
 typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_OUTPUT} DNNOperandType;
 typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNPaddingParam;
+typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
 
 typedef struct Layer{
     DNNLayerType type;

@@ -299,6 +299,7 @@ enum AVCodecID {
     AV_CODEC_ID_MOBICLIP,
     AV_CODEC_ID_PHOTOCD,
     AV_CODEC_ID_IPU,
+    AV_CODEC_ID_ARGO,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

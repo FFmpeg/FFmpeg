@@ -210,6 +210,7 @@ OBJS-$(CONFIG_APTX_HD_ENCODER)         += aptxenc.o aptx.o
 OBJS-$(CONFIG_APNG_DECODER)            += png.o pngdec.o pngdsp.o
 OBJS-$(CONFIG_APNG_ENCODER)            += png.o pngenc.o
 OBJS-$(CONFIG_ARBC_DECODER)            += arbc.o
+OBJS-$(CONFIG_ARGO_DECODER)            += argo.o
 OBJS-$(CONFIG_SSA_DECODER)             += assdec.o ass.o
 OBJS-$(CONFIG_SSA_ENCODER)             += assenc.o ass.o
 OBJS-$(CONFIG_ASS_DECODER)             += assdec.o ass.o

@@ -65,7 +65,7 @@ enum {
 void ff_argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *buf);
 int  ff_argo_asf_validate_file_header(AVFormatContext *s, const ArgoASFFileHeader *hdr);
 void ff_argo_asf_parse_chunk_header(ArgoASFChunkHeader *hdr, const uint8_t *buf);
-int  ff_argo_asf_fill_stream(AVStream *st, const ArgoASFFileHeader *fhdr,
+int  ff_argo_asf_fill_stream(AVFormatContext *s, AVStream *st, const ArgoASFFileHeader *fhdr,
                              const ArgoASFChunkHeader *ckhdr);
 
 #endif /* AVFORMAT_ARGO_ASF_H */

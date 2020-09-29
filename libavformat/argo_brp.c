@@ -32,14 +32,18 @@
 #define BRP_BLOCK_HEADER_SIZE   12
 #define BRP_STREAM_HEADER_SIZE  20
 #define BRP_MAX_STREAMS         32 /* Soft cap, but even this is overkill. */
+#define BRP_BASF_LOOKAHEAD      10 /* How many blocks to search for the first BASF one. */
 #define BVID_HEADER_SIZE        16
-#define BRP_MIN_BUFFER_SIZE     FFMAX(FFMAX3(BRP_FILE_HEADER_SIZE,    \
-                                             BRP_BLOCK_HEADER_SIZE,   \
-                                             BRP_STREAM_HEADER_SIZE), \
-                                      BVID_HEADER_SIZE)
+#define MASK_HEADER_SIZE        12
+#define BRP_MIN_BUFFER_SIZE     FFMAX3(FFMAX3(BRP_FILE_HEADER_SIZE,    \
+                                              BRP_BLOCK_HEADER_SIZE,   \
+                                              BRP_STREAM_HEADER_SIZE), \
+                                      BVID_HEADER_SIZE,                \
+                                      MASK_HEADER_SIZE)
 
 #define BRP_CODEC_ID_BVID       MKTAG('B', 'V', 'I', 'D')
 #define BRP_CODEC_ID_BASF       MKTAG('B', 'A', 'S', 'F')
+#define BRP_CODEC_ID_MASK       MKTAG('M', 'A', 'S', 'K')
 
 typedef struct ArgoBRPFileHeader {
     uint32_t magic;
@@ -60,6 +64,12 @@ typedef struct ArgoBVIDHeader {
     uint32_t depth;
 } ArgoBVIDHeader;
 
+typedef struct ArgoMASKHeader {
+    uint32_t num_frames;
+    uint32_t width;
+    uint32_t height;
+} ArgoMASKHeader;
+
 typedef struct ArgoBRPStreamHeader {
     uint32_t codec_id;
     uint32_t id;
@@ -72,6 +82,8 @@ typedef struct ArgoBRPStreamHeader {
         ArgoBVIDHeader    bvid;
         /* If codec_id == BRP_CODEC_ID_BASF */
         ArgoASFFileHeader basf;
+        /* If codec_id == BRP_CODEC_ID_MASK */
+        ArgoMASKHeader    mask;
     } extradata;
 } ArgoBRPStreamHeader;
 
@@ -106,6 +118,9 @@ static int read_extradata(AVFormatContext *s, const ArgoBRPStreamHeader *hdr,
     } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
         name = "BASF";
         size = ASF_FILE_HEADER_SIZE;
+    } else if (hdr->codec_id == BRP_CODEC_ID_MASK) {
+        name = "MASK";
+        size = MASK_HEADER_SIZE;
     } else {
         avpriv_request_sample(s, "BRP codec id 0x%x", hdr->codec_id);
 
@@ -196,9 +211,7 @@ static int argo_brp_read_header(AVFormatContext *s)
             ArgoBVIDHeader *bvid = &hdr->extradata.bvid;
 
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-
-            /* No decoder for this yet. */
-            st->codecpar->codec_id   = AV_CODEC_ID_NONE;
+            st->codecpar->codec_id   = AV_CODEC_ID_ARGO;
 
             bvid->num_frames = AV_RL32(buf +  0);
             bvid->width      = AV_RL32(buf +  4);
@@ -213,15 +226,8 @@ static int argo_brp_read_header(AVFormatContext *s)
 
             st->codecpar->width  = bvid->width;
             st->codecpar->height = bvid->height;
-
-            if (bvid->depth == 8) {
-                st->codecpar->format = AV_PIX_FMT_PAL8;
-            } else if (bvid->depth == 24) {
-                st->codecpar->format = AV_PIX_FMT_RGB24;
-            } else {
-                avpriv_request_sample(s, "depth == %u", bvid->depth);
-                return AVERROR_PATCHWELCOME;
-            }
+            st->nb_frames = bvid->num_frames;
+            st->codecpar->bits_per_raw_sample = bvid->depth;
         } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
             /*
              * It would make the demuxer significantly more complicated
@@ -241,21 +247,29 @@ static int argo_brp_read_header(AVFormatContext *s)
             if ((ret = ff_argo_asf_validate_file_header(s, &hdr->extradata.basf)) < 0)
                 return ret;
 
+            st->nb_frames = hdr->extradata.basf.num_chunks;
+        } else if (hdr->codec_id == BRP_CODEC_ID_MASK) {
+            ArgoMASKHeader *mask = &hdr->extradata.mask;
+
+            st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+
+            mask->num_frames = AV_RL32(buf + 0);
+            mask->width      = AV_RL32(buf + 4);
+            mask->height     = AV_RL32(buf + 8);
+
+            st->nb_frames    = mask->num_frames;
         } else {
             av_assert0(0); /* Caught above, should never happen. */
         }
     }
 
-    /*
-     * This is nasty. BASF streams have their chunk header in each block,
-     * so the first one needs to be read to get the stream info. It should
-     * always be the first one.
-     */
+    /* Try to find the first BASF chunk. */
     if (brp->basf.index >= 0) {
         AVStream *st = s->streams[brp->basf.index];
         ArgoBRPStreamHeader *hdr = brp->streams + brp->basf.index;
         ArgoBRPBlockHeader blk;
         int64_t offset;
+        int i;
 
         av_assert0(st->codecpar->codec_id == AV_CODEC_ID_ADPCM_ARGO);
         av_assert0(brp->streams[brp->basf.index].extradata_size == ASF_FILE_HEADER_SIZE);
@@ -265,19 +279,32 @@ static int argo_brp_read_header(AVFormatContext *s)
 
         offset = ret;
 
-        if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
-            return ret;
-        else if (ret != BRP_BLOCK_HEADER_SIZE)
-            return AVERROR(EIO);
+        av_log(s, AV_LOG_TRACE, "Searching %d blocks for BASF...", BRP_BASF_LOOKAHEAD);
 
-        blk.stream_id = AV_RL32(buf + 0);
-        blk.start_ms  = AV_RL32(buf + 4);
-        blk.size      = AV_RL32(buf + 8);
+        for (i = 0; i < BRP_BASF_LOOKAHEAD; i++) {
+            if ((ret = avio_read(pb, buf, BRP_BLOCK_HEADER_SIZE)) < 0)
+                return ret;
+            else if (ret != BRP_BLOCK_HEADER_SIZE)
+                return AVERROR(EIO);
 
-        if (blk.stream_id != brp->basf.index) {
-            avpriv_request_sample(s, "first block not BASF");
-            return AVERROR_PATCHWELCOME;
+            blk.stream_id = AV_RL32(buf + 0);
+            blk.start_ms  = AV_RL32(buf + 4);
+            blk.size      = AV_RL32(buf + 8);
+
+            if (blk.stream_id == brp->basf.index || blk.stream_id == -1)
+                break;
+
+            if ((ret = avio_skip(pb, blk.size)) < 0)
+                return ret;
         }
+
+        if (i == BRP_BASF_LOOKAHEAD || blk.stream_id == -1) {
+            /* Don't error here, as there may still be a valid video stream. */
+            av_log(s, AV_LOG_TRACE, "not found\n");
+            goto done;
+        }
+
+        av_log(s, AV_LOG_TRACE, "found at index %d\n", i);
 
         if (blk.size < ASF_CHUNK_HEADER_SIZE)
             return AVERROR_INVALIDDATA;
@@ -289,13 +316,28 @@ static int argo_brp_read_header(AVFormatContext *s)
 
         ff_argo_asf_parse_chunk_header(&brp->basf.ckhdr, buf);
 
-        if ((ret = ff_argo_asf_fill_stream(st, &hdr->extradata.basf, &brp->basf.ckhdr)) < 0)
+        /*
+         * Special Case Hack. It seems that in files where the BASF block isn't first,
+         * v1.1 streams are allowed to be non-22050...
+         * Bump the version to 1.2 so ff_argo_asf_fill_stream() doesn't "correct" it.
+         *
+         * Found in Alien Odyssey games files in:
+         * ./GRAPHICS/COMMBUNK/{{COMADD1,COMM2_{1,2,3E},COMM3_{2,3,4,5,6}},FADE{1,2}}.BRP
+         *
+         * Either this format really inconsistent, or FX Fighter and Croc just ignored the
+         * sample rate field...
+         */
+        if (i != 0 && hdr->extradata.basf.version_major == 1 && hdr->extradata.basf.version_minor == 1)
+            hdr->extradata.basf.version_minor = 2;
+
+        if ((ret = ff_argo_asf_fill_stream(s, st, &hdr->extradata.basf, &brp->basf.ckhdr)) < 0)
             return ret;
 
         /* Convert ms to samples. */
         st->start_time = av_rescale_rnd(blk.start_ms, st->codecpar->sample_rate, 1000, AV_ROUND_UP);
         st->duration   = av_rescale_rnd(hdr->duration_ms, st->codecpar->sample_rate, 1000, AV_ROUND_UP);
 
+done:
         if ((ret = avio_seek(s->pb, offset, SEEK_SET)) < 0)
             return ret;
     }

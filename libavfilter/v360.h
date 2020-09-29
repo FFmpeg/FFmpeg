@@ -53,6 +53,7 @@ enum Projections {
     HEQUIRECTANGULAR,
     EQUISOLID,
     ORTHOGRAPHIC,
+    OCTAHEDRON,
     NB_PROJECTIONS,
 };
 
@@ -108,6 +109,12 @@ typedef struct XYRemap {
     float ker[4][4];
 } XYRemap;
 
+typedef struct SliceXYRemap {
+    int16_t *u[2], *v[2];
+    int16_t *ker[2];
+    uint8_t *mask;
+} SliceXYRemap;
+
 typedef struct V360Context {
     const AVClass *class;
     int in, out;
@@ -144,7 +151,6 @@ typedef struct V360Context {
 
     float rot_mat[3][3];
 
-    float input_mirror_modifier[2];
     float output_mirror_modifier[3];
 
     int in_width, in_height;
@@ -163,10 +169,9 @@ typedef struct V360Context {
     int elements;
     int mask_size;
     int max_value;
+    int nb_threads;
 
-    int16_t *u[2], *v[2];
-    int16_t *ker[2];
-    uint8_t *mask;
+    SliceXYRemap *slice_remap;
     unsigned map[4];
 
     int (*in_transform)(const struct V360Context *s,
