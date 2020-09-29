@@ -169,7 +169,6 @@ AVFilter ff_vf_setparams = {
     .priv_class  = &setparams_class,
     .inputs      = inputs,
     .outputs     = outputs,
-    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
 #if CONFIG_SETRANGE_FILTER
@@ -209,7 +208,6 @@ AVFilter ff_vf_setrange = {
     .priv_class  = &setrange_class,
     .inputs      = inputs,
     .outputs     = outputs,
-    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 #endif /* CONFIG_SETRANGE_FILTER */
 
@@ -244,6 +242,5 @@ AVFilter ff_vf_setfield = {
     .priv_class  = &setfield_class,
     .inputs      = inputs,
     .outputs     = outputs,
-    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 #endif /* CONFIG_SETFIELD_FILTER */
