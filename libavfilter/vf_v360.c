@@ -3725,10 +3725,10 @@ static int octahedron_to_xyz(const V360Context *s,
                              int i, int j, int width, int height,
                              float *vec)
 {
-    float x = ((i + 0.5f) / width)  * 2.f - 1.f;
-    float y = ((j + 0.5f) / height) * 2.f - 1.f;
-    float ax = fabsf(x);
-    float ay = fabsf(y);
+    const float x = ((i + 0.5f) / width)  * 2.f - 1.f;
+    const float y = ((j + 0.5f) / height) * 2.f - 1.f;
+    const float ax = fabsf(x);
+    const float ay = fabsf(y);
 
     vec[2] = 1.f - (ax + ay);
     if (ax + ay > 1.f) {
@@ -3788,8 +3788,8 @@ static int xyz_to_octahedron(const V360Context *s,
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            us[i][j] = av_clip(uf + j - 1, 0, width  - 1);
-            vs[i][j] = av_clip(vf + i - 1, 0, height - 1);
+            us[i][j] = av_clip(ui + j - 1, 0, width  - 1);
+            vs[i][j] = av_clip(vi + i - 1, 0, height - 1);
         }
     }
 
