@@ -671,8 +671,6 @@ static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
     if (!priv->ps_var ## _ref[id]) \
         return AVERROR(ENOMEM); \
     priv->ps_var[id] = (H26 ## h26n ## Raw ## ps_name *)priv->ps_var ## _ref[id]->data; \
-    if (!unit->content_ref) \
-        memcpy(priv->ps_var[id], ps_var, sizeof(*ps_var)); \
     return 0; \
 }
 
