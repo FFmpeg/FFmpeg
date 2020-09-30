@@ -1970,7 +1970,7 @@ static int parse_rtsp_message(AVFormatContext *s)
                 av_log(s, AV_LOG_WARNING,
                        "Unable to answer to TEARDOWN\n");
         } else
-            return 0;
+            return AVERROR_EOF;
     } else {
         RTSPMessageHeader reply;
         ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
