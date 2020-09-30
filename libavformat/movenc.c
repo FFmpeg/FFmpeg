@@ -2901,7 +2901,7 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
 
 static int64_t calc_pts_duration(MOVMuxContext *mov, MOVTrack *track)
 {
-    if (track->tag == MKTAG('t','m','c','d')) {
+    if (track->tag == MKTAG('t','m','c','d') && mov->nb_meta_tmcd) {
         // tmcd tracks gets track_duration set in mov_write_moov_tag from
         // another track's duration, while the end_pts may be left at zero.
         // Calculate the pts duration for that track instead.
