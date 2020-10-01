@@ -34,6 +34,7 @@ version <next>:
 - ACE demuxer
 - AVS3 demuxer
 - AVS3 video decoder via libuavs3d
+- Cintel RAW decoder
 
 
 version 4.3:

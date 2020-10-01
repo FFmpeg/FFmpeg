@@ -41,6 +41,7 @@ const IdStrMap ff_img_tags[] = {
     { AV_CODEC_ID_PBM,        "pbm"      },
     { AV_CODEC_ID_PAM,        "pam"      },
     { AV_CODEC_ID_PFM,        "pfm"      },
+    { AV_CODEC_ID_CRI,        "cri"      },
     { AV_CODEC_ID_ALIAS_PIX,  "pix"      },
     { AV_CODEC_ID_DDS,        "dds"      },
     { AV_CODEC_ID_MPEG1VIDEO, "mpg1-img" },

@@ -269,6 +269,7 @@ OBJS-$(CONFIG_COMFORTNOISE_DECODER)    += cngdec.o celp_filters.o
 OBJS-$(CONFIG_COMFORTNOISE_ENCODER)    += cngenc.o
 OBJS-$(CONFIG_COOK_DECODER)            += cook.o
 OBJS-$(CONFIG_CPIA_DECODER)            += cpia.o
+OBJS-$(CONFIG_CRI_DECODER)             += cri.o
 OBJS-$(CONFIG_CSCD_DECODER)            += cscd.o
 OBJS-$(CONFIG_CYUV_DECODER)            += cyuv.o
 OBJS-$(CONFIG_DCA_DECODER)             += dcadec.o dca.o dcadata.o dcahuff.o \

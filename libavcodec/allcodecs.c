@@ -82,6 +82,7 @@ extern AVCodec ff_cllc_decoder;
 extern AVCodec ff_comfortnoise_encoder;
 extern AVCodec ff_comfortnoise_decoder;
 extern AVCodec ff_cpia_decoder;
+extern AVCodec ff_cri_decoder;
 extern AVCodec ff_cscd_decoder;
 extern AVCodec ff_cyuv_decoder;
 extern AVCodec ff_dds_decoder;
