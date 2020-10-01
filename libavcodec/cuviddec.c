@@ -961,7 +961,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ctx->cuparse_ext->format.seqhdr_data_length = avctx->extradata_size;
+    ctx->cuparse_ext->format.seqhdr_data_length = extradata_size;
     memcpy(ctx->cuparse_ext->raw_seqhdr_data, extradata, extradata_size);
 
     ctx->cuparseinfo.pExtVideoInfo = ctx->cuparse_ext;
