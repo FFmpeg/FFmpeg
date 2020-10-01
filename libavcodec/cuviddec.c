@@ -795,7 +795,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     CUcontext cuda_ctx = NULL;
     CUcontext dummy;
     uint8_t *extradata;
-    uint32_t extradata_size;
+    ssize_t extradata_size;
     int ret = 0;
 
     enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
@@ -955,7 +955,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     }
 
     ctx->cuparse_ext = av_mallocz(sizeof(*ctx->cuparse_ext)
-            + FFMAX(extradata_size - sizeof(ctx->cuparse_ext->raw_seqhdr_data), 0));
+            + FFMAX(extradata_size - (ssize_t)sizeof(ctx->cuparse_ext->raw_seqhdr_data), 0));
     if (!ctx->cuparse_ext) {
         ret = AVERROR(ENOMEM);
         goto error;
