@@ -815,7 +815,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     CUcontext dummy;
     const AVBitStreamFilter *bsf;
     uint8_t *extradata;
-    uint32_t extradata_size;
+    int extradata_size;
     int ret = 0;
 
     enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
@@ -985,20 +985,21 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
 
         extradata = ctx->bsf->par_out->extradata;
         extradata_size = ctx->bsf->par_out->extradata_size;
-    } else if (avctx->extradata_size > 0) {
+    } else {
         extradata = avctx->extradata;
         extradata_size = avctx->extradata_size;
     }
 
     ctx->cuparse_ext = av_mallocz(sizeof(*ctx->cuparse_ext)
-            + FFMAX(extradata_size - sizeof(ctx->cuparse_ext->raw_seqhdr_data), 0));
+            + FFMAX(extradata_size - (int)sizeof(ctx->cuparse_ext->raw_seqhdr_data), 0));
     if (!ctx->cuparse_ext) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
 
-    ctx->cuparse_ext->format.seqhdr_data_length = avctx->extradata_size;
-    memcpy(ctx->cuparse_ext->raw_seqhdr_data, extradata, extradata_size);
+    if (extradata_size > 0)
+        memcpy(ctx->cuparse_ext->raw_seqhdr_data, extradata, extradata_size);
+    ctx->cuparse_ext->format.seqhdr_data_length = extradata_size;
 
     ctx->cuparseinfo.pExtVideoInfo = ctx->cuparse_ext;
 
