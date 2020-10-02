@@ -1217,6 +1217,7 @@ const char *avcodec_get_name(enum AVCodecID id)
     return "unknown_codec";
 }
 
+#if FF_API_TAG_STRING
 size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_tag)
 {
     int i, len, ret = 0;
@@ -1236,6 +1237,7 @@ size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_ta
     }
     return ret;
 }
+#endif
 
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 {
