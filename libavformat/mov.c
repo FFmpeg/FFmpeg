@@ -7529,6 +7529,7 @@ static int mov_read_mfra(MOVContext *c, AVIOContext *f)
             goto fail;
     } while (!ret);
     ret = 0;
+    c->frag_index.complete = 1;
 fail:
     seek_ret = avio_seek(f, original_pos, SEEK_SET);
     if (seek_ret < 0) {
