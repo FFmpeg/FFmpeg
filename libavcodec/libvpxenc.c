@@ -1123,7 +1123,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (cx_frame->have_sse) {
             int i;
             /* Beware of the Y/U/V/all order! */
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_ERROR_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
             avctx->coded_frame->error[0] = cx_frame->sse[1];
             avctx->coded_frame->error[1] = cx_frame->sse[2];
