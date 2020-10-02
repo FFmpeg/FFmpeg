@@ -1189,14 +1189,14 @@ static int predict_motion(AVCodecContext *avctx,
             dst_linesize = s->pic[s->current_pic]->linesize[i];
             dst = s->pic[s->current_pic]->data[i] + offsetx + offsety * dst_linesize;
 
+            if (offsetx + (mv.x >> 1) < 0 ||
+                offsety + (mv.y >> 1) < 0 ||
+                offsetx + width  + (mv.x + 1 >> 1) > fwidth ||
+                offsety + height + (mv.y + 1 >> 1) > fheight)
+                return AVERROR_INVALIDDATA;
+
             switch (method) {
             case 0:
-                if (offsety + (mv.y >> 1) < 0 ||
-                    offsety + (mv.y >> 1) >= fheight ||
-                    offsetx + (mv.x >> 1) < 0 ||
-                    offsetx + (mv.x >> 1) >= fwidth)
-                    return AVERROR_INVALIDDATA;
-
                 src = s->pic[sidx]->data[i] + offsetx + (mv.x >> 1) +
                                (offsety + (mv.y >> 1)) * src_linesize;
                 for (int y = 0; y < height; y++) {
@@ -1207,12 +1207,6 @@ static int predict_motion(AVCodecContext *avctx,
                 }
                 break;
             case 1:
-                if (offsety + (mv.y >> 1) < 0 ||
-                    offsety + (mv.y >> 1) >= fheight ||
-                    offsetx + (mv.x >> 1) < 0 ||
-                    offsetx + (mv.x >> 1) >= fwidth)
-                    return AVERROR_INVALIDDATA;
-
                 src = s->pic[sidx]->data[i] + offsetx + (mv.x >> 1) +
                                (offsety + (mv.y >> 1)) * src_linesize;
                 for (int y = 0; y < height; y++) {
@@ -1225,12 +1219,6 @@ static int predict_motion(AVCodecContext *avctx,
                 }
                 break;
             case 2:
-                if (offsety + (mv.y >> 1) < 0 ||
-                    offsety + (mv.y >> 1) >= fheight - 1 ||
-                    offsetx + (mv.x >> 1) < 0 ||
-                    offsetx + (mv.x >> 1) >= fwidth)
-                    return AVERROR_INVALIDDATA;
-
                 src = s->pic[sidx]->data[i] + offsetx + (mv.x >> 1) +
                                (offsety + (mv.y >> 1)) * src_linesize;
                 for (int y = 0; y < height; y++) {
@@ -1243,12 +1231,6 @@ static int predict_motion(AVCodecContext *avctx,
                 }
                 break;
             case 3:
-                if (offsety + (mv.y >> 1) < 0 ||
-                    offsety + (mv.y >> 1) >= fheight - 1 ||
-                    offsetx + (mv.x >> 1) < 0 ||
-                    offsetx + (mv.x >> 1) >= fwidth)
-                    return AVERROR_INVALIDDATA;
-
                 src = s->pic[sidx]->data[i] + offsetx + (mv.x >> 1) +
                                (offsety + (mv.y >> 1)) * src_linesize;
                 for (int y = 0; y < height; y++) {
