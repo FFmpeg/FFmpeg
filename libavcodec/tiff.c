@@ -929,8 +929,8 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
         s->avctx_mjpeg->height == h / 2 &&
         s->avctx_mjpeg->pix_fmt == AV_PIX_FMT_GRAY16LE) {
         is_single_comp = 1;
-    } else if (s->avctx_mjpeg->width  == w &&
-               s->avctx_mjpeg->height == h &&
+    } else if (s->avctx_mjpeg->width  >= w &&
+               s->avctx_mjpeg->height >= h &&
                s->avctx_mjpeg->pix_fmt == (is_u16 ? AV_PIX_FMT_GRAY16 : AV_PIX_FMT_GRAY8)
               ) {
         is_single_comp = 0;
@@ -1923,8 +1923,7 @@ again:
     has_strip_bits = s->strippos || s->strips || s->stripoff || s->rps || s->sot || s->sstype || s->stripsize || s->stripsizesoff;
 
     if (has_tile_bits && has_strip_bits) {
-        av_log(avctx, AV_LOG_ERROR, "Tiled TIFF is not allowed to strip\n");
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_WARNING, "Tiled TIFF is not allowed to strip\n");
     }
 
     /* now we have the data and may start decoding */
