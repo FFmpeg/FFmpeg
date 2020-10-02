@@ -5704,8 +5704,18 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
                                                   enum AVTimebaseSource copy_tb)
 {
     //TODO: use [io]st->internal->avctx
-    const AVCodecContext *dec_ctx = ist->codec;
-    AVCodecContext       *enc_ctx = ost->codec;
+    const AVCodecContext *dec_ctx;
+    AVCodecContext       *enc_ctx;
+
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+    dec_ctx = ist->codec;
+    enc_ctx = ost->codec;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+    dec_ctx = ist->internal->avctx;
+    enc_ctx = ost->internal->avctx;
+#endif
 
     enc_ctx->time_base = ist->time_base;
     /*
