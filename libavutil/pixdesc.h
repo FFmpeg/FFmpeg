@@ -147,6 +147,7 @@ typedef struct AVPixFmtDescriptor {
  */
 #define AV_PIX_FMT_FLAG_RGB          (1 << 5)
 
+#if FF_API_PSEUDOPAL
 /**
  * The pixel format is "pseudo-paletted". This means that it contains a
  * fixed palette in the 2nd plane but the palette is fixed/constant for each
@@ -164,6 +165,7 @@ typedef struct AVPixFmtDescriptor {
  * before the deprecation, though).
  */
 #define AV_PIX_FMT_FLAG_PSEUDOPAL    (1 << 6)
+#endif
 
 /**
  * The pixel format has an alpha channel. This is set on all formats that
