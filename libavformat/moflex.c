@@ -342,8 +342,11 @@ static int moflex_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         m->in_block = 0;
 
-        if (m->flags % 2 == 0)
+        if (m->flags % 2 == 0) {
+            if (m->size <= 0)
+                return AVERROR_INVALIDDATA;
             avio_seek(pb, m->pos + m->size, SEEK_SET);
+        }
     }
 
     return AVERROR_EOF;
