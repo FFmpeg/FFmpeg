@@ -924,7 +924,7 @@ static av_always_inline void planar_rgb16_to_y(uint8_t *_dst, const uint8_t *_sr
         int b = rdpx(src[1] + i);
         int r = rdpx(src[2] + i);
 
-        dst[i] = ((ry*r + gy*g + by*b + (33 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + shift - 14));
+        dst[i] = (ry*r + gy*g + by*b + (16 << (RGB2YUV_SHIFT + bpc - 8)) + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);
     }
 }
 
@@ -957,8 +957,8 @@ static av_always_inline void planar_rgb16_to_uv(uint8_t *_dstU, uint8_t *_dstV,
         int b = rdpx(src[1] + i);
         int r = rdpx(src[2] + i);
 
-        dstU[i] = (ru*r + gu*g + bu*b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + shift - 14);
-        dstV[i] = (rv*r + gv*g + bv*b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + shift - 14);
+        dstU[i] = (ru*r + gu*g + bu*b + (128 << (RGB2YUV_SHIFT + bpc - 8)) + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);
+        dstV[i] = (rv*r + gv*g + bv*b + (128 << (RGB2YUV_SHIFT + bpc - 8)) + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);
     }
 }
 #undef rdpx

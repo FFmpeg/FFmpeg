@@ -1,4 +1,4 @@
 294d4f9fdf53ba0fe9d224d28ba700f0 *tests/data/fate/vsynth_lena-ffv1-v3-rgb48.avi
 13795036 tests/data/fate/vsynth_lena-ffv1-v3-rgb48.avi
-7bd82d1860095ae1e10ec0ace9cb04b6 *tests/data/fate/vsynth_lena-ffv1-v3-rgb48.out.rawvideo
-stddev:    0.91 PSNR: 48.91 MAXDIFF:   21 bytes:  7603200/  7603200
+832a42fafb18d52b35422ae0f34fe48c *tests/data/fate/vsynth_lena-ffv1-v3-rgb48.out.rawvideo
+stddev:    0.66 PSNR: 51.63 MAXDIFF:   21 bytes:  7603200/  7603200
