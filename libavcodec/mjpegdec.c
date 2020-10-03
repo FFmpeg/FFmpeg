@@ -50,6 +50,21 @@
 #include "bytestream.h"
 
 
+static void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
+                                const uint8_t *bits_table)
+{
+    for (int i = 1, code = 0, k = 0; i <= 16; i++) {
+        int nb = bits_table[i];
+        for (int j = 0; j < nb;j++) {
+            huff_size[k] = i;
+            huff_code[k] = code;
+            code++;
+            k++;
+        }
+        code <<= 1;
+    }
+}
+
 static int build_vlc(VLC *vlc, const uint8_t *bits_table,
                      const uint8_t *val_table, int nb_codes,
                      int use_static, int is_ac)
@@ -61,13 +76,14 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
 
     av_assert0(nb_codes <= 256);
 
-    ff_mjpeg_build_huffman_codes(huff_size, huff_code, bits_table, val_table);
+    build_huffman_codes(huff_size, huff_code, bits_table);
 
-    for (i = 0; i < 256; i++)
-        huff_sym[i] = i + 16 * is_ac;
+    for (i = 0; i < 256; i++) {
+        huff_sym[i] = val_table[i] + 16 * is_ac;
 
-    if (is_ac)
-        huff_sym[0] = 16 * 256;
+        if (is_ac && !val_table[i])
+            huff_sym[i] = 16 * 256;
+    }
 
     return ff_init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1,
                               huff_code, 2, 2, huff_sym, 2, 2, use_static);
@@ -240,7 +256,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
 /* decode huffman tables and build VLC decoders */
 int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
 {
-    int len, index, i, class, n, v, code_max;
+    int len, index, i, class, n, v;
     uint8_t bits_table[17];
     uint8_t val_table[256];
     int ret = 0;
@@ -270,11 +286,8 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         if (len < n || n > 256)
             return AVERROR_INVALIDDATA;
 
-        code_max = 0;
         for (i = 0; i < n; i++) {
             v = get_bits(&s->gb, 8);
-            if (v > code_max)
-                code_max = v;
             val_table[i] = v;
         }
         len -= n;
@@ -282,15 +295,15 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         /* build VLC and flush previous vlc if present */
         ff_free_vlc(&s->vlcs[class][index]);
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
-               class, index, code_max + 1);
+               class, index, n + 1);
         if ((ret = build_vlc(&s->vlcs[class][index], bits_table, val_table,
-                             code_max + 1, 0, class > 0)) < 0)
+                             n + 1, 0, class > 0)) < 0)
             return ret;
 
         if (class > 0) {
             ff_free_vlc(&s->vlcs[2][index]);
             if ((ret = build_vlc(&s->vlcs[2][index], bits_table, val_table,
-                                 code_max + 1, 0, 0)) < 0)
+                                 n + 1, 0, 0)) < 0)
                 return ret;
         }
 
