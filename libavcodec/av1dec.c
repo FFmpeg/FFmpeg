@@ -686,6 +686,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
             ret = set_context_with_sequence(avctx, s->raw_seq);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to set context.\n");
+                s->raw_seq = NULL;
                 goto end;
             }
 
@@ -694,6 +695,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                 if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Failed to get pixel format.\n");
+                    s->raw_seq = NULL;
                     goto end;
                 }
             }
@@ -703,6 +705,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                                                     unit->data_size);
                 if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR, "HW accel decode params fail.\n");
+                    s->raw_seq = NULL;
                     goto end;
                 }
             }
@@ -841,6 +844,8 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
 
 end:
     ff_cbs_fragment_reset(&s->current_obu);
+    if (ret < 0)
+        s->raw_frame_header = NULL;
     return ret;
 }
 
