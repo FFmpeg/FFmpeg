@@ -128,6 +128,7 @@ static const AVOption v360_options[] = {
     {  "spline16", "spline16 interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=SPLINE16},        0,                   0, FLAGS, "interp" },
     {     "gauss", "gaussian interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=GAUSSIAN},        0,                   0, FLAGS, "interp" },
     {  "gaussian", "gaussian interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=GAUSSIAN},        0,                   0, FLAGS, "interp" },
+    {  "mitchell", "mitchell interpolation",                     0, AV_OPT_TYPE_CONST,  {.i64=MITCHELL},        0,                   0, FLAGS, "interp" },
     {         "w", "output width",                   OFFSET(width), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "w"},
     {         "h", "output height",                 OFFSET(height), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "h"},
     { "in_stereo", "input stereo format",        OFFSET(in_stereo), AV_OPT_TYPE_INT,    {.i64=STEREO_2D},       0,    NB_STEREO_FMTS-1, FLAGS, "stereo" },
@@ -381,6 +382,7 @@ void ff_v360_init(V360Context *s, int depth)
     case LANCZOS:
     case SPLINE16:
     case GAUSSIAN:
+    case MITCHELL:
         s->remap_line = depth <= 8 ? remap4_8bit_line_c : remap4_16bit_line_c;
         break;
     }
@@ -659,6 +661,71 @@ static void gaussian_kernel(float du, float dv, const XYRemap *rmap,
 
     calculate_gaussian_coeffs(du, du_coeffs);
     calculate_gaussian_coeffs(dv, dv_coeffs);
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            u[i * 4 + j] = rmap->u[i][j];
+            v[i * 4 + j] = rmap->v[i][j];
+            ker[i * 4 + j] = lrintf(du_coeffs[j] * dv_coeffs[i] * 16385.f);
+        }
+    }
+}
+
+/**
+ * Calculate 1-dimensional cubic_bc_spline coefficients.
+ *
+ * @param t relative coordinate
+ * @param coeffs coefficients
+ */
+static void calculate_cubic_bc_coeffs(float t, float *coeffs,
+                                      float b, float c)
+{
+    float sum = 0.f;
+    float p0 = (6.f - 2.f * b) / 6.f,
+          p2 = (-18.f + 12.f * b + 6.f * c) / 6.f,
+          p3 = (12.f - 9.f * b - 6.f * c) / 6.f,
+          q0 = (8.f * b + 24.f * c) / 6.f,
+          q1 = (-12.f * b - 48.f * c) / 6.f,
+          q2 = (6.f * b + 30.f * c) / 6.f,
+          q3 = (-b - 6.f * c) / 6.f;
+
+    for (int i = 0; i < 4; i++) {
+        const float x = fabsf(t - i + 1.f);
+        if (x < 1.f) {
+            coeffs[i] = (p0 + x * x * (p2 + x * p3)) *
+                        (p0 + x * x * (p2 + x * p3 / 2.f) / 4.f);
+        } else if (x < 2.f) {
+            coeffs[i] = (q0 + x * (q1 + x * (q2 + x * q3))) *
+                        (q0 + x * (q1 + x * (q2 + x / 2.f * q3) / 2.f) / 2.f);
+        } else {
+            coeffs[i] = 0.f;
+        }
+        sum += coeffs[i];
+    }
+
+    for (int i = 0; i < 4; i++) {
+        coeffs[i] /= sum;
+    }
+}
+
+/**
+ * Calculate kernel for mitchell interpolation.
+ *
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ * @param rmap calculated 4x4 window
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
+ */
+static void mitchell_kernel(float du, float dv, const XYRemap *rmap,
+                            int16_t *u, int16_t *v, int16_t *ker)
+{
+    float du_coeffs[4];
+    float dv_coeffs[4];
+
+    calculate_cubic_bc_coeffs(du, du_coeffs, 1.f / 3.f, 1.f / 3.f);
+    calculate_cubic_bc_coeffs(dv, dv_coeffs, 1.f / 3.f, 1.f / 3.f);
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -4133,6 +4200,13 @@ static int config_output(AVFilterLink *outlink)
         break;
     case GAUSSIAN:
         s->calculate_kernel = gaussian_kernel;
+        s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
+        s->elements = 4 * 4;
+        sizeof_uv = sizeof(int16_t) * s->elements;
+        sizeof_ker = sizeof(int16_t) * s->elements;
+        break;
+    case MITCHELL:
+        s->calculate_kernel = mitchell_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         s->elements = 4 * 4;
         sizeof_uv = sizeof(int16_t) * s->elements;

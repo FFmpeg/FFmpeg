@@ -65,6 +65,7 @@ enum InterpMethod {
     LANCZOS,
     SPLINE16,
     GAUSSIAN,
+    MITCHELL,
     NB_INTERP_METHODS,
 };
 

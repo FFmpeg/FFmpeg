@@ -64,7 +64,8 @@ av_cold void ff_v360_init_x86(V360Context *s, int depth)
     if (EXTERNAL_AVX2_FAST(cpu_flags) && (s->interp == BICUBIC ||
                                           s->interp == LANCZOS ||
                                           s->interp == SPLINE16 ||
-                                          s->interp == GAUSSIAN) && depth <= 8)
+                                          s->interp == GAUSSIAN ||
+                                          s->interp == MITCHELL) && depth <= 8)
         s->remap_line = ff_remap4_8bit_line_avx2;
 #endif
 }
