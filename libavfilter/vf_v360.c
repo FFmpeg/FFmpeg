@@ -763,12 +763,12 @@ static inline int mod(int a, int b)
 static inline int reflecty(int y, int h)
 {
     if (y < 0) {
-        return -y;
+        y = -y;
     } else if (y >= h) {
-        return 2 * h - 1 - y;
+        y = 2 * h - 1 - y;
     }
 
-    return y;
+    return av_clip(y, 0, h - 1);
 }
 
 /**
