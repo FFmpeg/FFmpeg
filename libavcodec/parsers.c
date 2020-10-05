@@ -28,6 +28,7 @@ extern AVCodecParser ff_ac3_parser;
 extern AVCodecParser ff_adx_parser;
 extern AVCodecParser ff_av1_parser;
 extern AVCodecParser ff_avs2_parser;
+extern AVCodecParser ff_avs3_parser;
 extern AVCodecParser ff_bmp_parser;
 extern AVCodecParser ff_cavsvideo_parser;
 extern AVCodecParser ff_cook_parser;
