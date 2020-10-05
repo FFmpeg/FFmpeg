@@ -33,6 +33,7 @@ version <next>:
 - libwavpack encoder removed
 - ACE demuxer
 - AVS3 demuxer
+- AVS3 video decoder via libuavs3d
 
 
 version 4.3:

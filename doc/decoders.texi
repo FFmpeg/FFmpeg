@@ -88,6 +88,27 @@ This decoder allows libavcodec to decode AVS2 streams with davs2 library.
 
 @c man end VIDEO DECODERS
 
+@section libuavs3d
+
+AVS3-P2/IEEE1857.10 video decoder.
+
+libuavs3d allows libavcodec to decode AVS3 streams.
+Requires the presence of the libuavs3d headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libuavs3d}.
+
+@subsection Options
+
+The following option is supported by the libuavs3d wrapper.
+
+@table @option
+
+@item frame_threads
+Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
+
+@end table
+
+@c man end VIDEO DECODERS
+
 @chapter Audio Decoders
 @c man begin AUDIO DECODERS
 
