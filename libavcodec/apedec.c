@@ -559,12 +559,10 @@ static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
 
 static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
 {
-    unsigned int x, overflow;
-    int base, pivot;
+    unsigned int x, overflow, pivot;
+    int base;
 
-    pivot = rice->ksum >> 5;
-    if (pivot == 0)
-        pivot = 1;
+    pivot = FFMAX(rice->ksum >> 5, 1);
 
     overflow = range_get_symbol(ctx, counts_3980, counts_diff_3980);
 
