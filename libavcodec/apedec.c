@@ -1311,7 +1311,7 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
                             int32_t *data, int count, int order, int fracbits)
 {
     int res;
-    int absres;
+    unsigned absres;
 
     while (count--) {
         /* round fixedpoint scalar product */
@@ -1335,7 +1335,7 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
             /* Version 3.98 and later files */
 
             /* Update the adaption coefficients */
-            absres = res < 0 ? -(unsigned)res : res;
+            absres = FFABS(res);
             if (absres)
                 *f->adaptcoeffs = APESIGN(res) *
                                   (8 << ((absres > f->avg * 3) + (absres > f->avg * 4 / 3)));
