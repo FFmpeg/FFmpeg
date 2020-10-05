@@ -35,7 +35,7 @@ fate-mxf-probe-dv25: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
 
 FATE_MXF_PROBE-$(call ENCDEC2, PRORES, PCM_S24LE, MXF) += fate-mxf-probe-applehdr10
 fate-mxf-probe-applehdr10: SRC = $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf
-fate-mxf-probe-applehdr10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
+fate-mxf-probe-applehdr10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)" | sed -e "s/yuv422p10../yuv422p10/"
 
 FATE_MXF_REEL_NAME-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-reel_name
 fate-mxf-reel_name: $(SAMPLES)/mxf/Sony-00001.mxf
