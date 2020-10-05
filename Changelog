@@ -32,6 +32,7 @@ version <next>:
 - Argonaut Games Video decoder
 - libwavpack encoder removed
 - ACE demuxer
+- AVS3 demuxer
 
 
 version 4.3:
