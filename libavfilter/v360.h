@@ -150,7 +150,7 @@ typedef struct V360Context {
     float flat_range[2];
     float iflat_range[2];
 
-    float rot_mat[3][3];
+    float rot_quaternion[2][4];
 
     float output_mirror_modifier[3];
 

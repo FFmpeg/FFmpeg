@@ -3863,73 +3863,76 @@ static int xyz_to_octahedron(const V360Context *s,
     return 1;
 }
 
-static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
+static void multiply_quaternion(float c[4], const float a[4], const float b[4])
 {
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            float sum = 0.f;
+    c[0] = a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3];
+    c[1] = a[1] * b[0] + a[0] * b[1] + a[2] * b[3] - a[3] * b[2];
+    c[2] = a[2] * b[0] + a[0] * b[2] + a[3] * b[1] - a[1] * b[3];
+    c[3] = a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1];
+}
 
-            for (int k = 0; k < 3; k++)
-                sum += a[i][k] * b[k][j];
-
-            c[i][j] = sum;
-        }
-    }
+static void conjugate_quaternion(float d[4], const float q[4])
+{
+    d[0] =  q[0];
+    d[1] = -q[1];
+    d[2] = -q[2];
+    d[3] = -q[3];
 }
 
 /**
- * Calculate rotation matrix for yaw/pitch/roll angles.
+ * Calculate rotation quaternion for yaw/pitch/roll angles.
  */
-static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
-                                             float rot_mat[3][3],
-                                             const int rotation_order[3])
+static inline void calculate_rotation(float yaw, float pitch, float roll,
+                                      float rot_quaternion[2][4],
+                                      const int rotation_order[3])
 {
     const float yaw_rad   = yaw   * M_PI / 180.f;
     const float pitch_rad = pitch * M_PI / 180.f;
     const float roll_rad  = roll  * M_PI / 180.f;
 
-    const float sin_yaw   = sinf(yaw_rad);
-    const float cos_yaw   = cosf(yaw_rad);
-    const float sin_pitch = sinf(pitch_rad);
-    const float cos_pitch = cosf(pitch_rad);
-    const float sin_roll  = sinf(roll_rad);
-    const float cos_roll  = cosf(roll_rad);
+    const float sin_yaw   = sinf(yaw_rad   * 0.5f);
+    const float cos_yaw   = cosf(yaw_rad   * 0.5f);
+    const float sin_pitch = sinf(pitch_rad * 0.5f);
+    const float cos_pitch = cosf(pitch_rad * 0.5f);
+    const float sin_roll  = sinf(roll_rad  * 0.5f);
+    const float cos_roll  = cosf(roll_rad  * 0.5f);
 
-    float m[3][3][3];
-    float temp[3][3];
+    float m[3][4];
+    float tmp[2][4];
 
-    m[0][0][0] =  cos_yaw;  m[0][0][1] = 0;          m[0][0][2] =  sin_yaw;
-    m[0][1][0] =  0;        m[0][1][1] = 1;          m[0][1][2] =  0;
-    m[0][2][0] = -sin_yaw;  m[0][2][1] = 0;          m[0][2][2] =  cos_yaw;
+    m[0][0] = cos_yaw;   m[0][1] = 0.f;       m[0][2] = sin_yaw; m[0][3] = 0.f;
+    m[1][0] = cos_pitch; m[1][1] = sin_pitch; m[1][2] = 0.f;     m[1][3] = 0.f;
+    m[2][0] = cos_roll;  m[2][1] = 0.f;       m[2][2] = 0.f;     m[2][3] = sin_roll;
 
-    m[1][0][0] = 1;         m[1][0][1] = 0;          m[1][0][2] =  0;
-    m[1][1][0] = 0;         m[1][1][1] = cos_pitch;  m[1][1][2] = -sin_pitch;
-    m[1][2][0] = 0;         m[1][2][1] = sin_pitch;  m[1][2][2] =  cos_pitch;
+    multiply_quaternion(tmp[0], rot_quaternion[0], m[rotation_order[0]]);
+    multiply_quaternion(tmp[1], tmp[0], m[rotation_order[1]]);
+    multiply_quaternion(rot_quaternion[0], tmp[1], m[rotation_order[2]]);
 
-    m[2][0][0] = cos_roll;  m[2][0][1] = -sin_roll;  m[2][0][2] =  0;
-    m[2][1][0] = sin_roll;  m[2][1][1] =  cos_roll;  m[2][1][2] =  0;
-    m[2][2][0] = 0;         m[2][2][1] =  0;         m[2][2][2] =  1;
-
-    multiply_matrix(temp, m[rotation_order[0]], m[rotation_order[1]]);
-    multiply_matrix(rot_mat, temp, m[rotation_order[2]]);
+    conjugate_quaternion(rot_quaternion[1], rot_quaternion[0]);
 }
 
 /**
- * Rotate vector with given rotation matrix.
+ * Rotate vector with given rotation quaternion.
  *
- * @param rot_mat rotation matrix
+ * @param rot_quaternion rotation quaternion
  * @param vec vector
  */
-static inline void rotate(const float rot_mat[3][3],
+static inline void rotate(const float rot_quaternion[2][4],
                           float *vec)
 {
-    const float x_tmp = vec[0] * rot_mat[0][0] + vec[1] * rot_mat[0][1] + vec[2] * rot_mat[0][2];
-    const float y_tmp = vec[0] * rot_mat[1][0] + vec[1] * rot_mat[1][1] + vec[2] * rot_mat[1][2];
-    const float z_tmp = vec[0] * rot_mat[2][0] + vec[1] * rot_mat[2][1] + vec[2] * rot_mat[2][2];
+    float qv[4], temp[4], rqv[4];
 
-    vec[0] = x_tmp;
-    vec[1] = y_tmp;
-    vec[2] = z_tmp;
+    qv[0] = 0;
+    qv[1] = vec[0];
+    qv[2] = vec[1];
+    qv[3] = vec[2];
+
+    multiply_quaternion(temp, rot_quaternion[0], qv);
+    multiply_quaternion(rqv, temp, rot_quaternion[1]);
+
+    vec[0] = rqv[1];
+    vec[1] = rqv[2];
+    vec[2] = rqv[3];
 }
 
 static inline void set_mirror_modifier(int h_flip, int v_flip, int d_flip,
@@ -4109,7 +4112,7 @@ static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobn
                 else
                     out_mask = s->out_transform(s, i, j, width, height, vec);
                 av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
-                rotate(s->rot_mat, vec);
+                rotate(s->rot_quaternion, vec);
                 av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
                 normalize_vector(vec);
                 mirror(s->output_mirror_modifier, vec);
@@ -4667,7 +4670,14 @@ static int config_output(AVFilterLink *outlink)
             return err;
     }
 
-    calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
+    s->rot_quaternion[0][0] = 1.f;
+    s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
+
+    for (int i = 0; i < 4; i++) {
+        calculate_rotation(s->yaw * 0.25f, s->pitch * 0.25f, s->roll * 0.25f,
+                           s->rot_quaternion, s->rotation_order);
+    }
+
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
     ctx->internal->execute(ctx, v360_slice, NULL, NULL, s->nb_threads);
