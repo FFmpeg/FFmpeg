@@ -872,7 +872,7 @@ AVCodec ff_av1_decoder = {
     .init                  = av1_decode_init,
     .close                 = av1_decode_free,
     .decode                = av1_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DR1,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |
                              FF_CODEC_CAP_INIT_CLEANUP |
                              FF_CODEC_CAP_SETS_PKT_DTS,
