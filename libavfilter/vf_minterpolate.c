@@ -340,7 +340,7 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int height = inlink->h;
     const int width  = inlink->w;
-    int i, ret = 0;
+    int i;
 
     mi_ctx->log2_chroma_h = desc->log2_chroma_h;
     mi_ctx->log2_chroma_w = desc->log2_chroma_w;
@@ -380,10 +380,8 @@ static int config_input(AVFilterLink *inlink)
         mi_ctx->pixel_mvs = av_mallocz_array(width * height, sizeof(PixelMVS));
         mi_ctx->pixel_weights = av_mallocz_array(width * height, sizeof(PixelWeights));
         mi_ctx->pixel_refs = av_mallocz_array(width * height, sizeof(PixelRefs));
-        if (!mi_ctx->pixel_mvs || !mi_ctx->pixel_weights || !mi_ctx->pixel_refs) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!mi_ctx->pixel_mvs || !mi_ctx->pixel_weights || !mi_ctx->pixel_refs)
+            return AVERROR(ENOMEM);
 
         if (mi_ctx->me_mode == ME_MODE_BILAT)
             if (!(mi_ctx->int_blocks = av_mallocz_array(mi_ctx->b_count, sizeof(Block))))
@@ -405,13 +403,6 @@ static int config_input(AVFilterLink *inlink)
     }
 
     return 0;
-fail:
-    for (i = 0; i < NB_FRAMES; i++)
-        av_freep(&mi_ctx->frames[i].blocks);
-    av_freep(&mi_ctx->pixel_mvs);
-    av_freep(&mi_ctx->pixel_weights);
-    av_freep(&mi_ctx->pixel_refs);
-    return ret;
 }
 
 static int config_output(AVFilterLink *outlink)
