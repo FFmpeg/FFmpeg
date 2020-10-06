@@ -363,6 +363,11 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (mi_ctx->mi_mode == MI_MODE_MCI) {
+        if (mi_ctx->b_width < 2 || mi_ctx->b_height < 2) {
+            av_log(inlink->dst, AV_LOG_ERROR, "Height or width < %d\n",
+                   2 * mi_ctx->mb_size);
+            return AVERROR(EINVAL);
+        }
         mi_ctx->pixel_mvs = av_mallocz_array(width * height, sizeof(PixelMVS));
         mi_ctx->pixel_weights = av_mallocz_array(width * height, sizeof(PixelWeights));
         mi_ctx->pixel_refs = av_mallocz_array(width * height, sizeof(PixelRefs));
