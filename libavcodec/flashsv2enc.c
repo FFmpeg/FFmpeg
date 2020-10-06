@@ -174,6 +174,33 @@ static void reset_stats(FlashSV2Context * s)
 #endif
 }
 
+static int update_block_dimensions(FlashSV2Context *s, int block_width, int block_height)
+{
+    s->block_width  = block_width;
+    s->block_height = block_height;
+    s->rows = (s->image_height + s->block_height - 1) / s->block_height;
+    s->cols = (s->image_width  + s->block_width  - 1) / s->block_width;
+    if (s->rows * s->cols > s->blocks_size / sizeof(Block)) {
+        s->frame_blocks = av_realloc_array(s->frame_blocks, s->rows, s->cols * sizeof(Block));
+        s->key_blocks = av_realloc_array(s->key_blocks, s->cols, s->rows * sizeof(Block));
+        if (!s->frame_blocks || !s->key_blocks) {
+            av_log(s->avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
+            return AVERROR(ENOMEM);
+        }
+        s->blocks_size = s->rows * s->cols * sizeof(Block);
+    }
+    init_blocks(s, s->frame_blocks, s->encbuffer, s->databuffer);
+    init_blocks(s, s->key_blocks, s->keybuffer, 0);
+
+    av_fast_malloc(&s->blockbuffer, &s->blockbuffer_size, block_width * block_height * 6);
+    if (!s->blockbuffer) {
+        av_log(s->avctx, AV_LOG_ERROR, "Could not allocate block buffer.\n");
+        return AVERROR(ENOMEM);
+    }
+    return 0;
+}
+
+
 static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 {
     FlashSV2Context *s = avctx->priv_data;
@@ -211,39 +238,19 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     s->image_width  = avctx->width;
     s->image_height = avctx->height;
 
-    s->block_width  = (s->image_width /  12) & ~15;
-    s->block_height = (s->image_height / 12) & ~15;
-
-    if(!s->block_width)
-        s->block_width = 1;
-    if(!s->block_height)
-        s->block_height = 1;
-
-    s->rows = (s->image_height + s->block_height - 1) / s->block_height;
-    s->cols = (s->image_width +  s->block_width -  1) / s->block_width;
-
     s->frame_size  = s->image_width * s->image_height * 3;
-    s->blocks_size = s->rows * s->cols * sizeof(Block);
 
     s->encbuffer     = av_mallocz(s->frame_size);
     s->keybuffer     = av_mallocz(s->frame_size);
     s->databuffer    = av_mallocz(s->frame_size * 6);
     s->current_frame = av_mallocz(s->frame_size);
     s->key_frame     = av_mallocz(s->frame_size);
-    s->frame_blocks  = av_mallocz(s->blocks_size);
-    s->key_blocks    = av_mallocz(s->blocks_size);
     if (!s->encbuffer || !s->keybuffer || !s->databuffer
-        || !s->current_frame || !s->key_frame || !s->key_blocks
-        || !s->frame_blocks) {
+        || !s->current_frame || !s->key_frame) {
         av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
         return AVERROR(ENOMEM);
     }
 
-    s->blockbuffer      = NULL;
-    s->blockbuffer_size = 0;
-
-    init_blocks(s, s->frame_blocks, s->encbuffer, s->databuffer);
-    init_blocks(s, s->key_blocks,   s->keybuffer, 0);
     reset_stats(s);
 #ifndef FLASHSV2_DUMB
     s->total_bits = 1;
@@ -252,7 +259,7 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     s->use_custom_palette =  0;
     s->palette_type       = -1;        // so that the palette will be generated in reconfigure_at_keyframe
 
-    return 0;
+    return update_block_dimensions(s, 64, 64);
 }
 
 static int new_key_frame(FlashSV2Context * s)
@@ -800,29 +807,10 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
     int block_width  = optimum_block_width (s);
     int block_height = optimum_block_height(s);
 
-    s->rows = (s->image_height + block_height - 1) / block_height;
-    s->cols = (s->image_width  + block_width  - 1) / block_width;
-
     if (block_width != s->block_width || block_height != s->block_height) {
-        s->block_width  = block_width;
-        s->block_height = block_height;
-        if (s->rows * s->cols > s->blocks_size / sizeof(Block)) {
-            s->frame_blocks = av_realloc_array(s->frame_blocks, s->rows, s->cols * sizeof(Block));
-            s->key_blocks = av_realloc_array(s->key_blocks, s->cols, s->rows * sizeof(Block));
-            if (!s->frame_blocks || !s->key_blocks) {
-                av_log(s->avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-                return -1;
-            }
-            s->blocks_size = s->rows * s->cols * sizeof(Block);
-        }
-        init_blocks(s, s->frame_blocks, s->encbuffer, s->databuffer);
-        init_blocks(s, s->key_blocks, s->keybuffer, 0);
-
-        av_fast_malloc(&s->blockbuffer, &s->blockbuffer_size, block_width * block_height * 6);
-        if (!s->blockbuffer) {
-            av_log(s->avctx, AV_LOG_ERROR, "Could not allocate block buffer.\n");
-            return AVERROR(ENOMEM);
-        }
+        res = update_block_dimensions(s, block_width, block_height);
+        if (res < 0)
+            return res;
     }
 
     s->use15_7 = optimum_use15_7(s);
