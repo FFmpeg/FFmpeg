@@ -119,6 +119,14 @@ libdavs2 is under the GNU Public License Version 2 or later
 details), you must upgrade FFmpeg's license to GPL in order to use it.
 @end float
 
+@section uavs3d
+
+FFmpeg can make use of the uavs3d library for AVS3-P2/IEEE1857.10 video decoding.
+
+Go to @url{https://github.com/uavs3/uavs3d} and follow the instructions for
+installing the library. Then pass @code{--enable-libuavs3d} to configure to
+enable it.
+
 @section Game Music Emu
 
 FFmpeg can make use of the Game Music Emu library to read audio from supported video game
@@ -816,6 +824,8 @@ following image formats are supported:
     @tab Video encoding used by the Creature Shock game.
 @item AVS2-P2/IEEE1857.4     @tab  E  @tab  E
     @tab Supported through external libraries libxavs2 and libdavs2
+@item AVS3-P2/IEEE1857.10    @tab     @tab  E
+    @tab Supported through external library libuavs3d
 @item AYUV                   @tab  X  @tab  X
     @tab Microsoft uncompressed packed 4:4:4:4
 @item Beam Software VB       @tab     @tab  X
