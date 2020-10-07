@@ -28,7 +28,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
-#include "avfilter.h"
+#include "filters.h"
 #include "dnn_interface.h"
 #include "formats.h"
 #include "internal.h"
@@ -315,6 +315,51 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int activate_sync(AVFilterContext *filter_ctx)
+{
+    AVFilterLink *inlink = filter_ctx->inputs[0];
+    AVFilterLink *outlink = filter_ctx->outputs[0];
+    AVFrame *in = NULL;
+    int64_t pts;
+    int ret, status;
+    int got_frame = 0;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    do {
+        // drain all input frames
+        ret = ff_inlink_consume_frame(inlink, &in);
+        if (ret < 0)
+            return ret;
+        if (ret > 0) {
+            ret = filter_frame(inlink, in);
+            if (ret < 0)
+                return ret;
+            got_frame = 1;
+        }
+    } while (ret > 0);
+
+    // if frame got, schedule to next filter
+    if (got_frame)
+        return 0;
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF) {
+            ff_outlink_set_status(outlink, status, pts);
+            return ret;
+        }
+    }
+
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
+}
+
+static int activate(AVFilterContext *filter_ctx)
+{
+    return activate_sync(filter_ctx);
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DnnProcessingContext *context = ctx->priv;
@@ -332,7 +377,6 @@ static const AVFilterPad dnn_processing_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -356,4 +400,5 @@ AVFilter ff_vf_dnn_processing = {
     .inputs        = dnn_processing_inputs,
     .outputs       = dnn_processing_outputs,
     .priv_class    = &dnn_processing_class,
+    .activate      = activate,
 };
