@@ -1599,7 +1599,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                               prev->f->format,
                               prev->f->width,
                               prev->f->height);
-                h->short_ref[0]->poc = prev->poc + 2;
+                h->short_ref[0]->poc = prev->poc + 2U;
             } else if (!h->frame_recovered && !h->avctx->hwaccel)
                 ff_color_frame(h->short_ref[0]->f, c);
             h->short_ref[0]->frame_num = h->poc.prev_frame_num;
