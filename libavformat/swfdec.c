@@ -33,6 +33,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/get_bits.h"
 #include "swf.h"
+#include "flv.h"
 
 typedef struct SWFDecContext {
     int samples_per_frame;
@@ -307,15 +308,24 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             for(i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->id == ch_id) {
+                    int pkt_flags = 0;
                     frame = avio_rl16(pb);
                     len -= 2;
                     if (len <= 0)
                         goto skip;
+                    if (st->codecpar->codec_id == AV_CODEC_ID_FLASHSV) {
+                        unsigned flags = avio_r8(pb);
+                        len--;
+                        if (len <= 0)
+                            goto skip;
+                        pkt_flags |= (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ? AV_PKT_FLAG_KEY : 0;
+                    }
                     if ((res = av_get_packet(pb, pkt, len)) < 0)
                         return res;
                     pkt->pos = pos;
                     pkt->pts = frame;
                     pkt->stream_index = st->index;
+                    pkt->flags |= pkt_flags;
                     return pkt->size;
                 }
             }
