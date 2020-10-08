@@ -280,9 +280,9 @@ typedef struct PackageMergerList {
 
 static int compare_by_prob(const void *a, const void *b)
 {
-    PTable a_val = *(PTable *)a;
-    PTable b_val = *(PTable *)b;
-    return a_val.prob - b_val.prob;
+    const PTable *a2 = a;
+    const PTable *b2 = b;
+    return a2->prob - b2->prob;
 }
 
 static void magy_huffman_compute_bits(PTable *prob_table, HuffEntry *distincts,
