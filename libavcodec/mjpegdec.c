@@ -67,7 +67,7 @@ static void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
 
 static int build_vlc(VLC *vlc, const uint8_t *bits_table,
                      const uint8_t *val_table, int nb_codes,
-                     int use_static, int is_ac)
+                     int is_ac)
 {
     uint8_t huff_size[256] = { 0 };
     uint16_t huff_code[256];
@@ -86,7 +86,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
     }
 
     return ff_init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1,
-                              huff_code, 2, 2, huff_sym, 2, 2, use_static);
+                              huff_code, 2, 2, huff_sym, 2, 2, 0);
 }
 
 static int init_default_huffman_tables(MJpegDecodeContext *s)
@@ -116,7 +116,7 @@ static int init_default_huffman_tables(MJpegDecodeContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(ht); i++) {
         ret = build_vlc(&s->vlcs[ht[i].class][ht[i].index],
                         ht[i].bits, ht[i].values, ht[i].length,
-                        0, ht[i].class == 1);
+                        ht[i].class == 1);
         if (ret < 0)
             return ret;
 
@@ -296,13 +296,13 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
                class, index, n);
         if ((ret = build_vlc(&s->vlcs[class][index], bits_table, val_table,
-                             n, 0, class > 0)) < 0)
+                             n, class > 0)) < 0)
             return ret;
 
         if (class > 0) {
             ff_free_vlc(&s->vlcs[2][index]);
             if ((ret = build_vlc(&s->vlcs[2][index], bits_table, val_table,
-                                 n, 0, 0)) < 0)
+                                 n, 0)) < 0)
                 return ret;
         }
 
