@@ -133,14 +133,14 @@ static int pgx_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
         return ret;
 
-    if (depth <= 8) {
+    if (depth > 0 && depth <= 8) {
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         bpp = 8;
-    } else if (depth <= 16) {
+    } else if (depth > 0 && depth <= 16) {
         avctx->pix_fmt = AV_PIX_FMT_GRAY16;
         bpp = 16;
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Maximum depth of 16 bits supported.\n");
+        av_log(avctx, AV_LOG_ERROR, "depth %d is invalid or unsupported.\n", depth);
         return AVERROR_PATCHWELCOME;
     }
     if (bytestream2_get_bytes_left(&g) < width * height * (bpp >> 3))
