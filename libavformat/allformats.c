@@ -286,6 +286,7 @@ extern AVInputFormat  ff_mpl2_demuxer;
 extern AVInputFormat  ff_mpsub_demuxer;
 extern AVInputFormat  ff_msf_demuxer;
 extern AVInputFormat  ff_msnwc_tcp_demuxer;
+extern AVInputFormat  ff_msp_demuxer;
 extern AVInputFormat  ff_mtaf_demuxer;
 extern AVInputFormat  ff_mtv_demuxer;
 extern AVInputFormat  ff_musx_demuxer;
