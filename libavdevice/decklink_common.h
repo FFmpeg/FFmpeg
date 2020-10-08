@@ -155,13 +155,6 @@ struct decklink_ctx {
 
 typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;
 
-#ifdef _WIN32
-typedef unsigned int buffercount_type;
-IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
-#else
-typedef uint32_t buffercount_type;
-#endif
-
 static const BMDPixelFormat decklink_raw_format_map[] = {
     (BMDPixelFormat)0,
     bmdFormat8BitYUV,
