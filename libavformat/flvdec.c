@@ -495,6 +495,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 
     num_val  = 0;
     ioc      = s->pb;
+    if (avio_feof(ioc))
+        return AVERROR_EOF;
     amf_type = avio_r8(ioc);
 
     switch (amf_type) {
