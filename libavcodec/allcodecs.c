@@ -215,6 +215,7 @@ extern AVCodec ff_msmpeg4v2_decoder;
 extern AVCodec ff_msmpeg4v3_encoder;
 extern AVCodec ff_msmpeg4v3_decoder;
 extern AVCodec ff_msmpeg4_crystalhd_decoder;
+extern AVCodec ff_msp2_decoder;
 extern AVCodec ff_msrle_decoder;
 extern AVCodec ff_mss1_decoder;
 extern AVCodec ff_mss2_decoder;
