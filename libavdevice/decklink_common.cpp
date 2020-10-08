@@ -70,9 +70,30 @@ static IDeckLinkIterator *decklink_create_iterator(AVFormatContext *avctx)
 #else
     iter = CreateDeckLinkIteratorInstance();
 #endif
-    if (!iter)
+    if (!iter) {
         av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator. "
                                     "Make sure you have DeckLink drivers " BLACKMAGIC_DECKLINK_API_VERSION_STRING " or newer installed.\n");
+    } else {
+        IDeckLinkAPIInformation *api;
+        int64_t version;
+#ifdef _WIN32
+        if (CoCreateInstance(CLSID_CDeckLinkAPIInformation, NULL, CLSCTX_ALL,
+                             IID_IDeckLinkAPIInformation, (void**) &api) != S_OK) {
+            api = NULL;
+        }
+#else
+        api = CreateDeckLinkAPIInformationInstance();
+#endif
+        if (api && api->GetInt(BMDDeckLinkAPIVersion, &version) == S_OK) {
+            if (version < BLACKMAGIC_DECKLINK_API_VERSION)
+                av_log(avctx, AV_LOG_WARNING, "Installed DeckLink drivers are too old and may be incompatible with the SDK this module was built against. "
+                                              "Make sure you have DeckLink drivers " BLACKMAGIC_DECKLINK_API_VERSION_STRING " or newer installed.\n");
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Failed to check installed DeckLink API version.\n");
+        }
+        if (api)
+            api->Release();
+    }
 
     return iter;
 }
