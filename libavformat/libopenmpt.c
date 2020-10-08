@@ -218,7 +218,7 @@ static int read_seek_openmpt(AVFormatContext *s, int stream_idx, int64_t ts, int
     return 0;
 }
 
-static int probe_openmpt_extension(AVProbeData *p)
+static int probe_openmpt_extension(const AVProbeData *p)
 {
     const char *ext;
     if (p->filename) {
