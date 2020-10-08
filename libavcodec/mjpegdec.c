@@ -69,7 +69,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
                      const uint8_t *val_table, int nb_codes,
                      int is_ac)
 {
-    uint8_t huff_size[256] = { 0 };
+    uint8_t huff_size[256];
     uint16_t huff_code[256];
     uint16_t huff_sym[256];
     int i;
