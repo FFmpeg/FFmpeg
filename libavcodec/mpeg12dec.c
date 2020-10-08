@@ -526,10 +526,9 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
             } else {
                 /* escape */
                 run = SHOW_UBITS(re, &s->gb, 6) + 1;
-                LAST_SKIP_BITS(re, &s->gb, 6);
-                UPDATE_CACHE(re, &s->gb);
+                SKIP_BITS(re, &s->gb, 6);
                 level = SHOW_SBITS(re, &s->gb, 12);
-                SKIP_BITS(re, &s->gb, 12);
+                LAST_SKIP_BITS(re, &s->gb, 12);
                 i += run;
                 if (i > MAX_INDEX)
                     break;
@@ -610,10 +609,9 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s,
             } else {
                 /* escape */
                 run = SHOW_UBITS(re, &s->gb, 6) + 1;
-                LAST_SKIP_BITS(re, &s->gb, 6);
-                UPDATE_CACHE(re, &s->gb);
+                SKIP_BITS(re, &s->gb, 6);
                 level = SHOW_SBITS(re, &s->gb, 12);
-                SKIP_BITS(re, &s->gb, 12);
+                LAST_SKIP_BITS(re, &s->gb, 12);
                 i += run;
                 j = scantable[i];
                 if (level < 0) {
