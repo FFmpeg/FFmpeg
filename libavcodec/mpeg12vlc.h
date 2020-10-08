@@ -31,7 +31,7 @@
 #include "vlc.h"
 
 #define DC_VLC_BITS 9
-#define MV_VLC_BITS 9
+#define MV_VLC_BITS 8
 #define TEX_VLC_BITS 9
 
 #define MBINCR_VLC_BITS 9

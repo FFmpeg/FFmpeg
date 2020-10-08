@@ -149,7 +149,7 @@ av_cold void ff_mpeg12_init_vlcs(void)
                         ff_mpeg12_vlc_dc_chroma_code, 2, 2, 514);
         INIT_VLC_STATIC(&ff_mv_vlc, MV_VLC_BITS, 17,
                         &ff_mpeg12_mbMotionVectorTable[0][1], 2, 1,
-                        &ff_mpeg12_mbMotionVectorTable[0][0], 2, 1, 518);
+                        &ff_mpeg12_mbMotionVectorTable[0][0], 2, 1, 266);
         INIT_VLC_STATIC(&ff_mbincr_vlc, MBINCR_VLC_BITS, 36,
                         &ff_mpeg12_mbAddrIncrTable[0][1], 2, 1,
                         &ff_mpeg12_mbAddrIncrTable[0][0], 2, 1, 538);
