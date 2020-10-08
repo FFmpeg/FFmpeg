@@ -35,6 +35,7 @@ version <next>:
 - AVS3 demuxer
 - AVS3 video decoder via libuavs3d
 - Cintel RAW decoder
+- VDPAU accelerated VP9 10/12bit decoding
 
 
 version 4.3:
