@@ -1146,6 +1146,7 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
 
 err:
     xmlFree(c->adaptionset_lang);
+    c->adaptionset_lang = NULL;
     return ret;
 }
 
