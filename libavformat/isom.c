@@ -316,6 +316,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
     { AV_CODEC_ID_NOTCHLC, MKTAG('n', 'c', 'l', 'c') },
 
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'G', 'R') }, /* ASC Bayer BGGR */
+
     { AV_CODEC_ID_NONE, 0 },
 };
 
