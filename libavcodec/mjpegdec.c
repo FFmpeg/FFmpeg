@@ -78,7 +78,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
 
     build_huffman_codes(huff_size, huff_code, bits_table);
 
-    for (i = 0; i < 256; i++) {
+    for (i = 0; i < nb_codes; i++) {
         huff_sym[i] = val_table[i] + 16 * is_ac;
 
         if (is_ac && !val_table[i])
@@ -295,15 +295,15 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         /* build VLC and flush previous vlc if present */
         ff_free_vlc(&s->vlcs[class][index]);
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
-               class, index, n + 1);
+               class, index, n);
         if ((ret = build_vlc(&s->vlcs[class][index], bits_table, val_table,
-                             n + 1, 0, class > 0)) < 0)
+                             n, 0, class > 0)) < 0)
             return ret;
 
         if (class > 0) {
             ff_free_vlc(&s->vlcs[2][index]);
             if ((ret = build_vlc(&s->vlcs[2][index], bits_table, val_table,
-                                 n + 1, 0, 0)) < 0)
+                                 n, 0, 0)) < 0)
                 return ret;
         }
 
