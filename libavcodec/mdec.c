@@ -71,8 +71,6 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
     } else {
         component = (n <= 3 ? 0 : n - 4 + 1);
         diff = decode_dc(&a->gb, component);
-        if (diff >= 0xffff)
-            return AVERROR_INVALIDDATA;
         a->last_dc[component] += diff;
         block[0] = a->last_dc[component] * (1 << 3);
     }

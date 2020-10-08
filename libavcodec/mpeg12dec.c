@@ -490,8 +490,6 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
         component    = (n & 1) + 1;
     }
     diff = decode_dc(&s->gb, component);
-    if (diff >= 0xffff)
-        return AVERROR_INVALIDDATA;
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
@@ -577,8 +575,6 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s,
         component    = (n & 1) + 1;
     }
     diff = decode_dc(&s->gb, component);
-    if (diff >= 0xffff)
-        return AVERROR_INVALIDDATA;
     dc = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
