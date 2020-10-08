@@ -33,6 +33,6 @@ fate-dnn-layer-avgpool: $(DNNTESTSDIR)/dnn-layer-avgpool-test$(EXESUF)
 fate-dnn-layer-avgpool: CMD = run $(DNNTESTSDIR)/dnn-layer-avgpool-test$(EXESUF)
 fate-dnn-layer-avgpool: CMP = null
 
-FATE-yes += $(FATE_DNN)
+FATE-$(CONFIG_DNN) += $(FATE_DNN)
 
 fate-dnn: $(FATE_DNN)
