@@ -78,52 +78,6 @@ const char * avdevice_license(void)
     return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
-static void *device_next(void *prev, int output,
-                         AVClassCategory c1, AVClassCategory c2)
-{
-    const AVClass *pc;
-    AVClassCategory category = AV_CLASS_CATEGORY_NA;
-    do {
-        if (output) {
-            if (!(prev = av_oformat_next(prev)))
-                break;
-            pc = ((AVOutputFormat *)prev)->priv_class;
-        } else {
-            if (!(prev = av_iformat_next(prev)))
-                break;
-            pc = ((AVInputFormat *)prev)->priv_class;
-        }
-        if (!pc)
-            continue;
-        category = pc->category;
-    } while (category != c1 && category != c2);
-    return prev;
-}
-
-AVInputFormat *av_input_audio_device_next(AVInputFormat  *d)
-{
-    return device_next(d, 0, AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
-                       AV_CLASS_CATEGORY_DEVICE_INPUT);
-}
-
-AVInputFormat *av_input_video_device_next(AVInputFormat  *d)
-{
-    return device_next(d, 0, AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
-                       AV_CLASS_CATEGORY_DEVICE_INPUT);
-}
-
-AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d)
-{
-    return device_next(d, 1, AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
-                       AV_CLASS_CATEGORY_DEVICE_OUTPUT);
-}
-
-AVOutputFormat *av_output_video_device_next(AVOutputFormat *d)
-{
-    return device_next(d, 1, AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
-                       AV_CLASS_CATEGORY_DEVICE_OUTPUT);
-}
-
 int avdevice_app_to_dev_control_message(struct AVFormatContext *s, enum AVAppToDevMessageType type,
                                         void *data, size_t data_size)
 {
