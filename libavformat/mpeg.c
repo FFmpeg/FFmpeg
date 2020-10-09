@@ -622,7 +622,7 @@ skip:
         st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
         st->codecpar->sample_rate = 8000;
     }
-    st->request_probe     = request_probe;
+    st->internal->request_probe     = request_probe;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
 
 found:

@@ -226,6 +226,19 @@ struct AVStreamInternal {
     } *info;
 
     /**
+     * stream probing state
+     * -1   -> probing finished
+     *  0   -> no probing requested
+     * rest -> perform probing with request_probe being the minimum score to accept.
+     */
+    int request_probe;
+    /**
+     * Indicates that everything up to the next keyframe
+     * should be discarded.
+     */
+    int skip_to_keyframe;
+
+    /**
      * Number of samples to skip at the start of the frame decoded from the next packet.
      */
     int skip_samples;

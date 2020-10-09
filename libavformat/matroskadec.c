@@ -3597,7 +3597,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
             return res;
         if (is_keyframe)
             matroska->skip_to_keyframe = 0;
-        else if (!st->skip_to_keyframe) {
+        else if (!st->internal->skip_to_keyframe) {
             av_log(matroska->ctx, AV_LOG_ERROR, "File is broken, keyframes not correctly marked!\n");
             matroska->skip_to_keyframe = 0;
         }
@@ -3794,10 +3794,10 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     /* We seek to a level 1 element, so set the appropriate status. */
     matroska_reset_status(matroska, 0, st->index_entries[index].pos);
     if (flags & AVSEEK_FLAG_ANY) {
-        st->skip_to_keyframe = 0;
+        st->internal->skip_to_keyframe = 0;
         matroska->skip_to_timecode = timestamp;
     } else {
-        st->skip_to_keyframe = 1;
+        st->internal->skip_to_keyframe = 1;
         matroska->skip_to_timecode = st->index_entries[index].timestamp;
     }
     matroska->skip_to_keyframe = 1;
@@ -3810,7 +3810,7 @@ err:
     matroska_reset_status(matroska, 0, -1);
     matroska->resync_pos = -1;
     matroska_clear_queue(matroska);
-    st->skip_to_keyframe =
+    st->internal->skip_to_keyframe =
     matroska->skip_to_keyframe = 0;
     matroska->done = 0;
     return -1;
