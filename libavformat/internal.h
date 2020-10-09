@@ -308,11 +308,15 @@ struct AVStreamInternal {
      */
     int update_initial_durations_done;
 
+#define MAX_REORDER_DELAY 16
+
     /**
      * Internal data to generate dts from pts
      */
     int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
     uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
+
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
 
     /**
      * Internal data to analyze DTS and detect faulty mpeg streams

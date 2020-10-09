@@ -1357,12 +1357,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     }
 
     if (pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY) {
-        st->pts_buffer[0] = pkt->pts;
-        for (i = 0; i<delay && st->pts_buffer[i] > st->pts_buffer[i + 1]; i++)
-            FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
+        st->internal->pts_buffer[0] = pkt->pts;
+        for (i = 0; i<delay && st->internal->pts_buffer[i] > st->internal->pts_buffer[i + 1]; i++)
+            FFSWAP(int64_t, st->internal->pts_buffer[i], st->internal->pts_buffer[i + 1]);
 
         if(has_decode_delay_been_guessed(st))
-            pkt->dts = select_from_pts_buffer(st, st->pts_buffer, pkt->dts);
+            pkt->dts = select_from_pts_buffer(st, st->internal->pts_buffer, pkt->dts);
     }
     // We skipped it above so we try here.
     if (!onein_oneout)
@@ -1886,7 +1886,7 @@ void ff_read_frame_flush(AVFormatContext *s)
         st->probe_packets = s->max_probe_packets;
 
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
-            st->pts_buffer[j] = AV_NOPTS_VALUE;
+            st->internal->pts_buffer[j] = AV_NOPTS_VALUE;
 
         if (s->internal->inject_global_side_data)
             st->internal->inject_global_side_data = 1;
@@ -2867,7 +2867,7 @@ skip_duration_calc:
         st->last_IP_pts = AV_NOPTS_VALUE;
         st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
-            st->pts_buffer[j] = AV_NOPTS_VALUE;
+            st->internal->pts_buffer[j] = AV_NOPTS_VALUE;
     }
 }
 
@@ -4526,7 +4526,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     st->last_IP_pts = AV_NOPTS_VALUE;
     st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
     for (i = 0; i < MAX_REORDER_DELAY + 1; i++)
-        st->pts_buffer[i] = AV_NOPTS_VALUE;
+        st->internal->pts_buffer[i] = AV_NOPTS_VALUE;
 
     st->sample_aspect_ratio = (AVRational) { 0, 1 };
 

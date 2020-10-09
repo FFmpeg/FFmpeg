@@ -1084,11 +1084,10 @@ typedef struct AVStream {
      */
     struct AVPacketList *last_in_packet_buffer;
     AVProbeData probe_data;
-#define MAX_REORDER_DELAY 16
-    int64_t pts_buffer[MAX_REORDER_DELAY+1];
 
 #if LIBAVFORMAT_VERSION_MAJOR < 59
     // kept for ABI compatibility only, do not access in any way
+    int64_t      unused5[16+1];
     void         *unused2;
     int          unused3;
     unsigned int unused4;

@@ -595,13 +595,13 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
 
     //calculate dts from pts
     if (pkt->pts != AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY) {
-        st->pts_buffer[0] = pkt->pts;
-        for (i = 1; i < delay + 1 && st->pts_buffer[i] == AV_NOPTS_VALUE; i++)
-            st->pts_buffer[i] = pkt->pts + (i - delay - 1) * pkt->duration;
-        for (i = 0; i<delay && st->pts_buffer[i] > st->pts_buffer[i + 1]; i++)
-            FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i + 1]);
+        st->internal->pts_buffer[0] = pkt->pts;
+        for (i = 1; i < delay + 1 && st->internal->pts_buffer[i] == AV_NOPTS_VALUE; i++)
+            st->internal->pts_buffer[i] = pkt->pts + (i - delay - 1) * pkt->duration;
+        for (i = 0; i<delay && st->internal->pts_buffer[i] > st->internal->pts_buffer[i + 1]; i++)
+            FFSWAP(int64_t, st->internal->pts_buffer[i], st->internal->pts_buffer[i + 1]);
 
-        pkt->dts = st->pts_buffer[0];
+        pkt->dts = st->internal->pts_buffer[0];
     }
 
     if (st->cur_dts && st->cur_dts != AV_NOPTS_VALUE &&
