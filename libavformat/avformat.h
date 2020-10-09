@@ -1198,18 +1198,6 @@ typedef struct AVStream {
     uint8_t dts_misordered;
 
     /**
-     * Internal data to inject global side data
-     */
-    int inject_global_side_data;
-
-    /**
-     * display aspect ratio (0 if unknown)
-     * - encoding: unused
-     * - decoding: Set by libavformat to calculate sample_aspect_ratio internally
-     */
-    AVRational display_aspect_ratio;
-
-    /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
      */

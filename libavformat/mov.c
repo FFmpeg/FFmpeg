@@ -1767,8 +1767,8 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     return 0;
                 den *= 2;
             case 1:
-                c->fc->streams[c->fc->nb_streams-1]->display_aspect_ratio.num = num;
-                c->fc->streams[c->fc->nb_streams-1]->display_aspect_ratio.den = den;
+                c->fc->streams[c->fc->nb_streams-1]->internal->display_aspect_ratio.num = num;
+                c->fc->streams[c->fc->nb_streams-1]->internal->display_aspect_ratio.den = den;
             default:
                 return 0;
             }

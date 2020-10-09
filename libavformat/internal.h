@@ -224,6 +224,18 @@ struct AVStreamInternal {
         int     fps_last_dts_idx;
 
     } *info;
+
+    /**
+     * Internal data to inject global side data
+     */
+    int inject_global_side_data;
+
+    /**
+     * display aspect ratio (0 if unknown)
+     * - encoding: unused
+     * - decoding: Set by libavformat to calculate sample_aspect_ratio internally
+     */
+    AVRational display_aspect_ratio;
 };
 
 #ifdef __GNUC__

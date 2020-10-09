@@ -153,7 +153,7 @@ void av_format_inject_global_side_data(AVFormatContext *s)
     s->internal->inject_global_side_data = 1;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        st->inject_global_side_data = 1;
+        st->internal->inject_global_side_data = 1;
     }
 }
 
@@ -1660,7 +1660,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st->skip_samples = 0;
         }
 
-        if (st->inject_global_side_data) {
+        if (st->internal->inject_global_side_data) {
             for (i = 0; i < st->nb_side_data; i++) {
                 AVPacketSideData *src_sd = &st->side_data[i];
                 uint8_t *dst_data;
@@ -1676,7 +1676,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
                 memcpy(dst_data, src_sd->data, src_sd->size);
             }
-            st->inject_global_side_data = 0;
+            st->internal->inject_global_side_data = 0;
         }
     }
 
@@ -1889,7 +1889,7 @@ void ff_read_frame_flush(AVFormatContext *s)
             st->pts_buffer[j] = AV_NOPTS_VALUE;
 
         if (s->internal->inject_global_side_data)
-            st->inject_global_side_data = 1;
+            st->internal->inject_global_side_data = 1;
 
         st->skip_samples = 0;
     }
@@ -4008,9 +4008,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     st->r_frame_rate.den = st->time_base.num;
                 }
             }
-            if (st->display_aspect_ratio.num && st->display_aspect_ratio.den) {
+            if (st->internal->display_aspect_ratio.num && st->internal->display_aspect_ratio.den) {
                 AVRational hw_ratio = { avctx->height, avctx->width };
-                st->sample_aspect_ratio = av_mul_q(st->display_aspect_ratio,
+                st->sample_aspect_ratio = av_mul_q(st->internal->display_aspect_ratio,
                                                    hw_ratio);
             }
         } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -4536,7 +4536,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     st->internal->info->fps_first_dts = AV_NOPTS_VALUE;
     st->internal->info->fps_last_dts  = AV_NOPTS_VALUE;
 
-    st->inject_global_side_data = s->internal->inject_global_side_data;
+    st->internal->inject_global_side_data = s->internal->inject_global_side_data;
 
     st->internal->need_context_update = 1;
 

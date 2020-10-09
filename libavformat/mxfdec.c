@@ -2586,7 +2586,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 av_dict_set_int(&st->metadata, "source_track_origin", source_track->sequence->origin, 0);
             }
             if (descriptor->aspect_ratio.num && descriptor->aspect_ratio.den)
-                st->display_aspect_ratio = descriptor->aspect_ratio;
+                st->internal->display_aspect_ratio = descriptor->aspect_ratio;
             st->codecpar->color_range     = mxf_get_color_range(mxf, descriptor);
             st->codecpar->color_primaries = mxf_get_codec_ul(ff_mxf_color_primaries_uls, &descriptor->color_primaries_ul)->id;
             st->codecpar->color_trc       = mxf_get_codec_ul(ff_mxf_color_trc_uls, &descriptor->color_trc_ul)->id;
