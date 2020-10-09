@@ -676,7 +676,7 @@ static void force_codec_ids(AVFormatContext *s, AVStream *st)
 static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
 {
     if (st->internal->request_probe>0) {
-        AVProbeData *pd = &st->probe_data;
+        AVProbeData *pd = &st->internal->probe_data;
         int end;
         av_log(s, AV_LOG_DEBUG, "probing stream %d pp:%d\n", st->index, st->probe_packets);
         --st->probe_packets;
@@ -4343,6 +4343,8 @@ static void free_stream(AVStream **pst)
         av_bsf_free(&st->internal->bsfc);
         av_freep(&st->internal->priv_pts);
         av_freep(&st->internal->index_entries);
+        av_freep(&st->internal->probe_data.buf);
+
         av_bsf_free(&st->internal->extract_extradata.bsf);
         av_packet_free(&st->internal->extract_extradata.pkt);
 
@@ -4354,7 +4356,6 @@ static void free_stream(AVStream **pst)
 
     av_dict_free(&st->metadata);
     avcodec_parameters_free(&st->codecpar);
-    av_freep(&st->probe_data.buf);
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
     avcodec_free_context(&st->codec);

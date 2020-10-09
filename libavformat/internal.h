@@ -336,6 +336,8 @@ struct AVStreamInternal {
      * - decoding: Set by libavformat to calculate sample_aspect_ratio internally
      */
     AVRational display_aspect_ratio;
+
+    AVProbeData probe_data;
 };
 
 #ifdef __GNUC__

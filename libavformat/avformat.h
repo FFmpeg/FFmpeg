@@ -1083,10 +1083,10 @@ typedef struct AVStream {
      * last packet in packet_buffer for this stream when muxing.
      */
     struct AVPacketList *last_in_packet_buffer;
-    AVProbeData probe_data;
 
 #if LIBAVFORMAT_VERSION_MAJOR < 59
     // kept for ABI compatibility only, do not access in any way
+    AVProbeData  unused6;
     int64_t      unused5[16+1];
     void         *unused2;
     int          unused3;
