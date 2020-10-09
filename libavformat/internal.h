@@ -338,6 +338,11 @@ struct AVStreamInternal {
     AVRational display_aspect_ratio;
 
     AVProbeData probe_data;
+
+    /**
+     * last packet in packet_buffer for this stream when muxing.
+     */
+    struct AVPacketList *last_in_packet_buffer;
 };
 
 #ifdef __GNUC__

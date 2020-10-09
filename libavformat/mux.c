@@ -831,8 +831,8 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     av_packet_move_ref(&this_pktl->pkt, pkt);
     pkt = &this_pktl->pkt;
 
-    if (st->last_in_packet_buffer) {
-        next_point = &(st->last_in_packet_buffer->next);
+    if (st->internal->last_in_packet_buffer) {
+        next_point = &(st->internal->last_in_packet_buffer->next);
     } else {
         next_point = &s->internal->packet_buffer;
     }
@@ -876,7 +876,7 @@ next_non_null:
 
     this_pktl->next = *next_point;
 
-    st->last_in_packet_buffer = *next_point = this_pktl;
+    st->internal->last_in_packet_buffer = *next_point = this_pktl;
 
     return 0;
 }
@@ -926,7 +926,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     }
 
     for (i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->last_in_packet_buffer) {
+        if (s->streams[i]->internal->last_in_packet_buffer) {
             ++stream_count;
         } else if (s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
                    s->streams[i]->codecpar->codec_id != AV_CODEC_ID_VP8 &&
@@ -951,7 +951,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
         for (i = 0; i < s->nb_streams; i++) {
             int64_t last_dts;
-            const AVPacketList *last = s->streams[i]->last_in_packet_buffer;
+            const AVPacketList *last = s->streams[i]->internal->last_in_packet_buffer;
 
             if (!last)
                 continue;
@@ -1000,8 +1000,8 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
             if (!s->internal->packet_buffer)
                 s->internal->packet_buffer_end = NULL;
 
-            if (st->last_in_packet_buffer == pktl)
-                st->last_in_packet_buffer = NULL;
+            if (st->internal->last_in_packet_buffer == pktl)
+                st->internal->last_in_packet_buffer = NULL;
 
             av_packet_unref(&pktl->pkt);
             av_freep(&pktl);
@@ -1019,8 +1019,8 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
         if (!s->internal->packet_buffer)
             s->internal->packet_buffer_end = NULL;
 
-        if (st->last_in_packet_buffer == pktl)
-            st->last_in_packet_buffer = NULL;
+        if (st->internal->last_in_packet_buffer == pktl)
+            st->internal->last_in_packet_buffer = NULL;
         av_freep(&pktl);
 
         return 1;

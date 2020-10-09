@@ -1079,13 +1079,9 @@ typedef struct AVStream {
     enum AVStreamParseType need_parsing;
     struct AVCodecParserContext *parser;
 
-    /**
-     * last packet in packet_buffer for this stream when muxing.
-     */
-    struct AVPacketList *last_in_packet_buffer;
-
 #if LIBAVFORMAT_VERSION_MAJOR < 59
     // kept for ABI compatibility only, do not access in any way
+    void        *unused7;
     AVProbeData  unused6;
     int64_t      unused5[16+1];
     void         *unused2;
