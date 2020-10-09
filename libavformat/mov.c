@@ -3550,7 +3550,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
 
             if (first_non_zero_audio_edit > 0)
-                st->skip_samples = msc->start_pad = 0;
+                st->internal->skip_samples = msc->start_pad = 0;
         }
 
         // While reordering frame index according to edit list we must handle properly
@@ -3625,7 +3625,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     curr_cts < edit_list_media_time && curr_cts + frame_duration > edit_list_media_time &&
                     first_non_zero_audio_edit > 0) {
                     packet_skip_samples = edit_list_media_time - curr_cts;
-                    st->skip_samples += packet_skip_samples;
+                    st->internal->skip_samples += packet_skip_samples;
 
                     // Shift the index entry timestamp by packet_skip_samples to be correct.
                     edit_list_dts_counter -= packet_skip_samples;
@@ -3658,7 +3658,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         // Increment skip_samples for the first non-zero audio edit list
                         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                             first_non_zero_audio_edit > 0 && st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
-                            st->skip_samples += frame_duration;
+                            st->internal->skip_samples += frame_duration;
                         }
                     }
                 }
@@ -3744,7 +3744,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     // Update av stream length, if it ends up shorter than the track's media duration
     st->duration = FFMIN(st->duration, edit_list_dts_entry_end - start_dts);
-    msc->start_pad = st->skip_samples;
+    msc->start_pad = st->internal->skip_samples;
 
     // Free the old index and the old CTTS structures
     av_free(e_old);
@@ -7616,7 +7616,7 @@ static int mov_read_header(AVFormatContext *s)
         fix_timescale(mov, sc);
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             st->codecpar->codec_id   == AV_CODEC_ID_AAC) {
-            st->skip_samples = sc->start_pad;
+            st->internal->skip_samples = sc->start_pad;
         }
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sc->nb_frames_for_fps > 0 && sc->duration_for_fps > 0)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
@@ -8105,7 +8105,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             int64_t timestamp;
             MOVStreamContext *sc = s->streams[i]->priv_data;
             st = s->streams[i];
-            st->skip_samples = (sample_time <= 0) ? sc->start_pad : 0;
+            st->internal->skip_samples = (sample_time <= 0) ? sc->start_pad : 0;
 
             if (stream_index == i)
                 continue;

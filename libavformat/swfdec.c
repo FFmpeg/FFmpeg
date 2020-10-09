@@ -292,7 +292,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(ENOMEM);
             ast->duration = avio_rl32(pb); // number of samples
             if (((v>>4) & 15) == 2) { // MP3 sound data record
-                ast->skip_samples = avio_rl16(pb);
+                ast->internal->skip_samples = avio_rl16(pb);
                 len -= 2;
             }
             len -= 7;

@@ -255,13 +255,13 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
 
         mp3->start_pad = v>>12;
         mp3->  end_pad = v&4095;
-        st->start_skip_samples = mp3->start_pad + 528 + 1;
+        st->internal->start_skip_samples = mp3->start_pad + 528 + 1;
         if (mp3->frames) {
-            st->first_discard_sample = -mp3->end_pad + 528 + 1 + mp3->frames * (int64_t)spf;
-            st->last_discard_sample = mp3->frames * (int64_t)spf;
+            st->internal->first_discard_sample = -mp3->end_pad + 528 + 1 + mp3->frames * (int64_t)spf;
+            st->internal->last_discard_sample = mp3->frames * (int64_t)spf;
         }
         if (!st->start_time)
-            st->start_time = av_rescale_q(st->start_skip_samples,
+            st->start_time = av_rescale_q(st->internal->start_skip_samples,
                                             (AVRational){1, c->sample_rate},
                                             st->time_base);
         av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
