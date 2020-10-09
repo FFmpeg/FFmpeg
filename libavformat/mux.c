@@ -678,7 +678,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (s->avoid_negative_ts > 0) {
         AVStream *st = s->streams[pkt->stream_index];
-        int64_t offset = st->mux_ts_offset;
+        int64_t offset = st->internal->mux_ts_offset;
         int64_t ts = s->internal->avoid_negative_ts_use_pts ? pkt->pts : pkt->dts;
 
         if (s->internal->offset == AV_NOPTS_VALUE && ts != AV_NOPTS_VALUE &&
@@ -688,7 +688,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         if (s->internal->offset != AV_NOPTS_VALUE && !offset) {
-            offset = st->mux_ts_offset =
+            offset = st->internal->mux_ts_offset =
                 av_rescale_q_rnd(s->internal->offset,
                                  s->internal->offset_timebase,
                                  st->time_base,
@@ -1038,7 +1038,7 @@ int ff_interleaved_peek(AVFormatContext *s, int stream,
             *pkt = pktl->pkt;
             if (add_offset) {
                 AVStream *st = s->streams[pkt->stream_index];
-                int64_t offset = st->mux_ts_offset;
+                int64_t offset = st->internal->mux_ts_offset;
 
                 if (s->output_ts_offset)
                     offset += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);

@@ -226,6 +226,17 @@ struct AVStreamInternal {
     } *info;
 
     /**
+     * Number of internally decoded frames, used internally in libavformat, do not access
+     * its lifetime differs from info which is why it is not in that structure.
+     */
+    int nb_decoded_frames;
+
+    /**
+     * Timestamp offset added to timestamps before muxing
+     */
+    int64_t mux_ts_offset;
+
+    /**
      * Internal data to check for wrapping of the time stamp
      */
     int64_t pts_wrap_reference;

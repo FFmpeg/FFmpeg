@@ -1152,17 +1152,6 @@ typedef struct AVStream {
     int64_t last_discard_sample;
 
     /**
-     * Number of internally decoded frames, used internally in libavformat, do not access
-     * its lifetime differs from info which is why it is not in that structure.
-     */
-    int nb_decoded_frames;
-
-    /**
-     * Timestamp offset added to timestamps before muxing
-     */
-    int64_t mux_ts_offset;
-
-    /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
      */

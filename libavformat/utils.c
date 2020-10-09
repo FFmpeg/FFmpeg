@@ -1000,11 +1000,11 @@ static int has_decode_delay_been_guessed(AVStream *st)
         return 1;
 #endif
     if (st->internal->avctx->has_b_frames<3)
-        return st->nb_decoded_frames >= 7;
+        return st->internal->nb_decoded_frames >= 7;
     else if (st->internal->avctx->has_b_frames<4)
-        return st->nb_decoded_frames >= 18;
+        return st->internal->nb_decoded_frames >= 18;
     else
-        return st->nb_decoded_frames >= 20;
+        return st->internal->nb_decoded_frames >= 20;
 }
 
 static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList *pktl)
@@ -2960,7 +2960,7 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
             FAIL("unspecified sample rate");
         if (!avctx->channels)
             FAIL("unspecified number of channels");
-        if (st->internal->info->found_decoder >= 0 && !st->nb_decoded_frames && avctx->codec_id == AV_CODEC_ID_DTS)
+        if (st->internal->info->found_decoder >= 0 && !st->internal->nb_decoded_frames && avctx->codec_id == AV_CODEC_ID_DTS)
             FAIL("no decodable DTS frames");
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -3067,7 +3067,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
         }
         if (ret >= 0) {
             if (got_picture)
-                st->nb_decoded_frames++;
+                st->internal->nb_decoded_frames++;
             ret       = got_picture;
         }
     }
