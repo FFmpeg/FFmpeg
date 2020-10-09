@@ -1027,8 +1027,8 @@ static int64_t select_from_pts_buffer(AVStream *st, int64_t *pts_buffer, int64_t
         if (dts == AV_NOPTS_VALUE) {
             int64_t best_score = INT64_MAX;
             for (i = 0; i<delay; i++) {
-                if (st->pts_reorder_error_count[i]) {
-                    int64_t score = st->pts_reorder_error[i] / st->pts_reorder_error_count[i];
+                if (st->internal->pts_reorder_error_count[i]) {
+                    int64_t score = st->internal->pts_reorder_error[i] / st->internal->pts_reorder_error_count[i];
                     if (score < best_score) {
                         best_score = score;
                         dts = pts_buffer[i];
@@ -1039,13 +1039,13 @@ static int64_t select_from_pts_buffer(AVStream *st, int64_t *pts_buffer, int64_t
             for (i = 0; i<delay; i++) {
                 if (pts_buffer[i] != AV_NOPTS_VALUE) {
                     int64_t diff =  FFABS(pts_buffer[i] - dts)
-                                    + (uint64_t)st->pts_reorder_error[i];
-                    diff = FFMAX(diff, st->pts_reorder_error[i]);
-                    st->pts_reorder_error[i] = diff;
-                    st->pts_reorder_error_count[i]++;
-                    if (st->pts_reorder_error_count[i] > 250) {
-                        st->pts_reorder_error[i] >>= 1;
-                        st->pts_reorder_error_count[i] >>= 1;
+                                    + (uint64_t)st->internal->pts_reorder_error[i];
+                    diff = FFMAX(diff, st->internal->pts_reorder_error[i]);
+                    st->internal->pts_reorder_error[i] = diff;
+                    st->internal->pts_reorder_error_count[i]++;
+                    if (st->internal->pts_reorder_error_count[i] > 250) {
+                        st->internal->pts_reorder_error[i] >>= 1;
+                        st->internal->pts_reorder_error_count[i] >>= 1;
                     }
                 }
             }

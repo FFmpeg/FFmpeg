@@ -1185,12 +1185,6 @@ typedef struct AVStream {
     int update_initial_durations_done;
 
     /**
-     * Internal data to generate dts from pts
-     */
-    int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
-    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
-
-    /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
      */
