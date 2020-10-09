@@ -226,6 +226,13 @@ struct AVStreamInternal {
     } *info;
 
     /**
+     * Internal data to analyze DTS and detect faulty mpeg streams
+     */
+    int64_t last_dts_for_order_check;
+    uint8_t dts_ordered;
+    uint8_t dts_misordered;
+
+    /**
      * Internal data to inject global side data
      */
     int inject_global_side_data;

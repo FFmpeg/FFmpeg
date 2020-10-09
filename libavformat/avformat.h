@@ -1191,13 +1191,6 @@ typedef struct AVStream {
     uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
 
     /**
-     * Internal data to analyze DTS and detect faulty mpeg streams
-     */
-    int64_t last_dts_for_order_check;
-    uint8_t dts_ordered;
-    uint8_t dts_misordered;
-
-    /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
      */
