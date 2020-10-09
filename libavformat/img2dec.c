@@ -587,7 +587,7 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         int index = av_index_search_timestamp(st, timestamp, flags);
         if(index < 0)
             return -1;
-        s1->img_number = st->index_entries[index].pos;
+        s1->img_number = st->internal->index_entries[index].pos;
         return 0;
     }
 

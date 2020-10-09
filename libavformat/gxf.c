@@ -572,9 +572,9 @@ static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int
                                     AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     if (idx < 0)
         return -1;
-    pos = st->index_entries[idx].pos;
-    if (idx < st->nb_index_entries - 2)
-        maxlen = st->index_entries[idx + 2].pos - pos;
+    pos = st->internal->index_entries[idx].pos;
+    if (idx < st->internal->nb_index_entries - 2)
+        maxlen = st->internal->index_entries[idx + 2].pos - pos;
     maxlen = FFMAX(maxlen, 200 * 1024);
     res = avio_seek(s->pb, pos, SEEK_SET);
     if (res < 0)

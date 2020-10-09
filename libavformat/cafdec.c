@@ -329,7 +329,7 @@ found_data:
     if (caf->bytes_per_packet > 0 && caf->frames_per_packet > 0) {
         if (caf->data_size > 0)
             st->nb_frames = (caf->data_size / caf->bytes_per_packet) * caf->frames_per_packet;
-    } else if (st->nb_index_entries && st->duration > 0) {
+    } else if (st->internal->nb_index_entries && st->duration > 0) {
         if (st->codecpar->sample_rate && caf->data_size / st->duration > INT64_MAX / st->codecpar->sample_rate / 8) {
             av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %d * 8 * %"PRId64"\n",
                    st->codecpar->sample_rate, caf->data_size / st->duration);
@@ -382,13 +382,13 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt_size   = (CAF_MAX_PKT_SIZE / pkt_size) * pkt_size;
         pkt_size   = FFMIN(pkt_size, left);
         pkt_frames = pkt_size / caf->bytes_per_packet;
-    } else if (st->nb_index_entries) {
-        if (caf->packet_cnt < st->nb_index_entries - 1) {
-            pkt_size   = st->index_entries[caf->packet_cnt + 1].pos       - st->index_entries[caf->packet_cnt].pos;
-            pkt_frames = st->index_entries[caf->packet_cnt + 1].timestamp - st->index_entries[caf->packet_cnt].timestamp;
-        } else if (caf->packet_cnt == st->nb_index_entries - 1) {
-            pkt_size   = caf->num_bytes - st->index_entries[caf->packet_cnt].pos;
-            pkt_frames = st->duration   - st->index_entries[caf->packet_cnt].timestamp;
+    } else if (st->internal->nb_index_entries) {
+        if (caf->packet_cnt < st->internal->nb_index_entries - 1) {
+            pkt_size   = st->internal->index_entries[caf->packet_cnt + 1].pos       - st->internal->index_entries[caf->packet_cnt].pos;
+            pkt_frames = st->internal->index_entries[caf->packet_cnt + 1].timestamp - st->internal->index_entries[caf->packet_cnt].timestamp;
+        } else if (caf->packet_cnt == st->internal->nb_index_entries - 1) {
+            pkt_size   = caf->num_bytes - st->internal->index_entries[caf->packet_cnt].pos;
+            pkt_frames = st->duration   - st->internal->index_entries[caf->packet_cnt].timestamp;
         } else {
             return AVERROR(EIO);
         }
@@ -427,10 +427,10 @@ static int read_seek(AVFormatContext *s, int stream_index,
             pos = FFMIN(pos, caf->data_size);
         packet_cnt = pos / caf->bytes_per_packet;
         frame_cnt  = caf->frames_per_packet * packet_cnt;
-    } else if (st->nb_index_entries) {
+    } else if (st->internal->nb_index_entries) {
         packet_cnt = av_index_search_timestamp(st, timestamp, flags);
-        frame_cnt  = st->index_entries[packet_cnt].timestamp;
-        pos        = st->index_entries[packet_cnt].pos;
+        frame_cnt  = st->internal->index_entries[packet_cnt].timestamp;
+        pos        = st->internal->index_entries[packet_cnt].pos;
     } else {
         return -1;
     }

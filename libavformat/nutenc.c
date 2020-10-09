@@ -1013,12 +1013,12 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             int index = av_index_search_timestamp(st, dts_tb,
                                                   AVSEEK_FLAG_BACKWARD);
             if (index >= 0) {
-                sp_pos = FFMIN(sp_pos, st->index_entries[index].pos);
-                if (!nut->write_index && 2*index > st->nb_index_entries) {
-                    memmove(st->index_entries,
-                            st->index_entries + index,
-                            sizeof(*st->index_entries) * (st->nb_index_entries - index));
-                    st->nb_index_entries -=  index;
+                sp_pos = FFMIN(sp_pos, st->internal->index_entries[index].pos);
+                if (!nut->write_index && 2*index > st->internal->nb_index_entries) {
+                    memmove(st->internal->index_entries,
+                            st->internal->index_entries + index,
+                            sizeof(*st->internal->index_entries) * (st->internal->nb_index_entries - index));
+                    st->internal->nb_index_entries -=  index;
                 }
             }
         }

@@ -314,10 +314,10 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     stream = s->streams[rpl->chunk_part];
 
-    if (rpl->chunk_number >= stream->nb_index_entries)
+    if (rpl->chunk_number >= stream->internal->nb_index_entries)
         return AVERROR_EOF;
 
-    index_entry = &stream->index_entries[rpl->chunk_number];
+    index_entry = &stream->internal->index_entries[rpl->chunk_number];
 
     if (rpl->frame_in_part == 0)
         if (avio_seek(pb, index_entry->pos, SEEK_SET) < 0)

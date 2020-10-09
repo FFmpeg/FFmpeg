@@ -1087,10 +1087,12 @@ typedef struct AVStream {
 #define MAX_REORDER_DELAY 16
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
 
-    AVIndexEntry *index_entries; /**< Only used if the format does not
-                                    support seeking natively. */
-    int nb_index_entries;
-    unsigned int index_entries_allocated_size;
+#if LIBAVFORMAT_VERSION_MAJOR < 59
+    // kept for ABI compatibility only, do not access in any way
+    void         *unused2;
+    int          unused3;
+    unsigned int unused4;
+#endif
 
     /**
      * Stream Identifier

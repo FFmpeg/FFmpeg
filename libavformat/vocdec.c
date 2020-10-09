@@ -83,14 +83,14 @@ static int voc_read_seek(AVFormatContext *s, int stream_index,
     st = s->streams[stream_index];
     index = av_index_search_timestamp(st, timestamp, flags);
 
-    if (index >= 0 && index < st->nb_index_entries - 1) {
-        AVIndexEntry *e = &st->index_entries[index];
+    if (index >= 0 && index < st->internal->nb_index_entries - 1) {
+        AVIndexEntry *e = &st->internal->index_entries[index];
         avio_seek(s->pb, e->pos, SEEK_SET);
         voc->pts = e->timestamp;
         voc->remaining_size = e->size;
         return 0;
-    } else if (st->nb_index_entries && st->index_entries[0].timestamp <= timestamp) {
-        AVIndexEntry *e = &st->index_entries[st->nb_index_entries - 1];
+    } else if (st->internal->nb_index_entries && st->internal->index_entries[0].timestamp <= timestamp) {
+        AVIndexEntry *e = &st->internal->index_entries[st->internal->nb_index_entries - 1];
         // prepare context for seek_frame_generic()
         voc->pts = e->timestamp;
         voc->remaining_size = e->size;

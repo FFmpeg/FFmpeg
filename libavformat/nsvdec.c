@@ -682,10 +682,10 @@ static int nsv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     if(index < 0)
         return -1;
 
-    if (avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET) < 0)
+    if (avio_seek(s->pb, st->internal->index_entries[index].pos, SEEK_SET) < 0)
         return -1;
 
-    nst->frame_offset = st->index_entries[index].timestamp;
+    nst->frame_offset = st->internal->index_entries[index].timestamp;
     nsv->state = NSV_UNSYNC;
     return 0;
 }

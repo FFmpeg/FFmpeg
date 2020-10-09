@@ -431,8 +431,8 @@ static int mv_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     int64_t ret;
     uint64_t pos;
 
-    if (frame < st->nb_index_entries) {
-        index = &st->index_entries[frame];
+    if (frame < st->internal->nb_index_entries) {
+        index = &st->internal->index_entries[frame];
         pos   = avio_tell(pb);
         if (index->pos > pos)
             avio_skip(pb, index->pos - pos);

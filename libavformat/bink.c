@@ -225,8 +225,8 @@ static int read_header(AVFormatContext *s)
             return ret;
     }
 
-    if (vst->index_entries)
-        avio_seek(pb, vst->index_entries[0].pos + bink->smush_size, SEEK_SET);
+    if (vst->internal->index_entries)
+        avio_seek(pb, vst->internal->index_entries[0].pos + bink->smush_size, SEEK_SET);
     else
         avio_skip(pb, 4);
 
@@ -256,8 +256,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
 
-        bink->remain_packet_size = st->index_entries[index_entry].size;
-        bink->flags = st->index_entries[index_entry].flags;
+        bink->remain_packet_size = st->internal->index_entries[index_entry].size;
+        bink->flags = st->internal->index_entries[index_entry].flags;
         bink->current_track = 0;
     }
 
@@ -313,7 +313,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
         return -1;
 
     /* seek to the first frame */
-    ret = avio_seek(s->pb, vst->index_entries[0].pos + bink->smush_size, SEEK_SET);
+    ret = avio_seek(s->pb, vst->internal->index_entries[0].pos + bink->smush_size, SEEK_SET);
     if (ret < 0)
         return ret;
 

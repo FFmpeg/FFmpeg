@@ -40,8 +40,8 @@ static void reset_index_position(int64_t metadata_head_size, AVStream *st)
 {
     /* the real seek index offset should be the size of metadata blocks with the offset in the frame blocks */
     int i;
-    for(i=0; i<st->nb_index_entries; i++) {
-        st->index_entries[i].pos += metadata_head_size;
+    for(i=0; i<st->internal->nb_index_entries; i++) {
+        st->internal->index_entries[i].pos += metadata_head_size;
     }
 }
 
@@ -319,10 +319,10 @@ static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     }
 
     index = av_index_search_timestamp(s->streams[0], timestamp, flags);
-    if(index<0 || index >= s->streams[0]->nb_index_entries)
+    if(index<0 || index >= s->streams[0]->internal->nb_index_entries)
         return -1;
 
-    e = s->streams[0]->index_entries[index];
+    e = s->streams[0]->internal->index_entries[index];
     pos = avio_seek(s->pb, e.pos, SEEK_SET);
     if (pos >= 0) {
         return 0;
