@@ -1106,9 +1106,6 @@ typedef struct AVStream {
     int pmt_version;
     int pmt_stream_idx;
 
-    int64_t interleaver_chunk_size;
-    int64_t interleaver_chunk_duration;
-
     /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.

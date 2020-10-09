@@ -225,6 +225,9 @@ struct AVStreamInternal {
 
     } *info;
 
+    int64_t interleaver_chunk_size;
+    int64_t interleaver_chunk_duration;
+
     /**
      * stream probing state
      * -1   -> probing finished
