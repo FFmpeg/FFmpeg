@@ -1325,8 +1325,8 @@ skip:
                                     int64_t pcr = f->last_pcr / 300;
                                     pcr_found = 1;
                                     if (st) {
-                                        pes->st->pts_wrap_reference = st->pts_wrap_reference;
-                                        pes->st->pts_wrap_behavior = st->pts_wrap_behavior;
+                                        pes->st->internal->pts_wrap_reference = st->internal->pts_wrap_reference;
+                                        pes->st->internal->pts_wrap_behavior = st->internal->pts_wrap_behavior;
                                     }
                                     if (pes->dts == AV_NOPTS_VALUE || pes->dts < pcr) {
                                         pes->pts = pes->dts = pcr;

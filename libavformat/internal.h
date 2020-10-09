@@ -226,6 +226,28 @@ struct AVStreamInternal {
     } *info;
 
     /**
+     * Internal data to check for wrapping of the time stamp
+     */
+    int64_t pts_wrap_reference;
+
+    /**
+     * Options for behavior, when a wrap is detected.
+     *
+     * Defined by AV_PTS_WRAP_ values.
+     *
+     * If correction is enabled, there are two possibilities:
+     * If the first time stamp is near the wrap point, the wrap offset
+     * will be subtracted, which will create negative time stamps.
+     * Otherwise the offset will be added.
+     */
+    int pts_wrap_behavior;
+
+    /**
+     * Internal data to prevent doing update_initial_durations() twice
+     */
+    int update_initial_durations_done;
+
+    /**
      * Internal data to generate dts from pts
      */
     int64_t pts_reorder_error[MAX_REORDER_DELAY+1];

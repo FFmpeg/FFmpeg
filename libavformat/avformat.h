@@ -1163,28 +1163,6 @@ typedef struct AVStream {
     int64_t mux_ts_offset;
 
     /**
-     * Internal data to check for wrapping of the time stamp
-     */
-    int64_t pts_wrap_reference;
-
-    /**
-     * Options for behavior, when a wrap is detected.
-     *
-     * Defined by AV_PTS_WRAP_ values.
-     *
-     * If correction is enabled, there are two possibilities:
-     * If the first time stamp is near the wrap point, the wrap offset
-     * will be subtracted, which will create negative time stamps.
-     * Otherwise the offset will be added.
-     */
-    int pts_wrap_behavior;
-
-    /**
-     * Internal data to prevent doing update_initial_durations() twice
-     */
-    int update_initial_durations_done;
-
-    /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
      */

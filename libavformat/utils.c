@@ -101,13 +101,13 @@ static int is_relative(int64_t ts) {
  */
 static int64_t wrap_timestamp(const AVStream *st, int64_t timestamp)
 {
-    if (st->pts_wrap_behavior != AV_PTS_WRAP_IGNORE &&
-        st->pts_wrap_reference != AV_NOPTS_VALUE && timestamp != AV_NOPTS_VALUE) {
-        if (st->pts_wrap_behavior == AV_PTS_WRAP_ADD_OFFSET &&
-            timestamp < st->pts_wrap_reference)
+    if (st->internal->pts_wrap_behavior != AV_PTS_WRAP_IGNORE &&
+        st->internal->pts_wrap_reference != AV_NOPTS_VALUE && timestamp != AV_NOPTS_VALUE) {
+        if (st->internal->pts_wrap_behavior == AV_PTS_WRAP_ADD_OFFSET &&
+            timestamp < st->internal->pts_wrap_reference)
             return timestamp + (1ULL << st->pts_wrap_bits);
-        else if (st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET &&
-            timestamp >= st->pts_wrap_reference)
+        else if (st->internal->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET &&
+            timestamp >= st->internal->pts_wrap_reference)
             return timestamp - (1ULL << st->pts_wrap_bits);
     }
     return timestamp;
@@ -732,7 +732,7 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
 
     if (ref == AV_NOPTS_VALUE)
         ref = pkt->pts;
-    if (st->pts_wrap_reference != AV_NOPTS_VALUE || st->pts_wrap_bits >= 63 || ref == AV_NOPTS_VALUE || !s->correct_ts_overflow)
+    if (st->internal->pts_wrap_reference != AV_NOPTS_VALUE || st->pts_wrap_bits >= 63 || ref == AV_NOPTS_VALUE || !s->correct_ts_overflow)
         return 0;
     ref &= (1LL << st->pts_wrap_bits)-1;
 
@@ -747,17 +747,17 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
 
     if (!first_program) {
         int default_stream_index = av_find_default_stream_index(s);
-        if (s->streams[default_stream_index]->pts_wrap_reference == AV_NOPTS_VALUE) {
+        if (s->streams[default_stream_index]->internal->pts_wrap_reference == AV_NOPTS_VALUE) {
             for (i = 0; i < s->nb_streams; i++) {
                 if (av_find_program_from_stream(s, NULL, i))
                     continue;
-                s->streams[i]->pts_wrap_reference = pts_wrap_reference;
-                s->streams[i]->pts_wrap_behavior = pts_wrap_behavior;
+                s->streams[i]->internal->pts_wrap_reference = pts_wrap_reference;
+                s->streams[i]->internal->pts_wrap_behavior = pts_wrap_behavior;
             }
         }
         else {
-            st->pts_wrap_reference = s->streams[default_stream_index]->pts_wrap_reference;
-            st->pts_wrap_behavior = s->streams[default_stream_index]->pts_wrap_behavior;
+            st->internal->pts_wrap_reference = s->streams[default_stream_index]->internal->pts_wrap_reference;
+            st->internal->pts_wrap_behavior = s->streams[default_stream_index]->internal->pts_wrap_behavior;
         }
     }
     else {
@@ -776,8 +776,8 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
         while (program) {
             if (program->pts_wrap_reference != pts_wrap_reference) {
                 for (i = 0; i<program->nb_stream_indexes; i++) {
-                    s->streams[program->stream_index[i]]->pts_wrap_reference = pts_wrap_reference;
-                    s->streams[program->stream_index[i]]->pts_wrap_behavior = pts_wrap_behavior;
+                    s->streams[program->stream_index[i]]->internal->pts_wrap_reference = pts_wrap_reference;
+                    s->streams[program->stream_index[i]]->internal->pts_wrap_behavior = pts_wrap_behavior;
                 }
 
                 program->pts_wrap_reference = pts_wrap_reference;
@@ -859,7 +859,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         st = s->streams[pkt->stream_index];
 
-        if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
+        if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->internal->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
             // correct first time stamps to negative values
             if (!is_relative(st->first_dts))
                 st->first_dts = wrap_timestamp(st, st->first_dts);
@@ -1147,9 +1147,9 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
     int64_t cur_dts    = RELATIVE_TS_BASE;
 
     if (st->first_dts != AV_NOPTS_VALUE) {
-        if (st->update_initial_durations_done)
+        if (st->internal->update_initial_durations_done)
             return;
-        st->update_initial_durations_done = 1;
+        st->internal->update_initial_durations_done = 1;
         cur_dts = st->first_dts;
         for (; pktl; pktl = get_next_pkt(s, st, pktl)) {
             if (pktl->pkt.stream_index == stream_index) {
@@ -4520,8 +4520,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     st->duration   = AV_NOPTS_VALUE;
     st->first_dts     = AV_NOPTS_VALUE;
     st->probe_packets = s->max_probe_packets;
-    st->pts_wrap_reference = AV_NOPTS_VALUE;
-    st->pts_wrap_behavior = AV_PTS_WRAP_IGNORE;
+    st->internal->pts_wrap_reference = AV_NOPTS_VALUE;
+    st->internal->pts_wrap_behavior = AV_PTS_WRAP_IGNORE;
 
     st->last_IP_pts = AV_NOPTS_VALUE;
     st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
