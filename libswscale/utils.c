@@ -1013,8 +1013,8 @@ int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
 
     *inv_table  = c->srcColorspaceTable;
     *table      = c->dstColorspaceTable;
-    *srcRange   = c->srcRange;
-    *dstRange   = c->dstRange;
+    *srcRange   = range_override_needed(c->srcFormat) ? 1 : c->srcRange;
+    *dstRange   = range_override_needed(c->dstFormat) ? 1 : c->dstRange;
     *brightness = c->brightness;
     *contrast   = c->contrast;
     *saturation = c->saturation;
