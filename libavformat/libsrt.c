@@ -373,11 +373,6 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     int64_t open_timeout = 0;
     int eid;
 
-    eid = srt_epoll_create();
-    if (eid < 0)
-        return libsrt_neterrno(h);
-    s->eid = eid;
-
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
     if (strcmp(proto, "srt"))
@@ -412,6 +407,11 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     }
 
     cur_ai = ai;
+
+    eid = srt_epoll_create();
+    if (eid < 0)
+        return libsrt_neterrno(h);
+    s->eid = eid;
 
  restart:
 
@@ -495,6 +495,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     if (listen_fd >= 0)
         srt_close(listen_fd);
     freeaddrinfo(ai);
+    srt_epoll_release(s->eid);
     return ret;
 }
 
@@ -584,7 +585,8 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             } else if (!strcmp(buf, "rendezvous")) {
                 s->mode = SRT_MODE_RENDEZVOUS;
             } else {
-                return AVERROR(EIO);
+                ret = AVERROR(EINVAL);
+                goto err;
             }
         }
         if (av_find_info_tag(buf, sizeof(buf), "sndbuf", p)) {
@@ -632,10 +634,15 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             s->linger = strtol(buf, NULL, 10);
         }
     }
-    return libsrt_setup(h, uri, flags);
+    ret = libsrt_setup(h, uri, flags);
+    if (ret < 0)
+        goto err;
+    return 0;
+
 err:
     av_freep(&s->smoother);
     av_freep(&s->streamid);
+    srt_cleanup();
     return ret;
 }
 
