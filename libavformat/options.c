@@ -55,35 +55,38 @@ static void *format_child_next(void *obj, void *prev)
 }
 
 #if FF_API_CHILD_CLASS_NEXT
-FF_DISABLE_DEPRECATION_WARNINGS
 static const AVClass *format_child_class_next(const AVClass *prev)
 {
-    AVInputFormat  *ifmt = NULL;
-    AVOutputFormat *ofmt = NULL;
+    const AVInputFormat *ifmt = NULL;
+    const AVOutputFormat *ofmt = NULL;
+    void *ifmt_iter = NULL, *ofmt_iter = NULL;
 
     if (!prev)
         return &ff_avio_class;
 
-    while ((ifmt = av_iformat_next(ifmt)))
+    while ((ifmt = av_demuxer_iterate(&ifmt_iter)))
         if (ifmt->priv_class == prev)
             break;
 
-    if (!ifmt)
-        while ((ofmt = av_oformat_next(ofmt)))
+    if (!ifmt) {
+        ifmt_iter = NULL;
+        while ((ofmt = av_muxer_iterate(&ofmt_iter)))
             if (ofmt->priv_class == prev)
                 break;
-    if (!ofmt)
-        while (ifmt = av_iformat_next(ifmt))
+    }
+    if (!ofmt) {
+        ofmt_iter = NULL;
+        while ((ifmt = av_demuxer_iterate(&ifmt_iter)))
             if (ifmt->priv_class)
                 return ifmt->priv_class;
+    }
 
-    while (ofmt = av_oformat_next(ofmt))
+    while ((ofmt = av_muxer_iterate(&ofmt_iter)))
         if (ofmt->priv_class)
             return ofmt->priv_class;
 
     return NULL;
 }
-FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 enum {
