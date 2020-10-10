@@ -103,8 +103,15 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     static int c;
     int seekable = 0;
     int ret;
+    AVInputFormat *fmt = NULL;
 
     if (!c) {
+#ifdef FFMPEG_DEMUXER
+#define DEMUXER_SYMBOL0(DEMUXER) ff_##DEMUXER##_demuxer
+#define DEMUXER_SYMBOL(DEMUXER) DEMUXER_SYMBOL0(DEMUXER)
+        extern AVInputFormat DEMUXER_SYMBOL(FFMPEG_DEMUXER);
+        fmt = &DEMUXER_SYMBOL(FFMPEG_DEMUXER);
+#endif
         av_register_all();
         avcodec_register_all();
         av_log_set_level(AV_LOG_PANIC);
@@ -166,7 +173,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     avfmt->pb = fuzzed_pb;
 
-    ret = avformat_open_input(&avfmt, filename, NULL, NULL);
+    ret = avformat_open_input(&avfmt, filename, fmt, NULL);
     if (ret < 0) {
         av_freep(&fuzzed_pb->buffer);
         av_freep(&fuzzed_pb);
