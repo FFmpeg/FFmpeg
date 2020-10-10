@@ -990,6 +990,9 @@ set to 1) or to a default remote address (if set to 0).
 @item localport=@var{n}
 Set the local RTP port to @var{n}.
 
+@item timeout=@var{n}
+Set timeout (in microseconds) of socket I/O operations to @var{n}.
+
 This is a deprecated option. Instead, @option{localrtpport} should be
 used.
 
