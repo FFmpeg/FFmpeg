@@ -571,7 +571,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         break;
     case 'a':
         if (av_strstart(p, "control:", &p)) {
-            if (s->nb_streams == 0) {
+            if (rt->nb_rtsp_streams == 0) {
                 if (!strncmp(p, "rtsp://", 7))
                     av_strlcpy(rt->control_uri, p,
                                sizeof(rt->control_uri));
