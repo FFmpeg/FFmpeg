@@ -112,8 +112,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 #endif
 
     if (!c) {
-        av_register_all();
-        avcodec_register_all();
         av_log_set_level(AV_LOG_PANIC);
         c=1;
     }
@@ -139,15 +137,17 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         filesize       = bytestream2_get_le64(&gbc) & 0x7FFFFFFFFFFFFFFF;
 
         if ((flags & 2) && strlen(filename) < sizeof(filename) / 2) {
-            AVInputFormat *avif = NULL;
+            const AVInputFormat *avif = NULL;
+            void *avif_iter = NULL;
             int avif_count = 0;
-            while ((avif = av_iformat_next(avif))) {
+            while ((avif = av_demuxer_iterate(&avif_iter))) {
                 if (avif->extensions)
                     avif_count ++;
             }
             avif_count =  bytestream2_get_le32(&gbc) % avif_count;
 
-            while ((avif = av_iformat_next(avif))) {
+            avif_iter = NULL;
+            while ((avif = av_demuxer_iterate(&avif_iter))) {
                 if (avif->extensions)
                     if (!avif_count--)
                         break;
