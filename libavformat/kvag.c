@@ -83,7 +83,7 @@ static int kvag_read_header(AVFormatContext *s)
     par->bits_per_raw_sample    = 16;
     par->block_align            = 1;
     par->bit_rate               = par->channels *
-                                  par->sample_rate *
+                                  (uint64_t)par->sample_rate *
                                   par->bits_per_coded_sample;
 
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
