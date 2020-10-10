@@ -144,6 +144,16 @@
 #define STREAM_ID_METADATA_STREAM    0xfc
 #define STREAM_ID_EXTENDED_STREAM_ID 0xfd
 
+/* ISO/IEC 13818-1 Table 2-45 */
+#define VIDEO_STREAM_DESCRIPTOR      0x02
+#define REGISTRATION_DESCRIPTOR      0x05
+#define ISO_639_LANGUAGE_DESCRIPTOR  0x0a
+#define IOD_DESCRIPTOR               0x1d
+#define SL_DESCRIPTOR                0x1e
+#define FMC_DESCRIPTOR               0x1f
+#define METADATA_DESCRIPTOR          0x26
+#define METADATA_STD_DESCRIPTOR      0x27
+
 typedef struct MpegTSContext MpegTSContext;
 
 MpegTSContext *avpriv_mpegts_parse_open(AVFormatContext *s);

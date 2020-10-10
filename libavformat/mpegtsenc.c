@@ -275,7 +275,7 @@ static void putbuf(uint8_t **q_ptr, const uint8_t *buf, size_t len)
 static void put_registration_descriptor(uint8_t **q_ptr, uint32_t tag)
 {
     uint8_t *q = *q_ptr;
-    *q++ = 0x05; /* MPEG-2 registration descriptor*/
+    *q++ = REGISTRATION_DESCRIPTOR;
     *q++ = 4;
     *q++ = tag;
     *q++ = tag >> 8;
@@ -600,7 +600,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 char *next = lang->value;
                 uint8_t *len_ptr;
 
-                *q++     = 0x0a; /* ISO 639 language descriptor */
+                *q++     = ISO_639_LANGUAGE_DESCRIPTOR;
                 len_ptr  = q++;
                 *len_ptr = 0;
 
@@ -728,7 +728,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 put_registration_descriptor(&q, MKTAG('K', 'L', 'V', 'A'));
             } else if (codec_id == AV_CODEC_ID_TIMED_ID3) {
                 const char *tag = "ID3 ";
-                *q++ = 0x26; /* metadata descriptor */
+                *q++ = METADATA_DESCRIPTOR;
                 *q++ = 13;
                 put16(&q, 0xffff);    /* metadata application format */
                 putbuf(&q, tag, strlen(tag));
