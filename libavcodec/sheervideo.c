@@ -2036,15 +2036,16 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
+    if (s->format != format) {
+        if (ret < 0) {
+            s->format = 0;
+            return ret;
+        }
+        s->format = format;
+    }
     if (avpkt->size < 20 + avctx->width * avctx->height / 16) {
         av_log(avctx, AV_LOG_ERROR, "Input packet too small\n");
         return AVERROR_INVALIDDATA;
-    }
-
-    if (s->format != format) {
-        if (ret < 0)
-            return ret;
-        s->format = format;
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
