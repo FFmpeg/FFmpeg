@@ -1782,25 +1782,20 @@ static void decode_rgb(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 
 static int build_vlc(VLC *vlc, const uint8_t *len, int count)
 {
-    uint32_t codes[1024];
-    uint8_t bits[1024];
-    uint16_t syms[1024];
-    uint64_t index;
+    uint16_t codes[1024];
+    unsigned index;
     int i;
 
     index = 0;
     for (i = 0; i < count; i++) {
-        codes[i]  = index >> (32 - len[i]);
-        bits[i] = len[i];
-        syms[i]  = i;
-        index += 1ULL << (32 - len[i]);
+        codes[i] = index >> (32 - len[i]);
+        index   += 1U    << (32 - len[i]);
     }
 
     ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, 12, count,
-                              bits,  sizeof(*bits),  sizeof(*bits),
-                              codes, sizeof(*codes), sizeof(*codes),
-                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+    return init_vlc(vlc, 12, count,
+                    len,   sizeof(*len),   sizeof(*len),
+                    codes, sizeof(*codes), sizeof(*codes), 0);
 }
 
 static int decode_frame(AVCodecContext *avctx,
