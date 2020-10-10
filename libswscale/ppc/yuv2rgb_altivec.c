@@ -284,6 +284,16 @@ static inline void cvtyuvtoRGB(SwsContext *c, vector signed short Y,
  * ------------------------------------------------------------------------------
  */
 
+#if !HAVE_VSX
+static inline vector unsigned char vec_xl(signed long long offset, const ubyte *addr)
+{
+    const vector unsigned char *v_addr = (const vector unsigned char *) (addr + offset);
+    vector unsigned char align_perm = vec_lvsl(offset, addr);
+
+    return (vector unsigned char) vec_perm(v_addr[0], v_addr[1], align_perm);
+}
+#endif /* !HAVE_VSX */
+
 #define DEFCSP420_CVT(name, out_pixels)                                       \
 static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
                             int *instrides, int srcSliceY, int srcSliceH,     \
