@@ -3543,11 +3543,13 @@ typedef struct AVCodecParser {
  */
 const AVCodecParser *av_parser_iterate(void **opaque);
 
+#if FF_API_NEXT
 attribute_deprecated
 AVCodecParser *av_parser_next(const AVCodecParser *c);
 
 attribute_deprecated
 void av_register_codec_parser(AVCodecParser *parser);
+#endif
 AVCodecParserContext *av_parser_init(int codec_id);
 
 /**

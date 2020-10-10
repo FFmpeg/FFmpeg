@@ -21,6 +21,7 @@
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
+#include "version.h"
 
 extern AVCodecParser ff_aac_parser;
 extern AVCodecParser ff_aac_latm_parser;
@@ -74,6 +75,7 @@ extern AVCodecParser ff_xma_parser;
 
 #include "libavcodec/parser_list.c"
 
+#if FF_API_NEXT
 static AVOnce av_parser_next_init = AV_ONCE_INIT;
 
 static void av_parser_init_next(void)
@@ -97,6 +99,12 @@ AVCodecParser *av_parser_next(const AVCodecParser *p)
         return (AVCodecParser*)parser_list[0];
 }
 
+void av_register_codec_parser(AVCodecParser *parser)
+{
+    ff_thread_once(&av_parser_next_init, av_parser_init_next);
+}
+#endif
+
 const AVCodecParser *av_parser_iterate(void **opaque)
 {
     uintptr_t i = (uintptr_t)*opaque;
@@ -106,9 +114,4 @@ const AVCodecParser *av_parser_iterate(void **opaque)
         *opaque = (void*)(i + 1);
 
     return p;
-}
-
-void av_register_codec_parser(AVCodecParser *parser)
-{
-    ff_thread_once(&av_parser_next_init, av_parser_init_next);
 }
