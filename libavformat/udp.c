@@ -190,7 +190,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr,struct soc
         if (local_addr)
             mreq.imr_interface= ((struct sockaddr_in *)local_addr)->sin_addr;
         else
-            mreq.imr_interface.s_addr= INADDR_ANY;
+            mreq.imr_interface.s_addr = INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
             ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_MEMBERSHIP)");
             return -1;
@@ -203,7 +203,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr,struct soc
 
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
         //TODO: Interface index should be looked up from local_addr
-        mreq6.ipv6mr_interface= 0;
+        mreq6.ipv6mr_interface = 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
             ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP)");
             return -1;
@@ -221,9 +221,9 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
 
         mreq.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
         if (local_addr)
-            mreq.imr_interface= ((struct sockaddr_in *)local_addr)->sin_addr;
+            mreq.imr_interface = ((struct sockaddr_in *)local_addr)->sin_addr;
         else
-            mreq.imr_interface.s_addr= INADDR_ANY;
+            mreq.imr_interface.s_addr = INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
             ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_DROP_MEMBERSHIP)");
             return -1;
@@ -236,7 +236,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
 
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
         //TODO: Interface index should be looked up from local_addr
-        mreq6.ipv6mr_interface= 0;
+        mreq6.ipv6mr_interface = 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
             ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_DROP_MEMBERSHIP)");
             return -1;
@@ -295,9 +295,9 @@ static int udp_set_multicast_sources(URLContext *h,
 
         mreqs.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
         if (local_addr)
-            mreqs.imr_interface= ((struct sockaddr_in *)local_addr)->sin_addr;
+            mreqs.imr_interface = ((struct sockaddr_in *)local_addr)->sin_addr;
         else
-            mreqs.imr_interface.s_addr= INADDR_ANY;
+            mreqs.imr_interface.s_addr = INADDR_ANY;
         mreqs.imr_sourceaddr.s_addr = ((struct sockaddr_in *)&sources[i])->sin_addr.s_addr;
 
         if (setsockopt(sockfd, IPPROTO_IP,
@@ -545,7 +545,7 @@ static void *circular_buffer_task_tx( void *_URLContext)
         uint8_t tmp[4];
         int64_t timestamp;
 
-        len=av_fifo_size(s->fifo);
+        len = av_fifo_size(s->fifo);
 
         while (len<4) {
             if (s->close_req)
@@ -553,11 +553,11 @@ static void *circular_buffer_task_tx( void *_URLContext)
             if (pthread_cond_wait(&s->cond, &s->mutex) < 0) {
                 goto end;
             }
-            len=av_fifo_size(s->fifo);
+            len = av_fifo_size(s->fifo);
         }
 
         av_fifo_generic_read(s->fifo, tmp, 4, NULL);
-        len=AV_RL32(tmp);
+        len = AV_RL32(tmp);
 
         av_assert0(len >= 0);
         av_assert0(len <= sizeof(s->tmp));
@@ -953,10 +953,10 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                 uint8_t tmp[4];
 
                 av_fifo_generic_read(s->fifo, tmp, 4, NULL);
-                avail= AV_RL32(tmp);
+                avail = AV_RL32(tmp);
                 if(avail > size){
                     av_log(h, AV_LOG_WARNING, "Part of datagram lost due to insufficient buffer size\n");
-                    avail= size;
+                    avail = size;
                 }
 
                 av_fifo_generic_read(s->fifo, buf, avail, NULL);
@@ -970,8 +970,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             } else if(nonblock) {
                 pthread_mutex_unlock(&s->mutex);
                 return AVERROR(EAGAIN);
-            }
-            else {
+            } else {
                 /* FIXME: using the monotonic clock would be better,
                    but it does not exist on all supported platforms. */
                 int64_t t = av_gettime() + 100000;
@@ -984,7 +983,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                 }
                 nonblock = 1;
             }
-        } while( 1);
+        } while(1);
     }
 #endif
 
@@ -1017,7 +1016,7 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
           Here we can't know on which packet error was, but it needs to know that error exists.
         */
         if (s->circular_buffer_error<0) {
-            int err=s->circular_buffer_error;
+            int err = s->circular_buffer_error;
             pthread_mutex_unlock(&s->mutex);
             return err;
         }
