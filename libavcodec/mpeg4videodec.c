@@ -3347,7 +3347,7 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb, int 
                 next_start_code_studio(gb);
                 extension_and_user_data(s, gb, 0);
             } else if (s->studio_profile) {
-                avpriv_request_sample(s->avctx, "Mixes studio and non studio profile\n");
+                avpriv_request_sample(s->avctx, "Mix of studio and non studio profile");
                 return AVERROR_PATCHWELCOME;
             }
             s->avctx->profile = profile;

@@ -1590,7 +1590,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_GEO_KEY_DIRECTORY:
         if (s->geotag_count) {
-            avpriv_request_sample(s->avctx, "Multiple geo key directories\n");
+            avpriv_request_sample(s->avctx, "Multiple geo key directories");
             return AVERROR_INVALIDDATA;
         }
         ADD_METADATA(1, "GeoTIFF_Version", NULL);
@@ -1860,7 +1860,7 @@ again:
             return AVERROR_INVALIDDATA;
         }
         if (off <= last_off) {
-            avpriv_request_sample(s->avctx, "non increasing IFD offset\n");
+            avpriv_request_sample(s->avctx, "non increasing IFD offset");
             return AVERROR_INVALIDDATA;
         }
         if (off >= UINT_MAX - 14 || avpkt->size < off + 14) {

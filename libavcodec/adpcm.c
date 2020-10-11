@@ -129,7 +129,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         min_channels = 2;
         max_channels = 8;
         if (avctx->channels & 1) {
-            avpriv_request_sample(avctx, "channel count %d\n", avctx->channels);
+            avpriv_request_sample(avctx, "channel count %d", avctx->channels);
             return AVERROR_PATCHWELCOME;
         }
         break;

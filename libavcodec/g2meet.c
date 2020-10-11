@@ -560,7 +560,7 @@ static uint32_t epic_decode_pixel_pred(ePICContext *dc, int x, int y,
     }
 
     if (R<0 || G<0 || B<0 || R > 255 || G > 255 || B > 255) {
-        avpriv_request_sample(NULL, "RGB %d %d %d is out of range\n", R, G, B);
+        avpriv_request_sample(NULL, "RGB %d %d %d (out of range)", R, G, B);
         return 0;
     }
 
