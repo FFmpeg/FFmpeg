@@ -1228,6 +1228,7 @@ static void cbs_av1_free_metadata(void *unit, uint8_t *content)
         av_buffer_unref(&md->metadata.itut_t35.payload_ref);
         break;
     }
+    av_free(content);
 }
 
 static const CodedBitstreamUnitTypeDescriptor cbs_av1_unit_types[] = {
