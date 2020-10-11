@@ -286,11 +286,13 @@ typedef struct AVFilter {
 
     int flags_internal; ///< Additional flags for avfilter internal use only.
 
+#if FF_API_NEXT
     /**
      * Used by the filter registration system. Must not be touched by any other
      * code.
      */
     struct AVFilter *next;
+#endif
 
     /**
      * Make the filter instance process a command.
