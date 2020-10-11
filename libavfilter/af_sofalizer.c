@@ -183,10 +183,11 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     return 0;
 }
 
-static int parse_channel_name(char **arg, int *rchannel, char *buf)
+static int parse_channel_name(AVFilterContext *ctx, char **arg, int *rchannel)
 {
     int len, i, channel_id = 0;
     int64_t layout, layout0;
+    char buf[8] = {0};
 
     /* try to parse a channel name, e.g. "FL" */
     if (av_sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
@@ -199,8 +200,18 @@ static int parse_channel_name(char **arg, int *rchannel, char *buf)
             }
         }
         /* reject layouts that are not a single channel */
-        if (channel_id >= 64 || layout0 != 1LL << channel_id)
+        if (channel_id >= 64 || layout0 != 1LL << channel_id) {
+            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", buf);
             return AVERROR(EINVAL);
+        }
+        *rchannel = channel_id;
+        *arg += len;
+        return 0;
+    } else if (av_sscanf(*arg, "%d%n", &channel_id, &len) == 1) {
+        if (channel_id < 0 || channel_id >= 64) {
+            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%d\' as channel number.\n", channel_id);
+            return AVERROR(EINVAL);
+        }
         *rchannel = channel_id;
         *arg += len;
         return 0;
@@ -218,13 +229,11 @@ static void parse_speaker_pos(AVFilterContext *ctx, int64_t in_channel_layout)
     p = args;
 
     while ((arg = av_strtok(p, "|", &tokenizer))) {
-        char buf[8];
         float azim, elev;
         int out_ch_id;
 
         p = NULL;
-        if (parse_channel_name(&arg, &out_ch_id, buf)) {
-            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", buf);
+        if (parse_channel_name(ctx, &arg, &out_ch_id)) {
             continue;
         }
         if (av_sscanf(arg, "%f %f", &azim, &elev) == 2) {
