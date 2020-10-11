@@ -534,7 +534,9 @@ typedef struct AVOutputFormat {
 #else
 #define ff_const59 const
 #endif
+#if FF_API_NEXT
     ff_const59 struct AVOutputFormat *next;
+#endif
     /**
      * size of private data so that it can be allocated in the wrapper
      */
@@ -679,7 +681,9 @@ typedef struct AVInputFormat {
      * New public fields should be added right above.
      *****************************************************************
      */
+#if FF_API_NEXT
     ff_const59 struct AVInputFormat *next;
+#endif
 
     /**
      * Raw demuxers store their codec ID here.
