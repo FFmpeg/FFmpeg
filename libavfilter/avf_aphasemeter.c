@@ -28,26 +28,43 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
 #include "internal.h"
+#include "float.h"
 
 typedef struct AudioPhaseMeterContext {
     const AVClass *class;
     AVFrame *out;
     int do_video;
+    int do_phasing_detection;
     int w, h;
     AVRational frame_rate;
     int contrast[4];
     uint8_t *mpc_str;
     uint8_t mpc[4];
     int draw_median_phase;
+    int is_mono;
+    int is_out_phase;
+    int start_mono_presence;
+    int start_out_phase_presence;
+    float tolerance;
+    float angle;
+    float phase;
+    AVRational time_base;
+    int64_t duration;
+    int64_t frame_end;
+    int64_t mono_idx[2];
+    int64_t out_phase_idx[2];
 } AudioPhaseMeterContext;
 
+#define MAX_DURATION (24*60*60*1000000LL)
 #define OFFSET(x) offsetof(AudioPhaseMeterContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define get_duration(index) (index[1] - index[0])
 
 static const AVOption aphasemeter_options[] = {
     { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
@@ -59,6 +76,13 @@ static const AVOption aphasemeter_options[] = {
     { "bc", "set blue contrast",  OFFSET(contrast[2]), AV_OPT_TYPE_INT, {.i64=1}, 0, 255, FLAGS },
     { "mpc", "set median phase color", OFFSET(mpc_str), AV_OPT_TYPE_STRING, {.str = "none"}, 0, 0, FLAGS },
     { "video", "set video output", OFFSET(do_video), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    { "phasing", "set mono and out-of-phase detection output", OFFSET(do_phasing_detection), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
+    { "tolerance", "set phase tolerance for mono detection", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
+    { "t",         "set phase tolerance for mono detection", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
+    { "angle", "set angle threshold for out-of-phase detection", OFFSET(angle), AV_OPT_TYPE_FLOAT, {.dbl = 170.}, 90, 180, FLAGS },
+    { "a",     "set angle threshold for out-of-phase detection", OFFSET(angle), AV_OPT_TYPE_FLOAT, {.dbl = 170.}, 90, 180, FLAGS },
+    { "duration", "set minimum mono or out-of-phase duration in seconds", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=2000000}, 0, MAX_DURATION, FLAGS },
+    { "d",        "set minimum mono or out-of-phase duration in seconds", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=2000000}, 0, MAX_DURATION, FLAGS },
     { NULL }
 };
 
@@ -104,6 +128,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AudioPhaseMeterContext *s = ctx->priv;
     int nb_samples;
+    s->duration = av_rescale(s->duration, inlink->sample_rate, AV_TIME_BASE);
 
     if (s->do_video) {
         nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
@@ -140,6 +165,76 @@ static inline int get_x(float phase, int w)
   return (phase + 1.) / 2. * (w - 1);
 }
 
+static inline void add_metadata(AVFrame *insamples, const char *key, char *value)
+{
+    char buf[128];
+
+    snprintf(buf, sizeof(buf), "lavfi.aphasemeter.%s", key);
+    av_dict_set(&insamples->metadata, buf, value, 0);
+}
+
+static inline void update_mono_detection(AudioPhaseMeterContext *s, AVFrame *insamples, int mono_measurement)
+{
+    int64_t mono_duration;
+    if (!s->is_mono && mono_measurement) {
+        s->is_mono = 1;
+        s->start_mono_presence = 1;
+        s->mono_idx[0] = insamples->pts;
+    }
+    if (s->is_mono && mono_measurement && s->start_mono_presence) {
+        s->mono_idx[1] = s->frame_end;
+        mono_duration = get_duration(s->mono_idx);
+        if (mono_duration >= s->duration) {
+            add_metadata(insamples, "mono_start", av_ts2timestr(s->mono_idx[0], &s->time_base));
+            av_log(s, AV_LOG_INFO, "mono_start: %s\n", av_ts2timestr(s->mono_idx[0], &s->time_base));
+            s->start_mono_presence = 0;
+        }
+    }
+    if (s->is_mono && !mono_measurement) {
+        s->mono_idx[1] = insamples ? insamples->pts : s->frame_end;
+        mono_duration = get_duration(s->mono_idx);
+        if (mono_duration >= s->duration) {
+            if (insamples) {
+                add_metadata(insamples, "mono_end", av_ts2timestr(s->mono_idx[1], &s->time_base));
+                add_metadata(insamples, "mono_duration", av_ts2timestr(mono_duration, &s->time_base));
+            }
+            av_log(s, AV_LOG_INFO, "mono_end: %s | mono_duration: %s\n", av_ts2timestr(s->mono_idx[1], &s->time_base), av_ts2timestr(mono_duration, &s->time_base));
+        }
+        s->is_mono = 0;
+    }
+}
+
+static inline void update_out_phase_detection(AudioPhaseMeterContext *s, AVFrame *insamples, int out_phase_measurement)
+{
+    int64_t out_phase_duration;
+    if (!s->is_out_phase && out_phase_measurement) {
+        s->is_out_phase = 1;
+        s->start_out_phase_presence = 1;
+        s->out_phase_idx[0] = insamples->pts;
+    }
+    if (s->is_out_phase && out_phase_measurement && s->start_out_phase_presence) {
+        s->out_phase_idx[1] = s->frame_end;
+        out_phase_duration = get_duration(s->out_phase_idx);
+        if (out_phase_duration >= s->duration) {
+            add_metadata(insamples, "out_phase_start", av_ts2timestr(s->out_phase_idx[0], &s->time_base));
+            av_log(s, AV_LOG_INFO, "out_phase_start: %s\n", av_ts2timestr(s->out_phase_idx[0], &s->time_base));
+            s->start_out_phase_presence = 0;
+        }
+    }
+    if (s->is_out_phase && !out_phase_measurement) {
+        s->out_phase_idx[1] = insamples ? insamples->pts : s->frame_end;
+        out_phase_duration = get_duration(s->out_phase_idx);
+        if (out_phase_duration >= s->duration) {
+            if (insamples) {
+                add_metadata(insamples, "out_phase_end", av_ts2timestr(s->out_phase_idx[1], &s->time_base));
+                add_metadata(insamples, "out_phase_duration", av_ts2timestr(out_phase_duration, &s->time_base));
+            }
+            av_log(s, AV_LOG_INFO, "out_phase_end: %s | out_phase_duration: %s\n", av_ts2timestr(s->out_phase_idx[1], &s->time_base), av_ts2timestr(out_phase_duration, &s->time_base));
+        }
+        s->is_out_phase = 0;
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -154,6 +249,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     uint8_t *dst;
     int i;
+    int mono_measurement;
+    int out_phase_measurement;
+    float tolerance = 1.0f - s->tolerance;
+    float angle = cosf(s->angle/180.0f*M_PI);
 
     if (s->do_video && (!s->out || s->out->width  != outlink->w ||
                                    s->out->height != outlink->h)) {
@@ -193,6 +292,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         fphase += phase;
     }
     fphase /= in->nb_samples;
+    s->phase = fphase;
 
     if (s->do_video) {
         if (s->draw_median_phase) {
@@ -209,7 +309,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         uint8_t value[128];
 
         snprintf(value, sizeof(value), "%f", fphase);
-        av_dict_set(metadata, "lavfi.aphasemeter.phase", value, 0);
+        add_metadata(in, "phase", value);
+    }
+
+    if (s->do_phasing_detection) {
+        s->time_base = inlink->time_base;
+        s->frame_end = in->pts + av_rescale_q(in->nb_samples,
+            (AVRational){ 1, in->sample_rate }, inlink->time_base);
+
+        mono_measurement = (tolerance - fphase) < FLT_EPSILON;
+        out_phase_measurement = (angle - fphase) > FLT_EPSILON;
+
+        update_mono_detection(s, in, mono_measurement);
+        update_out_phase_detection(s, in, out_phase_measurement);
     }
 
     if (s->do_video) {
@@ -228,6 +340,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioPhaseMeterContext *s = ctx->priv;
 
+    if (s->do_phasing_detection) {
+        update_mono_detection(s, NULL, 0);
+        update_out_phase_detection(s, NULL, 0);
+    }
     av_frame_free(&s->out);
 }
 
