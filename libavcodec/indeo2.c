@@ -174,10 +174,6 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     s->decode_delta = buf[18];
 
     /* decide whether frame uses deltas or not */
-#ifndef BITSTREAM_READER_LE
-    for (i = 0; i < buf_size; i++)
-        buf[i] = ff_reverse[buf[i]];
-#endif
 
     if ((ret = init_get_bits8(&s->gb, buf + start, buf_size - start)) < 0)
         return ret;
@@ -232,7 +228,6 @@ static int ir2_decode_frame(AVCodecContext *avctx,
 static av_cold int ir2_decode_init(AVCodecContext *avctx)
 {
     Ir2Context * const ic = avctx->priv_data;
-    static VLC_TYPE vlc_tables[1 << CODE_VLC_BITS][2];
 
     ic->avctx = avctx;
 
@@ -242,17 +237,9 @@ static av_cold int ir2_decode_init(AVCodecContext *avctx)
     if (!ic->picture)
         return AVERROR(ENOMEM);
 
-    ir2_vlc.table = vlc_tables;
-    ir2_vlc.table_allocated = 1 << CODE_VLC_BITS;
-#ifdef BITSTREAM_READER_LE
-        init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
-                 &ir2_codes[0][1], 4, 2,
-                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);
-#else
-        init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
-                 &ir2_codes[0][1], 4, 2,
-                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC);
-#endif
+    INIT_LE_VLC_STATIC(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
+                       &ir2_codes[0][1], 4, 2,
+                       &ir2_codes[0][0], 4, 2, 1 << CODE_VLC_BITS);
 
     return 0;
 }
