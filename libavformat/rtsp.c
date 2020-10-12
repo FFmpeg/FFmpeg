@@ -2493,6 +2493,7 @@ static int rtp_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Unable to receive RTP payload type %d "
                                 "without an SDP file describing it\n",
                                  payload_type);
+        ret = AVERROR_INVALIDDATA;
         goto fail;
     }
     if (par->codec_type != AVMEDIA_TYPE_DATA) {
