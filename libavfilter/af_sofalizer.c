@@ -255,11 +255,11 @@ static int get_speaker_pos(AVFilterContext *ctx,
 {
     struct SOFAlizerContext *s = ctx->priv;
     uint64_t channels_layout = ctx->inputs[0]->channel_layout;
-    float azim[16] = { 0 };
-    float elev[16] = { 0 };
+    float azim[64] = { 0 };
+    float elev[64] = { 0 };
     int m, ch, n_conv = ctx->inputs[0]->channels; /* get no. input channels */
 
-    if (n_conv > 16)
+    if (n_conv < 0 || n_conv > 64)
         return AVERROR(EINVAL);
 
     s->lfe_channel = -1;
@@ -360,7 +360,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int buffer_length = s->buffer_length;
     /* -1 for AND instead of MODULO (applied to powers of 2): */
     const uint32_t modulo = (uint32_t)buffer_length - 1;
-    float *buffer[16]; /* holds ringbuffer for each input channel */
+    float *buffer[64]; /* holds ringbuffer for each input channel */
     int wr = *write;
     int read;
     int i, l;
