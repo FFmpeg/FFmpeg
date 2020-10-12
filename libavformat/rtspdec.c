@@ -735,22 +735,26 @@ static int rtsp_read_header(AVFormatContext *s)
 
         rt->real_setup_cache = !s->nb_streams ? NULL :
             av_mallocz_array(s->nb_streams, 2 * sizeof(*rt->real_setup_cache));
-        if (!rt->real_setup_cache && s->nb_streams)
-            return AVERROR(ENOMEM);
+        if (!rt->real_setup_cache && s->nb_streams) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         rt->real_setup = rt->real_setup_cache + s->nb_streams;
 
         if (rt->initial_pause) {
             /* do not start immediately */
         } else {
             if ((ret = rtsp_read_play(s)) < 0) {
-                ff_rtsp_close_streams(s);
-                ff_rtsp_close_connections(s);
-                return ret;
+                goto fail;
             }
         }
     }
 
     return 0;
+
+fail:
+    rtsp_read_close(s);
+    return ret;
 }
 
 int ff_rtsp_tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
