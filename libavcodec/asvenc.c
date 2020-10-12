@@ -291,12 +291,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     emms_c();
 
-    avpriv_align_put_bits(&a->pb);
-    while (put_bits_count(&a->pb) & 31)
-        put_bits(&a->pb, 8, 0);
-
     flush_put_bits(&a->pb);
-    size = put_bits_count(&a->pb) / 32;
+    AV_WN32(put_bits_ptr(&a->pb), 0);
+    size = (put_bits_count(&a->pb) + 31) / 32;
 
     if (avctx->codec_id == AV_CODEC_ID_ASV1) {
         a->bbdsp.bswap_buf((uint32_t *) pkt->data,
