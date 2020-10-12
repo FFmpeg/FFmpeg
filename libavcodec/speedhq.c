@@ -558,40 +558,17 @@ static av_cold void compute_alpha_vlcs(void)
                               level_symbols, 2, 2, 288);
 }
 
-static uint32_t reverse(uint32_t num, int bits)
-{
-    return bitswap_32(num) >> (32 - bits);
-}
-
-static void reverse_code(const uint16_t *code, const uint8_t *bits,
-                         uint16_t *reversed_code, int num_entries)
-{
-    int i;
-    for (i = 0; i < num_entries; i++) {
-        reversed_code[i] = reverse(code[i], bits[i]);
-    }
-}
-
 static av_cold void speedhq_static_init(void)
 {
-    uint16_t ff_mpeg12_vlc_dc_lum_code_reversed[12];
-    uint16_t ff_mpeg12_vlc_dc_chroma_code_reversed[12];
-
-    /* Exactly the same as MPEG-2, except little-endian. */
-    reverse_code(ff_mpeg12_vlc_dc_lum_code,
-                 ff_mpeg12_vlc_dc_lum_bits,
-                 ff_mpeg12_vlc_dc_lum_code_reversed,
-                 12);
-    INIT_LE_VLC_STATIC(&dc_lum_vlc_le, DC_VLC_BITS, 12,
-                       ff_mpeg12_vlc_dc_lum_bits, 1, 1,
-                       ff_mpeg12_vlc_dc_lum_code_reversed, 2, 2, 512);
-    reverse_code(ff_mpeg12_vlc_dc_chroma_code,
-                 ff_mpeg12_vlc_dc_chroma_bits,
-                 ff_mpeg12_vlc_dc_chroma_code_reversed,
-                 12);
-    INIT_LE_VLC_STATIC(&dc_chroma_vlc_le, DC_VLC_BITS, 12,
-                       ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
-                       ff_mpeg12_vlc_dc_chroma_code_reversed, 2, 2, 514);
+    /* Exactly the same as MPEG-2, except for a little-endian reader. */
+    INIT_CUSTOM_VLC_STATIC(&dc_lum_vlc_le, DC_VLC_BITS, 12,
+                           ff_mpeg12_vlc_dc_lum_bits, 1, 1,
+                           ff_mpeg12_vlc_dc_lum_code, 2, 2,
+                           INIT_VLC_OUTPUT_LE, 512);
+    INIT_CUSTOM_VLC_STATIC(&dc_chroma_vlc_le, DC_VLC_BITS, 12,
+                           ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
+                           ff_mpeg12_vlc_dc_chroma_code, 2, 2,
+                           INIT_VLC_OUTPUT_LE, 514);
 
     ff_rl_init(&rl_speedhq, speedhq_static_rl_table_store);
     INIT_2D_VLC_RL(rl_speedhq, 674, INIT_VLC_LE);
