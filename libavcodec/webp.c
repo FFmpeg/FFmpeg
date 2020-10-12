@@ -232,44 +232,6 @@ static void image_ctx_free(ImageContext *img)
     memset(img, 0, sizeof(*img));
 }
 
-
-/* Differs from get_vlc2() in the following ways:
- *   - codes are bit-reversed
- *   - assumes 8-bit table to make reversal simpler
- *   - assumes max depth of 2 since the max code length for WebP is 15
- */
-static av_always_inline int webp_get_vlc(GetBitContext *gb, VLC_TYPE (*table)[2])
-{
-    int n, nb_bits;
-    unsigned int index;
-    int code;
-
-    OPEN_READER(re, gb);
-    UPDATE_CACHE(re, gb);
-
-    index = SHOW_UBITS(re, gb, 8);
-    index = ff_reverse[index];
-    code  = table[index][0];
-    n     = table[index][1];
-
-    if (n < 0) {
-        LAST_SKIP_BITS(re, gb, 8);
-        UPDATE_CACHE(re, gb);
-
-        nb_bits = -n;
-
-        index = SHOW_UBITS(re, gb, nb_bits);
-        index = (ff_reverse[index] >> (8 - nb_bits)) + code;
-        code  = table[index][0];
-        n     = table[index][1];
-    }
-    SKIP_BITS(re, gb, n);
-
-    CLOSE_READER(re, gb);
-
-    return code;
-}
-
 static int huff_reader_get_symbol(HuffReader *r, GetBitContext *gb)
 {
     if (r->simple) {
@@ -278,7 +240,7 @@ static int huff_reader_get_symbol(HuffReader *r, GetBitContext *gb)
         else
             return r->simple_symbols[get_bits1(gb)];
     } else
-        return webp_get_vlc(gb, r->vlc.table);
+        return get_vlc2(gb, r->vlc.table, 8, 2);
 }
 
 static int huff_reader_build_canonical(HuffReader *r, int *code_lengths,
@@ -332,7 +294,7 @@ static int huff_reader_build_canonical(HuffReader *r, int *code_lengths,
 
     ret = init_vlc(&r->vlc, 8, alphabet_size,
                    code_lengths, sizeof(*code_lengths), sizeof(*code_lengths),
-                   codes, sizeof(*codes), sizeof(*codes), 0);
+                   codes, sizeof(*codes), sizeof(*codes), INIT_VLC_OUTPUT_LE);
     if (ret < 0) {
         av_free(codes);
         return ret;
