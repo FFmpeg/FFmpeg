@@ -744,9 +744,9 @@ static int rtsp_read_header(AVFormatContext *s)
         if (rt->initial_pause) {
             /* do not start immediately */
         } else {
-            if ((ret = rtsp_read_play(s)) < 0) {
+            ret = rtsp_read_play(s);
+            if (ret < 0)
                 goto fail;
-            }
         }
     }
 
