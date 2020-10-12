@@ -2337,11 +2337,14 @@ static int sdp_read_header(AVFormatContext *s)
     /* read the whole sdp file */
     /* XXX: better loading */
     content = av_malloc(SDP_MAX_SIZE);
-    if (!content)
+    if (!content) {
+        ff_network_close();
         return AVERROR(ENOMEM);
+    }
     size = avio_read(s->pb, content, SDP_MAX_SIZE - 1);
     if (size <= 0) {
         av_free(content);
+        ff_network_close();
         return AVERROR_INVALIDDATA;
     }
     content[size] ='\0';
@@ -2540,7 +2543,9 @@ static int rtp_read_header(AVFormatContext *s)
     ffio_init_context(&pb, sdp.str, sdp.len, 0, NULL, NULL, NULL, NULL);
     s->pb = &pb;
 
-    /* sdp_read_header initializes this again */
+    /* if sdp_read_header() fails then following ff_network_close() cancels out */
+    /* ff_network_init() at the start of this function. Otherwise it cancels out */
+    /* ff_network_init() inside sdp_read_header() */
     ff_network_close();
 
     rt->media_type_mask = (1 << (AVMEDIA_TYPE_SUBTITLE+1)) - 1;
