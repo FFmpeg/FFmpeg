@@ -47,7 +47,7 @@ static inline void asv1_put_level(PutBitContext *pb, int level)
     if (index <= 6) {
         put_bits(pb, ff_asv_level_tab[index][1], ff_asv_level_tab[index][0]);
     } else {
-        put_bits(pb, ff_asv_level_tab[3][1], ff_asv_level_tab[3][0]);
+        put_bits(pb, 3, 0); /* Escape code */
         put_sbits(pb, 8, level);
     }
 }
@@ -59,7 +59,7 @@ static inline void asv2_put_level(ASV1Context *a, PutBitContext *pb, int level)
     if (index <= 62) {
         put_bits(pb, ff_asv2_level_tab[index][1], ff_asv2_level_tab[index][0]);
     } else {
-        put_bits(pb, ff_asv2_level_tab[31][1], ff_asv2_level_tab[31][0]);
+        put_bits(pb, 5, 0); /* Escape code */
         if (level < -128 || level > 127) {
             av_log(a->avctx, AV_LOG_WARNING, "Clipping level %d, increase qscale\n", level);
             level = av_clip_int8(level);
@@ -95,7 +95,7 @@ static inline void asv1_encode_block(ASV1Context *a, int16_t block[64])
 
         if (ccp) {
             for (; nc_count; nc_count--)
-                put_bits(&a->pb, ff_asv_ccp_tab[0][1], ff_asv_ccp_tab[0][0]);
+                put_bits(&a->pb, 2, 2); /* Skip */
 
             put_bits(&a->pb, ff_asv_ccp_tab[ccp][1], ff_asv_ccp_tab[ccp][0]);
 
@@ -111,7 +111,7 @@ static inline void asv1_encode_block(ASV1Context *a, int16_t block[64])
             nc_count++;
         }
     }
-    put_bits(&a->pb, ff_asv_ccp_tab[16][1], ff_asv_ccp_tab[16][0]);
+    put_bits(&a->pb, 5, 0xF); /* End of block */
 }
 
 static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
