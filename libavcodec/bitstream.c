@@ -182,7 +182,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             j = code >> (32 - table_nb_bits);
             nb = 1 << (table_nb_bits - n);
             inc = 1;
-            if (flags & INIT_VLC_LE) {
+            if (flags & INIT_VLC_OUTPUT_LE) {
                 j = bitswap_32(code);
                 inc = 1 << n;
             }
@@ -217,7 +217,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
                 subtable_bits = FFMAX(subtable_bits, n);
             }
             subtable_bits = FFMIN(subtable_bits, table_nb_bits);
-            j = (flags & INIT_VLC_LE) ? bitswap_32(code_prefix) >> (32 - table_nb_bits) : code_prefix;
+            j = (flags & INIT_VLC_OUTPUT_LE) ? bitswap_32(code_prefix) >> (32 - table_nb_bits) : code_prefix;
             table[j][1] = -subtable_bits;
             ff_dlog(NULL, "%4x: n=%d (subtable)\n",
                     j, codes[i].bits + table_nb_bits);
@@ -319,7 +319,7 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
                 av_free(buf);                                               \
             return AVERROR(EINVAL);                                         \
         }                                                                   \
-        if (flags & INIT_VLC_LE)                                            \
+        if (flags & INIT_VLC_INPUT_LE)                                      \
             buf[j].code = bitswap_32(buf[j].code);                          \
         else                                                                \
             buf[j].code <<= 32 - buf[j].bits;                               \

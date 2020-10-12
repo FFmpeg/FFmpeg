@@ -51,26 +51,35 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
                        int flags);
 void ff_free_vlc(VLC *vlc);
 
-#define INIT_VLC_LE             2
+/* If INIT_VLC_INPUT_LE is set, the LSB bit of the codes used to
+ * initialize the VLC table is the first bit to be read. */
+#define INIT_VLC_INPUT_LE       2
+/* If set the VLC is intended for a little endian bitstream reader. */
+#define INIT_VLC_OUTPUT_LE      8
+#define INIT_VLC_LE             (INIT_VLC_INPUT_LE | INIT_VLC_OUTPUT_LE)
 #define INIT_VLC_USE_NEW_STATIC 4
 
-#define INIT_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
+#define INIT_CUSTOM_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,      \
+                                      h, i, j, flags, static_size)         \
     do {                                                                   \
         static VLC_TYPE table[static_size][2];                             \
         (vlc)->table           = table;                                    \
         (vlc)->table_allocated = static_size;                              \
         ff_init_vlc_sparse(vlc, bits, a, b, c, d, e, f, g, h, i, j,        \
-            INIT_VLC_USE_NEW_STATIC);                                      \
+                           flags | INIT_VLC_USE_NEW_STATIC);               \
     } while (0)
 
+#define INIT_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
+    INIT_CUSTOM_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,          \
+                                  h, i, j, 0, static_size)
+
 #define INIT_LE_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
-    do {                                                                   \
-        static VLC_TYPE table[static_size][2];                             \
-        (vlc)->table           = table;                                    \
-        (vlc)->table_allocated = static_size;                              \
-        ff_init_vlc_sparse(vlc, bits, a, b, c, d, e, f, g, h, i, j,        \
-            INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);                        \
-    } while (0)
+    INIT_CUSTOM_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,          \
+                                  h, i, j, INIT_VLC_LE, static_size)
+
+#define INIT_CUSTOM_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, flags, static_size) \
+    INIT_CUSTOM_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,          \
+                                  NULL, 0, 0, flags, static_size)
 
 #define INIT_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size)       \
     INIT_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
