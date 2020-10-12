@@ -34,7 +34,10 @@
 #include "mathops.h"
 #include "mpeg12data.h"
 
-#define VLC_BITS             6
+#define CCP_VLC_BITS         5
+#define DC_CCP_VLC_BITS      4
+#define AC_CCP_VLC_BITS      6
+#define ASV1_LEVEL_VLC_BITS  4
 #define ASV2_LEVEL_VLC_BITS 10
 
 static VLC ccp_vlc;
@@ -50,18 +53,18 @@ static av_cold void init_vlcs(ASV1Context *a)
     if (!done) {
         done = 1;
 
-        INIT_VLC_STATIC(&ccp_vlc, VLC_BITS, 17,
+        INIT_VLC_STATIC(&ccp_vlc, CCP_VLC_BITS, 17,
                         &ff_asv_ccp_tab[0][1], 2, 1,
-                        &ff_asv_ccp_tab[0][0], 2, 1, 64);
-        INIT_VLC_STATIC(&dc_ccp_vlc, VLC_BITS, 8,
+                        &ff_asv_ccp_tab[0][0], 2, 1, 32);
+        INIT_VLC_STATIC(&dc_ccp_vlc, DC_CCP_VLC_BITS, 8,
                         &ff_asv_dc_ccp_tab[0][1], 2, 1,
-                        &ff_asv_dc_ccp_tab[0][0], 2, 1, 64);
-        INIT_VLC_STATIC(&ac_ccp_vlc, VLC_BITS, 16,
+                        &ff_asv_dc_ccp_tab[0][0], 2, 1, 16);
+        INIT_VLC_STATIC(&ac_ccp_vlc, AC_CCP_VLC_BITS, 16,
                         &ff_asv_ac_ccp_tab[0][1], 2, 1,
                         &ff_asv_ac_ccp_tab[0][0], 2, 1, 64);
-        INIT_VLC_STATIC(&level_vlc,  VLC_BITS, 7,
+        INIT_VLC_STATIC(&level_vlc,      ASV1_LEVEL_VLC_BITS, 7,
                         &ff_asv_level_tab[0][1], 2, 1,
-                        &ff_asv_level_tab[0][0], 2, 1, 64);
+                        &ff_asv_level_tab[0][0], 2, 1, 16);
         INIT_VLC_STATIC(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63,
                         &ff_asv2_level_tab[0][1], 2, 1,
                         &ff_asv2_level_tab[0][0], 2, 1, 1024);
@@ -76,7 +79,7 @@ static inline int asv2_get_bits(GetBitContext *gb, int n)
 
 static inline int asv1_get_level(GetBitContext *gb)
 {
-    int code = get_vlc2(gb, level_vlc.table, VLC_BITS, 1);
+    int code = get_vlc2(gb, level_vlc.table, ASV1_LEVEL_VLC_BITS, 1);
 
     if (code == 3)
         return get_sbits(gb, 8);
@@ -101,7 +104,7 @@ static inline int asv1_decode_block(ASV1Context *a, int16_t block[64])
     block[0] = 8 * get_bits(&a->gb, 8);
 
     for (i = 0; i < 11; i++) {
-        const int ccp = get_vlc2(&a->gb, ccp_vlc.table, VLC_BITS, 1);
+        const int ccp = get_vlc2(&a->gb, ccp_vlc.table, CCP_VLC_BITS, 1);
 
         if (ccp) {
             if (ccp == 16)
@@ -133,7 +136,7 @@ static inline int asv2_decode_block(ASV1Context *a, int16_t block[64])
 
     block[0] = 8 * asv2_get_bits(&a->gb, 8);
 
-    ccp = get_vlc2(&a->gb, dc_ccp_vlc.table, VLC_BITS, 1);
+    ccp = get_vlc2(&a->gb, dc_ccp_vlc.table, DC_CCP_VLC_BITS, 1);
     if (ccp) {
         if (ccp & 4)
             block[a->scantable.permutated[1]] = (asv2_get_level(&a->gb) * a->intra_matrix[1]) >> 4;
@@ -144,7 +147,7 @@ static inline int asv2_decode_block(ASV1Context *a, int16_t block[64])
     }
 
     for (i = 1; i < count + 1; i++) {
-        const int ccp = get_vlc2(&a->gb, ac_ccp_vlc.table, VLC_BITS, 1);
+        const int ccp = get_vlc2(&a->gb, ac_ccp_vlc.table, AC_CCP_VLC_BITS, 1);
 
         if (ccp) {
             if (ccp & 8)
