@@ -694,12 +694,13 @@ static int rtsp_listen(AVFormatContext *s)
         } else if (methodcode == SETUP)
             ret = rtsp_read_setup(s, host, uri);
         if (ret) {
-            ffurl_close(rt->rtsp_hd);
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
     }
 fail:
+    ff_rtsp_close_streams(s);
+    ff_rtsp_close_connections(s);
     ff_network_close();
     return ret;
 }
