@@ -35,7 +35,6 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "mathops.h"
 #include "ivi.h"
 #include "ivi_dsp.h"
 
@@ -115,23 +114,6 @@ static int ivi_mc(const IVIBandDesc *band, ivi_mc_func mc, ivi_mc_avg_func mc_av
     return 0;
 }
 
-/**
- *  Reverse "nbits" bits of the value "val" and return the result
- *  in the least significant bits.
- */
-static uint16_t inv_bits(uint16_t val, int nbits)
-{
-    uint16_t res;
-
-    if (nbits <= 8) {
-        res = ff_reverse[val] >> (8 - nbits);
-    } else
-        res = ((ff_reverse[val & 0xFF] << 8) +
-               (ff_reverse[val >> 8])) >> (16 - nbits);
-
-    return res;
-}
-
 /*
  *  Generate a huffman codebook from the given descriptor
  *  and convert it into the FFmpeg VLC table.
@@ -162,7 +144,7 @@ static int ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
             if (bits[pos] > IVI_VLC_BITS)
                 return AVERROR_INVALIDDATA; /* invalid descriptor */
 
-            codewords[pos] = inv_bits((prefix | j), bits[pos]);
+            codewords[pos] = prefix | j;
             if (!bits[pos])
                 bits[pos] = 1;
 
@@ -172,7 +154,7 @@ static int ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
 
     /* number of codewords = pos */
     return init_vlc(vlc, IVI_VLC_BITS, pos, bits, 1, 1, codewords, 2, 2,
-                    (flag ? INIT_VLC_USE_NEW_STATIC : 0) | INIT_VLC_LE);
+                    (flag ? INIT_VLC_USE_NEW_STATIC : 0) | INIT_VLC_OUTPUT_LE);
 }
 
 av_cold void ff_ivi_init_static_vlc(void)
