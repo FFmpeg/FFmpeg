@@ -154,9 +154,9 @@ static void vector_pow43(int *coefs, int len)
     for (i=0; i<len; i++) {
         coef = coefs[i];
         if (coef < 0)
-            coef = -(int)cbrt_tab[-coef];
+            coef = -(int)cbrt_tab[(-coef) & 8191];
         else
-            coef = (int)cbrt_tab[coef];
+            coef =  (int)cbrt_tab[  coef  & 8191];
         coefs[i] = coef;
     }
 }
