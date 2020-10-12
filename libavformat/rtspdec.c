@@ -640,6 +640,9 @@ static int rtsp_listen(AVFormatContext *s)
     int ret;
     enum RTSPMethod methodcode;
 
+    if (!ff_network_init())
+        return AVERROR(EIO);
+
     /* extract hostname and port */
     av_url_split(proto, sizeof(proto), auth, sizeof(auth), host, sizeof(host),
                  &port, path, sizeof(path), s->url);
@@ -664,19 +667,19 @@ static int rtsp_listen(AVFormatContext *s)
                                    &s->interrupt_callback, NULL,
                                    s->protocol_whitelist, s->protocol_blacklist, NULL)) {
         av_log(s, AV_LOG_ERROR, "Unable to open RTSP for listening\n");
-        return ret;
+        goto fail;
     }
     rt->state       = RTSP_STATE_IDLE;
     rt->rtsp_hd_out = rt->rtsp_hd;
     for (;;) { /* Wait for incoming RTSP messages */
         ret = read_line(s, rbuf, sizeof(rbuf), &rbuflen);
         if (ret < 0)
-            return ret;
+            goto fail;
         ret = parse_command_line(s, rbuf, rbuflen, uri, sizeof(uri), method,
                                  sizeof(method), &methodcode);
         if (ret) {
             av_log(s, AV_LOG_ERROR, "RTSP: Unexpected Command\n");
-            return ret;
+            goto fail;
         }
 
         if (methodcode == ANNOUNCE) {
@@ -692,9 +695,13 @@ static int rtsp_listen(AVFormatContext *s)
             ret = rtsp_read_setup(s, host, uri);
         if (ret) {
             ffurl_close(rt->rtsp_hd);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
     }
+fail:
+    ff_network_close();
+    return ret;
 }
 
 static int rtsp_probe(const AVProbeData *p)
