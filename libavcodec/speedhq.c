@@ -168,10 +168,6 @@ static inline int decode_dc_le(GetBitContext *gb, int component)
     } else {
         code = get_vlc2(gb, ff_dc_chroma_vlc_le.table, DC_VLC_BITS, 2);
     }
-    if (code < 0) {
-        av_log(NULL, AV_LOG_ERROR, "invalid dc code at\n");
-        return 0xffff;
-    }
     if (!code) {
         diff = 0;
     } else {
