@@ -120,6 +120,16 @@ static av_cold void cudascale_uninit(AVFilterContext *ctx)
 {
     CUDAScaleContext *s = ctx->priv;
 
+    if (s->hwctx && s->cu_module) {
+        CudaFunctions *cu = s->hwctx->internal->cuda_dl;
+        CUcontext dummy;
+
+        CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
+        CHECK_CU(cu->cuModuleUnload(s->cu_module));
+        s->cu_module = NULL;
+        CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+    }
+
     av_frame_free(&s->frame);
     av_buffer_unref(&s->frames_ctx);
     av_frame_free(&s->tmp_frame);
