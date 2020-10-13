@@ -1186,8 +1186,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
             pktl->pkt.dts = cur_dts;
             if (!st->internal->avctx->has_b_frames)
                 pktl->pkt.pts = cur_dts;
-//            if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
-                pktl->pkt.duration = duration;
+            pktl->pkt.duration = duration;
         } else
             break;
         cur_dts = pktl->pkt.dts + pktl->pkt.duration;
