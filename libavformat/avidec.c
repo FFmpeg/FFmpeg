@@ -1072,11 +1072,15 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         ff_const59 AVInputFormat *sub_demuxer;
         AVRational time_base;
         int size;
+        AVProbeData pd;
+        unsigned int desc_len;
         AVIOContext *pb = avio_alloc_context(pkt->data + 7,
                                              pkt->size - 7,
                                              0, NULL, NULL, NULL, NULL);
-        AVProbeData pd;
-        unsigned int desc_len = avio_rl32(pb);
+        if (!pb)
+            goto error;
+
+        desc_len = avio_rl32(pb);
 
         if (desc_len > pb->buf_end - pb->buf_ptr)
             goto error;
