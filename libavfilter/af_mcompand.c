@@ -361,10 +361,8 @@ static int config_output(AVFilterLink *outlink)
         char *p2, *p3, *saveptr2 = NULL, *saveptr3 = NULL;
         double radius;
 
-        if (!tstr) {
-            uninit(ctx);
+        if (!tstr)
             return AVERROR(EINVAL);
-        }
         p = NULL;
 
         p2 = tstr;
@@ -372,7 +370,6 @@ static int config_output(AVFilterLink *outlink)
         tstr2 = av_strtok(p2, " ", &saveptr2);
         if (!tstr2) {
             av_log(ctx, AV_LOG_ERROR, "at least one attacks/decays rate is mandatory\n");
-            uninit(ctx);
             return AVERROR(EINVAL);
         }
         p2 = NULL;
@@ -381,7 +378,6 @@ static int config_output(AVFilterLink *outlink)
         count_items(tstr2, &nb_attacks, ',');
         if (!nb_attacks || nb_attacks & 1) {
             av_log(ctx, AV_LOG_ERROR, "number of attacks rate plus decays rate must be even\n");
-            uninit(ctx);
             return AVERROR(EINVAL);
         }
 
@@ -417,7 +413,6 @@ static int config_output(AVFilterLink *outlink)
         tstr2 = av_strtok(p2, " ", &saveptr2);
         if (!tstr2) {
             av_log(ctx, AV_LOG_ERROR, "transfer function curve in dB must be set\n");
-            uninit(ctx);
             return AVERROR(EINVAL);
         }
         sscanf(tstr2, "%lf", &s->bands[i].transfer_fn.curve_dB);
@@ -427,7 +422,6 @@ static int config_output(AVFilterLink *outlink)
         tstr2 = av_strtok(p2, " ", &saveptr2);
         if (!tstr2) {
             av_log(ctx, AV_LOG_ERROR, "transfer points missing\n");
-            uninit(ctx);
             return AVERROR(EINVAL);
         }
 
@@ -435,38 +429,31 @@ static int config_output(AVFilterLink *outlink)
         s->bands[i].transfer_fn.nb_segments = (nb_points + 4) * 2;
         s->bands[i].transfer_fn.segments = av_calloc(s->bands[i].transfer_fn.nb_segments,
                                                      sizeof(CompandSegment));
-        if (!s->bands[i].transfer_fn.segments) {
-            uninit(ctx);
+        if (!s->bands[i].transfer_fn.segments)
             return AVERROR(ENOMEM);
-        }
 
         ret = parse_points(tstr2, nb_points, radius, &s->bands[i].transfer_fn, ctx);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "transfer points parsing failed\n");
-            uninit(ctx);
             return ret;
         }
 
         tstr2 = av_strtok(p2, " ", &saveptr2);
         if (!tstr2) {
             av_log(ctx, AV_LOG_ERROR, "crossover_frequency is missing\n");
-            uninit(ctx);
             return AVERROR(EINVAL);
         }
 
         new_nb_items += sscanf(tstr2, "%lf", &s->bands[i].topfreq) == 1;
         if (s->bands[i].topfreq < 0 || s->bands[i].topfreq >= outlink->sample_rate / 2) {
             av_log(ctx, AV_LOG_ERROR, "crossover_frequency: %f, should be >=0 and lower than half of sample rate: %d.\n", s->bands[i].topfreq, outlink->sample_rate / 2);
-            uninit(ctx);
             return AVERROR(EINVAL);
         }
 
         if (s->bands[i].topfreq != 0) {
             ret = crossover_setup(outlink, &s->bands[i].filter, s->bands[i].topfreq);
-            if (ret < 0) {
-                uninit(ctx);
+            if (ret < 0)
                 return ret;
-            }
         }
 
         tstr2 = av_strtok(p2, " ", &saveptr2);
