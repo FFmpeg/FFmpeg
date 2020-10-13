@@ -32,13 +32,7 @@
 #include "dct.h"
 #include "fdctdsp.h"
 #include "internal.h"
-#include "mathops.h"
 #include "mpeg12data.h"
-
-static inline void asv2_put_bits(PutBitContext *pb, int n, int v)
-{
-    put_bits(pb, n, ff_reverse[v << (8 - n)]);
-}
 
 static inline void asv1_put_level(PutBitContext *pb, int level)
 {
@@ -57,14 +51,14 @@ static inline void asv2_put_level(ASV1Context *a, PutBitContext *pb, int level)
     unsigned int index = level + 31;
 
     if (index <= 62) {
-        put_bits(pb, ff_asv2_level_tab[index][1], ff_asv2_level_tab[index][0]);
+        put_bits_le(pb, ff_asv2_level_tab[index][1], ff_asv2_level_tab[index][0]);
     } else {
-        put_bits(pb, 5, 0); /* Escape code */
+        put_bits_le(pb, 5, 0); /* Escape code */
         if (level < -128 || level > 127) {
             av_log(a->avctx, AV_LOG_WARNING, "Clipping level %d, increase qscale\n", level);
             level = av_clip_int8(level);
         }
-        asv2_put_bits(pb, 8, level & 0xFF);
+        put_bits_le(pb, 8, level & 0xFF);
     }
 }
 
@@ -127,8 +121,8 @@ static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
 
     count >>= 2;
 
-    asv2_put_bits(&a->pb, 4, count);
-    asv2_put_bits(&a->pb, 8, (block[0] + 32) >> 6);
+    put_bits_le(&a->pb, 4, count);
+    put_bits_le(&a->pb, 8, (block[0] + 32) >> 6);
     block[0] = 0;
 
     for (i = 0; i <= count; i++) {
@@ -150,9 +144,9 @@ static inline void asv2_encode_block(ASV1Context *a, int16_t block[64])
 
         av_assert2(i || ccp < 8);
         if (i)
-            put_bits(&a->pb, ff_asv_ac_ccp_tab[ccp][1], ff_asv_ac_ccp_tab[ccp][0]);
+            put_bits_le(&a->pb, ff_asv_ac_ccp_tab[ccp][1], ff_asv_ac_ccp_tab[ccp][0]);
         else
-            put_bits(&a->pb, ff_asv_dc_ccp_tab[ccp][1], ff_asv_dc_ccp_tab[ccp][0]);
+            put_bits_le(&a->pb, ff_asv_dc_ccp_tab[ccp][1], ff_asv_dc_ccp_tab[ccp][0]);
 
         if (ccp) {
             if (ccp & 8)
@@ -291,17 +285,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     emms_c();
 
-    flush_put_bits(&a->pb);
+    if (avctx->codec_id == AV_CODEC_ID_ASV1)
+        flush_put_bits(&a->pb);
+    else
+        flush_put_bits_le(&a->pb);
     AV_WN32(put_bits_ptr(&a->pb), 0);
     size = (put_bits_count(&a->pb) + 31) / 32;
 
     if (avctx->codec_id == AV_CODEC_ID_ASV1) {
         a->bbdsp.bswap_buf((uint32_t *) pkt->data,
                            (uint32_t *) pkt->data, size);
-    } else {
-        int i;
-        for (i = 0; i < 4 * size; i++)
-            pkt->data[i] = ff_reverse[pkt->data[i]];
     }
 
     pkt->size   = size * 4;

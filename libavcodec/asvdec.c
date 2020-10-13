@@ -55,21 +55,18 @@ static av_cold void init_vlcs(ASV1Context *a)
         INIT_VLC_STATIC(&ccp_vlc, CCP_VLC_BITS, 17,
                         &ff_asv_ccp_tab[0][1], 2, 1,
                         &ff_asv_ccp_tab[0][0], 2, 1, 32);
-        INIT_CUSTOM_VLC_STATIC(&dc_ccp_vlc, DC_CCP_VLC_BITS, 8,
-                               &ff_asv_dc_ccp_tab[0][1], 2, 1,
-                               &ff_asv_dc_ccp_tab[0][0], 2, 1,
-                               INIT_VLC_OUTPUT_LE, 16);
-        INIT_CUSTOM_VLC_STATIC(&ac_ccp_vlc, AC_CCP_VLC_BITS, 16,
-                               &ff_asv_ac_ccp_tab[0][1], 2, 1,
-                               &ff_asv_ac_ccp_tab[0][0], 2, 1,
-                               INIT_VLC_OUTPUT_LE, 64);
+        INIT_LE_VLC_STATIC(&dc_ccp_vlc, DC_CCP_VLC_BITS, 8,
+                           &ff_asv_dc_ccp_tab[0][1], 2, 1,
+                           &ff_asv_dc_ccp_tab[0][0], 2, 1, 16);
+        INIT_LE_VLC_STATIC(&ac_ccp_vlc, AC_CCP_VLC_BITS, 16,
+                           &ff_asv_ac_ccp_tab[0][1], 2, 1,
+                           &ff_asv_ac_ccp_tab[0][0], 2, 1, 64);
         INIT_VLC_STATIC(&level_vlc,      ASV1_LEVEL_VLC_BITS, 7,
                         &ff_asv_level_tab[0][1], 2, 1,
                         &ff_asv_level_tab[0][0], 2, 1, 16);
-        INIT_CUSTOM_VLC_STATIC(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63,
-                               &ff_asv2_level_tab[0][1], 2, 1,
-                               &ff_asv2_level_tab[0][0], 2, 1,
-                               INIT_VLC_OUTPUT_LE, 1024);
+        INIT_LE_VLC_STATIC(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63,
+                           &ff_asv2_level_tab[0][1], 4, 2,
+                           &ff_asv2_level_tab[0][0], 4, 2, 1024);
     }
 }
 
