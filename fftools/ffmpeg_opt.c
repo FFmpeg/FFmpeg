@@ -2210,22 +2210,22 @@ static int open_output_file(OptionsContext *o, const char *filename)
 
         /* video: highest resolution */
         if (!o->video_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_VIDEO) != AV_CODEC_ID_NONE) {
-            int area = 0, idx = -1;
+            int best_score = 0, idx = -1;
             int qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
             for (i = 0; i < nb_input_streams; i++) {
-                int new_area;
+                int score;
                 ist = input_streams[i];
-                new_area = ist->st->codecpar->width * ist->st->codecpar->height + 100000000*!!ist->st->codec_info_nb_frames
+                score = ist->st->codecpar->width * ist->st->codecpar->height + 100000000*!!ist->st->codec_info_nb_frames
                            + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
                 if (ist->user_set_discard == AVDISCARD_ALL)
                     continue;
                 if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
-                    new_area = 1;
+                    score = 1;
                 if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                    new_area > area) {
+                    score > best_score) {
                     if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                         continue;
-                    area = new_area;
+                    best_score = score;
                     idx = i;
                 }
             }
