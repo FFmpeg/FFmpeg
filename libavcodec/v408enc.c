@@ -73,11 +73,6 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int v408_encode_close(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 #if CONFIG_AYUV_ENCODER
 AVCodec ff_ayuv_encoder = {
     .name         = "ayuv",
@@ -86,7 +81,6 @@ AVCodec ff_ayuv_encoder = {
     .id           = AV_CODEC_ID_AYUV,
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
-    .close        = v408_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE },
 };
 #endif
@@ -98,7 +92,6 @@ AVCodec ff_v408_encoder = {
     .id           = AV_CODEC_ID_V408,
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
-    .close        = v408_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE },
 };
 #endif
