@@ -156,8 +156,8 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = 512 * (avctx->sample_rate / 11025);
         break;
     case AV_CODEC_ID_ADPCM_IMA_SSI:
-        avctx->frame_size = BLKSIZE * 2 / avctx->channels;
-        avctx->block_align = BLKSIZE;
+        avctx->frame_size  = s->block_size * 2 / avctx->channels;
+        avctx->block_align = s->block_size;
         break;
     case AV_CODEC_ID_ADPCM_IMA_APM:
         avctx->frame_size = BLKSIZE * 2 / avctx->channels;
