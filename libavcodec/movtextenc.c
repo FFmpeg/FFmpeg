@@ -116,6 +116,7 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
     if ((s->box_flags & STYL_BOX) && s->count) {
         tsmb_size = s->count * STYLE_RECORD_SIZE + SIZE_ADD;
         tsmb_size = AV_RB32(&tsmb_size);
+        tsmb_type = AV_RB32(&tsmb_type);
         style_entries = AV_RB16(&s->count);
         /*The above three attributes are hard coded for now
         but will come from ASS style in the future*/
@@ -149,6 +150,7 @@ static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
     if (s->box_flags & HLIT_BOX) {
         tsmb_size = 12;
         tsmb_size = AV_RB32(&tsmb_size);
+        tsmb_type = AV_RB32(&tsmb_type);
         start     = AV_RB16(&s->hlit.start);
         end       = AV_RB16(&s->hlit.end);
         av_bprint_append_any(&s->buffer, &tsmb_size, 4);
@@ -164,6 +166,7 @@ static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
     if (s->box_flags & HCLR_BOX) {
         tsmb_size = 12;
         tsmb_size = AV_RB32(&tsmb_size);
+        tsmb_type = AV_RB32(&tsmb_type);
         color     = AV_RB32(&s->hclr.color);
         av_bprint_append_any(&s->buffer, &tsmb_size, 4);
         av_bprint_append_any(&s->buffer, &tsmb_type, 4);
@@ -172,9 +175,9 @@ static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
 }
 
 static const Box box_types[] = {
-    { MKTAG('s','t','y','l'), encode_styl },
-    { MKTAG('h','l','i','t'), encode_hlit },
-    { MKTAG('h','c','l','r'), encode_hclr },
+    { MKBETAG('s','t','y','l'), encode_styl },
+    { MKBETAG('h','l','i','t'), encode_hlit },
+    { MKBETAG('h','c','l','r'), encode_hclr },
 };
 
 const static size_t box_count = FF_ARRAY_ELEMS(box_types);
@@ -316,14 +319,16 @@ static int encode_sample_description(AVCodecContext *avctx)
     //     FontTableBox {
     tsmb_size = SIZE_ADD + 3 * s->font_count + font_names_total_len;
     tsmb_size = AV_RB32(&tsmb_size);
-    tsmb_type = MKTAG('f','t','a','b');
-    count = AV_RB16(&s->font_count);
+    tsmb_type = MKBETAG('f','t','a','b');
+    tsmb_type = AV_RB32(&tsmb_type);
+    count = s->font_count;
+    count = AV_RB16(&count);
     av_bprint_append_any(&s->buffer, &tsmb_size, 4);
     av_bprint_append_any(&s->buffer, &tsmb_type, 4);
     av_bprint_append_any(&s->buffer, &count, 2);
     //     FontRecord {
     for (i = 0; i < s->font_count; i++) {
-        int len;
+        uint8_t len;
         fontID = i + 1;
         fontID = AV_RB16(&fontID);
         av_bprint_append_any(&s->buffer, &fontID, 2);
