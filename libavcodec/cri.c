@@ -87,54 +87,72 @@ static void unpack_10bit(GetByteContext *gb, uint16_t *dst, int shift,
         dst[pos] = (((a0 >> 1) & 0xE00) | (a0 & 0x1FF)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 1)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a0 >> 13) & 0x3F) | ((a0 >> 14) & 0xFC0)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 2)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a0 >> 26) & 7) | ((a1 & 0x1FF) << 3)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 3)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a1 >> 10) & 0x1FF) | ((a1 >> 11) & 0xE00)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 4)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a1 >> 23) & 0x3F) | ((a2 & 0x3F) << 6)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 5)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a2 >> 7) & 0xFF8) | ((a2 >> 6) & 7)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 6)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a3 & 7) << 9) | ((a2 >> 20) & 0x1FF)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 7)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a3 >> 4) & 0xFC0) | ((a3 >> 3) & 0x3F)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 8)
+                break;
             dst += stride;
             pos = 0;
         }
         dst[pos] = (((a3 >> 16) & 7) | ((a3 >> 17) & 0xFF8)) << shift;
         pos++;
         if (pos >= w) {
+            if (count == 9)
+                break;
             dst += stride;
             pos = 0;
         }
