@@ -22,6 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "put_bits.h"
 #include "bytestream.h"
@@ -49,6 +51,9 @@ typedef struct TrellisNode {
 } TrellisNode;
 
 typedef struct ADPCMEncodeContext {
+    AVClass *class;
+    int block_size;
+
     ADPCMChannelStatus status[6];
     TrellisPath *paths;
     TrellisNode *node_buf;
@@ -66,6 +71,11 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "only stereo or mono is supported\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (s->block_size & (s->block_size - 1)) {
+        av_log(avctx, AV_LOG_ERROR, "block size must be power of 2\n");
         return AVERROR(EINVAL);
     }
 
@@ -841,6 +851,27 @@ static const enum AVSampleFormat sample_fmts_p[] = {
     AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_NONE
 };
 
+static const AVOption options[] = {
+    {
+        .name        = "block_size",
+        .help        = "set the block size",
+        .offset      = offsetof(ADPCMEncodeContext, block_size),
+        .type        = AV_OPT_TYPE_INT,
+        .default_val = {.i64 = BLKSIZE},
+        .min         = 32,
+        .max         = 8192, /* Is this a reasonable upper limit? */
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+    },
+    { NULL }
+};
+
+static const AVClass adpcm_encoder_class = {
+    .class_name = "ADPCM Encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 #define ADPCM_ENCODER(id_, name_, sample_fmts_, capabilities_, long_name_) \
 AVCodec ff_ ## name_ ## _encoder = {                                       \
     .name           = #name_,                                              \
@@ -854,6 +885,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                       \
     .sample_fmts    = sample_fmts_,                                        \
     .capabilities   = capabilities_,                                       \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,                           \
+    .priv_class     = &adpcm_encoder_class,                                \
 }
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games");
