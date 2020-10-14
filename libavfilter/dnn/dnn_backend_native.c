@@ -79,8 +79,23 @@ static DNNReturnType get_output_native(void *model, const char *input_name, int 
 {
     DNNReturnType ret;
     NativeModel *native_model = (NativeModel *)model;
+    NativeContext *ctx = &native_model->ctx;
     AVFrame *in_frame = av_frame_alloc();
-    AVFrame *out_frame = av_frame_alloc();
+    AVFrame *out_frame = NULL;
+
+    if (!in_frame) {
+        av_log(ctx, AV_LOG_ERROR, "Could not allocate memory for input frame\n");
+        return DNN_ERROR;
+    }
+
+    out_frame = av_frame_alloc();
+
+    if (!out_frame) {
+        av_log(ctx, AV_LOG_ERROR, "Could not allocate memory for output frame\n");
+        av_frame_free(&in_frame);
+        return DNN_ERROR;
+    }
+
     in_frame->width = input_width;
     in_frame->height = input_height;
 
