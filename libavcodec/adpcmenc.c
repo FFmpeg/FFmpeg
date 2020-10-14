@@ -160,8 +160,8 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = s->block_size;
         break;
     case AV_CODEC_ID_ADPCM_IMA_APM:
-        avctx->frame_size = BLKSIZE * 2 / avctx->channels;
-        avctx->block_align = BLKSIZE;
+        avctx->frame_size  = s->block_size * 2 / avctx->channels;
+        avctx->block_align = s->block_size;
 
         if (!(avctx->extradata = av_mallocz(28 + AV_INPUT_BUFFER_PADDING_SIZE)))
             return AVERROR(ENOMEM);
