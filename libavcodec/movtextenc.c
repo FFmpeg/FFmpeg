@@ -83,7 +83,7 @@ typedef struct {
     StyleBox d;
     uint16_t text_pos;
     uint16_t byte_count;
-    char ** fonts;
+    char **fonts;
     int font_count;
     double font_scale_factor;
     int frame_height;
@@ -202,8 +202,8 @@ static int mov_text_encode_close(AVCodecContext *avctx)
 
 static int encode_sample_description(AVCodecContext *avctx)
 {
-    ASS * ass;
-    ASSStyle * style;
+    ASS *ass;
+    ASSStyle *style;
     int i, j;
     uint32_t tsmb_size, tsmb_type, back_color, style_color;
     uint16_t style_start, style_end, fontID, count;
@@ -538,7 +538,7 @@ static void mov_text_alpha_cb(void *priv, int alpha, int alpha_id)
     // Movtext does not support changes to other alpha_id (outline, background)
 }
 
-static uint16_t find_font_id(MovTextContext * s, const char * name)
+static uint16_t find_font_id(MovTextContext *s, const char *name)
 {
     int i;
     for (i = 0; i < s->font_count; i++) {
@@ -612,16 +612,16 @@ static void mov_text_ass_style_set(MovTextContext *s, ASSStyle *style)
 
 static void mov_text_dialog(MovTextContext *s, ASSDialog *dialog)
 {
-    ASSStyle * style = ff_ass_style_get(s->ass_ctx, dialog->style);
+    ASSStyle *style = ff_ass_style_get(s->ass_ctx, dialog->style);
 
     s->ass_dialog_style = style;
     mov_text_ass_style_set(s, style);
 }
 
-static void mov_text_cancel_overrides_cb(void *priv, const char * style_name)
+static void mov_text_cancel_overrides_cb(void *priv, const char *style_name)
 {
     MovTextContext *s = priv;
-    ASSStyle * style;
+    ASSStyle *style;
 
     if (!style_name || !*style_name)
         style = s->ass_dialog_style;
