@@ -142,8 +142,8 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         }
         break;
     case AV_CODEC_ID_ADPCM_YAMAHA:
-        avctx->frame_size  = BLKSIZE * 2 / avctx->channels;
-        avctx->block_align = BLKSIZE;
+        avctx->frame_size  = s->block_size * 2 / avctx->channels;
+        avctx->block_align = s->block_size;
         break;
     case AV_CODEC_ID_ADPCM_SWF:
         if (avctx->sample_rate != 11025 &&
