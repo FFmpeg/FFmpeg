@@ -857,7 +857,7 @@ static const AVOption options[] = {
         .help        = "set the block size",
         .offset      = offsetof(ADPCMEncodeContext, block_size),
         .type        = AV_OPT_TYPE_INT,
-        .default_val = {.i64 = BLKSIZE},
+        .default_val = {.i64 = 1024},
         .min         = 32,
         .max         = 8192, /* Is this a reasonable upper limit? */
         .flags       = AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM

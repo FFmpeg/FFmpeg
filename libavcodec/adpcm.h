@@ -28,8 +28,6 @@
 
 #include <stdint.h>
 
-#define BLKSIZE 1024
-
 typedef struct ADPCMChannelStatus {
     int predictor;
     int16_t step_index;
