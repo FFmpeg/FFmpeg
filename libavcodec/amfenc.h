@@ -27,6 +27,7 @@
 #include "libavutil/fifo.h"
 
 #include "avcodec.h"
+#include "hwconfig.h"
 
 
 /**
@@ -116,6 +117,8 @@ typedef struct AmfContext {
     int                 max_qp_p;
     int                 tier;
 } AmfContext;
+
+extern const AVCodecHWConfigInternal *const ff_amfenc_hw_configs[];
 
 /**
 * Common encoder initization function

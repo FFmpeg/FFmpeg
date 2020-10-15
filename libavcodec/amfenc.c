@@ -782,3 +782,15 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     }
     return ret;
 }
+
+const AVCodecHWConfigInternal *const ff_amfenc_hw_configs[] = {
+#if CONFIG_D3D11VA
+    HW_CONFIG_ENCODER_FRAMES(D3D11, D3D11VA),
+    HW_CONFIG_ENCODER_DEVICE(NONE,  D3D11VA),
+#endif
+#if CONFIG_DXVA2
+    HW_CONFIG_ENCODER_FRAMES(DXVA2_VLD, DXVA2),
+    HW_CONFIG_ENCODER_DEVICE(NONE,      DXVA2),
+#endif
+    NULL,
+};

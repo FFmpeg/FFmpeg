@@ -392,4 +392,5 @@ AVCodec ff_h264_amf_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_amf_pix_fmts,
     .wrapper_name   = "amf",
+    .hw_configs     = ff_amfenc_hw_configs,
 };
