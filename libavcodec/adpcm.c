@@ -135,7 +135,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     case AV_CODEC_ID_ADPCM_PSX:
         max_channels = 8;
-        if (avctx->block_align % (16 * avctx->channels))
+        if (avctx->channels <= 0 || avctx->block_align % (16 * avctx->channels))
             return AVERROR_INVALIDDATA;
         break;
     case AV_CODEC_ID_ADPCM_IMA_DAT4:
