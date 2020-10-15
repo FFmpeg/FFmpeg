@@ -205,7 +205,7 @@ static int encode_sample_description(AVCodecContext *avctx)
     ASS *ass;
     ASSStyle *style;
     int i, j;
-    uint32_t tsmb_size, tsmb_type, back_color, style_color;
+    uint32_t tsmb_size, tsmb_type, back_color = 0, style_color;
     uint16_t style_start, style_end, fontID, count;
     int font_names_total_len = 0;
     MovTextContext *s = avctx->priv_data;
