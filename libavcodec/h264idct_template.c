@@ -278,7 +278,7 @@ void FUNCC(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul){
     const int stride= 16*2;
     const int xStride= 16;
     int i;
-    int temp[8];
+    unsigned temp[8];
     static const uint8_t x_offset[2]={0, 16};
     dctcoef *block = (dctcoef*)_block;
 
