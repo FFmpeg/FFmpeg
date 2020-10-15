@@ -769,11 +769,12 @@ extern AVCodec ff_idf_decoder;
  * above is available */
 extern AVCodec ff_aac_mf_encoder;
 extern AVCodec ff_ac3_mf_encoder;
-extern AVCodec ff_av1_cuvid_decoder;
 extern AVCodec ff_h263_v4l2m2m_encoder;
 extern AVCodec ff_libaom_av1_decoder;
 /* hwaccel hooks only, so prefer external decoders */
 extern AVCodec ff_av1_decoder;
+extern AVCodec ff_av1_cuvid_decoder;
+extern AVCodec ff_av1_qsv_decoder;
 extern AVCodec ff_libopenh264_encoder;
 extern AVCodec ff_libopenh264_decoder;
 extern AVCodec ff_h264_amf_encoder;
@@ -824,7 +825,6 @@ extern AVCodec ff_vp9_mediacodec_decoder;
 extern AVCodec ff_vp9_qsv_decoder;
 extern AVCodec ff_vp9_vaapi_encoder;
 extern AVCodec ff_vp9_qsv_encoder;
-extern AVCodec ff_av1_qsv_decoder;
 
 // The iterate API is not usable with ossfuzz due to the excessive size of binaries created
 #if CONFIG_OSSFUZZ
