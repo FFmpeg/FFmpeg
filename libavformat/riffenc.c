@@ -65,6 +65,12 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
     if (!par->codec_tag || par->codec_tag > 0xffff)
         return -1;
 
+    if (par->codec_id == AV_CODEC_ID_ADPCM_SWF && par->block_align == 0) {
+        av_log(s, AV_LOG_ERROR, "%s can only be written to WAVE with a constant frame size\n",
+               avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
     /* We use the known constant frame size for the codec if known, otherwise
      * fall back on using AVCodecContext.frame_size, which is not as reliable
      * for indicating packet duration. */
