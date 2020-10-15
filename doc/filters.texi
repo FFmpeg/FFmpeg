@@ -1421,8 +1421,16 @@ S-plane zeros/poles
 @end table
 
 @item process, r
-Set kind of processing.
-Can be @code{d} - direct or @code{s} - serial cascading. Default is @code{s}.
+Set type of processing.
+
+@table @samp
+@item d
+direct processing
+@item s
+serial processing
+@item p
+parallel processing
+@end table
 
 @item precision, e
 Set filtering precision.

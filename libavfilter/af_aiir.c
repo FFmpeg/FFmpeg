@@ -49,6 +49,7 @@ typedef struct IIRChannel {
     double *ab[2];
     double g;
     double *cache[2];
+    double fir;
     BiquadContext *biquads;
     int clippings;
 } IIRChannel;
@@ -183,6 +184,7 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
     const double ig = s->dry_gain;                                      \
     const double og = s->wet_gain;                                      \
     const double mix = s->mix;                                          \
+    const double imix = 1. - mix;                                       \
     ThreadData *td = arg;                                               \
     AVFrame *in = td->in, *out = td->out;                               \
     const type *src = (const type *)in->extended_data[ch];              \
@@ -205,16 +207,16 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
         double o2 = iir->biquads[i].o2;                                 \
                                                                         \
         for (n = 0; n < in->nb_samples; n++) {                          \
-            double sample = ig * (i ? dst[n] : src[n]);                 \
-            double o0 = sample * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2; \
+            double i0 = ig * (i ? dst[n] : src[n]);                     \
+            double o0 = i0 * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2; \
                                                                         \
             i2 = i1;                                                    \
-            i1 = src[n];                                                \
+            i1 = i0;                                                    \
             o2 = o1;                                                    \
             o1 = o0;                                                    \
             o0 *= og * g;                                               \
                                                                         \
-            o0 = o0 * mix + (1. - mix) * sample;                        \
+            o0 = o0 * mix + imix * i0;                                  \
             if (need_clipping && o0 < min) {                            \
                 (*clippings)++;                                         \
                 dst[n] = min;                                           \
@@ -238,6 +240,76 @@ SERIAL_IIR_CH(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
 SERIAL_IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
 SERIAL_IIR_CH(fltp, float,         -1.,        1., 0)
 SERIAL_IIR_CH(dblp, double,        -1.,        1., 0)
+
+#define PARALLEL_IIR_CH(name, type, min, max, need_clipping)            \
+static int iir_ch_parallel_## name(AVFilterContext *ctx, void *arg,     \
+                                   int ch, int nb_jobs)                 \
+{                                                                       \
+    AudioIIRContext *s = ctx->priv;                                     \
+    const double ig = s->dry_gain;                                      \
+    const double og = s->wet_gain;                                      \
+    const double mix = s->mix;                                          \
+    const double imix = 1. - mix;                                       \
+    ThreadData *td = arg;                                               \
+    AVFrame *in = td->in, *out = td->out;                               \
+    const type *src = (const type *)in->extended_data[ch];              \
+    type *dst = (type *)out->extended_data[ch];                         \
+    IIRChannel *iir = &s->iir[ch];                                      \
+    const double g = iir->g;                                            \
+    const double fir = iir->fir;                                        \
+    int *clippings = &iir->clippings;                                   \
+    int nb_biquads = (FFMAX(iir->nb_ab[0], iir->nb_ab[1]) + 1) / 2;     \
+    int n, i;                                                           \
+                                                                        \
+    for (i = 0; i < nb_biquads; i++) {                                  \
+        const double a1 = -iir->biquads[i].a[1];                        \
+        const double a2 = -iir->biquads[i].a[2];                        \
+        const double b1 = iir->biquads[i].b[1];                         \
+        const double b2 = iir->biquads[i].b[2];                         \
+        double i1 = iir->biquads[i].i1;                                 \
+        double i2 = iir->biquads[i].i2;                                 \
+        double o1 = iir->biquads[i].o1;                                 \
+        double o2 = iir->biquads[i].o2;                                 \
+                                                                        \
+        for (n = 0; n < in->nb_samples; n++) {                          \
+            double i0 = ig * src[n];                                    \
+            double o0 = i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2;          \
+                                                                        \
+            i2 = i1;                                                    \
+            i1 = i0;                                                    \
+            o2 = o1;                                                    \
+            o1 = o0;                                                    \
+            o0 *= og * g;                                               \
+            o0 += dst[n];                                               \
+                                                                        \
+            if (need_clipping && o0 < min) {                            \
+                (*clippings)++;                                         \
+                dst[n] = min;                                           \
+            } else if (need_clipping && o0 > max) {                     \
+                (*clippings)++;                                         \
+                dst[n] = max;                                           \
+            } else {                                                    \
+                dst[n] = o0;                                            \
+            }                                                           \
+        }                                                               \
+        iir->biquads[i].i1 = i1;                                        \
+        iir->biquads[i].i2 = i2;                                        \
+        iir->biquads[i].o1 = o1;                                        \
+        iir->biquads[i].o2 = o2;                                        \
+    }                                                                   \
+                                                                        \
+    for (n = 0; n < in->nb_samples; n++) {                              \
+        dst[n] += fir * src[n];                                         \
+        dst[n] = dst[n] * mix + imix * src[n];                          \
+    }                                                                   \
+                                                                        \
+    return 0;                                                           \
+}
+
+PARALLEL_IIR_CH(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
+PARALLEL_IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
+PARALLEL_IIR_CH(fltp, float,         -1.,        1., 0)
+PARALLEL_IIR_CH(dblp, double,        -1.,        1., 0)
 
 static void count_coefficients(char *item_str, int *nb_items)
 {
@@ -656,6 +728,128 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
     return 0;
 }
 
+static void biquad_process(double *x, double *y, int length,
+                           double b0, double b1, double b2,
+                           double a1, double a2)
+{
+    double w1 = 0., w2 = 0.;
+
+    a1 = -a1;
+    a2 = -a2;
+
+    for (int n = 0; n < length; n++) {
+        double out, in = x[n];
+
+        y[n] = out = in * b0 + w1;
+        w1 = b1 * in + w2 + a1 * out;
+        w2 = b2 * in + a2 * out;
+    }
+}
+
+static void solve(double *matrix, double *vector, int n, double *y, double *x, double *lu)
+{
+    double sum = 0.;
+
+    for (int i = 0; i < n; i++) {
+        for (int j = i; j < n; j++) {
+            sum = 0.;
+            for (int k = 0; k < i; k++)
+                sum += lu[i * n + k] * lu[k * n + j];
+            lu[i * n + j] = matrix[j * n + i] - sum;
+        }
+        for (int j = i + 1; j < n; j++) {
+            sum = 0.;
+            for (int k = 0; k < i; k++)
+                sum += lu[j * n + k] * lu[k * n + i];
+            lu[j * n + i] = (1. / lu[i * n + i]) * (matrix[i * n + j] - sum);
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        sum = 0.;
+        for (int k = 0; k < i; k++)
+            sum += lu[i * n + k] * y[k];
+        y[i] = vector[i] - sum;
+    }
+
+    for (int i = n - 1; i >= 0; i--) {
+        sum = 0.;
+        for (int k = i + 1; k < n; k++)
+            sum += lu[i * n + k] * x[k];
+        x[i] = (1 / lu[i * n + i]) * (y[i] - sum);
+    }
+}
+
+static int convert_serial2parallel(AVFilterContext *ctx, int channels)
+{
+    AudioIIRContext *s = ctx->priv;
+    int ret = 0;
+
+    for (int ch = 0; ch < channels; ch++) {
+        IIRChannel *iir = &s->iir[ch];
+        int nb_biquads = (FFMAX(iir->nb_ab[0], iir->nb_ab[1]) + 1) / 2;
+        int length = nb_biquads * 2 + 1;
+        double *impulse = av_calloc(length, sizeof(*impulse));
+        double *y = av_calloc(length, sizeof(*y));
+        double *resp = av_calloc(length, sizeof(*resp));
+        double *M = av_calloc((length - 1) * 2 * nb_biquads, sizeof(*M));
+        double *W = av_calloc((length - 1) * 2 * nb_biquads, sizeof(*W));
+
+        if (!impulse || !y || !resp || !M) {
+            av_free(impulse);
+            av_free(y);
+            av_free(resp);
+            av_free(M);
+            av_free(W);
+            return AVERROR(ENOMEM);
+        }
+
+        impulse[0] = 1.;
+
+        for (int n = 0; n < nb_biquads; n++) {
+            BiquadContext *biquad = &iir->biquads[n];
+
+            biquad_process(n ? y : impulse, y, length,
+                           biquad->b[0], biquad->b[1], biquad->b[2],
+                           biquad->a[1], biquad->a[2]);
+        }
+
+        for (int n = 0; n < nb_biquads; n++) {
+            BiquadContext *biquad = &iir->biquads[n];
+
+            biquad_process(impulse, resp, length - 1,
+                           1., 0., 0., biquad->a[1], biquad->a[2]);
+
+            memcpy(M + n * 2 * (length - 1), resp, sizeof(*resp) * (length - 1));
+            memcpy(M + n * 2 * (length - 1) + length, resp, sizeof(*resp) * (length - 2));
+            memset(resp, 0, length * sizeof(*resp));
+        }
+
+        solve(M, &y[1], length - 1, &impulse[1], resp, W);
+
+        iir->fir = y[0];
+
+        for (int n = 0; n < nb_biquads; n++) {
+            BiquadContext *biquad = &iir->biquads[n];
+
+            biquad->b[0] = 0.;
+            biquad->b[1] = resp[n * 2 + 0];
+            biquad->b[2] = resp[n * 2 + 1];
+        }
+
+        av_free(impulse);
+        av_free(y);
+        av_free(resp);
+        av_free(M);
+        av_free(W);
+
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static void convert_pr2zp(AVFilterContext *ctx, int channels)
 {
     AudioIIRContext *s = ctx->priv;
@@ -1034,13 +1228,20 @@ static int config_output(AVFilterLink *outlink)
         if (ret < 0)
             return ret;
     } else if (s->format == 0 && s->process == 1) {
-        av_log(ctx, AV_LOG_ERROR, "Serial cascading is not implemented for transfer function.\n");
+        av_log(ctx, AV_LOG_ERROR, "Serial processing is not implemented for transfer function.\n");
+        return AVERROR_PATCHWELCOME;
+    } else if (s->format == 0 && s->process == 2) {
+        av_log(ctx, AV_LOG_ERROR, "Parallel processing is not implemented for transfer function.\n");
         return AVERROR_PATCHWELCOME;
     } else if (s->format > 0 && s->process == 1) {
-        if (inlink->format == AV_SAMPLE_FMT_S16P)
-            av_log(ctx, AV_LOG_WARNING, "Serial cascading is not recommended for i16 precision.\n");
-
         ret = decompose_zp2biquads(ctx, inlink->channels);
+        if (ret < 0)
+            return ret;
+    } else if (s->format > 0 && s->process == 2) {
+        ret = decompose_zp2biquads(ctx, inlink->channels);
+        if (ret < 0)
+            return ret;
+        ret = convert_serial2parallel(ctx, inlink->channels);
         if (ret < 0)
             return ret;
     }
@@ -1061,10 +1262,10 @@ static int config_output(AVFilterLink *outlink)
     }
 
     switch (inlink->format) {
-    case AV_SAMPLE_FMT_DBLP: s->iir_channel = s->process == 1 ? iir_ch_serial_dblp : iir_ch_dblp; break;
-    case AV_SAMPLE_FMT_FLTP: s->iir_channel = s->process == 1 ? iir_ch_serial_fltp : iir_ch_fltp; break;
-    case AV_SAMPLE_FMT_S32P: s->iir_channel = s->process == 1 ? iir_ch_serial_s32p : iir_ch_s32p; break;
-    case AV_SAMPLE_FMT_S16P: s->iir_channel = s->process == 1 ? iir_ch_serial_s16p : iir_ch_s16p; break;
+    case AV_SAMPLE_FMT_DBLP: s->iir_channel = s->process == 2 ? iir_ch_parallel_dblp : s->process == 1 ? iir_ch_serial_dblp : iir_ch_dblp; break;
+    case AV_SAMPLE_FMT_FLTP: s->iir_channel = s->process == 2 ? iir_ch_parallel_fltp : s->process == 1 ? iir_ch_serial_fltp : iir_ch_fltp; break;
+    case AV_SAMPLE_FMT_S32P: s->iir_channel = s->process == 2 ? iir_ch_parallel_s32p : s->process == 1 ? iir_ch_serial_s32p : iir_ch_s32p; break;
+    case AV_SAMPLE_FMT_S16P: s->iir_channel = s->process == 2 ? iir_ch_parallel_s16p : s->process == 1 ? iir_ch_serial_s16p : iir_ch_s16p; break;
     }
 
     return 0;
@@ -1079,7 +1280,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int ch, ret;
 
-    if (av_frame_is_writable(in)) {
+    if (av_frame_is_writable(in) && s->process != 2) {
         out = in;
     } else {
         out = ff_get_audio_buffer(outlink, in->nb_samples);
@@ -1232,10 +1433,11 @@ static const AVOption aiir_options[] = {
     { "pr", "Z-plane zeros/poles (polar radians)", 0,                AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "format" },
     { "pd", "Z-plane zeros/poles (polar degrees)", 0,                AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "format" },
     { "sp", "S-plane zeros/poles",                 0,                AV_OPT_TYPE_CONST,  {.i64=4},     0, 0, AF, "format" },
-    { "process", "set kind of processing",         OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 1, AF, "process" },
-    { "r", "set kind of processing",               OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 1, AF, "process" },
+    { "process", "set kind of processing",         OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 2, AF, "process" },
+    { "r", "set kind of processing",               OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 2, AF, "process" },
     { "d", "direct",                               0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "process" },
-    { "s", "serial cascading",                     0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "process" },
+    { "s", "serial",                               0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "process" },
+    { "p", "parallel",                             0,                AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "process" },
     { "precision", "set filtering precision",      OFFSET(precision),AV_OPT_TYPE_INT,    {.i64=0},     0, 3, AF, "precision" },
     { "e", "set precision",                        OFFSET(precision),AV_OPT_TYPE_INT,    {.i64=0},     0, 3, AF, "precision" },
     { "dbl", "double-precision floating-point",    0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "precision" },
