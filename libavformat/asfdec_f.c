@@ -769,6 +769,8 @@ static int asf_read_marker(AVFormatContext *s, int64_t size)
         avio_rl32(pb);             // send time
         avio_rl32(pb);             // flags
         name_len = avio_rl32(pb);  // name length
+        if ((unsigned)name_len > INT_MAX / 2)
+            return AVERROR_INVALIDDATA;
         if ((ret = avio_get_str16le(pb, name_len * 2, name,
                                     sizeof(name))) < name_len)
             avio_skip(pb, name_len - ret);
