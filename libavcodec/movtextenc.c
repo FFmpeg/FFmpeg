@@ -29,6 +29,7 @@
 #include "libavutil/common.h"
 #include "ass_split.h"
 #include "ass.h"
+#include "bytestream.h"
 
 #define STYLE_FLAG_BOLD         (1<<0)
 #define STYLE_FLAG_ITALIC       (1<<1)
@@ -103,33 +104,27 @@ static void mov_text_cleanup(MovTextContext *s)
 
 static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
 {
-    uint32_t tsmb_size;
-    uint16_t style_entries;
     if ((s->box_flags & STYL_BOX) && s->count) {
-        tsmb_size = s->count * STYLE_RECORD_SIZE + SIZE_ADD;
-        tsmb_size = AV_RB32(&tsmb_size);
-        tsmb_type = AV_RB32(&tsmb_type);
-        style_entries = AV_RB16(&s->count);
+        uint8_t buf[12], *p = buf;
+
+        bytestream_put_be32(&p, s->count * STYLE_RECORD_SIZE + SIZE_ADD);
+        bytestream_put_be32(&p, tsmb_type);
+        bytestream_put_be16(&p, s->count);
         /*The above three attributes are hard coded for now
         but will come from ASS style in the future*/
-        av_bprint_append_any(&s->buffer, &tsmb_size, 4);
-        av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-        av_bprint_append_any(&s->buffer, &style_entries, 2);
+        av_bprint_append_any(&s->buffer, buf, 10);
         for (unsigned j = 0; j < s->count; j++) {
-            uint16_t style_start, style_end, style_fontID;
-            uint32_t style_color;
+            const StyleBox *style = &s->style_attributes[j];
 
-            style_start  = AV_RB16(&s->style_attributes[j].style_start);
-            style_end    = AV_RB16(&s->style_attributes[j].style_end);
-            style_color  = AV_RB32(&s->style_attributes[j].style_color);
-            style_fontID = AV_RB16(&s->style_attributes[j].style_fontID);
+            p = buf;
+            bytestream_put_be16(&p, style->style_start);
+            bytestream_put_be16(&p, style->style_end);
+            bytestream_put_be16(&p, style->style_fontID);
+            bytestream_put_byte(&p, style->style_flag);
+            bytestream_put_byte(&p, style->style_fontsize);
+            bytestream_put_be32(&p, style->style_color);
 
-            av_bprint_append_any(&s->buffer, &style_start, 2);
-            av_bprint_append_any(&s->buffer, &style_end, 2);
-            av_bprint_append_any(&s->buffer, &style_fontID, 2);
-            av_bprint_append_any(&s->buffer, &s->style_attributes[j].style_flag, 1);
-            av_bprint_append_any(&s->buffer, &s->style_attributes[j].style_fontsize, 1);
-            av_bprint_append_any(&s->buffer, &style_color, 4);
+            av_bprint_append_any(&s->buffer, buf, 12);
         }
     }
     mov_text_cleanup(s);
@@ -137,32 +132,28 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
 
 static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
 {
-    uint32_t tsmb_size;
-    uint16_t start, end;
     if (s->box_flags & HLIT_BOX) {
-        tsmb_size = 12;
-        tsmb_size = AV_RB32(&tsmb_size);
-        tsmb_type = AV_RB32(&tsmb_type);
-        start     = AV_RB16(&s->hlit.start);
-        end       = AV_RB16(&s->hlit.end);
-        av_bprint_append_any(&s->buffer, &tsmb_size, 4);
-        av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-        av_bprint_append_any(&s->buffer, &start, 2);
-        av_bprint_append_any(&s->buffer, &end, 2);
+        uint8_t buf[12], *p = buf;
+
+        bytestream_put_be32(&p, 12);
+        bytestream_put_be32(&p, tsmb_type);
+        bytestream_put_be16(&p, s->hlit.start);
+        bytestream_put_be16(&p, s->hlit.end);
+
+        av_bprint_append_any(&s->buffer, buf, 12);
     }
 }
 
 static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
 {
-    uint32_t tsmb_size, color;
     if (s->box_flags & HCLR_BOX) {
-        tsmb_size = 12;
-        tsmb_size = AV_RB32(&tsmb_size);
-        tsmb_type = AV_RB32(&tsmb_type);
-        color     = AV_RB32(&s->hclr.color);
-        av_bprint_append_any(&s->buffer, &tsmb_size, 4);
-        av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-        av_bprint_append_any(&s->buffer, &color, 4);
+        uint8_t buf[12], *p = buf;
+
+        bytestream_put_be32(&p, 12);
+        bytestream_put_be32(&p, tsmb_type);
+        bytestream_put_be32(&p, s->hclr.color);
+
+        av_bprint_append_any(&s->buffer, buf, 12);
     }
 }
 
@@ -190,25 +181,21 @@ static int encode_sample_description(AVCodecContext *avctx)
     ASS *ass;
     ASSStyle *style;
     int i, j;
-    uint32_t tsmb_size, tsmb_type, back_color = 0, style_color;
-    uint16_t style_start, style_end, fontID, count;
+    uint32_t back_color = 0;
     int font_names_total_len = 0;
     MovTextContext *s = avctx->priv_data;
+    uint8_t buf[30], *p = buf;
 
-    static const uint8_t display_and_justification[] = {
-        0x00, 0x00, 0x00, 0x00, // uint32_t displayFlags
-        0x01,                   // int8_t horizontal-justification
-        0xFF,                   // int8_t vertical-justification
-    };
+    //  0x00, 0x00, 0x00, 0x00, // uint32_t displayFlags
+    //  0x01,                   // int8_t horizontal-justification
+    //  0xFF,                   // int8_t vertical-justification
     //  0x00, 0x00, 0x00, 0x00, // uint8_t background-color-rgba[4]
-    static const uint8_t box_record[] = {
     //     BoxRecord {
-        0x00, 0x00,             // int16_t top
-        0x00, 0x00,             // int16_t left
-        0x00, 0x00,             // int16_t bottom
-        0x00, 0x00,             // int16_t right
+    //  0x00, 0x00,             // int16_t top
+    //  0x00, 0x00,             // int16_t left
+    //  0x00, 0x00,             // int16_t bottom
+    //  0x00, 0x00,             // int16_t right
     //     };
-    };
     //     StyleRecord {
     //  0x00, 0x00,             // uint16_t startChar
     //  0x00, 0x00,             // uint16_t endChar
@@ -256,25 +243,19 @@ static int encode_sample_description(AVCodecContext *avctx)
                      (255 - ((uint32_t)style->back_color >> 24));
     }
 
-    av_bprint_append_any(&s->buffer, display_and_justification,
-                                     sizeof(display_and_justification));
-    back_color = AV_RB32(&back_color);
-    av_bprint_append_any(&s->buffer, &back_color, 4);
-    //     BoxRecord {
-    av_bprint_append_any(&s->buffer, box_record, sizeof(box_record));
-    //     };
+    bytestream_put_be32(&p, 0); // displayFlags
+    bytestream_put_be16(&p, 0x01FF); // horizontal/vertical justification (2x int8_t)
+    bytestream_put_be32(&p, back_color);
+    bytestream_put_be64(&p, 0); // BoxRecord - 4xint16_t: top, left, bottom, right
     //     StyleRecord {
-    style_start  = AV_RB16(&s->d.style_start);
-    style_end    = AV_RB16(&s->d.style_end);
-    fontID = AV_RB16(&s->d.style_fontID);
-    style_color  = AV_RB32(&s->d.style_color);
-    av_bprint_append_any(&s->buffer, &style_start, 2);
-    av_bprint_append_any(&s->buffer, &style_end, 2);
-    av_bprint_append_any(&s->buffer, &fontID, 2);
-    av_bprint_append_any(&s->buffer, &s->d.style_flag, 1);
-    av_bprint_append_any(&s->buffer, &s->d.style_fontsize, 1);
-    av_bprint_append_any(&s->buffer, &style_color, 4);
+    bytestream_put_be16(&p, s->d.style_start);
+    bytestream_put_be16(&p, s->d.style_end);
+    bytestream_put_be16(&p, s->d.style_fontID);
+    bytestream_put_byte(&p, s->d.style_flag);
+    bytestream_put_byte(&p, s->d.style_fontsize);
+    bytestream_put_be32(&p, s->d.style_color);
     //     };
+    av_bprint_append_any(&s->buffer, buf, 30);
 
     // Build font table
     // We can't build a complete font table since that would require
@@ -306,23 +287,21 @@ static int encode_sample_description(AVCodecContext *avctx)
         av_dynarray_add(&s->fonts, &s->font_count, (char*)"Serif");
 
     //     FontTableBox {
-    tsmb_size = SIZE_ADD + 3 * s->font_count + font_names_total_len;
-    tsmb_size = AV_RB32(&tsmb_size);
-    tsmb_type = MKBETAG('f','t','a','b');
-    tsmb_type = AV_RB32(&tsmb_type);
-    count = s->font_count;
-    count = AV_RB16(&count);
-    av_bprint_append_any(&s->buffer, &tsmb_size, 4);
-    av_bprint_append_any(&s->buffer, &tsmb_type, 4);
-    av_bprint_append_any(&s->buffer, &count, 2);
+    p = buf;
+    bytestream_put_be32(&p, SIZE_ADD + 3 * s->font_count + font_names_total_len); // Size
+    bytestream_put_be32(&p, MKBETAG('f','t','a','b'));
+    bytestream_put_be16(&p, s->font_count);
+
+    av_bprint_append_any(&s->buffer, buf, 10);
     //     FontRecord {
     for (i = 0; i < s->font_count; i++) {
-        uint8_t len;
-        fontID = i + 1;
-        fontID = AV_RB16(&fontID);
-        av_bprint_append_any(&s->buffer, &fontID, 2);
-        len = strlen(s->fonts[i]);
-        av_bprint_append_any(&s->buffer, &len, 1);
+        size_t len = strlen(s->fonts[i]);
+
+        p = buf;
+        bytestream_put_be16(&p, i + 1); //fontID
+        bytestream_put_byte(&p, len);
+
+        av_bprint_append_any(&s->buffer, buf, 3);
         av_bprint_append_any(&s->buffer, s->fonts[i], len);
     }
     //     };
