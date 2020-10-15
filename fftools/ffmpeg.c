@@ -725,8 +725,13 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
         AVPacket tmp_pkt = {0};
         /* the muxer is not initialized yet, buffer the packet */
         if (!av_fifo_space(ost->muxing_queue)) {
-            int new_size = FFMIN(2 * av_fifo_size(ost->muxing_queue),
-                                 ost->max_muxing_queue_size);
+            unsigned int are_we_over_size =
+                (ost->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
+            int new_size = are_we_over_size ?
+                           FFMIN(2 * av_fifo_size(ost->muxing_queue),
+                                 ost->max_muxing_queue_size) :
+                           2 * av_fifo_size(ost->muxing_queue);
+
             if (new_size <= av_fifo_size(ost->muxing_queue)) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Too many packets buffered for output stream %d:%d.\n",
@@ -741,6 +746,7 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
         if (ret < 0)
             exit_program(1);
         av_packet_move_ref(&tmp_pkt, pkt);
+        ost->muxing_queue_data_size += tmp_pkt.size;
         av_fifo_generic_write(ost->muxing_queue, &tmp_pkt, sizeof(tmp_pkt), NULL);
         return;
     }
@@ -2991,6 +2997,7 @@ static int check_init_output_file(OutputFile *of, int file_index)
         while (av_fifo_size(ost->muxing_queue)) {
             AVPacket pkt;
             av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
+            ost->muxing_queue_data_size -= pkt.size;
             write_packet(of, &pkt, ost, 1);
         }
     }

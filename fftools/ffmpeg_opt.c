@@ -87,6 +87,7 @@ static const char *opt_name_canvas_sizes[]              = {"canvas_size", NULL};
 static const char *opt_name_pass[]                      = {"pass", NULL};
 static const char *opt_name_passlogfiles[]              = {"passlogfile", NULL};
 static const char *opt_name_max_muxing_queue_size[]     = {"max_muxing_queue_size", NULL};
+static const char *opt_name_muxing_queue_data_threshold[] = {"muxing_queue_data_threshold", NULL};
 static const char *opt_name_guess_layout_max[]          = {"guess_layout_max", NULL};
 static const char *opt_name_apad[]                      = {"apad", NULL};
 static const char *opt_name_discard[]                   = {"discard", NULL};
@@ -1563,6 +1564,11 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->max_muxing_queue_size = 128;
     MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, ost->max_muxing_queue_size, oc, st);
     ost->max_muxing_queue_size *= sizeof(AVPacket);
+
+    ost->muxing_queue_data_size = 0;
+
+    ost->muxing_queue_data_threshold = 50*1024*1024;
+    MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, ost->muxing_queue_data_threshold, oc, st);
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -3761,6 +3767,8 @@ const OptionDef options[] = {
 
     { "max_muxing_queue_size", HAS_ARG | OPT_INT | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT, { .off = OFFSET(max_muxing_queue_size) },
         "maximum number of packets that can be buffered while waiting for all streams to initialize", "packets" },
+    { "muxing_queue_data_threshold", HAS_ARG | OPT_INT | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT, { .off = OFFSET(muxing_queue_data_threshold) },
+        "set the threshold after which max_muxing_queue_size is taken into account", "bytes" },
 
     /* data codec support */
     { "dcodec", HAS_ARG | OPT_DATA | OPT_PERFILE | OPT_EXPERT | OPT_INPUT | OPT_OUTPUT, { .func_arg = opt_data_codec },

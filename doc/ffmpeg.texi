@@ -1746,6 +1746,11 @@ this buffer, in packets, for the matching output stream.
 The default value of this option should be high enough for most uses, so only
 touch this option if you are sure that you need it.
 
+@item -muxing_queue_data_threshold @var{bytes} (@emph{output,per-stream})
+This is a minimum threshold until which the muxing queue size is not taken into
+account. Defaults to 50 megabytes per stream, and is based on the overall size
+of packets passed to the muxer.
+
 @item -auto_conversion_filters (@emph{global})
 Enable automatically inserting format conversion filters in all filter
 graphs, including those defined by @option{-vf}, @option{-af},
