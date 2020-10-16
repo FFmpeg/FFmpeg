@@ -40,8 +40,7 @@ typedef struct Pair {
 typedef struct BiquadContext {
     double a[3];
     double b[3];
-    double i1, i2;
-    double o1, o2;
+    double w1, w2;
 } BiquadContext;
 
 typedef struct IIRChannel {
@@ -177,8 +176,9 @@ IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
 IIR_CH(fltp, float,         -1.,        1., 0)
 IIR_CH(dblp, double,        -1.,        1., 0)
 
-#define SERIAL_IIR_CH(name, type, min, max, need_clipping)                  \
-static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)  \
+#define SERIAL_IIR_CH(name, type, min, max, need_clipping)              \
+static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg,       \
+                                 int ch, int nb_jobs)                   \
 {                                                                       \
     AudioIIRContext *s = ctx->priv;                                     \
     const double ig = s->dry_gain;                                      \
@@ -201,19 +201,15 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
         const double b0 = iir->biquads[i].b[0];                         \
         const double b1 = iir->biquads[i].b[1];                         \
         const double b2 = iir->biquads[i].b[2];                         \
-        double i1 = iir->biquads[i].i1;                                 \
-        double i2 = iir->biquads[i].i2;                                 \
-        double o1 = iir->biquads[i].o1;                                 \
-        double o2 = iir->biquads[i].o2;                                 \
+        double w1 = iir->biquads[i].w1;                                 \
+        double w2 = iir->biquads[i].w2;                                 \
                                                                         \
         for (n = 0; n < in->nb_samples; n++) {                          \
             double i0 = ig * (i ? dst[n] : src[n]);                     \
-            double o0 = i0 * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2; \
+            double o0 = i0 * b0 + w1;                                   \
                                                                         \
-            i2 = i1;                                                    \
-            i1 = i0;                                                    \
-            o2 = o1;                                                    \
-            o1 = o0;                                                    \
+            w1 = b1 * i0 + w2 + a1 * o0;                                \
+            w2 = b2 * i0 + a2 * o0;                                     \
             o0 *= og * g;                                               \
                                                                         \
             o0 = o0 * mix + imix * i0;                                  \
@@ -227,10 +223,8 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
                 dst[n] = o0;                                            \
             }                                                           \
         }                                                               \
-        iir->biquads[i].i1 = i1;                                        \
-        iir->biquads[i].i2 = i2;                                        \
-        iir->biquads[i].o1 = o1;                                        \
-        iir->biquads[i].o2 = o2;                                        \
+        iir->biquads[i].w1 = w1;                                        \
+        iir->biquads[i].w2 = w2;                                        \
     }                                                                   \
                                                                         \
     return 0;                                                           \
@@ -266,19 +260,15 @@ static int iir_ch_parallel_## name(AVFilterContext *ctx, void *arg,     \
         const double a2 = -iir->biquads[i].a[2];                        \
         const double b1 = iir->biquads[i].b[1];                         \
         const double b2 = iir->biquads[i].b[2];                         \
-        double i1 = iir->biquads[i].i1;                                 \
-        double i2 = iir->biquads[i].i2;                                 \
-        double o1 = iir->biquads[i].o1;                                 \
-        double o2 = iir->biquads[i].o2;                                 \
+        double w1 = iir->biquads[i].w1;                                 \
+        double w2 = iir->biquads[i].w2;                                 \
                                                                         \
         for (n = 0; n < in->nb_samples; n++) {                          \
             double i0 = ig * src[n];                                    \
-            double o0 = i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2;          \
+            double o0 = w1;                                             \
                                                                         \
-            i2 = i1;                                                    \
-            i1 = i0;                                                    \
-            o2 = o1;                                                    \
-            o1 = o0;                                                    \
+            w1 = b1 * i0 + w2 + a1 * o0;                                \
+            w2 = b2 * i0 + a2 * o0;                                     \
             o0 *= og * g;                                               \
             o0 += dst[n];                                               \
                                                                         \
@@ -292,10 +282,8 @@ static int iir_ch_parallel_## name(AVFilterContext *ctx, void *arg,     \
                 dst[n] = o0;                                            \
             }                                                           \
         }                                                               \
-        iir->biquads[i].i1 = i1;                                        \
-        iir->biquads[i].i2 = i2;                                        \
-        iir->biquads[i].o1 = o1;                                        \
-        iir->biquads[i].o2 = o2;                                        \
+        iir->biquads[i].w1 = w1;                                        \
+        iir->biquads[i].w2 = w2;                                        \
     }                                                                   \
                                                                         \
     for (n = 0; n < in->nb_samples; n++) {                              \
