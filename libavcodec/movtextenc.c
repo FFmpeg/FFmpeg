@@ -102,6 +102,7 @@ static void mov_text_cleanup(MovTextContext *s)
             av_freep(&s->style_attributes[j]);
         }
         av_freep(&s->style_attributes);
+        s->count = 0;
     }
     if (s->style_attributes_temp) {
         *s->style_attributes_temp = s->d;
