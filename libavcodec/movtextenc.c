@@ -298,10 +298,14 @@ static int encode_sample_description(AVCodecContext *avctx)
     // is avaiable in the ASS header
     if (style && ass->styles_count) {
         // Find unique font names
-        av_dynarray_add(&s->fonts, &s->font_count, style->font_name);
-        font_names_total_len += strlen(style->font_name);
+        if (style->font_name) {
+            av_dynarray_add(&s->fonts, &s->font_count, style->font_name);
+            font_names_total_len += strlen(style->font_name);
+        }
         for (i = 0; i < ass->styles_count; i++) {
             int found = 0;
+            if (!ass->styles[i].font_name)
+                continue;
             for (j = 0; j < s->font_count; j++) {
                 if (!strcmp(s->fonts[j], ass->styles[i].font_name)) {
                     found = 1;
