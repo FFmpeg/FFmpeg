@@ -83,6 +83,7 @@ do {                                  \
     int y = y0 >> vshift;
     int x_tb = (x0 >> s->ps.sps->log2_min_tb_size) & s->ps.sps->tb_mask;
     int y_tb = (y0 >> s->ps.sps->log2_min_tb_size) & s->ps.sps->tb_mask;
+    int spin = c_idx && !size_in_tbs_v && ((2 * y0) & (1 << s->ps.sps->log2_min_tb_size));
 
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
 
@@ -103,11 +104,11 @@ do {                                  \
     pixel  *top           = top_array  + 1;
     pixel  *filtered_left = filtered_left_array + 1;
     pixel  *filtered_top  = filtered_top_array  + 1;
-    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS( x_tb - 1, (y_tb + size_in_tbs_v) & s->ps.sps->tb_mask);
+    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS( x_tb - 1, (y_tb + size_in_tbs_v + spin) & s->ps.sps->tb_mask);
     int cand_left        = lc->na.cand_left;
     int cand_up_left     = lc->na.cand_up_left;
     int cand_up          = lc->na.cand_up;
-    int cand_up_right    = lc->na.cand_up_right    && cur_tb_addr > MIN_TB_ADDR_ZS((x_tb + size_in_tbs_h) & s->ps.sps->tb_mask, y_tb - 1);
+    int cand_up_right    = lc->na.cand_up_right && !spin && cur_tb_addr > MIN_TB_ADDR_ZS((x_tb + size_in_tbs_h) & s->ps.sps->tb_mask, y_tb - 1);
 
     int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, s->ps.sps->height) -
                            (y0 + size_in_luma_v)) >> vshift;
