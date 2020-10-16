@@ -607,6 +607,8 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, int64_t size)
         ff_get_guid(pb, &g);
         size = avio_rl16(pb);
         ext_len = avio_rl32(pb);
+        if (ext_len < 0)
+            return AVERROR_INVALIDDATA;
         avio_skip(pb, ext_len);
         if (stream_num < 128 && i < FF_ARRAY_ELEMS(asf->streams[stream_num].payload)) {
             ASFPayload *p = &asf->streams[stream_num].payload[i];
