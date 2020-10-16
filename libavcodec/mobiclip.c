@@ -422,7 +422,8 @@ static void inverse4(unsigned *rs)
 
 static void idct(int *arr, int size)
 {
-    int e, f, g, h, x3, x2, x1, x0;
+    int e, f, g, h;
+    unsigned x3, x2, x1, x0;
     int tmp[4];
 
     if (size == 4) {
@@ -437,14 +438,14 @@ static void idct(int *arr, int size)
 
     inverse4(tmp);
 
-    e = arr[7] + arr[1] - arr[3] - (arr[3] >> 1);
-    f = arr[7] - arr[1] + arr[5] + (arr[5] >> 1);
-    g = arr[5] - arr[3] - arr[7] - (arr[7] >> 1);
-    h = arr[5] + arr[3] + arr[1] + (arr[1] >> 1);
-    x3 = g + (h >> 2);
-    x2 = e + (f >> 2);
-    x1 = (e >> 2) - f;
-    x0 = h - (g >> 2);
+    e = (unsigned)arr[7] + arr[1] - arr[3] - (arr[3] >> 1);
+    f = (unsigned)arr[7] - arr[1] + arr[5] + (arr[5] >> 1);
+    g = (unsigned)arr[5] - arr[3] - arr[7] - (arr[7] >> 1);
+    h = (unsigned)arr[5] + arr[3] + arr[1] + (arr[1] >> 1);
+    x3 = (unsigned)g + (h >> 2);
+    x2 = (unsigned)e + (f >> 2);
+    x1 = (e >> 2) - (unsigned)f;
+    x0 = (unsigned)h - (g >> 2);
 
     arr[0] = tmp[0] + x0;
     arr[1] = tmp[1] + x1;
