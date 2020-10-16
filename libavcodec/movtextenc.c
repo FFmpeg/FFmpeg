@@ -92,8 +92,7 @@ typedef struct {
 } MovTextContext;
 
 typedef struct {
-    uint32_t type;
-    void (*encode)(MovTextContext *s, uint32_t tsmb_type);
+    void (*encode)(MovTextContext *s);
 } Box;
 
 static void mov_text_cleanup(MovTextContext *s)
@@ -102,13 +101,13 @@ static void mov_text_cleanup(MovTextContext *s)
     s->style_attributes_temp = s->d;
 }
 
-static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
+static void encode_styl(MovTextContext *s)
 {
     if ((s->box_flags & STYL_BOX) && s->count) {
         uint8_t buf[12], *p = buf;
 
         bytestream_put_be32(&p, s->count * STYLE_RECORD_SIZE + SIZE_ADD);
-        bytestream_put_be32(&p, tsmb_type);
+        bytestream_put_be32(&p, MKBETAG('s','t','y','l'));
         bytestream_put_be16(&p, s->count);
         /*The above three attributes are hard coded for now
         but will come from ASS style in the future*/
@@ -130,13 +129,13 @@ static void encode_styl(MovTextContext *s, uint32_t tsmb_type)
     mov_text_cleanup(s);
 }
 
-static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
+static void encode_hlit(MovTextContext *s)
 {
     if (s->box_flags & HLIT_BOX) {
         uint8_t buf[12], *p = buf;
 
         bytestream_put_be32(&p, 12);
-        bytestream_put_be32(&p, tsmb_type);
+        bytestream_put_be32(&p, MKBETAG('h','l','i','t'));
         bytestream_put_be16(&p, s->hlit.start);
         bytestream_put_be16(&p, s->hlit.end);
 
@@ -144,13 +143,13 @@ static void encode_hlit(MovTextContext *s, uint32_t tsmb_type)
     }
 }
 
-static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
+static void encode_hclr(MovTextContext *s)
 {
     if (s->box_flags & HCLR_BOX) {
         uint8_t buf[12], *p = buf;
 
         bytestream_put_be32(&p, 12);
-        bytestream_put_be32(&p, tsmb_type);
+        bytestream_put_be32(&p, MKBETAG('h','c','l','r'));
         bytestream_put_be32(&p, s->hclr.color);
 
         av_bprint_append_any(&s->buffer, buf, 12);
@@ -158,9 +157,9 @@ static void encode_hclr(MovTextContext *s, uint32_t tsmb_type)
 }
 
 static const Box box_types[] = {
-    { MKBETAG('s','t','y','l'), encode_styl },
-    { MKBETAG('h','l','i','t'), encode_hlit },
-    { MKBETAG('h','c','l','r'), encode_hclr },
+    { encode_styl },
+    { encode_hlit },
+    { encode_hclr },
 };
 
 const static size_t box_count = FF_ARRAY_ELEMS(box_types);
@@ -682,7 +681,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 #endif
 
         for (j = 0; j < box_count; j++) {
-            box_types[j].encode(s, box_types[j].type);
+            box_types[j].encode(s);
         }
     }
 
