@@ -36,6 +36,9 @@ typedef struct AV1Frame {
     AVBufferRef *hwaccel_priv_buf;
     void *hwaccel_picture_private;
 
+    int temporal_id;
+    int spatial_id;
+
     uint8_t loop_filter_delta_enabled;
     int8_t  loop_filter_ref_deltas[AV1_NUM_REF_FRAMES];
     int8_t  loop_filter_mode_deltas[2];

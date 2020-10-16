@@ -343,6 +343,7 @@ static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
     ff_thread_release_buffer(avctx, &f->tf);
     av_buffer_unref(&f->hwaccel_priv_buf);
     f->hwaccel_picture_private = NULL;
+    f->spatial_id = f->temporal_id = 0;
 }
 
 static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *src)
@@ -360,6 +361,8 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
         dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
     }
 
+    dst->spatial_id = src->spatial_id;
+    dst->temporal_id = src->temporal_id;
     dst->loop_filter_delta_enabled = src->loop_filter_delta_enabled;
     memcpy(dst->loop_filter_ref_deltas,
            src->loop_filter_ref_deltas,
@@ -670,6 +673,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
     for (int i = 0; i < s->current_obu.nb_units; i++) {
         CodedBitstreamUnit *unit = &s->current_obu.units[i];
         AV1RawOBU *obu = unit->content;
+        const AV1RawOBUHeader *header = &obu->header;
         av_log(avctx, AV_LOG_DEBUG, "Obu idx:%d, obu type:%d.\n", i, unit->type);
 
         switch (unit->type) {
@@ -765,6 +769,9 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                 av_log(avctx, AV_LOG_ERROR, "Get current frame error\n");
                 goto end;
             }
+
+            s->cur_frame.spatial_id  = header->spatial_id;
+            s->cur_frame.temporal_id = header->temporal_id;
 
             if (avctx->hwaccel) {
                 ret = avctx->hwaccel->start_frame(avctx, unit->data,
