@@ -1,0 +1,4 @@
+af5ffee897bad0174f4c7fc16c54aa5d *tests/data/fate/acodec-adpcm-swf-wav.wav
+266948 tests/data/fate/acodec-adpcm-swf-wav.wav
+628089745a7059ae4055c2515b6d668b *tests/data/fate/acodec-adpcm-swf-wav.out.wav
+stddev:  933.58 PSNR: 36.93 MAXDIFF:51119 bytes:  1058400/  1064960
