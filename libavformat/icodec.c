@@ -124,11 +124,13 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     IcoDemuxContext *ico = s->priv_data;
     IcoImage *image;
     AVIOContext *pb = s->pb;
-    AVStream *st = s->streams[0];
+    AVStream *st;
     int ret;
 
     if (ico->current_image >= ico->nb_images)
         return AVERROR(EIO);
+
+    st = s->streams[0];
 
     image = &ico->images[ico->current_image];
 
