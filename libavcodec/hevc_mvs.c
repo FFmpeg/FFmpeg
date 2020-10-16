@@ -48,9 +48,9 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
 
     lc->na.cand_up       = (lc->ctb_up_flag   || y0b);
     lc->na.cand_left     = (lc->ctb_left_flag || x0b);
-    lc->na.cand_up_left  = (!x0b && !y0b) ? lc->ctb_up_left_flag : lc->na.cand_left && lc->na.cand_up;
+    lc->na.cand_up_left  = (x0b || y0b) ? lc->na.cand_left && lc->na.cand_up : lc->ctb_up_left_flag;
     lc->na.cand_up_right_sap =
-            ((x0b + nPbW) == (1 << s->ps.sps->log2_ctb_size)) ?
+            (x0b + nPbW == 1 << s->ps.sps->log2_ctb_size) ?
                     lc->ctb_up_right_flag && !y0b : lc->na.cand_up;
     lc->na.cand_up_right =
             lc->na.cand_up_right_sap
