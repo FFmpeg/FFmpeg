@@ -382,7 +382,7 @@ static int obu_read_header(AVFormatContext *s)
 static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ObuContext *c = s->priv_data;
-    uint8_t header[MAX_OBU_HEADER_SIZE];
+    uint8_t header[MAX_OBU_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     int64_t obu_size;
     int size = av_fifo_space(c->fifo);
     int ret, len, type;
