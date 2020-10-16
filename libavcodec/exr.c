@@ -1520,15 +1520,27 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             continue;
         } else if ((var_size = check_header_variable(s, "dataWindow", "box2i",
                                                      31)) >= 0) {
+            int xmin, ymin, xmax, ymax;
             if (!var_size) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
 
-            s->xmin   = bytestream2_get_le32(&s->gb);
-            s->ymin   = bytestream2_get_le32(&s->gb);
-            s->xmax   = bytestream2_get_le32(&s->gb);
-            s->ymax   = bytestream2_get_le32(&s->gb);
+            xmin   = bytestream2_get_le32(&s->gb);
+            ymin   = bytestream2_get_le32(&s->gb);
+            xmax   = bytestream2_get_le32(&s->gb);
+            ymax   = bytestream2_get_le32(&s->gb);
+
+            if (xmin > xmax || ymin > ymax ||
+                (unsigned)xmax - xmin >= INT_MAX ||
+                (unsigned)ymax - ymin >= INT_MAX) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            s->xmin = xmin;
+            s->xmax = xmax;
+            s->ymin = ymin;
+            s->ymax = ymax;
             s->xdelta = (s->xmax - s->xmin) + 1;
             s->ydelta = (s->ymax - s->ymin) + 1;
 
