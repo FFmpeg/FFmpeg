@@ -145,7 +145,7 @@ static void mov_text_cleanup_ftab(MovTextContext *m)
 static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
 {
     uint8_t *tx3g_ptr = avctx->extradata;
-    int i, font_length, remaining = avctx->extradata_size - BOX_SIZE_INITIAL;
+    int i, j = -1, font_length, remaining = avctx->extradata_size - BOX_SIZE_INITIAL;
     int8_t v_align, h_align;
     unsigned ftab_entries;
     StyleBox s_default;
@@ -230,6 +230,8 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
 
     for (i = 0; i < m->ftab_entries; i++) {
         m->ftab[i].fontID = AV_RB16(tx3g_ptr);
+        if (m->ftab[i].fontID == m->d.fontID)
+            j = i;
         tx3g_ptr += 2;
         font_length = *tx3g_ptr++;
 
@@ -247,10 +249,8 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
         m->ftab[i].font[font_length] = '\0';
         tx3g_ptr = tx3g_ptr + font_length;
     }
-    for (i = 0; i < m->ftab_entries; i++) {
-        if (m->d.fontID == m->ftab[i].fontID)
-            m->d.font = m->ftab[i].font;
-    }
+    if (j >= 0)
+        m->d.font = m->ftab[j].font;
     return 0;
 }
 
