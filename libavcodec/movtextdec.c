@@ -412,16 +412,16 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
             av_log(avctx, AV_LOG_ERROR, "invalid UTF-8 byte in subtitle\n");
             len = 1;
         }
-            switch (*text) {
-            case '\r':
-                break;
-            case '\n':
-                av_bprintf(buf, "\\N");
-                break;
-            default:
-                av_bprint_append_data(buf, text, len);
-                break;
-            }
+        switch (*text) {
+        case '\r':
+            break;
+        case '\n':
+            av_bprintf(buf, "\\N");
+            break;
+        default:
+            av_bprint_append_data(buf, text, len);
+            break;
+        }
         text += len;
         text_pos++;
     }
