@@ -102,15 +102,14 @@ typedef struct {
     StyleBox *s_temp;
     HighlightBox h;
     HilightcolorBox c;
-    FontRecord **ftab;
-    FontRecord *ftab_temp;
+    FontRecord *ftab;
     TextWrapBox w;
     MovTextDefault d;
     uint8_t box_flags;
     uint16_t style_entries, ftab_entries;
     uint64_t tracksize;
     int size_var;
-    int count_s, count_f;
+    int count_s;
     int readorder;
     int frame_width;
     int frame_height;
@@ -137,16 +136,8 @@ static void mov_text_cleanup(MovTextContext *m)
 
 static void mov_text_cleanup_ftab(MovTextContext *m)
 {
-    int i;
-    if (m->ftab_temp)
-        av_freep(&m->ftab_temp->font);
-    av_freep(&m->ftab_temp);
-    if (m->ftab) {
-        for(i = 0; i < m->count_f; i++) {
-            av_freep(&m->ftab[i]->font);
-            av_freep(&m->ftab[i]);
-        }
-    }
+    for (unsigned i = 0; i < m->ftab_entries; i++)
+        av_freep(&m->ftab[i].font);
     av_freep(&m->ftab);
     m->ftab_entries = 0;
 }
@@ -156,9 +147,9 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     uint8_t *tx3g_ptr = avctx->extradata;
     int i, box_size, font_length;
     int8_t v_align, h_align;
+    unsigned ftab_entries;
     StyleBox s_default;
 
-    m->count_f = 0;
     m->ftab_entries = 0;
     box_size = BOX_SIZE_INITIAL; /* Size till ftab_entries */
     if (avctx->extradata_size < box_size)
@@ -223,7 +214,16 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     // ftab
     tx3g_ptr += 4;
 
-    m->ftab_entries = AV_RB16(tx3g_ptr);
+    // In case of broken header, init default font
+    m->d.font = ASS_DEFAULT_FONT;
+
+    ftab_entries = AV_RB16(tx3g_ptr);
+    if (!ftab_entries)
+        return 0;
+    m->ftab = av_calloc(ftab_entries, sizeof(*m->ftab));
+    if (!m->ftab)
+        return AVERROR(ENOMEM);
+    m->ftab_entries = ftab_entries;
     tx3g_ptr += 2;
 
     for (i = 0; i < m->ftab_entries; i++) {
@@ -233,12 +233,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
             mov_text_cleanup_ftab(m);
             return -1;
         }
-        m->ftab_temp = av_mallocz(sizeof(*m->ftab_temp));
-        if (!m->ftab_temp) {
-            mov_text_cleanup_ftab(m);
-            return AVERROR(ENOMEM);
-        }
-        m->ftab_temp->fontID = AV_RB16(tx3g_ptr);
+        m->ftab[i].fontID = AV_RB16(tx3g_ptr);
         tx3g_ptr += 2;
         font_length = *tx3g_ptr++;
 
@@ -247,26 +242,18 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
             mov_text_cleanup_ftab(m);
             return -1;
         }
-        m->ftab_temp->font = av_malloc(font_length + 1);
-        if (!m->ftab_temp->font) {
+        m->ftab[i].font = av_malloc(font_length + 1);
+        if (!m->ftab[i].font) {
             mov_text_cleanup_ftab(m);
             return AVERROR(ENOMEM);
         }
-        memcpy(m->ftab_temp->font, tx3g_ptr, font_length);
-        m->ftab_temp->font[font_length] = '\0';
-        av_dynarray_add(&m->ftab, &m->count_f, m->ftab_temp);
-        if (!m->ftab) {
-            mov_text_cleanup_ftab(m);
-            return AVERROR(ENOMEM);
-        }
-        m->ftab_temp = NULL;
+        memcpy(m->ftab[i].font, tx3g_ptr, font_length);
+        m->ftab[i].font[font_length] = '\0';
         tx3g_ptr = tx3g_ptr + font_length;
     }
-    // In case of broken header, init default font
-    m->d.font = ASS_DEFAULT_FONT;
     for (i = 0; i < m->ftab_entries; i++) {
-        if (m->d.fontID == m->ftab[i]->fontID)
-            m->d.font = m->ftab[i]->font;
+        if (m->d.fontID == m->ftab[i].fontID)
+            m->d.font = m->ftab[i].font;
     }
     return 0;
 }
@@ -405,8 +392,8 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                     av_bprintf(buf, "{\\fs%d}", m->s[entry]->fontsize);
                 if (m->s[entry]->style_fontID != m->d.fontID)
                     for (i = 0; i < m->ftab_entries; i++) {
-                        if (m->s[entry]->style_fontID == m->ftab[i]->fontID)
-                            av_bprintf(buf, "{\\fn%s}", m->ftab[i]->font);
+                        if (m->s[entry]->style_fontID == m->ftab[i].fontID)
+                            av_bprintf(buf, "{\\fn%s}", m->ftab[i].font);
                     }
                 if (m->d.color != m->s[entry]->color) {
                     color = m->s[entry]->color;
