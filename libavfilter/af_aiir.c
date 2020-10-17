@@ -332,7 +332,7 @@ static int read_gains(AVFilterContext *ctx, char *item_str, int nb_items)
         }
 
         p = NULL;
-        if (sscanf(arg, "%lf", &s->iir[i].g) != 1) {
+        if (av_sscanf(arg, "%lf", &s->iir[i].g) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid gains supplied: %s\n", arg);
             av_freep(&old_str);
             return AVERROR(EINVAL);
@@ -359,7 +359,7 @@ static int read_tf_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
             break;
 
         p = NULL;
-        if (sscanf(arg, "%lf", &dst[i]) != 1) {
+        if (av_sscanf(arg, "%lf", &dst[i]) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid coefficients supplied: %s\n", arg);
             av_freep(&old_str);
             return AVERROR(EINVAL);
@@ -384,7 +384,7 @@ static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
             break;
 
         p = NULL;
-        if (sscanf(arg, format, &dst[i*2], &dst[i*2+1]) != 2) {
+        if (av_sscanf(arg, format, &dst[i*2], &dst[i*2+1]) != 2) {
             av_log(ctx, AV_LOG_ERROR, "Invalid coefficients supplied: %s\n", arg);
             av_freep(&old_str);
             return AVERROR(EINVAL);
