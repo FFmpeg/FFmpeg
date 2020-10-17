@@ -153,7 +153,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
                    "22050 or 44100\n");
             return AVERROR(EINVAL);
         }
-        avctx->frame_size = 512 * (avctx->sample_rate / 11025);
+        avctx->frame_size  = (s->block_size / 2) * (avctx->sample_rate / 11025);
         avctx->block_align = (2 + avctx->channels * (22 + 4 * (avctx->frame_size - 1)) + 7) / 8;
         break;
     case AV_CODEC_ID_ADPCM_IMA_SSI:
