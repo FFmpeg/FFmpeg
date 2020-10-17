@@ -43,6 +43,7 @@ version <next>:
 - adenorm filter
 - ADPCM IMA AMV encoder
 - AMV muxer
+- NVDEC AV1 hwaccel
 
 
 version 4.3:

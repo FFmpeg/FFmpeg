@@ -62,6 +62,9 @@ typedef struct NVDECFramePool {
 static int map_avcodec_id(enum AVCodecID id)
 {
     switch (id) {
+#if CONFIG_AV1_NVDEC_HWACCEL
+    case AV_CODEC_ID_AV1:        return cudaVideoCodec_AV1;
+#endif
     case AV_CODEC_ID_H264:       return cudaVideoCodec_H264;
     case AV_CODEC_ID_HEVC:       return cudaVideoCodec_HEVC;
     case AV_CODEC_ID_MJPEG:      return cudaVideoCodec_JPEG;
@@ -258,6 +261,7 @@ int ff_nvdec_decode_uninit(AVCodecContext *avctx)
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
 
     av_freep(&ctx->bitstream);
+    av_freep(&ctx->bitstream_internal);
     ctx->bitstream_len       = 0;
     ctx->bitstream_allocated = 0;
 

@@ -59,6 +59,7 @@ typedef struct NVDECContext {
     uint8_t      *bitstream;
     int           bitstream_len;
     unsigned int  bitstream_allocated;
+    uint8_t      *bitstream_internal;
 
     unsigned     *slice_offsets;
     int           nb_slices;
