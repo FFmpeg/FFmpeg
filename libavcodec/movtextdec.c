@@ -373,7 +373,16 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
 
         if ((m->box_flags & STYL_BOX) && entry < m->style_entries) {
             const StyleBox *style = &m->s[entry];
-            if (text_pos == style->style_start) {
+            if (text_pos == style->style_end) {
+                if (style_active) {
+                    av_bprintf(buf, "{\\r}");
+                    style_active = 0;
+                    color = m->d.color;
+                }
+                entry++;
+                style++;
+            }
+            if (entry < m->style_entries && text_pos == style->style_start) {
                 style_active = 1;
                 if (style->bold ^ m->d.bold)
                     av_bprintf(buf, "{\\b%d}", style->bold);
@@ -394,14 +403,6 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                 }
                 if (m->d.alpha != style->alpha)
                     av_bprintf(buf, "{\\1a&H%02X&}", 255 - style->alpha);
-            }
-            if (text_pos == style->style_end) {
-                if (style_active) {
-                    av_bprintf(buf, "{\\r}");
-                    style_active = 0;
-                    color = m->d.color;
-                }
-                entry++;
             }
         }
         if (m->box_flags & HLIT_BOX) {
