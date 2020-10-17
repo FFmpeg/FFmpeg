@@ -97,7 +97,7 @@ int ff_url_decompose(URLComponents *uc, const char *url, const char *end)
 
     /* scheme */
     uc->scheme = cur;
-    p = find_delim(":/", cur, end); /* lavf "schemes" can contain options */
+    p = find_delim(":/?#", cur, end); /* lavf "schemes" can contain options but not some RFC 3986 delimiters */
     if (*p == ':')
         cur = p + 1;
 
