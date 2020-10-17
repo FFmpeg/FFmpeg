@@ -30,6 +30,7 @@
 #include "ass_split.h"
 #include "ass.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #define STYLE_FLAG_BOLD         (1<<0)
 #define STYLE_FLAG_ITALIC       (1<<1)
@@ -331,19 +332,13 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     av_bprint_init(&s->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     s->ass_ctx = ff_ass_split(avctx->subtitle_header);
-    if (!s->ass_ctx) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    if (!s->ass_ctx)
+        return AVERROR_INVALIDDATA;
     ret = encode_sample_description(avctx);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     return 0;
-
-fail:
-    mov_text_encode_close(avctx);
-    return ret;
 }
 
 // Start a new style box if needed
@@ -736,4 +731,5 @@ AVCodec ff_movtext_encoder = {
     .init           = mov_text_encode_init,
     .encode_sub     = mov_text_encode_frame,
     .close          = mov_text_encode_close,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
