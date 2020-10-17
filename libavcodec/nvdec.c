@@ -441,6 +441,7 @@ static void nvdec_fdd_priv_free(void *priv)
 
     av_buffer_unref(&cf->idx_ref);
     av_buffer_unref(&cf->decoder_ref);
+    av_buffer_unref(&cf->ref_idx_ref);
 
     av_freep(&priv);
 }
@@ -465,6 +466,7 @@ static void nvdec_unmap_mapped_frame(void *opaque, uint8_t *data)
 finish:
     av_buffer_unref(&unmap_data->idx_ref);
     av_buffer_unref(&unmap_data->decoder_ref);
+    av_buffer_unref(&unmap_data->ref_idx_ref);
     av_free(unmap_data);
 }
 
@@ -576,7 +578,7 @@ int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    cf->idx = *(unsigned int*)cf->idx_ref->data;
+    cf->ref_idx = cf->idx = *(unsigned int*)cf->idx_ref->data;
 
     fdd->hwaccel_priv      = cf;
     fdd->hwaccel_priv_free = nvdec_fdd_priv_free;
@@ -587,6 +589,40 @@ fail:
     nvdec_fdd_priv_free(cf);
     return ret;
 
+}
+
+int ff_nvdec_start_frame_sep_ref(AVCodecContext *avctx, AVFrame *frame, int has_sep_ref)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+    NVDECFrame *cf;
+    int ret;
+
+    ret = ff_nvdec_start_frame(avctx, frame);
+    if (ret < 0)
+        return ret;
+
+    cf = fdd->hwaccel_priv;
+
+    if (has_sep_ref) {
+        if (!cf->ref_idx_ref) {
+            cf->ref_idx_ref = av_buffer_pool_get(ctx->decoder_pool);
+            if (!cf->ref_idx_ref) {
+                av_log(avctx, AV_LOG_ERROR, "No decoder surfaces left\n");
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
+        cf->ref_idx = *(unsigned int*)cf->ref_idx_ref->data;
+    } else {
+        av_buffer_unref(&cf->ref_idx_ref);
+        cf->ref_idx = cf->idx;
+    }
+
+    return 0;
+fail:
+    nvdec_fdd_priv_free(cf);
+    return ret;
 }
 
 int ff_nvdec_end_frame(AVCodecContext *avctx)
@@ -714,5 +750,5 @@ int ff_nvdec_get_ref_idx(AVFrame *frame)
     if (!cf)
         return -1;
 
-    return cf->idx;
+    return cf->ref_idx;
 }
