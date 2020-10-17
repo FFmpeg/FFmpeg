@@ -36,6 +36,7 @@ version <next>:
 - AVS3 video decoder via libuavs3d
 - Cintel RAW decoder
 - VDPAU accelerated VP9 10/12bit decoding
+- afreqshift and aphaseshift filters
 
 
 version 4.3:

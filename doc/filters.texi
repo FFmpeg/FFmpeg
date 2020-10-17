@@ -1314,6 +1314,21 @@ Force the output to either unsigned 8-bit or signed 16-bit stereo
 aformat=sample_fmts=u8|s16:channel_layouts=stereo
 @end example
 
+@section afreqshift
+Apply frequency shift to input audio samples.
+
+The filter accepts the following options:
+
+@table @option
+@item shift
+Specify frequency shift. Allowed range is -INT_MAX to INT_MAX.
+Default value is 0.0.
+@end table
+
+@subsection Commands
+
+This filter supports the above option as @ref{commands}.
+
 @section agate
 
 A gate is mainly used to reduce lower parts of a signal. This kind of signal
@@ -2063,6 +2078,21 @@ It accepts the following values:
 @item sinusoidal, s
 @end table
 @end table
+
+@section aphaseshift
+Apply phase shift to input audio samples.
+
+The filter accepts the following options:
+
+@table @option
+@item shift
+Specify phase shift. Allowed range is from -1.0 to 1.0.
+Default value is 0.0.
+@end table
+
+@subsection Commands
+
+This filter supports the above option as @ref{commands}.
 
 @section apulsator
 
