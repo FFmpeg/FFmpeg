@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -71,6 +72,7 @@ static int vid_read_header(AVFormatContext *s)
 {
     BVID_DemuxContext *vid = s->priv_data;
     AVIOContext *pb = s->pb;
+    int ret;
 
     /* load main header. Contents:
     *    bytes: 'V' 'I' 'D'
@@ -82,6 +84,10 @@ static int vid_read_header(AVFormatContext *s)
     vid->height  = avio_rl16(pb);
     vid->bethsoft_global_delay = avio_rl16(pb);
     avio_rl16(pb);
+
+    ret = av_image_check_size(vid->width, vid->height, 0, s);
+    if (ret < 0)
+        return ret;
 
     // wait until the first packet to create each stream
     vid->video_index = -1;
