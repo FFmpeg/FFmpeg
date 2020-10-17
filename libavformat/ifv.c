@@ -210,6 +210,7 @@ static int ifv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!ev) {
+        uint64_t vframes, aframes;
         if (ifv->is_audio_present && !ea) {
             /*read new video and audio indexes*/
 
@@ -217,8 +218,12 @@ static int ifv_read_packet(AVFormatContext *s, AVPacket *pkt)
             ifv->next_audio_index = ifv->total_aframes;
 
             avio_skip(s->pb, 0x1c);
-            ifv->total_vframes += avio_rl32(s->pb);
-            ifv->total_aframes += avio_rl32(s->pb);
+            vframes = ifv->total_vframes + (uint64_t)avio_rl32(s->pb);
+            aframes = ifv->total_aframes + (uint64_t)avio_rl32(s->pb);
+            if (vframes > INT_MAX || aframes > INT_MAX)
+                return AVERROR_INVALIDDATA;
+            ifv->total_vframes = vframes;
+            ifv->total_aframes = aframes;
             avio_skip(s->pb, 0xc);
 
             if (avio_feof(s->pb))
@@ -240,7 +245,10 @@ static int ifv_read_packet(AVFormatContext *s, AVPacket *pkt)
             ifv->next_video_index = ifv->total_vframes;
 
             avio_skip(s->pb, 0x1c);
-            ifv->total_vframes += avio_rl32(s->pb);
+            vframes = ifv->total_vframes + (uint64_t)avio_rl32(s->pb);
+            if (vframes > INT_MAX)
+                return AVERROR_INVALIDDATA;
+            ifv->total_vframes = vframes;
             avio_skip(s->pb, 0x10);
 
             if (avio_feof(s->pb))
