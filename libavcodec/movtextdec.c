@@ -302,6 +302,14 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         }
 
         tsmb += 2;
+        if (style->style_start == style->style_end) {
+            /* Skip this style as it applies to no character */
+            tsmb += 8;
+            m->style_entries--;
+            i--;
+            continue;
+        }
+
         style->style_fontID = AV_RB16(tsmb);
         tsmb += 2;
         style->style_flag = AV_RB8(tsmb);
