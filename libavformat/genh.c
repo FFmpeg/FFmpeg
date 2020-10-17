@@ -87,7 +87,9 @@ static int genh_read_header(AVFormatContext *s)
     case  5: st->codecpar->codec_id = st->codecpar->block_align > 0 ?
                                    AV_CODEC_ID_PCM_S8_PLANAR :
                                    AV_CODEC_ID_PCM_S8;           break;
-    case  6: st->codecpar->codec_id = AV_CODEC_ID_SDX2_DPCM;        break;
+    case  6: if (st->codecpar->block_align > INT_MAX/1024)
+                 return AVERROR_INVALIDDATA;
+             st->codecpar->codec_id = AV_CODEC_ID_SDX2_DPCM;        break;
     case  7: ret = ff_alloc_extradata(st->codecpar, 2);
              if (ret < 0)
                  return ret;
