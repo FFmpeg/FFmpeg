@@ -145,14 +145,13 @@ static void mov_text_cleanup_ftab(MovTextContext *m)
 static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
 {
     uint8_t *tx3g_ptr = avctx->extradata;
-    int i, box_size, font_length;
+    int i, font_length, remaining = avctx->extradata_size - BOX_SIZE_INITIAL;
     int8_t v_align, h_align;
     unsigned ftab_entries;
     StyleBox s_default;
 
     m->ftab_entries = 0;
-    box_size = BOX_SIZE_INITIAL; /* Size till ftab_entries */
-    if (avctx->extradata_size < box_size)
+    if (remaining < 0)
         return -1;
 
     // Display Flags
@@ -220,6 +219,9 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     ftab_entries = AV_RB16(tx3g_ptr);
     if (!ftab_entries)
         return 0;
+    remaining   -= 3 * ftab_entries;
+    if (remaining < 0)
+        return AVERROR_INVALIDDATA;
     m->ftab = av_calloc(ftab_entries, sizeof(*m->ftab));
     if (!m->ftab)
         return AVERROR(ENOMEM);
@@ -227,18 +229,12 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     tx3g_ptr += 2;
 
     for (i = 0; i < m->ftab_entries; i++) {
-
-        box_size += 3;
-        if (avctx->extradata_size < box_size) {
-            mov_text_cleanup_ftab(m);
-            return -1;
-        }
         m->ftab[i].fontID = AV_RB16(tx3g_ptr);
         tx3g_ptr += 2;
         font_length = *tx3g_ptr++;
 
-        box_size = box_size + font_length;
-        if (avctx->extradata_size < box_size) {
+        remaining  -= font_length;
+        if (remaining < 0) {
             mov_text_cleanup_ftab(m);
             return -1;
         }
