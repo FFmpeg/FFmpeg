@@ -90,6 +90,8 @@ int main(void)
     test_decompose("http://[::1]/dev/null");
     test_decompose("http://[::1]:8080/dev/null");
     test_decompose("//ffmpeg/dev/null");
+    test_decompose("test?url=http://server/path");
+    test_decompose("dummy.mp4#t=0:02:00,121.5");
 
     printf("Testing ff_make_absolute_url:\n");
     test(NULL, "baz");

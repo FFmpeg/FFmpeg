@@ -43,6 +43,14 @@ http://[::1]:8080/dev/null =>
   host: ffmpeg
   path: /dev/null
 
+test?url=http://server/path =>
+  path: test
+  query: ?url=http://server/path
+
+dummy.mp4#t=0:02:00,121.5 =>
+  path: dummy.mp4
+  fragment: #t=0:02:00,121.5
+
 Testing ff_make_absolute_url:
                                             (null) baz                  => baz
                                           /foo/bar baz                  => /foo/baz
