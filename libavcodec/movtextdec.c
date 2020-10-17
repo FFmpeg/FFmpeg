@@ -356,7 +356,6 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
     MovTextContext *m = avctx->priv_data;
     int i = 0;
     int text_pos = 0;
-    int style_active = 0;
     int entry = 0;
     int color = m->d.color;
 
@@ -374,16 +373,12 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
         if ((m->box_flags & STYL_BOX) && entry < m->style_entries) {
             const StyleBox *style = &m->s[entry];
             if (text_pos == style->style_end) {
-                if (style_active) {
-                    av_bprintf(buf, "{\\r}");
-                    style_active = 0;
-                    color = m->d.color;
-                }
+                av_bprintf(buf, "{\\r}");
+                color = m->d.color;
                 entry++;
                 style++;
             }
             if (entry < m->style_entries && text_pos == style->style_start) {
-                style_active = 1;
                 if (style->bold ^ m->d.bold)
                     av_bprintf(buf, "{\\b%d}", style->bold);
                 if (style->italic ^ m->d.italic)
