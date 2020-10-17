@@ -45,7 +45,7 @@
 #define DEFAULT_STYLE_COLOR    0xffffffff
 #define DEFAULT_STYLE_FLAG     0x00
 
-#define BGR_TO_RGB(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
+#define BGR_TO_RGB(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((uint32_t)(c) >> 16) & 0xff))
 #define FONTSIZE_SCALE(s,fs) ((fs) * (s)->font_scale_factor + 0.5)
 #define av_bprint_append_any(buf, data, size)   av_bprint_append_data(buf, ((const char*)data), size)
 
