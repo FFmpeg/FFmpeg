@@ -195,7 +195,7 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg,       \
     int nb_biquads = (FFMAX(iir->nb_ab[0], iir->nb_ab[1]) + 1) / 2;     \
     int n, i;                                                           \
                                                                         \
-    for (i = 0; i < nb_biquads; i++) {                                  \
+    for (i = nb_biquads - 1; i >= 0; i--) {                             \
         const double a1 = -iir->biquads[i].a[1];                        \
         const double a2 = -iir->biquads[i].a[2];                        \
         const double b0 = iir->biquads[i].b[0];                         \
@@ -1226,6 +1226,8 @@ static int config_output(AVFilterLink *outlink)
         if (ret < 0)
             return ret;
     } else if (s->format > 0 && s->process == 2) {
+        if (s->precision > 1)
+            av_log(ctx, AV_LOG_WARNING, "Parallel processing is not recommended for fixed-point precisions.\n");
         ret = decompose_zp2biquads(ctx, inlink->channels);
         if (ret < 0)
             return ret;
