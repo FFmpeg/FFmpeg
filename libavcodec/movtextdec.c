@@ -148,6 +148,7 @@ static void mov_text_cleanup_ftab(MovTextContext *m)
         }
     }
     av_freep(&m->ftab);
+    m->ftab_entries = 0;
 }
 
 static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
@@ -230,7 +231,6 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
         box_size += 3;
         if (avctx->extradata_size < box_size) {
             mov_text_cleanup_ftab(m);
-            m->ftab_entries = 0;
             return -1;
         }
         m->ftab_temp = av_mallocz(sizeof(*m->ftab_temp));
@@ -245,7 +245,6 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
         box_size = box_size + font_length;
         if (avctx->extradata_size < box_size) {
             mov_text_cleanup_ftab(m);
-            m->ftab_entries = 0;
             return -1;
         }
         m->ftab_temp->font = av_malloc(font_length + 1);
