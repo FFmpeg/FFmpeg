@@ -187,6 +187,8 @@ int avpriv_fits_header_parse_line(void *avcl, FITSHeader *header, const uint8_t 
             header->blank = t;
             header->blank_found = 1;
         } else if (!strcmp(keyword, "BSCALE") && sscanf(value, "%lf", &d) == 1) {
+            if (d <= 0)
+                return AVERROR_INVALIDDATA;
             header->bscale = d;
         } else if (!strcmp(keyword, "BZERO") && sscanf(value, "%lf", &d) == 1) {
             header->bzero = d;
