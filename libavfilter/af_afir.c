@@ -608,7 +608,7 @@ static int convert_coeffs(AVFilterContext *ctx)
     return 0;
 }
 
-static int check_ir(AVFilterLink *link, AVFrame *frame)
+static int check_ir(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
@@ -636,9 +636,7 @@ static int activate(AVFilterContext *ctx)
     if (s->response)
         FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[1], ctx);
     if (!s->eof_coeffs[s->selir]) {
-        AVFrame *ir = NULL;
-
-        ret = check_ir(ctx->inputs[1 + s->selir], ir);
+        ret = check_ir(ctx->inputs[1 + s->selir]);
         if (ret < 0)
             return ret;
 
