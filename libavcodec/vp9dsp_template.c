@@ -1275,10 +1275,10 @@ static av_always_inline void iadst8_1d(const dctcoef *in, ptrdiff_t stride,
     t6     =   (dctint)((1U << 13) + t4a - t6a) >> 14;
     t7     =   (dctint)((1U << 13) + t5a - t7a) >> 14;
 
-    out[3] = -(((t2 + t3) * 11585 + (1 << 13)) >> 14);
-    out[4] =   ((t2 - t3) * 11585 + (1 << 13)) >> 14;
-    out[2] =   ((t6 + t7) * 11585 + (1 << 13)) >> 14;
-    out[5] = -(((t6 - t7) * 11585 + (1 << 13)) >> 14);
+    out[3] = -((dctint)((t2 + t3) * 11585U + (1 << 13)) >> 14);
+    out[4] =   (dctint)((t2 - t3) * 11585U + (1 << 13)) >> 14;
+    out[2] =   (dctint)((t6 + t7) * 11585U + (1 << 13)) >> 14;
+    out[5] = -((dctint)((t6 - t7) * 11585U + (1 << 13)) >> 14);
 }
 
 itxfm_wrap(8, 5)
