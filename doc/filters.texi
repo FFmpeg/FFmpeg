@@ -1408,6 +1408,8 @@ Set output gain.
 Set coefficients format.
 
 @table @samp
+@item sf
+analog transfer function
 @item tf
 digital transfer function
 @item zp
@@ -1466,7 +1468,7 @@ displayed. This option is used only when @var{response} is enabled.
 Set video stream size. This option is used only when @var{response} is enabled.
 @end table
 
-Coefficients in @code{tf} format are separated by spaces and are in ascending
+Coefficients in @code{tf} and @code{sf} format are separated by spaces and are in ascending
 order.
 
 Coefficients in @code{zp} format are separated by spaces and order of coefficients
@@ -1490,6 +1492,12 @@ aiir=k=1:z=7.957584807809675810E-1 -2.575128568908332300 3.674839853930788710 -2
 Same as above but in @code{zp} format:
 @example
 aiir=k=0.79575848078096756:z=0.80918701+0.58773007i 0.80918701-0.58773007i 0.80884700+0.58784055i 0.80884700-0.58784055i:p=0.63892345+0.59951235i 0.63892345-0.59951235i 0.79582691+0.44198673i 0.79582691-0.44198673i:f=zp:r=s
+@end example
+
+@item
+Apply 3-rd order analog normalized Butterworth low-pass filter, using analog transfer function format:
+@example
+aiir=z=1.3057 0 0 0:p=1.3057 2.3892 2.1860 1:f=sf:r=d
 @end example
 @end itemize
 
