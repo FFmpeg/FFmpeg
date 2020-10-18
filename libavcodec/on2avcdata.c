@@ -159,7 +159,7 @@ const uint8_t ff_on2avc_scale_diff_bits[ON2AVC_SCALE_DIFFS] = {
 };
 
 #define ON2AVC_CB1_2_CODES 41
-static const uint32_t on2avc_cb1_codes[ON2AVC_CB1_2_CODES] = {
+static const uint16_t on2avc_cb1_codes[ON2AVC_CB1_2_CODES] = {
     0x0000, 0x0022, 0x001C, 0x001B, 0x0024, 0x0030,
     0x0029, 0x0027, 0x0021, 0x002B, 0x002E, 0x0020,
     0x0026, 0x0033, 0x0031, 0x002C, 0x002A, 0x001E,
@@ -189,14 +189,14 @@ static const uint16_t on2avc_cb1_2_syms[ON2AVC_CB1_2_CODES] = {
     0xFF00, 0xFF11, 0xFF1F, 0xFFF1, 0xFFFF,
 };
 
-static const uint32_t on2avc_cb2_codes[ON2AVC_CB1_2_CODES] = {
-    0x0006, 0x0003, 0x001F, 0x001E, 0x0000, 0x0014,
-    0x0009, 0x000E, 0x000D, 0x000C, 0x0015, 0x0008,
-    0x0010, 0x000F, 0x0004, 0x0012, 0x0007, 0x0016,
-    0x0005, 0x002F, 0x0017, 0x0006, 0x001D, 0x002C,
-    0x005E, 0x0014, 0x0016, 0x0006, 0x0011, 0x000A,
-    0x0013, 0x001C, 0x002D, 0x0015, 0x005F, 0x002E,
-    0x0002, 0x0007, 0x005D, 0x005C, 0x0004,
+static const uint8_t on2avc_cb2_codes[ON2AVC_CB1_2_CODES] = {
+    0x06, 0x03, 0x1F, 0x1E, 0x00, 0x14,
+    0x09, 0x0E, 0x0D, 0x0C, 0x15, 0x08,
+    0x10, 0x0F, 0x04, 0x12, 0x07, 0x16,
+    0x05, 0x2F, 0x17, 0x06, 0x1D, 0x2C,
+    0x5E, 0x14, 0x16, 0x06, 0x11, 0x0A,
+    0x13, 0x1C, 0x2D, 0x15, 0x5F, 0x2E,
+    0x02, 0x07, 0x5D, 0x5C, 0x04,
 };
 
 static const uint8_t on2avc_cb2_bits[ON2AVC_CB1_2_CODES] = {
@@ -378,7 +378,7 @@ static const uint16_t on2avc_cb3_4_syms[ON2AVC_CB3_4_CODES] = {
     0xFFFF,
 };
 
-static const uint32_t on2avc_cb4_codes[ON2AVC_CB3_4_CODES] = {
+static const uint16_t on2avc_cb4_codes[ON2AVC_CB3_4_CODES] = {
     0x000A, 0x013B, 0x0127, 0x0004, 0x0015, 0x012C,
     0x065F, 0x08CD, 0x016A, 0x08E7, 0x06BA, 0x001B,
     0x001D, 0x0018, 0x000A, 0x0002, 0x00C0, 0x012B,
@@ -3162,7 +3162,7 @@ static const uint16_t on2avc_cb7_8_syms[ON2AVC_CB7_8_CODES] = {
     0xFFEE, 0xFFF1, 0xFFF3, 0xFFFD, 0xFFFF,
 };
 
-static const uint32_t on2avc_cb8_codes[ON2AVC_CB7_8_CODES] = {
+static const uint16_t on2avc_cb8_codes[ON2AVC_CB7_8_CODES] = {
     0x028C, 0x05E6, 0xFAD9, 0x7DEF, 0x06CE, 0x004C,
     0x0178, 0x0A1D, 0x00AE, 0x046E, 0x03D5, 0x3F58,
     0x0EAA, 0x0233, 0x1A6A, 0x271F, 0x05CE, 0x0179,
@@ -5996,42 +5996,35 @@ static const uint16_t on2avc_cb15_syms[ON2AVC_CB15_CODES] = {
     0xFFFD, 0xFFFE, 0xFFFF,
 };
 
-const uint32_t * const ff_on2avc_quad_cb_codes[] = {
-    on2avc_cb1_codes, on2avc_cb2_codes, on2avc_cb3_codes, on2avc_cb4_codes,
-    on2avc_cb5_codes, on2avc_cb6_codes, on2avc_cb7_codes, on2avc_cb8_codes
-};
-
-const uint8_t * const ff_on2avc_quad_cb_bits[] = {
-    on2avc_cb1_bits, on2avc_cb2_bits, on2avc_cb3_bits, on2avc_cb4_bits,
-    on2avc_cb5_bits, on2avc_cb6_bits, on2avc_cb7_bits, on2avc_cb8_bits
-};
-
-const uint16_t * const ff_on2avc_quad_cb_syms[] = {
-    on2avc_cb1_2_syms, on2avc_cb1_2_syms, on2avc_cb3_4_syms, on2avc_cb3_4_syms,
-    on2avc_cb5_6_syms, on2avc_cb5_6_syms, on2avc_cb7_8_syms, on2avc_cb7_8_syms
-};
-
-const int ff_on2avc_quad_cb_elems[] = {
-    ON2AVC_CB1_2_CODES, ON2AVC_CB1_2_CODES, ON2AVC_CB3_4_CODES, ON2AVC_CB3_4_CODES,
-    ON2AVC_CB5_6_CODES, ON2AVC_CB5_6_CODES, ON2AVC_CB7_8_CODES, ON2AVC_CB7_8_CODES,
-};
-
-const uint16_t * const ff_on2avc_pair_cb_codes[] = {
+const void * const ff_on2avc_cb_codes[] = {
+    on2avc_cb1_codes,  on2avc_cb2_codes,  on2avc_cb3_codes,  on2avc_cb4_codes,
+    on2avc_cb5_codes,  on2avc_cb6_codes,  on2avc_cb7_codes,  on2avc_cb8_codes,
     on2avc_cb9_codes,  on2avc_cb10_codes, on2avc_cb11_codes, on2avc_cb12_codes,
     on2avc_cb13_codes, on2avc_cb14_codes, on2avc_cb15_codes
 };
 
-const uint8_t * const ff_on2avc_pair_cb_bits[] = {
+
+const uint8_t * const ff_on2avc_cb_bits[] = {
+    on2avc_cb1_bits,  on2avc_cb2_bits,  on2avc_cb3_bits,  on2avc_cb4_bits,
+    on2avc_cb5_bits,  on2avc_cb6_bits,  on2avc_cb7_bits,  on2avc_cb8_bits,
     on2avc_cb9_bits,  on2avc_cb10_bits, on2avc_cb11_bits, on2avc_cb12_bits,
     on2avc_cb13_bits, on2avc_cb14_bits, on2avc_cb15_bits
 };
 
-const uint16_t * const ff_on2avc_pair_cb_syms[] = {
+const uint16_t * const ff_on2avc_cb_syms[] = {
+    on2avc_cb1_2_syms, on2avc_cb1_2_syms, on2avc_cb3_4_syms, on2avc_cb3_4_syms,
+    on2avc_cb5_6_syms, on2avc_cb5_6_syms, on2avc_cb7_8_syms, on2avc_cb7_8_syms,
     on2avc_cb9_10_syms, on2avc_cb9_10_syms, on2avc_cb11_syms, on2avc_cb12_syms,
-    on2avc_cb13_syms, on2avc_cb14_syms, on2avc_cb15_syms
+    on2avc_cb13_syms,   on2avc_cb14_syms,   on2avc_cb15_syms
 };
 
-const int ff_on2avc_pair_cb_elems[] = {
+const uint8_t ff_on2avc_cb_codes_sizes[] = {
+    2, 1, 4, 2, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 2
+};
+
+const int ff_on2avc_cb_elems[] = {
+    ON2AVC_CB1_2_CODES, ON2AVC_CB1_2_CODES, ON2AVC_CB3_4_CODES, ON2AVC_CB3_4_CODES,
+    ON2AVC_CB5_6_CODES, ON2AVC_CB5_6_CODES, ON2AVC_CB7_8_CODES, ON2AVC_CB7_8_CODES,
     ON2AVC_CB9_10_CODES, ON2AVC_CB9_10_CODES, ON2AVC_CB11_CODES, ON2AVC_CB12_CODES,
     ON2AVC_CB13_CODES, ON2AVC_CB14_CODES, ON2AVC_CB15_CODES,
 };
