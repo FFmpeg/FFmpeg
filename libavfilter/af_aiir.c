@@ -899,7 +899,7 @@ static double fact(double i)
     return i * fact(i - 1.);
 }
 
-static double coef_sf2zf(double *a, int N, int n, double fs)
+static double coef_sf2zf(double *a, int N, int n)
 {
     double z = 0.;
 
@@ -918,7 +918,7 @@ static double coef_sf2zf(double *a, int N, int n, double fs)
     return z;
 }
 
-static void convert_sf2tf(AVFilterContext *ctx, int channels, int sample_rate)
+static void convert_sf2tf(AVFilterContext *ctx, int channels)
 {
     AudioIIRContext *s = ctx->priv;
     int ch;
@@ -935,10 +935,10 @@ static void convert_sf2tf(AVFilterContext *ctx, int channels, int sample_rate)
         memcpy(temp1, iir->ab[1], iir->nb_ab[1] * sizeof(*temp1));
 
         for (int n = 0; n < iir->nb_ab[0]; n++)
-            iir->ab[0][n] = coef_sf2zf(temp0, iir->nb_ab[0] - 1, n, sample_rate);
+            iir->ab[0][n] = coef_sf2zf(temp0, iir->nb_ab[0] - 1, n);
 
         for (int n = 0; n < iir->nb_ab[1]; n++)
-            iir->ab[1][n] = coef_sf2zf(temp1, iir->nb_ab[1] - 1, n, sample_rate);
+            iir->ab[1][n] = coef_sf2zf(temp1, iir->nb_ab[1] - 1, n);
 
 next:
         av_free(temp0);
@@ -1235,7 +1235,7 @@ static int config_output(AVFilterLink *outlink)
         return ret;
 
     if (s->format == -1) {
-        convert_sf2tf(ctx, inlink->channels, inlink->sample_rate);
+        convert_sf2tf(ctx, inlink->channels);
         s->format = 0;
     } else if (s->format == 2) {
         convert_pr2zp(ctx, inlink->channels);
