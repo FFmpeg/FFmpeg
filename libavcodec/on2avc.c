@@ -974,8 +974,6 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     return 0;
 vlc_fail:
     av_log(avctx, AV_LOG_ERROR, "Cannot init VLC\n");
-    on2avc_free_vlcs(c);
-    av_freep(&c->fdsp);
     return AVERROR(ENOMEM);
 }
 
