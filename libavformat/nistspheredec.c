@@ -109,6 +109,8 @@ static int nist_read_header(AVFormatContext *s)
             sscanf(buffer, "%*s %*s %"SCNd64, &st->duration);
         } else if (!memcmp(buffer, "sample_n_bytes", 14)) {
             sscanf(buffer, "%*s %*s %d", &bps);
+            if (bps > INT_MAX/8U)
+                return AVERROR_INVALIDDATA;
         } else if (!memcmp(buffer, "sample_rate", 11)) {
             sscanf(buffer, "%*s %*s %d", &st->codecpar->sample_rate);
         } else if (!memcmp(buffer, "sample_sig_bits", 15)) {
