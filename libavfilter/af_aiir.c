@@ -877,23 +877,17 @@ static void convert_sp2zp(AVFilterContext *ctx, int channels)
         for (n = 0; n < iir->nb_ab[0]; n++) {
             double sr = iir->ab[0][2*n];
             double si = iir->ab[0][2*n+1];
-            double snr = 1. + sr;
-            double sdr = 1. - sr;
-            double div = sdr * sdr + si * si;
 
-            iir->ab[0][2*n]   = (snr * sdr - si * si) / div;
-            iir->ab[0][2*n+1] = (sdr * si + snr * si) / div;
+            iir->ab[0][2*n]   = exp(sr) * cos(si);
+            iir->ab[0][2*n+1] = exp(sr) * sin(si);
         }
 
         for (n = 0; n < iir->nb_ab[1]; n++) {
             double sr = iir->ab[1][2*n];
             double si = iir->ab[1][2*n+1];
-            double snr = 1. + sr;
-            double sdr = 1. - sr;
-            double div = sdr * sdr + si * si;
 
-            iir->ab[1][2*n]   = (snr * sdr - si * si) / div;
-            iir->ab[1][2*n+1] = (sdr * si + snr * si) / div;
+            iir->ab[1][2*n]   = exp(sr) * cos(si);
+            iir->ab[1][2*n+1] = exp(sr) * sin(si);
         }
     }
 }
