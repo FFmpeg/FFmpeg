@@ -273,6 +273,11 @@ static AVIOContext * wtvfile_open2(AVFormatContext *s, const uint8_t *buf, int b
                    "bad filename length, remaining directory entries ignored\n");
             break;
         }
+        if (dir_length == 0) {
+            av_log(s, AV_LOG_ERROR,
+                   "bad dir length, remaining directory entries ignored\n");
+            break;
+        }
         if (48 + (int64_t)name_size > buf_end - buf) {
             av_log(s, AV_LOG_ERROR, "filename exceeds buffer size; remaining directory entries ignored\n");
             break;
