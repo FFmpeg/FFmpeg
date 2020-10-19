@@ -368,7 +368,7 @@ static const uint16_t vp4_mv_vlc[2][7][63][2] = {
     }
 };
 
-static const uint16_t vp4_dc_bias[16][32][2] = {
+static const uint16_t vp4_bias[5 * 16][32][2] = {
     { /* DC bias table 0 */
         {    0xC,  5 }, {   0x70,  7 }, {  0x1CA,  9 }, {  0x1CB,  9 },
         {  0x391, 10 }, { 0x1C9B, 13 }, { 0x3935, 14 }, {   0x71,  7 },
@@ -528,10 +528,7 @@ static const uint16_t vp4_dc_bias[16][32][2] = {
         {   0xC4,  8 }, {  0x5B9, 11 }, {  0x5B8, 11 }, {   0x11,  5 },
         {   0x36,  6 }, {   0x5F,  7 }, {   0x1E,  7 }, {   0x63,  7 },
         {   0x6F,  7 }, {   0x1F,  7 }, {   0xB6,  8 }, {  0x16F,  9 }
-    }
-};
-
-static const uint16_t vp4_ac_bias_0[16][32][2] = {
+    },
     { /* AC bias group 1, table 0 */
         {    0x6,  5 }, {   0x1E,  7 }, {  0x1CC,  9 }, {  0x1CE,  9 },
         {  0x734, 11 }, { 0x1CD5, 13 }, { 0x1CD4, 13 }, {   0x18,  5 },
@@ -691,10 +688,7 @@ static const uint16_t vp4_ac_bias_0[16][32][2] = {
         {  0x3A0, 12 }, {  0x3A3, 12 }, {  0x3A2, 12 }, {    0x5,  3 },
         {    0x2,  4 }, {   0x1F,  5 }, {   0x1D,  5 }, {   0x3C,  6 },
         {   0x18,  5 }, {    0xF,  6 }, {    0x6,  5 }, {    0x5,  6 }
-    }
-};
-
-static const uint16_t vp4_ac_bias_1[16][32][2] = {
+    },
     { /* AC bias group 2, table 0 */
         {    0x4,  5 }, {   0xF5,  8 }, {  0x182,  9 }, {  0x60F, 11 },
         { 0x1839, 13 }, { 0x1838, 13 }, { 0x183B, 13 }, {   0x13,  5 },
@@ -854,10 +848,7 @@ static const uint16_t vp4_ac_bias_1[16][32][2] = {
         {  0x288, 13 }, {  0x28B, 13 }, {  0x28A, 13 }, {    0xF,  4 },
         {   0x1D,  5 }, {   0x13,  5 }, {    0x1,  5 }, {    0x0,  5 },
         {    0x3,  3 }, {   0x1A,  5 }, {   0x72,  7 }, {   0xE7,  8 }
-    }
-};
-
-static const uint16_t vp4_ac_bias_2[16][32][2] = {
+    },
     { /* AC bias group 3, table 0 */
         {    0x9,  5 }, {   0x15,  7 }, {   0x28,  8 }, {   0x52,  9 },
         {  0x29A, 12 }, {  0x537, 13 }, {  0x536, 13 }, {    0xA,  5 },
@@ -1017,10 +1008,7 @@ static const uint16_t vp4_ac_bias_2[16][32][2] = {
         { 0x3872, 14 }, { 0x3879, 14 }, { 0x3878, 14 }, {   0x3C,  6 },
         {   0x73,  7 }, {   0x2A,  6 }, {   0x3D,  6 }, {   0x2B,  6 },
         {   0x1F,  5 }, {    0xD,  4 }, { 0x1C3E, 13 }, { 0x1C3D, 13 }
-    }
-};
-
-static const uint16_t vp4_ac_bias_3[16][32][2] = {
+    },
     { /* AC bias group 4, table 0 */
         {    0x7,  4 }, {    0xF,  6 }, {   0xBB,  8 }, {   0xBA,  8 },
         {  0x5CF, 11 }, { 0x173A, 13 }, { 0x2E77, 14 }, {   0x29,  6 },

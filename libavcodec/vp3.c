@@ -257,11 +257,9 @@ typedef struct Vp3DecodeContext {
     int *nkf_coded_fragment_list;
     int num_kf_coded_fragment[3];
 
-    VLC dc_vlc[16];
-    VLC ac_vlc_1[16];
-    VLC ac_vlc_2[16];
-    VLC ac_vlc_3[16];
-    VLC ac_vlc_4[16];
+    /* The first 16 of the following VLCs are for the dc coefficients;
+       the others are four groups of 16 VLCs each for ac coefficients. */
+    VLC coeff_vlc[5 * 16];
 
     VLC superblock_run_length_vlc; /* version < 2 */
     VLC fragment_run_length_vlc; /* version < 2 */
@@ -347,13 +345,8 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_frame_free(&s->last_frame.f);
     av_frame_free(&s->golden_frame.f);
 
-    for (i = 0; i < 16; i++) {
-        ff_free_vlc(&s->dc_vlc[i]);
-        ff_free_vlc(&s->ac_vlc_1[i]);
-        ff_free_vlc(&s->ac_vlc_2[i]);
-        ff_free_vlc(&s->ac_vlc_3[i]);
-        ff_free_vlc(&s->ac_vlc_4[i]);
-    }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++)
+        ff_free_vlc(&s->coeff_vlc[i]);
 
     ff_free_vlc(&s->superblock_run_length_vlc);
     ff_free_vlc(&s->fragment_run_length_vlc);
@@ -1314,7 +1307,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     dc_c_table = get_bits(gb, 4);
 
     /* unpack the Y plane DC coefficients */
-    residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_y_table], 0,
+    residual_eob_run = unpack_vlcs(s, gb, &s->coeff_vlc[dc_y_table], 0,
                                    0, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
@@ -1325,11 +1318,11 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     reverse_dc_prediction(s, 0, s->fragment_width[0], s->fragment_height[0]);
 
     /* unpack the C plane DC coefficients */
-    residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
+    residual_eob_run = unpack_vlcs(s, gb, &s->coeff_vlc[dc_c_table], 0,
                                    1, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
-    residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
+    residual_eob_run = unpack_vlcs(s, gb, &s->coeff_vlc[dc_c_table], 0,
                                    2, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
@@ -1350,20 +1343,24 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 
     /* build tables of AC VLC tables */
     for (i = 1; i <= 5; i++) {
-        y_tables[i] = &s->ac_vlc_1[ac_y_table];
-        c_tables[i] = &s->ac_vlc_1[ac_c_table];
+        /* AC VLC table group 1 */
+        y_tables[i] = &s->coeff_vlc[ac_y_table + 16];
+        c_tables[i] = &s->coeff_vlc[ac_c_table + 16];
     }
     for (i = 6; i <= 14; i++) {
-        y_tables[i] = &s->ac_vlc_2[ac_y_table];
-        c_tables[i] = &s->ac_vlc_2[ac_c_table];
+        /* AC VLC table group 2 */
+        y_tables[i] = &s->coeff_vlc[ac_y_table + 32];
+        c_tables[i] = &s->coeff_vlc[ac_c_table + 32];
     }
     for (i = 15; i <= 27; i++) {
-        y_tables[i] = &s->ac_vlc_3[ac_y_table];
-        c_tables[i] = &s->ac_vlc_3[ac_c_table];
+        /* AC VLC table group 3 */
+        y_tables[i] = &s->coeff_vlc[ac_y_table + 48];
+        c_tables[i] = &s->coeff_vlc[ac_c_table + 48];
     }
     for (i = 28; i <= 63; i++) {
-        y_tables[i] = &s->ac_vlc_4[ac_y_table];
-        c_tables[i] = &s->ac_vlc_4[ac_c_table];
+        /* AC VLC table group 4 */
+        y_tables[i] = &s->coeff_vlc[ac_y_table + 64];
+        c_tables[i] = &s->coeff_vlc[ac_c_table + 64];
     }
 
     /* decode all AC coefficients */
@@ -1542,23 +1539,28 @@ static int vp4_unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 
     /* build tables of DC/AC VLC tables */
 
-    tables[0][0] = &s->dc_vlc[dc_y_table];
-    tables[1][0] = &s->dc_vlc[dc_c_table];
+    /* DC table group */
+    tables[0][0] = &s->coeff_vlc[dc_y_table];
+    tables[1][0] = &s->coeff_vlc[dc_c_table];
     for (i = 1; i <= 5; i++) {
-        tables[0][i] = &s->ac_vlc_1[ac_y_table];
-        tables[1][i] = &s->ac_vlc_1[ac_c_table];
+        /* AC VLC table group 1 */
+        tables[0][i] = &s->coeff_vlc[ac_y_table + 16];
+        tables[1][i] = &s->coeff_vlc[ac_c_table + 16];
     }
     for (i = 6; i <= 14; i++) {
-        tables[0][i] = &s->ac_vlc_2[ac_y_table];
-        tables[1][i] = &s->ac_vlc_2[ac_c_table];
+        /* AC VLC table group 2 */
+        tables[0][i] = &s->coeff_vlc[ac_y_table + 32];
+        tables[1][i] = &s->coeff_vlc[ac_c_table + 32];
     }
     for (i = 15; i <= 27; i++) {
-        tables[0][i] = &s->ac_vlc_3[ac_y_table];
-        tables[1][i] = &s->ac_vlc_3[ac_c_table];
+        /* AC VLC table group 3 */
+        tables[0][i] = &s->coeff_vlc[ac_y_table + 48];
+        tables[1][i] = &s->coeff_vlc[ac_c_table + 48];
     }
     for (i = 28; i <= 63; i++) {
-        tables[0][i] = &s->ac_vlc_4[ac_y_table];
-        tables[1][i] = &s->ac_vlc_4[ac_c_table];
+        /* AC VLC table group 4 */
+        tables[0][i] = &s->coeff_vlc[ac_y_table + 64];
+        tables[1][i] = &s->coeff_vlc[ac_c_table + 64];
     }
 
     vp4_set_tokens_base(s);
@@ -2412,102 +2414,27 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
         /* init VLC tables */
         if (s->version < 2) {
-            for (i = 0; i < 16; i++) {
-                /* DC histograms */
-                if ((ret = init_vlc(&s->dc_vlc[i], 11, 32,
-                                    &dc_bias[i][0][1], 4, 2,
-                                    &dc_bias[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 1 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_1[i], 11, 32,
-                                    &ac_bias_0[i][0][1], 4, 2,
-                                    &ac_bias_0[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 2 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_2[i], 11, 32,
-                                    &ac_bias_1[i][0][1], 4, 2,
-                                    &ac_bias_1[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 3 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_3[i], 11, 32,
-                                    &ac_bias_2[i][0][1], 4, 2,
-                                    &ac_bias_2[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 4 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_4[i], 11, 32,
-                                    &ac_bias_3[i][0][1], 4, 2,
-                                    &ac_bias_3[i][0][0], 4, 2, 0)) < 0)
+            for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
+                if ((ret = init_vlc(&s->coeff_vlc[i], 11, 32,
+                                    &vp3_bias[i][0][1], 4, 2,
+                                    &vp3_bias[i][0][0], 4, 2, 0)) < 0)
                     return ret;
             }
 #if CONFIG_VP4_DECODER
         } else { /* version >= 2 */
-            for (i = 0; i < 16; i++) {
-                /* DC histograms */
-                if ((ret = init_vlc(&s->dc_vlc[i], 11, 32,
-                                    &vp4_dc_bias[i][0][1], 4, 2,
-                                    &vp4_dc_bias[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 1 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_1[i], 11, 32,
-                                    &vp4_ac_bias_0[i][0][1], 4, 2,
-                                    &vp4_ac_bias_0[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 2 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_2[i], 11, 32,
-                                    &vp4_ac_bias_1[i][0][1], 4, 2,
-                                    &vp4_ac_bias_1[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 3 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_3[i], 11, 32,
-                                    &vp4_ac_bias_2[i][0][1], 4, 2,
-                                    &vp4_ac_bias_2[i][0][0], 4, 2, 0)) < 0)
-                    return ret;
-
-                /* group 4 AC histograms */
-                if ((ret = init_vlc(&s->ac_vlc_4[i], 11, 32,
-                                    &vp4_ac_bias_3[i][0][1], 4, 2,
-                                    &vp4_ac_bias_3[i][0][0], 4, 2, 0)) < 0)
+            for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
+                if ((ret = init_vlc(&s->coeff_vlc[i], 11, 32,
+                                    &vp4_bias[i][0][1], 4, 2,
+                                    &vp4_bias[i][0][0], 4, 2, 0)) < 0)
                     return ret;
             }
 #endif
         }
     } else {
-        for (i = 0; i < 16; i++) {
-            /* DC histograms */
-            if (init_vlc(&s->dc_vlc[i], 11, 32,
+        for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
+            if (init_vlc(&s->coeff_vlc[i], 11, 32,
                          &s->huffman_table[i][0][1], 8, 4,
                          &s->huffman_table[i][0][0], 8, 4, 0) < 0)
-                goto vlc_fail;
-
-            /* group 1 AC histograms */
-            if (init_vlc(&s->ac_vlc_1[i], 11, 32,
-                         &s->huffman_table[i + 16][0][1], 8, 4,
-                         &s->huffman_table[i + 16][0][0], 8, 4, 0) < 0)
-                goto vlc_fail;
-
-            /* group 2 AC histograms */
-            if (init_vlc(&s->ac_vlc_2[i], 11, 32,
-                         &s->huffman_table[i + 16 * 2][0][1], 8, 4,
-                         &s->huffman_table[i + 16 * 2][0][0], 8, 4, 0) < 0)
-                goto vlc_fail;
-
-            /* group 3 AC histograms */
-            if (init_vlc(&s->ac_vlc_3[i], 11, 32,
-                         &s->huffman_table[i + 16 * 3][0][1], 8, 4,
-                         &s->huffman_table[i + 16 * 3][0][0], 8, 4, 0) < 0)
-                goto vlc_fail;
-
-            /* group 4 AC histograms */
-            if (init_vlc(&s->ac_vlc_4[i], 11, 32,
-                         &s->huffman_table[i + 16 * 4][0][1], 8, 4,
-                         &s->huffman_table[i + 16 * 4][0][0], 8, 4, 0) < 0)
                 goto vlc_fail;
         }
     }

@@ -442,7 +442,7 @@ static const int16_t *const coeff_tables[32] = {
     coeff_table_token_31
 };
 
-static const uint16_t dc_bias[16][32][2] = {
+static const uint16_t vp3_bias[5 * 16][32][2] = {
     { /* DC bias table 0 */
         {   0x2D,  6 },
         {   0x26,  7 },
@@ -986,10 +986,7 @@ static const uint16_t dc_bias[16][32][2] = {
         {  0x151,  9 },
         {  0x150,  9 },
         {  0x2A9, 10 }
-    }
-};
-
-static const uint16_t ac_bias_0[16][32][2] = {
+    },
     { /* AC bias group 1, table 0 */
         {    0x8,  5 },
         {   0x25,  7 },
@@ -1533,10 +1530,7 @@ static const uint16_t ac_bias_0[16][32][2] = {
         {   0x38,  7 },
         {   0x3D,  6 },
         {   0x79,  7 }
-    }
-};
-
-static const uint16_t ac_bias_1[16][32][2] = {
+    },
     { /* AC bias group 2, table 0 */
         {    0xB,  5 },
         {   0x2B,  7 },
@@ -2080,10 +2074,7 @@ static const uint16_t ac_bias_1[16][32][2] = {
         {    0xB,  6 },
         {   0x5F,  7 },
         {   0xBD,  8 }
-    }
-};
-
-static const uint16_t ac_bias_2[16][32][2] = {
+    },
     { /* AC bias group 3, table 0 */
         {    0x3,  4 },
         {    0x9,  6 },
@@ -2627,10 +2618,7 @@ static const uint16_t ac_bias_2[16][32][2] = {
         {   0x1B,  5 },
         { 0x35B7, 14 },
         { 0x35B6, 14 }
-    }
-};
-
-static const uint16_t ac_bias_3[16][32][2] = {
+    },
     { /* AC bias group 4, table 0 */
         {    0x0,  3 },
         {   0x10,  5 },
