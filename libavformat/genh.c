@@ -146,6 +146,9 @@ static int genh_read_header(AVFormatContext *s)
         }
     }
 
+    if (st->codecpar->block_align <= 0)
+        return AVERROR_INVALIDDATA;
+
     avio_skip(s->pb, start_offset - avio_tell(s->pb));
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
