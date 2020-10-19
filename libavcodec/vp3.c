@@ -2287,7 +2287,6 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
         !s->superblock_fragments || !s->macroblock_coding      ||
         !s->dc_pred_row ||
         !s->motion_val[0]        || !s->motion_val[1]) {
-        vp3_decode_end(avctx);
         return -1;
     }
 
@@ -2302,12 +2301,8 @@ static av_cold int init_frames(Vp3DecodeContext *s)
     s->last_frame.f    = av_frame_alloc();
     s->golden_frame.f  = av_frame_alloc();
 
-    if (!s->current_frame.f || !s->last_frame.f || !s->golden_frame.f) {
-        av_frame_free(&s->current_frame.f);
-        av_frame_free(&s->last_frame.f);
-        av_frame_free(&s->golden_frame.f);
+    if (!s->current_frame.f || !s->last_frame.f || !s->golden_frame.f)
         return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -3224,7 +3219,8 @@ AVCodec ff_theora_decoder = {
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
-    .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING | FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING | FF_CODEC_CAP_ALLOCATE_PROGRESS |
+                             FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 
@@ -3241,7 +3237,7 @@ AVCodec ff_vp3_decoder = {
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
-    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 #if CONFIG_VP4_DECODER
@@ -3258,6 +3254,6 @@ AVCodec ff_vp4_decoder = {
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
-    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
