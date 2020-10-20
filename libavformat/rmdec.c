@@ -703,17 +703,19 @@ static int rm_sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stre
             state= (state<<8) + avio_r8(pb);
 
             if(state == MKBETAG('I', 'N', 'D', 'X')){
-                int n_pkts, expected_len;
+                int n_pkts;
+                int64_t expected_len;
                 len = avio_rb32(pb);
                 avio_skip(pb, 2);
                 n_pkts = avio_rb32(pb);
-                expected_len = 20 + n_pkts * 14;
-                if (len == 20)
+                expected_len = 20 + n_pkts * 14LL;
+
+                if (len == 20 && expected_len <= INT_MAX)
                     /* some files don't add index entries to chunk size... */
                     len = expected_len;
                 else if (len != expected_len)
                     av_log(s, AV_LOG_WARNING,
-                           "Index size %d (%d pkts) is wrong, should be %d.\n",
+                           "Index size %d (%d pkts) is wrong, should be %"PRId64".\n",
                            len, n_pkts, expected_len);
                 len -= 14; // we already read part of the index header
                 if(len<0)
