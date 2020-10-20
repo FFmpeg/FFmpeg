@@ -344,6 +344,7 @@ static volatile int received_nb_signals = 0;
 static atomic_int transcode_init_done = ATOMIC_VAR_INIT(0);
 static volatile int ffmpeg_exited = 0;
 static int main_return_code = 0;
+static int64_t copy_ts_first_pts = AV_NOPTS_VALUE;
 
 static void
 sigterm_handler(int sig)
@@ -1781,9 +1782,17 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             vid = 1;
         }
         /* compute min output value */
-        if (av_stream_get_end_pts(ost->st) != AV_NOPTS_VALUE)
+        if (av_stream_get_end_pts(ost->st) != AV_NOPTS_VALUE) {
             pts = FFMAX(pts, av_rescale_q(av_stream_get_end_pts(ost->st),
                                           ost->st->time_base, AV_TIME_BASE_Q));
+            if (copy_ts) {
+                if (copy_ts_first_pts == AV_NOPTS_VALUE && pts > 1)
+                    copy_ts_first_pts = pts;
+                if (copy_ts_first_pts != AV_NOPTS_VALUE)
+                    pts -= copy_ts_first_pts;
+            }
+        }
+
         if (is_last_report)
             nb_frames_drop += ost->last_dropped;
     }
