@@ -155,6 +155,15 @@ typedef struct {
 
 #define MIN_DEQUANT_VAL 2
 
+typedef struct HuffEntry {
+    uint8_t len, sym;
+} HuffEntry;
+
+typedef struct HuffTable {
+    HuffEntry entries[32];
+    uint8_t   nb_entries;
+} HuffTable;
+
 typedef struct Vp3DecodeContext {
     AVCodecContext *avctx;
     int theora, theora_tables, theora_header;
@@ -285,11 +294,7 @@ typedef struct Vp3DecodeContext {
     uint8_t *edge_emu_buffer;
 
     /* Huffman decode */
-    int hti;
-    unsigned int hbits;
-    int entries;
-    int huff_code_size;
-    uint32_t huffman_table[80][32][2];
+    HuffTable huffman_table[5 * 16];
 
     uint8_t filter_limit_values[64];
     DECLARE_ALIGNED(8, int, bounding_values_array)[256 + 2];
@@ -2309,6 +2314,20 @@ static av_cold int init_frames(Vp3DecodeContext *s)
     return 0;
 }
 
+static av_cold int theora_init_huffman_tables(VLC *vlc, const HuffTable *huff)
+{
+    uint32_t code = 0, codes[32];
+
+    for (unsigned i = 0; i < huff->nb_entries; i++) {
+        codes[i] = code        >> (31 - huff->entries[i].len);
+        code    += 0x80000000U >> huff->entries[i].len;
+    }
+    return ff_init_vlc_sparse(vlc, 11, huff->nb_entries,
+                              &huff->entries[0].len, sizeof(huff->entries[0]), 1,
+                              codes, 4, 4,
+                              &huff->entries[0].sym, sizeof(huff->entries[0]), 1, 0);
+}
+
 static av_cold int vp3_decode_init(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -2432,10 +2451,9 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         }
     } else {
         for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
-            if (init_vlc(&s->coeff_vlc[i], 11, 32,
-                         &s->huffman_table[i][0][1], 8, 4,
-                         &s->huffman_table[i][0][0], 8, 4, 0) < 0)
-                goto vlc_fail;
+            ret = theora_init_huffman_tables(&s->coeff_vlc[i], &s->huffman_table[i]);
+            if (ret < 0)
+                return ret;
         }
     }
 
@@ -2476,10 +2494,6 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 #endif
 
     return allocate_tables(avctx);
-
-vlc_fail:
-    av_log(avctx, AV_LOG_FATAL, "Invalid huffman table\n");
-    return -1;
 }
 
 /// Release and shuffle frames after decode finishes
@@ -2811,36 +2825,30 @@ error:
     return ret;
 }
 
-static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
+static int read_huffman_tree(HuffTable *huff, GetBitContext *gb, int length,
+                             AVCodecContext *avctx)
 {
-    Vp3DecodeContext *s = avctx->priv_data;
-
     if (get_bits1(gb)) {
         int token;
-        if (s->entries >= 32) { /* overflow */
+        if (huff->nb_entries >= 32) { /* overflow */
             av_log(avctx, AV_LOG_ERROR, "huffman tree overflow\n");
             return -1;
         }
         token = get_bits(gb, 5);
-        ff_dlog(avctx, "hti %d hbits %x token %d entry : %d size %d\n",
-                s->hti, s->hbits, token, s->entries, s->huff_code_size);
-        s->huffman_table[s->hti][token][0] = s->hbits;
-        s->huffman_table[s->hti][token][1] = s->huff_code_size;
-        s->entries++;
+        ff_dlog(avctx, "code length %d, curr entry %d, token %d\n",
+                length, huff->nb_entries, token);
+        huff->entries[huff->nb_entries++] = (HuffEntry){ length, token };
     } else {
-        if (s->huff_code_size >= 32) { /* overflow */
+        /* The following bound follows from the fact that nb_entries <= 32. */
+        if (length >= 31) { /* overflow */
             av_log(avctx, AV_LOG_ERROR, "huffman tree overflow\n");
             return -1;
         }
-        s->huff_code_size++;
-        s->hbits <<= 1;
-        if (read_huffman_tree(avctx, gb))
+        length++;
+        if (read_huffman_tree(huff, gb, length, avctx))
             return -1;
-        s->hbits |= 1;
-        if (read_huffman_tree(avctx, gb))
+        if (read_huffman_tree(huff, gb, length, avctx))
             return -1;
-        s->hbits >>= 1;
-        s->huff_code_size--;
     }
     return 0;
 }
@@ -2965,7 +2973,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int i, n, matrices, inter, plane;
+    int i, n, matrices, inter, plane, ret;
 
     if (!s->theora_header)
         return AVERROR_INVALIDDATA;
@@ -3057,17 +3065,10 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
     }
 
     /* Huffman tables */
-    for (s->hti = 0; s->hti < 80; s->hti++) {
-        s->entries        = 0;
-        s->huff_code_size = 1;
-        if (!get_bits1(gb)) {
-            s->hbits = 0;
-            if (read_huffman_tree(avctx, gb))
-                return -1;
-            s->hbits = 1;
-            if (read_huffman_tree(avctx, gb))
-                return -1;
-        }
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->huffman_table); i++) {
+        s->huffman_table[i].nb_entries = 0;
+        if ((ret = read_huffman_tree(&s->huffman_table[i], gb, 0, avctx)) < 0)
+            return ret;
     }
 
     s->theora_tables = 1;
