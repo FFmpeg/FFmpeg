@@ -185,7 +185,7 @@ static int read_header(AVFormatContext *s)
             AVStream *st = avformat_new_stream(s, NULL);
 
             if (!st)
-                return AVERROR(ENOMEM);
+                goto nomem;
 
             st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
             st->codecpar->codec_id   = AV_CODEC_ID_FFMETADATA;
@@ -195,7 +195,7 @@ static int read_header(AVFormatContext *s)
             AVChapter *ch = read_chapter(s);
 
             if (!ch)
-                return AVERROR(ENOMEM);
+                goto nomem;
 
             m = &ch->metadata;
         } else
@@ -211,6 +211,10 @@ static int read_header(AVFormatContext *s)
                                    AV_TIME_BASE_Q);
 
     return 0;
+nomem:
+    av_bprint_finalize(&bp, NULL);
+
+    return AVERROR(ENOMEM);
 }
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
