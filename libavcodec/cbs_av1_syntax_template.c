@@ -837,6 +837,9 @@ static int FUNC(loop_filter_params)(CodedBitstreamContext *ctx, RWContext *rw,
                                     AV1RawFrameHeader *current)
 {
     CodedBitstreamAV1Context *priv = ctx->priv_data;
+    static const int8_t default_loop_filter_ref_deltas[AV1_TOTAL_REFS_PER_FRAME] =
+        { 1, 0, 0, 0, -1, 0, -1, -1 };
+    static const int8_t default_loop_filter_mode_deltas[2] = { 0, 0 };
     int i, err;
 
     if (priv->coded_lossless || current->allow_intrabc) {
@@ -870,19 +873,44 @@ static int FUNC(loop_filter_params)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(loop_filter_delta_enabled);
     if (current->loop_filter_delta_enabled) {
-        flag(loop_filter_delta_update);
-        if (current->loop_filter_delta_update) {
-            for (i = 0; i < AV1_TOTAL_REFS_PER_FRAME; i++) {
-                flags(update_ref_delta[i], 1, i);
-                if (current->update_ref_delta[i])
-                    sus(1 + 6, loop_filter_ref_deltas[i], 1, i);
-            }
-            for (i = 0; i < 2; i++) {
-                flags(update_mode_delta[i], 1, i);
-                if (current->update_mode_delta[i])
-                    sus(1 + 6, loop_filter_mode_deltas[i], 1, i);
-            }
+        const int8_t *ref_loop_filter_ref_deltas, *ref_loop_filter_mode_deltas;
+
+        if (current->primary_ref_frame == AV1_PRIMARY_REF_NONE) {
+            ref_loop_filter_ref_deltas = default_loop_filter_ref_deltas;
+            ref_loop_filter_mode_deltas = default_loop_filter_mode_deltas;
+        } else {
+            ref_loop_filter_ref_deltas =
+                priv->ref[current->ref_frame_idx[current->primary_ref_frame]].loop_filter_ref_deltas;
+            ref_loop_filter_mode_deltas =
+                priv->ref[current->ref_frame_idx[current->primary_ref_frame]].loop_filter_mode_deltas;
         }
+
+        flag(loop_filter_delta_update);
+        for (i = 0; i < AV1_TOTAL_REFS_PER_FRAME; i++) {
+            if (current->loop_filter_delta_update)
+                flags(update_ref_delta[i], 1, i);
+            else
+                infer(update_ref_delta[i], 0);
+            if (current->update_ref_delta[i])
+                sus(1 + 6, loop_filter_ref_deltas[i], 1, i);
+            else
+                infer(loop_filter_ref_deltas[i], ref_loop_filter_ref_deltas[i]);
+        }
+        for (i = 0; i < 2; i++) {
+            if (current->loop_filter_delta_update)
+                flags(update_mode_delta[i], 1, i);
+            else
+                infer(update_mode_delta[i], 0);
+            if (current->update_mode_delta[i])
+                sus(1 + 6, loop_filter_mode_deltas[i], 1, i);
+            else
+                infer(loop_filter_mode_deltas[i], ref_loop_filter_mode_deltas[i]);
+        }
+    } else {
+        for (i = 0; i < AV1_TOTAL_REFS_PER_FRAME; i++)
+            infer(loop_filter_ref_deltas[i], default_loop_filter_ref_deltas[i]);
+        for (i = 0; i < 2; i++)
+            infer(loop_filter_mode_deltas[i], default_loop_filter_mode_deltas[i]);
     }
 
     return 0;
@@ -1613,6 +1641,10 @@ update_refs:
                 .bit_depth      = priv->bit_depth,
                 .order_hint     = priv->order_hint,
             };
+            memcpy(priv->ref[i].loop_filter_ref_deltas, current->loop_filter_ref_deltas,
+                   sizeof(current->loop_filter_ref_deltas));
+            memcpy(priv->ref[i].loop_filter_mode_deltas, current->loop_filter_mode_deltas,
+                   sizeof(current->loop_filter_mode_deltas));
         }
     }
 

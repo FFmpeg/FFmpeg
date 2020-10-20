@@ -413,6 +413,9 @@ typedef struct AV1ReferenceFrameState {
     int subsampling_y;  // RefSubsamplingY
     int bit_depth;      // RefBitDepth
     int order_hint;     // RefOrderHint
+
+    int8_t  loop_filter_ref_deltas[AV1_TOTAL_REFS_PER_FRAME];
+    int8_t  loop_filter_mode_deltas[2];
 } AV1ReferenceFrameState;
 
 typedef struct CodedBitstreamAV1Context {
