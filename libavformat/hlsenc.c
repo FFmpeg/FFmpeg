@@ -349,7 +349,7 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
             level = st->codecpar->level;
 
         /* check the boundary of data which from current position is small than extradata_size */
-        while (data && (data - st->codecpar->extradata + 5) < st->codecpar->extradata_size) {
+        while (data && (data - st->codecpar->extradata + 19) < st->codecpar->extradata_size) {
             /* get HEVC SPS NAL and seek to profile_tier_level */
             if (!(data[0] | data[1] | data[2]) && data[3] == 1 && ((data[4] & 0x42) == 0x42)) {
                 int remain_size = 0;
