@@ -210,6 +210,6 @@ int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t i
         if (old == INT64_MAX || old == AV_NOPTS_VALUE || old_ts == AV_NOPTS_VALUE)
             return ts;
 
-        return av_rescale_q(old + 1, inc_tb, ts_tb) + (ts - old_ts);
+        return av_sat_add64(av_rescale_q(old + 1, inc_tb, ts_tb), ts - old_ts);
     }
 }
