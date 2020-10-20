@@ -35,8 +35,7 @@ typedef struct CrossfeedContext {
     double a0, a1, a2;
     double b0, b1, b2;
 
-    double i1, i2;
-    double o1, o2;
+    double w1, w2;
 } CrossfeedContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -92,8 +91,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const double b0 = s->b0;
     const double b1 = s->b1;
     const double b2 = s->b2;
-    const double a1 = s->a1;
-    const double a2 = s->a2;
+    const double a1 = -s->a1;
+    const double a2 = -s->a2;
     AVFrame *out;
     double *dst;
     int n;
@@ -113,12 +112,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (n = 0; n < out->nb_samples; n++, src += 2, dst += 2) {
         double mid = (src[0] + src[1]) * level_in * .5;
         double side = (src[0] - src[1]) * level_in * .5;
-        double oside = side * b0 + s->i1 * b1 + s->i2 * b2 - s->o1 * a1 - s->o2 * a2;
+        double oside = side * b0 + s->w1;
 
-        s->i2 = s->i1;
-        s->i1 = side;
-        s->o2 = s->o1;
-        s->o1 = oside;
+        s->w1 = b1 * side + s->w2 + a1 * oside;
+        s->w2 = b2 * side + a2 * oside;
 
         if (ctx->is_disabled) {
             dst[0] = src[0];
