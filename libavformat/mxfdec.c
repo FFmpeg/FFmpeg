@@ -343,11 +343,10 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     MXFIndexTableSegment *seg;
     switch ((*ctx)->type) {
     case Descriptor:
+    case MultipleDescriptor:
         av_freep(&((MXFDescriptor *)*ctx)->extradata);
         av_freep(&((MXFDescriptor *)*ctx)->mastering);
         av_freep(&((MXFDescriptor *)*ctx)->coll);
-        break;
-    case MultipleDescriptor:
         av_freep(&((MXFDescriptor *)*ctx)->sub_descriptors_refs);
         break;
     case Sequence:
