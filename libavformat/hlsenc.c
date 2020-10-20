@@ -352,13 +352,14 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
         while (data && (data - st->codecpar->extradata + 19) < st->codecpar->extradata_size) {
             /* get HEVC SPS NAL and seek to profile_tier_level */
             if (!(data[0] | data[1] | data[2]) && data[3] == 1 && ((data[4] & 0x42) == 0x42)) {
+                uint8_t *rbsp_buf;
                 int remain_size = 0;
                 int rbsp_size = 0;
                 /* skip start code + nalu header */
                 data += 6;
                 /* process by reference General NAL unit syntax */
                 remain_size = st->codecpar->extradata_size - (data - st->codecpar->extradata);
-                uint8_t *rbsp_buf = ff_nal_unit_extract_rbsp(data, remain_size, &rbsp_size, 0);
+                rbsp_buf = ff_nal_unit_extract_rbsp(data, remain_size, &rbsp_size, 0);
                 if (!rbsp_buf)
                     return;
                 if (rbsp_size < 13) {
