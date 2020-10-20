@@ -317,7 +317,7 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_lte: return e->value * (d <= d2 ? 1.0 : 0.0);
                 case e_pow: return e->value * pow(d, d2);
                 case e_mul: return e->value * (d * d2);
-                case e_div: return e->value * ((!CONFIG_FTRAPV || d2 ) ? (d / d2) : d * INFINITY);
+                case e_div: return e->value * (d2 ? (d / d2) : d * INFINITY);
                 case e_add: return e->value * (d + d2);
                 case e_last:return e->value * d2;
                 case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
