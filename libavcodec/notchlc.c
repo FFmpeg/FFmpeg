@@ -490,11 +490,6 @@ static int decode_frame(AVCodecContext *avctx,
 
         bytestream2_init(gb, s->lzf_buffer, uncompressed_size);
     } else if (s->format == 1) {
-        unsigned remaining = bytestream2_get_bytes_left(gb);
-
-        if (remaining > 0x7E000000U || remaining + remaining/255 + 16 < uncompressed_size)
-            return AVERROR_INVALIDDATA;
-
         av_fast_padded_malloc(&s->uncompressed_buffer, &s->uncompressed_size,
                               uncompressed_size);
         if (!s->uncompressed_buffer)
