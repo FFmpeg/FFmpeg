@@ -743,8 +743,11 @@ static int FUNC(quantization_params)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
                                      AV1RawFrameHeader *current)
 {
+    CodedBitstreamAV1Context  *priv = ctx->priv_data;
     static const uint8_t bits[AV1_SEG_LVL_MAX] = { 8, 6, 6, 6, 6, 3, 0, 0 };
     static const uint8_t sign[AV1_SEG_LVL_MAX] = { 1, 1, 1, 1, 1, 0, 0, 0 };
+    static const uint8_t default_feature_enabled[AV1_SEG_LVL_MAX] = { 0 };
+    static const int16_t default_feature_value[AV1_SEG_LVL_MAX] = { 0 };
     int i, j, err;
 
     flag(segmentation_enabled);
@@ -763,9 +766,22 @@ static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
             flag(segmentation_update_data);
         }
 
-        if (current->segmentation_update_data) {
-            for (i = 0; i < AV1_MAX_SEGMENTS; i++) {
-                for (j = 0; j < AV1_SEG_LVL_MAX; j++) {
+        for (i = 0; i < AV1_MAX_SEGMENTS; i++) {
+            const uint8_t *ref_feature_enabled;
+            const int16_t *ref_feature_value;
+
+            if (current->primary_ref_frame == AV1_PRIMARY_REF_NONE) {
+                ref_feature_enabled = default_feature_enabled;
+                ref_feature_value = default_feature_value;
+            } else {
+                ref_feature_enabled =
+                    priv->ref[current->ref_frame_idx[current->primary_ref_frame]].feature_enabled[i];
+                ref_feature_value =
+                    priv->ref[current->ref_frame_idx[current->primary_ref_frame]].feature_value[i];
+            }
+
+            for (j = 0; j < AV1_SEG_LVL_MAX; j++) {
+                if (current->segmentation_update_data) {
                     flags(feature_enabled[i][j], 2, i, j);
 
                     if (current->feature_enabled[i][j] && bits[j] > 0) {
@@ -776,6 +792,9 @@ static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
                     } else {
                         infer(feature_value[i][j], 0);
                     }
+                } else {
+                    infer(feature_enabled[i][j], ref_feature_enabled[j]);
+                    infer(feature_value[i][j], ref_feature_value[j]);
                 }
             }
         }
@@ -1645,6 +1664,10 @@ update_refs:
                    sizeof(current->loop_filter_ref_deltas));
             memcpy(priv->ref[i].loop_filter_mode_deltas, current->loop_filter_mode_deltas,
                    sizeof(current->loop_filter_mode_deltas));
+            memcpy(priv->ref[i].feature_enabled, current->feature_enabled,
+                   sizeof(current->feature_enabled));
+            memcpy(priv->ref[i].feature_value, current->feature_value,
+                   sizeof(current->feature_value));
         }
     }
 
