@@ -40,7 +40,7 @@ typedef struct ASubBoostContext {
     int write_pos;
     int buffer_samples;
 
-    AVFrame *i, *o;
+    AVFrame *w;
     AVFrame *buffer;
 } ASubBoostContext;
 
@@ -104,9 +104,8 @@ static int config_input(AVFilterLink *inlink)
     ASubBoostContext *s = ctx->priv;
 
     s->buffer = ff_get_audio_buffer(inlink, inlink->sample_rate / 10);
-    s->i = ff_get_audio_buffer(inlink, 2);
-    s->o = ff_get_audio_buffer(inlink, 2);
-    if (!s->buffer || !s->i || !s->o)
+    s->w = ff_get_audio_buffer(inlink, 2);
+    if (!s->buffer || !s->w)
         return AVERROR(ENOMEM);
 
     return get_coeffs(ctx);
@@ -117,7 +116,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     ASubBoostContext *s = ctx->priv;
-    const float wet = s->wet_gain, dry = s->dry_gain, feedback = s->feedback, decay = s->decay;
+    const double wet = s->wet_gain, dry = s->dry_gain, feedback = s->feedback, decay = s->decay;
+    const double b0 = s->b0;
+    const double b1 = s->b1;
+    const double b2 = s->b2;
+    const double a1 = -s->a1;
+    const double a2 = -s->a2;
     int write_pos;
     AVFrame *out;
 
@@ -136,18 +140,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         const double *src = (const double *)in->extended_data[ch];
         double *dst = (double *)out->extended_data[ch];
         double *buffer = (double *)s->buffer->extended_data[ch];
-        double *ix = (double *)s->i->extended_data[ch];
-        double *ox = (double *)s->o->extended_data[ch];
+        double *w = (double *)s->w->extended_data[ch];
 
         write_pos = s->write_pos;
         for (int n = 0; n < in->nb_samples; n++) {
             double out_sample;
 
-            out_sample = src[n] * s->b0 + ix[0] * s->b1 + ix[1] * s->b2 - ox[0] * s->a1 - ox[1] * s->a2;
-            ix[1] = ix[0];
-            ix[0] = src[n];
-            ox[1] = ox[0];
-            ox[0] = out_sample;
+            out_sample = src[n] * b0 + w[0];
+            w[0] = b1 * src[n] + w[1] + a1 * out_sample;
+            w[1] = b2 * src[n] + a2 * out_sample;
 
             buffer[write_pos] = buffer[write_pos] * decay + out_sample * feedback;
             dst[n] = src[n] * dry + buffer[write_pos] * wet;
@@ -169,8 +170,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     ASubBoostContext *s = ctx->priv;
 
     av_frame_free(&s->buffer);
-    av_frame_free(&s->i);
-    av_frame_free(&s->o);
+    av_frame_free(&s->w);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
