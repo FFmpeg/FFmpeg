@@ -380,7 +380,8 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
             profile != FF_PROFILE_UNKNOWN &&
             level != FF_LEVEL_UNKNOWN) {
             snprintf(attr, sizeof(attr), "%s.%d.4.L%d.B01", av_fourcc2str(st->codecpar->codec_tag), profile, level);
-        }
+        } else
+            goto fail;
     } else if (st->codecpar->codec_id == AV_CODEC_ID_MP2) {
         snprintf(attr, sizeof(attr), "mp4a.40.33");
     } else if (st->codecpar->codec_id == AV_CODEC_ID_MP3) {
