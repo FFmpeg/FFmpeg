@@ -135,6 +135,8 @@ enum {
     NVENC_LOSSLESS   = 2,
     NVENC_ONE_PASS   = 4,
     NVENC_TWO_PASSES = 8,
+
+    NVENC_DEPRECATED_PRESET = 0x8000,
 };
 
 enum {
