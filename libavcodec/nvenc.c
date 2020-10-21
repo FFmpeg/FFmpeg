@@ -903,10 +903,22 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
 #ifdef NVENC_HAVE_MULTIPASS
     ctx->encode_config.rcParams.multiPass = ctx->multipass;
-    if (ctx->encode_config.rcParams.multiPass != NV_ENC_MULTI_PASS_DISABLED)
-        ctx->flags |= NVENC_TWO_PASSES;
-#endif
 
+    if (ctx->flags & NVENC_ONE_PASS)
+        ctx->encode_config.rcParams.multiPass = NV_ENC_MULTI_PASS_DISABLED;
+    if (ctx->flags & NVENC_TWO_PASSES || ctx->twopass)
+        ctx->encode_config.rcParams.multiPass = NV_ENC_TWO_PASS_FULL_RESOLUTION;
+
+    if (ctx->rc < 0) {
+        if (ctx->cbr) {
+            ctx->rc = NV_ENC_PARAMS_RC_CBR;
+        } else if (ctx->cqp >= 0) {
+            ctx->rc = NV_ENC_PARAMS_RC_CONSTQP;
+        } else {
+            ctx->rc = NV_ENC_PARAMS_RC_VBR;
+        }
+    }
+#else
     if (ctx->rc < 0) {
         if (ctx->flags & NVENC_ONE_PASS)
             ctx->twopass = 0;
@@ -930,6 +942,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
             ctx->rc = NV_ENC_PARAMS_RC_VBR_MINQP;
         }
     }
+#endif
 
     if (ctx->rc >= 0 && ctx->rc & RC_MODE_DEPRECATED) {
         av_log(avctx, AV_LOG_WARNING, "Specified rc mode is deprecated.\n");
@@ -1258,6 +1271,9 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
     if (IS_SDK10_PRESET(ctx->preset)) {
 #ifdef NVENC_HAVE_NEW_PRESETS
         ctx->init_encode_params.tuningInfo = ctx->tuning_info;
+
+        if (ctx->flags & NVENC_LOWLATENCY)
+            ctx->init_encode_params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
 
         nv_status = p_nvenc->nvEncGetEncodePresetConfigEx(ctx->nvencoder,
             ctx->init_encode_params.encodeGUID,
