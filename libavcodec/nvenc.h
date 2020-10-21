@@ -81,7 +81,6 @@ typedef struct NvencSurface
 
     NV_ENC_OUTPUT_PTR output_surface;
     NV_ENC_BUFFER_FORMAT format;
-    int size;
 } NvencSurface;
 
 typedef struct NvencDynLoadFunctions
