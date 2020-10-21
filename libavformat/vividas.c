@@ -673,6 +673,10 @@ static int viv_read_packet(AVFormatContext *s,
     if (!pb)
         return AVERROR(EIO);
     off = avio_tell(pb);
+
+    if (viv->current_sb_entry >= viv->n_sb_entries)
+        return AVERROR_INVALIDDATA;
+
     off += viv->sb_entries[viv->current_sb_entry].size;
 
     if (viv->sb_entries[viv->current_sb_entry].flag == 0) {
