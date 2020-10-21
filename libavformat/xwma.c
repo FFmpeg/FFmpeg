@@ -211,6 +211,10 @@ static int xwma_read_header(AVFormatContext *s)
             }
 
             for (i = 0; i < dpds_table_size; ++i) {
+                if (avio_feof(pb)) {
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
                 dpds_table[i] = avio_rl32(pb);
                 size -= 4;
             }
