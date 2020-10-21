@@ -144,6 +144,9 @@ static int film_read_header(AVFormatContext *s)
         film->video_type = AV_CODEC_ID_NONE;
     }
 
+    if (!film->video_type && !film->audio_type)
+        return AVERROR_INVALIDDATA;
+
     /* initialize the decoder streams */
     if (film->video_type) {
         st = avformat_new_stream(s, NULL);
