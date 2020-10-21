@@ -38,6 +38,7 @@ version <next>:
 - VDPAU accelerated VP9 10/12bit decoding
 - afreqshift and aphaseshift filters
 - High Voltage Software ADPCM encoder
+- LEGO Racers ALP (.tun & .pcm) muxer
 
 
 version 4.3:

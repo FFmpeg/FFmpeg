@@ -1,5 +1,5 @@
 /*
- * LEGO Racers ALP (.tun & .pcm) demuxer
+ * LEGO Racers ALP (.tun & .pcm) (de)muxer
  *
  * Copyright (C) 2020 Zane van Iperen (zane@zanevaniperen.com)
  *
@@ -21,8 +21,10 @@
  */
 #include "avformat.h"
 #include "internal.h"
+#include "rawenc.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 
 #define ALP_TAG            MKTAG('A', 'L', 'P', ' ')
 #define ALP_MAX_READ_SIZE  4096
@@ -36,6 +38,18 @@ typedef struct ALPHeader {
     uint32_t    sample_rate;    /*< Sample rate, only if header_size >= 12. */
 } ALPHeader;
 
+typedef enum ALPType {
+    ALP_TYPE_AUTO = 0, /*< Autodetect based on file extension. */
+    ALP_TYPE_TUN  = 1, /*< Force a .TUN file. */
+    ALP_TYPE_PCM  = 2, /*< Force a .PCM file. */
+} ALPType;
+
+typedef struct ALPMuxContext {
+    const AVClass *class;
+    ALPType type;
+} ALPMuxContext;
+
+#if CONFIG_ALP_DEMUXER
 static int alp_probe(const AVProbeData *p)
 {
     uint32_t i;
@@ -144,3 +158,135 @@ AVInputFormat ff_alp_demuxer = {
     .read_header    = alp_read_header,
     .read_packet    = alp_read_packet
 };
+#endif
+
+#if CONFIG_ALP_MUXER
+
+static int alp_write_init(AVFormatContext *s)
+{
+    ALPMuxContext *alp = s->priv_data;
+    AVCodecParameters *par;
+
+    if (alp->type == ALP_TYPE_AUTO) {
+        if (av_match_ext(s->url, "pcm"))
+            alp->type = ALP_TYPE_PCM;
+        else
+            alp->type = ALP_TYPE_TUN;
+    }
+
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "Too many streams\n");
+        return AVERROR(EINVAL);
+    }
+
+    par = s->streams[0]->codecpar;
+
+    if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_ALP) {
+        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
+               avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
+    if (par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "A maximum of 2 channels are supported\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (par->sample_rate > 44100) {
+        av_log(s, AV_LOG_ERROR, "Sample rate too large\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (alp->type == ALP_TYPE_TUN && par->sample_rate != 22050) {
+        av_log(s, AV_LOG_ERROR, "Sample rate must be 22050 for TUN files\n");
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
+static int alp_write_header(AVFormatContext *s)
+{
+    ALPMuxContext *alp = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+
+    avio_wl32(s->pb,  ALP_TAG);
+    avio_wl32(s->pb,  alp->type == ALP_TYPE_PCM ? 12 : 8);
+    avio_write(s->pb, "ADPCM", 6);
+    avio_w8(s->pb,    0);
+    avio_w8(s->pb,    par->channels);
+    if (alp->type == ALP_TYPE_PCM)
+        avio_wl32(s->pb, par->sample_rate);
+
+    return 0;
+}
+
+enum { AE = AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM };
+
+static const AVOption alp_options[] = {
+    {
+        .name        = "type",
+        .help        = "set file type",
+        .offset      = offsetof(ALPMuxContext, type),
+        .type        = AV_OPT_TYPE_INT,
+        .default_val = {.i64 = ALP_TYPE_AUTO},
+        .min         = ALP_TYPE_AUTO,
+        .max         = ALP_TYPE_PCM,
+        .flags       = AE,
+        .unit        = "type",
+    },
+    {
+        .name        = "auto",
+        .help        = "autodetect based on file extension",
+        .offset      = 0,
+        .type        = AV_OPT_TYPE_CONST,
+        .default_val = {.i64 = ALP_TYPE_AUTO},
+        .min         = 0,
+        .max         = 0,
+        .flags       = AE,
+        .unit        = "type"
+    },
+    {
+        .name        = "tun",
+        .help        = "force .tun, used for music",
+        .offset      = 0,
+        .type        = AV_OPT_TYPE_CONST,
+        .default_val = {.i64 = ALP_TYPE_TUN},
+        .min         = 0,
+        .max         = 0,
+        .flags       = AE,
+        .unit        = "type"
+    },
+    {
+        .name        = "pcm",
+        .help        = "force .pcm, used for sfx",
+        .offset      = 0,
+        .type        = AV_OPT_TYPE_CONST,
+        .default_val = {.i64 = ALP_TYPE_PCM},
+        .min         = 0,
+        .max         = 0,
+        .flags       = AE,
+        .unit        = "type"
+    },
+    { NULL }
+};
+
+static const AVClass alp_muxer_class = {
+    .class_name = "alp",
+    .item_name  = av_default_item_name,
+    .option     = alp_options,
+    .version    = LIBAVUTIL_VERSION_INT
+};
+
+AVOutputFormat ff_alp_muxer = {
+    .name           = "alp",
+    .long_name      = NULL_IF_CONFIG_SMALL("LEGO Racers ALP"),
+    .extensions     = "tun,pcm",
+    .audio_codec    = AV_CODEC_ID_ADPCM_IMA_ALP,
+    .video_codec    = AV_CODEC_ID_NONE,
+    .init           = alp_write_init,
+    .write_header   = alp_write_header,
+    .write_packet   = ff_raw_write_packet,
+    .priv_class     = &alp_muxer_class,
+    .priv_data_size = sizeof(ALPMuxContext)
+};
+#endif
