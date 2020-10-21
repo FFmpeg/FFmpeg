@@ -933,10 +933,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
     if (ctx->rc >= 0 && ctx->rc & RC_MODE_DEPRECATED) {
         av_log(avctx, AV_LOG_WARNING, "Specified rc mode is deprecated.\n");
-        av_log(avctx, AV_LOG_WARNING, "\tll_2pass_quality -> cbr_ld_hq\n");
-        av_log(avctx, AV_LOG_WARNING, "\tll_2pass_size -> cbr_hq\n");
-        av_log(avctx, AV_LOG_WARNING, "\tvbr_2pass -> vbr_hq\n");
-        av_log(avctx, AV_LOG_WARNING, "\tvbr_minqp -> (no replacement)\n");
+        av_log(avctx, AV_LOG_WARNING, "Use -rc constqp/cbr/vbr, -tune and -multipass instead.\n");
 
         ctx->rc &= ~RC_MODE_DEPRECATED;
     }
