@@ -243,7 +243,7 @@ static int huff_reader_get_symbol(HuffReader *r, GetBitContext *gb)
         return get_vlc2(gb, r->vlc.table, 8, 2);
 }
 
-static int huff_reader_build_canonical(HuffReader *r, int *code_lengths,
+static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_lengths,
                                        int alphabet_size)
 {
     int len = 0, sym, code = 0, ret;
@@ -324,8 +324,8 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
                                     int alphabet_size)
 {
     HuffReader code_len_hc = { { 0 }, 0, 0, { 0 } };
-    int *code_lengths = NULL;
-    int code_length_code_lengths[NUM_CODE_LENGTH_CODES] = { 0 };
+    uint8_t *code_lengths = NULL;
+    uint8_t code_length_code_lengths[NUM_CODE_LENGTH_CODES] = { 0 };
     int i, symbol, max_symbol, prev_code_len, ret;
     int num_codes = 4 + get_bits(&s->gb, 4);
 
@@ -340,7 +340,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     if (ret < 0)
         goto finish;
 
-    code_lengths = av_mallocz_array(alphabet_size, sizeof(*code_lengths));
+    code_lengths = av_mallocz(alphabet_size);
     if (!code_lengths) {
         ret = AVERROR(ENOMEM);
         goto finish;
