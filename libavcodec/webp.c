@@ -329,8 +329,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     int i, symbol, max_symbol, prev_code_len, ret;
     int num_codes = 4 + get_bits(&s->gb, 4);
 
-    if (num_codes > NUM_CODE_LENGTH_CODES)
-        return AVERROR_INVALIDDATA;
+    av_assert1(num_codes <= NUM_CODE_LENGTH_CODES);
 
     for (i = 0; i < num_codes; i++)
         code_length_code_lengths[code_length_code_order[i]] = get_bits(&s->gb, 3);
