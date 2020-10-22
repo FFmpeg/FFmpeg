@@ -324,7 +324,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
                                     int alphabet_size)
 {
     HuffReader code_len_hc = { { 0 }, 0, 0, { 0 } };
-    uint8_t *code_lengths = NULL;
+    uint8_t *code_lengths;
     uint8_t code_length_code_lengths[NUM_CODE_LENGTH_CODES] = { 0 };
     int i, symbol, max_symbol, prev_code_len, ret;
     int num_codes = 4 + get_bits(&s->gb, 4);
@@ -338,7 +338,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     ret = huff_reader_build_canonical(&code_len_hc, code_length_code_lengths,
                                       NUM_CODE_LENGTH_CODES);
     if (ret < 0)
-        goto finish;
+        return ret;
 
     code_lengths = av_mallocz(alphabet_size);
     if (!code_lengths) {
