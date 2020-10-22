@@ -998,7 +998,7 @@ static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int
     } else {
         int prefix_minus3 = prefix - 3;
 
-        if (prefix == CABAC_MAX_BIN || prefix_minus3 + rc_rice_param >= 31) {
+        if (prefix == CABAC_MAX_BIN || prefix_minus3 + rc_rice_param > 16 + 6) {
             av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
             return 0;
         }
