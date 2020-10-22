@@ -345,10 +345,6 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
 
     while (q < q_end) {
         code = get_vlc2(&s->gb, s->exp_vlc.table, EXPVLCBITS, EXPMAX);
-        if (code < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Exponent vlc invalid\n");
-            return -1;
-        }
         /* NOTE: this offset is the same as MPEG-4 AAC! */
         last_exp += code - 60;
         if ((unsigned) last_exp + 60 >= FF_ARRAY_ELEMS(pow_tab)) {
@@ -560,11 +556,6 @@ static int wma_decode_block(WMACodecContext *s)
                         } else {
                             code = get_vlc2(&s->gb, s->hgain_vlc.table,
                                             HGAINVLCBITS, HGAINMAX);
-                            if (code < 0) {
-                                av_log(s->avctx, AV_LOG_ERROR,
-                                       "hgain vlc invalid\n");
-                                return -1;
-                            }
                             val += code - 18;
                         }
                         s->high_band_values[ch][i] = val;
