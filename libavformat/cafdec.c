@@ -186,6 +186,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     CafContext *caf   = s->priv_data;
     int64_t pos = 0, ccount, num_packets;
     int i;
+    int ret;
 
     ccount = avio_tell(pb);
 
@@ -201,7 +202,9 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     for (i = 0; i < num_packets; i++) {
         if (avio_feof(pb))
             return AVERROR_INVALIDDATA;
-        av_add_index_entry(s->streams[0], pos, st->duration, 0, 0, AVINDEX_KEYFRAME);
+        ret = av_add_index_entry(s->streams[0], pos, st->duration, 0, 0, AVINDEX_KEYFRAME);
+        if (ret < 0)
+            return ret;
         pos += caf->bytes_per_packet ? caf->bytes_per_packet : ff_mp4_read_descr_len(pb);
         st->duration += caf->frames_per_packet ? caf->frames_per_packet : ff_mp4_read_descr_len(pb);
     }
