@@ -39,19 +39,17 @@ static av_cold int init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     const uint8_t  *table_bits   = vlc_table->huffbits;
     const uint32_t *table_codes  = vlc_table->huffcodes;
     const uint16_t *levels_table = vlc_table->levels;
-    uint16_t *run_table, *level_table, *int_table;
+    uint16_t *run_table, *int_table;
     float *flevel_table;
     int i, l, j, k, level;
 
     init_vlc(vlc, VLCBITS, n, table_bits, 1, 1, table_codes, 4, 4, 0);
 
     run_table    = av_malloc_array(n, sizeof(uint16_t));
-    level_table  = av_malloc_array(n, sizeof(uint16_t));
     flevel_table = av_malloc_array(n, sizeof(*flevel_table));
     int_table    = av_malloc_array(n, sizeof(uint16_t));
-    if (!run_table || !level_table || !flevel_table || !int_table) {
+    if (!run_table || !flevel_table || !int_table) {
         av_freep(&run_table);
-        av_freep(&level_table);
         av_freep(&flevel_table);
         av_freep(&int_table);
         return AVERROR(ENOMEM);
@@ -64,7 +62,6 @@ static av_cold int init_coef_vlc(VLC *vlc, uint16_t **prun_table,
         l            = levels_table[k++];
         for (j = 0; j < l; j++) {
             run_table[i]    = j;
-            level_table[i]  = level;
             flevel_table[i] = level;
             i++;
         }
@@ -73,7 +70,6 @@ static av_cold int init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     *prun_table   = run_table;
     *plevel_table = flevel_table;
     *pint_table   = int_table;
-    av_free(level_table);
 
     return 0;
 }
