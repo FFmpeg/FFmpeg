@@ -90,13 +90,13 @@ static const uint16_t rv34_qscale_tab[32] = {
 
 /**
  * tables used to translate a quantizer value into a VLC set for decoding
- * The first table is used for intraframes.
+ * The first table is used for intraframes. The two last entries are invalid.
  */
-static const uint8_t rv34_quant_to_vlc_set[2][31] = {
+static const uint8_t rv34_quant_to_vlc_set[2][32] = {
  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-   2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 0 },
+   2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 0, 0 },
  { 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3,
-   3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6 },
+   3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6 },
 };
 
 /**

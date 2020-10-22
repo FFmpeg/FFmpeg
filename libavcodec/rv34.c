@@ -24,6 +24,7 @@
  * RV30/40 decoder common data
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 
@@ -339,8 +340,9 @@ static inline RV34VLC* choose_vlc_set(int quant, int mod, int type)
 {
     if(mod == 2 && quant < 19) quant += 10;
     else if(mod && quant < 26) quant += 5;
-    return type ? &inter_vlcs[rv34_quant_to_vlc_set[1][av_clip(quant, 0, 30)]]
-                : &intra_vlcs[rv34_quant_to_vlc_set[0][av_clip(quant, 0, 30)]];
+    av_assert2(quant >= 0 && quant < 32);
+    return type ? &inter_vlcs[rv34_quant_to_vlc_set[1][quant]]
+                : &intra_vlcs[rv34_quant_to_vlc_set[0][quant]];
 }
 
 /**
