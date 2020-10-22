@@ -276,6 +276,9 @@ FATE_HEVC-$(call DEMDEC, MOV, HEVC) += fate-hevc-two-first-slice
 fate-hevc-cabac-tudepth: CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc/cbf_cr_cb_TUDepth_4_circle.h265 -pix_fmt yuv444p
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += fate-hevc-cabac-tudepth
 
+fate-hevc-small422chroma: CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc/food.hevc -pix_fmt yuv422p10le -vf scale
+FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += fate-hevc-small422chroma
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 

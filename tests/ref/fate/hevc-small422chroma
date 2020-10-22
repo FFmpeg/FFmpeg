@@ -1,0 +1,6 @@
+#tb 0: 1/50
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 3840x2160
+#sar 0: 1/1
+0,         11,         11,        1, 33177600, 0x53015e18
