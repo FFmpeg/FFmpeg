@@ -84,6 +84,7 @@ typedef struct MpegTSWrite {
     int64_t next_pcr;
     int mux_rate; ///< set to 1 when VBR
     int pes_payload_size;
+    int64_t total_size;
 
     int transport_stream_id;
     int original_network_id;
@@ -830,9 +831,9 @@ invalid:
     return 0;
 }
 
-static int64_t get_pcr(const MpegTSWrite *ts, AVIOContext *pb)
+static int64_t get_pcr(const MpegTSWrite *ts)
 {
-    return av_rescale(avio_tell(pb) + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
+    return av_rescale(ts->total_size + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
            ts->first_pcr;
 }
 
@@ -840,13 +841,14 @@ static void write_packet(AVFormatContext *s, const uint8_t *packet)
 {
     MpegTSWrite *ts = s->priv_data;
     if (ts->m2ts_mode) {
-        int64_t pcr = get_pcr(s->priv_data, s->pb);
+        int64_t pcr = get_pcr(s->priv_data);
         uint32_t tp_extra_header = pcr % 0x3fffffff;
         tp_extra_header = AV_RB32(&tp_extra_header);
         avio_write(s->pb, (unsigned char *) &tp_extra_header,
                    sizeof(tp_extra_header));
     }
     avio_write(s->pb, packet, TS_PACKET_SIZE);
+    ts->total_size += TS_PACKET_SIZE;
 }
 
 static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
@@ -1228,7 +1230,7 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
     }
 
     /* PCR coded into 6 bytes */
-    q += write_pcr_bits(q, get_pcr(ts, s->pb));
+    q += write_pcr_bits(q, get_pcr(ts));
 
     /* stuffing bytes */
     memset(q, 0xFF, TS_PACKET_SIZE - (q - buf));
@@ -1315,7 +1317,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     while (payload_size > 0) {
         int64_t pcr = AV_NOPTS_VALUE;
         if (ts->mux_rate > 1)
-            pcr = get_pcr(ts, s->pb);
+            pcr = get_pcr(ts);
         else if (dts != AV_NOPTS_VALUE)
             pcr = (dts - delay) * 300;
 
@@ -1326,7 +1328,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         write_pcr = 0;
         if (ts->mux_rate > 1) {
             /* Send PCR packets for all PCR streams if needed */
-            pcr = get_pcr(ts, s->pb);
+            pcr = get_pcr(ts);
             if (pcr >= ts->next_pcr) {
                 int64_t next_pcr = INT64_MAX;
                 for (int i = 0; i < s->nb_streams; i++) {
@@ -1340,7 +1342,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                             ts_st2->last_pcr = FFMAX(pcr - ts_st2->pcr_period, ts_st2->last_pcr + ts_st2->pcr_period);
                             if (st2 != st) {
                                 mpegts_insert_pcr_only(s, st2);
-                                pcr = get_pcr(ts, s->pb);
+                                pcr = get_pcr(ts);
                             } else {
                                 write_pcr = 1;
                             }
