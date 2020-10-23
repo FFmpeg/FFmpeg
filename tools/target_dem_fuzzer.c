@@ -49,6 +49,8 @@ static int io_read(void *opaque, uint8_t *buf, int buf_size)
         c->filesize = FFMIN(c->pos, c->filesize);
         return AVERROR_EOF;
     }
+    if (c->pos > INT64_MAX - size)
+        return AVERROR(EIO);
 
     memcpy(buf, c->fuzz, size);
     c->fuzz      += size;
