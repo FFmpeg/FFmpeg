@@ -131,6 +131,8 @@ static int rsd_read_header(AVFormatContext *s)
             return ret;
 
         for (i = 0; i < par->channels; i++) {
+            if (avio_feof(pb))
+                return AVERROR_EOF;
             avio_read(s->pb, st->codecpar->extradata + 32 * i, 32);
             avio_skip(s->pb, 8);
         }
