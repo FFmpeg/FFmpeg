@@ -247,7 +247,7 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
         if (selector != 1) {
             for (i = 0; i < num_codes; i++) {
                 huff_symb = get_vlc2(gb, spectral_coeff_tab[selector-1].table,
-                                     ATRAC3_VLC_BITS, 3);
+                                     ATRAC3_VLC_BITS, 1);
                 huff_symb += 1;
                 code = huff_symb >> 1;
                 if (huff_symb & 1)
@@ -257,7 +257,7 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
         } else {
             for (i = 0; i < num_codes; i++) {
                 huff_symb = get_vlc2(gb, spectral_coeff_tab[selector - 1].table,
-                                     ATRAC3_VLC_BITS, 3);
+                                     ATRAC3_VLC_BITS, 1);
                 mantissas[i * 2    ] = mantissa_vlc_tab[huff_symb * 2    ];
                 mantissas[i * 2 + 1] = mantissa_vlc_tab[huff_symb * 2 + 1];
             }
