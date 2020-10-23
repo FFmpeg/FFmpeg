@@ -1845,10 +1845,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
         quant_matrix = s->chroma_intra_matrix;
     }
 
-    if (dct_dc_size < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "illegal dct_dc_size vlc\n");
-        return AVERROR_INVALIDDATA;
-    } else if (dct_dc_size == 0) {
+    if (dct_dc_size == 0) {
         dct_diff = 0;
     } else {
         dct_diff = get_xbits(&s->gb, dct_dc_size);
