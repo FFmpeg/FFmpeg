@@ -1,0 +1,4 @@
+d84466bdfbe6405fa31e44df255f6aad *tests/data/fate/acodec-adpcm-ima_alp.alp
+264620 tests/data/fate/acodec-adpcm-ima_alp.alp
+d60c48654568a1cf0abd56b565b12f00 *tests/data/fate/acodec-adpcm-ima_alp.out.wav
+stddev: 1467.15 PSNR: 33.00 MAXDIFF:33866 bytes:  1058400/  1058400
