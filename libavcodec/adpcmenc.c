@@ -157,6 +157,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = (2 + avctx->channels * (22 + 4 * (avctx->frame_size - 1)) + 7) / 8;
         break;
     case AV_CODEC_ID_ADPCM_IMA_SSI:
+    case AV_CODEC_ID_ADPCM_IMA_ALP:
         avctx->frame_size  = s->block_size * 2 / avctx->channels;
         avctx->block_align = s->block_size;
         break;
@@ -201,6 +202,25 @@ static inline uint8_t adpcm_ima_compress_sample(ADPCMChannelStatus *c,
                         ff_adpcm_yamaha_difflookup[nibble]) / 8);
     c->prev_sample = av_clip_int16(c->prev_sample);
     c->step_index  = av_clip(c->step_index + ff_adpcm_index_table[nibble], 0, 88);
+    return nibble;
+}
+
+static inline uint8_t adpcm_ima_alp_compress_sample(ADPCMChannelStatus *c, int16_t sample)
+{
+    const int delta  = sample - c->prev_sample;
+    const int step   = ff_adpcm_step_table[c->step_index];
+    const int sign   = (delta < 0) * 8;
+
+    int nibble = FFMIN(abs(delta) * 4 / step, 7);
+    int diff   = (step * nibble) >> 2;
+    if (sign)
+        diff = -diff;
+
+    nibble = sign | nibble;
+
+    c->prev_sample += diff;
+    c->prev_sample  = av_clip_int16(c->prev_sample);
+    c->step_index   = av_clip(c->step_index + ff_adpcm_index_table[nibble], 0, 88);
     return nibble;
 }
 
@@ -552,6 +572,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     st = avctx->channels == 2;
 
     if (avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_SSI ||
+        avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_ALP ||
         avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_APM)
         pkt_size = (frame->nb_samples * avctx->channels) / 2;
     else
@@ -650,6 +671,24 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (ch = 0; ch < avctx->channels; ch++) {
                 put_bits(&pb, 4, adpcm_ima_qt_compress_sample(c->status + ch, *samples++));
             }
+        }
+
+        flush_put_bits(&pb);
+        break;
+    }
+    case AV_CODEC_ID_ADPCM_IMA_ALP:
+    {
+        PutBitContext pb;
+        init_put_bits(&pb, dst, pkt_size);
+
+        av_assert0(avctx->trellis == 0);
+
+        for (n = frame->nb_samples / 2; n > 0; n--) {
+            for (ch = 0; ch < avctx->channels; ch++) {
+                put_bits(&pb, 4, adpcm_ima_alp_compress_sample(c->status + ch, *samples++));
+                put_bits(&pb, 4, adpcm_ima_alp_compress_sample(c->status + ch, samples[st]));
+            }
+            samples += avctx->channels;
         }
 
         flush_put_bits(&pb);
@@ -889,6 +928,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                       \
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV");

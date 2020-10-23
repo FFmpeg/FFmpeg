@@ -37,6 +37,7 @@ version <next>:
 - Cintel RAW decoder
 - VDPAU accelerated VP9 10/12bit decoding
 - afreqshift and aphaseshift filters
+- High Voltage Software ADPCM encoder
 
 
 version 4.3:
