@@ -695,6 +695,9 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
 
         s->slices[i][j].start = offset + header_size;
         s->slices[i][j].size  = avpkt->size - s->slices[i][j].start;
+
+        if (s->slices[i][j].size < 2)
+            return AVERROR_INVALIDDATA;
     }
 
     if (bytestream2_get_byte(&gbyte) != s->planes)
