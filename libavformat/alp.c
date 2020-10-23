@@ -83,7 +83,7 @@ static int alp_read_header(AVFormatContext *s)
 
     if (hdr.header_size == 8) {
         /* .TUN music file */
-        hdr.sample_rate         = 11025 * hdr.num_channels;
+        hdr.sample_rate         = 22050;
     } else {
         /* .PCM sound file */
         hdr.sample_rate         = avio_rl32(s->pb);
