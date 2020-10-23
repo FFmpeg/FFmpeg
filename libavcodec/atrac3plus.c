@@ -192,12 +192,12 @@ av_cold void ff_atrac3p_init_vlcs(void)
 
     /* build huffman tables for spectrum decoding */
     for (i = 0; i < 112; i++) {
-        if (atrac3p_spectra_tabs[i].cb)
+        if (atrac3p_spectra_tabs[i].redirect < 0)
             build_canonical_huff(atrac3p_spectra_tabs[i].cb,
                                  atrac3p_spectra_tabs[i].xlat,
                                  &tab_offset, &spec_vlc_tabs[i]);
-        else
-            spec_vlc_tabs[i].table = 0;
+        else /* Reuse already initialized VLC table */
+            spec_vlc_tabs[i] = spec_vlc_tabs[atrac3p_spectra_tabs[i].redirect];
     }
 
     /* build huffman tables for gain data decoding */
@@ -879,10 +879,6 @@ static void decode_spectrum(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
 
                 tab_index = (chan->table_type * 8 + codetab) * 7 + wordlen - 1;
                 tab       = &atrac3p_spectra_tabs[tab_index];
-
-                /* this allows reusing VLC tables */
-                if (tab->redirect >= 0)
-                    tab_index = tab->redirect;
 
                 decode_qu_spectra(gb, tab, &spec_vlc_tabs[tab_index],
                                   &chan->spectrum[ff_atrac3p_qu_to_spec_pos[qu]],
