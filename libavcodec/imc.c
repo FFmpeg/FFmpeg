@@ -110,6 +110,7 @@ typedef struct IMCContext {
 
 static VLC huffman_vlc[4][4];
 
+#define IMC_VLC_BITS 9
 #define VLC_TABLES_SIZE 9512
 
 static const int vlc_offsets[17] = {
@@ -238,7 +239,7 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         for (j = 0; j < 4; j++) {
             huffman_vlc[i][j].table = &vlc_tables[vlc_offsets[i * 4 + j]];
             huffman_vlc[i][j].table_allocated = vlc_offsets[i * 4 + j + 1] - vlc_offsets[i * 4 + j];
-            init_vlc(&huffman_vlc[i][j], 9, imc_huffman_sizes[i],
+            init_vlc(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
                      imc_huffman_lens[i][j], 1, 1,
                      imc_huffman_bits[i][j], 2, 2, INIT_VLC_USE_NEW_STATIC);
         }
@@ -348,7 +349,7 @@ static void imc_read_level_coeffs(IMCContext *q, int stream_format_code,
         levlCoeffs[0] = get_bits(&q->gb, 7);
     for (i = start; i < BANDS; i++) {
         levlCoeffs[i] = get_vlc2(&q->gb, hufftab[cb_sel[i]]->table,
-                                 hufftab[cb_sel[i]]->bits, 2);
+                                 IMC_VLC_BITS, 2);
         if (levlCoeffs[i] == 17)
             levlCoeffs[i] += get_bits(&q->gb, 4);
     }
