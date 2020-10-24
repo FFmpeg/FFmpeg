@@ -88,8 +88,6 @@ static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
 
     memset(blk, 0, sizeof(*blk) * 64);
     blk[0] = get_vlc2(gb, ctx->dc_vlc.table, 9, 3);
-    if (blk[0] < 0)
-        return AVERROR_INVALIDDATA;
     blk[0] -= 63;
 
     if (!has_ac)
