@@ -31,6 +31,8 @@
 #include "golomb.h"
 #include "internal.h"
 
+#define MOBI_MV_VLC_BITS 6
+
 static const uint8_t zigzag4x4_tab[] =
 {
     0x00, 0x04, 0x01, 0x02, 0x05, 0x08, 0x0C, 0x09, 0x06, 0x03, 0x07, 0x0A,
@@ -364,14 +366,14 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
     }
 
     for (int j = 0; j < 16; j++) {
-        ret = ff_init_vlc_sparse(&s->mv_vlc[0][j], 8, mv_len[j],
+        ret = ff_init_vlc_sparse(&s->mv_vlc[0][j], MOBI_MV_VLC_BITS, mv_len[j],
                                  mv_bits_mods[j],  sizeof(*mv_bits_mods[j]),  sizeof(*mv_bits_mods[j]),
                                  mv_codes_mods[j], sizeof(*mv_codes_mods[j]), sizeof(*mv_codes_mods[j]),
                                  mv_syms_mods[j],  sizeof(*mv_syms_mods[j]),  sizeof(*mv_syms_mods[j]), 0);
         if (ret < 0)
             return ret;
 
-        ret = ff_init_vlc_sparse(&s->mv_vlc[1][j], 8, mv_len[j],
+        ret = ff_init_vlc_sparse(&s->mv_vlc[1][j], MOBI_MV_VLC_BITS, mv_len[j],
                                  mv_bits[j],  sizeof(*mv_bits[j]),  sizeof(*mv_bits[j]),
                                  mv_codes[j], sizeof(*mv_codes[j]), sizeof(*mv_codes[j]),
                                  mv_syms[j],  sizeof(*mv_syms[j]),  sizeof(*mv_syms[j]), 0);
@@ -1259,7 +1261,7 @@ static int predict_motion(AVCodecContext *avctx,
             int ret, idx2;
 
             idx2 = get_vlc2(gb, s->mv_vlc[s->moflex][tidx].table,
-                            s->mv_vlc[s->moflex][tidx].bits, 1);
+                            MOBI_MV_VLC_BITS, 1);
             if (idx2 < 0)
                 return AVERROR_INVALIDDATA;
 
@@ -1335,7 +1337,7 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
                 motion[x / 16 + 2].y = 0;
 
                 idx = get_vlc2(gb, s->mv_vlc[s->moflex][0].table,
-                                   s->mv_vlc[s->moflex][0].bits, 1);
+                                   MOBI_MV_VLC_BITS, 1);
                 if (idx < 0)
                     return AVERROR_INVALIDDATA;
 
