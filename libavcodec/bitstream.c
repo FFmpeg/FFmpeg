@@ -281,7 +281,7 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
     vlc = vlc_arg;
     vlc->bits = nb_bits;
     if (flags & INIT_VLC_USE_NEW_STATIC) {
-        av_assert0(nb_codes + 1 <= FF_ARRAY_ELEMS(localbuf));
+        av_assert0(nb_codes <= FF_ARRAY_ELEMS(localbuf));
         localvlc = *vlc_arg;
         vlc = &localvlc;
         vlc->table_size = 0;
@@ -290,8 +290,8 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
         vlc->table_allocated = 0;
         vlc->table_size      = 0;
     }
-    if (nb_codes + 1 > FF_ARRAY_ELEMS(localbuf)) {
-        buf = av_malloc_array((nb_codes + 1), sizeof(VLCcode));
+    if (nb_codes > FF_ARRAY_ELEMS(localbuf)) {
+        buf = av_malloc_array(nb_codes, sizeof(VLCcode));
         if (!buf)
             return AVERROR(ENOMEM);
     } else
