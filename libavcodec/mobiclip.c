@@ -316,9 +316,6 @@ typedef struct MobiClipContext {
     uint8_t *bitstream;
     int bitstream_size;
 
-    VLC     vlc[2];
-    VLC     mv_vlc[2][16];
-
     int     qtab[2][64];
     uint8_t pre[32];
     MotionXY *motion;
@@ -327,10 +324,12 @@ typedef struct MobiClipContext {
     BswapDSPContext bdsp;
 } MobiClipContext;
 
+static VLC rl_vlc[2];
+static VLC mv_vlc[2][16];
+
 static av_cold int mobiclip_init(AVCodecContext *avctx)
 {
     MobiClipContext *s = avctx->priv_data;
-    int ret;
 
     if (avctx->width & 15 || avctx->height & 15) {
         av_log(avctx, AV_LOG_ERROR, "width/height not multiple of 16\n");
@@ -340,20 +339,6 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&s->bdsp);
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-
-    ret = ff_init_vlc_sparse(&s->vlc[0], MOBI_RL_VLC_BITS, 104,
-                             bits0,  sizeof(*bits0),  sizeof(*bits0),
-                             codes0, sizeof(*codes0), sizeof(*codes0),
-                             syms0,  sizeof(*syms0),  sizeof(*syms0), 0);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_init_vlc_sparse(&s->vlc[1], MOBI_RL_VLC_BITS, 104,
-                             bits0,  sizeof(*bits0),  sizeof(*bits0),
-                             codes0, sizeof(*codes0), sizeof(*codes0),
-                             syms1,  sizeof(*syms1),  sizeof(*syms1), 0);
-    if (ret < 0)
-        return ret;
 
     s->motion = av_calloc(avctx->width / 16 + 3, sizeof(MotionXY));
     if (!s->motion)
@@ -366,20 +351,30 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
+    INIT_VLC_SPARSE_STATIC(&rl_vlc[0], MOBI_RL_VLC_BITS, 104,
+                           bits0,  sizeof(*bits0),  sizeof(*bits0),
+                           codes0, sizeof(*codes0), sizeof(*codes0),
+                           syms0,  sizeof(*syms0),  sizeof(*syms0),
+                           1 << MOBI_RL_VLC_BITS);
+    INIT_VLC_SPARSE_STATIC(&rl_vlc[1], MOBI_RL_VLC_BITS, 104,
+                           bits0,  sizeof(*bits0),  sizeof(*bits0),
+                           codes0, sizeof(*codes0), sizeof(*codes0),
+                           syms1,  sizeof(*syms1),  sizeof(*syms1),
+                           1 << MOBI_RL_VLC_BITS);
     for (int j = 0; j < 16; j++) {
-        ret = ff_init_vlc_sparse(&s->mv_vlc[0][j], MOBI_MV_VLC_BITS, mv_len[j],
-                                 mv_bits_mods[j],  sizeof(*mv_bits_mods[j]),  sizeof(*mv_bits_mods[j]),
-                                 mv_codes_mods[j], sizeof(*mv_codes_mods[j]), sizeof(*mv_codes_mods[j]),
-                                 mv_syms_mods[j],  sizeof(*mv_syms_mods[j]),  sizeof(*mv_syms_mods[j]), 0);
-        if (ret < 0)
-            return ret;
-
-        ret = ff_init_vlc_sparse(&s->mv_vlc[1][j], MOBI_MV_VLC_BITS, mv_len[j],
-                                 mv_bits[j],  sizeof(*mv_bits[j]),  sizeof(*mv_bits[j]),
-                                 mv_codes[j], sizeof(*mv_codes[j]), sizeof(*mv_codes[j]),
-                                 mv_syms[j],  sizeof(*mv_syms[j]),  sizeof(*mv_syms[j]), 0);
-        if (ret < 0)
-            return ret;
+        static VLC_TYPE vlc_buf[2 * 16 << MOBI_MV_VLC_BITS][2];
+        mv_vlc[0][j].table           = &vlc_buf[2 * j << MOBI_MV_VLC_BITS];
+        mv_vlc[0][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
+        ff_init_vlc_sparse(&mv_vlc[0][j], MOBI_MV_VLC_BITS, mv_len[j],
+                           mv_bits_mods[j],  sizeof(*mv_bits_mods[j]),  sizeof(*mv_bits_mods[j]),
+                           mv_codes_mods[j], sizeof(*mv_codes_mods[j]), sizeof(*mv_codes_mods[j]),
+                           mv_syms_mods[j],  sizeof(*mv_syms_mods[j]),  sizeof(*mv_syms_mods[j]), INIT_VLC_USE_NEW_STATIC);
+        mv_vlc[1][j].table           = &vlc_buf[(2 * j + 1) << MOBI_MV_VLC_BITS];
+        mv_vlc[1][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
+        ff_init_vlc_sparse(&mv_vlc[1][j], MOBI_MV_VLC_BITS, mv_len[j],
+                           mv_bits[j],  sizeof(*mv_bits[j]),  sizeof(*mv_bits[j]),
+                           mv_codes[j], sizeof(*mv_codes[j]), sizeof(*mv_codes[j]),
+                           mv_syms[j],  sizeof(*mv_syms[j]),  sizeof(*mv_syms[j]), INIT_VLC_USE_NEW_STATIC);
     }
 
     return 0;
@@ -465,7 +460,7 @@ static void read_run_encoding(AVCodecContext *avctx,
 {
     MobiClipContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    int n = get_vlc2(gb, s->vlc[s->dct_tab_idx].table,
+    int n = get_vlc2(gb, rl_vlc[s->dct_tab_idx].table,
                      MOBI_RL_VLC_BITS, 1);
 
     *last = (n >> 11) == 1;
@@ -1249,7 +1244,7 @@ static int predict_motion(AVCodecContext *avctx,
         for (int i = 0; i < 2; i++) {
             int ret, idx2;
 
-            idx2 = get_vlc2(gb, s->mv_vlc[s->moflex][tidx].table,
+            idx2 = get_vlc2(gb, mv_vlc[s->moflex][tidx].table,
                             MOBI_MV_VLC_BITS, 1);
 
             ret = predict_motion(avctx, width, height, idx2,
@@ -1323,7 +1318,7 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
                 motion[x / 16 + 2].x = 0;
                 motion[x / 16 + 2].y = 0;
 
-                idx = get_vlc2(gb, s->mv_vlc[s->moflex][0].table,
+                idx = get_vlc2(gb, mv_vlc[s->moflex][0].table,
                                    MOBI_MV_VLC_BITS, 1);
 
                 if (idx == 6 || idx == 7) {
@@ -1381,14 +1376,6 @@ static void mobiclip_flush(AVCodecContext *avctx)
 static av_cold int mobiclip_close(AVCodecContext *avctx)
 {
     MobiClipContext *s = avctx->priv_data;
-
-    ff_free_vlc(&s->vlc[0]);
-    ff_free_vlc(&s->vlc[1]);
-
-    for (int i = 0; i < 16; i++) {
-        ff_free_vlc(&s->mv_vlc[0][i]);
-        ff_free_vlc(&s->mv_vlc[1][i]);
-    }
 
     av_freep(&s->bitstream);
     s->bitstream_size = 0;
