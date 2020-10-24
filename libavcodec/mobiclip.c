@@ -459,7 +459,7 @@ static void idct(int *arr, int size)
     arr[7] = tmp[0] - x0;
 }
 
-static int read_run_encoding(AVCodecContext *avctx,
+static void read_run_encoding(AVCodecContext *avctx,
                               int *last, int *run, int *level)
 {
     MobiClipContext *s = avctx->priv_data;
@@ -467,14 +467,9 @@ static int read_run_encoding(AVCodecContext *avctx,
     int n = get_vlc2(gb, s->vlc[s->dct_tab_idx].table,
                      s->vlc[s->dct_tab_idx].bits, 2);
 
-    if (n < 0)
-        return AVERROR_INVALIDDATA;
-
     *last = (n >> 11) == 1;
     *run  = (n >> 5) & 0x3F;
     *level = n & 0x1F;
-
-    return 0;
 }
 
 static int add_coefficients(AVCodecContext *avctx, AVFrame *frame,
@@ -486,29 +481,22 @@ static int add_coefficients(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *ztab = size == 8 ? ff_zigzag_direct : zigzag4x4_tab;
     const int *qtab = s->qtab[size == 8];
     uint8_t *dst = frame->data[plane] + by * frame->linesize[plane] + bx;
-    int ret = 0;
 
     for (int pos = 0; get_bits_left(gb) > 0; pos++) {
         int qval, last, run, level;
 
-        ret = read_run_encoding(avctx, &last, &run, &level);
-        if (ret < 0)
-            return ret;
+        read_run_encoding(avctx, &last, &run, &level);
 
         if (level) {
             if (get_bits1(gb))
                 level = -level;
         } else if (!get_bits1(gb)) {
-            ret = read_run_encoding(avctx, &last, &run, &level);
-            if (ret < 0)
-                return ret;
+            read_run_encoding(avctx, &last, &run, &level);
             level += run_residue[s->dct_tab_idx][(last ? 64 : 0) + run];
             if (get_bits1(gb))
                 level = -level;
         } else if (!get_bits1(gb)) {
-            ret = read_run_encoding(avctx, &last, &run, &level);
-            if (ret < 0)
-                return ret;
+            read_run_encoding(avctx, &last, &run, &level);
             run += run_residue[s->dct_tab_idx][128 + (last ? 64 : 0) + level];
             if (get_bits1(gb))
                 level = -level;
@@ -547,7 +535,7 @@ static int add_coefficients(AVCodecContext *avctx, AVFrame *frame,
         dst += frame->linesize[plane];
     }
 
-    return ret;
+    return 0;
 }
 
 static int add_pframe_coefficients(AVCodecContext *avctx, AVFrame *frame,
@@ -1262,8 +1250,6 @@ static int predict_motion(AVCodecContext *avctx,
 
             idx2 = get_vlc2(gb, s->mv_vlc[s->moflex][tidx].table,
                             MOBI_MV_VLC_BITS, 1);
-            if (idx2 < 0)
-                return AVERROR_INVALIDDATA;
 
             ret = predict_motion(avctx, width, height, idx2,
                                  offsetm, offsetx + i * adjx, offsety + i * adjy);
@@ -1338,8 +1324,6 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
 
                 idx = get_vlc2(gb, s->mv_vlc[s->moflex][0].table,
                                    MOBI_MV_VLC_BITS, 1);
-                if (idx < 0)
-                    return AVERROR_INVALIDDATA;
 
                 if (idx == 6 || idx == 7) {
                     ret = decode_macroblock(avctx, frame, x, y, idx == 7);
