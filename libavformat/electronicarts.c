@@ -582,6 +582,8 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
     int av_uninit(num_samples);
 
     while ((!packet_read && !hit_end) || partial_packet) {
+        if (avio_feof(pb))
+            return AVERROR_EOF;
         chunk_type = avio_rl32(pb);
         chunk_size = ea->big_endian ? avio_rb32(pb) : avio_rl32(pb);
         if (chunk_size < 8)
