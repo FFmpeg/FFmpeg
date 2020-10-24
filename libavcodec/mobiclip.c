@@ -31,6 +31,7 @@
 #include "golomb.h"
 #include "internal.h"
 
+#define MOBI_RL_VLC_BITS 12
 #define MOBI_MV_VLC_BITS 6
 
 static const uint8_t zigzag4x4_tab[] =
@@ -340,14 +341,14 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    ret = ff_init_vlc_sparse(&s->vlc[0], 12, 104,
+    ret = ff_init_vlc_sparse(&s->vlc[0], MOBI_RL_VLC_BITS, 104,
                              bits0,  sizeof(*bits0),  sizeof(*bits0),
                              codes0, sizeof(*codes0), sizeof(*codes0),
                              syms0,  sizeof(*syms0),  sizeof(*syms0), 0);
     if (ret < 0)
         return ret;
 
-    ret = ff_init_vlc_sparse(&s->vlc[1], 12, 104,
+    ret = ff_init_vlc_sparse(&s->vlc[1], MOBI_RL_VLC_BITS, 104,
                              bits0,  sizeof(*bits0),  sizeof(*bits0),
                              codes0, sizeof(*codes0), sizeof(*codes0),
                              syms1,  sizeof(*syms1),  sizeof(*syms1), 0);
@@ -465,7 +466,7 @@ static void read_run_encoding(AVCodecContext *avctx,
     MobiClipContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     int n = get_vlc2(gb, s->vlc[s->dct_tab_idx].table,
-                     s->vlc[s->dct_tab_idx].bits, 2);
+                     MOBI_RL_VLC_BITS, 1);
 
     *last = (n >> 11) == 1;
     *run  = (n >> 5) & 0x3F;
