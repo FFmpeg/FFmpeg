@@ -1842,13 +1842,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     ymax = FFMAX(0, s->ymax + 1);
     // Zero out the end if ymax+1 is not h
-    for (i = 0; i < planes; i++) {
-        ptr = picture->data[i] + (ymax * picture->linesize[i]);
-        for (y = ymax; y < avctx->height; y++) {
-            memset(ptr, 0, out_line_size);
-            ptr += picture->linesize[i];
+    if (ymax < avctx->height)
+        for (i = 0; i < planes; i++) {
+            ptr = picture->data[i] + (ymax * picture->linesize[i]);
+            for (y = ymax; y < avctx->height; y++) {
+                memset(ptr, 0, out_line_size);
+                ptr += picture->linesize[i];
+            }
         }
-    }
 
     picture->pict_type = AV_PICTURE_TYPE_I;
     *got_frame = 1;
