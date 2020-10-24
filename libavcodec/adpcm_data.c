@@ -178,10 +178,22 @@ const int16_t ff_adpcm_mtaf_stepsize[32][16] = {
        -424, -1273, -2121, -2970, -3819, -4668, -5516, -6365, },
 };
 
+/*
+ * Dumped from the binaries:
+ * - FantasticJourney.exe - 0x794D2, DGROUP:0x47A4D2
+ * - BigRaceUSA.exe       - 0x9B8AA, DGROUP:0x49C4AA
+ * - Timeshock!.exe       - 0x8506A, DGROUP:0x485C6A
+ */
 const int8_t ff_adpcm_ima_cunning_index_table[9] = {
     -1, -1, -1, -1, 1, 2, 3, 4, -1
 };
 
+/*
+ * Dumped from the binaries:
+ * - FantasticJourney.exe - 0x79458, DGROUP:0x47A458
+ * - BigRaceUSA.exe       - 0x9B830, DGROUP:0x49C430
+ * - Timeshock!.exe       - 0x84FF0, DGROUP:0x485BF0
+ */
 const int16_t ff_adpcm_ima_cunning_step_table[61] = {
        1,    1,   1,      1,     2,     2,     3,     3,    4,      5,
        6,    7,   8,     10,    12,    14,    16,    20,    24,    28,
