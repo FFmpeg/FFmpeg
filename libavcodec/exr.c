@@ -1821,10 +1821,12 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     avctx->execute2(avctx, decode_block, s->thread_data, NULL, nb_blocks);
 
     // Zero out the end if ymax+1 is not h
-    ptr = picture->data[0] + ((s->ymax+1) * picture->linesize[0]);
-    for (y = s->ymax + 1; y < avctx->height; y++) {
-        memset(ptr, 0, out_line_size);
-        ptr += picture->linesize[0];
+    if ((s->ymax+1) < avctx->height) {
+        ptr = picture->data[0] + ((s->ymax+1) * picture->linesize[0]);
+        for (y = s->ymax + 1; y < avctx->height; y++) {
+            memset(ptr, 0, out_line_size);
+            ptr += picture->linesize[0];
+        }
     }
 
     picture->pict_type = AV_PICTURE_TYPE_I;
