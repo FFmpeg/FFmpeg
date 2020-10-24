@@ -1351,7 +1351,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     ptr         = picture->data[0];
 
     // Zero out the start if ymin is not 0
-    for (y = 0; y < s->ymin; y++) {
+    for (y = 0; y < FFMIN(s->ymin, s->h); y++) {
         memset(ptr, 0, out_line_size);
         ptr += picture->linesize[0];
     }
