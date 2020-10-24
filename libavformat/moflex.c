@@ -316,6 +316,8 @@ static int moflex_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
 
             pkt_size = pop_int(br, pb, 13) + 1;
+            if (pkt_size > m->size)
+                return AVERROR_INVALIDDATA;
             packet   = s->streams[stream_index]->priv_data;
             if (!packet) {
                 avio_skip(pb, pkt_size);
