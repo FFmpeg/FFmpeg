@@ -132,6 +132,8 @@ static int alloc_table(VLC *vlc, int size, int use_static)
     return index;
 }
 
+#define LOCALBUF_ELEMS 1500 // the maximum currently needed is 1296 by rv34
+
 typedef struct VLCcode {
     uint8_t bits;
     VLC_TYPE symbol;
@@ -139,6 +141,31 @@ typedef struct VLCcode {
      * (even if intended for a little-endian bitstream reader) */
     uint32_t code;
 } VLCcode;
+
+static int vlc_common_init(VLC *vlc_arg, int nb_bits, int nb_codes,
+                           VLC **vlc, VLC *localvlc, VLCcode **buf,
+                           int flags)
+{
+    *vlc = vlc_arg;
+    (*vlc)->bits = nb_bits;
+    if (flags & INIT_VLC_USE_NEW_STATIC) {
+        av_assert0(nb_codes <= LOCALBUF_ELEMS);
+        *localvlc = *vlc_arg;
+        *vlc = localvlc;
+        (*vlc)->table_size = 0;
+    } else {
+        (*vlc)->table           = NULL;
+        (*vlc)->table_allocated = 0;
+        (*vlc)->table_size      = 0;
+    }
+    if (nb_codes > LOCALBUF_ELEMS) {
+        *buf = av_malloc_array(nb_codes, sizeof(VLCcode));
+        if (!*buf)
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
 
 static int compare_vlcspec(const void *a, const void *b)
 {
@@ -248,6 +275,27 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     return table_index;
 }
 
+static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+                          int flags, VLC *vlc_arg, VLCcode localbuf[LOCALBUF_ELEMS])
+{
+    int ret = build_table(vlc, nb_bits, nb_codes, codes, flags);
+
+    if (flags & INIT_VLC_USE_NEW_STATIC) {
+        if(vlc->table_size != vlc->table_allocated)
+            av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
+
+        av_assert0(ret >= 0);
+        *vlc_arg = *vlc;
+    } else {
+        if (codes != localbuf)
+            av_free(codes);
+        if (ret < 0) {
+            av_freep(&vlc->table);
+            return ret;
+        }
+    }
+    return 0;
+}
 
 /* Build VLC decoding tables suitable for use with get_vlc().
 
@@ -278,30 +326,14 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
                        const void *symbols, int symbols_wrap, int symbols_size,
                        int flags)
 {
-    VLCcode *buf;
+    VLCcode localbuf[LOCALBUF_ELEMS], *buf = localbuf;
     int i, j, ret;
-    VLCcode localbuf[1500]; // the maximum currently needed is 1296 by rv34
     VLC localvlc, *vlc;
 
-    vlc = vlc_arg;
-    vlc->bits = nb_bits;
-    if (flags & INIT_VLC_USE_NEW_STATIC) {
-        av_assert0(nb_codes <= FF_ARRAY_ELEMS(localbuf));
-        localvlc = *vlc_arg;
-        vlc = &localvlc;
-        vlc->table_size = 0;
-    } else {
-        vlc->table           = NULL;
-        vlc->table_allocated = 0;
-        vlc->table_size      = 0;
-    }
-    if (nb_codes > FF_ARRAY_ELEMS(localbuf)) {
-        buf = av_malloc_array(nb_codes, sizeof(VLCcode));
-        if (!buf)
-            return AVERROR(ENOMEM);
-    } else
-        buf = localbuf;
-
+    ret = vlc_common_init(vlc_arg, nb_bits, nb_codes, &vlc, &localvlc,
+                          &buf, flags);
+    if (ret < 0)
+        return ret;
 
     av_assert0(symbols_size <= 2 || !symbols);
     j = 0;
@@ -342,25 +374,59 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
     COPY(len && len <= nb_bits);
     nb_codes = j;
 
-    ret = build_table(vlc, nb_bits, nb_codes, buf, flags);
-
-    if (flags & INIT_VLC_USE_NEW_STATIC) {
-        if(vlc->table_size != vlc->table_allocated)
-            av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
-
-        av_assert0(ret >= 0);
-        *vlc_arg = *vlc;
-    } else {
-        if (buf != localbuf)
-            av_free(buf);
-        if (ret < 0) {
-            av_freep(&vlc->table);
-            return ret;
-        }
-    }
-    return 0;
+    return vlc_common_end(vlc, nb_bits, nb_codes, buf,
+                          flags, vlc_arg, localbuf);
 }
 
+int ff_init_vlc_from_lengths(VLC *vlc_arg, int nb_bits, int nb_codes,
+                             const int8_t *lens, int lens_wrap,
+                             const void *symbols, int symbols_wrap, int symbols_size,
+                             int offset, int flags, void *logctx)
+{
+    VLCcode localbuf[LOCALBUF_ELEMS], *buf = localbuf;
+    VLC localvlc, *vlc;
+    uint64_t code;
+    int ret, j, len_max = FFMIN(32, 3 * nb_bits);
+
+    ret = vlc_common_init(vlc_arg, nb_bits, nb_codes, &vlc, &localvlc,
+                          &buf, flags);
+    if (ret < 0)
+        return ret;
+
+    j = code = 0;
+    for (int i = 0; i < nb_codes; i++, lens += lens_wrap) {
+        int len = *lens;
+        if (len > 0) {
+            unsigned sym;
+
+            buf[j].bits = len;
+            if (symbols)
+                GET_DATA(sym, symbols, i, symbols_wrap, symbols_size)
+            else
+                sym = i;
+            buf[j].symbol = sym + offset;
+            buf[j++].code = code;
+        } else if (len <  0) {
+            len = -len;
+        } else
+            continue;
+        if (len > len_max || code & ((1U << (32 - len)) - 1)) {
+            av_log(logctx, AV_LOG_ERROR, "Invalid VLC (length %u)\n", len);
+            goto fail;
+        }
+        code += 1U << (32 - len);
+        if (code > UINT32_MAX + 1ULL) {
+            av_log(logctx, AV_LOG_ERROR, "Overdetermined VLC tree\n");
+            goto fail;
+        }
+    }
+    return vlc_common_end(vlc, nb_bits, j, buf,
+                          flags, vlc_arg, localbuf);
+fail:
+    if (buf != localbuf)
+        av_free(buf);
+    return AVERROR_INVALIDDATA;
+}
 
 void ff_free_vlc(VLC *vlc)
 {

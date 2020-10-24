@@ -49,6 +49,41 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
                        const void *codes, int codes_wrap, int codes_size,
                        const void *symbols, int symbols_wrap, int symbols_size,
                        int flags);
+
+/**
+ * Build VLC decoding tables suitable for use with get_vlc2()
+ *
+ * This function takes lengths and symbols and calculates the codes from them.
+ * For this the input lengths and symbols have to be sorted according to "left
+ * nodes in the corresponding tree first".
+ *
+ * @param[in,out] vlc      The VLC to be initialized; table and table_allocated
+ *                         must have been set when initializing a static VLC,
+ *                         otherwise this will be treated as uninitialized.
+ * @param[in] nb_bits      The number of bits to use for the VLC table;
+ *                         higher values take up more memory and cache, but
+ *                         allow to read codes with fewer reads.
+ * @param[in] nb_codes     The number of provided length and (if supplied) symbol
+ *                         entries.
+ * @param[in] lens         The lengths of the codes. Entries > 0 correspond to
+ *                         valid codes; entries == 0 will be skipped and entries
+ *                         with len < 0 indicate that the tree is incomplete and
+ *                         has an open end of length -len at this position.
+ * @param[in] lens_wrap    Stride (in bytes) of the lengths.
+ * @param[in] symbols      The symbols, i.e. what is returned from get_vlc2()
+ *                         when the corresponding code is encountered.
+ *                         May be NULL, then 0, 1, 2, 3, 4,... will be used.
+ * @param[in] symbols_wrap Stride (in bytes) of the symbols.
+ * @param[in] symbols_size Size of the symbols. 1 and 2 are supported.
+ * @param[in] offset       An offset to apply to all the valid symbols.
+ * @param[in] flags        A combination of the INIT_VLC_* flags; notice that
+ *                         INIT_VLC_INPUT_LE is pointless and ignored.
+ */
+int ff_init_vlc_from_lengths(VLC *vlc, int nb_bits, int nb_codes,
+                             const int8_t *lens, int lens_wrap,
+                             const void *symbols, int symbols_wrap, int symbols_size,
+                             int offset, int flags, void *logctx);
+
 void ff_free_vlc(VLC *vlc);
 
 /* If INIT_VLC_INPUT_LE is set, the LSB bit of the codes used to
@@ -86,5 +121,18 @@ void ff_free_vlc(VLC *vlc);
 
 #define INIT_LE_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size) \
     INIT_LE_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
+
+#define INIT_VLC_STATIC_FROM_LENGTHS(vlc, bits, nb_codes, lens, len_wrap,  \
+                                     symbols, symbols_wrap, symbols_size,  \
+                                     offset, flags, static_size)           \
+    do {                                                                   \
+        static VLC_TYPE table[static_size][2];                             \
+        (vlc)->table           = table;                                    \
+        (vlc)->table_allocated = static_size;                              \
+        ff_init_vlc_from_lengths(vlc, bits, nb_codes, lens, len_wrap,      \
+                                 symbols, symbols_wrap, symbols_size,      \
+                                 offset, flags | INIT_VLC_USE_NEW_STATIC,  \
+                                 NULL);                                    \
+    } while (0)
 
 #endif /* AVCODEC_VLC_H */
