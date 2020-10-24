@@ -57,8 +57,6 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
     num_lens = get_bits(gb, 5);
 
     if (num_lens > VLC_BITS * VLC_DEPTH) {
-        vlc->table = NULL;
-
         av_log(ctx->avctx, AV_LOG_ERROR, "To long VLCs %d\n", num_lens);
         return AVERROR_INVALIDDATA;
     }
@@ -68,8 +66,6 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
         num_codes_sum += num_codes;
 
         if (num_codes_sum > 256) {
-            vlc->table = NULL;
-
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "Too many VLCs (%d) to be read.\n", num_codes_sum);
             return AVERROR_INVALIDDATA;
@@ -83,7 +79,6 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
             count++;
         }
         if (prefix > (65535 - 256)/2) {
-            vlc->table = NULL;
             return AVERROR_INVALIDDATA;
         }
 
@@ -247,7 +242,7 @@ static int decode_argb_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
     for (i = 0; i < 4; i++) {
         ret = read_code_table(ctx, gb, &vlc[i]);
         if (ret < 0) {
-            for (j = 0; j <= i; j++)
+            for (j = 0; j < i; j++)
                 ff_free_vlc(&vlc[j]);
 
             av_log(ctx->avctx, AV_LOG_ERROR,
@@ -290,7 +285,7 @@ static int decode_rgb24_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
     for (i = 0; i < 3; i++) {
         ret = read_code_table(ctx, gb, &vlc[i]);
         if (ret < 0) {
-            for (j = 0; j <= i; j++)
+            for (j = 0; j < i; j++)
                 ff_free_vlc(&vlc[j]);
 
             av_log(ctx->avctx, AV_LOG_ERROR,
@@ -343,7 +338,7 @@ static int decode_yuv_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
     for (i = 0; i < 2; i++) {
         ret = read_code_table(ctx, gb, &vlc[i]);
         if (ret < 0) {
-            for (j = 0; j <= i; j++)
+            for (j = 0; j < i; j++)
                 ff_free_vlc(&vlc[j]);
 
             av_log(ctx->avctx, AV_LOG_ERROR,
