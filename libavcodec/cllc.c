@@ -46,11 +46,9 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
 {
     uint8_t symbols[256];
     uint8_t bits[256];
-    uint16_t codes[256];
-    int num_lens, num_codes, num_codes_sum, prefix;
+    int num_lens, num_codes, num_codes_sum;
     int i, j, count;
 
-    prefix        = 0;
     count         = 0;
     num_codes_sum = 0;
 
@@ -74,19 +72,13 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
         for (j = 0; j < num_codes; j++) {
             symbols[count] = get_bits(gb, 8);
             bits[count]    = i + 1;
-            codes[count]   = prefix++;
 
             count++;
         }
-        if (prefix > (65535 - 256)/2) {
-            return AVERROR_INVALIDDATA;
-        }
-
-        prefix <<= 1;
     }
 
-    return ff_init_vlc_sparse(vlc, VLC_BITS, count, bits, 1, 1,
-                              codes, 2, 2, symbols, 1, 1, 0);
+    return ff_init_vlc_from_lengths(vlc, VLC_BITS, count, bits, 1,
+                                    symbols, 1, 1, 0, 0, ctx->avctx);
 }
 
 /*
