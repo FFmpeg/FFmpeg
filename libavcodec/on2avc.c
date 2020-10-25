@@ -169,7 +169,7 @@ static int on2avc_decode_band_scales(On2AVCContext *c, GetBitContext *gb)
                 scale = get_bits(gb, 7);
                 first = 0;
             } else {
-                scale += get_vlc2(gb, c->scale_diff.table, 9, 3) - 60;
+                scale += get_vlc2(gb, c->scale_diff.table, 9, 3);
             }
             if (scale < 0 || scale > 127) {
                 av_log(c->avctx, AV_LOG_ERROR, "Invalid scale value %d\n",
@@ -960,7 +960,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
 
     ret = ff_init_vlc_from_lengths(&c->scale_diff, 9, ON2AVC_SCALE_DIFFS,
                                    ff_on2avc_scale_diff_bits, 1,
-                                   ff_on2avc_scale_diff_syms, 1, 1, 0, 0, avctx);
+                                   ff_on2avc_scale_diff_syms, 1, 1, -60, 0, avctx);
     if (ret < 0)
         goto vlc_fail;
     for (i = 1; i < 16; i++) {
