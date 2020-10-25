@@ -356,7 +356,7 @@ struct AVDeviceCapabilitiesQuery;
  *       sorting will have '-sort' appended. E.g. artist="The Beatles",
  *       artist-sort="Beatles, The".
  * - Some protocols and demuxers support metadata updates. After a successful
- *   call to av_read_packet(), AVFormatContext.event_flags or AVStream.event_flags
+ *   call to av_read_frame(), AVFormatContext.event_flags or AVStream.event_flags
  *   will be updated to indicate if metadata changed. In order to detect metadata
  *   changes on a stream, you need to loop through all streams in the AVFormatContext
  *   and check their individual event_flags.
