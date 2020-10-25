@@ -62,14 +62,17 @@ typedef struct SmackVContext {
     int mmap_last[3], mclr_last[3], full_last[3], type_last[3];
 } SmackVContext;
 
+typedef struct HuffEntry {
+    uint8_t value;
+    uint8_t length;
+} HuffEntry;
+
 /**
  * Context used for code reconstructing
  */
 typedef struct HuffContext {
     int current;
-    uint32_t bits[256];
-    uint8_t lengths[256];
-    uint8_t values[256];
+    HuffEntry entries[256];
 } HuffContext;
 
 /* common parameters used for decode_bigtree */
@@ -105,7 +108,7 @@ enum SmkBlockTypes {
  * Can read SMKTREE_DECODE_MAX_RECURSION before the first check;
  * does not overread gb on success.
  */
-static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t prefix, int length)
+static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, int length)
 {
     if (length > SMKTREE_DECODE_MAX_RECURSION || length > 3 * SMKTREE_BITS) {
         av_log(NULL, AV_LOG_ERROR, "Maximum tree recursion level exceeded.\n");
@@ -119,18 +122,15 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
         }
         if (get_bits_left(gb) < 8)
             return AVERROR_INVALIDDATA;
-        hc->bits[hc->current]    = prefix;
-        hc->lengths[hc->current] = length;
-        hc->values[hc->current] = get_bits(gb, 8);
-        hc->current++;
+        hc->entries[hc->current++] = (HuffEntry){ get_bits(gb, 8), length };
         return 0;
     } else { //Node
         int r;
         length++;
-        r = smacker_decode_tree(gb, hc, prefix, length);
+        r = smacker_decode_tree(gb, hc, length);
         if(r)
             return r;
-        return smacker_decode_tree(gb, hc, prefix | (1U << (length - 1)), length);
+        return smacker_decode_tree(gb, hc, length);
     }
 }
 
@@ -216,22 +216,21 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
                    i ? "high" : "low");
             continue;
         }
-        err = smacker_decode_tree(gb, &h, 0, 0);
+        err = smacker_decode_tree(gb, &h, 0);
         if (err < 0)
             goto error;
         skip_bits1(gb);
         if (h.current > 1) {
-            err = ff_init_vlc_sparse(&vlc[i], SMKTREE_BITS, h.current,
-                                     h.lengths, sizeof(*h.lengths), sizeof(*h.lengths),
-                                     h.bits,    sizeof(*h.bits),    sizeof(*h.bits),
-                                     h.values,  sizeof(*h.values),  sizeof(*h.values),
-                                     INIT_VLC_LE);
+            err = ff_init_vlc_from_lengths(&vlc[i], SMKTREE_BITS, h.current,
+                                           &h.entries[0].length, sizeof(*h.entries),
+                                           &h.entries[0].value,  sizeof(*h.entries), 1,
+                                           0, INIT_VLC_OUTPUT_LE, smk->avctx);
             if (err < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
                 goto error;
             }
         } else
-            ctx.vals[i] = h.values[0];
+            ctx.vals[i] = h.entries[0].value;
     }
 
     escapes[0]  = get_bits(gb, 16);
@@ -650,21 +649,20 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         HuffContext h;
         h.current = 0;
         skip_bits1(&gb);
-        if ((ret = smacker_decode_tree(&gb, &h, 0, 0)) < 0)
+        if ((ret = smacker_decode_tree(&gb, &h, 0)) < 0)
             goto error;
         skip_bits1(&gb);
         if (h.current > 1) {
-            ret = ff_init_vlc_sparse(&vlc[i], SMKTREE_BITS, h.current,
-                                     h.lengths, sizeof(*h.lengths), sizeof(*h.lengths),
-                                     h.bits,    sizeof(*h.bits),    sizeof(*h.bits),
-                                     h.values,  sizeof(*h.values),  sizeof(*h.values),
-                                     INIT_VLC_LE);
+            ret = ff_init_vlc_from_lengths(&vlc[i], SMKTREE_BITS, h.current,
+                                           &h.entries[0].length, sizeof(*h.entries),
+                                           &h.entries[0].value,  sizeof(*h.entries), 1,
+                                           0, INIT_VLC_OUTPUT_LE, avctx);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
                 goto error;
             }
         } else
-            values[i] = h.values[0];
+            values[i] = h.entries[0].value;
     }
     /* this codec relies on wraparound instead of clipping audio */
     if(bits) { //decode 16-bit data
