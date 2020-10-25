@@ -38,13 +38,11 @@ extern const On2AVCMode ff_on2avc_modes_40[8];
 extern const On2AVCMode ff_on2avc_modes_44[8];
 
 #define ON2AVC_SCALE_DIFFS 121
-extern const uint32_t ff_on2avc_scale_diff_codes[];
-extern const uint8_t  ff_on2avc_scale_diff_bits[];
+extern const uint8_t ff_on2avc_scale_diff_syms[];
+extern const uint8_t ff_on2avc_scale_diff_bits[];
 
-extern const void     * const ff_on2avc_cb_codes[];
 extern const uint8_t  * const ff_on2avc_cb_bits[];
 extern const uint16_t * const ff_on2avc_cb_syms[];
-extern const uint8_t          ff_on2avc_cb_codes_sizes[];
 extern const int              ff_on2avc_cb_elems[];
 
 extern const float ff_on2avc_window_long_32000[1024];

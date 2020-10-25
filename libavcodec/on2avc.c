@@ -906,7 +906,7 @@ static av_cold void on2avc_free_vlcs(On2AVCContext *c)
 static av_cold int on2avc_decode_init(AVCodecContext *avctx)
 {
     On2AVCContext *c = avctx->priv_data;
-    int i;
+    int i, ret;
 
     if (avctx->channels > 2U) {
         avpriv_request_sample(avctx, "Decoding more than 2 channels");
@@ -956,25 +956,24 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     if (!c->fdsp)
         return AVERROR(ENOMEM);
 
-    if (init_vlc(&c->scale_diff, 9, ON2AVC_SCALE_DIFFS,
-                 ff_on2avc_scale_diff_bits,  1, 1,
-                 ff_on2avc_scale_diff_codes, 4, 4, 0)) {
+    ret = ff_init_vlc_from_lengths(&c->scale_diff, 9, ON2AVC_SCALE_DIFFS,
+                                   ff_on2avc_scale_diff_bits, 1,
+                                   ff_on2avc_scale_diff_syms, 1, 1, 0, 0, avctx);
+    if (ret < 0)
         goto vlc_fail;
-    }
     for (i = 1; i < 16; i++) {
-        int idx = i - 1, codes_size = ff_on2avc_cb_codes_sizes[idx];
-        if (ff_init_vlc_sparse(&c->cb_vlc[i], 9, ff_on2avc_cb_elems[idx],
-                               ff_on2avc_cb_bits[idx],  1, 1,
-                               ff_on2avc_cb_codes[idx], codes_size, codes_size,
-                               ff_on2avc_cb_syms[idx],  2, 2, 0)) {
+        int idx = i - 1;
+        ret = ff_init_vlc_from_lengths(&c->cb_vlc[i], 9, ff_on2avc_cb_elems[idx],
+                                       ff_on2avc_cb_bits[idx], 1,
+                                       ff_on2avc_cb_syms[idx], 2, 2, 0, 0, avctx);
+        if (ret < 0)
             goto vlc_fail;
-        }
     }
 
     return 0;
 vlc_fail:
     av_log(avctx, AV_LOG_ERROR, "Cannot init VLC\n");
-    return AVERROR(ENOMEM);
+    return ret;
 }
 
 static av_cold int on2avc_decode_close(AVCodecContext *avctx)
