@@ -43,10 +43,10 @@ static inline int wnv1_get_code(GetBitContext *gb, int shift, int base_value)
 {
     int v = get_vlc2(gb, code_vlc.table, CODE_VLC_BITS, 1);
 
-    if (v == 15)
+    if (v == 8)
         return get_bits(gb, 8 - shift) << shift;
     else
-        return base_value + ((v - 7U) << shift);
+        return base_value + v * (1 << shift);
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -119,7 +119,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     INIT_VLC_STATIC_FROM_LENGTHS(&code_vlc, CODE_VLC_BITS, 16,
                                  &code_tab[0][1], 2,
                                  &code_tab[0][0], 2, 1,
-                                 0, INIT_VLC_OUTPUT_LE, 1 << CODE_VLC_BITS);
+                                 -7, INIT_VLC_OUTPUT_LE, 1 << CODE_VLC_BITS);
     return 0;
 }
 
