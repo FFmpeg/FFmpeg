@@ -537,7 +537,7 @@ TESTPROGS = drawutils filtfmts formats integral
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
 clean::
-	$(RM) $(CLEANSUFFIXES:%=libavfilter/dnn/%)
+	$(RM) $(CLEANSUFFIXES:%=libavfilter/dnn/%) $(CLEANSUFFIXES:%=libavfilter/opencl/%)
 
 OPENCL = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/opencl/*.cl))
 .SECONDARY: $(OPENCL:.cl=.c)
