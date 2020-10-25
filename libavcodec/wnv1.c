@@ -29,11 +29,10 @@
 #include "get_bits.h"
 #include "internal.h"
 
-
-static const uint16_t code_tab[16][2] = {
-    { 0x17F, 9 }, { 0xBF, 8 }, { 0x5F, 7 }, { 0x2F, 6 }, { 0x17, 5 }, { 0x0B, 4 }, { 0x005, 3 },
-    { 0x000, 1 },
-    { 0x01, 3 }, { 0x03, 4 }, { 0x07, 5 }, { 0x0F, 6 }, { 0x1F, 7 }, { 0x3F, 8 }, { 0x07F, 9 }, { 0xFF, 8 }
+static const uint8_t code_tab[16][2] = {
+    {  7, 1 }, {  8, 3 }, {  6, 3 }, { 9, 4 }, {  5, 4 }, { 10, 5 }, {  4, 5 },
+    { 11, 6 }, {  3, 6 }, { 12, 7 }, { 2, 7 }, { 13, 8 }, {  1, 8 }, { 14, 9 },
+    {  0, 9 }, { 15, 8 }
 };
 
 #define CODE_VLC_BITS 9
@@ -115,16 +114,12 @@ static int decode_frame(AVCodecContext *avctx,
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    static VLC_TYPE code_table[1 << CODE_VLC_BITS][2];
-
     avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
-    code_vlc.table           = code_table;
-    code_vlc.table_allocated = 1 << CODE_VLC_BITS;
-    init_vlc(&code_vlc, CODE_VLC_BITS, 16,
-             &code_tab[0][1], 4, 2,
-             &code_tab[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);
-
+    INIT_VLC_STATIC_FROM_LENGTHS(&code_vlc, CODE_VLC_BITS, 16,
+                                 &code_tab[0][1], 2,
+                                 &code_tab[0][0], 2, 1,
+                                 0, INIT_VLC_OUTPUT_LE, 1 << CODE_VLC_BITS);
     return 0;
 }
 
