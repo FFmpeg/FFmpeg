@@ -90,60 +90,28 @@ static const uint8_t clv_ac_bits[NUM_AC_CODES] = {
      6,  5,  5,  5,  4,  2,  3,  4,  4
 };
 
-static const uint8_t clv_flagsy_0_bits[] = {
-     2,  3,  4,  4,  4,  4,  4,  4,  4,  4,  5,  5,  5,  6,  7,  7
+static const uint8_t clv_flags_bits[][16] = {
+    { 2,  3,  4,  4,  4,  4,  4,  4,  4,  4,  5,  5,  5,  6,  7,  7 }, // Y_0
+    { 2,  3,  3,  4,  4,  4,  4,  4,  4,  4,  6,  6,  6,  7,  8,  8 }, // Y_1
+    { 1,  4,  4,  4,  4,  4,  4,  5,  5,  5,  6,  7,  8,  9, 10, 10 }, // Y_2
+    { 1,  4,  4,  4,  4,  4,  4,  5,  5,  5,  7,  7,  7,  8,  9,  9 }, // U_0
+    { 1,  4,  4,  4,  4,  4,  4,  4,  5,  6,  8,  8,  8,  9, 10, 10 }, // U_1
+    { 1,  3,  4,  4,  4,  5,  5,  5,  5,  5,  6,  7,  8,  9, 10, 10 }, // V_0
+    { 1,  3,  4,  4,  4,  4,  5,  5,  5,  6,  7,  8,  9, 10, 11, 11 }  // V_1
 };
 
-static const uint8_t clv_flagsy_0_syms[] = {
-    15,  0,  3,  5, 12,  1, 10,  2,  4,  8,  7, 11, 14,  6,  9, 13
+static const uint8_t clv_flags_syms[][16] = {
+    { 15,  0,  3,  5, 12,  1, 10,  2,  4,  8,  7, 11, 14,  6,  9, 13 }, // Y_0
+    {  0, 15,  3, 12,  5,  1,  4,  2,  8, 10, 11,  7,  9,  6, 13, 14 }, // Y_1
+    {  0,  3, 12,  4,  2,  1,  8,  5,  7, 10,  9,  6, 11, 13, 14, 15 }, // Y_2
+    {  0, 15,  3, 12,  1, 10,  2,  5,  4,  8, 11,  7, 14, 13,  9,  6 }, // U_0
+    {  0,  2, 12,  3,  4,  1,  8,  5, 10,  7,  9,  6, 11, 14, 13, 15 }, // U_1
+    {  0, 15,  1, 12,  3, 10,  2,  5,  8,  4, 11, 14,  6,  9,  7, 13 }, // V_0
+    {  0,  8,  3,  4,  2,  1, 12,  5, 10,  7,  9,  6, 14, 11, 13, 15 }  // V_1
 };
 
-static const uint8_t clv_flagsy_1_bits[] = {
-     2,  3,  3,  4,  4,  4,  4,  4,  4,  4,  6,  6,  6,  7,  8,  8
-};
-
-static const uint8_t clv_flagsy_1_syms[] = {
-     0, 15,  3, 12,  5,  1,  4,  2,  8, 10, 11,  7,  9,  6, 13, 14
-};
-
-static const uint8_t clv_flagsy_2_bits[] = {
-     1,  4,  4,  4,  4,  4,  4,  5,  5,  5,  6,  7,  8,  9, 10, 10
-};
-
-static const uint8_t clv_flagsy_2_syms[] = {
-     0,  3, 12,  4,  2,  1,  8,  5,  7, 10,  9,  6, 11, 13, 14, 15
-};
-
-static const uint8_t clv_flagsu_0_bits[] = {
-     1,  4,  4,  4,  4,  4,  4,  5,  5,  5,  7,  7,  7,  8,  9,  9
-};
-
-static const uint8_t clv_flagsu_0_syms[] = {
-     0, 15,  3, 12,  1, 10,  2,  5,  4,  8, 11,  7, 14, 13,  9,  6
-};
-
-static const uint8_t clv_flagsu_1_bits[] = {
-     1,  4,  4,  4,  4,  4,  4,  4,  5,  6,  8,  8,  8,  9, 10, 10
-};
-
-static const uint8_t clv_flagsu_1_syms[] = {
-     0,  2, 12,  3,  4,  1,  8,  5, 10,  7,  9,  6, 11, 14, 13, 15
-};
-
-static const uint8_t clv_flagsv_0_bits[] = {
-     1,  3,  4,  4,  4,  5,  5,  5,  5,  5,  6,  7,  8,  9, 10, 10
-};
-
-static const uint8_t clv_flagsv_0_syms[] = {
-     0, 15,  1, 12,  3, 10,  2,  5,  8,  4, 11, 14,  6,  9,  7, 13
-};
-
-static const uint8_t clv_flagsv_1_bits[] = {
-     1,  3,  4,  4,  4,  4,  5,  5,  5,  6,  7,  8,  9, 10, 11, 11
-};
-
-static const uint8_t clv_flagsv_1_syms[] = {
-     0,  8,  3,  4,  2,  1, 12,  5, 10,  7,  9,  6, 14, 11, 13, 15
+static const uint16_t clv_mv_escape[] = {
+    0x0909, 0x0A0A, 0x1010, 0x1313, 0, 0x0808, 0x0B0B, 0, 0x0808, 0x0B0B
 };
 
 static const uint8_t clv_mvy_0_bits[] = {
@@ -1032,6 +1000,42 @@ static const uint16_t clv_biasv_2_syms[] = {
     0x0024, 0x0028, 0xFFD8, 0x002C, 0xFFD4, 0x0030, 0xFFD0, 0xFFCC, 0x0034,
     0xFFC8, 0x0038, 0x0040, 0xFFC4, 0xFFC0, 0x003C, 0x0044, 0xFFBC, 0xFFB8,
     0x0048, 0xFFB4, 0x004C, 0x0100, 0xFFB0, 0x0054, 0xFFAC, 0x0050
+};
+
+static const uint8_t *const clv_bias_bits[] = {
+    clv_biasy_1_bits, clv_biasy_2_bits, clv_biasy_3_bits,
+    clv_biasu_1_bits, clv_biasu_2_bits,
+    clv_biasv_1_bits, clv_biasv_2_bits
+};
+
+static const uint16_t *const clv_bias_syms[] = {
+    clv_biasy_1_syms, clv_biasy_2_syms, clv_biasy_3_syms,
+    clv_biasu_1_syms, clv_biasu_2_syms,
+    clv_biasv_1_syms, clv_biasv_2_syms
+};
+
+static const int clv_bias_sizes[] = {
+    FF_ARRAY_ELEMS(clv_biasy_1_bits), FF_ARRAY_ELEMS(clv_biasy_2_bits), FF_ARRAY_ELEMS(clv_biasy_3_bits),
+    FF_ARRAY_ELEMS(clv_biasu_1_bits), FF_ARRAY_ELEMS(clv_biasu_2_bits),
+    FF_ARRAY_ELEMS(clv_biasv_1_bits), FF_ARRAY_ELEMS(clv_biasv_2_bits)
+};
+
+static const uint8_t *const clv_mv_bits[] = {
+    clv_mvy_0_bits, clv_mvy_1_bits, clv_mvy_2_bits, clv_mvy_3_bits,
+    NULL, clv_mvu_1_bits, clv_mvu_2_bits,
+    NULL, clv_mvv_1_bits, clv_mvv_2_bits
+};
+
+static const uint16_t *const clv_mv_syms[] = {
+    clv_mvy_0_syms, clv_mvy_1_syms, clv_mvy_2_syms, clv_mvy_3_syms,
+    NULL, clv_mvu_1_syms, clv_mvu_2_syms,
+    NULL, clv_mvv_1_syms, clv_mvv_2_syms
+};
+
+static const int clv_mv_sizes[] = {
+    FF_ARRAY_ELEMS(clv_mvy_0_bits), FF_ARRAY_ELEMS(clv_mvy_1_bits), FF_ARRAY_ELEMS(clv_mvy_2_bits), FF_ARRAY_ELEMS(clv_mvy_3_bits),
+    0, FF_ARRAY_ELEMS(clv_mvu_1_bits), FF_ARRAY_ELEMS(clv_mvu_2_bits),
+    0, FF_ARRAY_ELEMS(clv_mvv_1_bits), FF_ARRAY_ELEMS(clv_mvv_2_bits)
 };
 
 #endif /* AVCODEC_CLEARVIDEODATA_H */
