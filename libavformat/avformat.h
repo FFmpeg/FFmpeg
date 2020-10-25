@@ -995,6 +995,12 @@ typedef struct AVStream {
  *     it into the file
  */
 #define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001
+/**
+ * - demuxing: new packets for this stream were read from the file. This
+ *   event is informational only and does not guarantee that new packets
+ *   for this stream will necessarily be returned from av_read_frame().
+ */
+#define AVSTREAM_EVENT_FLAG_NEW_PACKETS (1 << 1)
 
     /**
      * Real base framerate of the stream.

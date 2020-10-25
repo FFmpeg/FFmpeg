@@ -1533,6 +1533,8 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         ret = 0;
         st  = s->streams[pkt->stream_index];
 
+        st->event_flags |= AVSTREAM_EVENT_FLAG_NEW_PACKETS;
+
         /* update context if required */
         if (st->internal->need_context_update) {
             if (avcodec_is_open(st->internal->avctx)) {
