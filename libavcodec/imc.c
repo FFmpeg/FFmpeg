@@ -239,9 +239,10 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         for (j = 0; j < 4; j++) {
             huffman_vlc[i][j].table = &vlc_tables[vlc_offsets[i * 4 + j]];
             huffman_vlc[i][j].table_allocated = vlc_offsets[i * 4 + j + 1] - vlc_offsets[i * 4 + j];
-            init_vlc(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
-                     imc_huffman_lens[i][j], 1, 1,
-                     imc_huffman_bits[i][j], 2, 2, INIT_VLC_USE_NEW_STATIC);
+            ff_init_vlc_from_lengths(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
+                                     imc_huffman_lens[i][j], 1,
+                                     imc_huffman_syms[i][j], 1, 1,
+                                     0, INIT_VLC_USE_NEW_STATIC, NULL);
         }
     }
 
