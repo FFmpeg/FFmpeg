@@ -3922,7 +3922,7 @@ static inline void rotate(const float rot_quaternion[2][4],
 {
     float qv[4], temp[4], rqv[4];
 
-    qv[0] = 0;
+    qv[0] = 0.f;
     qv[1] = vec[0];
     qv[2] = vec[1];
     qv[3] = vec[2];
@@ -4670,13 +4670,8 @@ static int config_output(AVFilterLink *outlink)
             return err;
     }
 
-    s->rot_quaternion[0][0] = 1.f;
-    s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
-
-    for (int i = 0; i < 4; i++) {
-        calculate_rotation(s->yaw * 0.25f, s->pitch * 0.25f, s->roll * 0.25f,
-                           s->rot_quaternion, s->rotation_order);
-    }
+    calculate_rotation(s->yaw, s->pitch, s->roll,
+                       s->rot_quaternion, s->rotation_order);
 
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
@@ -4712,13 +4707,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
+    V360Context *s = ctx->priv;
     int ret;
+
+    s->yaw = s->pitch = s->roll = 0.f;
 
     ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
     if (ret < 0)
         return ret;
 
     return config_output(ctx->outputs[0]);
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->rot_quaternion[0][0] = 1.f;
+    s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
+
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -4762,6 +4770,7 @@ AVFilter ff_vf_v360 = {
     .name          = "v360",
     .description   = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
     .priv_size     = sizeof(V360Context),
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = inputs,
