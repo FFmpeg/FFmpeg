@@ -977,12 +977,24 @@ typedef struct AVStream {
     int            nb_side_data;
 
     /**
-     * Flags for the user to detect events happening on the stream. Flags must
-     * be cleared by the user once the event has been handled.
-     * A combination of AVSTREAM_EVENT_FLAG_*.
+     * Flags indicating events happening on the stream, a combination of
+     * AVSTREAM_EVENT_FLAG_*.
+     *
+     * - demuxing: may be set by the demuxer in avformat_open_input(),
+     *   avformat_find_stream_info() and av_read_frame(). Flags must be cleared
+     *   by the user once the event has been handled.
+     * - muxing: may be set by the user after avformat_write_header(). to
+     *   indicate a user-triggered event.  The muxer will clear the flags for
+     *   events it has handled in av_[interleaved]_write_frame().
      */
     int event_flags;
-#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
+/**
+ * - demuxing: the demuxer read new metadata from the file and updated
+ *     AVStream.metadata accordingly
+ * - muxing: the user updated AVStream.metadata and wishes the muxer to write
+ *     it into the file
+ */
+#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001
 
     /**
      * Real base framerate of the stream.
@@ -1649,12 +1661,24 @@ typedef struct AVFormatContext {
     int strict_std_compliance;
 
     /**
-     * Flags for the user to detect events happening on the file. Flags must
-     * be cleared by the user once the event has been handled.
-     * A combination of AVFMT_EVENT_FLAG_*.
+     * Flags indicating events happening on the file, a combination of
+     * AVFMT_EVENT_FLAG_*.
+     *
+     * - demuxing: may be set by the demuxer in avformat_open_input(),
+     *   avformat_find_stream_info() and av_read_frame(). Flags must be cleared
+     *   by the user once the event has been handled.
+     * - muxing: may be set by the user after avformat_write_header() to
+     *   indicate a user-triggered event.  The muxer will clear the flags for
+     *   events it has handled in av_[interleaved]_write_frame().
      */
     int event_flags;
-#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
+/**
+ * - demuxing: the demuxer read new metadata from the file and updated
+ *   AVFormatContext.metadata accordingly
+ * - muxing: the user updated AVFormatContext.metadata and wishes the muxer to
+ *   write it into the file
+ */
+#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001
 
     /**
      * Maximum number of packets to read while waiting for the first timestamp.
