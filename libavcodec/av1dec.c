@@ -673,7 +673,12 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
     for (int i = 0; i < s->current_obu.nb_units; i++) {
         CodedBitstreamUnit *unit = &s->current_obu.units[i];
         AV1RawOBU *obu = unit->content;
-        const AV1RawOBUHeader *header = &obu->header;
+        const AV1RawOBUHeader *header;
+
+        if (!obu)
+            continue;
+
+        header = &obu->header;
         av_log(avctx, AV_LOG_DEBUG, "Obu idx:%d, obu type:%d.\n", i, unit->type);
 
         switch (unit->type) {
