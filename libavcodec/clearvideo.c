@@ -646,9 +646,31 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
     return mb_ret < 0 ? mb_ret : buf_size;
 }
 
+static av_cold int build_vlc(VLC *vlc, const uint8_t counts[16],
+                             const uint16_t **syms)
+{
+    uint8_t lens[MAX_VLC_ENTRIES];
+    unsigned num = 0;
+    int ret;
+
+    for (int i = 0; i < 16; i++) {
+        unsigned count = counts[i];
+        if (count == 255) /* Special case for Y_3 table */
+            count = 303;
+        for (count += num; num < count; num++)
+            lens[num] = i + 1;
+    }
+    ret = ff_init_vlc_from_lengths(vlc, 9, num, lens, 1, *syms, 2, 2, 0, 0, NULL);
+    if (ret < 0)
+        return ret;
+    *syms += num;
+    return 0;
+}
+
 static av_cold int clv_decode_init(AVCodecContext *avctx)
 {
     CLVContext *const c = avctx->priv_data;
+    const uint16_t *mv_syms = clv_mv_syms, *bias_syms = clv_bias_syms;
     int ret, w, h;
 
     if (avctx->extradata_size == 110) {
@@ -704,14 +726,13 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
         return ret;
     }
 
-    for (int i = 0, j = 0;; i++) {
+    for (int i = 0, j = 0, k = 0;; i++) {
         if (0x36F & (1 << i)) {
             c->lev[i].mv_esc = clv_mv_escape[i];
-            ret = ff_init_vlc_from_lengths(&c->lev[i].mv_cb, 9, clv_mv_sizes[i],
-                                           clv_mv_bits[i], 1,
-                                           clv_mv_syms[i], 2, 2, 0, 0, avctx);
+            ret = build_vlc(&c->lev[i].mv_cb, clv_mv_len_counts[k], &mv_syms);
             if (ret < 0)
                 return ret;
+            k++;
         }
         if (i == FF_ARRAY_ELEMS(c->lev) - 1)
             break;
@@ -723,9 +744,8 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
                 return ret;
 
             c->lev[i + 1].bias_esc = 0x100;
-            ret = ff_init_vlc_from_lengths(&c->lev[i + 1].bias_cb, 9, clv_bias_sizes[j],
-                                           clv_bias_bits[j], 1,
-                                           clv_bias_syms[j], 2, 2, 0, 0, avctx);
+            ret = build_vlc(&c->lev[i + 1].bias_cb,
+                            clv_bias_len_counts[j], &bias_syms);
             if (ret < 0)
                 return ret;
             j++;
