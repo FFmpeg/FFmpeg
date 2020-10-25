@@ -143,19 +143,16 @@ const uint8_t ff_on2avc_scale_diff_bits[ON2AVC_SCALE_DIFFS] = {
 #define ON2AVC_CB_14_CODES    729
 #define ON2AVC_CB_15_CODES   1089
 
-static const uint8_t on2avc_cb1_bits[ON2AVC_CB_1_2_CODES] = {
+const uint8_t ff_on2avc_cb_lens[] = {
+    /* Codebook 1 - 41 entries */
     1,  6,  6,  6,  6,  6,  8,  8,  9,  9,  9,  9,  6,  6,  6,  6,  6,  6,  6,
     6,  6,  6,  6,  6,  6,  6,  5,  5,  5,  5,  5,  7,  9,  9,  9,  9,  7,  9,
     9,  9,  9,
-};
-
-static const uint8_t on2avc_cb2_bits[ON2AVC_CB_1_2_CODES] = {
+    /* Codebook 2 - 41 entries */
     5,  7,  7,  7,  7,  5,  5,  5,  7,  7,  7,  7,  5,  5,  5,  5,  5,  7,  7,
     7,  7,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  7,  7,  7,  7,  3,  5,
     5,  5,  5,
-};
-
-static const uint8_t on2avc_cb3_bits[ON2AVC_CB_3_4_CODES] = {
+    /* Codebook 3 - 313 entries */
     1,  7,  7,  7,  9,  9,  10, 11, 12, 14, 14, 14, 15, 15, 10, 10, 7,  9,  9,
     9,  10, 11, 12, 12, 7,  10, 11, 11, 12, 12, 12, 13, 14, 15, 15, 11, 11, 9,
     9,  7,  9,  10, 11, 12, 12, 9,  9,  7,  7,  7,  7,  7,  7,  7,  7,  7,  9,
@@ -173,9 +170,7 @@ static const uint8_t on2avc_cb3_bits[ON2AVC_CB_3_4_CODES] = {
     9,  10, 12, 12, 12, 13, 14, 15, 16, 16, 9,  10, 10, 9,  10, 11, 12, 12, 9,
     10, 11, 12, 13, 13, 9,  9,  9,  11, 12, 13, 14, 14, 11, 11, 8,  9,  11, 12,
     13, 13, 11, 12, 13, 15, 15, 15, 15,
-};
-
-static const uint8_t on2avc_cb4_bits[ON2AVC_CB_3_4_CODES] = {
+    /* Codebook 4 - 313 entries */
     7,  7,  7,  9,  9,  9,  10, 11, 12, 12, 6,  6,  6,  7,  9,  9,  9,  9,  6,
     6,  6,  7,  9,  9,  9,  9,  6,  6,  6,  7,  7,  6,  6,  9,  9,  9,  11, 12,
     12, 11, 11, 9,  9,  9,  11, 11, 11, 12, 12, 7,  9,  9,  9,  9,  7,  9,  9,
@@ -193,9 +188,7 @@ static const uint8_t on2avc_cb4_bits[ON2AVC_CB_3_4_CODES] = {
     11, 11, 10, 10, 8,  8,  8,  10, 10, 10, 10, 8,  10, 11, 11, 10, 10, 8,  9,
     10, 11, 13, 13, 13, 13, 9,  10, 10, 10, 11, 11, 10, 10, 6,  6,  5,  5,  5,
     6,  8,  9,  9,  8,  9,  10, 11, 11,
-};
-
-static const uint8_t on2avc_cb5_bits[ON2AVC_CB_5_6_CODES] = {
+    /* Codebook 5 - 1201 entries */
     1,  7,  8,  10, 10, 10, 11, 12, 14, 14, 14, 14, 7,  10, 11, 14, 14, 14, 14,
     13, 13, 10, 12, 13, 15, 15, 15, 15, 12, 12, 10, 10, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 12, 14, 14, 14, 14, 11, 12, 12, 7,
@@ -260,9 +253,7 @@ static const uint8_t on2avc_cb5_bits[ON2AVC_CB_5_6_CODES] = {
     16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 14, 15, 15, 14, 14, 14, 14, 13, 14, 14, 11,
     13, 13, 13, 13,
-};
-
-static const uint8_t on2avc_cb6_bits[ON2AVC_CB_5_6_CODES] = {
+    /* Codebook 6 - 1201 entries */
     8,  10, 12, 13, 13, 12, 13, 14, 16, 17, 17, 16, 16, 10, 11, 11, 8,  10, 11,
     11, 10, 10, 10, 10, 11, 12, 13, 14, 14, 11, 11, 10, 10, 10, 11, 12, 12, 8,
     10, 11, 12, 12, 10, 11, 11, 8,  10, 10, 10, 11, 13, 13, 13, 13, 10, 11, 12,
@@ -327,9 +318,7 @@ static const uint8_t on2avc_cb6_bits[ON2AVC_CB_5_6_CODES] = {
     9,  10, 11, 12, 12, 9,  9,  9,  10, 10, 9,  9,  12, 12, 12, 12, 11, 11, 10,
     10, 9,  10, 11, 13, 13, 13, 13, 9,  9,  9,  9,  12, 12, 12, 12, 11, 11, 10,
     10, 9,  10, 10,
-};
-
-static const uint8_t on2avc_cb7_bits[ON2AVC_CB_7_8_CODES] = {
+    /* Codebook 7 - 3281 entries */
     1,  7,  11, 12, 12, 12, 13, 14, 15, 15, 13, 13, 13, 13, 13, 13, 13, 14, 14,
     12, 12, 12, 12, 12, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 13,
@@ -503,9 +492,7 @@ static const uint8_t on2avc_cb7_bits[ON2AVC_CB_7_8_CODES] = {
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 12, 12, 11, 12, 12, 10, 11, 11,
-};
-
-static const uint8_t on2avc_cb8_bits[ON2AVC_CB_7_8_CODES] = {
+    /* Codebook 8 - 3281 entries */
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
@@ -679,9 +666,7 @@ static const uint8_t on2avc_cb8_bits[ON2AVC_CB_7_8_CODES] = {
     14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
-};
-
-static const uint8_t on2avc_cb9_bits[ON2AVC_CB_9_10_CODES] = {
+    /* Codebook 9 - 121 entries */
     1,  5,  8,  9,  10, 11, 11, 9,  10, 11, 11, 10, 12, 12, 12, 12, 11, 11, 11,
     11, 9,  10, 11, 12, 13, 13, 10, 11, 11, 10, 10, 8,  9,  11, 12, 12, 11, 11,
     5,  8,  9,  10, 10, 8,  9,  10, 10, 8,  8,  8,  9,  10, 11, 12, 12, 8,  9,
@@ -689,9 +674,7 @@ static const uint8_t on2avc_cb9_bits[ON2AVC_CB_9_10_CODES] = {
     10, 8,  8,  8,  9,  9,  5,  9,  10, 11, 11, 9,  10, 11, 11, 8,  9,  9,  8,
     8,  8,  8,  5,  5,  5,  9,  11, 12, 12, 11, 11, 9,  9,  8,  9,  10, 10, 8,
     8,  8,  9,  10, 10, 4,  4,
-};
-
-static const uint8_t on2avc_cb10_bits[ON2AVC_CB_9_10_CODES] = {
+    /* Codebook 10 - 121 entries */
     9,  9,  9,  9,  8,  9,  9,  7,  8,  9,  9,  8,  9,  9,  8,  8,  8,  8,  8,
     8,  5,  6,  8,  8,  8,  8,  7,  8,  8,  7,  7,  7,  8,  9,  9,  7,  8,  8,
     7,  7,  7,  8,  9,  9,  6,  7,  7,  5,  6,  7,  7,  6,  7,  8,  9,  9,  6,
@@ -699,9 +682,7 @@ static const uint8_t on2avc_cb10_bits[ON2AVC_CB_9_10_CODES] = {
     7,  7,  5,  7,  8,  8,  8,  8,  8,  8,  5,  6,  7,  7,  6,  7,  8,  8,  6,
     7,  8,  8,  5,  6,  7,  8,  8,  7,  7,  8,  9,  9,  8,  8,  6,  7,  8,  8,
     6,  7,  8,  8,  6,  7,  7,
-};
-
-static const uint8_t on2avc_cb11_bits[ON2AVC_CB_11_CODES] = {
+    /* Codebook 11 - 225 entries */
     2,  10, 10, 10, 10, 9,  10, 11, 11, 10, 10, 10, 10, 9,  9,  9,  10, 11, 11,
     9,  10, 10, 10, 11, 12, 12, 10, 11, 11, 9,  9,  9,  10, 10, 9,  9,  8,  10,
     11, 11, 10, 10, 9,  10, 10, 10, 10, 10, 11, 11, 9,  10, 10, 9,  10, 10, 8,
@@ -714,9 +695,7 @@ static const uint8_t on2avc_cb11_bits[ON2AVC_CB_11_CODES] = {
     10, 10, 10, 9,  10, 10, 9,  9,  8,  9,  9,  7,  8,  10, 10, 10, 10, 7,  8,
     9,  10, 10, 7,  9,  10, 10, 9,  10, 10, 8,  8,  9,  9,  9,  10, 10, 7,  8,
     9,  10, 10, 8,  9,  10, 10, 9,  9,  9,  10, 10, 4,  4,  4,  4,
-};
-
-static const uint8_t on2avc_cb12_bits[ON2AVC_CB_12_CODES] = {
+    /* Codebook 12 - 441 entries */
     2,  10, 11, 11, 11, 12, 12, 11, 11, 10, 12, 12, 12, 12, 10, 11, 11, 12, 12,
     12, 12, 11, 11, 10, 11, 11, 10, 12, 13, 13, 12, 12, 10, 12, 12, 12, 12, 10,
     11, 12, 12, 10, 12, 12, 12, 12, 11, 12, 12, 11, 12, 12, 11, 11, 11, 11, 10,
@@ -741,9 +720,7 @@ static const uint8_t on2avc_cb12_bits[ON2AVC_CB_12_CODES] = {
     11, 11, 10, 11, 12, 12, 9,  10, 11, 11, 10, 11, 11, 10, 10, 10, 11, 12, 12,
     10, 11, 11, 10, 10, 10, 10, 9,  9,  10, 11, 11, 10, 10, 9,  11, 11, 11, 11,
     4,  4,  4,  4,
-};
-
-static const uint8_t on2avc_cb13_bits[ON2AVC_CB_13_CODES] = {
+    /* Codebook 13 - 625 entries */
     1,  8,  10, 10, 10, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 14, 14,
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
     14, 13, 14, 14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
@@ -777,9 +754,7 @@ static const uint8_t on2avc_cb13_bits[ON2AVC_CB_13_CODES] = {
     12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 12, 12,
     10, 11, 11, 10, 10, 5,  5,  5,  7,  8,  10, 10, 11, 12, 14, 14, 14, 14, 11,
     11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 11, 11, 10, 10, 8,  9,  9,
-};
-
-static const uint8_t on2avc_cb14_bits[ON2AVC_CB_14_CODES] = {
+    /* Codebook 14 - 729 entries */
     1,  6,  13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 13, 13, 12, 12, 12, 12,
@@ -819,9 +794,7 @@ static const uint8_t on2avc_cb14_bits[ON2AVC_CB_14_CODES] = {
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 12, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
     12, 12, 12, 12, 12, 12, 12,
-};
-
-static const uint8_t on2avc_cb15_bits[ON2AVC_CB_15_CODES] = {
+    /* Codebook 15 - 1089 entries */
     2,  5,  8,  8,  12, 12, 12, 12, 11, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
     13, 13, 13, 12, 12, 11, 11, 11, 11, 8,  11, 12, 13, 14, 14, 11, 12, 12, 11,
@@ -882,23 +855,20 @@ static const uint8_t on2avc_cb15_bits[ON2AVC_CB_15_CODES] = {
     11, 10, 11, 11, 10, 10
 };
 
-static const uint16_t on2avc_cb_1_syms[ON2AVC_CB_1_2_CODES] = {
+const uint16_t ff_on2avc_cb_syms[] = {
+    /* Codebook 1 - 41 entries */
     0x0000, 0x0F10, 0x01F0, 0x0011, 0xFF00, 0x00FF, 0x1111, 0xFFFF, 0x1FF1,
     0xF11F, 0x11FF, 0xFF11, 0x0FF0, 0x0110, 0xF010, 0x010F, 0x10F0, 0x0F01,
     0x1010, 0xF001, 0x0F0F, 0xF0F0, 0x0101, 0x100F, 0xF00F, 0x1001, 0x1F00,
     0x00F1, 0x001F, 0xF100, 0x1100, 0xF1F1, 0xF1FF, 0x1F11, 0xFF1F, 0x11F1,
     0x1F1F, 0x1FFF, 0xF111, 0xFFF1, 0x111F,
-};
-
-static const uint16_t on2avc_cb_2_syms[ON2AVC_CB_1_2_CODES] = {
+    /* Codebook 2 - 41 entries */
     0x00FF, 0xFFFF, 0x1111, 0x11FF, 0xFF11, 0xFF00, 0x0011, 0x100F, 0x1FF1,
     0xF11F, 0x1FFF, 0x11F1, 0xF001, 0x10F0, 0x0F10, 0x010F, 0xF010, 0x1F11,
     0xF111, 0xF1FF, 0x111F, 0x0F01, 0x01F0, 0x0110, 0x1001, 0x0FF0, 0xF00F,
     0x1010, 0xF0F0, 0x0101, 0x0F0F, 0x1100, 0xFFF1, 0xFF1F, 0x1F1F, 0xF1F1,
     0x0000, 0xF100, 0x1F00, 0x00F1, 0x001F,
-};
-
-static const uint16_t on2avc_cb_3_syms[ON2AVC_CB_3_4_CODES] = {
+    /* Codebook 3 - 313 entries */
     0x0000, 0xE000, 0x0F10, 0x000E, 0x01F2, 0x0F1E, 0xEE00, 0x1021, 0x22E0,
     0x02E2, 0xE1F2, 0xEEE0, 0xE2E2, 0xE20E, 0x0FEF, 0x2200, 0x0002, 0xF2F0,
     0xFFFF, 0x1E10, 0x00E2, 0xFE0F, 0x0EE2, 0x022E, 0xF001, 0xF111, 0x20F1,
@@ -934,9 +904,7 @@ static const uint16_t on2avc_cb_3_syms[ON2AVC_CB_3_4_CODES] = {
     0x0E2E, 0x2FF2, 0xFF11, 0xFFF1, 0x0121, 0xF2E1, 0x020E, 0xEFE1, 0x211E,
     0xE00E, 0x1E2F, 0x1122, 0x1111, 0xFEF0, 0x1221, 0xE2FF, 0x1212, 0x2F21,
     0x0E22, 0xF2FE, 0xFEFE, 0xE002, 0xEE22, 0xE202, 0xE222,
-};
-
-static const uint16_t on2avc_cb_4_syms[ON2AVC_CB_3_4_CODES] = {
+    /* Codebook 4 - 313 entries */
     0x1FF1, 0xF111, 0x111F, 0xF01E, 0xE011, 0x20FF, 0xFFEE, 0xF2FE, 0x220E,
     0x20EE, 0x0110, 0x0F01, 0x0011, 0xF1F1, 0x20F1, 0x2F0F, 0x10F2, 0x110E,
     0xF010, 0xF001, 0x10F0, 0xFFF1, 0xFF02, 0xE01F, 0x021F, 0xFE01, 0x010F,
@@ -972,9 +940,7 @@ static const uint16_t on2avc_cb_4_syms[ON2AVC_CB_3_4_CODES] = {
     0x0EE2, 0x02EE, 0x022E, 0x1221, 0xEFFE, 0xE1E1, 0x12EF, 0x00EE, 0x2200,
     0x2112, 0xE1F2, 0xFF11, 0x11FF, 0x1100, 0x00FF, 0xFF00, 0xF11F, 0xE1F0,
     0xFEEF, 0xEEFF, 0x1012, 0x1122, 0x1F22, 0xEE00, 0xEE20,
-};
-
-static const uint16_t on2avc_cb_5_syms[ON2AVC_CB_5_6_CODES] = {
+    /* Codebook 5 - 1201 entries */
     0x0000, 0x1100, 0x3F00, 0xF1FF, 0x010D, 0x0F30, 0xFE30, 0x10FE, 0xD021,
     0xE23F, 0xE3EF, 0xFF33, 0xFF00, 0x03F0, 0x0301, 0xF1EE, 0xF3D1, 0xF30E,
     0x023D, 0xFEDE, 0xFE0F, 0x1F11, 0xF11D, 0x10E3, 0xEDF2, 0xEEEE, 0xEE1F,
@@ -1109,9 +1075,7 @@ static const uint16_t on2avc_cb_5_syms[ON2AVC_CB_5_6_CODES] = {
     0x2EEE, 0x2F21, 0x2F23, 0x2103, 0x2123, 0x3FD1, 0x3FE2, 0xD21E, 0x3102,
     0x3230, 0xEF23, 0xE2FD, 0x0D1E, 0x2EFD, 0xFDDF, 0x2FD2, 0x322F, 0x002E,
     0xFE2F, 0xF2F2, 0xF221, 0x1EE1,
-};
-
-static const uint16_t on2avc_cb_6_syms[ON2AVC_CB_5_6_CODES] = {
+    /* Codebook 6 - 1201 entries */
     0xFF1F, 0x1EF0, 0x0D32, 0x3E30, 0x0D0F, 0x2E02, 0x0D10, 0xD0E3, 0xD33D,
     0xDDD3, 0xD030, 0x0DD0, 0x3DD3, 0x1E10, 0x2DE1, 0x20EE, 0x11F1, 0xF0F2,
     0xFE1E, 0x1D22, 0xEEFF, 0xE0F1, 0xFEEF, 0xE101, 0xDEF2, 0x2EE2, 0x00FD,
@@ -1246,9 +1210,7 @@ static const uint16_t on2avc_cb_6_syms[ON2AVC_CB_5_6_CODES] = {
     0xDF1F, 0x0321, 0x022E, 0xD1D3, 0xE03D, 0x3FDD, 0x320D, 0x1F0E, 0x1F1D,
     0x1F13, 0x1102, 0xD22D, 0xE3E3, 0x0330, 0x233E, 0x0FED, 0x1203, 0xFEFE,
     0x1E1E, 0x20FF, 0x10E3, 0x132E,
-};
-
-static const uint16_t on2avc_cb_7_syms[ON2AVC_CB_7_8_CODES] = {
+    /* Codebook 7 - 3281 entries */
     0x0000, 0x00FF, 0x3F00, 0xCC00, 0x1C10, 0x1140, 0xFCEF, 0x4220, 0x43C1,
     0xCCCE, 0xFF40, 0xF2DC, 0xF21C, 0x1E4F, 0x114C, 0x2E1F, 0x30F0, 0xC020,
     0xC2E0, 0x0022, 0x01C1, 0x014F, 0x1012, 0x104D, 0xEF21, 0xFEDC, 0xFFE2,
@@ -1614,9 +1576,7 @@ static const uint16_t on2avc_cb_7_syms[ON2AVC_CB_7_8_CODES] = {
     0x0E0C, 0x02E2, 0x03DC, 0x12DC, 0x142F, 0x2E11, 0x2FEF, 0x22F1, 0x24DF,
     0x2431, 0x3EF0, 0x3001, 0x32F0, 0x4DEF, 0x4FE1, 0xC10F, 0xDC0F, 0xF0FE,
     0xDC2F, 0x0F03, 0x01D4, 0x0CE0, 0x0103,
-};
-
-static const uint16_t on2avc_cb_8_syms[ON2AVC_CB_7_8_CODES] = {
+    /* Codebook 8 - 3281 entries */
     0x0E24, 0x0E3D, 0x0FDC, 0x0FFC, 0x0F3E, 0x0134, 0x02CC, 0x024C, 0x03D0,
     0x030F, 0x04CE, 0x04F3, 0x1C41, 0x1D1D, 0x1D20, 0x1D33, 0x1E03, 0x10D0,
     0x10D2, 0x102D, 0x103E, 0x1030, 0x11D3, 0x12D0, 0x13F3, 0x134E, 0x144D,
@@ -1982,9 +1942,7 @@ static const uint16_t on2avc_cb_8_syms[ON2AVC_CB_7_8_CODES] = {
     0xD33D, 0xD4D4, 0xEC3D, 0xEC33, 0xED03, 0xED1C, 0xED2D, 0xED2F, 0xEE33,
     0xEFE3, 0xE0D1, 0xE3ED, 0xE3FC, 0xE32D, 0xE40E, 0xFCD2, 0xFC4D, 0xFDCE,
     0xF31D, 0xF32C, 0x0D23, 0x0D43, 0x0ED3,
-};
-
-static const uint16_t on2avc_cb_9_syms[ON2AVC_CB_9_10_CODES] = {
+    /* Codebook 9 - 121 entries */
     0x0000, 0xFF00, 0x05FF, 0x02FB, 0xFE02, 0xFDFE, 0x03FE, 0x05FE, 0x0301,
     0x0400, 0x02FD, 0x0103, 0xFCFE, 0x02FC, 0x0303, 0x04FD, 0x0004, 0x00FC,
     0x0302, 0x04FF, 0x0502, 0xFC05, 0xFC01, 0xFDFC, 0xFC04, 0x03FC, 0x0504,
@@ -1999,9 +1957,7 @@ static const uint16_t on2avc_cb_9_syms[ON2AVC_CB_9_10_CODES] = {
     0xFFFF, 0x0101, 0xFD01, 0xFEFC, 0x04FC, 0x0404, 0xFE04, 0x0402, 0x01FD,
     0xFDFF, 0xFB02, 0x02FE, 0x05FB, 0x0505, 0xFFFE, 0xFE01, 0x0102, 0x0202,
     0x0203, 0xFD02, 0x0100, 0x0001,
-};
-
-static const uint16_t on2avc_cb_10_syms[ON2AVC_CB_9_10_CODES] = {
+    /* Codebook 10 - 121 entries */
     0x04FE, 0x0401, 0x04FB, 0x04FD, 0xFDFD, 0xFFFC, 0xFCFC, 0xFE00, 0x03FB,
     0xFC03, 0x04FF, 0xFD00, 0x03FC, 0x0404, 0x0405, 0xFCFB, 0xFD05, 0xFB03,
     0x05FD, 0x03FD, 0x0101, 0x05FF, 0x0504, 0xFBFC, 0xFD03, 0x0003, 0x05FE,
@@ -2016,9 +1972,7 @@ static const uint16_t on2avc_cb_10_syms[ON2AVC_CB_9_10_CODES] = {
     0x02FE, 0x02FD, 0x02FC, 0xFD04, 0xFD02, 0x0305, 0xFCFF, 0x04FC, 0xFC04,
     0xFC01, 0xFF04, 0xFE02, 0xFBFD, 0xFC02, 0xFCFD, 0x0002, 0x0303, 0x01FC,
     0x0104, 0x00FE, 0xFDFB, 0x0503,
-};
-
-static const uint16_t on2avc_cb11_syms[ON2AVC_CB_11_CODES] = {
+    /* Codebook 11 - 225 entries */
     0x0000, 0xFA04, 0xFBFA, 0xFAFB, 0xFE04, 0x0103, 0xFDFC, 0xFB03, 0x0504,
     0x04FF, 0xFF07, 0x04FE, 0x0506, 0x01FA, 0xFDFE, 0xFAFF, 0x07FF, 0xFD05,
     0x05F9, 0x0302, 0xFE07, 0xF902, 0x0701, 0x0005, 0xF907, 0x07F9, 0xFC02,
@@ -2044,9 +1998,7 @@ static const uint16_t on2avc_cb11_syms[ON2AVC_CB_11_CODES] = {
     0x04FC, 0x0503, 0x03FF, 0xFFFD, 0x04FA, 0xFEFC, 0x0402, 0x03FB, 0x0505,
     0xFE00, 0x01FD, 0x02FC, 0x0706, 0xFBFE, 0xFDFF, 0xFFFC, 0xF9FB, 0xFBFC,
     0xFCFE, 0xF901, 0xFCFF, 0x05FD, 0x0405, 0x0100, 0xFF00, 0x0001, 0x00FF,
-};
-
-static const uint16_t on2avc_cb12_syms[ON2AVC_CB_12_CODES] = {
+    /* Codebook 12 - 441 entries */
     0x0000, 0xFD03, 0x09FE, 0xFBFF, 0xF701, 0xF7F8, 0x0606, 0xFBFC, 0x0904,
     0x08FF, 0xFB05, 0x0207, 0x04F6, 0x0AFA, 0x0801, 0xF703, 0xFD05, 0xF904,
     0xFAF6, 0xFA02, 0x03F9, 0xF7FD, 0xFBFD, 0x04FF, 0x03F7, 0x0502, 0x0208,
@@ -2096,9 +2048,7 @@ static const uint16_t on2avc_cb12_syms[ON2AVC_CB_12_CODES] = {
     0x0901, 0xF708, 0x07F9, 0x00F9, 0x01FB, 0xFA04, 0xFBF9, 0x03FB, 0x03FC,
     0x0708, 0x0808, 0x0300, 0xFDFD, 0x06FF, 0xF9F9, 0xF6FC, 0xF700, 0x0305,
     0xF802, 0xF706, 0xF9FA, 0xFC06, 0x07FE, 0x0001, 0x0100, 0xFF00, 0x00FF,
-};
-
-static const uint16_t on2avc_cb13_syms[ON2AVC_CB_13_CODES] = {
+    /* Codebook 13 - 625 entries */
     0x0000, 0x0201, 0xFDFF, 0x03FE, 0x0302, 0xF909, 0xF90A, 0xFA00, 0xFA0A,
     0x00F7, 0x08F6, 0x09F6, 0x09F8, 0x0901, 0x0AF7, 0x0A03, 0x0BF4, 0xF6F7,
     0xF6FB, 0xF6FF, 0xF600, 0xF706, 0xF801, 0xF806, 0xF808, 0xFDF6, 0xFF09,
@@ -2169,9 +2119,7 @@ static const uint16_t on2avc_cb13_syms[ON2AVC_CB_13_CODES] = {
     0xF608, 0xF703, 0xF707, 0xF807, 0xF5F4, 0xF70B, 0xFAFA, 0xFA03, 0xFCFA,
     0xFD0C, 0x00FC, 0x06F5, 0x06FF, 0x0702, 0xF5FE, 0x0705, 0x0C05, 0xFEF4,
     0x00FD, 0xFE02, 0xFEFD, 0x0301,
-};
-
-static const uint16_t on2avc_cb14_syms[ON2AVC_CB_14_CODES] = {
+    /* Codebook 14 - 729 entries */
     0x0000, 0x01FF, 0xF9F8, 0xF9F9, 0xF907, 0xFA04, 0xFBF8, 0xFB07, 0xFB08,
     0xFB0A, 0xFC07, 0xFC0A, 0xFDF5, 0xFDF6, 0xFEF5, 0xFFFB, 0xFF08, 0xFF0B,
     0x01F5, 0x02F6, 0x03F9, 0x04FA, 0x04FB, 0x04FC, 0x040C, 0x05FF, 0x06FD,
@@ -2253,9 +2201,7 @@ static const uint16_t on2avc_cb14_syms[ON2AVC_CB_14_CODES] = {
     0x0B08, 0x0CF5, 0x0CF6, 0x0CF8, 0x0CFA, 0x0CFE, 0xF30D, 0x0C02, 0x0C08,
     0xF4F7, 0xF405, 0xF5F4, 0xF5F5, 0xF5F7, 0xF6F8, 0xF6F9, 0xF6FA, 0xF6FD,
     0xF602, 0xF7F7, 0xF701, 0xF706, 0xF8F6, 0xF8FC, 0xF8FD, 0xF806, 0xF9F6,
-};
-
-static const uint16_t on2avc_cb15_syms[ON2AVC_CB_15_CODES] = {
+    /* Codebook 15 - 1089 entries */
     0x0000, 0x00FF, 0xFEFF, 0x0201, 0xFAFF, 0xFBFB, 0xFF06, 0x06FE, 0x100E,
     0xF2F6, 0xF2FF, 0xF205, 0xF3F3, 0xF6F2, 0xF8F5, 0xF90B, 0xFAF8, 0xFAF9,
     0xFA06, 0xFCF2, 0x0008, 0x0209, 0x030E, 0x04F2, 0x040E, 0x040F, 0x05F7,
@@ -2377,20 +2323,6 @@ static const uint16_t on2avc_cb15_syms[ON2AVC_CB_15_CODES] = {
     0xF703, 0xF8FA, 0xFAF6, 0xFC09, 0xFD0F, 0xFFF9, 0xFF0F, 0x01F2, 0x02F1,
     0x03F2, 0x03F7, 0x03F9, 0x05FB, 0x07FB, 0x09FB, 0x0905, 0x0907, 0x0EFA,
     0x0F05, 0x0F06, 0xF000, 0xFB04, 0xF0F3, 0xFFFA, 0x1000, 0x0A10, 0x0CF0
-};
-
-const uint8_t * const ff_on2avc_cb_bits[] = {
-    on2avc_cb1_bits,  on2avc_cb2_bits,  on2avc_cb3_bits,  on2avc_cb4_bits,
-    on2avc_cb5_bits,  on2avc_cb6_bits,  on2avc_cb7_bits,  on2avc_cb8_bits,
-    on2avc_cb9_bits,  on2avc_cb10_bits, on2avc_cb11_bits, on2avc_cb12_bits,
-    on2avc_cb13_bits, on2avc_cb14_bits, on2avc_cb15_bits
-};
-
-const uint16_t * const ff_on2avc_cb_syms[] = {
-    on2avc_cb_1_syms, on2avc_cb_2_syms, on2avc_cb_3_syms, on2avc_cb_4_syms,
-    on2avc_cb_5_syms, on2avc_cb_6_syms, on2avc_cb_7_syms, on2avc_cb_8_syms,
-    on2avc_cb_9_syms, on2avc_cb_10_syms, on2avc_cb11_syms, on2avc_cb12_syms,
-    on2avc_cb13_syms,   on2avc_cb14_syms,   on2avc_cb15_syms
 };
 
 const int ff_on2avc_cb_elems[] = {
