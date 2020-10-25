@@ -696,159 +696,143 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Error initialising DC VLC\n");
         return ret;
     }
-    ret = ff_init_vlc_sparse(&c->ac_vlc, 9, NUM_AC_CODES,
-                             clv_ac_bits,  1, 1,
-                             clv_ac_codes, 1, 1,
-                             clv_ac_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ac_vlc, 9, NUM_AC_CODES,
+                                   clv_ac_bits, 1,
+                                   clv_ac_syms, 2, 2, 0, 0, avctx);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Error initialising AC VLC\n");
         return ret;
     }
 
-    ret = init_vlc(&c->ylev[0].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsy_0_bits),
-                   clv_flagsy_0_bits,  1, 1,
-                   clv_flagsy_0_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[0].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsy_0_bits),
+                                   clv_flagsy_0_bits, 1,
+                                   clv_flagsy_0_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = init_vlc(&c->ylev[1].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsy_1_bits),
-                   clv_flagsy_1_bits,  1, 1,
-                   clv_flagsy_1_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[1].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsy_1_bits),
+                                   clv_flagsy_1_bits, 1,
+                                   clv_flagsy_1_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = init_vlc(&c->ylev[2].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsy_2_bits),
-                   clv_flagsy_2_bits,  1, 1,
-                   clv_flagsy_2_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[2].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsy_2_bits),
+                                   clv_flagsy_2_bits, 1,
+                                   clv_flagsy_2_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = init_vlc(&c->ulev[0].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsu_0_bits),
-                   clv_flagsu_0_bits,  1, 1,
-                   clv_flagsu_0_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ulev[0].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsu_0_bits),
+                                   clv_flagsu_0_bits, 1,
+                                   clv_flagsu_0_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = init_vlc(&c->ulev[1].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsu_1_bits),
-                   clv_flagsu_1_bits,  1, 1,
-                   clv_flagsu_1_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ulev[1].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsu_1_bits),
+                                   clv_flagsu_1_bits, 1,
+                                   clv_flagsu_1_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = init_vlc(&c->vlev[0].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsv_0_bits),
-                   clv_flagsv_0_bits,  1, 1,
-                   clv_flagsv_0_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->vlev[0].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsv_0_bits),
+                                   clv_flagsv_0_bits, 1,
+                                   clv_flagsv_0_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = init_vlc(&c->vlev[1].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsv_1_bits),
-                   clv_flagsv_1_bits,  1, 1,
-                   clv_flagsv_1_codes, 2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->vlev[1].flags_cb, 9, FF_ARRAY_ELEMS(clv_flagsv_1_bits),
+                                   clv_flagsv_1_bits, 1,
+                                   clv_flagsv_1_syms, 1, 1, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[0].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_0_bits),
-                             clv_mvy_0_bits,  1, 1,
-                             clv_mvy_0_codes, 2, 2,
-                             clv_mvy_0_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[0].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_0_bits),
+                                   clv_mvy_0_bits, 1,
+                                   clv_mvy_0_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[1].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_1_bits),
-                             clv_mvy_1_bits,  1, 1,
-                             clv_mvy_1_codes, 2, 2,
-                             clv_mvy_1_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[1].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_1_bits),
+                                   clv_mvy_1_bits, 1,
+                                   clv_mvy_1_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[2].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_2_bits),
-                             clv_mvy_2_bits,  1, 1,
-                             clv_mvy_2_codes, 2, 2,
-                             clv_mvy_2_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[2].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_2_bits),
+                                   clv_mvy_2_bits, 1,
+                                   clv_mvy_2_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[3].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_3_bits),
-                             clv_mvy_3_bits,  1, 1,
-                             clv_mvy_3_codes, 2, 2,
-                             clv_mvy_3_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[3].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvy_3_bits),
+                                   clv_mvy_3_bits, 1,
+                                   clv_mvy_3_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ulev[1].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvu_1_bits),
-                             clv_mvu_1_bits,  1, 1,
-                             clv_mvu_1_codes, 2, 2,
-                             clv_mvu_1_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ulev[1].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvu_1_bits),
+                                   clv_mvu_1_bits, 1,
+                                   clv_mvu_1_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ulev[2].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvu_2_bits),
-                             clv_mvu_2_bits,  1, 1,
-                             clv_mvu_2_codes, 2, 2,
-                             clv_mvu_2_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ulev[2].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvu_2_bits),
+                                   clv_mvu_2_bits, 1,
+                                   clv_mvu_2_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->vlev[1].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvv_1_bits),
-                             clv_mvv_1_bits,  1, 1,
-                             clv_mvv_1_codes, 2, 2,
-                             clv_mvv_1_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->vlev[1].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvv_1_bits),
+                                   clv_mvv_1_bits, 1,
+                                   clv_mvv_1_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->vlev[2].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvv_2_bits),
-                             clv_mvv_2_bits,  1, 1,
-                             clv_mvv_2_codes, 2, 2,
-                             clv_mvv_2_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->vlev[2].mv_cb, 9, FF_ARRAY_ELEMS(clv_mvv_2_bits),
+                                   clv_mvv_2_bits, 1,
+                                   clv_mvv_2_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[1].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasy_1_bits),
-                             clv_biasy_1_bits,  1, 1,
-                             clv_biasy_1_codes, 2, 2,
-                             clv_biasy_1_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[1].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasy_1_bits),
+                                   clv_biasy_1_bits, 1,
+                                   clv_biasy_1_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[2].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasy_2_bits),
-                             clv_biasy_2_bits,  1, 1,
-                             clv_biasy_2_codes, 2, 2,
-                             clv_biasy_2_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[2].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasy_2_bits),
+                                   clv_biasy_2_bits, 1,
+                                   clv_biasy_2_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ylev[3].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasy_3_bits),
-                             clv_biasy_3_bits,  1, 1,
-                             clv_biasy_3_codes, 2, 2,
-                             clv_biasy_3_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ylev[3].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasy_3_bits),
+                                   clv_biasy_3_bits, 1,
+                                   clv_biasy_3_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ulev[1].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasu_1_bits),
-                             clv_biasu_1_bits,  1, 1,
-                             clv_biasu_1_codes, 2, 2,
-                             clv_biasu_1_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ulev[1].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasu_1_bits),
+                                   clv_biasu_1_bits, 1,
+                                   clv_biasu_1_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->ulev[2].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasu_2_bits),
-                             clv_biasu_2_bits,  1, 1,
-                             clv_biasu_2_codes, 2, 2,
-                             clv_biasu_2_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->ulev[2].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasu_2_bits),
+                                   clv_biasu_2_bits, 1,
+                                   clv_biasu_2_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->vlev[1].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasv_1_bits),
-                             clv_biasv_1_bits,  1, 1,
-                             clv_biasv_1_codes, 2, 2,
-                             clv_biasv_1_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->vlev[1].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasv_1_bits),
+                                   clv_biasv_1_bits, 1,
+                                   clv_biasv_1_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
-    ret = ff_init_vlc_sparse(&c->vlev[2].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasv_2_bits),
-                             clv_biasv_2_bits,  1, 1,
-                             clv_biasv_2_codes, 2, 2,
-                             clv_biasv_2_syms,  2, 2, 0);
+    ret = ff_init_vlc_from_lengths(&c->vlev[2].bias_cb, 9, FF_ARRAY_ELEMS(clv_biasv_2_bits),
+                                   clv_biasv_2_bits, 1,
+                                   clv_biasv_2_syms, 2, 2, 0, 0, avctx);
     if (ret)
         return ret;
 
