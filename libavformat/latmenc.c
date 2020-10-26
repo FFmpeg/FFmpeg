@@ -120,7 +120,7 @@ static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
 
         /* AudioSpecificConfig */
         if (ctx->object_type == AOT_ALS) {
-            header_size = par->extradata_size-(ctx->off >> 3);
+            header_size = (par->extradata_size - (ctx->off >> 3)) * 8;
             avpriv_copy_bits(bs, &par->extradata[ctx->off >> 3], header_size);
         } else {
             // + 3 assumes not scalable and dependsOnCoreCoder == 0,
