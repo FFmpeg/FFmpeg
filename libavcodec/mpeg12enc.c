@@ -233,7 +233,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static void put_header(MpegEncContext *s, int header)
 {
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     put_bits(&s->pb, 16, header >> 16);
     put_sbits(&s->pb, 16, header);
 }

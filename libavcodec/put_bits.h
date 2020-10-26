@@ -33,6 +33,8 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 
+#include "version.h"
+
 #if ARCH_X86_64
 // TODO: Benchmark and optionally enable on other 64-bit architectures.
 typedef uint64_t BitBuf;
@@ -145,15 +147,14 @@ static inline void flush_put_bits_le(PutBitContext *s)
     s->bit_buf  = 0;
 }
 
+#if FF_API_AVPRIV_PUT_BITS
+void avpriv_align_put_bits(PutBitContext *s);
+#endif
+
 #ifdef BITSTREAM_WRITER_LE
-#define avpriv_align_put_bits align_put_bits_unsupported_here
 #define avpriv_put_string ff_put_string_unsupported_here
 #define avpriv_copy_bits avpriv_copy_bits_unsupported_here
 #else
-/**
- * Pad the bitstream with zeros up to the next byte boundary.
- */
-void avpriv_align_put_bits(PutBitContext *s);
 
 /**
  * Put the string string in the bitstream.
@@ -383,6 +384,14 @@ static inline void set_put_bits_buffer_size(PutBitContext *s, int size)
     av_assert0(size <= INT_MAX/8 - BUF_BITS);
     s->buf_end = s->buf + size;
     s->size_in_bits = 8*size;
+}
+
+/**
+ * Pad the bitstream with zeros up to the next byte boundary.
+ */
+static inline void align_put_bits(PutBitContext *s)
+{
+    put_bits(s, s->bit_left & 7, 0);
 }
 
 #undef AV_WBBUF

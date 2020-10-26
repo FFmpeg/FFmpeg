@@ -83,7 +83,7 @@ static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
         }
     }
 
-    avpriv_align_put_bits(pb);
+    align_put_bits(pb);
     put_bits(pb, 8, strlen(aux_data));
     avpriv_put_string(pb, aux_data, 0);
 }
@@ -522,7 +522,7 @@ static void put_bitstream_info(AACEncContext *s, const char *name)
         put_bits(&s->pb, 8, namelen - 14);
     put_bits(&s->pb, 4, 0); //extension type - filler
     padbits = -put_bits_count(&s->pb) & 7;
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     for (i = 0; i < namelen - 2; i++)
         put_bits(&s->pb, 8, name[i]);
     put_bits(&s->pb, 12 - padbits, 0);

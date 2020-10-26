@@ -647,7 +647,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    // avpriv_align_put_bits(&s->pb);
+    // align_put_bits(&s->pb);
     while (put_bits_count(&s->pb) & 31)
         put_bits(&s->pb, 1, 0);
 

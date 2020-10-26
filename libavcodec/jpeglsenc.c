@@ -403,7 +403,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             put_bits(&pb, 8, v);
         }
     }
-    avpriv_align_put_bits(&pb);
+    align_put_bits(&pb);
     av_freep(&buf2);
 
     /* End of image */

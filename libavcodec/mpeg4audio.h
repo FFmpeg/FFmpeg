@@ -165,7 +165,7 @@ static inline int ff_copy_pce_data(PutBitContext *pb, GetBitContext *gb)
         ff_pce_copy_bits(pb, gb, 16);
     if (bits)
         ff_pce_copy_bits(pb, gb, bits);
-    avpriv_align_put_bits(pb);
+    align_put_bits(pb);
     align_get_bits(gb);
     comment_size = ff_pce_copy_bits(pb, gb, 8);
     for (; comment_size > 0; comment_size--)

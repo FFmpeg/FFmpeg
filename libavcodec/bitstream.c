@@ -45,10 +45,12 @@ const uint8_t ff_log2_run[41]={
 24,
 };
 
+#if FF_API_AVPRIV_PUT_BITS
 void avpriv_align_put_bits(PutBitContext *s)
 {
-    put_bits(s, s->bit_left & 7, 0);
+    align_put_bits(s);
 }
+#endif
 
 void avpriv_put_string(PutBitContext *pb, const char *string,
                        int terminate_string)

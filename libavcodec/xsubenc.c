@@ -90,7 +90,7 @@ static int xsub_encode_rle(PutBitContext *pb, const uint8_t *bitmap,
         if (color != PADDING_COLOR && (PADDING + (w&1)))
             put_xsub_rle(pb, PADDING + (w&1), PADDING_COLOR);
 
-        avpriv_align_put_bits(pb);
+        align_put_bits(pb);
 
         bitmap += linesize;
     }

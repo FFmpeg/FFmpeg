@@ -225,7 +225,7 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
     find_best_tables(s);
 
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     put_bits(&s->pb, 2, s->pict_type - 1);
 
     put_bits(&s->pb, 5, s->qscale);

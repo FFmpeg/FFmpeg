@@ -229,7 +229,7 @@ static void encode_parse_info(VC2EncContext *s, enum DiracParseCodes pcode)
 {
     uint32_t cur_pos, dist;
 
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
 
     cur_pos = put_bits_count(&s->pb) >> 3;
 
@@ -399,7 +399,7 @@ static void encode_source_params(VC2EncContext *s)
 /* VC-2 11 - sequence_header() */
 static void encode_seq_header(VC2EncContext *s)
 {
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     encode_parse_params(s);
     put_vc2_ue_uint(&s->pb, s->base_vf);
     encode_source_params(s);
@@ -409,7 +409,7 @@ static void encode_seq_header(VC2EncContext *s)
 /* VC-2 12.1 - picture_header() */
 static void encode_picture_header(VC2EncContext *s)
 {
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     put_bits32(&s->pb, s->picture_number++);
 }
 
@@ -509,15 +509,15 @@ static void encode_transform_params(VC2EncContext *s)
 static void encode_wavelet_transform(VC2EncContext *s)
 {
     encode_transform_params(s);
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
 }
 
 /* VC-2 12 - picture_parse() */
 static void encode_picture_start(VC2EncContext *s)
 {
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     encode_picture_header(s);
-    avpriv_align_put_bits(&s->pb);
+    align_put_bits(&s->pb);
     encode_wavelet_transform(s);
 }
 
@@ -753,7 +753,7 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
                                quants[level][orientation]);
             }
         }
-        avpriv_align_put_bits(pb);
+        align_put_bits(pb);
         bytes_len = (put_bits_count(pb) >> 3) - bytes_start - 1;
         if (p == 2) {
             int len_diff = slice_bytes_max - (put_bits_count(pb) >> 3);
