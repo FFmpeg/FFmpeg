@@ -181,7 +181,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
         /* JFIF header */
         put_marker(p, APP0);
         put_bits(p, 16, 16);
-        avpriv_put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
+        ff_put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
         /* The most significant byte is used for major revisions, the least
          * significant byte for minor revisions. Version 1.02 is the current
          * released revision. */
@@ -199,7 +199,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
         flush_put_bits(p);
         ptr = put_bits_ptr(p);
         put_bits(p, 16, 0); /* patched later */
-        avpriv_put_string(p, LIBAVCODEC_IDENT, 1);
+        ff_put_string(p, LIBAVCODEC_IDENT, 1);
         size = strlen(LIBAVCODEC_IDENT)+3;
         AV_WB16(ptr, size);
     }
@@ -212,7 +212,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
         flush_put_bits(p);
         ptr = put_bits_ptr(p);
         put_bits(p, 16, 0); /* patched later */
-        avpriv_put_string(p, "CS=ITU601", 1);
+        ff_put_string(p, "CS=ITU601", 1);
         size = strlen("CS=ITU601")+3;
         AV_WB16(ptr, size);
     }

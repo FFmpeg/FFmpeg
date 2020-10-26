@@ -1054,7 +1054,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     if (!(s->avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
         put_bits(&s->pb, 16, 0);
         put_bits(&s->pb, 16, 0x1B2);    /* user_data */
-        avpriv_put_string(&s->pb, LIBAVCODEC_IDENT, 0);
+        ff_put_string(&s->pb, LIBAVCODEC_IDENT, 0);
     }
 }
 

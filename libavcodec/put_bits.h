@@ -152,7 +152,7 @@ void avpriv_align_put_bits(PutBitContext *s);
 #endif
 
 #ifdef BITSTREAM_WRITER_LE
-#define avpriv_put_string ff_put_string_unsupported_here
+#define ff_put_string ff_put_string_unsupported_here
 #define avpriv_copy_bits avpriv_copy_bits_unsupported_here
 #else
 
@@ -161,7 +161,7 @@ void avpriv_align_put_bits(PutBitContext *s);
  *
  * @param terminate_string 0-terminates the written string if value is 1
  */
-void avpriv_put_string(PutBitContext *pb, const char *string,
+void ff_put_string(PutBitContext *pb, const char *string,
                        int terminate_string);
 
 /**

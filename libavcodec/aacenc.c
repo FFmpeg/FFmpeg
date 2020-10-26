@@ -85,7 +85,7 @@ static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
 
     align_put_bits(pb);
     put_bits(pb, 8, strlen(aux_data));
-    avpriv_put_string(pb, aux_data, 0);
+    ff_put_string(pb, aux_data, 0);
 }
 
 /**

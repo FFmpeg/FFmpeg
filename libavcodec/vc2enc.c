@@ -234,7 +234,7 @@ static void encode_parse_info(VC2EncContext *s, enum DiracParseCodes pcode)
     cur_pos = put_bits_count(&s->pb) >> 3;
 
     /* Magic string */
-    avpriv_put_string(&s->pb, "BBCD", 0);
+    ff_put_string(&s->pb, "BBCD", 0);
 
     /* Parse code */
     put_bits(&s->pb, 8, pcode);
@@ -931,7 +931,7 @@ static int encode_frame(VC2EncContext *s, AVPacket *avpkt, const AVFrame *frame,
     /* Encoder version */
     if (aux_data) {
         encode_parse_info(s, DIRAC_PCODE_AUX);
-        avpriv_put_string(&s->pb, aux_data, 1);
+        ff_put_string(&s->pb, aux_data, 1);
     }
 
     /* Picture header */
