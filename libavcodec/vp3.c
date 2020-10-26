@@ -682,11 +682,6 @@ static int vp4_get_mb_count(Vp3DecodeContext *s, GetBitContext *gb)
 static int vp4_get_block_pattern(Vp3DecodeContext *s, GetBitContext *gb, int *next_block_pattern_table)
 {
     int v = get_vlc2(gb, s->block_pattern_vlc[*next_block_pattern_table].table, 3, 2);
-    if (v == -1) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid block pattern\n");
-        *next_block_pattern_table = 0;
-        return 0;
-    }
     *next_block_pattern_table = vp4_block_pattern_table_selector[v];
     return v + 1;
 }
