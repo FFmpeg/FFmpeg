@@ -61,6 +61,66 @@ static int codec2_probe(const AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION + 1;
 }
 
+//Mimics codec2_samples_per_frame()
+static int codec2_mode_frame_size(AVFormatContext *s, int mode)
+{
+    int frame_size_table[CODEC2_MODE_MAX+1] = {
+        160,    // 3200
+        160,    // 2400
+        320,    // 1600
+        320,    // 1400
+        320,    // 1300
+        320,    // 1200
+        320,    // 700
+        320,    // 700B
+        320,    // 700C
+    };
+
+    if (mode < 0 || mode > CODEC2_MODE_MAX) {
+        av_log(s, AV_LOG_ERROR, "unknown codec2 mode %i, can't find frame_size\n", mode);
+        return 0;
+    } else {
+        return frame_size_table[mode];
+    }
+}
+
+//Mimics (codec2_bits_per_frame()+7)/8
+static int codec2_mode_block_align(AVFormatContext *s, int mode)
+{
+    int block_align_table[CODEC2_MODE_MAX+1] = {
+        8,      // 3200
+        6,      // 2400
+        8,      // 1600
+        7,      // 1400
+        7,      // 1300
+        6,      // 1200
+        4,      // 700
+        4,      // 700B
+        4,      // 700C
+    };
+
+    if (mode < 0 || mode > CODEC2_MODE_MAX) {
+        av_log(s, AV_LOG_ERROR, "unknown codec2 mode %i, can't find block_align\n", mode);
+        return 0;
+    } else {
+        return block_align_table[mode];
+    }
+}
+
+//Computes bitrate from mode, with frames rounded up to the nearest octet.
+//So 700 bit/s (28 bits/frame) becomes 800 bits/s (32 bits/frame).
+static int codec2_mode_bit_rate(AVFormatContext *s, int mode)
+{
+    int frame_size  = codec2_mode_frame_size(s, mode);
+    int block_align = codec2_mode_block_align(s, mode);
+
+    if (frame_size <= 0 || block_align <= 0) {
+        return 0;
+    }
+
+    return 8 * 8000 * block_align / frame_size;
+}
+
 static int codec2_read_header_common(AVFormatContext *s, AVStream *st)
 {
     int mode = codec2_mode_from_extradata(st->codecpar->extradata);
@@ -71,9 +131,9 @@ static int codec2_read_header_common(AVFormatContext *s, AVStream *st)
     st->codecpar->channels          = 1;
     st->codecpar->format            = AV_SAMPLE_FMT_S16;
     st->codecpar->channel_layout    = AV_CH_LAYOUT_MONO;
-    st->codecpar->bit_rate          = avpriv_codec2_mode_bit_rate(s, mode);
-    st->codecpar->frame_size        = avpriv_codec2_mode_frame_size(s, mode);
-    st->codecpar->block_align       = avpriv_codec2_mode_block_align(s, mode);
+    st->codecpar->bit_rate          = codec2_mode_bit_rate(s, mode);
+    st->codecpar->frame_size        = codec2_mode_frame_size(s, mode);
+    st->codecpar->block_align       = codec2_mode_block_align(s, mode);
 
     if (st->codecpar->bit_rate <= 0 ||
         st->codecpar->frame_size <= 0 ||

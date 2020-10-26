@@ -23,6 +23,7 @@
 #include "internal.h"
 #include "libavcodec/codec2utils.h"
 
+#if LIBAVCODEC_VERSION_MAJOR < 59
 int avpriv_codec2_mode_bit_rate(void *logctx, int mode)
 {
     int frame_size  = avpriv_codec2_mode_frame_size(logctx, mode);
@@ -78,3 +79,4 @@ int avpriv_codec2_mode_block_align(void *logctx, int mode)
         return block_align_table[mode];
     }
 }
+#endif
