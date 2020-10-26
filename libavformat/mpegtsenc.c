@@ -81,6 +81,7 @@ typedef struct MpegTSWrite {
     int64_t pat_period; /* PAT/PMT period in PCR time base */
     int nb_services;
     int64_t first_pcr;
+    int first_dts_checked;
     int64_t next_pcr;
     int mux_rate; ///< set to 1 when VBR
     int pes_payload_size;
@@ -1688,6 +1689,11 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         stream_id = side_data[0];
 
     if (ts->copyts < 1) {
+        if (!ts->first_dts_checked && dts != AV_NOPTS_VALUE) {
+            ts->first_pcr += dts * 300;
+            ts->first_dts_checked = 1;
+        }
+
         if (pts != AV_NOPTS_VALUE)
             pts += delay;
         if (dts != AV_NOPTS_VALUE)
