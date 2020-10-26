@@ -29,8 +29,8 @@
 #include "rawenc.h"
 #include "pcm.h"
 
-#define AVPRIV_CODEC2_HEADER_SIZE 7
-#define AVPRIV_CODEC2_MAGIC       0xC0DEC2
+#define CODEC2_HEADER_SIZE 7
+#define CODEC2_MAGIC       0xC0DEC2
 
 //the lowest version we should ever run across is 0.8
 //we may run across later versions as the format evolves
@@ -46,7 +46,7 @@ typedef struct {
 static int codec2_probe(const AVProbeData *p)
 {
     //must start wih C0 DE C2
-    if (AV_RB24(p->buf) != AVPRIV_CODEC2_MAGIC) {
+    if (AV_RB24(p->buf) != CODEC2_MAGIC) {
         return 0;
     }
 
@@ -63,7 +63,7 @@ static int codec2_probe(const AVProbeData *p)
 
 static int codec2_read_header_common(AVFormatContext *s, AVStream *st)
 {
-    int mode = avpriv_codec2_mode_from_extradata(st->codecpar->extradata);
+    int mode = codec2_mode_from_extradata(st->codecpar->extradata);
 
     st->codecpar->codec_type        = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id          = AV_CODEC_ID_CODEC2;
@@ -95,28 +95,28 @@ static int codec2_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
 
-    if (avio_rb24(s->pb) != AVPRIV_CODEC2_MAGIC) {
+    if (avio_rb24(s->pb) != CODEC2_MAGIC) {
         av_log(s, AV_LOG_ERROR, "not a .c2 file\n");
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_alloc_extradata(st->codecpar, AVPRIV_CODEC2_EXTRADATA_SIZE);
+    ret = ff_alloc_extradata(st->codecpar, CODEC2_EXTRADATA_SIZE);
     if (ret) {
         return ret;
     }
 
-    ret = ffio_read_size(s->pb, st->codecpar->extradata, AVPRIV_CODEC2_EXTRADATA_SIZE);
+    ret = ffio_read_size(s->pb, st->codecpar->extradata, CODEC2_EXTRADATA_SIZE);
     if (ret < 0) {
         return ret;
     }
 
-    version = avpriv_codec2_version_from_extradata(st->codecpar->extradata);
+    version = codec2_version_from_extradata(st->codecpar->extradata);
     if ((version >> 8) != EXPECTED_CODEC2_MAJOR_VERSION) {
         avpriv_report_missing_feature(s, "Major version %i", version >> 8);
         return AVERROR_PATCHWELCOME;
     }
 
-    s->internal->data_offset = AVPRIV_CODEC2_HEADER_SIZE;
+    s->internal->data_offset = CODEC2_HEADER_SIZE;
 
     return codec2_read_header_common(s, st);
 }
@@ -160,14 +160,14 @@ static int codec2_write_header(AVFormatContext *s)
 
     st = s->streams[0];
 
-    if (st->codecpar->extradata_size != AVPRIV_CODEC2_EXTRADATA_SIZE) {
+    if (st->codecpar->extradata_size != CODEC2_EXTRADATA_SIZE) {
         av_log(s, AV_LOG_ERROR, ".c2 files require exactly %i bytes of extradata (got %i)\n",
-               AVPRIV_CODEC2_EXTRADATA_SIZE, st->codecpar->extradata_size);
+               CODEC2_EXTRADATA_SIZE, st->codecpar->extradata_size);
         return AVERROR(EINVAL);
     }
 
-    avio_wb24(s->pb, AVPRIV_CODEC2_MAGIC);
-    avio_write(s->pb, st->codecpar->extradata, AVPRIV_CODEC2_EXTRADATA_SIZE);
+    avio_wb24(s->pb, CODEC2_MAGIC);
+    avio_write(s->pb, st->codecpar->extradata, CODEC2_EXTRADATA_SIZE);
 
     return 0;
 }
@@ -189,13 +189,13 @@ static int codec2raw_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
 
-    ret = ff_alloc_extradata(st->codecpar, AVPRIV_CODEC2_EXTRADATA_SIZE);
+    ret = ff_alloc_extradata(st->codecpar, CODEC2_EXTRADATA_SIZE);
     if (ret) {
         return ret;
     }
 
     s->internal->data_offset = 0;
-    avpriv_codec2_make_extradata(st->codecpar->extradata, c2->mode);
+    codec2_make_extradata(st->codecpar->extradata, c2->mode);
 
     return codec2_read_header_common(s, st);
 }
@@ -211,7 +211,7 @@ static const AVOption codec2_options[] = {
 };
 
 static const AVOption codec2raw_options[] = {
-    AVPRIV_CODEC2_AVOPTIONS("codec2 mode [mandatory]", Codec2Context, -1, -1, AV_OPT_FLAG_DECODING_PARAM),
+    CODEC2_AVOPTIONS("codec2 mode [mandatory]", Codec2Context, -1, -1, AV_OPT_FLAG_DECODING_PARAM),
     FRAMES_PER_PACKET,
     { NULL },
 };

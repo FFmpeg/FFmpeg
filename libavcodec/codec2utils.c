@@ -37,7 +37,7 @@ int avpriv_codec2_mode_bit_rate(void *logctx, int mode)
 
 int avpriv_codec2_mode_frame_size(void *logctx, int mode)
 {
-    int frame_size_table[AVPRIV_CODEC2_MODE_MAX+1] = {
+    int frame_size_table[CODEC2_MODE_MAX+1] = {
         160,    // 3200
         160,    // 2400
         320,    // 1600
@@ -49,7 +49,7 @@ int avpriv_codec2_mode_frame_size(void *logctx, int mode)
         320,    // 700C
     };
 
-    if (mode < 0 || mode > AVPRIV_CODEC2_MODE_MAX) {
+    if (mode < 0 || mode > CODEC2_MODE_MAX) {
         av_log(logctx, AV_LOG_ERROR, "unknown codec2 mode %i, can't find frame_size\n", mode);
         return 0;
     } else {
@@ -59,7 +59,7 @@ int avpriv_codec2_mode_frame_size(void *logctx, int mode)
 
 int avpriv_codec2_mode_block_align(void *logctx, int mode)
 {
-    int block_align_table[AVPRIV_CODEC2_MODE_MAX+1] = {
+    int block_align_table[CODEC2_MODE_MAX+1] = {
         8,      // 3200
         6,      // 2400
         8,      // 1600
@@ -71,7 +71,7 @@ int avpriv_codec2_mode_block_align(void *logctx, int mode)
         4,      // 700C
     };
 
-    if (mode < 0 || mode > AVPRIV_CODEC2_MODE_MAX) {
+    if (mode < 0 || mode > CODEC2_MODE_MAX) {
         av_log(logctx, AV_LOG_ERROR, "unknown codec2 mode %i, can't find block_align\n", mode);
         return 0;
     } else {

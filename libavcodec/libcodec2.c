@@ -34,7 +34,7 @@ typedef struct {
 static const AVOption options[] = {
     //not AV_OPT_FLAG_DECODING_PARAM since mode should come from the demuxer
     //1300 (aka FreeDV 1600) is the most common mode on-the-air, default to it here as well
-    AVPRIV_CODEC2_AVOPTIONS("codec2 mode", LibCodec2Context, 0, 4 /*CODEC2_MODE_1300*/, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_ENCODING_PARAM),
+    CODEC2_AVOPTIONS("codec2 mode", LibCodec2Context, 0, 4 /*CODEC2_MODE_1300*/, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_ENCODING_PARAM),
     { NULL },
 };
 
@@ -55,7 +55,7 @@ static av_cold int libcodec2_init_common(AVCodecContext *avctx, int mode)
 {
     LibCodec2Context *c2 = avctx->priv_data;
     //Grab mode name from options, unless it's some weird number.
-    const char *modename = mode >= 0 && mode <= AVPRIV_CODEC2_MODE_MAX ? options[mode+1].name : "?";
+    const char *modename = mode >= 0 && mode <= CODEC2_MODE_MAX ? options[mode+1].name : "?";
 
     c2->codec = codec2_create(mode);
     if (!c2->codec) {
@@ -93,13 +93,13 @@ static av_cold int libcodec2_init_decoder(AVCodecContext *avctx)
     avctx->sample_fmt       = AV_SAMPLE_FMT_S16;
     avctx->channel_layout   = AV_CH_LAYOUT_MONO;
 
-    if (avctx->extradata_size != AVPRIV_CODEC2_EXTRADATA_SIZE) {
+    if (avctx->extradata_size != CODEC2_EXTRADATA_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "must have exactly %i bytes of extradata (got %i)\n",
-               AVPRIV_CODEC2_EXTRADATA_SIZE, avctx->extradata_size);
+               CODEC2_EXTRADATA_SIZE, avctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
 
-    return libcodec2_init_common(avctx, avpriv_codec2_mode_from_extradata(avctx->extradata));
+    return libcodec2_init_common(avctx, codec2_mode_from_extradata(avctx->extradata));
 }
 
 static av_cold int libcodec2_init_encoder(AVCodecContext *avctx)
@@ -114,13 +114,13 @@ static av_cold int libcodec2_init_encoder(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    avctx->extradata = av_mallocz(AVPRIV_CODEC2_EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata = av_mallocz(CODEC2_EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         return AVERROR(ENOMEM);
     }
 
-    avctx->extradata_size = AVPRIV_CODEC2_EXTRADATA_SIZE;
-    avpriv_codec2_make_extradata(avctx->extradata, c2->mode);
+    avctx->extradata_size = CODEC2_EXTRADATA_SIZE;
+    codec2_make_extradata(avctx->extradata, c2->mode);
 
     return libcodec2_init_common(avctx, c2->mode);
 }
