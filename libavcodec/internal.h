@@ -313,11 +313,6 @@ int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
  */
 int ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
 
-/**
- * Finalize buf into extradata and set its size appropriately.
- */
-int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf);
-
 const uint8_t *avpriv_find_start_code(const uint8_t *p,
                                       const uint8_t *end,
                                       uint32_t *state);
