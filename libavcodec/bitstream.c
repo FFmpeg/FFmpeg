@@ -50,6 +50,10 @@ void avpriv_align_put_bits(PutBitContext *s)
 {
     align_put_bits(s);
 }
+void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
+{
+    ff_copy_bits(pb, src, length);
+}
 #endif
 
 void ff_put_string(PutBitContext *pb, const char *string, int terminate_string)
@@ -62,7 +66,7 @@ void ff_put_string(PutBitContext *pb, const char *string, int terminate_string)
         put_bits(pb, 8, 0);
 }
 
-void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
+void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
 {
     int words = length >> 4;
     int bits  = length & 15;

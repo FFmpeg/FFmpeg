@@ -149,11 +149,12 @@ static inline void flush_put_bits_le(PutBitContext *s)
 
 #if FF_API_AVPRIV_PUT_BITS
 void avpriv_align_put_bits(PutBitContext *s);
+void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 #endif
 
 #ifdef BITSTREAM_WRITER_LE
 #define ff_put_string ff_put_string_unsupported_here
-#define avpriv_copy_bits avpriv_copy_bits_unsupported_here
+#define ff_copy_bits ff_copy_bits_unsupported_here
 #else
 
 /**
@@ -169,7 +170,7 @@ void ff_put_string(PutBitContext *pb, const char *string,
  *
  * @param length the number of bits of src to copy
  */
-void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
+void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 #endif
 
 static inline void put_bits_no_assert(PutBitContext *s, int n, BitBuf value)
