@@ -285,9 +285,12 @@ static void gxf_track_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si
 static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     AVIOContext *pb = s->pb;
     AVStream *st;
-    uint32_t fields_per_map = avio_rl32(pb);
-    uint32_t map_cnt = avio_rl32(pb);
+    uint32_t fields_per_map, map_cnt;
     int i;
+    if (pkt_len < 8)
+        return;
+    fields_per_map = avio_rl32(pb);
+    map_cnt = avio_rl32(pb);
     pkt_len -= 8;
     if ((s->flags & AVFMT_FLAG_IGNIDX) || !s->streams) {
         avio_skip(pb, pkt_len);
