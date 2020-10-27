@@ -260,6 +260,29 @@ typedef struct HLSContext {
     int has_video_m3u8; /* has video stream m3u8 list */
 } HLSContext;
 
+static int strftime_expand(const char *fmt, char **dest)
+{
+    int r = 1;
+    time_t now0;
+    struct tm *tm, tmpbuf;
+    char *buf;
+
+    buf = av_mallocz(MAX_URL_SIZE);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    time(&now0);
+    tm = localtime_r(&now0, &tmpbuf);
+    r = strftime(buf, MAX_URL_SIZE, fmt, tm);
+    if (!r) {
+        av_free(buf);
+        return AVERROR(EINVAL);
+    }
+    *dest = buf;
+
+    return r;
+}
+
 static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
                           AVDictionary **options)
 {
@@ -1687,19 +1710,15 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
         ff_format_set_url(oc, filename);
     } else {
         if (c->use_localtime) {
-            time_t now0;
-            struct tm *tm, tmpbuf;
-            int bufsize = strlen(vs->basename) + MAX_URL_SIZE;
-            char *buf = av_mallocz(bufsize);
-            if (!buf)
-                return AVERROR(ENOMEM);
-            time(&now0);
-            tm = localtime_r(&now0, &tmpbuf);
-            ff_format_set_url(oc, buf);
-            if (!strftime(oc->url, bufsize, vs->basename, tm)) {
+            int r;
+            char *expanded = NULL;
+
+            r = strftime_expand(vs->basename, &expanded);
+            if (r < 0) {
                 av_log(oc, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
-                return AVERROR(EINVAL);
+                return r;
             }
+            ff_format_set_url(oc, expanded);
 
             err = sls_flag_use_localtime_filename(oc, c, vs);
             if (err < 0) {
@@ -3005,6 +3024,19 @@ static int hls_init(AVFormatContext *s)
                     }
                     if (ret < 0)
                         return ret;
+                }
+
+                if (hls->use_localtime) {
+                    int r;
+                    char *expanded = NULL;
+
+                    r = strftime_expand(vs->fmp4_init_filename, &expanded);
+                    if (r < 0) {
+                      av_log(s, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
+                      return r;
+                    }
+                    av_free(vs->fmp4_init_filename);
+                    vs->fmp4_init_filename = expanded;
                 }
 
                 p = strrchr(vs->m3u8_name, '/');

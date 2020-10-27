@@ -859,6 +859,13 @@ fmp4 files may be used in HLS version 7 and above.
 @item hls_fmp4_init_filename @var{filename}
 Set filename to the fragment files header file, default filename is @file{init.mp4}.
 
+Use @code{-strftime 1} on @var{filename} to expand the segment filename with localtime.
+@example
+ffmpeg -i in.nut  -hls_segment_type fmp4 -strftime 1 -hls_fmp4_init_filename "%s_init.mp4" out.m3u8
+@end example
+This will produce init like this
+@file{1602678741_init.mp4}
+
 @item hls_fmp4_init_resend
 Resend init file after m3u8 file refresh every time, default is @var{0}.
 
