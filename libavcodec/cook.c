@@ -197,23 +197,27 @@ static av_cold int init_cook_vlc_tables(COOKContext *q)
 
     result = 0;
     for (i = 0; i < 13; i++) {
-        result |= init_vlc(&q->envelope_quant_index[i], 9, 24,
-                           envelope_quant_index_huffbits[i], 1, 1,
-                           envelope_quant_index_huffcodes[i], 2, 2, 0);
+        result |= ff_init_vlc_from_lengths(&q->envelope_quant_index[i], 9, 24,
+                                           envelope_quant_index_huffbits[i], 1,
+                                           envelope_quant_index_huffsyms[i], 1, 1,
+                                           0, 0, q->avctx);
     }
     av_log(q->avctx, AV_LOG_DEBUG, "sqvh VLC init\n");
     for (i = 0; i < 7; i++) {
-        result |= init_vlc(&q->sqvh[i], vhvlcsize_tab[i], vhsize_tab[i],
-                           cvh_huffbits[i], 1, 1,
-                           cvh_huffcodes[i], 2, 2, 0);
+        int sym_size = 1 + (i == 3);
+        result |= ff_init_vlc_from_lengths(&q->sqvh[i], vhvlcsize_tab[i], vhsize_tab[i],
+                                           cvh_huffbits[i], 1,
+                                           cvh_huffsyms[i], sym_size, sym_size,
+                                           0, 0, q->avctx);
     }
 
     for (i = 0; i < q->num_subpackets; i++) {
         if (q->subpacket[i].joint_stereo == 1) {
-            result |= init_vlc(&q->subpacket[i].channel_coupling, 6,
-                               (1 << q->subpacket[i].js_vlc_bits) - 1,
-                               ccpl_huffbits[q->subpacket[i].js_vlc_bits - 2], 1, 1,
-                               ccpl_huffcodes[q->subpacket[i].js_vlc_bits - 2], 2, 2, 0);
+            result |= ff_init_vlc_from_lengths(&q->subpacket[i].channel_coupling, 6,
+                                               (1 << q->subpacket[i].js_vlc_bits) - 1,
+                                               ccpl_huffbits[q->subpacket[i].js_vlc_bits - 2], 1,
+                                               ccpl_huffsyms[q->subpacket[i].js_vlc_bits - 2], 1, 1,
+                                               0, 0, q->avctx);
             av_log(q->avctx, AV_LOG_DEBUG, "subpacket %i Joint-stereo VLC used.\n", i);
         }
     }
