@@ -200,7 +200,7 @@ static av_cold int init_cook_vlc_tables(COOKContext *q)
         result |= ff_init_vlc_from_lengths(&q->envelope_quant_index[i], 9, 24,
                                            envelope_quant_index_huffbits[i], 1,
                                            envelope_quant_index_huffsyms[i], 1, 1,
-                                           0, 0, q->avctx);
+                                           -12, 0, q->avctx);
     }
     av_log(q->avctx, AV_LOG_DEBUG, "sqvh VLC init\n");
     for (i = 0; i < 7; i++) {
@@ -385,7 +385,7 @@ static int decode_envelope(COOKContext *q, COOKSubpacket *p,
 
         j = get_vlc2(&q->gb, q->envelope_quant_index[vlc_index - 1].table,
                      q->envelope_quant_index[vlc_index - 1].bits, 2);
-        quant_index_table[i] = quant_index_table[i - 1] + j - 12; // differential encoding
+        quant_index_table[i] = quant_index_table[i - 1] + j; // differential encoding
         if (quant_index_table[i] > 63 || quant_index_table[i] < -63) {
             av_log(q->avctx, AV_LOG_ERROR,
                    "Invalid quantizer %d at position %d, outside [-63, 63] range\n",
