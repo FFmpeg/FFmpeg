@@ -448,8 +448,8 @@ static int config_input(AVFilterLink *inlink)
     for (c = 0; c < 3; c++) {
         s->min[c].history = s->history_mem + (c*2)   * s->history_len;
         s->max[c].history = s->history_mem + (c*2+1) * s->history_len;
-        s->sblackpt[c] = scale * s->blackpt[c] + (s->blackpt[c] >> (s->depth - 8));
-        s->swhitept[c] = scale * s->whitept[c] + (s->whitept[c] >> (s->depth - 8));
+        s->sblackpt[c] = scale * s->blackpt[c] + (s->blackpt[c] & (1 << (s->depth - 8)));
+        s->swhitept[c] = scale * s->whitept[c] + (s->whitept[c] & (1 << (s->depth - 8)));
     }
 
     planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
