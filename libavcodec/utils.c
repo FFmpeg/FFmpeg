@@ -3473,8 +3473,11 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
 
         if (ch > 0) {
             /* calc from sample rate and channels */
-            if (id == AV_CODEC_ID_BINKAUDIO_DCT)
+            if (id == AV_CODEC_ID_BINKAUDIO_DCT) {
+                if (sr / 22050 > 22)
+                    return 0;
                 return (480 << (sr / 22050)) / ch;
+            }
         }
     }
 
