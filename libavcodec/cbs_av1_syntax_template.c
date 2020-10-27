@@ -1725,6 +1725,8 @@ static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
 
         CHECK(FUNC(uncompressed_header)(ctx, rw, current));
 
+        priv->tile_num = 0;
+
         if (current->show_existing_frame) {
             priv->seen_frame_header = 0;
         } else {
@@ -1790,9 +1792,11 @@ static int FUNC(tile_group_obu)(CodedBitstreamContext *ctx, RWContext *rw,
     } else {
         tile_bits = cbs_av1_tile_log2(1, priv->tile_cols) +
                     cbs_av1_tile_log2(1, priv->tile_rows);
-        fb(tile_bits, tg_start);
-        fb(tile_bits, tg_end);
+        fc(tile_bits, tg_start, priv->tile_num, num_tiles - 1);
+        fc(tile_bits, tg_end, current->tg_start, num_tiles - 1);
     }
+
+    priv->tile_num = current->tg_end + 1;
 
     CHECK(FUNC(byte_alignment)(ctx, rw));
 

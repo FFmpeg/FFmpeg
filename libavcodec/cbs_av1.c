@@ -1205,6 +1205,7 @@ static void cbs_av1_flush(CodedBitstreamContext *ctx)
     memset(priv->ref, 0, sizeof(priv->ref));
     priv->operating_point_idc = 0;
     priv->seen_frame_header = 0;
+    priv->tile_num = 0;
 }
 
 static void cbs_av1_close(CodedBitstreamContext *ctx)
