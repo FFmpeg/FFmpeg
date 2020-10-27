@@ -190,6 +190,21 @@ static av_cold void init_gain_table(COOKContext *q)
                                (1.0 / (double) q->gain_size_factor));
 }
 
+static av_cold int build_vlc(VLC *vlc, int nb_bits, const uint8_t counts[16],
+                             const void *syms, int symbol_size, int offset,
+                             void *logctx)
+{
+    uint8_t lens[MAX_COOK_VLC_ENTRIES];
+    unsigned num = 0;
+
+    for (int i = 0; i < 16; i++)
+        for (unsigned count = num + counts[i]; num < count; num++)
+            lens[num] = i + 1;
+
+    return ff_init_vlc_from_lengths(vlc, nb_bits, num, lens, 1,
+                                    syms, symbol_size, symbol_size,
+                                    offset, 0, logctx);
+}
 
 static av_cold int init_cook_vlc_tables(COOKContext *q)
 {
@@ -197,27 +212,24 @@ static av_cold int init_cook_vlc_tables(COOKContext *q)
 
     result = 0;
     for (i = 0; i < 13; i++) {
-        result |= ff_init_vlc_from_lengths(&q->envelope_quant_index[i], 9, 24,
-                                           envelope_quant_index_huffbits[i], 1,
-                                           envelope_quant_index_huffsyms[i], 1, 1,
-                                           -12, 0, q->avctx);
+        result |= build_vlc(&q->envelope_quant_index[i], 9,
+                            envelope_quant_index_huffcounts[i],
+                            envelope_quant_index_huffsyms[i], 1, -12, q->avctx);
     }
     av_log(q->avctx, AV_LOG_DEBUG, "sqvh VLC init\n");
     for (i = 0; i < 7; i++) {
         int sym_size = 1 + (i == 3);
-        result |= ff_init_vlc_from_lengths(&q->sqvh[i], vhvlcsize_tab[i], vhsize_tab[i],
-                                           cvh_huffbits[i], 1,
-                                           cvh_huffsyms[i], sym_size, sym_size,
-                                           0, 0, q->avctx);
+        result |= build_vlc(&q->sqvh[i], vhvlcsize_tab[i],
+                            cvh_huffcounts[i],
+                            cvh_huffsyms[i], sym_size, 0, q->avctx);
     }
 
     for (i = 0; i < q->num_subpackets; i++) {
         if (q->subpacket[i].joint_stereo == 1) {
-            result |= ff_init_vlc_from_lengths(&q->subpacket[i].channel_coupling, 6,
-                                               (1 << q->subpacket[i].js_vlc_bits) - 1,
-                                               ccpl_huffbits[q->subpacket[i].js_vlc_bits - 2], 1,
-                                               ccpl_huffsyms[q->subpacket[i].js_vlc_bits - 2], 1, 1,
-                                               0, 0, q->avctx);
+            result |= build_vlc(&q->subpacket[i].channel_coupling, 6,
+                                ccpl_huffcounts[q->subpacket[i].js_vlc_bits - 2],
+                                ccpl_huffsyms[q->subpacket[i].js_vlc_bits - 2], 1,
+                                0, q->avctx);
             av_log(q->avctx, AV_LOG_DEBUG, "subpacket %i Joint-stereo VLC used.\n", i);
         }
     }
