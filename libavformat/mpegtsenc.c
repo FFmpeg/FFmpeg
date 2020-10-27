@@ -232,7 +232,7 @@ typedef struct MpegTSWriteStream {
     int cc;
     int discontinuity;
     int payload_size;
-    int first_pts_check; ///< first pts check needed
+    int first_pts_checked; ///< first pts check needed
     int prev_payload_key;
     int64_t payload_pts;
     int64_t payload_dts;
@@ -1101,7 +1101,6 @@ static int mpegts_init(AVFormatContext *s)
         }
         ts_st->payload_pts     = AV_NOPTS_VALUE;
         ts_st->payload_dts     = AV_NOPTS_VALUE;
-        ts_st->first_pts_check = 1;
         ts_st->cc              = 15;
         ts_st->discontinuity   = ts->flags & MPEGTS_FLAG_DISCONT;
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
@@ -1700,11 +1699,11 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             dts += delay;
     }
 
-    if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
+    if (!ts_st->first_pts_checked && pts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_ERROR, "first pts value must be set\n");
         return AVERROR_INVALIDDATA;
     }
-    ts_st->first_pts_check = 0;
+    ts_st->first_pts_checked = 1;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         const uint8_t *p = buf, *buf_end = p + size;
