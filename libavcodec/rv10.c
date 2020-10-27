@@ -46,6 +46,7 @@
 #define RV_GET_MINOR_VER(x) (((x) >> 20) & 0xFF)
 #define RV_GET_MICRO_VER(x) (((x) >> 12) & 0xFF)
 
+#define MAX_VLC_ENTRIES 1023 // Note: Does not include the skip entries.
 #define DC_VLC_BITS 14 // FIXME find a better solution
 
 typedef struct RVDecContext {
@@ -54,63 +55,25 @@ typedef struct RVDecContext {
     int orig_width, orig_height;
 } RVDecContext;
 
-/* The elements with negative length in the bits table correspond to
- * open ends in the respective Huffman tree. */
-static const uint8_t rv_sym[] = {
-    128, 127, 129, 125, 126, 130, 131, 121, 122, 123, 124, 132, 133, 134, 135,
-    113, 114, 115, 116, 117, 118, 119, 120, 136, 137, 138, 139, 140, 141, 142,
-    143,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
-    111, 112, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156,
-    157, 158, 159,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,
-     77,  78,  79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,
-     92,  93,  94,  95,  96, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169,
-    170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184,
-    185, 186, 187, 188, 189, 190, 191,   1,   2,   3,   4,   5,   6,   7,   8,
-      9,  10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,
-     24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,
-     39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,
-     54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64, 192, 193, 194, 195,
-    196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210,
-    211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225,
-    226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240,
-    241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255,
-      0,   0,   0,   0,   0,   0,   0,   0,
+/* (run, length) encoded value for the symbols table. The actual symbols
+ * are run..run + length (mod 256).
+ * The last two entries in the following table apply to luma only.
+ * The skip values are not included in this list. */
+static const uint8_t rv_sym_run_len[][2] = {
+    { 128,   0 }, { 127,   0 }, { 129,   0 }, { 125,   1 }, { 130,  1 },
+    { 121,   3 }, { 132,   3 }, { 113,   7 }, { 136,   7 }, {  97, 15 },
+    { 144,  15 }, {  65,  31 }, { 160,  31 }, {   1,  63 }, { 192, 63 },
+    { 129, 127 }, {   0, 127 }, {   1, 255 }, {   0, 255 },
 };
 
-static const uint8_t rv_lum_len[] = {
-     2,  4,  4,  5,  5,  5,  5,  6,  6,  6,  6,  6,  6,  6,  6,  7,  7,  7,
-     7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  8,  8,  8,  8,  8,
-     8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
-     8,  8,  8,  8,  8,  8,  8,  8,  8, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, -8, -9,-10,-11,-12,-13,-14, 14,
+/* entry[i] of the following tables gives
+ * the number of VLC codes of length i + 2. */
+static const uint16_t rv_lum_len_count[15] = {
+    1,  0,  2,  4,  8, 16, 32,  0, 64,  0, 128,  0, 256,  0, 512,
 };
 
-static const uint8_t rv_chrom_len[] = {
-     2,  3,  3,  4,  4,  4,  4,  6,  6,  6,  6,  6,  6,  6,  6,  8,  8,  8,
-     8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-    14, 14, 14,-10,-11,-12,-13,-14,-15,-16, 16,
+static const uint16_t rv_chrom_len_count[15] = {
+    1,  2,  4,  0,  8,  0, 16,  0, 32,  0,  64,  0, 128,  0, 256,
 };
 
 static VLC rv_dc_lum, rv_dc_chrom;
@@ -122,37 +85,18 @@ int ff_rv_decode_dc(MpegEncContext *s, int n)
     if (n < 4) {
         code = get_vlc2(&s->gb, rv_dc_lum.table, DC_VLC_BITS, 2);
         if (code < 0) {
-            /* XXX: I don't understand why they use LONGER codes than
-             * necessary. The following code would be completely useless
-             * if they had thought about it !!! */
-            code = get_bits(&s->gb, 7);
-            if (code == 0x7c) {
-                code = (int8_t) (get_bits(&s->gb, 7) + 1);
-            } else if (code == 0x7d) {
-                code = -128 + get_bits(&s->gb, 7);
-            } else if (code == 0x7e) {
-                if (get_bits1(&s->gb) == 0)
-                    code = (int8_t) (get_bits(&s->gb, 8) + 1);
-                else
-                    code = (int8_t) (get_bits(&s->gb, 8));
-            } else if (code == 0x7f) {
-                skip_bits(&s->gb, 11);
-                code = 1;
-            }
+            /* Skip entry - no error. */
+            skip_bits(&s->gb, 18);
+            code = 1;
         } else {
             code -= 128;
         }
     } else {
         code = get_vlc2(&s->gb, rv_dc_chrom.table, DC_VLC_BITS, 2);
-        /* same remark */
         if (code < 0) {
-            code = get_bits(&s->gb, 9);
-            if (code == 0x1fc) {
-                code = (int8_t) (get_bits(&s->gb, 7) + 1);
-            } else if (code == 0x1fd) {
-                code = -128 + get_bits(&s->gb, 7);
-            } else if (code == 0x1fe) {
-                skip_bits(&s->gb, 9);
+            if (show_bits(&s->gb, 9) == 0x1FE) {
+                /* Skip entry - no error. */
+                skip_bits(&s->gb, 18);
                 code = 1;
             } else {
                 av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");
@@ -383,14 +327,39 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     return s->mb_width * s->mb_height - mb_pos;
 }
 
+static av_cold void rv10_build_vlc(VLC *vlc, const uint16_t len_count[15],
+                                   const uint8_t sym_rl[][2], int sym_rl_elems)
+{
+    uint16_t syms[MAX_VLC_ENTRIES];
+    uint8_t  lens[MAX_VLC_ENTRIES];
+    unsigned nb_syms = 0, nb_lens = 0;
+
+    for (unsigned i = 0; i < sym_rl_elems; i++) {
+        unsigned cur_sym = sym_rl[i][0];
+        for (unsigned tmp = nb_syms + sym_rl[i][1]; nb_syms <= tmp; nb_syms++)
+            syms[nb_syms] = 0xFF & cur_sym++;
+    }
+
+    for (unsigned i = 0; i < 15; i++)
+        for (unsigned tmp = nb_lens + len_count[i]; nb_lens < tmp; nb_lens++)
+            lens[nb_lens] = i + 2;
+    av_assert1(nb_lens == nb_syms);
+    ff_init_vlc_from_lengths(vlc, DC_VLC_BITS, nb_lens, lens, 1,
+                             syms, 2, 2, 0, INIT_VLC_STATIC_OVERLONG, NULL);
+}
+
 static av_cold void rv10_init_static(void)
 {
-    INIT_VLC_STATIC_FROM_LENGTHS(&rv_dc_lum, DC_VLC_BITS, 263,
-                                 rv_lum_len, 1,
-                                 rv_sym, 1, 1, 0, 0, 16384);
-    INIT_VLC_STATIC_FROM_LENGTHS(&rv_dc_chrom, DC_VLC_BITS, 263,
-                                 rv_chrom_len, 1,
-                                 rv_sym, 1, 1, 0, 0, 16388);
+    static VLC_TYPE table[16896 + 16640][2];
+
+    rv_dc_lum.table             = table;
+    rv_dc_lum.table_allocated   = 16896;
+    rv10_build_vlc(&rv_dc_lum, rv_lum_len_count,
+                   rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len));
+    rv_dc_chrom.table           = &table[16896];
+    rv_dc_chrom.table_allocated = 16640;
+    rv10_build_vlc(&rv_dc_chrom, rv_chrom_len_count,
+                   rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len) - 2);
     ff_h263_decode_init_vlc();
 }
 
