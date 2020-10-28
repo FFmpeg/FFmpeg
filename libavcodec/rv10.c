@@ -47,7 +47,7 @@
 #define RV_GET_MICRO_VER(x) (((x) >> 12) & 0xFF)
 
 #define MAX_VLC_ENTRIES 1023 // Note: Does not include the skip entries.
-#define DC_VLC_BITS 14 // FIXME find a better solution
+#define DC_VLC_BITS        9
 
 typedef struct RVDecContext {
     MpegEncContext m;
@@ -346,14 +346,14 @@ static av_cold void rv10_build_vlc(VLC *vlc, const uint16_t len_count[15],
 
 static av_cold void rv10_init_static(void)
 {
-    static VLC_TYPE table[16896 + 16640][2];
+    static VLC_TYPE table[1472 + 992][2];
 
     rv_dc_lum.table             = table;
-    rv_dc_lum.table_allocated   = 16896;
+    rv_dc_lum.table_allocated   = 1472;
     rv10_build_vlc(&rv_dc_lum, rv_lum_len_count,
                    rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len));
-    rv_dc_chrom.table           = &table[16896];
-    rv_dc_chrom.table_allocated = 16640;
+    rv_dc_chrom.table           = &table[1472];
+    rv_dc_chrom.table_allocated = 992;
     rv10_build_vlc(&rv_dc_chrom, rv_chrom_len_count,
                    rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len) - 2);
     ff_h263_decode_init_vlc();
