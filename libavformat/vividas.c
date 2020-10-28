@@ -28,6 +28,7 @@
  * @sa http://wiki.multimedia.cx/index.php?title=Vividas_VIV
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "avio_internal.h"
 #include "avformat.h"
@@ -374,7 +375,7 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
 
         if (avio_tell(pb) < off) {
             int num_data;
-            int xd_size = 0;
+            int xd_size = 1;
             int data_len[256];
             int offset = 1;
             uint8_t *p;
@@ -389,11 +390,10 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
                     return AVERROR_INVALIDDATA;
                 }
                 data_len[j] = len;
-                xd_size += len;
+                xd_size += len + 1 + len/255;
             }
 
-            st->codecpar->extradata_size = 64 + xd_size + xd_size / 255;
-            if (ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size)) {
+            if (ff_alloc_extradata(st->codecpar, xd_size)) {
                 av_free(pb);
                 return AVERROR(ENOMEM);
             }
@@ -403,10 +403,7 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
 
             for (j = 0; j < num_data - 1; j++) {
                 unsigned delta = av_xiphlacing(&p[offset], data_len[j]);
-                if (delta > data_len[j]) {
-                    av_free(pb);
-                    return AVERROR_INVALIDDATA;
-                }
+                av_assert0(delta <= xd_size - offset);
                 offset += delta;
             }
 
@@ -417,6 +414,7 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
                     av_freep(&st->codecpar->extradata);
                     break;
                 }
+                av_assert0(data_len[j] <= xd_size - offset);
                 offset += data_len[j];
             }
 
