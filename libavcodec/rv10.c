@@ -56,14 +56,14 @@ typedef struct RVDecContext {
 } RVDecContext;
 
 /* (run, length) encoded value for the symbols table. The actual symbols
- * are run..run + length (mod 256).
+ * are run..run - length (mod 256).
  * The last two entries in the following table apply to luma only.
  * The skip values are not included in this list. */
 static const uint8_t rv_sym_run_len[][2] = {
-    { 128,   0 }, { 127,   0 }, { 129,   0 }, { 125,   1 }, { 130,  1 },
-    { 121,   3 }, { 132,   3 }, { 113,   7 }, { 136,   7 }, {  97, 15 },
-    { 144,  15 }, {  65,  31 }, { 160,  31 }, {   1,  63 }, { 192, 63 },
-    { 129, 127 }, {   0, 127 }, {   1, 255 }, {   0, 255 },
+    {   0,   0 }, {   1,   0 }, { 255,   0 }, {   3,   1 }, { 254,  1 },
+    {   7,   3 }, { 252,   3 }, {  15,   7 }, { 248,   7 }, {  31, 15 },
+    { 240,  15 }, {  63,  31 }, { 224,  31 }, { 127,  63 }, { 192, 63 },
+    { 255, 127 }, { 128, 127 }, { 127, 255 }, { 128, 255 },
 };
 
 /* entry[i] of the following tables gives
@@ -87,9 +87,7 @@ int ff_rv_decode_dc(MpegEncContext *s, int n)
         if (code < 0) {
             /* Skip entry - no error. */
             skip_bits(&s->gb, 18);
-            code = 1;
-        } else {
-            code -= 128;
+            code = 255;
         }
     } else {
         code = get_vlc2(&s->gb, rv_dc_chrom.table, DC_VLC_BITS, 2);
@@ -97,16 +95,14 @@ int ff_rv_decode_dc(MpegEncContext *s, int n)
             if (show_bits(&s->gb, 9) == 0x1FE) {
                 /* Skip entry - no error. */
                 skip_bits(&s->gb, 18);
-                code = 1;
+                code = 255;
             } else {
                 av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");
-                return 0xffff;
+                return -1;
             }
-        } else {
-            code -= 128;
         }
     }
-    return -code;
+    return code;
 }
 
 /* read RV 1.0 compatible frame header */
@@ -337,7 +333,7 @@ static av_cold void rv10_build_vlc(VLC *vlc, const uint16_t len_count[15],
     for (unsigned i = 0; i < sym_rl_elems; i++) {
         unsigned cur_sym = sym_rl[i][0];
         for (unsigned tmp = nb_syms + sym_rl[i][1]; nb_syms <= tmp; nb_syms++)
-            syms[nb_syms] = 0xFF & cur_sym++;
+            syms[nb_syms] = 0xFF & cur_sym--;
     }
 
     for (unsigned i = 0; i < 15; i++)

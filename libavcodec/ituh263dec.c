@@ -467,7 +467,7 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
             level = s->last_dc[component];
             if (s->rv10_first_dc_coded[component]) {
                 diff = ff_rv_decode_dc(s, n);
-                if (diff == 0xffff)
+                if (diff < 0)
                     return -1;
                 level += diff;
                 level = level & 0xff; /* handle wrap round */
