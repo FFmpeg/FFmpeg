@@ -23,6 +23,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "internal.h"
@@ -58,12 +60,13 @@ typedef struct MimicContext {
     BswapDSPContext bbdsp;
     HpelDSPContext  hdsp;
     IDCTDSPContext  idsp;
-    VLC             vlc;
 
     /* Kept in the context so multithreading can have a constant to read from */
     int             next_cur_index;
     int             next_prev_index;
 } MimicContext;
+
+static VLC block_vlc;
 
 static const uint8_t huffsyms[] = {
     0x10, 0x20, 0x30, 0x00, 0x11, 0x40, 0x50, 0x12, 0x13, 0x21, 0x31, 0x60,
@@ -111,25 +114,24 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
         av_frame_free(&ctx->frames[i].f);
     }
 
-    ff_free_vlc(&ctx->vlc);
-
     return 0;
+}
+
+static av_cold void mimic_init_static(void)
+{
+    INIT_VLC_STATIC_FROM_LENGTHS(&block_vlc, MIMIC_VLC_BITS, FF_ARRAY_ELEMS(huffbits),
+                                 huffbits, 1, huffsyms, 1, 1, 0, 0, 4368);
 }
 
 static av_cold int mimic_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MimicContext *ctx = avctx->priv_data;
-    int ret, i;
+    int i;
 
     ctx->prev_index = 0;
     ctx->cur_index  = 15;
 
-    ret = ff_init_vlc_from_lengths(&ctx->vlc, MIMIC_VLC_BITS, FF_ARRAY_ELEMS(huffbits),
-                                   huffbits, 1, huffsyms, 1, 1, 0, 0, avctx);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
-        return ret;
-    }
     ff_blockdsp_init(&ctx->bdsp, avctx);
     ff_bswapdsp_init(&ctx->bbdsp);
     ff_hpeldsp_init(&ctx->hdsp, avctx->flags);
@@ -141,6 +143,8 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
         if (!ctx->frames[i].f)
             return AVERROR(ENOMEM);
     }
+
+    ff_thread_once(&init_static_once, mimic_init_static);
 
     return 0;
 }
@@ -221,7 +225,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
         int value;
         int coeff;
 
-        vlc = get_vlc2(&ctx->gb, ctx->vlc.table, MIMIC_VLC_BITS, 3);
+        vlc = get_vlc2(&ctx->gb, block_vlc.table, MIMIC_VLC_BITS, 3);
         if (!vlc) /* end-of-block code */
             return 0;
         if (vlc == -1)
