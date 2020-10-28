@@ -57,12 +57,21 @@ static void read_global_param(AV1DecContext *s, int type, int ref, int idx)
 {
     uint8_t primary_frame, prev_frame;
     uint32_t abs_bits, prec_bits, round, prec_diff, sub, mx;
-    int32_t r;
+    int32_t r, prev_gm_param;
 
     primary_frame = s->raw_frame_header->primary_ref_frame;
     prev_frame = s->raw_frame_header->ref_frame_idx[primary_frame];
     abs_bits = AV1_GM_ABS_ALPHA_BITS;
     prec_bits = AV1_GM_ALPHA_PREC_BITS;
+
+    /* setup_past_independence() sets PrevGmParams to default values. We can
+     * simply point to the current's frame gm_params as they will be initialized
+     * with defaults at this point.
+     */
+    if (s->raw_frame_header->primary_ref_frame == AV1_PRIMARY_REF_NONE)
+        prev_gm_param = s->cur_frame.gm_params[ref][idx];
+    else
+        prev_gm_param = s->ref[prev_frame].gm_params[ref][idx];
 
     if (idx < 2) {
         if (type == AV1_WARP_MODEL_TRANSLATION) {
@@ -79,7 +88,7 @@ static void read_global_param(AV1DecContext *s, int type, int ref, int idx)
     prec_diff = AV1_WARPEDMODEL_PREC_BITS - prec_bits;
     sub = (idx % 3) == 2 ? (1 << prec_bits) : 0;
     mx = 1 << abs_bits;
-    r = (s->ref[prev_frame].gm_params[ref][idx] >> prec_diff) - sub;
+    r = (prev_gm_param >> prec_diff) - sub;
 
     s->cur_frame.gm_params[ref][idx] =
         (decode_signed_subexp_with_ref(s->raw_frame_header->gm_params[ref][idx],
