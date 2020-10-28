@@ -84,22 +84,11 @@ int ff_rv_decode_dc(MpegEncContext *s, int n)
 
     if (n < 4) {
         code = get_vlc2(&s->gb, rv_dc_lum.table, DC_VLC_BITS, 2);
-        if (code < 0) {
-            /* Skip entry - no error. */
-            skip_bits(&s->gb, 18);
-            code = 255;
-        }
     } else {
         code = get_vlc2(&s->gb, rv_dc_chrom.table, DC_VLC_BITS, 2);
         if (code < 0) {
-            if (show_bits(&s->gb, 9) == 0x1FE) {
-                /* Skip entry - no error. */
-                skip_bits(&s->gb, 18);
-                code = 255;
-            } else {
-                av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");
-                return -1;
-            }
+            av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");
+            return -1;
         }
     }
     return code;
@@ -352,10 +341,21 @@ static av_cold void rv10_init_static(void)
     rv_dc_lum.table_allocated   = 1472;
     rv10_build_vlc(&rv_dc_lum, rv_lum_len_count,
                    rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len));
+    for (int i = 0; i < 1 << (DC_VLC_BITS - 7 /* Length of skip prefix */); i++) {
+        /* All codes beginning with 0x7F have the same length and value.
+         * Modifying the table directly saves us the useless subtables. */
+        rv_dc_lum.table[(0x7F << (DC_VLC_BITS - 7)) + i][0] = 255;
+        rv_dc_lum.table[(0x7F << (DC_VLC_BITS - 7)) + i][1] = 18;
+    }
     rv_dc_chrom.table           = &table[1472];
     rv_dc_chrom.table_allocated = 992;
     rv10_build_vlc(&rv_dc_chrom, rv_chrom_len_count,
                    rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len) - 2);
+    for (int i = 0; i < 1 << (DC_VLC_BITS - 9 /* Length of skip prefix */); i++) {
+        /* Same as above. */
+        rv_dc_chrom.table[(0x1FE << (DC_VLC_BITS - 9)) + i][0] = 255;
+        rv_dc_chrom.table[(0x1FE << (DC_VLC_BITS - 9)) + i][1] = 18;
+    }
     ff_h263_decode_init_vlc();
 }
 
