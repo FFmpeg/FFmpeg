@@ -286,7 +286,7 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
 %ifidn %1, yuv
     pcmpeqd m3, m3 ; Set alpha empty
 %else
-    mova m3, [pa_2indexq + 2 * indexq] ; Load alpha
+    movu m3, [pa_2indexq + 2 * indexq] ; Load alpha
 %endif
     mova m5, m_blue
     mova m6, m_red
