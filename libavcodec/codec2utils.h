@@ -70,11 +70,6 @@ static inline void codec2_make_extradata(uint8_t *ptr, int mode) {
     ptr[3] = 0;     //flags
 }
 
-//Returns version as a 16-bit value. 0.8 -> 0x0008
-static inline uint16_t codec2_version_from_extradata(uint8_t *ptr) {
-    return (ptr[0] << 8) + ptr[1];
-}
-
 static inline uint8_t codec2_mode_from_extradata(uint8_t *ptr) {
     return ptr[2];
 }
