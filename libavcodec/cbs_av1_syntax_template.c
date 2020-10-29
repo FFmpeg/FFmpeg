@@ -1490,13 +1490,19 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
         fb(8, refresh_frame_flags);
 
     if (!frame_is_intra || current->refresh_frame_flags != all_frames) {
-        if (current->error_resilient_mode && seq->enable_order_hint) {
+        if (seq->enable_order_hint) {
             for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
-                fbs(order_hint_bits, ref_order_hint[i], 1, i);
+                if (current->error_resilient_mode)
+                    fbs(order_hint_bits, ref_order_hint[i], 1, i);
+                else
+                    infer(ref_order_hint[i], priv->ref[i].order_hint);
                 if (current->ref_order_hint[i] != priv->ref[i].order_hint)
                     priv->ref[i].valid = 0;
             }
         }
+    } else if (!frame_is_intra && seq->enable_order_hint) {
+        for (i = 0; i < AV1_NUM_REF_FRAMES; i++)
+            infer(ref_order_hint[i], priv->ref[i].order_hint);
     }
 
     if (current->frame_type == AV1_FRAME_KEY ||
