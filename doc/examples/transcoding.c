@@ -414,38 +414,40 @@ static int init_filters(void)
     return 0;
 }
 
-static int encode_write_frame(AVFrame *filt_frame, unsigned int stream_index, int *got_frame) {
+static int encode_write_frame(AVFrame *filt_frame, unsigned int stream_index)
+{
+    StreamContext *stream = &stream_ctx[stream_index];
     int ret;
-    int got_frame_local;
     AVPacket enc_pkt;
-    int (*enc_func)(AVCodecContext *, AVPacket *, const AVFrame *, int *) =
-        (ifmt_ctx->streams[stream_index]->codecpar->codec_type ==
-         AVMEDIA_TYPE_VIDEO) ? avcodec_encode_video2 : avcodec_encode_audio2;
-
-    if (!got_frame)
-        got_frame = &got_frame_local;
 
     av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
     /* encode filtered frame */
     enc_pkt.data = NULL;
     enc_pkt.size = 0;
     av_init_packet(&enc_pkt);
-    ret = enc_func(stream_ctx[stream_index].enc_ctx, &enc_pkt,
-            filt_frame, got_frame);
+
+    ret = avcodec_send_frame(stream->enc_ctx, filt_frame);
+
     if (ret < 0)
         return ret;
-    if (!(*got_frame))
-        return 0;
 
-    /* prepare packet for muxing */
-    enc_pkt.stream_index = stream_index;
-    av_packet_rescale_ts(&enc_pkt,
-                         stream_ctx[stream_index].enc_ctx->time_base,
-                         ofmt_ctx->streams[stream_index]->time_base);
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(stream->enc_ctx, &enc_pkt);
 
-    av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
-    /* mux encoded frame */
-    ret = av_interleaved_write_frame(ofmt_ctx, &enc_pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return 0;
+
+        /* prepare packet for muxing */
+        enc_pkt.stream_index = stream_index;
+        av_packet_rescale_ts(&enc_pkt,
+                             stream->enc_ctx->time_base,
+                             ofmt_ctx->streams[stream_index]->time_base);
+
+        av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
+        /* mux encoded frame */
+        ret = av_interleaved_write_frame(ofmt_ctx, &enc_pkt);
+    }
+
     return ret;
 }
 
@@ -479,7 +481,7 @@ static int filter_encode_write_frame(AVFrame *frame, unsigned int stream_index)
         }
 
         filter->filtered_frame->pict_type = AV_PICTURE_TYPE_NONE;
-        ret = encode_write_frame(filter->filtered_frame, stream_index, NULL);
+        ret = encode_write_frame(filter->filtered_frame, stream_index);
         av_frame_unref(filter->filtered_frame);
         if (ret < 0)
             break;
@@ -490,33 +492,20 @@ static int filter_encode_write_frame(AVFrame *frame, unsigned int stream_index)
 
 static int flush_encoder(unsigned int stream_index)
 {
-    int ret;
-    int got_frame;
-
     if (!(stream_ctx[stream_index].enc_ctx->codec->capabilities &
                 AV_CODEC_CAP_DELAY))
         return 0;
 
-    while (1) {
-        av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", stream_index);
-        ret = encode_write_frame(NULL, stream_index, &got_frame);
-        if (ret < 0)
-            break;
-        if (!got_frame)
-            return 0;
-    }
-    return ret;
+    av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", stream_index);
+    return encode_write_frame(NULL, stream_index);
 }
 
 int main(int argc, char **argv)
 {
     int ret;
     AVPacket packet = { .data = NULL, .size = 0 };
-    enum AVMediaType type;
     unsigned int stream_index;
     unsigned int i;
-    int got_frame;
-    int (*dec_func)(AVCodecContext *, AVFrame *, int *, const AVPacket *);
 
     if (argc != 3) {
         av_log(NULL, AV_LOG_ERROR, "Usage: %s <input file> <output file>\n", argv[0]);
@@ -535,7 +524,6 @@ int main(int argc, char **argv)
         if ((ret = av_read_frame(ifmt_ctx, &packet)) < 0)
             break;
         stream_index = packet.stream_index;
-        type = ifmt_ctx->streams[packet.stream_index]->codecpar->codec_type;
         av_log(NULL, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n",
                 stream_index);
 
@@ -547,16 +535,19 @@ int main(int argc, char **argv)
             av_packet_rescale_ts(&packet,
                                  ifmt_ctx->streams[stream_index]->time_base,
                                  stream->dec_ctx->time_base);
-            dec_func = (type == AVMEDIA_TYPE_VIDEO) ? avcodec_decode_video2 :
-                avcodec_decode_audio4;
-            ret = dec_func(stream->dec_ctx, stream->dec_frame,
-                    &got_frame, &packet);
+            ret = avcodec_send_packet(stream->dec_ctx, &packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Decoding failed\n");
                 break;
             }
 
-            if (got_frame) {
+            while (ret >= 0) {
+                ret = avcodec_receive_frame(stream->dec_ctx, stream->dec_frame);
+                if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
+                    break;
+                else if (ret < 0)
+                    goto end;
+
                 stream->dec_frame->pts = stream->dec_frame->best_effort_timestamp;
                 ret = filter_encode_write_frame(stream->dec_frame, stream_index);
                 if (ret < 0)
