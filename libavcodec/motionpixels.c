@@ -133,7 +133,7 @@ static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int
         if (mp_get_code(mp, gb, size, code + 1) < 0)
             return AVERROR_INVALIDDATA;
     }
-    if (mp->current_codes_count >= MAX_HUFF_CODES) {
+    if (mp->current_codes_count >= mp->codes_count) {
         av_log(mp->avctx, AV_LOG_ERROR, "too many codes\n");
         return AVERROR_INVALIDDATA;
     }
