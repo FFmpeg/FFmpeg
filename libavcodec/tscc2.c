@@ -62,24 +62,24 @@ static av_cold int init_vlcs(TSCC2Context *c)
 {
     int i, ret;
 
-    ret = ff_init_vlc_sparse(&c->dc_vlc, 9, DC_VLC_COUNT,
-                             tscc2_dc_vlc_bits,  1, 1,
-                             tscc2_dc_vlc_codes, 2, 2,
-                             tscc2_dc_vlc_syms,  2, 2, INIT_VLC_LE);
+    ret = ff_init_vlc_from_lengths(&c->dc_vlc, 9, DC_VLC_COUNT,
+                                   tscc2_dc_vlc_lens, 1,
+                                   tscc2_dc_vlc_syms, 2, 2,
+                                   0, INIT_VLC_OUTPUT_LE, c->avctx);
     if (ret)
         return ret;
 
     for (i = 0; i < NUM_VLC_SETS; i++) {
-        ret = ff_init_vlc_sparse(c->nc_vlc + i, 9, 16,
-                                 tscc2_nc_vlc_bits[i],  1, 1,
-                                 tscc2_nc_vlc_codes[i], 2, 2,
-                                 tscc2_nc_vlc_syms,     1, 1, INIT_VLC_LE);
+        ret = ff_init_vlc_from_lengths(c->nc_vlc + i, 9, 16,
+                                       tscc2_nc_vlc_lens[i], 1,
+                                       tscc2_nc_vlc_syms[i], 1, 1,
+                                       0, INIT_VLC_OUTPUT_LE, c->avctx);
         if (ret)
             return ret;
-        ret = ff_init_vlc_sparse(c->ac_vlc + i, 9, tscc2_ac_vlc_sizes[i],
-                                 tscc2_ac_vlc_bits[i],  1, 1,
-                                 tscc2_ac_vlc_codes[i], 2, 2,
-                                 tscc2_ac_vlc_syms[i],  2, 2, INIT_VLC_LE);
+        ret = ff_init_vlc_from_lengths(c->ac_vlc + i, 9, tscc2_ac_vlc_sizes[i],
+                                       tscc2_ac_vlc_bits[i], 1,
+                                       tscc2_ac_vlc_syms[i], 2, 2,
+                                       0, INIT_VLC_OUTPUT_LE, c->avctx);
         if (ret)
             return ret;
     }
