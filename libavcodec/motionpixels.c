@@ -195,8 +195,6 @@ static av_always_inline int mp_get_vlc(MotionPixelsContext *mp, GetBitContext *g
     int i;
 
     i = (mp->codes_count == 1) ? 0 : get_vlc2(gb, mp->vlc.table, mp->max_codes_bits, 1);
-    if (i < 0)
-        return i;
     return mp->codes[i].delta;
 }
 
