@@ -41,12 +41,16 @@ typedef struct FilteringContext {
     AVFilterContext *buffersink_ctx;
     AVFilterContext *buffersrc_ctx;
     AVFilterGraph *filter_graph;
+
+    AVFrame *filtered_frame;
 } FilteringContext;
 static FilteringContext *filter_ctx;
 
 typedef struct StreamContext {
     AVCodecContext *dec_ctx;
     AVCodecContext *enc_ctx;
+
+    AVFrame *dec_frame;
 } StreamContext;
 static StreamContext *stream_ctx;
 
@@ -102,6 +106,10 @@ static int open_input_file(const char *filename)
             }
         }
         stream_ctx[i].dec_ctx = codec_ctx;
+
+        stream_ctx[i].dec_frame = av_frame_alloc();
+        if (!stream_ctx[i].dec_frame)
+            return AVERROR(ENOMEM);
     }
 
     av_dump_format(ifmt_ctx, 0, filename, 0);
@@ -398,6 +406,10 @@ static int init_filters(void)
                 stream_ctx[i].enc_ctx, filter_spec);
         if (ret)
             return ret;
+
+        filter_ctx[i].filtered_frame = av_frame_alloc();
+        if (!filter_ctx[i].filtered_frame)
+            return AVERROR(ENOMEM);
     }
     return 0;
 }
@@ -420,7 +432,6 @@ static int encode_write_frame(AVFrame *filt_frame, unsigned int stream_index, in
     av_init_packet(&enc_pkt);
     ret = enc_func(stream_ctx[stream_index].enc_ctx, &enc_pkt,
             filt_frame, got_frame);
-    av_frame_free(&filt_frame);
     if (ret < 0)
         return ret;
     if (!(*got_frame))
@@ -440,12 +451,12 @@ static int encode_write_frame(AVFrame *filt_frame, unsigned int stream_index, in
 
 static int filter_encode_write_frame(AVFrame *frame, unsigned int stream_index)
 {
+    FilteringContext *filter = &filter_ctx[stream_index];
     int ret;
-    AVFrame *filt_frame;
 
     av_log(NULL, AV_LOG_INFO, "Pushing decoded frame to filters\n");
     /* push the decoded frame into the filtergraph */
-    ret = av_buffersrc_add_frame_flags(filter_ctx[stream_index].buffersrc_ctx,
+    ret = av_buffersrc_add_frame_flags(filter->buffersrc_ctx,
             frame, 0);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
@@ -454,14 +465,9 @@ static int filter_encode_write_frame(AVFrame *frame, unsigned int stream_index)
 
     /* pull filtered frames from the filtergraph */
     while (1) {
-        filt_frame = av_frame_alloc();
-        if (!filt_frame) {
-            ret = AVERROR(ENOMEM);
-            break;
-        }
         av_log(NULL, AV_LOG_INFO, "Pulling filtered frame from filters\n");
-        ret = av_buffersink_get_frame(filter_ctx[stream_index].buffersink_ctx,
-                filt_frame);
+        ret = av_buffersink_get_frame(filter->buffersink_ctx,
+                                      filter->filtered_frame);
         if (ret < 0) {
             /* if no more frames for output - returns AVERROR(EAGAIN)
              * if flushed and no more frames for output - returns AVERROR_EOF
@@ -469,12 +475,12 @@ static int filter_encode_write_frame(AVFrame *frame, unsigned int stream_index)
              */
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                 ret = 0;
-            av_frame_free(&filt_frame);
             break;
         }
 
-        filt_frame->pict_type = AV_PICTURE_TYPE_NONE;
-        ret = encode_write_frame(filt_frame, stream_index, NULL);
+        filter->filtered_frame->pict_type = AV_PICTURE_TYPE_NONE;
+        ret = encode_write_frame(filter->filtered_frame, stream_index, NULL);
+        av_frame_unref(filter->filtered_frame);
         if (ret < 0)
             break;
     }
@@ -506,7 +512,6 @@ int main(int argc, char **argv)
 {
     int ret;
     AVPacket packet = { .data = NULL, .size = 0 };
-    AVFrame *frame = NULL;
     enum AVMediaType type;
     unsigned int stream_index;
     unsigned int i;
@@ -535,33 +540,27 @@ int main(int argc, char **argv)
                 stream_index);
 
         if (filter_ctx[stream_index].filter_graph) {
+            StreamContext *stream = &stream_ctx[stream_index];
+
             av_log(NULL, AV_LOG_DEBUG, "Going to reencode&filter the frame\n");
-            frame = av_frame_alloc();
-            if (!frame) {
-                ret = AVERROR(ENOMEM);
-                break;
-            }
+
             av_packet_rescale_ts(&packet,
                                  ifmt_ctx->streams[stream_index]->time_base,
-                                 stream_ctx[stream_index].dec_ctx->time_base);
+                                 stream->dec_ctx->time_base);
             dec_func = (type == AVMEDIA_TYPE_VIDEO) ? avcodec_decode_video2 :
                 avcodec_decode_audio4;
-            ret = dec_func(stream_ctx[stream_index].dec_ctx, frame,
+            ret = dec_func(stream->dec_ctx, stream->dec_frame,
                     &got_frame, &packet);
             if (ret < 0) {
-                av_frame_free(&frame);
                 av_log(NULL, AV_LOG_ERROR, "Decoding failed\n");
                 break;
             }
 
             if (got_frame) {
-                frame->pts = frame->best_effort_timestamp;
-                ret = filter_encode_write_frame(frame, stream_index);
-                av_frame_free(&frame);
+                stream->dec_frame->pts = stream->dec_frame->best_effort_timestamp;
+                ret = filter_encode_write_frame(stream->dec_frame, stream_index);
                 if (ret < 0)
                     goto end;
-            } else {
-                av_frame_free(&frame);
             }
         } else {
             /* remux this frame without reencoding */
@@ -598,13 +597,16 @@ int main(int argc, char **argv)
     av_write_trailer(ofmt_ctx);
 end:
     av_packet_unref(&packet);
-    av_frame_free(&frame);
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
         avcodec_free_context(&stream_ctx[i].dec_ctx);
         if (ofmt_ctx && ofmt_ctx->nb_streams > i && ofmt_ctx->streams[i] && stream_ctx[i].enc_ctx)
             avcodec_free_context(&stream_ctx[i].enc_ctx);
-        if (filter_ctx && filter_ctx[i].filter_graph)
+        if (filter_ctx && filter_ctx[i].filter_graph) {
             avfilter_graph_free(&filter_ctx[i].filter_graph);
+            av_frame_free(&filter_ctx[i].filtered_frame);
+        }
+
+        av_frame_free(&stream_ctx[i].dec_frame);
     }
     av_free(filter_ctx);
     av_free(stream_ctx);
