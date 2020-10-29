@@ -39,9 +39,6 @@
 static VLC band_vlc, scfi_vlc[2], dscf_vlc[2], res_vlc[2];
 static VLC q1_vlc, q2_vlc[2], q3_vlc[2], quant_vlc[4][2], q9up_vlc;
 
-static const int q3_offsets[2] = { MPC8_Q3_OFFSET, MPC8_Q4_OFFSET };
-static const int quant_offsets[6] = { MPC8_Q5_OFFSET, MPC8_Q6_OFFSET, MPC8_Q7_OFFSET, MPC8_Q8_OFFSET };
-
 static inline int mpc8_dec_base(GetBitContext *gb, int k, int n)
 {
     int len = mpc8_cnk_len[k-1][n-1] - 1;
@@ -161,10 +158,10 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 
     INIT_VLC_STATIC_FROM_LENGTHS(&q3_vlc[0], MPC8_Q3_BITS, MPC8_Q3_SIZE,
                                  mpc8_q3_bits, 1,
-                                 mpc8_q3_syms, 1, 1, 0, 0, 512);
+                                 mpc8_q3_syms, 1, 1, MPC8_Q3_OFFSET, 0, 512);
     INIT_VLC_STATIC_FROM_LENGTHS(&q3_vlc[1], MPC8_Q4_BITS, MPC8_Q4_SIZE,
                                  mpc8_q4_bits, 1,
-                                 mpc8_q4_syms, 1, 1, 0, 0, 516);
+                                 mpc8_q4_syms, 1, 1, MPC8_Q4_OFFSET, 0, 516);
 
     for(i = 0; i < 2; i++){
         res_vlc[i].table = &codes_table[vlc_offsets[0+i]];
@@ -186,25 +183,25 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
         ff_init_vlc_from_lengths(&quant_vlc[0][i], MPC8_Q5_BITS, MPC8_Q5_SIZE,
                                  mpc8_q5_bits[i], 1,
                                  mpc8_q5_syms[i], 1, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                 MPC8_Q5_OFFSET, INIT_VLC_USE_NEW_STATIC, NULL);
         quant_vlc[1][i].table = &codes_table[vlc_offsets[6+i]];
         quant_vlc[1][i].table_allocated = vlc_offsets[7+i] - vlc_offsets[6+i];
         ff_init_vlc_from_lengths(&quant_vlc[1][i], MPC8_Q6_BITS, MPC8_Q6_SIZE,
                                  mpc8_q6_bits[i], 1,
                                  mpc8_q6_syms[i], 1, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                 MPC8_Q6_OFFSET, INIT_VLC_USE_NEW_STATIC, NULL);
         quant_vlc[2][i].table = &codes_table[vlc_offsets[8+i]];
         quant_vlc[2][i].table_allocated = vlc_offsets[9+i] - vlc_offsets[8+i];
         ff_init_vlc_from_lengths(&quant_vlc[2][i], MPC8_Q7_BITS, MPC8_Q7_SIZE,
                                  mpc8_q7_bits[i], 1,
                                  mpc8_q7_syms[i], 1, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                 MPC8_Q7_OFFSET, INIT_VLC_USE_NEW_STATIC, NULL);
         quant_vlc[3][i].table = &codes_table[vlc_offsets[10+i]];
         quant_vlc[3][i].table_allocated = vlc_offsets[11+i] - vlc_offsets[10+i];
         ff_init_vlc_from_lengths(&quant_vlc[3][i], MPC8_Q8_BITS, MPC8_Q8_SIZE,
                                  mpc8_q8_bits[i], 1,
                                  mpc8_q8_syms[i], 1, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                 MPC8_Q8_OFFSET, INIT_VLC_USE_NEW_STATIC, NULL);
     }
     vlc_initialized = 1;
     ff_mpa_synth_init_fixed();
@@ -358,7 +355,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             case 3:
             case 4:
                 for(j = 0; j < SAMPLES_PER_BAND; j += 2){
-                    t = get_vlc2(gb, q3_vlc[res - 3].table, MPC8_Q3_BITS, 2) + q3_offsets[res - 3];
+                    t = get_vlc2(gb, q3_vlc[res - 3].table, MPC8_Q3_BITS, 2);
                     c->Q[ch][off + j + 1] = t >> 4;
                     c->Q[ch][off + j + 0] = sign_extend(t, 4);
                 }
@@ -369,8 +366,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             case 8:
                 cnt = 2 * mpc8_thres[res];
                 for(j = 0; j < SAMPLES_PER_BAND; j++){
-                    t = get_vlc2(gb, quant_vlc[res - 5][cnt > mpc8_thres[res]].table, quant_vlc[res - 5][cnt > mpc8_thres[res]].bits, 2) + quant_offsets[res - 5];
-                    c->Q[ch][off + j] = t;
+                    const VLC *vlc = &quant_vlc[res - 5][cnt > mpc8_thres[res]];
+                    c->Q[ch][off + j] = get_vlc2(gb, vlc->table, vlc->bits, 2);
                     cnt = (cnt >> 1) + FFABS(c->Q[ch][off + j]);
                 }
                 break;
