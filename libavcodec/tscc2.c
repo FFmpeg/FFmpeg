@@ -151,8 +151,6 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
                 dc = get_bits(gb, 8);
             } else {
                 dc = get_vlc2(gb, c->dc_vlc.table, 9, 2);
-                if (dc == -1)
-                    return AVERROR_INVALIDDATA;
                 if (dc == 0x100)
                     dc = get_bits(gb, 8);
             }
@@ -161,15 +159,11 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
             c->block[0] = dc;
 
             nc = get_vlc2(gb, c->nc_vlc[vlc_set].table, 9, 1);
-            if (nc == -1)
-                return AVERROR_INVALIDDATA;
 
             bpos = 1;
             memset(c->block + 1, 0, 15 * sizeof(*c->block));
             for (l = 0; l < nc; l++) {
                 ac = get_vlc2(gb, c->ac_vlc[vlc_set].table, 9, 2);
-                if (ac == -1)
-                    return AVERROR_INVALIDDATA;
                 if (ac == 0x1000)
                     ac = get_bits(gb, 12);
                 bpos += ac & 0xF;
