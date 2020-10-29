@@ -43,12 +43,6 @@
                     rc == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ || \
                     rc == NV_ENC_PARAMS_RC_CBR_HQ)
 
-#ifdef NVENC_HAVE_NEW_PRESETS
-#define IS_SDK10_PRESET(p) ((p) >= PRESET_P1 && (p) <= PRESET_P7)
-#else
-#define IS_SDK10_PRESET(p) 0
-#endif
-
 const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NV12,
@@ -1268,30 +1262,26 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
     preset_config.version = NV_ENC_PRESET_CONFIG_VER;
     preset_config.presetCfg.version = NV_ENC_CONFIG_VER;
 
-    if (IS_SDK10_PRESET(ctx->preset)) {
 #ifdef NVENC_HAVE_NEW_PRESETS
-        ctx->init_encode_params.tuningInfo = ctx->tuning_info;
+    ctx->init_encode_params.tuningInfo = ctx->tuning_info;
 
-        if (ctx->flags & NVENC_LOWLATENCY)
-            ctx->init_encode_params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
+    if (ctx->flags & NVENC_LOWLATENCY)
+        ctx->init_encode_params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
 
-        nv_status = p_nvenc->nvEncGetEncodePresetConfigEx(ctx->nvencoder,
-            ctx->init_encode_params.encodeGUID,
-            ctx->init_encode_params.presetGUID,
-            ctx->init_encode_params.tuningInfo,
-            &preset_config);
+    nv_status = p_nvenc->nvEncGetEncodePresetConfigEx(ctx->nvencoder,
+        ctx->init_encode_params.encodeGUID,
+        ctx->init_encode_params.presetGUID,
+        ctx->init_encode_params.tuningInfo,
+        &preset_config);
+#else
+    // Turn off tuning info parameter if older presets are on
+    ctx->init_encode_params.tuningInfo = 0;
+
+    nv_status = p_nvenc->nvEncGetEncodePresetConfig(ctx->nvencoder,
+        ctx->init_encode_params.encodeGUID,
+        ctx->init_encode_params.presetGUID,
+        &preset_config);
 #endif
-    } else {
-#ifdef NVENC_HAVE_NEW_PRESETS
-        // Turn off tuning info parameter if older presets are on
-        ctx->init_encode_params.tuningInfo = 0;
-#endif
-
-        nv_status = p_nvenc->nvEncGetEncodePresetConfig(ctx->nvencoder,
-            ctx->init_encode_params.encodeGUID,
-            ctx->init_encode_params.presetGUID,
-            &preset_config);
-    }
     if (nv_status != NV_ENC_SUCCESS)
         return nvenc_print_error(avctx, nv_status, "Cannot get the preset configuration");
 
