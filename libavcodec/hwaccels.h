@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 
+extern const AVHWAccel ff_av1_vaapi_hwaccel;
 extern const AVHWAccel ff_h263_vaapi_hwaccel;
 extern const AVHWAccel ff_h263_videotoolbox_hwaccel;
 extern const AVHWAccel ff_h264_d3d11va_hwaccel;

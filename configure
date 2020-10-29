@@ -2918,6 +2918,8 @@ videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
 
+av1_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferAV1_bit_depth_idx"
+av1_vaapi_hwaccel_select="av1_decoder"
 h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
 h263_videotoolbox_hwaccel_deps="videotoolbox"
@@ -6675,6 +6677,7 @@ if enabled vaapi; then
 
     check_type "va/va.h va/va_dec_hevc.h" "VAPictureParameterBufferHEVC"
     check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
+    check_struct "va/va.h" "VADecPictureParameterBufferAV1" bit_depth_idx
     check_type   "va/va.h va/va_vpp.h" "VAProcFilterParameterBufferHDRToneMapping"
     check_struct "va/va.h va/va_vpp.h" "VAProcPipelineCaps" rotation_flags
     check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"

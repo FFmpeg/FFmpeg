@@ -39,6 +39,7 @@ version <next>:
 - afreqshift and aphaseshift filters
 - High Voltage Software ADPCM encoder
 - LEGO Racers ALP (.tun & .pcm) muxer
+- AV1 VAAPI decoder
 
 
 version 4.3:
