@@ -384,7 +384,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
                 for(j = 0; j < SAMPLES_PER_BAND; j += 2){
                     t = get_vlc2(gb, q3_vlc[res - 3].table, MPC8_Q3_BITS, 2) + q3_offsets[res - 3];
                     c->Q[ch][off + j + 1] = t >> 4;
-                    c->Q[ch][off + j + 0] = (t & 8) ? (t & 0xF) - 16 : (t & 0xF);
+                    c->Q[ch][off + j + 0] = sign_extend(t, 4);
                 }
                 break;
             case 5:
