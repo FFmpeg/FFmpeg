@@ -97,10 +97,10 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
                                  &mpc7_scfi[0], 2, 1, 0, 0, 1 << MPC7_SCFI_BITS);
     INIT_VLC_STATIC_FROM_LENGTHS(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
                                  &mpc7_dscf[1], 2,
-                                 &mpc7_dscf[0], 2, 1, 0, 0, 1 << MPC7_DSCF_BITS);
+                                 &mpc7_dscf[0], 2, 1, -7, 0, 1 << MPC7_DSCF_BITS);
     INIT_VLC_STATIC_FROM_LENGTHS(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
                                  &mpc7_hdr[1], 2,
-                                 &mpc7_hdr[0], 2, 1, 0, 0, 1 << MPC7_HDR_BITS);
+                                 &mpc7_hdr[0], 2, 1, -5, 0, 1 << MPC7_HDR_BITS);
     for(i = 0; i < MPC7_QUANT_VLC_TABLES; i++){
         for(j = 0; j < 2; j++){
             quant_vlc[i][j].table = quant_table;
@@ -109,7 +109,8 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
             ff_init_vlc_from_lengths(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
                                      &raw_quant_table[1], 2,
                                      &raw_quant_table[0], 2, 1,
-                                     0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                     mpc7_quant_vlc_off[i],
+                                     INIT_VLC_USE_NEW_STATIC, NULL);
             raw_quant_table += 2 * mpc7_quant_vlc_sizes[i];
         }
     }
@@ -151,7 +152,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     case  3: case  4: case  5: case  6: case  7:
         i1 = get_bits1(gb);
         for(i = 0; i < SAMPLES_PER_BAND; i++)
-            *dst++ = get_vlc2(gb, quant_vlc[idx-1][i1].table, 9, 2) - mpc7_quant_vlc_off[idx-1];
+            *dst++ = get_vlc2(gb, quant_vlc[idx-1][i1].table, 9, 2);
         break;
     case  8: case  9: case 10: case 11: case 12:
     case 13: case 14: case 15: case 16: case 17:
@@ -166,7 +167,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
 
 static int get_scale_idx(GetBitContext *gb, int ref)
 {
-    int t = get_vlc2(gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
+    int t = get_vlc2(gb, dscf_vlc.table, MPC7_DSCF_BITS, 1);
     if (t == 8)
         return get_bits(gb, 6);
     return ref + t;
@@ -221,8 +222,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     /* read subband indexes */
     for(i = 0; i <= c->maxbands; i++){
         for(ch = 0; ch < 2; ch++){
-            int t = 4;
-            if(i) t = get_vlc2(&gb, hdr_vlc.table, MPC7_HDR_BITS, 1) - 5;
+            int t = i ? get_vlc2(&gb, hdr_vlc.table, MPC7_HDR_BITS, 1) : 4;
             if(t == 4) bands[i].res[ch] = get_bits(&gb, 4);
             else bands[i].res[ch] = bands[i-1].res[ch] + t;
             if (bands[i].res[ch] < -1 || bands[i].res[ch] > 17) {

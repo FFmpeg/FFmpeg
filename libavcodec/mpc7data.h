@@ -55,8 +55,8 @@ static const uint8_t mpc7_quant_vlc_sizes[MPC7_QUANT_VLC_TABLES] = {
     27, 25, 7, 9, 15, 31, 63
 };
 
-static const uint8_t mpc7_quant_vlc_off[MPC7_QUANT_VLC_TABLES] = {
-    0, 0, 3, 4, 7, 15, 31
+static const int8_t mpc7_quant_vlc_off[MPC7_QUANT_VLC_TABLES] = {
+    0, 0, -3, -4, -7, -15, -31
 };
 
 static const uint8_t mpc7_quant_vlcs[177 * 2 * 2] = {
