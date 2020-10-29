@@ -33,7 +33,6 @@
 #include "motionpixels_tablegen.h"
 
 typedef struct HuffCode {
-    int code;
     uint8_t size;
     uint8_t delta;
 } HuffCode;
@@ -129,7 +128,7 @@ static void mp_read_changes_map(MotionPixelsContext *mp, GetBitContext *gb, int 
     }
 }
 
-static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int code)
+static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size)
 {
     while (get_bits1(gb)) {
         ++size;
@@ -137,8 +136,7 @@ static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int
             av_log(mp->avctx, AV_LOG_ERROR, "invalid code size %d/%d\n", size, mp->max_codes_bits);
             return AVERROR_INVALIDDATA;
         }
-        code <<= 1;
-        if (mp_get_code(mp, gb, size, code + 1) < 0)
+        if (mp_get_code(mp, gb, size) < 0)
             return AVERROR_INVALIDDATA;
     }
     if (mp->current_codes_count >= mp->codes_count) {
@@ -146,7 +144,6 @@ static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int
         return AVERROR_INVALIDDATA;
     }
 
-    mp->codes[mp->current_codes_count  ].code = code;
     mp->codes[mp->current_codes_count++].size = size;
     return 0;
 }
@@ -163,7 +160,7 @@ static int mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
         for (i = 0; i < mp->codes_count; ++i)
             mp->codes[i].delta = get_bits(gb, 4);
         mp->current_codes_count = 0;
-        if ((ret = mp_get_code(mp, gb, 0, 0)) < 0)
+        if ((ret = mp_get_code(mp, gb, 0)) < 0)
             return ret;
         if (mp->current_codes_count < mp->codes_count) {
             av_log(mp->avctx, AV_LOG_ERROR, "too few codes\n");
@@ -329,10 +326,12 @@ static int mp_decode_frame(AVCodecContext *avctx,
         goto end;
 
     if (mp->codes_count > 1) {
-        ret = ff_init_vlc_sparse(&mp->vlc, mp->max_codes_bits, mp->codes_count,
-                                 &mp->codes[0].size,  sizeof(HuffCode), 1,
-                                 &mp->codes[0].code,  sizeof(HuffCode), 4,
-                                 &mp->codes[0].delta, sizeof(HuffCode), 1, 0);
+        /* The entries of the mp->codes array are sorted from right to left
+         * in the Huffman tree, hence -(int)sizeof(HuffCode). */
+        ret = ff_init_vlc_from_lengths(&mp->vlc, mp->max_codes_bits, mp->codes_count,
+                                       &mp->codes[mp->codes_count - 1].size,  -(int)sizeof(HuffCode),
+                                       &mp->codes[mp->codes_count - 1].delta, -(int)sizeof(HuffCode), 1,
+                                       0, 0, avctx);
         if (ret < 0)
             goto end;
     }
