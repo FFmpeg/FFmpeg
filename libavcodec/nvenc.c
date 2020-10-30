@@ -908,7 +908,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
             ctx->rc = NV_ENC_PARAMS_RC_CBR;
         } else if (ctx->cqp >= 0) {
             ctx->rc = NV_ENC_PARAMS_RC_CONSTQP;
-        } else {
+        } else if (ctx->quality >= 0.0f) {
             ctx->rc = NV_ENC_PARAMS_RC_VBR;
         }
     }
