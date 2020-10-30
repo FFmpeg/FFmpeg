@@ -2247,9 +2247,7 @@ redo:
                     s->start_time_realtime = av_rescale (rtpctx->first_rtcp_ntp_time - (NTP_OFFSET << 32), 1000000, 1LL << 32);
                     if (rtpctx->st) {
                         s->start_time_realtime -=
-                            av_rescale (rtpctx->rtcp_ts_offset,
-                                        (uint64_t) rtpctx->st->time_base.num * 1000000,
-                                                   rtpctx->st->time_base.den);
+                            av_rescale_q (rtpctx->rtcp_ts_offset, rtpctx->st->time_base, AV_TIME_BASE_Q);
                     }
                 }
             }
