@@ -8122,6 +8122,22 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
     return sample;
 }
 
+static int64_t mov_get_skip_samples(AVStream *st, int sample)
+{
+    MOVStreamContext *sc = st->priv_data;
+    int64_t first_ts = st->internal->index_entries[0].timestamp;
+    int64_t ts = st->internal->index_entries[sample].timestamp;
+    int64_t off;
+
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+        return 0;
+
+    /* compute skip samples according to stream start_pad, seek ts and first ts */
+    off = av_rescale_q(ts - first_ts, st->time_base,
+                       (AVRational){1, st->codecpar->sample_rate});
+    return FFMAX(sc->start_pad - off, 0);
+}
+
 static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
 {
     MOVContext *mc = s->priv_data;
@@ -8140,18 +8156,19 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     if (mc->seek_individually) {
         /* adjust seek timestamp to found sample timestamp */
         int64_t seek_timestamp = st->internal->index_entries[sample].timestamp;
+        st->internal->skip_samples = mov_get_skip_samples(st, sample);
 
         for (i = 0; i < s->nb_streams; i++) {
             int64_t timestamp;
-            MOVStreamContext *sc = s->streams[i]->priv_data;
             st = s->streams[i];
-            st->internal->skip_samples = (sample_time <= 0) ? sc->start_pad : 0;
 
             if (stream_index == i)
                 continue;
 
             timestamp = av_rescale_q(seek_timestamp, s->streams[stream_index]->time_base, st->time_base);
-            mov_seek_stream(s, st, timestamp, flags);
+            sample = mov_seek_stream(s, st, timestamp, flags);
+            if (sample >= 0)
+                st->internal->skip_samples = mov_get_skip_samples(st, sample);
         }
     } else {
         for (i = 0; i < s->nb_streams; i++) {
