@@ -87,10 +87,10 @@ static int mpc8_get_mask(GetBitContext *gb, int size, int t)
 }
 
 static const uint16_t vlc_offsets[13] = {
-    0, 640, 1184, 1748, 2298, 2426, 2554, 3066, 3578, 4106, 4618, 5196, 5708
+    0, 640, 1184, 1748, 2298, 2426, 2490, 3002, 3258, 3786, 4298, 4876, 5388
 };
 
-static av_cold void build_vlc(VLC *vlc, int nb_bits,
+static av_cold void build_vlc(VLC *vlc,
                               const uint8_t codes_counts[16],
                               const uint8_t syms[], int offset)
 {
@@ -101,7 +101,7 @@ static av_cold void build_vlc(VLC *vlc, int nb_bits,
         for (unsigned tmp = num + codes_counts[i - 1]; num < tmp; num++)
             len[num] = i;
 
-    ff_init_vlc_from_lengths(vlc, nb_bits, num, len, 1,
+    ff_init_vlc_from_lengths(vlc, FFMIN(len[0], 9), num, len, 1,
                              syms, 1, 1, offset, INIT_VLC_USE_NEW_STATIC, NULL);
 }
 
@@ -112,7 +112,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     GetBitContext gb;
     static int vlc_initialized = 0;
     int channels;
-    static VLC_TYPE codes_table[5708][2];
+    static VLC_TYPE codes_table[5388][2];
 
     if(avctx->extradata_size < 2){
         av_log(avctx, AV_LOG_ERROR, "Too small extradata size (%i)!\n", avctx->extradata_size);
@@ -150,7 +150,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
         static VLC_TYPE table[static_size][2];                             \
         (vlc)->table           = table;                                    \
         (vlc)->table_allocated = static_size;                              \
-        build_vlc(vlc, bits, len_counts, symbols, offset);                 \
+        build_vlc(vlc, len_counts, symbols, offset);                       \
     } while (0)
 
 
@@ -180,29 +180,29 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     for(i = 0; i < 2; i++){
         res_vlc[i].table = &codes_table[vlc_offsets[0+i]];
         res_vlc[i].table_allocated = vlc_offsets[1+i] - vlc_offsets[0+i];
-        build_vlc(&res_vlc[i], MPC8_RES_BITS,
+        build_vlc(&res_vlc[i],
                   mpc8_res_len_counts[i], mpc8_res_syms[i], 0);
 
         q2_vlc[i].table = &codes_table[vlc_offsets[2+i]];
         q2_vlc[i].table_allocated = vlc_offsets[3+i] - vlc_offsets[2+i];
-        build_vlc(&q2_vlc[i], MPC8_Q2_BITS,
+        build_vlc(&q2_vlc[i],
                   mpc8_q2_len_counts[i], mpc8_q2_syms[i], 0);
 
         quant_vlc[0][i].table = &codes_table[vlc_offsets[4+i]];
         quant_vlc[0][i].table_allocated = vlc_offsets[5+i] - vlc_offsets[4+i];
-        build_vlc(&quant_vlc[0][i], MPC8_Q5_BITS,
+        build_vlc(&quant_vlc[0][i],
                   mpc8_q5_len_counts[i], mpc8_q5_syms[i], MPC8_Q5_OFFSET);
         quant_vlc[1][i].table = &codes_table[vlc_offsets[6+i]];
         quant_vlc[1][i].table_allocated = vlc_offsets[7+i] - vlc_offsets[6+i];
-        build_vlc(&quant_vlc[1][i], MPC8_Q6_BITS,
+        build_vlc(&quant_vlc[1][i],
                   mpc8_q6_len_counts[i], mpc8_q6_syms[i], MPC8_Q6_OFFSET);
         quant_vlc[2][i].table = &codes_table[vlc_offsets[8+i]];
         quant_vlc[2][i].table_allocated = vlc_offsets[9+i] - vlc_offsets[8+i];
-        build_vlc(&quant_vlc[2][i], MPC8_Q7_BITS,
+        build_vlc(&quant_vlc[2][i],
                   mpc8_q7_len_counts[i], mpc8_q7_syms[i], MPC8_Q7_OFFSET);
         quant_vlc[3][i].table = &codes_table[vlc_offsets[10+i]];
         quant_vlc[3][i].table_allocated = vlc_offsets[11+i] - vlc_offsets[10+i];
-        build_vlc(&quant_vlc[3][i], MPC8_Q8_BITS,
+        build_vlc(&quant_vlc[3][i],
                   mpc8_q8_len_counts[i], mpc8_q8_syms[i], MPC8_Q8_OFFSET);
     }
     vlc_initialized = 1;
