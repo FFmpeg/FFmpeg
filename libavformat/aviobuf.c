@@ -40,7 +40,7 @@
  * data instead of calling the protocol seek function, for seekable
  * protocols.
  */
-#define SHORT_SEEK_THRESHOLD 4096
+#define SHORT_SEEK_THRESHOLD 32768
 
 static void *ff_avio_child_next(void *obj, void *prev)
 {
