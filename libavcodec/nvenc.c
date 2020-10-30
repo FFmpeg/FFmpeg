@@ -900,7 +900,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
     if (ctx->flags & NVENC_ONE_PASS)
         ctx->encode_config.rcParams.multiPass = NV_ENC_MULTI_PASS_DISABLED;
-    if (ctx->flags & NVENC_TWO_PASSES || ctx->twopass)
+    if (ctx->flags & NVENC_TWO_PASSES || ctx->twopass > 0)
         ctx->encode_config.rcParams.multiPass = NV_ENC_TWO_PASS_FULL_RESOLUTION;
 
     if (ctx->rc < 0) {
