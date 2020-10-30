@@ -1274,9 +1274,6 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
         ctx->init_encode_params.tuningInfo,
         &preset_config);
 #else
-    // Turn off tuning info parameter if older presets are on
-    ctx->init_encode_params.tuningInfo = 0;
-
     nv_status = p_nvenc->nvEncGetEncodePresetConfig(ctx->nvencoder,
         ctx->init_encode_params.encodeGUID,
         ctx->init_encode_params.presetGUID,
