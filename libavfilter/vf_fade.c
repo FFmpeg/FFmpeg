@@ -404,7 +404,7 @@ static int filter_slice_alpha16(AVFilterContext *ctx, void *arg, int jobnr,
     return 0;
 }
 
-static int config_props(AVFilterLink *inlink)
+static int config_input(AVFilterLink *inlink)
 {
     FadeContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
@@ -553,7 +553,7 @@ static const AVFilterPad avfilter_vf_fade_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
-        .config_props   = config_props,
+        .config_props   = config_input,
         .filter_frame   = filter_frame,
         .needs_writable = 1,
     },
