@@ -588,6 +588,11 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         entries >= UINT_MAX / sizeof(*sc->drefs))
         return AVERROR_INVALIDDATA;
 
+    for (i = 0; i < sc->drefs_count; i++) {
+        MOVDref *dref = &sc->drefs[i];
+        av_freep(&dref->path);
+        av_freep(&dref->dir);
+    }
     av_free(sc->drefs);
     sc->drefs_count = 0;
     sc->drefs = av_mallocz(entries * sizeof(*sc->drefs));
