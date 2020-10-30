@@ -182,7 +182,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         t += get_bits(&gb, 12);
         if(t & 1)
             t = -(t & ~1);
-        pos = (t >> 1) + ppos[0]*2 - ppos[1];
+        pos = (t >> 1) + (uint64_t)ppos[0]*2 - ppos[1];
         av_add_index_entry(s->streams[0], pos, (int64_t)i << seekd, 0, 0, AVINDEX_KEYFRAME);
         ppos[1] = ppos[0];
         ppos[0] = pos;
