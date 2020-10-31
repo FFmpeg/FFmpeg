@@ -848,7 +848,7 @@ static int predict_intra(AVCodecContext *avctx, AVFrame *frame, int ax, int ay,
             uint8_t *left = frame->data[plane] + ay * frame->linesize[plane] + FFMAX(ax - 1, 0);
             int bottommost = frame->data[plane][(ay + size - 1) * frame->linesize[plane] + FFMAX(ax - 1, 0)];
             int rightmost = frame->data[plane][FFMAX(ay - 1, 0) * frame->linesize[plane] + ax + size - 1];
-            int avg = (bottommost + rightmost + 1) / 2 + 2 * get_se_golomb(gb);
+            int avg = (bottommost + rightmost + 1) / 2 + 2 * av_clip(get_se_golomb(gb), -(1<<16), 1<<16);
             int r6 = adjust(avg - bottommost, size);
             int r9 = adjust(avg - rightmost, size);
             int shift = adjust(size, size) == 8 ? 3 : 2;
