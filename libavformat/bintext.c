@@ -242,6 +242,8 @@ static int adf_read_header(AVFormatContext *s)
         bin->fsize = avio_size(pb) - 1 - 192 - 4096;
         st->codec->width = 80<<3;
         ff_sauce_read(s, &bin->fsize, &got_width, 0);
+        if (st->codec->width < 8)
+            return AVERROR_INVALIDDATA;
         if (!bin->width)
             calculate_height(st->codec, bin->fsize);
         avio_seek(pb, 1 + 192 + 4096, SEEK_SET);
