@@ -4414,7 +4414,7 @@ static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    int64_t end = avio_tell(pb) + atom.size;
+    int64_t end = av_sat_add64(avio_tell(pb), atom.size);
     uint8_t *key = NULL, *val = NULL, *mean = NULL;
     int i;
     int ret = 0;
