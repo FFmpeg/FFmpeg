@@ -32,7 +32,7 @@ and in the [wiki](https://trac.ffmpeg.org).
 
 ### Examples
 
-Coding examples are available in the **doc/examples** directory.
+Coding examples are available in the **docs/examples** directory.
 
 ## License
 
