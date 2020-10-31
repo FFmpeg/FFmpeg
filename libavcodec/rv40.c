@@ -73,25 +73,26 @@ static av_cold void rv40_init_tables(void)
     for(i = 0; i < AIC_MODE2_NUM; i++){
         aic_mode2_vlc[i].table = &aic_mode2_table[mode2_offs[i]];
         aic_mode2_vlc[i].table_allocated = mode2_offs[i + 1] - mode2_offs[i];
-        init_vlc(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
-                 aic_mode2_vlc_bits[i],  1, 1,
-                 aic_mode2_vlc_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
+                                 aic_mode2_vlc_bits[i], 1,
+                                 aic_mode2_vlc_syms[i], 1, 1,
+                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
     }
     for(i = 0; i < NUM_PTYPE_VLCS; i++){
         ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
         ptype_vlc[i].table_allocated = 1 << PTYPE_VLC_BITS;
-        ff_init_vlc_sparse(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
-                            ptype_vlc_bits[i],  1, 1,
-                            ptype_vlc_codes[i], 1, 1,
-                            ptype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
+                                 &ptype_vlc_tabs[i][0][1], 2,
+                                 &ptype_vlc_tabs[i][0][0], 2, 1,
+                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
     }
     for(i = 0; i < NUM_BTYPE_VLCS; i++){
         btype_vlc[i].table = &btype_table[i << BTYPE_VLC_BITS];
         btype_vlc[i].table_allocated = 1 << BTYPE_VLC_BITS;
-        ff_init_vlc_sparse(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
-                            btype_vlc_bits[i],  1, 1,
-                            btype_vlc_codes[i], 1, 1,
-                            btype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
+                                 &btype_vlc_tabs[i][0][1], 2,
+                                 &btype_vlc_tabs[i][0][0], 2, 1,
+                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
     }
 }
 
