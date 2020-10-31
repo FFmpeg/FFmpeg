@@ -226,7 +226,7 @@ static int apng_read_header(AVFormatContext *s)
                                     ctx->num_frames, ctx->num_play);
             break;
         case MKTAG('f', 'c', 'T', 'L'):
-            if (!acTL_found) {
+            if (!acTL_found || len != 26) {
                ret = AVERROR_INVALIDDATA;
                goto fail;
             }
