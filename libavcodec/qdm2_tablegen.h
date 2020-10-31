@@ -122,7 +122,7 @@ static av_cold void build_vlc(VLC *vlc, int nb_bits, int nb_codes, int idx,
     vlc->table_allocated = qdm2_vlc_offs[idx + 1] - qdm2_vlc_offs[idx];
     ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes,
                              &tab[0][1], 2, &tab[0][0], 2, 1,
-                             0, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE, NULL);
+                             -1, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE, NULL);
 }
 
 static av_cold void qdm2_init_vlc(void)

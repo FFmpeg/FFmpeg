@@ -205,7 +205,7 @@ static int qdm2_get_vlc(GetBitContext *gb, const VLC *vlc, int flag, int depth)
     value = get_vlc2(gb, vlc->table, vlc->bits, depth);
 
     /* stage-2, 3 bits exponent escape sequence */
-    if (value-- == 0)
+    if (value < 0)
         value = get_bits(gb, get_bits(gb, 3) + 1);
 
     /* stage-3, optional */
