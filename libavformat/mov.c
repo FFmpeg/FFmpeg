@@ -5052,7 +5052,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int64_t stream_size = avio_size(pb);
-    int64_t offset = avio_tell(pb) + atom.size, pts, timestamp;
+    int64_t offset = av_sat_add64(avio_tell(pb), atom.size), pts, timestamp;
     uint8_t version, is_complete;
     unsigned i, j, track_id, item_count;
     AVStream *st = NULL;
