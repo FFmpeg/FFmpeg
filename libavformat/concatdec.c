@@ -113,7 +113,8 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     ConcatFile *file;
     char *url = NULL;
     const char *proto;
-    size_t url_len, proto_len;
+    const char *ptr;
+    size_t url_len;
     int ret;
 
     if (cat->safe > 0 && !safe_filename(filename)) {
@@ -122,9 +123,8 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     }
 
     proto = avio_find_protocol_name(filename);
-    proto_len = proto ? strlen(proto) : 0;
-    if (proto && !memcmp(filename, proto, proto_len) &&
-        (filename[proto_len] == ':' || filename[proto_len] == ',')) {
+    if (proto && av_strstart(filename, proto, &ptr) &&
+        (*ptr == ':' || *ptr == ',')) {
         url = filename;
         filename = NULL;
     } else {
