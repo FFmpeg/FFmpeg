@@ -143,25 +143,21 @@ typedef struct MSS4Context {
 } MSS4Context;
 
 static av_cold int mss4_init_vlc(VLC *vlc, const uint8_t *lens,
-                                 const uint8_t *syms, int num_syms)
+                                 const uint8_t *syms)
 {
     uint8_t  bits[MAX_ENTRIES];
-    uint16_t codes[MAX_ENTRIES];
     int i, j;
-    int prefix = 0, max_bits = 0, idx = 0;
+    int idx = 0;
 
     for (i = 0; i < 16; i++) {
         for (j = 0; j < lens[i]; j++) {
             bits[idx]  = i + 1;
-            codes[idx] = prefix++;
-            max_bits   = i + 1;
             idx++;
         }
-        prefix <<= 1;
     }
 
-    return ff_init_vlc_sparse(vlc, FFMIN(max_bits, 9), num_syms, bits, 1, 1,
-                              codes, 2, 2, syms, 1, 1, 0);
+    return ff_init_vlc_from_lengths(vlc, FFMIN(bits[idx - 1], 9), idx,
+                                    bits, 1, syms, 1, 1, 0, 0, NULL);
 }
 
 static av_cold int mss4_init_vlcs(MSS4Context *ctx)
@@ -169,15 +165,15 @@ static av_cold int mss4_init_vlcs(MSS4Context *ctx)
     int ret, i;
 
     for (i = 0; i < 2; i++) {
-        ret = mss4_init_vlc(&ctx->dc_vlc[i], mss4_dc_vlc_lens[i], NULL, 12);
+        ret = mss4_init_vlc(&ctx->dc_vlc[i], mss4_dc_vlc_lens[i], NULL);
         if (ret)
             return ret;
         ret = mss4_init_vlc(&ctx->ac_vlc[i], mss4_ac_vlc_lens[i],
-                            mss4_ac_vlc_syms[i], 162);
+                            mss4_ac_vlc_syms[i]);
         if (ret)
             return ret;
         ret = mss4_init_vlc(&ctx->vec_entry_vlc[i], mss4_vec_entry_vlc_lens[i],
-                            mss4_vec_entry_vlc_syms[i], 9);
+                            mss4_vec_entry_vlc_syms[i]);
         if (ret)
             return ret;
     }
