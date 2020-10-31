@@ -35,200 +35,138 @@
 /** VLC TABLES **/
 
 /* values in this table range from -1..23; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_level_huffcodes[24] = {
-    0x037c, 0x0004, 0x003c, 0x004c, 0x003a, 0x002c, 0x001c, 0x001a,
-    0x0024, 0x0014, 0x0001, 0x0002, 0x0000, 0x0003, 0x0007, 0x0005,
-    0x0006, 0x0008, 0x0009, 0x000a, 0x000c, 0x00fc, 0x007c, 0x017c
-};
-
-static const uint8_t vlc_tab_level_huffbits[24] = {
-    10, 6, 7, 7, 6, 6, 6, 6, 6, 5, 4, 4, 4, 3, 3, 3, 3, 4, 4, 5, 7, 8, 9, 10
+static const uint8_t tab_level[24][2] = {
+    { 12,  4 }, { 17,  4 }, {  1,  6 }, {  8,  6 }, {  9,  5 }, { 20,  7 },
+    {  3,  7 }, {  5,  6 }, {  6,  6 }, {  2,  7 }, { 22,  9 }, { 23, 10 },
+    {  0, 10 }, { 21,  8 }, { 11,  4 }, { 19,  5 }, {  7,  6 }, {  4,  6 },
+    { 16,  3 }, { 10,  4 }, { 18,  4 }, { 15,  3 }, { 13,  3 }, { 14,  3 },
 };
 
 /* values in this table range from -1..36; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_diff_huffcodes[37] = {
-    0x1c57, 0x0004, 0x0000, 0x0001, 0x0003, 0x0002, 0x000f, 0x000e,
-    0x0007, 0x0016, 0x0037, 0x0027, 0x0026, 0x0066, 0x0006, 0x0097,
-    0x0046, 0x01c6, 0x0017, 0x0786, 0x0086, 0x0257, 0x00d7, 0x0357,
-    0x00c6, 0x0386, 0x0186, 0x0000, 0x0157, 0x0c57, 0x0057, 0x0000,
-    0x0b86, 0x0000, 0x1457, 0x0000, 0x0457
-};
-
-static const uint8_t vlc_tab_diff_huffbits[37] = {
-    13, 3, 3, 2, 3, 3, 4, 4, 6, 5, 6, 6, 7, 7, 8, 8,
-    8, 9, 8, 11, 9, 10, 8, 10, 9, 12, 10, 0, 10, 13, 11, 0,
-    12, 0, 13, 0, 13
+static const uint8_t tab_diff[33][2] = {
+    {  2,  3 }, {  1,  3 }, {  5,  3 }, { 14,  8 }, { 20,  9 }, { 26, 10 },
+    { 25, 12 }, { 32, 12 }, { 19, 11 }, { 16,  8 }, { 24,  9 }, { 17,  9 },
+    { 12,  7 }, { 13,  7 }, {  9,  5 }, {  7,  4 }, {  3,  2 }, {  4,  3 },
+    {  8,  6 }, { 11,  6 }, { 18,  8 }, { 15,  8 }, { 30, 11 }, { 36, 13 },
+    { 34, 13 }, { 29, 13 }, {  0, 13 }, { 21, 10 }, { 28, 10 }, { 23, 10 },
+    { 22,  8 }, { 10,  6 }, {  6,  4 },
 };
 
 /* values in this table range from -1..5; adjust retrieved value by -1 */
-static const uint8_t vlc_tab_run_huffcodes[6] = {
-    0x1f, 0x00, 0x01, 0x03, 0x07, 0x0f
-};
-
-static const uint8_t vlc_tab_run_huffbits[6] = {
-    5, 1, 2, 3, 4, 5
+static const uint8_t tab_run[6][2] = {
+    { 1, 1 }, { 2, 2 }, { 3, 3 }, { 4, 4 }, { 5, 5 }, { 0, 5 },
 };
 
 /* values in this table range from -1..19; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_tone_level_idx_hi1_huffcodes[20] = {
-    0x5714, 0x000c, 0x0002, 0x0001, 0x0000, 0x0004, 0x0034, 0x0054,
-    0x0094, 0x0014, 0x0114, 0x0214, 0x0314, 0x0614, 0x0e14, 0x0f14,
-    0x2714, 0x0714, 0x1714, 0x3714
-};
-
-static const uint8_t vlc_tab_tone_level_idx_hi1_huffbits[20] = {
-    15, 4, 2, 1, 3, 5, 6, 7, 8, 10, 10, 11, 11, 12, 12, 12, 14, 14, 15, 14
+static const uint8_t tab_tone_level_idx_hi1[20][2] = {
+    {  4,  3 }, {  5,  5 }, {  9, 10 }, { 11, 11 }, { 13, 12 }, { 14, 12 },
+    { 10, 10 }, { 12, 11 }, { 17, 14 }, { 16, 14 }, { 18, 15 }, {  0, 15 },
+    { 19, 14 }, { 15, 12 }, {  8,  8 }, {  7,  7 }, {  6,  6 }, {  1,  4 },
+    {  2,  2 }, {  3,  1 },
 };
 
 /* values in this table range from -1..23; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_tone_level_idx_mid_huffcodes[24] = {
-    0x0fea, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000, 0x03ea, 0x00ea, 0x002a, 0x001a,
-    0x0006, 0x0001, 0x0000, 0x0002, 0x000a, 0x006a, 0x01ea, 0x07ea
-};
-
-static const uint8_t vlc_tab_tone_level_idx_mid_huffbits[24] = {
-    12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 9, 7, 5, 3, 1, 2, 4, 6, 8, 10, 12
+static const uint8_t tab_tone_level_idx_mid[13][2] = {
+    { 18,  2 }, { 19,  4 }, { 20,  6 }, { 14,  7 }, { 21,  8 }, { 13,  9 },
+    { 22, 10 }, { 12, 11 }, { 23, 12 }, {  0, 12 }, { 15,  5 }, { 16,  3 },
+    { 17,  1 },
 };
 
 /* values in this table range from -1..23; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_tone_level_idx_hi2_huffcodes[24] = {
-    0x0664, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0064, 0x00e4,
-    0x00a4, 0x0068, 0x0004, 0x0008, 0x0014, 0x0018, 0x0000, 0x0001,
-    0x0002, 0x0003, 0x000c, 0x0028, 0x0024, 0x0164, 0x0000, 0x0264
-};
-
-static const uint8_t vlc_tab_tone_level_idx_hi2_huffbits[24] = {
-    11, 0, 0, 0, 0, 0, 10, 8, 8, 7, 6, 6, 5, 5, 4, 2, 2, 2, 4, 7, 8, 9, 0, 11
+static const uint8_t tab_tone_level_idx_hi2[18][2] = {
+    { 14,  4 }, { 11,  6 }, { 19,  7 }, {  9,  7 }, { 13,  5 }, { 10,  6 },
+    { 20,  8 }, {  8,  8 }, {  6, 10 }, { 23, 11 }, {  0, 11 }, { 21,  9 },
+    {  7,  8 }, { 12,  5 }, { 18,  4 }, { 16,  2 }, { 15,  2 }, { 17,  2 },
 };
 
 /* values in this table range from -1..8; adjust retrieved value by -1 */
-static const uint8_t vlc_tab_type30_huffcodes[9] = {
-    0x3c, 0x06, 0x00, 0x01, 0x03, 0x02, 0x04, 0x0c, 0x1c
-};
-
-static const uint8_t vlc_tab_type30_huffbits[9] = {
-    6, 3, 3, 2, 2, 3, 4, 5, 6
+static const uint8_t tab_type30[9][2] = {
+    { 2, 3 }, { 6, 4 }, { 7, 5 }, { 8, 6 }, { 0, 6 }, { 5, 3 }, { 1, 3 },
+    { 3, 2 }, { 4, 2 },
 };
 
 /* values in this table range from -1..9; adjust retrieved value by -1 */
-static const uint8_t vlc_tab_type34_huffcodes[10] = {
-    0x18, 0x00, 0x01, 0x04, 0x05, 0x07, 0x03, 0x02, 0x06, 0x08
-};
-
-static const uint8_t vlc_tab_type34_huffbits[10] = {
-    5, 4, 3, 3, 3, 3, 3, 3, 3, 5
+static const uint8_t tab_type34[10][2] = {
+    { 1, 4 }, { 9, 5 }, { 0, 5 }, { 3, 3 }, { 7, 3 }, { 8, 3 }, { 2, 3 },
+    { 4, 3 }, { 6, 3 }, { 5, 3 },
 };
 
 /* values in this table range from -1..22; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_fft_tone_offset_0_huffcodes[23] = {
-    0x038e, 0x0001, 0x0000, 0x0022, 0x000a, 0x0006, 0x0012, 0x0002,
-    0x001e, 0x003e, 0x0056, 0x0016, 0x000e, 0x0032, 0x0072, 0x0042,
-    0x008e, 0x004e, 0x00f2, 0x002e, 0x0036, 0x00c2, 0x018e
-};
-
-static const uint8_t vlc_tab_fft_tone_offset_0_huffbits[23] = {
-    10, 1, 2, 6, 4, 5, 6, 7, 6, 6, 7, 7, 8, 7, 8, 8, 9, 7, 8, 6, 6, 8, 10
+static const uint8_t tab_fft_tone_offset_0[23][2] = {
+    {  2,  2 }, {  7,  7 }, { 15,  8 }, { 21,  8 }, {  3,  6 }, {  6,  6 },
+    { 13,  7 }, { 14,  8 }, { 18,  8 }, {  4,  4 }, {  5,  5 }, { 11,  7 },
+    { 10,  7 }, { 20,  6 }, { 12,  8 }, { 16,  9 }, { 22, 10 }, {  0, 10 },
+    { 17,  7 }, { 19,  6 }, {  8,  6 }, {  9,  6 }, {  1,  1 },
 };
 
 /* values in this table range from -1..27; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_fft_tone_offset_1_huffcodes[28] = {
-    0x07a4, 0x0001, 0x0020, 0x0012, 0x001c, 0x0008, 0x0006, 0x0010,
-    0x0000, 0x0014, 0x0004, 0x0032, 0x0070, 0x000c, 0x0002, 0x003a,
-    0x001a, 0x002c, 0x002a, 0x0022, 0x0024, 0x000a, 0x0064, 0x0030,
-    0x0062, 0x00a4, 0x01a4, 0x03a4
-};
-
-static const uint8_t vlc_tab_fft_tone_offset_1_huffbits[28] = {
-    11, 1, 6, 6, 5, 4, 3, 6, 6, 5, 6, 6, 7, 6, 6, 6,
-    6, 6, 6, 7, 8, 6, 7, 7, 7, 9, 10, 11
+static const uint8_t tab_fft_tone_offset_1[28][2] = {
+    {  8,  6 }, {  2,  6 }, {  7,  6 }, { 23,  7 }, { 12,  7 }, {  5,  4 },
+    { 10,  6 }, { 20,  8 }, { 25,  9 }, { 26, 10 }, { 27, 11 }, {  0, 11 },
+    { 22,  7 }, {  9,  5 }, { 13,  6 }, { 17,  6 }, {  4,  5 }, { 14,  6 },
+    { 19,  7 }, { 24,  7 }, {  3,  6 }, { 11,  6 }, { 21,  6 }, { 18,  6 },
+    { 16,  6 }, { 15,  6 }, {  6,  3 }, {  1,  1 },
 };
 
 /* values in this table range from -1..31; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_fft_tone_offset_2_huffcodes[32] = {
-    0x1760, 0x0001, 0x0000, 0x0082, 0x000c, 0x0006, 0x0003, 0x0007,
-    0x0008, 0x0004, 0x0010, 0x0012, 0x0022, 0x001a, 0x0000, 0x0020,
-    0x000a, 0x0040, 0x004a, 0x006a, 0x002a, 0x0042, 0x0002, 0x0060,
-    0x00aa, 0x00e0, 0x00c2, 0x01c2, 0x0160, 0x0360, 0x0760, 0x0f60
-};
-
-static const uint8_t vlc_tab_fft_tone_offset_2_huffbits[32] = {
-    13, 2, 0, 8, 4, 3, 3, 3, 4, 4, 5, 5, 6, 5, 7, 7,
-    7, 7, 7, 7, 8, 8, 8, 9, 8, 8, 9, 9, 10, 11, 13, 12
+static const uint8_t tab_fft_tone_offset_2[31][2] = {
+    { 14,  7 }, { 17,  7 }, { 15,  7 }, { 23,  9 }, { 28, 10 }, { 29, 11 },
+    { 30, 13 }, {  0, 13 }, { 31, 12 }, { 25,  8 }, { 10,  5 }, {  8,  4 },
+    {  9,  4 }, {  4,  4 }, { 22,  8 }, {  3,  8 }, { 21,  8 }, { 26,  9 },
+    { 27,  9 }, { 12,  6 }, { 11,  5 }, { 16,  7 }, { 18,  7 }, { 20,  8 },
+    { 24,  8 }, { 19,  7 }, { 13,  5 }, {  5,  3 }, {  1,  2 }, {  6,  3 },
+    {  7,  3 },
 };
 
 /* values in this table range from -1..34; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_fft_tone_offset_3_huffcodes[35] = {
-    0x33ea, 0x0005, 0x0000, 0x000c, 0x0000, 0x0006, 0x0003, 0x0008,
-    0x0002, 0x0001, 0x0004, 0x0007, 0x001a, 0x000f, 0x001c, 0x002c,
-    0x000a, 0x001d, 0x002d, 0x002a, 0x000d, 0x004c, 0x008c, 0x006a,
-    0x00cd, 0x004d, 0x00ea, 0x020c, 0x030c, 0x010c, 0x01ea, 0x07ea,
-    0x0bea, 0x03ea, 0x13ea
-};
-
-static const uint8_t vlc_tab_fft_tone_offset_3_huffbits[35] = {
-    14, 4, 0, 10, 4, 3, 3, 4, 4, 3, 4, 4, 5, 4, 5, 6,
-    6, 5, 6, 7, 7, 7, 8, 8, 8, 8, 9, 10, 10, 10, 10, 11,
-    12, 13, 14
+static const uint8_t tab_fft_tone_offset_3[34][2] = {
+    {  4,  4 }, {  7,  4 }, { 10,  4 }, {  3, 10 }, { 27, 10 }, { 29, 10 },
+    { 28, 10 }, { 22,  8 }, { 21,  7 }, { 15,  6 }, { 14,  5 }, {  8,  4 },
+    { 16,  6 }, { 19,  7 }, { 23,  8 }, { 26,  9 }, { 30, 10 }, { 33, 13 },
+    { 34, 14 }, {  0, 14 }, { 32, 12 }, { 31, 11 }, { 12,  5 }, {  5,  3 },
+    {  9,  3 }, {  1,  4 }, { 20,  7 }, { 25,  8 }, { 24,  8 }, { 18,  6 },
+    { 17,  5 }, {  6,  3 }, { 11,  4 }, { 13,  4 },
 };
 
 /* values in this table range from -1..37; adjust retrieved value by -1 */
-static const uint16_t vlc_tab_fft_tone_offset_4_huffcodes[38] = {
-    0x5282, 0x0016, 0x0000, 0x0136, 0x0004, 0x0000, 0x0007, 0x000a,
-    0x000e, 0x0003, 0x0001, 0x000d, 0x0006, 0x0009, 0x0012, 0x0005,
-    0x0025, 0x0022, 0x0015, 0x0002, 0x0076, 0x0035, 0x0042, 0x00c2,
-    0x0182, 0x00b6, 0x0036, 0x03c2, 0x0482, 0x01c2, 0x0682, 0x0882,
-    0x0a82, 0x0082, 0x0282, 0x1282, 0x3282, 0x2282
-};
-
-static const uint8_t vlc_tab_fft_tone_offset_4_huffbits[38] = {
-    15, 6, 0, 9, 3, 3, 3, 4, 4, 3, 4, 4, 5, 4, 5, 6,
-    6, 6, 6, 8, 7, 6, 8, 9, 9, 8, 9, 10, 11, 10, 11, 12,
-    12, 12, 14, 15, 14, 14
+static const uint8_t tab_fft_tone_offset_4[37][2] = {
+    {  5,  3 }, {  4,  3 }, { 19,  8 }, { 33, 12 }, { 31, 12 }, { 28, 11 },
+    { 34, 14 }, { 37, 14 }, { 35, 15 }, {  0, 15 }, { 36, 14 }, { 32, 12 },
+    { 30, 11 }, { 24,  9 }, { 22,  8 }, { 23,  9 }, { 29, 10 }, { 27, 10 },
+    { 17,  6 }, { 14,  5 }, {  7,  4 }, { 12,  5 }, {  1,  6 }, { 26,  9 },
+    {  3,  9 }, { 25,  8 }, { 20,  7 }, {  8,  4 }, { 10,  4 }, { 13,  4 },
+    { 15,  6 }, { 16,  6 }, { 18,  6 }, { 21,  6 }, { 11,  4 }, {  9,  3 },
+    {  6,  3 },
 };
 
 /** FFT TABLES **/
 
 /* values in this table range from -1..27; adjust retrieved value by -1 */
-static const uint16_t fft_level_exp_alt_huffcodes[28] = {
-    0x1ec6, 0x0006, 0x00c2, 0x0142, 0x0242, 0x0246, 0x00c6, 0x0046,
-    0x0042, 0x0146, 0x00a2, 0x0062, 0x0026, 0x0016, 0x000e, 0x0005,
-    0x0004, 0x0003, 0x0000, 0x0001, 0x000a, 0x0012, 0x0002, 0x0022,
-    0x01c6, 0x02c6, 0x06c6, 0x0ec6
-};
-
-static const uint8_t fft_level_exp_alt_huffbits[28] = {
-    13, 7, 8, 9, 10, 10, 10, 10, 10, 9, 8, 7, 6, 5, 4, 3,
-    3, 2, 3, 3, 4, 5, 7, 8, 9, 11, 12, 13
+static const uint8_t fft_level_exp_alt[28][2] = {
+    { 18,  3 }, { 16,  3 }, { 22,  7 }, {  8, 10 }, {  4, 10 }, {  3,  9 },
+    {  2,  8 }, { 23,  8 }, { 10,  8 }, { 11,  7 }, { 21,  5 }, { 20,  4 },
+    {  1,  7 }, {  7, 10 }, {  5, 10 }, {  9,  9 }, {  6, 10 }, { 25, 11 },
+    { 26, 12 }, { 27, 13 }, {  0, 13 }, { 24,  9 }, { 12,  6 }, { 13,  5 },
+    { 14,  4 }, { 19,  3 }, { 15,  3 }, { 17,  2 },
 };
 
 /* values in this table range from -1..19; adjust retrieved value by -1 */
-static const uint16_t fft_level_exp_huffcodes[20] = {
-    0x0f24, 0x0001, 0x0002, 0x0000, 0x0006, 0x0005, 0x0007, 0x000c,
-    0x000b, 0x0014, 0x0013, 0x0004, 0x0003, 0x0023, 0x0064, 0x00a4,
-    0x0024, 0x0124, 0x0324, 0x0724
-};
-
-static const uint8_t fft_level_exp_huffbits[20] = {
-    12, 3, 3, 3, 3, 3, 3, 4, 4, 5, 5, 6, 6, 6, 7, 8, 9, 10, 11, 12
+static const uint8_t fft_level_exp[20][2] = {
+    {  3,  3 }, { 11,  6 }, { 16,  9 }, { 17, 10 }, { 18, 11 }, { 19, 12 },
+    {  0, 12 }, { 15,  8 }, { 14,  7 }, {  9,  5 }, {  7,  4 }, {  2,  3 },
+    {  4,  3 }, {  1,  3 }, {  5,  3 }, { 12,  6 }, { 13,  6 }, { 10,  5 },
+    {  8,  4 }, {  6,  3 },
 };
 
 /* values in this table range from -1..6; adjust retrieved value by -1 */
-static const uint8_t fft_stereo_exp_huffcodes[7] = {
-    0x3e, 0x01, 0x00, 0x02, 0x06, 0x0e, 0x1e
-};
-
-static const uint8_t fft_stereo_exp_huffbits[7] = {
-    6, 1, 2, 3, 4, 5, 6
+static const uint8_t fft_stereo_exp[7][2] = {
+    { 2, 2 }, { 3, 3 }, { 4, 4 }, { 5, 5 }, { 6, 6 }, { 0, 6 }, { 1, 1 },
 };
 
 /* values in this table range from -1..8; adjust retrieved value by -1 */
-static const uint8_t fft_stereo_phase_huffcodes[9] = {
-    0x35, 0x02, 0x00, 0x01, 0x0d, 0x15, 0x05, 0x09, 0x03
-};
-
-static const uint8_t fft_stereo_phase_huffbits[9] = {
-    6, 2, 2, 4, 4, 6, 5, 4, 2
+static const uint8_t fft_stereo_phase[9][2] = {
+    { 2, 2 }, { 1, 2 }, { 3, 4 }, { 7, 4 }, { 6, 5 }, { 5, 6 }, { 0, 6 },
+    { 4, 4 }, { 8, 2 },
 };
 
 static const int fft_cutoff_index_table[4][2] = {
