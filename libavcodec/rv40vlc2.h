@@ -33,7 +33,7 @@
  * codes used for the first four block types
  */
 //@{
-#define AIC_TOP_BITS  8
+#define AIC_TOP_BITS  7
 #define AIC_TOP_SIZE 16
 static const uint8_t rv40_aic_top_vlc_codes[AIC_TOP_SIZE] = {
  0x01, 0x05, 0x01, 0x00, 0x03, 0x3D, 0x1D, 0x02,
