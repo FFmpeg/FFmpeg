@@ -157,48 +157,9 @@ static const uint8_t mv_len[16] =
     10, 8, 8, 7, 8, 8, 8, 7, 8, 8, 8, 7, 7, 7, 7, 6,
 };
 
-static const uint8_t mv_bits[16][10] =
+static const uint8_t mv_bits[2][16][10] =
 {
-    { 3, 4, 5, 5, 3, 5, 6, 6, 4, 1 },
-    { 2, 3, 4, 5, 5, 2, 3, 3 },
-    { 2, 4, 4, 3, 3, 4, 4, 2 },
-    { 1, 4, 4, 3, 4, 4, 3 },
-    { 3, 3, 2, 4, 5, 5, 3, 2 },
-    { 3, 4, 4, 3, 3, 3, 3, 2 },
-    { 1, 3, 3, 4, 4, 4, 5, 5 },
-    { 1, 4, 4, 3, 3, 4, 4 },
-    { 2, 4, 4, 3, 3, 4, 4, 2 },
-    { 1, 3, 3, 4, 4, 4, 5, 5 },
-    { 2, 3, 4, 4, 4, 4, 3, 2 },
-    { 2, 3, 3, 4, 4, 3, 2 },
-    { 1, 4, 4, 3, 3, 4, 4 },
-    { 1, 4, 4, 3, 3, 4, 4 },
-    { 2, 3, 3, 4, 4, 3, 2 },
-    { 2, 3, 3, 3, 3, 2 },
-};
-
-static const uint8_t mv_syms[16][10] =
-{
-    { 8, 2, 3, 6, 1, 7, 5, 4, 9, 0 },
-    { 9, 2, 3, 5, 4, 1, 8, 0 },
-    { 0, 5, 4, 2, 9, 3, 8, 1 },
-    { 1, 5, 4, 2, 8, 3, 0 },
-    { 2, 9, 8, 3, 5, 4, 0, 1 },
-    { 3, 5, 4, 2, 9, 8, 0, 1 },
-    { 1, 2, 0, 9, 8, 3, 5, 4 },
-    { 1, 8, 5, 2, 0, 4, 3 },
-    { 0, 5, 4, 2, 8, 3, 9, 1 },
-    { 1, 2, 0, 9, 8, 3, 5, 4 },
-    { 0, 3, 9, 8, 5, 4, 2, 1 },
-    { 0, 4, 3, 8, 5, 2, 1 },
-    { 1, 5, 4, 2, 0, 9, 3 },
-    { 1, 9, 5, 2, 0, 4, 3 },
-    { 0, 5, 3, 9, 4, 2, 1 },
-    { 0, 4, 5, 3, 2, 1 },
-};
-
-static const uint8_t mv_bits_mods[16][10] =
-{
+    {
     { 2, 3, 3, 5, 5, 4, 4, 5, 5, 2 },
     { 2, 3, 4, 4, 3, 4, 4, 2 },
     { 3, 4, 4, 2, 4, 4, 3, 2 },
@@ -215,10 +176,30 @@ static const uint8_t mv_bits_mods[16][10] =
     { 2, 3, 4, 4, 3, 3, 2 },
     { 2, 3, 4, 4, 3, 3, 2 },
     { 3, 3, 2, 2, 3, 3 },
+    },
+    {
+    { 3, 4, 5, 5, 3, 5, 6, 6, 4, 1 },
+    { 2, 3, 4, 5, 5, 2, 3, 3 },
+    { 2, 4, 4, 3, 3, 4, 4, 2 },
+    { 1, 4, 4, 3, 4, 4, 3 },
+    { 3, 3, 2, 4, 5, 5, 3, 2 },
+    { 3, 4, 4, 3, 3, 3, 3, 2 },
+    { 1, 3, 3, 4, 4, 4, 5, 5 },
+    { 1, 4, 4, 3, 3, 4, 4 },
+    { 2, 4, 4, 3, 3, 4, 4, 2 },
+    { 1, 3, 3, 4, 4, 4, 5, 5 },
+    { 2, 3, 4, 4, 4, 4, 3, 2 },
+    { 2, 3, 3, 4, 4, 3, 2 },
+    { 1, 4, 4, 3, 3, 4, 4 },
+    { 1, 4, 4, 3, 3, 4, 4 },
+    { 2, 3, 3, 4, 4, 3, 2 },
+    { 2, 3, 3, 3, 3, 2 },
+    }
 };
 
-static const uint8_t mv_syms_mods[16][10] =
+static const uint8_t mv_syms[2][16][10] =
 {
+    {
     { 1, 8, 9, 4, 3, 2, 7, 5, 6, 0 },
     { 0, 9, 5, 4, 2, 3, 8, 1 },
     { 3, 9, 5, 0, 4, 8, 2, 1 },
@@ -235,6 +216,25 @@ static const uint8_t mv_syms_mods[16][10] =
     { 2, 4, 9, 5, 3, 0, 1 },
     { 0, 4, 9, 5, 3, 2, 1 },
     { 5, 4, 1, 0, 3, 2 },
+    },
+    {
+    { 8, 2, 3, 6, 1, 7, 5, 4, 9, 0 },
+    { 9, 2, 3, 5, 4, 1, 8, 0 },
+    { 0, 5, 4, 2, 9, 3, 8, 1 },
+    { 1, 5, 4, 2, 8, 3, 0 },
+    { 2, 9, 8, 3, 5, 4, 0, 1 },
+    { 3, 5, 4, 2, 9, 8, 0, 1 },
+    { 1, 2, 0, 9, 8, 3, 5, 4 },
+    { 1, 8, 5, 2, 0, 4, 3 },
+    { 0, 5, 4, 2, 8, 3, 9, 1 },
+    { 1, 2, 0, 9, 8, 3, 5, 4 },
+    { 0, 3, 9, 8, 5, 4, 2, 1 },
+    { 0, 4, 3, 8, 5, 2, 1 },
+    { 1, 5, 4, 2, 0, 9, 3 },
+    { 1, 9, 5, 2, 0, 4, 3 },
+    { 0, 5, 3, 9, 4, 2, 1 },
+    { 0, 4, 5, 3, 2, 1 },
+    }
 };
 
 typedef struct BlockXY {
@@ -306,21 +306,16 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
                                  bits0, sizeof(*bits0),
                            syms1,  sizeof(*syms1),  sizeof(*syms1),
                                  0, 0, 1 << MOBI_RL_VLC_BITS);
-    for (int j = 0; j < 16; j++) {
+    for (int i = 0; i < 2; i++) {
         static VLC_TYPE vlc_buf[2 * 16 << MOBI_MV_VLC_BITS][2];
-        mv_vlc[0][j].table           = &vlc_buf[2 * j << MOBI_MV_VLC_BITS];
-        mv_vlc[0][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
-        ff_init_vlc_from_lengths(&mv_vlc[0][j], MOBI_MV_VLC_BITS, mv_len[j],
-                                 mv_bits_mods[j], sizeof(*mv_bits_mods[j]),
-                                 mv_syms_mods[j], sizeof(*mv_syms_mods[j]),
-                                 sizeof(*mv_syms_mods[j]), 0,
-                                 INIT_VLC_USE_NEW_STATIC, NULL);
-        mv_vlc[1][j].table           = &vlc_buf[(2 * j + 1) << MOBI_MV_VLC_BITS];
-        mv_vlc[1][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
-        ff_init_vlc_from_lengths(&mv_vlc[1][j], MOBI_MV_VLC_BITS, mv_len[j],
-                                 mv_bits[j], sizeof(*mv_bits[j]),
-                                 mv_syms[j], sizeof(*mv_syms[j]), sizeof(*mv_syms[j]),
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+        for (int j = 0; j < 16; j++) {
+            mv_vlc[i][j].table           = &vlc_buf[(16 * i + j) << MOBI_MV_VLC_BITS];
+            mv_vlc[i][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
+            ff_init_vlc_from_lengths(&mv_vlc[i][j], MOBI_MV_VLC_BITS, mv_len[j],
+                                     mv_bits[i][j], sizeof(*mv_bits[i][j]),
+                                     mv_syms[i][j], sizeof(*mv_syms[i][j]), sizeof(*mv_syms[i][j]),
+                                     0, INIT_VLC_USE_NEW_STATIC, NULL);
+        }
     }
 
     return 0;
