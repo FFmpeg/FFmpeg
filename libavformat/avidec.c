@@ -1691,18 +1691,19 @@ static int check_stream_max_drift(AVFormatContext *s)
             AVIStream *ast = st->priv_data;
 
             if (idx[i] && min_dts != INT64_MAX / 2) {
-                int64_t dts;
+                int64_t dts, delta_dts;
                 dts = av_rescale_q(st->internal->index_entries[idx[i] - 1].timestamp /
                                    FFMAX(ast->sample_size, 1),
                                    st->time_base, AV_TIME_BASE_Q);
+                delta_dts = av_sat_sub64(dts, min_dts);
                 max_dts = FFMAX(max_dts, dts);
                 max_buffer = FFMAX(max_buffer,
-                                   av_rescale(dts - min_dts,
+                                   av_rescale(delta_dts,
                                               st->codecpar->bit_rate,
                                               AV_TIME_BASE));
             }
         }
-        if (max_dts - min_dts > 2 * AV_TIME_BASE ||
+        if (av_sat_sub64(max_dts, min_dts) > 2 * AV_TIME_BASE ||
             max_buffer > 1024 * 1024 * 8 * 8) {
             av_free(idx);
             return 1;
