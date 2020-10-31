@@ -127,6 +127,8 @@ static av_cold void build_vlc(VLC *vlc, int nb_bits, int nb_codes, int idx,
 
 static av_cold void qdm2_init_vlc(void)
 {
+    const uint8_t (*tab)[2] = tab_fft_tone_offset;
+
     build_vlc(&vlc_tab_level, 8, 24, 0, tab_level);
     build_vlc(&vlc_tab_diff,  8, 33, 1, tab_diff);
     build_vlc(&vlc_tab_run,   5,  6, 2, tab_run);
@@ -144,11 +146,11 @@ static av_cold void qdm2_init_vlc(void)
     build_vlc(&vlc_tab_type30, 6,  9, 10, tab_type30);
     build_vlc(&vlc_tab_type34, 5, 10, 11, tab_type34);
 
-    build_vlc(&vlc_tab_fft_tone_offset[0], 8, 23, 12, tab_fft_tone_offset_0);
-    build_vlc(&vlc_tab_fft_tone_offset[1], 8, 28, 13, tab_fft_tone_offset_1);
-    build_vlc(&vlc_tab_fft_tone_offset[2], 8, 31, 14, tab_fft_tone_offset_2);
-    build_vlc(&vlc_tab_fft_tone_offset[3], 8, 34, 15, tab_fft_tone_offset_3);
-    build_vlc(&vlc_tab_fft_tone_offset[4], 8, 37, 16, tab_fft_tone_offset_4);
+    for (int i = 0; i < 5; i++) {
+        build_vlc(&vlc_tab_fft_tone_offset[i], 8, tab_fft_tone_offset_sizes[i],
+                  12 + i, tab);
+        tab += tab_fft_tone_offset_sizes[i];
+    }
 }
 
 #endif /* CONFIG_HARDCODED_TABLES */

@@ -91,45 +91,37 @@ static const uint8_t tab_type34[10][2] = {
     { 4, 3 }, { 6, 3 }, { 5, 3 },
 };
 
-/* values in this table range from -1..22; adjust retrieved value by -1 */
-static const uint8_t tab_fft_tone_offset_0[23][2] = {
+static const uint8_t tab_fft_tone_offset_sizes[] = {
+    23, 28, 31, 34, 37
+};
+
+static const uint8_t tab_fft_tone_offset[][2] = {
+    /* First table - 23 entries with range -1..21 */
     {  2,  2 }, {  7,  7 }, { 15,  8 }, { 21,  8 }, {  3,  6 }, {  6,  6 },
     { 13,  7 }, { 14,  8 }, { 18,  8 }, {  4,  4 }, {  5,  5 }, { 11,  7 },
     { 10,  7 }, { 20,  6 }, { 12,  8 }, { 16,  9 }, { 22, 10 }, {  0, 10 },
     { 17,  7 }, { 19,  6 }, {  8,  6 }, {  9,  6 }, {  1,  1 },
-};
-
-/* values in this table range from -1..27; adjust retrieved value by -1 */
-static const uint8_t tab_fft_tone_offset_1[28][2] = {
+    /* Second table - 28 entries with range -1..26 */
     {  8,  6 }, {  2,  6 }, {  7,  6 }, { 23,  7 }, { 12,  7 }, {  5,  4 },
     { 10,  6 }, { 20,  8 }, { 25,  9 }, { 26, 10 }, { 27, 11 }, {  0, 11 },
     { 22,  7 }, {  9,  5 }, { 13,  6 }, { 17,  6 }, {  4,  5 }, { 14,  6 },
     { 19,  7 }, { 24,  7 }, {  3,  6 }, { 11,  6 }, { 21,  6 }, { 18,  6 },
     { 16,  6 }, { 15,  6 }, {  6,  3 }, {  1,  1 },
-};
-
-/* values in this table range from -1..31; adjust retrieved value by -1 */
-static const uint8_t tab_fft_tone_offset_2[31][2] = {
+    /* Third table - 31 entries with range -1..30  (1 omitted) */
     { 14,  7 }, { 17,  7 }, { 15,  7 }, { 23,  9 }, { 28, 10 }, { 29, 11 },
     { 30, 13 }, {  0, 13 }, { 31, 12 }, { 25,  8 }, { 10,  5 }, {  8,  4 },
     {  9,  4 }, {  4,  4 }, { 22,  8 }, {  3,  8 }, { 21,  8 }, { 26,  9 },
     { 27,  9 }, { 12,  6 }, { 11,  5 }, { 16,  7 }, { 18,  7 }, { 20,  8 },
     { 24,  8 }, { 19,  7 }, { 13,  5 }, {  5,  3 }, {  1,  2 }, {  6,  3 },
     {  7,  3 },
-};
-
-/* values in this table range from -1..34; adjust retrieved value by -1 */
-static const uint8_t tab_fft_tone_offset_3[34][2] = {
+    /* Fourth table - 34 entries with range -1..33 (1 omitted) */
     {  4,  4 }, {  7,  4 }, { 10,  4 }, {  3, 10 }, { 27, 10 }, { 29, 10 },
     { 28, 10 }, { 22,  8 }, { 21,  7 }, { 15,  6 }, { 14,  5 }, {  8,  4 },
     { 16,  6 }, { 19,  7 }, { 23,  8 }, { 26,  9 }, { 30, 10 }, { 33, 13 },
     { 34, 14 }, {  0, 14 }, { 32, 12 }, { 31, 11 }, { 12,  5 }, {  5,  3 },
     {  9,  3 }, {  1,  4 }, { 20,  7 }, { 25,  8 }, { 24,  8 }, { 18,  6 },
     { 17,  5 }, {  6,  3 }, { 11,  4 }, { 13,  4 },
-};
-
-/* values in this table range from -1..37; adjust retrieved value by -1 */
-static const uint8_t tab_fft_tone_offset_4[37][2] = {
+    /* Fifth table - 37 entries with range -1..36 (1 omitted) */
     {  5,  3 }, {  4,  3 }, { 19,  8 }, { 33, 12 }, { 31, 12 }, { 28, 11 },
     { 34, 14 }, { 37, 14 }, { 35, 15 }, {  0, 15 }, { 36, 14 }, { 32, 12 },
     { 30, 11 }, { 24,  9 }, { 22,  8 }, { 23,  9 }, { 29, 10 }, { 27, 10 },
