@@ -24,6 +24,8 @@
  * RV40 decoder
  */
 
+#include "config.h"
+
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
@@ -71,12 +73,21 @@ static av_cold void rv40_init_tables(void)
                  aic_mode1_vlc_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
     }
     for(i = 0; i < AIC_MODE2_NUM; i++){
+        uint16_t syms[AIC_MODE2_SIZE];
+
+        for (int j = 0; j < AIC_MODE2_SIZE; j++) {
+            int first  = aic_mode2_vlc_syms[i][j] >> 4;
+            int second = aic_mode2_vlc_syms[i][j] & 0xF;
+            if (HAVE_BIGENDIAN)
+                syms[j] = (first << 8) | second;
+            else
+                syms[j] = first | (second << 8);
+        }
         aic_mode2_vlc[i].table = &aic_mode2_table[mode2_offs[i]];
         aic_mode2_vlc[i].table_allocated = mode2_offs[i + 1] - mode2_offs[i];
         ff_init_vlc_from_lengths(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
                                  aic_mode2_vlc_bits[i], 1,
-                                 aic_mode2_vlc_syms[i], 1, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                 syms, 2, 2, 0, INIT_VLC_USE_NEW_STATIC, NULL);
     }
     for(i = 0; i < NUM_PTYPE_VLCS; i++){
         ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
@@ -195,9 +206,8 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
                 if(pattern == rv40_aic_table_index[k])
                     break;
             if(j < 3 && k < MODE2_PATTERNS_NUM){ //pattern is found, decoding 2 coefficients
-                v = get_vlc2(gb, aic_mode2_vlc[k].table, AIC_MODE2_BITS, 2);
-                *ptr++ = v/9;
-                *ptr++ = v%9;
+                AV_WN16(ptr, get_vlc2(gb, aic_mode2_vlc[k].table, AIC_MODE2_BITS, 2));
+                ptr += 2;
                 j++;
             }else{
                 if(B != -1 && C != -1)
