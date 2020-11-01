@@ -78,55 +78,18 @@ av_cold void ff_atrac3p_init_vlcs(void)
     int i, tab_offset = 0;
     const uint8_t *xlats;
 
-    static const uint8_t wl_nb_bits[4]  = { 2, 3, 5, 5 };
-    static const uint8_t wl_nb_codes[4] = { 3, 5, 8, 8 };
-    static const uint8_t (*const wl_huffs[4])[2] = {
-        atrac3p_wl_huff1, atrac3p_wl_huff2,
-        atrac3p_wl_huff3, atrac3p_wl_huff4
-    };
-
-    static const uint8_t ct_nb_bits[4]  = { 3, 4, 4, 4 };
-    static const uint8_t ct_nb_codes[4] = { 4, 8, 8, 8 };
-    static const uint8_t (*const ct_huffs[4])[2]  = {
-        atrac3p_ct_huff1, atrac3p_ct_huff2,
-        atrac3p_ct_huff3, atrac3p_ct_huff4
-    };
-
-    static const uint8_t sf_nb_bits[8]  = {  9,  9,  9,  9,  6,  6,  7,  7 };
-    static const uint8_t sf_nb_codes[8] = { 64, 64, 64, 64, 15, 15, 15, 15 };
-    static const uint8_t  (*const sf_huffs[8])[2]  = {
-        atrac3p_sf_huff1, atrac3p_sf_huff2, atrac3p_sf_huff3,
-        atrac3p_sf_huff4, atrac3p_sf_huff5, atrac3p_sf_huff6,
-        atrac3p_sf_huff7, atrac3p_sf_huff8
-    };
-
+    xlats = atrac3p_wl_ct_xlats;
     for (int i = 0; i < 4; i++) {
-        wl_vlc_tabs[i].table = &tables_data[tab_offset];
-        wl_vlc_tabs[i].table_allocated = 1 << wl_nb_bits[i];
-        tab_offset                    += 1 << wl_nb_bits[i];
-        ff_init_vlc_from_lengths(&wl_vlc_tabs[i], wl_nb_bits[i], wl_nb_codes[i],
-                                 &wl_huffs[i][0][1], 2,
-                                 &wl_huffs[i][0][0], 2, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
-
-        ct_vlc_tabs[i].table = &tables_data[tab_offset];
-        ct_vlc_tabs[i].table_allocated = 1 << ct_nb_bits[i];
-        tab_offset                    += 1 << ct_nb_bits[i];
-        ff_init_vlc_from_lengths(&ct_vlc_tabs[i], ct_nb_bits[i], ct_nb_codes[i],
-                                 &ct_huffs[i][0][1], 2,
-                                 &ct_huffs[i][0][0], 2, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+        build_canonical_huff(atrac3p_wl_cbs[i], &xlats,
+                             &tab_offset, &wl_vlc_tabs[i]);
+        build_canonical_huff(atrac3p_ct_cbs[i], &xlats,
+                             &tab_offset, &ct_vlc_tabs[i]);
     }
 
-    for (int i = 0; i < 8; i++) {
-        sf_vlc_tabs[i].table = &tables_data[tab_offset];
-        sf_vlc_tabs[i].table_allocated = 1 << sf_nb_bits[i];
-        tab_offset                    += 1 << sf_nb_bits[i];
-        ff_init_vlc_from_lengths(&sf_vlc_tabs[i], sf_nb_bits[i], sf_nb_codes[i],
-                                 &sf_huffs[i][0][1], 2,
-                                 &sf_huffs[i][0][0], 2, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
-    }
+    xlats = atrac3p_sf_xlats;
+    for (int i = 0; i < 8; i++)
+        build_canonical_huff(atrac3p_sf_cbs[i], &xlats,
+                             &tab_offset, &sf_vlc_tabs[i]);
 
     /* build huffman tables for spectrum decoding */
     xlats = atrac3p_spectra_xlats;
