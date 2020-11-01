@@ -558,6 +558,9 @@ static int wav_read_header(AVFormatContext *s)
                     for (int i = 0; i < nb_cues; i++) {
                         unsigned offset, id = avio_rl32(pb);
 
+                        if (avio_feof(pb))
+                            return AVERROR_INVALIDDATA;
+
                         avio_skip(pb, 16);
                         offset = avio_rl32(pb);
 
