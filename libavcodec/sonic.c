@@ -509,7 +509,7 @@ static int modified_levinson_durbin(int *window, int window_entries,
     if (!state)
         return AVERROR(ENOMEM);
 
-    memcpy(state, window, 4* window_entries);
+    memcpy(state, window, window_entries * sizeof(*state));
 
     for (i = 0; i < out_entries; i++)
     {
@@ -761,7 +761,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             break;
     }
 
-    memset(s->window, 0, 4* s->window_size);
+    memset(s->window, 0, s->window_size * sizeof(*s->window));
 
     for (i = 0; i < s->tail_size; i++)
         s->window[x++] = s->tail[i];
