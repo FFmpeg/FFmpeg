@@ -132,6 +132,9 @@ static int vqf_read_header(AVFormatContext *s)
 
         switch(chunk_tag){
         case MKTAG('C','O','M','M'):
+            if (len < 12)
+                return AVERROR_INVALIDDATA;
+
             avio_read(s->pb, comm_chunk, 12);
             st->codecpar->channels = AV_RB32(comm_chunk    ) + 1;
             read_bitrate        = AV_RB32(comm_chunk + 4);
