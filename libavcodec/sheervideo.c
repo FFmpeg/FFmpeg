@@ -1781,7 +1781,7 @@ static void decode_rgb(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     }
 }
 
-static int build_vlc(VLC *vlc, const SheerTable *table)
+static av_cold int build_vlc(VLC *vlc, const SheerTable *table)
 {
     const uint8_t *cur = table->lens;
     uint16_t codes[1024];
