@@ -75,7 +75,7 @@ static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t *xlat,
 
 av_cold void ff_atrac3p_init_vlcs(void)
 {
-    int i, wl_vlc_offs, ct_vlc_offs, sf_vlc_offs, tab_offset;
+    int i, tab_offset = 0;
 
     static const uint8_t wl_nb_bits[4]  = { 2, 3, 5, 5 };
     static const uint8_t wl_nb_codes[4] = { 3, 5, 8, 8 };
@@ -127,38 +127,33 @@ av_cold void ff_atrac3p_init_vlcs(void)
         atrac3p_huff_freq_xlat
     };
 
-    for (i = 0, wl_vlc_offs = 0, ct_vlc_offs = 2508; i < 4; i++) {
-        wl_vlc_tabs[i].table = &tables_data[wl_vlc_offs];
+    for (int i = 0; i < 4; i++) {
+        wl_vlc_tabs[i].table = &tables_data[tab_offset];
         wl_vlc_tabs[i].table_allocated = 1 << wl_nb_bits[i];
-        ct_vlc_tabs[i].table = &tables_data[ct_vlc_offs];
-        ct_vlc_tabs[i].table_allocated = 1 << ct_nb_bits[i];
-
+        tab_offset                    += 1 << wl_nb_bits[i];
         ff_init_vlc_from_lengths(&wl_vlc_tabs[i], wl_nb_bits[i], wl_nb_codes[i],
                                  &wl_huffs[i][0][1], 2,
                                  &wl_huffs[i][0][0], 2, 1,
                                  0, INIT_VLC_USE_NEW_STATIC, NULL);
 
+        ct_vlc_tabs[i].table = &tables_data[tab_offset];
+        ct_vlc_tabs[i].table_allocated = 1 << ct_nb_bits[i];
+        tab_offset                    += 1 << ct_nb_bits[i];
         ff_init_vlc_from_lengths(&ct_vlc_tabs[i], ct_nb_bits[i], ct_nb_codes[i],
                                  &ct_huffs[i][0][1], 2,
                                  &ct_huffs[i][0][0], 2, 1,
                                  0, INIT_VLC_USE_NEW_STATIC, NULL);
-
-        wl_vlc_offs += wl_vlc_tabs[i].table_allocated;
-        ct_vlc_offs += ct_vlc_tabs[i].table_allocated;
     }
 
-    for (i = 0, sf_vlc_offs = 76; i < 8; i++) {
-        sf_vlc_tabs[i].table = &tables_data[sf_vlc_offs];
+    for (int i = 0; i < 8; i++) {
+        sf_vlc_tabs[i].table = &tables_data[tab_offset];
         sf_vlc_tabs[i].table_allocated = 1 << sf_nb_bits[i];
-
+        tab_offset                    += 1 << sf_nb_bits[i];
         ff_init_vlc_from_lengths(&sf_vlc_tabs[i], sf_nb_bits[i], sf_nb_codes[i],
                                  &sf_huffs[i][0][1], 2,
                                  &sf_huffs[i][0][0], 2, 1,
                                  0, INIT_VLC_USE_NEW_STATIC, NULL);
-        sf_vlc_offs += sf_vlc_tabs[i].table_allocated;
     }
-
-    tab_offset = 2564;
 
     /* build huffman tables for spectrum decoding */
     for (i = 0; i < 112; i++) {
