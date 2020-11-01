@@ -43,11 +43,11 @@ static VLC tone_vlc_tabs[7];
  * Generate canonical VLC table from given descriptor.
  *
  * @param[in]     cb          ptr to codebook descriptor
- * @param[in]     xlat        ptr to translation table or NULL
+ * @param[in,out] xlat        ptr to ptr to translation table
  * @param[in,out] tab_offset  starting offset to the generated vlc table
  * @param[out]    out_vlc     ptr to vlc table to be generated
  */
-static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t *xlat,
+static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t **xlat,
                                          int *tab_offset, VLC *out_vlc)
 {
     int i, b;
@@ -68,14 +68,16 @@ static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t *xlat,
     out_vlc->table_allocated = 1 << max_len;
 
     ff_init_vlc_from_lengths(out_vlc, max_len, index, bits, 1,
-                             xlat, 1, 1, 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                             *xlat, 1, 1, 0, INIT_VLC_USE_NEW_STATIC, NULL);
 
     *tab_offset += 1 << max_len;
+    *xlat       += index;
 }
 
 av_cold void ff_atrac3p_init_vlcs(void)
 {
     int i, tab_offset = 0;
+    const uint8_t *xlats;
 
     static const uint8_t wl_nb_bits[4]  = { 2, 3, 5, 5 };
     static const uint8_t wl_nb_codes[4] = { 3, 5, 8, 8 };
@@ -107,24 +109,12 @@ av_cold void ff_atrac3p_init_vlcs(void)
         atrac3p_huff_gain_loc4_cb, atrac3p_huff_gain_loc2_cb,
         atrac3p_huff_gain_loc5_cb
     };
-    static const uint8_t * const gain_xlats[11] = {
-        NULL, atrac3p_huff_gain_npoints2_xlat, atrac3p_huff_gain_lev1_xlat,
-        atrac3p_huff_gain_lev2_xlat, atrac3p_huff_gain_lev3_xlat,
-        atrac3p_huff_gain_lev4_xlat, atrac3p_huff_gain_loc3_xlat,
-        atrac3p_huff_gain_loc1_xlat, atrac3p_huff_gain_loc4_xlat,
-        atrac3p_huff_gain_loc2_xlat, atrac3p_huff_gain_loc5_xlat
-    };
 
     static const uint8_t * const tone_cbs[7] = {
         atrac3p_huff_tonebands_cb,  atrac3p_huff_numwavs1_cb,
         atrac3p_huff_numwavs2_cb,   atrac3p_huff_wav_ampsf1_cb,
         atrac3p_huff_wav_ampsf2_cb, atrac3p_huff_wav_ampsf3_cb,
         atrac3p_huff_freq_cb
-    };
-    static const uint8_t * const tone_xlats[7] = {
-        NULL, NULL, atrac3p_huff_numwavs2_xlat, atrac3p_huff_wav_ampsf1_xlat,
-        atrac3p_huff_wav_ampsf2_xlat, atrac3p_huff_wav_ampsf3_xlat,
-        atrac3p_huff_freq_xlat
     };
 
     for (int i = 0; i < 4; i++) {
@@ -156,22 +146,24 @@ av_cold void ff_atrac3p_init_vlcs(void)
     }
 
     /* build huffman tables for spectrum decoding */
+    xlats = atrac3p_spectra_xlats;
     for (i = 0; i < 112; i++) {
         if (atrac3p_spectra_tabs[i].redirect < 0)
             build_canonical_huff(atrac3p_spectra_tabs[i].cb,
-                                 atrac3p_spectra_tabs[i].xlat,
-                                 &tab_offset, &spec_vlc_tabs[i]);
+                                 &xlats, &tab_offset, &spec_vlc_tabs[i]);
         else /* Reuse already initialized VLC table */
             spec_vlc_tabs[i] = spec_vlc_tabs[atrac3p_spectra_tabs[i].redirect];
     }
 
     /* build huffman tables for gain data decoding */
+    xlats = atrac3p_gain_xlats;
     for (i = 0; i < 11; i++)
-        build_canonical_huff(gain_cbs[i], gain_xlats[i], &tab_offset, &gain_vlc_tabs[i]);
+        build_canonical_huff(gain_cbs[i], &xlats, &tab_offset, &gain_vlc_tabs[i]);
 
     /* build huffman tables for tone decoding */
+    xlats = atrac3p_tone_xlats;
     for (i = 0; i < 7; i++)
-        build_canonical_huff(tone_cbs[i], tone_xlats[i], &tab_offset, &tone_vlc_tabs[i]);
+        build_canonical_huff(tone_cbs[i], &xlats, &tab_offset, &tone_vlc_tabs[i]);
 }
 
 /**
