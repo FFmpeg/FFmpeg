@@ -1784,11 +1784,10 @@ static void decode_rgb(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 static av_cold int build_vlc(VLC *vlc, const SheerTable *table)
 {
     const uint8_t *cur = table->lens;
-    uint16_t codes[1024];
     uint8_t  lens[1024];
     unsigned count = 0;
 
-    for (unsigned step = 1, len = 1, index = 0; len > 0; len += step) {
+    for (int step = 1, len = 1; len > 0; len += step) {
         unsigned new_count = count;
 
         if (len == 16) {
@@ -1797,17 +1796,13 @@ static av_cold int build_vlc(VLC *vlc, const SheerTable *table)
         } else
             new_count += *cur++;
 
-        for (; count < new_count; count++) {
-            codes[count] = index >> (32 - len);
-            index       += 1U    << (32 - len);
+        for (; count < new_count; count++)
             lens[count]  = len;
-        }
     }
 
     ff_free_vlc(vlc);
-    return init_vlc(vlc, SHEER_VLC_BITS, count,
-                    lens,  sizeof(*lens),  sizeof(*lens),
-                    codes, sizeof(*codes), sizeof(*codes), 0);
+    return ff_init_vlc_from_lengths(vlc, SHEER_VLC_BITS, count,
+                                    lens, sizeof(*lens), NULL, 0, 0, 0, 0, NULL);
 }
 
 static int decode_frame(AVCodecContext *avctx,
