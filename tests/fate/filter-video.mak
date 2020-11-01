@@ -410,6 +410,9 @@ fate-filter-untile: CMD = framecrc -lavfi testsrc2=d=1:r=2,untile=2x2
 FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
 fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp=11:11:-1.5:11:11:-1.5
 
+FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp-yuv420p10
+fate-filter-unsharp-yuv420p10: CMD = framecrc -lavfi testsrc2=r=2:d=10,scale,format=yuv420p10,unsharp=11:11:-1.5:11:11:-1.5,scale -pix_fmt yuv420p10le -flags +bitexact -sws_flags +accurate_rnd+bitexact
+
 FATE_FILTER_SAMPLES-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILTER) += fate-filter-hqdn3d-sample
 fate-filter-hqdn3d-sample: tests/data/filtergraphs/hqdn3d
 fate-filter-hqdn3d-sample: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/hqdn3d -an
