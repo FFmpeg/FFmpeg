@@ -51,9 +51,7 @@ static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t *xlat,
                                          int *tab_offset, VLC *out_vlc)
 {
     int i, b;
-    uint16_t codes[256];
     uint8_t bits[256];
-    unsigned code = 0;
     int index = 0;
     int min_len = *cb++; // get shortest codeword length
     int max_len = *cb++; // get longest  codeword length
@@ -62,17 +60,15 @@ static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t *xlat,
         for (i = *cb++; i > 0; i--) {
             av_assert0(index < 256);
             bits[index]  = b;
-            codes[index] = code++;
             index++;
         }
-        code <<= 1;
     }
 
     out_vlc->table = &tables_data[*tab_offset];
     out_vlc->table_allocated = 1 << max_len;
 
-    ff_init_vlc_sparse(out_vlc, max_len, index, bits, 1, 1, codes, 2, 2,
-                       xlat, 1, 1, INIT_VLC_USE_NEW_STATIC);
+    ff_init_vlc_from_lengths(out_vlc, max_len, index, bits, 1,
+                             xlat, 1, 1, 0, INIT_VLC_USE_NEW_STATIC, NULL);
 
     *tab_offset += 1 << max_len;
 }
