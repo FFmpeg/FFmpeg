@@ -138,7 +138,7 @@ extern RLTable ff_mpeg4_rl_intra;
 extern RLTable ff_rvlc_rl_inter;
 extern RLTable ff_rvlc_rl_intra;
 
-extern const uint16_t ff_sprite_trajectory_tab[15][2];
+extern const uint8_t ff_sprite_trajectory_lens[15];
 extern const uint8_t ff_mb_type_b_tab[4][2];
 
 /* these matrixes will be permuted for the idct */
@@ -151,9 +151,9 @@ extern const uint16_t ff_mpeg4_resync_prefix[8];
 
 extern const uint8_t ff_mpeg4_dc_threshold[8];
 
-extern const uint16_t ff_mpeg4_studio_dc_luma[19][2];
-extern const uint16_t ff_mpeg4_studio_dc_chroma[19][2];
-extern const uint16_t ff_mpeg4_studio_intra[12][22][2];
+extern const uint8_t ff_mpeg4_studio_dc_luma[19][2];
+extern const uint8_t ff_mpeg4_studio_dc_chroma[19][2];
+extern const uint8_t ff_mpeg4_studio_intra[12][24][2];
 
 void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],

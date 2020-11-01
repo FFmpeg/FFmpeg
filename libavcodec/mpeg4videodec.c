@@ -3394,9 +3394,9 @@ av_cold void ff_mpeg4videodec_static_init(void) {
         INIT_VLC_STATIC(&dc_chrom, DC_VLC_BITS, 10 /* 13 */,
                         &ff_mpeg4_DCtab_chrom[0][1], 2, 1,
                         &ff_mpeg4_DCtab_chrom[0][0], 2, 1, 512);
-        INIT_VLC_STATIC(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
-                        &ff_sprite_trajectory_tab[0][1], 4, 2,
-                        &ff_sprite_trajectory_tab[0][0], 4, 2, 128);
+        INIT_VLC_STATIC_FROM_LENGTHS(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
+                                     ff_sprite_trajectory_lens, 1,
+                                     NULL, 0, 0, 0, 0, 128);
         INIT_VLC_STATIC(&mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
                         &ff_mb_type_b_tab[0][1], 2, 1,
                         &ff_mb_type_b_tab[0][0], 2, 1, 16);
@@ -3506,26 +3506,27 @@ static av_cold int init_studio_vlcs(Mpeg4DecContext *ctx)
     int i, ret;
 
     for (i = 0; i < 12; i++) {
-        ret = init_vlc(&ctx->studio_intra_tab[i], STUDIO_INTRA_BITS, 22,
-                       &ff_mpeg4_studio_intra[i][0][1], 4, 2,
-                       &ff_mpeg4_studio_intra[i][0][0], 4, 2,
-                       0);
+        ret = ff_init_vlc_from_lengths(&ctx->studio_intra_tab[i],
+                                       STUDIO_INTRA_BITS, 24,
+                                       &ff_mpeg4_studio_intra[i][0][1], 2,
+                                       &ff_mpeg4_studio_intra[i][0][0], 2, 1,
+                                       0, 0, NULL);
 
         if (ret < 0)
             return ret;
     }
 
-    ret = init_vlc(&ctx->studio_luma_dc, STUDIO_INTRA_BITS, 19,
-                   &ff_mpeg4_studio_dc_luma[0][1], 4, 2,
-                   &ff_mpeg4_studio_dc_luma[0][0], 4, 2,
-                   0);
+    ret = ff_init_vlc_from_lengths(&ctx->studio_luma_dc, STUDIO_INTRA_BITS, 19,
+                                   &ff_mpeg4_studio_dc_luma[0][1], 2,
+                                   &ff_mpeg4_studio_dc_luma[0][0], 2, 1,
+                                   0, 0, NULL);
     if (ret < 0)
         return ret;
 
-    ret = init_vlc(&ctx->studio_chroma_dc, STUDIO_INTRA_BITS, 19,
-                   &ff_mpeg4_studio_dc_chroma[0][1], 4, 2,
-                   &ff_mpeg4_studio_dc_chroma[0][0], 4, 2,
-                   0);
+    ret = ff_init_vlc_from_lengths(&ctx->studio_chroma_dc, STUDIO_INTRA_BITS, 19,
+                                   &ff_mpeg4_studio_dc_chroma[0][1], 2,
+                                   &ff_mpeg4_studio_dc_chroma[0][0], 2, 1,
+                                   0, 0, NULL);
     if (ret < 0)
         return ret;
 
