@@ -50,33 +50,28 @@
 #include "bytestream.h"
 
 
-static void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
-                                const uint8_t *bits_table)
+static void build_huffman_codes(uint8_t *huff_size, const uint8_t *bits_table)
 {
-    for (int i = 1, code = 0, k = 0; i <= 16; i++) {
+    for (int i = 1, k = 0; i <= 16; i++) {
         int nb = bits_table[i];
         for (int j = 0; j < nb;j++) {
             huff_size[k] = i;
-            huff_code[k] = code;
-            code++;
             k++;
         }
-        code <<= 1;
     }
 }
 
 static int build_vlc(VLC *vlc, const uint8_t *bits_table,
                      const uint8_t *val_table, int nb_codes,
-                     int is_ac)
+                     int is_ac, void *logctx)
 {
     uint8_t huff_size[256];
-    uint16_t huff_code[256];
     uint16_t huff_sym[256];
     int i;
 
     av_assert0(nb_codes <= 256);
 
-    build_huffman_codes(huff_size, huff_code, bits_table);
+    build_huffman_codes(huff_size, bits_table);
 
     for (i = 0; i < nb_codes; i++) {
         huff_sym[i] = val_table[i] + 16 * is_ac;
@@ -85,8 +80,8 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
             huff_sym[i] = 16 * 256;
     }
 
-    return ff_init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1,
-                              huff_code, 2, 2, huff_sym, 2, 2, 0);
+    return ff_init_vlc_from_lengths(vlc, 9, nb_codes, huff_size, 1,
+                                    huff_sym, 2, 2, 0, 0, logctx);
 }
 
 static int init_default_huffman_tables(MJpegDecodeContext *s)
@@ -116,7 +111,7 @@ static int init_default_huffman_tables(MJpegDecodeContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(ht); i++) {
         ret = build_vlc(&s->vlcs[ht[i].class][ht[i].index],
                         ht[i].bits, ht[i].values, ht[i].length,
-                        ht[i].class == 1);
+                        ht[i].class == 1, s->avctx);
         if (ret < 0)
             return ret;
 
@@ -296,13 +291,13 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
                class, index, n);
         if ((ret = build_vlc(&s->vlcs[class][index], bits_table, val_table,
-                             n, class > 0)) < 0)
+                             n, class > 0, s->avctx)) < 0)
             return ret;
 
         if (class > 0) {
             ff_free_vlc(&s->vlcs[2][index]);
             if ((ret = build_vlc(&s->vlcs[2][index], bits_table, val_table,
-                                 n, 0)) < 0)
+                                 n, 0, s->avctx)) < 0)
                 return ret;
         }
 
