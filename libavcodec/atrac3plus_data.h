@@ -413,254 +413,122 @@ static const uint8_t atrac3p_ct_restricted_to_full[2][7][4] = {
 };
 
 /** Tables for spectrum coding */
-static const uint8_t huff_a01_cb[14] = {
-    1, 12, 1, 0, 0, 1, 7, 0, 19, 5, 13, 21, 6, 8
-};
 
-static const uint8_t huff_a02_cb[13] = {
-    2, 12, 1, 0, 4, 11, 0, 1, 29, 6, 20, 7, 2
-};
-
-static const uint8_t huff_a03_cb[9] = { 3, 9, 1, 8, 0, 13, 18, 7, 2 };
-
-static const uint8_t huff_a04_cb[4]   = { 2, 3, 2, 4 };
-
-static const uint8_t huff_a05_cb[12] = {
-    3, 12, 1, 3, 5, 8, 12, 23, 72, 68, 31, 2
-};
-
-static const uint8_t huff_a06_cb[7] = {
-    2, 6, 1, 3, 2, 6, 4
-};
-
-static const uint8_t huff_a07_cb[11] = {
-    2, 10, 1, 2, 2, 2, 6, 14, 21, 13, 2
-};
-
-static const uint8_t huff_a11_cb[13] = {
-    1, 11, 1, 0, 0, 0, 8, 1, 18, 9, 22, 10, 12
-};
-
-static const uint8_t huff_a12_cb[8] = { 5, 10, 16, 11, 32, 19, 1, 2 };
-
-static const uint8_t huff_a13_cb[12] = {
-    1, 10, 1, 0, 0, 4, 2, 2, 9, 15, 12, 4
-};
-
-static const uint8_t huff_a14_cb[12] = {
-    2, 11, 1, 0, 4, 3, 5, 16, 28, 34, 26, 4
-};
-
-static const uint8_t huff_a15_cb[9] = { 5, 11, 9, 12, 16, 44, 98, 42, 4 };
-
-static const uint8_t huff_a16_cb[13] = {
-    2, 12, 1, 1, 2, 2, 5, 7, 21, 54, 85, 62, 16
-};
-
-static const uint8_t huff_a17_cb[9] = { 3, 9, 3, 2, 5, 7, 17, 23, 6 };
-
-static const uint8_t huff_a21_cb[14] = {
-    1, 12, 1, 0, 0, 2, 6, 0, 7, 21, 15, 17, 8, 4
-};
-
-static const uint8_t huff_a22_cb[10] = { 2, 9, 1, 4, 0, 4, 3, 8, 3, 2 };
-
-static const uint8_t huff_a23_cb[9] = { 3, 9, 5, 0, 4, 6, 10, 16, 8 };
-
-static const uint8_t huff_a24_cb[5] = { 2, 4, 3, 1, 2 };
-
-static const uint8_t huff_a25_cb[5] = { 2, 4, 1, 5, 2 };
-
-static const uint8_t huff_a26_cb[10] = { 4, 11, 3, 4, 12, 15, 34, 83, 75, 30 };
-
-static const uint8_t huff_a27_cb[7] = { 4, 8, 3, 14, 10, 20, 16 };
-
-static const uint8_t huff_a31_cb[8] = { 1, 6, 1, 0, 3, 1, 0, 4 };
-
-static const uint8_t huff_a32_cb[13] = {
-    1, 11, 1, 0, 0, 2, 2, 6, 12, 18, 19, 15, 6
-};
-
-static const uint8_t huff_a33_cb[12] = {
-    3, 12, 1, 1, 13, 1, 14, 28, 33, 81, 32, 52
-};
-
-static const uint8_t huff_a34_cb[7] = { 1, 5, 1, 1, 1, 1, 2 };
-
-static const uint8_t huff_a35_cb[11] = { 2, 10, 1, 0, 2, 3, 6, 19, 9, 75, 110 };
-
-static const uint8_t huff_a36_cb[12] = {
-    3, 12, 1, 3, 5, 5, 13, 27, 69, 96, 35, 2
-};
-
-static const uint8_t huff_a37_cb[7] = { 4, 8, 7, 6, 8, 22, 20 };
-
-static const uint8_t huff_a41_cb[14] = {
-    1, 12, 1, 0, 0, 6, 2, 0, 0, 0, 19, 9, 24, 20
-};
-
-static const uint8_t huff_a42_cb[10] = { 3, 10, 1, 2, 13, 1, 31, 13, 16, 4 };
-
-static const uint8_t huff_a43_cb[5] = { 2, 4, 2, 3, 2 };
-
-static const uint8_t huff_a44_cb[9] = { 4, 10, 5, 4, 12, 17, 47, 24, 12 };
-
-static const uint8_t huff_a45_cb[5] = { 2, 4, 2, 2, 4 };
-
-static const uint8_t huff_a46_cb[7] = { 5, 9, 1, 16, 31, 36, 172 };
-
-static const uint8_t huff_a47_cb[8] = { 4, 9, 5, 12, 9, 12, 15, 10 };
-
-static const uint8_t huff_a51_cb[12] = {
-    2, 11, 1, 0, 6, 2, 6, 18, 4, 26, 6, 12
-};
-
-static const uint8_t huff_a52_cb[12] = { 1, 10, 1, 0, 2, 2, 0, 4, 3, 8, 3, 2 };
-
-static const uint8_t huff_a54_cb[8] = { 4, 9, 4, 7, 12, 19, 21, 58 };
-
-static const uint8_t huff_a55_cb[8] = { 1, 6, 1, 1, 1, 0, 3, 2 };
-
-static const uint8_t huff_a56_cb[7] = { 3, 7, 1, 8, 6, 8, 8 };
-
-static const uint8_t huff_a57_cb[9] = { 3, 9, 1, 5, 7, 8, 16, 22, 4 };
-
-static const uint8_t huff_a61_cb[12] = {
-    2, 11, 1, 0, 8, 0, 1, 16, 10, 29, 12, 4
-};
-
-static const uint8_t huff_a62_cb[8] = { 3, 8, 5, 2, 2, 9, 5, 2 };
-
-static const uint8_t huff_a63_cb[11] = {
-    3, 11, 1, 1, 10, 4, 16, 29, 46, 75, 74
-};
-
-static const uint8_t huff_a64_cb[8] = { 4, 9, 1, 7, 12, 36, 63, 2 };
-
-static const uint8_t huff_a65_cb[8] = { 2, 7, 3, 0, 1, 3, 4, 4 };
-
-static const uint8_t huff_a66_cb[11] = { 2, 10, 1, 2, 2, 6, 8, 6, 3, 1, 2 };
-
-static const uint8_t huff_a67_cb[10] = { 2, 9, 1, 1, 3, 4, 6, 13, 25, 10 };
-
-static const uint8_t huff_a71_cb[5] = { 1, 3, 1, 1, 2 };
-
-static const uint8_t huff_a72_cb[12] = {
-    2, 11, 1, 0, 4, 8, 3, 8, 24, 17, 12, 4
-};
-
-static const uint8_t huff_a73_cb[11] = { 2, 10, 1, 1, 5, 2, 8, 7, 13, 8, 4 };
-
-static const uint8_t huff_a74_cb[14] = {
-    1, 12, 1, 0, 0, 4, 0, 4, 5, 9, 30, 45, 21, 2
-};
-
-static const uint8_t huff_a75_cb[7] = { 2, 6, 1, 3, 3, 4, 4 };
-
-static const uint8_t huff_a76_cb[12] = {
-    3, 12, 1, 3, 4, 8, 10, 36, 60, 78, 48, 8
-};
-
-static const uint8_t huff_b01_cb[14] = {
-    1, 12, 1, 0, 0, 2, 6, 0, 11, 13, 12, 24, 4, 8
-};
-
-static const uint8_t huff_b02_cb[14] = {
-    1, 12, 1, 0, 0, 4, 0, 8, 4, 9, 19, 13, 13, 10
-};
-
-static const uint8_t huff_b03_cb[11] = { 1, 9, 1, 0, 0, 4, 0, 5, 12, 13, 14 };
-
-static const uint8_t huff_b04_cb[12] = {
-    2, 11, 1, 0, 4, 4, 5, 9, 30, 45, 21, 2
-};
-
-static const uint8_t huff_b05_cb[11] = {
-    3, 11, 1, 4, 4, 4, 12, 30, 73, 75, 22
-};
-
-static const uint8_t huff_b07_cb[9] = { 3, 9, 3, 2, 4, 8, 23, 13, 10 };
-
-static const uint8_t huff_b12_cb[10] = { 3, 10, 1, 3, 12, 0, 30, 9, 18, 8 };
-
-static const uint8_t huff_b14_cb[14] = {
-    1, 12, 1, 0, 0, 4, 0, 3, 5, 16, 28, 34, 26, 4
-};
-
-static const uint8_t huff_b16_cb[11] = {
-    4, 12, 4, 4, 9, 13, 37, 76, 72, 39, 2
-};
-
-static const uint8_t huff_b26_cb[12] = {
-    3, 12, 2, 2, 4, 5, 11, 26, 67, 78, 51, 10
-};
-
-static const uint8_t huff_b32_cb[12] = {
-    2, 11, 1, 0, 4, 6, 7, 10, 22, 11, 16, 4
-};
-
-static const uint8_t huff_b33_cb[13] = {
-    2, 12, 1, 0, 0, 4, 11, 8, 28, 92, 97, 13, 2
-};
-
-static const uint8_t huff_b35_cb[14] = {
-    1, 12, 1, 0, 0, 0, 4, 6, 6, 14, 42, 63, 59, 30
-};
-
-static const uint8_t huff_b37_cb[13] = {
-    1, 11, 1, 0, 2, 0, 2, 2, 6, 17, 14, 13, 6
-};
-
-static const uint8_t huff_b41_cb[14] = {
-    1, 12, 1, 0, 0, 1, 7, 0, 20, 4, 10, 24, 2, 12
-};
-
-static const uint8_t huff_b42_cb[11] = { 1, 9, 1, 0, 1, 3, 2, 3, 7, 4, 4 };
-
-static const uint8_t huff_b43_cb[10] = { 2, 9, 1, 1, 3, 4, 9, 15, 12, 4 };
-
-static const uint8_t huff_b47_cb[10] = { 2, 9, 1, 1, 3, 4, 6, 14, 22, 12 };
-
-static const uint8_t huff_b52_cb[11] = { 1, 9, 1, 0, 1, 3, 2, 3, 7, 4, 4 };
-
-static const uint8_t huff_b53_cb[7] = { 1, 5, 1, 1, 1, 0, 4 }; // same as b63!!!
-
-static const uint8_t huff_b56_cb[11] = { 1, 9, 1, 0, 2, 0, 2, 4, 11, 9, 2 };
-
-static const uint8_t huff_b62_cb[14] = {
-    1, 12, 1, 0, 0, 2, 3, 5, 12, 14, 18, 15, 9, 2
-};
-
-static const uint8_t huff_b63_cb[7] = { 1, 5, 1, 1, 1, 0, 4 };
-
-static const uint8_t huff_b64_cb[7] = { 1, 5, 1, 1, 1, 1, 2 };
-
-static const uint8_t huff_b65_cb[14] = {
-    1, 12, 1, 0, 0, 2, 2, 2, 6, 12, 34, 92, 54, 20
-};
-
-static const uint8_t huff_b66_cb[14] = {
-    1, 12, 1, 0, 0, 3, 0, 3, 3, 10, 40, 85, 61, 50
-};
-
-static const uint8_t huff_b67_cb[10] = { 2, 9, 1, 2, 1, 4, 7, 10, 26, 12 };
-
-static const uint8_t huff_b71_cb[14] = {
-    1, 12, 1, 0, 0, 1, 7, 0, 19, 5, 13, 23, 0, 12
-};
-
-static const uint8_t huff_b73_cb[13] = {
-    1, 11, 1, 0, 0, 0, 1, 4, 9, 4, 103, 110, 24
-};
-
-static const uint8_t huff_b74_cb[8] = { 1, 6, 1, 0, 2, 2, 2, 4 };
-
-static const uint8_t huff_b75_cb[13] = {
-    2, 12, 1, 4, 0, 0, 0, 8, 11, 24, 53, 64, 60
-};
-
-static const uint8_t huff_b77_cb[12] = {
-    2, 11, 1, 0, 4, 6, 10, 12, 7, 15, 4, 4
+/* If the first entry of a subtable is negative, it means
+ * that another VLC is to be reused. */
+static int8_t atrac3p_spectra_cbs[][12] = {
+    {  1,  0,  0,  1,  7,  0, 19,  5, 13, 21,  6,  8 },
+    {  0,  1,  0,  4, 11,  0,  1, 29,  6, 20,  7,  2 },
+    {  0,  0,  1,  8,  0, 13, 18,  7,  2,  0,  0,  0 },
+    {  0,  2,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  1,  3,  5,  8, 12, 23, 72, 68, 31,  2 },
+    {  0,  1,  3,  2,  6,  4,  0,  0,  0,  0,  0,  0 },
+    {  0,  1,  2,  2,  2,  6, 14, 21, 13,  2,  0,  0 },
+    {  1,  0,  0,  0,  8,  1, 18,  9, 22, 10, 12,  0 },
+    {  0,  0,  0,  0, 16, 11, 32, 19,  1,  2,  0,  0 },
+    {  1,  0,  0,  4,  2,  2,  9, 15, 12,  4,  0,  0 },
+    {  0,  1,  0,  4,  3,  5, 16, 28, 34, 26,  4,  0 },
+    {  0,  0,  0,  0,  9, 12, 16, 44, 98, 42,  4,  0 },
+    {  0,  1,  1,  2,  2,  5,  7, 21, 54, 85, 62, 16 },
+    {  0,  0,  3,  2,  5,  7, 17, 23,  6,  0,  0,  0 },
+    {  1,  0,  0,  2,  6,  0,  7, 21, 15, 17,  8,  4 },
+    {  0,  1,  4,  0,  4,  3,  8,  3,  2,  0,  0,  0 },
+    {  0,  0,  5,  0,  4,  6, 10, 16,  8,  0,  0,  0 },
+    {  0,  3,  1,  2,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  1,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  0,  3,  4, 12, 15, 34, 83, 75, 30,  0 },
+    {  0,  0,  0,  3, 14, 10, 20, 16,  0,  0,  0,  0 },
+    {  1,  0,  3,  1,  0,  4,  0,  0,  0,  0,  0,  0 },
+    {  1,  0,  0,  2,  2,  6, 12, 18, 19, 15,  6,  0 },
+    {  0,  0,  1,  1, 13,  1, 14, 28, 33, 81, 32, 52 },
+    {  1,  1,  1,  1,  2,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  1,  0,  2,  3,  6, 19,  9, 75, 110, 0,  0 },
+    {  0,  0,  1,  3,  5,  5, 13, 27, 69, 96, 35,  2 },
+    {  0,  0,  0,  7,  6,  8, 22, 20,  0,  0,  0,  0 },
+    {  1,  0,  0,  6,  2,  0,  0,  0, 19,  9, 24, 20 },
+    {  0,  0,  1,  2, 13,  1, 31, 13, 16,  4,  0,  0 },
+    {  0,  2,  3,  2,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  0,  5,  4, 12, 17, 47, 24, 12,  0,  0 },
+    {  0,  2,  2,  4,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  0,  0,  1, 16, 31, 36, 172, 0,  0,  0 },
+    {  0,  0,  0,  5, 12,  9, 12, 15, 10,  0,  0,  0 },
+    {  0,  1,  0,  6,  2,  6, 18,  4, 26,  6, 12,  0 },
+    {  1,  0,  2,  2,  0,  4,  3,  8,  3,  2,  0,  0 },
+    {  0,  2,  3,  2,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  0,  4,  7, 12, 19, 21, 58,  0,  0,  0 },
+    {  1,  1,  1,  0,  3,  2,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  1,  8,  6,  8,  8,  0,  0,  0,  0,  0 },
+    {  0,  0,  1,  5,  7,  8, 16, 22,  4,  0,  0,  0 },
+    {  0,  1,  0,  8,  0,  1, 16, 10, 29, 12,  4,  0 },
+    {  0,  0,  5,  2,  2,  9,  5,  2,  0,  0,  0,  0 },
+    {  0,  0,  1,  1, 10,  4, 16, 29, 46, 75, 74,  0 },
+    {  0,  0,  0,  1,  7, 12, 36, 63,  2,  0,  0,  0 },
+    {  0,  3,  0,  1,  3,  4,  4,  0,  0,  0,  0,  0 },
+    {  0,  1,  2,  2,  6,  8,  6,  3,  1,  2,  0,  0 },
+    {  0,  1,  1,  3,  4,  6, 13, 25, 10,  0,  0,  0 },
+    {  1,  1,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  1,  0,  4,  8,  3,  8, 24, 17, 12,  4,  0 },
+    {  0,  1,  1,  5,  2,  8,  7, 13,  8,  4,  0,  0 },
+    {  1,  0,  0,  4,  0,  4,  5,  9, 30, 45, 21,  2 },
+    {  0,  1,  3,  3,  4,  4,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  1,  3,  4,  8, 10, 36, 60, 78, 48,  8 },
+    { -6 },
+    {  1,  0,  0,  2,  6,  0, 11, 13, 12, 24,  4,  8 },
+    {  1,  0,  0,  4,  0,  8,  4,  9, 19, 13, 13, 10 },
+    {  1,  0,  0,  4,  0,  5, 12, 13, 14,  0,  0,  0 },
+    {  0,  1,  0,  4,  4,  5,  9, 30, 45, 21,  2,  0 },
+    {  0,  0,  1,  4,  4,  4, 12, 30, 73, 75, 22,  0 },
+    { -5 },
+    {  0,  0,  3,  2,  4,  8, 23, 13, 10,  0,  0,  0 },
+    { -14 },
+    {  0,  0,  1,  3, 12,  0, 30,  9, 18,  8,  0,  0 },
+    { -9 },
+    {  1,  0,  0,  4,  0,  3,  5, 16, 28, 34, 26,  4 },
+    { -11 },
+    {  0,  0,  0,  4,  4,  9, 13, 37, 76, 72, 39,  2 },
+    { -6 },
+    { -28 },
+    { -22 },
+    { -2 },
+    { -31 },
+    { -60 },
+    {  0,  0,  2,  2,  4,  5, 11, 26, 67, 78, 51, 10 },
+    { -6 },
+    { -35 },
+    {  0,  1,  0,  4,  6,  7, 10, 22, 11, 16,  4,  0 },
+    {  0,  1,  0,  0,  4, 11,  8, 28, 92, 97, 13,  2 },
+    { -59 },
+    {  1,  0,  0,  0,  4,  6,  6, 14, 42, 63, 59, 30 },
+    { -75 },
+    {  1,  0,  2,  0,  2,  2,  6, 17, 14, 13,  6,  0 },
+    {  1,  0,  0,  1,  7,  0, 20,  4, 10, 24,  2, 12 },
+    {  1,  0,  1,  3,  2,  3,  7,  4,  4,  0,  0,  0 },
+    {  0,  1,  1,  3,  4,  9, 15, 12,  4,  0,  0,  0 },
+    { -66 },
+    { -32 },
+    { -12 },
+    {  0,  1,  1,  3,  4,  6, 14, 22, 12,  0,  0,  0 },
+    { -42 },
+    {  1,  0,  1,  3,  2,  3,  7,  4,  4,  0,  0,  0 },
+    {  1,  1,  1,  0,  4,  0,  0,  0,  0,  0,  0,  0 },
+    { -17 },
+    { -39 },
+    {  1,  0,  2,  0,  2,  4, 11,  9,  2,  0,  0,  0 },
+    { -62 },
+    { -28 },
+    {  1,  0,  0,  2,  3,  5, 12, 14, 18, 15,  9,  2 },
+    {  1,  1,  1,  0,  4,  0,  0,  0,  0,  0,  0,  0 },
+    {  1,  1,  1,  1,  2,  0,  0,  0,  0,  0,  0,  0 },
+    {  1,  0,  0,  2,  2,  2,  6, 12, 34, 92, 54, 20 },
+    {  1,  0,  0,  3,  0,  3,  3, 10, 40, 85, 61, 50 },
+    {  0,  1,  2,  1,  4,  7, 10, 26, 12,  0,  0,  0 },
+    {  1,  0,  0,  1,  7,  0, 19,  5, 13, 23,  0, 12 },
+    { -78 },
+    {  1,  0,  0,  0,  1,  4,  9, 4, 103, 110, 24, 0 },
+    {  1,  0,  2,  2,  2,  4,  0,  0,  0,  0,  0,  0 },
+    {  0,  1,  4,  0,  0,  0,  8, 11, 24, 53, 64, 60 },
+    { -47 },
+    {  0,  1,  0,  4,  6, 10, 12,  7, 15,  4,  4,  0 },
 };
 
 static const uint8_t atrac3p_spectra_xlats[] = {
@@ -1583,186 +1451,170 @@ typedef struct Atrac3pSpecCodeTab {
     uint8_t num_coeffs;  ///< 1 - map index to a single value, > 1 - map index to a vector of values
     uint8_t bits;        ///< number of bits a single coefficient occupy
     uint8_t is_signed;   ///< 1 - values in that table are signed ones, otherwise - absolute ones
-
-    int redirect;        ///< if >= 0: tells which huffman table must be reused
-    const uint8_t *cb;   ///< pointer to the codebook descriptor
 } Atrac3pSpecCodeTab;
 
 static const Atrac3pSpecCodeTab atrac3p_spectra_tabs[112] = {
     /* table set = A */
     /* code table = 0 */
-    { 1, 4, 2, 1, -1, huff_a01_cb }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_a02_cb }, // wordlen = 2
-    { 1, 2, 3, 1, -1, huff_a03_cb }, // wordlen = 3
-    { 1, 1, 3, 0, -1, huff_a04_cb }, // wordlen = 4
-    { 1, 2, 4, 1, -1, huff_a05_cb }, // wordlen = 5
-    { 1, 1, 4, 0, -1, huff_a06_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a07_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 1, 1, 3, 0 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 1, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 1 */
-    { 4, 4, 2, 1, -1, huff_a11_cb }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_a12_cb }, // wordlen = 2
-    { 1, 2, 3, 1, -1, huff_a13_cb }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_a14_cb }, // wordlen = 4
-    { 1, 2, 4, 1, -1, huff_a15_cb }, // wordlen = 5
-    { 1, 2, 4, 0, -1, huff_a16_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a17_cb }, // wordlen = 7
+    { 4, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 2 */
-    { 1, 4, 2, 1, -1, huff_a21_cb }, // wordlen = 1
-    { 1, 2, 3, 1, -1, huff_a22_cb }, // wordlen = 2
-    { 1, 2, 3, 1, -1, huff_a23_cb }, // wordlen = 3
-    { 1, 1, 3, 0, -1, huff_a24_cb }, // wordlen = 4
-    { 1, 1, 3, 0, -1, huff_a25_cb }, // wordlen = 5
-    { 1, 2, 4, 0, -1, huff_a26_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a27_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 2, 3, 1 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 1, 1, 3, 0 }, // wordlen = 4
+    { 1, 1, 3, 0 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 3 */
-    { 1, 2, 2, 1, -1, huff_a31_cb }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_a32_cb }, // wordlen = 2
-    { 1, 4, 2, 0, -1, huff_a33_cb }, // wordlen = 3
-    { 1, 1, 3, 0, -1, huff_a34_cb }, // wordlen = 4
-    { 1, 2, 4, 1, -1, huff_a35_cb }, // wordlen = 5
-    { 1, 2, 4, 0, -1, huff_a36_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a37_cb }, // wordlen = 7
+    { 1, 2, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 4, 2, 0 }, // wordlen = 3
+    { 1, 1, 3, 0 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 4 */
-    { 1, 4, 2, 1, -1, huff_a41_cb }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_a42_cb }, // wordlen = 2
-    { 1, 1, 3, 1, -1, huff_a43_cb }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_a44_cb }, // wordlen = 4
-    { 1, 1, 3, 0, -1, huff_a45_cb }, // wordlen = 5
-    { 1, 2, 4, 0, -1, huff_a46_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a47_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 1, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 1, 3, 0 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 5 */
-    { 1, 4, 2, 1, -1, huff_a51_cb }, // wordlen = 1
-    { 1, 2, 3, 1, -1, huff_a52_cb }, // wordlen = 2
-    { 1, 1, 3, 1, -1, huff_a43_cb }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_a54_cb }, // wordlen = 4
-    { 1, 1, 3, 0, -1, huff_a55_cb }, // wordlen = 5
-    { 1, 1, 5, 1, -1, huff_a56_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a57_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 2, 3, 1 }, // wordlen = 2
+    { 1, 1, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 1, 3, 0 }, // wordlen = 5
+    { 1, 1, 5, 1 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 6 */
-    { 2, 4, 2, 1, -1, huff_a61_cb }, // wordlen = 1
-    { 1, 2, 3, 1, -1, huff_a62_cb }, // wordlen = 2
-    { 1, 4, 2, 0, -1, huff_a63_cb }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_a64_cb }, // wordlen = 4
-    { 1, 1, 4, 1, -1, huff_a65_cb }, // wordlen = 5
-    { 1, 1, 5, 1, -1, huff_a66_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_a67_cb }, // wordlen = 7
+    { 2, 4, 2, 1 }, // wordlen = 1
+    { 1, 2, 3, 1 }, // wordlen = 2
+    { 1, 4, 2, 0 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 1, 4, 1 }, // wordlen = 5
+    { 1, 1, 5, 1 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 7 */
-    { 1, 2, 1, 0, -1, huff_a71_cb }, // wordlen = 1
-    { 2, 4, 2, 0, -1, huff_a72_cb }, // wordlen = 2
-    { 1, 2, 3, 1, -1, huff_a73_cb }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_a74_cb }, // wordlen = 4
-    { 1, 1, 4, 1, -1, huff_a75_cb }, // wordlen = 5
-    { 2, 2, 4, 0, -1, huff_a76_cb }, // wordlen = 6
-    { 4, 1, 6, 1,  6, NULL        }, // wordlen = 7
+    { 1, 2, 1, 0 }, // wordlen = 1
+    { 2, 4, 2, 0 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 1, 4, 1 }, // wordlen = 5
+    { 2, 2, 4, 0 }, // wordlen = 6
+    { 4, 1, 6, 1 }, // wordlen = 7
 
     /* table set = B */
     /* code table = 0 */
-    { 4, 4, 2, 1, -1, huff_b01_cb }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_b02_cb }, // wordlen = 2
-    { 4, 2, 3, 1, -1, huff_b03_cb }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_b04_cb }, // wordlen = 4
-    { 1, 2, 4, 1, -1, huff_b05_cb }, // wordlen = 5
-    { 1, 1, 4, 0,  5, NULL        }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_b07_cb }, // wordlen = 7
+    { 4, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 4, 2, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 1, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 1 */
-    { 1, 4, 2, 1, 14, NULL        }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_b12_cb }, // wordlen = 2
-    { 1, 2, 3, 1,  9, NULL        }, // wordlen = 3
-    { 1, 2, 4, 1, -1, huff_b14_cb }, // wordlen = 4
-    { 1, 2, 4, 1, 11, NULL        }, // wordlen = 5
-    { 1, 2, 4, 0, -1, huff_b16_cb }, // wordlen = 6
-    { 1, 1, 6, 1,  6, NULL        }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 2 */
-    { 4, 4, 2, 1, 28, NULL        }, // wordlen = 1
-    { 4, 4, 2, 0, 22, NULL        }, // wordlen = 2
-    { 1, 2, 3, 1,  2, NULL        }, // wordlen = 3
-    { 1, 2, 4, 1, 31, NULL        }, // wordlen = 4
-    { 2, 2, 4, 1, 60, NULL        }, // wordlen = 5
-    { 2, 2, 4, 0, -1, huff_b26_cb }, // wordlen = 6
-    { 4, 1, 6, 1,  6, NULL        }, // wordlen = 7
+    { 4, 4, 2, 1 }, // wordlen = 1
+    { 4, 4, 2, 0 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 1, 2, 4, 1 }, // wordlen = 4
+    { 2, 2, 4, 1 }, // wordlen = 5
+    { 2, 2, 4, 0 }, // wordlen = 6
+    { 4, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 3 */
-    { 1, 4, 2, 1, 35, NULL        }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_b32_cb }, // wordlen = 2
-    { 1, 4, 2, 0, -1, huff_b33_cb }, // wordlen = 3
-    { 2, 2, 4, 1, 59, NULL        }, // wordlen = 4
-    { 1, 2, 4, 1, -1, huff_b35_cb }, // wordlen = 5
-    { 1, 2, 4, 0, 75, NULL        }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_b37_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 4, 2, 0 }, // wordlen = 3
+    { 2, 2, 4, 1 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 4 */
-    { 1, 4, 2, 1, -1, huff_b41_cb }, // wordlen = 1
-    { 4, 2, 3, 1, -1, huff_b42_cb }, // wordlen = 2
-    { 1, 2, 3, 1, -1, huff_b43_cb }, // wordlen = 3
-    { 4, 2, 4, 1, 66, NULL        }, // wordlen = 4
-    { 1, 1, 3, 0, 32, NULL        }, // wordlen = 5
-    { 1, 2, 4, 0, 12, NULL        }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_b47_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 4, 2, 3, 1 }, // wordlen = 2
+    { 1, 2, 3, 1 }, // wordlen = 3
+    { 4, 2, 4, 1 }, // wordlen = 4
+    { 1, 1, 3, 0 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 5 */
-    { 2, 4, 2, 1, 42, NULL        }, // wordlen = 1
-    { 1, 2, 3, 1, -1, huff_b52_cb }, // wordlen = 2
-    { 4, 1, 3, 1, -1, huff_b53_cb }, // wordlen = 3
-    { 1, 1, 3, 0, 17, NULL        }, // wordlen = 4
-    { 1, 1, 3, 0, 39, NULL        }, // wordlen = 5
-    { 1, 1, 5, 1, -1, huff_b56_cb }, // wordlen = 6
-    { 2, 1, 6, 1, 62, NULL        }, // wordlen = 7
+    { 2, 4, 2, 1 }, // wordlen = 1
+    { 1, 2, 3, 1 }, // wordlen = 2
+    { 4, 1, 3, 1 }, // wordlen = 3
+    { 1, 1, 3, 0 }, // wordlen = 4
+    { 1, 1, 3, 0 }, // wordlen = 5
+    { 1, 1, 5, 1 }, // wordlen = 6
+    { 2, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 6 */
-    { 1, 4, 2, 1, 28, NULL        }, // wordlen = 1
-    { 1, 4, 2, 0, -1, huff_b62_cb }, // wordlen = 2
-    { 1, 1, 3, 1, -1, huff_b63_cb }, // wordlen = 3
-    { 1, 1, 3, 0, -1, huff_b64_cb }, // wordlen = 4
-    { 4, 2, 4, 1, -1, huff_b65_cb }, // wordlen = 5
-    { 1, 2, 4, 0, -1, huff_b66_cb }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_b67_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 1, 4, 2, 0 }, // wordlen = 2
+    { 1, 1, 3, 1 }, // wordlen = 3
+    { 1, 1, 3, 0 }, // wordlen = 4
+    { 4, 2, 4, 1 }, // wordlen = 5
+    { 1, 2, 4, 0 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 
     /* code table = 7 */
-    { 1, 4, 2, 1, -1, huff_b71_cb }, // wordlen = 1
-    { 4, 4, 2, 0, 78, NULL        }, // wordlen = 2
-    { 4, 4, 2, 0, -1, huff_b73_cb }, // wordlen = 3
-    { 1, 1, 4, 1, -1, huff_b74_cb }, // wordlen = 4
-    { 1, 2, 4, 1, -1, huff_b75_cb }, // wordlen = 5
-    { 1, 1, 5, 1, 47, NULL        }, // wordlen = 6
-    { 1, 1, 6, 1, -1, huff_b77_cb }, // wordlen = 7
+    { 1, 4, 2, 1 }, // wordlen = 1
+    { 4, 4, 2, 0 }, // wordlen = 2
+    { 4, 4, 2, 0 }, // wordlen = 3
+    { 1, 1, 4, 1 }, // wordlen = 4
+    { 1, 2, 4, 1 }, // wordlen = 5
+    { 1, 1, 5, 1 }, // wordlen = 6
+    { 1, 1, 6, 1 }, // wordlen = 7
 };
 
 /* Huffman tables for gain control data. */
-static const uint8_t atrac3p_huff_gain_npoints1_cb[9] = {
-    1, 7, 1, 1, 1, 1, 1, 1, 2
+static const uint8_t atrac3p_gain_cbs[][12] = {
+    {  1,  1,  1,  1,  1,  1,  2,  0,  0,  0,  0,  0 },
+    {  1,  1,  1,  1,  1,  1,  2,  0,  0,  0,  0,  0 },
+    {  1,  0,  2,  2,  1,  2,  8,  0,  0,  0,  0,  0 },
+    {  1,  1,  1,  1,  1,  0,  2,  0,  8,  0,  0,  0 },
+    {  1,  0,  3,  1,  1,  0,  2,  0,  8,  0,  0,  0 },
+    {  1,  1,  1,  1,  1,  0,  1,  2,  8,  0,  0,  0 },
+    {  0,  1,  0,  2, 11, 18,  0,  0,  0,  0,  0,  0 },
+    {  0,  1,  2,  4,  4,  4,  0, 16,  0,  0,  0,  0 },
+    {  0,  0,  0,  3, 23,  6,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  5,  3,  2,  3,  2, 16,  0,  0,  0,  0 },
+    {  1,  0,  0,  3,  2,  6, 20,  0,  0,  0,  0,  0 },
 };
-
-static const uint8_t atrac3p_huff_gain_lev1_cb[9] = { 1, 7, 1, 0, 2, 2, 1, 2, 8 };
-static const uint8_t atrac3p_huff_gain_lev2_cb[11] = {
-    1, 9, 1, 1, 1, 1, 1, 0, 2, 0, 8
-};
-
-static const uint8_t atrac3p_huff_gain_lev3_cb[11] = {
-    1, 9, 1, 0, 3, 1, 1, 0, 2, 0, 8
-};
-
-static const uint8_t atrac3p_huff_gain_lev4_cb[11] = {
-    1, 9, 1, 1, 1, 1, 1, 0, 1, 2, 8
-};
-
-static const uint8_t atrac3p_huff_gain_loc1_cb[9] = { 2, 8, 1, 2, 4, 4, 4, 0, 16 };
-
-static const uint8_t atrac3p_huff_gain_loc2_cb[8] = { 3, 8, 5, 3, 2, 3, 2, 16 };
-
-static const uint8_t atrac3p_huff_gain_loc3_cb[7] = { 2, 6, 1, 0, 2, 11, 18 };
-
-static const uint8_t atrac3p_huff_gain_loc4_cb[5] = { 4, 6, 3, 23, 6 };
-
-static const uint8_t atrac3p_huff_gain_loc5_cb[9] = { 1, 7, 1, 0, 0, 3, 2, 6, 20 };
 
 static const uint8_t atrac3p_gain_xlats[] = {
     /* Number of gain control points 1 - 8 entries */
@@ -1795,17 +1647,14 @@ static const uint8_t atrac3p_gain_xlats[] = {
 };
 
 /* Huffman tables for GHA waves data. */
-static const uint8_t atrac3p_huff_tonebands_cb[8] = { 1, 6, 1, 0, 1, 2, 4, 8 };
-static const uint8_t atrac3p_huff_numwavs1_cb[9] = { 1, 7, 1, 1, 1, 1, 1, 1, 2 };
-static const uint8_t atrac3p_huff_numwavs2_cb[8] = { 1, 6, 1, 1, 1, 1, 0, 4 };
-static const uint8_t atrac3p_huff_wav_ampsf1_cb[7] = { 4, 8, 10, 8, 6, 0, 8 };
-
-static const uint8_t atrac3p_huff_wav_ampsf2_cb[7] = { 4, 8, 11, 5, 6, 6, 4 };
-
-static const uint8_t atrac3p_huff_wav_ampsf3_cb[9] = { 2, 8, 1, 3, 3, 1, 4, 4, 16 };
-
-static const uint8_t atrac3p_huff_freq_cb[13] = {
-    1, 11, 1, 0, 0, 2, 2, 0, 9, 9, 29, 104, 100
+static const uint8_t atrac3p_tone_cbs[][12] = {
+    {  1,  0,  1,  2,  4,  8,  0,  0,  0,  0,  0,  0 },
+    {  1,  1,  1,  1,  1,  1,  2,  0,  0,  0,  0,  0 },
+    {  1,  1,  1,  1,  0,  4,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  0, 10,  8,  6,  0,  8,  0,  0,  0,  0 },
+    {  0,  0,  0, 11,  5,  6,  6,  4,  0,  0,  0,  0 },
+    {  0,  1,  3,  3,  1,  4,  4, 16,  0,  0,  0,  0 },
+    {  1,  0,  0,  2,  2,  0,  9,  9, 29,104, 100, 0 },
 };
 
 static const uint8_t atrac3p_tone_xlats[] = {

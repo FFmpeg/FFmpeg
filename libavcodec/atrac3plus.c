@@ -50,19 +50,18 @@ static VLC tone_vlc_tabs[7];
 static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t **xlat,
                                          int *tab_offset, VLC *out_vlc)
 {
-    int i, b;
+    int i, max_len;
     uint8_t bits[256];
     int index = 0;
-    int min_len = *cb++; // get shortest codeword length
-    int max_len = *cb++; // get longest  codeword length
 
-    for (b = min_len; b <= max_len; b++) {
+    for (int b = 1; b <= 12; b++) {
         for (i = *cb++; i > 0; i--) {
             av_assert0(index < 256);
             bits[index]  = b;
             index++;
         }
     }
+    max_len = bits[index - 1];
 
     out_vlc->table = &tables_data[*tab_offset];
     out_vlc->table_allocated = 1 << max_len;
@@ -101,22 +100,6 @@ av_cold void ff_atrac3p_init_vlcs(void)
         atrac3p_sf_huff7, atrac3p_sf_huff8
     };
 
-    static const uint8_t * const gain_cbs[11] = {
-        atrac3p_huff_gain_npoints1_cb, atrac3p_huff_gain_npoints1_cb,
-        atrac3p_huff_gain_lev1_cb, atrac3p_huff_gain_lev2_cb,
-        atrac3p_huff_gain_lev3_cb, atrac3p_huff_gain_lev4_cb,
-        atrac3p_huff_gain_loc3_cb, atrac3p_huff_gain_loc1_cb,
-        atrac3p_huff_gain_loc4_cb, atrac3p_huff_gain_loc2_cb,
-        atrac3p_huff_gain_loc5_cb
-    };
-
-    static const uint8_t * const tone_cbs[7] = {
-        atrac3p_huff_tonebands_cb,  atrac3p_huff_numwavs1_cb,
-        atrac3p_huff_numwavs2_cb,   atrac3p_huff_wav_ampsf1_cb,
-        atrac3p_huff_wav_ampsf2_cb, atrac3p_huff_wav_ampsf3_cb,
-        atrac3p_huff_freq_cb
-    };
-
     for (int i = 0; i < 4; i++) {
         wl_vlc_tabs[i].table = &tables_data[tab_offset];
         wl_vlc_tabs[i].table_allocated = 1 << wl_nb_bits[i];
@@ -148,22 +131,24 @@ av_cold void ff_atrac3p_init_vlcs(void)
     /* build huffman tables for spectrum decoding */
     xlats = atrac3p_spectra_xlats;
     for (i = 0; i < 112; i++) {
-        if (atrac3p_spectra_tabs[i].redirect < 0)
-            build_canonical_huff(atrac3p_spectra_tabs[i].cb,
+        if (atrac3p_spectra_cbs[i][0] >= 0)
+            build_canonical_huff(atrac3p_spectra_cbs[i],
                                  &xlats, &tab_offset, &spec_vlc_tabs[i]);
         else /* Reuse already initialized VLC table */
-            spec_vlc_tabs[i] = spec_vlc_tabs[atrac3p_spectra_tabs[i].redirect];
+            spec_vlc_tabs[i] = spec_vlc_tabs[-atrac3p_spectra_cbs[i][0]];
     }
 
     /* build huffman tables for gain data decoding */
     xlats = atrac3p_gain_xlats;
     for (i = 0; i < 11; i++)
-        build_canonical_huff(gain_cbs[i], &xlats, &tab_offset, &gain_vlc_tabs[i]);
+        build_canonical_huff(atrac3p_gain_cbs[i], &xlats,
+                             &tab_offset, &gain_vlc_tabs[i]);
 
     /* build huffman tables for tone decoding */
     xlats = atrac3p_tone_xlats;
     for (i = 0; i < 7; i++)
-        build_canonical_huff(tone_cbs[i], &xlats, &tab_offset, &tone_vlc_tabs[i]);
+        build_canonical_huff(atrac3p_tone_cbs[i], &xlats,
+                             &tab_offset, &tone_vlc_tabs[i]);
 }
 
 /**
