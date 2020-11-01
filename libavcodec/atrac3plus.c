@@ -79,47 +79,24 @@ av_cold void ff_atrac3p_init_vlcs(void)
 
     static const uint8_t wl_nb_bits[4]  = { 2, 3, 5, 5 };
     static const uint8_t wl_nb_codes[4] = { 3, 5, 8, 8 };
-    static const uint8_t * const wl_bits[4] = {
-        atrac3p_wl_huff_bits1, atrac3p_wl_huff_bits2,
-        atrac3p_wl_huff_bits3, atrac3p_wl_huff_bits4
-    };
-    static const uint8_t * const wl_codes[4] = {
-        atrac3p_wl_huff_code1, atrac3p_wl_huff_code2,
-        atrac3p_wl_huff_code3, atrac3p_wl_huff_code4
-    };
-    static const uint8_t * const wl_xlats[4] = {
-        atrac3p_wl_huff_xlat1, atrac3p_wl_huff_xlat2, NULL, NULL
+    static const uint8_t (*const wl_huffs[4])[2] = {
+        atrac3p_wl_huff1, atrac3p_wl_huff2,
+        atrac3p_wl_huff3, atrac3p_wl_huff4
     };
 
     static const uint8_t ct_nb_bits[4]  = { 3, 4, 4, 4 };
     static const uint8_t ct_nb_codes[4] = { 4, 8, 8, 8 };
-    static const uint8_t * const ct_bits[4]  = {
-        atrac3p_ct_huff_bits1, atrac3p_ct_huff_bits2,
-        atrac3p_ct_huff_bits2, atrac3p_ct_huff_bits3
-    };
-    static const uint8_t * const ct_codes[4] = {
-        atrac3p_ct_huff_code1, atrac3p_ct_huff_code2,
-        atrac3p_ct_huff_code2, atrac3p_ct_huff_code3
-    };
-    static const uint8_t * const ct_xlats[4] = {
-        NULL, NULL, atrac3p_ct_huff_xlat1, NULL
+    static const uint8_t (*const ct_huffs[4])[2]  = {
+        atrac3p_ct_huff1, atrac3p_ct_huff2,
+        atrac3p_ct_huff3, atrac3p_ct_huff4
     };
 
     static const uint8_t sf_nb_bits[8]  = {  9,  9,  9,  9,  6,  6,  7,  7 };
-    static const uint8_t sf_nb_codes[8] = { 64, 64, 64, 64, 16, 16, 16, 16 };
-    static const uint8_t  * const sf_bits[8]  = {
-        atrac3p_sf_huff_bits1, atrac3p_sf_huff_bits1, atrac3p_sf_huff_bits2,
-        atrac3p_sf_huff_bits3, atrac3p_sf_huff_bits4, atrac3p_sf_huff_bits4,
-        atrac3p_sf_huff_bits5, atrac3p_sf_huff_bits6
-    };
-    static const uint16_t * const sf_codes[8] = {
-        atrac3p_sf_huff_code1, atrac3p_sf_huff_code1, atrac3p_sf_huff_code2,
-        atrac3p_sf_huff_code3, atrac3p_sf_huff_code4, atrac3p_sf_huff_code4,
-        atrac3p_sf_huff_code5, atrac3p_sf_huff_code6
-    };
-    static const uint8_t  * const sf_xlats[8] = {
-        atrac3p_sf_huff_xlat1, atrac3p_sf_huff_xlat2, NULL, NULL,
-        atrac3p_sf_huff_xlat4, atrac3p_sf_huff_xlat5, NULL, NULL
+    static const uint8_t sf_nb_codes[8] = { 64, 64, 64, 64, 15, 15, 15, 15 };
+    static const uint8_t  (*const sf_huffs[8])[2]  = {
+        atrac3p_sf_huff1, atrac3p_sf_huff2, atrac3p_sf_huff3,
+        atrac3p_sf_huff4, atrac3p_sf_huff5, atrac3p_sf_huff6,
+        atrac3p_sf_huff7, atrac3p_sf_huff8
     };
 
     static const uint8_t * const gain_cbs[11] = {
@@ -156,17 +133,15 @@ av_cold void ff_atrac3p_init_vlcs(void)
         ct_vlc_tabs[i].table = &tables_data[ct_vlc_offs];
         ct_vlc_tabs[i].table_allocated = 1 << ct_nb_bits[i];
 
-        ff_init_vlc_sparse(&wl_vlc_tabs[i], wl_nb_bits[i], wl_nb_codes[i],
-                           wl_bits[i],  1, 1,
-                           wl_codes[i], 1, 1,
-                           wl_xlats[i], 1, 1,
-                           INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&wl_vlc_tabs[i], wl_nb_bits[i], wl_nb_codes[i],
+                                 &wl_huffs[i][0][1], 2,
+                                 &wl_huffs[i][0][0], 2, 1,
+                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
 
-        ff_init_vlc_sparse(&ct_vlc_tabs[i], ct_nb_bits[i], ct_nb_codes[i],
-                           ct_bits[i],  1, 1,
-                           ct_codes[i], 1, 1,
-                           ct_xlats[i], 1, 1,
-                           INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&ct_vlc_tabs[i], ct_nb_bits[i], ct_nb_codes[i],
+                                 &ct_huffs[i][0][1], 2,
+                                 &ct_huffs[i][0][0], 2, 1,
+                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
 
         wl_vlc_offs += wl_vlc_tabs[i].table_allocated;
         ct_vlc_offs += ct_vlc_tabs[i].table_allocated;
@@ -176,11 +151,10 @@ av_cold void ff_atrac3p_init_vlcs(void)
         sf_vlc_tabs[i].table = &tables_data[sf_vlc_offs];
         sf_vlc_tabs[i].table_allocated = 1 << sf_nb_bits[i];
 
-        ff_init_vlc_sparse(&sf_vlc_tabs[i], sf_nb_bits[i], sf_nb_codes[i],
-                           sf_bits[i],  1, 1,
-                           sf_codes[i], 2, 2,
-                           sf_xlats[i], 1, 1,
-                           INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&sf_vlc_tabs[i], sf_nb_bits[i], sf_nb_codes[i],
+                                 &sf_huffs[i][0][1], 2,
+                                 &sf_huffs[i][0][0], 2, 1,
+                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
         sf_vlc_offs += sf_vlc_tabs[i].table_allocated;
     }
 
