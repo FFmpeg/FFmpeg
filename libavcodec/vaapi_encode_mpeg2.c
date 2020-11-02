@@ -292,17 +292,16 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
     priv->sequence_display_extension.extension_start_code_identifier =
         MPEG2_EXTENSION_SEQUENCE_DISPLAY;
 
+    // Unspecified video format, from table 6-6.
     sde->video_format = 5;
-    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+
+    sde->colour_primaries         = avctx->color_primaries;
+    sde->transfer_characteristics = avctx->color_trc;
+    sde->matrix_coefficients      = avctx->colorspace;
+    sde->colour_description       =
+        avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
         avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
-        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED) {
-        sde->colour_description       = 1;
-        sde->colour_primaries         = avctx->color_primaries;
-        sde->transfer_characteristics = avctx->color_trc;
-        sde->matrix_coefficients      = avctx->colorspace;
-    } else {
-        sde->colour_description = 0;
-    }
+        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED;
 
     sde->display_horizontal_size = avctx->width;
     sde->display_vertical_size   = avctx->height;
