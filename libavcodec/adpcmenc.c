@@ -74,7 +74,12 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (s->block_size & (s->block_size - 1)) {
+    /*
+     * AMV's block size has to match that of the corresponding video
+     * stream. Relax the POT requirement.
+     */
+    if (avctx->codec->id != AV_CODEC_ID_ADPCM_IMA_AMV &&
+        (s->block_size & (s->block_size - 1))) {
         av_log(avctx, AV_LOG_ERROR, "block size must be power of 2\n");
         return AVERROR(EINVAL);
     }
@@ -160,6 +165,20 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_ADPCM_IMA_ALP:
         avctx->frame_size  = s->block_size * 2 / avctx->channels;
         avctx->block_align = s->block_size;
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_AMV:
+        if (avctx->sample_rate != 22050) {
+            av_log(avctx, AV_LOG_ERROR, "Sample rate must be 22050\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (avctx->channels != 1) {
+            av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
+            return AVERROR(EINVAL);
+        }
+
+        avctx->frame_size  = s->block_size;
+        avctx->block_align = 8 + (FFALIGN(avctx->frame_size, 2) / 2);
         break;
     case AV_CODEC_ID_ADPCM_IMA_APM:
         avctx->frame_size  = s->block_size * 2 / avctx->channels;
@@ -338,6 +357,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
     nodes[0]->sample2 = c->sample2;
     if (version == AV_CODEC_ID_ADPCM_IMA_WAV ||
         version == AV_CODEC_ID_ADPCM_IMA_QT  ||
+        version == AV_CODEC_ID_ADPCM_IMA_AMV ||
         version == AV_CODEC_ID_ADPCM_SWF)
         nodes[0]->sample1 = c->prev_sample;
     if (version == AV_CODEC_ID_ADPCM_MS)
@@ -442,6 +462,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
                 }
             } else if (version == AV_CODEC_ID_ADPCM_IMA_WAV ||
                        version == AV_CODEC_ID_ADPCM_IMA_QT  ||
+                       version == AV_CODEC_ID_ADPCM_IMA_AMV ||
                        version == AV_CODEC_ID_ADPCM_SWF) {
 #define LOOP_NODES(NAME, STEP_TABLE, STEP_INDEX)\
                 const int predictor = nodes[j]->sample1;\
@@ -834,6 +855,40 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         flush_put_bits(&pb);
         break;
     }
+    case AV_CODEC_ID_ADPCM_IMA_AMV:
+    {
+        av_assert0(avctx->channels == 1);
+
+        c->status[0].prev_sample = *samples;
+        bytestream_put_le16(&dst, c->status[0].prev_sample);
+        bytestream_put_byte(&dst, c->status[0].step_index);
+        bytestream_put_byte(&dst, 0);
+        bytestream_put_le32(&dst, avctx->frame_size);
+
+        if (avctx->trellis > 0) {
+            n = frame->nb_samples >> 1;
+
+            if (!(buf = av_malloc(2 * n)))
+                return AVERROR(ENOMEM);
+
+            adpcm_compress_trellis(avctx, samples, buf, &c->status[0], 2 * n, avctx->channels);
+            for (i = 0; i < n; i++)
+                bytestream_put_byte(&dst, (buf[2 * i] << 4) | buf[2 * i + 1]);
+
+            samples += 2 * n;
+        } else for (n = frame->nb_samples >> 1; n > 0; n--) {
+            int nibble;
+            nibble  = adpcm_ima_compress_sample(&c->status[0], *samples++) << 4;
+            nibble |= adpcm_ima_compress_sample(&c->status[0], *samples++) & 0x0F;
+            bytestream_put_byte(&dst, nibble);
+        }
+
+        if (avctx->frame_size & 1) {
+            int nibble = adpcm_ima_compress_sample(&c->status[0], *samples++) << 4;
+            bytestream_put_byte(&dst, nibble);
+        }
+        break;
+    }
     case AV_CODEC_ID_ADPCM_ARGO:
     {
         PutBitContext pb;
@@ -927,6 +982,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                       \
 }
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games");
+ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP");
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime");
