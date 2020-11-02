@@ -411,30 +411,20 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         sps->vui.aspect_ratio_info_present_flag = 1;
     }
 
-    if (avctx->color_range     != AVCOL_RANGE_UNSPECIFIED ||
-        avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+    // Unspecified video format, from table E-2.
+    sps->vui.video_format             = 5;
+    sps->vui.video_full_range_flag    =
+        avctx->color_range == AVCOL_RANGE_JPEG;
+    sps->vui.colour_primaries         = avctx->color_primaries;
+    sps->vui.transfer_characteristics = avctx->color_trc;
+    sps->vui.matrix_coefficients      = avctx->colorspace;
+    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
         avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
-        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED) {
+        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED)
+        sps->vui.colour_description_present_flag = 1;
+    if (avctx->color_range     != AVCOL_RANGE_UNSPECIFIED ||
+        sps->vui.colour_description_present_flag)
         sps->vui.video_signal_type_present_flag = 1;
-        sps->vui.video_format      = 5; // Unspecified.
-        sps->vui.video_full_range_flag =
-            avctx->color_range == AVCOL_RANGE_JPEG;
-
-        if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
-            avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
-            avctx->colorspace      != AVCOL_SPC_UNSPECIFIED) {
-            sps->vui.colour_description_present_flag = 1;
-            sps->vui.colour_primaries         = avctx->color_primaries;
-            sps->vui.transfer_characteristics = avctx->color_trc;
-            sps->vui.matrix_coefficients      = avctx->colorspace;
-        }
-    } else {
-        sps->vui.video_format             = 5;
-        sps->vui.video_full_range_flag    = 0;
-        sps->vui.colour_primaries         = avctx->color_primaries;
-        sps->vui.transfer_characteristics = avctx->color_trc;
-        sps->vui.matrix_coefficients      = avctx->colorspace;
-    }
 
     if (avctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED) {
         sps->vui.chroma_loc_info_present_flag = 1;
