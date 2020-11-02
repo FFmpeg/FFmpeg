@@ -54,6 +54,7 @@ extern AVInputFormat  ff_amr_demuxer;
 extern AVOutputFormat ff_amr_muxer;
 extern AVInputFormat  ff_amrnb_demuxer;
 extern AVInputFormat  ff_amrwb_demuxer;
+extern AVOutputFormat ff_amv_muxer;
 extern AVInputFormat  ff_anm_demuxer;
 extern AVInputFormat  ff_apc_demuxer;
 extern AVInputFormat  ff_ape_demuxer;

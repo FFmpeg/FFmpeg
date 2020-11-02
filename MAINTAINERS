@@ -394,6 +394,7 @@ Muxers/Demuxers:
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
   aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   alp.c                                 Zane van Iperen
+  amvenc.c                              Zane van Iperen
   apm.c                                 Zane van Iperen
   apngdec.c                             Benoit Fouet
   argo_asf.c                            Zane van Iperen
