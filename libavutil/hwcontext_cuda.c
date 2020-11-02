@@ -30,7 +30,7 @@
 #include "pixfmt.h"
 #include "imgutils.h"
 
-#define CUDA_FRAME_ALIGNMENT 256
+#define CUDA_FRAME_ALIGNMENT 512
 
 typedef struct CUDAFramesContext {
     int shift_width, shift_height;
