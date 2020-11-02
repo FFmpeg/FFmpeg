@@ -1690,6 +1690,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_IMA_AMV:
         av_assert0(avctx->channels == 1);
 
+        /*
+         * Header format:
+         *   int16_t  predictor;
+         *   uint8_t  step_index;
+         *   uint8_t  reserved;
+         *   uint32_t frame_size;
+         *
+         * Some implementations have step_index as 16-bits, but others
+         * only use the lower 8 and store garbage in the upper 8.
+         */
         c->status[0].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
         c->status[0].step_index = bytestream2_get_byteu(&gb);
         bytestream2_skipu(&gb, 5);
