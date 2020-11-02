@@ -775,7 +775,6 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         case AV_CODEC_ID_ADPCM_IMA_DAT4:
         case AV_CODEC_ID_ADPCM_IMA_MOFLEX:
         case AV_CODEC_ID_ADPCM_IMA_ISS:     header_size = 4 * ch;      break;
-        case AV_CODEC_ID_ADPCM_IMA_AMV:     header_size = 8;           break;
         case AV_CODEC_ID_ADPCM_IMA_SMJPEG:  header_size = 4 * ch;      break;
     }
     if (header_size > 0)
@@ -783,6 +782,13 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
 
     /* more complex formats */
     switch (avctx->codec->id) {
+    case AV_CODEC_ID_ADPCM_IMA_AMV:
+        bytestream2_skip(gb, 4);
+        has_coded_samples  = 1;
+        *coded_samples     = bytestream2_get_le32u(gb);
+        nb_samples         = FFMIN((buf_size - 8) * 2, *coded_samples);
+        bytestream2_seek(gb, -8, SEEK_CUR);
+        break;
     case AV_CODEC_ID_ADPCM_EA:
         has_coded_samples = 1;
         *coded_samples  = bytestream2_get_le32(gb);
@@ -1698,6 +1704,17 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 
             *samples++ = adpcm_ima_expand_nibble(&c->status[0], v >> 4, 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0], v & 0xf, 3);
+        }
+
+        if (nb_samples & 1) {
+            int v = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], v >> 4, 3);
+
+            if (v & 0x0F) {
+                /* Holds true on all the http://samples.mplayerhq.hu/amv samples. */
+                av_log(avctx, AV_LOG_WARNING, "Last nibble set on packet with odd sample count.\n");
+                av_log(avctx, AV_LOG_WARNING, "Sample will be skipped.\n");
+            }
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_SMJPEG:
