@@ -731,6 +731,33 @@ adelay=delays=64S:all=1
 @end example
 @end itemize
 
+@section adenorm
+Remedy denormals in audio by adding extremely low-level noise.
+
+A description of the accepted parameters follows.
+
+@table @option
+@item level
+Set level of added noise in dB. Default is @code{-351}.
+Allowed range is from -451 to -90.
+
+@item type
+Set type of added noise.
+
+@table @option
+@item dc
+Add DC signal.
+@item ac
+Add AC signal.
+@item square
+Add square signal.
+@item pulse
+Add pulse signal.
+@end table
+
+Default is @code{dc}.
+@end table
+
 @section aderivative, aintegral
 
 Compute derivative/integral of audio stream.

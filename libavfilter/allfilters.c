@@ -34,6 +34,7 @@ extern AVFilter ff_af_acrusher;
 extern AVFilter ff_af_adeclick;
 extern AVFilter ff_af_adeclip;
 extern AVFilter ff_af_adelay;
+extern AVFilter ff_af_adenorm;
 extern AVFilter ff_af_aderivative;
 extern AVFilter ff_af_aecho;
 extern AVFilter ff_af_aemphasis;

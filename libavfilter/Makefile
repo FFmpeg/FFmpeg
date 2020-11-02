@@ -41,6 +41,7 @@ OBJS-$(CONFIG_ACUE_FILTER)                   += f_cue.o
 OBJS-$(CONFIG_ADECLICK_FILTER)               += af_adeclick.o
 OBJS-$(CONFIG_ADECLIP_FILTER)                += af_adeclick.o
 OBJS-$(CONFIG_ADELAY_FILTER)                 += af_adelay.o
+OBJS-$(CONFIG_ADENORM_FILTER)                += af_adenorm.o
 OBJS-$(CONFIG_ADERIVATIVE_FILTER)            += af_aderivative.o
 OBJS-$(CONFIG_AECHO_FILTER)                  += af_aecho.o
 OBJS-$(CONFIG_AEMPHASIS_FILTER)              += af_aemphasis.o
