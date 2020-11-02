@@ -218,6 +218,9 @@ static int argo_brp_read_header(AVFormatContext *s)
             bvid->height     = AV_RL32(buf +  8);
             bvid->depth      = AV_RL32(buf + 12);
 
+            if (bvid->num_frames == 0)
+                return AVERROR_INVALIDDATA;
+
             /* These are from 1990's games, sanity check this. */
             if (bvid->width >= 65536 || bvid->height >= 65536 ||
                 bvid->depth > 24     || bvid->depth % 8 != 0) {
