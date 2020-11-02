@@ -817,7 +817,6 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         av_packet_unref(&vst->pkt); //FIXME this should be output.
         if ((ret = av_new_packet(&vst->pkt, vst->videobufsize)) < 0)
             return ret;
-        memset(vst->pkt.data, 0, vst->pkt.size);
         vst->videobufpos = 8*vst->slices + 1;
         vst->cur_slice = 0;
         vst->curpic_num = pic_num;
@@ -849,7 +848,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         if(vst->slices != vst->cur_slice) //FIXME find out how to set slices correct from the begin
             memmove(pkt->data + 1 + 8*vst->cur_slice, pkt->data + 1 + 8*vst->slices,
                 vst->videobufpos - 1 - 8*vst->slices);
-        pkt->size = vst->videobufpos + 8*(vst->cur_slice - vst->slices);
+        av_shrink_packet(pkt, vst->videobufpos + 8*(vst->cur_slice - vst->slices));
         pkt->pts = AV_NOPTS_VALUE;
         pkt->pos = vst->pktpos;
         vst->slices = 0;
