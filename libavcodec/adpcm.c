@@ -110,6 +110,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     unsigned int max_channels = 2;
 
     switch(avctx->codec->id) {
+    case AV_CODEC_ID_ADPCM_IMA_AMV:
     case AV_CODEC_ID_ADPCM_IMA_CUNNING:
         max_channels = 1;
         break;
@@ -1681,6 +1682,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_AMV:
+        av_assert0(avctx->channels == 1);
+
         c->status[0].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
         c->status[0].step_index = bytestream2_get_byteu(&gb);
         bytestream2_skipu(&gb, 5);
@@ -1690,7 +1693,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
-        for (n = nb_samples >> (1 - st); n > 0; n--) {
+        for (n = nb_samples >> 1; n > 0; n--) {
             int v = bytestream2_get_byteu(&gb);
 
             *samples++ = adpcm_ima_expand_nibble(&c->status[0], v >> 4, 3);
