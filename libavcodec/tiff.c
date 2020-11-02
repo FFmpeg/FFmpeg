@@ -1923,14 +1923,17 @@ again:
     has_strip_bits = s->strippos || s->strips || s->stripoff || s->rps || s->sot || s->sstype || s->stripsize || s->stripsizesoff;
 
     if (has_tile_bits && has_strip_bits) {
-        av_log(avctx, AV_LOG_WARNING, "Tiled TIFF is not allowed to strip\n");
+        int tiled_dng = s->is_tiled && is_dng;
+        av_log(avctx, tiled_dng ? AV_LOG_WARNING : AV_LOG_ERROR, "Tiled TIFF is not allowed to strip\n");
+        if (!tiled_dng)
+            return AVERROR_INVALIDDATA;
     }
 
     /* now we have the data and may start decoding */
     if ((ret = init_image(s, &frame)) < 0)
         return ret;
 
-    if (!s->is_tiled) {
+    if (!s->is_tiled || has_strip_bits) {
         if (s->strips == 1 && !s->stripsize) {
             av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
             s->stripsize = avpkt->size - s->stripoff;
