@@ -2316,6 +2316,7 @@ Set type of soft-clipping.
 
 It accepts the following values:
 @table @option
+@item hard
 @item tanh
 @item atan
 @item cubic

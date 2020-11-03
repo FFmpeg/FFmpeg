@@ -25,6 +25,7 @@
 #include "formats.h"
 
 enum ASoftClipTypes {
+    ASC_HARD = -1,
     ASC_TANH,
     ASC_ATAN,
     ASC_CUBIC,
@@ -50,7 +51,8 @@ typedef struct ASoftClipContext {
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption asoftclip_options[] = {
-    { "type", "set softclip type", OFFSET(type), AV_OPT_TYPE_INT,    {.i64=0},          0, NB_TYPES-1, A, "types" },
+    { "type", "set softclip type", OFFSET(type), AV_OPT_TYPE_INT,    {.i64=0},         -1, NB_TYPES-1, A, "types" },
+    { "hard",                NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_HARD},   0,          0, A, "types" },
     { "tanh",                NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_TANH},   0,          0, A, "types" },
     { "atan",                NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_ATAN},   0,          0, A, "types" },
     { "cubic",               NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_CUBIC},  0,          0, A, "types" },
@@ -109,6 +111,11 @@ static void filter_flt(ASoftClipContext *s,
         float *dst = dptr[c];
 
         switch (s->type) {
+        case ASC_HARD:
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = av_clipf(src[n], -1.f, 1.f);
+            }
+            break;
         case ASC_TANH:
             for (int n = 0; n < nb_samples; n++) {
                 dst[n] = tanhf(src[n] * param);
@@ -171,6 +178,11 @@ static void filter_dbl(ASoftClipContext *s,
         double *dst = dptr[c];
 
         switch (s->type) {
+        case ASC_HARD:
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = av_clipd(src[n], -1., 1.);
+            }
+            break;
         case ASC_TANH:
             for (int n = 0; n < nb_samples; n++) {
                 dst[n] = tanh(src[n] * param);
