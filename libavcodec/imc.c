@@ -113,11 +113,6 @@ static VLC huffman_vlc[4][4];
 #define IMC_VLC_BITS 9
 #define VLC_TABLES_SIZE 9512
 
-static const int vlc_offsets[17] = {
-    0,     640, 1156, 1732, 2308, 2852, 3396, 3924,
-    4452, 5220, 5860, 6628, 7268, 7908, 8424, 8936, VLC_TABLES_SIZE
-};
-
 static VLC_TYPE vlc_tables[VLC_TABLES_SIZE][2];
 
 static inline double freq2bark(double freq)
@@ -235,14 +230,15 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         q->sqrt_tab[i] = sqrt(i);
 
     /* initialize the VLC tables */
-    for (i = 0; i < 4 ; i++) {
+    for (int i = 0, offset = 0; i < 4 ; i++) {
         for (j = 0; j < 4; j++) {
-            huffman_vlc[i][j].table = &vlc_tables[vlc_offsets[i * 4 + j]];
-            huffman_vlc[i][j].table_allocated = vlc_offsets[i * 4 + j + 1] - vlc_offsets[i * 4 + j];
+            huffman_vlc[i][j].table           = &vlc_tables[offset];
+            huffman_vlc[i][j].table_allocated = VLC_TABLES_SIZE - offset;;
             ff_init_vlc_from_lengths(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
                                      imc_huffman_lens[i][j], 1,
                                      imc_huffman_syms[i][j], 1, 1,
-                                     0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                     0, INIT_VLC_STATIC_OVERLONG, NULL);
+            offset += huffman_vlc[i][j].table_size;
         }
     }
 
