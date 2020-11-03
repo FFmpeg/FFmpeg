@@ -392,9 +392,6 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_INVALIDDATA;
 
         blk.size -= ASF_CHUNK_HEADER_SIZE;
-
-        if (blk.size % st->codecpar->block_align != 0)
-            return AVERROR_INVALIDDATA;
     }
 
     if ((ret = av_get_packet(s->pb, pkt, blk.size)) < 0)
