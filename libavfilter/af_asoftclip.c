@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
@@ -162,6 +163,8 @@ static void filter_flt(ASoftClipContext *s,
                 dst[n] = erff(src[n]);
             }
             break;
+        default:
+            av_assert0(0);
         }
     }
 }
@@ -229,6 +232,8 @@ static void filter_dbl(ASoftClipContext *s,
                 dst[n] = erf(src[n]);
             }
             break;
+        default:
+            av_assert0(0);
         }
     }
 }
@@ -243,6 +248,7 @@ static int config_input(AVFilterLink *inlink)
     case AV_SAMPLE_FMT_FLTP: s->filter = filter_flt; break;
     case AV_SAMPLE_FMT_DBL:
     case AV_SAMPLE_FMT_DBLP: s->filter = filter_dbl; break;
+    default: av_assert0(0);
     }
 
     return 0;
