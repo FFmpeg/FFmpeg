@@ -30,10 +30,9 @@
 #include "pixfmt.h"
 #include "imgutils.h"
 
-#define CUDA_FRAME_ALIGNMENT 512
-
 typedef struct CUDAFramesContext {
     int shift_width, shift_height;
+    int tex_alignment;
 } CUDAFramesContext;
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -127,8 +126,11 @@ fail:
 
 static int cuda_frames_init(AVHWFramesContext *ctx)
 {
-    CUDAFramesContext *priv = ctx->internal->priv;
-    int i;
+    AVHWDeviceContext *device_ctx = ctx->device_ctx;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CUDAFramesContext       *priv = ctx->internal->priv;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
+    int err, i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++) {
         if (ctx->sw_format == supported_formats[i])
@@ -140,10 +142,24 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         return AVERROR(ENOSYS);
     }
 
+    err = CHECK_CU(cu->cuDeviceGetAttribute(&priv->tex_alignment,
+                                            14 /* CU_DEVICE_ATTRIBUTE_TEXTURE_ALIGNMENT */,
+                                            hwctx->internal->cuda_device));
+    if (err < 0)
+        return err;
+
+    av_log(ctx, AV_LOG_DEBUG, "CUDA texture alignment: %d\n", priv->tex_alignment);
+
+    // YUV420P is a special case.
+    // Since nvenc expects the U/V planes to have half the linesize of the Y plane
+    // alignment has to be doubled to ensure the U/V planes still end up aligned.
+    if (ctx->sw_format == AV_PIX_FMT_YUV420P)
+        priv->tex_alignment *= 2;
+
     av_pix_fmt_get_chroma_sub_sample(ctx->sw_format, &priv->shift_width, &priv->shift_height);
 
     if (!ctx->pool) {
-        int size = av_image_get_buffer_size(ctx->sw_format, ctx->width, ctx->height, CUDA_FRAME_ALIGNMENT);
+        int size = av_image_get_buffer_size(ctx->sw_format, ctx->width, ctx->height, priv->tex_alignment);
         if (size < 0)
             return size;
 
@@ -157,6 +173,7 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
 
 static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
 {
+    CUDAFramesContext *priv = ctx->internal->priv;
     int res;
 
     frame->buf[0] = av_buffer_pool_get(ctx->pool);
@@ -164,7 +181,7 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
         return AVERROR(ENOMEM);
 
     res = av_image_fill_arrays(frame->data, frame->linesize, frame->buf[0]->data,
-                               ctx->sw_format, ctx->width, ctx->height, CUDA_FRAME_ALIGNMENT);
+                               ctx->sw_format, ctx->width, ctx->height, priv->tex_alignment);
     if (res < 0)
         return res;
 
