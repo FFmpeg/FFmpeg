@@ -38,22 +38,15 @@
 
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
-static const uint16_t quant_sizes[MPC7_QUANT_VLC_TABLES*2] =
-{
-    512, 512, 512, 516, 512, 512, 512, 512, 512, 512, 512, 528, 512, 548
-};
-
-
 static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 {
-    int i, j;
+    int j;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     LOCAL_ALIGNED_16(uint8_t, buf, [16]);
     static int vlc_initialized = 0;
 
     static VLC_TYPE quant_tables[7224][2];
-    VLC_TYPE (*quant_table)[2] = quant_tables;
     const uint8_t *raw_quant_table = mpc7_quant_vlcs;
 
     /* Musepack SV7 is always stereo */
@@ -101,17 +94,17 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     INIT_VLC_STATIC_FROM_LENGTHS(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
                                  &mpc7_hdr[1], 2,
                                  &mpc7_hdr[0], 2, 1, -5, 0, 1 << MPC7_HDR_BITS);
-    for(i = 0; i < MPC7_QUANT_VLC_TABLES; i++){
+    for (unsigned i = 0, offset = 0; i < MPC7_QUANT_VLC_TABLES; i++){
         for(j = 0; j < 2; j++){
-            quant_vlc[i][j].table = quant_table;
-            quant_vlc[i][j].table_allocated = quant_sizes[i * 2 + j];
-            quant_table += quant_sizes[i * 2 + j];
+            quant_vlc[i][j].table           = &quant_tables[offset];
+            quant_vlc[i][j].table_allocated = FF_ARRAY_ELEMS(quant_tables) - offset;
             ff_init_vlc_from_lengths(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
                                      &raw_quant_table[1], 2,
                                      &raw_quant_table[0], 2, 1,
                                      mpc7_quant_vlc_off[i],
-                                     INIT_VLC_USE_NEW_STATIC, NULL);
+                                     INIT_VLC_STATIC_OVERLONG, NULL);
             raw_quant_table += 2 * mpc7_quant_vlc_sizes[i];
+            offset          += quant_vlc[i][j].table_size;
         }
     }
     vlc_initialized = 1;
