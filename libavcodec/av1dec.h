@@ -44,6 +44,8 @@ typedef struct AV1Frame {
 
     uint8_t order_hint;
     uint8_t skip_mode_frame_idx[2];
+
+    uint8_t coded_lossless;
 } AV1Frame;
 
 typedef struct TileGroupInfo {

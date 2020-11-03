@@ -217,6 +217,36 @@ static void skip_mode_params(AV1DecContext *s)
         AV1_REF_FRAME_LAST + FFMAX(forward_idx, second_forward_idx);
 }
 
+static void coded_lossless_param(AV1DecContext *s)
+{
+    const AV1RawFrameHeader *header = s->raw_frame_header;
+    int i;
+
+    if (header->delta_q_y_dc || header->delta_q_u_ac ||
+        header->delta_q_u_dc || header->delta_q_v_ac ||
+        header->delta_q_v_dc) {
+        s->cur_frame.coded_lossless = 0;
+        return;
+    }
+
+    s->cur_frame.coded_lossless = 1;
+    for (i = 0; i < AV1_MAX_SEGMENTS; i++) {
+        int qindex;
+        if (header->feature_enabled[i][AV1_SEG_LVL_ALT_Q]) {
+            qindex = (header->base_q_idx +
+                      header->feature_value[i][AV1_SEG_LVL_ALT_Q]);
+        } else {
+            qindex = header->base_q_idx;
+        }
+        qindex = av_clip_uintp2(qindex, 8);
+
+        if (qindex) {
+            s->cur_frame.coded_lossless = 0;
+            return;
+        }
+    }
+}
+
 static int init_tile_data(AV1DecContext *s)
 
 {
@@ -393,6 +423,7 @@ static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
     f->order_hint = 0;
     memset(f->skip_mode_frame_idx, 0,
            2 * sizeof(uint8_t));
+    f->coded_lossless = 0;
 }
 
 static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *src)
@@ -422,6 +453,7 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
     memcpy(dst->skip_mode_frame_idx,
            src->skip_mode_frame_idx,
            2 * sizeof(uint8_t));
+    dst->coded_lossless = src->coded_lossless;
 
     return 0;
 
@@ -693,6 +725,7 @@ static int get_current_frame(AVCodecContext *avctx)
 
     global_motion_params(s);
     skip_mode_params(s);
+    coded_lossless_param(s);
 
     return ret;
 }
