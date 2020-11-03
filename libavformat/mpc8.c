@@ -183,7 +183,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
         if(t & 1)
             t = -(t & ~1);
         pos = (t >> 1) + ppos[0]*2 - ppos[1];
-        av_add_index_entry(s->streams[0], pos, i << seekd, 0, 0, AVINDEX_KEYFRAME);
+        av_add_index_entry(s->streams[0], pos, (int64_t)i << seekd, 0, 0, AVINDEX_KEYFRAME);
         ppos[1] = ppos[0];
         ppos[0] = pos;
     }
@@ -258,7 +258,7 @@ static int mpc8_read_header(AVFormatContext *s)
 
     st->codecpar->channels = (st->codecpar->extradata[1] >> 4) + 1;
     st->codecpar->sample_rate = mpc8_rate[st->codecpar->extradata[0] >> 5];
-    avpriv_set_pts_info(st, 32, 1152  << (st->codecpar->extradata[1]&3)*2, st->codecpar->sample_rate);
+    avpriv_set_pts_info(st, 64, 1152  << (st->codecpar->extradata[1]&3)*2, st->codecpar->sample_rate);
     st->start_time = 0;
     st->duration = c->samples / (1152 << (st->codecpar->extradata[1]&3)*2);
     size -= avio_tell(pb) - pos;
