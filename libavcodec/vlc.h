@@ -93,6 +93,7 @@ void ff_free_vlc(VLC *vlc);
 #define INIT_VLC_OUTPUT_LE      8
 #define INIT_VLC_LE             (INIT_VLC_INPUT_LE | INIT_VLC_OUTPUT_LE)
 #define INIT_VLC_USE_NEW_STATIC 4
+#define INIT_VLC_STATIC_OVERLONG (1 | INIT_VLC_USE_NEW_STATIC)
 
 #define INIT_CUSTOM_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,      \
                                       h, i, j, flags, static_size)         \

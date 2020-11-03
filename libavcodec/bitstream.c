@@ -281,9 +281,9 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
     int ret = build_table(vlc, nb_bits, nb_codes, codes, flags);
 
     if (flags & INIT_VLC_USE_NEW_STATIC) {
-        if(vlc->table_size != vlc->table_allocated)
+        if (vlc->table_size != vlc->table_allocated &&
+            !(flags & (INIT_VLC_STATIC_OVERLONG & ~INIT_VLC_USE_NEW_STATIC)))
             av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
-
         av_assert0(ret >= 0);
         *vlc_arg = *vlc;
     } else {
