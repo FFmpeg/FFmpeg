@@ -24,6 +24,7 @@
  * FITS demuxer.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
 #include "libavutil/opt.h"
@@ -125,14 +126,14 @@ static int64_t is_image(AVFormatContext *s, FITSContext *fits, FITSHeader *heade
     size += header->pcount;
 
     t = (abs(header->bitpix) >> 3) * ((int64_t) header->gcount);
-    if(size && t > UINT64_MAX / size)
+    if(size && t > INT64_MAX / size)
         return AVERROR_INVALIDDATA;
     size *= t;
 
     if (!size) {
         image = 0;
     } else {
-        if(FITS_BLOCK_SIZE - 1 > UINT64_MAX - size)
+        if(FITS_BLOCK_SIZE - 1 > INT64_MAX - size)
             return AVERROR_INVALIDDATA;
         size = ((size + FITS_BLOCK_SIZE - 1) / FITS_BLOCK_SIZE) * FITS_BLOCK_SIZE;
     }
@@ -173,6 +174,11 @@ static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
         goto fail;
     }
 
+    av_assert0(avbuf.len <= INT64_MAX && size <= INT64_MAX);
+    if (avbuf.len + size > INT_MAX - 80)  {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
     // Header is sent with the first line removed...
     ret = av_new_packet(pkt, avbuf.len - 80 + size);
     if (ret < 0)
