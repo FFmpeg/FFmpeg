@@ -2049,7 +2049,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 }
             }
 #endif
-        } else if (n == 0 && --runs <= 0) {
+        } else if (n == 0 && rt->initial_timeout > 0 && --runs <= 0) {
             return AVERROR(ETIMEDOUT);
         } else if (n < 0 && errno != EINTR)
             return AVERROR(errno);
