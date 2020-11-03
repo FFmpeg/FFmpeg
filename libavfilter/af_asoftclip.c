@@ -32,6 +32,7 @@ enum ASoftClipTypes {
     ASC_ALG,
     ASC_QUINTIC,
     ASC_SIN,
+    ASC_ERF,
     NB_TYPES,
 };
 
@@ -57,6 +58,7 @@ static const AVOption asoftclip_options[] = {
     { "alg",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_ALG},    0,          0, A, "types" },
     { "quintic",             NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_QUINTIC},0,          0, A, "types" },
     { "sin",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_SIN},    0,          0, A, "types" },
+    { "erf",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_ERF},    0,          0, A, "types" },
     { "param", "set softclip parameter", OFFSET(param), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01,        3, A },
     { NULL }
 };
@@ -148,6 +150,11 @@ static void filter_flt(ASoftClipContext *s,
                     dst[n] = sinf(src[n]);
             }
             break;
+        case ASC_ERF:
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = erff(src[n]);
+            }
+            break;
         }
     }
 }
@@ -203,6 +210,11 @@ static void filter_dbl(ASoftClipContext *s,
                     dst[n] = FFSIGN(src[n]);
                 else
                     dst[n] = sin(src[n]);
+            }
+            break;
+        case ASC_ERF:
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = erf(src[n]);
             }
             break;
         }
