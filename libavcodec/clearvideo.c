@@ -88,7 +88,6 @@ static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
 
     memset(blk, 0, sizeof(*blk) * 64);
     blk[0] = get_vlc2(gb, ctx->dc_vlc.table, CLV_VLC_BITS, 3);
-    blk[0] -= 63;
 
     if (!has_ac)
         return 0;
@@ -712,9 +711,9 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     ff_idctdsp_init(&c->idsp, avctx);
-    ret = init_vlc(&c->dc_vlc, CLV_VLC_BITS, NUM_DC_CODES,
-                   clv_dc_bits,  1, 1,
-                   clv_dc_codes, 1, 1, 0);
+    ret = ff_init_vlc_from_lengths(&c->dc_vlc, CLV_VLC_BITS, NUM_DC_CODES,
+                                   clv_dc_lens, 1,
+                                   clv_dc_syms, 1, 1, -63, 0, avctx);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Error initialising DC VLC\n");
         return ret;
