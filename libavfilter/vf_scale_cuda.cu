@@ -23,6 +23,27 @@
 #include "cuda/vector_helpers.cuh"
 
 template<typename T>
+__device__ inline void Subsample_Nearest(cudaTextureObject_t tex,
+                                         T *dst,
+                                         int dst_width, int dst_height, int dst_pitch,
+                                         int src_width, int src_height,
+                                         int bit_depth)
+{
+    int xo = blockIdx.x * blockDim.x + threadIdx.x;
+    int yo = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (yo < dst_height && xo < dst_width)
+    {
+        float hscale = (float)src_width / (float)dst_width;
+        float vscale = (float)src_height / (float)dst_height;
+        float xi = (xo + 0.5f) * hscale;
+        float yi = (yo + 0.5f) * vscale;
+
+        dst[yo*dst_pitch+xo] = tex2D<T>(tex, xi, yi);
+    }
+}
+
+template<typename T>
 __device__ inline void Subsample_Bilinear(cudaTextureObject_t tex,
                                           T *dst,
                                           int dst_width, int dst_height, int dst_pitch,
@@ -56,6 +77,27 @@ __device__ inline void Subsample_Bilinear(cudaTextureObject_t tex,
 }
 
 extern "C" {
+
+#define NEAREST_KERNEL(T) \
+    __global__ void Subsample_Nearest_ ## T(cudaTextureObject_t src_tex,                  \
+                                            T *dst,                                       \
+                                            int dst_width, int dst_height, int dst_pitch, \
+                                            int src_width, int src_height,                \
+                                            int bit_depth)                                \
+    {                                                                                     \
+        Subsample_Nearest<T>(src_tex, dst,                                                \
+                              dst_width, dst_height, dst_pitch,                           \
+                              src_width, src_height,                                      \
+                              bit_depth);                                                 \
+    }
+
+NEAREST_KERNEL(uchar)
+NEAREST_KERNEL(uchar2)
+NEAREST_KERNEL(uchar4)
+
+NEAREST_KERNEL(ushort)
+NEAREST_KERNEL(ushort2)
+NEAREST_KERNEL(ushort4)
 
 #define BILINEAR_KERNEL(T) \
     __global__ void Subsample_Bilinear_ ## T(cudaTextureObject_t src_tex,                  \

@@ -56,6 +56,7 @@ static const enum AVPixelFormat supported_formats[] = {
 enum {
     INTERP_ALGO_DEFAULT,
 
+    INTERP_ALGO_NEAREST,
     INTERP_ALGO_BILINEAR,
     INTERP_ALGO_BICUBIC,
 
@@ -273,6 +274,12 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     extern char vf_scale_cuda_bicubic_ptx[];
 
     switch(s->interp_algo) {
+    case INTERP_ALGO_NEAREST:
+        scaler_ptx = vf_scale_cuda_ptx;
+        function_infix = "_Nearest";
+        s->interp_use_linear = 0;
+        s->interp_as_integer = 1;
+        break;
     case INTERP_ALGO_BILINEAR:
         scaler_ptx = vf_scale_cuda_ptx;
         function_infix = "_Bilinear";
@@ -591,6 +598,7 @@ static const AVOption options[] = {
     { "w",      "Output video width",  OFFSET(w_expr),     AV_OPT_TYPE_STRING, { .str = "iw" }, .flags = FLAGS },
     { "h",      "Output video height", OFFSET(h_expr),     AV_OPT_TYPE_STRING, { .str = "ih" }, .flags = FLAGS },
     { "interp_algo", "Interpolation algorithm used for resizing", OFFSET(interp_algo), AV_OPT_TYPE_INT, { .i64 = INTERP_ALGO_DEFAULT }, 0, INTERP_ALGO_COUNT - 1, FLAGS, "interp_algo" },
+        { "nearest",  "nearest neighbour", 0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_NEAREST }, 0, 0, FLAGS, "interp_algo" },
         { "bilinear", "bilinear", 0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_BILINEAR }, 0, 0, FLAGS, "interp_algo" },
         { "bicubic",  "bicubic",  0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_BICUBIC  }, 0, 0, FLAGS, "interp_algo" },
     { "passthrough", "Do not process frames at all if parameters match", OFFSET(passthrough), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
