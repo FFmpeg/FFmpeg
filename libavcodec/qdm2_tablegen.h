@@ -109,46 +109,44 @@ static VLC vlc_tab_type30;
 static VLC vlc_tab_type34;
 static VLC vlc_tab_fft_tone_offset[5];
 
-static const uint16_t qdm2_vlc_offs[] = {
-    0,260,566,598,894,1166,1230,1294,1678,1950,2214,2278,2310,2570,2834,3124,3448,3838,
-};
-
 static VLC_TYPE qdm2_table[3838][2];
 
-static av_cold void build_vlc(VLC *vlc, int nb_bits, int nb_codes, int idx,
-                              const uint8_t tab[][2])
+static av_cold void build_vlc(VLC *vlc, int nb_bits, int nb_codes,
+                              unsigned *offset, const uint8_t tab[][2])
 {
-    vlc->table           = &qdm2_table[qdm2_vlc_offs[idx]];
-    vlc->table_allocated = qdm2_vlc_offs[idx + 1] - qdm2_vlc_offs[idx];
+    vlc->table           = &qdm2_table[*offset];
+    vlc->table_allocated = FF_ARRAY_ELEMS(qdm2_table) - *offset;
     ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes,
                              &tab[0][1], 2, &tab[0][0], 2, 1,
-                             -1, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE, NULL);
+                             -1, INIT_VLC_STATIC_OVERLONG | INIT_VLC_LE, NULL);
+    *offset += vlc->table_size;
 }
 
 static av_cold void qdm2_init_vlc(void)
 {
     const uint8_t (*tab)[2] = tab_fft_tone_offset;
+    unsigned offset = 0;
 
-    build_vlc(&vlc_tab_level, 8, 24, 0, tab_level);
-    build_vlc(&vlc_tab_diff,  8, 33, 1, tab_diff);
-    build_vlc(&vlc_tab_run,   5,  6, 2, tab_run);
+    build_vlc(&vlc_tab_level, 8, 24, &offset, tab_level);
+    build_vlc(&vlc_tab_diff,  8, 33, &offset, tab_diff);
+    build_vlc(&vlc_tab_run,   5,  6, &offset, tab_run);
 
-    build_vlc(&fft_level_exp_alt_vlc, 8, 28, 3, fft_level_exp_alt);
-    build_vlc(&fft_level_exp_vlc,     8, 20, 4, fft_level_exp);
+    build_vlc(&fft_level_exp_alt_vlc, 8, 28, &offset, fft_level_exp_alt);
+    build_vlc(&fft_level_exp_vlc,     8, 20, &offset, fft_level_exp);
 
-    build_vlc(&fft_stereo_exp_vlc,   6, 7, 5, fft_stereo_exp);
-    build_vlc(&fft_stereo_phase_vlc, 6, 9, 6, fft_stereo_phase);
+    build_vlc(&fft_stereo_exp_vlc,   6, 7, &offset, fft_stereo_exp);
+    build_vlc(&fft_stereo_phase_vlc, 6, 9, &offset, fft_stereo_phase);
 
-    build_vlc(&vlc_tab_tone_level_idx_hi1, 8, 20, 7, tab_tone_level_idx_hi1);
-    build_vlc(&vlc_tab_tone_level_idx_mid, 8, 13, 8, tab_tone_level_idx_mid);
-    build_vlc(&vlc_tab_tone_level_idx_hi2, 8, 18, 9, tab_tone_level_idx_hi2);
+    build_vlc(&vlc_tab_tone_level_idx_hi1, 8, 20, &offset, tab_tone_level_idx_hi1);
+    build_vlc(&vlc_tab_tone_level_idx_mid, 8, 13, &offset, tab_tone_level_idx_mid);
+    build_vlc(&vlc_tab_tone_level_idx_hi2, 8, 18, &offset, tab_tone_level_idx_hi2);
 
-    build_vlc(&vlc_tab_type30, 6,  9, 10, tab_type30);
-    build_vlc(&vlc_tab_type34, 5, 10, 11, tab_type34);
+    build_vlc(&vlc_tab_type30, 6,  9, &offset, tab_type30);
+    build_vlc(&vlc_tab_type34, 5, 10, &offset, tab_type34);
 
     for (int i = 0; i < 5; i++) {
         build_vlc(&vlc_tab_fft_tone_offset[i], 8, tab_fft_tone_offset_sizes[i],
-                  12 + i, tab);
+                  &offset, tab);
         tab += tab_fft_tone_offset_sizes[i];
     }
 }
