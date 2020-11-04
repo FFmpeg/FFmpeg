@@ -113,8 +113,7 @@ static int read_header(AVFormatContext *s)
         ico->images[i].size   = avio_rl32(pb);
         if (ico->images[i].size <= 0) {
             av_log(s, AV_LOG_ERROR, "Invalid image size %d\n", ico->images[i].size);
-            av_freep(&ico->images);
-            return AVERROR_INVALIDDATA;
+            goto fail;
         }
         ico->images[i].offset = avio_rl32(pb);
 
@@ -130,8 +129,7 @@ static int read_header(AVFormatContext *s)
             break;
         case 40:
             if (ico->images[i].size < 40) {
-                av_freep(&ico->images);
-                return AVERROR_INVALIDDATA;
+                goto fail;
             }
             st->codecpar->codec_id = AV_CODEC_ID_BMP;
             tmp = avio_rl32(pb);
@@ -143,12 +141,14 @@ static int read_header(AVFormatContext *s)
             break;
         default:
             avpriv_request_sample(s, "codec %d", codec);
-            av_freep(&ico->images);
-            return AVERROR_INVALIDDATA;
+            goto fail;
         }
     }
 
     return 0;
+fail:
+    av_freep(&ico->images);
+    return AVERROR_INVALIDDATA;
 }
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
