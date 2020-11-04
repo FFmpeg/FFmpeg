@@ -848,6 +848,7 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     GetBitContext gb;
     ATRAC9Context *s = avctx->priv_data;
     int version, block_config_idx, superframe_idx, alloc_c_len;
+    const uint8_t (*tab)[2];
     int ret;
 
     s->avctx = avctx;
@@ -932,17 +933,20 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
             s->alloc_curve[i - 1][j] = at9_tab_b_dist[(j * alloc_c_len) / i];
 
     /* Unsigned scalefactor VLCs */
+    tab = at9_sfb_a_tab;
     for (int i = 1; i < 7; i++) {
         const HuffmanCodebook *hf = &at9_huffman_sf_unsigned[i];
 
         ret = ff_init_vlc_from_lengths(&s->sf_vlc[0][i], ATRAC9_SF_VLC_BITS,
-                                       hf->size, &hf->tab[0][1], 2,
-                                       &hf->tab[0][0], 2, 1, 0, 0, avctx);
+                                       hf->size, &tab[0][1], 2,
+                                       &tab[0][0], 2, 1, 0, 0, avctx);
         if (ret < 0)
             return ret;
+        tab += hf->size;
     }
 
     /* Signed scalefactor VLCs */
+    tab = at9_sfb_b_tab;
     for (int i = 2; i < 6; i++) {
         const HuffmanCodebook *hf = &at9_huffman_sf_signed[i];
 
@@ -950,22 +954,25 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
          * the values in the source table are offset by 16 to make
          * them fit into an uint8_t; the -16 reverses this shift. */
         ret = ff_init_vlc_from_lengths(&s->sf_vlc[1][i], ATRAC9_SF_VLC_BITS,
-                                       hf->size, &hf->tab[0][1], 2,
-                                       &hf->tab[0][0], 2, 1, -16, 0, avctx);
+                                       hf->size, &tab[0][1], 2,
+                                       &tab[0][0], 2, 1, -16, 0, avctx);
         if (ret < 0)
             return ret;
+        tab += hf->size;
     }
 
     /* Coefficient VLCs */
+    tab = at9_coeffs_tab;
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 8; j++) {
             for (int k = 0; k < 4; k++) {
                 const HuffmanCodebook *hf = &at9_huffman_coeffs[i][j][k];
                 ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i][j][k], 9,
-                                               hf->size, &hf->tab[0][1], 2,
-                                               &hf->tab[0][0], 2, 1, 0, 0, avctx);
+                                               hf->size, &tab[0][1], 2,
+                                               &tab[0][0], 2, 1, 0, 0, avctx);
                 if (ret < 0)
                     return ret;
+                tab += hf->size;
             }
         }
     }
