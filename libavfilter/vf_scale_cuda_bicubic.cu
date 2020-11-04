@@ -22,6 +22,30 @@
 
 #include "cuda/vector_helpers.cuh"
 
+typedef float4 (*coeffs_function_t)(float);
+
+__device__ inline float4 lanczos_coeffs(float x)
+{
+    const float pi = 3.141592654f;
+
+    float4 res = make_float4(
+        pi * (x + 1),
+        pi * x,
+        pi * (x - 1),
+        pi * (x - 2));
+
+    res.x = res.x == 0.0f ? 1.0f :
+        __sinf(res.x) * __sinf(res.x / 2.0f) / (res.x * res.x / 2.0f);
+    res.y = res.y == 0.0f ? 1.0f :
+        __sinf(res.y) * __sinf(res.y / 2.0f) / (res.y * res.y / 2.0f);
+    res.z = res.z == 0.0f ? 1.0f :
+        __sinf(res.z) * __sinf(res.z / 2.0f) / (res.z * res.z / 2.0f);
+    res.w = res.w == 0.0f ? 1.0f :
+        __sinf(res.w) * __sinf(res.w / 2.0f) / (res.w * res.w / 2.0f);
+
+    return res / (res.x + res.y + res.z + res.w);
+}
+
 __device__ inline float4 bicubic_coeffs(float x)
 {
     const float A = -0.75f;
@@ -35,10 +59,8 @@ __device__ inline float4 bicubic_coeffs(float x)
     return res;
 }
 
-__device__ inline void bicubic_fast_coeffs(float x, float *h0, float *h1, float *s)
+__device__ inline void derived_fast_coeffs(float4 coeffs, float x, float *h0, float *h1, float *s)
 {
-    float4 coeffs = bicubic_coeffs(x);
-
     float g0 = coeffs.x + coeffs.y;
     float g1 = coeffs.z + coeffs.w;
 
@@ -48,7 +70,7 @@ __device__ inline void bicubic_fast_coeffs(float x, float *h0, float *h1, float 
 }
 
 template<typename V>
-__device__ inline V bicubic_filter(float4 coeffs, V c0, V c1, V c2, V c3)
+__device__ inline V apply_coeffs(float4 coeffs, V c0, V c1, V c2, V c3)
 {
     V res = c0 * coeffs.x;
     res  += c1 * coeffs.y;
@@ -59,7 +81,8 @@ __device__ inline V bicubic_filter(float4 coeffs, V c0, V c1, V c2, V c3)
 }
 
 template<typename T>
-__device__ inline void Subsample_Bicubic(cudaTextureObject_t src_tex,
+__device__ inline void Subsample_Bicubic(coeffs_function_t coeffs_function,
+                                         cudaTextureObject_t src_tex,
                                          T *dst,
                                          int dst_width, int dst_height, int dst_pitch,
                                          int src_width, int src_height,
@@ -81,17 +104,17 @@ __device__ inline void Subsample_Bicubic(cudaTextureObject_t src_tex,
 
         float factor = bit_depth > 8 ? 0xFFFF : 0xFF;
 
-        float4 coeffsX = bicubic_coeffs(fx);
-        float4 coeffsY = bicubic_coeffs(fy);
+        float4 coeffsX = coeffs_function(fx);
+        float4 coeffsY = coeffs_function(fy);
 
 #define PIX(x, y) tex2D<floatT>(src_tex, (x), (y))
 
         dst[yo * dst_pitch + xo] = from_floatN<T, floatT>(
-            bicubic_filter<floatT>(coeffsY,
-                bicubic_filter<floatT>(coeffsX, PIX(px - 1, py - 1), PIX(px, py - 1), PIX(px + 1, py - 1), PIX(px + 2, py - 1)),
-                bicubic_filter<floatT>(coeffsX, PIX(px - 1, py    ), PIX(px, py    ), PIX(px + 1, py    ), PIX(px + 2, py    )),
-                bicubic_filter<floatT>(coeffsX, PIX(px - 1, py + 1), PIX(px, py + 1), PIX(px + 1, py + 1), PIX(px + 2, py + 1)),
-                bicubic_filter<floatT>(coeffsX, PIX(px - 1, py + 2), PIX(px, py + 2), PIX(px + 1, py + 2), PIX(px + 2, py + 2))
+            apply_coeffs<floatT>(coeffsY,
+                apply_coeffs<floatT>(coeffsX, PIX(px - 1, py - 1), PIX(px, py - 1), PIX(px + 1, py - 1), PIX(px + 2, py - 1)),
+                apply_coeffs<floatT>(coeffsX, PIX(px - 1, py    ), PIX(px, py    ), PIX(px + 1, py    ), PIX(px + 2, py    )),
+                apply_coeffs<floatT>(coeffsX, PIX(px - 1, py + 1), PIX(px, py + 1), PIX(px + 1, py + 1), PIX(px + 2, py + 1)),
+                apply_coeffs<floatT>(coeffsX, PIX(px - 1, py + 2), PIX(px, py + 2), PIX(px + 1, py + 2), PIX(px + 2, py + 2))
             ) * factor
         );
 
@@ -101,7 +124,8 @@ __device__ inline void Subsample_Bicubic(cudaTextureObject_t src_tex,
 
 /* This does not yield correct results. Most likely because of low internal precision in tex2D linear interpolation */
 template<typename T>
-__device__ inline void Subsample_FastBicubic(cudaTextureObject_t src_tex,
+__device__ inline void Subsample_FastBicubic(coeffs_function_t coeffs_function,
+                                             cudaTextureObject_t src_tex,
                                              T *dst,
                                              int dst_width, int dst_height, int dst_pitch,
                                              int src_width, int src_height,
@@ -123,10 +147,13 @@ __device__ inline void Subsample_FastBicubic(cudaTextureObject_t src_tex,
 
         float factor = bit_depth > 8 ? 0xFFFF : 0xFF;
 
+        float4 coeffsX = coeffs_function(fx);
+        float4 coeffsY = coeffs_function(fy);
+
         float h0x, h1x, sx;
         float h0y, h1y, sy;
-        bicubic_fast_coeffs(fx, &h0x, &h1x, &sx);
-        bicubic_fast_coeffs(fy, &h0y, &h1y, &sy);
+        derived_fast_coeffs(coeffsX, fx, &h0x, &h1x, &sx);
+        derived_fast_coeffs(coeffsY, fy, &h0y, &h1y, &sy);
 
 #define PIX(x, y) tex2D<floatT>(src_tex, (x), (y))
 
@@ -157,7 +184,7 @@ extern "C" {
                                             int src_width, int src_height,                \
                                             int bit_depth)                                \
     {                                                                                     \
-        Subsample_Bicubic<T>(src_tex, dst,                                                \
+        Subsample_Bicubic<T>(&bicubic_coeffs, src_tex, dst,                               \
                              dst_width, dst_height, dst_pitch,                            \
                              src_width, src_height,                                       \
                              bit_depth);                                                  \
@@ -170,5 +197,27 @@ BICUBIC_KERNEL(uchar4)
 BICUBIC_KERNEL(ushort)
 BICUBIC_KERNEL(ushort2)
 BICUBIC_KERNEL(ushort4)
+
+
+#define LANCZOS_KERNEL(T) \
+    __global__ void Subsample_Lanczos_ ## T(cudaTextureObject_t src_tex,                  \
+                                            T *dst,                                       \
+                                            int dst_width, int dst_height, int dst_pitch, \
+                                            int src_width, int src_height,                \
+                                            int bit_depth)                                \
+    {                                                                                     \
+        Subsample_Bicubic<T>(&lanczos_coeffs, src_tex, dst,                               \
+                             dst_width, dst_height, dst_pitch,                            \
+                             src_width, src_height,                                       \
+                             bit_depth);                                                  \
+    }
+
+LANCZOS_KERNEL(uchar)
+LANCZOS_KERNEL(uchar2)
+LANCZOS_KERNEL(uchar4)
+
+LANCZOS_KERNEL(ushort)
+LANCZOS_KERNEL(ushort2)
+LANCZOS_KERNEL(ushort4)
 
 }

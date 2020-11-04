@@ -182,4 +182,7 @@ static inline __device__ float fabsf(float a) { return __builtin_fabsf(a); }
 static inline __device__ float fabs(float a) { return __builtin_fabsf(a); }
 static inline __device__ double fabs(double a) { return __builtin_fabs(a); }
 
+static inline __device__ float __sinf(float a) { return __nvvm_sin_approx_f(a); }
+static inline __device__ float __cosf(float a) { return __nvvm_cos_approx_f(a); }
+
 #endif /* COMPAT_CUDA_CUDA_RUNTIME_H */

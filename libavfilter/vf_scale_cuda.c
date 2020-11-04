@@ -59,6 +59,7 @@ enum {
     INTERP_ALGO_NEAREST,
     INTERP_ALGO_BILINEAR,
     INTERP_ALGO_BICUBIC,
+    INTERP_ALGO_LANCZOS,
 
     INTERP_ALGO_COUNT
 };
@@ -290,6 +291,12 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     case INTERP_ALGO_BICUBIC:
         scaler_ptx = vf_scale_cuda_bicubic_ptx;
         function_infix = "_Bicubic";
+        s->interp_use_linear = 0;
+        s->interp_as_integer = 0;
+        break;
+    case INTERP_ALGO_LANCZOS:
+        scaler_ptx = vf_scale_cuda_bicubic_ptx;
+        function_infix = "_Lanczos";
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
         break;
@@ -601,6 +608,7 @@ static const AVOption options[] = {
         { "nearest",  "nearest neighbour", 0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_NEAREST }, 0, 0, FLAGS, "interp_algo" },
         { "bilinear", "bilinear", 0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_BILINEAR }, 0, 0, FLAGS, "interp_algo" },
         { "bicubic",  "bicubic",  0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_BICUBIC  }, 0, 0, FLAGS, "interp_algo" },
+        { "lanczos",  "lanczos",  0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_LANCZOS  }, 0, 0, FLAGS, "interp_algo" },
     { "passthrough", "Do not process frames at all if parameters match", OFFSET(passthrough), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, FLAGS, "force_oar" },
         { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
