@@ -115,10 +115,6 @@ typedef struct Mpeg4DecContext {
     int cplx_estimation_trash_p;
     int cplx_estimation_trash_b;
 
-    VLC studio_intra_tab[12];
-    VLC studio_luma_dc;
-    VLC studio_chroma_dc;
-
     int rgb;
 } Mpeg4DecContext;
 
