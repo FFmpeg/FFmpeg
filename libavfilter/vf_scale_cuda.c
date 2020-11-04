@@ -406,8 +406,6 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func, int channel
                            &src_width, &src_height, &bit_depth, &s->param };
     int ret;
 
-    dst_pitch /= channels;
-
     CUDA_TEXTURE_DESC tex_desc = {
         .filterMode = s->interp_use_linear ?
                       CU_TR_FILTER_MODE_LINEAR :
@@ -426,6 +424,10 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func, int channel
         .res.pitch2D.pitchInBytes = src_pitch,
         .res.pitch2D.devPtr = (CUdeviceptr)src_dptr,
     };
+
+    // Handling of channels is done via vector-types in cuda, so their size is implicitly part of the pitch
+    // Same for pixel_size, which is represented via datatypes on the cuda side of things.
+    dst_pitch /= channels * pixel_size;
 
     ret = CHECK_CU(cu->cuTexObjectCreate(&tex, &res_desc, &tex_desc, NULL));
     if (ret < 0)
