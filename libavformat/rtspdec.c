@@ -172,7 +172,7 @@ static int rtsp_read_announce(AVFormatContext *s)
 {
     RTSPState *rt             = s->priv_data;
     RTSPMessageHeader request = { 0 };
-    char sdp[4096];
+    char sdp[SDP_MAX_SIZE];
     int  ret;
 
     ret = rtsp_read_request(s, &request, "ANNOUNCE");
