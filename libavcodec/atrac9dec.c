@@ -272,7 +272,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         c->scalefactors[0] = get_bits(gb, len);
 
         for (int i = 1; i < b->band_ext_q_unit; i++) {
-            int val = c->scalefactors[i - 1] + get_vlc2(gb, tab->table, 9, 2);
+            int val = c->scalefactors[i - 1] + get_vlc2(gb, tab->table, 9, 1);
             c->scalefactors[i] = val & ((1 << len) - 1);
         }
 
@@ -302,7 +302,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         const VLC *tab = &s->sf_vlc[1][len];
 
         for (int i = 0; i < unit_cnt; i++) {
-            int dist = get_vlc2(gb, tab->table, 9, 2);
+            int dist = get_vlc2(gb, tab->table, 9, 1);
             c->scalefactors[i] = baseline[i] + dist;
         }
 
@@ -325,7 +325,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         c->scalefactors[0] = get_bits(gb, len);
 
         for (int i = 1; i < unit_cnt; i++) {
-            int val = c->scalefactors[i - 1] + get_vlc2(gb, tab->table, 9, 2);
+            int val = c->scalefactors[i - 1] + get_vlc2(gb, tab->table, 9, 1);
             c->scalefactors[i] = val & ((1 << len) - 1);
         }
 
