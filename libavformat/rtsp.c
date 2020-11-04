@@ -696,7 +696,7 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
      *
      * The Vorbis FMTP line can be up to 16KB - see xiph_parse_sdp_line
      * in rtpdec_xiph.c. */
-    char buf[16384], *q;
+    char buf[SDP_MAX_SIZE], *q;
     SDPParseState sdp_parse_state = { { 0 } }, *s1 = &sdp_parse_state;
 
     p = content;
