@@ -3165,7 +3165,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
     }
     if (data != pkt->data)
-        memcpy(pkt->data, data, ts->raw_packet_size);
+        memcpy(pkt->data, data, TS_PACKET_SIZE);
     finished_reading_packet(s, ts->raw_packet_size);
     if (ts->mpeg2ts_compute_pcr) {
         /* compute exact PCR for each packet */
