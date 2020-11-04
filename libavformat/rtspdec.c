@@ -768,7 +768,7 @@ redo:
     }
     ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
-        return -1;
+        return AVERROR(EIO);
     id  = buf[0];
     len = AV_RB16(buf + 1);
     av_log(s, AV_LOG_TRACE, "id=%d len=%d\n", id, len);
@@ -777,10 +777,10 @@ redo:
     /* get the data */
     ret = ffurl_read_complete(rt->rtsp_hd, buf, len);
     if (ret != len)
-        return -1;
+        return AVERROR(EIO);
     if (rt->transport == RTSP_TRANSPORT_RDT &&
-        ff_rdt_parse_header(buf, len, &id, NULL, NULL, NULL, NULL) < 0)
-        return -1;
+        (ret = ff_rdt_parse_header(buf, len, &id, NULL, NULL, NULL, NULL)) < 0)
+        return ret;
 
     /* find the matching stream */
     for (i = 0; i < rt->nb_rtsp_streams; i++) {
