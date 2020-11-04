@@ -848,6 +848,7 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     GetBitContext gb;
     ATRAC9Context *s = avctx->priv_data;
     int version, block_config_idx, superframe_idx, alloc_c_len;
+    int ret;
 
     s->avctx = avctx;
 
@@ -934,22 +935,25 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     for (int i = 1; i < 7; i++) {
         const HuffmanCodebook *hf = &at9_huffman_sf_unsigned[i];
 
-        init_vlc(&s->sf_vlc[0][i], ATRAC9_SF_VLC_BITS, hf->size,
-                 hf->bits, 1, 1, hf->codes,
-                 2, 2, 0);
+        ret = ff_init_vlc_from_lengths(&s->sf_vlc[0][i], ATRAC9_SF_VLC_BITS,
+                                       hf->size, &hf->tab[0][1], 2,
+                                       &hf->tab[0][0], 2, 1, 0, 0, avctx);
+        if (ret < 0)
+            return ret;
     }
 
     /* Signed scalefactor VLCs */
     for (int i = 2; i < 6; i++) {
         const HuffmanCodebook *hf = &at9_huffman_sf_signed[i];
 
-        int nums = hf->size;
-        int16_t sym[32];
-        for (int j = 0; j < nums; j++)
-            sym[j] = sign_extend(j, hf->value_bits);
-
-        ff_init_vlc_sparse(&s->sf_vlc[1][i], ATRAC9_SF_VLC_BITS, hf->size, hf->bits, 1, 1,
-                           hf->codes, 2, 2, sym, sizeof(*sym), sizeof(*sym), 0);
+        /* The symbols are signed integers in the range -16..15;
+         * the values in the source table are offset by 16 to make
+         * them fit into an uint8_t; the -16 reverses this shift. */
+        ret = ff_init_vlc_from_lengths(&s->sf_vlc[1][i], ATRAC9_SF_VLC_BITS,
+                                       hf->size, &hf->tab[0][1], 2,
+                                       &hf->tab[0][0], 2, 1, -16, 0, avctx);
+        if (ret < 0)
+            return ret;
     }
 
     /* Coefficient VLCs */
@@ -957,8 +961,11 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
         for (int j = 0; j < 8; j++) {
             for (int k = 0; k < 4; k++) {
                 const HuffmanCodebook *hf = &at9_huffman_coeffs[i][j][k];
-                init_vlc(&s->coeff_vlc[i][j][k], 9, hf->size, hf->bits, 1, 1,
-                         hf->codes, 2, 2, 0);
+                ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i][j][k], 9,
+                                               hf->size, &hf->tab[0][1], 2,
+                                               &hf->tab[0][0], 2, 1, 0, 0, avctx);
+                if (ret < 0)
+                    return ret;
             }
         }
     }
