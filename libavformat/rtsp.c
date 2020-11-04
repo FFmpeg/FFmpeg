@@ -1982,7 +1982,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     int runs = rt->initial_timeout * 1000LL / POLLING_TIME;
 
     if (!p) {
-        p = rt->p = av_malloc_array(2 * rt->nb_rtsp_streams + 1, sizeof(struct pollfd));
+        p = rt->p = av_malloc_array(2 * rt->nb_rtsp_streams + 1, sizeof(*p));
         if (!p)
             return AVERROR(ENOMEM);
 
