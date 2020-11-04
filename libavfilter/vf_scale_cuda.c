@@ -48,6 +48,8 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_P010,
     AV_PIX_FMT_P016,
     AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_0RGB32,
+    AV_PIX_FMT_0BGR32,
 };
 
 #define DIV_UP(a, b) ( ((a) + (b) - 1) / (b) )
@@ -516,6 +518,13 @@ static int scalecuda_resize(AVFilterContext *ctx,
                            in->data[1], in->width / 2, in->height / 2, in->linesize[1] / 2,
                            out->data[1], out->width / 2, out->height / 2, out->linesize[1] / 4,
                            2, 16);
+        break;
+    case AV_PIX_FMT_0RGB32:
+    case AV_PIX_FMT_0BGR32:
+        call_resize_kernel(ctx, s->cu_func_uchar4, 4,
+                           in->data[0], in->width, in->height, in->linesize[0],
+                           out->data[0], out->width, out->height, out->linesize[0] / 4,
+                           1, 8);
         break;
     default:
         return AVERROR_BUG;
