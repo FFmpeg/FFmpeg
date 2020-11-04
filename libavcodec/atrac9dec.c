@@ -411,7 +411,7 @@ static inline void read_coeffs_coarse(ATRAC9Context *s, ATRAC9BlockData *b,
             const int groups = bands >> huff->value_cnt_pow;
 
             for (int j = 0; j < groups; j++) {
-                uint16_t val = get_vlc2(gb, tab->table, 9, huff->max_bit_size);
+                uint16_t val = get_vlc2(gb, tab->table, 9, 2);
 
                 for (int k = 0; k < huff->value_cnt; k++) {
                     coeffs[k] = sign_extend(val, huff->value_bits);
