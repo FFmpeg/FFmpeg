@@ -41,31 +41,35 @@ static VLC aic_top_vlc;
 static VLC aic_mode1_vlc[AIC_MODE1_NUM], aic_mode2_vlc[AIC_MODE2_NUM];
 static VLC ptype_vlc[NUM_PTYPE_VLCS], btype_vlc[NUM_BTYPE_VLCS];
 
+static av_cold void rv40_init_table(VLC *vlc, unsigned *offset, int nb_bits,
+                                    int nb_codes, const uint8_t (*tab)[2])
+{
+    static VLC_TYPE vlc_buf[11776][2];
+
+    vlc->table           = &vlc_buf[*offset];
+    vlc->table_allocated = 1 << nb_bits;
+    *offset             += 1 << nb_bits;
+
+    ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes,
+                             &tab[0][1], 2, &tab[0][0], 2, 1,
+                             0, INIT_VLC_USE_NEW_STATIC, NULL);
+}
+
 /**
  * Initialize all tables.
  */
 static av_cold void rv40_init_tables(void)
 {
-    int i;
-    static VLC_TYPE aic_table[1 << AIC_TOP_BITS][2];
-    static VLC_TYPE aic_mode1_table[AIC_MODE1_NUM << AIC_MODE1_BITS][2];
+    int i, offset = 0;
     static VLC_TYPE aic_mode2_table[11814][2];
-    static VLC_TYPE ptype_table[NUM_PTYPE_VLCS << PTYPE_VLC_BITS][2];
-    static VLC_TYPE btype_table[NUM_BTYPE_VLCS << BTYPE_VLC_BITS][2];
 
-    aic_top_vlc.table = aic_table;
-    aic_top_vlc.table_allocated = 1 << AIC_TOP_BITS;
-    init_vlc(&aic_top_vlc, AIC_TOP_BITS, AIC_TOP_SIZE,
-             rv40_aic_top_vlc_bits,  1, 1,
-             rv40_aic_top_vlc_codes, 1, 1, INIT_VLC_USE_NEW_STATIC);
+    rv40_init_table(&aic_top_vlc, &offset, AIC_TOP_BITS, AIC_TOP_SIZE,
+                    rv40_aic_top_vlc_tab);
     for(i = 0; i < AIC_MODE1_NUM; i++){
         // Every tenth VLC table is empty
         if((i % 10) == 9) continue;
-        aic_mode1_vlc[i].table = &aic_mode1_table[i << AIC_MODE1_BITS];
-        aic_mode1_vlc[i].table_allocated = 1 << AIC_MODE1_BITS;
-        init_vlc(&aic_mode1_vlc[i], AIC_MODE1_BITS, AIC_MODE1_SIZE,
-                 aic_mode1_vlc_bits[i],  1, 1,
-                 aic_mode1_vlc_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        rv40_init_table(&aic_mode1_vlc[i], &offset, AIC_MODE1_BITS,
+                        AIC_MODE1_SIZE, aic_mode1_vlc_tabs[i]);
     }
     for (unsigned i = 0, offset = 0; i < AIC_MODE2_NUM; i++){
         uint16_t syms[AIC_MODE2_SIZE];
@@ -86,20 +90,12 @@ static av_cold void rv40_init_tables(void)
         offset += aic_mode2_vlc[i].table_size;
     }
     for(i = 0; i < NUM_PTYPE_VLCS; i++){
-        ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
-        ptype_vlc[i].table_allocated = 1 << PTYPE_VLC_BITS;
-        ff_init_vlc_from_lengths(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
-                                 &ptype_vlc_tabs[i][0][1], 2,
-                                 &ptype_vlc_tabs[i][0][0], 2, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+        rv40_init_table(&ptype_vlc[i], &offset, PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
+                        ptype_vlc_tabs[i]);
     }
     for(i = 0; i < NUM_BTYPE_VLCS; i++){
-        btype_vlc[i].table = &btype_table[i << BTYPE_VLC_BITS];
-        btype_vlc[i].table_allocated = 1 << BTYPE_VLC_BITS;
-        ff_init_vlc_from_lengths(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
-                                 &btype_vlc_tabs[i][0][1], 2,
-                                 &btype_vlc_tabs[i][0][0], 2, 1,
-                                 0, INIT_VLC_USE_NEW_STATIC, NULL);
+        rv40_init_table(&btype_vlc[i], &offset, BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
+                        btype_vlc_tabs[i]);
     }
 }
 
