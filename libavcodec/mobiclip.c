@@ -539,11 +539,11 @@ static int add_pframe_coefficients(AVCodecContext *avctx, AVFrame *frame,
 {
     MobiClipContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    int ret, idx = get_ue_golomb(gb);
+    int ret, idx = get_ue_golomb_31(gb);
 
     if (idx == 0) {
         ret = add_coefficients(avctx, frame, bx, by, size, plane);
-    } else if (idx < FF_ARRAY_ELEMS(pframe_block4x4_coefficients_tab)) {
+    } else if ((unsigned)idx < FF_ARRAY_ELEMS(pframe_block4x4_coefficients_tab)) {
         int flags = pframe_block4x4_coefficients_tab[idx];
 
         for (int y = by; y < by + 8; y += 4) {
@@ -1012,8 +1012,8 @@ static int process_block(AVCodecContext *avctx, AVFrame *frame,
         return predict_intra(avctx, frame, x, y, pmode, 0, 8, plane);
     }
 
-    tmp = get_ue_golomb(gb);
-    if (tmp < 0 || tmp > FF_ARRAY_ELEMS(block4x4_coefficients_tab))
+    tmp = get_ue_golomb_31(gb);
+    if ((unsigned)tmp > FF_ARRAY_ELEMS(block4x4_coefficients_tab))
         return AVERROR_INVALIDDATA;
 
     if (tmp == 0) {
