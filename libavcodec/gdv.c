@@ -551,7 +551,7 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
-    return ret < 0 ? ret : avpkt->size;
+    return avpkt->size;
 }
 
 static av_cold int gdv_decode_close(AVCodecContext *avctx)
