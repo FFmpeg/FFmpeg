@@ -2356,6 +2356,9 @@ It accepts the following values:
 
 @item param
 Set additional parameter which controls sigmoid function.
+
+@item oversample
+Set oversampling factor.
 @end table
 
 @subsection Commands

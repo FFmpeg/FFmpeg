@@ -21,6 +21,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
+#include "libswresample/swresample.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -42,7 +43,14 @@ typedef struct ASoftClipContext {
     const AVClass *class;
 
     int type;
+    int oversample;
+    int64_t delay;
     double param;
+
+    SwrContext *up_ctx;
+    SwrContext *down_ctx;
+
+    AVFrame *frame;
 
     void (*filter)(struct ASoftClipContext *s, void **dst, const void **src,
                    int nb_samples, int channels, int start, int end);
@@ -50,6 +58,7 @@ typedef struct ASoftClipContext {
 
 #define OFFSET(x) offsetof(ASoftClipContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+#define F AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption asoftclip_options[] = {
     { "type", "set softclip type", OFFSET(type), AV_OPT_TYPE_INT,    {.i64=0},         -1, NB_TYPES-1, A, "types" },
@@ -63,6 +72,7 @@ static const AVOption asoftclip_options[] = {
     { "sin",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_SIN},    0,          0, A, "types" },
     { "erf",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_ERF},    0,          0, A, "types" },
     { "param", "set softclip parameter", OFFSET(param), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01,        3, A },
+    { "oversample", "set oversample factor", OFFSET(oversample), AV_OPT_TYPE_INT, {.i64=1}, 1, 32, F },
     { NULL }
 };
 
@@ -242,6 +252,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ASoftClipContext *s = ctx->priv;
+    int ret;
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_FLT:
@@ -250,6 +261,38 @@ static int config_input(AVFilterLink *inlink)
     case AV_SAMPLE_FMT_DBLP: s->filter = filter_dbl; break;
     default: av_assert0(0);
     }
+
+    if (s->oversample <= 1)
+        return 0;
+
+    s->up_ctx = swr_alloc();
+    s->down_ctx = swr_alloc();
+    if (!s->up_ctx || !s->down_ctx)
+        return AVERROR(ENOMEM);
+
+    av_opt_set_int(s->up_ctx, "in_channel_layout",    inlink->channel_layout, 0);
+    av_opt_set_int(s->up_ctx, "in_sample_rate",       inlink->sample_rate, 0);
+    av_opt_set_sample_fmt(s->up_ctx, "in_sample_fmt", inlink->format, 0);
+
+    av_opt_set_int(s->up_ctx, "out_channel_layout",    inlink->channel_layout, 0);
+    av_opt_set_int(s->up_ctx, "out_sample_rate",       inlink->sample_rate * s->oversample, 0);
+    av_opt_set_sample_fmt(s->up_ctx, "out_sample_fmt", inlink->format, 0);
+
+    av_opt_set_int(s->down_ctx, "in_channel_layout",    inlink->channel_layout, 0);
+    av_opt_set_int(s->down_ctx, "in_sample_rate",       inlink->sample_rate * s->oversample, 0);
+    av_opt_set_sample_fmt(s->down_ctx, "in_sample_fmt", inlink->format, 0);
+
+    av_opt_set_int(s->down_ctx, "out_channel_layout",    inlink->channel_layout, 0);
+    av_opt_set_int(s->down_ctx, "out_sample_rate",       inlink->sample_rate, 0);
+    av_opt_set_sample_fmt(s->down_ctx, "out_sample_fmt", inlink->format, 0);
+
+    ret = swr_init(s->up_ctx);
+    if (ret < 0)
+        return ret;
+
+    ret = swr_init(s->down_ctx);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -280,8 +323,9 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
+    ASoftClipContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int nb_samples, channels;
+    int ret, nb_samples, channels;
     ThreadData td;
     AVFrame *out;
 
@@ -304,17 +348,64 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         channels = 1;
     }
 
-    td.in = in;
-    td.out = out;
-    td.nb_samples = nb_samples;
-    td.channels = channels;
-    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(channels,
-                                                            ff_filter_get_nb_threads(ctx)));
+    if (s->oversample > 1) {
+        s->frame = ff_get_audio_buffer(outlink, in->nb_samples * s->oversample);
+        if (!s->frame) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        ret = swr_convert(s->up_ctx, (uint8_t**)s->frame->extended_data, in->nb_samples * s->oversample,
+                          (const uint8_t **)in->extended_data, in->nb_samples);
+        if (ret < 0)
+            goto fail;
+
+        td.in = s->frame;
+        td.out = s->frame;
+        td.nb_samples = av_sample_fmt_is_planar(in->format) ? ret : ret * in->channels;
+        td.channels = channels;
+        ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(channels,
+                                                                ff_filter_get_nb_threads(ctx)));
+
+        ret = swr_convert(s->down_ctx, (uint8_t**)out->extended_data, out->nb_samples,
+                          (const uint8_t **)s->frame->extended_data, ret);
+        if (ret < 0)
+            goto fail;
+
+        if (out->pts)
+            out->pts -= s->delay;
+        s->delay += in->nb_samples - ret;
+        out->nb_samples = ret;
+
+        av_frame_free(&s->frame);
+    } else {
+        td.in = in;
+        td.out = out;
+        td.nb_samples = nb_samples;
+        td.channels = channels;
+        ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(channels,
+                                                                ff_filter_get_nb_threads(ctx)));
+    }
 
     if (out != in)
         av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
+fail:
+    if (out != in)
+        av_frame_free(&out);
+    av_frame_free(&in);
+    av_frame_free(&s->frame);
+
+    return ret;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    ASoftClipContext *s = ctx->priv;
+
+    swr_free(&s->up_ctx);
+    swr_free(&s->down_ctx);
 }
 
 static const AVFilterPad inputs[] = {
@@ -343,6 +434,7 @@ AVFilter ff_af_asoftclip = {
     .priv_class     = &asoftclip_class,
     .inputs         = inputs,
     .outputs        = outputs,
+    .uninit         = uninit,
     .process_command = ff_filter_process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                       AVFILTER_FLAG_SLICE_THREADS,
