@@ -361,7 +361,7 @@ static int obu_probe(const AVProbeData *p)
         ret = read_obu_with_size(p->buf + cnt, p->buf_size - cnt, &obu_size, &type);
         if (ret < 0 || obu_size <= 0)
             return 0;
-        cnt += ret;
+        cnt += FFMIN(ret, p->buf_size - cnt);
 
         ret = get_score(type, &seq);
         if (ret >= 0)
