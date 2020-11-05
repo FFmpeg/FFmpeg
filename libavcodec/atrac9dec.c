@@ -964,8 +964,8 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     /* Coefficient VLCs */
     tab = at9_coeffs_tab;
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 8; j++) {
-            for (int k = 0; k < 4; k++) {
+        for (int j = 2; j < 8; j++) {
+            for (int k = i; k < 4; k++) {
                 const HuffmanCodebook *hf = &at9_huffman_coeffs[i][j][k];
                 ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i][j][k], 9,
                                                hf->size, &tab[0][1], 2,
