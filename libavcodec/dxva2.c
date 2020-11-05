@@ -45,6 +45,7 @@ DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main,  0x5b11d51b, 0x2f4c,0x4452,0xbc,0xc3,0x0
 DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10,0x107af0e0, 0xef1a,0x4d19,0xab,0xa8,0x67,0xa1,0x63,0x07,0x3d,0x13);
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_Profile0,0x463707f8,0xa1d0,0x4585,0x87,0x6d,0x83,0xaa,0x6d,0x60,0xb8,0x9e);
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_10bit_Profile2,0xa4c749ef,0x6ecf,0x48aa,0x84,0x48,0x50,0xa7,0xa1,0x16,0x5f,0xf7);
+DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_Profile0,0xb8be4ccb,0xcf53,0x46ba,0x8d,0x59,0xd6,0xb8,0xa6,0xda,0x5d,0x2a);
 DEFINE_GUID(ff_DXVA2_NoEncrypt,          0x1b81beD0, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(ff_GUID_NULL,                0x00000000, 0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
 DEFINE_GUID(ff_IID_IDirectXVideoDecoderService, 0xfc51a551,0xd5e7,0x11d9,0xaf,0x55,0x00,0x05,0x4e,0x43,0xff,0x02);
@@ -72,6 +73,8 @@ static const int prof_vp9_profile0[] = {FF_PROFILE_VP9_0,
                                         FF_PROFILE_UNKNOWN};
 static const int prof_vp9_profile2[] = {FF_PROFILE_VP9_2,
                                         FF_PROFILE_UNKNOWN};
+static const int prof_av1_profile0[] = {FF_PROFILE_AV1_MAIN,
+                                        FF_PROFILE_UNKNOWN};
 
 static const dxva_mode dxva_modes[] = {
     /* MPEG-2 */
@@ -97,6 +100,9 @@ static const dxva_mode dxva_modes[] = {
     /* VP8/9 */
     { &ff_DXVA2_ModeVP9_VLD_Profile0,       AV_CODEC_ID_VP9, prof_vp9_profile0 },
     { &ff_DXVA2_ModeVP9_VLD_10bit_Profile2, AV_CODEC_ID_VP9, prof_vp9_profile2 },
+
+    /* AV1 */
+    { &ff_DXVA2_ModeAV1_VLD_Profile0,       AV_CODEC_ID_AV1, prof_av1_profile0 },
 
     { NULL,                          0 },
 };
@@ -604,7 +610,7 @@ int ff_dxva2_common_frame_params(AVCodecContext *avctx,
         surface_alignment = 32;
     /* the HEVC DXVA2 spec asks for 128 pixel aligned surfaces to ensure
     all coding features have enough room to work with */
-    else if (avctx->codec_id == AV_CODEC_ID_HEVC)
+    else if (avctx->codec_id == AV_CODEC_ID_HEVC || avctx->codec_id == AV_CODEC_ID_AV1)
         surface_alignment = 128;
     else
         surface_alignment = 16;
@@ -615,7 +621,7 @@ int ff_dxva2_common_frame_params(AVCodecContext *avctx,
     /* add surfaces based on number of possible refs */
     if (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC)
         num_surfaces += 16;
-    else if (avctx->codec_id == AV_CODEC_ID_VP9)
+    else if (avctx->codec_id == AV_CODEC_ID_VP9 || avctx->codec_id == AV_CODEC_ID_AV1)
         num_surfaces += 8;
     else
         num_surfaces += 2;

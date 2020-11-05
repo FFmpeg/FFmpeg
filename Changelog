@@ -44,6 +44,7 @@ version <next>:
 - ADPCM IMA AMV encoder
 - AMV muxer
 - NVDEC AV1 hwaccel
+- DXVA2/D3D11VA hardware accelerated AV1 decoding
 
 
 version 4.3:

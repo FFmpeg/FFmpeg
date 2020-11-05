@@ -317,7 +317,10 @@ static int get_pixel_format(AVCodecContext *avctx)
     uint8_t bit_depth;
     int ret;
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
-#define HWACCEL_MAX (CONFIG_AV1_NVDEC_HWACCEL + CONFIG_AV1_VAAPI_HWACCEL)
+#define HWACCEL_MAX (CONFIG_AV1_DXVA2_HWACCEL + \
+                     CONFIG_AV1_D3D11VA_HWACCEL * 2 + \
+                     CONFIG_AV1_NVDEC_HWACCEL + \
+                     CONFIG_AV1_VAAPI_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
 
     if (seq->seq_profile == 2 && seq->color_config.high_bitdepth)
@@ -380,6 +383,13 @@ static int get_pixel_format(AVCodecContext *avctx)
 
     switch (s->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
+#if CONFIG_AV1_DXVA2_HWACCEL
+        *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
+#endif
+#if CONFIG_AV1_D3D11VA_HWACCEL
+        *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
+        *fmtp++ = AV_PIX_FMT_D3D11;
+#endif
 #if CONFIG_AV1_NVDEC_HWACCEL
         *fmtp++ = AV_PIX_FMT_CUDA;
 #endif
@@ -388,6 +398,13 @@ static int get_pixel_format(AVCodecContext *avctx)
 #endif
         break;
     case AV_PIX_FMT_YUV420P10:
+#if CONFIG_AV1_DXVA2_HWACCEL
+        *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
+#endif
+#if CONFIG_AV1_D3D11VA_HWACCEL
+        *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
+        *fmtp++ = AV_PIX_FMT_D3D11;
+#endif
 #if CONFIG_AV1_NVDEC_HWACCEL
         *fmtp++ = AV_PIX_FMT_CUDA;
 #endif
@@ -974,6 +991,15 @@ AVCodec ff_av1_decoder = {
     .flush                 = av1_decode_flush,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .hw_configs            = (const AVCodecHWConfigInternal * []) {
+#if CONFIG_AV1_DXVA2_HWACCEL
+        HWACCEL_DXVA2(av1),
+#endif
+#if CONFIG_AV1_D3D11VA_HWACCEL
+        HWACCEL_D3D11VA(av1),
+#endif
+#if CONFIG_AV1_D3D11VA2_HWACCEL
+        HWACCEL_D3D11VA2(av1),
+#endif
 #if CONFIG_AV1_NVDEC_HWACCEL
         HWACCEL_NVDEC(av1),
 #endif
