@@ -45,16 +45,16 @@ static int realtext_probe(const AVProbeData *p)
     return !av_strncasecmp(buf, "<window", 7) ? AVPROBE_SCORE_EXTENSION : 0;
 }
 
-static int read_ts(const char *s)
+static int64_t read_ts(const char *s)
 {
     int hh, mm, ss, ms;
 
-    if (sscanf(s, "%u:%u:%u.%u", &hh, &mm, &ss, &ms) == 4) return (hh*3600 + mm*60 + ss) * 100 + ms;
-    if (sscanf(s, "%u:%u:%u"   , &hh, &mm, &ss     ) == 3) return (hh*3600 + mm*60 + ss) * 100;
-    if (sscanf(s,    "%u:%u.%u",      &mm, &ss, &ms) == 3) return (          mm*60 + ss) * 100 + ms;
-    if (sscanf(s,    "%u:%u"   ,      &mm, &ss     ) == 2) return (          mm*60 + ss) * 100;
-    if (sscanf(s,       "%u.%u",           &ss, &ms) == 2) return (                  ss) * 100 + ms;
-    return strtol(s, NULL, 10) * 100;
+    if (sscanf(s, "%u:%u:%u.%u", &hh, &mm, &ss, &ms) == 4) return (hh*3600LL + mm*60LL + ss) * 100LL + ms;
+    if (sscanf(s, "%u:%u:%u"   , &hh, &mm, &ss     ) == 3) return (hh*3600LL + mm*60LL + ss) * 100LL;
+    if (sscanf(s,    "%u:%u.%u",      &mm, &ss, &ms) == 3) return (            mm*60LL + ss) * 100LL + ms;
+    if (sscanf(s,    "%u:%u"   ,      &mm, &ss     ) == 2) return (            mm*60LL + ss) * 100LL;
+    if (sscanf(s,       "%u.%u",           &ss, &ms) == 2) return (                      ss) * 100LL + ms;
+    return strtol(s, NULL, 10) * 100LL;
 }
 
 static int realtext_read_header(AVFormatContext *s)
