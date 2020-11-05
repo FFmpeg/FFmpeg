@@ -838,7 +838,7 @@ static av_cold int atrac9_decode_close(AVCodecContext *avctx)
                 ff_free_vlc(&s->coeff_vlc[i][j][k]);
 
     ff_mdct_end(&s->imdct);
-    av_free(s->fdsp);
+    av_freep(&s->fdsp);
 
     return 0;
 }
