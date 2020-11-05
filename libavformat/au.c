@@ -84,8 +84,11 @@ static int au_read_annotation(AVFormatContext *s, int size)
     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
 
     while (size-- > 0) {
-        if (avio_feof(pb))
+        if (avio_feof(pb)) {
+            av_bprint_finalize(&bprint, NULL);
+            av_freep(&key);
             return AVERROR_EOF;
+        }
         c = avio_r8(pb);
         switch(state) {
         case PARSE_KEY:
