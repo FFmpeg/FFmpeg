@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/thread.h"
+
 #include "internal.h"
 #include "get_bits.h"
 #include "fft.h"
@@ -27,6 +29,7 @@
 #include "libavutil/float_dsp.h"
 
 #define ATRAC9_SF_VLC_BITS 8
+#define ATRAC9_COEFF_VLC_BITS 9
 
 typedef struct ATRAC9ChannelData {
     int band_ext;
@@ -92,13 +95,14 @@ typedef struct ATRAC9Context {
     const ATRAC9BlockConfig *block_config;
 
     /* Generated on init */
-    VLC sf_vlc[2][8];            /* Signed/unsigned, length */
-    VLC coeff_vlc[2][8][4];      /* Cookbook, precision, cookbook index */
     uint8_t alloc_curve[48][48];
     DECLARE_ALIGNED(32, float, imdct_win)[256];
 
     DECLARE_ALIGNED(32, float, temp)[256];
 } ATRAC9Context;
+
+static VLC sf_vlc[2][8];            /* Signed/unsigned, length */
+static VLC coeff_vlc[2][8][4];      /* Cookbook, precision, cookbook index */
 
 static inline int parse_gradient(ATRAC9Context *s, ATRAC9BlockData *b,
                                  GetBitContext *gb)
@@ -269,7 +273,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         const uint8_t *sf_weights = at9_tab_sf_weights[get_bits(gb, 3)];
         const int base = get_bits(gb, 5);
         const int len = get_bits(gb, 2) + 3;
-        const VLC *tab = &s->sf_vlc[0][len];
+        const VLC *tab = &sf_vlc[0][len];
 
         c->scalefactors[0] = get_bits(gb, len);
 
@@ -302,7 +306,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
 
         const int len = get_bits(gb, 2) + 2;
         const int unit_cnt = FFMIN(b->band_ext_q_unit, baseline_len);
-        const VLC *tab = &s->sf_vlc[1][len];
+        const VLC *tab = &sf_vlc[1][len];
 
         for (int i = 0; i < unit_cnt; i++) {
             int dist = get_vlc2(gb, tab->table, ATRAC9_SF_VLC_BITS, 1);
@@ -323,7 +327,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         const int base = get_bits(gb, 5) - (1 << (5 - 1));
         const int len = get_bits(gb, 2) + 1;
         const int unit_cnt = FFMIN(b->band_ext_q_unit, baseline_len);
-        const VLC *tab = &s->sf_vlc[0][len];
+        const VLC *tab = &sf_vlc[0][len];
 
         c->scalefactors[0] = get_bits(gb, len);
 
@@ -410,12 +414,12 @@ static inline void read_coeffs_coarse(ATRAC9Context *s, ATRAC9BlockData *b,
         if (prec <= max_prec) {
             const int cb = c->codebookset[i];
             const int cbi = at9_q_unit_to_codebookidx[i];
-            const VLC *tab = &s->coeff_vlc[cb][prec][cbi];
+            const VLC *tab = &coeff_vlc[cb][prec][cbi];
             const HuffmanCodebook *huff = &at9_huffman_coeffs[cb][prec][cbi];
             const int groups = bands >> huff->value_cnt_pow;
 
             for (int j = 0; j < groups; j++) {
-                uint16_t val = get_vlc2(gb, tab->table, 9, 2);
+                uint16_t val = get_vlc2(gb, tab->table, ATRAC9_COEFF_VLC_BITS, 2);
 
                 for (int k = 0; k < huff->value_cnt; k++) {
                     coeffs[k] = sign_extend(val, huff->value_bits);
@@ -828,28 +832,72 @@ static av_cold int atrac9_decode_close(AVCodecContext *avctx)
 {
     ATRAC9Context *s = avctx->priv_data;
 
-    for (int i = 1; i < 7; i++)
-        ff_free_vlc(&s->sf_vlc[0][i]);
-    for (int i = 2; i < 6; i++)
-        ff_free_vlc(&s->sf_vlc[1][i]);
-    for (int i = 0; i < 2; i++)
-        for (int j = 0; j < 8; j++)
-            for (int k = 0; k < 4; k++)
-                ff_free_vlc(&s->coeff_vlc[i][j][k]);
-
     ff_mdct_end(&s->imdct);
     av_freep(&s->fdsp);
 
     return 0;
 }
 
+static av_cold void atrac9_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
+                                    const uint8_t (**tab)[2],
+                                    unsigned *buf_offset, int offset)
+{
+    static VLC_TYPE vlc_buf[24812][2];
+
+    vlc->table           = &vlc_buf[*buf_offset];
+    vlc->table_allocated = FF_ARRAY_ELEMS(vlc_buf) - *buf_offset;
+    ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes,
+                             &(*tab)[0][1], 2, &(*tab)[0][0], 2, 1,
+                             offset, INIT_VLC_STATIC_OVERLONG, NULL);
+    *buf_offset += vlc->table_size;
+    *tab        += nb_codes;
+}
+
+static av_cold void atrac9_init_static(void)
+{
+    const uint8_t (*tab)[2];
+    unsigned offset = 0;
+
+    /* Unsigned scalefactor VLCs */
+    tab = at9_sfb_a_tab;
+    for (int i = 1; i < 7; i++) {
+        const HuffmanCodebook *hf = &at9_huffman_sf_unsigned[i];
+
+        atrac9_init_vlc(&sf_vlc[0][i], ATRAC9_SF_VLC_BITS,
+                        hf->size, &tab, &offset, 0);
+    }
+
+    /* Signed scalefactor VLCs */
+    tab = at9_sfb_b_tab;
+    for (int i = 2; i < 6; i++) {
+        const HuffmanCodebook *hf = &at9_huffman_sf_signed[i];
+
+        /* The symbols are signed integers in the range -16..15;
+         * the values in the source table are offset by 16 to make
+         * them fit into an uint8_t; the -16 reverses this shift. */
+        atrac9_init_vlc(&sf_vlc[1][i], ATRAC9_SF_VLC_BITS,
+                        hf->size, &tab, &offset, -16);
+    }
+
+    /* Coefficient VLCs */
+    tab = at9_coeffs_tab;
+    for (int i = 0; i < 2; i++) {
+        for (int j = 2; j < 8; j++) {
+            for (int k = i; k < 4; k++) {
+                const HuffmanCodebook *hf = &at9_huffman_coeffs[i][j][k];
+                atrac9_init_vlc(&coeff_vlc[i][j][k], ATRAC9_COEFF_VLC_BITS,
+                                hf->size, &tab, &offset, 0);
+            }
+        }
+    }
+}
+
 static av_cold int atrac9_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce static_table_init = AV_ONCE_INIT;
     GetBitContext gb;
     ATRAC9Context *s = avctx->priv_data;
     int version, block_config_idx, superframe_idx, alloc_c_len;
-    const uint8_t (*tab)[2];
-    int ret;
 
     s->avctx = avctx;
 
@@ -932,50 +980,7 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
         for (int j = 0; j < i; j++)
             s->alloc_curve[i - 1][j] = at9_tab_b_dist[(j * alloc_c_len) / i];
 
-    /* Unsigned scalefactor VLCs */
-    tab = at9_sfb_a_tab;
-    for (int i = 1; i < 7; i++) {
-        const HuffmanCodebook *hf = &at9_huffman_sf_unsigned[i];
-
-        ret = ff_init_vlc_from_lengths(&s->sf_vlc[0][i], ATRAC9_SF_VLC_BITS,
-                                       hf->size, &tab[0][1], 2,
-                                       &tab[0][0], 2, 1, 0, 0, avctx);
-        if (ret < 0)
-            return ret;
-        tab += hf->size;
-    }
-
-    /* Signed scalefactor VLCs */
-    tab = at9_sfb_b_tab;
-    for (int i = 2; i < 6; i++) {
-        const HuffmanCodebook *hf = &at9_huffman_sf_signed[i];
-
-        /* The symbols are signed integers in the range -16..15;
-         * the values in the source table are offset by 16 to make
-         * them fit into an uint8_t; the -16 reverses this shift. */
-        ret = ff_init_vlc_from_lengths(&s->sf_vlc[1][i], ATRAC9_SF_VLC_BITS,
-                                       hf->size, &tab[0][1], 2,
-                                       &tab[0][0], 2, 1, -16, 0, avctx);
-        if (ret < 0)
-            return ret;
-        tab += hf->size;
-    }
-
-    /* Coefficient VLCs */
-    tab = at9_coeffs_tab;
-    for (int i = 0; i < 2; i++) {
-        for (int j = 2; j < 8; j++) {
-            for (int k = i; k < 4; k++) {
-                const HuffmanCodebook *hf = &at9_huffman_coeffs[i][j][k];
-                ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i][j][k], 9,
-                                               hf->size, &tab[0][1], 2,
-                                               &tab[0][0], 2, 1, 0, 0, avctx);
-                if (ret < 0)
-                    return ret;
-                tab += hf->size;
-            }
-        }
-    }
+    ff_thread_once(&static_table_init, atrac9_init_static);
 
     return 0;
 }
