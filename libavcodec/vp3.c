@@ -2434,17 +2434,21 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         /* init VLC tables */
         if (s->version < 2) {
             for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
-                if ((ret = init_vlc(&s->coeff_vlc[i], 11, 32,
-                                    &vp3_bias[i][0][1], 4, 2,
-                                    &vp3_bias[i][0][0], 4, 2, 0)) < 0)
+                ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, 32,
+                                               &vp3_bias[i][0][1], 2,
+                                               &vp3_bias[i][0][0], 2, 1,
+                                               0, 0, avctx);
+                if (ret < 0)
                     return ret;
             }
 #if CONFIG_VP4_DECODER
         } else { /* version >= 2 */
             for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
-                if ((ret = init_vlc(&s->coeff_vlc[i], 11, 32,
-                                    &vp4_bias[i][0][1], 4, 2,
-                                    &vp4_bias[i][0][0], 4, 2, 0)) < 0)
+                ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, 32,
+                                               &vp4_bias[i][0][1], 2,
+                                               &vp4_bias[i][0][0], 2, 1,
+                                               0, 0, avctx);
+                if (ret < 0)
                     return ret;
             }
 #endif
@@ -2463,14 +2467,16 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    if ((ret = init_vlc(&s->fragment_run_length_vlc, 5, 30,
-                        &fragment_run_length_vlc_table[0][1], 4, 2,
-                        &fragment_run_length_vlc_table[0][0], 4, 2, 0)) < 0)
+    ret = ff_init_vlc_from_lengths(&s->fragment_run_length_vlc, 5, 30,
+                                   fragment_run_length_vlc_len, 1,
+                                   NULL, 0, 0, 0, 0, avctx);
+    if (ret < 0)
         return ret;
 
-    if ((ret = init_vlc(&s->mode_code_vlc, 3, 8,
-                        &mode_code_vlc_table[0][1], 2, 1,
-                        &mode_code_vlc_table[0][0], 2, 1, 0)) < 0)
+    ret = ff_init_vlc_from_lengths(&s->mode_code_vlc, 3, 8,
+                                   mode_code_vlc_len, 1,
+                                   NULL, 0, 0, 0, 0, avctx);
+    if (ret < 0)
         return ret;
 
     if ((ret = init_vlc(&s->motion_vector_vlc, 6, 63,
