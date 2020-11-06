@@ -48,6 +48,7 @@
 #include "vp3dsp.h"
 #include "xiph.h"
 
+#define VP3_MV_VLC_BITS     6
 #define VP4_MV_VLC_BITS     6
 #define SUPERBLOCK_VLC_BITS 6
 
@@ -946,8 +947,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 case MODE_INTER_PLUS_MV:
                     /* all 6 fragments use the same motion vector */
                     if (coding_mode == 0) {
-                        motion_x[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
-                        motion_y[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+                        motion_x[0] = get_vlc2(gb, s->motion_vector_vlc.table,
+                                               VP3_MV_VLC_BITS, 2);
+                        motion_y[0] = get_vlc2(gb, s->motion_vector_vlc.table,
+                                               VP3_MV_VLC_BITS, 2);
                     } else if (coding_mode == 1) {
                         motion_x[0] = fixed_motion_vector_table[get_bits(gb, 6)];
                         motion_y[0] = fixed_motion_vector_table[get_bits(gb, 6)];
@@ -976,8 +979,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         current_fragment = BLOCK_Y * s->fragment_width[0] + BLOCK_X;
                         if (s->all_fragments[current_fragment].coding_method != MODE_COPY) {
                             if (coding_mode == 0) {
-                                motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
-                                motion_y[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+                                motion_x[k] = get_vlc2(gb, s->motion_vector_vlc.table,
+                                                       VP3_MV_VLC_BITS, 2);
+                                motion_y[k] = get_vlc2(gb, s->motion_vector_vlc.table,
+                                                       VP3_MV_VLC_BITS, 2);
                             } else if (coding_mode == 1) {
                                 motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
                                 motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
@@ -2479,9 +2484,11 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    if ((ret = init_vlc(&s->motion_vector_vlc, 6, 63,
-                        &motion_vector_vlc_table[0][1], 2, 1,
-                        &motion_vector_vlc_table[0][0], 2, 1, 0)) < 0)
+    ret = ff_init_vlc_from_lengths(&s->motion_vector_vlc, VP3_MV_VLC_BITS, 63,
+                                   &motion_vector_vlc_table[0][1], 2,
+                                   &motion_vector_vlc_table[0][0], 2, 1,
+                                   -31, 0, avctx);
+    if (ret < 0)
         return ret;
 
 #if CONFIG_VP4_DECODER
