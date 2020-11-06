@@ -50,14 +50,14 @@ static VLC j_dc_vlc[2][8];     // [quant], [select]
 static VLC j_orient_vlc[2][4]; // [quant], [select]
 
 static av_cold void x8_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
-                                int *offset, const uint16_t table[][2])
+                                int *offset, const uint8_t table[][2])
 {
     static VLC_TYPE vlc_buf[VLC_BUFFER_SIZE][2];
 
     vlc->table           = &vlc_buf[*offset];
     vlc->table_allocated = VLC_BUFFER_SIZE - *offset;
-    init_vlc(vlc, nb_bits, nb_codes, &table[0][1], 4, 2,
-             &table[0][0], 4, 2, INIT_VLC_STATIC_OVERLONG);
+    ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes, &table[0][1], 2,
+                             &table[0][0], 2, 1, 0, INIT_VLC_STATIC_OVERLONG, NULL);
     *offset += vlc->table_size;
 }
 
@@ -67,30 +67,17 @@ static av_cold void x8_vlc_init(void)
     int offset = 0;
 
 // set ac tables
-#define init_ac_vlc(dst, src)                                                 \
-    do {                                                                      \
-        x8_init_vlc(&dst, AC_VLC_BITS, 77, &offset, &src);                    \
-    } while(0)
-
-    for (i = 0; i < 8; i++) {
-        init_ac_vlc(j_ac_vlc[0][0][i], x8_ac0_highquant_table[i][0]);
-        init_ac_vlc(j_ac_vlc[0][1][i], x8_ac1_highquant_table[i][0]);
-        init_ac_vlc(j_ac_vlc[1][0][i], x8_ac0_lowquant_table[i][0]);
-        init_ac_vlc(j_ac_vlc[1][1][i], x8_ac1_lowquant_table[i][0]);
-    }
-#undef init_ac_vlc
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+            for (int k = 0; k < 8; k++)
+                x8_init_vlc(&j_ac_vlc[i][j][k], AC_VLC_BITS, 77,
+                            &offset, x8_ac_quant_table[i][j][k]);
 
 // set dc tables
-#define init_dc_vlc(dst, src)                                                 \
-    do {                                                                      \
-        x8_init_vlc(&dst, DC_VLC_BITS, 34, &offset, &src);                    \
-    } while(0)
-
-    for (i = 0; i < 8; i++) {
-        init_dc_vlc(j_dc_vlc[0][i], x8_dc_highquant_table[i][0]);
-        init_dc_vlc(j_dc_vlc[1][i], x8_dc_lowquant_table[i][0]);
-    }
-#undef init_dc_vlc
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 8; j++)
+            x8_init_vlc(&j_dc_vlc[i][j], DC_VLC_BITS, 34, &offset,
+                        x8_dc_quant_table[i][j]);
 
 // set orient tables
     for (i = 0; i < 2; i++)
