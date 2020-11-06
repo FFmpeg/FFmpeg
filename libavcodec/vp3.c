@@ -2319,20 +2319,6 @@ static av_cold int init_frames(Vp3DecodeContext *s)
     return 0;
 }
 
-static av_cold int theora_init_huffman_tables(VLC *vlc, const HuffTable *huff)
-{
-    uint32_t code = 0, codes[32];
-
-    for (unsigned i = 0; i < huff->nb_entries; i++) {
-        codes[i] = code        >> (31 - huff->entries[i].len);
-        code    += 0x80000000U >> huff->entries[i].len;
-    }
-    return ff_init_vlc_sparse(vlc, 11, huff->nb_entries,
-                              &huff->entries[0].len, sizeof(huff->entries[0]), 1,
-                              codes, 4, 4,
-                              &huff->entries[0].sym, sizeof(huff->entries[0]), 1, 0);
-}
-
 static av_cold int vp3_decode_init(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -2460,7 +2446,12 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         }
     } else {
         for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
-            ret = theora_init_huffman_tables(&s->coeff_vlc[i], &s->huffman_table[i]);
+            const HuffTable *tab = &s->huffman_table[i];
+
+            ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, tab->nb_entries,
+                                           &tab->entries[0].len, sizeof(*tab->entries),
+                                           &tab->entries[0].sym, sizeof(*tab->entries), 1,
+                                           0, 0, avctx);
             if (ret < 0)
                 return ret;
         }
