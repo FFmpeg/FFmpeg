@@ -32,6 +32,8 @@
 #include "intrax8dsp.h"
 #include "mpegutils.h"
 
+#define VLC_BUFFER_SIZE 28150
+
 #define MAX_TABLE_DEPTH(table_bits, max_bits) \
     ((max_bits + table_bits - 1) / table_bits)
 
@@ -47,21 +49,27 @@ static VLC j_ac_vlc[2][2][8];  // [quant < 13], [intra / inter], [select]
 static VLC j_dc_vlc[2][8];     // [quant], [select]
 static VLC j_orient_vlc[2][4]; // [quant], [select]
 
+static av_cold void x8_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
+                                int *offset, const uint16_t table[][2])
+{
+    static VLC_TYPE vlc_buf[VLC_BUFFER_SIZE][2];
+
+    vlc->table           = &vlc_buf[*offset];
+    vlc->table_allocated = VLC_BUFFER_SIZE - *offset;
+    init_vlc(vlc, nb_bits, nb_codes, &table[0][1], 4, 2,
+             &table[0][0], 4, 2, INIT_VLC_STATIC_OVERLONG);
+    *offset += vlc->table_size;
+}
+
 static av_cold void x8_vlc_init(void)
 {
     int i;
     int offset = 0;
 
-    static VLC_TYPE table[28150][2];
-
 // set ac tables
 #define init_ac_vlc(dst, src)                                                 \
     do {                                                                      \
-        dst.table           = &table[offset];                                 \
-        dst.table_allocated = FF_ARRAY_ELEMS(table) - offset;                 \
-        init_vlc(&dst, AC_VLC_BITS, 77, &src[1], 4, 2, &src[0], 4, 2,         \
-                 INIT_VLC_STATIC_OVERLONG);                                   \
-        offset             += dst.table_size;                                 \
+        x8_init_vlc(&dst, AC_VLC_BITS, 77, &offset, &src);                    \
     } while(0)
 
     for (i = 0; i < 8; i++) {
@@ -75,11 +83,7 @@ static av_cold void x8_vlc_init(void)
 // set dc tables
 #define init_dc_vlc(dst, src)                                                 \
     do {                                                                      \
-        dst.table           = &table[offset];                                 \
-        dst.table_allocated = FF_ARRAY_ELEMS(table) - offset;                 \
-        init_vlc(&dst, DC_VLC_BITS, 34, &src[1], 4, 2, &src[0], 4, 2,         \
-                 INIT_VLC_STATIC_OVERLONG);                                   \
-        offset             += dst.table_size;                                 \
+        x8_init_vlc(&dst, DC_VLC_BITS, 34, &offset, &src);                    \
     } while(0)
 
     for (i = 0; i < 8; i++) {
@@ -89,22 +93,14 @@ static av_cold void x8_vlc_init(void)
 #undef init_dc_vlc
 
 // set orient tables
-#define init_or_vlc(dst, src)                                                 \
-    do {                                                                      \
-        dst.table           = &table[offset];                                 \
-        dst.table_allocated = FF_ARRAY_ELEMS(table) - offset;                 \
-        init_vlc(&dst, OR_VLC_BITS, 12, &src[1], 4, 2, &src[0], 4, 2,         \
-                 INIT_VLC_STATIC_OVERLONG);                                   \
-        offset             += dst.table_size;                                 \
-    } while(0)
-
     for (i = 0; i < 2; i++)
-        init_or_vlc(j_orient_vlc[0][i], x8_orient_highquant_table[i][0]);
+        x8_init_vlc(&j_orient_vlc[0][i], OR_VLC_BITS, 12,
+                    &offset, x8_orient_highquant_table[i]);
     for (i = 0; i < 4; i++)
-        init_or_vlc(j_orient_vlc[1][i], x8_orient_lowquant_table[i][0]);
-#undef init_or_vlc
+        x8_init_vlc(&j_orient_vlc[1][i], OR_VLC_BITS, 12,
+                    &offset, x8_orient_lowquant_table[i]);
 
-    av_assert2(offset == FF_ARRAY_ELEMS(table));
+    av_assert2(offset == VLC_BUFFER_SIZE);
 }
 
 static void x8_reset_vlc_tables(IntraX8Context *w)
