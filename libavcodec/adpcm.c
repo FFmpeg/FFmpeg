@@ -880,7 +880,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     }
     case AV_CODEC_ID_ADPCM_SWF:
     {
-        int buf_bits       = (avctx->block_align ? avctx->block_align : buf_size) * 8 - 2;
+        int buf_bits       = buf_size * 8 - 2;
         int nbits          = (bytestream2_get_byte(gb) >> 6) + 2;
         int block_hdr_size = 22 * ch;
         int block_size     = block_hdr_size + nbits * ch * 4095;
@@ -889,9 +889,6 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         nb_samples         = nblocks * 4096;
         if (bits_left >= block_hdr_size)
             nb_samples += 1 + (bits_left - block_hdr_size) / (nbits * ch);
-
-        if (avctx->block_align)
-            nb_samples *= buf_size / avctx->block_align;
         break;
     }
     case AV_CODEC_ID_ADPCM_THP:
@@ -1770,17 +1767,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_SWF:
-    {
-        const int nb_blocks  = avctx->block_align ? avpkt->size / avctx->block_align : 1;
-        const int block_size = avctx->block_align ? avctx->block_align : avpkt->size;
-
-        for (int block = 0; block < nb_blocks; block++) {
-            adpcm_swf_decode(avctx, buf + block * block_size, block_size, samples);
-            samples += nb_samples / nb_blocks;
-        }
+        adpcm_swf_decode(avctx, buf, buf_size, samples);
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
-    }
     case AV_CODEC_ID_ADPCM_YAMAHA:
         for (n = nb_samples >> (1 - st); n > 0; n--) {
             int v = bytestream2_get_byteu(&gb);
