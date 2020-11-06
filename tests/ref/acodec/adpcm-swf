@@ -1,4 +1,4 @@
-42d4639866ed4d692eaf126228a4fa2a *tests/data/fate/acodec-adpcm-swf.flv
-269166 tests/data/fate/acodec-adpcm-swf.flv
-628089745a7059ae4055c2515b6d668b *tests/data/fate/acodec-adpcm-swf.out.wav
-stddev:  933.58 PSNR: 36.93 MAXDIFF:51119 bytes:  1058400/  1064960
+64aedd1487cb355406dde36d2bba374f *tests/data/fate/acodec-adpcm-swf.flv
+267801 tests/data/fate/acodec-adpcm-swf.flv
+9d061488fdc1a557bdc454b9d1aba59c *tests/data/fate/acodec-adpcm-swf.out.wav
+stddev:  919.82 PSNR: 37.06 MAXDIFF:51119 bytes:  1058400/  1064960
