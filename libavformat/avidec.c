@@ -110,6 +110,15 @@ static const char avi_headers[][8] = {
 
 static const AVMetadataConv avi_metadata_conv[] = {
     { "strn", "title" },
+    { "isbj", "subject" },
+    { "inam", "title" },
+    { "iart", "artist" },
+    { "icop", "copyright" },
+    { "icmt", "comment" },
+    { "ignr", "genre" },
+    { "iprd", "product" },
+    { "isft", "software" },
+
     { 0 },
 };
 
@@ -979,6 +988,14 @@ static int avi_read_header(AVFormatContext *s)
             avio_skip(pb, size);
             break;
         case MKTAG('s', 't', 'r', 'n'):
+        case MKTAG('i', 's', 'b', 'j'):
+        case MKTAG('i', 'n', 'a', 'm'):
+        case MKTAG('i', 'a', 'r', 't'):
+        case MKTAG('i', 'c', 'o', 'p'):
+        case MKTAG('i', 'c', 'm', 't'):
+        case MKTAG('i', 'g', 'n', 'r'):
+        case MKTAG('i', 'p', 'o', 'd'):
+        case MKTAG('i', 's', 'o', 'f'):
             if (s->nb_streams) {
                 ret = avi_read_tag(s, s->streams[s->nb_streams - 1], tag, size);
                 if (ret < 0)
