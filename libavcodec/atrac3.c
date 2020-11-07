@@ -246,13 +246,8 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
         /* variable length coding (VLC) */
         if (selector != 1) {
             for (i = 0; i < num_codes; i++) {
-                huff_symb = get_vlc2(gb, spectral_coeff_tab[selector-1].table,
-                                     ATRAC3_VLC_BITS, 1);
-                huff_symb += 1;
-                code = huff_symb >> 1;
-                if (huff_symb & 1)
-                    code = -code;
-                mantissas[i] = code;
+                mantissas[i] = get_vlc2(gb, spectral_coeff_tab[selector-1].table,
+                                        ATRAC3_VLC_BITS, 1);
             }
         } else {
             for (i = 0; i < num_codes; i++) {
@@ -854,6 +849,7 @@ static int atrac3al_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold void atrac3_init_static_data(void)
 {
     VLC_TYPE (*table)[2] = atrac3_vlc_table;
+    const uint8_t (*hufftabs)[2] = atrac3_hufftabs;
     int i;
 
     init_imdct_window();
@@ -863,9 +859,11 @@ static av_cold void atrac3_init_static_data(void)
     for (i = 0; i < 7; i++) {
         spectral_coeff_tab[i].table           = table;
         spectral_coeff_tab[i].table_allocated = 256;
-        init_vlc(&spectral_coeff_tab[i], ATRAC3_VLC_BITS, huff_tab_sizes[i],
-                 huff_bits[i],  1, 1,
-                 huff_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_from_lengths(&spectral_coeff_tab[i], ATRAC3_VLC_BITS, huff_tab_sizes[i],
+                                 &hufftabs[0][1], 2,
+                                 &hufftabs[0][0], 2, 1,
+                                 -31, INIT_VLC_USE_NEW_STATIC, NULL);
+        hufftabs += huff_tab_sizes[i];
         table += 256;
     }
 }

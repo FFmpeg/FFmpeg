@@ -32,75 +32,45 @@
 
 /* VLC tables */
 
-static const uint8_t huffcode1[9] = {
-    0x0, 0x4, 0x5, 0xC, 0xD, 0x1C, 0x1D, 0x1E, 0x1F
-};
-
-static const uint8_t huffbits1[9] = { 1, 3, 3, 4, 4, 5, 5, 5, 5 };
-
-static const uint8_t huffcode2[5] = { 0x0, 0x4, 0x5, 0x6, 0x7 };
-
-static const uint8_t huffbits2[5] = { 1, 3, 3, 3, 3 };
-
-static const uint8_t huffcode3[7] = { 0x0, 0x4, 0x5, 0xC, 0xD, 0xE, 0xF };
-
-static const uint8_t huffbits3[7] = { 1, 3, 3, 4, 4, 4, 4 };
-
-static const uint8_t huffcode4[9] = {
-    0x0, 0x4, 0x5, 0xC, 0xD, 0x1C, 0x1D, 0x1E, 0x1F
-};
-
-static const uint8_t huffbits4[9] = { 1, 3, 3, 4, 4, 5, 5, 5, 5 };
-
-static const uint8_t huffcode5[15] = {
-    0x00, 0x02, 0x03, 0x08, 0x09, 0x0A, 0x0B, 0x1C,
-    0x1D, 0x3C, 0x3D, 0x3E, 0x3F, 0x0C, 0x0D
-};
-
-static const uint8_t huffbits5[15] = {
-    2, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6, 6, 6, 4, 4
-};
-
-static const uint8_t huffcode6[31] = {
-    0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x14,
-    0x15, 0x16, 0x17, 0x18, 0x19, 0x34, 0x35, 0x36,
-    0x37, 0x38, 0x39, 0x3A, 0x3B, 0x78, 0x79, 0x7A,
-    0x7B, 0x7C, 0x7D, 0x7E, 0x7F, 0x08, 0x09
-};
-
-static const uint8_t huffbits6[31] = {
-    3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6,
-    6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 4, 4
-};
-
-static const uint8_t huffcode7[63] = {
-    0x00, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-    0x0F, 0x10, 0x11, 0x24, 0x25, 0x26, 0x27, 0x28,
-    0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,
-    0x31, 0x32, 0x33, 0x68, 0x69, 0x6A, 0x6B, 0x6C,
-    0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74,
-    0x75, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2,
-    0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA,
-    0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x02, 0x03
-};
-
-static const uint8_t huffbits7[63] = {
-    3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
-    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7,
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8,
-    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 4
+static const uint8_t atrac3_hufftabs[][2] = {
+    /* Spectral coefficient 1 - 9 entries */
+    { 31, 1 }, { 32, 3 }, { 33, 3 }, { 34, 4 }, { 35, 4 },
+    { 36, 5 }, { 37, 5 }, { 38, 5 }, { 39, 5 },
+    /* Spectral coefficient 2 - 5 entries */
+    { 31, 1 }, { 32, 3 }, { 30, 3 }, { 33, 3 }, { 29, 3 },
+    /* Spectral coefficient 3 - 7 entries */
+    { 31, 1 }, { 32, 3 }, { 30, 3 }, { 33, 4 },
+    { 29, 4 }, { 34, 4 }, { 28, 4 },
+    /* Spectral coefficient 4 - 9 entries */
+    { 31, 1 }, { 32, 3 }, { 30, 3 }, { 33, 4 }, { 29, 4 },
+    { 34, 5 }, { 28, 5 }, { 35, 5 }, { 27, 5 },
+    /* Spectral coefficient 5 - 15 entries */
+    { 31, 2 }, { 32, 3 }, { 30, 3 }, { 33, 4 }, { 29, 4 },
+    { 34, 4 }, { 28, 4 }, { 38, 4 }, { 24, 4 }, { 35, 5 },
+    { 27, 5 }, { 36, 6 }, { 26, 6 }, { 37, 6 }, { 25, 6 },
+    /* Spectral coefficient 6 - 31 entries */
+    { 31, 3 }, { 32, 4 }, { 30, 4 }, { 33, 4 }, { 29, 4 }, { 34, 4 },
+    { 28, 4 }, { 46, 4 }, { 16, 4 }, { 35, 5 }, { 27, 5 }, { 36, 5 },
+    { 26, 5 }, { 37, 5 }, { 25, 5 }, { 38, 6 }, { 24, 6 }, { 39, 6 },
+    { 23, 6 }, { 40, 6 }, { 22, 6 }, { 41, 6 }, { 21, 6 }, { 42, 7 },
+    { 20, 7 }, { 43, 7 }, { 19, 7 }, { 44, 7 }, { 18, 7 }, { 45, 7 },
+    { 17, 7 },
+    /* Spectral coefficient 7 - 63 entries */
+    { 31, 3 }, { 62, 4 }, {  0, 4 }, { 32, 5 }, { 30, 5 }, { 33, 5 },
+    { 29, 5 }, { 34, 5 }, { 28, 5 }, { 35, 5 }, { 27, 5 }, { 36, 5 },
+    { 26, 5 }, { 37, 6 }, { 25, 6 }, { 38, 6 }, { 24, 6 }, { 39, 6 },
+    { 23, 6 }, { 40, 6 }, { 22, 6 }, { 41, 6 }, { 21, 6 }, { 42, 6 },
+    { 20, 6 }, { 43, 6 }, { 19, 6 }, { 44, 6 }, { 18, 6 }, { 45, 7 },
+    { 17, 7 }, { 46, 7 }, { 16, 7 }, { 47, 7 }, { 15, 7 }, { 48, 7 },
+    { 14, 7 }, { 49, 7 }, { 13, 7 }, { 50, 7 }, { 12, 7 }, { 51, 7 },
+    { 11, 7 }, { 52, 8 }, { 10, 8 }, { 53, 8 }, {  9, 8 }, { 54, 8 },
+    {  8, 8 }, { 55, 8 }, {  7, 8 }, { 56, 8 }, {  6, 8 }, { 57, 8 },
+    {  5, 8 }, { 58, 8 }, {  4, 8 }, { 59, 8 }, {  3, 8 }, { 60, 8 },
+    {  2, 8 }, { 61, 8 }, {  1, 8 },
 };
 
 static const uint8_t huff_tab_sizes[7] = {
     9, 5, 7, 9, 15, 31, 63,
-};
-
-static const uint8_t* const huff_codes[7] = {
-    huffcode1, huffcode2, huffcode3, huffcode4, huffcode5, huffcode6, huffcode7
-};
-
-static const uint8_t* const huff_bits[7] = {
-    huffbits1, huffbits2, huffbits3, huffbits4, huffbits5, huffbits6, huffbits7,
 };
 
 /* selector tables */
