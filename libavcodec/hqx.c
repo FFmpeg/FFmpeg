@@ -122,8 +122,6 @@ static int decode_block(GetBitContext *gb, VLC *vlc,
 
     memset(block, 0, 64 * sizeof(*block));
     dc = get_vlc2(gb, vlc->table, HQX_DC_VLC_BITS, 2);
-    if (dc < 0)
-        return AVERROR_INVALIDDATA;
     *last_dc += dc;
 
     block[0] = sign_extend(*last_dc << (12 - dcb), 12);
