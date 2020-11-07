@@ -197,7 +197,7 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
     int i, ret;
     int cbp;
 
-    cbp = get_vlc2(gb, ctx->cbp_vlc.table, ctx->cbp_vlc.bits, 1);
+    cbp = get_vlc2(gb, ctx->cbp_vlc.table, HQX_CBP_VLC_BITS, 1);
 
     for (i = 0; i < 12; i++)
         memset(slice->block[i], 0, sizeof(**slice->block) * 64);
@@ -283,7 +283,7 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
     int i, ret;
     int cbp;
 
-    cbp = get_vlc2(gb, ctx->cbp_vlc.table, ctx->cbp_vlc.bits, 1);
+    cbp = get_vlc2(gb, ctx->cbp_vlc.table, HQX_CBP_VLC_BITS, 1);
 
     for (i = 0; i < 16; i++)
         memset(slice->block[i], 0, sizeof(**slice->block) * 64);
