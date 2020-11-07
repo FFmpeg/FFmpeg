@@ -181,6 +181,8 @@ static int parse_int(AVIOContext *pb, int *cur_byte, int64_t *result)
     if ((unsigned)*cur_byte - '0' > 9)
         return AVERROR_INVALIDDATA;
     while (BETWEEN(*cur_byte, '0', '9')) {
+        if (val > INT_MAX/10 - (*cur_byte - '0'))
+            return AVERROR_INVALIDDATA;
         val = val * 10 + (*cur_byte - '0');
         next_byte(pb, cur_byte);
     }
