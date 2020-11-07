@@ -617,6 +617,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->peak.level   = 0;
         } else if (tag == -PeakLevel && s->peak.offset) {
             s->peak.level = data;
+            if (s->peak.offset < 4 - bytestream2_tell(&s->peak.base) ||
+                s->peak.offset > 4 + bytestream2_get_bytes_left(&s->peak.base)
+            ) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
             bytestream2_seek(&s->peak.base, s->peak.offset - 4, SEEK_CUR);
         } else
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
