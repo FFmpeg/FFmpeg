@@ -40,10 +40,16 @@
 #include "thread.h"
 #include "utvideo.h"
 
-static int build_huff(const uint8_t *src, VLC *vlc, int *fsym, unsigned nb_elems)
+typedef struct HuffEntry {
+    uint8_t len;
+    uint16_t sym;
+} HuffEntry;
+
+static int build_huff(UtvideoContext *c, const uint8_t *src, VLC *vlc,
+                      int *fsym, unsigned nb_elems)
 {
     int i;
-    uint32_t codes[1024];
+    HuffEntry he[1024];
     uint8_t bits[1024];
     uint16_t codes_count[33] = { 0 };
 
@@ -64,23 +70,21 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym, unsigned nb_elems
     if (codes_count[0] == nb_elems)
         return AVERROR_INVALIDDATA;
 
-    for (unsigned i = 32, nb_codes = 0; i > 0; i--) {
-        uint16_t curr = codes_count[i];   // # of leafs of length i
-        codes_count[i] = nb_codes / 2;    // # of non-leaf nodes on level i
-        nb_codes = codes_count[i] + curr; // # of nodes on level i
-    }
+    /* For Ut Video, longer codes are to the left of the tree and
+     * for codes with the same length the symbol is descending from
+     * left to right. So after the next loop --codes_count[i] will
+     * be the index of the first (lowest) symbol of length i when
+     * indexed by the position in the tree with left nodes being first. */
+    for (int i = 31; i >= 0; i--)
+        codes_count[i] += codes_count[i + 1];
 
-    for (unsigned i = nb_elems; i-- > 0;) {
-        if (!bits[i]) {
-            codes[i] = 0;
-            continue;
-        }
-        codes[i] = codes_count[bits[i]]++;
-    }
+    for (unsigned i = 0; i < nb_elems; i++)
+        he[--codes_count[bits[i]]] = (HuffEntry) { bits[i], i };
+
 #define VLC_BITS 11
-    return init_vlc(vlc, VLC_BITS, nb_elems,
-                    bits,  sizeof(*bits),  sizeof(*bits),
-                    codes, sizeof(*codes), sizeof(*codes), 0);
+    return ff_init_vlc_from_lengths(vlc, VLC_BITS, codes_count[0],
+                                    &he[0].len, sizeof(*he),
+                                    &he[0].sym, sizeof(*he), 2, 0, 0, c->avctx);
 }
 
 static int decode_plane10(UtvideoContext *c, int plane_no,
@@ -95,7 +99,7 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
     GetBitContext gb;
     int prev, fsym;
 
-    if ((ret = build_huff(huff, &vlc, &fsym, 1024)) < 0) {
+    if ((ret = build_huff(c, huff, &vlc, &fsym, 1024)) < 0) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
         return ret;
     }
@@ -255,7 +259,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         return 0;
     }
 
-    if (build_huff(src, &vlc, &fsym, 256)) {
+    if (build_huff(c, src, &vlc, &fsym, 256)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
         return AVERROR_INVALIDDATA;
     }
