@@ -119,28 +119,23 @@ static const uint8_t noise_bands_selector[] = {
     4, 3, 2, 1, 0, 0, 0,
 };
 
-static const uint8_t noise_value[][2] = {
+static const uint8_t qdmc_hufftab[][2] = {
+    /* Noise value - 27 entries */
     {  1,  2 }, { 10,  7 }, { 26,  9 }, { 22,  9 }, { 24,  9 }, { 14,  9 },
     {  8,  6 }, {  6,  5 }, {  7,  5 }, {  9,  7 }, { 30,  9 }, { 32, 10 },
     { 13, 10 }, { 20,  9 }, { 28,  9 }, { 12,  7 }, { 15, 11 }, { 36, 12 },
     {  0, 12 }, { 34, 10 }, { 18,  9 }, { 11,  9 }, { 16,  9 }, {  5,  3 },
     {  2,  3 }, {  4,  3 }, {  3,  2 },
-};
-
-static const uint8_t noise_segment_length[][2] = {
+    /* Noise segment length - 12 entries */
     {  1,  1 }, {  2,  2 }, {  3,  4 }, {  8,  9 }, {  9, 10 }, {  0, 10 },
     { 13,  8 }, {  7,  7 }, {  6,  6 }, { 17,  5 }, {  4,  4 }, {  5,  4 },
-};
-
-static const uint8_t amplitude[][2] = {
+    /* Amplitude - 28 entries */
     { 18,  3 }, { 16,  3 }, { 22,  7 }, {  8, 10 }, {  4, 10 }, {  3,  9 },
     {  2,  8 }, { 23,  8 }, { 10,  8 }, { 11,  7 }, { 21,  5 }, { 20,  4 },
     {  1,  7 }, {  7, 10 }, {  5, 10 }, {  9,  9 }, {  6, 10 }, { 25, 11 },
     { 26, 12 }, { 27, 13 }, {  0, 13 }, { 24,  9 }, { 12,  6 }, { 13,  5 },
     { 14,  4 }, { 19,  3 }, { 15,  3 }, { 17,  2 },
-};
-
-static const uint8_t freq_diff[][2] = {
+    /* Frequency differences - 47 entries */
     {  2,  4 }, { 14,  6 }, { 26,  7 }, { 31,  8 }, { 32,  9 }, { 35,  9 },
     {  7,  5 }, { 10,  5 }, { 22,  7 }, { 27,  7 }, { 19,  7 }, { 20,  7 },
     {  4,  5 }, { 13,  5 }, { 17,  6 }, { 15,  6 }, {  8,  5 }, {  5,  4 },
@@ -149,40 +144,37 @@ static const uint8_t freq_diff[][2] = {
     { 39, 12 }, { 41, 12 }, { 34,  8 }, { 16,  6 }, { 11,  5 }, {  9,  4 },
     {  1,  2 }, {  3,  4 }, { 30,  7 }, { 29,  7 }, { 23,  6 }, { 24,  6 },
     { 18,  6 }, {  6,  4 }, { 12,  5 }, { 21,  6 }, { 25,  6 },
-};
-
-static const uint8_t amplitude_diff[][2] = {
+    /* Amplitude differences - 9 entries */
     {  1,  2 }, {  3,  3 }, {  4,  4 }, {  5,  5 }, {  6,  6 }, {  7,  7 },
     {  8,  8 }, {  0,  8 }, {  2,  1 },
-};
-
-static const uint8_t phase_diff[][2] = {
+    /* Phase differences - 9 entries */
     {  2,  2 }, {  1,  2 }, {  3,  4 }, {  7,  4 }, {  6,  5 }, {  5,  6 },
     {  0,  6 }, {  4,  4 }, {  8,  2 },
 };
 
+static const uint8_t huff_sizes[] = {
+    27, 12, 28, 47, 9, 9
+};
+
+static const uint8_t huff_bits[] = {
+    12, 10, 12, 12, 8, 6
+};
+
 static av_cold void qdmc_init_static_data(void)
 {
+    const uint8_t (*hufftab)[2] = qdmc_hufftab;
     int i;
 
-    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[0], 12, FF_ARRAY_ELEMS(noise_value),
-                                 &noise_value[0][1], 2,
-                                 &noise_value[0][0], 2, 1, -1, INIT_VLC_LE, 4096);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[1], 10, FF_ARRAY_ELEMS(noise_segment_length),
-                                 &noise_segment_length[0][1], 2,
-                                 &noise_segment_length[0][0], 2, 1, -1, INIT_VLC_LE, 1024);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[2], 12, FF_ARRAY_ELEMS(amplitude),
-                                 &amplitude[0][1], 2,
-                                 &amplitude[0][0], 2, 1, -1, INIT_VLC_LE, 4098);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[3], 12, FF_ARRAY_ELEMS(freq_diff),
-                                 &freq_diff[0][1], 2,
-                                 &freq_diff[0][0], 2, 1, -1, INIT_VLC_LE, 4160);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[4], 8, FF_ARRAY_ELEMS(amplitude_diff),
-                                 &amplitude_diff[0][1], 2,
-                                 &amplitude_diff[0][0], 2, 1, -1, INIT_VLC_LE, 256);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[5], 6, FF_ARRAY_ELEMS(phase_diff),
-                                 &phase_diff[0][1], 2,
-                                 &phase_diff[0][0], 2, 1, -1, INIT_VLC_LE, 64);
+    for (unsigned i = 0, offset = 0; i < FF_ARRAY_ELEMS(vtable); i++) {
+        static VLC_TYPE vlc_buffer[13698][2];
+        vtable[i].table           = &vlc_buffer[offset];
+        vtable[i].table_allocated = FF_ARRAY_ELEMS(vlc_buffer) - offset;
+        ff_init_vlc_from_lengths(&vtable[i], huff_bits[i], huff_sizes[i],
+                                 &hufftab[0][1], 2, &hufftab[0][0], 2, 1, -1,
+                                 INIT_VLC_LE | INIT_VLC_STATIC_OVERLONG, NULL);
+        hufftab += huff_sizes[i];
+        offset  += vtable[i].table_size;
+    }
 
     for (i = 0; i < 512; i++)
         sin_table[i] = sin(2.0f * i * M_PI * 0.001953125f);
