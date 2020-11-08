@@ -370,8 +370,6 @@ static int qdmc_get_vlc(GetBitContext *gb, VLC *table, int flag)
     if (get_bits_left(gb) < 1)
         return AVERROR_INVALIDDATA;
     v = get_vlc2(gb, table->table, table->bits, 2);
-    if (v < 0)
-        return AVERROR_INVALIDDATA;
     if (v)
         v = v - 1;
     else
