@@ -151,37 +151,15 @@ static const uint8_t freq_diff[][2] = {
     { 18,  6 }, {  6,  4 }, { 12,  5 }, { 21,  6 }, { 25,  6 },
 };
 
-static const uint8_t amplitude_diff_bits[] = {
-    8, 2, 1, 3, 4, 5, 6, 7, 8,
+static const uint8_t amplitude_diff[][2] = {
+    {  1,  2 }, {  3,  3 }, {  4,  4 }, {  5,  5 }, {  6,  6 }, {  7,  7 },
+    {  8,  8 }, {  0,  8 }, {  2,  1 },
 };
 
-static const uint8_t amplitude_diff_codes[] = {
-    0xFE, 0x0, 0x1, 0x2, 0x6, 0xE, 0x1E, 0x3E, 0x7E,
+static const uint8_t phase_diff[][2] = {
+    {  2,  2 }, {  1,  2 }, {  3,  4 }, {  7,  4 }, {  6,  5 }, {  5,  6 },
+    {  0,  6 }, {  4,  4 }, {  8,  2 },
 };
-
-static const uint8_t phase_diff_bits[] = {
-    6, 2, 2, 4, 4, 6, 5, 4, 2,
-};
-
-static const uint8_t phase_diff_codes[] = {
-    0x35, 0x2, 0x0, 0x1, 0xD, 0x15, 0x5, 0x9, 0x3,
-};
-
-#define INIT_VLC_STATIC_LE(vlc, nb_bits, nb_codes,                 \
-                           bits, bits_wrap, bits_size,             \
-                           codes, codes_wrap, codes_size,          \
-                           symbols, symbols_wrap, symbols_size,    \
-                           static_size)                            \
-    do {                                                           \
-        static VLC_TYPE table[static_size][2];                     \
-        (vlc)->table           = table;                            \
-        (vlc)->table_allocated = static_size;                      \
-        ff_init_vlc_sparse(vlc, nb_bits, nb_codes,                 \
-                           bits, bits_wrap, bits_size,             \
-                           codes, codes_wrap, codes_size,          \
-                           symbols, symbols_wrap, symbols_size,    \
-                           INIT_VLC_LE | INIT_VLC_USE_NEW_STATIC); \
-    } while (0)
 
 static av_cold void qdmc_init_static_data(void)
 {
@@ -189,20 +167,22 @@ static av_cold void qdmc_init_static_data(void)
 
     INIT_VLC_STATIC_FROM_LENGTHS(&vtable[0], 12, FF_ARRAY_ELEMS(noise_value),
                                  &noise_value[0][1], 2,
-                                 &noise_value[0][0], 2, 1, 0, INIT_VLC_LE, 4096);
+                                 &noise_value[0][0], 2, 1, -1, INIT_VLC_LE, 4096);
     INIT_VLC_STATIC_FROM_LENGTHS(&vtable[1], 10, FF_ARRAY_ELEMS(noise_segment_length),
                                  &noise_segment_length[0][1], 2,
-                                 &noise_segment_length[0][0], 2, 1, 0, INIT_VLC_LE, 1024);
+                                 &noise_segment_length[0][0], 2, 1, -1, INIT_VLC_LE, 1024);
     INIT_VLC_STATIC_FROM_LENGTHS(&vtable[2], 12, FF_ARRAY_ELEMS(amplitude),
                                  &amplitude[0][1], 2,
-                                 &amplitude[0][0], 2, 1, 0, INIT_VLC_LE, 4098);
+                                 &amplitude[0][0], 2, 1, -1, INIT_VLC_LE, 4098);
     INIT_VLC_STATIC_FROM_LENGTHS(&vtable[3], 12, FF_ARRAY_ELEMS(freq_diff),
                                  &freq_diff[0][1], 2,
-                                 &freq_diff[0][0], 2, 1, 0, INIT_VLC_LE, 4160);
-    INIT_VLC_STATIC_LE(&vtable[4], 8, FF_ARRAY_ELEMS(amplitude_diff_bits),
-                       amplitude_diff_bits, 1, 1, amplitude_diff_codes, 1, 1, NULL, 0, 0, 256);
-    INIT_VLC_STATIC_LE(&vtable[5], 6, FF_ARRAY_ELEMS(phase_diff_bits),
-                       phase_diff_bits, 1, 1, phase_diff_codes, 1, 1, NULL, 0, 0, 64);
+                                 &freq_diff[0][0], 2, 1, -1, INIT_VLC_LE, 4160);
+    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[4], 8, FF_ARRAY_ELEMS(amplitude_diff),
+                                 &amplitude_diff[0][1], 2,
+                                 &amplitude_diff[0][0], 2, 1, -1, INIT_VLC_LE, 256);
+    INIT_VLC_STATIC_FROM_LENGTHS(&vtable[5], 6, FF_ARRAY_ELEMS(phase_diff),
+                                 &phase_diff[0][1], 2,
+                                 &phase_diff[0][0], 2, 1, -1, INIT_VLC_LE, 64);
 
     for (i = 0; i < 512; i++)
         sin_table[i] = sin(2.0f * i * M_PI * 0.001953125f);
@@ -351,9 +331,7 @@ static int qdmc_get_vlc(GetBitContext *gb, VLC *table, int flag)
     if (get_bits_left(gb) < 1)
         return AVERROR_INVALIDDATA;
     v = get_vlc2(gb, table->table, table->bits, 2);
-    if (v)
-        v = v - 1;
-    else
+    if (v < 0)
         v = get_bits(gb, get_bits(gb, 3) + 1);
 
     if (flag) {
