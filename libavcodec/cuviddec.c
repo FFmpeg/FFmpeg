@@ -1100,7 +1100,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
+static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
     &(const AVCodecHWConfigInternal) {
         .public = {
             .pix_fmt     = AV_PIX_FMT_CUDA,

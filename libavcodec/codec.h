@@ -320,7 +320,7 @@ typedef struct AVCodec {
      *
      * The user can only access this field via avcodec_get_hw_config().
      */
-    const struct AVCodecHWConfigInternal **hw_configs;
+    const struct AVCodecHWConfigInternal *const *hw_configs;
 
     /**
      * List of supported codec_tags, terminated by FF_CODEC_TAGS_END.

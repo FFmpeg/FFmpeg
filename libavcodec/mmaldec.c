@@ -809,7 +809,7 @@ static int ffmmal_decode(AVCodecContext *avctx, void *data, int *got_frame,
     return ret;
 }
 
-static const AVCodecHWConfigInternal *mmal_hw_configs[] = {
+static const AVCodecHWConfigInternal *const mmal_hw_configs[] = {
     HW_CONFIG_INTERNAL(MMAL),
     NULL
 };

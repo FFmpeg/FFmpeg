@@ -49,7 +49,7 @@ enum {
     MAX_TILE_COLS          = 20,
 };
 
-extern const AVCodecHWConfigInternal *ff_vaapi_encode_hw_configs[];
+extern const AVCodecHWConfigInternal *const ff_vaapi_encode_hw_configs[];
 
 enum {
     PICTURE_TYPE_IDR = 0,

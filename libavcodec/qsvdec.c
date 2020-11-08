@@ -43,7 +43,7 @@
 #include "qsv_internal.h"
 #include "qsvdec.h"
 
-const AVCodecHWConfigInternal *ff_qsv_hw_configs[] = {
+const AVCodecHWConfigInternal *const ff_qsv_hw_configs[] = {
     &(const AVCodecHWConfigInternal) {
         .public = {
             .pix_fmt     = AV_PIX_FMT_QSV,

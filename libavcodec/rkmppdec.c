@@ -548,7 +548,7 @@ static void rkmpp_flush(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Failed to reset MPI (code = %d)\n", ret);
 }
 
-static const AVCodecHWConfigInternal *rkmpp_hw_configs[] = {
+static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
     HW_CONFIG_INTERNAL(DRM_PRIME),
     NULL
 };

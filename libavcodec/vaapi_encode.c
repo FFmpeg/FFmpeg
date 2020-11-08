@@ -28,7 +28,7 @@
 #include "encode.h"
 #include "avcodec.h"
 
-const AVCodecHWConfigInternal *ff_vaapi_encode_hw_configs[] = {
+const AVCodecHWConfigInternal *const ff_vaapi_encode_hw_configs[] = {
     HW_CONFIG_ENCODER_FRAMES(VAAPI, VAAPI),
     NULL,
 };

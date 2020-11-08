@@ -743,7 +743,7 @@ const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
-const AVCodecHWConfigInternal *ff_h263_hw_config_list[] = {
+const AVCodecHWConfigInternal *const ff_h263_hw_config_list[] = {
 #if CONFIG_H263_VAAPI_HWACCEL
     HWACCEL_VAAPI(h263),
 #endif

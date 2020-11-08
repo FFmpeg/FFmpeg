@@ -486,7 +486,7 @@ static void mediacodec_decode_flush(AVCodecContext *avctx)
     ff_mediacodec_dec_flush(avctx, s->ctx);
 }
 
-static const AVCodecHWConfigInternal *mediacodec_hw_configs[] = {
+static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
     &(const AVCodecHWConfigInternal) {
         .public          = {
             .pix_fmt     = AV_PIX_FMT_MEDIACODEC,

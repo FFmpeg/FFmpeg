@@ -59,7 +59,7 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-const AVCodecHWConfigInternal *ff_nvenc_hw_configs[] = {
+const AVCodecHWConfigInternal *const ff_nvenc_hw_configs[] = {
     HW_CONFIG_ENCODER_FRAMES(CUDA,  CUDA),
     HW_CONFIG_ENCODER_DEVICE(NONE,  CUDA),
 #if CONFIG_D3D11VA
