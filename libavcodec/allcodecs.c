@@ -297,6 +297,7 @@ extern AVCodec ff_snow_encoder;
 extern AVCodec ff_snow_decoder;
 extern AVCodec ff_sp5x_decoder;
 extern AVCodec ff_speedhq_decoder;
+extern AVCodec ff_speedhq_encoder;
 extern AVCodec ff_srgc_decoder;
 extern AVCodec ff_sunrast_encoder;
 extern AVCodec ff_sunrast_decoder;

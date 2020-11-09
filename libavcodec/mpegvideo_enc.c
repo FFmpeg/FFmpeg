@@ -51,6 +51,7 @@
 #include "mathops.h"
 #include "mpegutils.h"
 #include "mjpegenc.h"
+#include "speedhqenc.h"
 #include "msmpeg4.h"
 #include "pixblockdsp.h"
 #include "qpeldsp.h"
@@ -323,6 +324,15 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
         if (!format_supported) {
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
+            return AVERROR(EINVAL);
+        }
+        break;
+    case AV_CODEC_ID_SPEEDHQ:
+        if (avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUV422P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUV444P) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "only YUV420/YUV422/YUV444 are supported (no alpha support yet)\n");
             return AVERROR(EINVAL);
         }
         break;
@@ -732,7 +742,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         //return -1;
     }
 
-    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO || s->codec_id == AV_CODEC_ID_MJPEG || s->codec_id==AV_CODEC_ID_AMV) {
+    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO || s->codec_id == AV_CODEC_ID_MJPEG || s->codec_id == AV_CODEC_ID_AMV || s->codec_id == AV_CODEC_ID_SPEEDHQ) {
         // (a + x * 3 / 8) / x
         s->intra_quant_bias = 3 << (QUANT_BIAS_SHIFT - 3);
         s->inter_quant_bias = 0;
@@ -779,6 +789,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!CONFIG_MJPEG_ENCODER)
             return AVERROR_ENCODER_NOT_FOUND;
         if ((ret = ff_mjpeg_encode_init(s)) < 0)
+            return ret;
+        avctx->delay = 0;
+        s->low_delay = 1;
+        break;
+    case AV_CODEC_ID_SPEEDHQ:
+        s->out_format = FMT_SPEEDHQ;
+        s->intra_only = 1; /* force intra only for SHQ */
+        if (!CONFIG_SPEEDHQ_ENCODER)
+            return AVERROR_ENCODER_NOT_FOUND;
+        if ((ret = ff_speedhq_encode_init(s)) < 0)
             return ret;
         avctx->delay = 0;
         s->low_delay = 1;
@@ -997,6 +1017,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
             s->intra_matrix[j] =
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
+        } else if (CONFIG_SPEEDHQ_ENCODER && s->codec_id == AV_CODEC_ID_SPEEDHQ) {
+            s->intra_matrix[j] =
+            s->inter_matrix[j] = ff_mpeg1_default_intra_matrix[i];
         } else {
             /* MPEG-1/2 */
             s->chroma_intra_matrix[j] =
@@ -2562,6 +2585,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         if (CONFIG_MJPEG_ENCODER)
             ff_mjpeg_encode_mb(s, s->block);
         break;
+    case AV_CODEC_ID_SPEEDHQ:
+        if (CONFIG_SPEEDHQ_ENCODER)
+            ff_speedhq_encode_mb(s, s->block);
+        break;
     default:
         av_assert1(0);
     }
@@ -2816,6 +2843,8 @@ static void write_slice_end(MpegEncContext *s){
         ff_mpeg4_stuffing(&s->pb);
     }else if(CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG){
         ff_mjpeg_encode_stuffing(s);
+    } else if (CONFIG_SPEEDHQ_ENCODER && s->out_format == FMT_SPEEDHQ) {
+        ff_speedhq_end_slice(s);
     }
 
     flush_put_bits(&s->pb);
@@ -2905,7 +2934,7 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
 
 static int encode_thread(AVCodecContext *c, void *arg){
     MpegEncContext *s= *(void**)arg;
-    int mb_x, mb_y;
+    int mb_x, mb_y, mb_y_order;
     int chr_h= 16>>s->chroma_y_shift;
     int i, j;
     MpegEncContext best_s = { 0 }, backup_s;
@@ -2966,7 +2995,16 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->resync_mb_y=0;
     s->first_slice_line = 1;
     s->ptr_lastgob = s->pb.buf;
-    for(mb_y= s->start_mb_y; mb_y < s->end_mb_y; mb_y++) {
+    for (mb_y_order = s->start_mb_y; mb_y_order < s->end_mb_y; mb_y_order++) {
+        if (s->codec_id == AV_CODEC_ID_SPEEDHQ) {
+            int first_in_slice;
+            mb_y = ff_speedhq_mb_y_order_to_mb(mb_y_order, s->mb_height, &first_in_slice);
+            if (first_in_slice && mb_y_order != s->start_mb_y)
+                ff_speedhq_end_slice(s);
+            s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 1024 << s->intra_dc_precision;
+        } else {
+            mb_y = mb_y_order;
+        }
         s->mb_x=0;
         s->mb_y= mb_y;
 
@@ -3855,6 +3893,11 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         s->qscale= 8;
     }
 
+    if (s->out_format == FMT_SPEEDHQ) {
+        s->y_dc_scale_table=
+        s->c_dc_scale_table= ff_mpeg2_dc_scale_table[3];
+    }
+
     //FIXME var duplication
     s->current_picture_ptr->f->key_frame =
     s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I; //FIXME pic_ptr
@@ -3871,6 +3914,10 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         if (CONFIG_MJPEG_ENCODER && s->huffman != HUFFMAN_TABLE_OPTIMAL)
             ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
                                            s->pred, s->intra_matrix, s->chroma_intra_matrix);
+        break;
+    case FMT_SPEEDHQ:
+        if (CONFIG_SPEEDHQ_ENCODER)
+            ff_speedhq_encode_picture_header(s);
         break;
     case FMT_H261:
         if (CONFIG_H261_ENCODER)

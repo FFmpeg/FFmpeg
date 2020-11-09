@@ -444,6 +444,9 @@ typedef struct MpegEncContext {
     int inter_intra_pred;
     int mspel;
 
+    /* SpeedHQ specific */
+    int slice_start;
+
     /* decompression specific */
     GetBitContext gb;
 

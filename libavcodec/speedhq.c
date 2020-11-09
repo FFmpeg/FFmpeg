@@ -132,7 +132,7 @@ static const uint8_t speedhq_run[121] = {
     31,
 };
 
-static RLTable rl_speedhq = {
+RLTable ff_rl_speedhq = {
     121,
     121,
     (const uint16_t (*)[])speedhq_vlc,
@@ -236,7 +236,7 @@ static inline int decode_dct_block(const SHQContext *s, GetBitContext *gb, int l
         for ( ;; ) {
             int level, run;
             UPDATE_CACHE_LE(re, gb);
-            GET_RL_VLC(level, run, re, gb, rl_speedhq.rl_vlc[0],
+            GET_RL_VLC(level, run, re, gb, ff_rl_speedhq.rl_vlc[0],
                        TEX_VLC_BITS, 2, 0);
             if (level == 127) {
                 break;
@@ -570,8 +570,8 @@ static av_cold void speedhq_static_init(void)
                            ff_mpeg12_vlc_dc_chroma_code, 2, 2,
                            INIT_VLC_OUTPUT_LE, 514);
 
-    ff_rl_init(&rl_speedhq, speedhq_static_rl_table_store);
-    INIT_2D_VLC_RL(rl_speedhq, 674, INIT_VLC_LE);
+    ff_rl_init(&ff_rl_speedhq, speedhq_static_rl_table_store);
+    INIT_2D_VLC_RL(ff_rl_speedhq, 674, INIT_VLC_LE);
 
     compute_alpha_vlcs();
 }

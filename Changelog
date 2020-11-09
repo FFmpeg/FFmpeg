@@ -46,6 +46,7 @@ version <next>:
 - NVDEC AV1 hwaccel
 - DXVA2/D3D11VA hardware accelerated AV1 decoding
 - speechnorm filter
+- SpeedHQ encoder
 
 
 version 4.3:
