@@ -490,5 +490,5 @@ void ff_vp3dsp_set_bounding_values(int * bounding_values_array, int filter_limit
     }
     if (value)
         bounding_values[128] = value;
-    bounding_values[129] = bounding_values[130] = filter_limit * 0x02020202;
+    bounding_values[129] = bounding_values[130] = filter_limit * 0x02020202U;
 }
