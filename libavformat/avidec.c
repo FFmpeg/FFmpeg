@@ -1446,6 +1446,7 @@ resync:
     if (avi->stream_index >= 0) {
         AVStream *st   = s->streams[avi->stream_index];
         AVIStream *ast = st->priv_data;
+        int dv_demux = CONFIG_DV_DEMUXER && avi->dv_demux;
         int size, err;
 
         if (get_subtitle_pkt(s, st, pkt))
@@ -1468,7 +1469,7 @@ resync:
             return err;
         size = err;
 
-        if (ast->has_pal && pkt->size < (unsigned)INT_MAX / 2) {
+        if (ast->has_pal && pkt->size < (unsigned)INT_MAX / 2 && !dv_demux) {
             uint8_t *pal;
             pal = av_packet_new_side_data(pkt,
                                           AV_PKT_DATA_PALETTE,
@@ -1482,7 +1483,7 @@ resync:
             }
         }
 
-        if (CONFIG_DV_DEMUXER && avi->dv_demux) {
+        if (dv_demux) {
             AVBufferRef *avbuf = pkt->buf;
             size = avpriv_dv_produce_packet(avi->dv_demux, pkt,
                                             pkt->data, pkt->size, pkt->pos);
