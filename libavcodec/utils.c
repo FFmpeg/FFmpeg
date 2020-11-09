@@ -1093,6 +1093,10 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     av_packet_unref(avci->compat_encode_packet);
     av_packet_unref(avci->buffer_pkt);
 
+    av_packet_unref(avci->last_pkt_props);
+    avpriv_packet_list_free(&avci->pkt_props,
+                            &avci->pkt_props_tail);
+
     av_frame_unref(avci->es.in_frame);
     av_packet_unref(avci->ds.in_pkt);
 
