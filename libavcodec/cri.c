@@ -80,10 +80,13 @@ static void unpack_10bit(GetByteContext *gb, uint16_t *dst, int shift,
     int pos = 0;
 
     while (count > 0) {
-        uint32_t a0 = bytestream2_get_le32(gb);
-        uint32_t a1 = bytestream2_get_le32(gb);
-        uint32_t a2 = bytestream2_get_le32(gb);
-        uint32_t a3 = bytestream2_get_le32(gb);
+        uint32_t a0, a1,a2,a3;
+        if (bytestream2_get_bytes_left(gb) < 4)
+            break;
+        a0 = bytestream2_get_le32(gb);
+        a1 = bytestream2_get_le32(gb);
+        a2 = bytestream2_get_le32(gb);
+        a3 = bytestream2_get_le32(gb);
         dst[pos] = (((a0 >> 1) & 0xE00) | (a0 & 0x1FF)) << shift;
         pos++;
         if (pos >= w) {
