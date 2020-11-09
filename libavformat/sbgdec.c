@@ -1411,6 +1411,11 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     if (r < 0)
         goto fail;
 
+    if (script.end_ts != AV_NOPTS_VALUE && script.end_ts < script.start_ts) {
+        r = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     st = avformat_new_stream(avf, NULL);
     if (!st)
         return AVERROR(ENOMEM);
