@@ -107,7 +107,7 @@ typedef struct ThreadData {
 
 #define EXPONENT_MASK 0x7F800000
 #define MANTISSA_MASK 0x007FFFFF
-#define SIGN_MASK     0x7FFFFFFF
+#define SIGN_MASK     0x80000000
 
 static inline float sanitizef(float f)
 {
@@ -120,7 +120,7 @@ static inline float sanitizef(float f)
             return 0.0f;
         } else if (t.i & SIGN_MASK) {
             // -INF
-            return FLT_MIN;
+            return -FLT_MAX;
         } else {
             // +INF
             return FLT_MAX;
