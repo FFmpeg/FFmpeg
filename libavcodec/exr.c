@@ -1203,7 +1203,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                     }
                 } else if (s->pixel_type == EXR_HALF) {
                     // 16-bit
-                    if (c < 3) {
+                    if (c < 3 || !trc_func) {
                         for (x = 0; x < xsize; x++) {
                             *ptr_x++ = s->gamma_table[bytestream_get_le16(&src)];
                         }
