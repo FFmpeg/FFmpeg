@@ -47,7 +47,7 @@ typedef enum Prediction {
 
 typedef struct HuffEntry {
     uint8_t  len;
-    uint16_t code;
+    uint16_t sym;
 } HuffEntry;
 
 typedef struct MagicYUVContext {
@@ -72,27 +72,22 @@ typedef struct MagicYUVContext {
     LLVidDSPContext   llviddsp;
 } MagicYUVContext;
 
-static int huff_build(HuffEntry he[], uint16_t codes_count[33],
-                      VLC *vlc, int nb_elems)
+static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
+                      VLC *vlc, int nb_elems, void *logctx)
 {
-    unsigned nb_codes = 0, max = 0;
+    HuffEntry he[4096];
 
-    for (int i = 32; i > 0; i--) {
-        uint16_t curr = codes_count[i];   // # of leafs of length i
-        codes_count[i] = nb_codes / 2;    // # of non-leaf nodes on level i
-        nb_codes = codes_count[i] + curr; // # of nodes on level i
-        if (curr && !max)
-            max = i;
-    }
+    for (int i = 31; i > 0; i--)
+        codes_pos[i] += codes_pos[i + 1];
 
-    for (unsigned i = 0; i < nb_elems; i++) {
-        he[i].code = codes_count[he[i].len];
-        codes_count[he[i].len]++;
-    }
+    for (unsigned i = nb_elems; i-- > 0;)
+        he[--codes_pos[len[i]]] = (HuffEntry){ len[i], i };
+
     ff_free_vlc(vlc);
-    return init_vlc(vlc, FFMIN(max, 12), nb_elems,
-                    &he[0].len,  sizeof(he[0]), sizeof(he[0].len),
-                    &he[0].code, sizeof(he[0]), sizeof(he[0].code), 0);
+    return ff_init_vlc_from_lengths(vlc, FFMIN(he[0].len, 12), nb_elems,
+                                    &he[0].len, sizeof(he[0]),
+                                    &he[0].sym, sizeof(he[0]), sizeof(he[0].sym),
+                                    0, 0, logctx);
 }
 
 static void magicyuv_median_pred16(uint16_t *dst, const uint16_t *src1,
@@ -384,7 +379,7 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
 {
     MagicYUVContext *s = avctx->priv_data;
     GetByteContext gb;
-    HuffEntry he[4096];
+    uint8_t len[4096];
     uint16_t length_count[33] = { 0 };
     int i = 0, j = 0, k;
 
@@ -408,11 +403,11 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
 
         length_count[x] += l;
         for (; j < k; j++)
-            he[j].len = x;
+            len[j] = x;
 
         if (j == max) {
             j = 0;
-            if (huff_build(he, length_count, &s->vlc[i], max)) {
+            if (huff_build(len, length_count, &s->vlc[i], max, avctx)) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
                 return AVERROR_INVALIDDATA;
             }
