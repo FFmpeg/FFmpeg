@@ -104,7 +104,7 @@ static const int at9_q_unit_to_coeff_idx[] = {
     72, 80, 88, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256
 };
 
-const uint8_t at9_q_unit_to_codebookidx[] = {
+static const uint8_t at9_q_unit_to_codebookidx[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2,
     2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
