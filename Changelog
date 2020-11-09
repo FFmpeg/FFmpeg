@@ -41,6 +41,8 @@ version <next>:
 - LEGO Racers ALP (.tun & .pcm) muxer
 - AV1 VAAPI decoder
 - adenorm filter
+- ADPCM IMA AMV encoder
+- AMV muxer
 
 
 version 4.3:
