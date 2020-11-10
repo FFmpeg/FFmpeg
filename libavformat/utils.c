@@ -3864,8 +3864,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (   t == 0
                 && st->codec_info_nb_frames>30
                 && st->internal->info->fps_first_dts != AV_NOPTS_VALUE
-                && st->internal->info->fps_last_dts  != AV_NOPTS_VALUE)
-                t = FFMAX(t, av_rescale_q(st->internal->info->fps_last_dts - st->internal->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
+                && st->internal->info->fps_last_dts  != AV_NOPTS_VALUE) {
+                int64_t dur = av_sat_sub64(st->internal->info->fps_last_dts, st->internal->info->fps_first_dts);
+                t = FFMAX(t, av_rescale_q(dur, st->time_base, AV_TIME_BASE_Q));
+            }
 
             if (analyzed_all_streams)                                limit = max_analyze_duration;
             else if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) limit = max_subtitle_analyze_duration;
