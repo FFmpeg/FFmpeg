@@ -93,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case 1: { // zlib compression
 #if CONFIG_ZLIB
         unsigned long dlen = c->decomp_size;
-        if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK) {
+        if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK || dlen != c->decomp_size) {
             av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");
             return AVERROR_INVALIDDATA;
         }
