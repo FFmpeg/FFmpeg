@@ -34,7 +34,6 @@
 #include "libavutil/time.h"
 #include "url.h"
 
-#define SDP_MAX_SIZE 16384
 
 static const AVClass rtsp_muxer_class = {
     .class_name = "RTSP muxer",
