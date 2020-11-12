@@ -596,7 +596,8 @@ static int asf_read_metadata_obj(AVFormatContext *s, const GUIDParseTable *g)
         } else {
             if (st_num < ASF_MAX_STREAMS) {
                 if ((ret = process_metadata(s, name, name_len, val_len, type,
-                                            &asf->asf_sd[st_num].asf_met)) < 0) {
+                                            st_num ? &asf->asf_sd[st_num].asf_met
+                                                   : &s->metadata)) < 0) {
                     av_freep(&name);
                     break;
                 }
