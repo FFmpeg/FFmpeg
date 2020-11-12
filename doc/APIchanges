@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2020-11-25 - xxxxxxxxxx - lavc 58.113.100 - avcodec.h
+  Adds a new flag AV_CODEC_EXPORT_DATA_FILM_GRAIN for export_side_data.
+
 2020-11-25 - xxxxxxxxxx - lavu 56.61.100 - film_grain_params.h
   Adds a new API for extracting codec film grain parameters as side data.
   Adds a new AVFrameSideDataType entry AV_FRAME_DATA_FILM_GRAIN_PARAMS for it.

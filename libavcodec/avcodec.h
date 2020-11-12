@@ -410,6 +410,11 @@ typedef struct RcOverride{
  * Export the AVVideoEncParams structure through frame side data.
  */
 #define AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS (1 << 2)
+/**
+ * Decoding only.
+ * Do not apply film grain, export it instead.
+ */
+#define AV_CODEC_EXPORT_DATA_FILM_GRAIN (1 << 3)
 
 /**
  * Pan Scan area.
