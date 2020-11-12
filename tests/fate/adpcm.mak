@@ -113,31 +113,31 @@ FATE_ADPCM-$(call DEMDEC, ALP, ADPCM_IMA_ALP) += fate-adpcm-ima-alp-stereo
 fate-adpcm-ima-alp-stereo: CMD = md5 -i $(TARGET_SAMPLES)/alp/theme-cut.tun -f s16le
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-single
-fate-adpcm-ima-cunning-single: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/GD-cut.5c -f s16le
+fate-adpcm-ima-cunning-single: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/GD-cut.5c -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-track0
-fate-adpcm-ima-cunning-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-cut.11c -map 0:a:0 -f s16le
+fate-adpcm-ima-cunning-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-cut.11c -map 0:a:0 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-track1
-fate-adpcm-ima-cunning-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-cut.11c -map 0:a:1 -f s16le
+fate-adpcm-ima-cunning-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-cut.11c -map 0:a:1 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t1
-fate-adpcm-ima-cunning-trunc-t1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t1.11c -map 0:a:0 -f s16le
+fate-adpcm-ima-cunning-trunc-t1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t1.11c -map 0:a:0 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2-track0
-fate-adpcm-ima-cunning-trunc-t2-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2.11c -map 0:a:0 -f s16le
+fate-adpcm-ima-cunning-trunc-t2-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2.11c -map 0:a:0 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2-track1
-fate-adpcm-ima-cunning-trunc-t2-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2.11c -map 0:a:1 -f s16le
+fate-adpcm-ima-cunning-trunc-t2-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2.11c -map 0:a:1 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2a-track0
-fate-adpcm-ima-cunning-trunc-t2a-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2a.11c -map 0:a:0 -f s16le
+fate-adpcm-ima-cunning-trunc-t2a-track0: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2a.11c -map 0:a:0 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-t2a-track1
-fate-adpcm-ima-cunning-trunc-t2a-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2a.11c -map 0:a:1 -f s16le
+fate-adpcm-ima-cunning-trunc-t2a-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-t2a.11c -map 0:a:1 -f s16le -af aresample
 
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-h2
-fate-adpcm-ima-cunning-trunc-h2: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-h2.11c -map 0:a:0 -f s16le
+fate-adpcm-ima-cunning-trunc-h2: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-h2.11c -map 0:a:0 -f s16le -af aresample
 
 FATE_SAMPLES_AVCONV += $(FATE_ADPCM-yes)
 fate-adpcm: $(FATE_ADPCM-yes)

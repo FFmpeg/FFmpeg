@@ -111,7 +111,6 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 
     switch(avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_IMA_AMV:
-    case AV_CODEC_ID_ADPCM_IMA_CUNNING:
         max_channels = 1;
         break;
     case AV_CODEC_ID_ADPCM_DTK:
@@ -197,6 +196,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_AICA:
+    case AV_CODEC_ID_ADPCM_IMA_CUNNING:
     case AV_CODEC_ID_ADPCM_IMA_DAT4:
     case AV_CODEC_ID_ADPCM_IMA_QT:
     case AV_CODEC_ID_ADPCM_IMA_WAV:
@@ -1377,10 +1377,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_CUNNING:
+        for (channel = 0; channel < avctx->channels; channel++) {
+            int16_t *smp = samples_p[channel];
         for (n = 0; n < nb_samples / 2; n++) {
             int v = bytestream2_get_byteu(&gb);
-            *samples++ = adpcm_ima_cunning_expand_nibble(&c->status[0], v & 0x0F);
-            *samples++ = adpcm_ima_cunning_expand_nibble(&c->status[0], v >> 4);
+            *smp++ = adpcm_ima_cunning_expand_nibble(&c->status[channel], v & 0x0F);
+            *smp++ = adpcm_ima_cunning_expand_nibble(&c->status[channel], v >> 4);
+        }
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_OKI:
@@ -2162,7 +2165,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_XAS,      sample_fmts_s16p, adpcm_ea_xas,    
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_AMV,     sample_fmts_s16,  adpcm_ima_amv,     "ADPCM IMA AMV");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_APC,     sample_fmts_s16,  adpcm_ima_apc,     "ADPCM IMA CRYO APC");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_APM,     sample_fmts_s16,  adpcm_ima_apm,     "ADPCM IMA Ubisoft APM");
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_CUNNING, sample_fmts_s16,  adpcm_ima_cunning, "ADPCM IMA Cunning Developments");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_CUNNING, sample_fmts_s16p, adpcm_ima_cunning, "ADPCM IMA Cunning Developments");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DAT4,    sample_fmts_s16,  adpcm_ima_dat4,    "ADPCM IMA Eurocom DAT4");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK3,     sample_fmts_s16,  adpcm_ima_dk3,     "ADPCM IMA Duck DK3");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK4,     sample_fmts_s16,  adpcm_ima_dk4,     "ADPCM IMA Duck DK4");
