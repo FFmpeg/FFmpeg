@@ -442,6 +442,8 @@ static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
     ff_thread_release_buffer(avctx, &f->tf);
     av_buffer_unref(&f->hwaccel_priv_buf);
     f->hwaccel_picture_private = NULL;
+    av_buffer_unref(&f->header_ref);
+    f->raw_frame_header = NULL;
     f->spatial_id = f->temporal_id = 0;
     f->order_hint = 0;
     memset(f->skip_mode_frame_idx, 0,
@@ -456,6 +458,12 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
         return ret;
+
+    dst->header_ref = av_buffer_ref(src->header_ref);
+    if (!dst->header_ref)
+        goto fail;
+
+    dst->raw_frame_header = src->raw_frame_header;
 
     if (src->hwaccel_picture_private) {
         dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
@@ -642,6 +650,12 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
     AV1RawFrameHeader *header= s->raw_frame_header;
     AVFrame *frame;
     int ret;
+
+    f->header_ref = av_buffer_ref(s->header_ref);
+    if (!f->header_ref)
+        return AVERROR(ENOMEM);
+
+    f->raw_frame_header = s->raw_frame_header;
 
     ret = update_context_with_frame_header(avctx, header);
     if (ret < 0) {

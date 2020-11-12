@@ -36,6 +36,9 @@ typedef struct AV1Frame {
     AVBufferRef *hwaccel_priv_buf;
     void *hwaccel_picture_private;
 
+    AVBufferRef *header_ref;
+    AV1RawFrameHeader *raw_frame_header;
+
     int temporal_id;
     int spatial_id;
 
