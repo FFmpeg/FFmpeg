@@ -851,6 +851,7 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_REGIONS_OF_INTEREST: return "Regions Of Interest";
     case AV_FRAME_DATA_VIDEO_ENC_PARAMS:            return "Video encoding parameters";
     case AV_FRAME_DATA_SEI_UNREGISTERED:            return "H.26[45] User Data Unregistered SEI message";
+    case AV_FRAME_DATA_FILM_GRAIN_PARAMS:           return "Film grain parameters";
     }
     return NULL;
 }
