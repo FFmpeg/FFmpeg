@@ -876,6 +876,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 bytestream_put_byte(&dst, (buf[2 * i] << 4) | buf[2 * i + 1]);
 
             samples += 2 * n;
+            av_free(buf);
         } else for (n = frame->nb_samples >> 1; n > 0; n--) {
             int nibble;
             nibble  = adpcm_ima_compress_sample(&c->status[0], *samples++) << 4;
