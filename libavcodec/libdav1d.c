@@ -22,6 +22,7 @@
 #include <dav1d/dav1d.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/film_grain_params.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
@@ -137,6 +138,8 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.frame_size_limit = c->max_pixels;
     if (dav1d->apply_grain >= 0)
         s.apply_grain = dav1d->apply_grain;
+    else if (c->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN)
+        s.apply_grain = 0;
 
     s.all_layers = dav1d->all_layers;
     if (dav1d->operating_point >= 0)
@@ -395,6 +398,42 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
     }
+    if (p->frame_hdr->film_grain.present && (!dav1d->apply_grain ||
+        (c->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))) {
+        AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(frame);
+        if (!fgp) {
+            res = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        fgp->type = AV_FILM_GRAM_PARAMS_AV1;
+        fgp->seed = p->frame_hdr->film_grain.data.seed;
+        fgp->codec.aom.num_y_points = p->frame_hdr->film_grain.data.num_y_points;
+        fgp->codec.aom.chroma_scaling_from_luma = p->frame_hdr->film_grain.data.chroma_scaling_from_luma;
+        fgp->codec.aom.scaling_shift = p->frame_hdr->film_grain.data.scaling_shift;
+        fgp->codec.aom.ar_coeff_lag = p->frame_hdr->film_grain.data.ar_coeff_lag;
+        fgp->codec.aom.ar_coeff_shift = p->frame_hdr->film_grain.data.ar_coeff_shift;
+        fgp->codec.aom.grain_scale_shift = p->frame_hdr->film_grain.data.grain_scale_shift;
+        fgp->codec.aom.overlap_flag = p->frame_hdr->film_grain.data.overlap_flag;
+        fgp->codec.aom.limit_output_range = p->frame_hdr->film_grain.data.clip_to_restricted_range;
+
+        memcpy(&fgp->codec.aom.y_points, &p->frame_hdr->film_grain.data.y_points,
+               sizeof(fgp->codec.aom.y_points));
+        memcpy(&fgp->codec.aom.num_uv_points, &p->frame_hdr->film_grain.data.num_uv_points,
+               sizeof(fgp->codec.aom.num_uv_points));
+        memcpy(&fgp->codec.aom.uv_points, &p->frame_hdr->film_grain.data.uv_points,
+               sizeof(fgp->codec.aom.uv_points));
+        memcpy(&fgp->codec.aom.ar_coeffs_y, &p->frame_hdr->film_grain.data.ar_coeffs_y,
+               sizeof(fgp->codec.aom.ar_coeffs_y));
+        memcpy(&fgp->codec.aom.ar_coeffs_uv, &p->frame_hdr->film_grain.data.ar_coeffs_uv,
+               sizeof(fgp->codec.aom.ar_coeffs_uv));
+        memcpy(&fgp->codec.aom.uv_mult, &p->frame_hdr->film_grain.data.uv_mult,
+               sizeof(fgp->codec.aom.uv_mult));
+        memcpy(&fgp->codec.aom.uv_mult_luma, &p->frame_hdr->film_grain.data.uv_luma_mult,
+               sizeof(fgp->codec.aom.uv_mult_luma));
+        memcpy(&fgp->codec.aom.uv_offset, &p->frame_hdr->film_grain.data.uv_offset,
+               sizeof(fgp->codec.aom.uv_offset));
+    }
 
     res = 0;
 fail:
@@ -420,7 +459,7 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 static const AVOption libdav1d_options[] = {
     { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_TILE_THREADS, VD },
     { "framethreads", "Frame threads", OFFSET(frame_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_THREADS, VD },
-    { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VD },
+    { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VD | AV_OPT_FLAG_DEPRECATED },
     { "oppoint",  "Select an operating point of the scalable bitstream", OFFSET(operating_point), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 31, VD },
     { "alllayers", "Output all spatial layers", OFFSET(all_layers), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { NULL }
