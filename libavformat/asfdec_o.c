@@ -360,7 +360,6 @@ static int asf_set_metadata(AVFormatContext *s, const uint8_t *name,
  * but in reality this is only loosely similar */
 static int asf_read_picture(AVFormatContext *s, int len)
 {
-    ASFContext *asf       = s->priv_data;
     AVPacket pkt          = { 0 };
     const CodecMime *mime = ff_id3v2_mime_tags;
     enum  AVCodecID id    = AV_CODEC_ID_NONE;
@@ -368,7 +367,6 @@ static int asf_read_picture(AVFormatContext *s, int len)
     uint8_t  *desc = NULL;
     AVStream   *st = NULL;
     int ret, type, picsize, desc_len;
-    ASFStream *asf_st;
 
     /* type + picsize + mime + desc */
     if (len < 1 + 4 + 2 + 2) {
@@ -425,21 +423,13 @@ static int asf_read_picture(AVFormatContext *s, int len)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    asf->asf_st[asf->nb_streams] = av_mallocz(sizeof(*asf_st));
-    asf_st = asf->asf_st[asf->nb_streams];
-    if (!asf_st) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
 
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codecpar->codec_type      = asf_st->type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id        = id;
     st->attached_pic              = pkt;
-    st->attached_pic.stream_index = asf_st->index = st->index;
+    st->attached_pic.stream_index = st->index;
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
-
-    asf->nb_streams++;
 
     if (*desc) {
         if (av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL) < 0)
