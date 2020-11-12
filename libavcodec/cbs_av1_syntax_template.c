@@ -1500,9 +1500,6 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                     priv->ref[i].valid = 0;
             }
         }
-    } else if (!frame_is_intra && seq->enable_order_hint) {
-        for (i = 0; i < AV1_NUM_REF_FRAMES; i++)
-            infer(ref_order_hint[i], priv->ref[i].order_hint);
     }
 
     if (current->frame_type == AV1_FRAME_KEY ||
