@@ -176,13 +176,6 @@ static int kmsgrab_get_fb2(AVFormatContext *avctx,
         err = AVERROR(EIO);
         goto fail;
     }
-    if (fb->modifier != ctx->drm_format_modifier) {
-        av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" framebuffer "
-               "format modifier changed: now %"PRIx64".\n",
-               ctx->plane_id, fb->modifier);
-        err = AVERROR(EIO);
-        goto fail;
-    }
     if (fb->width != ctx->width || fb->height != ctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Plane %"PRIu32" framebuffer "
                "dimensions changed: now %"PRIu32"x%"PRIu32".\n",
