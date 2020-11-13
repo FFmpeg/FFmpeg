@@ -458,6 +458,8 @@ static int rm_read_index(AVFormatContext *s)
         }
 
         for (n = 0; n < n_pkts; n++) {
+            if (avio_feof(pb))
+                return AVERROR_INVALIDDATA;
             avio_skip(pb, 2);
             pts = avio_rb32(pb);
             pos = avio_rb32(pb);
