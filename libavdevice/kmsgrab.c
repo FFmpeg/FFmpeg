@@ -160,6 +160,7 @@ static int kmsgrab_get_fb2(AVFormatContext *avctx,
     KMSGrabContext *ctx = avctx->priv_data;
     drmModeFB2 *fb;
     int err, i, nb_objects;
+    uint64_t modifier = ctx->drm_format_modifier;
 
     fb = drmModeGetFB2(ctx->hwctx->fd, plane->fb_id);
     if (!fb) {
@@ -194,6 +195,9 @@ static int kmsgrab_get_fb2(AVFormatContext *avctx,
         err = AVERROR(EIO);
         goto fail;
     }
+
+    if (fb->flags & DRM_MODE_FB_MODIFIERS)
+        modifier = fb->modifier;
 
     *desc = (AVDRMFrameDescriptor) {
         .nb_layers = 1,
@@ -243,7 +247,7 @@ static int kmsgrab_get_fb2(AVFormatContext *avctx,
             desc->objects[obj] = (AVDRMObjectDescriptor) {
                 .fd              = fd,
                 .size            = size,
-                .format_modifier = fb->modifier,
+                .format_modifier = modifier,
             };
             desc->layers[0].planes[i] = (AVDRMPlaneDescriptor) {
                 .object_index = obj,
@@ -557,15 +561,18 @@ static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
             err = AVERROR(EINVAL);
             goto fail;
         }
-        if (ctx->drm_format_modifier != DRM_FORMAT_MOD_INVALID &&
-            ctx->drm_format_modifier != fb2->modifier) {
-            av_log(avctx, AV_LOG_ERROR, "Framebuffer format modifier "
-                   "%"PRIx64" does not match expected modifier.\n",
-                   fb2->modifier);
-            err = AVERROR(EINVAL);
-            goto fail;
-        } else {
-            ctx->drm_format_modifier = fb2->modifier;
+
+        if (fb2->flags & DRM_MODE_FB_MODIFIERS) {
+            if (ctx->drm_format_modifier != DRM_FORMAT_MOD_INVALID &&
+                ctx->drm_format_modifier != fb2->modifier) {
+                av_log(avctx, AV_LOG_ERROR, "Framebuffer format modifier "
+                       "%"PRIx64" does not match expected modifier.\n",
+                       fb2->modifier);
+                err = AVERROR(EINVAL);
+                goto fail;
+            } else {
+                ctx->drm_format_modifier = fb2->modifier;
+            }
         }
         av_log(avctx, AV_LOG_VERBOSE, "Format is %s, from "
                "DRM format %"PRIx32" modifier %"PRIx64".\n",
