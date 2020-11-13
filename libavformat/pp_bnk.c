@@ -55,6 +55,7 @@ typedef struct PPBnkCtx {
     int             track_count;
     PPBnkCtxTrack   *tracks;
     uint32_t        current_track;
+    int             is_music;
 } PPBnkCtx;
 
 enum {
@@ -194,8 +195,12 @@ static int pp_bnk_read_header(AVFormatContext *s)
         goto fail;
     }
 
+    ctx->is_music = (hdr.flags & PP_BNK_FLAG_MUSIC) &&
+                    (ctx->track_count == 2) &&
+                    (ctx->tracks[0].data_size == ctx->tracks[1].data_size);
+
     /* Build the streams. */
-    for (int i = 0; i < ctx->track_count; i++) {
+    for (int i = 0; i < (ctx->is_music ? 1 : ctx->track_count); i++) {
         if (!(st = avformat_new_stream(s, NULL))) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -204,14 +209,21 @@ static int pp_bnk_read_header(AVFormatContext *s)
         par                         = st->codecpar;
         par->codec_type             = AVMEDIA_TYPE_AUDIO;
         par->codec_id               = AV_CODEC_ID_ADPCM_IMA_CUNNING;
-        par->format                 = AV_SAMPLE_FMT_S16;
-        par->channel_layout         = AV_CH_LAYOUT_MONO;
-        par->channels               = 1;
+        par->format                 = AV_SAMPLE_FMT_S16P;
+
+        if (ctx->is_music) {
+            par->channel_layout     = AV_CH_LAYOUT_STEREO;
+            par->channels           = 2;
+        } else {
+            par->channel_layout     = AV_CH_LAYOUT_MONO;
+            par->channels           = 1;
+        }
+
         par->sample_rate            = hdr.sample_rate;
         par->bits_per_coded_sample  = 4;
         par->bits_per_raw_sample    = 16;
         par->block_align            = 1;
-        par->bit_rate               = par->sample_rate * par->bits_per_coded_sample;
+        par->bit_rate               = par->sample_rate * par->bits_per_coded_sample * par->channels;
 
         avpriv_set_pts_info(st, 64, 1, par->sample_rate);
         st->start_time              = 0;
@@ -253,7 +265,22 @@ static int pp_bnk_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         size = FFMIN(trk->data_size - trk->bytes_read, PP_BNK_MAX_READ_SIZE);
 
-        if ((ret = av_get_packet(s->pb, pkt, size)) == AVERROR_EOF) {
+        if (!ctx->is_music)
+            ret = av_new_packet(pkt, size);
+        else if (ctx->current_track == 0)
+            ret = av_new_packet(pkt, size * 2);
+        else
+            ret = 0;
+
+        if (ret < 0)
+            return ret;
+
+        if (ctx->is_music)
+            ret = avio_read(s->pb, pkt->data + size * ctx->current_track, size);
+        else
+            ret = avio_read(s->pb, pkt->data, size);
+
+        if (ret == AVERROR_EOF) {
             /* If we've hit EOF, don't attempt this track again. */
             trk->data_size = trk->bytes_read;
             continue;
@@ -263,8 +290,19 @@ static int pp_bnk_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         trk->bytes_read    += ret;
         pkt->flags         &= ~AV_PKT_FLAG_CORRUPT;
-        pkt->stream_index   = ctx->current_track++;
+        pkt->stream_index   = ctx->current_track;
         pkt->duration       = ret * 2;
+
+        if (ctx->is_music) {
+            if (pkt->stream_index == 0)
+                continue;
+
+            pkt->stream_index = 0;
+        } else {
+            pkt->size = ret;
+        }
+
+        ctx->current_track++;
         return 0;
     }
 
