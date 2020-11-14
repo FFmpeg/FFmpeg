@@ -251,6 +251,9 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
 
+        if (size >= INT64_MAX)
+            return AVERROR_INVALIDDATA;
+
         switch(tag) {
         case MKTAG('A','B','S','S'):
             if (size < 8)
