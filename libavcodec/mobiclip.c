@@ -1146,6 +1146,8 @@ static int predict_motion(AVCodecContext *avctx,
             mv.x = mv.x + get_se_golomb(gb);
             mv.y = mv.y + get_se_golomb(gb);
         }
+        if (mv.x >= INT_MAX || mv.y >= INT_MAX)
+            return AVERROR_INVALIDDATA;
 
         motion[offsetm].x = mv.x;
         motion[offsetm].y = mv.y;
