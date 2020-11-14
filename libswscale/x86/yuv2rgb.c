@@ -59,22 +59,18 @@ DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 #endif /* HAVE_MMX */
 
 // MMXEXT versions
-#if HAVE_MMXEXT
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
 #define RENAME(a) a ## _mmxext
 #include "yuv2rgb_template.c"
-#endif /* HAVE_MMXEXT */
 
 //SSSE3 versions
-#if HAVE_SSSE3
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define RENAME(a) a ## _ssse3
 #include "yuv2rgb_template.c"
-#endif
 
 #endif /* HAVE_X86ASM */
 
