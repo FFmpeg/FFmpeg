@@ -666,7 +666,7 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     while (!avio_feof(pb)) {
         avio_read(pb, guid, 16);
         size = avio_rl64(pb);
-        if (size <= 24)
+        if (size <= 24 || size > INT64_MAX - 8)
             return AVERROR_INVALIDDATA;
         if (!memcmp(guid, guid1, 16))
             return size;
