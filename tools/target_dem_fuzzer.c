@@ -202,7 +202,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 end:
     av_freep(&fuzzed_pb->buffer);
-    av_freep(&fuzzed_pb);
+    avio_context_free(&fuzzed_pb);
     avformat_close_input(&avfmt);
 
     return 0;
