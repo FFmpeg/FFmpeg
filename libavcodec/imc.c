@@ -38,6 +38,7 @@
 #include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/internal.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
@@ -171,10 +172,27 @@ static av_cold void iac_generate_tabs(IMCContext *q, int sampling_rate)
     }
 }
 
+static av_cold void imc_init_static(void)
+{
+    /* initialize the VLC tables */
+    for (int i = 0, offset = 0; i < 4 ; i++) {
+        for (int j = 0; j < 4; j++) {
+            huffman_vlc[i][j].table           = &vlc_tables[offset];
+            huffman_vlc[i][j].table_allocated = VLC_TABLES_SIZE - offset;;
+            ff_init_vlc_from_lengths(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
+                                     imc_huffman_lens[i][j], 1,
+                                     imc_huffman_syms[i][j], 1, 1,
+                                     0, INIT_VLC_STATIC_OVERLONG, NULL);
+            offset += huffman_vlc[i][j].table_size;
+        }
+    }
+}
+
 static av_cold int imc_decode_init(AVCodecContext *avctx)
 {
     int i, j, ret;
     IMCContext *q = avctx->priv_data;
+    static AVOnce init_static_once = AV_ONCE_INIT;
     AVFloatDSPContext *fdsp;
     double r1, r2;
 
@@ -229,19 +247,6 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     for (i = 0; i < 30; i++)
         q->sqrt_tab[i] = sqrt(i);
 
-    /* initialize the VLC tables */
-    for (int i = 0, offset = 0; i < 4 ; i++) {
-        for (j = 0; j < 4; j++) {
-            huffman_vlc[i][j].table           = &vlc_tables[offset];
-            huffman_vlc[i][j].table_allocated = VLC_TABLES_SIZE - offset;;
-            ff_init_vlc_from_lengths(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
-                                     imc_huffman_lens[i][j], 1,
-                                     imc_huffman_syms[i][j], 1, 1,
-                                     0, INIT_VLC_STATIC_OVERLONG, NULL);
-            offset += huffman_vlc[i][j].table_size;
-        }
-    }
-
     if (avctx->codec_id == AV_CODEC_ID_IAC) {
         iac_generate_tabs(q, avctx->sample_rate);
     } else {
@@ -265,6 +270,8 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
     avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO
                                                  : AV_CH_LAYOUT_STEREO;
+
+    ff_thread_once(&init_static_once, imc_init_static);
 
     return 0;
 }
@@ -1088,6 +1095,7 @@ AVCodec ff_imc_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_IAC_DECODER
@@ -1104,5 +1112,6 @@ AVCodec ff_iac_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
