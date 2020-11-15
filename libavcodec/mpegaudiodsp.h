@@ -67,8 +67,8 @@ void ff_mpadsp_init_x86_tabs(void);
 void ff_mpadsp_init_mipsfpu(MPADSPContext *s);
 void ff_mpadsp_init_mipsdsp(MPADSPContext *s);
 
-void ff_mpa_synth_init_float(float *window);
-void ff_mpa_synth_init_fixed(int32_t *window);
+void ff_mpa_synth_init_float(void);
+void ff_mpa_synth_init_fixed(void);
 
 void ff_mpadsp_apply_window_float(float *synth_buf, float *window,
                                   int *dither_state, float *samples,

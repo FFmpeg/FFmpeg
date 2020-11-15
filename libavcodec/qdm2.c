@@ -1604,10 +1604,11 @@ static av_cold void qdm2_init_static_data(void) {
         return;
 
     qdm2_init_vlc();
-    ff_mpa_synth_init_float(ff_mpa_synth_window_float);
     softclip_table_init();
     rnd_table_init();
     init_noise_samples();
+
+    ff_mpa_synth_init_float();
 
     done = 1;
 }

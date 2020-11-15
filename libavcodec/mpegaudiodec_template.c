@@ -289,8 +289,6 @@ static av_cold void decode_init_static(void)
                 scale_factor_mult[i][2]);
     }
 
-    RENAME(ff_mpa_synth_init)(RENAME(ff_mpa_synth_window));
-
     /* huffman decode tables */
     offset = 0;
     for (i = 1; i < 16; i++) {
@@ -408,6 +406,7 @@ static av_cold void decode_init_static(void)
         csa_table[i][3] = ca - cs;
 #endif
     }
+    RENAME(ff_mpa_synth_init)();
 }
 
 static av_cold int decode_init(AVCodecContext * avctx)
