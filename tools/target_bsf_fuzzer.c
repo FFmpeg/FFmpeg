@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bsf_internal.h"
@@ -66,6 +67,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (size > 1024) {
         GetByteContext gbc;
         int extradata_size;
+        int flags;
         size -= 1024;
         bytestream2_init(&gbc, data + size, 1024);
         bsf->par_in->width                      = bytestream2_get_le32(&gbc);
@@ -88,6 +90,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         bsf->par_in->block_align                = bytestream2_get_le32(&gbc);
         keyframes                               = bytestream2_get_le64(&gbc);
         flushpattern                            = bytestream2_get_le64(&gbc);
+        flags                                   = bytestream2_get_byte(&gbc);
+
+        if (flags & 0x20) {
+            if (!strcmp(f->name, "av1_metadata"))
+                av_opt_set_int(bsf->priv_data, "td", bytestream2_get_byte(&gbc) % 3, 0);
+            else if (!strcmp(f->name, "h264_metadata") || !strcmp(f->name, "h265_metadata"))
+                av_opt_set_int(bsf->priv_data, "aud", bytestream2_get_byte(&gbc) % 3, 0);
+            else if (!strcmp(f->name, "extract_extradata"))
+                av_opt_set_int(bsf->priv_data, "remove", bytestream2_get_byte(&gbc) & 1, 0);
+        }
 
         if (extradata_size < size) {
             bsf->par_in->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
