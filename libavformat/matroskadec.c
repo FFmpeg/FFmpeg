@@ -3581,7 +3581,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
 
     if (cluster_time != (uint64_t) -1 &&
         (block_time >= 0 || cluster_time >= -block_time)) {
-        timecode = cluster_time + block_time - track->codec_delay_in_track_tb;
+        uint64_t timecode_cluster_in_track_tb = (double) cluster_time / track->time_scale;
+        timecode = timecode_cluster_in_track_tb + block_time - track->codec_delay_in_track_tb;
         if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE &&
             timecode < track->end_timecode)
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
