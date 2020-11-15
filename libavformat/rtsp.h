@@ -27,6 +27,7 @@
 #include "rtpdec.h"
 #include "network.h"
 #include "httpauth.h"
+#include "internal.h"
 
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -316,7 +317,7 @@ typedef struct RTSPState {
     /** some MS RTSP streams contain a URL in the SDP that we need to use
      * for all subsequent RTSP requests, rather than the input URI; in
      * other cases, this is a copy of AVFormatContext->filename. */
-    char control_uri[2048];
+    char control_uri[MAX_URL_SIZE];
 
     /** The following are used for parsing raw mpegts in udp */
     //@{
@@ -444,7 +445,7 @@ typedef struct RTSPStream {
      * for the selected transport. Only used for TCP. */
     int interleaved_min, interleaved_max;
 
-    char control_url[1024];   /**< url for this stream (from SDP) */
+    char control_url[MAX_URL_SIZE];   /**< url for this stream (from SDP) */
 
     /** The following are used only in SDP, not RTSP */
     //@{

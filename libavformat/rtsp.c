@@ -1025,7 +1025,7 @@ static void handle_rtp_info(RTSPState *rt, const char *url,
 static void rtsp_parse_rtp_info(RTSPState *rt, const char *p)
 {
     int read = 0;
-    char key[20], value[1024], url[1024] = "";
+    char key[20], value[MAX_URL_SIZE], url[MAX_URL_SIZE] = "";
     uint32_t seq = 0, rtptime = 0;
 
     for (;;) {
@@ -1124,7 +1124,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     int ret, len, len1;
-    uint8_t buf[1024];
+    uint8_t buf[MAX_URL_SIZE];
 
     ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
@@ -1150,7 +1150,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                        int return_on_interleaved_data, const char *method)
 {
     RTSPState *rt = s->priv_data;
-    char buf[4096], buf1[1024], *q;
+    char buf[MAX_URL_SIZE], buf1[MAX_URL_SIZE], *q;
     unsigned char ch;
     const char *p;
     int ret, content_length, line_count = 0, request = 0;
@@ -1230,7 +1230,7 @@ start:
         av_freep(&content);
 
     if (request) {
-        char buf[1024];
+        char buf[MAX_URL_SIZE];
         char base64buf[AV_BASE64_SIZE(sizeof(buf))];
         const char* ptr = buf;
 
@@ -1306,7 +1306,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                             int send_content_length)
 {
     RTSPState *rt = s->priv_data;
-    char buf[4096], *out_buf;
+    char buf[MAX_URL_SIZE], *out_buf;
     char base64buf[AV_BASE64_SIZE(sizeof(buf))];
 
     if (!rt->rtsp_hd_out)
@@ -1416,7 +1416,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     int rtx = 0, j, i, err, interleave = 0, port_off;
     RTSPStream *rtsp_st;
     RTSPMessageHeader reply1, *reply = &reply1;
-    char cmd[2048];
+    char cmd[MAX_URL_SIZE];
     const char *trans_pref;
 
     if (rt->transport == RTSP_TRANSPORT_RDT)
@@ -1437,7 +1437,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     port_off -= port_off & 0x01;
 
     for (j = rt->rtp_port_min + port_off, i = 0; i < rt->nb_rtsp_streams; ++i) {
-        char transport[2048];
+        char transport[MAX_URL_SIZE];
 
         /*
          * WMS serves all UDP data over a single connection, the RTX, which
@@ -1586,7 +1586,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             break;
 
         case RTSP_LOWER_TRANSPORT_UDP: {
-            char url[1024], options[30] = "";
+            char url[MAX_URL_SIZE], options[30] = "";
             const char *peer = host;
 
             if (rt->rtsp_flags & RTSP_FLAG_FILTER_SRC)
@@ -1604,7 +1604,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             break;
         }
         case RTSP_LOWER_TRANSPORT_UDP_MULTICAST: {
-            char url[1024], namebuf[50], optbuf[20] = "";
+            char url[MAX_URL_SIZE], namebuf[50], optbuf[20] = "";
             struct sockaddr_storage addr;
             int port, ttl;
             AVDictionary *opts = map_to_opts(rt);
@@ -1666,7 +1666,7 @@ int ff_rtsp_connect(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     char proto[128], host[1024], path[1024];
-    char tcpname[1024], cmd[2048], auth[128];
+    char tcpname[1024], cmd[MAX_URL_SIZE], auth[128];
     const char *lower_rtsp_proto = "tcp";
     int port, err, tcp_fd;
     RTSPMessageHeader reply1, *reply = &reply1;
@@ -2324,7 +2324,7 @@ static int sdp_read_header(AVFormatContext *s)
     RTSPStream *rtsp_st;
     int size, i, err;
     char *content;
-    char url[1024];
+    char url[MAX_URL_SIZE];
 
     if (!ff_network_init())
         return AVERROR(EIO);
