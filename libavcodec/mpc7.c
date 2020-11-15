@@ -28,6 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
@@ -38,16 +39,42 @@
 
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
+static av_cold void mpc7_init_static(void)
+{
+    static VLC_TYPE quant_tables[7224][2];
+    const uint8_t *raw_quant_table = mpc7_quant_vlcs;
+
+    INIT_VLC_STATIC_FROM_LENGTHS(&scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
+                                 &mpc7_scfi[1], 2,
+                                 &mpc7_scfi[0], 2, 1, 0, 0, 1 << MPC7_SCFI_BITS);
+    INIT_VLC_STATIC_FROM_LENGTHS(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
+                                 &mpc7_dscf[1], 2,
+                                 &mpc7_dscf[0], 2, 1, -7, 0, 1 << MPC7_DSCF_BITS);
+    INIT_VLC_STATIC_FROM_LENGTHS(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
+                                 &mpc7_hdr[1], 2,
+                                 &mpc7_hdr[0], 2, 1, -5, 0, 1 << MPC7_HDR_BITS);
+    for (unsigned i = 0, offset = 0; i < MPC7_QUANT_VLC_TABLES; i++){
+        for (int j = 0; j < 2; j++) {
+            quant_vlc[i][j].table           = &quant_tables[offset];
+            quant_vlc[i][j].table_allocated = FF_ARRAY_ELEMS(quant_tables) - offset;
+            ff_init_vlc_from_lengths(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
+                                     &raw_quant_table[1], 2,
+                                     &raw_quant_table[0], 2, 1,
+                                     mpc7_quant_vlc_off[i],
+                                     INIT_VLC_STATIC_OVERLONG, NULL);
+            raw_quant_table += 2 * mpc7_quant_vlc_sizes[i];
+            offset          += quant_vlc[i][j].table_size;
+        }
+    }
+    ff_mpa_synth_init_fixed();
+}
+
 static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 {
-    int j;
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     LOCAL_ALIGNED_16(uint8_t, buf, [16]);
-    static int vlc_initialized = 0;
-
-    static VLC_TYPE quant_tables[7224][2];
-    const uint8_t *raw_quant_table = mpc7_quant_vlcs;
 
     /* Musepack SV7 is always stereo */
     if (avctx->channels != 2) {
@@ -83,32 +110,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
-    if(vlc_initialized) return 0;
-    av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
-    INIT_VLC_STATIC_FROM_LENGTHS(&scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
-                                 &mpc7_scfi[1], 2,
-                                 &mpc7_scfi[0], 2, 1, 0, 0, 1 << MPC7_SCFI_BITS);
-    INIT_VLC_STATIC_FROM_LENGTHS(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
-                                 &mpc7_dscf[1], 2,
-                                 &mpc7_dscf[0], 2, 1, -7, 0, 1 << MPC7_DSCF_BITS);
-    INIT_VLC_STATIC_FROM_LENGTHS(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
-                                 &mpc7_hdr[1], 2,
-                                 &mpc7_hdr[0], 2, 1, -5, 0, 1 << MPC7_HDR_BITS);
-    for (unsigned i = 0, offset = 0; i < MPC7_QUANT_VLC_TABLES; i++){
-        for(j = 0; j < 2; j++){
-            quant_vlc[i][j].table           = &quant_tables[offset];
-            quant_vlc[i][j].table_allocated = FF_ARRAY_ELEMS(quant_tables) - offset;
-            ff_init_vlc_from_lengths(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
-                                     &raw_quant_table[1], 2,
-                                     &raw_quant_table[0], 2, 1,
-                                     mpc7_quant_vlc_off[i],
-                                     INIT_VLC_STATIC_OVERLONG, NULL);
-            raw_quant_table += 2 * mpc7_quant_vlc_sizes[i];
-            offset          += quant_vlc[i][j].table_size;
-        }
-    }
-    vlc_initialized = 1;
-    ff_mpa_synth_init_fixed();
+    ff_thread_once(&init_static_once, mpc7_init_static);
 
     return 0;
 }
@@ -317,4 +319,5 @@ AVCodec ff_mpc7_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
