@@ -21,20 +21,66 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/thread.h"
+#include "mpegaudio.h"
 #include "mpegaudiodsp.h"
 #include "dct.h"
 #include "dct32.h"
 
-static AVOnce mpadsp_float_table_init = AV_ONCE_INIT;
-static AVOnce mpadsp_fixed_table_init = AV_ONCE_INIT;
+static AVOnce mpadsp_table_init = AV_ONCE_INIT;
+
+static av_cold void mpadsp_init_tabs(void)
+{
+    int i, j;
+    /* compute mdct windows */
+    for (i = 0; i < 36; i++) {
+        for (j = 0; j < 4; j++) {
+            double d;
+
+            if (j == 2 && i % 3 != 1)
+                continue;
+
+            d = sin(M_PI * (i + 0.5) / 36.0);
+            if (j == 1) {
+                if      (i >= 30) d = 0;
+                else if (i >= 24) d = sin(M_PI * (i - 18 + 0.5) / 12.0);
+                else if (i >= 18) d = 1;
+            } else if (j == 3) {
+                if      (i <   6) d = 0;
+                else if (i <  12) d = sin(M_PI * (i -  6 + 0.5) / 12.0);
+                else if (i <  18) d = 1;
+            }
+            //merge last stage of imdct into the window coefficients
+            d *= 0.5 * IMDCT_SCALAR / cos(M_PI * (2 * i + 19) / 72);
+
+            if (j == 2) {
+                ff_mdct_win_float[j][i/3] = d / (1 << 5);
+                ff_mdct_win_fixed[j][i/3] = d / (1 << 5) * (1LL << 32) + 0.5;
+            } else {
+                int idx = i < 18 ? i : i + (MDCT_BUF_SIZE/2 - 18);
+                ff_mdct_win_float[j][idx] = d / (1 << 5);
+                ff_mdct_win_fixed[j][idx] = d / (1 << 5) * (1LL << 32) + 0.5;
+            }
+        }
+    }
+
+    /* NOTE: we do frequency inversion after the MDCT by changing
+        the sign of the right window coefs */
+    for (j = 0; j < 4; j++) {
+        for (i = 0; i < MDCT_BUF_SIZE; i += 2) {
+            ff_mdct_win_float[j + 4][i    ] =  ff_mdct_win_float[j][i    ];
+            ff_mdct_win_float[j + 4][i + 1] = -ff_mdct_win_float[j][i + 1];
+            ff_mdct_win_fixed[j + 4][i    ] =  ff_mdct_win_fixed[j][i    ];
+            ff_mdct_win_fixed[j + 4][i + 1] = -ff_mdct_win_fixed[j][i + 1];
+        }
+    }
+}
 
 av_cold void ff_mpadsp_init(MPADSPContext *s)
 {
     DCTContext dct;
 
     ff_dct_init(&dct, 5, DCT_II);
-    ff_thread_once(&mpadsp_float_table_init, &ff_init_mpadsp_tabs_float);
-    ff_thread_once(&mpadsp_fixed_table_init, &ff_init_mpadsp_tabs_fixed);
+    ff_thread_once(&mpadsp_table_init, &mpadsp_init_tabs);
 
     s->apply_window_float = ff_mpadsp_apply_window_float;
     s->apply_window_fixed = ff_mpadsp_apply_window_fixed;

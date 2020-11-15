@@ -82,9 +82,6 @@ void ff_imdct36_blocks_float(float *out, float *buf, float *in,
 void ff_imdct36_blocks_fixed(int *out, int *buf, int *in,
                              int count, int switch_point, int block_type);
 
-void ff_init_mpadsp_tabs_float(void);
-void ff_init_mpadsp_tabs_fixed(void);
-
 /** For SSE implementation, MDCT_BUF_SIZE/2 should be 128-bit aligned */
 #define MDCT_BUF_SIZE FFALIGN(36, 2*4)
 
