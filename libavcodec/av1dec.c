@@ -20,6 +20,7 @@
 
 #include "libavutil/film_grain_params.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "av1dec.h"
 #include "bytestream.h"
@@ -653,6 +654,8 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
+    av_opt_set_int(s->cbc->priv_data, "operating_point", s->operating_point, 0);
+
     if (avctx->extradata && avctx->extradata_size) {
         ret = ff_cbs_read_extradata_from_codec(s->cbc,
                                                &s->current_obu,
@@ -805,6 +808,11 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
     const AVFrame *srcframe = s->cur_frame.tf.f;
     int ret;
 
+    // TODO: all layers
+    if (s->operating_point_idc &&
+        av_log2(s->operating_point_idc >> 8) > s->cur_frame.spatial_id)
+        return 0;
+
     ret = av_frame_ref(frame, srcframe);
     if (ret < 0)
         return ret;
@@ -918,6 +926,8 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                 s->raw_seq = NULL;
                 goto end;
             }
+
+            s->operating_point_idc = s->raw_seq->operating_point_idc[s->operating_point];
 
             if (s->pix_fmt == AV_PIX_FMT_NONE) {
                 ret = get_pixel_format(avctx);
@@ -1089,11 +1099,27 @@ static void av1_decode_flush(AVCodecContext *avctx)
         av1_frame_unref(avctx, &s->ref[i]);
 
     av1_frame_unref(avctx, &s->cur_frame);
+    s->operating_point_idc = 0;
     s->raw_frame_header = NULL;
     s->raw_seq = NULL;
 
     ff_cbs_flush(s->cbc);
 }
+
+#define OFFSET(x) offsetof(AV1DecContext, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption av1_options[] = {
+    { "operating_point",  "Select an operating point of the scalable bitstream",
+                          OFFSET(operating_point), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, AV1_MAX_OPERATING_POINTS - 1, VD },
+    { NULL }
+};
+
+static const AVClass av1_class = {
+    .class_name = "AV1 decoder",
+    .item_name  = av_default_item_name,
+    .option     = av1_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_av1_decoder = {
     .name                  = "av1",
@@ -1110,6 +1136,7 @@ AVCodec ff_av1_decoder = {
                              FF_CODEC_CAP_SETS_PKT_DTS,
     .flush                 = av1_decode_flush,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
+    .priv_class            = &av1_class,
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_AV1_DXVA2_HWACCEL
         HWACCEL_DXVA2(av1),

@@ -76,9 +76,13 @@ typedef struct AV1DecContext {
     uint16_t tg_start;
     uint16_t tg_end;
 
+    int operating_point_idc;
+
     AV1Frame ref[AV1_NUM_REF_FRAMES];
     AV1Frame cur_frame;
 
+    // AVOptions
+    int operating_point;
 } AV1DecContext;
 
 #endif /* AVCODEC_AV1DEC_H */
