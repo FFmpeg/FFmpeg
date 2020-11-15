@@ -155,10 +155,8 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
 
     for (i = 0; i < FF_ARRAY_ELEMS(ctx->frames); i++) {
         ctx->frames[i].f = av_frame_alloc();
-        if (!ctx->frames[i].f) {
-            mimic_decode_end(avctx);
+        if (!ctx->frames[i].f)
             return AVERROR(ENOMEM);
-        }
     }
 
     return 0;
@@ -460,5 +458,5 @@ AVCodec ff_mimic_decoder = {
     .decode                = mimic_decode_frame,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mimic_decode_update_thread_context),
-    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
 };
