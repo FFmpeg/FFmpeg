@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/thread.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
@@ -225,8 +226,16 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static av_cold void ir2_init_static(void)
+{
+    INIT_VLC_STATIC_FROM_LENGTHS(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
+                                 &ir2_tab[0][1], 2, &ir2_tab[0][0], 2, 1,
+                                 0, INIT_VLC_OUTPUT_LE, 1 << CODE_VLC_BITS);
+}
+
 static av_cold int ir2_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     Ir2Context * const ic = avctx->priv_data;
 
     ic->avctx = avctx;
@@ -237,9 +246,7 @@ static av_cold int ir2_decode_init(AVCodecContext *avctx)
     if (!ic->picture)
         return AVERROR(ENOMEM);
 
-    INIT_VLC_STATIC_FROM_LENGTHS(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
-                                 &ir2_tab[0][1], 2, &ir2_tab[0][0], 2, 1,
-                                 0, INIT_VLC_OUTPUT_LE, 1 << CODE_VLC_BITS);
+    ff_thread_once(&init_static_once, ir2_init_static);
 
     return 0;
 }
@@ -263,4 +270,5 @@ AVCodec ff_indeo2_decoder = {
     .close          = ir2_decode_end,
     .decode         = ir2_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
