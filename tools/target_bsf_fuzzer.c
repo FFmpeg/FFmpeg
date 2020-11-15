@@ -43,6 +43,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     AVBSFContext *bsf = NULL;
     AVPacket in, out;
     uint64_t keyframes = 0;
+    uint64_t flushpattern = -1;
     int res;
 
     if (!f) {
@@ -86,6 +87,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         bsf->par_in->channels                   = (unsigned)bytestream2_get_le32(&gbc) % FF_SANE_NB_CHANNELS;
         bsf->par_in->block_align                = bytestream2_get_le32(&gbc);
         keyframes                               = bytestream2_get_le64(&gbc);
+        flushpattern                            = bytestream2_get_le64(&gbc);
 
         if (extradata_size < size) {
             bsf->par_in->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -127,6 +129,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         keyframes = (keyframes >> 2) + (keyframes<<62);
         data += sizeof(fuzz_tag);
         last = data;
+
+        if (!(flushpattern & 7))
+            av_bsf_flush(bsf);
+        flushpattern = (flushpattern >> 3) + (flushpattern << 61);
 
         while (in.size) {
             res = av_bsf_send_packet(bsf, &in);
