@@ -86,6 +86,12 @@ typedef const struct CodedBitstreamUnitTypeDescriptor {
 typedef struct CodedBitstreamType {
     enum AVCodecID codec_id;
 
+    // A class for the private data, used to declare private AVOptions.
+    // This field is NULL for types that do not declare any options.
+    // If this field is non-NULL, the first member of the filter private data
+    // must be a pointer to AVClass.
+    const AVClass *priv_class;
+
     size_t priv_data_size;
 
     // List of unit type descriptors for this codec.

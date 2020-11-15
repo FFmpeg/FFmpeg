@@ -23,6 +23,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 
 #include "cbs.h"
 #include "cbs_internal.h"
@@ -101,6 +102,10 @@ int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
             av_freep(&ctx);
             return AVERROR(ENOMEM);
         }
+        if (type->priv_class) {
+            *(const AVClass **)ctx->priv_data = type->priv_class;
+            av_opt_set_defaults(ctx->priv_data);
+        }
     }
 
     ctx->decompose_unit_types = NULL;
@@ -129,6 +134,10 @@ void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
         ctx->codec->close(ctx);
 
     av_freep(&ctx->write_buffer);
+
+    if (ctx->codec->priv_class && ctx->priv_data)
+        av_opt_free(ctx->priv_data);
+
     av_freep(&ctx->priv_data);
     av_freep(ctx_ptr);
 }
