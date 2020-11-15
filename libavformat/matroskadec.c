@@ -2672,8 +2672,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown/unsupported AVCodecID %s.\n", track->codec_id);
 
-        if (track->time_scale < 0.01)
+        if (track->time_scale < 0.01) {
+            av_log(matroska->ctx, AV_LOG_WARNING,
+                   "Track TimestampScale too small %f, assuming 1.0.\n",
+                   track->time_scale);
             track->time_scale = 1.0;
+        }
         avpriv_set_pts_info(st, 64, matroska->time_scale * track->time_scale,
                             1000 * 1000 * 1000);    /* 64 bit pts in ns */
 
