@@ -73,6 +73,9 @@ static av_cold void mpadsp_init_tabs(void)
             ff_mdct_win_fixed[j + 4][i + 1] = -ff_mdct_win_fixed[j][i + 1];
         }
     }
+
+    if (ARCH_X86)
+        ff_mpadsp_init_x86_tabs();
 }
 
 av_cold void ff_mpadsp_init(MPADSPContext *s)
