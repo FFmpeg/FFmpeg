@@ -36,6 +36,7 @@
 #include <stdio.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/thread.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
@@ -1596,19 +1597,12 @@ static void qdm2_synthesis_filter(QDM2Context *q, int index)
  * Init static data (does not depend on specific file)
  */
 static av_cold void qdm2_init_static_data(void) {
-    static int done;
-
-    if(done)
-        return;
-
     qdm2_init_vlc();
     softclip_table_init();
     rnd_table_init();
     init_noise_samples();
 
     ff_mpa_synth_init_float();
-
-    done = 1;
 }
 
 /**
@@ -1616,11 +1610,10 @@ static av_cold void qdm2_init_static_data(void) {
  */
 static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     QDM2Context *s = avctx->priv_data;
     int tmp_val, tmp, size;
     GetByteContext gb;
-
-    qdm2_init_static_data();
 
     /* extradata parsing
 
@@ -1767,6 +1760,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
+    ff_thread_once(&init_static_once, qdm2_init_static_data);
+
     return 0;
 }
 
@@ -1883,4 +1878,5 @@ AVCodec ff_qdm2_decoder = {
     .close            = qdm2_decode_close,
     .decode           = qdm2_decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };
