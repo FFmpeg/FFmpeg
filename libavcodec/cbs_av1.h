@@ -425,6 +425,8 @@ typedef struct AV1ReferenceFrameState {
 } AV1ReferenceFrameState;
 
 typedef struct CodedBitstreamAV1Context {
+    const AVClass *class;
+
     AV1RawSequenceHeader *sequence_header;
     AVBufferRef          *sequence_header_ref;
 
@@ -453,6 +455,9 @@ typedef struct CodedBitstreamAV1Context {
     int tile_num;
 
     AV1ReferenceFrameState ref[AV1_NUM_REF_FRAMES];
+
+    // AVOptions
+    int operating_point;
 } CodedBitstreamAV1Context;
 
 

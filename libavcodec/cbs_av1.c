@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 
 #include "cbs.h"
@@ -917,7 +918,7 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
             int in_spatial_layer  =
                 (priv->operating_point_idc >> (priv->spatial_id + 8)) & 1;
             if (!in_temporal_layer || !in_spatial_layer) {
-                // Decoding will drop this OBU at this operating point.
+                return AVERROR(EAGAIN); // drop_obu()
             }
         }
     }
@@ -929,6 +930,18 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
                                                    &obu->obu.sequence_header);
             if (err < 0)
                 return err;
+
+            if (priv->operating_point >= 0) {
+                AV1RawSequenceHeader *sequence_header = &obu->obu.sequence_header;
+
+                if (priv->operating_point > sequence_header->operating_points_cnt_minus_1) {
+                    av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid Operating Point %d requested. "
+                                                       "Must not be higher than %u.\n",
+                           priv->operating_point, sequence_header->operating_points_cnt_minus_1);
+                    return AVERROR(EINVAL);
+                }
+                priv->operating_point_idc = sequence_header->operating_point_idc[priv->operating_point];
+            }
 
             av_buffer_unref(&priv->sequence_header_ref);
             priv->sequence_header = NULL;
@@ -1291,9 +1304,24 @@ static const CodedBitstreamUnitTypeDescriptor cbs_av1_unit_types[] = {
     CBS_UNIT_TYPE_END_OF_LIST
 };
 
+#define OFFSET(x) offsetof(CodedBitstreamAV1Context, x)
+static const AVOption cbs_av1_options[] = {
+    { "operating_point",  "Set operating point to select layers to parse from a scalable bitstream",
+                          OFFSET(operating_point), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, AV1_MAX_OPERATING_POINTS - 1, 0 },
+    { NULL }
+};
+
+static const AVClass cbs_av1_class = {
+    .class_name = "cbs_av1",
+    .item_name  = av_default_item_name,
+    .option     = cbs_av1_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const CodedBitstreamType ff_cbs_type_av1 = {
     .codec_id          = AV_CODEC_ID_AV1,
 
+    .priv_class        = &cbs_av1_class,
     .priv_data_size    = sizeof(CodedBitstreamAV1Context),
 
     .unit_types        = cbs_av1_unit_types,
