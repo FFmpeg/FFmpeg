@@ -732,7 +732,7 @@ AVCodec ff_smacker_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
 
 AVCodec ff_smackaud_decoder = {
@@ -743,4 +743,5 @@ AVCodec ff_smackaud_decoder = {
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
