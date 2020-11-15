@@ -53,6 +53,7 @@
 #define DEFAULT_INTRA_TC_OFFSET 2
 
 #define HEVC_CONTEXTS 199
+#define HEVC_STAT_COEFFS 4
 
 #define MRG_MAX_NUM_CANDS     5
 
@@ -424,7 +425,7 @@ typedef struct HEVCFrame {
 typedef struct HEVCLocalContext {
     uint8_t cabac_state[HEVC_CONTEXTS];
 
-    uint8_t stat_coeff[4];
+    uint8_t stat_coeff[HEVC_STAT_COEFFS];
 
     uint8_t first_qp_group;
 
@@ -480,6 +481,7 @@ typedef struct HEVCContext {
     int                 height;
 
     uint8_t *cabac_state;
+    uint8_t stat_coeff[HEVC_STAT_COEFFS];
 
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
@@ -594,7 +596,7 @@ int ff_hevc_frame_rps(HEVCContext *s);
 int ff_hevc_slice_rpl(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
-int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
+int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts, int thread);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
 int ff_hevc_sao_band_position_decode(HEVCContext *s);
