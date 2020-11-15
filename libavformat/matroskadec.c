@@ -3547,7 +3547,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     uint32_t lace_size[256];
     int n, flags, laces = 0;
     uint64_t num;
-    int trust_default_duration = 1;
+    int trust_default_duration;
 
     ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
 
@@ -3615,7 +3615,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         return res;
     }
 
-    if (track->audio.samplerate == 8000) {
+    trust_default_duration = track->default_duration != 0;
+    if (track->audio.samplerate == 8000 && trust_default_duration) {
         // If this is needed for more codecs, then add them here
         if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
             if (track->audio.samplerate != st->codecpar->sample_rate || !st->codecpar->frame_size)
