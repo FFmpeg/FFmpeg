@@ -27,6 +27,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
@@ -107,15 +108,40 @@ static av_cold void build_vlc(VLC *vlc, unsigned *buf_offset,
     *syms       += num;
 }
 
-static av_cold int mpc8_decode_init(AVCodecContext * avctx)
+static av_cold void mpc8_init_static(void)
 {
-    int i, offset = 0;
-    MPCContext *c = avctx->priv_data;
-    GetBitContext gb;
-    static int vlc_initialized = 0;
     const uint8_t *q_syms   = mpc8_q_syms,  *bands_syms = mpc8_bands_syms;
     const uint8_t *res_syms = mpc8_res_syms, *scfi_syms = mpc8_scfi_syms;
     const uint8_t *dscf_syms = mpc8_dscf_syms;
+    unsigned offset = 0;
+
+    build_vlc(&band_vlc, &offset, mpc8_bands_len_counts, &bands_syms, 0);
+
+    build_vlc(&q1_vlc,   &offset, mpc8_q1_len_counts,   &q_syms, 0);
+    build_vlc(&q9up_vlc, &offset, mpc8_q9up_len_counts, &q_syms, 0);
+
+    for (int i = 0; i < 2; i++){
+        build_vlc(&scfi_vlc[i], &offset, mpc8_scfi_len_counts[i], &scfi_syms, 0);
+
+        build_vlc(&dscf_vlc[i], &offset, mpc8_dscf_len_counts[i], &dscf_syms, 0);
+
+        build_vlc(&res_vlc[i],  &offset, mpc8_res_len_counts[i],  &res_syms,  0);
+
+        build_vlc(&q2_vlc[i], &offset, mpc8_q2_len_counts[i], &q_syms, 0);
+        build_vlc(&q3_vlc[i], &offset, mpc8_q34_len_counts[i],
+                  &q_syms, -48 - 16 * i);
+        for (int j = 0; j < 4; j++)
+            build_vlc(&quant_vlc[j][i], &offset, mpc8_q5_8_len_counts[i][j],
+                      &q_syms, -((8 << j) - 1));
+    }
+    ff_mpa_synth_init_fixed();
+}
+
+static av_cold int mpc8_decode_init(AVCodecContext * avctx)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    MPCContext *c = avctx->priv_data;
+    GetBitContext gb;
     int channels;
 
     if(avctx->extradata_size < 2){
@@ -146,30 +172,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     avctx->channel_layout = (channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->channels = channels;
 
-    if(vlc_initialized) return 0;
-    av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
-
-    build_vlc(&band_vlc, &offset, mpc8_bands_len_counts, &bands_syms, 0);
-
-    build_vlc(&q1_vlc,   &offset, mpc8_q1_len_counts,   &q_syms, 0);
-    build_vlc(&q9up_vlc, &offset, mpc8_q9up_len_counts, &q_syms, 0);
-
-    for(i = 0; i < 2; i++){
-        build_vlc(&scfi_vlc[i], &offset, mpc8_scfi_len_counts[i], &scfi_syms, 0);
-
-        build_vlc(&dscf_vlc[i], &offset, mpc8_dscf_len_counts[i], &dscf_syms, 0);
-
-        build_vlc(&res_vlc[i],  &offset, mpc8_res_len_counts[i],  &res_syms,  0);
-
-        build_vlc(&q2_vlc[i], &offset, mpc8_q2_len_counts[i], &q_syms, 0);
-        build_vlc(&q3_vlc[i], &offset, mpc8_q34_len_counts[i],
-                  &q_syms, -48 - 16 * i);
-        for (int j = 0; j < 4; j++)
-            build_vlc(&quant_vlc[j][i], &offset, mpc8_q5_8_len_counts[i][j],
-                      &q_syms, -((8 << j) - 1));
-    }
-    vlc_initialized = 1;
-    ff_mpa_synth_init_fixed();
+    ff_thread_once(&init_static_once, mpc8_init_static);
 
     return 0;
 }
@@ -392,4 +395,5 @@ AVCodec ff_mpc8_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
