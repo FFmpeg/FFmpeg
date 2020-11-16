@@ -379,9 +379,6 @@ static int decode_coeffs(GetBitContext *gb, int16_t *coeffs, int nb_codes)
     for (int i = 0; i < nb_codes;) {
         int value = get_vlc2(gb, cbp_tab.table, cbp_tab.bits, 1);
 
-        if (value < 0)
-            return AVERROR_INVALIDDATA;
-
         if (value > 0) {
             int x = get_bits(gb, value);
 
