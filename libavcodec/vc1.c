@@ -27,6 +27,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/thread.h"
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
@@ -1576,21 +1577,11 @@ static const uint16_t vlc_offs[] = {
     31714, 31746, 31778, 32306, 32340, 32372
 };
 
-/**
- * Init VC-1 specific tables and VC1Context members
- * @param v The VC1Context to initialize
- * @return Status
- */
-av_cold int ff_vc1_init_common(VC1Context *v)
+static av_cold void vc1_init_static(void)
 {
-    static int done = 0;
     int i = 0;
     static VLC_TYPE vlc_table[32372][2];
 
-    v->hrd_rate = v->hrd_buffer = NULL;
-
-    /* VLC tables */
-    if (!done) {
         INIT_VLC_STATIC(&ff_vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
                         ff_vc1_bfraction_bits, 1, 1,
                         ff_vc1_bfraction_codes, 1, 1, 1 << VC1_BFRACTION_VLC_BITS);
@@ -1697,14 +1688,27 @@ av_cold int ff_vc1_init_common(VC1Context *v)
                      ff_vc1_if_1mv_mbmode_bits[i], 1, 1,
                      ff_vc1_if_1mv_mbmode_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
         }
-        done = 1;
-    }
+}
 
-    /* Other defaults */
+/**
+ * Init VC-1 specific tables and VC1Context members
+ * @param v The VC1Context to initialize
+ * @return Status
+ */
+av_cold int ff_vc1_init_common(VC1Context *v)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
+    v->hrd_rate = v->hrd_buffer = NULL;
+
+    /* defaults */
     v->pq      = -1;
     v->mvrange = 0; /* 7.1.1.18, p80 */
 
     ff_vc1dsp_init(&v->vc1dsp);
+
+    /* VLC tables */
+    ff_thread_once(&init_static_once, vc1_init_static);
 
     return 0;
 }
