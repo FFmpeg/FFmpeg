@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "idctdsp.h"
@@ -725,6 +726,8 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                                    int block_last_index[12],
                                    int mb_width, int mb_height)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
     w->avctx = avctx;
     w->idsp = *idsp;
     w->mb_width  = mb_width;
@@ -752,7 +755,7 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
     ff_intrax8dsp_init(&w->dsp);
     ff_blockdsp_init(&w->bdsp, avctx);
 
-    x8_vlc_init();
+    ff_thread_once(&init_static_once, x8_vlc_init);
 
     return 0;
 }
