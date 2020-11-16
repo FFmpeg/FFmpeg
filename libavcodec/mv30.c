@@ -35,6 +35,8 @@
 #include "internal.h"
 #include "aandcttab.h"
 
+#define CBP_VLC_BITS  9
+
 typedef struct MV30Context {
     GetBitContext  gb;
 
@@ -651,18 +653,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-static const uint16_t cbp_codes[] = {
-    0, 1, 4, 5, 6, 0xE, 0x1E, 0x3E, 0x7E, 0xFE, 0x1FE, 0x1FF,
-};
-
 static const uint8_t cbp_bits[] = {
     2, 2, 3, 3, 3, 4, 5, 6, 7, 8, 9, 9,
 };
 
 static av_cold void init_static_data(void)
 {
-    INIT_VLC_SPARSE_STATIC(&cbp_tab, 9, FF_ARRAY_ELEMS(cbp_bits),
-                           cbp_bits, 1, 1, cbp_codes, 2, 2, NULL, 0, 0, 512);
+    INIT_VLC_STATIC_FROM_LENGTHS(&cbp_tab, CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_bits),
+                                 cbp_bits, 1, NULL, 0, 0, 0, 0, 1 << CBP_VLC_BITS);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
