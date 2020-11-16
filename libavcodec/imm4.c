@@ -34,6 +34,8 @@
 #include "internal.h"
 
 #define CBPLO_VLC_BITS   6
+#define BLKTYPE_VLC_BITS 9
+#define BLOCK_VLC_BITS  12
 
 typedef struct IMM4Context {
     BswapDSPContext bdsp;
@@ -60,16 +62,9 @@ static const uint8_t inter_cb[] = {
     30, 20, 15
 };
 
-static const uint8_t cbplo_symbols[] = {
-    0, 0, 1, 1, 2, 2, 3, 3
-};
-
-static const uint8_t cbplo_bits[] = {
-    1, 4, 3, 6, 3, 6, 3, 6
-};
-
-static const uint8_t cbplo_codes[] = {
-    1, 1, 1, 1, 2, 2, 3, 3
+static const uint8_t cbplo[][2] = {
+    {    0,-6 }, { 0x01, 6 }, { 0x02, 6 }, { 0x03, 6 }, { 0x00, 4 },
+    { 0x01, 3 }, { 0x02, 3 }, { 0x03, 3 }, { 0x00, 1 },
 };
 
 static const uint8_t cbphi_bits[] = {
@@ -80,47 +75,36 @@ static const uint8_t cbphi_codes[] = {
     3, 5, 4, 9, 3, 7, 2, 11, 2, 3, 5, 10, 4, 8, 6, 3
 };
 
-static const uint8_t blktype_symbols[] = {
-    0, 1, 2, 3, 4, 16, 17, 18, 19, 20, 32, 33, 34, 35, 48, 50, 51, 52
-};
-
-static const uint8_t blktype_bits[] = {
-    1, 3, 3, 5, 6, 4, 7, 7, 8, 9, 4, 7, 7, 8, 6, 8, 7, 9
-};
-
-static const uint8_t blktype_codes[] = {
-    1, 3, 2, 3, 4, 3, 7, 5, 4, 4, 2, 6, 4, 3, 5, 5, 3, 2
+static const uint8_t blktype[][2] = {
+    {    0,-8 }, { 0x34, 9 }, {    0,-9 }, { 0x14, 9 }, {    0,-9 },
+    { 0x23, 8 }, { 0x13, 8 }, { 0x32, 8 }, { 0x33, 7 }, { 0x22, 7 },
+    { 0x12, 7 }, { 0x21, 7 }, { 0x11, 7 }, { 0x04, 6 }, { 0x30, 6 },
+    { 0x03, 5 }, { 0x20, 4 }, { 0x10, 4 }, { 0x02, 3 }, { 0x01, 3 },
+    { 0x00, 1 },
 };
 
 static const uint16_t block_symbols[] = {
-    0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0x81, 0x82, 0x83,
-    0x84, 0x85, 0x86, 0x101, 0x102, 0x103, 0x104, 0x181, 0x182, 0x183, 0x201, 0x202,
-    0x203, 0x281, 0x282, 0x283, 0x301, 0x302, 0x303, 0x381, 0x382, 0x401, 0x402,
-    0x481, 0x482, 0x501, 0x502, 0x581, 0x601, 0x681, 0x701, 0x781, 0x801, 0x881,
-    0x901, 0x981, 0xA01, 0xA81, 0xB01, 0xB81, 0xC01, 0xC81, 0xD01, 0x4001, 0x4002,
-    0x4003, 0x4081, 0x4082, 0x4101, 0x4181, 0x4201, 0x4281, 0x4301, 0x4381, 0x4401,
-    0x4481, 0x4501, 0x4581, 0x4601, 0x4681, 0x4701, 0x4781, 0x4801, 0x4881, 0x4901,
-    0x4981, 0x4A01, 0x4A81, 0x4B01, 0x4B81, 0x4C01, 0x4C81, 0x4D01, 0x4D81, 0x4E01,
-    0x4E81, 0x4F01, 0x4F81, 0x5001, 0x5081, 0x5101, 0x5181, 0x5201, 0x5281, 0x5301,
-    0x5381, 0x5401
+         0, 0x4082, 0x4003, 0x000B, 0x000A, 0x4E01, 0x4D81, 0x4D01, 0x4C81,
+    0x0482, 0x0402, 0x0382, 0x0302, 0x0282, 0x0183, 0x0103, 0x0084, 0x000C,
+    0x0085, 0x0B81, 0x0C01, 0x4E81, 0x4F01, 0x4F81, 0x5001, 0x0086, 0x0104,
+    0x0203, 0x0283, 0x0303, 0x0502, 0x0C81, 0x0D01, 0x5081, 0x5101, 0x5181,
+    0x5201, 0x5281, 0x5301, 0x5381, 0x5401, 0x0000, 0x0009, 0x0008, 0x4C01,
+    0x4B81, 0x4B01, 0x4A81, 0x4A01, 0x4981, 0x4901, 0x4881, 0x4002, 0x0B01,
+    0x0A81, 0x0A01, 0x0981, 0x0901, 0x0881, 0x0801, 0x0781, 0x0202, 0x0182,
+    0x0007, 0x0006, 0x4801, 0x4781, 0x4701, 0x4681, 0x4601, 0x4581, 0x4501,
+    0x4481, 0x0701, 0x0681, 0x0102, 0x0083, 0x0005, 0x4401, 0x4381, 0x4301,
+    0x4281, 0x0601, 0x0581, 0x0501, 0x0004, 0x4201, 0x4181, 0x4101, 0x4081,
+    0x0481, 0x0401, 0x0381, 0x0301, 0x0082, 0x0003, 0x0281, 0x0201, 0x0181,
+    0x4001, 0x0001, 0x0081, 0x0101, 0x0002,
 };
 
 static const uint8_t block_bits[] = {
-    7, 2, 4, 6, 7, 8, 9, 9, 10, 10, 11, 11, 11, 3, 6, 8, 10, 11, 12, 4, 8,
-    10, 12, 5, 9, 10, 5, 9, 12, 5, 10, 12, 6, 10, 12, 6, 10, 6, 10, 6,
-    10, 7, 12, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 11, 11, 12, 12, 4, 9,
-    11, 6, 11, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9,
-    9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12,
-    12, 12
-};
-
-static const uint8_t block_codes[] = {
-    3, 2, 15, 21, 23, 31, 37, 36, 33, 32, 7, 6, 32, 6, 20, 30, 15, 33, 80,
-    14, 29, 14, 81, 13, 35, 13, 12, 34, 82, 11, 12, 83, 19, 11, 84, 18,
-    10, 17, 9, 16, 8, 22, 85, 21, 20, 28, 27, 33, 32, 31, 30, 29, 28,
-    27, 26, 34, 35, 86, 87, 7, 25, 5, 15, 4, 14, 13, 12, 19, 18, 17, 16,
-    26, 25, 24, 23, 22, 21, 20, 19, 24, 23, 22, 21, 20, 19, 18, 17, 7,
-    6, 5, 4, 36, 37, 38, 39, 88, 89, 90, 91, 92, 93, 94, 95
+    -9, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11,
+    11, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12,  7, 10, 10,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,
+     9,  9,  9,  9,  9,  9,  9,  9,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
+     8,  8,  7,  7,  7,  7,  7,  7,  7,  7,  6,  6,  6,  6,  6,  6,  6,  6,  6,
+     6,  5,  5,  5,  4,  2,  3,  4,  4,
 };
 
 static VLC cbplo_tab;
@@ -490,18 +474,20 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold void imm4_init_static_data(void)
 {
-    INIT_VLC_SPARSE_STATIC(&cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo_bits),
-                           cbplo_bits, 1, 1, cbplo_codes, 1, 1, cbplo_symbols, 1, 1,
-                           1 << CBPLO_VLC_BITS);
+    INIT_VLC_STATIC_FROM_LENGTHS(&cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo),
+                                 &cbplo[0][1], 2, &cbplo[0][0], 2, 1,
+                                 0, 0, 1 << CBPLO_VLC_BITS);
 
     INIT_VLC_SPARSE_STATIC(&cbphi_tab, 6, FF_ARRAY_ELEMS(cbphi_bits),
                            cbphi_bits, 1, 1, cbphi_codes, 1, 1, NULL, 0, 0, 64);
 
-    INIT_VLC_SPARSE_STATIC(&blktype_tab, 9, FF_ARRAY_ELEMS(blktype_bits),
-                           blktype_bits, 1, 1, blktype_codes, 1, 1, blktype_symbols, 1, 1, 512);
+    INIT_VLC_STATIC_FROM_LENGTHS(&blktype_tab, BLKTYPE_VLC_BITS, FF_ARRAY_ELEMS(blktype),
+                                 &blktype[0][1], 2, &blktype[0][0], 2, 1,
+                                 0, 0, 1 << BLKTYPE_VLC_BITS);
 
-    INIT_VLC_SPARSE_STATIC(&block_tab, 12, FF_ARRAY_ELEMS(block_bits),
-                           block_bits, 1, 1, block_codes, 1, 1, block_symbols, 2, 2, 4096);
+    INIT_VLC_STATIC_FROM_LENGTHS(&block_tab, BLOCK_VLC_BITS, FF_ARRAY_ELEMS(block_bits),
+                                 block_bits, 1, block_symbols, 2, 2,
+                                 0, 0, 1 << BLOCK_VLC_BITS);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
