@@ -324,6 +324,7 @@ enum AVEscapeMode {
     AV_ESCAPE_MODE_AUTO,      ///< Use auto-selected escaping mode.
     AV_ESCAPE_MODE_BACKSLASH, ///< Use backslash escaping.
     AV_ESCAPE_MODE_QUOTE,     ///< Use single-quote escaping.
+    AV_ESCAPE_MODE_XML,       ///< Use XML non-markup character data escaping.
 };
 
 /**
@@ -342,6 +343,19 @@ enum AVEscapeMode {
  * special by av_get_token(), such as the single quote.
  */
 #define AV_ESCAPE_FLAG_STRICT (1 << 1)
+
+/**
+ * Within AV_ESCAPE_MODE_XML, additionally escape single quotes for single
+ * quoted attributes.
+ */
+#define AV_ESCAPE_FLAG_XML_SINGLE_QUOTES (1 << 2)
+
+/**
+ * Within AV_ESCAPE_MODE_XML, additionally escape double quotes for double
+ * quoted attributes.
+ */
+#define AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES (1 << 3)
+
 
 /**
  * Escape string in src, and put the escaped string in an allocated
