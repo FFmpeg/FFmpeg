@@ -33,6 +33,8 @@
 #include "idctdsp.h"
 #include "internal.h"
 
+#define CBPLO_VLC_BITS   6
+
 typedef struct IMM4Context {
     BswapDSPContext bdsp;
     GetBitContext  gb;
@@ -488,8 +490,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold void imm4_init_static_data(void)
 {
-    INIT_VLC_SPARSE_STATIC(&cbplo_tab, 9, FF_ARRAY_ELEMS(cbplo_bits),
-                           cbplo_bits, 1, 1, cbplo_codes, 1, 1, cbplo_symbols, 1, 1, 512);
+    INIT_VLC_SPARSE_STATIC(&cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo_bits),
+                           cbplo_bits, 1, 1, cbplo_codes, 1, 1, cbplo_symbols, 1, 1,
+                           1 << CBPLO_VLC_BITS);
 
     INIT_VLC_SPARSE_STATIC(&cbphi_tab, 6, FF_ARRAY_ELEMS(cbphi_bits),
                            cbphi_bits, 1, 1, cbphi_codes, 1, 1, NULL, 0, 0, 64);
