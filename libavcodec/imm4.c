@@ -61,7 +61,7 @@ static const uint8_t inter_cb[] = {
 };
 
 static const uint8_t cbplo_symbols[] = {
-    3, 4, 19, 20, 35, 36, 51, 52
+    0, 0, 1, 1, 2, 2, 3, 3
 };
 
 static const uint8_t cbplo_bits[] = {
@@ -236,7 +236,7 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
         for (x = 0; x < avctx->width; x += 16) {
             unsigned flag, cbphi, cbplo;
 
-            cbplo = get_vlc2(gb, cbplo_tab.table, cbplo_tab.bits, 1) >> 4;
+            cbplo = get_vlc2(gb, cbplo_tab.table, CBPLO_VLC_BITS, 1);
             flag = get_bits1(gb);
 
             cbphi = get_cbphi(gb, 1);
