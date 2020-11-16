@@ -379,7 +379,7 @@ static int decode_coeffs(GetBitContext *gb, int16_t *coeffs, int nb_codes)
     memset(coeffs, 0, nb_codes * sizeof(*coeffs));
 
     for (int i = 0; i < nb_codes;) {
-        int value = get_vlc2(gb, cbp_tab.table, cbp_tab.bits, 1);
+        int value = get_vlc2(gb, cbp_tab.table, CBP_VLC_BITS, 1);
 
         if (value > 0) {
             int x = get_bits(gb, value);
