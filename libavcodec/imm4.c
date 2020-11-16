@@ -34,6 +34,7 @@
 #include "internal.h"
 
 #define CBPLO_VLC_BITS   6
+#define CBPHI_VLC_BITS   6
 #define BLKTYPE_VLC_BITS 9
 #define BLOCK_VLC_BITS  12
 
@@ -116,7 +117,7 @@ static int get_cbphi(GetBitContext *gb, int x)
 {
     int value;
 
-    value = get_vlc2(gb, cbphi_tab.table, cbphi_tab.bits, 1);
+    value = get_vlc2(gb, cbphi_tab.table, CBPHI_VLC_BITS, 1);
     if (value < 0)
         return AVERROR_INVALIDDATA;
 
@@ -133,7 +134,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     for (i = !flag; i < 64; i++) {
         int value;
 
-        value = get_vlc2(gb, block_tab.table, block_tab.bits, 1);
+        value = get_vlc2(gb, block_tab.table, BLOCK_VLC_BITS, 1);
         if (value < 0)
             return AVERROR_INVALIDDATA;
         if (value == 0) {
@@ -286,7 +287,7 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
                 continue;
             }
 
-            value = get_vlc2(gb, blktype_tab.table, blktype_tab.bits, 1);
+            value = get_vlc2(gb, blktype_tab.table, BLKTYPE_VLC_BITS, 1);
             if (value < 0)
                 return AVERROR_INVALIDDATA;
 
@@ -478,7 +479,7 @@ static av_cold void imm4_init_static_data(void)
                                  &cbplo[0][1], 2, &cbplo[0][0], 2, 1,
                                  0, 0, 1 << CBPLO_VLC_BITS);
 
-    INIT_VLC_SPARSE_STATIC(&cbphi_tab, 6, FF_ARRAY_ELEMS(cbphi_bits),
+    INIT_VLC_SPARSE_STATIC(&cbphi_tab, CBPHI_VLC_BITS, FF_ARRAY_ELEMS(cbphi_bits),
                            cbphi_bits, 1, 1, cbphi_codes, 1, 1, NULL, 0, 0, 64);
 
     INIT_VLC_STATIC_FROM_LENGTHS(&blktype_tab, BLKTYPE_VLC_BITS, FF_ARRAY_ELEMS(blktype),
