@@ -59,7 +59,7 @@ static av_cold void mpegaudio_tableinit(void)
         M_SQRT2               , /* 2 ^ (2 * 0.25) */
         1.68179283050742908606, /* 2 ^ (3 * 0.25) */
     };
-    static double pow43_lut[16];
+    double pow43_lut[16];
     double exp2_base = 2.11758236813575084767080625169910490512847900390625e-22; // 2^(-72)
     double exp2_val;
     double pow43_val = 0;
