@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "error_resilience.h"
@@ -1481,6 +1482,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
  */
 av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     RV34DecContext *r = avctx->priv_data;
     MpegEncContext *s = &r->s;
     int ret;
@@ -1513,8 +1515,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
         return ret;
     }
 
-    if(!intra_vlcs[0].cbppattern[0].bits)
-        rv34_init_tables();
+    ff_thread_once(&init_static_once, rv34_init_tables);
 
     return 0;
 }
