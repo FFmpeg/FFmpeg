@@ -502,8 +502,7 @@ static const uint8_t mpa_huffbits_24[256] = {
   7,  7,  7,  8,  8,  8,  8,  4,
 };
 
-static const HuffTable mpa_huff_tables[16] = {
-{ 1, NULL, NULL },
+static const HuffTable mpa_huff_tables[] = {
 { 2, mpa_huffbits_1, mpa_huffcodes_1 },
 { 3, mpa_huffbits_2, mpa_huffcodes_2 },
 { 3, mpa_huffbits_3, mpa_huffcodes_3 },

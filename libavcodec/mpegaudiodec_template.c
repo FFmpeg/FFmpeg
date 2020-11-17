@@ -100,7 +100,7 @@ typedef struct MPADecodeContext {
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16];
 static VLC_TYPE huff_vlc_tables[
-    0 + 128 + 128 + 128 + 130 + 128 + 154 + 166 +
+  128 + 128 + 128 + 130 + 128 + 154 + 166 +
   142 + 204 + 190 + 170 + 542 + 460 + 662 + 414
   ][2];
 static VLC huff_quad_vlc[2];
@@ -286,7 +286,7 @@ static av_cold void decode_init_static(void)
 
     /* huffman decode tables */
     offset = 0;
-    for (i = 1; i < 16; i++) {
+    for (int i = 0; i < 15;) {
         const HuffTable *h = &mpa_huff_tables[i];
         int xsize, x, y;
         uint8_t  tmp_bits [512] = { 0 };
@@ -303,7 +303,7 @@ static av_cold void decode_init_static(void)
         }
 
         /* XXX: fail test */
-        huff_vlc[i].table = huff_vlc_tables+offset;
+        huff_vlc[++i].table         = huff_vlc_tables + offset;
         huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
         init_vlc(&huff_vlc[i], 7, 512,
                  tmp_bits, 1, 1, tmp_codes, 2, 2,
