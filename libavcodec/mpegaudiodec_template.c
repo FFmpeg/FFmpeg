@@ -96,34 +96,13 @@ typedef struct MPADecodeContext {
 #define HEADER_SIZE 4
 
 #include "mpegaudiodata.h"
-#include "mpegaudiodectab.h"
 
-/* vlc structure for decoding layer 3 huffman tables */
-static VLC huff_vlc[16];
-static VLC_TYPE huff_vlc_tables[
-  128 + 128 + 128 + 130 + 128 + 154 + 166 +
-  142 + 204 + 190 + 170 + 542 + 460 + 662 + 414
-  ][2];
-static VLC huff_quad_vlc[2];
-static VLC_TYPE  huff_quad_vlc_tables[64+16][2];
-/* computed from band_size_long */
-static uint16_t band_index_long[9][23];
 #include "mpegaudio_tablegen.h"
 /* intensity stereo coef table */
 static INTFLOAT is_table[2][16];
 static INTFLOAT is_table_lsf[2][2][16];
 static INTFLOAT csa_table[8][4];
 
-static int16_t division_tab3[1 << 6 ];
-static int16_t division_tab5[1 << 8 ];
-static int16_t division_tab9[1 << 11];
-
-static int16_t * const division_tabs[4] = {
-    division_tab3, division_tab5, NULL, division_tab9
-};
-
-/* lower 2 bits: modulo 3, higher bits: shift */
-static uint16_t scale_factor_modshift[64];
 /* [i][j]:  2^(-j/3) * FRAC_ONE * 2^(i+2) / (2^(i+2) - 1) */
 static int32_t scale_factor_mult[15][3];
 /* mult table for layer 2 group quantization */
@@ -174,10 +153,10 @@ static void init_long_region(MPADecodeContext *s, GranuleDef *g,
                              int ra1, int ra2)
 {
     int l;
-    g->region_size[0] = band_index_long[s->sample_rate_index][ra1 + 1];
+    g->region_size[0] = ff_band_index_long[s->sample_rate_index][ra1 + 1];
     /* should not overflow */
     l = FFMIN(ra1 + ra2 + 2, 22);
-    g->region_size[1] = band_index_long[s->sample_rate_index][      l];
+    g->region_size[1] = ff_band_index_long[s->sample_rate_index][      l];
 }
 
 static void compute_band_indexes(MPADecodeContext *s, GranuleDef *g)
@@ -212,7 +191,7 @@ static inline int l1_unscale(int n, int mant, int scale_factor)
     int shift, mod;
     int64_t val;
 
-    shift   = scale_factor_modshift[scale_factor];
+    shift   = ff_scale_factor_modshift[scale_factor];
     mod     = shift & 3;
     shift >>= 2;
     val     = MUL64((int)(mant + (-1U << n) + 1), scale_factor_mult[n-1][mod]);
@@ -225,7 +204,7 @@ static inline int l2_unscale_group(int steps, int mant, int scale_factor)
 {
     int shift, mod, val;
 
-    shift   = scale_factor_modshift[scale_factor];
+    shift   = ff_scale_factor_modshift[scale_factor];
     mod     = shift & 3;
     shift >>= 2;
 
@@ -258,18 +237,7 @@ static inline int l3_unscale(int value, int exponent)
 
 static av_cold void decode_init_static(void)
 {
-    const uint8_t *huff_sym = mpa_huffsymbols, *huff_lens = mpa_hufflens;
-    int i, j, k;
-    int offset;
-
-    /* scale factors table for layer 1/2 */
-    for (i = 0; i < 64; i++) {
-        int shift, mod;
-        /* 1.0 (i = 3) is normalized to 2 ^ FRAC_BITS */
-        shift = i / 3;
-        mod   = i % 3;
-        scale_factor_modshift[i] = mod | (shift << 2);
-    }
+    int i, j;
 
     /* scale factor multiply for layer 1 */
     for (i = 0; i < 15; i++) {
@@ -286,71 +254,9 @@ static av_cold void decode_init_static(void)
                 scale_factor_mult[i][2]);
     }
 
-    /* huffman decode tables */
-    offset = 0;
-    for (int i = 0; i < 15;) {
-        uint16_t tmp_symbols[256];
-        int nb_codes_minus_one = mpa_huff_sizes_minus_one[i];
-        int j;
-
-        for (j = 0; j <= nb_codes_minus_one; j++) {
-            uint8_t high = huff_sym[j] & 0xF0, low = huff_sym[j] & 0xF;
-
-            tmp_symbols[j] = high << 1 | ((high && low) << 4) | low;
-        }
-
-        /* XXX: fail test */
-        huff_vlc[++i].table         = huff_vlc_tables + offset;
-        huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
-        ff_init_vlc_from_lengths(&huff_vlc[i], 7, j,
-                                 huff_lens, 1, tmp_symbols, 2, 2,
-                                 0, INIT_VLC_STATIC_OVERLONG, NULL);
-        offset += huff_vlc[i].table_size;
-        huff_lens += j;
-        huff_sym  += j;
-    }
-    av_assert0(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
-
-    offset = 0;
-    for (i = 0; i < 2; i++) {
-        int bits = i == 0 ? 6 : 4;
-        huff_quad_vlc[i].table = huff_quad_vlc_tables+offset;
-        huff_quad_vlc[i].table_allocated = 1 << bits;
-        offset                          += 1 << bits;
-        init_vlc(&huff_quad_vlc[i], bits, 16,
-                 mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1,
-                 INIT_VLC_USE_NEW_STATIC);
-    }
-    av_assert0(offset == FF_ARRAY_ELEMS(huff_quad_vlc_tables));
-
-    for (i = 0; i < 9; i++) {
-        k = 0;
-        for (j = 0; j < 22; j++) {
-            band_index_long[i][j] = k;
-            k += band_size_long[i][j] >> 1;
-        }
-        band_index_long[i][22] = k;
-    }
-
     /* compute n ^ (4/3) and store it in mantissa/exp format */
 
     mpegaudio_tableinit();
-
-    for (i = 0; i < 4; i++) {
-        if (ff_mpa_quant_bits[i] < 0) {
-            for (j = 0; j < (1 << (-ff_mpa_quant_bits[i] + 1)); j++) {
-                int val1, val2, val3, steps;
-                int val = j;
-                steps   = ff_mpa_quant_steps[i];
-                val1    = val % steps;
-                val    /= steps;
-                val2    = val % steps;
-                val3    = val / steps;
-                division_tabs[i][j] = val1 + (val2 << 4) + (val3 << 8);
-            }
-        }
-    }
-
 
     for (i = 0; i < 7; i++) {
         float f;
@@ -386,7 +292,7 @@ static av_cold void decode_init_static(void)
 
     for (i = 0; i < 8; i++) {
         double ci, cs, ca;
-        ci = ci_table[i];
+        ci = ff_ci_table[i];
         cs = 1.0 / sqrt(1.0 + ci * ci);
         ca = cs * ci;
 #if !USE_FLOATS
@@ -402,6 +308,7 @@ static av_cold void decode_init_static(void)
 #endif
     }
     RENAME(ff_mpa_synth_init)();
+    ff_mpegaudiodec_common_init_static();
 }
 
 static av_cold int decode_init(AVCodecContext * avctx)
@@ -688,7 +595,7 @@ static int mp_decode_layer2(MPADecodeContext *s)
                             int v2;
                             /* 3 values at the same time */
                             v = get_bits(&s->gb, -bits);
-                            v2 = division_tabs[qindex][v];
+                            v2 = ff_division_tabs[qindex][v];
                             steps  = ff_mpa_quant_steps[qindex];
 
                             s->sb_samples[ch][k * 12 + l + 0][i] =
@@ -816,8 +723,8 @@ static void exponents_from_scale_factors(MPADecodeContext *s, GranuleDef *g,
     gain    = g->global_gain - 210;
     shift   = g->scalefac_scale + 1;
 
-    bstab  = band_size_long[s->sample_rate_index];
-    pretab = mpa_pretab[g->preflag];
+    bstab  = ff_band_size_long[s->sample_rate_index];
+    pretab = ff_mpa_pretab[g->preflag];
     for (i = 0; i < g->long_end; i++) {
         v0 = gain - ((g->scale_factors[i] + pretab[i]) << shift) + 400;
         len = bstab[i];
@@ -826,7 +733,7 @@ static void exponents_from_scale_factors(MPADecodeContext *s, GranuleDef *g,
     }
 
     if (g->short_start < 13) {
-        bstab    = band_size_short[s->sample_rate_index];
+        bstab    = ff_band_size_short[s->sample_rate_index];
         gains[0] = gain - (g->subblock_gain[0] << 3);
         gains[1] = gain - (g->subblock_gain[1] << 3);
         gains[2] = gain - (g->subblock_gain[2] << 3);
@@ -891,9 +798,9 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             continue;
         /* select vlc table */
         k       = g->table_select[i];
-        l       = mpa_huff_data[k][0];
-        linbits = mpa_huff_data[k][1];
-        vlc     = &huff_vlc[l];
+        l       = ff_mpa_huff_data[k][0];
+        linbits = ff_mpa_huff_data[k][1];
+        vlc     = &ff_huff_vlc[l];
 
         if (!l) {
             memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid) * 2 * j);
@@ -966,7 +873,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     }
 
     /* high frequencies */
-    vlc = &huff_quad_vlc[g->count1table_select];
+    vlc = &ff_huff_quad_vlc[g->count1table_select];
     last_pos = 0;
     while (s_index <= 572) {
         int pos, code;
@@ -1043,7 +950,7 @@ static void reorder_block(MPADecodeContext *s, GranuleDef *g)
     }
 
     for (i = g->short_start; i < 13; i++) {
-        len  = band_size_short[s->sample_rate_index][i];
+        len  = ff_band_size_short[s->sample_rate_index][i];
         ptr1 = ptr;
         dst  = tmp;
         for (j = len; j > 0; j--) {
@@ -1088,7 +995,7 @@ static void compute_stereo(MPADecodeContext *s, GranuleDef *g0, GranuleDef *g1)
             /* for last band, use previous scale factor */
             if (i != 11)
                 k -= 3;
-            len = band_size_short[s->sample_rate_index][i];
+            len = ff_band_size_short[s->sample_rate_index][i];
             for (l = 2; l >= 0; l--) {
                 tab0 -= len;
                 tab1 -= len;
@@ -1132,7 +1039,7 @@ found1:
                          non_zero_found_short[2];
 
         for (i = g1->long_end - 1;i >= 0;i--) {
-            len   = band_size_long[s->sample_rate_index][i];
+            len   = ff_band_size_long[s->sample_rate_index][i];
             tab0 -= len;
             tab1 -= len;
             /* test if non zero band. if so, stop doing i-stereo */
@@ -1463,8 +1370,8 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 int slen, slen1, slen2;
 
                 /* MPEG-1 scale factors */
-                slen1 = slen_table[0][g->scalefac_compress];
-                slen2 = slen_table[1][g->scalefac_compress];
+                slen1 = ff_slen_table[0][g->scalefac_compress];
+                slen2 = ff_slen_table[1][g->scalefac_compress];
                 ff_dlog(s->avctx, "slen1=%d slen2=%d\n", slen1, slen2);
                 if (g->block_type == 2) {
                     n = g->switch_point ? 17 : 18;
@@ -1549,7 +1456,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 
                 j = 0;
                 for (k = 0; k < 4; k++) {
-                    n  = lsf_nsf_table[tindex2][tindex][k];
+                    n  = ff_lsf_nsf_table[tindex2][tindex][k];
                     sl = slen[k];
                     if (sl) {
                         for (i = 0; i < n; i++)

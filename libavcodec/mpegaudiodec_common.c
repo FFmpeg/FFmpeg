@@ -24,25 +24,34 @@
  * mpeg audio layer decoder tables.
  */
 
-#ifndef AVCODEC_MPEGAUDIODECTAB_H
-#define AVCODEC_MPEGAUDIODECTAB_H
-
 #include <stddef.h>
 #include <stdint.h>
 
-#include "mpegaudio.h"
+#include "libavutil/avassert.h"
+#include "libavutil/thread.h"
+
+#include "mpegaudiodata.h"
+
+uint16_t ff_scale_factor_modshift[64];
+
+static int16_t division_tab3[1 << 6 ];
+static int16_t division_tab5[1 << 8 ];
+static int16_t division_tab9[1 << 11];
+
+int16_t *const ff_division_tabs[4] = {
+    division_tab3, division_tab5, NULL, division_tab9
+};
+
 
 /*******************************************************/
 /* layer 3 tables */
 
-/* layer3 scale factor size */
-static const uint8_t slen_table[2][16] = {
+const uint8_t ff_slen_table[2][16] = {
     { 0, 0, 0, 0, 3, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 },
     { 0, 1, 2, 3, 0, 1, 2, 3, 1, 2, 3, 1, 2, 3, 2, 3 },
 };
 
-/* number of lsf scale factors for a given size */
-static const uint8_t lsf_nsf_table[6][3][4] = {
+const uint8_t ff_lsf_nsf_table[6][3][4] = {
     { {  6,  5,  5, 5 }, {  9,  9,  9, 9 }, {  6,  9,  9, 9 } },
     { {  6,  5,  7, 3 }, {  9,  9, 12, 6 }, {  6,  9, 12, 6 } },
     { { 11, 10,  0, 0 }, { 18, 18,  0, 0 }, { 15, 18,  0, 0 } },
@@ -52,6 +61,12 @@ static const uint8_t lsf_nsf_table[6][3][4] = {
 };
 
 /* mpegaudio layer 3 huffman tables */
+VLC ff_huff_vlc[16];
+static VLC_TYPE huff_vlc_tables[128 + 128 + 128 + 130 + 128 + 154 + 166 + 142 +
+                                204 + 190 + 170 + 542 + 460 + 662 + 414][2];
+VLC ff_huff_quad_vlc[2];
+static VLC_TYPE  huff_quad_vlc_tables[64 + 16][2];
+
 static const uint8_t mpa_hufflens[] = {
     /* Huffman table 1 - 4 entries */
      3,  3,  2,  1,
@@ -294,7 +309,7 @@ static const uint8_t mpa_huff_sizes_minus_one[] =
     3, 8, 8, 15, 15, 35, 35, 35, 63, 63, 63, 255, 255, 255, 255
 };
 
-static const uint8_t mpa_huff_data[32][2] = {
+const uint8_t ff_mpa_huff_data[32][2] = {
 { 0, 0 },
 { 1, 0 },
 { 2, 0 },
@@ -341,8 +356,7 @@ static const uint8_t mpa_quad_bits[2][16] = {
     { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, },
 };
 
-/* band size tables */
-static const uint8_t band_size_long[9][22] = {
+const uint8_t ff_band_size_long[9][22] = {
 { 4, 4, 4, 4, 4, 4, 6, 6, 8, 8, 10,
   12, 16, 20, 24, 28, 34, 42, 50, 54, 76, 158, }, /* 44100 */
 { 4, 4, 4, 4, 4, 4, 6, 6, 6, 8, 10,
@@ -363,7 +377,7 @@ static const uint8_t band_size_long[9][22] = {
   40, 48, 56, 64, 76, 90, 2, 2, 2, 2, 2, }, /* 8000 */
 };
 
-static const uint8_t band_size_short[9][13] = {
+const uint8_t ff_band_size_short[9][13] = {
 { 4, 4, 4, 4, 6, 8, 10, 12, 14, 18, 22, 30, 56, }, /* 44100 */
 { 4, 4, 4, 4, 6, 6, 10, 12, 14, 16, 20, 26, 66, }, /* 48000 */
 { 4, 4, 4, 4, 6, 8, 12, 16, 20, 26, 34, 42, 12, }, /* 32000 */
@@ -375,14 +389,95 @@ static const uint8_t band_size_short[9][13] = {
 { 8, 8, 8, 12, 16, 20, 24, 28, 36, 2, 2, 2, 26, }, /* 8000 */
 };
 
-static const uint8_t mpa_pretab[2][22] = {
+uint16_t ff_band_index_long[9][23];
+
+const uint8_t ff_mpa_pretab[2][22] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 3, 2, 0 },
 };
 
-/* table for alias reduction (XXX: store it as integer !) */
-static const float ci_table[8] = {
+const float ff_ci_table[8] = {
     -0.6, -0.535, -0.33, -0.185, -0.095, -0.041, -0.0142, -0.0037,
 };
 
-#endif /* AVCODEC_MPEGAUDIODECTAB_H */
+static av_cold void mpegaudiodec_common_init_static(void)
+{
+    const uint8_t *huff_sym = mpa_huffsymbols, *huff_lens = mpa_hufflens;
+    int offset;
+
+    /* scale factors table for layer 1/2 */
+    for (int i = 0; i < 64; i++) {
+        int shift, mod;
+        /* 1.0 (i = 3) is normalized to 2 ^ FRAC_BITS */
+        shift = i / 3;
+        mod   = i % 3;
+        ff_scale_factor_modshift[i] = mod | (shift << 2);
+    }
+
+    /* huffman decode tables */
+    offset = 0;
+    for (int i = 0; i < 15;) {
+        uint16_t tmp_symbols[256];
+        int nb_codes_minus_one = mpa_huff_sizes_minus_one[i];
+        int j;
+
+        for (j = 0; j <= nb_codes_minus_one; j++) {
+            uint8_t high = huff_sym[j] & 0xF0, low = huff_sym[j] & 0xF;
+
+            tmp_symbols[j] = high << 1 | ((high && low) << 4) | low;
+        }
+
+        ff_huff_vlc[++i].table         = huff_vlc_tables + offset;
+        ff_huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
+        ff_init_vlc_from_lengths(&ff_huff_vlc[i], 7, j,
+                                 huff_lens, 1, tmp_symbols, 2, 2,
+                                 0, INIT_VLC_STATIC_OVERLONG, NULL);
+        offset    += ff_huff_vlc[i].table_size;
+        huff_lens += j;
+        huff_sym  += j;
+    }
+    av_assert0(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
+
+    offset = 0;
+    for (int i = 0; i < 2; i++) {
+        int bits = i == 0 ? 6 : 4;
+        ff_huff_quad_vlc[i].table = huff_quad_vlc_tables + offset;
+        ff_huff_quad_vlc[i].table_allocated = 1 << bits;
+        offset                             += 1 << bits;
+        init_vlc(&ff_huff_quad_vlc[i], bits, 16,
+                 mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1,
+                 INIT_VLC_USE_NEW_STATIC);
+    }
+    av_assert0(offset == FF_ARRAY_ELEMS(huff_quad_vlc_tables));
+
+    for (int i = 0; i < 9; i++) {
+        int k = 0;
+        for (int j = 0; j < 22; j++) {
+            ff_band_index_long[i][j] = k;
+            k += ff_band_size_long[i][j] >> 1;
+        }
+        ff_band_index_long[i][22] = k;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (ff_mpa_quant_bits[i] < 0) {
+            for (int j = 0; j < (1 << (-ff_mpa_quant_bits[i] + 1)); j++) {
+                int val1, val2, val3, steps;
+                int val = j;
+                steps   = ff_mpa_quant_steps[i];
+                val1    = val % steps;
+                val    /= steps;
+                val2    = val % steps;
+                val3    = val / steps;
+                ff_division_tabs[i][j] = val1 + (val2 << 4) + (val3 << 8);
+            }
+        }
+    }
+}
+
+av_cold void ff_mpegaudiodec_common_init_static(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
+    ff_thread_once(&init_static_once, mpegaudiodec_common_init_static);
+}

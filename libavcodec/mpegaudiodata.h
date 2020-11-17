@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "internal.h"
+#include "vlc.h"
 
 #define MODE_EXT_MS_STEREO 2
 #define MODE_EXT_I_STEREO  1
@@ -40,5 +41,35 @@ extern const int ff_mpa_sblimit_table[5];
 extern const int ff_mpa_quant_steps[17];
 extern const int ff_mpa_quant_bits[17];
 extern const unsigned char * const ff_mpa_alloc_tables[5];
+
+/* VLCs for decoding layer 3 huffman tables */
+extern VLC ff_huff_vlc[16];
+extern VLC ff_huff_quad_vlc[2];
+
+/* layer3 scale factor size */
+extern const uint8_t ff_slen_table[2][16];
+/* number of lsf scale factors for a given size */
+extern const uint8_t ff_lsf_nsf_table[6][3][4];
+extern const uint8_t ff_mpa_huff_data[32][2];
+
+/* band size tables */
+extern const uint8_t ff_band_size_long[9][22];
+extern const uint8_t ff_band_size_short[9][13];
+/* computed from ff_band_size_long */
+extern uint16_t ff_band_index_long[9][23];
+
+extern int16_t *const ff_division_tabs[4];
+
+/* lower 2 bits: modulo 3, higher bits: shift */
+extern uint16_t ff_scale_factor_modshift[64];
+
+extern const uint8_t ff_mpa_pretab[2][22];
+
+/* table for alias reduction (XXX: store it as integer !) */
+extern const float ff_ci_table[8];
+
+/* Initialize tables shared between the fixed and
+ * floating point MPEG audio decoders. */
+void ff_mpegaudiodec_common_init_static(void);
 
 #endif /* AVCODEC_MPEGAUDIODATA_H */
