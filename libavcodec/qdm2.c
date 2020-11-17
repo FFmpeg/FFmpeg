@@ -1594,8 +1594,6 @@ static void qdm2_synthesis_filter(QDM2Context *q, int index)
 
 /**
  * Init static data (does not depend on specific file)
- *
- * @param q    context
  */
 static av_cold void qdm2_init_static_data(void) {
     static int done;
