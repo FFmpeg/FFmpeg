@@ -108,8 +108,8 @@ static const int huff_vlc_tables_sizes[16] = {
   142,  204,  190,  170,  542,  460,  662,  414
 };
 static VLC huff_quad_vlc[2];
-static VLC_TYPE  huff_quad_vlc_tables[128+16][2];
-static const int huff_quad_vlc_tables_sizes[2] = { 128, 16 };
+static VLC_TYPE  huff_quad_vlc_tables[64+16][2];
+static const int huff_quad_vlc_tables_sizes[2] = { 64, 16 };
 /* computed from band_size_long */
 static uint16_t band_index_long[9][23];
 #include "mpegaudio_tablegen.h"
@@ -321,7 +321,7 @@ static av_cold void decode_init_static(void)
     for (i = 0; i < 2; i++) {
         huff_quad_vlc[i].table = huff_quad_vlc_tables+offset;
         huff_quad_vlc[i].table_allocated = huff_quad_vlc_tables_sizes[i];
-        init_vlc(&huff_quad_vlc[i], i == 0 ? 7 : 4, 16,
+        init_vlc(&huff_quad_vlc[i], i == 0 ? 6 : 4, 16,
                  mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1,
                  INIT_VLC_USE_NEW_STATIC);
         offset += huff_quad_vlc_tables_sizes[i];
