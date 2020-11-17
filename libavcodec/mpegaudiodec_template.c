@@ -30,6 +30,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
@@ -405,13 +406,8 @@ static av_cold void decode_init_static(void)
 
 static av_cold int decode_init(AVCodecContext * avctx)
 {
-    static int initialized_tables = 0;
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MPADecodeContext *s = avctx->priv_data;
-
-    if (!initialized_tables) {
-        decode_init_static();
-        initialized_tables = 1;
-    }
 
     s->avctx = avctx;
 
@@ -437,6 +433,8 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     if (avctx->codec_id == AV_CODEC_ID_MP3ADU)
         s->adu_mode = 1;
+
+    ff_thread_once(&init_static_once, decode_init_static);
 
     return 0;
 }
