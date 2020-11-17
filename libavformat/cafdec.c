@@ -199,6 +199,8 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
 
     st->duration = 0;
     for (i = 0; i < num_packets; i++) {
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
         av_add_index_entry(s->streams[0], pos, st->duration, 0, 0, AVINDEX_KEYFRAME);
         pos += caf->bytes_per_packet ? caf->bytes_per_packet : ff_mp4_read_descr_len(pb);
         st->duration += caf->frames_per_packet ? caf->frames_per_packet : ff_mp4_read_descr_len(pb);
