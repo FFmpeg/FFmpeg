@@ -35,13 +35,6 @@
 /*******************************************************/
 /* layer 3 tables */
 
-/* layer 3 huffman tables */
-typedef struct HuffTable {
-    int nb_codes;
-    const uint8_t *bits;
-    const uint8_t *symbols;
-} HuffTable;
-
 /* layer3 scale factor size */
 static const uint8_t slen_table[2][16] = {
     { 0, 0, 0, 0, 3, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 },
@@ -59,63 +52,42 @@ static const uint8_t lsf_nsf_table[6][3][4] = {
 };
 
 /* mpegaudio layer 3 huffman tables */
-static const uint8_t mpa_huffbits_1[4] = {
+static const uint8_t mpa_hufflens[] = {
+    /* Huffman table 1 - 4 entries */
      3,  3,  2,  1,
-};
-
-static const uint8_t mpa_huffbits_2[9] = {
+    /* Huffman table 2 - 9 entries */
      6,  6,  5,  5,  5,  3,  3,  3,  1,
-};
-
-static const uint8_t mpa_huffbits_3[9] = {
+    /* Huffman table 3 - 9 entries */
      6,  6,  5,  5,  5,  3,  2,  2,  2,
-};
-
-static const uint8_t mpa_huffbits_5[16] = {
+    /* Huffman table 5 - 16 entries */
      8,  8,  7,  6,  7,  7,  7,  7,  6,  6,  6,  6,  3,  3,  3,  1,
-};
-
-static const uint8_t mpa_huffbits_6[16] = {
+    /* Huffman table 6 - 16 entries */
      7,  7,  6,  6,  6,  5,  5,  5,  5,  4,  4,  4,  3,  2,  3,  3,
-};
-
-static const uint8_t mpa_huffbits_7[36] = {
+    /* Huffman table 7 - 36 entries */
     10, 10, 10, 10,  9,  9,  9,  9,  8,  8,  9,  9,  8,  9,  9,  8,  8,  7,  7,
      7,  8,  8,  8,  8,  7,  7,  7,  7,  6,  5,  6,  6,  4,  3,  3,  1,
-};
-
-static const uint8_t mpa_huffbits_8[36] = {
+    /* Huffman table 8 - 36 entries */
     11, 11, 10,  9, 10, 10,  9,  9,  9,  8,  8,  9,  9,  9,  9,  8,  8,  8,  7,
      8,  8,  8,  8,  8,  8,  8,  8,  6,  6,  6,  4,  4,  2,  3,  3,  2,
-};
-
-static const uint8_t mpa_huffbits_9[36] = {
+    /* Huffman table 9 - 36 entries */
      9,  9,  8,  8,  9,  9,  8,  8,  8,  8,  7,  7,  7,  8,  8,  7,  7,  7,  7,
      6,  6,  6,  6,  5,  5,  6,  6,  5,  5,  4,  4,  4,  3,  3,  3,  3,
-};
-
-static const uint8_t mpa_huffbits_10[64] = {
+    /* Huffman table 10 - 64 entries */
     11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 11, 11, 10,  9,  9, 10,
     10,  9,  9, 10, 10,  9, 10, 10,  8,  8,  9,  9, 10, 10,  9,  9, 10, 10,  8,
      8,  8,  9,  9,  9,  9,  9,  9,  8,  8,  8,  8,  8,  8,  7,  7,  7,  7,  6,
      6,  6,  6,  4,  3,  3,  1,
-};
-
-static const uint8_t mpa_huffbits_11[64] = {
+    /* Huffman table 11 - 64 entries */
     10, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10,  9,  9,  9, 10, 10, 10, 10,  8,
      8,  9,  9,  7,  8,  8,  8,  8,  8,  9,  9,  9,  9,  8,  7,  8,  8,  7,  7,
      8,  8,  8,  9,  9,  8,  8,  8,  8,  8,  8,  7,  7,  6,  6,  7,  7,  6,  5,
      4,  5,  5,  3,  3,  3,  2,
-};
-
-static const uint8_t mpa_huffbits_12[64] = {
+    /* Huffman table 12 - 64 entries */
     10, 10,  9,  9,  9,  9,  9,  9,  9,  8,  8,  9,  9,  8,  8,  8,  8,  8,  8,
      9,  9,  8,  8,  8,  8,  8,  9,  9,  7,  7,  7,  8,  8,  8,  8,  8,  8,  7,
      7,  7,  7,  8,  8,  7,  7,  7,  6,  6,  6,  6,  7,  7,  6,  5,  5,  5,  4,
      4,  5,  5,  4,  3,  3,  3,
-};
-
-static const uint8_t mpa_huffbits_13[256] = {
+    /* Huffman table 13 - 256 entries */
     19, 19, 18, 17, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 15, 15, 16,
     16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16, 16, 15, 16, 16, 14, 14, 15,
     15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 14, 13, 14,
@@ -130,9 +102,7 @@ static const uint8_t mpa_huffbits_13[256] = {
     10, 10, 10, 10, 10, 10, 10, 10,  8,  9,  9,  9,  9,  9,  9, 10, 10,  9,  9,
      9,  8,  8,  9,  9,  9,  9,  9,  9,  8,  7,  8,  8,  8,  8,  7,  7,  7,  7,
      7,  6,  6,  6,  6,  4,  4,  3,  1,
-};
-
-static const uint8_t mpa_huffbits_15[256] = {
+    /* Huffman table 15 - 256 entries */
     13, 13, 13, 13, 12, 13, 13, 13, 13, 13, 13, 12, 13, 13, 12, 12, 12, 12, 12,
     12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13,
     13, 11, 11, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11, 12, 12, 11, 11, 11, 11,
@@ -147,9 +117,7 @@ static const uint8_t mpa_huffbits_15[256] = {
      8,  8,  9,  9,  8,  8,  8,  8,  8,  8,  8,  9,  9,  8,  7,  8,  8,  7,  7,
      7,  7,  8,  8,  7,  7,  7,  7,  7,  6,  7,  7,  6,  6,  7,  7,  6,  6,  6,
      5,  5,  5,  5,  5,  3,  4,  4,  3,
-};
-
-static const uint8_t mpa_huffbits_16[256] = {
+    /* Huffman table 16 - 256 entries */
     11, 11, 11, 11, 11, 11, 11, 11, 10, 11, 11, 11, 11, 10, 10, 10, 10, 10,  8,
     10, 10,  9,  9,  9,  9, 10, 16, 17, 17, 15, 15, 16, 16, 14, 15, 15, 14, 14,
     15, 15, 14, 14, 15, 15, 15, 15, 14, 15, 15, 14, 13,  8,  9,  9,  8,  8, 13,
@@ -164,9 +132,7 @@ static const uint8_t mpa_huffbits_16[256] = {
     10,  9,  9, 10, 10, 10, 10, 10, 10,  9,  9,  9, 10, 10,  9, 10, 10,  9,  9,
      8,  9,  9,  9,  9,  9,  9,  9,  9,  8,  8,  9,  9,  8,  8,  7,  7,  8,  8,
      7,  6,  6,  6,  6,  4,  4,  3,  1,
-};
-
-static const uint8_t mpa_huffbits_24[256] = {
+    /* Huffman table 24 - 256 entries */
      8,  8,  8,  8,  8,  8,  8,  8,  7,  8,  8,  7,  7,  8,  8,  7,  7,  7,  7,
      7,  7,  7,  7,  7,  7,  7,  7,  8,  8,  9, 11, 11, 11, 11, 11, 11, 11, 11,
     11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
@@ -183,74 +149,53 @@ static const uint8_t mpa_huffbits_24[256] = {
      6,  5,  5,  6,  6,  4,  4,  4,  4,
 };
 
-static const uint8_t mpa_huffsyms_1[4] = {
+static const uint8_t mpa_huffsymbols[] = {
+    /* Huffman table 1 - 4 entries */
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_2[9] = {
+    /* Huffman table 2 - 9 entries */
     0x22, 0x02, 0x12, 0x21, 0x20, 0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_3[9] = {
+    /* Huffman table 3 - 9 entries */
     0x22, 0x02, 0x12, 0x21, 0x20, 0x10, 0x11, 0x01, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_5[16] = {
+    /* Huffman table 5 - 16 entries */
     0x33, 0x23, 0x32, 0x31, 0x13, 0x03, 0x30, 0x22, 0x12, 0x21, 0x02, 0x20,
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_6[16] = {
+    /* Huffman table 6 - 16 entries */
     0x33, 0x03, 0x23, 0x32, 0x30, 0x13, 0x31, 0x22, 0x02, 0x12, 0x21, 0x20,
     0x01, 0x11, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_7[36] = {
+    /* Huffman table 7 - 36 entries */
     0x55, 0x45, 0x54, 0x53, 0x35, 0x44, 0x25, 0x52, 0x15, 0x51, 0x05, 0x34,
     0x50, 0x43, 0x33, 0x24, 0x42, 0x14, 0x41, 0x40, 0x04, 0x23, 0x32, 0x03,
     0x13, 0x31, 0x30, 0x22, 0x12, 0x21, 0x02, 0x20, 0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_8[36] = {
+    /* Huffman table 8 - 36 entries */
     0x55, 0x54, 0x45, 0x53, 0x35, 0x44, 0x25, 0x52, 0x05, 0x15, 0x51, 0x34,
     0x43, 0x50, 0x33, 0x24, 0x42, 0x14, 0x41, 0x04, 0x40, 0x23, 0x32, 0x13,
     0x31, 0x03, 0x30, 0x22, 0x02, 0x20, 0x12, 0x21, 0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_9[36] = {
+    /* Huffman table 9 - 36 entries */
     0x55, 0x45, 0x35, 0x53, 0x54, 0x05, 0x44, 0x25, 0x52, 0x15, 0x51, 0x34,
     0x43, 0x50, 0x04, 0x24, 0x42, 0x33, 0x40, 0x14, 0x41, 0x23, 0x32, 0x13,
     0x31, 0x03, 0x30, 0x22, 0x02, 0x12, 0x21, 0x20, 0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_10[64] = {
+    /* Huffman table 10 - 64 entries */
     0x77, 0x67, 0x76, 0x57, 0x75, 0x66, 0x47, 0x74, 0x56, 0x65, 0x37, 0x73,
     0x46, 0x55, 0x54, 0x63, 0x27, 0x72, 0x64, 0x07, 0x70, 0x62, 0x45, 0x35,
     0x06, 0x53, 0x44, 0x17, 0x71, 0x36, 0x26, 0x25, 0x52, 0x15, 0x51, 0x34,
     0x43, 0x16, 0x61, 0x60, 0x05, 0x50, 0x24, 0x42, 0x33, 0x04, 0x14, 0x41,
     0x40, 0x23, 0x32, 0x03, 0x13, 0x31, 0x30, 0x22, 0x12, 0x21, 0x02, 0x20,
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_11[64] = {
+    /* Huffman table 11 - 64 entries */
     0x77, 0x67, 0x76, 0x75, 0x66, 0x47, 0x74, 0x57, 0x55, 0x56, 0x65, 0x37,
     0x73, 0x46, 0x45, 0x54, 0x35, 0x53, 0x27, 0x72, 0x64, 0x07, 0x71, 0x17,
     0x70, 0x36, 0x63, 0x60, 0x44, 0x25, 0x52, 0x05, 0x15, 0x62, 0x26, 0x06,
     0x16, 0x61, 0x51, 0x34, 0x50, 0x43, 0x33, 0x24, 0x42, 0x14, 0x41, 0x04,
     0x40, 0x23, 0x32, 0x13, 0x31, 0x03, 0x30, 0x22, 0x21, 0x12, 0x02, 0x20,
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_12[64] = {
+    /* Huffman table 12 - 64 entries */
     0x77, 0x67, 0x76, 0x57, 0x75, 0x66, 0x47, 0x74, 0x65, 0x56, 0x37, 0x73,
     0x55, 0x27, 0x72, 0x46, 0x64, 0x17, 0x71, 0x07, 0x70, 0x36, 0x63, 0x45,
     0x54, 0x44, 0x06, 0x05, 0x26, 0x62, 0x61, 0x16, 0x60, 0x35, 0x53, 0x25,
     0x52, 0x15, 0x51, 0x34, 0x43, 0x50, 0x04, 0x24, 0x42, 0x14, 0x33, 0x41,
     0x23, 0x32, 0x40, 0x03, 0x30, 0x13, 0x31, 0x22, 0x12, 0x21, 0x02, 0x20,
     0x00, 0x11, 0x01, 0x10,
-};
-
-static const uint8_t mpa_huffsyms_13[256] = {
+    /* Huffman table 13 - 256 entries */
     0xFE, 0xFC, 0xFD, 0xED, 0xFF, 0xEF, 0xDF, 0xEE, 0xCF, 0xDE, 0xBF, 0xFB,
     0xCE, 0xDC, 0xAF, 0xE9, 0xEC, 0xDD, 0xFA, 0xCD, 0xBE, 0xEB, 0x9F, 0xF9,
     0xEA, 0xBD, 0xDB, 0x8F, 0xF8, 0xCC, 0xAE, 0x9E, 0x8E, 0x7F, 0x7E, 0xF7,
@@ -273,9 +218,7 @@ static const uint8_t mpa_huffsyms_13[256] = {
     0x05, 0x15, 0x51, 0x34, 0x43, 0x50, 0x24, 0x42, 0x33, 0x14, 0x41, 0x04,
     0x40, 0x23, 0x32, 0x13, 0x31, 0x03, 0x30, 0x22, 0x12, 0x21, 0x02, 0x20,
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_15[256] = {
+    /* Huffman table 15 - 256 entries */
     0xFF, 0xEF, 0xFE, 0xDF, 0xEE, 0xFD, 0xCF, 0xFC, 0xDE, 0xED, 0xBF, 0xFB,
     0xCE, 0xEC, 0xDD, 0xAF, 0xFA, 0xBE, 0xEB, 0xCD, 0xDC, 0x9F, 0xF9, 0xEA,
     0xBD, 0xDB, 0x8F, 0xF8, 0xCC, 0x9E, 0xE9, 0x7F, 0xF7, 0xAD, 0xDA, 0xBC,
@@ -298,9 +241,7 @@ static const uint8_t mpa_huffsyms_15[256] = {
     0x15, 0x51, 0x05, 0x50, 0x34, 0x43, 0x24, 0x42, 0x33, 0x41, 0x14, 0x04,
     0x23, 0x32, 0x40, 0x03, 0x13, 0x31, 0x30, 0x22, 0x12, 0x21, 0x02, 0x20,
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_16[256] = {
+    /* Huffman table 16 - 256 entries */
     0xEF, 0xFE, 0xDF, 0xFD, 0xCF, 0xFC, 0xBF, 0xFB, 0xAF, 0xFA, 0x9F, 0xF9,
     0xF8, 0x8F, 0x7F, 0xF7, 0x6F, 0xF6, 0xFF, 0x5F, 0xF5, 0x4F, 0xF4, 0xF3,
     0xF0, 0x3F, 0xCE, 0xEC, 0xDD, 0xDE, 0xE9, 0xEA, 0xD9, 0xEE, 0xED, 0xEB,
@@ -323,9 +264,7 @@ static const uint8_t mpa_huffsyms_16[256] = {
     0x51, 0x15, 0x05, 0x34, 0x43, 0x50, 0x24, 0x42, 0x33, 0x14, 0x41, 0x04,
     0x40, 0x23, 0x32, 0x13, 0x31, 0x03, 0x30, 0x22, 0x12, 0x21, 0x02, 0x20,
     0x11, 0x01, 0x10, 0x00,
-};
-
-static const uint8_t mpa_huffsyms_24[256] = {
+    /* Huffman table 24 - 256 entries */
     0xEF, 0xFE, 0xDF, 0xFD, 0xCF, 0xFC, 0xBF, 0xFB, 0xFA, 0xAF, 0x9F, 0xF9,
     0xF8, 0x8F, 0x7F, 0xF7, 0x6F, 0xF6, 0x5F, 0xF5, 0x4F, 0xF4, 0x3F, 0xF3,
     0x2F, 0xF2, 0xF1, 0x1F, 0xF0, 0x0F, 0xEE, 0xDE, 0xED, 0xCE, 0xEC, 0xDD,
@@ -350,22 +289,9 @@ static const uint8_t mpa_huffsyms_24[256] = {
     0x11, 0x01, 0x10, 0x00,
 };
 
-static const HuffTable mpa_huff_tables[] = {
-    {   4, mpa_huffbits_1,  mpa_huffsyms_1  },
-    {   9, mpa_huffbits_2,  mpa_huffsyms_2  },
-    {   9, mpa_huffbits_3,  mpa_huffsyms_3  },
-    {  16, mpa_huffbits_5,  mpa_huffsyms_5  },
-    {  16, mpa_huffbits_6,  mpa_huffsyms_6  },
-    {  36, mpa_huffbits_7,  mpa_huffsyms_7  },
-    {  36, mpa_huffbits_8,  mpa_huffsyms_8  },
-    {  36, mpa_huffbits_9,  mpa_huffsyms_9  },
-    {  64, mpa_huffbits_10, mpa_huffsyms_10 },
-    {  64, mpa_huffbits_11, mpa_huffsyms_11 },
-    {  64, mpa_huffbits_12, mpa_huffsyms_12 },
-    { 256, mpa_huffbits_13, mpa_huffsyms_13 },
-    { 256, mpa_huffbits_15, mpa_huffsyms_15 },
-    { 256, mpa_huffbits_16, mpa_huffsyms_16 },
-    { 256, mpa_huffbits_24, mpa_huffsyms_24 },
+static const uint8_t mpa_huff_sizes_minus_one[] =
+{
+    3, 8, 8, 15, 15, 35, 35, 35, 63, 63, 63, 255, 255, 255, 255
 };
 
 static const uint8_t mpa_huff_data[32][2] = {

@@ -257,6 +257,7 @@ static inline int l3_unscale(int value, int exponent)
 
 static av_cold void decode_init_static(void)
 {
+    const uint8_t *huff_sym = mpa_huffsymbols, *huff_lens = mpa_hufflens;
     int i, j, k;
     int offset;
 
@@ -287,12 +288,12 @@ static av_cold void decode_init_static(void)
     /* huffman decode tables */
     offset = 0;
     for (int i = 0; i < 15;) {
-        const HuffTable *h = &mpa_huff_tables[i];
         uint16_t tmp_symbols[256];
-        int nb_codes = h->nb_codes;
+        int nb_codes_minus_one = mpa_huff_sizes_minus_one[i];
+        int j;
 
-        for (int j = 0; j < nb_codes; j++) {
-            uint8_t high = h->symbols[j] & 0xF0, low = h->symbols[j] & 0xF;
+        for (j = 0; j <= nb_codes_minus_one; j++) {
+            uint8_t high = huff_sym[j] & 0xF0, low = huff_sym[j] & 0xF;
 
             tmp_symbols[j] = high << 1 | ((high && low) << 4) | low;
         }
@@ -300,10 +301,12 @@ static av_cold void decode_init_static(void)
         /* XXX: fail test */
         huff_vlc[++i].table         = huff_vlc_tables + offset;
         huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
-        ff_init_vlc_from_lengths(&huff_vlc[i], 7, nb_codes,
-                                 h->bits, 1, tmp_symbols, 2, 2,
+        ff_init_vlc_from_lengths(&huff_vlc[i], 7, j,
+                                 huff_lens, 1, tmp_symbols, 2, 2,
                                  0, INIT_VLC_STATIC_OVERLONG, NULL);
         offset += huff_vlc[i].table_size;
+        huff_lens += j;
+        huff_sym  += j;
     }
     av_assert0(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
 
