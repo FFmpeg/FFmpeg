@@ -34,10 +34,18 @@
 #else
 static int8_t   table_4_3_exp[TABLE_4_3_SIZE];
 static uint32_t table_4_3_value[TABLE_4_3_SIZE];
+
+#if defined(BUILD_TABLES) || !USE_FLOATS
+#define FIXED_TABLE
 static uint32_t exp_table_fixed[512];
 static uint32_t expval_table_fixed[512][16];
+#endif
+
+#if defined(BUILD_TABLES) || USE_FLOATS
+#define FLOAT_TABLE
 static float exp_table_float[512];
 static float expval_table_float[512][16];
+#endif
 
 #define FRAC_BITS 23
 #define IMDCT_SCALAR 1.759
@@ -79,13 +87,23 @@ static av_cold void mpegaudio_tableinit(void)
         exp2_val = exp2_base * exp2_lut[exponent & 3] / IMDCT_SCALAR;
         for (value = 0; value < 16; value++) {
             double f = pow43_lut[value] * exp2_val;
+#ifdef FIXED_TABLE
             expval_table_fixed[exponent][value] = (f < 0xFFFFFFFF ? llrint(f) : 0xFFFFFFFF);
+#endif
+#ifdef FLOAT_TABLE
             expval_table_float[exponent][value] = f;
+#endif
         }
+#ifdef FIXED_TABLE
         exp_table_fixed[exponent] = expval_table_fixed[exponent][1];
+#endif
+#ifdef FLOAT_TABLE
         exp_table_float[exponent] = expval_table_float[exponent][1];
+#endif
     }
 }
+#undef FLOAT_TABLE
+#undef FIXED_TABLE
 #endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_MPEGAUDIO_TABLEGEN_H */
