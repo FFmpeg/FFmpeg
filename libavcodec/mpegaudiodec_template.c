@@ -174,10 +174,10 @@ static void init_long_region(MPADecodeContext *s, GranuleDef *g,
                              int ra1, int ra2)
 {
     int l;
-    g->region_size[0] = band_index_long[s->sample_rate_index][ra1 + 1] >> 1;
+    g->region_size[0] = band_index_long[s->sample_rate_index][ra1 + 1];
     /* should not overflow */
     l = FFMIN(ra1 + ra2 + 2, 22);
-    g->region_size[1] = band_index_long[s->sample_rate_index][      l] >> 1;
+    g->region_size[1] = band_index_long[s->sample_rate_index][      l];
 }
 
 static void compute_band_indexes(MPADecodeContext *s, GranuleDef *g)
@@ -327,7 +327,7 @@ static av_cold void decode_init_static(void)
         k = 0;
         for (j = 0; j < 22; j++) {
             band_index_long[i][j] = k;
-            k += band_size_long[i][j];
+            k += band_size_long[i][j] >> 1;
         }
         band_index_long[i][22] = k;
     }
