@@ -70,7 +70,7 @@ static int read_desc_chunk(AVFormatContext *s)
 
     /* parse format description */
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->sample_rate = av_int2double(avio_rb64(pb));
+    st->codecpar->sample_rate = av_clipd(av_int2double(avio_rb64(pb)), 0, INT_MAX);
     st->codecpar->codec_tag   = avio_rl32(pb);
     flags = avio_rb32(pb);
     caf->bytes_per_packet  = avio_rb32(pb);
