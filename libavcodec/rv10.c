@@ -28,6 +28,7 @@
 #include <inttypes.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "error_resilience.h"
@@ -463,11 +464,22 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     return s->mb_width * s->mb_height - mb_pos;
 }
 
+static av_cold void rv10_init_static(void)
+{
+        INIT_VLC_STATIC(&rv_dc_lum, DC_VLC_BITS, 256,
+                        rv_lum_bits, 1, 1,
+                        rv_lum_code, 2, 2, 16384);
+        INIT_VLC_STATIC(&rv_dc_chrom, DC_VLC_BITS, 256,
+                        rv_chrom_bits, 1, 1,
+                        rv_chrom_code, 2, 2, 16388);
+    ff_h263_decode_init_vlc();
+}
+
 static av_cold int rv10_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     RVDecContext *rv = avctx->priv_data;
     MpegEncContext *s = &rv->m;
-    static int done = 0;
     int major_ver, minor_ver, micro_ver, ret;
 
     if (avctx->extradata_size < 8) {
@@ -525,18 +537,9 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         return ret;
 
     ff_h263dsp_init(&s->h263dsp);
-    ff_h263_decode_init_vlc();
 
-    /* init rv vlc */
-    if (!done) {
-        INIT_VLC_STATIC(&rv_dc_lum, DC_VLC_BITS, 256,
-                        rv_lum_bits, 1, 1,
-                        rv_lum_code, 2, 2, 16384);
-        INIT_VLC_STATIC(&rv_dc_chrom, DC_VLC_BITS, 256,
-                        rv_chrom_bits, 1, 1,
-                        rv_chrom_code, 2, 2, 16388);
-        done = 1;
-    }
+    /* init static VLCs */
+    ff_thread_once(&init_static_once, rv10_init_static);
 
     return 0;
 }
