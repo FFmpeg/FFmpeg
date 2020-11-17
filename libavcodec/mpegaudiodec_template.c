@@ -288,26 +288,21 @@ static av_cold void decode_init_static(void)
     offset = 0;
     for (int i = 0; i < 15;) {
         const HuffTable *h = &mpa_huff_tables[i];
-        int xsize, x, y;
-        uint8_t  tmp_bits [512] = { 0 };
-        uint16_t tmp_codes[512] = { 0 };
+        uint16_t tmp_symbols[256];
+        int nb_codes = h->nb_codes;
 
-        xsize = h->xsize;
+        for (int j = 0; j < nb_codes; j++) {
+            uint8_t high = h->symbols[j] & 0xF0, low = h->symbols[j] & 0xF;
 
-        j = 0;
-        for (x = 0; x < xsize; x++) {
-            for (y = 0; y < xsize; y++) {
-                tmp_bits [(x << 5) | y | ((x && y) << 4)]= h->bits [j  ];
-                tmp_codes[(x << 5) | y | ((x && y) << 4)]= h->codes[j++];
-            }
+            tmp_symbols[j] = high << 1 | ((high && low) << 4) | low;
         }
 
         /* XXX: fail test */
         huff_vlc[++i].table         = huff_vlc_tables + offset;
         huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
-        init_vlc(&huff_vlc[i], 7, 512,
-                 tmp_bits, 1, 1, tmp_codes, 2, 2,
-                 INIT_VLC_STATIC_OVERLONG);
+        ff_init_vlc_from_lengths(&huff_vlc[i], 7, nb_codes,
+                                 h->bits, 1, tmp_symbols, 2, 2,
+                                 0, INIT_VLC_STATIC_OVERLONG, NULL);
         offset += huff_vlc[i].table_size;
     }
     av_assert0(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
