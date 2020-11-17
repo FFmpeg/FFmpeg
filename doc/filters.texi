@@ -1935,16 +1935,7 @@ Set smooth factor. Default value is @var{11}. Allowed range is from @var{1} to @
 
 @subsection Commands
 
-This filter supports the following commands:
-@table @option
-@item s
-Change denoise strength. Argument is single float number.
-Syntax for the command is : "@var{s}"
-
-@item o
-Change output mode.
-Syntax for the command is : "i", "o" or "n" string.
-@end table
+This filter supports the all above options as @ref{commands}.
 
 @section anlms
 Apply Normalized Least-Mean-Squares algorithm to the first audio stream using the second audio stream.

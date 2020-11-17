@@ -72,13 +72,12 @@ enum OutModes {
 };
 
 #define OFFSET(x) offsetof(AudioNLMeansContext, x)
-#define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 #define AFT AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption anlmdn_options[] = {
     { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AFT },
-    { "p", "set patch duration",     OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AF },
-    { "r", "set research duration",  OFFSET(rd), AV_OPT_TYPE_DURATION, {.i64=6000}, 2000, 300000, AF },
+    { "p", "set patch duration",     OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AFT },
+    { "r", "set research duration",  OFFSET(rd), AV_OPT_TYPE_DURATION, {.i64=6000}, 2000, 300000, AFT },
     { "o", "set output mode",        OFFSET(om), AV_OPT_TYPE_INT,      {.i64=OUT_MODE},  0, NB_MODES-1, AFT, "mode" },
     {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AFT, "mode" },
     {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AFT, "mode" },
@@ -147,31 +146,72 @@ void ff_anlmdn_init(AudioNLMDNDSPContext *dsp)
         ff_anlmdn_init_x86(dsp);
 }
 
+static int config_filter(AVFilterContext *ctx)
+{
+    AudioNLMeansContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    int newK, newS, newH, newN;
+    AVFrame *new_in, *new_cache;
+
+    newK = av_rescale(s->pd, outlink->sample_rate, AV_TIME_BASE);
+    newS = av_rescale(s->rd, outlink->sample_rate, AV_TIME_BASE);
+
+    newH = newK * 2 + 1;
+    newN = newH + (newK + newS) * 2;
+
+    av_log(ctx, AV_LOG_DEBUG, "K:%d S:%d H:%d N:%d\n", newK, newS, newH, newN);
+
+    if (!s->cache || s->cache->nb_samples < newS * 2) {
+        new_cache = ff_get_audio_buffer(outlink, newS * 2);
+        if (new_cache) {
+            av_frame_free(&s->cache);
+            s->cache = new_cache;
+        } else {
+            return AVERROR(ENOMEM);
+        }
+    }
+    if (!s->cache)
+        return AVERROR(ENOMEM);
+
+    s->pdiff_lut_scale = 1.f / s->m * WEIGHT_LUT_SIZE;
+    for (int i = 0; i < WEIGHT_LUT_SIZE; i++) {
+        float w = -i / s->pdiff_lut_scale;
+
+        s->weight_lut[i] = expf(w);
+    }
+
+    if (!s->in || s->in->nb_samples < newN) {
+        new_in = ff_get_audio_buffer(outlink, newN);
+        if (new_in) {
+            av_frame_free(&s->in);
+            s->in = new_in;
+        } else {
+            return AVERROR(ENOMEM);
+        }
+    }
+    if (!s->in)
+        return AVERROR(ENOMEM);
+
+    s->K = newK;
+    s->S = newS;
+    s->H = newH;
+    s->N = newN;
+
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioNLMeansContext *s = ctx->priv;
     int ret;
 
-    s->K = av_rescale(s->pd, outlink->sample_rate, AV_TIME_BASE);
-    s->S = av_rescale(s->rd, outlink->sample_rate, AV_TIME_BASE);
-
     s->eof_left = -1;
     s->pts = AV_NOPTS_VALUE;
-    s->H = s->K * 2 + 1;
-    s->N = s->H + (s->K + s->S) * 2;
 
-    av_log(ctx, AV_LOG_DEBUG, "K:%d S:%d H:%d N:%d\n", s->K, s->S, s->H, s->N);
-
-    av_frame_free(&s->in);
-    av_frame_free(&s->cache);
-    s->in = ff_get_audio_buffer(outlink, s->N);
-    if (!s->in)
-        return AVERROR(ENOMEM);
-
-    s->cache = ff_get_audio_buffer(outlink, s->S * 2);
-    if (!s->cache)
-        return AVERROR(ENOMEM);
+    ret = config_filter(ctx);
+    if (ret < 0)
+        return ret;
 
     s->fifo = av_audio_fifo_alloc(outlink->format, outlink->channels, s->N);
     if (!s->fifo)
@@ -180,13 +220,6 @@ static int config_output(AVFilterLink *outlink)
     ret = av_audio_fifo_write(s->fifo, (void **)s->in->extended_data, s->K + s->S);
     if (ret < 0)
         return ret;
-
-    s->pdiff_lut_scale = 1.f / s->m * WEIGHT_LUT_SIZE;
-    for (int i = 0; i < WEIGHT_LUT_SIZE; i++) {
-        float w = -i / s->pdiff_lut_scale;
-
-        s->weight_lut[i] = expf(w);
-    }
 
     ff_anlmdn_init(&s->dsp);
 
@@ -331,6 +364,22 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    ret = config_filter(ctx);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioNLMeansContext *s = ctx->priv;
@@ -368,7 +417,7 @@ AVFilter ff_af_anlmdn = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
-    .process_command = ff_filter_process_command,
+    .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };
