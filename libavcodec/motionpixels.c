@@ -19,6 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/thread.h"
+
+#include "config.h"
+
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bswapdsp.h"
@@ -65,6 +69,7 @@ static av_cold int mp_decode_end(AVCodecContext *avctx)
 
 static av_cold int mp_decode_init(AVCodecContext *avctx)
 {
+    av_unused static AVOnce init_static_once = AV_ONCE_INIT;
     MotionPixelsContext *mp = avctx->priv_data;
     int w4 = (avctx->width  + 3) & ~3;
     int h4 = (avctx->height + 3) & ~3;
@@ -74,7 +79,6 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    motionpixels_tableinit();
     mp->avctx = avctx;
     ff_bswapdsp_init(&mp->bdsp);
     mp->changes_map = av_mallocz_array(avctx->width, h4);
@@ -88,6 +92,10 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
     mp->frame = av_frame_alloc();
     if (!mp->frame)
         return AVERROR(ENOMEM);
+
+#if !CONFIG_HARDCODED_TABLES
+    ff_thread_once(&init_static_once, motionpixels_tableinit);
+#endif
 
     return 0;
 }
@@ -348,5 +356,5 @@ AVCodec ff_motionpixels_decoder = {
     .close          = mp_decode_end,
     .decode         = mp_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
