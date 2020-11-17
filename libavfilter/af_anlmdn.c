@@ -83,7 +83,7 @@ static const AVOption anlmdn_options[] = {
     {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AFT, "mode" },
     {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AFT, "mode" },
     {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},0,  0, AFT, "mode" },
-    { "m", "set smooth factor",      OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 15, AF },
+    { "m", "set smooth factor",      OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 15, AFT },
     { NULL }
 };
 
