@@ -33,8 +33,6 @@
 #include "clearvideodata.h"
 
 typedef struct LevelCodes {
-    uint16_t    mv_esc;
-    uint16_t    bias_esc;
     VLC         flags_cb;
     VLC         mv_cb;
     VLC         bias_cb;
@@ -371,7 +369,7 @@ static TileInfo* decode_tile_info(GetBitContext *gb, LevelCodes *lc, int level)
     if (lc[level].mv_cb.table) {
         uint16_t mv_code = get_vlc2(gb, lc[level].mv_cb.table, lc[level].mv_cb.bits, 3);
 
-        if (mv_code != lc[level].mv_esc) {
+        if (mv_code != MV_ESC) {
             mv.x = (int8_t)(mv_code & 0xff);
             mv.y = (int8_t)(mv_code >> 8);
         } else {
@@ -383,7 +381,7 @@ static TileInfo* decode_tile_info(GetBitContext *gb, LevelCodes *lc, int level)
     if (lc[level].bias_cb.table) {
         uint16_t bias_val = get_vlc2(gb, lc[level].bias_cb.table, lc[level].bias_cb.bits, 2);
 
-        if (bias_val != lc[level].bias_esc) {
+        if (bias_val != BIAS_ESC) {
             bias = (int16_t)(bias_val);
         } else {
             bias = get_sbits(gb, 16);
@@ -728,7 +726,6 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
 
     for (int i = 0, j = 0, k = 0;; i++) {
         if (0x36F & (1 << i)) {
-            c->lev[i].mv_esc = clv_mv_escape[i];
             ret = build_vlc(&c->lev[i].mv_cb, clv_mv_len_counts[k], &mv_syms);
             if (ret < 0)
                 return ret;
@@ -743,7 +740,6 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
             if (ret < 0)
                 return ret;
 
-            c->lev[i + 1].bias_esc = 0x100;
             ret = build_vlc(&c->lev[i + 1].bias_cb,
                             clv_bias_len_counts[j], &bias_syms);
             if (ret < 0)
