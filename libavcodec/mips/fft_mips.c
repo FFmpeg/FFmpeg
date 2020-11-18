@@ -500,9 +500,7 @@ static void ff_imdct_calc_mips(FFTContext *s, FFTSample *output, const FFTSample
 
 av_cold void ff_fft_init_mips(FFTContext *s)
 {
-    int n=0;
-
-    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
+    ff_fft_lut_init();
     ff_init_ff_cos_tabs(17);
 
 #if HAVE_INLINE_ASM
