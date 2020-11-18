@@ -65,9 +65,6 @@ extern uint16_t ff_scale_factor_modshift[64];
 
 extern const uint8_t ff_mpa_pretab[2][22];
 
-/* table for alias reduction (XXX: store it as integer !) */
-extern const float ff_ci_table[8];
-
 /* Initialize tables shared between the fixed and
  * floating point MPEG audio decoders. */
 void ff_mpegaudiodec_common_init_static(void);

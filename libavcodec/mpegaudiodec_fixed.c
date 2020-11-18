@@ -36,6 +36,26 @@
 #define OUT_FMT   AV_SAMPLE_FMT_S16
 #define OUT_FMT_P AV_SAMPLE_FMT_S16P
 
+/* Intensity stereo table. See commit b91d46614df189e7905538e7f5c4ed9c7ed0d274
+ * (float based mp1/mp2/mp3 decoders.) for how they were created. */
+static const int32_t is_table[2][16] = {
+    { 0x000000, 0x1B0CB1, 0x2ED9EC, 0x400000, 0x512614, 0x64F34F, 0x800000 },
+    { 0x800000, 0x64F34F, 0x512614, 0x400000, 0x2ED9EC, 0x1B0CB1, 0x000000 }
+};
+
+/* Antialiasing table. See commit ce4a29c066cddfc180979ed86396812f24337985
+ * (optimize antialias) for how they were created. */
+static const int32_t csa_table[8][4] = {
+    { 0x36E129F8, 0xDF128056, 0x15F3AA4E, 0xA831565E },
+    { 0x386E75F2, 0xE1CF24A5, 0x1A3D9A97, 0xA960AEB3 },
+    { 0x3CC6B73A, 0xEBF19FA6, 0x28B856E0, 0xAF2AE86C },
+    { 0x3EEEA054, 0xF45B88BC, 0x334A2910, 0xB56CE868 },
+    { 0x3FB6905C, 0xF9F27F18, 0x39A90F74, 0xBA3BEEBC },
+    { 0x3FF23F20, 0xFD60D1E4, 0x3D531104, 0xBD6E92C4 },
+    { 0x3FFE5932, 0xFF175EE4, 0x3F15B816, 0xBF1905B2 },
+    { 0x3FFFE34A, 0xFFC3612F, 0x3FC34479, 0xBFC37DE5 }
+};
+
 #include "mpegaudiodec_template.c"
 
 #if CONFIG_MP1_DECODER

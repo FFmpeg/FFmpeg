@@ -396,10 +396,6 @@ const uint8_t ff_mpa_pretab[2][22] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 3, 2, 0 },
 };
 
-const float ff_ci_table[8] = {
-    -0.6, -0.535, -0.33, -0.185, -0.095, -0.041, -0.0142, -0.0037,
-};
-
 static av_cold void mpegaudiodec_common_init_static(void)
 {
     const uint8_t *huff_sym = mpa_huffsymbols, *huff_lens = mpa_hufflens;

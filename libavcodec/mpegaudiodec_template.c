@@ -99,9 +99,7 @@ typedef struct MPADecodeContext {
 
 #include "mpegaudio_tablegen.h"
 /* intensity stereo coef table */
-static INTFLOAT is_table[2][16];
 static INTFLOAT is_table_lsf[2][2][16];
-static INTFLOAT csa_table[8][4];
 
 /* [i][j]:  2^(-j/3) * FRAC_ONE * 2^(i+2) / (2^(i+2) - 1) */
 static int32_t scale_factor_mult[15][3];
@@ -258,22 +256,6 @@ static av_cold void decode_init_static(void)
 
     mpegaudio_tableinit();
 
-    for (i = 0; i < 7; i++) {
-        float f;
-        INTFLOAT v;
-        if (i != 6) {
-            f = tan((double)i * M_PI / 12.0);
-            v = FIXR(f / (1.0 + f));
-        } else {
-            v = FIXR(1.0);
-        }
-        is_table[0][    i] = v;
-        is_table[1][6 - i] = v;
-    }
-    /* invalid values */
-    for (i = 7; i < 16; i++)
-        is_table[0][i] = is_table[1][i] = 0.0;
-
     for (i = 0; i < 16; i++) {
         double f;
         int e, k;
@@ -288,24 +270,6 @@ static av_cold void decode_init_static(void)
                     i, j, (float) is_table_lsf[j][0][i],
                     (float) is_table_lsf[j][1][i]);
         }
-    }
-
-    for (i = 0; i < 8; i++) {
-        double ci, cs, ca;
-        ci = ff_ci_table[i];
-        cs = 1.0 / sqrt(1.0 + ci * ci);
-        ca = cs * ci;
-#if !USE_FLOATS
-        csa_table[i][0] = FIXHR(cs/4);
-        csa_table[i][1] = FIXHR(ca/4);
-        csa_table[i][2] = FIXHR(ca/4) + FIXHR(cs/4);
-        csa_table[i][3] = FIXHR(ca/4) - FIXHR(cs/4);
-#else
-        csa_table[i][0] = cs;
-        csa_table[i][1] = ca;
-        csa_table[i][2] = ca + cs;
-        csa_table[i][3] = ca - cs;
-#endif
     }
     RENAME(ff_mpa_synth_init)();
     ff_mpegaudiodec_common_init_static();
@@ -970,7 +934,8 @@ static void compute_stereo(MPADecodeContext *s, GranuleDef *g0, GranuleDef *g1)
 {
     int i, j, k, l;
     int sf_max, sf, len, non_zero_found;
-    INTFLOAT (*is_tab)[16], *tab0, *tab1, v1, v2;
+    INTFLOAT *tab0, *tab1, v1, v2;
+    const INTFLOAT (*is_tab)[16];
     SUINTFLOAT tmp0, tmp1;
     int non_zero_found_short[3];
 

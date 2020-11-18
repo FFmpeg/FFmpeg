@@ -63,7 +63,7 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
                                         GranuleDef *g)
 {
     float *ptr, *ptr_end;
-    float *csa = &csa_table[0][0];
+    const float *csa = &csa_table[0][0];
     /* temporary variables */
     float in1, in2, in3, in4, in5, in6, in7, in8;
     float out1, out2, out3, out4;
