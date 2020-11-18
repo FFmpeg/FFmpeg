@@ -33,7 +33,7 @@ DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
 {
     DNNModule *dnn_module;
 
-    dnn_module = av_malloc(sizeof(DNNModule));
+    dnn_module = av_mallocz(sizeof(DNNModule));
     if(!dnn_module){
         return NULL;
     }
