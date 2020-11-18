@@ -29,6 +29,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "internal.h"
 #include "vlc.h"
 
@@ -41,6 +43,15 @@ extern const int ff_mpa_sblimit_table[5];
 extern const int ff_mpa_quant_steps[17];
 extern const int ff_mpa_quant_bits[17];
 extern const unsigned char * const ff_mpa_alloc_tables[5];
+
+#define TABLE_4_3_SIZE ((8191 + 16)*4)
+#if CONFIG_HARDCODED_TABLES
+extern const int8_t   ff_table_4_3_exp  [TABLE_4_3_SIZE];
+extern const uint32_t ff_table_4_3_value[TABLE_4_3_SIZE];
+#else
+extern int8_t   ff_table_4_3_exp  [TABLE_4_3_SIZE];
+extern uint32_t ff_table_4_3_value[TABLE_4_3_SIZE];
+#endif
 
 /* VLCs for decoding layer 3 huffman tables */
 extern VLC ff_huff_vlc[16];

@@ -1241,6 +1241,7 @@ HOSTPROGS = aacps_tablegen                                              \
             dv_tablegen                                                 \
             motionpixels_tablegen                                       \
             mpegaudio_tablegen                                          \
+            mpegaudiodec_common_tablegen                                \
             pcm_tablegen                                                \
             qdm2_tablegen                                               \
             sinewin_tablegen                                            \
@@ -1265,7 +1266,8 @@ endif
 
 GEN_HEADERS = cbrt_tables.h cbrt_fixed_tables.h aacps_tables.h aacps_fixed_tables.h \
               dv_tables.h     \
-              sinewin_tables.h sinewin_fixed_tables.h mpegaudio_tables.h motionpixels_tables.h \
+              sinewin_tables.h sinewin_fixed_tables.h mpegaudio_tables.h \
+              mpegaudiodec_common_tables.h motionpixels_tables.h \
               pcm_tables.h qdm2_tables.h
 GEN_HEADERS := $(addprefix $(SUBDIR), $(GEN_HEADERS))
 
@@ -1280,6 +1282,7 @@ $(SUBDIR)aacps_fixed.o: $(SUBDIR)aacps_fixed_tables.h
 $(SUBDIR)aactab_fixed.o: $(SUBDIR)aac_fixed_tables.h
 $(SUBDIR)dvenc.o: $(SUBDIR)dv_tables.h
 $(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
+$(SUBDIR)mpegaudiodec_common.o: $(SUBDIR)mpegaudiodec_common_tables.h
 $(SUBDIR)mpegaudiodec_fixed.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)mpegaudiodec_float.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h

@@ -1,7 +1,8 @@
 /*
- * Generate a header file for hardcoded mpegaudiodec tables
+ * Generate a header file for hardcoded shared mpegaudiodec tables
  *
  * Copyright (c) 2009 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
+ * Copyright (c) 2020 Andreas Rheinhardt <andreas.rheinhardt@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -22,21 +23,18 @@
 
 #include <stdlib.h>
 #define CONFIG_HARDCODED_TABLES 0
-#define BUILD_TABLES
 #include "libavutil/tablegen.h"
-#include "mpegaudio_tablegen.h"
+#include "mpegaudiodec_common_tablegen.h"
 #include "tableprint.h"
 
 int main(void)
 {
-    mpegaudio_tableinit();
+    mpegaudiodec_common_tableinit();
 
     write_fileheader();
 
-    WRITE_ARRAY("static const", uint32_t, exp_table_fixed);
-    WRITE_ARRAY("static const", float, exp_table_float);
-    WRITE_2D_ARRAY("static const", uint32_t, expval_table_fixed);
-    WRITE_2D_ARRAY("static const", float, expval_table_float);
+    WRITE_ARRAY("const", int8_t, ff_table_4_3_exp);
+    WRITE_ARRAY("const", uint32_t, ff_table_4_3_value);
 
     return 0;
 }

@@ -32,6 +32,8 @@
 
 #include "mpegaudiodata.h"
 
+#include "mpegaudiodec_common_tablegen.h"
+
 uint16_t ff_scale_factor_modshift[64];
 
 static int16_t division_tab3[1 << 6 ];
@@ -469,6 +471,7 @@ static av_cold void mpegaudiodec_common_init_static(void)
             }
         }
     }
+    mpegaudiodec_common_tableinit();
 }
 
 av_cold void ff_mpegaudiodec_common_init_static(void)
