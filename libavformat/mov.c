@@ -2100,6 +2100,7 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     uint8_t codec_name[32] = { 0 };
     int64_t stsd_start;
     unsigned int len;
+    uint32_t id = 0;
 
     /* The first 16 bytes of the video sample description are already
      * read in ff_mov_read_stsd_entries() */
@@ -2107,7 +2108,8 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
 
     avio_rb16(pb); /* version */
     avio_rb16(pb); /* revision level */
-    avio_rb32(pb); /* vendor */
+    id = avio_rl32(pb); /* vendor */
+    av_dict_set(&st->metadata, "vendor_id", av_fourcc2str(id), 0);
     avio_rb32(pb); /* temporal quality */
     avio_rb32(pb); /* spatial quality */
 
@@ -2155,10 +2157,12 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
 {
     int bits_per_sample, flags;
     uint16_t version = avio_rb16(pb);
+    uint32_t id = 0;
     AVDictionaryEntry *compatible_brands = av_dict_get(c->fc->metadata, "compatible_brands", NULL, AV_DICT_MATCH_CASE);
 
     avio_rb16(pb); /* revision level */
-    avio_rb32(pb); /* vendor */
+    id = avio_rl32(pb); /* vendor */
+    av_dict_set(&st->metadata, "vendor_id", av_fourcc2str(id), 0);
 
     st->codecpar->channels              = avio_rb16(pb); /* channel count */
     st->codecpar->bits_per_coded_sample = avio_rb16(pb); /* sample size */

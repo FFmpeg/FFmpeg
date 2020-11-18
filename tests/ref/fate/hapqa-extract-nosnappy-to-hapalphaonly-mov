@@ -69,5 +69,6 @@ DISPOSITION:attached_pic=0
 DISPOSITION:timed_thumbnails=0
 TAG:language=eng
 TAG:handler_name=Module de gestion video
+TAG:vendor_id=FFMP
 TAG:encoder=HAPAlpha Only
 [/STREAM]
