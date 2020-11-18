@@ -349,7 +349,7 @@ int av_frame_get_buffer(AVFrame *frame, int align)
 
 static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
 {
-    int i;
+    int ret, i;
 
     dst->key_frame              = src->key_frame;
     dst->pict_type              = src->pict_type;
@@ -426,31 +426,18 @@ FF_DISABLE_DEPRECATION_WARNINGS
     dst->qscale_table = NULL;
     dst->qstride      = 0;
     dst->qscale_type  = 0;
-    av_buffer_unref(&dst->qp_table_buf);
-    if (src->qp_table_buf) {
-        dst->qp_table_buf = av_buffer_ref(src->qp_table_buf);
-        if (dst->qp_table_buf) {
-            dst->qscale_table = dst->qp_table_buf->data;
-            dst->qstride      = src->qstride;
-            dst->qscale_type  = src->qscale_type;
-        }
+    av_buffer_replace(&dst->qp_table_buf, src->qp_table_buf);
+    if (dst->qp_table_buf) {
+        dst->qscale_table = dst->qp_table_buf->data;
+        dst->qstride      = src->qstride;
+        dst->qscale_type  = src->qscale_type;
     }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    av_buffer_unref(&dst->opaque_ref);
-    av_buffer_unref(&dst->private_ref);
-    if (src->opaque_ref) {
-        dst->opaque_ref = av_buffer_ref(src->opaque_ref);
-        if (!dst->opaque_ref)
-            return AVERROR(ENOMEM);
-    }
-    if (src->private_ref) {
-        dst->private_ref = av_buffer_ref(src->private_ref);
-        if (!dst->private_ref)
-            return AVERROR(ENOMEM);
-    }
-    return 0;
+    ret = av_buffer_replace(&dst->opaque_ref, src->opaque_ref);
+    ret |= av_buffer_replace(&dst->private_ref, src->private_ref);
+    return ret;
 }
 
 int av_frame_ref(AVFrame *dst, const AVFrame *src)
