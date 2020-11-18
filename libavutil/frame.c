@@ -456,17 +456,17 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
 
     ret = frame_copy_props(dst, src, 0);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     /* duplicate the frame data if it's not refcounted */
     if (!src->buf[0]) {
         ret = av_frame_get_buffer(dst, 0);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         ret = av_frame_copy(dst, src);
         if (ret < 0)
-            av_frame_unref(dst);
+            goto fail;
 
         return ret;
     }
