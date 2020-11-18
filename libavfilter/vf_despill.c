@@ -153,7 +153,7 @@ static const AVFilterPad despill_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(DespillContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption despill_options[] = {
     { "type",       "set the screen type",     OFFSET(type),        AV_OPT_TYPE_INT,     {.i64=0},     0,   1, FLAGS, "type" },
@@ -179,5 +179,6 @@ AVFilter ff_vf_despill = {
     .query_formats = query_formats,
     .inputs        = despill_inputs,
     .outputs       = despill_outputs,
+    .process_command = ff_filter_process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -9410,6 +9410,10 @@ Controls brightness of spill area, preserving colors.
 Modify alpha from generated spillmap.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section detelecine
 
 Apply an exact inverse of the telecine operation. It requires a predefined
