@@ -368,14 +368,21 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     ch_id, bmp_fmt, width, height, linesize, len, out_len, colormapsize);
 
             zbuf = av_malloc(len);
-            buf  = av_malloc(out_len);
-            if (!zbuf || !buf) {
+            if (!zbuf) {
                 res = AVERROR(ENOMEM);
                 goto bitmap_end;
             }
 
             len = avio_read(pb, zbuf, len);
-            if (len < 0 || (res = uncompress(buf, &out_len, zbuf, len)) != Z_OK) {
+            if (len < 0)
+                goto bitmap_end_skip;
+
+            buf  = av_malloc(out_len);
+            if (!buf) {
+                res = AVERROR(ENOMEM);
+                goto bitmap_end;
+            }
+            if ((res = uncompress(buf, &out_len, zbuf, len)) != Z_OK) {
                 av_log(s, AV_LOG_WARNING, "Failed to uncompress one bitmap\n");
                 goto bitmap_end_skip;
             }
