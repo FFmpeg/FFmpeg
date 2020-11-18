@@ -35,13 +35,6 @@
 
 #if FFT_FIXED_32
 #include "fft_table.h"
-
-static void av_cold fft_lut_init(void)
-{
-    int n = 0;
-    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
-}
-
 #else /* FFT_FIXED_32 */
 
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
@@ -236,10 +229,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 #endif
 
 #if FFT_FIXED_32
-    {
-        static AVOnce control = AV_ONCE_INIT;
-        ff_thread_once(&control, fft_lut_init);
-    }
+    ff_fft_lut_init();
 #else /* FFT_FIXED_32 */
 #if FFT_FLOAT
     if (ARCH_AARCH64) ff_fft_init_aarch64(s);

@@ -51,6 +51,8 @@
  * @file
  * definitions and initialization of LUT table for FFT
  */
+#include "libavutil/thread.h"
+
 #include "libavcodec/fft_table.h"
 
 const int32_t ff_w_tab_sr[MAX_FFT_SIZE/(4*16)] = {
@@ -314,15 +316,29 @@ const int32_t ff_w_tab_sr[MAX_FFT_SIZE/(4*16)] = {
 
 uint16_t ff_fft_offsets_lut[21845];
 
-void ff_fft_lut_init(uint16_t *table, int off, int size, int *index)
+static void fft_lut_init(uint16_t *table, int off, int size, int *index)
 {
     if (size < 16) {
         table[*index] = off >> 2;
         (*index)++;
     }
     else {
-        ff_fft_lut_init(table, off, size>>1, index);
-        ff_fft_lut_init(table, off+(size>>1), size>>2, index);
-        ff_fft_lut_init(table, off+3*(size>>2), size>>2, index);
+        fft_lut_init(table, off,                   size >> 1, index);
+        fft_lut_init(table, off +     (size >> 1), size >> 2, index);
+        fft_lut_init(table, off + 3 * (size >> 2), size >> 2, index);
     }
+}
+
+static void fft_lut_init_start(void)
+{
+    int n = 0;
+
+    fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
+}
+
+void ff_fft_lut_init(void)
+{
+    static AVOnce init_once = AV_ONCE_INIT;
+
+    ff_thread_once(&init_once, fft_lut_init_start);
 }
