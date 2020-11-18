@@ -80,7 +80,7 @@ typedef struct DNNModule{
     DNNReturnType (*execute_model_async)(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame);
     // Retrieve inference result.
-    DNNAsyncStatusType (*get_async_result)(const DNNModel *model, AVFrame **out);
+    DNNAsyncStatusType (*get_async_result)(const DNNModel *model, AVFrame **in, AVFrame **out);
     // Frees memory allocated for model.
     void (*free_model)(DNNModel **model);
 } DNNModule;

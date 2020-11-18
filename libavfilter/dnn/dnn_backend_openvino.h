@@ -33,6 +33,9 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
 
 DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                       const char **output_names, uint32_t nb_output, AVFrame *out_frame);
+DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
+                                            const char **output_names, uint32_t nb_output, AVFrame *out_frame);
+DNNAsyncStatusType ff_dnn_get_async_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out);
 
 void ff_dnn_free_model_ov(DNNModel **model);
 
