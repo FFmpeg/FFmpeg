@@ -336,8 +336,11 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
     }
 
     ov_model = av_mallocz(sizeof(OVModel));
-    if (!ov_model)
-        goto err;
+    if (!ov_model) {
+        av_freep(&model);
+        return NULL;
+    }
+    model->model = (void *)ov_model;
     ov_model->model = model;
     ov_model->ctx.class = &dnn_openvino_class;
     ctx = &ov_model->ctx;
@@ -377,7 +380,6 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
     if (status != OK)
         goto err;
 
-    model->model = (void *)ov_model;
     model->get_input = &get_input_ov;
     model->get_output = &get_output_ov;
     model->options = options;
@@ -386,19 +388,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
     return model;
 
 err:
-    if (model)
-        av_freep(&model);
-    if (ov_model) {
-        if (ov_model->infer_request)
-            ie_infer_request_free(&ov_model->infer_request);
-        if (ov_model->exe_network)
-            ie_exec_network_free(&ov_model->exe_network);
-        if (ov_model->network)
-            ie_network_free(&ov_model->network);
-        if (ov_model->core)
-            ie_core_free(&ov_model->core);
-        av_freep(&ov_model);
-    }
+    ff_dnn_free_model_ov(&model);
     return NULL;
 }
 
