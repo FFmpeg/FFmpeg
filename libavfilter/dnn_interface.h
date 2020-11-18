@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 #include "libavutil/frame.h"
+typedef struct AVFilterContext AVFilterContext;
 
 typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
@@ -53,8 +54,8 @@ typedef struct DNNModel{
     void *model;
     // Stores options when the model is executed by the backend
     const char *options;
-    // Stores userdata used for the interaction between AVFrame and DNNData
-    void *userdata;
+    // Stores FilterContext used for the interaction between AVFrame and DNNData
+    AVFilterContext *filter_ctx;
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
     DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
@@ -63,16 +64,16 @@ typedef struct DNNModel{
                                 const char *output_name, int *output_width, int *output_height);
     // set the pre process to transfer data from AVFrame to DNNData
     // the default implementation within DNN is used if it is not provided by the filter
-    int (*pre_proc)(AVFrame *frame_in, DNNData *model_input, void *user_data);
+    int (*pre_proc)(AVFrame *frame_in, DNNData *model_input, AVFilterContext *filter_ctx);
     // set the post process to transfer data from DNNData to AVFrame
     // the default implementation within DNN is used if it is not provided by the filter
-    int (*post_proc)(AVFrame *frame_out, DNNData *model_output, void *user_data);
+    int (*post_proc)(AVFrame *frame_out, DNNData *model_output, AVFilterContext *filter_ctx);
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
-    DNNModel *(*load_model)(const char *model_filename, const char *options, void *userdata);
+    DNNModel *(*load_model)(const char *model_filename, const char *options, AVFilterContext *filter_ctx);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
     DNNReturnType (*execute_model)(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                    const char **output_names, uint32_t nb_output, AVFrame *out_frame);

@@ -136,7 +136,7 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, TaskItem *task, Requ
     input.dt = precision_to_datatype(precision);
     if (task->do_ioproc) {
         if (ov_model->model->pre_proc != NULL) {
-            ov_model->model->pre_proc(task->in_frame, &input, ov_model->model->userdata);
+            ov_model->model->pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
         } else {
             proc_from_frame_to_dnn(task->in_frame, &input, ctx);
         }
@@ -196,7 +196,7 @@ static void infer_completion_callback(void *args)
     output.data     = blob_buffer.buffer;
     if (task->do_ioproc) {
         if (task->ov_model->model->post_proc != NULL) {
-            task->ov_model->model->post_proc(task->out_frame, &output, task->ov_model->model->userdata);
+            task->ov_model->model->post_proc(task->out_frame, &output, task->ov_model->model->filter_ctx);
         } else {
             proc_from_dnn_to_frame(task->out_frame, &output, ctx);
         }
@@ -350,7 +350,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     return ret;
 }
 
-DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, void *userdata)
+DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, AVFilterContext *filter_ctx)
 {
     char *all_dev_names = NULL;
     DNNModel *model = NULL;
@@ -447,7 +447,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
     model->get_input = &get_input_ov;
     model->get_output = &get_output_ov;
     model->options = options;
-    model->userdata = userdata;
+    model->filter_ctx = filter_ctx;
 
     return model;
 

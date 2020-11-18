@@ -664,7 +664,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     return DNN_SUCCESS;
 }
 
-DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, void *userdata)
+DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, AVFilterContext *filter_ctx)
 {
     DNNModel *model = NULL;
     TFModel *tf_model = NULL;
@@ -704,7 +704,7 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, 
     model->get_input = &get_input_tf;
     model->get_output = &get_output_tf;
     model->options = options;
-    model->userdata = userdata;
+    model->filter_ctx = filter_ctx;
 
     return model;
 }
@@ -741,7 +741,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
 
     if (do_ioproc) {
         if (tf_model->model->pre_proc != NULL) {
-            tf_model->model->pre_proc(in_frame, &input, tf_model->model->userdata);
+            tf_model->model->pre_proc(in_frame, &input, tf_model->model->filter_ctx);
         } else {
             proc_from_frame_to_dnn(in_frame, &input, ctx);
         }
@@ -798,7 +798,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
 
         if (do_ioproc) {
             if (tf_model->model->post_proc != NULL) {
-                tf_model->model->post_proc(out_frame, &output, tf_model->model->userdata);
+                tf_model->model->post_proc(out_frame, &output, tf_model->model->filter_ctx);
             } else {
                 proc_from_dnn_to_frame(out_frame, &output, ctx);
             }
