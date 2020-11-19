@@ -371,11 +371,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    Frei0rContext *s = ctx->priv;
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return set_params(ctx, s->params);
+}
+
 #define OFFSET(x) offsetof(Frei0rContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption frei0r_options[] = {
     { "filter_name",   NULL, OFFSET(dl_name), AV_OPT_TYPE_STRING, .flags = FLAGS },
-    { "filter_params", NULL, OFFSET(params),  AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { "filter_params", NULL, OFFSET(params),  AV_OPT_TYPE_STRING, .flags = TFLAGS },
     { NULL }
 };
 
@@ -409,6 +423,7 @@ AVFilter ff_vf_frei0r = {
     .priv_class    = &frei0r_class,
     .inputs        = avfilter_vf_frei0r_inputs,
     .outputs       = avfilter_vf_frei0r_outputs,
+    .process_command = process_command,
 };
 
 static av_cold int source_init(AVFilterContext *ctx)

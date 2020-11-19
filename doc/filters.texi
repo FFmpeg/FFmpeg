@@ -11784,6 +11784,10 @@ frei0r=perspective:0.2/0.2|0.8/0.2
 For more information, see
 @url{http://frei0r.dyne.org}
 
+@subsection Commands
+
+This filter supports the @option{filter_params} option as @ref{commands}.
+
 @section fspp
 
 Apply fast and simple postprocessing. It is a faster version of @ref{spp}.
