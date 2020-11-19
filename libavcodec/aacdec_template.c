@@ -1195,29 +1195,23 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
         reset_predict_state(&ps[i]);
 }
 
-#define AAC_INIT_VLC_STATIC(num, size)                                     \
-    INIT_VLC_STATIC(&vlc_spectral[num], 8, ff_aac_spectral_sizes[num],     \
-         ff_aac_spectral_bits[num], sizeof(ff_aac_spectral_bits[num][0]),  \
-                                    sizeof(ff_aac_spectral_bits[num][0]),  \
-        ff_aac_spectral_codes[num], sizeof(ff_aac_spectral_codes[num][0]), \
-                                    sizeof(ff_aac_spectral_codes[num][0]), \
-        size);
-
 static void aacdec_init(AACContext *ac);
 
 static av_cold void aac_static_table_init(void)
 {
-    AAC_INIT_VLC_STATIC( 0, 304);
-    AAC_INIT_VLC_STATIC( 1, 270);
-    AAC_INIT_VLC_STATIC( 2, 550);
-    AAC_INIT_VLC_STATIC( 3, 300);
-    AAC_INIT_VLC_STATIC( 4, 328);
-    AAC_INIT_VLC_STATIC( 5, 294);
-    AAC_INIT_VLC_STATIC( 6, 306);
-    AAC_INIT_VLC_STATIC( 7, 268);
-    AAC_INIT_VLC_STATIC( 8, 510);
-    AAC_INIT_VLC_STATIC( 9, 366);
-    AAC_INIT_VLC_STATIC(10, 462);
+    static VLC_TYPE vlc_buf[304 + 270 + 550 + 300 + 328 +
+                            294 + 306 + 268 + 510 + 366 + 462][2];
+    for (unsigned i = 0, offset = 0; i < 11; i++) {
+        vlc_spectral[i].table           = &vlc_buf[offset];
+        vlc_spectral[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
+        init_vlc(&vlc_spectral[i], 8, ff_aac_spectral_sizes[i],
+                 ff_aac_spectral_bits[i],  sizeof(ff_aac_spectral_bits[i][0]),
+                                           sizeof(ff_aac_spectral_bits[i][0]),
+                 ff_aac_spectral_codes[i], sizeof(ff_aac_spectral_codes[i][0]),
+                                           sizeof(ff_aac_spectral_codes[i][0]),
+                 INIT_VLC_STATIC_OVERLONG);
+        offset += vlc_spectral[i].table_size;
+    }
 
     AAC_RENAME(ff_aac_sbr_init)();
 
