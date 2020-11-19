@@ -945,13 +945,13 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
             if (videoFrame->GetAncillaryData(&vanc) == S_OK) {
                 int i;
-                int64_t line_mask = 1;
                 BMDPixelFormat vanc_format = vanc->GetPixelFormat();
                 txt_buf[0] = 0x10;    // data_identifier - EBU_data
                 txt_buf++;
 #if CONFIG_LIBZVBI
                 if (ctx->bmd_mode == bmdModePAL && ctx->teletext_lines &&
                     (vanc_format == bmdFormat8BitYUV || vanc_format == bmdFormat10BitYUV)) {
+                    int64_t line_mask = 1;
                     av_assert0(videoFrame->GetWidth() == 720);
                     for (i = 6; i < 336; i++, line_mask <<= 1) {
                         uint8_t *buf;
