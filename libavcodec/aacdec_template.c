@@ -1204,11 +1204,13 @@ static av_cold void aac_static_table_init(void)
     for (unsigned i = 0, offset = 0; i < 11; i++) {
         vlc_spectral[i].table           = &vlc_buf[offset];
         vlc_spectral[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
-        init_vlc(&vlc_spectral[i], 8, ff_aac_spectral_sizes[i],
-                 ff_aac_spectral_bits[i],  sizeof(ff_aac_spectral_bits[i][0]),
-                                           sizeof(ff_aac_spectral_bits[i][0]),
-                 ff_aac_spectral_codes[i], sizeof(ff_aac_spectral_codes[i][0]),
-                                           sizeof(ff_aac_spectral_codes[i][0]),
+        ff_init_vlc_sparse(&vlc_spectral[i], 8, ff_aac_spectral_sizes[i],
+                           ff_aac_spectral_bits[i],       sizeof(ff_aac_spectral_bits[i][0]),
+                                                          sizeof(ff_aac_spectral_bits[i][0]),
+                           ff_aac_spectral_codes[i],      sizeof(ff_aac_spectral_codes[i][0]),
+                                                          sizeof(ff_aac_spectral_codes[i][0]),
+                           ff_aac_codebook_vector_idx[i], sizeof(ff_aac_codebook_vector_idx[i][0]),
+                                                          sizeof(ff_aac_codebook_vector_idx[i][0]),
                  INIT_VLC_STATIC_OVERLONG);
         offset += vlc_spectral[i].table_size;
     }
@@ -1796,7 +1798,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 #if !USE_FIXED
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
 #endif /* !USE_FIXED */
-                const uint16_t *cb_vector_idx = ff_aac_codebook_vector_idx[cbt_m1];
                 VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cbt_m1].table;
                 OPEN_READER(re, gb);
 
@@ -1812,7 +1813,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-                            cb_idx = cb_vector_idx[code];
+                            cb_idx = code;
 #if USE_FIXED
                             cf = DEC_SQUAD(cf, cb_idx);
 #else
@@ -1835,7 +1836,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-                            cb_idx = cb_vector_idx[code];
+                            cb_idx = code;
                             nnz = cb_idx >> 8 & 15;
                             bits = nnz ? GET_CACHE(re, gb) : 0;
                             LAST_SKIP_BITS(re, gb, nnz);
@@ -1859,7 +1860,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-                            cb_idx = cb_vector_idx[code];
+                            cb_idx = code;
 #if USE_FIXED
                             cf = DEC_SPAIR(cf, cb_idx);
 #else
@@ -1883,7 +1884,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-                            cb_idx = cb_vector_idx[code];
+                            cb_idx = code;
                             nnz = cb_idx >> 8 & 15;
                             sign = nnz ? SHOW_UBITS(re, gb, nnz) << (cb_idx >> 12) : 0;
                             LAST_SKIP_BITS(re, gb, nnz);
@@ -1916,14 +1917,14 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
+                            cb_idx = code;
 
-                            if (!code) {
+                            if (cb_idx == 0x0000) {
                                 *icf++ = 0;
                                 *icf++ = 0;
                                 continue;
                             }
 
-                            cb_idx = cb_vector_idx[code];
                             nnz = cb_idx >> 12;
                             nzt = cb_idx >> 8;
                             bits = SHOW_UBITS(re, gb, nnz) << (32-nnz);
