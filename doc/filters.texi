@@ -20716,6 +20716,8 @@ Set one of available transition effects:
 @item wipetr
 @item wipebl
 @item wipebr
+@item squeezeh
+@item squeezev
 @end table
 Default transition effect is fade.
 

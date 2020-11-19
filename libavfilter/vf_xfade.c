@@ -71,6 +71,8 @@ enum XFadeTransitions {
     WIPETR,
     WIPEBL,
     WIPEBR,
+    SQUEEZEH,
+    SQUEEZEV,
     NB_TRANSITIONS,
 };
 
@@ -195,6 +197,8 @@ static const AVOption xfade_options[] = {
     {   "wipetr",     "wipe tr transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPETR},     0, 0, FLAGS, "transition" },
     {   "wipebl",     "wipe bl transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPEBL},     0, 0, FLAGS, "transition" },
     {   "wipebr",     "wipe br transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPEBR},     0, 0, FLAGS, "transition" },
+    {   "squeezeh",   "squeeze h transition",   0, AV_OPT_TYPE_CONST, {.i64=SQUEEZEH},   0, 0, FLAGS, "transition" },
+    {   "squeezev",   "squeeze v transition",   0, AV_OPT_TYPE_CONST, {.i64=SQUEEZEV},   0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1553,6 +1557,81 @@ static void wipebr##name##_transition(AVFilterContext *ctx,                     
 WIPEBR_TRANSITION(8, uint8_t, 1)
 WIPEBR_TRANSITION(16, uint16_t, 2)
 
+#define SQUEEZEH_TRANSITION(name, type, div)                                         \
+static void squeezeh##name##_transition(AVFilterContext *ctx,                        \
+                                const AVFrame *a, const AVFrame *b, AVFrame *out,    \
+                                float progress,                                      \
+                                int slice_start, int slice_end, int jobnr)           \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const float h = out->height;                                                     \
+    const int height = slice_end - slice_start;                                      \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            const float z = .5f + ((slice_start + y) / h - .5f) / progress;          \
+                                                                                     \
+            if (z < 0.f || z > 1.f) {                                                \
+                for (int x = 0; x < out->width; x++)                                 \
+                    dst[x] = xf1[x];                                                 \
+            } else {                                                                 \
+                const int yy = lrintf(z * (h - 1.f));                                \
+                const type *xf0 = (const type *)(a->data[p] + yy * a->linesize[p]);  \
+                                                                                     \
+                for (int x = 0; x < out->width; x++)                                 \
+                    dst[x] = xf0[x];                                                 \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+SQUEEZEH_TRANSITION(8, uint8_t, 1)
+SQUEEZEH_TRANSITION(16, uint16_t, 2)
+
+#define SQUEEZEV_TRANSITION(name, type, div)                                         \
+static void squeezev##name##_transition(AVFilterContext *ctx,                        \
+                                const AVFrame *a, const AVFrame *b, AVFrame *out,    \
+                                float progress,                                      \
+                                int slice_start, int slice_end, int jobnr)           \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const float w = out->width;                                                      \
+    const int height = slice_end - slice_start;                                      \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p] + slice_start * a->linesize[p]); \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            for (int x = 0; x < out->width; x++) {                                   \
+                const float z = .5f + (x / w - .5f) / progress;                      \
+                                                                                     \
+                if (z < 0.f || z > 1.f) {                                            \
+                    dst[x] = xf1[x];                                                 \
+                } else {                                                             \
+                    const int xx = lrintf(z * (w - 1.f));                            \
+                                                                                     \
+                    dst[x] = xf0[xx];                                                \
+                }                                                                    \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf0 += a->linesize[p] / div;                                             \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+SQUEEZEV_TRANSITION(8, uint8_t, 1)
+SQUEEZEV_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1700,6 +1779,8 @@ static int config_output(AVFilterLink *outlink)
     case WIPETR:     s->transitionf = s->depth <= 8 ? wipetr8_transition     : wipetr16_transition;     break;
     case WIPEBL:     s->transitionf = s->depth <= 8 ? wipebl8_transition     : wipebl16_transition;     break;
     case WIPEBR:     s->transitionf = s->depth <= 8 ? wipebr8_transition     : wipebr16_transition;     break;
+    case SQUEEZEH:   s->transitionf = s->depth <= 8 ? squeezeh8_transition   : squeezeh16_transition;   break;
+    case SQUEEZEV:   s->transitionf = s->depth <= 8 ? squeezev8_transition   : squeezev16_transition;   break;
     }
 
     if (s->transition == CUSTOM) {
