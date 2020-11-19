@@ -30,7 +30,6 @@
  ***********************************/
 
 #include "libavutil/libm.h"
-#include "libavutil/thread.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -48,8 +47,6 @@
 #include "aacenc_utils.h"
 
 #include "psymodel.h"
-
-static AVOnce aac_table_init = AV_ONCE_INIT;
 
 static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
 {
@@ -951,11 +948,6 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
     return 0;
 }
 
-static av_cold void aac_encode_init_tables(void)
-{
-    ff_aac_tableinit();
-}
-
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
@@ -1107,10 +1099,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (HAVE_MIPSDSP)
         ff_aac_coder_init_mips(s);
 
-    if ((ret = ff_thread_once(&aac_table_init, &aac_encode_init_tables)) != 0)
-        return AVERROR_UNKNOWN;
-
     ff_af_queue_init(avctx, &s->afq);
+    ff_aac_tableinit();
 
     return 0;
 }
