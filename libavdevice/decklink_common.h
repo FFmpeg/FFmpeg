@@ -162,6 +162,15 @@ IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
 typedef uint32_t buffercount_type;
 #endif
 
+static const BMDPixelFormat decklink_raw_format_map[] = {
+    (BMDPixelFormat)0,
+    bmdFormat8BitYUV,
+    bmdFormat10BitYUV,
+    bmdFormat8BitARGB,
+    bmdFormat8BitBGRA,
+    bmdFormat10BitRGB,
+};
+
 static const BMDAudioConnection decklink_audio_connection_map[] = {
     (BMDAudioConnection)0,
     bmdAudioConnectionEmbedded,
