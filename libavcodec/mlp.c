@@ -23,6 +23,7 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/thread.h"
 #include "mlp.h"
 
 const uint8_t ff_mlp_huffman_tables[3][18][2] = {
@@ -62,7 +63,6 @@ const uint64_t ff_mlp_channel_layouts[12] = {
     AV_CH_LAYOUT_4POINT1, AV_CH_LAYOUT_5POINT1_BACK, 0,
 };
 
-static int crc_init = 0;
 #if CONFIG_SMALL
 #define CRC_TABLE_SIZE 257
 #else
@@ -72,14 +72,17 @@ static AVCRC crc_63[CRC_TABLE_SIZE];
 static AVCRC crc_1D[CRC_TABLE_SIZE];
 static AVCRC crc_2D[CRC_TABLE_SIZE];
 
+static av_cold void mlp_init_crc(void)
+{
+    av_crc_init(crc_63, 0,  8,   0x63, sizeof(crc_63));
+    av_crc_init(crc_1D, 0,  8,   0x1D, sizeof(crc_1D));
+    av_crc_init(crc_2D, 0, 16, 0x002D, sizeof(crc_2D));
+}
+
 av_cold void ff_mlp_init_crc(void)
 {
-    if (!crc_init) {
-        av_crc_init(crc_63, 0,  8,   0x63, sizeof(crc_63));
-        av_crc_init(crc_1D, 0,  8,   0x1D, sizeof(crc_1D));
-        av_crc_init(crc_2D, 0, 16, 0x002D, sizeof(crc_2D));
-        crc_init = 1;
-    }
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, mlp_init_crc);
 }
 
 uint16_t ff_mlp_checksum16(const uint8_t *buf, unsigned int buf_size)
