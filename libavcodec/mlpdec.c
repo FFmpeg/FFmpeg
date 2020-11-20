@@ -30,6 +30,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/thread.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "libavutil/crc.h"
@@ -205,7 +206,6 @@ static VLC huff_vlc[3];
 
 static av_cold void init_static(void)
 {
-    if (!huff_vlc[0].bits) {
         INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
                     &ff_mlp_huffman_tables[0][0][1], 2, 1,
                     &ff_mlp_huffman_tables[0][0][0], 2, 1, VLC_STATIC_SIZE);
@@ -215,7 +215,6 @@ static av_cold void init_static(void)
         INIT_VLC_STATIC(&huff_vlc[2], VLC_BITS, 15,
                     &ff_mlp_huffman_tables[2][0][1], 2, 1,
                     &ff_mlp_huffman_tables[2][0][0], 2, 1, VLC_STATIC_SIZE);
-    }
 
     ff_mlp_init_crc();
 }
@@ -279,14 +278,16 @@ static inline int read_huff_channels(MLPDecodeContext *m, GetBitContext *gbp,
 
 static av_cold int mlp_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MLPDecodeContext *m = avctx->priv_data;
     int substr;
 
-    init_static();
     m->avctx = avctx;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
     ff_mlpdsp_init(&m->dsp);
+
+    ff_thread_once(&init_static_once, init_static);
 
     return 0;
 }
@@ -1339,6 +1340,7 @@ AVCodec ff_mlp_decoder = {
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_TRUEHD_DECODER
@@ -1351,5 +1353,6 @@ AVCodec ff_truehd_decoder = {
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif /* CONFIG_TRUEHD_DECODER */
