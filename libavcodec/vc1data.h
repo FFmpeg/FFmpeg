@@ -112,8 +112,6 @@ extern const uint8_t ff_vc1_norm2_codes[4];
 extern const uint8_t ff_vc1_norm2_bits[4];
 extern const uint16_t ff_vc1_norm6_codes[64];
 extern const uint8_t ff_vc1_norm6_bits[64];
-/* Normal-6 imode */
-extern const uint8_t ff_vc1_norm6_spec[64][5];
 
 /* 4MV Block pattern VLC tables */
 extern const uint8_t ff_vc1_4mv_block_pattern_codes[4][16];
@@ -187,8 +185,6 @@ extern const uint8_t ff_vc1_adv_interlaced_8x8_zz [64];
 extern const uint8_t ff_vc1_adv_interlaced_8x4_zz [32];
 extern const uint8_t ff_vc1_adv_interlaced_4x8_zz [32];
 extern const uint8_t ff_vc1_adv_interlaced_4x4_zz [16];
-extern const uint8_t ff_vc1_intra_horz_8x8_zz [64];
-extern const uint8_t ff_vc1_intra_vert_8x8_zz [64];
 
 /* DQScale as specified in 8.1.3.9 - almost identical to 0x40000/i */
 extern const int32_t ff_vc1_dqscale[63];
