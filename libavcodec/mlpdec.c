@@ -206,15 +206,14 @@ static VLC huff_vlc[3];
 
 static av_cold void init_static(void)
 {
-        INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
-                    &ff_mlp_huffman_tables[0][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[0][0][0], 2, 1, VLC_STATIC_SIZE);
-        INIT_VLC_STATIC(&huff_vlc[1], VLC_BITS, 16,
-                    &ff_mlp_huffman_tables[1][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[1][0][0], 2, 1, VLC_STATIC_SIZE);
-        INIT_VLC_STATIC(&huff_vlc[2], VLC_BITS, 15,
-                    &ff_mlp_huffman_tables[2][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[2][0][0], 2, 1, VLC_STATIC_SIZE);
+    for (int i = 0; i < 3; i++) {
+        static VLC_TYPE vlc_buf[3 * VLC_STATIC_SIZE][2];
+        huff_vlc[i].table           = &vlc_buf[i * VLC_STATIC_SIZE];
+        huff_vlc[i].table_allocated = VLC_STATIC_SIZE;
+        init_vlc(&huff_vlc[i], VLC_BITS, 18,
+                 &ff_mlp_huffman_tables[i][0][1], 2, 1,
+                 &ff_mlp_huffman_tables[i][0][0], 2, 1, INIT_VLC_USE_NEW_STATIC);
+    }
 
     ff_mlp_init_crc();
 }
