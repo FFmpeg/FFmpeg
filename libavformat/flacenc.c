@@ -346,6 +346,8 @@ static void flac_deinit(struct AVFormatContext *s)
     FlacMuxerContext *c = s->priv_data;
 
     ff_packet_list_free(&c->queue, &c->queue_end);
+    for (unsigned i = 0; i < s->nb_streams; i++)
+        av_packet_free((AVPacket **)&s->streams[i]->priv_data);
 }
 
 static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
