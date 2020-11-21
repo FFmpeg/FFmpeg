@@ -3193,31 +3193,51 @@ enum AVCodecID av_codec_get_id(const AVCodecTag *const *tags, unsigned int tag)
     return AV_CODEC_ID_NONE;
 }
 
-static void compute_chapters_end(AVFormatContext *s)
+static int chapter_start_cmp(const void *p1, const void *p2)
 {
-    unsigned int i, j;
+    AVChapter *ch1 = *(AVChapter**)p1;
+    AVChapter *ch2 = *(AVChapter**)p2;
+    int delta = av_compare_ts(ch1->start, ch1->time_base, ch2->start, ch2->time_base);
+    if (delta)
+        return delta;
+    return (ch1 > ch2) - (ch1 < ch2);
+}
+
+static int compute_chapters_end(AVFormatContext *s)
+{
+    unsigned int i;
     int64_t max_time = 0;
+    AVChapter **timetable = av_malloc(s->nb_chapters * sizeof(*timetable));
+
+    if (!timetable)
+        return AVERROR(ENOMEM);
 
     if (s->duration > 0 && s->start_time < INT64_MAX - s->duration)
         max_time = s->duration +
                        ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time);
 
     for (i = 0; i < s->nb_chapters; i++)
-        if (s->chapters[i]->end == AV_NOPTS_VALUE) {
-            AVChapter *ch = s->chapters[i];
-            int64_t end = max_time ? av_rescale_q(max_time, AV_TIME_BASE_Q,
-                                                  ch->time_base)
-                                   : INT64_MAX;
+        timetable[i] = s->chapters[i];
+    qsort(timetable, s->nb_chapters, sizeof(*timetable), chapter_start_cmp);
 
-            for (j = 0; j < s->nb_chapters; j++) {
-                AVChapter *ch1     = s->chapters[j];
+    for (i = 0; i < s->nb_chapters; i++)
+        if (timetable[i]->end == AV_NOPTS_VALUE) {
+            AVChapter *ch = timetable[i];
+            int64_t end = max_time ? av_rescale_q(max_time, AV_TIME_BASE_Q,
+                                                ch->time_base)
+                                : INT64_MAX;
+
+            if (i + 1 < s->nb_chapters) {
+                AVChapter *ch1     = timetable[i + 1];
                 int64_t next_start = av_rescale_q(ch1->start, ch1->time_base,
-                                                  ch->time_base);
-                if (j != i && next_start > ch->start && next_start < end)
+                                                ch->time_base);
+                if (next_start > ch->start && next_start < end)
                     end = next_start;
             }
             ch->end = (end == INT64_MAX || end < ch->start) ? ch->start : end;
         }
+    av_free(timetable);
+    return 0;
 }
 
 static int get_std_framerate(int i)
@@ -4073,7 +4093,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    compute_chapters_end(ic);
+    ret = compute_chapters_end(ic);
+    if (ret < 0)
+        goto find_stream_info_err;
 
     /* update the stream parameters from the internal codec contexts */
     for (i = 0; i < ic->nb_streams; i++) {
