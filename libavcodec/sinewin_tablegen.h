@@ -74,7 +74,7 @@ av_cold void AAC_RENAME(ff_sine_window_init)(INTFLOAT *window, int n) {
 }
 
 av_cold void AAC_RENAME(ff_init_ff_sine_windows)(int index) {
-    assert(index >= 0 && index < FF_ARRAY_ELEMS(AAC_RENAME(ff_sine_windows)));
+    assert(index >= 5 && index < FF_ARRAY_ELEMS(AAC_RENAME(ff_sine_windows)));
 #if !CONFIG_HARDCODED_TABLES
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_windows)[index], 1 << index);
 #endif
