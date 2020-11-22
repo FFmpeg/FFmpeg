@@ -1230,11 +1230,11 @@ static av_cold void aac_static_table_init(void)
                     352);
 
     // window initialization
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_1024), 4.0, 1024);
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_128), 6.0, 128);
+    AAC_RENAME(ff_kbd_window_init)(AAC_KBD_RENAME(kbd_long_1024), 4.0, 1024);
+    AAC_RENAME(ff_kbd_window_init)(AAC_KBD_RENAME(kbd_short_128), 6.0, 128);
 #if !USE_FIXED
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_960), 4.0, 960);
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_120), 6.0, 120);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_960), 960);
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_120), 120);
 #endif
@@ -2642,10 +2642,10 @@ static void apply_tns(INTFLOAT coef_param[1024], TemporalNoiseShaping *tns,
 static void windowing_and_mdct_ltp(AACContext *ac, INTFLOAT *out,
                                    INTFLOAT *in, IndividualChannelStream *ics)
 {
-    const INTFLOAT *lwindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_long_1024) : AAC_RENAME(ff_sine_1024);
-    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_128) : AAC_RENAME(ff_sine_128);
-    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_long_1024) : AAC_RENAME(ff_sine_1024);
-    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_short_128) : AAC_RENAME(ff_sine_128);
+    const INTFLOAT *lwindow      = ics->use_kb_window[0] ? AAC_KBD_RENAME(kbd_long_1024) : AAC_RENAME(ff_sine_1024);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_KBD_RENAME(kbd_short_128) : AAC_RENAME(ff_sine_128);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_KBD_RENAME(kbd_long_1024) : AAC_RENAME(ff_sine_1024);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_KBD_RENAME(kbd_short_128) : AAC_RENAME(ff_sine_128);
 
     if (ics->window_sequence[0] != LONG_STOP_SEQUENCE) {
         ac->fdsp->vector_fmul(in, in, lwindow_prev, 1024);
@@ -2702,8 +2702,8 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
     IndividualChannelStream *ics = &sce->ics;
     INTFLOAT *saved     = sce->saved;
     INTFLOAT *saved_ltp = sce->coeffs;
-    const INTFLOAT *lwindow = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_long_1024) : AAC_RENAME(ff_sine_1024);
-    const INTFLOAT *swindow = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_128) : AAC_RENAME(ff_sine_128);
+    const INTFLOAT *lwindow = ics->use_kb_window[0] ? AAC_KBD_RENAME(kbd_long_1024) : AAC_RENAME(ff_sine_1024);
+    const INTFLOAT *swindow = ics->use_kb_window[0] ? AAC_KBD_RENAME(kbd_short_128) : AAC_RENAME(ff_sine_128);
     int i;
 
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
@@ -2741,9 +2741,9 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
     INTFLOAT *in    = sce->coeffs;
     INTFLOAT *out   = sce->ret;
     INTFLOAT *saved = sce->saved;
-    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_128) : AAC_RENAME(ff_sine_128);
-    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_long_1024) : AAC_RENAME(ff_sine_1024);
-    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_short_128) : AAC_RENAME(ff_sine_128);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_KBD_RENAME(kbd_short_128) : AAC_RENAME(ff_sine_128);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_KBD_RENAME(kbd_long_1024) : AAC_RENAME(ff_sine_1024);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_KBD_RENAME(kbd_short_128) : AAC_RENAME(ff_sine_128);
     INTFLOAT *buf  = ac->buf_mdct;
     INTFLOAT *temp = ac->temp;
     int i;
@@ -2810,9 +2810,9 @@ static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
     INTFLOAT *in    = sce->coeffs;
     INTFLOAT *out   = sce->ret;
     INTFLOAT *saved = sce->saved;
-    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(sine_120);
-    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_long_960) : AAC_RENAME(sine_960);
-    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(sine_120);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(aac_kbd_short_120) : AAC_RENAME(sine_120);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(aac_kbd_long_960) : AAC_RENAME(sine_960);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(aac_kbd_short_120) : AAC_RENAME(sine_120);
     INTFLOAT *buf  = ac->buf_mdct;
     INTFLOAT *temp = ac->temp;
     int i;

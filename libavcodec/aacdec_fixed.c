@@ -86,6 +86,9 @@
 #include <math.h>
 #include <string.h>
 
+DECLARE_ALIGNED(32, static int, AAC_KBD_RENAME(kbd_long_1024))[1024];
+DECLARE_ALIGNED(32, static int, AAC_KBD_RENAME(kbd_short_128))[128];
+
 static av_always_inline void reset_predict_state(PredictorState *ps)
 {
     ps->r0.mant   = 0;
