@@ -1235,8 +1235,8 @@ static av_cold void aac_static_table_init(void)
 #if !USE_FIXED
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_960), 4.0, 960);
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_120), 6.0, 120);
-    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_960), 960);
-    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_120), 120);
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_960), 960);
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_120), 120);
 #endif
     AAC_RENAME(ff_init_ff_sine_windows)(10);
     AAC_RENAME(ff_init_ff_sine_windows)( 9);
@@ -2810,9 +2810,9 @@ static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
     INTFLOAT *in    = sce->coeffs;
     INTFLOAT *out   = sce->ret;
     INTFLOAT *saved = sce->saved;
-    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(ff_sine_120);
-    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_long_960) : AAC_RENAME(ff_sine_960);
-    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(ff_sine_120);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(sine_120);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_long_960) : AAC_RENAME(sine_960);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(sine_120);
     INTFLOAT *buf  = ac->buf_mdct;
     INTFLOAT *temp = ac->temp;
     int i;

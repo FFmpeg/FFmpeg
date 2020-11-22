@@ -31,10 +31,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 
-#if !USE_FIXED
-SINETABLE120960(120);
-SINETABLE120960(960);
-#endif
 #if !CONFIG_HARDCODED_TABLES
 SINETABLE(  32);
 SINETABLE(  64);
