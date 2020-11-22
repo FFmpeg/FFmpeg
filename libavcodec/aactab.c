@@ -45,12 +45,18 @@ float ff_aac_pow34sf_tab[428];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
 
-av_cold void ff_aac_float_common_init(void)
+static av_cold void aac_float_common_init(void)
 {
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows(7);
+}
+
+av_cold void ff_aac_float_common_init(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, aac_float_common_init);
 }
 #endif
 
