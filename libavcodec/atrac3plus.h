@@ -179,9 +179,9 @@ int ff_atrac3p_decode_channel_unit(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
 void ff_atrac3p_init_imdct(AVCodecContext *avctx, FFTContext *mdct_ctx);
 
 /**
- * Initialize sine waves synthesizer.
+ * Initialize sine waves synthesizer and ff_sine_* tables.
  */
-void ff_atrac3p_init_wave_synth(void);
+void ff_atrac3p_init_dsp_static(void);
 
 /**
  * Synthesize sine waves for a particular subband.
