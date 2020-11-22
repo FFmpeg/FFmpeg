@@ -2409,17 +2409,17 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
     CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS s_s_par[AV_NUM_DATA_POINTERS] = { 0 };
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
-    if (ret < 0) {
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
+    if (ret < 0)
+        return AVERROR_EXTERNAL;
 
     dst_f = (AVVkFrame *)dst->data[0];
 
     ret = vulkan_export_to_cuda(hwfc, src->hw_frames_ctx, dst);
     if (ret < 0) {
-        goto fail;
+        CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+        return ret;
     }
+
     dst_int = dst_f->internal;
 
     ret = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
@@ -3120,16 +3120,15 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     CudaFunctions *cu = cu_internal->cuda_dl;
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
-    if (ret < 0) {
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
+    if (ret < 0)
+        return AVERROR_EXTERNAL;
 
     dst_f = (AVVkFrame *)src->data[0];
 
     err = vulkan_export_to_cuda(hwfc, dst->hw_frames_ctx, src);
     if (err < 0) {
-        goto fail;
+        CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+        return err;
     }
 
     dst_int = dst_f->internal;
