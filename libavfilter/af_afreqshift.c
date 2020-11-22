@@ -273,12 +273,40 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    AFreqShift *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
+    const int start = (in->channels * jobnr) / nb_jobs;
+    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+
+    for (int ch = start; ch < end; ch++) {
+        s->filter_channel(ctx, in->nb_samples,
+                          in->sample_rate,
+                          (const double *)in->extended_data[ch],
+                          (double *)out->extended_data[ch],
+                          (double *)s->i1->extended_data[ch],
+                          (double *)s->o1->extended_data[ch],
+                          (double *)s->i2->extended_data[ch],
+                          (double *)s->o2->extended_data[ch]);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AFreqShift *s = ctx->priv;
     AVFrame *out;
+    ThreadData td;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -291,16 +319,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    for (int ch = 0; ch < in->channels; ch++) {
-        s->filter_channel(ctx, in->nb_samples,
-                          in->sample_rate,
-                          (const double *)in->extended_data[ch],
-                          (double *)out->extended_data[ch],
-                          (double *)s->i1->extended_data[ch],
-                          (double *)s->o1->extended_data[ch],
-                          (double *)s->i2->extended_data[ch],
-                          (double *)s->o2->extended_data[ch]);
-    }
+    td.in = in; td.out = out;
+    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(inlink->channels,
+                                                            ff_filter_get_nb_threads(ctx)));
 
     s->in_samples += in->nb_samples;
 
@@ -357,6 +378,8 @@ AVFilter ff_af_afreqshift = {
     .inputs          = inputs,
     .outputs         = outputs,
     .process_command = ff_filter_process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
 };
 
 static const AVOption aphaseshift_options[] = {
@@ -376,4 +399,6 @@ AVFilter ff_af_aphaseshift = {
     .inputs          = inputs,
     .outputs         = outputs,
     .process_command = ff_filter_process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
 };
