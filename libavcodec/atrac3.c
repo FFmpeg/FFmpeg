@@ -39,6 +39,8 @@
 #include "libavutil/attributes.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
+#include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "fft.h"
@@ -870,7 +872,7 @@ static av_cold void atrac3_init_static_data(void)
 
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
-    static int static_init_done;
+    static AVOnce init_static_once = AV_ONCE_INIT;
     int i, js_pair, ret;
     int version, delay, samples_per_frame, frame_factor;
     const uint8_t *edata_ptr = avctx->extradata;
@@ -881,10 +883,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Channel configuration error!\n");
         return AVERROR(EINVAL);
     }
-
-    if (!static_init_done)
-        atrac3_init_static_data();
-    static_init_done = 1;
 
     /* Take care of the codec-specific extradata. */
     if (avctx->codec_id == AV_CODEC_ID_ATRAC3AL) {
@@ -1009,6 +1007,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     if (!q->units)
         return AVERROR(ENOMEM);
 
+    ff_thread_once(&init_static_once, atrac3_init_static_data);
+
     return 0;
 }
 
@@ -1024,7 +1024,7 @@ AVCodec ff_atrac3_decoder = {
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
-    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 AVCodec ff_atrac3al_decoder = {
@@ -1039,5 +1039,5 @@ AVCodec ff_atrac3al_decoder = {
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
-    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
