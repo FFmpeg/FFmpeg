@@ -32,6 +32,10 @@
 #include "libavutil/common.h"
 
 #if !CONFIG_HARDCODED_TABLES
+#ifndef BUILD_TABLES
+#include "libavutil/thread.h"
+#endif
+
 SINETABLE(  32);
 SINETABLE(  64);
 SINETABLE( 128);
@@ -69,10 +73,49 @@ av_cold void AAC_RENAME(ff_sine_window_init)(INTFLOAT *window, int n) {
         window[i] = SIN_FIX(sinf((i + 0.5) * (M_PI / (2.0 * n))));
 }
 
+#if !CONFIG_HARDCODED_TABLES && !defined(BUILD_TABLES)
+#define INIT_FF_SINE_WINDOW_INIT_FUNC(index)        \
+static void init_ff_sine_window_ ## index(void)     \
+{                                                   \
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_windows)[index], 1 << index);\
+}
+
+INIT_FF_SINE_WINDOW_INIT_FUNC(5)
+INIT_FF_SINE_WINDOW_INIT_FUNC(6)
+INIT_FF_SINE_WINDOW_INIT_FUNC(7)
+INIT_FF_SINE_WINDOW_INIT_FUNC(8)
+INIT_FF_SINE_WINDOW_INIT_FUNC(9)
+INIT_FF_SINE_WINDOW_INIT_FUNC(10)
+INIT_FF_SINE_WINDOW_INIT_FUNC(11)
+INIT_FF_SINE_WINDOW_INIT_FUNC(12)
+INIT_FF_SINE_WINDOW_INIT_FUNC(13)
+
+static void (*const sine_window_init_func_array[])(void) = {
+    init_ff_sine_window_5,
+    init_ff_sine_window_6,
+    init_ff_sine_window_7,
+    init_ff_sine_window_8,
+    init_ff_sine_window_9,
+    init_ff_sine_window_10,
+    init_ff_sine_window_11,
+    init_ff_sine_window_12,
+    init_ff_sine_window_13,
+};
+
+static AVOnce init_sine_window_once[9] = {
+    AV_ONCE_INIT, AV_ONCE_INIT, AV_ONCE_INIT, AV_ONCE_INIT, AV_ONCE_INIT,
+    AV_ONCE_INIT, AV_ONCE_INIT, AV_ONCE_INIT, AV_ONCE_INIT
+};
+#endif
+
 av_cold void AAC_RENAME(ff_init_ff_sine_windows)(int index) {
     assert(index >= 5 && index < FF_ARRAY_ELEMS(AAC_RENAME(ff_sine_windows)));
 #if !CONFIG_HARDCODED_TABLES
+#ifdef BUILD_TABLES
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_windows)[index], 1 << index);
+#else
+    ff_thread_once(&init_sine_window_once[index - 5], sine_window_init_func_array[index - 5]);
+#endif
 #endif
 }
 
