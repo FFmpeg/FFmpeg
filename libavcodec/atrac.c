@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "atrac.h"
 
@@ -45,22 +47,23 @@ static const float qmf_48tap_half[24] = {
    -0.043596379,   -0.099384367,   0.13207909,    0.46424159
 };
 
-av_cold void ff_atrac_generate_tables(void)
+static av_cold void atrac_generate_tables(void)
 {
-    int i;
-    float s;
-
     /* Generate scale factors */
-    if (!ff_atrac_sf_table[63])
-        for (i=0 ; i<64 ; i++)
-            ff_atrac_sf_table[i] = pow(2.0, (i - 15) / 3.0);
+    for (int i = 0; i < 64; i++)
+        ff_atrac_sf_table[i] = pow(2.0, (i - 15) / 3.0);
 
     /* Generate the QMF window. */
-    if (!qmf_window[47])
-        for (i=0 ; i<24; i++) {
-            s = qmf_48tap_half[i] * 2.0;
-            qmf_window[i] = qmf_window[47 - i] = s;
-        }
+    for (int i = 0; i < 24; i++) {
+        float s = qmf_48tap_half[i] * 2.0;
+        qmf_window[i] = qmf_window[47 - i] = s;
+    }
+}
+
+av_cold void ff_atrac_generate_tables(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, atrac_generate_tables);
 }
 
 av_cold void ff_atrac_init_gain_compensation(AtracGCContext *gctx, int id2exp_offset,
