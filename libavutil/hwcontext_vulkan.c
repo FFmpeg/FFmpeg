@@ -3028,6 +3028,11 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         size_t p_size = FFALIGN(FFABS(src->linesize[i]) * p_height,
                                 p->hprops.minImportedHostPointerAlignment);
 
+        VkExternalMemoryBufferCreateInfo create_desc = {
+            .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+            .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+        };
+
         VkImportMemoryHostPointerInfoEXT import_desc = {
             .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
             .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
@@ -3044,7 +3049,8 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         tmp.linesize[i] = FFABS(src->linesize[i]);
         err = create_buf(dev_ctx, &bufs[i], p_size, p_height, &tmp.linesize[i],
                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                         host_mapped[i] ? &create_desc : NULL,
                          host_mapped[i] ? &import_desc : NULL);
         if (err)
             goto end;
@@ -3211,6 +3217,11 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         size_t p_size = FFALIGN(FFABS(dst->linesize[i]) * p_height,
                                 p->hprops.minImportedHostPointerAlignment);
 
+        VkExternalMemoryBufferCreateInfo create_desc = {
+            .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+            .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+        };
+
         VkImportMemoryHostPointerInfoEXT import_desc = {
             .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
             .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
@@ -3227,7 +3238,8 @@ static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         tmp.linesize[i] = FFABS(dst->linesize[i]);
         err = create_buf(dev_ctx, &bufs[i], p_size, p_height,
                          &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, NULL,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                         host_mapped[i] ? &create_desc : NULL,
                          host_mapped[i] ? &import_desc : NULL);
         if (err)
             goto end;
