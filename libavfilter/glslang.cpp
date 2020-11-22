@@ -235,8 +235,7 @@ int glslang_init(void)
 void glslang_uninit(void)
 {
     pthread_mutex_lock(&glslang_mutex);
-    av_assert0(glslang_refcount > 0);
-    if (--glslang_refcount == 0)
+    if (glslang_refcount && (--glslang_refcount == 0))
         FinalizeProcess();
     pthread_mutex_unlock(&glslang_mutex);
 }
