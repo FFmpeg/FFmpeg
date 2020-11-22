@@ -1138,7 +1138,7 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *_dst, \
             for (j = 0; j < sz; j++) \
                 dst[j * stride] = av_clip_pixel(dst[j * stride] + \
                                                 (bits ? \
-                                                 (t + (1 << (bits - 1))) >> bits : \
+                                                 (int)(t + (1U << (bits - 1))) >> bits : \
                                                  t)); \
             dst++; \
         } \
@@ -1153,7 +1153,7 @@ static void type_a##_##type_b##_##sz##x##sz##_add_c(uint8_t *_dst, \
         for (j = 0; j < sz; j++) \
             dst[j * stride] = av_clip_pixel(dst[j * stride] + \
                                             (bits ? \
-                                             (out[j] + (1 << (bits - 1))) >> bits : \
+                                             (int)(out[j] + (1U << (bits - 1))) >> bits : \
                                              out[j])); \
         dst++; \
     } \
