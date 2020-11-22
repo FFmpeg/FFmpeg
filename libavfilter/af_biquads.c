@@ -388,16 +388,14 @@ static void biquad_latt_## name (BiquadsContext *s,                           \
         in   = ibuf[i];                                                       \
         t0   = in - k1 * s0;                                                  \
         t1   = t0 * k1 + s0;                                                  \
-        s0   = t1;                                                            \
         out += t1 * v2;                                                       \
                                                                               \
         t0    = t0 - k0 * s1;                                                 \
         t1    = t0 * k0 + s1;                                                 \
         out  += t1 * v1;                                                      \
-        s1    = t1;                                                           \
                                                                               \
         out  += t0 * v0;                                                      \
-        s0    = s1;                                                           \
+        s0    = t1;                                                           \
         s1    = t0;                                                           \
                                                                               \
         out = out * wet + in * dry;                                           \
