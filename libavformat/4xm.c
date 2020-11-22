@@ -299,7 +299,7 @@ static int fourxm_read_packet(AVFormatContext *s,
     unsigned int track_number;
     int packet_read = 0;
     unsigned char header[8];
-    int audio_frame_count;
+    int64_t audio_frame_count;
 
     while (!packet_read) {
         if ((ret = avio_read(s->pb, header, 8)) < 0)
