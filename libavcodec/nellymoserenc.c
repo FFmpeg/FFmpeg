@@ -170,12 +170,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_af_queue_init(avctx, &s->afq);
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
-        goto error;
+        return ret;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!s->fdsp) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     /* Generate overlap window */
     ff_init_ff_sine_windows(7);
@@ -195,16 +193,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->avctx->trellis) {
         s->opt  = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(float  ));
         s->path = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(uint8_t));
-        if (!s->opt || !s->path) {
-            ret = AVERROR(ENOMEM);
-            goto error;
-        }
+        if (!s->opt || !s->path)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
-error:
-    encode_end(avctx);
-    return ret;
 }
 
 #define find_best(val, table, LUT, LUT_add, LUT_size) \
@@ -431,4 +424,5 @@ AVCodec ff_nellymoser_encoder = {
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
