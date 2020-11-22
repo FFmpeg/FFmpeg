@@ -299,6 +299,63 @@ PARALLEL_IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
 PARALLEL_IIR_CH(fltp, float,         -1.,        1., 0)
 PARALLEL_IIR_CH(dblp, double,        -1.,        1., 0)
 
+#define LATTICE_IIR_CH(name, type, min, max, need_clipping)             \
+static int iir_ch_lattice_## name(AVFilterContext *ctx, void *arg,      \
+                                  int ch, int nb_jobs)                  \
+{                                                                       \
+    AudioIIRContext *s = ctx->priv;                                     \
+    const double ig = s->dry_gain;                                      \
+    const double og = s->wet_gain;                                      \
+    const double mix = s->mix;                                          \
+    ThreadData *td = arg;                                               \
+    AVFrame *in = td->in, *out = td->out;                               \
+    const type *src = (const type *)in->extended_data[ch];              \
+    double n0, n1, p0, *x = (double *)s->iir[ch].cache[0];              \
+    const int nb_stages = s->iir[ch].nb_ab[1];                          \
+    const double *v = s->iir[ch].ab[0];                                 \
+    const double *k = s->iir[ch].ab[1];                                 \
+    const double g = s->iir[ch].g;                                      \
+    int *clippings = &s->iir[ch].clippings;                             \
+    type *dst = (type *)out->extended_data[ch];                         \
+    int n;                                                              \
+                                                                        \
+    for (n = 0; n < in->nb_samples; n++) {                              \
+        const double in = src[n] * ig;                                  \
+        double out = 0.;                                                \
+                                                                        \
+        n1 = in;                                                        \
+        for (int i = nb_stages - 1; i >= 0; i--) {                      \
+            n0 = n1 - k[i] * x[i];                                      \
+            p0 = n0 * k[i] + x[i];                                      \
+            out += p0 * v[i+1];                                         \
+            x[i] = p0;                                                  \
+            n1 = n0;                                                    \
+        }                                                               \
+                                                                        \
+        out += n1 * v[0];                                               \
+        memmove(&x[1], &x[0], nb_stages * sizeof(*x));                  \
+        x[0] = n1;                                                      \
+        out *= og * g;                                                  \
+        out = out * mix + in * (1. - mix);                              \
+        if (need_clipping && out < min) {                               \
+            (*clippings)++;                                             \
+            dst[n] = min;                                               \
+        } else if (need_clipping && out > max) {                        \
+            (*clippings)++;                                             \
+            dst[n] = max;                                               \
+        } else {                                                        \
+            dst[n] = out;                                               \
+        }                                                               \
+    }                                                                   \
+                                                                        \
+    return 0;                                                           \
+}
+
+LATTICE_IIR_CH(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
+LATTICE_IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
+LATTICE_IIR_CH(fltp, float,         -1.,        1., 0)
+LATTICE_IIR_CH(dblp, double,        -1.,        1., 0)
+
 static void count_coefficients(char *item_str, int *nb_items)
 {
     char *p;
@@ -1266,6 +1323,9 @@ static int config_output(AVFilterLink *outlink)
         ret = convert_zp2tf(ctx, inlink->channels);
         if (ret < 0)
             return ret;
+    } else if (s->format == -2 && s->process > 0) {
+        av_log(ctx, AV_LOG_ERROR, "Only direct processing is implemented for lattice-ladder function.\n");
+        return AVERROR_PATCHWELCOME;
     } else if (s->format <= 0 && s->process == 1) {
         av_log(ctx, AV_LOG_ERROR, "Serial processing is not implemented for transfer function.\n");
         return AVERROR_PATCHWELCOME;
@@ -1285,6 +1345,15 @@ static int config_output(AVFilterLink *outlink)
         ret = convert_serial2parallel(ctx, inlink->channels);
         if (ret < 0)
             return ret;
+    }
+
+    for (ch = 0; s->format == -2 && ch < inlink->channels; ch++) {
+        IIRChannel *iir = &s->iir[ch];
+
+        if (iir->nb_ab[0] != iir->nb_ab[1] + 1) {
+            av_log(ctx, AV_LOG_ERROR, "Number of ladder coefficients must be one more than number of reflection coefficients.\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     for (ch = 0; s->format == 0 && ch < inlink->channels; ch++) {
@@ -1307,6 +1376,15 @@ static int config_output(AVFilterLink *outlink)
     case AV_SAMPLE_FMT_FLTP: s->iir_channel = s->process == 2 ? iir_ch_parallel_fltp : s->process == 1 ? iir_ch_serial_fltp : iir_ch_fltp; break;
     case AV_SAMPLE_FMT_S32P: s->iir_channel = s->process == 2 ? iir_ch_parallel_s32p : s->process == 1 ? iir_ch_serial_s32p : iir_ch_s32p; break;
     case AV_SAMPLE_FMT_S16P: s->iir_channel = s->process == 2 ? iir_ch_parallel_s16p : s->process == 1 ? iir_ch_serial_s16p : iir_ch_s16p; break;
+    }
+
+    if (s->format == -2) {
+        switch (inlink->format) {
+        case AV_SAMPLE_FMT_DBLP: s->iir_channel = iir_ch_lattice_dblp; break;
+        case AV_SAMPLE_FMT_FLTP: s->iir_channel = iir_ch_lattice_fltp; break;
+        case AV_SAMPLE_FMT_S32P: s->iir_channel = iir_ch_lattice_s32p; break;
+        case AV_SAMPLE_FMT_S16P: s->iir_channel = iir_ch_lattice_s16p; break;
+        }
     }
 
     return 0;
@@ -1459,16 +1537,17 @@ static const AVFilterPad inputs[] = {
 #define VF AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption aiir_options[] = {
-    { "zeros", "set B/numerator/zeros coefficients", OFFSET(b_str),  AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
-    { "z", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
-    { "poles", "set A/denominator/poles coefficients", OFFSET(a_str),AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
-    { "p", "set A/denominator/poles coefficients", OFFSET(a_str),    AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
+    { "zeros", "set B/numerator/zeros/reflection coefficients", OFFSET(b_str), AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
+    { "z", "set B/numerator/zeros/reflection coefficients",     OFFSET(b_str), AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
+    { "poles", "set A/denominator/poles/ladder coefficients",   OFFSET(a_str), AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
+    { "p", "set A/denominator/poles/ladder coefficients",       OFFSET(a_str), AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
     { "gains", "set channels gains",               OFFSET(g_str),    AV_OPT_TYPE_STRING, {.str="1|1"}, 0, 0, AF },
     { "k", "set channels gains",                   OFFSET(g_str),    AV_OPT_TYPE_STRING, {.str="1|1"}, 0, 0, AF },
     { "dry", "set dry gain",                       OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "wet", "set wet gain",                       OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
-    { "format", "set coefficients format",         OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},    -1, 4, AF, "format" },
-    { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},    -1, 4, AF, "format" },
+    { "format", "set coefficients format",         OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},    -2, 4, AF, "format" },
+    { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},    -2, 4, AF, "format" },
+    { "ll", "lattice-ladder function",             0,                AV_OPT_TYPE_CONST,  {.i64=-2},    0, 0, AF, "format" },
     { "sf", "analog transfer function",            0,                AV_OPT_TYPE_CONST,  {.i64=-1},    0, 0, AF, "format" },
     { "tf", "digital transfer function",           0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "format" },
     { "zp", "Z-plane zeros/poles",                 0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "format" },

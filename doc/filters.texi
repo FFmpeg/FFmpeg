@@ -1436,10 +1436,10 @@ It accepts the following parameters:
 
 @table @option
 @item zeros, z
-Set numerator/zeros coefficients.
+Set B/numerator/zeros/reflection coefficients.
 
 @item poles, p
-Set denominator/poles coefficients.
+Set A/denominator/poles/ladder coefficients.
 
 @item gains, k
 Set channels gains.
@@ -1454,6 +1454,8 @@ Set output gain.
 Set coefficients format.
 
 @table @samp
+@item ll
+lattice-ladder function
 @item sf
 analog transfer function
 @item tf
