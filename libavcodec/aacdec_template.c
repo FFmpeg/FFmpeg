@@ -1230,17 +1230,19 @@ static av_cold void aac_static_table_init(void)
                     352);
 
     // window initialization
-    AAC_RENAME(ff_kbd_window_init)(AAC_KBD_RENAME(kbd_long_1024), 4.0, 1024);
-    AAC_RENAME(ff_kbd_window_init)(AAC_KBD_RENAME(kbd_short_128), 6.0, 128);
 #if !USE_FIXED
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_960), 960);
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_120), 120);
-#endif
+    ff_aac_float_common_init();
+#else
+    AAC_RENAME(ff_kbd_window_init)(AAC_KBD_RENAME(kbd_long_1024), 4.0, 1024);
+    AAC_RENAME(ff_kbd_window_init)(AAC_KBD_RENAME(kbd_short_128), 6.0, 128);
     AAC_RENAME(ff_init_ff_sine_windows)(10);
-    AAC_RENAME(ff_init_ff_sine_windows)( 9);
     AAC_RENAME(ff_init_ff_sine_windows)( 7);
+#endif
+    AAC_RENAME(ff_init_ff_sine_windows)( 9);
 
     AAC_RENAME(ff_cbrt_tableinit)();
 }

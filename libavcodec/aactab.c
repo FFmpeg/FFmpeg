@@ -27,6 +27,7 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
+#include "config.h"
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
 #include "aac.h"
@@ -37,8 +38,21 @@
 float ff_aac_pow2sf_tab[428];
 float ff_aac_pow34sf_tab[428];
 
+#if CONFIG_AAC_ENCODER || CONFIG_AAC_DECODER
+#include "kbdwin.h"
+#include "sinewin.h"
+
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
+
+av_cold void ff_aac_float_common_init(void)
+{
+    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
+    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
+    ff_init_ff_sine_windows(10);
+    ff_init_ff_sine_windows(7);
+}
+#endif
 
 const uint8_t ff_aac_num_swb_1024[] = {
     41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40

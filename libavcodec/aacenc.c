@@ -36,7 +36,6 @@
 #include "put_bits.h"
 #include "internal.h"
 #include "mpeg4audio.h"
-#include "kbdwin.h"
 #include "sinewin.h"
 #include "profiles.h"
 
@@ -922,10 +921,7 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
         return AVERROR(ENOMEM);
 
     // window init
-    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
-    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
-    ff_init_ff_sine_windows(10);
-    ff_init_ff_sine_windows(7);
+    ff_aac_float_common_init();
 
     if ((ret = ff_mdct_init(&s->mdct1024, 11, 0, 32768.0)) < 0)
         return ret;
