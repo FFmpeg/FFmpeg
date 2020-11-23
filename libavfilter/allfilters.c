@@ -83,6 +83,7 @@ extern AVFilter ff_af_asr;
 extern AVFilter ff_af_astats;
 extern AVFilter ff_af_astreamselect;
 extern AVFilter ff_af_asubboost;
+extern AVFilter ff_af_asupercut;
 extern AVFilter ff_af_atempo;
 extern AVFilter ff_af_atrim;
 extern AVFilter ff_af_axcorrelate;

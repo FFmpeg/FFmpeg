@@ -47,6 +47,7 @@ version <next>:
 - DXVA2/D3D11VA hardware accelerated AV1 decoding
 - speechnorm filter
 - SpeedHQ encoder
+- asupercut filter
 
 
 version 4.3:
