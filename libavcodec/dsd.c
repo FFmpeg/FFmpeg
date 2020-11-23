@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/thread.h"
 #include "libavcodec/internal.h"
 #include "libavcodec/mathops.h"
 #include "avcodec.h"
@@ -45,11 +46,8 @@ static av_cold void dsd_ctables_tableinit(void)
 
 av_cold void ff_init_dsd_data(void)
 {
-    static int done = 0;
-    if (done)
-        return;
-    dsd_ctables_tableinit();
-    done = 1;
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, dsd_ctables_tableinit);
 }
 
 void ff_dsd2pcm_translate(DSDContext* s, size_t samples, int lsbf,
