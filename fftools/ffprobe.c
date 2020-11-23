@@ -35,6 +35,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/display.h"
 #include "libavutil/hash.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/dovi_meta.h"
 #include "libavutil/opt.h"
@@ -1860,6 +1861,105 @@ static inline int show_tags(WriterContext *w, AVDictionary *tags, int section_id
     return ret;
 }
 
+static void print_dynamic_hdr10_plus(WriterContext *w, const AVDynamicHDRPlus *metadata)
+{
+    if (!metadata)
+        return;
+    print_int("application version", metadata->application_version);
+    print_int("num_windows", metadata->num_windows);
+    for (int n = 1; n < metadata->num_windows; n++) {
+        const AVHDRPlusColorTransformParams *params = &metadata->params[n];
+        print_q("window_upper_left_corner_x",
+                params->window_upper_left_corner_x,'/');
+        print_q("window_upper_left_corner_y",
+                params->window_upper_left_corner_y,'/');
+        print_q("window_lower_right_corner_x",
+                params->window_lower_right_corner_x,'/');
+        print_q("window_lower_right_corner_y",
+                params->window_lower_right_corner_y,'/');
+        print_q("window_upper_left_corner_x",
+                params->window_upper_left_corner_x,'/');
+        print_q("window_upper_left_corner_y",
+                params->window_upper_left_corner_y,'/');
+        print_int("center_of_ellipse_x",
+                  params->center_of_ellipse_x ) ;
+        print_int("center_of_ellipse_y",
+                  params->center_of_ellipse_y );
+        print_int("rotation_angle",
+                  params->rotation_angle);
+        print_int("semimajor_axis_internal_ellipse",
+                  params->semimajor_axis_internal_ellipse);
+        print_int("semimajor_axis_external_ellipse",
+                  params->semimajor_axis_external_ellipse);
+        print_int("semiminor_axis_external_ellipse",
+                  params->semiminor_axis_external_ellipse);
+        print_int("overlap_process_option",
+                  params->overlap_process_option);
+    }
+    print_q("targeted_system_display_maximum_luminance",
+            metadata->targeted_system_display_maximum_luminance,'/');
+    if (metadata->targeted_system_display_actual_peak_luminance_flag) {
+        print_int("num_rows_targeted_system_display_actual_peak_luminance",
+                  metadata->num_rows_targeted_system_display_actual_peak_luminance);
+        print_int("num_cols_targeted_system_display_actual_peak_luminance",
+                  metadata->num_cols_targeted_system_display_actual_peak_luminance);
+        for (int i = 0; i < metadata->num_rows_targeted_system_display_actual_peak_luminance; i++) {
+            for (int j = 0; j < metadata->num_cols_targeted_system_display_actual_peak_luminance; j++) {
+                print_q("targeted_system_display_actual_peak_luminance",
+                        metadata->targeted_system_display_actual_peak_luminance[i][j],'/');
+            }
+        }
+    }
+    for (int n = 0; n < metadata->num_windows; n++) {
+        const AVHDRPlusColorTransformParams *params = &metadata->params[n];
+        for (int i = 0; i < 3; i++) {
+            print_q("maxscl",params->maxscl[i],'/');
+        }
+        print_q("average_maxrgb",
+                params->average_maxrgb,'/');
+        print_int("num_distribution_maxrgb_percentiles",
+                  params->num_distribution_maxrgb_percentiles);
+        for (int i = 0; i < params->num_distribution_maxrgb_percentiles; i++) {
+            print_int("distribution_maxrgb_percentage",
+                      params->distribution_maxrgb[i].percentage);
+            print_q("distribution_maxrgb_percentile",
+                    params->distribution_maxrgb[i].percentile,'/');
+        }
+        print_q("fraction_bright_pixels",
+                params->fraction_bright_pixels,'/');
+    }
+    if (metadata->mastering_display_actual_peak_luminance_flag) {
+        print_int("num_rows_mastering_display_actual_peak_luminance",
+                  metadata->num_rows_mastering_display_actual_peak_luminance);
+        print_int("num_cols_mastering_display_actual_peak_luminance",
+                  metadata->num_cols_mastering_display_actual_peak_luminance);
+        for (int i = 0; i < metadata->num_rows_mastering_display_actual_peak_luminance; i++) {
+            for (int j = 0; j <  metadata->num_cols_mastering_display_actual_peak_luminance; j++) {
+                print_q("mastering_display_actual_peak_luminance",
+                        metadata->mastering_display_actual_peak_luminance[i][j],'/');
+            }
+        }
+    }
+
+    for (int n = 0; n < metadata->num_windows; n++) {
+        const AVHDRPlusColorTransformParams *params = &metadata->params[n];
+        if (params->tone_mapping_flag) {
+            print_q("knee_point_x", params->knee_point_x,'/');
+            print_q("knee_point_y", params->knee_point_y,'/');
+            print_int("num_bezier_curve_anchors",
+                      params->num_bezier_curve_anchors );
+            for (int i = 0; i < params->num_bezier_curve_anchors; i++) {
+                print_q("bezier_curve_anchors",
+                        params->bezier_curve_anchors[i],'/');
+            }
+        }
+        if (params->color_saturation_mapping_flag) {
+            print_q("color_saturation_weight",
+                    params->color_saturation_weight,'/');
+        }
+    }
+}
+
 static void print_pkt_side_data(WriterContext *w,
                                 AVCodecParameters *par,
                                 const AVPacketSideData *side_data,
@@ -2250,6 +2350,9 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                     print_q("min_luminance", metadata->min_luminance, '/');
                     print_q("max_luminance", metadata->max_luminance, '/');
                 }
+            } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_PLUS) {
+                AVDynamicHDRPlus *metadata = (AVDynamicHDRPlus *)sd->data;
+                print_dynamic_hdr10_plus(w, metadata);
             } else if (sd->type == AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
                 AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
                 print_int("max_content", metadata->MaxCLL);
