@@ -110,9 +110,9 @@ static av_cold int wma_decode_init(AVCodecContext *avctx)
         ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 1, 1.0 / 32768.0);
 
     if (s->use_noise_coding) {
-        init_vlc(&s->hgain_vlc, HGAINVLCBITS, sizeof(ff_wma_hgain_huffbits),
-                 ff_wma_hgain_huffbits, 1, 1,
-                 ff_wma_hgain_huffcodes, 2, 2, 0);
+        ff_init_vlc_from_lengths(&s->hgain_vlc, HGAINVLCBITS, FF_ARRAY_ELEMS(ff_wma_hgain_hufftab),
+                                 &ff_wma_hgain_hufftab[0][1], 2,
+                                 &ff_wma_hgain_hufftab[0][0], 2, 1, 0, 0, avctx);
     }
 
     if (s->use_exp_vlc)
