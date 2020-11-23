@@ -72,7 +72,7 @@ static void set_spdif(AVFormatContext *s, WAVDemuxContext *wav)
         if (ret < 0)
             goto end;
 
-        buf = av_malloc(len);
+        buf = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!buf) {
             ret = AVERROR(ENOMEM);
             goto end;
