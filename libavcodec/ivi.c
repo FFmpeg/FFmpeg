@@ -30,6 +30,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/thread.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
@@ -157,14 +158,11 @@ static int ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
                     (flag ? INIT_VLC_USE_NEW_STATIC : 0) | INIT_VLC_OUTPUT_LE);
 }
 
-av_cold void ff_ivi_init_static_vlc(void)
+static av_cold void ivi_init_static_vlc(void)
 {
     int i;
     static VLC_TYPE table_data[8192 * 16][2];
-    static int initialized_vlcs = 0;
 
-    if (initialized_vlcs)
-        return;
     for (i = 0; i < 8; i++) {
         ivi_mb_vlc_tabs[i].table = table_data + i * 2 * 8192;
         ivi_mb_vlc_tabs[i].table_allocated = 8192;
@@ -175,7 +173,12 @@ av_cold void ff_ivi_init_static_vlc(void)
         ivi_create_huff_from_desc(&ivi_blk_huff_desc[i],
                                   &ivi_blk_vlc_tabs[i], 1);
     }
-    initialized_vlcs = 1;
+}
+
+av_cold void ff_ivi_init_static_vlc(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, ivi_init_static_vlc);
 }
 
 /*
