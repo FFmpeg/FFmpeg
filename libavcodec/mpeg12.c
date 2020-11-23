@@ -30,6 +30,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/timecode.h"
+#include "libavutil/thread.h"
 
 #include "internal.h"
 #include "avcodec.h"
@@ -132,13 +133,8 @@ VLC ff_mb_ptype_vlc;
 VLC ff_mb_btype_vlc;
 VLC ff_mb_pat_vlc;
 
-av_cold void ff_mpeg12_init_vlcs(void)
+static av_cold void mpeg12_init_vlcs(void)
 {
-    static int done = 0;
-
-    if (!done) {
-        done = 1;
-
         INIT_VLC_STATIC(&ff_dc_lum_vlc, DC_VLC_BITS, 12,
                         ff_mpeg12_vlc_dc_lum_bits, 1, 1,
                         ff_mpeg12_vlc_dc_lum_code, 2, 2, 512);
@@ -164,7 +160,12 @@ av_cold void ff_mpeg12_init_vlcs(void)
 
         INIT_2D_VLC_RL(ff_rl_mpeg1, 680, 0);
         INIT_2D_VLC_RL(ff_rl_mpeg2, 674, 0);
-    }
+}
+
+av_cold void ff_mpeg12_init_vlcs(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, mpeg12_init_vlcs);
 }
 
 /**
