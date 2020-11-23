@@ -5295,34 +5295,6 @@ static int mov_read_tmcd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_av1c(MOVContext *c, AVIOContext *pb, MOVAtom atom)
-{
-    AVStream *st;
-    int ret;
-
-    if (c->fc->nb_streams < 1)
-        return 0;
-    st = c->fc->streams[c->fc->nb_streams - 1];
-
-    if (atom.size < 4) {
-        av_log(c->fc, AV_LOG_ERROR, "Empty AV1 Codec Configuration Box\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    /* For now, propagate only the OBUs, if any. Once libavcodec is
-       updated to handle isobmff style extradata this can be removed. */
-    avio_skip(pb, 4);
-
-    if (atom.size == 4)
-        return 0;
-
-    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 4);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
 static int mov_read_vpcc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -6850,7 +6822,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','A','L','P'), mov_read_avid },
 { MKTAG('A','R','E','S'), mov_read_ares },
 { MKTAG('a','v','s','s'), mov_read_avss },
-{ MKTAG('a','v','1','C'), mov_read_av1c },
+{ MKTAG('a','v','1','C'), mov_read_glbl },
 { MKTAG('c','h','p','l'), mov_read_chpl },
 { MKTAG('c','o','6','4'), mov_read_stco },
 { MKTAG('c','o','l','r'), mov_read_colr },
