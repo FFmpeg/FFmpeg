@@ -1,0 +1,34 @@
+/*
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#ifndef AVCODEC_DYNAMIC_HDR10_PLUS_H
+#define AVCODEC_DYNAMIC_HDR10_PLUS_H
+
+#include "libavutil/hdr_dynamic_metadata.h"
+#include "get_bits.h"
+
+/**
+ * Parse the user data registered ITU-T T.35 to AVbuffer (AVDynamicHDRPlus).
+ * @param gb The bit content to be decoded.
+ * @param s A pointer containing the decoded AVDynamicHDRPlus structure.
+ *
+ * @return 0 if succeed. Otherwise, returns the appropriate AVERROR.
+ */
+int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(GetBitContext *gb, AVDynamicHDRPlus *s);
+
+#endif /* AVCODEC_DYNAMIC_HDR10_PLUS_H */
