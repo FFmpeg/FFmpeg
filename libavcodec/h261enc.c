@@ -322,8 +322,7 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
     }
 }
 
-static av_cold void init_uni_h261_rl_tab(RLTable *rl, uint32_t *bits_tab,
-                                         uint8_t *len_tab)
+static av_cold void init_uni_h261_rl_tab(const RLTable *rl, uint8_t *len_tab)
 {
     int slevel, run, last;
 
@@ -372,7 +371,7 @@ av_cold void ff_h261_encode_init(MpegEncContext *s)
     s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
     s->ac_esc_length    = 6+6+8;
 
-    init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, NULL, uni_h261_rl_len);
+    init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, uni_h261_rl_len);
 
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
     s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len + 128*64;
