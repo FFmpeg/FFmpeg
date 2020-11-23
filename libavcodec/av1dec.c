@@ -616,8 +616,9 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
         return ret;
 
     if (avctx->extradata && avctx->extradata_size) {
-        ret = ff_cbs_read(s->cbc, &s->current_obu, avctx->extradata,
-                          avctx->extradata_size);
+        ret = ff_cbs_read_extradata_from_codec(s->cbc,
+                                               &s->current_obu,
+                                               avctx);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "Failed to read extradata.\n");
             return ret;

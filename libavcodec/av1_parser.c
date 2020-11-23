@@ -73,7 +73,7 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
     if (avctx->extradata_size && !s->parsed_extradata) {
         s->parsed_extradata = 1;
 
-        ret = ff_cbs_read(s->cbc, td, avctx->extradata, avctx->extradata_size);
+        ret = ff_cbs_read_extradata_from_codec(s->cbc, td, avctx);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "Failed to parse extradata.\n");
         }
