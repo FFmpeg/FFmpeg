@@ -223,66 +223,67 @@ static int cbs_fill_fragment_data(CodedBitstreamFragment *frag,
     return 0;
 }
 
-int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
-                          CodedBitstreamFragment *frag,
-                          const AVCodecParameters *par)
+static int cbs_read_data(CodedBitstreamContext *ctx,
+                         CodedBitstreamFragment *frag,
+                         AVBufferRef *buf,
+                         const uint8_t *data, size_t size,
+                         int header)
 {
     int err;
 
-    err = cbs_fill_fragment_data(frag, par->extradata,
-                                 par->extradata_size);
-    if (err < 0)
-        return err;
+    if (buf) {
+        frag->data_ref = av_buffer_ref(buf);
+        if (!frag->data_ref)
+            return AVERROR(ENOMEM);
 
-    err = ctx->codec->split_fragment(ctx, frag, 1);
+        frag->data      = (uint8_t *)data;
+        frag->data_size = size;
+
+    } else {
+        err = cbs_fill_fragment_data(frag, data, size);
+        if (err < 0)
+            return err;
+    }
+
+    err = ctx->codec->split_fragment(ctx, frag, header);
     if (err < 0)
         return err;
 
     return cbs_read_fragment_content(ctx, frag);
+}
+
+int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
+                          CodedBitstreamFragment *frag,
+                          const AVCodecParameters *par)
+{
+    return cbs_read_data(ctx, frag, NULL,
+                         par->extradata,
+                         par->extradata_size, 1);
+}
+
+int ff_cbs_read_extradata_from_codec(CodedBitstreamContext *ctx,
+                                     CodedBitstreamFragment *frag,
+                                     const AVCodecContext *avctx)
+{
+    return cbs_read_data(ctx, frag, NULL,
+                         avctx->extradata,
+                         avctx->extradata_size, 1);
 }
 
 int ff_cbs_read_packet(CodedBitstreamContext *ctx,
                        CodedBitstreamFragment *frag,
                        const AVPacket *pkt)
 {
-    int err;
-
-    if (pkt->buf) {
-        frag->data_ref = av_buffer_ref(pkt->buf);
-        if (!frag->data_ref)
-            return AVERROR(ENOMEM);
-
-        frag->data      = pkt->data;
-        frag->data_size = pkt->size;
-
-    } else {
-        err = cbs_fill_fragment_data(frag, pkt->data, pkt->size);
-        if (err < 0)
-            return err;
-    }
-
-    err = ctx->codec->split_fragment(ctx, frag, 0);
-    if (err < 0)
-        return err;
-
-    return cbs_read_fragment_content(ctx, frag);
+    return cbs_read_data(ctx, frag, pkt->buf,
+                         pkt->data, pkt->size, 0);
 }
 
 int ff_cbs_read(CodedBitstreamContext *ctx,
                 CodedBitstreamFragment *frag,
                 const uint8_t *data, size_t size)
 {
-    int err;
-
-    err = cbs_fill_fragment_data(frag, data, size);
-    if (err < 0)
-        return err;
-
-    err = ctx->codec->split_fragment(ctx, frag, 0);
-    if (err < 0)
-        return err;
-
-    return cbs_read_fragment_content(ctx, frag);
+    return cbs_read_data(ctx, frag, NULL,
+                         data, size, 0);
 }
 
 static int cbs_write_unit_data(CodedBitstreamContext *ctx,
