@@ -375,6 +375,20 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
+    if (buf[0] & 0x80) {
+        // first bit is nonzero, the passed data does not consist purely of
+        // OBUs. Expect that the data is already in AV1CodecConfigurationRecord
+        // format.
+        int config_record_version = buf[0] & 0x7f;
+        if (config_record_version != 1 || size < 4) {
+            return AVERROR_INVALIDDATA;
+        }
+
+        avio_write(pb, buf, size);
+
+        return 0;
+    }
+
     ret = avio_open_dyn_buf(&meta_pb);
     if (ret < 0)
         return ret;
