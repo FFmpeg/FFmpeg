@@ -317,6 +317,8 @@ fate-exr-rgb-scanline-half-zip-dw-outside: CMD = framecrc -i $(TARGET_SAMPLES)/e
 FATE_EXR += fate-exr-rgb-tile-half-zip-dw-outside
 fate-exr-rgb-tile-half-zip-dw-outside: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_half_zip_dw_outside.exr -pix_fmt gbrpf32le
 
+FATE_EXR += fate-exr-rgb-scanline-zip-half-0x0-0xFFFF
+fate-exr-rgb-scanline-zip-half-0x0-0xFFFF: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip_half_float_0x0_to_0xFFFF.exr -pix_fmt gbrpf32le
 
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 

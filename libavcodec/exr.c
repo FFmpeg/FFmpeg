@@ -193,8 +193,7 @@ static union av_intfloat32 exr_half2float(uint16_t hf)
         // half-float NaNs will be converted to a single precision NaN
         // half-float Infs will be converted to a single precision Inf
         exp = FLOAT_MAX_BIASED_EXP;
-        if (mantissa)
-            mantissa = (1 << 23) - 1;    // set all bits to indicate a NaN
+        mantissa <<= 13; // preserve half-float NaN bits if set
     } else if (exp == 0x0) {
         // convert half-float zero/denorm to single precision value
         if (mantissa) {
