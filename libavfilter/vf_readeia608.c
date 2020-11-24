@@ -74,7 +74,7 @@ typedef struct ReadEIA608Context {
 } ReadEIA608Context;
 
 #define OFFSET(x) offsetof(ReadEIA608Context, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption readeia608_options[] = {
     { "scan_min", "set from which line to scan for codes",               OFFSET(start), AV_OPT_TYPE_INT,   {.i64=0},     0, INT_MAX, FLAGS },
@@ -440,4 +440,5 @@ AVFilter ff_vf_readeia608 = {
     .outputs       = readeia608_outputs,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = ff_filter_process_command,
 };

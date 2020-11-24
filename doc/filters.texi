@@ -15910,6 +15910,10 @@ Enable checking the parity bit. In the event of a parity error, the filter will 
 Lowpass lines prior to further processing. Default is enabled.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @subsection Examples
 
 @itemize
