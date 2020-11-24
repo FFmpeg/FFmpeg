@@ -1055,7 +1055,6 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
         }
 
         init_uni_ac_vlc(&ff_rl_mpeg1, uni_mpeg1_ac_vlc_len);
-        if (s->intra_vlc_format)
             init_uni_ac_vlc(&ff_rl_mpeg2, uni_mpeg2_ac_vlc_len);
 
         /* build unified dc encoding tables */
