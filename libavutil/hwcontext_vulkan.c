@@ -1270,12 +1270,18 @@ static int alloc_mem(AVHWDeviceContext *ctx, VkMemoryRequirements *req,
     /* The vulkan spec requires memory types to be sorted in the "optimal"
      * order, so the first matching type we find will be the best/fastest one */
     for (int i = 0; i < p->mprops.memoryTypeCount; i++) {
+        const VkMemoryType *type = &p->mprops.memoryTypes[i];
+
         /* The memory type must be supported by the requirements (bitfield) */
         if (!(req->memoryTypeBits & (1 << i)))
             continue;
 
         /* The memory type flags must include our properties */
-        if ((p->mprops.memoryTypes[i].propertyFlags & req_flags) != req_flags)
+        if ((type->propertyFlags & req_flags) != req_flags)
+            continue;
+
+        /* The memory type must be large enough */
+        if (req->size > p->mprops.memoryHeaps[type->heapIndex].size)
             continue;
 
         /* Found a suitable memory type */
