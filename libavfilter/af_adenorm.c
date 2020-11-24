@@ -219,11 +219,34 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ADenormContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
+    const int start = (in->channels * jobnr) / nb_jobs;
+    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+
+    for (int ch = start; ch < end; ch++) {
+        s->filter(ctx, out->extended_data[ch],
+                  in->extended_data[ch],
+                  in->nb_samples);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     ADenormContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
     AVFrame *out;
 
     if (av_frame_is_writable(in)) {
@@ -238,11 +261,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->level = exp(s->level_db / 20. * M_LN10);
-    for (int ch = 0; ch < inlink->channels; ch++) {
-        s->filter(ctx, out->extended_data[ch],
-                  in->extended_data[ch],
-                  in->nb_samples);
-    }
+    td.in = in; td.out = out;
+    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(inlink->channels,
+                                                            ff_filter_get_nb_threads(ctx)));
+
     s->in_samples += in->nb_samples;
 
     if (out != in)
@@ -305,4 +327,6 @@ AVFilter ff_af_adenorm = {
     .outputs         = adenorm_outputs,
     .priv_class      = &adenorm_class,
     .process_command = process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
 };
