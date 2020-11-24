@@ -2982,26 +2982,29 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
     }
 }
 
-static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
-                                         const AVFrame *src)
+static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
+                                const AVFrame *swf, int from)
 {
     int err = 0;
-    AVFrame tmp;
-    AVVkFrame *f = (AVVkFrame *)dst->data[0];
+    AVVkFrame *f = (AVVkFrame *)vkf->data[0];
     AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
-    AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
-    const int planes = av_pix_fmt_count_planes(src->format);
-    int log2_chroma = av_pix_fmt_desc_get(src->format)->log2_chroma_h;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
-    int map_host = p->extensions & EXT_EXTERNAL_HOST_MEMORY;
 
-    if ((src->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(src->format))) {
-        av_log(hwfc, AV_LOG_ERROR, "Unsupported source pixel format!\n");
+    AVFrame tmp;
+    AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
+
+    const int planes = av_pix_fmt_count_planes(swf->format);
+    int log2_chroma = av_pix_fmt_desc_get(swf->format)->log2_chroma_h;
+
+    int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
+    const int map_host = p->extensions & EXT_EXTERNAL_HOST_MEMORY;
+
+    if ((swf->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(swf->format))) {
+        av_log(hwfc, AV_LOG_ERROR, "Unsupported software frame pixel format!\n");
         return AVERROR(EINVAL);
     }
 
-    if (src->width > hwfc->width || src->height > hwfc->height)
+    if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
     /* For linear, host visiable images */
@@ -3010,22 +3013,22 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         AVFrame *map = av_frame_alloc();
         if (!map)
             return AVERROR(ENOMEM);
-        map->format = src->format;
+        map->format = swf->format;
 
-        err = vulkan_map_frame_to_mem(hwfc, map, dst, AV_HWFRAME_MAP_WRITE);
+        err = vulkan_map_frame_to_mem(hwfc, map, vkf, AV_HWFRAME_MAP_WRITE);
         if (err)
             return err;
 
-        err = av_frame_copy(map, src);
+        err = av_frame_copy((AVFrame *)(from ? swf : map), from ? map : swf);
         av_frame_free(&map);
         return err;
     }
 
     /* Create buffers */
     for (int i = 0; i < planes; i++) {
-        int h = src->height;
+        int h = swf->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-        size_t p_size = FFALIGN(FFABS(src->linesize[i]) * p_height,
+        size_t p_size = FFALIGN(FFABS(swf->linesize[i]) * p_height,
                                 p->hprops.minImportedHostPointerAlignment);
 
         VkExternalMemoryBufferCreateInfo create_desc = {
@@ -3036,19 +3039,20 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
         VkImportMemoryHostPointerInfoEXT import_desc = {
             .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
             .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
-            .pHostPointer = src->data[i],
+            .pHostPointer = swf->data[i],
         };
 
         /* We can only map images with positive stride and alignment appropriate
          * for the device. */
-        host_mapped[i] = map_host && src->linesize[i] > 0 &&
+        host_mapped[i] = map_host && swf->linesize[i] > 0 &&
                          !(((uintptr_t)import_desc.pHostPointer) %
                            p->hprops.minImportedHostPointerAlignment);
         p_size = host_mapped[i] ? p_size : 0;
 
-        tmp.linesize[i] = FFABS(src->linesize[i]);
+        tmp.linesize[i] = FFABS(swf->linesize[i]);
         err = create_buf(dev_ctx, &bufs[i], p_size, p_height, &tmp.linesize[i],
-                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         from ? VK_BUFFER_USAGE_TRANSFER_DST_BIT :
+                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                          host_mapped[i] ? &create_desc : NULL,
                          host_mapped[i] ? &import_desc : NULL);
@@ -3056,29 +3060,53 @@ static int vulkan_transfer_data_from_mem(AVHWFramesContext *hwfc, AVFrame *dst,
             goto end;
     }
 
-    /* Map, copy image to buffer, unmap */
-    if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
-        goto end;
+    if (!from) {
+        /* Map, copy image to buffer, unmap */
+        if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
+            goto end;
 
-    for (int i = 0; i < planes; i++) {
-        int h = src->height;
-        int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
+        for (int i = 0; i < planes; i++) {
+            int h = swf->height;
+            int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
 
-        if (host_mapped[i])
-            continue;
+            if (host_mapped[i])
+                continue;
 
-        av_image_copy_plane(tmp.data[i], tmp.linesize[i],
-                            (const uint8_t *)src->data[i], src->linesize[i],
-                            FFMIN(tmp.linesize[i], FFABS(src->linesize[i])),
-                            p_height);
+            av_image_copy_plane(tmp.data[i], tmp.linesize[i],
+                                (const uint8_t *)swf->data[i], swf->linesize[i],
+                                FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
+                                p_height);
+        }
+
+        if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
+            goto end;
     }
 
-    if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
-        goto end;
+    /* Copy buffers into/from image */
+    err = transfer_image_buf(hwfc, vkf, bufs, tmp.linesize,
+                             swf->width, swf->height, swf->format, from);
 
-    /* Copy buffers to image */
-    err = transfer_image_buf(hwfc, dst, bufs, tmp.linesize,
-                             src->width, src->height, src->format, 0);
+    if (from) {
+        /* Map, copy image to buffer, unmap */
+        if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
+            goto end;
+
+        for (int i = 0; i < planes; i++) {
+            int h = swf->height;
+            int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
+
+            if (host_mapped[i])
+                continue;
+
+            av_image_copy_plane(swf->data[i], swf->linesize[i],
+                                (const uint8_t *)tmp.data[i], tmp.linesize[i],
+                                FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
+                                p_height);
+        }
+
+        if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
+            goto end;
+    }
 
 end:
     for (int i = 0; i < planes; i++)
@@ -3088,7 +3116,7 @@ end:
 }
 
 static int vulkan_transfer_data_to(AVHWFramesContext *hwfc, AVFrame *dst,
-                                        const AVFrame *src)
+                                   const AVFrame *src)
 {
     av_unused VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
 
@@ -3103,13 +3131,13 @@ static int vulkan_transfer_data_to(AVHWFramesContext *hwfc, AVFrame *dst,
         if (src->hw_frames_ctx)
             return AVERROR(ENOSYS);
         else
-            return vulkan_transfer_data_from_mem(hwfc, dst, src);
+            return vulkan_transfer_data(hwfc, dst, src, 0);
     }
 }
 
 #if CONFIG_CUDA
 static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
-                                      const AVFrame *src)
+                                        const AVFrame *src)
 {
     int err;
     VkResult ret;
@@ -3176,106 +3204,6 @@ fail:
 }
 #endif
 
-static int vulkan_transfer_data_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
-                                       const AVFrame *src)
-{
-    int err = 0;
-    AVFrame tmp;
-    AVVkFrame *f = (AVVkFrame *)src->data[0];
-    AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
-    AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
-    const int planes = av_pix_fmt_count_planes(dst->format);
-    int log2_chroma = av_pix_fmt_desc_get(dst->format)->log2_chroma_h;
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
-    int map_host = p->extensions & EXT_EXTERNAL_HOST_MEMORY;
-
-    if (dst->width > hwfc->width || dst->height > hwfc->height)
-        return AVERROR(EINVAL);
-
-    /* For linear, host visiable images */
-    if (f->tiling == VK_IMAGE_TILING_LINEAR &&
-        f->flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
-        AVFrame *map = av_frame_alloc();
-        if (!map)
-            return AVERROR(ENOMEM);
-        map->format = dst->format;
-
-        err = vulkan_map_frame_to_mem(hwfc, map, src, AV_HWFRAME_MAP_READ);
-        if (err)
-            return err;
-
-        err = av_frame_copy(dst, map);
-        av_frame_free(&map);
-        return err;
-    }
-
-    /* Create buffers */
-    for (int i = 0; i < planes; i++) {
-        int h = dst->height;
-        int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-        size_t p_size = FFALIGN(FFABS(dst->linesize[i]) * p_height,
-                                p->hprops.minImportedHostPointerAlignment);
-
-        VkExternalMemoryBufferCreateInfo create_desc = {
-            .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-            .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
-        };
-
-        VkImportMemoryHostPointerInfoEXT import_desc = {
-            .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
-            .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
-            .pHostPointer = dst->data[i],
-        };
-
-        /* We can only map images with positive stride and alignment appropriate
-         * for the device. */
-        host_mapped[i] = map_host && dst->linesize[i] > 0 &&
-                         !(((uintptr_t)import_desc.pHostPointer) %
-                           p->hprops.minImportedHostPointerAlignment);
-        p_size = host_mapped[i] ? p_size : 0;
-
-        tmp.linesize[i] = FFABS(dst->linesize[i]);
-        err = create_buf(dev_ctx, &bufs[i], p_size, p_height,
-                         &tmp.linesize[i], VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                         host_mapped[i] ? &create_desc : NULL,
-                         host_mapped[i] ? &import_desc : NULL);
-        if (err)
-            goto end;
-    }
-
-    /* Copy image to buffer */
-    if ((err = transfer_image_buf(hwfc, src, bufs, tmp.linesize,
-                                  dst->width, dst->height, dst->format, 1)))
-        goto end;
-
-    /* Map, copy buffer to frame, unmap */
-    if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 1)))
-        goto end;
-
-    for (int i = 0; i < planes; i++) {
-        int h = dst->height;
-        int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-
-        if (host_mapped[i])
-            continue;
-
-        av_image_copy_plane(dst->data[i], dst->linesize[i],
-                            (const uint8_t *)tmp.data[i], tmp.linesize[i],
-                            FFMIN(tmp.linesize[i], FFABS(dst->linesize[i])),
-                            p_height);
-    }
-
-    err = unmap_buffers(dev_ctx, bufs, planes, 0);
-
-end:
-    for (int i = 0; i < planes; i++)
-        av_buffer_unref(&bufs[i]);
-
-    return err;
-}
-
 static int vulkan_transfer_data_from(AVHWFramesContext *hwfc, AVFrame *dst,
                                      const AVFrame *src)
 {
@@ -3292,7 +3220,7 @@ static int vulkan_transfer_data_from(AVHWFramesContext *hwfc, AVFrame *dst,
         if (dst->hw_frames_ctx)
             return AVERROR(ENOSYS);
         else
-            return vulkan_transfer_data_to_mem(hwfc, dst, src);
+            return vulkan_transfer_data(hwfc, src, dst, 1);
     }
 }
 
