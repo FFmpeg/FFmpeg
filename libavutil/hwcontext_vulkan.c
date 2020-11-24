@@ -1965,7 +1965,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     VulkanFramesPriv *fp = hwfc->internal->priv;
     AVVulkanFramesContext *frames_hwctx = hwfc->hwctx;
     const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(hwfc->sw_format);
-    const int has_modifiers = p->extensions & EXT_DRM_MODIFIER_FLAGS;
+    const int has_modifiers = !!(p->extensions & EXT_DRM_MODIFIER_FLAGS);
     VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
     VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { 0 };
     VkBindImagePlaneMemoryInfo plane_info[AV_NUM_DATA_POINTERS] = { 0 };
@@ -2997,7 +2997,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
     int log2_chroma = av_pix_fmt_desc_get(swf->format)->log2_chroma_h;
 
     int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
-    const int map_host = p->extensions & EXT_EXTERNAL_HOST_MEMORY;
+    const int map_host = !!(p->extensions & EXT_EXTERNAL_HOST_MEMORY);
 
     if ((swf->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(swf->format))) {
         av_log(hwfc, AV_LOG_ERROR, "Unsupported software frame pixel format!\n");
