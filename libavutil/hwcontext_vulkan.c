@@ -2694,21 +2694,30 @@ static void free_buf(void *opaque, uint8_t *data)
     av_free(data);
 }
 
-static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size,
-                      int height, int *stride, VkBufferUsageFlags usage,
-                      VkMemoryPropertyFlagBits flags, void *create_pnext,
-                      void *alloc_pnext)
+static size_t get_req_buffer_size(VulkanDevicePriv *p, int *stride, int height)
+{
+    size_t size;
+    *stride = FFALIGN(*stride, p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
+    size = height*(*stride);
+    size = FFALIGN(size, p->props.properties.limits.minMemoryMapAlignment);
+    return size;
+}
+
+static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf,
+                      VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags,
+                      size_t size, uint32_t req_memory_bits, int host_mapped,
+                      void *create_pnext, void *alloc_pnext)
 {
     int err;
     VkResult ret;
     int use_ded_mem;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VulkanDevicePriv *p = ctx->internal->priv;
 
     VkBufferCreateInfo buf_spawn = {
         .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext       = create_pnext,
         .usage       = usage,
+        .size        = size,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 
@@ -2731,21 +2740,14 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size
     if (!vkbuf)
         return AVERROR(ENOMEM);
 
-    vkbuf->mapped_mem = !!imp_size;
-
-    if (!vkbuf->mapped_mem) {
-        *stride = FFALIGN(*stride, p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
-        buf_spawn.size = height*(*stride);
-        buf_spawn.size = FFALIGN(buf_spawn.size, p->props.properties.limits.minMemoryMapAlignment);
-    } else {
-        buf_spawn.size = imp_size;
-    }
+    vkbuf->mapped_mem = host_mapped;
 
     ret = vkCreateBuffer(hwctx->act_dev, &buf_spawn, NULL, &vkbuf->buf);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create buffer: %s\n",
                vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
+        err = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     req_desc.buffer = vkbuf->buf;
@@ -2758,27 +2760,35 @@ static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf, size_t imp_size
     if (use_ded_mem)
         ded_alloc.buffer = vkbuf->buf;
 
+    /* Additional requirements imposed on us */
+    if (req_memory_bits)
+        req.memoryRequirements.memoryTypeBits &= req_memory_bits;
+
     err = alloc_mem(ctx, &req.memoryRequirements, flags,
                     use_ded_mem ? &ded_alloc : (void *)ded_alloc.pNext,
                     &vkbuf->flags, &vkbuf->mem);
     if (err)
-        return err;
+        goto fail;
 
     ret = vkBindBufferMemory(hwctx->act_dev, vkbuf->buf, vkbuf->mem, 0);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory to buffer: %s\n",
                vk_ret2str(ret));
-        free_buf(ctx, (uint8_t *)vkbuf);
-        return AVERROR_EXTERNAL;
+        err = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     *buf = av_buffer_create((uint8_t *)vkbuf, sizeof(*vkbuf), free_buf, ctx, 0);
     if (!(*buf)) {
-        free_buf(ctx, (uint8_t *)vkbuf);
-        return AVERROR(ENOMEM);
+        err = AVERROR(ENOMEM);
+        goto fail;
     }
 
     return 0;
+
+fail:
+    free_buf(ctx, (uint8_t *)vkbuf);
+    return err;
 }
 
 /* Skips mapping of host mapped buffers but still invalidates them */
@@ -2814,8 +2824,16 @@ static int map_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs, uint8_t *mem[
             .memory = vkbuf->mem,
             .size   = VK_WHOLE_SIZE,
         };
+
+        /* For host imported memory Vulkan says to use platform-defined
+         * sync methods, but doesn't really say not to call flush or invalidate
+         * on original host pointers. It does explicitly allow to do that on
+         * host-mapped pointers which are then mapped again using vkMapMemory,
+         * but known implementations return the original pointers when mapped
+         * again. */
         if (vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
             continue;
+
         invalidate_ctx[invalidate_count++] = ival_buf;
     }
 
@@ -2847,8 +2865,10 @@ static int unmap_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs,
                 .memory = vkbuf->mem,
                 .size   = VK_WHOLE_SIZE,
             };
+
             if (vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                 continue;
+
             flush_ctx[flush_count++] = flush_buf;
         }
     }
@@ -2874,7 +2894,8 @@ static int unmap_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs,
 }
 
 static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
-                              AVBufferRef **bufs, const int *buf_stride, int w,
+                              AVBufferRef **bufs, size_t *buf_offsets,
+                              const int *buf_stride, int w,
                               int h, enum AVPixelFormat pix_fmt, int to_buf)
 {
     int err;
@@ -2945,7 +2966,7 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
         const int p_w = i > 0 ? AV_CEIL_RSHIFT(w, desc->log2_chroma_w) : w;
         const int p_h = i > 0 ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h) : h;
         VkBufferImageCopy buf_reg = {
-            .bufferOffset = 0,
+            .bufferOffset = buf_offsets[i],
             /* Buffer stride isn't in bytes, it's in samples, the implementation
              * uses the image's VkFormat to know how many bytes per sample
              * the buffer has. So we have to convert by dividing. Stupid.
@@ -2992,18 +3013,23 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
                                 const AVFrame *swf, int from)
 {
     int err = 0;
+    VkResult ret;
     AVVkFrame *f = (AVVkFrame *)vkf->data[0];
     AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
+    AVVulkanDeviceContext *hwctx = dev_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
 
     AVFrame tmp;
     AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
+    size_t buf_offsets[AV_NUM_DATA_POINTERS] = { 0 };
 
     const int planes = av_pix_fmt_count_planes(swf->format);
     int log2_chroma = av_pix_fmt_desc_get(swf->format)->log2_chroma_h;
 
     int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
     const int map_host = !!(p->extensions & EXT_EXTERNAL_HOST_MEMORY);
+
+    VK_LOAD_PFN(hwctx->inst, vkGetMemoryHostPointerPropertiesEXT);
 
     if ((swf->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(swf->format))) {
         av_log(hwfc, AV_LOG_ERROR, "Unsupported software frame pixel format!\n");
@@ -3032,10 +3058,9 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
 
     /* Create buffers */
     for (int i = 0; i < planes; i++) {
+        size_t req_size;
         int h = swf->height;
         int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-        size_t p_size = FFALIGN(FFABS(swf->linesize[i]) * p_height,
-                                p->hprops.minImportedHostPointerAlignment);
 
         VkExternalMemoryBufferCreateInfo create_desc = {
             .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
@@ -3045,21 +3070,44 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
         VkImportMemoryHostPointerInfoEXT import_desc = {
             .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
             .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
-            .pHostPointer = swf->data[i],
         };
 
-        /* We can only map images with positive stride and alignment appropriate
-         * for the device. */
-        host_mapped[i] = map_host && swf->linesize[i] > 0 &&
-                         !(((uintptr_t)import_desc.pHostPointer) %
-                           p->hprops.minImportedHostPointerAlignment);
-        p_size = host_mapped[i] ? p_size : 0;
+        VkMemoryHostPointerPropertiesEXT p_props = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
+        };
 
         tmp.linesize[i] = FFABS(swf->linesize[i]);
-        err = create_buf(dev_ctx, &bufs[i], p_size, p_height, &tmp.linesize[i],
+
+        /* Do not map images with a negative stride */
+        if (map_host && swf->linesize[i] > 0) {
+            size_t offs;
+            offs = (uintptr_t)swf->data[i] % p->hprops.minImportedHostPointerAlignment;
+            import_desc.pHostPointer = swf->data[i] - offs;
+
+            /* We have to compensate for the few extra bytes of padding we
+             * completely ignore at the start */
+            req_size = FFALIGN(offs + tmp.linesize[i] * p_height,
+                               p->hprops.minImportedHostPointerAlignment);
+
+            ret = pfn_vkGetMemoryHostPointerPropertiesEXT(hwctx->act_dev,
+                                                          import_desc.handleType,
+                                                          import_desc.pHostPointer,
+                                                          &p_props);
+
+            if (ret == VK_SUCCESS) {
+                host_mapped[i] = 1;
+                buf_offsets[i] = offs;
+            }
+        }
+
+        if (!host_mapped[i])
+            req_size = get_req_buffer_size(p, &tmp.linesize[i], p_height);
+
+        err = create_buf(dev_ctx, &bufs[i],
                          from ? VK_BUFFER_USAGE_TRANSFER_DST_BIT :
                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                         req_size, p_props.memoryTypeBits, host_mapped[i],
                          host_mapped[i] ? &create_desc : NULL,
                          host_mapped[i] ? &import_desc : NULL);
         if (err)
@@ -3089,7 +3137,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
     }
 
     /* Copy buffers into/from image */
-    err = transfer_image_buf(hwfc, vkf, bufs, tmp.linesize,
+    err = transfer_image_buf(hwfc, vkf, bufs, buf_offsets, tmp.linesize,
                              swf->width, swf->height, swf->format, from);
 
     if (from) {
