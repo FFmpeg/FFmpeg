@@ -440,7 +440,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
         return 0;
     }
 
-    if (w0 > M_PI || w0 <= 0.)
+    if ((w0 > M_PI || w0 <= 0.) && (s->filter_type != biquad))
         return AVERROR(EINVAL);
 
     switch (s->width_type) {
