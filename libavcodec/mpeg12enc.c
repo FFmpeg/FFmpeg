@@ -31,6 +31,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "libavutil/timecode.h"
 #include "libavutil/stereo3d.h"
 
@@ -1034,18 +1035,12 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
         mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 8);
 }
 
-av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
+static av_cold void mpeg12_encode_init_static(void)
 {
-    static int done = 0;
-
-    ff_mpeg12_common_init(s);
-
-    if (!done) {
         int f_code;
         int mv;
         int i;
 
-        done = 1;
         ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
         ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
@@ -1110,7 +1105,14 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
         for (f_code = MAX_FCODE; f_code > 0; f_code--)
             for (mv = -(8 << f_code); mv < (8 << f_code); mv++)
                 fcode_tab[mv + MAX_MV] = f_code;
-    }
+}
+
+av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
+    ff_mpeg12_common_init(s);
+
     s->me.mv_penalty = mv_penalty;
     s->fcode_tab     = fcode_tab;
     if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
@@ -1129,6 +1131,8 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     }
     s->inter_ac_vlc_length      =
     s->inter_ac_vlc_last_length = uni_mpeg1_ac_vlc_len;
+
+    ff_thread_once(&init_static_once, mpeg12_encode_init_static);
 }
 
 #define OFFSET(x) offsetof(MpegEncContext, x)
