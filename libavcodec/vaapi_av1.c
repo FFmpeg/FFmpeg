@@ -61,6 +61,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
     VADecPictureParameterBufferAV1 pic_param;
     int8_t bit_depth_idx;
     int err = 0;
+    int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) && film_grain->apply_grain;
     uint8_t remap_lr_type[4] = {AV1_RESTORE_NONE, AV1_RESTORE_SWITCHABLE, AV1_RESTORE_WIENER, AV1_RESTORE_SGRPROJ};
 
     pic->output_surface = vaapi_av1_surface_id(&s->cur_frame);
@@ -107,7 +108,8 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
             .subsampling_x              = seq->color_config.subsampling_x,
             .subsampling_y              = seq->color_config.subsampling_y,
             .chroma_sample_position     = seq->color_config.chroma_sample_position,
-            .film_grain_params_present  = seq->film_grain_params_present,
+            .film_grain_params_present  = seq->film_grain_params_present &&
+                                          !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN),
         },
         .seg_info.segment_info_fields.bits = {
             .enabled         = frame_header->segmentation_enabled,
@@ -117,7 +119,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         },
         .film_grain_info = {
             .film_grain_info_fields.bits = {
-                .apply_grain              = film_grain->apply_grain,
+                .apply_grain              = apply_grain,
                 .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
                 .grain_scaling_minus_8    = film_grain->grain_scaling_minus_8,
                 .ar_coeff_lag             = film_grain->ar_coeff_lag,
@@ -215,7 +217,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         for (int j = 0; j < 6; j++)
             pic_param.wm[i - 1].wmmat[j] = s->cur_frame.gm_params[i][j];
     }
-    if (film_grain->apply_grain) {
+    if (apply_grain) {
         for (int i = 0; i < film_grain->num_y_points; i++) {
             pic_param.film_grain_info.point_y_value[i] =
                 film_grain->point_y_value[i];

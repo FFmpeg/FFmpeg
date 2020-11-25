@@ -62,6 +62,7 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     const AV1RawFilmGrainParams *film_grain = &h->cur_frame.film_grain;
 
     unsigned char remap_lr_type[4] = { AV1_RESTORE_NONE, AV1_RESTORE_SWITCHABLE, AV1_RESTORE_WIENER, AV1_RESTORE_SGRPROJ };
+    int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) && film_grain->apply_grain;
 
     memset(pp, 0, sizeof(*pp));
 
@@ -99,7 +100,7 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     pp->coding.integer_mv                   = frame_header->force_integer_mv || !(frame_header->frame_type & 1);
     pp->coding.cdef                         = seq->enable_cdef;
     pp->coding.restoration                  = seq->enable_restoration;
-    pp->coding.film_grain                   = seq->film_grain_params_present;
+    pp->coding.film_grain                   = seq->film_grain_params_present && !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
     pp->coding.intrabc                      = frame_header->allow_intrabc;
     pp->coding.high_precision_mv            = frame_header->allow_high_precision_mv;
     pp->coding.switchable_motion_mode       = frame_header->is_motion_mode_switchable;
@@ -215,7 +216,7 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     }
 
     /* Film grain */
-    if (film_grain->apply_grain) {
+    if (apply_grain) {
         pp->film_grain.apply_grain              = 1;
         pp->film_grain.scaling_shift_minus8     = film_grain->grain_scaling_minus_8;
         pp->film_grain.chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma;

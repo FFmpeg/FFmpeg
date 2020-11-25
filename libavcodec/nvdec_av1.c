@@ -53,9 +53,10 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
 
     unsigned char remap_lr_type[4] = { AV1_RESTORE_NONE, AV1_RESTORE_SWITCHABLE, AV1_RESTORE_WIENER, AV1_RESTORE_SGRPROJ };
 
+    int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) && film_grain->apply_grain;
     int ret, i, j;
 
-    ret = ff_nvdec_start_frame_sep_ref(avctx, cur_frame, film_grain->apply_grain);
+    ret = ff_nvdec_start_frame_sep_ref(avctx, cur_frame, apply_grain);
     if (ret < 0)
         return ret;
 
@@ -95,7 +96,8 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .enable_superres            = seq->enable_superres,
             .enable_cdef                = seq->enable_cdef,
             .enable_restoration         = seq->enable_restoration,
-            .enable_fgs                 = seq->film_grain_params_present,
+            .enable_fgs                 = seq->film_grain_params_present &&
+                                          !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN),
 
             /* Frame Header */
             .frame_type                   = frame_header->frame_type,
@@ -182,7 +184,7 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .spatial_layer_id  = s->cur_frame.spatial_id,
 
             /* Film Grain Params */
-            .apply_grain              = film_grain->apply_grain,
+            .apply_grain              = apply_grain,
             .overlap_flag             = film_grain->overlap_flag,
             .scaling_shift_minus8     = film_grain->grain_scaling_minus_8,
             .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
@@ -259,7 +261,7 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
     }
 
     /* Film Grain Params */
-    if (film_grain->apply_grain) {
+    if (apply_grain) {
         for (i = 0; i < 14; ++i) {
             ppc->scaling_points_y[i][0] = film_grain->point_y_value[i];
             ppc->scaling_points_y[i][1] = film_grain->point_y_scaling[i];

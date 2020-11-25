@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/film_grain_params.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "av1dec.h"
@@ -737,6 +738,66 @@ fail:
     return ret;
 }
 
+static int export_film_grain(AVCodecContext *avctx, AVFrame *frame)
+{
+    AV1DecContext *s = avctx->priv_data;
+    const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
+    AVFilmGrainParams *fgp;
+    AVFilmGrainAOMParams *aom;
+
+    if (!film_grain->apply_grain)
+        return 0;
+
+    fgp = av_film_grain_params_create_side_data(frame);
+    if (!fgp)
+        return AVERROR(ENOMEM);
+
+    fgp->type = AV_FILM_GRAIN_PARAMS_AV1;
+    fgp->seed = film_grain->grain_seed;
+
+    aom = &fgp->codec.aom;
+    aom->chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma;
+    aom->scaling_shift = film_grain->grain_scaling_minus_8 + 8;
+    aom->ar_coeff_lag = film_grain->ar_coeff_lag;
+    aom->ar_coeff_shift = film_grain->ar_coeff_shift_minus_6 + 6;
+    aom->grain_scale_shift = film_grain->grain_scale_shift;
+    aom->overlap_flag = film_grain->overlap_flag;
+    aom->limit_output_range = film_grain->clip_to_restricted_range;
+
+    aom->num_y_points = film_grain->num_y_points;
+    for (int i = 0; i < film_grain->num_y_points; i++) {
+        aom->y_points[i][0] = film_grain->point_y_value[i];
+        aom->y_points[i][1] = film_grain->point_y_scaling[i];
+    }
+    aom->num_uv_points[0] = film_grain->num_cb_points;
+    for (int i = 0; i < film_grain->num_cb_points; i++) {
+        aom->uv_points[0][i][0] = film_grain->point_cb_value[i];
+        aom->uv_points[0][i][1] = film_grain->point_cb_scaling[i];
+    }
+    aom->num_uv_points[1] = film_grain->num_cr_points;
+    for (int i = 0; i < film_grain->num_cr_points; i++) {
+        aom->uv_points[1][i][0] = film_grain->point_cr_value[i];
+        aom->uv_points[1][i][1] = film_grain->point_cr_scaling[i];
+    }
+
+    for (int i = 0; i < 24; i++) {
+        aom->ar_coeffs_y[i] = film_grain->ar_coeffs_y_plus_128[i] - 128;
+    }
+    for (int i = 0; i < 25; i++) {
+        aom->ar_coeffs_uv[0][i] = film_grain->ar_coeffs_cb_plus_128[i] - 128;
+        aom->ar_coeffs_uv[1][i] = film_grain->ar_coeffs_cr_plus_128[i] - 128;
+    }
+
+    aom->uv_mult[0] = film_grain->cb_mult;
+    aom->uv_mult[1] = film_grain->cr_mult;
+    aom->uv_mult_luma[0] = film_grain->cb_luma_mult;
+    aom->uv_mult_luma[1] = film_grain->cr_luma_mult;
+    aom->uv_offset[0] = film_grain->cb_offset;
+    aom->uv_offset[1] = film_grain->cr_offset;
+
+    return 0;
+}
+
 static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
                             const AVPacket *pkt, int *got_frame)
 {
@@ -747,6 +808,14 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
     ret = av_frame_ref(frame, srcframe);
     if (ret < 0)
         return ret;
+
+    if (avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) {
+        ret = export_film_grain(avctx, frame);
+        if (ret < 0) {
+            av_frame_unref(frame);
+            return ret;
+        }
+    }
 
     frame->pts = pkt->pts;
     frame->pkt_dts = pkt->dts;
