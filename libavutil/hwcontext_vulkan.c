@@ -752,14 +752,6 @@ static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
 
     cmd->nb_queues = num_queues;
 
-    cmd->queues = av_mallocz(num_queues * sizeof(*cmd->queues));
-    if (!cmd->queues)
-        return AVERROR(ENOMEM);
-
-    cmd->bufs = av_mallocz(num_queues * sizeof(*cmd->bufs));
-    if (!cmd->bufs)
-        return AVERROR(ENOMEM);
-
     /* Create command pool */
     ret = vkCreateCommandPool(hwctx->act_dev, &cqueue_create,
                               hwctx->alloc, &cmd->pool);
@@ -769,6 +761,10 @@ static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
         return AVERROR_EXTERNAL;
     }
 
+    cmd->bufs = av_mallocz(num_queues * sizeof(*cmd->bufs));
+    if (!cmd->bufs)
+        return AVERROR(ENOMEM);
+
     cbuf_create.commandPool = cmd->pool;
 
     /* Allocate command buffer */
@@ -776,8 +772,13 @@ static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
     if (ret != VK_SUCCESS) {
         av_log(hwfc, AV_LOG_ERROR, "Command buffer alloc failure: %s\n",
                vk_ret2str(ret));
+        av_freep(&cmd->bufs);
         return AVERROR_EXTERNAL;
     }
+
+    cmd->queues = av_mallocz(num_queues * sizeof(*cmd->queues));
+    if (!cmd->queues)
+        return AVERROR(ENOMEM);
 
     for (int i = 0; i < num_queues; i++) {
         VulkanQueueCtx *q = &cmd->queues[i];
@@ -792,23 +793,25 @@ static void free_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
 {
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
 
-    /* Make sure all queues have finished executing */
-    for (int i = 0; i < cmd->nb_queues; i++) {
-        VulkanQueueCtx *q = &cmd->queues[i];
+    if (cmd->queues) {
+        for (int i = 0; i < cmd->nb_queues; i++) {
+            VulkanQueueCtx *q = &cmd->queues[i];
 
-        if (q->fence && !q->was_synchronous) {
-            vkWaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
-            vkResetFences(hwctx->act_dev, 1, &q->fence);
+            /* Make sure all queues have finished executing */
+            if (q->fence && !q->was_synchronous) {
+                vkWaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
+                vkResetFences(hwctx->act_dev, 1, &q->fence);
+            }
+
+            /* Free the fence */
+            if (q->fence)
+                vkDestroyFence(hwctx->act_dev, q->fence, hwctx->alloc);
+
+            /* Free buffer dependencies */
+            for (int j = 0; j < q->nb_buf_deps; j++)
+                av_buffer_unref(&q->buf_deps[j]);
+            av_free(q->buf_deps);
         }
-
-        /* Free the fence */
-        if (q->fence)
-            vkDestroyFence(hwctx->act_dev, q->fence, hwctx->alloc);
-
-        /* Free buffer dependencies */
-        for (int j = 0; j < q->nb_buf_deps; j++)
-            av_buffer_unref(&q->buf_deps[j]);
-        av_free(q->buf_deps);
     }
 
     if (cmd->bufs)
@@ -816,8 +819,9 @@ static void free_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
     if (cmd->pool)
         vkDestroyCommandPool(hwctx->act_dev, cmd->pool, hwctx->alloc);
 
-    av_freep(&cmd->bufs);
     av_freep(&cmd->queues);
+    av_freep(&cmd->bufs);
+    cmd->pool = NULL;
 }
 
 static VkCommandBuffer get_buf_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
@@ -1719,24 +1723,24 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                           dev_hwctx->queue_family_comp_index,
                           GET_QUEUE_COUNT(dev_hwctx, 0, 1, 0));
     if (err)
-        goto fail;
+        return err;
 
     err = create_exec_ctx(hwfc, &fp->upload_ctx,
                           dev_hwctx->queue_family_tx_index,
                           GET_QUEUE_COUNT(dev_hwctx, 0, 0, 1));
     if (err)
-        goto fail;
+        return err;
 
     err = create_exec_ctx(hwfc, &fp->download_ctx,
                           dev_hwctx->queue_family_tx_index, 1);
     if (err)
-        goto fail;
+        return err;
 
     /* Test to see if allocation will fail */
     err = create_frame(hwfc, &f, hwctx->tiling, hwctx->usage,
                        hwctx->create_pnext);
     if (err)
-        goto fail;
+        return err;
 
     vulkan_frame_free(hwfc, (uint8_t *)f);
 
@@ -1746,20 +1750,11 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         hwfc->internal->pool_internal = av_buffer_pool_init2(sizeof(AVVkFrame),
                                                              hwfc, vulkan_pool_alloc,
                                                              NULL);
-        if (!hwfc->internal->pool_internal) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!hwfc->internal->pool_internal)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
-
-fail:
-    free_exec_ctx(hwfc, &fp->conv_ctx);
-    free_exec_ctx(hwfc, &fp->upload_ctx);
-    free_exec_ctx(hwfc, &fp->download_ctx);
-
-    return err;
 }
 
 static int vulkan_get_buffer(AVHWFramesContext *hwfc, AVFrame *frame)
