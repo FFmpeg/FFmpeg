@@ -244,6 +244,8 @@ enum VulkanExtensions {
     EXT_EXTERNAL_FD_MEMORY     = 1ULL <<  2, /* VK_KHR_external_memory_fd */
     EXT_EXTERNAL_FD_SEM        = 1ULL <<  3, /* VK_KHR_external_semaphore_fd */
     EXT_EXTERNAL_HOST_MEMORY   = 1ULL <<  4, /* VK_EXT_external_memory_host */
+    EXT_PUSH_DESCRIPTORS       = 1ULL <<  5, /* VK_KHR_push_descriptor */
+    EXT_HOST_QUERY_RESET       = 1ULL <<  6, /* VK_EXT_host_query_reset */
 
     EXT_NO_FLAG                = 1ULL << 63,
 };
@@ -263,6 +265,8 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,        EXT_DRM_MODIFIER_FLAGS,     },
     { VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,            EXT_EXTERNAL_FD_SEM,        },
     { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME,             EXT_EXTERNAL_HOST_MEMORY,   },
+    { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,                  EXT_PUSH_DESCRIPTORS,       },
+    { VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,                 EXT_HOST_QUERY_RESET,       },
 };
 
 /* Converts return values to strings */
@@ -1041,6 +1045,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     vkGetPhysicalDeviceFeatures(hwctx->phys_dev, &dev_features);
 #define COPY_FEATURE(DST, NAME) (DST).features.NAME = dev_features.NAME;
     COPY_FEATURE(hwctx->device_features, shaderImageGatherExtended)
+    COPY_FEATURE(hwctx->device_features, shaderStorageImageReadWithoutFormat)
+    COPY_FEATURE(hwctx->device_features, shaderStorageImageWriteWithoutFormat)
     COPY_FEATURE(hwctx->device_features, fragmentStoresAndAtomics)
     COPY_FEATURE(hwctx->device_features, vertexPipelineStoresAndAtomics)
     COPY_FEATURE(hwctx->device_features, shaderInt64)
