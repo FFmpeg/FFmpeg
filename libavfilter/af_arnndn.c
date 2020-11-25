@@ -1338,7 +1338,8 @@ static void compute_rnn(AudioRNNContext *s, RNNState *rnn, float *gains, float *
     compute_dense(rnn->model->denoise_output, gains, rnn->denoise_gru_state);
 }
 
-static float rnnoise_channel(AudioRNNContext *s, DenoiseState *st, float *out, const float *in)
+static float rnnoise_channel(AudioRNNContext *s, DenoiseState *st, float *out, const float *in,
+                             int disabled)
 {
     AVComplexFloat X[FREQ_SIZE];
     AVComplexFloat P[WINDOW_SIZE];
@@ -1356,7 +1357,7 @@ static float rnnoise_channel(AudioRNNContext *s, DenoiseState *st, float *out, c
     biquad(x, st->mem_hp_x, in, b_hp, a_hp, FRAME_SIZE);
     silence = compute_frame_features(s, st, X, P, Ex, Ep, Exp, features, x);
 
-    if (!silence) {
+    if (!silence && !disabled) {
         compute_rnn(s, &st->rnn, g, &vad_prob, features);
         pitch_filter(X, P, Ex, Ep, Exp, g);
         for (int i = 0; i < NB_BANDS; i++) {
@@ -1395,7 +1396,8 @@ static int rnnoise_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     for (int ch = start; ch < end; ch++) {
         rnnoise_channel(s, &s->st[ch],
                         (float *)out->extended_data[ch],
-                        (const float *)in->extended_data[ch]);
+                        (const float *)in->extended_data[ch],
+                        ctx->is_disabled);
     }
 
     return 0;
@@ -1540,5 +1542,6 @@ AVFilter ff_af_arnndn = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
