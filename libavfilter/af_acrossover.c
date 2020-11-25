@@ -41,8 +41,7 @@
 typedef struct BiquadContext {
     double a0, a1, a2;
     double b1, b2;
-    double i1, i2;
-    double o1, o2;
+    double z1, z2;
 } BiquadContext;
 
 typedef struct CrossoverChannel {
@@ -150,8 +149,8 @@ static void set_lp(BiquadContext *b, double fc, double q, double sr)
     b->a0 = (0.5 + beta - gamma) / 2.0;
     b->a1 = 0.5 + beta - gamma;
     b->a2 = b->a1 / 2.0;
-    b->b1 = -2.0 * gamma;
-    b->b2 = 2.0 * beta;
+    b->b1 = 2.0 * gamma;
+    b->b2 = -2.0 * beta;
 }
 
 static void set_hp(BiquadContext *b, double fc, double q, double sr)
@@ -164,8 +163,8 @@ static void set_hp(BiquadContext *b, double fc, double q, double sr)
     b->a0 = (0.5 + beta + gamma) / 2.0;
     b->a1 = -(0.5 + beta + gamma);
     b->a2 = b->a0;
-    b->b1 = -2.0 * gamma;
-    b->b2 = 2.0 * beta;
+    b->b1 = 2.0 * gamma;
+    b->b2 = -2.0 * beta;
 }
 
 static void calc_q_factors(int order, double *q)
@@ -246,26 +245,21 @@ static void biquad_process(BiquadContext *b,
     const double a2 = b->a2;
     const double b1 = b->b1;
     const double b2 = b->b2;
-    double i1 = b->i1;
-    double i2 = b->i2;
-    double o1 = b->o1;
-    double o2 = b->o2;
+    double z1 = b->z1;
+    double z2 = b->z2;
 
     for (int n = 0; n < nb_samples; n++) {
         const double in = src[n];
         double out;
 
-        out = in * a0 + i1 * a1 + i2 * a2 - o1 * b1 - o2 * b2;
-        i2 = i1;
-        o2 = o1;
-        i1 = in;
-        o1 = dst[n] = out;
+        out = in * a0 + z1;
+        z1 = a1 * in + z2 + b1 * out;
+        z2 = a2 * in + b2 * out;
+        dst[n] = out;
     }
 
-    b->i1 = i1;
-    b->i2 = i2;
-    b->o1 = o1;
-    b->o2 = o2;
+    b->z1 = z1;
+    b->z2 = z2;
 }
 
 static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
