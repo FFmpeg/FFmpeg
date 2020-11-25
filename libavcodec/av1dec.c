@@ -247,6 +247,26 @@ static void coded_lossless_param(AV1DecContext *s)
     }
 }
 
+static void load_grain_params(AV1DecContext *s)
+{
+    const AV1RawFrameHeader *header = s->raw_frame_header;
+    const AV1RawFilmGrainParams *film_grain = &header->film_grain, *src;
+    AV1RawFilmGrainParams *dst = &s->cur_frame.film_grain;
+
+    if (!film_grain->apply_grain)
+        return;
+
+    if (film_grain->update_grain) {
+        memcpy(dst, film_grain, sizeof(*dst));
+        return;
+    }
+
+    src = &s->ref[film_grain->film_grain_params_ref_idx].film_grain;
+
+    memcpy(dst, src, sizeof(*dst));
+    dst->grain_seed = film_grain->grain_seed;
+}
+
 static int init_tile_data(AV1DecContext *s)
 
 {
@@ -447,6 +467,7 @@ static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
     f->spatial_id = f->temporal_id = 0;
     memset(f->skip_mode_frame_idx, 0,
            2 * sizeof(uint8_t));
+    memset(&f->film_grain, 0, sizeof(f->film_grain));
     f->coded_lossless = 0;
 }
 
@@ -482,6 +503,9 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
     memcpy(dst->skip_mode_frame_idx,
            src->skip_mode_frame_idx,
            2 * sizeof(uint8_t));
+    memcpy(&dst->film_grain,
+           &src->film_grain,
+           sizeof(dst->film_grain));
     dst->coded_lossless = src->coded_lossless;
 
     return 0;
@@ -762,6 +786,7 @@ static int get_current_frame(AVCodecContext *avctx)
     global_motion_params(s);
     skip_mode_params(s);
     coded_lossless_param(s);
+    load_grain_params(s);
 
     return ret;
 }

@@ -47,6 +47,8 @@ typedef struct AV1Frame {
 
     uint8_t skip_mode_frame_idx[2];
 
+    AV1RawFilmGrainParams film_grain;
+
     uint8_t coded_lossless;
 } AV1Frame;
 
