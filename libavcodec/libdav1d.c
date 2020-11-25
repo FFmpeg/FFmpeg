@@ -425,8 +425,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                sizeof(fgp->codec.aom.uv_points));
         memcpy(&fgp->codec.aom.ar_coeffs_y, &p->frame_hdr->film_grain.data.ar_coeffs_y,
                sizeof(fgp->codec.aom.ar_coeffs_y));
-        memcpy(&fgp->codec.aom.ar_coeffs_uv, &p->frame_hdr->film_grain.data.ar_coeffs_uv,
-               sizeof(fgp->codec.aom.ar_coeffs_uv));
+        memcpy(&fgp->codec.aom.ar_coeffs_uv[0], &p->frame_hdr->film_grain.data.ar_coeffs_uv[0],
+               sizeof(fgp->codec.aom.ar_coeffs_uv[0]));
+        memcpy(&fgp->codec.aom.ar_coeffs_uv[1], &p->frame_hdr->film_grain.data.ar_coeffs_uv[1],
+               sizeof(fgp->codec.aom.ar_coeffs_uv[1]));
         memcpy(&fgp->codec.aom.uv_mult, &p->frame_hdr->film_grain.data.uv_mult,
                sizeof(fgp->codec.aom.uv_mult));
         memcpy(&fgp->codec.aom.uv_mult_luma, &p->frame_hdr->film_grain.data.uv_luma_mult,
