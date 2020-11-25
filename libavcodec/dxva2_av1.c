@@ -59,6 +59,7 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     int i,j, uses_lr;
     const AV1RawSequenceHeader *seq = h->raw_seq;
     const AV1RawFrameHeader *frame_header = h->raw_frame_header;
+    const AV1RawFilmGrainParams *film_grain = &h->cur_frame.film_grain;
 
     unsigned char remap_lr_type[4] = { AV1_RESTORE_NONE, AV1_RESTORE_SWITCHABLE, AV1_RESTORE_WIENER, AV1_RESTORE_SGRPROJ };
 
@@ -214,47 +215,47 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     }
 
     /* Film grain */
-    if (frame_header->apply_grain) {
+    if (film_grain->apply_grain) {
         pp->film_grain.apply_grain              = 1;
-        pp->film_grain.scaling_shift_minus8     = frame_header->grain_scaling_minus_8;
-        pp->film_grain.chroma_scaling_from_luma = frame_header->chroma_scaling_from_luma;
-        pp->film_grain.ar_coeff_lag             = frame_header->ar_coeff_lag;
-        pp->film_grain.ar_coeff_shift_minus6    = frame_header->ar_coeff_shift_minus_6;
-        pp->film_grain.grain_scale_shift        = frame_header->grain_scale_shift;
-        pp->film_grain.overlap_flag             = frame_header->overlap_flag;
-        pp->film_grain.clip_to_restricted_range = frame_header->clip_to_restricted_range;
+        pp->film_grain.scaling_shift_minus8     = film_grain->grain_scaling_minus_8;
+        pp->film_grain.chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma;
+        pp->film_grain.ar_coeff_lag             = film_grain->ar_coeff_lag;
+        pp->film_grain.ar_coeff_shift_minus6    = film_grain->ar_coeff_shift_minus_6;
+        pp->film_grain.grain_scale_shift        = film_grain->grain_scale_shift;
+        pp->film_grain.overlap_flag             = film_grain->overlap_flag;
+        pp->film_grain.clip_to_restricted_range = film_grain->clip_to_restricted_range;
         pp->film_grain.matrix_coeff_is_identity = (seq->color_config.matrix_coefficients == AVCOL_SPC_RGB);
 
-        pp->film_grain.grain_seed               = frame_header->grain_seed;
-        pp->film_grain.num_y_points             = frame_header->num_y_points;
-        for (i = 0; i < frame_header->num_y_points; i++) {
-            pp->film_grain.scaling_points_y[i][0] = frame_header->point_y_value[i];
-            pp->film_grain.scaling_points_y[i][1] = frame_header->point_y_scaling[i];
+        pp->film_grain.grain_seed               = film_grain->grain_seed;
+        pp->film_grain.num_y_points             = film_grain->num_y_points;
+        for (i = 0; i < film_grain->num_y_points; i++) {
+            pp->film_grain.scaling_points_y[i][0] = film_grain->point_y_value[i];
+            pp->film_grain.scaling_points_y[i][1] = film_grain->point_y_scaling[i];
         }
-        pp->film_grain.num_cb_points            = frame_header->num_cb_points;
-        for (i = 0; i < frame_header->num_cb_points; i++) {
-            pp->film_grain.scaling_points_cb[i][0] = frame_header->point_cb_value[i];
-            pp->film_grain.scaling_points_cb[i][1] = frame_header->point_cb_scaling[i];
+        pp->film_grain.num_cb_points            = film_grain->num_cb_points;
+        for (i = 0; i < film_grain->num_cb_points; i++) {
+            pp->film_grain.scaling_points_cb[i][0] = film_grain->point_cb_value[i];
+            pp->film_grain.scaling_points_cb[i][1] = film_grain->point_cb_scaling[i];
         }
-        pp->film_grain.num_cr_points            = frame_header->num_cr_points;
-        for (i = 0; i < frame_header->num_cr_points; i++) {
-            pp->film_grain.scaling_points_cr[i][0] = frame_header->point_cr_value[i];
-            pp->film_grain.scaling_points_cr[i][1] = frame_header->point_cr_scaling[i];
+        pp->film_grain.num_cr_points            = film_grain->num_cr_points;
+        for (i = 0; i < film_grain->num_cr_points; i++) {
+            pp->film_grain.scaling_points_cr[i][0] = film_grain->point_cr_value[i];
+            pp->film_grain.scaling_points_cr[i][1] = film_grain->point_cr_scaling[i];
         }
         for (i = 0; i < 24; i++) {
-            pp->film_grain.ar_coeffs_y[i] = frame_header->ar_coeffs_y_plus_128[i];
+            pp->film_grain.ar_coeffs_y[i] = film_grain->ar_coeffs_y_plus_128[i];
         }
         for (i = 0; i < 25; i++) {
-            pp->film_grain.ar_coeffs_cb[i] = frame_header->ar_coeffs_cb_plus_128[i];
-            pp->film_grain.ar_coeffs_cr[i] = frame_header->ar_coeffs_cr_plus_128[i];
+            pp->film_grain.ar_coeffs_cb[i] = film_grain->ar_coeffs_cb_plus_128[i];
+            pp->film_grain.ar_coeffs_cr[i] = film_grain->ar_coeffs_cr_plus_128[i];
         }
-        pp->film_grain.cb_mult      = frame_header->cb_mult;
-        pp->film_grain.cb_luma_mult = frame_header->cb_luma_mult;
-        pp->film_grain.cr_mult      = frame_header->cr_mult;
-        pp->film_grain.cr_luma_mult = frame_header->cr_luma_mult;
-        pp->film_grain.cb_offset    = frame_header->cb_offset;
-        pp->film_grain.cr_offset    = frame_header->cr_offset;
-        pp->film_grain.cr_offset    = frame_header->cr_offset;
+        pp->film_grain.cb_mult      = film_grain->cb_mult;
+        pp->film_grain.cb_luma_mult = film_grain->cb_luma_mult;
+        pp->film_grain.cr_mult      = film_grain->cr_mult;
+        pp->film_grain.cr_luma_mult = film_grain->cr_luma_mult;
+        pp->film_grain.cb_offset    = film_grain->cb_offset;
+        pp->film_grain.cr_offset    = film_grain->cr_offset;
+        pp->film_grain.cr_offset    = film_grain->cr_offset;
     }
 
     // XXX: Setting the StatusReportFeedbackNumber breaks decoding on some drivers (tested on NVIDIA 457.09)
