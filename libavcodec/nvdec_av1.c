@@ -42,7 +42,7 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
     const AV1DecContext *s = avctx->priv_data;
     const AV1RawSequenceHeader *seq = s->raw_seq;
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
-    const AV1RawFilmGrainParams *film_grain = &frame_header->film_grain;
+    const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
 
     NVDECContext      *ctx = avctx->internal->hwaccel_priv_data;
     CUVIDPICPARAMS     *pp = &ctx->pic_params;
