@@ -42,6 +42,7 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
     const AV1DecContext *s = avctx->priv_data;
     const AV1RawSequenceHeader *seq = s->raw_seq;
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
+    const AV1RawFilmGrainParams *film_grain = &frame_header->film_grain;
 
     NVDECContext      *ctx = avctx->internal->hwaccel_priv_data;
     CUVIDPICPARAMS     *pp = &ctx->pic_params;
@@ -54,7 +55,7 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
 
     int ret, i, j;
 
-    ret = ff_nvdec_start_frame_sep_ref(avctx, cur_frame, frame_header->apply_grain);
+    ret = ff_nvdec_start_frame_sep_ref(avctx, cur_frame, film_grain->apply_grain);
     if (ret < 0)
         return ret;
 
@@ -181,24 +182,24 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .spatial_layer_id  = s->cur_frame.spatial_id,
 
             /* Film Grain Params */
-            .apply_grain              = frame_header->apply_grain,
-            .overlap_flag             = frame_header->overlap_flag,
-            .scaling_shift_minus8     = frame_header->grain_scaling_minus_8,
-            .chroma_scaling_from_luma = frame_header->chroma_scaling_from_luma,
-            .ar_coeff_lag             = frame_header->ar_coeff_lag,
-            .ar_coeff_shift_minus6    = frame_header->ar_coeff_shift_minus_6,
-            .grain_scale_shift        = frame_header->grain_scale_shift,
-            .clip_to_restricted_range = frame_header->clip_to_restricted_range,
-            .num_y_points             = frame_header->num_y_points,
-            .num_cb_points            = frame_header->num_cb_points,
-            .num_cr_points            = frame_header->num_cr_points,
-            .random_seed              = frame_header->grain_seed,
-            .cb_mult                  = frame_header->cb_mult,
-            .cb_luma_mult             = frame_header->cb_luma_mult,
-            .cb_offset                = frame_header->cb_offset,
-            .cr_mult                  = frame_header->cr_mult,
-            .cr_luma_mult             = frame_header->cr_luma_mult,
-            .cr_offset                = frame_header->cr_offset
+            .apply_grain              = film_grain->apply_grain,
+            .overlap_flag             = film_grain->overlap_flag,
+            .scaling_shift_minus8     = film_grain->grain_scaling_minus_8,
+            .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
+            .ar_coeff_lag             = film_grain->ar_coeff_lag,
+            .ar_coeff_shift_minus6    = film_grain->ar_coeff_shift_minus_6,
+            .grain_scale_shift        = film_grain->grain_scale_shift,
+            .clip_to_restricted_range = film_grain->clip_to_restricted_range,
+            .num_y_points             = film_grain->num_y_points,
+            .num_cb_points            = film_grain->num_cb_points,
+            .num_cr_points            = film_grain->num_cr_points,
+            .random_seed              = film_grain->grain_seed,
+            .cb_mult                  = film_grain->cb_mult,
+            .cb_luma_mult             = film_grain->cb_luma_mult,
+            .cb_offset                = film_grain->cb_offset,
+            .cr_mult                  = film_grain->cr_mult,
+            .cr_luma_mult             = film_grain->cr_luma_mult,
+            .cr_offset                = film_grain->cr_offset
         }
     };
 
@@ -258,23 +259,23 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
     }
 
     /* Film Grain Params */
-    if (frame_header->apply_grain) {
+    if (film_grain->apply_grain) {
         for (i = 0; i < 14; ++i) {
-            ppc->scaling_points_y[i][0] = frame_header->point_y_value[i];
-            ppc->scaling_points_y[i][1] = frame_header->point_y_scaling[i];
+            ppc->scaling_points_y[i][0] = film_grain->point_y_value[i];
+            ppc->scaling_points_y[i][1] = film_grain->point_y_scaling[i];
         }
         for (i = 0; i < 10; ++i) {
-            ppc->scaling_points_cb[i][0] = frame_header->point_cb_value[i];
-            ppc->scaling_points_cb[i][1] = frame_header->point_cb_scaling[i];
-            ppc->scaling_points_cr[i][0] = frame_header->point_cr_value[i];
-            ppc->scaling_points_cr[i][1] = frame_header->point_cr_scaling[i];
+            ppc->scaling_points_cb[i][0] = film_grain->point_cb_value[i];
+            ppc->scaling_points_cb[i][1] = film_grain->point_cb_scaling[i];
+            ppc->scaling_points_cr[i][0] = film_grain->point_cr_value[i];
+            ppc->scaling_points_cr[i][1] = film_grain->point_cr_scaling[i];
         }
         for (i = 0; i < 24; ++i) {
-            ppc->ar_coeffs_y[i] = (short)frame_header->ar_coeffs_y_plus_128[i] - 128;
+            ppc->ar_coeffs_y[i] = (short)film_grain->ar_coeffs_y_plus_128[i] - 128;
         }
         for (i = 0; i < 25; ++i) {
-            ppc->ar_coeffs_cb[i] = (short)frame_header->ar_coeffs_cb_plus_128[i] - 128;
-            ppc->ar_coeffs_cr[i] = (short)frame_header->ar_coeffs_cr_plus_128[i] - 128;
+            ppc->ar_coeffs_cb[i] = (short)film_grain->ar_coeffs_cb_plus_128[i] - 128;
+            ppc->ar_coeffs_cr[i] = (short)film_grain->ar_coeffs_cr_plus_128[i] - 128;
         }
     }
 

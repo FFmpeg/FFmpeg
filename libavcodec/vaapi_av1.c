@@ -56,6 +56,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
     AV1DecContext *s = avctx->priv_data;
     const AV1RawSequenceHeader *seq = s->raw_seq;
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
+    const AV1RawFilmGrainParams *film_grain = &frame_header->film_grain;
     VAAPIDecodePicture *pic = s->cur_frame.hwaccel_picture_private;
     VADecPictureParameterBufferAV1 pic_param;
     int8_t bit_depth_idx;
@@ -115,14 +116,14 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
             .update_data     = frame_header->segmentation_update_data,
         },
         .film_grain_info.film_grain_info_fields.bits = {
-            .apply_grain              = frame_header->apply_grain,
-            .chroma_scaling_from_luma = frame_header->chroma_scaling_from_luma,
-            .grain_scaling_minus_8    = frame_header->grain_scaling_minus_8,
-            .ar_coeff_lag             = frame_header->ar_coeff_lag,
-            .ar_coeff_shift_minus_6   = frame_header->ar_coeff_shift_minus_6,
-            .grain_scale_shift        = frame_header->grain_scale_shift,
-            .overlap_flag             = frame_header->overlap_flag,
-            .clip_to_restricted_range = frame_header->clip_to_restricted_range,
+            .apply_grain              = film_grain->apply_grain,
+            .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
+            .grain_scaling_minus_8    = film_grain->grain_scaling_minus_8,
+            .ar_coeff_lag             = film_grain->ar_coeff_lag,
+            .ar_coeff_shift_minus_6   = film_grain->ar_coeff_shift_minus_6,
+            .grain_scale_shift        = film_grain->grain_scale_shift,
+            .overlap_flag             = film_grain->overlap_flag,
+            .clip_to_restricted_range = film_grain->clip_to_restricted_range,
         },
         .pic_info_fields.bits = {
             .frame_type                   = frame_header->frame_type,

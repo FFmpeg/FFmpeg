@@ -130,6 +130,38 @@ typedef struct AV1RawSequenceHeader {
     uint8_t film_grain_params_present;
 } AV1RawSequenceHeader;
 
+typedef struct AV1RawFilmGrainParams {
+    uint8_t  apply_grain;
+    uint16_t grain_seed;
+    uint8_t  update_grain;
+    uint8_t  film_grain_params_ref_idx;
+    uint8_t  num_y_points;
+    uint8_t  point_y_value[14];
+    uint8_t  point_y_scaling[14];
+    uint8_t  chroma_scaling_from_luma;
+    uint8_t  num_cb_points;
+    uint8_t  point_cb_value[10];
+    uint8_t  point_cb_scaling[10];
+    uint8_t  num_cr_points;
+    uint8_t  point_cr_value[10];
+    uint8_t  point_cr_scaling[10];
+    uint8_t  grain_scaling_minus_8;
+    uint8_t  ar_coeff_lag;
+    uint8_t  ar_coeffs_y_plus_128[24];
+    uint8_t  ar_coeffs_cb_plus_128[25];
+    uint8_t  ar_coeffs_cr_plus_128[25];
+    uint8_t  ar_coeff_shift_minus_6;
+    uint8_t  grain_scale_shift;
+    uint8_t  cb_mult;
+    uint8_t  cb_luma_mult;
+    uint16_t cb_offset;
+    uint8_t  cr_mult;
+    uint8_t  cr_luma_mult;
+    uint16_t cr_offset;
+    uint8_t  overlap_flag;
+    uint8_t  clip_to_restricted_range;
+} AV1RawFilmGrainParams;
+
 typedef struct AV1RawFrameHeader {
     uint8_t  show_existing_frame;
     uint8_t  frame_to_show_map_idx;
@@ -251,35 +283,7 @@ typedef struct AV1RawFrameHeader {
     //AV1RawSubexp gm_params[AV1_TOTAL_REFS_PER_FRAME][6];
     uint32_t gm_params[AV1_TOTAL_REFS_PER_FRAME][6];
 
-    uint8_t  apply_grain;
-    uint16_t grain_seed;
-    uint8_t  update_grain;
-    uint8_t  film_grain_params_ref_idx;
-    uint8_t  num_y_points;
-    uint8_t  point_y_value[14];
-    uint8_t  point_y_scaling[14];
-    uint8_t  chroma_scaling_from_luma;
-    uint8_t  num_cb_points;
-    uint8_t  point_cb_value[10];
-    uint8_t  point_cb_scaling[10];
-    uint8_t  num_cr_points;
-    uint8_t  point_cr_value[10];
-    uint8_t  point_cr_scaling[10];
-    uint8_t  grain_scaling_minus_8;
-    uint8_t  ar_coeff_lag;
-    uint8_t  ar_coeffs_y_plus_128[24];
-    uint8_t  ar_coeffs_cb_plus_128[25];
-    uint8_t  ar_coeffs_cr_plus_128[25];
-    uint8_t  ar_coeff_shift_minus_6;
-    uint8_t  grain_scale_shift;
-    uint8_t  cb_mult;
-    uint8_t  cb_luma_mult;
-    uint16_t cb_offset;
-    uint8_t  cr_mult;
-    uint8_t  cr_luma_mult;
-    uint16_t cr_offset;
-    uint8_t  overlap_flag;
-    uint8_t  clip_to_restricted_range;
+    AV1RawFilmGrainParams film_grain;
 } AV1RawFrameHeader;
 
 typedef struct AV1RawTileData {
