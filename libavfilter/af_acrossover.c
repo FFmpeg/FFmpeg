@@ -237,16 +237,35 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-static double biquad_process(BiquadContext *b, double in)
+static void biquad_process(BiquadContext *b,
+                           double *dst, const double *src,
+                           int nb_samples)
 {
-    double out = in * b->a0 + b->i1 * b->a1 + b->i2 * b->a2 - b->o1 * b->b1 - b->o2 * b->b2;
+    const double a0 = b->a0;
+    const double a1 = b->a1;
+    const double a2 = b->a2;
+    const double b1 = b->b1;
+    const double b2 = b->b2;
+    double i1 = b->i1;
+    double i2 = b->i2;
+    double o1 = b->o1;
+    double o2 = b->o2;
 
-    b->i2 = b->i1;
-    b->o2 = b->o1;
-    b->i1 = in;
-    b->o1 = out;
+    for (int n = 0; n < nb_samples; n++) {
+        const double in = src[n];
+        double out;
 
-    return out;
+        out = in * a0 + i1 * a1 + i2 * a2 - o1 * b1 - o2 * b2;
+        i2 = i1;
+        o2 = o1;
+        i1 = in;
+        o1 = dst[n] = out;
+    }
+
+    b->i1 = i1;
+    b->i2 = i2;
+    b->o1 = o1;
+    b->o2 = o2;
 }
 
 static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -256,33 +275,28 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVFrame **frames = s->frames;
     const int start = (in->channels * jobnr) / nb_jobs;
     const int end = (in->channels * (jobnr+1)) / nb_jobs;
-    int f, band;
+    const int nb_samples = in->nb_samples;
 
     for (int ch = start; ch < end; ch++) {
-        const double *src = (const double *)in->extended_data[ch];
         CrossoverChannel *xover = &s->xover[ch];
 
-        for (int i = 0; i < in->nb_samples; i++) {
-            double sample = src[i], lo, hi;
+        for (int band = 0; band < ctx->nb_outputs; band++) {
+            for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
+                const double *src = band == 0 ? (const double *)in->extended_data[ch] : (const double *)frames[band]->extended_data[ch];
+                double *dst = (double *)frames[band + 1]->extended_data[ch];
+                const double *hsrc = f == 0 ? src : dst;
+                BiquadContext *hp = &xover->hp[band][f];
 
-            for (band = 0; band < ctx->nb_outputs; band++) {
+                biquad_process(hp, dst, hsrc, nb_samples);
+            }
+
+            for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
+                const double *src = band == 0 ? (const double *)in->extended_data[ch] : (const double *)frames[band]->extended_data[ch];
                 double *dst = (double *)frames[band]->extended_data[ch];
+                const double *lsrc = f == 0 ? src : dst;
+                BiquadContext *lp = &xover->lp[band][f];
 
-                lo = sample;
-                hi = sample;
-                for (f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
-                    BiquadContext *lp = &xover->lp[band][f];
-                    lo = biquad_process(lp, lo);
-                }
-
-                for (f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {
-                    BiquadContext *hp = &xover->hp[band][f];
-                    hi = biquad_process(hp, hi);
-                }
-
-                dst[i] = lo;
-
-                sample = hi;
+                biquad_process(lp, dst, lsrc, nb_samples);
             }
         }
     }
