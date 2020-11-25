@@ -1509,6 +1509,23 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     return submit_exec_ctx(hwfc, ectx, &s_info, 0);
 }
 
+static inline void get_plane_wh(int *w, int *h, enum AVPixelFormat format,
+                                int frame_w, int frame_h, int plane)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+
+    /* Currently always true unless gray + alpha support is added */
+    if (!plane || (plane == 3) || desc->flags & AV_PIX_FMT_FLAG_RGB ||
+        !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) {
+        *w = frame_w;
+        *h = frame_h;
+        return;
+    }
+
+    *w = AV_CEIL_RSHIFT(frame_w, desc->log2_chroma_w);
+    *h = AV_CEIL_RSHIFT(frame_h, desc->log2_chroma_h);
+}
+
 static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
                         VkImageTiling tiling, VkImageUsageFlagBits usage,
                         void *create_pnext)
@@ -1540,19 +1557,11 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
 
     /* Create the images */
     for (int i = 0; i < planes; i++) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
-        int w = hwfc->width;
-        int h = hwfc->height;
-        const int p_w = i > 0 ? AV_CEIL_RSHIFT(w, desc->log2_chroma_w) : w;
-        const int p_h = i > 0 ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h) : h;
-
-        VkImageCreateInfo image_create_info = {
+        VkImageCreateInfo create_info = {
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext                 = create_pnext,
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = img_fmts[i],
-            .extent.width          = p_w,
-            .extent.height         = p_h,
             .extent.depth          = 1,
             .mipLevels             = 1,
             .arrayLayers           = 1,
@@ -1567,7 +1576,10 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
                                                       VK_SHARING_MODE_EXCLUSIVE,
         };
 
-        ret = vkCreateImage(hwctx->act_dev, &image_create_info,
+        get_plane_wh(&create_info.extent.width, &create_info.extent.height,
+                     format, hwfc->width, hwfc->height, i);
+
+        ret = vkCreateImage(hwctx->act_dev, &create_info,
                             hwctx->alloc, &f->img[i]);
         if (ret != VK_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Image creation failure: %s\n",
@@ -1585,7 +1597,7 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
             return AVERROR_EXTERNAL;
         }
 
-        f->layout[i] = image_create_info.initialLayout;
+        f->layout[i] = create_info.initialLayout;
         f->access[i] = 0x0;
     }
 
@@ -1965,7 +1977,6 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFramesPriv *fp = hwfc->internal->priv;
     AVVulkanFramesContext *frames_hwctx = hwfc->hwctx;
-    const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(hwfc->sw_format);
     const int has_modifiers = !!(p->extensions & EXT_DRM_MODIFIER_FLAGS);
     VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
     VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { 0 };
@@ -2011,16 +2022,11 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         };
 
-        const int p_w = i > 0 ? AV_CEIL_RSHIFT(hwfc->width, fmt_desc->log2_chroma_w) : hwfc->width;
-        const int p_h = i > 0 ? AV_CEIL_RSHIFT(hwfc->height, fmt_desc->log2_chroma_h) : hwfc->height;
-
-        VkImageCreateInfo image_create_info = {
+        VkImageCreateInfo create_info = {
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext                 = &einfo,
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = drm_to_vulkan_fmt(desc->layers[i].format),
-            .extent.width          = p_w,
-            .extent.height         = p_h,
             .extent.depth          = 1,
             .mipLevels             = 1,
             .arrayLayers           = 1,
@@ -2035,6 +2041,9 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                                                       VK_SHARING_MODE_EXCLUSIVE,
         };
 
+        get_plane_wh(&create_info.extent.width, &create_info.extent.height,
+                     hwfc->sw_format, hwfc->width, hwfc->height, i);
+
         for (int j = 0; j < planes; j++) {
             plane_data[j].offset     = desc->layers[i].planes[j].offset;
             plane_data[j].rowPitch   = desc->layers[i].planes[j].pitch;
@@ -2044,7 +2053,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         }
 
         /* Create image */
-        ret = vkCreateImage(hwctx->act_dev, &image_create_info,
+        ret = vkCreateImage(hwctx->act_dev, &create_info,
                             hwctx->alloc, &f->img[i]);
         if (ret != VK_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Image creation failure: %s\n",
@@ -2066,7 +2075,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
          * offer us anything we could import and sync with, so instead
          * just signal the semaphore we created. */
 
-        f->layout[i] = image_create_info.initialLayout;
+        f->layout[i] = create_info.initialLayout;
         f->access[i] = 0x0;
     }
 
@@ -2308,10 +2317,6 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
             CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC tex_desc = {
                 .offset = 0,
                 .arrayDesc = {
-                    .Width  = i > 0 ? AV_CEIL_RSHIFT(hwfc->width, desc->log2_chroma_w)
-                                    : hwfc->width,
-                    .Height = i > 0 ? AV_CEIL_RSHIFT(hwfc->height, desc->log2_chroma_h)
-                                    : hwfc->height,
                     .Depth = 0,
                     .Format = cufmt,
                     .NumChannels = 1 + ((planes == 2) && i),
@@ -2336,6 +2341,12 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
             CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC ext_sem_desc = {
                 .type = CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD,
             };
+
+            int p_w, p_h;
+            get_plane_wh(&p_w, &p_h, hwfc->sw_format, hwfc->width, hwfc->height, i);
+
+            tex_desc.arrayDesc.Width = p_w;
+            tex_desc.arrayDesc.Height = p_h;
 
             ret = pfn_vkGetMemoryFdKHR(hwctx->act_dev, &export_info,
                                        &ext_desc.handle.fd);
@@ -2439,11 +2450,13 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
             .dstMemoryType = CU_MEMORYTYPE_ARRAY,
             .dstArray      = dst_int->cu_array[i],
-            .WidthInBytes  = (i > 0 ? AV_CEIL_RSHIFT(hwfc->width, desc->log2_chroma_w)
-                                    : hwfc->width) * desc->comp[i].step,
-            .Height        = i > 0 ? AV_CEIL_RSHIFT(hwfc->height, desc->log2_chroma_h)
-                                   : hwfc->height,
         };
+
+        int p_w, p_h;
+        get_plane_wh(&p_w, &p_h, hwfc->sw_format, hwfc->width, hwfc->height, i);
+
+        cpy.WidthInBytes = p_w * desc->comp[i].step;
+        cpy.Height = p_h;
 
         ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, cuda_dev->stream));
         if (ret < 0) {
@@ -2958,21 +2971,19 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
     /* Schedule a copy for each plane */
     for (int i = 0; i < planes; i++) {
         ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
-        const int p_w = i > 0 ? AV_CEIL_RSHIFT(w, desc->log2_chroma_w) : w;
-        const int p_h = i > 0 ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h) : h;
         VkBufferImageCopy buf_reg = {
             .bufferOffset = buf_offsets[i],
-            /* Buffer stride isn't in bytes, it's in samples, the implementation
-             * uses the image's VkFormat to know how many bytes per sample
-             * the buffer has. So we have to convert by dividing. Stupid.
-             * Won't work with YUVA or other planar formats with alpha. */
             .bufferRowLength = buf_stride[i] / desc->comp[i].step,
-            .bufferImageHeight = p_h,
             .imageSubresource.layerCount = 1,
             .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .imageOffset = { 0, 0, 0, },
-            .imageExtent = { p_w, p_h, 1, },
         };
+
+        int p_w, p_h;
+        get_plane_wh(&p_w, &p_h, pix_fmt, w, h, i);
+
+        buf_reg.bufferImageHeight = p_h;
+        buf_reg.imageExtent = (VkExtent3D){ p_w, p_h, 1, };
 
         if (to_buf)
             vkCmdCopyImageToBuffer(cmd_buf, frame->img[i], frame->layout[i],
@@ -3018,8 +3029,8 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
     AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
     size_t buf_offsets[AV_NUM_DATA_POINTERS] = { 0 };
 
+    int p_w, p_h;
     const int planes = av_pix_fmt_count_planes(swf->format);
-    int log2_chroma = av_pix_fmt_desc_get(swf->format)->log2_chroma_h;
 
     int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
     const int map_host = !!(p->extensions & EXT_EXTERNAL_HOST_MEMORY);
@@ -3054,8 +3065,6 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
     /* Create buffers */
     for (int i = 0; i < planes; i++) {
         size_t req_size;
-        int h = swf->height;
-        int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
 
         VkExternalMemoryBufferCreateInfo create_desc = {
             .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
@@ -3071,6 +3080,8 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
             .sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
         };
 
+        get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+
         tmp.linesize[i] = FFABS(swf->linesize[i]);
 
         /* Do not map images with a negative stride */
@@ -3081,7 +3092,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
 
             /* We have to compensate for the few extra bytes of padding we
              * completely ignore at the start */
-            req_size = FFALIGN(offs + tmp.linesize[i] * p_height,
+            req_size = FFALIGN(offs + tmp.linesize[i] * p_h,
                                p->hprops.minImportedHostPointerAlignment);
 
             ret = pfn_vkGetMemoryHostPointerPropertiesEXT(hwctx->act_dev,
@@ -3096,7 +3107,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
         }
 
         if (!host_mapped[i])
-            req_size = get_req_buffer_size(p, &tmp.linesize[i], p_height);
+            req_size = get_req_buffer_size(p, &tmp.linesize[i], p_h);
 
         err = create_buf(dev_ctx, &bufs[i],
                          from ? VK_BUFFER_USAGE_TRANSFER_DST_BIT :
@@ -3115,16 +3126,15 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
             goto end;
 
         for (int i = 0; i < planes; i++) {
-            int h = swf->height;
-            int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-
             if (host_mapped[i])
                 continue;
+
+            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
 
             av_image_copy_plane(tmp.data[i], tmp.linesize[i],
                                 (const uint8_t *)swf->data[i], swf->linesize[i],
                                 FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
-                                p_height);
+                                p_h);
         }
 
         if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
@@ -3141,16 +3151,15 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
             goto end;
 
         for (int i = 0; i < planes; i++) {
-            int h = swf->height;
-            int p_height = i > 0 ? AV_CEIL_RSHIFT(h, log2_chroma) : h;
-
             if (host_mapped[i])
                 continue;
+
+            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
 
             av_image_copy_plane(swf->data[i], swf->linesize[i],
                                 (const uint8_t *)tmp.data[i], tmp.linesize[i],
                                 FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
-                                p_height);
+                                p_h);
         }
 
         if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
@@ -3225,11 +3234,13 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
             .srcMemoryType = CU_MEMORYTYPE_ARRAY,
             .srcArray      = dst_int->cu_array[i],
-            .WidthInBytes  = (i > 0 ? AV_CEIL_RSHIFT(hwfc->width, desc->log2_chroma_w)
-                                    : hwfc->width) * desc->comp[i].step,
-            .Height        = i > 0 ? AV_CEIL_RSHIFT(hwfc->height, desc->log2_chroma_h)
-                                   : hwfc->height,
         };
+
+        int w, h;
+        get_plane_wh(&w, &h, hwfc->sw_format, hwfc->width, hwfc->height, i);
+
+        cpy.WidthInBytes = w * desc->comp[i].step;
+        cpy.Height = h;
 
         ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, cuda_dev->stream));
         if (ret < 0) {
