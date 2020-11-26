@@ -300,4 +300,5 @@ AVCodec ff_sgi_encoder = {
         AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     },
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
