@@ -14813,7 +14813,7 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 
 Overlay one video on top of another.
 
-This is the CUDA cariant of the @ref{overlay} filter.
+This is the CUDA variant of the @ref{overlay} filter.
 It only accepts CUDA frames. The underlying input pixel formats have to match.
 
 It takes two inputs and has one output. The first input is the "main"
