@@ -45,8 +45,8 @@ typedef struct BiquadContext {
 } BiquadContext;
 
 typedef struct CrossoverChannel {
-    BiquadContext lp[MAX_BANDS][16];
-    BiquadContext hp[MAX_BANDS][16];
+    BiquadContext lp[MAX_BANDS][20];
+    BiquadContext hp[MAX_BANDS][20];
 } CrossoverChannel;
 
 typedef struct AudioCrossoverContext {
@@ -71,12 +71,17 @@ typedef struct AudioCrossoverContext {
 
 static const AVOption acrossover_options[] = {
     { "split", "set split frequencies", OFFSET(splits_str), AV_OPT_TYPE_STRING, {.str="500"}, 0, 0, AF },
-    { "order", "set order",             OFFSET(order_opt),  AV_OPT_TYPE_INT,    {.i64=1},     0, 4, AF, "m" },
+    { "order", "set order",             OFFSET(order_opt),  AV_OPT_TYPE_INT,    {.i64=1},     0, 9, AF, "m" },
     { "2nd",   "2nd order",             0,                  AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "m" },
     { "4th",   "4th order",             0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "m" },
-    { "8th",   "8th order",             0,                  AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "m" },
-    { "12th",  "12th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "m" },
-    { "16th",  "16th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=4},     0, 0, AF, "m" },
+    { "6th",   "6th order",             0,                  AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "m" },
+    { "8th",   "8th order",             0,                  AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "m" },
+    { "10th",  "10th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=4},     0, 0, AF, "m" },
+    { "12th",  "12th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=5},     0, 0, AF, "m" },
+    { "14th",  "14th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=6},     0, 0, AF, "m" },
+    { "16th",  "16th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=7},     0, 0, AF, "m" },
+    { "18th",  "18th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=8},     0, 0, AF, "m" },
+    { "20th",  "20th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=9},     0, 0, AF, "m" },
     { NULL }
 };
 
@@ -169,12 +174,10 @@ static void set_hp(BiquadContext *b, double fc, double q, double sr)
 
 static void calc_q_factors(int order, double *q)
 {
-    int num = 1, den = 4 * order;
+    double n = order / 2.;
 
-    for (int i = 0; i < order; i++) {
-        q[i] = fabs(1. / (2. * cos(num * M_PI / den)));
-        num += 2;
-    }
+    for (int i = 0; i < n / 2; i++)
+        q[i] = 1. / (-2. * cos(M_PI * (2. * (i + 1) + n - 1.) / (2. * n)));
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -182,20 +185,27 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AudioCrossoverContext *s = ctx->priv;
     int sample_rate = inlink->sample_rate;
-    double q[16] = { 0.5 };
+    int first_order;
+    double q[16];
 
     s->xover = av_calloc(inlink->channels, sizeof(*s->xover));
     if (!s->xover)
         return AVERROR(ENOMEM);
 
-    s->order = FFMAX(2, s->order_opt * 4);
+    s->order = (s->order_opt + 1) * 2;
     s->filter_count = s->order / 2;
-    calc_q_factors(s->filter_count / 2, q + (s->order == 2));
+    first_order = s->filter_count & 1;
+    calc_q_factors(s->order, q);
 
     for (int ch = 0; ch < inlink->channels; ch++) {
         for (int band = 0; band <= s->nb_splits; band++) {
-            for (int n = 0; n < s->filter_count; n++) {
-                const int idx = (n + (s->order == 2)) / 2;
+            if (first_order) {
+                set_lp(&s->xover[ch].lp[band][0], s->splits[band], 0.5, sample_rate);
+                set_hp(&s->xover[ch].hp[band][0], s->splits[band], 0.5, sample_rate);
+            }
+
+            for (int n = first_order; n < s->filter_count; n++) {
+                const int idx = s->filter_count / 2 - ((n + first_order) / 2 - first_order) - 1;
 
                 set_lp(&s->xover[ch].lp[band][n], s->splits[band], q[idx], sample_rate);
                 set_hp(&s->xover[ch].hp[band][n], s->splits[band], q[idx], sample_rate);

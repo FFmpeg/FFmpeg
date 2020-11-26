@@ -523,7 +523,21 @@ The filter accepts the following options:
 Set split frequencies. Those must be positive and increasing.
 
 @item order
-Set filter order, can be @var{2nd}, @var{4th} or @var{8th}.
+Set filter order. Availabe values are:
+
+@table @samp
+@item 2nd
+@item 4th
+@item 6th
+@item 8th
+@item 10th
+@item 12th
+@item 14th
+@item 16th
+@item 18th
+@item 20th
+@end table
+
 Default is @var{4th}.
 @end table
 
