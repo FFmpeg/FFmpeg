@@ -125,7 +125,7 @@ static av_cold int tdsc_init(AVCodecContext *avctx)
     ctx->jpeg_avctx->flags2 = avctx->flags2;
     ctx->jpeg_avctx->dct_algo = avctx->dct_algo;
     ctx->jpeg_avctx->idct_algo = avctx->idct_algo;
-    ret = ff_codec_open2_recursive(ctx->jpeg_avctx, codec, NULL);
+    ret = avcodec_open2(ctx->jpeg_avctx, codec, NULL);
     if (ret < 0)
         return ret;
 

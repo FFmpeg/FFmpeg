@@ -65,7 +65,7 @@ static av_cold int init(AVCodecContext *avctx)
         a->mjpeg_avctx->width = avctx->width;
         a->mjpeg_avctx->height = avctx->height;
 
-        if ((ret = ff_codec_open2_recursive(a->mjpeg_avctx, codec, &thread_opt)) < 0) {
+        if ((ret = avcodec_open2(a->mjpeg_avctx, codec, &thread_opt)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "MJPEG codec failed to open\n");
         }
         av_dict_free(&thread_opt);
