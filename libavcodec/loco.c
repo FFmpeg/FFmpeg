@@ -346,4 +346,5 @@ AVCodec ff_loco_decoder = {
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
