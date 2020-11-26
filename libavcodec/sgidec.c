@@ -297,4 +297,5 @@ AVCodec ff_sgi_decoder = {
     .decode         = decode_frame,
     .init           = sgi_decode_init,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
