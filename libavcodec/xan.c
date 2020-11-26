@@ -645,5 +645,5 @@ AVCodec ff_xan_wc3_decoder = {
     .close          = xan_decode_end,
     .decode         = xan_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
