@@ -315,6 +315,15 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
                 biquad_process(lp, dst, lsrc, nb_samples);
             }
         }
+
+        for (int band = 0; band < ctx->nb_outputs && s->filter_count & 1; band++) {
+            if (band & 1) {
+                double *dst = (double *)frames[band]->extended_data[ch];
+
+                for (int n = 0; n < nb_samples; n++)
+                    dst[n] *= -1.;
+            }
+        }
     }
 
     return 0;
