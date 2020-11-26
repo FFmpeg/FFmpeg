@@ -2888,7 +2888,7 @@ AVCodec ff_mjpeg_decoder = {
     .max_lowres     = 3,
     .priv_class     = &mjpegdec_class,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .hw_configs     = (const AVCodecHWConfigInternal*[]) {
 #if CONFIG_MJPEG_NVDEC_HWACCEL
@@ -2914,6 +2914,6 @@ AVCodec ff_thp_decoder = {
     .flush          = decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
