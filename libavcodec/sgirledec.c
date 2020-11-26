@@ -139,4 +139,5 @@ AVCodec ff_sgirle_decoder = {
     .init           = sgirle_decode_init,
     .decode         = sgirle_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
