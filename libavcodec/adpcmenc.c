@@ -978,7 +978,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                       \
     .close          = adpcm_encode_close,                                  \
     .sample_fmts    = sample_fmts_,                                        \
     .capabilities   = capabilities_,                                       \
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,                           \
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE, \
     .priv_class     = &adpcm_encoder_class,                                \
 }
 
