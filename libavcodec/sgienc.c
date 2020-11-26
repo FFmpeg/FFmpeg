@@ -39,9 +39,9 @@ typedef struct SgiContext {
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     if (avctx->width > 65535 || avctx->height > 65535) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Unsupported resolution %dx%d.\n", avctx->width, avctx->height);
-        av_log(avctx, AV_LOG_ERROR, "SGI does not support resolutions above 65535x65535\n");
+        av_log(avctx, AV_LOG_ERROR, "Unsupported resolution %dx%d. "
+               "SGI does not support resolutions above 65535x65535\n",
+               avctx->width, avctx->height);
         return AVERROR_INVALIDDATA;
     }
 
