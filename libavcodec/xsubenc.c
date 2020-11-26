@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "put_bits.h"
 
 /**
@@ -230,4 +231,5 @@ AVCodec ff_xsub_encoder = {
     .id         = AV_CODEC_ID_XSUB,
     .init       = xsub_encoder_init,
     .encode_sub = xsub_encode,
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
