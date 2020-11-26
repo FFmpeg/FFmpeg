@@ -106,7 +106,7 @@ AVCodec ff_sp5x_decoder = {
     .decode         = sp5x_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 #if CONFIG_AMV_DECODER
@@ -121,6 +121,6 @@ AVCodec ff_amv_decoder = {
     .decode         = sp5x_decode_frame,
     .max_lowres     = 3,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
