@@ -24,6 +24,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "internal.h"
 
 static av_cold int decode_init(AVCodecContext *avctx) {
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
@@ -180,4 +181,5 @@ AVCodec ff_xsub_decoder = {
     .id        = AV_CODEC_ID_XSUB,
     .init      = decode_init,
     .decode    = decode_frame,
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
