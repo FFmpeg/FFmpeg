@@ -453,4 +453,5 @@ AVCodec ff_cdtoons_decoder = {
     .decode         = cdtoons_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .flush          = cdtoons_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
