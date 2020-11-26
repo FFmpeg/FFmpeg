@@ -47,6 +47,7 @@ typedef struct BiquadContext {
 typedef struct CrossoverChannel {
     BiquadContext lp[MAX_BANDS][20];
     BiquadContext hp[MAX_BANDS][20];
+    BiquadContext ap[MAX_BANDS][MAX_BANDS][20];
 } CrossoverChannel;
 
 typedef struct AudioCrossoverContext {
@@ -184,6 +185,26 @@ static void set_hp(BiquadContext *b, double fc, double q, double sr)
     b->a2 = -a2 / a0;
 }
 
+static void set_ap(BiquadContext *b, double fc, double q, double sr)
+{
+    double omega = M_PI * fc / sr;
+    double cosine = cos(omega);
+    double alpha = sin(omega) / (2. * q);
+
+    double a0 = 1. + alpha;
+    double a1 = -2. * cosine;
+    double a2 = 1. - alpha;
+    double b0 = a2;
+    double b1 = a1;
+    double b2 = a0;
+
+    b->b0 =  b0 / a0;
+    b->b1 =  b1 / a0;
+    b->b2 =  b2 / a0;
+    b->a1 = -a1 / a0;
+    b->a2 = -a2 / a0;
+}
+
 static void calc_q_factors(int order, double *q)
 {
     double n = order / 2.;
@@ -221,6 +242,9 @@ static int config_input(AVFilterLink *inlink)
 
                 set_lp(&s->xover[ch].lp[band][n], s->splits[band], q[idx], sample_rate);
                 set_hp(&s->xover[ch].hp[band][n], s->splits[band], q[idx], sample_rate);
+
+                for (int x = 0; x <= s->nb_splits; x++)
+                    set_ap(&s->xover[ch].ap[x][band][n], s->splits[band], q[idx], sample_rate);
             }
         }
     }
@@ -314,9 +338,19 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 
                 biquad_process(lp, dst, lsrc, nb_samples);
             }
+
+            for (int aband = band + 1; aband < ctx->nb_outputs; aband++) {
+                for (int f = 0; f < s->filter_count / 2; f++) {
+                    const double *src = (const double *)frames[band]->extended_data[ch];
+                    double *dst = (double *)frames[band]->extended_data[ch];
+                    BiquadContext *ap = &xover->ap[band][aband][f * 2 + (s->filter_count & 1)];
+
+                    biquad_process(ap, dst, src, nb_samples);
+                }
+            }
         }
 
-        for (int band = 0; band < ctx->nb_outputs && s->filter_count & 1; band++) {
+        for (int band = 0; band < ctx->nb_outputs && (s->filter_count & 1); band++) {
             if (band & 1) {
                 double *dst = (double *)frames[band]->extended_data[ch];
 
