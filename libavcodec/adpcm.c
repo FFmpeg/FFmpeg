@@ -2142,6 +2142,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .flush          = adpcm_flush,                          \
     .capabilities   = AV_CODEC_CAP_DR1,                     \
     .sample_fmts    = sample_fmts_,                         \
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 }
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
