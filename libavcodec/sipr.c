@@ -571,4 +571,5 @@ AVCodec ff_sipr_decoder = {
     .init           = sipr_decoder_init,
     .decode         = sipr_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
