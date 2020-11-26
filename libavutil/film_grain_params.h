@@ -54,8 +54,8 @@ typedef struct AVFilmGrainAOMParams {
      * If chroma_scaling_from_luma is set to 0, signals the chroma scaling
      * function parameters.
      */
-    int num_uv_points[2];
-    uint8_t uv_points[2][10][2 /* value, scaling */];
+    int num_uv_points[2 /* cb, cr */];
+    uint8_t uv_points[2 /* cb, cr */][10][2 /* value, scaling */];
 
     /**
      * Specifies the shift applied to the chroma components. For AV1, its within
@@ -77,7 +77,7 @@ typedef struct AVFilmGrainAOMParams {
     /**
      * Chroma auto-regression coefficients.
      */
-    int8_t ar_coeffs_uv[2][25];
+    int8_t ar_coeffs_uv[2 /* cb, cr */][25];
 
     /**
      * Specifies the range of the auto-regressive coefficients. Values of 6,
@@ -96,14 +96,14 @@ typedef struct AVFilmGrainAOMParams {
      * Specifies the luma/chroma multipliers for the index to the component
      * scaling function.
      */
-    int uv_mult[2];
-    int uv_mult_luma[2];
+    int uv_mult[2 /* cb, cr */];
+    int uv_mult_luma[2 /* cb, cr */];
 
     /**
      * Offset used for component scaling function. For AV1 its a 9-bit value
      * with a range [-256, 255]
      */
-    int uv_offset[2];
+    int uv_offset[2 /* cb, cr */];
 
     /**
      * Signals whether to overlap film grain blocks.
