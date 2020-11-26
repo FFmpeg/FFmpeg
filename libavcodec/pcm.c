@@ -24,8 +24,10 @@
  * PCM codecs
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -35,19 +37,22 @@
 static av_cold int pcm_encode_init(AVCodecContext *avctx)
 {
     avctx->frame_size = 0;
+#if !CONFIG_HARDCODED_TABLES
     switch (avctx->codec->id) {
-    case AV_CODEC_ID_PCM_ALAW:
-        pcm_alaw_tableinit();
-        break;
-    case AV_CODEC_ID_PCM_MULAW:
-        pcm_ulaw_tableinit();
-        break;
-    case AV_CODEC_ID_PCM_VIDC:
-        pcm_vidc_tableinit();
-        break;
+#define INIT_ONCE(id, name)                                                 \
+    case AV_CODEC_ID_PCM_ ## id:                                            \
+        if (CONFIG_PCM_ ## id ## _ENCODER) {                                \
+            static AVOnce init_static_once = AV_ONCE_INIT;                  \
+            ff_thread_once(&init_static_once, pcm_ ## name ## _tableinit);  \
+        }                                                                   \
+        break
+        INIT_ONCE(ALAW,  alaw);
+        INIT_ONCE(MULAW, ulaw);
+        INIT_ONCE(VIDC,  vidc);
     default:
         break;
     }
+#endif
 
     avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
     avctx->block_align           = avctx->channels * avctx->bits_per_coded_sample / 8;
@@ -547,6 +552,7 @@ AVCodec ff_ ## name_ ## _encoder = {                                        \
     .capabilities = AV_CODEC_CAP_VARIABLE_FRAME_SIZE,                       \
     .sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_,             \
                                                    AV_SAMPLE_FMT_NONE },    \
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,                          \
 }
 
 #define PCM_ENCODER_2(cf, id, sample_fmt, name, long_name)                  \
