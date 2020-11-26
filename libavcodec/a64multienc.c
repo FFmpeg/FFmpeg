@@ -407,6 +407,7 @@ AVCodec ff_a64multi_encoder = {
     .close          = a64multi_close_encoder,
     .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 #if CONFIG_A64MULTI5_ENCODER
@@ -421,5 +422,6 @@ AVCodec ff_a64multi5_encoder = {
     .close          = a64multi_close_encoder,
     .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
