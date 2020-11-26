@@ -2815,6 +2815,8 @@ the_end_no_picture:
     return buf_ptr - buf;
 }
 
+/* mxpeg may call the following function (with a blank MJpegDecodeContext)
+ * even without having called ff_mjpeg_decode_init(). */
 av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;

@@ -67,10 +67,8 @@ static av_cold int mxpeg_decode_init(AVCodecContext *avctx)
 
     s->picture[0] = av_frame_alloc();
     s->picture[1] = av_frame_alloc();
-    if (!s->picture[0] || !s->picture[1]) {
-        mxpeg_decode_end(avctx);
+    if (!s->picture[0] || !s->picture[1])
         return AVERROR(ENOMEM);
-    }
 
     s->jpg.picture_ptr      = s->picture[0];
     return ff_mjpeg_decode_init(avctx);
@@ -351,5 +349,5 @@ AVCodec ff_mxpeg_decoder = {
     .decode         = mxpeg_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
