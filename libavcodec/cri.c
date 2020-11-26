@@ -66,7 +66,7 @@ static av_cold int cri_decode_init(AVCodecContext *avctx)
     s->jpeg_avctx->flags2 = avctx->flags2;
     s->jpeg_avctx->dct_algo = avctx->dct_algo;
     s->jpeg_avctx->idct_algo = avctx->idct_algo;
-    ret = ff_codec_open2_recursive(s->jpeg_avctx, codec, NULL);
+    ret = avcodec_open2(s->jpeg_avctx, codec, NULL);
     if (ret < 0)
         return ret;
 
@@ -419,6 +419,6 @@ AVCodec ff_cri_decoder = {
     .decode         = cri_decode_frame,
     .close          = cri_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .long_name      = NULL_IF_CONFIG_SMALL("Cintel RAW"),
 };
