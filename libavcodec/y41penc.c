@@ -84,4 +84,5 @@ AVCodec ff_y41p_encoder = {
     .encode2      = y41p_encode_frame,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                  AV_PIX_FMT_NONE },
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
