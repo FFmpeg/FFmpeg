@@ -185,4 +185,5 @@ AVCodec ff_xface_decoder = {
     .init           = xface_decode_init,
     .decode         = xface_decode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
