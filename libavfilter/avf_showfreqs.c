@@ -36,6 +36,7 @@
 #include "internal.h"
 #include "window_func.h"
 
+enum DataMode       { MAGNITUDE, PHASE, NB_DATA };
 enum DisplayMode    { LINE, BAR, DOT, NB_MODES };
 enum ChannelMode    { COMBINED, SEPARATE, NB_CMODES };
 enum FrequencyScale { FS_LINEAR, FS_LOG, FS_RLOG, NB_FSCALES };
@@ -45,6 +46,7 @@ typedef struct ShowFreqsContext {
     const AVClass *class;
     int w, h;
     int mode;
+    int data_mode;
     int cmode;
     int fft_size;
     int fft_bits;
@@ -115,6 +117,9 @@ static const AVOption showfreqs_options[] = {
         { "combined", "show all channels in same window",  0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "cmode" },
         { "separate", "show each channel in own window",   0, AV_OPT_TYPE_CONST, {.i64=SEPARATE}, 0, 0, FLAGS, "cmode" },
     { "minamp",  "set minimum amplitude", OFFSET(minamp), AV_OPT_TYPE_FLOAT, {.dbl=1e-6}, FLT_MIN, 1e-6, FLAGS },
+    { "data", "set data mode", OFFSET(data_mode), AV_OPT_TYPE_INT, {.i64=MAGNITUDE}, 0, NB_DATA-1, FLAGS, "data" },
+        { "magnitude", "show magnitude",  0, AV_OPT_TYPE_CONST, {.i64=MAGNITUDE}, 0, 0, FLAGS, "data" },
+        { "phase",     "show phase",      0, AV_OPT_TYPE_CONST, {.i64=PHASE},     0, 0, FLAGS, "data" },
     { NULL }
 };
 
@@ -397,6 +402,7 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
 #define RE(x, ch) s->fft_data[ch][x].re
 #define IM(x, ch) s->fft_data[ch][x].im
 #define M(a, b) (sqrt((a) * (a) + (b) * (b)))
+#define P(a, b) (atan2((b), (a)))
 
     colors = av_strdup(s->colors);
     if (!colors) {
@@ -413,13 +419,27 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
         if (color)
             av_parse_color(fg, color, -1, ctx);
 
-        a = av_clipd(M(RE(0, ch), 0) / s->scale, 0, 1);
-        plot_freq(s, ch, a, 0, fg, &prev_y, out, outlink);
+        switch (s->data_mode) {
+        case MAGNITUDE:
+            a = av_clipd(M(RE(0, ch), 0) / s->scale, 0, 1);
+            plot_freq(s, ch, a, 0, fg, &prev_y, out, outlink);
 
-        for (f = 1; f < s->nb_freq; f++) {
-            a = av_clipd(M(RE(f, ch), IM(f, ch)) / s->scale, 0, 1);
+            for (f = 1; f < s->nb_freq; f++) {
+                a = av_clipd(M(RE(f, ch), IM(f, ch)) / s->scale, 0, 1);
 
-            plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
+                plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
+            }
+            break;
+        case PHASE:
+            a = av_clipd((M_PI + P(RE(0, ch), 0)) / (2. * M_PI), 0, 1);
+            plot_freq(s, ch, a, 0, fg, &prev_y, out, outlink);
+
+            for (f = 1; f < s->nb_freq; f++) {
+                a = av_clipd((M_PI + P(RE(f, ch), IM(f, ch))) / (2. * M_PI), 0, 1);
+
+                plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
+            }
+            break;
         }
     }
 

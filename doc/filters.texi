@@ -25187,6 +25187,15 @@ Default is @code{combined}.
 @item minamp
 Set minimum amplitude used in @code{log} amplitude scaler.
 
+@item data
+Set data display mode.
+
+It accepts the following values:
+@table @samp
+@item magnitude
+@item phase
+@end table
+Default is @code{magnitude}.
 @end table
 
 @section showspatial
