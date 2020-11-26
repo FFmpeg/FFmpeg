@@ -274,4 +274,5 @@ AVCodec ff_yop_decoder = {
     .init           = yop_decode_init,
     .close          = yop_decode_close,
     .decode         = yop_decode_frame,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
