@@ -39,8 +39,8 @@
 #define MAX_BANDS MAX_SPLITS + 1
 
 typedef struct BiquadContext {
-    double a0, a1, a2;
-    double b1, b2;
+    double b0, b1, b2;
+    double a1, a2;
     double z1, z2;
 } BiquadContext;
 
@@ -146,30 +146,42 @@ static av_cold int init(AVFilterContext *ctx)
 
 static void set_lp(BiquadContext *b, double fc, double q, double sr)
 {
-    double thetac = 2.0 * M_PI * fc / sr;
-    double d = 1.0 / q;
-    double beta = 0.5 * (1.0 - (d / 2.0) * sin(thetac)) / (1.0 + (d / 2.0) * sin(thetac));
-    double gamma = (0.5 + beta) * cos(thetac);
+    double omega = M_PI * fc / sr;
+    double cosine = cos(omega);
+    double alpha = sin(omega) / (2. * q);
 
-    b->a0 = (0.5 + beta - gamma) / 2.0;
-    b->a1 = 0.5 + beta - gamma;
-    b->a2 = b->a1 / 2.0;
-    b->b1 = 2.0 * gamma;
-    b->b2 = -2.0 * beta;
+    double b0 = (1. - cosine) / 2.;
+    double b1 = 1. - cosine;
+    double b2 = (1. - cosine) / 2.;
+    double a0 = 1. + alpha;
+    double a1 = -2. * cosine;
+    double a2 = 1. - alpha;
+
+    b->b0 =  b0 / a0;
+    b->b1 =  b1 / a0;
+    b->b2 =  b2 / a0;
+    b->a1 = -a1 / a0;
+    b->a2 = -a2 / a0;
 }
 
 static void set_hp(BiquadContext *b, double fc, double q, double sr)
 {
-    double thetac = 2.0 * M_PI * fc / sr;
-    double d = 1.0 / q;
-    double beta = 0.5 * (1.0 - (d / 2.0) * sin(thetac)) / (1.0 + (d / 2.0) * sin(thetac));
-    double gamma = (0.5 + beta) * cos(thetac);
+    double omega = M_PI * fc / sr;
+    double cosine = cos(omega);
+    double alpha = sin(omega) / (2. * q);
 
-    b->a0 = (0.5 + beta + gamma) / 2.0;
-    b->a1 = -(0.5 + beta + gamma);
-    b->a2 = b->a0;
-    b->b1 = 2.0 * gamma;
-    b->b2 = -2.0 * beta;
+    double b0 = (1. + cosine) / 2.;
+    double b1 = -1. - cosine;
+    double b2 = (1. + cosine) / 2.;
+    double a0 = 1. + alpha;
+    double a1 = -2. * cosine;
+    double a2 = 1. - alpha;
+
+    b->b0 =  b0 / a0;
+    b->b1 =  b1 / a0;
+    b->b2 =  b2 / a0;
+    b->a1 = -a1 / a0;
+    b->a2 = -a2 / a0;
 }
 
 static void calc_q_factors(int order, double *q)
@@ -250,11 +262,11 @@ static void biquad_process(BiquadContext *b,
                            double *dst, const double *src,
                            int nb_samples)
 {
-    const double a0 = b->a0;
-    const double a1 = b->a1;
-    const double a2 = b->a2;
+    const double b0 = b->b0;
     const double b1 = b->b1;
     const double b2 = b->b2;
+    const double a1 = b->a1;
+    const double a2 = b->a2;
     double z1 = b->z1;
     double z2 = b->z2;
 
@@ -262,9 +274,9 @@ static void biquad_process(BiquadContext *b,
         const double in = src[n];
         double out;
 
-        out = in * a0 + z1;
-        z1 = a1 * in + z2 + b1 * out;
-        z2 = a2 * in + b2 * out;
+        out = in * b0 + z1;
+        z1 = b1 * in + z2 + a1 * out;
+        z2 = b2 * in + a2 * out;
         dst[n] = out;
     }
 
