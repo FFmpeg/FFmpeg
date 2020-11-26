@@ -94,4 +94,5 @@ AVCodec ff_tmv_decoder = {
     .init           = tmv_decode_init,
     .decode         = tmv_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
