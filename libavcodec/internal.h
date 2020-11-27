@@ -306,13 +306,6 @@ int ff_thread_can_start_frame(AVCodecContext *avctx);
 
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
 
-/**
- * Call avcodec_open2 recursively by decrementing counter, unlocking mutex,
- * calling the function and then restoring again. Assumes the mutex is
- * already locked
- */
-int ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-
 const uint8_t *avpriv_find_start_code(const uint8_t *p,
                                       const uint8_t *end,
                                       uint32_t *state);
