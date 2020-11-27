@@ -553,4 +553,5 @@ const AVCodec ff_ra_144_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]){ 8000, 0 },
     .channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
