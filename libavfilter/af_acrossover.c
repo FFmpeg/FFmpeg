@@ -58,6 +58,8 @@ typedef struct AudioCrossoverContext {
 
     int order;
     int filter_count;
+    int first_order;
+    int ap_filter_count;
     int nb_splits;
     float *splits;
 
@@ -205,6 +207,18 @@ static void set_ap(BiquadContext *b, double fc, double q, double sr)
     b->a2 = -a2 / a0;
 }
 
+static void set_ap1(BiquadContext *b, double fc, double sr)
+{
+    double omega = M_PI * fc / sr;
+    double K = tan(omega);
+
+    b->a1 = -(1. - K) / (1. + K);
+    b->a2 = 0.;
+    b->b0 = -b->a1;
+    b->b1 = 1.;
+    b->b2 = 0.;
+}
+
 static void calc_q_factors(int order, double *q)
 {
     double n = order / 2.;
@@ -218,7 +232,6 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AudioCrossoverContext *s = ctx->priv;
     int sample_rate = inlink->sample_rate;
-    int first_order;
     double q[16];
 
     s->xover = av_calloc(inlink->channels, sizeof(*s->xover));
@@ -227,21 +240,29 @@ static int config_input(AVFilterLink *inlink)
 
     s->order = (s->order_opt + 1) * 2;
     s->filter_count = s->order / 2;
-    first_order = s->filter_count & 1;
+    s->first_order = s->filter_count & 1;
+    s->ap_filter_count = s->filter_count / 2 + s->first_order;
     calc_q_factors(s->order, q);
 
     for (int ch = 0; ch < inlink->channels; ch++) {
         for (int band = 0; band <= s->nb_splits; band++) {
-            if (first_order) {
+            if (s->first_order) {
                 set_lp(&s->xover[ch].lp[band][0], s->splits[band], 0.5, sample_rate);
                 set_hp(&s->xover[ch].hp[band][0], s->splits[band], 0.5, sample_rate);
             }
 
-            for (int n = first_order; n < s->filter_count; n++) {
-                const int idx = s->filter_count / 2 - ((n + first_order) / 2 - first_order) - 1;
+            for (int n = s->first_order; n < s->filter_count; n++) {
+                const int idx = s->filter_count / 2 - ((n + s->first_order) / 2 - s->first_order) - 1;
 
                 set_lp(&s->xover[ch].lp[band][n], s->splits[band], q[idx], sample_rate);
                 set_hp(&s->xover[ch].hp[band][n], s->splits[band], q[idx], sample_rate);
+            }
+
+            for (int x = 0; x <= s->nb_splits && s->first_order; x++)
+                set_ap1(&s->xover[ch].ap[x][band][0], s->splits[band], sample_rate);
+
+            for (int n = s->first_order; n < s->ap_filter_count; n++) {
+                const int idx = (s->filter_count / 2 - ((n * 2 + s->first_order) / 2 - s->first_order) - 1);
 
                 for (int x = 0; x <= s->nb_splits; x++)
                     set_ap(&s->xover[ch].ap[x][band][n], s->splits[band], q[idx], sample_rate);
@@ -340,17 +361,25 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             }
 
             for (int aband = band + 1; aband < ctx->nb_outputs; aband++) {
-                for (int f = 0; f < s->filter_count / 2; f++) {
+                if (s->first_order) {
                     const double *src = (const double *)frames[band]->extended_data[ch];
                     double *dst = (double *)frames[band]->extended_data[ch];
-                    BiquadContext *ap = &xover->ap[band][aband][f * 2 + (s->filter_count & 1)];
+                    BiquadContext *ap = &xover->ap[band][aband][0];
+
+                    biquad_process(ap, dst, src, nb_samples);
+                }
+
+                for (int f = s->first_order; f < s->ap_filter_count; f++) {
+                    const double *src = (const double *)frames[band]->extended_data[ch];
+                    double *dst = (double *)frames[band]->extended_data[ch];
+                    BiquadContext *ap = &xover->ap[band][aband][f];
 
                     biquad_process(ap, dst, src, nb_samples);
                 }
             }
         }
 
-        for (int band = 0; band < ctx->nb_outputs && (s->filter_count & 1); band++) {
+        for (int band = 0; band < ctx->nb_outputs && s->first_order; band++) {
             if (band & 1) {
                 double *dst = (double *)frames[band]->extended_data[ch];
 
