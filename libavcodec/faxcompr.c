@@ -24,6 +24,7 @@
  * CCITT Fax Group 3 and 4 decompression
  * @author Konstantin Shishkov
  */
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -96,15 +97,12 @@ static const uint8_t ccitt_group3_2d_lens[11] = {
 
 static VLC ccitt_vlc[2], ccitt_group3_2d_vlc;
 
-av_cold void ff_ccitt_unpack_init(void)
+static av_cold void ccitt_unpack_init(void)
 {
     static VLC_TYPE code_table1[528][2];
     static VLC_TYPE code_table2[648][2];
     int i;
-    static int initialized = 0;
 
-    if (initialized)
-        return;
     ccitt_vlc[0].table = code_table1;
     ccitt_vlc[0].table_allocated = 528;
     ccitt_vlc[1].table = code_table2;
@@ -119,7 +117,12 @@ av_cold void ff_ccitt_unpack_init(void)
     INIT_VLC_STATIC(&ccitt_group3_2d_vlc, 9, 11,
                     ccitt_group3_2d_lens, 1, 1,
                     ccitt_group3_2d_bits, 1, 1, 512);
-    initialized = 1;
+}
+
+av_cold void ff_ccitt_unpack_init(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, ccitt_unpack_init);
 }
 
 static int decode_uncompressed(AVCodecContext *avctx, GetBitContext *gb,
