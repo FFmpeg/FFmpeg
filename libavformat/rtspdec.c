@@ -274,6 +274,17 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
     rtsp_st   = rt->rtsp_streams[streamid];
     localport = rt->rtp_port_min;
 
+    /* check if the stream has already been setup */
+    if (rtsp_st->transport_priv) {
+        if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RDT)
+            ff_rdt_parse_close(rtsp_st->transport_priv);
+        else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RTP)
+            ff_rtp_parse_close(rtsp_st->transport_priv);
+        rtsp_st->transport_priv = NULL;
+    }
+    if (rtsp_st->rtp_handle)
+        ffurl_closep(&rtsp_st->rtp_handle);
+
     if (request.transports[0].lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
         rt->lower_transport = RTSP_LOWER_TRANSPORT_TCP;
         if ((ret = ff_rtsp_open_transport_ctx(s, rtsp_st))) {
