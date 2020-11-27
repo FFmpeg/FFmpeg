@@ -69,16 +69,30 @@ static const AVOption aemphasis_options[] = {
 
 AVFILTER_DEFINE_CLASS(aemphasis);
 
-static inline double biquad(BiquadD2 *bq, double in)
+static inline void biquad_process(BiquadD2 *bq, double *dst, const double *src, int nb_samples,
+                                  double level_in, double level_out)
 {
-    double n = in;
-    double tmp = n - bq->w1 * bq->b1 - bq->w2 * bq->b2;
-    double out = tmp * bq->a0 + bq->w1 * bq->a1 + bq->w2 * bq->a2;
+    const double a0 = bq->a0;
+    const double a1 = bq->a1;
+    const double a2 = bq->a2;
+    const double b1 = bq->b1;
+    const double b2 = bq->b2;
+    double w1 = bq->w1;
+    double w2 = bq->w2;
 
-    bq->w2 = bq->w1;
-    bq->w1 = tmp;
+    for (int i = 0; i < nb_samples; i++) {
+        double n = src[i] * level_in;
+        double tmp = n - w1 * b1 - w2 * b2;
+        double out = tmp * a0 + w1 * a1 + w2 * a2;
 
-    return out;
+        w2 = w1;
+        w1 = tmp;
+
+        dst[i] = out * level_out;
+    }
+
+    bq->w1 = w1;
+    bq->w2 = w2;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -86,12 +100,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioEmphasisContext *s = ctx->priv;
-    const double *src = (const double *)in->data[0];
     const double level_out = s->level_out;
     const double level_in = s->level_in;
     AVFrame *out;
-    double *dst;
-    int n, c;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -103,13 +114,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
         av_frame_copy_props(out, in);
     }
-    dst = (double *)out->data[0];
 
-    for (n = 0; n < in->nb_samples; n++) {
-        for (c = 0; c < inlink->channels; c++)
-            dst[c] = level_out * biquad(&s->rc[c].r1, s->rc[c].use_brickw ? biquad(&s->rc[c].brickw, src[c] * level_in) : src[c] * level_in);
-        dst += inlink->channels;
-        src += inlink->channels;
+    for (int ch = 0; ch < inlink->channels; ch++) {
+        const double *src = (const double *)in->extended_data[ch];
+        double *dst = (double *)out->extended_data[ch];
+
+        if (s->rc[ch].use_brickw) {
+            biquad_process(&s->rc[ch].brickw, dst, src, in->nb_samples, level_in, 1.);
+            biquad_process(&s->rc[ch].r1, dst, dst, in->nb_samples, 1., level_out);
+        } else {
+            biquad_process(&s->rc[ch].r1, dst, src, in->nb_samples, level_in, level_out);
+        }
     }
 
     if (in != out)
@@ -122,7 +137,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts;
     AVFilterFormats *formats;
     static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_DBL,
+        AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
     int ret;
