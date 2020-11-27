@@ -795,6 +795,10 @@ Add pulse signal.
 Default is @code{dc}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section aderivative, aintegral
 
 Compute derivative/integral of audio stream.
