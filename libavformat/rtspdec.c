@@ -474,6 +474,7 @@ int ff_rtsp_parse_streaming_commands(AVFormatContext *s)
     ret = read_line(s, rbuf, sizeof(rbuf), &rbuflen);
     if (ret < 0)
         return ret;
+    av_log(s, AV_LOG_TRACE, "Parsing[%d]: %s\n", rbuflen, rbuf);
     ret = parse_command_line(s, rbuf, rbuflen, uri, sizeof(uri), method,
                              sizeof(method), &methodcode);
     if (ret) {
@@ -675,6 +676,7 @@ static int rtsp_listen(AVFormatContext *s)
         ret = read_line(s, rbuf, sizeof(rbuf), &rbuflen);
         if (ret < 0)
             goto fail;
+        av_log(s, AV_LOG_TRACE, "Parsing[%d]: %s\n", rbuflen, rbuf);
         ret = parse_command_line(s, rbuf, rbuflen, uri, sizeof(uri), method,
                                  sizeof(method), &methodcode);
         if (ret) {
