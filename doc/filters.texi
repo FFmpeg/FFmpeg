@@ -911,6 +911,10 @@ select 75µs (FM-KF).
 @end table
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section aeval
 
 Modify an audio signal according to the specified expressions.
