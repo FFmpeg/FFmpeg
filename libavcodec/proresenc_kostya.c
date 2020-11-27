@@ -1415,4 +1415,5 @@ const AVCodec ff_prores_ks_encoder = {
                       },
     .priv_class     = &proresenc_class,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
