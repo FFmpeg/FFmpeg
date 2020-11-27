@@ -419,4 +419,5 @@ AVCodec ff_paf_video_decoder = {
     .close          = paf_video_close,
     .decode         = paf_video_decode,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
