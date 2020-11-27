@@ -2168,7 +2168,7 @@ static av_cold int tiff_init(AVCodecContext *avctx)
     s->avctx_mjpeg->flags2 = avctx->flags2;
     s->avctx_mjpeg->dct_algo = avctx->dct_algo;
     s->avctx_mjpeg->idct_algo = avctx->idct_algo;
-    ret = ff_codec_open2_recursive(s->avctx_mjpeg, codec, NULL);
+    ret = avcodec_open2(s->avctx_mjpeg, codec, NULL);
     if (ret < 0) {
         return ret;
     }
@@ -2219,6 +2219,6 @@ AVCodec ff_tiff_decoder = {
     .close          = tiff_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class     = &tiff_decoder_class,
 };
