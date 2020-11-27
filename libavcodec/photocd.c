@@ -469,4 +469,5 @@ AVCodec ff_photocd_decoder = {
     .decode         = photocd_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("Kodak Photo CD"),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
