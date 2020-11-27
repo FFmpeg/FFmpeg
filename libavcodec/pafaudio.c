@@ -79,4 +79,5 @@ AVCodec ff_paf_audio_decoder = {
     .init         = paf_audio_init,
     .decode       = paf_audio_decode,
     .capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
