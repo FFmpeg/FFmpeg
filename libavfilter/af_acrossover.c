@@ -209,10 +209,11 @@ static void set_ap(BiquadContext *b, double fc, double q, double sr)
 
 static void set_ap1(BiquadContext *b, double fc, double sr)
 {
-    double omega = M_PI * fc / sr;
-    double K = tan(omega);
+    double omega = 0.5 * M_PI * fc / sr + M_PI_4;
+    double cosine = cos(omega);
+    double sine = sin(omega);
 
-    b->a1 = -(1. - K) / (1. + K);
+    b->a1 = -cosine / sine;
     b->a2 = 0.;
     b->b0 = -b->a1;
     b->b1 = 1.;
