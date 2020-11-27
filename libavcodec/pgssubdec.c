@@ -713,4 +713,5 @@ const AVCodec ff_pgssub_decoder = {
     .close          = close_decoder,
     .decode         = decode,
     .priv_class     = &pgsdec_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
