@@ -523,7 +523,7 @@ The filter accepts the following options:
 Set split frequencies. Those must be positive and increasing.
 
 @item order
-Set filter order. Availabe values are:
+Set filter order. Available values are:
 
 @table @samp
 @item 2nd
@@ -554,13 +554,13 @@ ffmpeg -i in.flac -filter_complex 'acrossover=split=1500[LOW][HIGH]' -map '[LOW]
 @item
 Same as above, but with higher filter order:
 @example
-ffmpeg -i in.flac -filter_complex 'acrossover=split=1500:order=4th[LOW][HIGH]' -map '[LOW]' low.wav -map '[HIGH]' high.wav
+ffmpeg -i in.flac -filter_complex 'acrossover=split=1500:order=8th[LOW][HIGH]' -map '[LOW]' low.wav -map '[HIGH]' high.wav
 @end example
 
 @item
 Same as above, but also with additional middle band (frequencies between 1500 and 8000):
 @example
-ffmpeg -i in.flac -filter_complex 'acrossover=split=1500 8000:order=4th[LOW][MID][HIGH]' -map '[LOW]' low.wav -map '[MID]' mid.wav -map '[HIGH]' high.wav
+ffmpeg -i in.flac -filter_complex 'acrossover=split=1500 8000:order=8th[LOW][MID][HIGH]' -map '[LOW]' low.wav -map '[MID]' mid.wav -map '[HIGH]' high.wav
 @end example
 @end itemize
 
@@ -6801,7 +6801,7 @@ Alternatively can be set to @code{s} serial.
 
 Parallel can be faster then serial, while other way around is never true.
 Parallel will abort early on first change being greater then thresholds, while serial
-will continue processing other side of frames if they are equal or bellow thresholds.
+will continue processing other side of frames if they are equal or below thresholds.
 @end table
 
 @subsection Commands
