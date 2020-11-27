@@ -335,4 +335,5 @@ AVCodec ff_cdxl_decoder = {
     .close          = cdxl_decode_end,
     .decode         = cdxl_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
