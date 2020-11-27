@@ -406,7 +406,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             goto fail;
         }
 
-        fgp->type = AV_FILM_GRAM_PARAMS_AV1;
+        fgp->type = AV_FILM_GRAIN_PARAMS_AV1;
         fgp->seed = p->frame_hdr->film_grain.data.seed;
         fgp->codec.aom.num_y_points = p->frame_hdr->film_grain.data.num_y_points;
         fgp->codec.aom.chroma_scaling_from_luma = p->frame_hdr->film_grain.data.chroma_scaling_from_luma;

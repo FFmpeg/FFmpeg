@@ -22,12 +22,12 @@
 #include "frame.h"
 
 enum AVFilmGrainParamsType {
-    AV_FILM_GRAM_PARAMS_NONE = 0,
+    AV_FILM_GRAIN_PARAMS_NONE = 0,
 
     /**
      * The union is valid when interpreted as AVFilmGrainAOMParams (codec.aom)
      */
-    AV_FILM_GRAM_PARAMS_AV1,
+    AV_FILM_GRAIN_PARAMS_AV1,
 };
 
 /**
