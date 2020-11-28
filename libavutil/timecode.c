@@ -49,7 +49,7 @@ int av_timecode_adjust_ntsc_framenum2(int framenum, int fps)
     d = framenum / frames_per_10mins;
     m = framenum % frames_per_10mins;
 
-    return framenum + 9 * drop_frames * d + drop_frames * ((m - drop_frames) / (frames_per_10mins / 10));
+    return framenum + 9U * drop_frames * d + drop_frames * ((m - drop_frames) / (frames_per_10mins / 10));
 }
 
 uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
