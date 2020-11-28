@@ -305,38 +305,39 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
                                                                                             \
         for (int band = 0; band < ctx->nb_outputs; band++) {                                \
             for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {       \
-                const type *src = band == 0 ? (const type *)in->extended_data[ch] : (const type *)frames[band]->extended_data[ch]; \
+                const type *src = (const type *)in->extended_data[ch];                      \
+                const type *prv = (const type *)frames[band]->extended_data[ch];            \
                 type *dst = (type *)frames[band + 1]->extended_data[ch];                    \
-                const type *hsrc = f == 0 ? src : dst;                                      \
+                const type *hsrc = (band == 0 && f == 0) ? src : f == 0 ? prv : dst;        \
                 BiquadContext *hp = &xover->hp[band][f];                                    \
                                                                                             \
                 biquad_process_## name(hp, dst, hsrc, nb_samples);                          \
             }                                                                               \
                                                                                             \
             for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {       \
-                const type *src = band == 0 ? (const type *)in->extended_data[ch] : (const type *)frames[band]->extended_data[ch]; \
+                const type *src = (const type *)in->extended_data[ch];                      \
                 type *dst = (type *)frames[band]->extended_data[ch];                        \
-                const type *lsrc = f == 0 ? src : dst;                                      \
+                const type *lsrc = (band == 0 && f == 0) ? src : dst;                       \
                 BiquadContext *lp = &xover->lp[band][f];                                    \
                                                                                             \
                 biquad_process_## name(lp, dst, lsrc, nb_samples);                          \
             }                                                                               \
                                                                                             \
-            for (int aband = band + 1; aband < ctx->nb_outputs; aband++) {                  \
+            for (int aband = band + 1; aband + 1 < ctx->nb_outputs; aband++) {              \
                 if (s->first_order) {                                                       \
-                    const type *src = (const type *)frames[band]->extended_data[ch];        \
+                    const type *asrc = (const type *)frames[band]->extended_data[ch];       \
                     type *dst = (type *)frames[band]->extended_data[ch];                    \
                     BiquadContext *ap = &xover->ap[band][aband][0];                         \
                                                                                             \
-                    biquad_process_## name(ap, dst, src, nb_samples);                       \
+                    biquad_process_## name(ap, dst, asrc, nb_samples);                      \
                 }                                                                           \
                                                                                             \
                 for (int f = s->first_order; f < s->ap_filter_count; f++) {                 \
-                    const type *src = (const type *)frames[band]->extended_data[ch];        \
+                    const type *asrc = (const type *)frames[band]->extended_data[ch];       \
                     type *dst = (type *)frames[band]->extended_data[ch];                    \
                     BiquadContext *ap = &xover->ap[band][aband][f];                         \
                                                                                             \
-                    biquad_process_## name(ap, dst, src, nb_samples);                       \
+                    biquad_process_## name(ap, dst, asrc, nb_samples);                      \
                 }                                                                           \
             }                                                                               \
         }                                                                                   \
