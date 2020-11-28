@@ -995,6 +995,8 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
 
                     if (tlen <= 0)
                         goto seek;
+                    if (dlen / 32768 > tlen)
+                        goto seek;
 
                     av_fast_malloc(&uncompressed_buffer, &uncompressed_buffer_size, dlen);
                     if (!uncompressed_buffer) {
