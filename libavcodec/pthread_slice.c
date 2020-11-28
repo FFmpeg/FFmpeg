@@ -130,7 +130,7 @@ int ff_slice_thread_init(AVCodecContext *avctx)
 {
     SliceThreadContext *c;
     int thread_count = avctx->thread_count;
-    static void (*mainfunc)(void *);
+    void (*mainfunc)(void *);
 
     // We cannot do this in the encoder init as the threads are created before
     if (av_codec_is_encoder(avctx->codec) &&
