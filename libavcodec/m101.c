@@ -113,4 +113,5 @@ const AVCodec ff_m101_decoder = {
     .init           = m101_decode_init,
     .decode         = m101_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
