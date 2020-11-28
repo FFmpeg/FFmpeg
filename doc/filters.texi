@@ -25230,6 +25230,7 @@ It accepts the following values:
 @table @samp
 @item magnitude
 @item phase
+@item delay
 @end table
 Default is @code{magnitude}.
 @end table

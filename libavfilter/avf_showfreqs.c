@@ -36,7 +36,7 @@
 #include "internal.h"
 #include "window_func.h"
 
-enum DataMode       { MAGNITUDE, PHASE, NB_DATA };
+enum DataMode       { MAGNITUDE, PHASE, DELAY, NB_DATA };
 enum DisplayMode    { LINE, BAR, DOT, NB_MODES };
 enum ChannelMode    { COMBINED, SEPARATE, NB_CMODES };
 enum FrequencyScale { FS_LINEAR, FS_LOG, FS_RLOG, NB_FSCALES };
@@ -120,6 +120,7 @@ static const AVOption showfreqs_options[] = {
     { "data", "set data mode", OFFSET(data_mode), AV_OPT_TYPE_INT, {.i64=MAGNITUDE}, 0, NB_DATA-1, FLAGS, "data" },
         { "magnitude", "show magnitude",  0, AV_OPT_TYPE_CONST, {.i64=MAGNITUDE}, 0, 0, FLAGS, "data" },
         { "phase",     "show phase",      0, AV_OPT_TYPE_CONST, {.i64=PHASE},     0, 0, FLAGS, "data" },
+        { "delay",     "show group delay",0, AV_OPT_TYPE_CONST, {.i64=DELAY},     0, 0, FLAGS, "data" },
     { NULL }
 };
 
@@ -436,6 +437,16 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
 
             for (f = 1; f < s->nb_freq; f++) {
                 a = av_clipd((M_PI + P(RE(f, ch), IM(f, ch))) / (2. * M_PI), 0, 1);
+
+                plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
+            }
+            break;
+        case DELAY:
+            plot_freq(s, ch, 0, 0, fg, &prev_y, out, outlink);
+
+            for (f = 1; f < s->nb_freq; f++) {
+                a = av_clipd((M_PI - P(IM(f, ch) * RE(f-1, ch) - IM(f-1, ch) * RE(f, ch),
+                                       RE(f, ch) * RE(f-1, ch) + IM(f, ch) * IM(f-1, ch))) / (2. * M_PI), 0, 1);
 
                 plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
             }
