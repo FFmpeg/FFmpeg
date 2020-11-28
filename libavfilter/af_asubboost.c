@@ -122,7 +122,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     ThreadData *td = arg;
     AVFrame *out = td->out;
     AVFrame *in = td->in;
-    const double wet = ctx->is_disabled ? 0. : s->wet_gain;
+    const double mix = ctx->is_disabled ? 0. : 1.;
+    const double wet = ctx->is_disabled ? 1. : s->wet_gain;
     const double dry = ctx->is_disabled ? 1. : s->dry_gain;
     const double feedback = s->feedback, decay = s->decay;
     const double b0 = s->b0;
@@ -149,7 +150,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             w[1] = b2 * src[n] + a2 * out_sample;
 
             buffer[write_pos] = buffer[write_pos] * decay + out_sample * feedback;
-            dst[n] = src[n] * dry + buffer[write_pos] * wet;
+            dst[n] = (src[n] * dry + buffer[write_pos] * mix) * wet;
 
             if (++write_pos >= buffer_samples)
                 write_pos = 0;
@@ -213,10 +214,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption asubboost_options[] = {
-    { "dry",      "set dry gain", OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0.5},      0,   1, FLAGS },
-    { "wet",      "set wet gain", OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0.8},      0,   1, FLAGS },
+    { "dry",      "set dry gain", OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0.7},      0,   1, FLAGS },
+    { "wet",      "set wet gain", OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0.7},      0,   1, FLAGS },
     { "decay",    "set decay",    OFFSET(decay),    AV_OPT_TYPE_DOUBLE, {.dbl=0.7},      0,   1, FLAGS },
-    { "feedback", "set feedback", OFFSET(feedback), AV_OPT_TYPE_DOUBLE, {.dbl=0.5},      0,   1, FLAGS },
+    { "feedback", "set feedback", OFFSET(feedback), AV_OPT_TYPE_DOUBLE, {.dbl=0.9},      0,   1, FLAGS },
     { "cutoff",   "set cutoff",   OFFSET(cutoff),   AV_OPT_TYPE_DOUBLE, {.dbl=100},     50, 900, FLAGS },
     { "slope",    "set slope",    OFFSET(slope),    AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0.0001,   1, FLAGS },
     { "delay",    "set delay",    OFFSET(delay),    AV_OPT_TYPE_DOUBLE, {.dbl=20},       1, 100, FLAGS },

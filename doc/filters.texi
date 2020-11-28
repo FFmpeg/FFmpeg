@@ -2605,11 +2605,11 @@ The filter accepts the following options:
 @table @option
 @item dry
 Set dry gain, how much of original signal is kept. Allowed range is from 0 to 1.
-Default value is 0.5.
+Default value is 0.7.
 
 @item wet
 Set wet gain, how much of filtered signal is kept. Allowed range is from 0 to 1.
-Default value is 0.8.
+Default value is 0.7.
 
 @item decay
 Set delay line decay gain value. Allowed range is from 0 to 1.
@@ -2617,7 +2617,7 @@ Default value is 0.7.
 
 @item feedback
 Set delay line feedback gain value. Allowed range is from 0 to 1.
-Default value is 0.5.
+Default value is 0.9.
 
 @item cutoff
 Set cutoff frequency in Hertz. Allowed range is 50 to 900.
