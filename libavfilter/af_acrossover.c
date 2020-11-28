@@ -27,6 +27,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
@@ -55,6 +56,7 @@ typedef struct AudioCrossoverContext {
 
     char *splits_str;
     int order_opt;
+    float level_in;
 
     int order;
     int filter_count;
@@ -69,6 +71,8 @@ typedef struct AudioCrossoverContext {
     AVFrame *frames[MAX_BANDS];
 
     int (*filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
+
+    AVFloatDSPContext *fdsp;
 } AudioCrossoverContext;
 
 #define OFFSET(x) offsetof(AudioCrossoverContext, x)
@@ -87,6 +91,7 @@ static const AVOption acrossover_options[] = {
     { "16th",  "16th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=7},     0, 0, AF, "m" },
     { "18th",  "18th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=8},     0, 0, AF, "m" },
     { "20th",  "20th order",            0,                  AV_OPT_TYPE_CONST,  {.i64=9},     0, 0, AF, "m" },
+    { "level", "set input gain",        OFFSET(level_in),   AV_OPT_TYPE_FLOAT,  {.dbl=1},     0, 1, AF },
     { NULL }
 };
 
@@ -97,6 +102,10 @@ static av_cold int init(AVFilterContext *ctx)
     AudioCrossoverContext *s = ctx->priv;
     char *p, *arg, *saveptr = NULL;
     int i, ret = 0;
+
+    s->fdsp = avpriv_float_dsp_alloc(0);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     s->splits = av_calloc(MAX_SPLITS, sizeof(*s->splits));
     if (!s->splits)
@@ -288,7 +297,7 @@ static void biquad_process_## name(BiquadContext *b,           \
 BIQUAD_PROCESS(fltp, float)
 BIQUAD_PROCESS(dblp, double)
 
-#define XOVER_PROCESS(name, type, one)                         \
+#define XOVER_PROCESS(name, type, one, ff)                                                  \
 static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
 {                                                                                           \
     AudioCrossoverContext *s = ctx->priv;                                                   \
@@ -299,23 +308,26 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
     const int nb_samples = in->nb_samples;                                                  \
                                                                                             \
     for (int ch = start; ch < end; ch++) {                                                  \
+        const type *src = (const type *)in->extended_data[ch];                              \
         CrossoverChannel *xover = &s->xover[ch];                                            \
+                                                                                            \
+        s->fdsp->vector_## ff ##mul_scalar((type *)frames[0]->extended_data[ch], src,       \
+                                    s->level_in, nb_samples);                               \
+        emms_c();                                                                           \
                                                                                             \
         for (int band = 0; band < ctx->nb_outputs; band++) {                                \
             for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {       \
-                const type *src = (const type *)in->extended_data[ch];                      \
                 const type *prv = (const type *)frames[band]->extended_data[ch];            \
                 type *dst = (type *)frames[band + 1]->extended_data[ch];                    \
-                const type *hsrc = (band == 0 && f == 0) ? src : f == 0 ? prv : dst;        \
+                const type *hsrc = f == 0 ? prv : dst;                                      \
                 BiquadContext *hp = &xover->hp[band][f];                                    \
                                                                                             \
                 biquad_process_## name(hp, dst, hsrc, nb_samples);                          \
             }                                                                               \
                                                                                             \
             for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {       \
-                const type *src = (const type *)in->extended_data[ch];                      \
                 type *dst = (type *)frames[band]->extended_data[ch];                        \
-                const type *lsrc = (band == 0 && f == 0) ? src : dst;                       \
+                const type *lsrc = dst;                                                     \
                 BiquadContext *lp = &xover->lp[band][f];                                    \
                                                                                             \
                 biquad_process_## name(lp, dst, lsrc, nb_samples);                          \
@@ -353,8 +365,8 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
     return 0;                                                                               \
 }
 
-XOVER_PROCESS(fltp, float, 1.f)
-XOVER_PROCESS(dblp, double, 1.0)
+XOVER_PROCESS(fltp, float, 1.f, f)
+XOVER_PROCESS(dblp, double, 1.0, d)
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -453,6 +465,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     AudioCrossoverContext *s = ctx->priv;
     int i;
 
+    av_freep(&s->fdsp);
     av_freep(&s->splits);
     av_freep(&s->xover);
 
