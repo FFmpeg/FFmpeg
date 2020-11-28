@@ -771,6 +771,8 @@ adelay=delays=64S:all=1
 @section adenorm
 Remedy denormals in audio by adding extremely low-level noise.
 
+This filter shall be placed before any filter that can produce denormals.
+
 A description of the accepted parameters follows.
 
 @table @option
