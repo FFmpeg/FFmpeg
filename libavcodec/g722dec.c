@@ -149,4 +149,5 @@ const AVCodec ff_adpcm_g722_decoder = {
     .decode         = g722_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_class     = &g722_decoder_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
