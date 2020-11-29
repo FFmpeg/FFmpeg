@@ -302,4 +302,5 @@ const AVCodec ff_msvideo1_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_RGB555, AV_PIX_FMT_NONE},
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
