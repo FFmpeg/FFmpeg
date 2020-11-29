@@ -502,4 +502,5 @@ const AVCodec ff_dvdsub_encoder = {
     .encode_sub     = dvdsub_encode,
     .priv_class     = &dvdsubenc_class,
     .priv_data_size = sizeof(DVDSubtitleContext),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
