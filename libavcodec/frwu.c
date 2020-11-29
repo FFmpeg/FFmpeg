@@ -125,4 +125,5 @@ const AVCodec ff_frwu_decoder = {
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .priv_class     = &frwu_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
