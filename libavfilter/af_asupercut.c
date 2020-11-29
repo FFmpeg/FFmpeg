@@ -32,10 +32,12 @@ typedef struct ASuperCutContext {
     const AVClass *class;
 
     double cutoff;
+    int order;
 
+    int filter_count;
     int bypass;
 
-    BiquadCoeffs coeffs[5];
+    BiquadCoeffs coeffs[10];
 
     AVFrame *w;
 } ASuperCutContext;
@@ -69,33 +71,48 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
+static void calc_q_factors(int n, double *q)
+{
+    for (int i = 0; i < n / 2; i++)
+        q[i] = 1. / (-2. * cos(M_PI * (2. * (i + 1) + n - 1.) / (2. * n)));
+}
+
 static int get_coeffs(AVFilterContext *ctx)
 {
     ASuperCutContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     double w0 = s->cutoff / inlink->sample_rate;
     double K = tan(M_PI * w0);
-    double q[5];
+    double q[10];
 
     s->bypass = w0 >= 0.5;
     if (s->bypass)
         return 0;
 
-    q[0] = 0.50623256;
-    q[1] = 0.56116312;
-    q[2] = 0.70710678;
-    q[3] = 1.10134463;
-    q[4] = 3.19622661;
+    s->filter_count = s->order / 2 + (s->order & 1);
+    calc_q_factors(s->order, q);
 
-    for (int b = 0; b < 5; b++) {
+    if (s->order & 1) {
+        BiquadCoeffs *coeffs = &s->coeffs[0];
+        double omega = 2. * tan(M_PI * w0);
+
+        coeffs->b0 = omega / (2. + omega);
+        coeffs->b1 = coeffs->b0;
+        coeffs->b2 = 0.;
+        coeffs->a1 = -(omega - 2.) / (2. + omega);
+        coeffs->a2 = 0.;
+    }
+
+    for (int b = (s->order & 1); b < s->filter_count; b++) {
         BiquadCoeffs *coeffs = &s->coeffs[b];
-        double norm = 1.0 / (1.0 + K / q[b] + K * K);
+        const int idx = b - (s->order & 1);
+        double norm = 1.0 / (1.0 + K / q[idx] + K * K);
 
         coeffs->b0 = K * K * norm;
         coeffs->b1 = 2.0 * coeffs->b0;
         coeffs->b2 = coeffs->b0;
         coeffs->a1 = -2.0 * (K * K - 1.0) * norm;
-        coeffs->a2 = -(1.0 - K / q[b] + K * K) * norm;
+        coeffs->a2 = -(1.0 - K / q[idx] + K * K) * norm;
     }
 
     return 0;
@@ -106,7 +123,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ASuperCutContext *s = ctx->priv;
 
-    s->w = ff_get_audio_buffer(inlink, 2 * 5);
+    s->w = ff_get_audio_buffer(inlink, 2 * 10);
     if (!s->w)
         return AVERROR(ENOMEM);
 
@@ -130,7 +147,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         const double *src = (const double *)in->extended_data[ch];
         double *dst = (double *)out->extended_data[ch];
 
-        for (int b = 0; b < 5; b++) {
+        for (int b = 0; b < s->filter_count; b++) {
             BiquadCoeffs *coeffs = &s->coeffs[b];
             const double a1 = coeffs->a1;
             const double a2 = coeffs->a2;
@@ -209,6 +226,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVOption asupercut_options[] = {
     { "cutoff", "set cutoff frequency", OFFSET(cutoff), AV_OPT_TYPE_DOUBLE, {.dbl=20000}, 20000, 192000, FLAGS },
+    { "order",  "set filter order",     OFFSET(order),  AV_OPT_TYPE_INT,    {.i64=10},        3,     20, FLAGS },
     { NULL }
 };
 

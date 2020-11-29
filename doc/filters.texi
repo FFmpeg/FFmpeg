@@ -2645,6 +2645,10 @@ The filter accepts the following options:
 @item cutoff
 Set cutoff frequency in Hertz. Allowed range is 20000 to 192000.
 Default value is 20000.
+
+@item order
+Set filter order. Available values are from 3 to 20.
+Default value is 10.
 @end table
 
 @subsection Commands
