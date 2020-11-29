@@ -40,6 +40,8 @@ typedef struct ASuperCutContext {
     BiquadCoeffs coeffs[10];
 
     AVFrame *w;
+
+    int (*filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ASuperCutContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -47,6 +49,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts = NULL;
     static const enum AVSampleFormat sample_fmts[] = {
+        AV_SAMPLE_FMT_FLTP,
         AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
@@ -118,57 +121,67 @@ static int get_coeffs(AVFilterContext *ctx)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+#define FILTER(name, type)                                          \
+static int filter_channels_## name(AVFilterContext *ctx, void *arg, \
+                                   int jobnr, int nb_jobs)          \
+{                                                                   \
+    ASuperCutContext *s = ctx->priv;                                \
+    ThreadData *td = arg;                                           \
+    AVFrame *out = td->out;                                         \
+    AVFrame *in = td->in;                                           \
+    const int start = (in->channels * jobnr) / nb_jobs;             \
+    const int end = (in->channels * (jobnr+1)) / nb_jobs;           \
+                                                                    \
+    for (int ch = start; ch < end; ch++) {                          \
+        const type *src = (const type *)in->extended_data[ch];      \
+        type *dst = (type *)out->extended_data[ch];                 \
+                                                                    \
+        for (int b = 0; b < s->filter_count; b++) {                 \
+            BiquadCoeffs *coeffs = &s->coeffs[b];                   \
+            const type a1 = coeffs->a1;                             \
+            const type a2 = coeffs->a2;                             \
+            const type b0 = coeffs->b0;                             \
+            const type b1 = coeffs->b1;                             \
+            const type b2 = coeffs->b2;                             \
+            type *w = ((type *)s->w->extended_data[ch]) + b * 2;    \
+                                                                    \
+            for (int n = 0; n < in->nb_samples; n++) {              \
+                type sin = b ? dst[n] : src[n];                     \
+                type sout = sin * b0 + w[0];                        \
+                                                                    \
+                w[0] = b1 * sin + w[1] + a1 * sout;                 \
+                w[1] = b2 * sin + a2 * sout;                        \
+                                                                    \
+                dst[n] = sout;                                      \
+            }                                                       \
+        }                                                           \
+    }                                                               \
+                                                                    \
+    return 0;                                                       \
+}
+
+FILTER(fltp, float)
+FILTER(dblp, double)
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ASuperCutContext *s = ctx->priv;
+
+    switch (inlink->format) {
+    case AV_SAMPLE_FMT_FLTP: s->filter_channels = filter_channels_fltp; break;
+    case AV_SAMPLE_FMT_DBLP: s->filter_channels = filter_channels_dblp; break;
+    }
 
     s->w = ff_get_audio_buffer(inlink, 2 * 10);
     if (!s->w)
         return AVERROR(ENOMEM);
 
     return get_coeffs(ctx);
-}
-
-typedef struct ThreadData {
-    AVFrame *in, *out;
-} ThreadData;
-
-static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    ASuperCutContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *out = td->out;
-    AVFrame *in = td->in;
-    const int start = (in->channels * jobnr) / nb_jobs;
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;
-
-    for (int ch = start; ch < end; ch++) {
-        const double *src = (const double *)in->extended_data[ch];
-        double *dst = (double *)out->extended_data[ch];
-
-        for (int b = 0; b < s->filter_count; b++) {
-            BiquadCoeffs *coeffs = &s->coeffs[b];
-            const double a1 = coeffs->a1;
-            const double a2 = coeffs->a2;
-            const double b0 = coeffs->b0;
-            const double b1 = coeffs->b1;
-            const double b2 = coeffs->b2;
-            double *w = ((double *)s->w->extended_data[ch]) + b * 2;
-
-            for (int n = 0; n < in->nb_samples; n++) {
-                double sin = b ? dst[n] : src[n];
-                double sout = sin * b0 + w[0];
-
-                w[0] = b1 * sin + w[1] + a1 * sout;
-                w[1] = b2 * sin + a2 * sout;
-
-                dst[n] = sout;
-            }
-        }
-    }
-
-    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -194,8 +207,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(inlink->channels,
-                                                            ff_filter_get_nb_threads(ctx)));
+    ctx->internal->execute(ctx, s->filter_channels, &td, NULL, FFMIN(inlink->channels,
+                                                               ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);
