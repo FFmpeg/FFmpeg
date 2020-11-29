@@ -126,7 +126,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
     zret = inflateInit(&s->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return 1;
+        return AVERROR_EXTERNAL;
     }
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
 
