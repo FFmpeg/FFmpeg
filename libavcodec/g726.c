@@ -514,6 +514,7 @@ const AVCodec ff_adpcm_g726_decoder = {
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -528,5 +529,6 @@ const AVCodec ff_adpcm_g726le_decoder = {
     .flush          = g726_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
