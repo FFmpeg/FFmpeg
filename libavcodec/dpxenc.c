@@ -293,4 +293,5 @@ const AVCodec ff_dpx_encoder = {
         AV_PIX_FMT_GBRP10LE, AV_PIX_FMT_GBRP10BE,
         AV_PIX_FMT_GBRP12LE, AV_PIX_FMT_GBRP12BE,
         AV_PIX_FMT_NONE},
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
