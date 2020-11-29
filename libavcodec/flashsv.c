@@ -517,7 +517,7 @@ const AVCodec ff_flashsv_decoder = {
     .close          = flashsv_decode_end,
     .decode         = flashsv_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
 };
 #endif /* CONFIG_FLASHSV_DECODER */
@@ -585,7 +585,7 @@ const AVCodec ff_flashsv2_decoder = {
     .close          = flashsv2_decode_end,
     .decode         = flashsv_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
 };
 #endif /* CONFIG_FLASHSV2_DECODER */
