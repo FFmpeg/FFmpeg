@@ -170,4 +170,5 @@ const AVCodec ff_msrle_decoder = {
     .decode         = msrle_decode_frame,
     .flush          = msrle_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
