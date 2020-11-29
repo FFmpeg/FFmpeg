@@ -262,6 +262,7 @@ const AVCodec ff_mvc1_decoder = {
     .init           = mvc_decode_init,
     .decode         = mvc_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -275,5 +276,6 @@ const AVCodec ff_mvc2_decoder = {
     .init           = mvc_decode_init,
     .decode         = mvc_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
