@@ -351,4 +351,5 @@ const AVCodec ff_msvideo1_decoder = {
     .close          = msvideo1_decode_end,
     .decode         = msvideo1_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
