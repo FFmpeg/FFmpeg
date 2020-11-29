@@ -469,5 +469,5 @@ AVCodec ff_ffwavesynth_decoder = {
     .close          = wavesynth_close,
     .decode         = wavesynth_decode,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
