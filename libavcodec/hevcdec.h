@@ -42,7 +42,6 @@
 #include "thread.h"
 #include "videodsp.h"
 
-#define MAX_NB_THREADS 16
 #define SHIFT_CTB_WPP 2
 
 //TODO: check if this is really the maximum
@@ -468,9 +467,9 @@ typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
 
-    struct HEVCContext  *sList[MAX_NB_THREADS];
+    struct HEVCContext  **sList;
 
-    HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
+    HEVCLocalContext    **HEVClcList;
     HEVCLocalContext    *HEVClc;
 
     uint8_t             threads_type;
