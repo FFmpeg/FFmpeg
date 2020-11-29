@@ -1367,5 +1367,5 @@ const AVCodec ff_interplay_video_decoder = {
     .close          = ipvideo_decode_end,
     .decode         = ipvideo_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
