@@ -8,7 +8,7 @@
 #dimensions 0: 320x240
 #sar 0: 1/1
 #stream#, dts,        pts, duration,     size, hash
-0,        -80,          0,        0,     5131, fb6a475e53addc2ffa79e1b75de81050
+0,        -80,          0,       40,     5131, fb6a475e53addc2ffa79e1b75de81050
 0,        -40,        160,       40,     2479, fc64a1f7054d22741fffc68891ff4887
 0,          0,         80,       40,     1354, 344ee1f5e8f0fe2785639dd530cf85ca
 0,         40,         40,       40,      965, cbea2691414063d4e1199b781586cac4
