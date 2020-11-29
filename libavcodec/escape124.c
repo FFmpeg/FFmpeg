@@ -386,4 +386,5 @@ const AVCodec ff_escape124_decoder = {
     .close          = escape124_decode_close,
     .decode         = escape124_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
