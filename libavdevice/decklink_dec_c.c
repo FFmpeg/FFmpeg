@@ -30,7 +30,7 @@
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "list_devices", "list available devices"  , OFFSET(list_devices), AV_OPT_TYPE_BOOL  , { .i64 = 0   }, 0, 1, DEC | AV_OPT_FLAG_DEPRECATED},
+    { "list_devices", "use ffmpeg -sources decklink instead", OFFSET(list_devices), AV_OPT_TYPE_BOOL, { .i64 = 0   }, 0, 1, DEC | AV_OPT_FLAG_DEPRECATED},
     { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "format_code",  "set format by fourcc"    , OFFSET(format_code),  AV_OPT_TYPE_STRING, { .str = NULL}, 0, 0, DEC },
     { "raw_format",   "pixel format to be returned by the card when capturing" , OFFSET(raw_format),  AV_OPT_TYPE_INT, { .i64 = 0}, 0, 5, DEC, "raw_format" },
