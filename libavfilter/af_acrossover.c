@@ -320,7 +320,7 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
         CrossoverChannel *xover = &s->xover[ch];                                            \
                                                                                             \
         s->fdsp->vector_## ff ##mul_scalar((type *)frames[0]->extended_data[ch], src,       \
-                                    s->level_in, nb_samples);                               \
+                                    s->level_in, FFALIGN(nb_samples, sizeof(type)));        \
         emms_c();                                                                           \
                                                                                             \
         for (int band = 0; band < ctx->nb_outputs; band++) {                                \
