@@ -180,7 +180,7 @@ static int caca_write_header(AVFormatContext *s)
     if (!c->window_title)
         c->window_title = av_strdup(s->url);
     caca_set_display_title(c->display, c->window_title);
-    caca_set_display_time(c->display, av_rescale_q(1, st->codec->time_base, AV_TIME_BASE_Q));
+    caca_set_display_time(c->display, av_rescale_q(1, st->time_base, AV_TIME_BASE_Q));
 
     return 0;
 
