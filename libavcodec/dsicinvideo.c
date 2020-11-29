@@ -330,6 +330,6 @@ const AVCodec ff_dsicinvideo_decoder = {
     .init           = cinvideo_decode_init,
     .close          = cinvideo_decode_end,
     .decode         = cinvideo_decode_frame,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
