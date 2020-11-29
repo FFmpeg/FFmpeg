@@ -1911,7 +1911,7 @@ const AVCodec ff_iff_ilbm_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
