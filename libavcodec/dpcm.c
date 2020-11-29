@@ -419,6 +419,7 @@ const AVCodec ff_ ## name_ ## _decoder = {                        \
     .init           = dpcm_decode_init,                     \
     .decode         = dpcm_decode_frame,                    \
     .capabilities   = AV_CODEC_CAP_DR1,                     \
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 }
 
 DPCM_DECODER(AV_CODEC_ID_DERF_DPCM,      derf_dpcm,      "DPCM Xilam DERF");
