@@ -409,6 +409,7 @@ const AVCodec ff_adpcm_g726_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &g726_class,
     .defaults       = defaults,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -433,6 +434,7 @@ const AVCodec ff_adpcm_g726le_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &g726le_class,
     .defaults       = defaults,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
