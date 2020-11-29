@@ -1120,4 +1120,5 @@ const AVCodec ff_g723_1_decoder = {
     .decode         = g723_1_decode_frame,
     .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .priv_class     = &g723_1dec_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
