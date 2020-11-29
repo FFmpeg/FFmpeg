@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/thread.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
@@ -54,10 +55,25 @@ typedef struct InterplayACMContext {
     int *midbuf;
 } InterplayACMContext;
 
+static av_cold void decode_init_static(void)
+{
+    for (int x3 = 0; x3 < 3; x3++)
+        for (int x2 = 0; x2 < 3; x2++)
+            for (int x1 = 0; x1 < 3; x1++)
+                mul_3x3[x1 + x2 * 3 + x3 * 3 * 3] = x1 + (x2 << 4) + (x3 << 8);
+    for (int x3 = 0; x3 < 5; x3++)
+        for (int x2 = 0; x2 < 5; x2++)
+            for (int x1 = 0; x1 < 5; x1++)
+                mul_3x5[x1 + x2 * 5 + x3 * 5 * 5] = x1 + (x2 << 4) + (x3 << 8);
+    for (int x2 = 0; x2 < 11; x2++)
+        for (int x1 = 0; x1 < 11; x1++)
+            mul_2x11[x1 + x2 * 11] = x1 + (x2 << 4);
+}
+
 static av_cold int decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     InterplayACMContext *s = avctx->priv_data;
-    int x1, x2, x3;
 
     if (avctx->extradata_size < 14)
         return AVERROR_INVALIDDATA;
@@ -84,17 +100,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->midbuf  = s->ampbuf + 0x8000;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    for (x3 = 0; x3 < 3; x3++)
-        for (x2 = 0; x2 < 3; x2++)
-            for (x1 = 0; x1 < 3; x1++)
-                mul_3x3[x1 + x2 * 3 + x3* 3 * 3] = x1 + (x2 << 4) + (x3 << 8);
-    for (x3 = 0; x3 < 5; x3++)
-        for (x2 = 0; x2 < 5; x2++)
-            for (x1 = 0; x1 < 5; x1++)
-                mul_3x5[x1 + x2 * 5 + x3 * 5 * 5] = x1 + (x2 << 4) + (x3 << 8);
-    for (x2 = 0; x2 < 11; x2++)
-        for (x1 = 0; x1 < 11; x1++)
-            mul_2x11[x1 + x2 * 11] = x1 + (x2 << 4);
+    ff_thread_once(&init_static_once, decode_init_static);
 
     return 0;
 }
@@ -630,6 +636,6 @@ const AVCodec ff_interplay_acm_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(InterplayACMContext),
 };
