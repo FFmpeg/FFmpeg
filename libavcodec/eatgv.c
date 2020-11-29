@@ -369,4 +369,5 @@ const AVCodec ff_eatgv_decoder = {
     .close          = tgv_decode_end,
     .decode         = tgv_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
