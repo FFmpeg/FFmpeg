@@ -296,7 +296,6 @@ static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
     avctx->channels       = 1;
     avctx->sample_rate    = 11025;
 
-    memset(p->history, 0, sizeof(p->history));
     p->pulse_dec_mode = 1;
     p->avctx          = avctx;
 
