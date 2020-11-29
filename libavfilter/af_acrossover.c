@@ -167,7 +167,7 @@ static av_cold int init(AVFilterContext *ctx)
 
 static void set_lp(BiquadCoeffs *b, double fc, double q, double sr)
 {
-    double omega = M_PI * fc / sr;
+    double omega = 2. * M_PI * fc / sr;
     double cosine = cos(omega);
     double alpha = sin(omega) / (2. * q);
 
@@ -187,7 +187,7 @@ static void set_lp(BiquadCoeffs *b, double fc, double q, double sr)
 
 static void set_hp(BiquadCoeffs *b, double fc, double q, double sr)
 {
-    double omega = M_PI * fc / sr;
+    double omega = 2. * M_PI * fc / sr;
     double cosine = cos(omega);
     double alpha = sin(omega) / (2. * q);
 
@@ -207,7 +207,7 @@ static void set_hp(BiquadCoeffs *b, double fc, double q, double sr)
 
 static void set_ap(BiquadCoeffs *b, double fc, double q, double sr)
 {
-    double omega = M_PI * fc / sr;
+    double omega = 2. * M_PI * fc / sr;
     double cosine = cos(omega);
     double alpha = sin(omega) / (2. * q);
 
@@ -227,7 +227,7 @@ static void set_ap(BiquadCoeffs *b, double fc, double q, double sr)
 
 static void set_ap1(BiquadCoeffs *b, double fc, double sr)
 {
-    double omega = M_PI * fc / sr;
+    double omega = 2. * M_PI * fc / sr;
 
     b->a1 = exp(-omega);
     b->a2 = 0.;
