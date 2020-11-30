@@ -185,4 +185,5 @@ const AVCodec ff_s302m_encoder = {
                                                   AV_CH_LAYOUT_5POINT1_BACK,
                                                   AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX,
                                                   0 }, */
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 };
