@@ -70,7 +70,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     BinkAudioContext *s = avctx->priv_data;
     int sample_rate = avctx->sample_rate;
     int sample_rate_half;
-    int i;
+    int i, ret;
     int frame_len_bits;
 
     /* determine frame length */
@@ -132,11 +132,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->first = 1;
 
     if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT)
-        ff_rdft_init(&s->trans.rdft, frame_len_bits, DFT_C2R);
+        ret = ff_rdft_init(&s->trans.rdft, frame_len_bits, DFT_C2R);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
-        ff_dct_init(&s->trans.dct, frame_len_bits, DCT_III);
+        ret = ff_dct_init(&s->trans.dct, frame_len_bits, DCT_III);
     else
         av_assert0(0);
+    if (ret < 0)
+        return ret;
 
     s->pkt = av_packet_alloc();
     if (!s->pkt)
