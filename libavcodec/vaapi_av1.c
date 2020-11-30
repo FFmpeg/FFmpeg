@@ -56,7 +56,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
     AV1DecContext *s = avctx->priv_data;
     const AV1RawSequenceHeader *seq = s->raw_seq;
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
-    const AV1RawFilmGrainParams *film_grain = &frame_header->film_grain;
+    const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
     VAAPIDecodePicture *pic = s->cur_frame.hwaccel_picture_private;
     VADecPictureParameterBufferAV1 pic_param;
     int8_t bit_depth_idx;
