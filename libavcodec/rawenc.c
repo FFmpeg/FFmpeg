@@ -87,4 +87,5 @@ const AVCodec ff_rawvideo_encoder = {
     .id             = AV_CODEC_ID_RAWVIDEO,
     .init           = raw_encode_init,
     .encode2        = raw_encode,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
