@@ -397,4 +397,5 @@ const AVCodec ff_cdgraphics_decoder = {
     .decode         = cdg_decode_frame,
     .flush          = cdg_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
