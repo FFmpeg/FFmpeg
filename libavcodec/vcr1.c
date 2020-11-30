@@ -130,4 +130,5 @@ const AVCodec ff_vcr1_decoder = {
     .init           = vcr1_decode_init,
     .decode         = vcr1_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
