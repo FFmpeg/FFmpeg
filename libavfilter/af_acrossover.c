@@ -367,9 +367,9 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
         for (int band = 0; band < ctx->nb_outputs && s->first_order; band++) {              \
             if (band & 1) {                                                                 \
                 type *dst = (type *)frames[band]->extended_data[ch];                        \
-                                                                                            \
-                for (int n = 0; n < nb_samples; n++)                                        \
-                    dst[n] *= -one;                                                         \
+                s->fdsp->vector_## ff ##mul_scalar(dst, dst, -one,                          \
+                                                   FFALIGN(nb_samples, sizeof(type)));      \
+                emms_c();                                                                   \
             }                                                                               \
         }                                                                                   \
     }                                                                                       \
