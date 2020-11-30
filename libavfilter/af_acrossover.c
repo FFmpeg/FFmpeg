@@ -288,7 +288,25 @@ static void biquad_process_## name(const BiquadCoeffs *const c,\
     type z1 = b->z1;                                           \
     type z2 = b->z2;                                           \
                                                                \
-    for (int n = 0; n < nb_samples; n++) {                     \
+    for (int n = 0; n + 1 < nb_samples; n++) {                 \
+        type in = src[n];                                      \
+        type out;                                              \
+                                                               \
+        out = in * b0 + z1;                                    \
+        z1 = b1 * in + z2 + a1 * out;                          \
+        z2 = b2 * in + a2 * out;                               \
+        dst[n] = out;                                          \
+                                                               \
+        n++;                                                   \
+        in = src[n];                                           \
+        out = in * b0 + z1;                                    \
+        z1 = b1 * in + z2 + a1 * out;                          \
+        z2 = b2 * in + a2 * out;                               \
+        dst[n] = out;                                          \
+    }                                                          \
+                                                               \
+    if (nb_samples & 1) {                                      \
+        const int n = nb_samples - 1;                          \
         const type in = src[n];                                \
         type out;                                              \
                                                                \
