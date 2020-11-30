@@ -80,4 +80,5 @@ const AVCodec ff_v308_decoder = {
     .init         = v308_decode_init,
     .decode       = v308_decode_frame,
     .capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
