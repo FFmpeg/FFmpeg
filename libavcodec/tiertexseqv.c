@@ -271,4 +271,5 @@ const AVCodec ff_tiertexseqvideo_decoder = {
     .close          = seqvideo_decode_end,
     .decode         = seqvideo_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
