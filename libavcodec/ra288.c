@@ -246,4 +246,5 @@ const AVCodec ff_ra_288_decoder = {
     .init           = ra288_decode_init,
     .decode         = ra288_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
