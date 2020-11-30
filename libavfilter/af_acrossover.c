@@ -339,7 +339,6 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
                                                                                             \
         s->fdsp->vector_## ff ##mul_scalar((type *)frames[0]->extended_data[ch], src,       \
                                     s->level_in, FFALIGN(nb_samples, sizeof(type)));        \
-        emms_c();                                                                           \
                                                                                             \
         for (int band = 0; band < ctx->nb_outputs; band++) {                                \
             for (int f = 0; band + 1 < ctx->nb_outputs && f < s->filter_count; f++) {       \
@@ -387,7 +386,6 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
                 type *dst = (type *)frames[band]->extended_data[ch];                        \
                 s->fdsp->vector_## ff ##mul_scalar(dst, dst, -one,                          \
                                                    FFALIGN(nb_samples, sizeof(type)));      \
-                emms_c();                                                                   \
             }                                                                               \
         }                                                                                   \
     }                                                                                       \
