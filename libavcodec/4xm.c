@@ -31,6 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "bswapdsp.h"
@@ -246,7 +247,7 @@ static void idct(int16_t block[64])
     }
 }
 
-static av_cold void init_vlcs(FourXContext *f)
+static av_cold void init_vlcs(void)
 {
     static VLC_TYPE table[2][4][32][2];
     int i, j;
@@ -988,6 +989,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     FourXContext * const f = avctx->priv_data;
     int ret;
 
@@ -1015,12 +1017,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_blockdsp_init(&f->bdsp, avctx);
     ff_bswapdsp_init(&f->bbdsp);
     f->avctx = avctx;
-    init_vlcs(f);
 
     if (f->version > 2)
         avctx->pix_fmt = AV_PIX_FMT_RGB565;
     else
         avctx->pix_fmt = AV_PIX_FMT_BGR555;
+
+    ff_thread_once(&init_static_once, init_vlcs);
 
     return 0;
 }
@@ -1035,4 +1038,5 @@ const AVCodec ff_fourxm_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
