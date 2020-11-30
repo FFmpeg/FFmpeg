@@ -2662,6 +2662,32 @@ Default value is 20.
 
 This filter supports the all above options as @ref{commands}.
 
+@section asubcut
+Cut subwoofer frequencies.
+
+This filter allows to set custom, steeper
+roll off than highpass filter, and thus is able to more attenuate
+frequency content in stop-band.
+
+The filter accepts the following options:
+
+@table @option
+@item cutoff
+Set cutoff frequency in Hertz. Allowed range is 2 to 200.
+Default value is 20.
+
+@item order
+Set filter order. Available values are from 3 to 20.
+Default value is 10.
+
+@item level
+Set input gain level. Allowed range is from 0 to 1. Default value is 1.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section asupercut
 Cut super frequencies.
 
@@ -2675,6 +2701,9 @@ Default value is 20000.
 @item order
 Set filter order. Available values are from 3 to 20.
 Default value is 10.
+
+@item level
+Set input gain level. Allowed range is from 0 to 1. Default value is 1.
 @end table
 
 @subsection Commands

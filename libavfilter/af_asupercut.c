@@ -32,6 +32,7 @@ typedef struct ASuperCutContext {
     const AVClass *class;
 
     double cutoff;
+    double level;
     int order;
 
     int filter_count;
@@ -95,27 +96,52 @@ static int get_coeffs(AVFilterContext *ctx)
     s->filter_count = s->order / 2 + (s->order & 1);
     calc_q_factors(s->order, q);
 
-    if (s->order & 1) {
-        BiquadCoeffs *coeffs = &s->coeffs[0];
-        double omega = 2. * tan(M_PI * w0);
+    if (!strcmp(ctx->filter->name, "asubcut")) {
+        if (s->order & 1) {
+            BiquadCoeffs *coeffs = &s->coeffs[0];
+            double omega = 2. * tan(M_PI * w0);
 
-        coeffs->b0 = omega / (2. + omega);
-        coeffs->b1 = coeffs->b0;
-        coeffs->b2 = 0.;
-        coeffs->a1 = -(omega - 2.) / (2. + omega);
-        coeffs->a2 = 0.;
-    }
+            coeffs->b0 = 2. / (2. + omega);
+            coeffs->b1 = -coeffs->b0;
+            coeffs->b2 = 0.;
+            coeffs->a1 = -(omega - 2.) / (2. + omega);
+            coeffs->a2 = 0.;
+        }
 
-    for (int b = (s->order & 1); b < s->filter_count; b++) {
-        BiquadCoeffs *coeffs = &s->coeffs[b];
-        const int idx = b - (s->order & 1);
-        double norm = 1.0 / (1.0 + K / q[idx] + K * K);
+        for (int b = (s->order & 1); b < s->filter_count; b++) {
+            BiquadCoeffs *coeffs = &s->coeffs[b];
+            const int idx = b - (s->order & 1);
+            double norm = 1.0 / (1.0 + K / q[idx] + K * K);
 
-        coeffs->b0 = K * K * norm;
-        coeffs->b1 = 2.0 * coeffs->b0;
-        coeffs->b2 = coeffs->b0;
-        coeffs->a1 = -2.0 * (K * K - 1.0) * norm;
-        coeffs->a2 = -(1.0 - K / q[idx] + K * K) * norm;
+            coeffs->b0 = norm;
+            coeffs->b1 = -2.0 * coeffs->b0;
+            coeffs->b2 = coeffs->b0;
+            coeffs->a1 = -2.0 * (K * K - 1.0) * norm;
+            coeffs->a2 = -(1.0 - K / q[idx] + K * K) * norm;
+        }
+    } else {
+        if (s->order & 1) {
+            BiquadCoeffs *coeffs = &s->coeffs[0];
+            double omega = 2. * tan(M_PI * w0);
+
+            coeffs->b0 = omega / (2. + omega);
+            coeffs->b1 = coeffs->b0;
+            coeffs->b2 = 0.;
+            coeffs->a1 = -(omega - 2.) / (2. + omega);
+            coeffs->a2 = 0.;
+        }
+
+        for (int b = (s->order & 1); b < s->filter_count; b++) {
+            BiquadCoeffs *coeffs = &s->coeffs[b];
+            const int idx = b - (s->order & 1);
+            double norm = 1.0 / (1.0 + K / q[idx] + K * K);
+
+            coeffs->b0 = K * K * norm;
+            coeffs->b1 = 2.0 * coeffs->b0;
+            coeffs->b2 = coeffs->b0;
+            coeffs->a1 = -2.0 * (K * K - 1.0) * norm;
+            coeffs->a2 = -(1.0 - K / q[idx] + K * K) * norm;
+        }
     }
 
     return 0;
@@ -135,6 +161,7 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, \
     AVFrame *in = td->in;                                           \
     const int start = (in->channels * jobnr) / nb_jobs;             \
     const int end = (in->channels * (jobnr+1)) / nb_jobs;           \
+    const double level = s->level;                                  \
                                                                     \
     for (int ch = start; ch < end; ch++) {                          \
         const type *src = (const type *)in->extended_data[ch];      \
@@ -150,7 +177,7 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, \
             type *w = ((type *)s->w->extended_data[ch]) + b * 2;    \
                                                                     \
             for (int n = 0; n < in->nb_samples; n++) {              \
-                type sin = b ? dst[n] : src[n];                     \
+                type sin = b ? dst[n] : src[n] * level;             \
                 type sout = sin * b0 + w[0];                        \
                                                                     \
                 w[0] = b1 * sin + w[1] + a1 * sout;                 \
@@ -240,6 +267,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 static const AVOption asupercut_options[] = {
     { "cutoff", "set cutoff frequency", OFFSET(cutoff), AV_OPT_TYPE_DOUBLE, {.dbl=20000}, 20000, 192000, FLAGS },
     { "order",  "set filter order",     OFFSET(order),  AV_OPT_TYPE_INT,    {.i64=10},        3,     20, FLAGS },
+    { "level",  "set input level",      OFFSET(level),  AV_OPT_TYPE_DOUBLE, {.dbl=1.},        0.,    1., FLAGS },
     { NULL }
 };
 
@@ -269,6 +297,29 @@ AVFilter ff_af_asupercut = {
     .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asupercut_class,
+    .uninit          = uninit,
+    .inputs          = inputs,
+    .outputs         = outputs,
+    .process_command = process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
+};
+
+static const AVOption asubcut_options[] = {
+    { "cutoff", "set cutoff frequency", OFFSET(cutoff), AV_OPT_TYPE_DOUBLE, {.dbl=20},  2, 200, FLAGS },
+    { "order",  "set filter order",     OFFSET(order),  AV_OPT_TYPE_INT,    {.i64=10},  3,  20, FLAGS },
+    { "level",  "set input level",      OFFSET(level),  AV_OPT_TYPE_DOUBLE, {.dbl=1.}, 0.,  1., FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(asubcut);
+
+AVFilter ff_af_asubcut = {
+    .name            = "asubcut",
+    .description     = NULL_IF_CONFIG_SMALL("Cut subwoofer frequencies."),
+    .query_formats   = query_formats,
+    .priv_size       = sizeof(ASuperCutContext),
+    .priv_class      = &asubcut_class,
     .uninit          = uninit,
     .inputs          = inputs,
     .outputs         = outputs,

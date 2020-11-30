@@ -48,6 +48,7 @@ version <next>:
 - speechnorm filter
 - SpeedHQ encoder
 - asupercut filter
+- asubcut filter
 
 
 version 4.3:

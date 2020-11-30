@@ -90,6 +90,7 @@ OBJS-$(CONFIG_ASR_FILTER)                    += af_asr.o
 OBJS-$(CONFIG_ASTATS_FILTER)                 += af_astats.o
 OBJS-$(CONFIG_ASTREAMSELECT_FILTER)          += f_streamselect.o framesync.o
 OBJS-$(CONFIG_ASUBBOOST_FILTER)              += af_asubboost.o
+OBJS-$(CONFIG_ASUBCUT_FILTER)                += af_asupercut.o
 OBJS-$(CONFIG_ASUPERCUT_FILTER)              += af_asupercut.o
 OBJS-$(CONFIG_ATEMPO_FILTER)                 += af_atempo.o
 OBJS-$(CONFIG_ATRIM_FILTER)                  += trim.o
