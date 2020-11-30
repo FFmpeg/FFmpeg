@@ -81,4 +81,5 @@ const AVCodec ff_targa_y216_decoder = {
     .init         = y216_decode_init,
     .decode       = y216_decode_frame,
     .capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
