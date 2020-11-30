@@ -187,4 +187,5 @@ const AVCodec ff_kgv1_decoder = {
     .decode         = decode_frame,
     .flush          = decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
