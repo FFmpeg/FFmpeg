@@ -1263,11 +1263,7 @@ VLC     ff_dca_vlc_rsd;
 av_cold void ff_dca_init_vlcs(void)
 {
     static VLC_TYPE dca_table[30214][2];
-    static int vlcs_initialized = 0;
     int i, j, k = 0;
-
-    if (vlcs_initialized)
-        return;
 
 #define DCA_INIT_VLC(vlc, a, b, c, d)                                       \
     do {                                                                    \
@@ -1331,8 +1327,6 @@ av_cold void ff_dca_init_vlcs(void)
     LBR_INIT_VLC(ff_dca_vlc_grid_2,      grid_2,      9);
     LBR_INIT_VLC(ff_dca_vlc_grid_3,      grid_3,      9);
     LBR_INIT_VLC(ff_dca_vlc_rsd,         rsd,         6);
-
-    vlcs_initialized = 1;
 }
 
 uint32_t ff_dca_vlc_calc_quant_bits(int *values, uint8_t n, uint8_t sel, uint8_t table)

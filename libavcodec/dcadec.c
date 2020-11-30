@@ -20,6 +20,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/thread.h"
 
 #include "dcadec.h"
 #include "dcahuff.h"
@@ -318,8 +319,15 @@ static av_cold int dcadec_close(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold void dcadec_init_static(void)
+{
+    ff_dca_lbr_init_tables();
+    ff_dca_init_vlcs();
+}
+
 static av_cold int dcadec_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     DCAContext *s = avctx->priv_data;
 
     s->avctx = avctx;
@@ -327,8 +335,6 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
     s->exss.avctx = avctx;
     s->xll.avctx = avctx;
     s->lbr.avctx = avctx;
-
-    ff_dca_init_vlcs();
 
     if (ff_dca_core_init(&s->core) < 0)
         return AVERROR(ENOMEM);
@@ -361,6 +367,8 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING, "Invalid request_channel_layout\n");
         break;
     }
+
+    ff_thread_once(&init_static_once, dcadec_init_static);
 
     return 0;
 }
@@ -396,5 +404,5 @@ const AVCodec ff_dca_decoder = {
                                                       AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE },
     .priv_class     = &dcadec_class,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

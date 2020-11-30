@@ -124,21 +124,15 @@ static const uint16_t channel_layouts[7] = {
 static float    cos_tab[256];
 static float    lpc_tab[16];
 
-static av_cold void init_tables(void)
+av_cold void ff_dca_lbr_init_tables(void)
 {
-    static int initialized;
     int i;
-
-    if (initialized)
-        return;
 
     for (i = 0; i < 256; i++)
         cos_tab[i] = cos(M_PI * i / 128);
 
     for (i = 0; i < 16; i++)
         lpc_tab[i] = sin((i - 8) * (M_PI / ((i < 8) ? 17 : 15)));
-
-    initialized = 1;
 }
 
 static int parse_lfe_24(DCALbrDecoder *s)
@@ -1818,8 +1812,6 @@ av_cold void ff_dca_lbr_flush(DCALbrDecoder *s)
 
 av_cold int ff_dca_lbr_init(DCALbrDecoder *s)
 {
-    init_tables();
-
     if (!(s->fdsp = avpriv_float_dsp_alloc(0)))
         return AVERROR(ENOMEM);
 
