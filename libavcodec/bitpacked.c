@@ -150,4 +150,5 @@ const AVCodec ff_bitpacked_decoder = {
         MKTAG('U', 'Y', 'V', 'Y'),
         FF_CODEC_TAGS_END,
     },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
