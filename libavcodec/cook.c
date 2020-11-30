@@ -45,6 +45,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/thread.h"
 
 #include "audiodsp.h"
 #include "avcodec.h"
@@ -1071,6 +1072,7 @@ static void dump_cook_context(COOKContext *q)
  */
 static av_cold int cook_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     COOKContext *q = avctx->priv_data;
     GetByteContext gb;
     int s = 0;
@@ -1249,7 +1251,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     }
 
     /* Generate tables */
-    init_pow2table();
+    ff_thread_once(&init_static_once, init_pow2table);
     init_gain_table(q);
     init_cplscales_table(q);
 
@@ -1301,7 +1303,7 @@ const AVCodec ff_cook_decoder = {
     .close          = cook_decode_close,
     .decode         = cook_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
