@@ -198,4 +198,5 @@ const AVCodec ff_adpcm_adx_encoder = {
     .capabilities   = AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
