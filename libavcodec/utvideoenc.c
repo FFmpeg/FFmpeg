@@ -167,7 +167,6 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     if (!avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata.\n");
-        utvideo_encode_close(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -176,7 +175,6 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
                                        AV_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
-            utvideo_encode_close(avctx);
             return AVERROR(ENOMEM);
         }
     }
@@ -664,5 +662,5 @@ const AVCodec ff_utvideo_encoder = {
                           AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_YUV422P,
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
                       },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
