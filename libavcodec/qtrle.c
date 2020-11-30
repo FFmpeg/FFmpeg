@@ -592,4 +592,5 @@ const AVCodec ff_qtrle_decoder = {
     .decode         = qtrle_decode_frame,
     .flush          = qtrle_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
