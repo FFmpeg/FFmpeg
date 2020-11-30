@@ -568,6 +568,11 @@ static int load_font(AVFilterContext *ctx)
     return err;
 }
 
+static inline int is_newline(uint32_t c)
+{
+    return c == '\n' || c == '\r' || c == '\f' || c == '\v';
+}
+
 static int load_textfile(AVFilterContext *ctx)
 {
     DrawTextContext *s = ctx->priv;
@@ -583,6 +588,8 @@ static int load_textfile(AVFilterContext *ctx)
         return err;
     }
 
+    if (textbuf_size > 0 && is_newline(textbuf[textbuf_size - 1]))
+        textbuf_size--;
     if (textbuf_size > SIZE_MAX - 1 || !(tmp = av_realloc(s->text, textbuf_size + 1))) {
         av_file_unmap(textbuf, textbuf_size);
         return AVERROR(ENOMEM);
@@ -593,11 +600,6 @@ static int load_textfile(AVFilterContext *ctx)
     av_file_unmap(textbuf, textbuf_size);
 
     return 0;
-}
-
-static inline int is_newline(uint32_t c)
-{
-    return c == '\n' || c == '\r' || c == '\f' || c == '\v';
 }
 
 #if CONFIG_LIBFRIBIDI
