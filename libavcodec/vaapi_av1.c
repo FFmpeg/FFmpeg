@@ -115,15 +115,27 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
             .temporal_update = frame_header->segmentation_temporal_update,
             .update_data     = frame_header->segmentation_update_data,
         },
-        .film_grain_info.film_grain_info_fields.bits = {
-            .apply_grain              = film_grain->apply_grain,
-            .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
-            .grain_scaling_minus_8    = film_grain->grain_scaling_minus_8,
-            .ar_coeff_lag             = film_grain->ar_coeff_lag,
-            .ar_coeff_shift_minus_6   = film_grain->ar_coeff_shift_minus_6,
-            .grain_scale_shift        = film_grain->grain_scale_shift,
-            .overlap_flag             = film_grain->overlap_flag,
-            .clip_to_restricted_range = film_grain->clip_to_restricted_range,
+        .film_grain_info = {
+            .film_grain_info_fields.bits = {
+                .apply_grain              = film_grain->apply_grain,
+                .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
+                .grain_scaling_minus_8    = film_grain->grain_scaling_minus_8,
+                .ar_coeff_lag             = film_grain->ar_coeff_lag,
+                .ar_coeff_shift_minus_6   = film_grain->ar_coeff_shift_minus_6,
+                .grain_scale_shift        = film_grain->grain_scale_shift,
+                .overlap_flag             = film_grain->overlap_flag,
+                .clip_to_restricted_range = film_grain->clip_to_restricted_range,
+            },
+            .grain_seed    = film_grain->grain_seed,
+            .num_y_points  = film_grain->num_y_points,
+            .num_cb_points = film_grain->num_cb_points,
+            .num_cr_points = film_grain->num_cr_points,
+            .cb_mult       = film_grain->cb_mult,
+            .cb_luma_mult  = film_grain->cb_luma_mult,
+            .cb_offset     = film_grain->cb_offset,
+            .cr_mult       = film_grain->cr_mult,
+            .cr_luma_mult  = film_grain->cr_luma_mult,
+            .cr_offset     = film_grain->cr_offset,
         },
         .pic_info_fields.bits = {
             .frame_type                   = frame_header->frame_type,
@@ -202,6 +214,36 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         pic_param.wm[i - 1].wmtype = s->cur_frame.gm_type[i];
         for (int j = 0; j < 6; j++)
             pic_param.wm[i - 1].wmmat[j] = s->cur_frame.gm_params[i][j];
+    }
+    if (film_grain->apply_grain) {
+        for (int i = 0; i < film_grain->num_y_points; i++) {
+            pic_param.film_grain_info.point_y_value[i] =
+                film_grain->point_y_value[i];
+            pic_param.film_grain_info.point_y_scaling[i] =
+                film_grain->point_y_scaling[i];
+        }
+        for (int i = 0; i < film_grain->num_cb_points; i++) {
+            pic_param.film_grain_info.point_cb_value[i] =
+                film_grain->point_cb_value[i];
+            pic_param.film_grain_info.point_cb_scaling[i] =
+                film_grain->point_cb_scaling[i];
+        }
+        for (int i = 0; i < film_grain->num_cr_points; i++) {
+            pic_param.film_grain_info.point_cr_value[i] =
+                film_grain->point_cr_value[i];
+            pic_param.film_grain_info.point_cr_scaling[i] =
+                film_grain->point_cr_scaling[i];
+        }
+        for (int i = 0; i < 24; i++) {
+            pic_param.film_grain_info.ar_coeffs_y[i] =
+                film_grain->ar_coeffs_y_plus_128[i] - 128;
+        }
+        for (int i = 0; i < 25; i++) {
+            pic_param.film_grain_info.ar_coeffs_cb[i] =
+                film_grain->ar_coeffs_cb_plus_128[i] - 128;
+            pic_param.film_grain_info.ar_coeffs_cr[i] =
+                film_grain->ar_coeffs_cr_plus_128[i] - 128;
+        }
     }
     err = ff_vaapi_decode_make_param_buffer(avctx, pic,
                                             VAPictureParameterBufferType,
