@@ -63,7 +63,7 @@ typedef struct AudioGateContext {
 } AudioGateContext;
 
 #define OFFSET(x) offsetof(AudioGateContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption options[] = {
     { "level_in",  "set input level",        OFFSET(level_in),  AV_OPT_TYPE_DOUBLE, {.dbl=1},           0.015625,   64, A },
@@ -268,6 +268,8 @@ AVFilter ff_af_agate = {
     .priv_class     = &agate_class,
     .inputs         = inputs,
     .outputs        = outputs,
+    .process_command = ff_filter_process_command,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 #endif /* CONFIG_AGATE_FILTER */
@@ -445,5 +447,7 @@ AVFilter ff_af_sidechaingate = {
     .uninit         = uninit,
     .inputs         = sidechaingate_inputs,
     .outputs        = sidechaingate_outputs,
+    .process_command = ff_filter_process_command,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 #endif  /* CONFIG_SIDECHAINGATE_FILTER */

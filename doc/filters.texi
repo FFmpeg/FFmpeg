@@ -1478,6 +1478,10 @@ the reduction.
 Default is @code{average}. Can be @code{average} or @code{maximum}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section aiir
 
 Apply an arbitrary Infinite Impulse Response filter.
@@ -5080,6 +5084,10 @@ Default is average. Can be average or maximum.
 @item level_sc
 Set sidechain gain. Default is 1. Range is from 0.015625 to 64.
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section silencedetect
 
