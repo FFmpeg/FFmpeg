@@ -26,6 +26,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 
 #define DVBSUB_PAGE_SEGMENT     0x10
 #define DVBSUB_REGION_SEGMENT   0x11
@@ -254,31 +255,9 @@ static void delete_regions(DVBSubContext *ctx)
     }
 }
 
-static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
+static av_cold void init_default_clut(void)
 {
     int i, r, g, b, a = 0;
-    DVBSubContext *ctx = avctx->priv_data;
-
-    if (ctx->substream < 0) {
-        ctx->composition_id = -1;
-        ctx->ancillary_id   = -1;
-    } else if (!avctx->extradata || (avctx->extradata_size < 4) || ((avctx->extradata_size % 5 != 0) && (avctx->extradata_size != 4))) {
-        av_log(avctx, AV_LOG_WARNING, "Invalid DVB subtitles stream extradata!\n");
-        ctx->composition_id = -1;
-        ctx->ancillary_id   = -1;
-    } else {
-        if (avctx->extradata_size > 5*ctx->substream + 2) {
-            ctx->composition_id = AV_RB16(avctx->extradata + 5*ctx->substream);
-            ctx->ancillary_id   = AV_RB16(avctx->extradata + 5*ctx->substream + 2);
-        } else {
-            av_log(avctx, AV_LOG_WARNING, "Selected DVB subtitles sub-stream %d is not available\n", ctx->substream);
-            ctx->composition_id = AV_RB16(avctx->extradata);
-            ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
-        }
-    }
-
-    ctx->version = -1;
-    ctx->prev_start = AV_NOPTS_VALUE;
 
     default_clut.id = -1;
     default_clut.next = NULL;
@@ -339,6 +318,35 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
         }
         default_clut.clut256[i] = RGBA(r, g, b, a);
     }
+}
+
+static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    DVBSubContext *ctx = avctx->priv_data;
+
+    if (ctx->substream < 0) {
+        ctx->composition_id = -1;
+        ctx->ancillary_id   = -1;
+    } else if (!avctx->extradata || (avctx->extradata_size < 4) || ((avctx->extradata_size % 5 != 0) && (avctx->extradata_size != 4))) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid DVB subtitles stream extradata!\n");
+        ctx->composition_id = -1;
+        ctx->ancillary_id   = -1;
+    } else {
+        if (avctx->extradata_size > 5*ctx->substream + 2) {
+            ctx->composition_id = AV_RB16(avctx->extradata + 5*ctx->substream);
+            ctx->ancillary_id   = AV_RB16(avctx->extradata + 5*ctx->substream + 2);
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Selected DVB subtitles sub-stream %d is not available\n", ctx->substream);
+            ctx->composition_id = AV_RB16(avctx->extradata);
+            ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
+        }
+    }
+
+    ctx->version = -1;
+    ctx->prev_start = AV_NOPTS_VALUE;
+
+    ff_thread_once(&init_static_once, init_default_clut);
 
     return 0;
 }
@@ -1747,4 +1755,5 @@ const AVCodec ff_dvbsub_decoder = {
     .close          = dvbsub_close_decoder,
     .decode         = dvbsub_decode,
     .priv_class     = &dvbsubdec_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
