@@ -693,28 +693,45 @@ static double process_sample(FoSection *s1, double in)
     return p1;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int filter_channels(AVFilterContext *ctx, void *arg,
+                           int jobnr, int nb_jobs)
 {
-    AVFilterContext *ctx = inlink->dst;
     AudioNEqualizerContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    double *bptr;
-    int i, n;
+    AVFrame *buf = arg;
+    const int start = (buf->channels * jobnr) / nb_jobs;
+    const int end = (buf->channels * (jobnr+1)) / nb_jobs;
 
-    for (i = 0; i < s->nb_filters; i++) {
+    for (int i = 0; i < s->nb_filters; i++) {
         EqualizatorFilter *f = &s->filters[i];
+        double *bptr;
 
         if (f->gain == 0. || f->ignore)
             continue;
+        if (f->channel < start ||
+            f->channel >= end)
+            continue;
 
         bptr = (double *)buf->extended_data[f->channel];
-        for (n = 0; n < buf->nb_samples; n++) {
+        for (int n = 0; n < buf->nb_samples; n++) {
             double sample = bptr[n];
 
             sample  = process_sample(f->section, sample);
             bptr[n] = sample;
         }
     }
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AudioNEqualizerContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+
+    if (!ctx->is_disabled)
+        ctx->internal->execute(ctx, filter_channels, buf, NULL, FFMIN(inlink->channels,
+                                                                ff_filter_get_nb_threads(ctx)));
 
     if (s->draw_curves) {
         AVFrame *clone;
@@ -757,6 +774,8 @@ AVFilter ff_af_anequalizer = {
     .query_formats = query_formats,
     .inputs        = inputs,
     .outputs       = NULL,
-    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .process_command = process_command,
+    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
