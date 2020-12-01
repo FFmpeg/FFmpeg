@@ -724,8 +724,8 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     DVBSubDisplayDefinition *display_def = ctx->display_definition;
     DVBSubRegion *region;
     AVSubtitleRect *rect;
-    DVBSubCLUT *clut;
-    uint32_t *clut_table;
+    const DVBSubCLUT *clut;
+    const uint32_t *clut_table;
     int i;
     int offset_x=0, offset_y=0;
     int ret = 0;
@@ -1443,8 +1443,8 @@ static int save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
     DVBSubRegionDisplay *display;
-    DVBSubCLUT *clut;
-    uint32_t *clut_table;
+    const DVBSubCLUT *clut;
+    const uint32_t *clut_table;
     int x_pos, y_pos, width, height;
     int x, y, y_off, x_off;
     uint32_t *pbuf;
