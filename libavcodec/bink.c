@@ -1312,11 +1312,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
 static av_cold void bink_init_vlcs(void)
 {
-    for (int i = 0; i < 16; i++) {
-        static VLC_TYPE table[16 * 128][2];
+    for (int i = 0, offset = 0; i < 16; i++) {
+        static VLC_TYPE table[976][2];
         const int maxbits = bink_tree_lens[i][15];
-        bink_trees[i].table = table + i*128;
+        bink_trees[i].table           = table + offset;
         bink_trees[i].table_allocated = 1 << maxbits;
+        offset                       += bink_trees[i].table_allocated;
         init_vlc(&bink_trees[i], maxbits, 16,
                  bink_tree_lens[i], 1, 1,
                  bink_tree_bits[i], 1, 1, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);
