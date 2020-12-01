@@ -26,6 +26,7 @@
 
 #include <time.h>
 #include "ass.h"
+#include "internal.h"
 #include "jacosub.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -202,4 +203,5 @@ const AVCodec ff_jacosub_decoder = {
     .decode         = jacosub_decode_frame,
     .flush          = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

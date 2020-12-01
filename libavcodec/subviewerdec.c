@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
+#include "internal.h"
 #include "libavutil/bprint.h"
 
 static int subviewer_event_to_ass(AVBPrint *buf, const char *p)
@@ -74,4 +75,5 @@ const AVCodec ff_subviewer_decoder = {
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

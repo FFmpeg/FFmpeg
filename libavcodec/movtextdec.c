@@ -28,6 +28,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #define STYLE_FLAG_BOLD         (1<<0)
 #define STYLE_FLAG_ITALIC       (1<<1)
@@ -593,4 +594,5 @@ const AVCodec ff_movtext_decoder = {
     .decode       = mov_text_decode_frame,
     .close        = mov_text_decode_close,
     .flush        = mov_text_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

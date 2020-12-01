@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
+#include "internal.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 
@@ -91,6 +92,7 @@ const AVCodec ff_text_decoder = {
     .init           = ff_ass_subtitle_header_default,
     .priv_class     = &text_decoder_class,
     .flush          = text_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -117,6 +119,7 @@ const AVCodec ff_vplayer_decoder = {
     .init           = linebreak_init,
     .priv_class     = &vplayer_decoder_class,
     .flush          = text_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -134,6 +137,7 @@ const AVCodec ff_stl_decoder = {
     .init           = linebreak_init,
     .priv_class     = &stl_decoder_class,
     .flush          = text_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -151,6 +155,7 @@ const AVCodec ff_pjs_decoder = {
     .init           = linebreak_init,
     .priv_class     = &pjs_decoder_class,
     .flush          = text_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -168,6 +173,7 @@ const AVCodec ff_subviewer1_decoder = {
     .init           = linebreak_init,
     .priv_class     = &subviewer1_decoder_class,
     .flush          = text_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 

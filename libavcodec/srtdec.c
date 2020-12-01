@@ -26,6 +26,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "htmlsubtitles.h"
+#include "internal.h"
 
 static int srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
                        const char *in, int x1, int y1, int x2, int y2)
@@ -97,6 +98,7 @@ const AVCodec ff_srt_decoder = {
     .decode       = srt_decode_frame,
     .flush        = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -110,5 +112,6 @@ const AVCodec ff_subrip_decoder = {
     .decode       = srt_decode_frame,
     .flush        = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
+#include "internal.h"
 #include "libavutil/opt.h"
 
 #define SCREEN_ROWS 15
@@ -952,4 +953,5 @@ const AVCodec ff_ccaption_decoder = {
     .decode         = decode,
     .priv_class     = &ccaption_dec_class,
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

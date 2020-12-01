@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "htmlsubtitles.h"
+#include "internal.h"
 
 typedef struct {
     AVBPrint source;
@@ -190,4 +191,5 @@ const AVCodec ff_sami_decoder = {
     .close          = sami_close,
     .decode         = sami_decode_frame,
     .flush          = sami_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
