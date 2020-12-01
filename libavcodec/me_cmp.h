@@ -79,8 +79,6 @@ typedef struct MECmpContext {
     me_cmp_func median_sad[6];
 } MECmpContext;
 
-int ff_check_alignment(void);
-
 void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_alpha(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_arm(MECmpContext *c, AVCodecContext *avctx);

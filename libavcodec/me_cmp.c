@@ -1012,31 +1012,8 @@ WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WRAPPER8_16_SQ(rd8x8_c, rd16_c)
 WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
-int ff_check_alignment(void)
-{
-    static int did_fail = 0;
-    LOCAL_ALIGNED_16(int, aligned, [4]);
-
-    if ((intptr_t)aligned & 15) {
-        if (!did_fail) {
-#if HAVE_MMX || HAVE_ALTIVEC
-            av_log(NULL, AV_LOG_ERROR,
-                "Compiler did not align stack variables. Libavcodec has been miscompiled\n"
-                "and may be very slow or crash. This is not a bug in libavcodec,\n"
-                "but in the compiler. You may try recompiling using gcc >= 4.2.\n"
-                "Do not report crashes to FFmpeg developers.\n");
-#endif
-            did_fail=1;
-        }
-        return -1;
-    }
-    return 0;
-}
-
 av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
 {
-    ff_check_alignment();
-
     c->sum_abs_dctelem = sum_abs_dctelem_c;
 
     /* TODO [0] 16  [1] 8 */
