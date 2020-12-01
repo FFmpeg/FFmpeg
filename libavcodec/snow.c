@@ -21,6 +21,7 @@
 #include "libavutil/intmath.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "me_cmp.h"
 #include "snow_dwt.h"
@@ -427,10 +428,19 @@ mca( 8, 0,8)
 mca( 0, 8,8)
 mca( 8, 8,8)
 
+static av_cold void snow_static_init(void)
+{
+    for (int i = 0; i < MAX_REF_FRAMES; i++)
+        for (int j = 0; j < MAX_REF_FRAMES; j++)
+            ff_scale_mv_ref[i][j] = 256 * (i + 1) / (j + 1);
+    init_qexp();
+}
+
 av_cold int ff_snow_common_init(AVCodecContext *avctx){
+    static AVOnce init_static_once = AV_ONCE_INIT;
     SnowContext *s = avctx->priv_data;
     int width, height;
-    int i, j;
+    int i;
 
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure it's not an invalid value in case of no initial keyframe
@@ -480,8 +490,6 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     mcfh(0, 8)
     mcfh(8, 8)
 
-    init_qexp();
-
 //    dec += FFMAX(s->chroma_h_shift, s->chroma_v_shift);
 
     width= s->avctx->width;
@@ -495,8 +503,6 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
         return AVERROR(ENOMEM);
 
     for(i=0; i<MAX_REF_FRAMES; i++) {
-        for(j=0; j<MAX_REF_FRAMES; j++)
-            ff_scale_mv_ref[i][j] = 256*(i+1)/(j+1);
         s->last_picture[i] = av_frame_alloc();
         if (!s->last_picture[i])
             return AVERROR(ENOMEM);
@@ -506,6 +512,8 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->current_picture = av_frame_alloc();
     if (!s->mconly_picture || !s->current_picture)
         return AVERROR(ENOMEM);
+
+    ff_thread_once(&init_static_once, snow_static_init);
 
     return 0;
 }
