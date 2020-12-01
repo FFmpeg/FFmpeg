@@ -142,6 +142,10 @@ typedef struct MJpegDecodeContext {
     int iccnum;
     int iccread;
 
+    AVFrame *smv_frame;
+    int smv_frames_per_jpeg;
+    int smv_next_frame;
+
     // Raw stream data for hwaccel use.
     const uint8_t *raw_image_buffer;
     size_t         raw_image_buffer_size;

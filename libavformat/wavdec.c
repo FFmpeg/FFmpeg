@@ -58,7 +58,6 @@ typedef struct WAVDemuxContext {
     int ignore_length;
     int max_size;
     int spdif;
-    int smv_cur_pt;
     int smv_given_first;
     int unaligned; // e.g. if an odd number of bytes ID3 tag was prepended
     int rifx; // RIFX: integer byte order for parameters is big endian
@@ -497,7 +496,6 @@ static int wav_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
             AV_WL32(vst->codecpar->extradata, wav->smv_frames_per_jpeg);
-            wav->smv_cur_pt = 0;
             goto break_loop;
         case MKTAG('L', 'I', 'S', 'T'):
         case MKTAG('l', 'i', 's', 't'):
@@ -717,12 +715,9 @@ smv_retry:
             if (ret < 0)
                 goto smv_out;
             pkt->pos -= 3;
-            pkt->pts = wav->smv_block * wav->smv_frames_per_jpeg + wav->smv_cur_pt;
-            wav->smv_cur_pt++;
-            if (wav->smv_frames_per_jpeg > 0)
-                wav->smv_cur_pt %= wav->smv_frames_per_jpeg;
-            if (!wav->smv_cur_pt)
-                wav->smv_block++;
+            pkt->pts = wav->smv_block * wav->smv_frames_per_jpeg;
+            pkt->duration = wav->smv_frames_per_jpeg;
+            wav->smv_block++;
 
             pkt->stream_index = 1;
 smv_out:
@@ -784,7 +779,6 @@ static int wav_read_seek(AVFormatContext *s,
             timestamp = av_rescale_q(smv_timestamp, s->streams[1]->time_base, s->streams[0]->time_base);
         if (wav->smv_frames_per_jpeg > 0) {
             wav->smv_block = smv_timestamp / wav->smv_frames_per_jpeg;
-            wav->smv_cur_pt = smv_timestamp % wav->smv_frames_per_jpeg;
         }
     }
 

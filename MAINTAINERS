@@ -235,7 +235,6 @@ Codecs:
   rv10.c                                Michael Niedermayer
   s3tc*                                 Ivo van Poorten
   smc.c                                 Mike Melanson
-  smvjpegdec.c                          Ash Hughes
   snow*                                 Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
   speedhq.c                             Steinar H. Gunderson

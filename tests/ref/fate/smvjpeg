@@ -2,7 +2,7 @@
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 128x160
-#sar 0: 0/1
+#sar 0: 72/72
 0,          0,          0,        1,    30720, 0x3a821807
 0,          1,          1,        1,    30720, 0x95168e5d
 0,          2,          2,        1,    30720, 0xd4d98e45

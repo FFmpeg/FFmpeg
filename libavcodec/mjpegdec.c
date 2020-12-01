@@ -198,7 +198,19 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
             s->interlace_polarity = 1;
     }
 
-    if (   avctx->extradata_size > 8
+    if (avctx->codec_id == AV_CODEC_ID_SMVJPEG) {
+        if (avctx->extradata_size >= 4)
+            s->smv_frames_per_jpeg = AV_RL32(avctx->extradata);
+
+        if (s->smv_frames_per_jpeg <= 0) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid number of frames per jpeg.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        s->smv_frame = av_frame_alloc();
+        if (!s->smv_frame)
+            return AVERROR(ENOMEM);
+    } else if (avctx->extradata_size > 8
         && AV_RL32(avctx->extradata) == 0x2C
         && AV_RL32(avctx->extradata+4) == 0x18) {
         parse_avid(s, avctx->extradata, avctx->extradata_size);
@@ -470,6 +482,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->first_picture = 0;
     } else {
         size_change = 0;
+    }
+
+    if (s->avctx->codec_id == AV_CODEC_ID_SMVJPEG) {
+        s->avctx->height = s->avctx->coded_height / s->smv_frames_per_jpeg;
+        if (s->avctx->height <= 0)
+            return AVERROR_INVALIDDATA;
     }
 
     if (s->got_picture && s->interlaced && (s->bottom_field == !s->interlace_polarity)) {
@@ -2336,6 +2354,42 @@ static void reset_icc_profile(MJpegDecodeContext *s)
     s->iccnum  = 0;
 }
 
+// SMV JPEG just stacks several output frames into one JPEG picture
+// we handle that by setting up the cropping parameters appropriately
+static int smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    MJpegDecodeContext *s = avctx->priv_data;
+    int ret;
+
+    if (s->smv_next_frame > 0) {
+        av_assert0(s->smv_frame->buf[0]);
+        av_frame_unref(frame);
+        ret = av_frame_ref(frame, s->smv_frame);
+        if (ret < 0)
+            return ret;
+    } else {
+        av_assert0(frame->buf[0]);
+        av_frame_unref(s->smv_frame);
+        ret = av_frame_ref(s->smv_frame, frame);
+        if (ret < 0)
+            return ret;
+    }
+
+    av_assert0((s->smv_next_frame + 1) * avctx->height <= avctx->coded_height);
+
+    frame->width       = avctx->coded_width;
+    frame->height      = avctx->coded_height;
+    frame->crop_top    = FFMIN(s->smv_next_frame * avctx->height, frame->height);
+    frame->crop_bottom = frame->height - (s->smv_next_frame + 1) * avctx->height;
+
+    s->smv_next_frame = (s->smv_next_frame + 1) % s->smv_frames_per_jpeg;
+
+    if (s->smv_next_frame == 0)
+        av_frame_unref(s->smv_frame);
+
+    return 0;
+}
+
 static int mjpeg_get_packet(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
@@ -2371,6 +2425,9 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     int i, index;
     int ret = 0;
     int is16bit;
+
+    if (avctx->codec_id == AV_CODEC_ID_SMVJPEG && s->smv_next_frame > 0)
+        return smv_process_frame(avctx, frame);
 
     av_dict_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
@@ -2833,6 +2890,14 @@ the_end:
     av_dict_copy(&frame->metadata, s->exif_metadata, 0);
     av_dict_free(&s->exif_metadata);
 
+    if (avctx->codec_id == AV_CODEC_ID_SMVJPEG) {
+        ret = smv_process_frame(avctx, frame);
+        if (ret < 0) {
+            av_frame_unref(frame);
+            return ret;
+        }
+    }
+
     ret = 0;
 
 the_end_no_picture:
@@ -2861,6 +2926,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 
     av_packet_free(&s->pkt);
 
+    av_frame_free(&s->smv_frame);
+
     av_freep(&s->buffer);
     av_freep(&s->stereo3d);
     av_freep(&s->ljpeg_buffer);
@@ -2887,6 +2954,9 @@ static void decode_flush(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
     s->got_picture = 0;
+
+    s->smv_next_frame = 0;
+    av_frame_unref(s->smv_frame);
 }
 
 #if CONFIG_MJPEG_DECODER
@@ -2946,6 +3016,23 @@ AVCodec ff_thp_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif
+
+#if CONFIG_SMVJPEG_DECODER
+AVCodec ff_smvjpeg_decoder = {
+    .name           = "smvjpeg",
+    .long_name      = NULL_IF_CONFIG_SMALL("SMV JPEG"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_SMVJPEG,
+    .priv_data_size = sizeof(MJpegDecodeContext),
+    .init           = ff_mjpeg_decode_init,
+    .close          = ff_mjpeg_decode_end,
+    .receive_frame  = ff_mjpeg_receive_frame,
+    .flush          = decode_flush,
+    .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING |
                       FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
