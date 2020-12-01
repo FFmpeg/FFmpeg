@@ -718,5 +718,5 @@ const AVCodec ff_movtext_encoder = {
     .init           = mov_text_encode_init,
     .encode_sub     = mov_text_encode_frame,
     .close          = mov_text_encode_close,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

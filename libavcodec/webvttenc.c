@@ -26,6 +26,7 @@
 #include "libavutil/bprint.h"
 #include "ass_split.h"
 #include "ass.h"
+#include "internal.h"
 
 #define WEBVTT_STACK_SIZE 64
 typedef struct {
@@ -219,4 +220,5 @@ const AVCodec ff_webvtt_encoder = {
     .init           = webvtt_encode_init,
     .encode_sub     = webvtt_encode_frame,
     .close          = webvtt_encode_close,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

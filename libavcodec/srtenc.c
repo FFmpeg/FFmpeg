@@ -25,6 +25,7 @@
 #include "libavutil/bprint.h"
 #include "ass_split.h"
 #include "ass.h"
+#include "internal.h"
 
 
 #define SRT_STACK_SIZE 64
@@ -299,6 +300,7 @@ const AVCodec ff_srt_encoder = {
     .init           = srt_encode_init,
     .encode_sub     = srt_encode_frame,
     .close          = srt_encode_close,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -312,6 +314,7 @@ const AVCodec ff_subrip_encoder = {
     .init           = srt_encode_init,
     .encode_sub     = srt_encode_frame,
     .close          = srt_encode_close,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -325,5 +328,6 @@ const AVCodec ff_text_encoder = {
     .init           = srt_encode_init,
     .encode_sub     = text_encode_frame,
     .close          = srt_encode_close,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
