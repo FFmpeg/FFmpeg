@@ -49,6 +49,8 @@ typedef struct MJpegDecodeContext {
     GetBitContext gb;
     int buf_size;
 
+    AVPacket *pkt;
+
     int start_code; /* current start code */
     int buffer_size;
     uint8_t *buffer;
@@ -156,9 +158,7 @@ typedef struct MJpegDecodeContext {
 
 int ff_mjpeg_decode_init(AVCodecContext *avctx);
 int ff_mjpeg_decode_end(AVCodecContext *avctx);
-int ff_mjpeg_decode_frame(AVCodecContext *avctx,
-                          void *data, int *got_frame,
-                          AVPacket *avpkt);
+int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame);
 int ff_mjpeg_decode_dqt(MJpegDecodeContext *s);
 int ff_mjpeg_decode_dht(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s);
@@ -168,5 +168,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
 int ff_mjpeg_find_marker(MJpegDecodeContext *s,
                          const uint8_t **buf_ptr, const uint8_t *buf_end,
                          const uint8_t **unescaped_buf_ptr, int *unescaped_buf_size);
+
+int ff_sp5x_process_packet(AVCodecContext *avctx, AVPacket *avpkt);
 
 #endif /* AVCODEC_MJPEGDEC_H */
