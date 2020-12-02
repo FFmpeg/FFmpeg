@@ -30,6 +30,7 @@
 #include <limits.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
@@ -671,7 +672,7 @@ void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code)
     }
 }
 
-static av_cold void init_mv_penalty_and_fcode(MpegEncContext *s)
+static av_cold void init_mv_penalty_and_fcode(void)
 {
     int f_code;
     int mv;
@@ -754,22 +755,23 @@ static av_cold void init_uni_h263_rl_tab(const RLTable *rl, uint8_t *len_tab)
     }
 }
 
+static av_cold void h263_encode_init_static(void)
+{
+    static uint8_t rl_intra_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
+
+    ff_rl_init(&ff_rl_intra_aic, rl_intra_table);
+    ff_h263_init_rl_inter();
+
+    init_uni_h263_rl_tab(&ff_rl_intra_aic,  uni_h263_intra_aic_rl_len);
+    init_uni_h263_rl_tab(&ff_h263_rl_inter, uni_h263_inter_rl_len);
+
+    init_mv_penalty_and_fcode();
+}
+
 av_cold void ff_h263_encode_init(MpegEncContext *s)
 {
-    static int done = 0;
+    static AVOnce init_static_once = AV_ONCE_INIT;
 
-    if (!done) {
-        static uint8_t rl_intra_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
-        done = 1;
-
-        ff_rl_init(&ff_rl_intra_aic, rl_intra_table);
-        ff_h263_init_rl_inter();
-
-        init_uni_h263_rl_tab(&ff_rl_intra_aic,  uni_h263_intra_aic_rl_len);
-        init_uni_h263_rl_tab(&ff_h263_rl_inter, uni_h263_inter_rl_len);
-
-        init_mv_penalty_and_fcode(s);
-    }
     s->me.mv_penalty= mv_penalty; // FIXME exact table for MSMPEG4 & H.263+
 
     s->intra_ac_vlc_length     =s->inter_ac_vlc_length     = uni_h263_inter_rl_len;
@@ -817,6 +819,8 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
+
+    ff_thread_once(&init_static_once, h263_encode_init_static);
 }
 
 void ff_h263_encode_mba(MpegEncContext *s)
