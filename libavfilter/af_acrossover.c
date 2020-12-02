@@ -62,7 +62,7 @@ typedef struct AudioCrossoverContext {
     int first_order;
     int ap_filter_count;
     int nb_splits;
-    float *splits;
+    float splits[MAX_SPLITS];
 
     BiquadCoeffs lp[MAX_BANDS][20];
     BiquadCoeffs hp[MAX_BANDS][20];
@@ -108,10 +108,6 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->fdsp = avpriv_float_dsp_alloc(0);
     if (!s->fdsp)
-        return AVERROR(ENOMEM);
-
-    s->splits = av_calloc(MAX_SPLITS, sizeof(*s->splits));
-    if (!s->splits)
         return AVERROR(ENOMEM);
 
     p = s->splits_str;
@@ -513,7 +509,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     av_freep(&s->fdsp);
-    av_freep(&s->splits);
     av_frame_free(&s->xover);
 
     for (i = 0; i < ctx->nb_outputs; i++)
