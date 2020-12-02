@@ -719,9 +719,9 @@ static int rm_sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stre
                     av_log(s, AV_LOG_WARNING,
                            "Index size %d (%d pkts) is wrong, should be %"PRId64".\n",
                            len, n_pkts, expected_len);
-                len -= 14; // we already read part of the index header
-                if(len<0)
+                if(len < 14)
                     continue;
+                len -= 14; // we already read part of the index header
                 goto skip;
             } else if (state == MKBETAG('D','A','T','A')) {
                 av_log(s, AV_LOG_WARNING,
