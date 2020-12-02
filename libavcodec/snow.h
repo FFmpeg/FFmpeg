@@ -194,7 +194,7 @@ typedef struct SnowContext{
 
 /* Tables */
 extern const uint8_t * const ff_obmc_tab[4];
-extern uint8_t ff_qexp[QROOT];
+extern const uint8_t ff_qexp[QROOT];
 extern int ff_scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
 
 /* C bits used by mmx/sse2/altivec */

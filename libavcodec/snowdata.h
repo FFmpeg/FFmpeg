@@ -124,8 +124,14 @@ const uint8_t * const ff_obmc_tab[4]= {
     obmc32, obmc16, obmc8, obmc4
 };
 
-/* runtime generated tables */
-uint8_t ff_qexp[QROOT];
+/* ff_qexp[i] = lrintf(128 * 2^(i / QROOT)) with QROOT = 32 */
+const uint8_t ff_qexp[QROOT] = {
+    128, 131, 134, 137, 140, 143, 146, 149, 152, 156, 159,
+    162, 166, 170, 173, 177, 181, 185, 189, 193, 197, 202,
+    206, 211, 215, 220, 225, 230, 235, 240, 245, 251,
+};
+
+/* table generated at runtime */
 int ff_scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
 
 
