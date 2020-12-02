@@ -274,7 +274,7 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
 
 int av_cpu_count(void)
 {
-    static volatile int printed;
+    static atomic_int printed = ATOMIC_VAR_INIT(0);
 
     int nb_cpus = 1;
 #if HAVE_WINRT
@@ -306,10 +306,8 @@ int av_cpu_count(void)
     nb_cpus = sysinfo.dwNumberOfProcessors;
 #endif
 
-    if (!printed) {
+    if (!atomic_exchange_explicit(&printed, 1, memory_order_relaxed))
         av_log(NULL, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
-        printed = 1;
-    }
 
     return nb_cpus;
 }
