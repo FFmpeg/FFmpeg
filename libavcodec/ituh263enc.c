@@ -759,10 +759,11 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     static int done = 0;
 
     if (!done) {
+        static uint8_t rl_intra_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
         done = 1;
 
-        ff_rl_init(&ff_h263_rl_inter, ff_h263_static_rl_table_store[0]);
-        ff_rl_init(&ff_rl_intra_aic, ff_h263_static_rl_table_store[1]);
+        ff_rl_init(&ff_rl_intra_aic, rl_intra_table);
+        ff_h263_init_rl_inter();
 
         init_uni_h263_rl_tab(&ff_rl_intra_aic,  uni_h263_intra_aic_rl_len);
         init_uni_h263_rl_tab(&ff_h263_rl_inter, uni_h263_inter_rl_len);

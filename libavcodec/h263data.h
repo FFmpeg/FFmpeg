@@ -61,7 +61,7 @@ extern const int8_t ff_inter_run[102];
 
 extern RLTable ff_h263_rl_inter;
 extern RLTable ff_rl_intra_aic;
-extern uint8_t ff_h263_static_rl_table_store[2][2][2 * MAX_RUN + MAX_LEVEL + 3];
+void ff_h263_init_rl_inter(void);
 
 extern const uint16_t ff_h263_format[8][2];
 
