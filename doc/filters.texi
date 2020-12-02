@@ -523,19 +523,31 @@ The filter accepts the following options:
 Set split frequencies. Those must be positive and increasing.
 
 @item order
-Set filter order. Available values are:
+Set filter order for each band split. This controls filter roll-off or steepness
+of filter transfer function.
+Available values are:
 
 @table @samp
 @item 2nd
+12 dB per octave.
 @item 4th
+24 dB per octave.
 @item 6th
+36 dB per octave.
 @item 8th
+48 dB per octave.
 @item 10th
+60 dB per octave.
 @item 12th
+72 dB per octave.
 @item 14th
+84 dB per octave.
 @item 16th
+96 dB per octave.
 @item 18th
+108 dB per octave.
 @item 20th
+120 dB per octave.
 @end table
 
 Default is @var{4th}.
