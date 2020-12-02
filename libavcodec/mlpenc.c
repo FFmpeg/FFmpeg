@@ -190,8 +190,8 @@ typedef struct {
     unsigned int    number_of_subblocks;
     unsigned int    seq_index;              ///< Sequence index for high compression levels.
 
-    ChannelParams  *prev_channel_params;
-    DecodingParams *prev_decoding_params;
+    const ChannelParams  *prev_channel_params;
+    const DecodingParams *prev_decoding_params;
 
     ChannelParams  *seq_channel_params;
     DecodingParams *seq_decoding_params;
@@ -203,7 +203,7 @@ typedef struct {
 
 static ChannelParams   restart_channel_params[MAX_CHANNELS];
 static DecodingParams  restart_decoding_params[MAX_SUBSTREAMS];
-static BestOffset      restart_best_offset[NUM_CODEBOOKS] = {{0}};
+static const BestOffset restart_best_offset[NUM_CODEBOOKS] = {{0}};
 
 #define SYNC_MAJOR      0xf8726f
 #define MAJOR_SYNC_INFO_SIGNATURE   0xB752
@@ -285,9 +285,9 @@ static int compare_matrix_params(MLPEncodeContext *ctx, const MatrixParams *prev
  */
 static int compare_decoding_params(MLPEncodeContext *ctx)
 {
-    DecodingParams *prev = ctx->prev_decoding_params;
+    const DecodingParams *prev = ctx->prev_decoding_params;
     DecodingParams *dp = ctx->cur_decoding_params;
-    MatrixParams *prev_mp = &prev->matrix_params;
+    const MatrixParams *prev_mp = &prev->matrix_params;
     MatrixParams *mp = &dp->matrix_params;
     RestartHeader  *rh = ctx->cur_restart_header;
     unsigned int ch;
@@ -315,7 +315,7 @@ static int compare_decoding_params(MLPEncodeContext *ctx)
         }
 
     for (ch = rh->min_channel; ch <= rh->max_channel; ch++) {
-        ChannelParams *prev_cp = &ctx->prev_channel_params[ch];
+        const ChannelParams *prev_cp = &ctx->prev_channel_params[ch];
         ChannelParams *cp = &ctx->cur_channel_params[ch];
 
         if (!(retval & PARAM_FIR) &&
@@ -1959,7 +1959,7 @@ static void clear_path_counter(PathCounter *path_counter)
     memset(path_counter, 0, (NUM_CODEBOOKS + 1) * sizeof(*path_counter));
 }
 
-static int compare_best_offset(BestOffset *prev, BestOffset *cur)
+static int compare_best_offset(const BestOffset *prev, const BestOffset *cur)
 {
     if (prev->lsb_bits != cur->lsb_bits)
         return 1;
@@ -1971,8 +1971,9 @@ static int best_codebook_path_cost(MLPEncodeContext *ctx, unsigned int channel,
                                    PathCounter *src, int cur_codebook)
 {
     int idx = src->cur_idx;
-    BestOffset *cur_bo = ctx->best_offset[idx][channel],
-              *prev_bo = idx ? ctx->best_offset[idx - 1][channel] : restart_best_offset;
+    const BestOffset *cur_bo = ctx->best_offset[idx][channel],
+                    *prev_bo = idx ? ctx->best_offset[idx - 1][channel] :
+                                     restart_best_offset;
     int bitcount = src->bitcount;
     int prev_codebook = src->path[idx];
 
@@ -1992,7 +1993,8 @@ static void set_best_codebook(MLPEncodeContext *ctx)
     unsigned int channel;
 
     for (channel = rh->min_channel; channel <= rh->max_channel; channel++) {
-        BestOffset *cur_bo, *prev_bo = restart_best_offset;
+        const BestOffset *prev_bo = restart_best_offset;
+        BestOffset *cur_bo;
         PathCounter path_counter[NUM_CODEBOOKS + 1];
         unsigned int best_codebook;
         unsigned int index;
