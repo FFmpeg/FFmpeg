@@ -554,6 +554,9 @@ Default is @var{4th}.
 
 @item level
 Set input gain level. Allowed range is from 0 to 1. Default value is 1.
+
+@item gains
+Set output gain for each band. Default value is 1 for all bands.
 @end table
 
 @subsection Examples

@@ -54,6 +54,7 @@ typedef struct AudioCrossoverContext {
     const AVClass *class;
 
     char *splits_str;
+    char *gains_str;
     int order_opt;
     float level_in;
 
@@ -63,6 +64,8 @@ typedef struct AudioCrossoverContext {
     int ap_filter_count;
     int nb_splits;
     float splits[MAX_SPLITS];
+
+    float gains[MAX_BANDS];
 
     BiquadCoeffs lp[MAX_BANDS][20];
     BiquadCoeffs hp[MAX_BANDS][20];
@@ -95,10 +98,46 @@ static const AVOption acrossover_options[] = {
     { "18th",  "18th order (108 dB/8ve)",0,                 AV_OPT_TYPE_CONST,  {.i64=8},     0, 0, AF, "m" },
     { "20th",  "20th order (120 dB/8ve)",0,                 AV_OPT_TYPE_CONST,  {.i64=9},     0, 0, AF, "m" },
     { "level", "set input gain",        OFFSET(level_in),   AV_OPT_TYPE_FLOAT,  {.dbl=1},     0, 1, AF },
+    { "gain",  "set output bands gain", OFFSET(gains_str),  AV_OPT_TYPE_STRING, {.str="1.f"}, 0, 0, AF },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(acrossover);
+
+static int parse_gains(AVFilterContext *ctx)
+{
+    AudioCrossoverContext *s = ctx->priv;
+    char *p, *arg, *saveptr = NULL;
+    int i, ret = 0;
+
+    saveptr = NULL;
+    p = s->gains_str;
+    for (i = 0; i < MAX_BANDS; i++) {
+        float gain;
+        char c[3] = { 0 };
+
+        if (!(arg = av_strtok(p, " |", &saveptr)))
+            break;
+
+        p = NULL;
+
+        if (av_sscanf(arg, "%f%2s", &gain, c) < 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for gain[%d].\n", i);
+            ret = AVERROR(EINVAL);
+            break;
+        }
+
+        if (c[0] == 'd' && c[1] == 'B')
+            s->gains[i] = expf(gain * M_LN10 / 20.f);
+        else
+            s->gains[i] = gain;
+    }
+
+    for (; i < MAX_BANDS; i++)
+        s->gains[i] = 1.f;
+
+    return ret;
+}
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -137,6 +176,10 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     s->nb_splits = i;
+
+    ret = parse_gains(ctx);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i <= s->nb_splits; i++) {
         AVFilterPad pad  = { 0 };
@@ -349,6 +392,7 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
     const int end = (in->channels * (jobnr+1)) / nb_jobs;                                   \
     const int nb_samples = in->nb_samples;                                                  \
     const int nb_outs = ctx->nb_outputs;                                                    \
+    const int first_order = s->first_order;                                                 \
                                                                                             \
     for (int ch = start; ch < end; ch++) {                                                  \
         const type *src = (const type *)in->extended_data[ch];                              \
@@ -378,7 +422,7 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
             }                                                                               \
                                                                                             \
             for (int aband = band + 1; aband + 1 < nb_outs; aband++) {                      \
-                if (s->first_order) {                                                       \
+                if (first_order) {                                                          \
                     const type *asrc = (const type *)frames[band]->extended_data[ch];       \
                     type *dst = (type *)frames[band]->extended_data[ch];                    \
                     type *ap = xover + nb_outs * 40 + (aband * nb_outs + band) * 20;        \
@@ -387,7 +431,7 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
                     biquad_process_## name(apc, ap, dst, asrc, nb_samples);                 \
                 }                                                                           \
                                                                                             \
-                for (int f = s->first_order; f < s->ap_filter_count; f++) {                 \
+                for (int f = first_order; f < s->ap_filter_count; f++) {                    \
                     const type *asrc = (const type *)frames[band]->extended_data[ch];       \
                     type *dst = (type *)frames[band]->extended_data[ch];                    \
                     type *ap = xover + nb_outs * 40 + (aband * nb_outs + band) * 20 + f * 2;\
@@ -398,12 +442,12 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
             }                                                                               \
         }                                                                                   \
                                                                                             \
-        for (int band = 0; band < nb_outs && s->first_order; band++) {                      \
-            if (band & 1) {                                                                 \
-                type *dst = (type *)frames[band]->extended_data[ch];                        \
-                s->fdsp->vector_## ff ##mul_scalar(dst, dst, -one,                          \
-                                                   FFALIGN(nb_samples, sizeof(type)));      \
-            }                                                                               \
+        for (int band = 0; band < nb_outs; band++) {                                        \
+            const type gain = s->gains[band] * ((band & 1 && first_order) ? -one : one);    \
+            type *dst = (type *)frames[band]->extended_data[ch];                            \
+                                                                                            \
+            s->fdsp->vector_## ff ##mul_scalar(dst, dst, gain,                              \
+                                               FFALIGN(nb_samples, sizeof(type)));          \
         }                                                                                   \
     }                                                                                       \
                                                                                             \
