@@ -36,6 +36,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "me_cmp.h"
@@ -304,7 +305,7 @@ void ff_ac3_apply_rematrixing(AC3EncodeContext *s)
 /*
  * Initialize exponent tables.
  */
-static av_cold void exponent_init(AC3EncodeContext *s)
+static av_cold void exponent_init(void)
 {
     int expstr, i, grpsize;
 
@@ -317,9 +318,6 @@ static av_cold void exponent_init(AC3EncodeContext *s)
     }
     /* LFE */
     exponent_group_tab[0][0][7] = 2;
-
-    if (CONFIG_EAC3_ENCODER && s->eac3)
-        ff_eac3_exponent_init();
 }
 
 
@@ -2409,6 +2407,7 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
 
 av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     AC3EncodeContext *s = avctx->priv_data;
     int ret, frame_size_58;
 
@@ -2448,14 +2447,14 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         s->mdct_init                    = ff_ac3_float_mdct_init;
         s->allocate_sample_buffers      = ff_ac3_float_allocate_sample_buffers;
     }
-    if (CONFIG_EAC3_ENCODER && s->eac3)
+    if (CONFIG_EAC3_ENCODER && s->eac3) {
+        static AVOnce init_static_once = AV_ONCE_INIT;
+        ff_thread_once(&init_static_once, ff_eac3_exponent_init);
         s->output_frame_header = ff_eac3_output_frame_header;
-    else
+    } else
         s->output_frame_header = ac3_output_frame_header;
 
     set_bandwidth(s);
-
-    exponent_init(s);
 
     bit_alloc_init(s);
 
@@ -2472,6 +2471,8 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     dprint_options(s);
+
+    ff_thread_once(&init_static_once, exponent_init);
 
     return 0;
 }
