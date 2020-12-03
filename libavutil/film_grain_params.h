@@ -64,18 +64,19 @@ typedef struct AVFilmGrainAOMParams {
     int scaling_shift;
 
     /**
-     * Specifies the auto-regression lag. The number of coefficients is given by
-     * 2*ar_coeff_lag(ar_coeff_lag - 1), with an extra one for the chroma.
+     * Specifies the auto-regression lag.
      */
     int ar_coeff_lag;
 
     /**
-     * Luma auto-regression coefficients.
+     * Luma auto-regression coefficients. The number of coefficients is given by
+     * 2 * ar_coeff_lag * (ar_coeff_lag + 1).
      */
     int8_t ar_coeffs_y[24];
 
     /**
-     * Chroma auto-regression coefficients.
+     * Chroma auto-regression coefficients. The number of coefficients is given by
+     * 2 * ar_coeff_lag * (ar_coeff_lag + 1) + !!num_y_points.
      */
     int8_t ar_coeffs_uv[2 /* cb, cr */][25];
 
