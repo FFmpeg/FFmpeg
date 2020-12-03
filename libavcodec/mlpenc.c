@@ -27,6 +27,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/avstring.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/thread.h"
 #include "mlp.h"
 #include "lpc.h"
 
@@ -403,11 +404,9 @@ static void copy_restart_frame_params(MLPEncodeContext *ctx,
 }
 
 /** Clears a DecodingParams struct the way it should be after a restart header. */
-static void clear_decoding_params(MLPEncodeContext *ctx, DecodingParams decoding_params[MAX_SUBSTREAMS])
+static void clear_decoding_params(DecodingParams decoding_params[MAX_SUBSTREAMS], int num_substreams)
 {
-    unsigned int substr;
-
-    for (substr = 0; substr < ctx->num_substreams; substr++) {
+    for (unsigned substr = 0; substr < num_substreams; substr++) {
         DecodingParams *dp = &decoding_params[substr];
 
         dp->param_presence_flags   = 0xff;
@@ -419,11 +418,9 @@ static void clear_decoding_params(MLPEncodeContext *ctx, DecodingParams decoding
 }
 
 /** Clears a ChannelParams struct the way it should be after a restart header. */
-static void clear_channel_params(MLPEncodeContext *ctx, ChannelParams channel_params[MAX_CHANNELS])
+static void clear_channel_params(ChannelParams channel_params[MAX_CHANNELS], int nb_channels)
 {
-    unsigned int channel;
-
-    for (channel = 0; channel < ctx->avctx->channels; channel++) {
+    for (unsigned channel = 0; channel < nb_channels; channel++) {
         ChannelParams *cp = &channel_params[channel];
 
         memset(&cp->filter_params, 0, sizeof(cp->filter_params));
@@ -441,7 +438,7 @@ static void default_decoding_params(MLPEncodeContext *ctx,
 {
     unsigned int substr;
 
-    clear_decoding_params(ctx, decoding_params);
+    clear_decoding_params(decoding_params, ctx->num_substreams);
 
     for (substr = 0; substr < ctx->num_substreams; substr++) {
         DecodingParams *dp = &decoding_params[substr];
@@ -484,8 +481,16 @@ static int mlp_peak_bitrate(int peak_bitrate, int sample_rate)
     return ((peak_bitrate << 4) - 8) / sample_rate;
 }
 
+static av_cold void mlp_encode_init_static(void)
+{
+    clear_channel_params (restart_channel_params,  MAX_CHANNELS);
+    clear_decoding_params(restart_decoding_params, MAX_SUBSTREAMS);
+    ff_mlp_init_crc();
+}
+
 static av_cold int mlp_encode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MLPEncodeContext *ctx = avctx->priv_data;
     unsigned int substr, index;
     unsigned int sum = 0;
@@ -607,8 +612,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    ff_mlp_init_crc();
-
     ctx->num_substreams = 1; // TODO: change this after adding multi-channel support for TrueHD
 
     if (ctx->avctx->codec_id == AV_CODEC_ID_MLP) {
@@ -726,9 +729,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         rh->max_matrix_channel = rh->max_channel;
     }
 
-    clear_channel_params(ctx, restart_channel_params);
-    clear_decoding_params(ctx, restart_decoding_params);
-
     if ((ret = ff_lpc_init(&ctx->lpc_ctx, ctx->number_of_samples,
                     MLP_MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON)) < 0) {
         av_log(avctx, AV_LOG_ERROR,
@@ -737,6 +737,8 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     }
 
     ff_af_queue_init(avctx, &ctx->afq);
+
+    ff_thread_once(&init_static_once, mlp_encode_init_static);
 
     return 0;
 }
@@ -2317,7 +2319,7 @@ input_and_return:
             ctx->number_of_samples = number_of_samples;
 
             for (index = 0; index < ctx->seq_size[seq_index]; index++) {
-                clear_channel_params(ctx, ctx->seq_channel_params + index*(ctx->avctx->channels));
+                clear_channel_params(ctx->seq_channel_params + index * ctx->avctx->channels, ctx->avctx->channels);
                 default_decoding_params(ctx, ctx->seq_decoding_params + index*(ctx->num_substreams));
             }
 
@@ -2379,7 +2381,7 @@ const AVCodec ff_mlp_encoder = {
     .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     .channel_layouts        = ff_mlp_channel_layouts,
-    .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal          = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 #if CONFIG_TRUEHD_ENCODER
@@ -2396,6 +2398,6 @@ const AVCodec ff_truehd_encoder = {
     .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     .channel_layouts        = (const uint64_t[]) {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_5POINT1_BACK, 0},
-    .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal          = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
