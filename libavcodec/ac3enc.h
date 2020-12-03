@@ -282,18 +282,8 @@ void ff_ac3_adjust_frame_size(AC3EncodeContext *s);
 
 void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s);
 
-void ff_ac3_apply_rematrixing(AC3EncodeContext *s);
-
-void ff_ac3_process_exponents(AC3EncodeContext *s);
-
-int ff_ac3_compute_bit_allocation(AC3EncodeContext *s);
-
-void ff_ac3_group_exponents(AC3EncodeContext *s);
-
-void ff_ac3_quantize_mantissas(AC3EncodeContext *s);
-
-void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame);
-
+int ff_ac3_encode_frame_common_end(AVCodecContext *avctx, AVPacket *avpkt,
+                                   const AVFrame *frame, int *got_packet_ptr);
 
 /* prototypes for functions in ac3enc_template.c */
 

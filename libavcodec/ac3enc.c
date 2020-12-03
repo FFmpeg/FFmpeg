@@ -271,7 +271,7 @@ void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s)
  *
  * @param s  AC-3 encoder private context
  */
-void ff_ac3_apply_rematrixing(AC3EncodeContext *s)
+static void ac3_apply_rematrixing(AC3EncodeContext *s)
 {
     int nb_coefs;
     int blk, bnd, i;
@@ -575,7 +575,7 @@ static int count_exponent_bits(AC3EncodeContext *s)
  *
  * @param s  AC-3 encoder private context
  */
-void ff_ac3_group_exponents(AC3EncodeContext *s)
+static void ac3_group_exponents(AC3EncodeContext *s)
 {
     int blk, ch, i, cpl;
     int group_size, nb_groups;
@@ -633,7 +633,7 @@ void ff_ac3_group_exponents(AC3EncodeContext *s)
  *
  * @param s  AC-3 encoder private context
  */
-void ff_ac3_process_exponents(AC3EncodeContext *s)
+static void ac3_process_exponents(AC3EncodeContext *s)
 {
     extract_exponents(s);
 
@@ -1142,7 +1142,7 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
  * frame size.  Output is the SNR offset and a set of bit allocation pointers
  * used to quantize the mantissas.
  */
-int ff_ac3_compute_bit_allocation(AC3EncodeContext *s)
+static int ac3_compute_bit_allocation(AC3EncodeContext *s)
 {
     count_frame_bits(s);
 
@@ -1296,7 +1296,7 @@ static void quantize_mantissas_blk_ch(AC3Mant *s, int32_t *fixed_coef,
  *
  * @param s  AC-3 encoder private context
  */
-void ff_ac3_quantize_mantissas(AC3EncodeContext *s)
+static void ac3_quantize_mantissas(AC3EncodeContext *s)
 {
     int blk, ch, ch0=0, got_cpl;
 
@@ -1657,7 +1657,7 @@ static void output_frame_end(AC3EncodeContext *s)
  * @param s      AC-3 encoder private context
  * @param frame  output data buffer
  */
-void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
+static void ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
 {
     int blk;
 
@@ -1671,6 +1671,36 @@ void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
     output_frame_end(s);
 }
 
+int ff_ac3_encode_frame_common_end(AVCodecContext *avctx, AVPacket *avpkt,
+                                   const AVFrame *frame, int *got_packet_ptr)
+{
+    AC3EncodeContext *const s = avctx->priv_data;
+    int ret;
+
+    ac3_apply_rematrixing(s);
+
+    ac3_process_exponents(s);
+
+    ret = ac3_compute_bit_allocation(s);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
+        return ret;
+    }
+
+    ac3_group_exponents(s);
+
+    ac3_quantize_mantissas(s);
+
+    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size, 0)) < 0)
+        return ret;
+    ac3_output_frame(s, avpkt->data);
+
+    if (frame->pts != AV_NOPTS_VALUE)
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
+
+    *got_packet_ptr = 1;
+    return 0;
+}
 
 static void dprint_options(AC3EncodeContext *s)
 {

@@ -407,27 +407,5 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
     if (AC3ENC_FLOAT)
         scale_coefficients(s);
 
-    ff_ac3_apply_rematrixing(s);
-
-    ff_ac3_process_exponents(s);
-
-    ret = ff_ac3_compute_bit_allocation(s);
-    if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
-        return ret;
-    }
-
-    ff_ac3_group_exponents(s);
-
-    ff_ac3_quantize_mantissas(s);
-
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size, 0)) < 0)
-        return ret;
-    ff_ac3_output_frame(s, avpkt->data);
-
-    if (frame->pts != AV_NOPTS_VALUE)
-        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
-
-    *got_packet_ptr = 1;
-    return 0;
+    return ff_ac3_encode_frame_common_end(avctx, avpkt, frame, got_packet_ptr);
 }
