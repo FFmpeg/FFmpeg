@@ -35,13 +35,10 @@
 #include "eac3enc.h"
 #include "kbdwin.h"
 
-#define AC3ENC_TYPE AC3ENC_TYPE_AC3_FIXED
-#include "ac3enc_opts_template.c"
-
 static const AVClass ac3enc_class = {
     .class_name = "Fixed-Point AC-3 Encoder",
     .item_name  = av_default_item_name,
-    .option     = ac3_options,
+    .option     = ff_ac3_enc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -145,5 +142,5 @@ AVCodec ff_ac3_fixed_encoder = {
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .supported_samplerates = ff_ac3_sample_rate_tab,
     .channel_layouts = ff_ac3_channel_layouts,
-    .defaults        = ac3_defaults,
+    .defaults        = ff_ac3_enc_defaults,
 };

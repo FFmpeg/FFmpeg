@@ -43,13 +43,6 @@
 #define AC3ENC_FLOAT 0
 #endif
 
-#define OFFSET(param) offsetof(AC3EncodeContext, options.param)
-#define AC3ENC_PARAM (AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
-
-#define AC3ENC_TYPE_AC3_FIXED   0
-#define AC3ENC_TYPE_AC3         1
-#define AC3ENC_TYPE_EAC3        2
-
 #if AC3ENC_FLOAT
 #include "libavutil/float_dsp.h"
 #define AC3_NAME(x) ff_ac3_float_ ## x
@@ -273,6 +266,8 @@ typedef struct AC3EncodeContext {
 
 
 extern const uint64_t ff_ac3_channel_layouts[19];
+extern const AVOption ff_ac3_enc_options[];
+extern const AVCodecDefault ff_ac3_enc_defaults[];
 
 int ff_ac3_encode_init(AVCodecContext *avctx);
 int ff_ac3_float_encode_init(AVCodecContext *avctx);
