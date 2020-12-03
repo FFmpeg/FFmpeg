@@ -1719,6 +1719,12 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
         }
     } else {
         int frame_size;
+
+        if (avpkt->size < s->next_packet_start) {
+            s->packet_loss = 1;
+            return AVERROR_INVALIDDATA;
+        }
+
         s->buf_bit_size = (avpkt->size - s->next_packet_start) << 3;
         init_get_bits(gb, avpkt->data, s->buf_bit_size);
         skip_bits(gb, s->packet_offset);
