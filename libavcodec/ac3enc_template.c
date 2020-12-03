@@ -91,7 +91,7 @@ static void apply_mdct(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
-#if CONFIG_AC3ENC_FLOAT
+#if AC3ENC_FLOAT
             s->fdsp->vector_fmul(s->windowed_samples, input_samples,
                                 s->mdct_window, AC3_WINDOW_SIZE);
 #else
@@ -115,7 +115,7 @@ static void apply_mdct(AC3EncodeContext *s)
 static void apply_channel_coupling(AC3EncodeContext *s)
 {
     LOCAL_ALIGNED_16(CoefType, cpl_coords,      [AC3_MAX_BLOCKS], [AC3_MAX_CHANNELS][16]);
-#if CONFIG_AC3ENC_FLOAT
+#if AC3ENC_FLOAT
     LOCAL_ALIGNED_16(int32_t, fixed_cpl_coords, [AC3_MAX_BLOCKS], [AC3_MAX_CHANNELS][16]);
 #else
     int32_t (*fixed_cpl_coords)[AC3_MAX_CHANNELS][16] = cpl_coords;
@@ -125,7 +125,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
     int cpl_start, num_cpl_coefs;
 
     memset(cpl_coords,       0, AC3_MAX_BLOCKS * sizeof(*cpl_coords));
-#if CONFIG_AC3ENC_FLOAT
+#if AC3ENC_FLOAT
     memset(fixed_cpl_coords, 0, AC3_MAX_BLOCKS * sizeof(*cpl_coords));
 #endif
 
@@ -266,7 +266,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         if (!block->cpl_in_use)
             continue;
 
-#if CONFIG_AC3ENC_FLOAT
+#if AC3ENC_FLOAT
         s->ac3dsp.float_to_fixed24(fixed_cpl_coords[blk][1],
                                    cpl_coords[blk][1],
                                    s->fbw_channels * 16);

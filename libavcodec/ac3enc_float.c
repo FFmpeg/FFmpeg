@@ -26,7 +26,7 @@
  * floating-point AC-3 encoder.
  */
 
-#define CONFIG_AC3ENC_FLOAT 1
+#define AC3ENC_FLOAT 1
 #include "internal.h"
 #include "audiodsp.h"
 #include "ac3enc.h"

@@ -41,8 +41,8 @@
 #include "put_bits.h"
 #include "audiodsp.h"
 
-#ifndef CONFIG_AC3ENC_FLOAT
-#define CONFIG_AC3ENC_FLOAT 0
+#ifndef AC3ENC_FLOAT
+#define AC3ENC_FLOAT 0
 #endif
 
 #define OFFSET(param) offsetof(AC3EncodeContext, options.param)
@@ -52,7 +52,7 @@
 #define AC3ENC_TYPE_AC3         1
 #define AC3ENC_TYPE_EAC3        2
 
-#if CONFIG_AC3ENC_FLOAT
+#if AC3ENC_FLOAT
 #define AC3_NAME(x) ff_ac3_float_ ## x
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 #define COEF_MIN (-16777215.0/16777216.0)
