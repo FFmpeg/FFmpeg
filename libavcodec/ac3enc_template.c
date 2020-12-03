@@ -38,7 +38,7 @@
 #include "eac3enc.h"
 
 
-int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
+static int allocate_sample_buffers(AC3EncodeContext *s)
 {
     int ch;
 

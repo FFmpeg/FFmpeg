@@ -94,7 +94,7 @@ static void sum_square_butterfly(AC3EncodeContext *s, float sum[4],
  *
  * @param s  AC-3 encoder private context
  */
-av_cold void ff_ac3_float_mdct_end(AC3EncodeContext *s)
+static av_cold void ac3_float_mdct_end(AC3EncodeContext *s)
 {
     ff_mdct_end(&s->mdct);
     av_freep(&s->mdct_window);
@@ -107,7 +107,7 @@ av_cold void ff_ac3_float_mdct_end(AC3EncodeContext *s)
  * @param s  AC-3 encoder private context
  * @return   0 on success, negative error code on failure
  */
-av_cold int ff_ac3_float_mdct_init(AC3EncodeContext *s)
+static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 {
     float *window;
     int i, n, n2;
@@ -132,6 +132,9 @@ av_cold int ff_ac3_float_mdct_init(AC3EncodeContext *s)
 av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
+    s->mdct_end                = ac3_float_mdct_end;
+    s->mdct_init               = ac3_float_mdct_init;
+    s->allocate_sample_buffers = allocate_sample_buffers;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);

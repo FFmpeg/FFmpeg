@@ -295,19 +295,7 @@ void ff_ac3_quantize_mantissas(AC3EncodeContext *s);
 void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame);
 
 
-/* prototypes for functions in ac3enc_fixed.c and ac3enc_float.c */
-
-void ff_ac3_fixed_mdct_end(AC3EncodeContext *s);
-void ff_ac3_float_mdct_end(AC3EncodeContext *s);
-
-int ff_ac3_fixed_mdct_init(AC3EncodeContext *s);
-int ff_ac3_float_mdct_init(AC3EncodeContext *s);
-
-
 /* prototypes for functions in ac3enc_template.c */
-
-int ff_ac3_fixed_allocate_sample_buffers(AC3EncodeContext *s);
-int ff_ac3_float_allocate_sample_buffers(AC3EncodeContext *s);
 
 int ff_ac3_fixed_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                               const AVFrame *frame, int *got_packet_ptr);

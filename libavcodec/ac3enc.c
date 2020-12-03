@@ -2049,8 +2049,7 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->cpl_coord_mant);
     }
 
-    if (s->mdct_end)
-        s->mdct_end(s);
+    s->mdct_end(s);
 
     return 0;
 }
@@ -2437,16 +2436,6 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         s->crc_inv[1] = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
     }
 
-    /* set function pointers */
-    if (CONFIG_AC3_FIXED_ENCODER && s->fixed_point) {
-        s->mdct_end                     = ff_ac3_fixed_mdct_end;
-        s->mdct_init                    = ff_ac3_fixed_mdct_init;
-        s->allocate_sample_buffers      = ff_ac3_fixed_allocate_sample_buffers;
-    } else if (CONFIG_AC3_ENCODER || CONFIG_EAC3_ENCODER) {
-        s->mdct_end                     = ff_ac3_float_mdct_end;
-        s->mdct_init                    = ff_ac3_float_mdct_init;
-        s->allocate_sample_buffers      = ff_ac3_float_allocate_sample_buffers;
-    }
     if (CONFIG_EAC3_ENCODER && s->eac3) {
         static AVOnce init_static_once = AV_ONCE_INIT;
         ff_thread_once(&init_static_once, ff_eac3_exponent_init);
