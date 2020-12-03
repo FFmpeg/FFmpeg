@@ -119,8 +119,10 @@ typedef struct HTTPContext {
     char *method;
     int reconnect;
     int reconnect_at_eof;
+    int reconnect_on_network_error;
     int reconnect_streamed;
     int reconnect_delay_max;
+    char *reconnect_on_http_error;
     int listen;
     char *resource;
     int reply_code;
@@ -164,6 +166,8 @@ static const AVOption options[] = {
     { "method", "Override the HTTP method or set the expected HTTP method from a client", OFFSET(method), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "reconnect", "auto reconnect after disconnect before EOF", OFFSET(reconnect), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D },
     { "reconnect_at_eof", "auto reconnect at EOF", OFFSET(reconnect_at_eof), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D },
+    { "reconnect_on_network_error", "auto reconnect in case of tcp/tls error during connect", OFFSET(reconnect_on_network_error), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D },
+    { "reconnect_on_http_error", "list of http status codes to reconnect on", OFFSET(reconnect_on_http_error), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
     { "reconnect_streamed", "auto reconnect streamed / non seekable streams", OFFSET(reconnect_streamed), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D },
     { "reconnect_delay_max", "max reconnect delay in seconds after which to give up", OFFSET(reconnect_delay_max), AV_OPT_TYPE_INT, { .i64 = 120 }, 0, UINT_MAX/1000/1000, D },
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, D | E },
@@ -258,21 +262,73 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     return location_changed;
 }
 
+static int http_should_reconnect(HTTPContext *s, int err)
+{
+    const char *status_group;
+    char http_code[4];
+
+    switch (err) {
+    case AVERROR_HTTP_BAD_REQUEST:
+    case AVERROR_HTTP_UNAUTHORIZED:
+    case AVERROR_HTTP_FORBIDDEN:
+    case AVERROR_HTTP_NOT_FOUND:
+    case AVERROR_HTTP_OTHER_4XX:
+        status_group = "4xx";
+        break;
+
+    case AVERROR_HTTP_SERVER_ERROR:
+        status_group = "5xx";
+        break;
+
+    default:
+        return s->reconnect_on_network_error;
+    }
+
+    if (!s->reconnect_on_http_error)
+        return 0;
+
+    if (av_match_list(status_group, s->reconnect_on_http_error, ',') > 0)
+        return 1;
+
+    snprintf(http_code, sizeof(http_code), "%d", s->http_code);
+
+    return av_match_list(http_code, s->reconnect_on_http_error, ',') > 0;
+}
+
 /* return non zero if error */
 static int http_open_cnx(URLContext *h, AVDictionary **options)
 {
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
     int location_changed, attempts = 0, redirects = 0;
+    int reconnect_delay = 0;
+    uint64_t off;
+
 redo:
     av_dict_copy(options, s->chained_options, 0);
 
     cur_auth_type       = s->auth_state.auth_type;
     cur_proxy_auth_type = s->auth_state.auth_type;
 
+    off = s->off;
     location_changed = http_open_cnx_internal(h, options);
-    if (location_changed < 0)
-        goto fail;
+    if (location_changed < 0) {
+        if (!http_should_reconnect(s, location_changed) ||
+            reconnect_delay > s->reconnect_delay_max)
+            goto fail;
+
+        av_log(h, AV_LOG_WARNING, "Will reconnect at %"PRIu64" in %d second(s).\n", off, reconnect_delay);
+        location_changed = ff_network_sleep_interruptible(1000U * 1000 * reconnect_delay, &h->interrupt_callback);
+        if (location_changed != AVERROR(ETIMEDOUT))
+            goto fail;
+        reconnect_delay = 1 + 2 * reconnect_delay;
+
+        /* restore the offset (http_connect resets it) */
+        s->off = off;
+
+        ffurl_closep(&s->hd);
+        goto redo;
+    }
 
     attempts++;
     if (s->http_code == 401) {
