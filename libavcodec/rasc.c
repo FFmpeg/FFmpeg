@@ -70,6 +70,9 @@ static void clear_plane(AVCodecContext *avctx, AVFrame *frame)
     RASCContext *s = avctx->priv_data;
     uint8_t *dst = frame->data[0];
 
+    if (!dst)
+        return;
+
     for (int y = 0; y < avctx->height; y++) {
         memset(dst, 0, avctx->width * s->bpp);
         dst += frame->linesize[0];
