@@ -327,8 +327,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         L *= level_out;
         R *= level_out;
 
-        dst[0] = L;
-        dst[1] = R;
+        if (ctx->is_disabled) {
+            dst[0] = src[0];
+            dst[1] = src[1];
+        } else {
+            dst[0] = L;
+            dst[1] = R;
+        }
     }
 
     if (out != in)
@@ -370,4 +375,5 @@ AVFilter ff_af_stereotools = {
     .uninit         = uninit,
     .inputs         = inputs,
     .outputs        = outputs,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
