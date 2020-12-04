@@ -3133,8 +3133,8 @@ static int perspective_to_xyz(const V360Context *s,
         const float cos_theta = cosf(theta);
 
         vec[0] = cos_theta * sin_phi;
-        vec[1] = sin_theta;
-        vec[2] = cos_theta * cos_phi;
+        vec[1] = cos_theta * cos_phi;
+        vec[2] = sin_theta;
     } else {
         vec[0] = 0.f;
         vec[1] = 1.f;
@@ -3142,7 +3142,6 @@ static int perspective_to_xyz(const V360Context *s,
         return 0;
     }
 
-    normalize_vector(vec);
     return 1;
 }
 
