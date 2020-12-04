@@ -1,1 +1,27 @@
-7bb9f39e8e05724525154de17f0235d8
+6dc13ae283257e898e069e5041ac8435 *tests/data/fate/mxf-d10-user-comments.mxf_d10
+3782189 tests/data/fate/mxf-d10-user-comments.mxf_d10
+#extradata 0:       34, 0x716b05c4
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: mpeg2video
+#dimensions 0: 1280x720
+#sar 0: 3/4
+0,         -1,          0,        1,   150000, 0x0547870d, S=1,       24, 0x5aa90ad0
+0,          0,          1,        1,   150000, 0xe80a1612, F=0x0
+0,          1,          2,        1,   150000, 0xc5c50e2f, F=0x0
+0,          2,          3,        1,   150000, 0x51e28a04, F=0x0
+0,          3,          4,        1,   150000, 0x9bbe6feb, F=0x0
+[FORMAT]
+TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010900
+TAG:uid=adab4424-2f25-4dc7-92ff-29bd000c0000
+TAG:generation_uid=adab4424-2f25-4dc7-92ff-29bd000c0001
+TAG:company_name=FATE-company
+TAG:product_name=FATE-test
+TAG:product_version=3.14159
+TAG:application_platform=Lavf
+TAG:product_uid=adab4424-2f25-4dc7-92ff-29bd000c0002
+TAG:toolkit_version=0.0.0.0.0
+TAG:material_package_umid=0x060A2B340101010501010D001300000000000000000000000000000000000000
+TAG:comment_test=value
+TAG:timecode=01:00:00:00
+[/FORMAT]
