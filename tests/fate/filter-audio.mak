@@ -112,7 +112,7 @@ fate-filter-dcshift: CMD = framecrc -i $(SRC) -frames:a 20 -af aresample,dcshift
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, EARWAX, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-earwax
 fate-filter-earwax: tests/data/asynth-44100-2.wav
 fate-filter-earwax: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-earwax: CMD = framecrc -i $(SRC) -frames:a 20 -af earwax
+fate-filter-earwax: CMD = framecrc -i $(SRC) -frames:a 20 -af aresample,earwax,aresample
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, EXTRASTEREO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-extrastereo
 fate-filter-extrastereo: tests/data/asynth-44100-2.wav

@@ -34,9 +34,9 @@
 #include "audio.h"
 #include "formats.h"
 
-#define NUMTAPS 64
+#define NUMTAPS 32
 
-static const int8_t filt[NUMTAPS] = {
+static const int8_t filt[NUMTAPS * 2] = {
 /* 30°  330° */
     4,   -6,     /* 32 tap stereo FIR filter. */
     4,  -11,     /* One side filters as if the */
@@ -72,7 +72,10 @@ static const int8_t filt[NUMTAPS] = {
     4,    0};
 
 typedef struct EarwaxContext {
-    int16_t taps[NUMTAPS * 2];
+    int16_t filter[2][NUMTAPS];
+    int16_t taps[4][NUMTAPS * 2];
+
+    AVFrame *frame[2];
 } EarwaxContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -83,7 +86,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layout = NULL;
 
-    if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_S16                 )) < 0 ||
+    if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_S16P                )) < 0 ||
         (ret = ff_set_common_formats         (ctx     , formats                           )) < 0 ||
         (ret = ff_add_channel_layout         (&layout , AV_CH_LAYOUT_STEREO               )) < 0 ||
         (ret = ff_set_common_channel_layouts (ctx     , layout                            )) < 0 ||
@@ -94,7 +97,8 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 //FIXME: replace with DSPContext.scalarproduct_int16
-static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, int16_t *out)
+static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin,
+                                     const int16_t *filt, int16_t *out)
 {
     int32_t sample;
     int16_t j;
@@ -103,7 +107,7 @@ static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, in
         sample = 0;
         for (j = 0; j < NUMTAPS; j++)
             sample += in[j] * filt[j];
-        *out = av_clip_int16(sample >> 6);
+        *out = av_clip_int16(sample >> 7);
         out++;
         in++;
     }
@@ -111,40 +115,102 @@ static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, in
     return out;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
+static int config_input(AVFilterLink *inlink)
 {
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    int16_t *taps, *endin, *in, *out;
-    AVFrame *outsamples = ff_get_audio_buffer(outlink, insamples->nb_samples);
+    EarwaxContext *s = inlink->dst->priv;
+
+    for (int i = 0; i < NUMTAPS; i++) {
+        s->filter[0][i] = filt[i * 2];
+        s->filter[1][i] = filt[i * 2 + 1];
+    }
+
+    return 0;
+}
+
+static void convolve(AVFilterContext *ctx, AVFrame *in,
+                     int input_ch, int output_ch,
+                     int filter_ch, int tap_ch)
+{
+    EarwaxContext *s = ctx->priv;
+    int16_t *taps, *endin, *dst, *src;
     int len;
 
-    if (!outsamples) {
-        av_frame_free(&insamples);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(outsamples, insamples);
+    taps  = s->taps[tap_ch];
+    dst   = (int16_t *)s->frame[input_ch]->data[output_ch];
+    src   = (int16_t *)in->data[input_ch];
 
-    taps  = ((EarwaxContext *)inlink->dst->priv)->taps;
-    out   = (int16_t *)outsamples->data[0];
-    in    = (int16_t *)insamples ->data[0];
-
-    len = FFMIN(NUMTAPS, 2*insamples->nb_samples);
+    len = FFMIN(NUMTAPS, in->nb_samples);
     // copy part of new input and process with saved input
-    memcpy(taps+NUMTAPS, in, len * sizeof(*taps));
-    out   = scalarproduct(taps, taps + len, out);
+    memcpy(taps+NUMTAPS, src, len * sizeof(*taps));
+    dst = scalarproduct(taps, taps + len, s->filter[filter_ch], dst);
 
     // process current input
-    if (2*insamples->nb_samples >= NUMTAPS ){
-        endin = in + insamples->nb_samples * 2 - NUMTAPS;
-        scalarproduct(in, endin, out);
+    if (2*in->nb_samples >= NUMTAPS ){
+        endin = src + in->nb_samples - NUMTAPS;
+        scalarproduct(src, endin, s->filter[filter_ch], dst);
 
         // save part of input for next round
         memcpy(taps, endin, NUMTAPS * sizeof(*taps));
-    } else
-        memmove(taps, taps + 2*insamples->nb_samples, NUMTAPS * sizeof(*taps));
+    } else {
+        memmove(taps, taps + in->nb_samples, NUMTAPS * sizeof(*taps));
+    }
+}
 
-    av_frame_free(&insamples);
-    return ff_filter_frame(outlink, outsamples);
+static void mix(AVFilterContext *ctx, AVFrame *out,
+                int output_ch, int f0, int f1, int i0, int i1)
+{
+    EarwaxContext *s = ctx->priv;
+    const int16_t *srcl = (const int16_t *)s->frame[f0]->data[i0];
+    const int16_t *srcr = (const int16_t *)s->frame[f1]->data[i1];
+    int16_t *dst = (int16_t *)out->data[output_ch];
+
+    for (int n = 0; n < out->nb_samples; n++)
+        dst[n] = av_clip_int16(srcl[n] + srcr[n]);
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    EarwaxContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out = ff_get_audio_buffer(outlink, in->nb_samples);
+
+    for (int ch = 0; ch < 2; ch++) {
+        if (!s->frame[ch] || s->frame[ch]->nb_samples < in->nb_samples) {
+            av_frame_free(&s->frame[ch]);
+            s->frame[ch] = ff_get_audio_buffer(outlink, in->nb_samples);
+            if (!s->frame[ch]) {
+                av_frame_free(&in);
+                av_frame_free(&out);
+                return AVERROR(ENOMEM);
+            }
+        }
+    }
+
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+
+    convolve(ctx, in, 0, 0, 0, 0);
+    convolve(ctx, in, 0, 1, 1, 1);
+    convolve(ctx, in, 1, 0, 0, 2);
+    convolve(ctx, in, 1, 1, 1, 3);
+
+    mix(ctx, out, 0, 0, 1, 1, 0);
+    mix(ctx, out, 1, 0, 1, 0, 1);
+
+    av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    EarwaxContext *s = ctx->priv;
+
+    av_frame_free(&s->frame[0]);
+    av_frame_free(&s->frame[1]);
 }
 
 static const AVFilterPad earwax_inputs[] = {
@@ -152,6 +218,7 @@ static const AVFilterPad earwax_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
@@ -169,6 +236,7 @@ AVFilter ff_af_earwax = {
     .description    = NULL_IF_CONFIG_SMALL("Widen the stereo image."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(EarwaxContext),
+    .uninit         = uninit,
     .inputs         = earwax_inputs,
     .outputs        = earwax_outputs,
 };
