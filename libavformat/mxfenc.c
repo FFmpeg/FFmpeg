@@ -2887,6 +2887,13 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     MXFIndexEntry ie = {0};
     int err;
 
+    if (!mxf->header_written && pkt->stream_index != 0 &&
+        s->oformat != &ff_mxf_opatom_muxer) {
+        av_log(s, AV_LOG_ERROR, "Received non-video packet before "
+                                "header has been written\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!mxf->cbr_index && !mxf->edit_unit_byte_count && !(mxf->edit_units_count % EDIT_UNITS_PER_BODY)) {
         if ((err = av_reallocp_array(&mxf->index_entries, mxf->edit_units_count
                                      + EDIT_UNITS_PER_BODY, sizeof(*mxf->index_entries))) < 0) {
