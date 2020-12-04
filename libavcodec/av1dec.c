@@ -674,20 +674,20 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
     AVFrame *frame;
     int ret;
 
-    f->header_ref = av_buffer_ref(s->header_ref);
-    if (!f->header_ref)
-        return AVERROR(ENOMEM);
-
-    f->raw_frame_header = s->raw_frame_header;
-
     ret = update_context_with_frame_header(avctx, header);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to update context with frame header\n");
         return ret;
     }
 
+    f->header_ref = av_buffer_ref(s->header_ref);
+    if (!f->header_ref)
+        return AVERROR(ENOMEM);
+
+    f->raw_frame_header = s->raw_frame_header;
+
     if ((ret = ff_thread_get_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF)) < 0)
-        return ret;
+        goto fail;
 
     frame = f->tf.f;
     frame->key_frame = header->frame_type == AV1_FRAME_KEY;
@@ -710,8 +710,10 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
         if (hwaccel->frame_priv_data_size) {
             f->hwaccel_priv_buf =
                 av_buffer_allocz(hwaccel->frame_priv_data_size);
-            if (!f->hwaccel_priv_buf)
+            if (!f->hwaccel_priv_buf) {
+                ret = AVERROR(ENOMEM);
                 goto fail;
+            }
             f->hwaccel_picture_private = f->hwaccel_priv_buf->data;
         }
     }
@@ -719,7 +721,7 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
 
 fail:
     av1_frame_unref(avctx, f);
-    return AVERROR(ENOMEM);
+    return ret;
 }
 
 static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
