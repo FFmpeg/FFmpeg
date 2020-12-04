@@ -57,7 +57,7 @@ typedef struct StereoToolsContext {
 } StereoToolsContext;
 
 #define OFFSET(x) offsetof(StereoToolsContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption stereotools_options[] = {
     { "level_in",    "set level in",     OFFSET(level_in),    AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.015625,  64, A },
@@ -120,12 +120,9 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     StereoToolsContext *s = ctx->priv;
 
-    s->length = 2 * inlink->sample_rate * 0.05;
-    if (s->length <= 1 || s->length & 1) {
-        av_log(ctx, AV_LOG_ERROR, "sample rate is too small\n");
-        return AVERROR(EINVAL);
-    }
-    s->buffer = av_calloc(s->length, sizeof(*s->buffer));
+    s->length = FFALIGN(inlink->sample_rate / 10, 2);
+    if (!s->buffer)
+        s->buffer = av_calloc(s->length, sizeof(*s->buffer));
     if (!s->buffer)
         return AVERROR(ENOMEM);
 
@@ -341,6 +338,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     StereoToolsContext *s = ctx->priv;
@@ -375,5 +384,6 @@ AVFilter ff_af_stereotools = {
     .uninit         = uninit,
     .inputs         = inputs,
     .outputs        = outputs,
+    .process_command = process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
