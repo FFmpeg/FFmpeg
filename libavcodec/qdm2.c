@@ -1877,6 +1877,6 @@ AVCodec ff_qdm2_decoder = {
     .init             = qdm2_decode_init,
     .close            = qdm2_decode_close,
     .decode           = qdm2_decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -735,5 +735,5 @@ AVCodec ff_qdmc_decoder = {
     .close            = qdmc_decode_close,
     .decode           = qdmc_decode_frame,
     .flush            = qdmc_flush,
-    .capabilities     = AV_CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };

@@ -1283,7 +1283,7 @@ AVCodec ff_amrwb_decoder = {
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amrwb_decode_init,
     .decode         = amrwb_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
 };

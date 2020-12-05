@@ -194,7 +194,7 @@ AVCodec ff_nellymoser_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_tag,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE | AV_CODEC_CAP_CHANNEL_CONF,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

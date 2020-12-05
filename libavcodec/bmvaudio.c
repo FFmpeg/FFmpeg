@@ -85,5 +85,5 @@ AVCodec ff_bmv_audio_decoder = {
     .id             = AV_CODEC_ID_BMV_AUDIO,
     .init           = bmv_aud_decode_init,
     .decode         = bmv_aud_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };

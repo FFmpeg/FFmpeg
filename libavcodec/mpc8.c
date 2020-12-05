@@ -392,7 +392,7 @@ AVCodec ff_mpc8_decoder = {
     .init           = mpc8_decode_init,
     .decode         = mpc8_decode_frame,
     .flush          = mpc8_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

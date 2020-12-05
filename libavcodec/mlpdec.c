@@ -1338,7 +1338,7 @@ AVCodec ff_mlp_decoder = {
     .priv_data_size = sizeof(MLPDecodeContext),
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
@@ -1351,7 +1351,7 @@ AVCodec ff_truehd_decoder = {
     .priv_data_size = sizeof(MLPDecodeContext),
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif /* CONFIG_TRUEHD_DECODER */

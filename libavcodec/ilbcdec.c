@@ -1484,6 +1484,6 @@ AVCodec ff_ilbc_decoder = {
     .id             = AV_CODEC_ID_ILBC,
     .init           = ilbc_decode_init,
     .decode         = ilbc_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(ILBCContext),
 };

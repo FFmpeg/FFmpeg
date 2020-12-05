@@ -134,5 +134,5 @@ AVCodec ff_ra_144_decoder = {
     .priv_data_size = sizeof(RA144Context),
     .init           = ra144_decode_init,
     .decode         = ra144_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };

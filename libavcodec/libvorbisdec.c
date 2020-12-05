@@ -217,5 +217,5 @@ AVCodec ff_libvorbis_decoder = {
     .init           = oggvorbis_decode_init,
     .decode         = oggvorbis_decode_frame,
     .close          = oggvorbis_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,
 };

@@ -797,6 +797,6 @@ AVCodec ff_qcelp_decoder = {
     .id             = AV_CODEC_ID_QCELP,
     .init           = qcelp_decode_init,
     .decode         = qcelp_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(QCELPContext),
 };

@@ -1711,7 +1711,7 @@ AVCodec ff_wavpack_decoder = {
     .flush          = wavpack_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
-                      AV_CODEC_CAP_SLICE_THREADS,
+                      AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };

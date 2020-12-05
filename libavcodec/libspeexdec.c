@@ -199,6 +199,6 @@ AVCodec ff_libspeex_decoder = {
     .close          = libspeex_decode_close,
     .decode         = libspeex_decode_frame,
     .flush          = libspeex_decode_flush,
-    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .wrapper_name   = "libspeex",
 };

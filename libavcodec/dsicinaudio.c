@@ -129,5 +129,5 @@ AVCodec ff_dsicinaudio_decoder = {
     .priv_data_size = sizeof(CinAudioContext),
     .init           = cinaudio_decode_init,
     .decode         = cinaudio_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };

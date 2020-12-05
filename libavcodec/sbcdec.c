@@ -370,7 +370,7 @@ AVCodec ff_sbc_decoder = {
     .priv_data_size        = sizeof(SBCDecContext),
     .init                  = sbc_decode_init,
     .decode                = sbc_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DR1,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO, 0},

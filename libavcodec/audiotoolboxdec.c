@@ -595,7 +595,7 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
         .flush          = ffat_decode_flush, \
         .priv_class     = &ffat_##NAME##_dec_class, \
         .bsfs           = bsf_name, \
-        .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY, \
+        .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF, \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP, \
         .wrapper_name   = "at", \
     };

@@ -147,6 +147,6 @@ AVCodec ff_adpcm_g722_decoder = {
     .priv_data_size = sizeof(G722Context),
     .init           = g722_decode_init,
     .decode         = g722_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_class     = &g722_decoder_class,
 };

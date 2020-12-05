@@ -139,7 +139,7 @@ AVCodec ff_libopencore_amrnb_decoder = {
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
     .decode         = amr_nb_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_DECODER */
 
@@ -379,7 +379,7 @@ AVCodec ff_libopencore_amrwb_decoder = {
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,
     .decode         = amr_wb_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .wrapper_name   = "libopencore_amrwb",
 };
 

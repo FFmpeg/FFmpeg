@@ -120,7 +120,7 @@ AVCodec ff_gsm_decoder = {
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };
 #endif
 #if CONFIG_GSM_MS_DECODER
@@ -133,6 +133,6 @@ AVCodec ff_gsm_ms_decoder = {
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };
 #endif
