@@ -423,9 +423,9 @@ fate-filter-overlay-dvdsub-2397: CMD = framecrc -auto_conversion_filters -flags 
 
 FATE_FILTER_HQX-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER HQX_FILTER) = fate-filter-hq2x fate-filter-hq3x fate-filter-hq4x
 FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_HQX-yes)
-fate-filter-hq2x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,hqx=2 -pix_fmt bgra
-fate-filter-hq3x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,hqx=3 -pix_fmt bgra
-fate-filter-hq4x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,hqx=4 -pix_fmt bgra
+fate-filter-hq2x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,format=rgb32,hqx=2,scale,format=bgra
+fate-filter-hq3x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,format=rgb32,hqx=3,scale,format=bgra
+fate-filter-hq4x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,format=rgb32,hqx=4,scale,format=bgra
 fate-filter-hqx: $(FATE_FILTER_HQX-yes)
 
 FATE_FILTER_XBR-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER XBR_FILTER) = fate-filter-2xbr fate-filter-3xbr fate-filter-4xbr
