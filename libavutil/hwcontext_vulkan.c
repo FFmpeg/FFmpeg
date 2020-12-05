@@ -3253,6 +3253,8 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     AVCUDADeviceContext *cuda_dev = cuda_cu->hwctx;
     AVCUDADeviceContextInternal *cu_internal = cuda_dev->internal;
     CudaFunctions *cu = cu_internal->cuda_dl;
+    CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS s_w_par[AV_NUM_DATA_POINTERS] = { 0 };
+    CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS s_s_par[AV_NUM_DATA_POINTERS] = { 0 };
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
     if (ret < 0)
@@ -3267,6 +3269,13 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     }
 
     dst_int = dst_f->internal;
+
+    ret = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
+                                                     planes, cuda_dev->stream));
+    if (ret < 0) {
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
 
     for (int i = 0; i < planes; i++) {
         CUDA_MEMCPY2D cpy = {
@@ -3290,6 +3299,13 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
             err = AVERROR_EXTERNAL;
             goto fail;
         }
+    }
+
+    ret = CHECK_CU(cu->cuSignalExternalSemaphoresAsync(dst_int->cu_sem, s_s_par,
+                                                       planes, cuda_dev->stream));
+    if (ret < 0) {
+        err = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
