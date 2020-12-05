@@ -32,6 +32,7 @@ typedef struct AFreqShift {
     const AVClass *class;
 
     double shift;
+    double level;
 
     double c[NB_COEFS];
 
@@ -85,7 +86,8 @@ static void pfilter_channel(AVFilterContext *ctx,
                             double *i2, double *o2)
 {
     AFreqShift *s = ctx->priv;
-    double *c = s->c;
+    const double *c = s->c;
+    const double level = s->level;
     double shift = s->shift * M_PI;
     double cos_theta = cos(shift);
     double sin_theta = sin(shift);
@@ -113,7 +115,7 @@ static void pfilter_channel(AVFilterContext *ctx,
         }
         Q = o2[NB_COEFS - 1];
 
-        dst[n] = I * cos_theta - Q * sin_theta;
+        dst[n] = (I * cos_theta - Q * sin_theta) * level;
     }
 }
 
@@ -125,7 +127,8 @@ static void ffilter_channel(AVFilterContext *ctx,
                             double *i2, double *o2)
 {
     AFreqShift *s = ctx->priv;
-    double *c = s->c;
+    const double *c = s->c;
+    const double level = s->level;
     double ts = 1. / sample_rate;
     double shift = s->shift;
     int64_t N = s->in_samples;
@@ -154,7 +157,7 @@ static void ffilter_channel(AVFilterContext *ctx,
         Q = o2[NB_COEFS - 1];
 
         theta = 2. * M_PI * fmod(shift * (N + n) * ts, 1.);
-        dst[n] = I * cos(theta) - Q * sin(theta);
+        dst[n] = (I * cos(theta) - Q * sin(theta)) * level;
     }
 }
 
@@ -345,6 +348,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVOption afreqshift_options[] = {
     { "shift", "set frequency shift", OFFSET(shift), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -INT_MAX, INT_MAX, FLAGS },
+    { "level", "set output level",    OFFSET(level), AV_OPT_TYPE_DOUBLE, {.dbl=1},      0.0,     1.0, FLAGS },
     { NULL }
 };
 
@@ -384,6 +388,7 @@ AVFilter ff_af_afreqshift = {
 
 static const AVOption aphaseshift_options[] = {
     { "shift", "set phase shift", OFFSET(shift), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -1.0, 1.0, FLAGS },
+    { "level", "set output level",OFFSET(level), AV_OPT_TYPE_DOUBLE, {.dbl=1},  0.0, 1.0, FLAGS },
     { NULL }
 };
 

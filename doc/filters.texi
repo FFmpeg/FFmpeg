@@ -1419,11 +1419,15 @@ The filter accepts the following options:
 @item shift
 Specify frequency shift. Allowed range is -INT_MAX to INT_MAX.
 Default value is 0.0.
+
+@item level
+Set output gain applied to final output. Allowed range is from -1.0 to 1.0.
+Default value is 1.0.
 @end table
 
 @subsection Commands
 
-This filter supports the above option as @ref{commands}.
+This filter supports the all above options as @ref{commands}.
 
 @section agate
 
@@ -2182,11 +2186,15 @@ The filter accepts the following options:
 @item shift
 Specify phase shift. Allowed range is from -1.0 to 1.0.
 Default value is 0.0.
+
+@item level
+Set output gain applied to final output. Allowed range is from -1.0 to 1.0.
+Default value is 1.0.
 @end table
 
 @subsection Commands
 
-This filter supports the above option as @ref{commands}.
+This filter supports the all above options as @ref{commands}.
 
 @section apulsator
 
