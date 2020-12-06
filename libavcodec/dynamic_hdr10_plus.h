@@ -20,15 +20,16 @@
 #define AVCODEC_DYNAMIC_HDR10_PLUS_H
 
 #include "libavutil/hdr_dynamic_metadata.h"
-#include "get_bits.h"
 
 /**
  * Parse the user data registered ITU-T T.35 to AVbuffer (AVDynamicHDRPlus).
- * @param gb The bit content to be decoded.
  * @param s A pointer containing the decoded AVDynamicHDRPlus structure.
+ * @param data The byte array containing the raw ITU-T T.35 data.
+ * @param size Size of the data array in bytes.
  *
  * @return 0 if succeed. Otherwise, returns the appropriate AVERROR.
  */
-int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(GetBitContext *gb, AVDynamicHDRPlus *s);
+int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t *data,
+                                             int size);
 
 #endif /* AVCODEC_DYNAMIC_HDR10_PLUS_H */

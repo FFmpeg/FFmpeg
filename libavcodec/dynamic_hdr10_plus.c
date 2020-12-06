@@ -17,6 +17,7 @@
  */
 
 #include "dynamic_hdr10_plus.h"
+#include "get_bits.h"
 
 static const uint8_t usa_country_code = 0xB5;
 static const uint16_t smpte_provider_code = 0x003C;
@@ -30,10 +31,18 @@ static const int32_t knee_point_den = 4095;
 static const int32_t bezier_anchor_den = 1023;
 static const int32_t saturation_weight_den = 8;
 
-int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(GetBitContext *gb, AVDynamicHDRPlus *s)
+int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t *data,
+                                             int size)
 {
+    GetBitContext gbc, *gb = &gbc;
+    int ret;
+
     if (!s)
         return AVERROR(ENOMEM);
+
+    ret = init_get_bits8(gb, data, size);
+    if (ret < 0)
+        return ret;
 
     s->application_version = get_bits(gb, 8);
 
@@ -188,8 +197,6 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(GetBitContext *gb, AVDynamicHDRPlus
                 (AVRational){get_bits(gb, 6), saturation_weight_den};
         }
     }
-
-    skip_bits(gb, get_bits_left(gb));
 
     return 0;
 }

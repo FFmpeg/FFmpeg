@@ -216,7 +216,8 @@ static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s
     if (!metadata)
         return AVERROR(ENOMEM);
 
-    err = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(gb, metadata);
+    err = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(metadata,
+                                                   gb->buffer + get_bits_count(gb) / 8, size);
     if (err < 0) {
         av_free(metadata);
         return err;
@@ -228,6 +229,8 @@ static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s
         av_free(metadata);
         return AVERROR(ENOMEM);
     }
+
+    skip_bits_long(gb, size * 8);
 
     return 0;
 }
