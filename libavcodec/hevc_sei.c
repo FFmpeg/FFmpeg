@@ -230,7 +230,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
 
     if (country_code == usa_country_code &&
         provider_code == smpte_provider_code) {
-        // A/341 Amendment – 2094-40
+        // A/341 Amendment - 2094-40
         const uint16_t smpte2094_40_provider_oriented_code = 0x0001;
         const uint8_t smpte2094_40_application_identifier = 0x04;
 
