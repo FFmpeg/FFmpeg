@@ -74,7 +74,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(GetBitContext *gb, AVDynamicHDRPlus
         return AVERROR(EINVAL);
 
     s->targeted_system_display_maximum_luminance =
-        (AVRational){get_bits(gb, 27), luminance_den};
+        (AVRational){get_bits_long(gb, 27), luminance_den};
     s->targeted_system_display_actual_peak_luminance_flag = get_bits1(gb);
 
     if (s->targeted_system_display_actual_peak_luminance_flag) {
