@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2005 Boðaç Topaktaþ
+ * Copyright (c) 2020 Paul B Mahol
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -33,6 +36,7 @@ typedef struct ASuperCutContext {
 
     double cutoff;
     double level;
+    double qfactor;
     int order;
 
     int filter_count;
@@ -93,10 +97,11 @@ static int get_coeffs(AVFilterContext *ctx)
     if (s->bypass)
         return 0;
 
-    s->filter_count = s->order / 2 + (s->order & 1);
-    calc_q_factors(s->order, q);
-
     if (!strcmp(ctx->filter->name, "asubcut")) {
+        s->filter_count = s->order / 2 + (s->order & 1);
+
+        calc_q_factors(s->order, q);
+
         if (s->order & 1) {
             BiquadCoeffs *coeffs = &s->coeffs[0];
             double omega = 2. * tan(M_PI * w0);
@@ -119,7 +124,11 @@ static int get_coeffs(AVFilterContext *ctx)
             coeffs->a1 = -2.0 * (K * K - 1.0) * norm;
             coeffs->a2 = -(1.0 - K / q[idx] + K * K) * norm;
         }
-    } else {
+    } else if (!strcmp(ctx->filter->name, "asupercut")) {
+        s->filter_count = s->order / 2 + (s->order & 1);
+
+        calc_q_factors(s->order, q);
+
         if (s->order & 1) {
             BiquadCoeffs *coeffs = &s->coeffs[0];
             double omega = 2. * tan(M_PI * w0);
@@ -141,6 +150,74 @@ static int get_coeffs(AVFilterContext *ctx)
             coeffs->b2 = coeffs->b0;
             coeffs->a1 = -2.0 * (K * K - 1.0) * norm;
             coeffs->a2 = -(1.0 - K / q[idx] + K * K) * norm;
+        }
+    } else if (!strcmp(ctx->filter->name, "asuperpass")) {
+        double alpha, beta, gamma, theta;
+        double theta_0 = 2. * M_PI * (s->cutoff / inlink->sample_rate);
+        double d_E;
+
+        s->filter_count = s->order / 2;
+        d_E = (2. * tan(theta_0 / (2. * s->qfactor))) / sin(theta_0);
+
+        for (int b = 0; b < s->filter_count; b += 2) {
+            double D = 2. * sin(((b + 1) * M_PI) / (2. * s->filter_count));
+            double A = (1. + pow((d_E / 2.), 2)) / (D * d_E / 2.);
+            double d = sqrt((d_E * D) / (A + sqrt(A * A - 1.)));
+            double B = D * (d_E / 2.) / d;
+            double W = B + sqrt(B * B - 1.);
+
+            for (int j = 0; j < 2; j++) {
+                BiquadCoeffs *coeffs = &s->coeffs[b + j];
+
+                if (j == 1)
+                    theta = 2. * atan(tan(theta_0 / 2.) / W);
+                else
+                    theta = 2. * atan(W * tan(theta_0 / 2.));
+
+                beta = 0.5 * ((1. - (d / 2.) * sin(theta)) / (1. + (d / 2.) * sin(theta)));
+                gamma = (0.5 + beta) * cos(theta);
+                alpha = 0.5 * (0.5 - beta) * sqrt(1. + pow((W - (1. / W)) / d, 2.));
+
+                coeffs->a1 =  2. * gamma;
+                coeffs->a2 = -2. * beta;
+                coeffs->b0 =  2. * alpha;
+                coeffs->b1 =  0.;
+                coeffs->b2 = -2. * alpha;
+            }
+        }
+    } else if (!strcmp(ctx->filter->name, "asuperstop")) {
+        double alpha, beta, gamma, theta;
+        double theta_0 = 2. * M_PI * (s->cutoff / inlink->sample_rate);
+        double d_E;
+
+        s->filter_count = s->order / 2;
+        d_E = (2. * tan(theta_0 / (2. * s->qfactor))) / sin(theta_0);
+
+        for (int b = 0; b < s->filter_count; b += 2) {
+            double D = 2. * sin(((b + 1) * M_PI) / (2. * s->filter_count));
+            double A = (1. + pow((d_E / 2.), 2)) / (D * d_E / 2.);
+            double d = sqrt((d_E * D) / (A + sqrt(A * A - 1.)));
+            double B = D * (d_E / 2.) / d;
+            double W = B + sqrt(B * B - 1.);
+
+            for (int j = 0; j < 2; j++) {
+                BiquadCoeffs *coeffs = &s->coeffs[b + j];
+
+                if (j == 1)
+                    theta = 2. * atan(tan(theta_0 / 2.) / W);
+                else
+                    theta = 2. * atan(W * tan(theta_0 / 2.));
+
+                beta = 0.5 * ((1. - (d / 2.) * sin(theta)) / (1. + (d / 2.) * sin(theta)));
+                gamma = (0.5 + beta) * cos(theta);
+                alpha = 0.5 * (0.5 + beta) * ((1. - cos(theta)) / (1. - cos(theta_0)));
+
+                coeffs->a1 =  2. * gamma;
+                coeffs->a2 = -2. * beta;
+                coeffs->b0 =  2. * alpha;
+                coeffs->b1 = -4. * alpha * cos(theta_0);
+                coeffs->b2 =  2. * alpha;
+            }
         }
     }
 
@@ -320,6 +397,54 @@ AVFilter ff_af_asubcut = {
     .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asubcut_class,
+    .uninit          = uninit,
+    .inputs          = inputs,
+    .outputs         = outputs,
+    .process_command = process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
+};
+
+static const AVOption asuperpass_options[] = {
+    { "centerf","set center frequency", OFFSET(cutoff), AV_OPT_TYPE_DOUBLE, {.dbl=1000}, 2, 999999, FLAGS },
+    { "order",  "set filter order",     OFFSET(order),  AV_OPT_TYPE_INT,    {.i64=4},    4,     20, FLAGS },
+    { "qfactor","set Q-factor",         OFFSET(qfactor),AV_OPT_TYPE_DOUBLE, {.dbl=1.},0.01,   100., FLAGS },
+    { "level",  "set input level",      OFFSET(level),  AV_OPT_TYPE_DOUBLE, {.dbl=1.},   0.,    2., FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(asuperpass);
+
+AVFilter ff_af_asuperpass = {
+    .name            = "asuperpass",
+    .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-pass filter."),
+    .query_formats   = query_formats,
+    .priv_size       = sizeof(ASuperCutContext),
+    .priv_class      = &asuperpass_class,
+    .uninit          = uninit,
+    .inputs          = inputs,
+    .outputs         = outputs,
+    .process_command = process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
+};
+
+static const AVOption asuperstop_options[] = {
+    { "centerf","set center frequency", OFFSET(cutoff), AV_OPT_TYPE_DOUBLE, {.dbl=1000}, 2, 999999, FLAGS },
+    { "order",  "set filter order",     OFFSET(order),  AV_OPT_TYPE_INT,    {.i64=4},    4,     20, FLAGS },
+    { "qfactor","set Q-factor",         OFFSET(qfactor),AV_OPT_TYPE_DOUBLE, {.dbl=1.},0.01,   100., FLAGS },
+    { "level",  "set input level",      OFFSET(level),  AV_OPT_TYPE_DOUBLE, {.dbl=1.},   0.,    2., FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(asuperstop);
+
+AVFilter ff_af_asuperstop = {
+    .name            = "asuperstop",
+    .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-stop filter."),
+    .query_formats   = query_formats,
+    .priv_size       = sizeof(ASuperCutContext),
+    .priv_class      = &asuperstop_class,
     .uninit          = uninit,
     .inputs          = inputs,
     .outputs         = outputs,
