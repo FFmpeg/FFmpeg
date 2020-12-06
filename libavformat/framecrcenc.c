@@ -23,6 +23,7 @@
 
 #include "libavutil/adler32.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -52,16 +53,17 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (pkt->flags != AV_PKT_FLAG_KEY)
         av_strlcatf(buf, sizeof(buf), ", F=0x%0X", pkt->flags);
     if (pkt->side_data_elems) {
-        int i, j;
+        int i;
         av_strlcatf(buf, sizeof(buf), ", S=%d", pkt->side_data_elems);
 
         for (i=0; i<pkt->side_data_elems; i++) {
+            const AVPacketSideData *const sd = &pkt->side_data[i];
             uint32_t side_data_crc = 0;
             if (HAVE_BIGENDIAN && AV_PKT_DATA_PALETTE == pkt->side_data[i].type) {
-                for (j=0; j<pkt->side_data[i].size; j++) {
-                    side_data_crc = av_adler32_update(side_data_crc,
-                                                      pkt->side_data[i].data + (j^3),
-                                                      1);
+                for (int j = 0; j < sd->size / 4; j++) {
+                    uint8_t buf[4];
+                    AV_WL32(buf, AV_RB32(sd->data + 4 * j));
+                    side_data_crc = av_adler32_update(side_data_crc, buf, 4);
                 }
             } else {
                 side_data_crc = av_adler32_update(0,
