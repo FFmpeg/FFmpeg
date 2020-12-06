@@ -207,6 +207,31 @@ static int decode_nal_sei_user_data_unregistered(HEVCSEIUnregistered *s, GetBitC
     return 0;
 }
 
+static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s,
+                                                        GetBitContext *gb, int size)
+{
+    size_t meta_size;
+    int err;
+    AVDynamicHDRPlus *metadata = av_dynamic_hdr_plus_alloc(&meta_size);
+    if (!metadata)
+        return AVERROR(ENOMEM);
+
+    err = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(gb, metadata);
+    if (err < 0) {
+        av_free(metadata);
+        return err;
+    }
+
+    av_buffer_unref(&s->info);
+    s->info = av_buffer_create((uint8_t *)metadata, meta_size, NULL, NULL, 0);
+    if (!s->info) {
+        av_free(metadata);
+        return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
 static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitContext *gb,
                                                          int size)
 {
@@ -239,25 +264,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
 
         if (provider_oriented_code == smpte2094_40_provider_oriented_code &&
             application_identifier == smpte2094_40_application_identifier) {
-            int err = 0;
-            size_t meta_size = 0;
-            AVDynamicHDRPlus *metadata = av_dynamic_hdr_plus_alloc(&meta_size);
-            if (!metadata)
-                return AVERROR(ENOMEM);
-
-            err = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(gb, metadata);
-            if (err < 0) {
-                av_free(metadata);
-                return err;
-            }
-
-            av_buffer_unref(&s->dynamic_hdr_plus.info);
-            s->dynamic_hdr_plus.info = av_buffer_create((uint8_t *)metadata,
-                                                        meta_size, NULL, NULL, 0);
-            if (!s->dynamic_hdr_plus.info) {
-                av_free(metadata);
-                return AVERROR(ENOMEM);
-            }
+            return decode_registered_user_data_dynamic_hdr_plus(&s->dynamic_hdr_plus, gb, size);
         }
     } else {
         uint32_t user_identifier = get_bits_long(gb, 32);
