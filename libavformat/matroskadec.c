@@ -2321,6 +2321,15 @@ static int matroska_parse_tracks(AVFormatContext *s)
         if (!track->codec_id)
             continue;
 
+        if (   track->type == MATROSKA_TRACK_TYPE_AUDIO && track->codec_id[0] != 'A'
+            || track->type == MATROSKA_TRACK_TYPE_VIDEO && track->codec_id[0] != 'V'
+            || track->type == MATROSKA_TRACK_TYPE_SUBTITLE && track->codec_id[0] != 'D' && track->codec_id[0] != 'S'
+            || track->type == MATROSKA_TRACK_TYPE_METADATA && track->codec_id[0] != 'D' && track->codec_id[0] != 'S'
+        ) {
+            av_log(matroska->ctx, AV_LOG_INFO, "Inconsistent track type\n");
+            continue;
+        }
+
         if (track->audio.samplerate < 0 || track->audio.samplerate > INT_MAX ||
             isnan(track->audio.samplerate)) {
             av_log(matroska->ctx, AV_LOG_WARNING,
