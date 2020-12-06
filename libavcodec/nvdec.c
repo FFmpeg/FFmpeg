@@ -83,6 +83,9 @@ static int map_chroma_format(enum AVPixelFormat pix_fmt)
 {
     int shift_h = 0, shift_v = 0;
 
+    if (av_pix_fmt_count_planes(pix_fmt) == 1)
+        return cudaVideoChromaFormat_Monochrome;
+
     av_pix_fmt_get_chroma_sub_sample(pix_fmt, &shift_h, &shift_v);
 
     if (shift_h == 1 && shift_v == 1)

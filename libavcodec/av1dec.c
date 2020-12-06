@@ -387,9 +387,12 @@ static int get_pixel_format(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
         }
     } else {
-        if (seq->color_config.subsampling_x == 1 &&
-            seq->color_config.subsampling_y == 1)
-            pix_fmt = AV_PIX_FMT_YUV440P;
+        if (bit_depth == 8)
+            pix_fmt = AV_PIX_FMT_GRAY8;
+        else if (bit_depth == 10)
+            pix_fmt = AV_PIX_FMT_GRAY10;
+        else if (bit_depth == 12)
+            pix_fmt = AV_PIX_FMT_GRAY12;
         else
             av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
     }
@@ -430,6 +433,16 @@ static int get_pixel_format(AVCodecContext *avctx)
 #endif
 #if CONFIG_AV1_VAAPI_HWACCEL
         *fmtp++ = AV_PIX_FMT_VAAPI;
+#endif
+        break;
+    case AV_PIX_FMT_GRAY8:
+#if CONFIG_AV1_NVDEC_HWACCEL
+        *fmtp++ = AV_PIX_FMT_CUDA;
+#endif
+        break;
+    case AV_PIX_FMT_GRAY10:
+#if CONFIG_AV1_NVDEC_HWACCEL
+        *fmtp++ = AV_PIX_FMT_CUDA;
 #endif
         break;
     }
