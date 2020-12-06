@@ -24,12 +24,12 @@
 
 #include <inttypes.h>
 
-#include "libavcodec/dynamic_hdr10_plus.h"
 #include "libavutil/bswap.h"
 #include "libavutil/adler32.h"
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/spherical.h"
