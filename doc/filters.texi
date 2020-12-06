@@ -1719,6 +1719,21 @@ Set transform type of IIR filter.
 @item tdii
 @item latt
 @end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
+@end table
 @end table
 
 @subsection Commands
@@ -2918,6 +2933,21 @@ Set transform type of IIR filter.
 @item tdii
 @item latt
 @end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
+@end table
 @end table
 
 @subsection Commands
@@ -2989,6 +3019,21 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
 @end table
 @end table
 
@@ -3069,6 +3114,21 @@ Set transform type of IIR filter.
 @item tdii
 @item latt
 @end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
+@end table
 @end table
 
 @subsection Commands
@@ -3135,6 +3195,21 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
 @end table
 @end table
 
@@ -3868,6 +3943,21 @@ Set transform type of IIR filter.
 @item tdii
 @item latt
 @end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
+@end table
 @end table
 
 @subsection Examples
@@ -4354,6 +4444,21 @@ Set transform type of IIR filter.
 @item tdii
 @item latt
 @end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
+@end table
 @end table
 
 @subsection Commands
@@ -4688,6 +4793,21 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
 @end table
 @end table
 
@@ -5894,6 +6014,21 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
 @end table
 @end table
 
