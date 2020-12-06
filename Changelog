@@ -13,6 +13,7 @@ version <next>:
 - Apple Graphics (SMC) encoder
 - hsvkey and hsvhold video filters
 - adecorrelate audio filter
+- atilt audio filter
 
 
 version 4.4:

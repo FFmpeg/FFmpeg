@@ -92,6 +92,7 @@ extern const AVFilter ff_af_asupercut;
 extern const AVFilter ff_af_asuperpass;
 extern const AVFilter ff_af_asuperstop;
 extern const AVFilter ff_af_atempo;
+extern const AVFilter ff_af_atilt;
 extern const AVFilter ff_af_atrim;
 extern const AVFilter ff_af_axcorrelate;
 extern const AVFilter ff_af_azmq;

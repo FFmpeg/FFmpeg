@@ -2989,6 +2989,35 @@ Change filter tempo scale factor.
 Syntax for the command is : "@var{tempo}"
 @end table
 
+@section atilt
+Apply spectral tilt filter to audio stream.
+
+This filter apply any spectral roll-off slope over any specified frequency band.
+
+The filter accepts the following options:
+
+@table @option
+@item freq
+Set central frequency of tilt in Hz. Default is 10000 Hz.
+
+@item slope
+Set slope direction of tilt. Default is 0. Allowed range is from -1 to 1.
+
+@item width
+Set width of tilt. Default is 1000. Allowed range is from 100 to 10000.
+
+@item order
+Set order of tilt filter.
+
+@item level
+Set input volume level. Allowed range is from 0 to 4.
+Defalt is 1.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section atrim
 
 Trim the input so that the output contains one continuous subpart of the input.

@@ -99,6 +99,7 @@ OBJS-$(CONFIG_ASUPERCUT_FILTER)              += af_asupercut.o
 OBJS-$(CONFIG_ASUPERPASS_FILTER)             += af_asupercut.o
 OBJS-$(CONFIG_ASUPERSTOP_FILTER)             += af_asupercut.o
 OBJS-$(CONFIG_ATEMPO_FILTER)                 += af_atempo.o
+OBJS-$(CONFIG_ATILT_FILTER)                  += af_atilt.o
 OBJS-$(CONFIG_ATRIM_FILTER)                  += trim.o
 OBJS-$(CONFIG_AXCORRELATE_FILTER)            += af_axcorrelate.o
 OBJS-$(CONFIG_AZMQ_FILTER)                   += f_zmq.o
