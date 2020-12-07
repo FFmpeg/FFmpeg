@@ -19,10 +19,6 @@
 #include "dynamic_hdr10_plus.h"
 #include "get_bits.h"
 
-static const uint8_t usa_country_code = 0xB5;
-static const uint16_t smpte_provider_code = 0x003C;
-static const uint16_t smpte2094_40_provider_oriented_code = 0x0001;
-static const uint16_t smpte2094_40_application_identifier = 0x04;
 static const int64_t luminance_den = 1;
 static const int32_t peak_luminance_den = 15;
 static const int64_t rgb_den = 100000;
