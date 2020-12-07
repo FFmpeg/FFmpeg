@@ -132,7 +132,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     unsigned int offset;
     int magic_num, endian;
-    int x, y, stride, i, ret;
+    int x, y, stride, i, j, ret;
     int w, h, bits_per_color, descriptor, elements, packing;
     int encoding, need_align = 0;
 
@@ -265,6 +265,29 @@ static int decode_frame(AVCodecContext *avctx,
             av_timecode_make_smpte_tc_string2(tcbuf, avctx->framerate,
                                               tc_sd[1], 0, 0);
             av_dict_set(&p->metadata, "timecode", tcbuf, 0);
+        }
+    }
+
+    /* color range from television header */
+    if (offset >= 1964 + 4) {
+        buf = avpkt->data + 1952;
+        i = read32(&buf, endian);
+
+        buf = avpkt->data + 1964;
+        j = read32(&buf, endian);
+
+        if (i != 0xFFFFFFFF && j != 0xFFFFFFFF) {
+            float minCV, maxCV;
+            minCV = av_int2float(i);
+            maxCV = av_int2float(j);
+            if (bits_per_color >= 1 &&
+                minCV == 0.0f && maxCV == ((1<<bits_per_color) - 1)) {
+                avctx->color_range = AVCOL_RANGE_JPEG;
+            } else if (bits_per_color >= 8 &&
+                       minCV == (1  <<(bits_per_color - 4)) &&
+                       maxCV == (235<<(bits_per_color - 8))) {
+                avctx->color_range = AVCOL_RANGE_MPEG;
+            }
         }
     }
 
