@@ -167,7 +167,7 @@ static int decode_frame(AVCodecContext *avctx,
     int x, y, stride, i, j, ret;
     int w, h, bits_per_color, descriptor, elements, packing;
     int yuv, color_trc, color_spec;
-    int encoding, need_align = 0;
+    int encoding, need_align = 0, unpadded_10bit = 0;
 
     unsigned int rgbBuffer = 0;
     int n_datum = 0;
@@ -574,6 +574,12 @@ static int decode_frame(AVCodecContext *avctx,
     input_device[32] = '\0';
     av_dict_set(&p->metadata, "Input Device", input_device, 0);
 
+    // Some devices do not pad 10bit samples to whole 32bit words per row
+    if (!memcmp(input_device, "Scanity", 7) ||
+        !memcmp(creator, "Lasergraphics Inc.", 18)) {
+        unpadded_10bit = 1;
+    }
+
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
 
@@ -606,7 +612,7 @@ static int decode_frame(AVCodecContext *avctx,
                     read10in32(&buf, &rgbBuffer,
                                &n_datum, endian, shift);
             }
-            if (memcmp(input_device, "Scanity", 7))
+            if (!unpadded_10bit)
                 n_datum = 0;
             for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
