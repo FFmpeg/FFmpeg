@@ -141,6 +141,7 @@ AVFilter ff_af_aperms = {
     .inputs      = aperms_inputs,
     .outputs     = aperms_outputs,
     .priv_class  = &aperms_class,
+    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 #endif /* CONFIG_APERMS_FILTER */
 
@@ -174,5 +175,6 @@ AVFilter ff_vf_perms = {
     .inputs      = perms_inputs,
     .outputs     = perms_outputs,
     .priv_class  = &perms_class,
+    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 #endif /* CONFIG_PERMS_FILTER */
