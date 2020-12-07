@@ -4,6 +4,13 @@ color_range=unknown
 color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
+TAG:timecode=00:00:01:18
 TAG:Creator=Apple Compressor
 TAG:Input Device=
+[SIDE_DATA]
+side_data_type=SMPTE 12-1 timecode
+[TIMECODE]
+value=00:00:01:18
+[/TIMECODE]
+[/SIDE_DATA]
 [/FRAME]
