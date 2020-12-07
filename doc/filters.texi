@@ -1421,7 +1421,7 @@ Specify frequency shift. Allowed range is -INT_MAX to INT_MAX.
 Default value is 0.0.
 
 @item level
-Set output gain applied to final output. Allowed range is from -1.0 to 1.0.
+Set output gain applied to final output. Allowed range is from 0.0 to 1.0.
 Default value is 1.0.
 @end table
 
@@ -2203,7 +2203,7 @@ Specify phase shift. Allowed range is from -1.0 to 1.0.
 Default value is 0.0.
 
 @item level
-Set output gain applied to final output. Allowed range is from -1.0 to 1.0.
+Set output gain applied to final output. Allowed range is from 0.0 to 1.0.
 Default value is 1.0.
 @end table
 
