@@ -216,10 +216,23 @@ static int decode_frame(AVCodecContext *avctx,
     else
         avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
 
+    /* preferred frame rate from Motion-picture film header */
     if (offset >= 1724 + 4) {
         buf = avpkt->data + 1724;
         i = read32(&buf, endian);
-        if(i) {
+        if(i && i != 0xFFFFFFFF) {
+            AVRational q = av_d2q(av_int2float(i), 4096);
+            if (q.num > 0 && q.den > 0)
+                avctx->framerate = q;
+        }
+    }
+
+    /* alternative frame rate from television header */
+    if (offset >= 1940 + 4 &&
+        !(avctx->framerate.num && avctx->framerate.den)) {
+        buf = avpkt->data + 1940;
+        i = read32(&buf, endian);
+        if(i && i != 0xFFFFFFFF) {
             AVRational q = av_d2q(av_int2float(i), 4096);
             if (q.num > 0 && q.den > 0)
                 avctx->framerate = q;
