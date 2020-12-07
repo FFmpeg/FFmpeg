@@ -1,8 +1,8 @@
 [FRAME]
 sample_aspect_ratio=1:1
 color_range=pc
-color_space=unknown
-color_primaries=unknown
+color_space=bt709
+color_primaries=bt709
 color_transfer=unknown
 TAG:timecode=00:00:01:18
 TAG:Creator=Apple Compressor

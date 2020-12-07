@@ -28,6 +28,38 @@
 #include "avcodec.h"
 #include "internal.h"
 
+enum DPX_TRC {
+    DPX_TRC_USER_DEFINED       = 0,
+    DPX_TRC_PRINTING_DENSITY   = 1,
+    DPX_TRC_LINEAR             = 2,
+    DPX_TRC_LOGARITHMIC        = 3,
+    DPX_TRC_UNSPECIFIED_VIDEO  = 4,
+    DPX_TRC_SMPTE_274          = 5,
+    DPX_TRC_ITU_R_709_4        = 6,
+    DPX_TRC_ITU_R_601_625      = 7,
+    DPX_TRC_ITU_R_601_525      = 8,
+    DPX_TRC_SMPTE_170          = 9,
+    DPX_TRC_ITU_R_624_4_PAL    = 10,
+    DPX_TRC_Z_LINEAR           = 11,
+    DPX_TRC_Z_HOMOGENEOUS      = 12,
+};
+
+enum DPX_COL_SPEC {
+    DPX_COL_SPEC_USER_DEFINED       = 0,
+    DPX_COL_SPEC_PRINTING_DENSITY   = 1,
+    /* 2 = N/A */
+    /* 3 = N/A */
+    DPX_COL_SPEC_UNSPECIFIED_VIDEO  = 4,
+    DPX_COL_SPEC_SMPTE_274          = 5,
+    DPX_COL_SPEC_ITU_R_709_4        = 6,
+    DPX_COL_SPEC_ITU_R_601_625      = 7,
+    DPX_COL_SPEC_ITU_R_601_525      = 8,
+    DPX_COL_SPEC_SMPTE_170          = 9,
+    DPX_COL_SPEC_ITU_R_624_4_PAL    = 10,
+    /* 11 = N/A */
+    /* 12 = N/A */
+};
+
 static unsigned int read16(const uint8_t **ptr, int is_big)
 {
     unsigned int temp;
@@ -134,6 +166,7 @@ static int decode_frame(AVCodecContext *avctx,
     int magic_num, endian;
     int x, y, stride, i, j, ret;
     int w, h, bits_per_color, descriptor, elements, packing;
+    int yuv, color_trc, color_spec;
     int encoding, need_align = 0;
 
     unsigned int rgbBuffer = 0;
@@ -193,6 +226,8 @@ static int decode_frame(AVCodecContext *avctx,
     // Need to end in 0x320 to read the descriptor
     buf += 20;
     descriptor = buf[0];
+    color_trc = buf[1];
+    color_spec = buf[2];
 
     // Need to end in 0x323 to read the bits per color
     buf += 3;
@@ -294,18 +329,26 @@ static int decode_frame(AVCodecContext *avctx,
     switch (descriptor) {
     case 6:  // Y
         elements = 1;
+        yuv = 1;
+        break;
+    case 50: // RGB
+        elements = 3;
         break;
     case 52: // ABGR
     case 51: // RGBA
-    case 103: // UYVA4444
         elements = 4;
-        break;
-    case 50: // RGB
-    case 102: // UYV444
-        elements = 3;
         break;
     case 100: // UYVY422
         elements = 2;
+        yuv = 1;
+        break;
+    case 102: // UYV444
+        elements = 3;
+        yuv = 1;
+        break;
+    case 103: // UYVA4444
+        elements = 4;
+        yuv = 1;
         break;
     default:
         avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
@@ -347,6 +390,82 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     default:
         return AVERROR_INVALIDDATA;
+    }
+
+    switch (color_trc) {
+    case DPX_TRC_LINEAR:
+        avctx->color_trc = AVCOL_TRC_LINEAR;
+        break;
+    case DPX_TRC_SMPTE_274:
+    case DPX_TRC_ITU_R_709_4:
+        avctx->color_trc = AVCOL_TRC_BT709;
+        break;
+    case DPX_TRC_ITU_R_601_625:
+    case DPX_TRC_ITU_R_601_525:
+    case DPX_TRC_SMPTE_170:
+        avctx->color_trc = AVCOL_TRC_SMPTE170M;
+        break;
+    case DPX_TRC_ITU_R_624_4_PAL:
+        avctx->color_trc = AVCOL_TRC_GAMMA28;
+        break;
+    case DPX_TRC_USER_DEFINED:
+    case DPX_TRC_UNSPECIFIED_VIDEO:
+        /* Nothing to do */
+        break;
+    default:
+        av_log(avctx, AV_LOG_VERBOSE, "Cannot map DPX transfer characteristic "
+            "%d to color_trc.\n", color_trc);
+        break;
+    }
+
+    switch (color_spec) {
+    case DPX_COL_SPEC_SMPTE_274:
+    case DPX_COL_SPEC_ITU_R_709_4:
+        avctx->color_primaries = AVCOL_PRI_BT709;
+        break;
+    case DPX_COL_SPEC_ITU_R_601_625:
+    case DPX_COL_SPEC_ITU_R_624_4_PAL:
+        avctx->color_primaries = AVCOL_PRI_BT470BG;
+        break;
+    case DPX_COL_SPEC_ITU_R_601_525:
+    case DPX_COL_SPEC_SMPTE_170:
+        avctx->color_primaries = AVCOL_PRI_SMPTE170M;
+        break;
+    case DPX_COL_SPEC_USER_DEFINED:
+    case DPX_COL_SPEC_UNSPECIFIED_VIDEO:
+        /* Nothing to do */
+        break;
+    default:
+        av_log(avctx, AV_LOG_VERBOSE, "Cannot map DPX color specification "
+            "%d to color_primaries.\n", color_spec);
+        break;
+    }
+
+    if (yuv) {
+        switch (color_spec) {
+        case DPX_COL_SPEC_SMPTE_274:
+        case DPX_COL_SPEC_ITU_R_709_4:
+            avctx->colorspace = AVCOL_SPC_BT709;
+            break;
+        case DPX_COL_SPEC_ITU_R_601_625:
+        case DPX_COL_SPEC_ITU_R_624_4_PAL:
+            avctx->colorspace = AVCOL_SPC_BT470BG;
+            break;
+        case DPX_COL_SPEC_ITU_R_601_525:
+        case DPX_COL_SPEC_SMPTE_170:
+            avctx->colorspace = AVCOL_SPC_SMPTE170M;
+            break;
+        case DPX_COL_SPEC_USER_DEFINED:
+        case DPX_COL_SPEC_UNSPECIFIED_VIDEO:
+            /* Nothing to do */
+            break;
+        default:
+            av_log(avctx, AV_LOG_INFO, "Cannot map DPX color specification "
+                "%d to colorspace.\n", color_spec);
+            break;
+        }
+    } else {
+        avctx->colorspace = AVCOL_SPC_RGB;
     }
 
     // Table 3c: Runs will always break at scan line boundaries. Packing
