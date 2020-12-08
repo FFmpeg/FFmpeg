@@ -80,6 +80,9 @@ av_cold void ff_rl_init_vlc(RLTable *rl, unsigned static_size)
         int qmul = q * 2;
         int qadd = (q - 1) | 1;
 
+        if (!rl->rl_vlc[q])
+            return;
+
         if (q == 0) {
             qmul = 1;
             qadd = 0;

@@ -68,6 +68,14 @@ void ff_rl_init_vlc(RLTable *rl, unsigned static_size);
     }\
 }
 
+#define INIT_FIRST_VLC_RL(rl, static_size)              \
+do {                                                    \
+    static RL_VLC_ELEM rl_vlc_table[static_size];       \
+                                                        \
+    rl.rl_vlc[0] = rl_vlc_table;                        \
+    ff_rl_init_vlc(&rl, static_size);                   \
+} while (0)
+
 static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 {
     int index;
