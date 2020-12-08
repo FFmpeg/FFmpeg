@@ -46,9 +46,6 @@ static uint16_t mpeg12_vlc_dc_chroma_code_reversed[12];
 static uint32_t speedhq_lum_dc_uni[512];
 static uint32_t speedhq_chr_dc_uni[512];
 
-static uint8_t speedhq_index_run[2][64];
-static int8_t  speedhq_max_level[2][64];
-
 static uint8_t uni_speedhq_ac_vlc_len[64 * 64 * 2];
 
 static uint32_t reverse(uint32_t num, int bits)
@@ -76,11 +73,6 @@ static av_cold void speedhq_init_static_data(void)
                  12);
 
     ff_rl_init(&ff_rl_speedhq, speedhq_static_rl_table_store);
-
-    for (int i = 0; i < 64; i++) {
-        speedhq_max_level[0][i] = ff_rl_speedhq.max_level[0][i];
-        speedhq_index_run[0][i] = ff_rl_speedhq.index_run[0][i];
-    }
 
     /* build unified dc encoding tables */
     for (int i = -255; i < 256; i++) {
@@ -231,8 +223,8 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
             MASK_ABS(sign, alevel);
             sign &= 1;
 
-            if (alevel <= speedhq_max_level[0][run]) {
-                code = speedhq_index_run[0][run] + alevel - 1;
+            if (alevel <= ff_rl_speedhq.max_level[0][run]) {
+                code = ff_rl_speedhq.index_run[0][run] + alevel - 1;
                 /* store the VLC & sign at once */
                 put_bits_le(&s->pb, ff_rl_speedhq.table_vlc[code][1] + 1,
                             ff_rl_speedhq.table_vlc[code][0] + (sign << ff_rl_speedhq.table_vlc[code][1]));

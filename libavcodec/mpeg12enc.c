@@ -62,9 +62,6 @@ static uint8_t uni_mpeg2_ac_vlc_len[64 * 64 * 2];
 static uint32_t mpeg1_lum_dc_uni[512];
 static uint32_t mpeg1_chr_dc_uni[512];
 
-static uint8_t mpeg1_index_run[2][64];
-static int8_t  mpeg1_max_level[2][64];
-
 #define A53_MAX_CC_COUNT 0x1f
 #endif /* CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER */
 
@@ -722,8 +719,8 @@ next_coef:
             MASK_ABS(sign, alevel);
             sign &= 1;
 
-            if (alevel <= mpeg1_max_level[0][run]) {
-                code = mpeg1_index_run[0][run] + alevel - 1;
+            if (alevel <= ff_rl_mpeg1.max_level[0][run]) {
+                code = ff_rl_mpeg1.index_run[0][run] + alevel - 1;
                 /* store the VLC & sign at once */
                 put_bits(&s->pb, table_vlc[code][1] + 1,
                          (table_vlc[code][0] << 1) + sign);
@@ -1045,11 +1042,6 @@ static av_cold void mpeg12_encode_init_static(void)
 
     ff_rl_init(&ff_rl_mpeg1, mpeg12_static_rl_table_store[0]);
     ff_rl_init(&ff_rl_mpeg2, mpeg12_static_rl_table_store[1]);
-
-    for (int i = 0; i < 64; i++) {
-        mpeg1_max_level[0][i] = ff_rl_mpeg1.max_level[0][i];
-        mpeg1_index_run[0][i] = ff_rl_mpeg1.index_run[0][i];
-    }
 
     ff_mpeg1_init_uni_ac_vlc(&ff_rl_mpeg1, uni_mpeg1_ac_vlc_len);
     ff_mpeg1_init_uni_ac_vlc(&ff_rl_mpeg2, uni_mpeg2_ac_vlc_len);
