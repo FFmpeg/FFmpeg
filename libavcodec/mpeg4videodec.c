@@ -3389,9 +3389,9 @@ av_cold void ff_mpeg4videodec_static_init(void) {
         ff_rl_init(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
         ff_rl_init(&ff_rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
         ff_rl_init(&ff_rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
-        INIT_VLC_RL(ff_mpeg4_rl_intra, 554);
+        INIT_FIRST_VLC_RL(ff_mpeg4_rl_intra, 554);
         INIT_VLC_RL(ff_rvlc_rl_inter, 1072);
-        INIT_VLC_RL(ff_rvlc_rl_intra, 1072);
+        INIT_FIRST_VLC_RL(ff_rvlc_rl_intra, 1072);
         INIT_VLC_STATIC(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
                         &ff_mpeg4_DCtab_lum[0][1], 2, 1,
                         &ff_mpeg4_DCtab_lum[0][0], 2, 1, 512);
