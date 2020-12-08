@@ -2996,7 +2996,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->first_slice_line = 1;
     s->ptr_lastgob = s->pb.buf;
     for (mb_y_order = s->start_mb_y; mb_y_order < s->end_mb_y; mb_y_order++) {
-        if (s->codec_id == AV_CODEC_ID_SPEEDHQ) {
+        if (CONFIG_SPEEDHQ_ENCODER && s->codec_id == AV_CODEC_ID_SPEEDHQ) {
             int first_in_slice;
             mb_y = ff_speedhq_mb_y_order_to_mb(mb_y_order, s->mb_height, &first_in_slice);
             if (first_in_slice && mb_y_order != s->start_mb_y)
