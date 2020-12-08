@@ -8899,6 +8899,10 @@ The value which the width/height should be divisible by. It defaults to
 get only even dimensions (needed for 4:2:2 video). 16 is best when
 encoding to most video codecs.
 
+@item skip
+Set the number of initial frames for which evaluation is skipped.
+Default is 2. Range is 0 to INT_MAX.
+
 @item reset_count, reset
 Set the counter that determines after how many frames cropdetect will
 reset the previously detected largest video area and start over to
