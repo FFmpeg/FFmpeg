@@ -57,7 +57,7 @@ int64_t av_gettime_relative(void)
 {
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
 #ifdef __APPLE__
-    if (clock_gettime)
+    if (&clock_gettime)
 #endif
     {
         struct timespec ts;
@@ -72,7 +72,7 @@ int av_gettime_relative_is_monotonic(void)
 {
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
 #ifdef __APPLE__
-    if (!clock_gettime)
+    if (!&clock_gettime)
         return 0;
 #endif
     return 1;
