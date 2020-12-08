@@ -483,6 +483,7 @@ AVFilter ff_af_aeval = {
     .inputs        = aeval_inputs,
     .outputs       = aeval_outputs,
     .priv_class    = &aeval_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 #endif /* CONFIG_AEVAL_FILTER */
