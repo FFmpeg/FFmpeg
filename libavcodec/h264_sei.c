@@ -198,8 +198,12 @@ static int decode_registered_user_data(H264SEIContext *h, GetBitContext *gb,
         size--;
     }
 
-    if (country_code != 0xB5) // usa_country_code
+    if (country_code != 0xB5) { // usa_country_code
+        av_log(logctx, AV_LOG_VERBOSE,
+               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = %d)\n",
+               country_code);
         return 0;
+    }
 
     /* itu_t_t35_payload_byte follows */
     provider_code = get_bits(gb, 16);
@@ -220,11 +224,17 @@ static int decode_registered_user_data(H264SEIContext *h, GetBitContext *gb,
             return decode_registered_user_data_closed_caption(&h->a53_caption, gb,
                                                               logctx, size);
         default:
+            av_log(logctx, AV_LOG_VERBOSE,
+                   "Unsupported User Data Registered ITU-T T35 SEI message (atsc user_identifier = 0x%04x)\n",
+                   user_identifier);
             break;
         }
         break;
     }
     default:
+        av_log(logctx, AV_LOG_VERBOSE,
+               "Unsupported User Data Registered ITU-T T35 SEI message (provider_code = %d)\n",
+               provider_code);
         break;
     }
 
