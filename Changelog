@@ -51,6 +51,7 @@ version <next>:
 - asubcut filter
 - Microsoft Paint (MSP) version 2 decoder
 - Microsoft Paint (MSP) demuxer
+- AV1 monochrome encoding support via libaom >= 2.0.1
 
 
 version 4.3:
