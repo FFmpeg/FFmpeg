@@ -25,8 +25,6 @@
 #include "mpeg12vlc.h"
 #include "mpegvideo.h"
 
-extern uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
-
 void ff_mpeg12_common_init(MpegEncContext *s);
 
 #define INIT_2D_VLC_RL(rl, static_size, flags)\

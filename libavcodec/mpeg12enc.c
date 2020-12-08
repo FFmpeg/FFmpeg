@@ -1041,8 +1041,10 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
 
 static av_cold void mpeg12_encode_init_static(void)
 {
-    ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-    ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+    static uint8_t mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
+
+    ff_rl_init(&ff_rl_mpeg1, mpeg12_static_rl_table_store[0]);
+    ff_rl_init(&ff_rl_mpeg2, mpeg12_static_rl_table_store[1]);
 
     for (int i = 0; i < 64; i++) {
         mpeg1_max_level[0][i] = ff_rl_mpeg1.max_level[0][i];

@@ -41,8 +41,6 @@
 #include "bytestream.h"
 #include "thread.h"
 
-uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
-
 static const uint8_t table_mb_ptype[7][2] = {
     { 3, 5 }, // 0x01 MB_INTRA
     { 1, 2 }, // 0x02 MB_PAT
@@ -163,8 +161,6 @@ av_cold void ff_mpeg12_init_vlcs(void)
         INIT_VLC_STATIC(&ff_mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                         &table_mb_btype[0][1], 2, 1,
                         &table_mb_btype[0][0], 2, 1, 64);
-        ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         INIT_2D_VLC_RL(ff_rl_mpeg1, 680, 0);
         INIT_2D_VLC_RL(ff_rl_mpeg2, 674, 0);
