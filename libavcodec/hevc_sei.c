@@ -238,11 +238,7 @@ static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s
 static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitContext *gb,
                                                          int size)
 {
-    const uint8_t usa_country_code = 0xB5;
-    const uint16_t smpte_provider_code = 0x003C;
-
-    uint8_t country_code = 0;
-    uint16_t provider_code = 0;
+    int country_code, provider_code;
 
     if (size < 3)
         return AVERROR(EINVAL);
@@ -250,14 +246,20 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
 
     country_code = get_bits(gb, 8);
     if (country_code == 0xFF) {
+        if (size < 1)
+            return AVERROR_INVALIDDATA;
+
         skip_bits(gb, 8);
         size--;
     }
 
+    if (country_code != 0xB5) // usa_country_code
+        goto end;
+
     provider_code = get_bits(gb, 16);
 
-    if (country_code == usa_country_code &&
-        provider_code == smpte_provider_code) {
+    switch (provider_code) {
+    case 0x3C: { // smpte_provider_code
         // A/341 Amendment - 2094-40
         const uint16_t smpte2094_40_provider_oriented_code = 0x0001;
         const uint8_t smpte2094_40_application_identifier = 0x04;
@@ -274,7 +276,9 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
             application_identifier == smpte2094_40_application_identifier) {
             return decode_registered_user_data_dynamic_hdr_plus(&s->dynamic_hdr_plus, gb, size);
         }
-    } else {
+        break;
+    }
+    case 0x31: { // atsc_provider_code
         uint32_t user_identifier;
 
         if (size < 4)
@@ -288,7 +292,13 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
         default:
             break;
         }
+        break;
     }
+    default:
+        break;
+    }
+
+end:
     skip_bits_long(gb, size * 8);
     return 0;
 }
