@@ -183,33 +183,49 @@ static int decode_registered_user_data_closed_caption(H264SEIA53Caption *h,
 static int decode_registered_user_data(H264SEIContext *h, GetBitContext *gb,
                                        void *logctx, int size)
 {
-    uint32_t country_code;
-    uint32_t user_identifier;
+    int country_code, provider_code;
 
-    if (size < 7)
+    if (size < 3)
         return AVERROR_INVALIDDATA;
-    size -= 7;
+    size -= 3;
 
     country_code = get_bits(gb, 8); // itu_t_t35_country_code
     if (country_code == 0xFF) {
+        if (size < 1)
+            return AVERROR_INVALIDDATA;
+
         skip_bits(gb, 8);           // itu_t_t35_country_code_extension_byte
         size--;
     }
 
-    /* itu_t_t35_payload_byte follows */
-    skip_bits(gb, 8);              // terminal provider code
-    skip_bits(gb, 8);              // terminal provider oriented code
-    user_identifier = get_bits_long(gb, 32);
+    if (country_code != 0xB5) // usa_country_code
+        return 0;
 
-    switch (user_identifier) {
+    /* itu_t_t35_payload_byte follows */
+    provider_code = get_bits(gb, 16);
+
+    switch (provider_code) {
+    case 0x31: { // atsc_provider_code
+        uint32_t user_identifier;
+
+        if (size < 4)
+            return AVERROR_INVALIDDATA;
+        size -= 4;
+
+        user_identifier = get_bits_long(gb, 32);
+        switch (user_identifier) {
         case MKBETAG('D', 'T', 'G', '1'):       // afd_data
             return decode_registered_user_data_afd(&h->afd, gb, size);
         case MKBETAG('G', 'A', '9', '4'):       // closed captions
             return decode_registered_user_data_closed_caption(&h->a53_caption, gb,
                                                               logctx, size);
         default:
-            skip_bits(gb, size * 8);
             break;
+        }
+        break;
+    }
+    default:
+        break;
     }
 
     return 0;
