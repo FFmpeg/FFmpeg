@@ -230,6 +230,9 @@ static int rpl_read_header(AVFormatContext *s)
             error |= read_line(pb, line, sizeof(line));
     }
 
+    if (s->nb_streams == 0)
+        return AVERROR_INVALIDDATA;
+
     rpl->frames_per_chunk = read_line_and_int(pb, &error);  // video frames per chunk
     if (rpl->frames_per_chunk > 1 && vst->codec->codec_tag != 124)
         av_log(s, AV_LOG_WARNING,
