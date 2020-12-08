@@ -317,9 +317,9 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         for(i=0;i<NB_RL_TABLES;i++) {
             ff_rl_init(&ff_rl_table[i], ff_static_rl_table_store[i]);
         }
-        INIT_VLC_RL(ff_rl_table[0], 642);
-        INIT_VLC_RL(ff_rl_table[1], 1104);
-        INIT_VLC_RL(ff_rl_table[2], 554);
+        INIT_FIRST_VLC_RL(ff_rl_table[0], 642);
+        INIT_FIRST_VLC_RL(ff_rl_table[1], 1104);
+        INIT_FIRST_VLC_RL(ff_rl_table[2], 554);
         INIT_VLC_RL(ff_rl_table[3], 940);
         INIT_VLC_RL(ff_rl_table[4], 962);
         INIT_VLC_RL(ff_rl_table[5], 554);
