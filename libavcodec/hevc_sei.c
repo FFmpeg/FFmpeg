@@ -236,7 +236,7 @@ static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s
 }
 
 static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitContext *gb,
-                                                         int size)
+                                                         void *logctx, int size)
 {
     int country_code, provider_code;
 
@@ -253,8 +253,12 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
         size--;
     }
 
-    if (country_code != 0xB5) // usa_country_code
+    if (country_code != 0xB5) { // usa_country_code
+        av_log(logctx, AV_LOG_VERBOSE,
+               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = %d)\n",
+               country_code);
         goto end;
+    }
 
     provider_code = get_bits(gb, 16);
 
@@ -290,11 +294,17 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
         case MKBETAG('G', 'A', '9', '4'):
             return decode_registered_user_data_closed_caption(&s->a53_caption, gb, size);
         default:
+            av_log(logctx, AV_LOG_VERBOSE,
+                   "Unsupported User Data Registered ITU-T T35 SEI message (atsc user_identifier = 0x%04x)\n",
+                   user_identifier);
             break;
         }
         break;
     }
     default:
+        av_log(logctx, AV_LOG_VERBOSE,
+               "Unsupported User Data Registered ITU-T T35 SEI message (provider_code = %d)\n",
+               provider_code);
         break;
     }
 
@@ -405,7 +415,7 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
     case HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS:
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
-        return decode_nal_sei_user_data_registered_itu_t_t35(s, gb, size);
+        return decode_nal_sei_user_data_registered_itu_t_t35(s, gb, logctx, size);
     case HEVC_SEI_TYPE_USER_DATA_UNREGISTERED:
         return decode_nal_sei_user_data_unregistered(&s->unregistered, gb, size);
     case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
