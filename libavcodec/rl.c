@@ -25,27 +25,16 @@
 
 #include "rl.h"
 
-void ff_rl_free(RLTable *rl)
-{
-    int i;
-
-    for (i = 0; i < 2; i++) {
-        av_freep(&rl->max_run[i]);
-        av_freep(&rl->max_level[i]);
-        av_freep(&rl->index_run[i]);
-    }
-}
-
-av_cold int ff_rl_init(RLTable *rl,
-                       uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
+av_cold void ff_rl_init(RLTable *rl,
+                        uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
 {
     int8_t  max_level[MAX_RUN + 1], max_run[MAX_LEVEL + 1];
     uint8_t index_run[MAX_RUN + 1];
     int last, run, level, start, end, i;
 
-    /* If table is static, we can quit if rl->max_level[0] is not NULL */
-    if (static_store && rl->max_level[0])
-        return 0;
+    /* If rl->max_level[0] is set, this RLTable has already been initialized */
+    if (rl->max_level[0])
+        return;
 
     /* compute max_level[], max_run[] and index_run[] */
     for (last = 0; last < 2; last++) {
@@ -70,36 +59,13 @@ av_cold int ff_rl_init(RLTable *rl,
             if (run > max_run[level])
                 max_run[level] = run;
         }
-        if (static_store)
-            rl->max_level[last] = static_store[last];
-        else {
-            rl->max_level[last] = av_malloc(MAX_RUN + 1);
-            if (!rl->max_level[last])
-                goto fail;
-        }
+        rl->max_level[last] = static_store[last];
         memcpy(rl->max_level[last], max_level, MAX_RUN + 1);
-        if (static_store)
-            rl->max_run[last]   = static_store[last] + MAX_RUN + 1;
-        else {
-            rl->max_run[last]   = av_malloc(MAX_LEVEL + 1);
-            if (!rl->max_run[last])
-                goto fail;
-        }
+        rl->max_run[last]   = static_store[last] + MAX_RUN + 1;
         memcpy(rl->max_run[last], max_run, MAX_LEVEL + 1);
-        if (static_store)
-            rl->index_run[last] = static_store[last] + MAX_RUN + MAX_LEVEL + 2;
-        else {
-            rl->index_run[last] = av_malloc(MAX_RUN + 1);
-            if (!rl->index_run[last])
-                goto fail;
-        }
+        rl->index_run[last] = static_store[last] + MAX_RUN + MAX_LEVEL + 2;
         memcpy(rl->index_run[last], index_run, MAX_RUN + 1);
     }
-    return 0;
-
-fail:
-    ff_rl_free(rl);
-    return AVERROR(ENOMEM);
 }
 
 av_cold void ff_rl_init_vlc(RLTable *rl, unsigned static_size)
