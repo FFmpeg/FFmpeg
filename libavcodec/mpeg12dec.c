@@ -1057,8 +1057,6 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
         avctx->coded_width = avctx->coded_height = 0; // do not trust dimensions from input
     ff_mpv_decode_init(s2, avctx);
 
-    s->mpeg_enc_ctx.avctx  = avctx;
-
     /* we need some permutation to store matrices,
      * until the decoder sets the real permutation. */
     ff_mpv_idct_init(s2);
@@ -3100,7 +3098,6 @@ static av_cold int ipu_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     ff_mpv_decode_init(m, avctx);
-    s->m.avctx = avctx;
     ff_mpv_idct_init(m);
     ff_mpeg12_common_init(m);
     ff_mpeg12_init_vlcs();
