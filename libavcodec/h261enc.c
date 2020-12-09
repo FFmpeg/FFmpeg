@@ -27,6 +27,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
@@ -361,9 +362,17 @@ static av_cold void init_uni_h261_rl_tab(const RLTable *rl, uint8_t *len_tab)
     }
 }
 
+static av_cold void h261_encode_init_static(void)
+{
+    static uint8_t h261_rl_table_store[2][2 * MAX_RUN + MAX_LEVEL + 3];
+
+    ff_rl_init(&ff_h261_rl_tcoeff, h261_rl_table_store);
+    init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, uni_h261_rl_len);
+}
+
 av_cold void ff_h261_encode_init(MpegEncContext *s)
 {
-    ff_h261_common_init();
+    static AVOnce init_static_once = AV_ONCE_INIT;
 
     s->min_qcoeff       = -127;
     s->max_qcoeff       = 127;
@@ -371,10 +380,9 @@ av_cold void ff_h261_encode_init(MpegEncContext *s)
     s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
     s->ac_esc_length    = 6+6+8;
 
-    init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, uni_h261_rl_len);
-
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
     s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len + 128*64;
+    ff_thread_once(&init_static_once, h261_encode_init_static);
 }
 
 static const AVClass h261_class = {
@@ -393,7 +401,7 @@ AVCodec ff_h261_encoder = {
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
     .priv_class     = &h261_class,

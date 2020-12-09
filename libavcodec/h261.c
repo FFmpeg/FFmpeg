@@ -30,8 +30,6 @@
 
 #define IS_FIL(a)    ((a) & MB_TYPE_H261_FIL)
 
-uint8_t ff_h261_rl_table_store[2][2 * MAX_RUN + MAX_LEVEL + 3];
-
 static void h261_loop_filter(uint8_t *src, int stride)
 {
     int x, y, xy, yz;
@@ -78,15 +76,4 @@ void ff_h261_loop_filter(MpegEncContext *s)
     h261_loop_filter(dest_y + 8 * linesize + 8, linesize);
     h261_loop_filter(dest_cb, uvlinesize);
     h261_loop_filter(dest_cr, uvlinesize);
-}
-
-av_cold void ff_h261_common_init(void)
-{
-    static int done = 0;
-
-    if (done)
-        return;
-
-    ff_rl_init(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
-    done = 1;
 }
