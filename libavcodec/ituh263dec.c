@@ -52,7 +52,6 @@
 // reading vlc values. Changing these may improve speed and data cache needs
 // be aware though that decreasing them may need the number of stages that is
 // passed to get_vlc* to be increased.
-#define MV_VLC_BITS 9
 #define H263_MBTYPE_B_VLC_BITS 6
 #define CBPC_B_VLC_BITS 3
 
@@ -99,7 +98,7 @@ void ff_h263_show_pict_info(MpegEncContext *s){
 VLC ff_h263_intra_MCBPC_vlc;
 VLC ff_h263_inter_MCBPC_vlc;
 VLC ff_h263_cbpy_vlc;
-static VLC mv_vlc;
+VLC ff_h263_mv_vlc;
 static VLC h263_mbtype_b_vlc;
 static VLC cbpc_b_vlc;
 
@@ -120,7 +119,7 @@ av_cold void ff_h263_decode_init_vlc(void)
         INIT_VLC_STATIC(&ff_h263_cbpy_vlc, CBPY_VLC_BITS, 16,
                  &ff_h263_cbpy_tab[0][1], 2, 1,
                  &ff_h263_cbpy_tab[0][0], 2, 1, 64);
-        INIT_VLC_STATIC(&mv_vlc, MV_VLC_BITS, 33,
+        INIT_VLC_STATIC(&ff_h263_mv_vlc, H263_MV_VLC_BITS, 33,
                  &ff_mvtab[0][1], 2, 1,
                  &ff_mvtab[0][0], 2, 1, 538);
         ff_rl_init(&ff_h263_rl_inter, ff_h263_static_rl_table_store[0]);
@@ -271,7 +270,7 @@ int ff_h263_resync(MpegEncContext *s){
 int ff_h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
     int code, val, sign, shift;
-    code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
+    code = get_vlc2(&s->gb, ff_h263_mv_vlc.table, H263_MV_VLC_BITS, 2);
 
     if (code == 0)
         return pred;

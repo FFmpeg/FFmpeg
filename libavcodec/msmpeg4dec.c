@@ -38,7 +38,6 @@
 #define V2_INTRA_CBPC_VLC_BITS 3
 #define V2_MB_TYPE_VLC_BITS 7
 #define MV_VLC_BITS 9
-#define V2_MV_VLC_BITS 9
 #define TEX_VLC_BITS 9
 
 #define DEFAULT_INTER_INDEX 3
@@ -66,7 +65,6 @@ static VLC v2_dc_lum_vlc;
 static VLC v2_dc_chroma_vlc;
 static VLC v2_intra_cbpc_vlc;
 static VLC v2_mb_type_vlc;
-static VLC v2_mv_vlc;
 VLC ff_inter_intra_vlc;
 
 /* This is identical to H.263 except that its range is multiplied by 2. */
@@ -74,7 +72,7 @@ static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
     int code, val, sign, shift;
 
-    code = get_vlc2(&s->gb, v2_mv_vlc.table, V2_MV_VLC_BITS, 2);
+    code = get_vlc2(&s->gb, ff_h263_mv_vlc.table, H263_MV_VLC_BITS, 2);
     ff_dlog(s, "MV code %d at %d %d pred: %d\n", code, s->mb_x,s->mb_y, pred);
     if (code < 0)
         return 0xffff;
@@ -362,9 +360,6 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         INIT_VLC_STATIC(&v2_mb_type_vlc, V2_MB_TYPE_VLC_BITS, 8,
                  &ff_v2_mb_type[0][1], 2, 1,
                  &ff_v2_mb_type[0][0], 2, 1, 128);
-        INIT_VLC_STATIC(&v2_mv_vlc, V2_MV_VLC_BITS, 33,
-                 &ff_mvtab[0][1], 2, 1,
-                 &ff_mvtab[0][0], 2, 1, 538);
 
         INIT_VLC_STATIC(&ff_mb_non_intra_vlc[0], MB_NON_INTRA_VLC_BITS, 128,
                      &ff_wmv2_inter_table[0][0][1], 8, 4,

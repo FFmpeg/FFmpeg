@@ -34,6 +34,7 @@
 // reading vlc values. Changing these may improve speed and data cache needs
 // be aware though that decreasing them may need the number of stages that is
 // passed to get_vlc* to be increased.
+#define H263_MV_VLC_BITS     9
 #define INTRA_MCBPC_VLC_BITS 6
 #define INTER_MCBPC_VLC_BITS 7
 #define CBPY_VLC_BITS 6
@@ -44,6 +45,7 @@
 extern VLC ff_h263_intra_MCBPC_vlc;
 extern VLC ff_h263_inter_MCBPC_vlc;
 extern VLC ff_h263_cbpy_vlc;
+extern VLC ff_h263_mv_vlc;
 
 extern const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[];
 
