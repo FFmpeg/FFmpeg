@@ -81,7 +81,6 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     s->low_delay   = 1;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    ff_h261_common_init();
     h261_decode_init_vlc(h);
 
     h->gob_start_code_skipped = 0;
