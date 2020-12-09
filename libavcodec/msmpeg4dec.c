@@ -322,7 +322,10 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         INIT_FIRST_VLC_RL(ff_rl_table[2], 554);
         INIT_VLC_RL(ff_rl_table[3], 940);
         INIT_VLC_RL(ff_rl_table[4], 962);
-        INIT_VLC_RL(ff_rl_table[5], 554);
+        /* ff_rl_table[5] coincides with ff_h263_rl_inter which has just been
+         * initialized in ff_h263_decode_init() above. So just copy the VLCs. */
+        av_assert1(ff_h263_rl_inter.rl_vlc[0]);
+        memcpy(ff_rl_table[5].rl_vlc, ff_h263_rl_inter.rl_vlc, sizeof(ff_rl_table[5].rl_vlc));
 
         mv = &ff_mv_tables[0];
         INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, mv->n + 1,
