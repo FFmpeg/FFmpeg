@@ -75,7 +75,6 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     MpegEncContext *const s = &h->s;
 
     // set defaults
-    ff_mpv_decode_defaults(s);
     ff_mpv_decode_init(s, avctx);
 
     s->out_format  = FMT_H261;

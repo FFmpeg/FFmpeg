@@ -374,7 +374,6 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
                                    avctx->coded_height, 0, avctx)) < 0)
         return ret;
 
-    ff_mpv_decode_defaults(s);
     ff_mpv_decode_init(s, avctx);
 
     s->out_format  = FMT_H263;

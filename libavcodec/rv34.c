@@ -1487,7 +1487,6 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &r->s;
     int ret;
 
-    ff_mpv_decode_defaults(s);
     ff_mpv_decode_init(s, avctx);
     s->out_format = FMT_H263;
 

@@ -660,17 +660,14 @@ void ff_mpv_common_defaults(MpegEncContext *s)
 }
 
 /**
- * Set the given MpegEncContext to defaults for decoding.
+ * Initialize the given MpegEncContext for decoding.
  * the changed fields will not depend upon
  * the prior state of the MpegEncContext.
  */
-void ff_mpv_decode_defaults(MpegEncContext *s)
-{
-    ff_mpv_common_defaults(s);
-}
-
 void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 {
+    ff_mpv_common_defaults(s);
+
     s->avctx           = avctx;
     s->width           = avctx->coded_width;
     s->height          = avctx->coded_height;
