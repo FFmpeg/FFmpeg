@@ -39,6 +39,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "dct.h"
 #include "idctdsp.h"
@@ -249,18 +250,24 @@ static void update_duplicate_context_after_me(MpegEncContext *dst,
 #undef COPY
 }
 
+static void mpv_encode_init_static(void)
+{
+   for (int i = -16; i < 16; i++)
+        default_fcode_tab[i + MAX_MV] = 1;
+}
+
 /**
  * Set the given MpegEncContext to defaults for encoding.
  * the changed fields will not depend upon the prior state of the MpegEncContext.
  */
 static void mpv_encode_defaults(MpegEncContext *s)
 {
-    int i;
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
     ff_mpv_common_defaults(s);
 
-    for (i = -16; i < 16; i++) {
-        default_fcode_tab[i + MAX_MV] = 1;
-    }
+    ff_thread_once(&init_static_once, mpv_encode_init_static);
+
     s->me.mv_penalty = default_mv_penalty;
     s->fcode_tab     = default_fcode_tab;
 
