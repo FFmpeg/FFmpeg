@@ -578,7 +578,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
     int dmin_sum=0, mx4_sum=0, my4_sum=0, i;
     int same=1;
     const int stride= c->stride;
-    uint8_t *mv_penalty= c->current_mv_penalty;
+    const uint8_t *mv_penalty = c->current_mv_penalty;
     int safety_clipping= s->unrestricted_mv && (s->width&15) && (s->height&15);
 
     init_mv4_ref(c);
@@ -743,7 +743,7 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
     const int h=8;
     int block;
     int P[10][2];
-    uint8_t * const mv_penalty= c->current_mv_penalty;
+    const uint8_t * const mv_penalty = c->current_mv_penalty;
     int same=1;
     const int stride= 2*s->linesize;
     int dmin_sum= 0;
@@ -1120,7 +1120,7 @@ static int estimate_motion_b(MpegEncContext *s, int mb_x, int mb_y,
     const int shift= 1+s->quarter_sample;
     const int mot_stride = s->mb_stride;
     const int mot_xy = mb_y*mot_stride + mb_x;
-    uint8_t * const mv_penalty= c->mv_penalty[f_code] + MAX_DMV;
+    const uint8_t * const mv_penalty = c->mv_penalty[f_code] + MAX_DMV;
     int mv_scale;
 
     c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
@@ -1184,8 +1184,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
     //FIXME better f_code prediction (max mv & distance)
     //FIXME pointers
     MotionEstContext * const c= &s->me;
-    uint8_t * const mv_penalty_f= c->mv_penalty[s->f_code] + MAX_DMV; // f_code of the prev frame
-    uint8_t * const mv_penalty_b= c->mv_penalty[s->b_code] + MAX_DMV; // f_code of the prev frame
+    const uint8_t * const mv_penalty_f = c->mv_penalty[s->f_code] + MAX_DMV; // f_code of the prev frame
+    const uint8_t * const mv_penalty_b = c->mv_penalty[s->b_code] + MAX_DMV; // f_code of the prev frame
     int stride= c->stride;
     uint8_t *dest_y = c->scratchpad;
     uint8_t *ptr;
@@ -1600,7 +1600,7 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
     if (s->motion_est != FF_ME_ZERO) {
         int score[8];
         int i, y, range= s->avctx->me_range ? s->avctx->me_range : (INT_MAX/2);
-        uint8_t * fcode_tab= s->fcode_tab;
+        const uint8_t * fcode_tab = s->fcode_tab;
         int best_fcode=-1;
         int best_score=-10000000;
 

@@ -34,7 +34,7 @@
     const int av_unused ymin= c->ymin;\
     const int av_unused xmax= c->xmax;\
     const int av_unused ymax= c->ymax;\
-    uint8_t *mv_penalty= c->current_mv_penalty;\
+    const uint8_t *mv_penalty = c->current_mv_penalty; \
     const int pred_x= c->pred_x;\
     const int pred_y= c->pred_y;\
 
