@@ -32,6 +32,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
+#include "libavutil/thread.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "internal.h"
@@ -72,7 +73,9 @@ void ff_msmpeg4_code012(PutBitContext *pb, int n)
     }
 }
 
-static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, int level, int intra){
+static int get_size_of_code(const RLTable *rl, int last, int run,
+                            int level, int intra)
+{
     int size=0;
     int code;
     int run_diff= intra ? 0 : 1;
@@ -113,21 +116,10 @@ static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, 
     return size;
 }
 
-av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
+static av_cold void msmpeg4_encode_init_static(void)
 {
-    static int init_done=0;
     int i;
-
-    ff_msmpeg4_common_init(s);
-    if(s->msmpeg4_version>=4){
-        s->min_qcoeff= -255;
-        s->max_qcoeff=  255;
-    }
-
-    if (!init_done) {
         static uint16_t mv_index_tables[2][4096];
-        /* init various encoding tables */
-        init_done = 1;
         init_mv_table(&ff_mv_tables[0], mv_index_tables[0]);
         init_mv_table(&ff_mv_tables[1], mv_index_tables[1]);
 
@@ -138,12 +130,25 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
                 for(run=0; run<=MAX_RUN; run++){
                     int last;
                     for(last=0; last<2; last++){
-                        rl_length[i][level][run][last]= get_size_of_code(s, &ff_rl_table[  i], last, run, level, 0);
+                        rl_length[i][level][run][last] = get_size_of_code(&ff_rl_table[i], last, run, level, 0);
                     }
                 }
             }
         }
+}
+
+av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
+    ff_msmpeg4_common_init(s);
+    if (s->msmpeg4_version >= 4) {
+        s->min_qcoeff = -255;
+        s->max_qcoeff =  255;
     }
+
+    /* init various encoding tables */
+    ff_thread_once(&init_static_once, msmpeg4_encode_init_static);
 }
 
 static void find_best_tables(MpegEncContext * s)
