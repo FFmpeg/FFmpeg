@@ -131,9 +131,6 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
         init_mv_table(&ff_mv_tables[0], mv_index_tables[0]);
         init_mv_table(&ff_mv_tables[1], mv_index_tables[1]);
 
-        for(i=0;i<NB_RL_TABLES;i++)
-            ff_rl_init(&ff_rl_table[i], ff_static_rl_table_store[i]);
-
         for(i=0; i<NB_RL_TABLES; i++){
             int level;
             for (level = 1; level <= MAX_LEVEL; level++) {

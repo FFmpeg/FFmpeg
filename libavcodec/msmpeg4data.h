@@ -59,7 +59,6 @@ extern const uint8_t ff_wmv1_scantable[WMV1_SCANTABLE_COUNT][64];
 #define NB_RL_TABLES  6
 
 extern RLTable ff_rl_table[NB_RL_TABLES];
-extern uint8_t ff_static_rl_table_store[NB_RL_TABLES][2][2 * MAX_RUN + MAX_LEVEL + 3];
 
 extern uint32_t ff_v2_dc_lum_table[512][2];
 extern uint32_t ff_v2_dc_chroma_table[512][2];

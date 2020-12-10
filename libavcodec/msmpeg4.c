@@ -103,6 +103,16 @@ static av_cold void init_h263_dc_for_msmpeg4(void)
     }
 }
 
+static av_cold void msmpeg4_common_init_static(void)
+{
+    static uint8_t rl_table_store[NB_RL_TABLES][2][2 * MAX_RUN + MAX_LEVEL + 3];
+
+    for (int i = 0; i < NB_RL_TABLES; i++)
+        ff_rl_init(&ff_rl_table[i], rl_table_store[i]);
+
+    init_h263_dc_for_msmpeg4();
+}
+
 av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
@@ -145,7 +155,7 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
     }
     //Note the default tables are set in common_init in mpegvideo.c
 
-    ff_thread_once(&init_static_once, init_h263_dc_for_msmpeg4);
+    ff_thread_once(&init_static_once, msmpeg4_common_init_static);
 }
 
 /* predict coded block */

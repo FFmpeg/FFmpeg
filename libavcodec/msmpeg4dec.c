@@ -295,7 +295,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     static volatile int done = 0;
-    int i, ret;
+    int ret;
     MVTable *mv;
 
     if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
@@ -307,9 +307,6 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     ff_msmpeg4_common_init(s);
 
     if (!done) {
-        for(i=0;i<NB_RL_TABLES;i++) {
-            ff_rl_init(&ff_rl_table[i], ff_static_rl_table_store[i]);
-        }
         INIT_FIRST_VLC_RL(ff_rl_table[0], 642);
         INIT_FIRST_VLC_RL(ff_rl_table[1], 1104);
         INIT_FIRST_VLC_RL(ff_rl_table[2], 554);
