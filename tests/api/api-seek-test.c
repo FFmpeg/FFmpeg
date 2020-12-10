@@ -73,16 +73,14 @@ static int compare_crc_in_array(uint32_t crc, int64_t pts)
 }
 
 static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
-                                AVCodecContext *ctx, AVFrame *fr, uint64_t ts_start, uint64_t ts_end, int no_seeking)
+                                AVCodecContext *ctx, AVPacket *pkt, AVFrame *fr,
+                                uint64_t ts_start, uint64_t ts_end, int no_seeking)
 {
     int number_of_written_bytes;
-    int got_frame = 0;
     int result;
-    int end_of_stream = 0;
     int byte_buffer_size;
     uint8_t *byte_buffer;
     uint32_t crc;
-    AVPacket pkt;
 
     byte_buffer_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 16);
     byte_buffer = av_malloc(byte_buffer_size);
@@ -101,53 +99,66 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
         avcodec_flush_buffers(ctx);
     }
 
-    av_init_packet(&pkt);
     do {
-        if (!end_of_stream)
-            if (av_read_frame(fmt_ctx, &pkt) < 0)
-                end_of_stream = 1;
-        if (end_of_stream) {
-            pkt.data = NULL;
-            pkt.size = 0;
+        result = av_read_frame(fmt_ctx, pkt);
+        if (result >= 0 && pkt->stream_index != video_stream) {
+            av_packet_unref(pkt);
+            continue;
         }
-        if (pkt.stream_index == video_stream || end_of_stream) {
-            got_frame = 0;
-            if ((pkt.pts == AV_NOPTS_VALUE) && (!end_of_stream)) {
+
+        if (result < 0)
+            result = avcodec_send_packet(ctx, NULL);
+        else {
+            if (pkt->pts == AV_NOPTS_VALUE) {
                 av_log(NULL, AV_LOG_ERROR, "Error: frames doesn't have pts values\n");
                 return -1;
             }
-            result = avcodec_decode_video2(ctx, fr, &got_frame, &pkt);
-            if (result < 0) {
+            result = avcodec_send_packet(ctx, pkt);
+        }
+
+        av_packet_unref(pkt);
+
+        if (result < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error submitting a packet for decoding\n");
+            return result;
+        }
+
+        while (result >= 0) {
+            result = avcodec_receive_frame(ctx, fr);
+            if (result == AVERROR_EOF)
+                goto finish;
+            else if (result == AVERROR(EAGAIN)) {
+                result = 0;
+                break;
+            } else if (result < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding frame\n");
                 return result;
             }
-            if (got_frame) {
-                number_of_written_bytes = av_image_copy_to_buffer(byte_buffer, byte_buffer_size,
-                                        (const uint8_t* const *)fr->data, (const int*) fr->linesize,
-                                        ctx->pix_fmt, ctx->width, ctx->height, 1);
-                if (number_of_written_bytes < 0) {
-                    av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
-                    return number_of_written_bytes;
-                }
-                if ((!no_seeking) && (fr->pts > ts_end))
-                    break;
-                crc = av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes);
-                printf("%10"PRId64", 0x%08"PRIx32"\n", fr->pts, crc);
-                if (no_seeking) {
-                    if (add_crc_to_array(crc, fr->pts) < 0)
-                        return -1;
-                }
-                else {
-                    if (compare_crc_in_array(crc, fr->pts) < 0)
-                        return -1;
-                }
-            }
-        }
-        av_packet_unref(&pkt);
-        av_init_packet(&pkt);
-    } while ((!end_of_stream || got_frame) && (no_seeking || (fr->pts + fr->pkt_duration <= ts_end)));
 
-    av_packet_unref(&pkt);
+            number_of_written_bytes = av_image_copy_to_buffer(byte_buffer, byte_buffer_size,
+                                    (const uint8_t* const *)fr->data, (const int*) fr->linesize,
+                                    ctx->pix_fmt, ctx->width, ctx->height, 1);
+            if (number_of_written_bytes < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
+                return number_of_written_bytes;
+            }
+            if ((!no_seeking) && (fr->pts > ts_end))
+                break;
+            crc = av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes);
+            printf("%10"PRId64", 0x%08"PRIx32"\n", fr->pts, crc);
+            if (no_seeking) {
+                if (add_crc_to_array(crc, fr->pts) < 0)
+                    return -1;
+            }
+            else {
+                if (compare_crc_in_array(crc, fr->pts) < 0)
+                    return -1;
+            }
+            av_frame_unref(fr);
+        }
+    } while (result >= 0 && (no_seeking || (fr->pts + fr->pkt_duration <= ts_end)));
+
+finish:
     av_freep(&byte_buffer);
 
     return 0;
@@ -176,6 +187,7 @@ static int seek_test(const char *input_filename, const char *start, const char *
     AVCodec *codec = NULL;
     AVCodecContext *ctx= NULL;
     AVCodecParameters *origin_par = NULL;
+    AVPacket *pkt = NULL;
     AVFrame *fr = NULL;
     AVFormatContext *fmt_ctx = NULL;
     int video_stream;
@@ -250,13 +262,20 @@ static int seek_test(const char *input_filename, const char *start, const char *
         goto end;
     }
 
-    result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, 0, 0, 1);
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate packet\n");
+        result = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, pkt, fr, 0, 0, 1);
     if (result != 0)
         goto end;
 
     for (i = start_ts; i < end_ts; i += 100) {
         for (j = i + 100; j < end_ts; j += 100) {
-            result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, i, j, 0);
+            result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, pkt, fr, i, j, 0);
             if (result != 0)
                 break;
         }
@@ -265,6 +284,7 @@ static int seek_test(const char *input_filename, const char *start, const char *
 end:
     av_freep(&crc_array);
     av_freep(&pts_array);
+    av_packet_free(&pkt);
     av_frame_free(&fr);
     avformat_close_input(&fmt_ctx);
     avcodec_free_context(&ctx);
