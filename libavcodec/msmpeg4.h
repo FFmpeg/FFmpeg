@@ -50,7 +50,7 @@ void ff_msmpeg4_encode_motion(MpegEncContext * s, int mx, int my);
 int ff_msmpeg4_coded_block_pred(MpegEncContext * s, int n,
                                 uint8_t **coded_block_ptr);
 
-int ff_msmpeg4_encode_init(MpegEncContext *s);
+void ff_msmpeg4_encode_init(MpegEncContext *s);
 void ff_msmpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_msmpeg4_encode_ext_header(MpegEncContext *s);
 void ff_msmpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
