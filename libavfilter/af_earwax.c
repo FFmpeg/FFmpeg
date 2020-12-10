@@ -145,7 +145,7 @@ static void convolve(AVFilterContext *ctx, AVFrame *in,
     dst = scalarproduct(taps, taps + len, s->filter[filter_ch], dst);
 
     // process current input
-    if (2*in->nb_samples >= NUMTAPS ){
+    if (in->nb_samples >= NUMTAPS) {
         endin = src + in->nb_samples - NUMTAPS;
         scalarproduct(src, endin, s->filter[filter_ch], dst);
 
