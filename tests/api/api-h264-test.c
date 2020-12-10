@@ -37,15 +37,13 @@ static int video_decode_example(const char *input_filename)
     AVCodecParameters *origin_par = NULL;
     AVFrame *fr = NULL;
     uint8_t *byte_buffer = NULL;
-    AVPacket pkt;
+    AVPacket *pkt;
     AVFormatContext *fmt_ctx = NULL;
     int number_of_written_bytes;
     int video_stream;
-    int got_frame = 0;
     int byte_buffer_size;
     int i = 0;
     int result;
-    int end_of_stream = 0;
 
     result = avformat_open_input(&fmt_ctx, input_filename, NULL, NULL);
     if (result < 0) {
@@ -97,6 +95,12 @@ static int video_decode_example(const char *input_filename)
         return AVERROR(ENOMEM);
     }
 
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate packet\n");
+        return AVERROR(ENOMEM);
+    }
+
     byte_buffer_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 16);
     byte_buffer = av_malloc(byte_buffer_size);
     if (!byte_buffer) {
@@ -106,43 +110,60 @@ static int video_decode_example(const char *input_filename)
 
     printf("#tb %d: %d/%d\n", video_stream, fmt_ctx->streams[video_stream]->time_base.num, fmt_ctx->streams[video_stream]->time_base.den);
     i = 0;
-    av_init_packet(&pkt);
-    do {
-        if (!end_of_stream)
-            if (av_read_frame(fmt_ctx, &pkt) < 0)
-                end_of_stream = 1;
-        if (end_of_stream) {
-            pkt.data = NULL;
-            pkt.size = 0;
+
+    result = 0;
+    while (result >= 0) {
+        result = av_read_frame(fmt_ctx, pkt);
+        if (result >= 0 && pkt->stream_index != video_stream) {
+            av_packet_unref(pkt);
+            continue;
         }
-        if (pkt.stream_index == video_stream || end_of_stream) {
-            got_frame = 0;
-            if (pkt.pts == AV_NOPTS_VALUE)
-                pkt.pts = pkt.dts = i;
-            result = avcodec_decode_video2(ctx, fr, &got_frame, &pkt);
-            if (result < 0) {
+
+        if (result < 0)
+            result = avcodec_send_packet(ctx, NULL);
+        else {
+            if (pkt->pts == AV_NOPTS_VALUE)
+                pkt->pts = pkt->dts = i;
+            result = avcodec_send_packet(ctx, pkt);
+        }
+        av_packet_unref(pkt);
+
+        if (result < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error submitting a packet for decoding\n");
+            return result;
+        }
+
+        while (result >= 0) {
+            result = avcodec_receive_frame(ctx, fr);
+            if (result == AVERROR_EOF)
+                goto finish;
+            else if (result == AVERROR(EAGAIN)) {
+                result = 0;
+                break;
+            } else if (result < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding frame\n");
                 return result;
             }
-            if (got_frame) {
-                number_of_written_bytes = av_image_copy_to_buffer(byte_buffer, byte_buffer_size,
-                                        (const uint8_t* const *)fr->data, (const int*) fr->linesize,
-                                        ctx->pix_fmt, ctx->width, ctx->height, 1);
-                if (number_of_written_bytes < 0) {
-                    av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
-                    return number_of_written_bytes;
-                }
-                printf("%d, %s, %s, %8"PRId64", %8d, 0x%08lx\n", video_stream,
-                       av_ts2str(fr->pts), av_ts2str(fr->pkt_dts), fr->pkt_duration,
-                       number_of_written_bytes, av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes));
+
+            number_of_written_bytes = av_image_copy_to_buffer(byte_buffer, byte_buffer_size,
+                                    (const uint8_t* const *)fr->data, (const int*) fr->linesize,
+                                    ctx->pix_fmt, ctx->width, ctx->height, 1);
+            if (number_of_written_bytes < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
+                av_frame_unref(fr);
+                return number_of_written_bytes;
             }
-            av_packet_unref(&pkt);
-            av_init_packet(&pkt);
+            printf("%d, %s, %s, %8"PRId64", %8d, 0x%08lx\n", video_stream,
+                   av_ts2str(fr->pts), av_ts2str(fr->pkt_dts), fr->pkt_duration,
+                   number_of_written_bytes, av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes));
+
+            av_frame_unref(fr);
         }
         i++;
-    } while (!end_of_stream || got_frame);
+    }
 
-    av_packet_unref(&pkt);
+finish:
+    av_packet_free(&pkt);
     av_frame_free(&fr);
     avformat_close_input(&fmt_ctx);
     avcodec_free_context(&ctx);
