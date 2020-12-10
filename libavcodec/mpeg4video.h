@@ -129,6 +129,7 @@ extern const int8_t ff_mpeg4_intra_level[102];
 extern const int8_t ff_mpeg4_intra_run[102];
 
 extern RLTable ff_mpeg4_rl_intra;
+void ff_mpeg4_init_rl_intra(void);
 
 /* Note this is identical to the intra rvlc except that it is reordered. */
 extern RLTable ff_rvlc_rl_inter;
@@ -179,8 +180,6 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
  * @return the mb_type
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
-
-extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2 * MAX_RUN + MAX_LEVEL + 3];
 
 #if 0 //3IV1 is quite rare and it slows things down a tiny bit
 #define IS_3IV1 s->codec_tag == AV_RL32("3IV1")
