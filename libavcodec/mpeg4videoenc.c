@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
@@ -1266,11 +1267,21 @@ static av_cold void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab,
     }
 }
 
+static av_cold void mpeg4_encode_init_static(void)
+{
+    init_uni_dc_tab();
+
+    ff_mpeg4_init_rl_intra();
+
+    init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
+    init_uni_mpeg4_rl_tab(&ff_h263_rl_inter,  uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
+}
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MpegEncContext *s = avctx->priv_data;
     int ret;
-    static int done = 0;
 
     if (avctx->width >= (1<<13) || avctx->height >= (1<<13)) {
         av_log(avctx, AV_LOG_ERROR, "dimensions too large for MPEG-4\n");
@@ -1280,16 +1291,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_mpv_encode_init(avctx)) < 0)
         return ret;
 
-    if (!done) {
-        done = 1;
-
-        init_uni_dc_tab();
-
-        ff_mpeg4_init_rl_intra();
-
-        init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
-        init_uni_mpeg4_rl_tab(&ff_h263_rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
-    }
+    ff_thread_once(&init_static_once, mpeg4_encode_init_static);
 
     s->min_qcoeff               = -2048;
     s->max_qcoeff               = 2047;
@@ -1405,6 +1407,6 @@ AVCodec ff_mpeg4_encoder = {
     .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class     = &mpeg4enc_class,
 };
