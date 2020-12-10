@@ -27,6 +27,8 @@
  * MSMPEG4 backend for encoder and decoder
  */
 
+#include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "idctdsp.h"
 #include "mpegvideo.h"
@@ -52,9 +54,6 @@
 static av_cold void init_h263_dc_for_msmpeg4(void)
 {
         int level, uni_code, uni_len;
-
-        if(ff_v2_dc_chroma_table[255 + 256][1])
-            return;
 
         for(level=-256; level<256; level++){
             int size, v, l;
@@ -108,6 +107,8 @@ static av_cold void init_h263_dc_for_msmpeg4(void)
 
 av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
     switch(s->msmpeg4_version){
     case 1:
     case 2:
@@ -146,7 +147,7 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
     }
     //Note the default tables are set in common_init in mpegvideo.c
 
-    init_h263_dc_for_msmpeg4();
+    ff_thread_once(&init_static_once, init_h263_dc_for_msmpeg4);
 }
 
 /* predict coded block */
