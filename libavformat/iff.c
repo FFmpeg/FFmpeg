@@ -368,7 +368,7 @@ static int read_dst_frame(AVFormatContext *s, AVPacket *pkt)
         data_size = iff->is_64bit ? avio_rb64(pb) : avio_rb32(pb);
         data_pos = avio_tell(pb);
 
-        if (data_size < 1)
+        if (data_size < 1 || data_size >= INT64_MAX)
             return AVERROR_INVALIDDATA;
 
         switch (chunk_id) {
