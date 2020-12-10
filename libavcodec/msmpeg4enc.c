@@ -118,23 +118,19 @@ static int get_size_of_code(const RLTable *rl, int last, int run,
 
 static av_cold void msmpeg4_encode_init_static(void)
 {
-    int i;
-        static uint16_t mv_index_tables[2][4096];
-        init_mv_table(&ff_mv_tables[0], mv_index_tables[0]);
-        init_mv_table(&ff_mv_tables[1], mv_index_tables[1]);
+    static uint16_t mv_index_tables[2][4096];
+    init_mv_table(&ff_mv_tables[0], mv_index_tables[0]);
+    init_mv_table(&ff_mv_tables[1], mv_index_tables[1]);
 
-        for(i=0; i<NB_RL_TABLES; i++){
-            int level;
-            for (level = 1; level <= MAX_LEVEL; level++) {
-                int run;
-                for(run=0; run<=MAX_RUN; run++){
-                    int last;
-                    for(last=0; last<2; last++){
-                        rl_length[i][level][run][last] = get_size_of_code(&ff_rl_table[i], last, run, level, 0);
-                    }
+    for (int i = 0; i < NB_RL_TABLES; i++) {
+        for (int level = 1; level <= MAX_LEVEL; level++) {
+            for (int run = 0; run <= MAX_RUN; run++) {
+                for (int last = 0; last < 2; last++) {
+                    rl_length[i][level][run][last] = get_size_of_code(&ff_rl_table[i], last, run, level, 0);
                 }
             }
         }
+    }
 }
 
 av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
