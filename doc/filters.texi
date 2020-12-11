@@ -7742,7 +7742,7 @@ The filter accepts the following options:
 @table @option
 @item thres
 Set threshold for averaging chrominance values.
-Sum of absolute difference of U and V pixel components or current
+Sum of absolute difference of Y, U and V pixel components of current
 pixel and neighbour pixels lower than this threshold will be used in
 averaging. Luma component is left unchanged and is copied to output.
 Default value is 30. Allowed range is from 1 to 200.
@@ -7764,6 +7764,24 @@ Mostly useful to speed-up filtering.
 Set vertical step when averaging. Default value is 1.
 Allowed range is from 1 to 50.
 Mostly useful to speed-up filtering.
+
+@item threy
+Set Y threshold for averaging chrominance values.
+Set finer control for max allowed difference between Y components
+of current pixel and neigbour pixels.
+Default value is 200. Allowed range is from 1 to 200.
+
+@item threu
+Set U threshold for averaging chrominance values.
+Set finer control for max allowed difference between U components
+of current pixel and neigbour pixels.
+Default value is 200. Allowed range is from 1 to 200.
+
+@item threv
+Set V threshold for averaging chrominance values.
+Set finer control for max allowed difference between V components
+of current pixel and neigbour pixels.
+Default value is 200. Allowed range is from 1 to 200.
 @end table
 
 @subsection Commands
