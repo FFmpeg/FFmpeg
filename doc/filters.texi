@@ -8544,6 +8544,10 @@ Set matrix mode for each plane. Can be @var{square}, @var{row} or @var{column}.
 Default is @var{square}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @subsection Examples
 
 @itemize
@@ -15947,6 +15951,10 @@ Set value which will be multiplied with filtered result.
 Set value which will be added to filtered result.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section pseudocolor
 
 Alter frame colors in video with pseudocolors.
@@ -16538,6 +16546,10 @@ Set value which will be multiplied with filtered result.
 @item delta
 Set value which will be added to filtered result.
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section rotate
 
@@ -18124,6 +18136,10 @@ Set value which will be multiplied with filtered result.
 @item delta
 Set value which will be added to filtered result.
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @anchor{spp}
 @section spp
