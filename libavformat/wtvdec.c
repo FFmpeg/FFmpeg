@@ -953,6 +953,9 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         } else
             av_log(s, AV_LOG_WARNING, "unsupported chunk:"FF_PRI_GUID"\n", FF_ARG_GUID(g));
 
+        if (avio_feof(pb))
+            break;
+
         avio_skip(pb, WTV_PAD8(len) - consumed);
     }
     return AVERROR_EOF;
