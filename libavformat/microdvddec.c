@@ -65,12 +65,12 @@ static int64_t get_pts(const char *buf)
     return AV_NOPTS_VALUE;
 }
 
-static int get_duration(const char *buf)
+static int64_t get_duration(const char *buf)
 {
     int frame_start, frame_end;
 
     if (sscanf(buf, "{%d}{%d}", &frame_start, &frame_end) == 2)
-        return frame_end - frame_start;
+        return frame_end - (int64_t)frame_start;
     return -1;
 }
 
