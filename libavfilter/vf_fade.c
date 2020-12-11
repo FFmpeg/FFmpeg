@@ -577,5 +577,6 @@ AVFilter ff_vf_fade = {
     .query_formats = query_formats,
     .inputs        = avfilter_vf_fade_inputs,
     .outputs       = avfilter_vf_fade_outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
