@@ -46,7 +46,7 @@ fate-auravision-v2: CMD = framecrc -i $(TARGET_SAMPLES)/auravision/salma-hayek-i
 FATE_VIDEO-$(call DEMDEC, AVI, AVRN) += fate-avid-interlaced
 fate-avid-interlaced: CMD = framecrc -i $(TARGET_SAMPLES)/avid/avid_ntsc_interlaced.avi
 
-FATE_VIDEO-$(call DEMDEC, MOV, AVRN) += fate-avid-meridian
+FATE_VIDEO-$(call DEMDEC, MOV, MJPEG) += fate-avid-meridian
 fate-avid-meridian: CMD = framecrc -i $(TARGET_SAMPLES)/avid/avidmeridianntsc.mov
 
 FATE_VIDEO-$(call DEMDEC, BETHSOFTVID, BETHSOFTVID) += fate-bethsoft-vid

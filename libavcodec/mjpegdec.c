@@ -450,6 +450,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         size_change = 0;
     }
 
+    if ((s->avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
+         s->avctx->codec_tag == MKTAG('A', 'V', 'D', 'J')) &&
+        s->orig_height < s->avctx->height)
+        s->avctx->height = s->orig_height;
+
     if (s->avctx->codec_id == AV_CODEC_ID_SMVJPEG) {
         s->avctx->height = s->avctx->coded_height / s->smv_frames_per_jpeg;
         if (s->avctx->height <= 0)
@@ -2854,6 +2859,12 @@ the_end:
             av_frame_unref(frame);
             return ret;
         }
+    }
+    if ((avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
+         avctx->codec_tag == MKTAG('A', 'V', 'D', 'J')) &&
+        avctx->coded_height > s->orig_height) {
+        frame->height   = avctx->coded_height;
+        frame->crop_top = frame->height - s->orig_height;
     }
 
     ret = 0;

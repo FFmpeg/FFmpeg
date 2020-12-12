@@ -69,8 +69,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
     { AV_CODEC_ID_MJPEG,  MKTAG('j', 'p', 'e', 'g') }, /* PhotoJPEG */
     { AV_CODEC_ID_MJPEG,  MKTAG('m', 'j', 'p', 'a') }, /* Motion-JPEG (format A) */
-    { AV_CODEC_ID_AVRN ,  MKTAG('A', 'V', 'D', 'J') }, /* MJPEG with alpha-channel (AVID JFIF meridien compressed) */
-/*  { AV_CODEC_ID_MJPEG,  MKTAG('A', 'V', 'R', 'n') }, *//* MJPEG with alpha-channel (AVID ABVB/Truevision NuVista) */
+    { AV_CODEC_ID_MJPEG,  MKTAG('A', 'V', 'D', 'J') }, /* MJPEG with alpha-channel (AVID JFIF meridien compressed) */
+    { AV_CODEC_ID_MJPEG,  MKTAG('A', 'V', 'R', 'n') }, /* MJPEG with alpha-channel (AVID ABVB/Truevision NuVista) */
     { AV_CODEC_ID_MJPEG,  MKTAG('d', 'm', 'b', '1') }, /* Motion JPEG OpenDML */
     { AV_CODEC_ID_MJPEGB, MKTAG('m', 'j', 'p', 'b') }, /* Motion-JPEG (format B) */
 

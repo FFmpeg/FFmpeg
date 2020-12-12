@@ -838,6 +838,12 @@ static int avi_read_header(AVFormatContext *s)
                         st->codecpar->codec_tag == MKTAG('H', '2', '6', '5'))
                         st->need_parsing = AVSTREAM_PARSE_FULL;
 
+                    if (st->codecpar->codec_id  == AV_CODEC_ID_AVRN &&
+                        st->codecpar->codec_tag == MKTAG('A', 'V', 'R', 'n') &&
+                        (st->codecpar->extradata_size < 31 ||
+                          memcmp(&st->codecpar->extradata[28], "1:1", 3)))
+                        st->codecpar->codec_id = AV_CODEC_ID_MJPEG;
+
                     if (st->codecpar->codec_tag == 0 && st->codecpar->height > 0 &&
                         st->codecpar->extradata_size < 1U << 30) {
                         st->codecpar->extradata_size += 9;
