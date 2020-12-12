@@ -88,6 +88,14 @@ static int subtitle_handler(AVCodecContext *avctx, void *frame,
     return ret;
 }
 
+static int audio_video_handler(AVCodecContext *avctx, AVFrame *frame,
+                               int *got_frame, const AVPacket *dummy)
+{
+    int ret = avcodec_receive_frame(avctx, frame);
+    *got_frame = ret >= 0;
+    return ret;
+}
+
 // Ensure we don't loop forever
 const uint32_t maxiteration = 8096;
 const uint64_t maxpixels_per_frame = 4096 * 4096;
@@ -133,8 +141,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     switch (c->type) {
-    case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
-    case AVMEDIA_TYPE_VIDEO   : decode_handler = avcodec_decode_video2; break;
+    case AVMEDIA_TYPE_AUDIO   :
+    case AVMEDIA_TYPE_VIDEO   : decode_handler = audio_video_handler  ; break;
     case AVMEDIA_TYPE_SUBTITLE: decode_handler = subtitle_handler     ; break;
     }
     switch (c->id) {
@@ -194,7 +202,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     if (ctx->max_pixels == 0 || ctx->max_pixels > maxpixels_per_frame)
         ctx->max_pixels = maxpixels_per_frame; //To reduce false positive OOM and hangs
-    ctx->refcounted_frames = 1; //To reduce false positive timeouts and focus testing on the refcounted API
 
     ctx->max_samples = maxsamples_per_frame;
 
@@ -306,6 +313,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         last = data;
 
         while (parsepkt.size > 0) {
+            int decode_more;
 
             if (parser) {
                 av_init_packet(&avpkt);
@@ -338,8 +346,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
               avcodec_flush_buffers(ctx);
           flushpattern = (flushpattern >> 3) + (flushpattern << 61);
 
+          if (ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+              int ret = avcodec_send_packet(ctx, &avpkt);
+              decode_more = ret >= 0;
+          } else
+              decode_more = 1;
+
           // Iterate through all data
-          while (avpkt.size > 0 && it++ < maxiteration) {
+          while (decode_more && it++ < maxiteration) {
             av_frame_unref(frame);
             int ret = decode_handler(ctx, frame, &got_frame, &avpkt);
 
@@ -360,10 +374,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
             if (ret <= 0 || ret > avpkt.size)
                break;
-            if (ctx->codec_type != AVMEDIA_TYPE_AUDIO)
-                ret = avpkt.size;
-            avpkt.data += ret;
-            avpkt.size -= ret;
+
+            if (ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+                avpkt.data += ret;
+                avpkt.size -= ret;
+                decode_more = avpkt.size > 0;
+            } else
+                decode_more = ret >= 0;
           }
           av_packet_unref(&avpkt);
         }
@@ -372,6 +389,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 maximums_reached:
 
     av_packet_unref(&avpkt);
+
+    if (ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
+        avcodec_send_packet(ctx, NULL);
 
     do {
         got_frame = 0;
