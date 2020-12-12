@@ -404,7 +404,7 @@ retry:
     if (c->itunes_metadata && atom.size > 8) {
         int data_size = avio_rb32(pb);
         int tag = avio_rl32(pb);
-        if (tag == MKTAG('d','a','t','a') && data_size <= atom.size) {
+        if (tag == MKTAG('d','a','t','a') && data_size <= atom.size && data_size >= 16) {
             data_type = avio_rb32(pb); // type
             avio_rb32(pb); // unknown
             str_size = data_size - 16;
