@@ -44,6 +44,8 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
                        AVINDEX_KEYFRAME);
 
     while (!voc->remaining_size) {
+        if (max_size < 4)
+            max_size = 0;
         type = avio_r8(pb);
         if (type == VOC_TYPE_EOF)
             return AVERROR_EOF;
