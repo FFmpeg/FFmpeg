@@ -172,7 +172,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     s->start_code    = -1;
     s->first_picture = 1;
     s->got_picture   = 0;
-    s->org_height    = avctx->coded_height;
+    s->orig_height    = avctx->coded_height;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     avctx->colorspace = AVCOL_SPC_BT470BG;
     s->hwaccel_pix_fmt = s->hwaccel_sw_pix_fmt = AV_PIX_FMT_NONE;
@@ -466,8 +466,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         /* test interlaced mode */
         if (s->first_picture   &&
             (s->multiscope != 2 || s->avctx->time_base.den >= 25 * s->avctx->time_base.num) &&
-            s->org_height != 0 &&
-            s->height < ((s->org_height * 3) / 4)) {
+            s->orig_height != 0 &&
+            s->height < ((s->orig_height * 3) / 4)) {
             s->interlaced                    = 1;
             s->bottom_field                  = s->interlace_polarity;
             s->picture_ptr->interlaced_frame = 1;
