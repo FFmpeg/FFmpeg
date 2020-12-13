@@ -2605,7 +2605,6 @@ eoi_parser:
             s->got_picture = 0;
 
             frame->pkt_dts = s->pkt->dts;
-            frame->best_effort_timestamp = s->pkt->pts;
 
             if (!s->lossless) {
                 int qp = FFMAX3(s->qscale[0],
