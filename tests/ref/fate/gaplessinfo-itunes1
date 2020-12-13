@@ -24,7 +24,7 @@ packet|pts=1291264|dts=1291264|duration=1024|flags=K_
 packet|pts=1292288|dts=1292288|duration=1024|flags=K_
 packet|pts=1293312|dts=1293312|duration=1024|flags=K_
 stream|nb_read_packets=1264
-frame|pkt_pts=2112|pkt_dts=2112|best_effort_timestamp=2048|pkt_duration=960|nb_samples=960
+frame|pkt_pts=2112|pkt_dts=2112|best_effort_timestamp=2112|pkt_duration=960|nb_samples=960
 frame|pkt_pts=3072|pkt_dts=3072|best_effort_timestamp=3072|pkt_duration=1024|nb_samples=1024
 frame|pkt_pts=4096|pkt_dts=4096|best_effort_timestamp=4096|pkt_duration=1024|nb_samples=1024
 frame|pkt_pts=5120|pkt_dts=5120|best_effort_timestamp=5120|pkt_duration=1024|nb_samples=1024
