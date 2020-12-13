@@ -117,7 +117,8 @@ int main(int argc, char *argv[])
 
 end:
     avformat_close_input(&fmt_ctx);
-
+    if(!avio_ctx && avio_ctx_buffer)
+    	av_freep(avio_ctx_buffer);
     /* note: the internal buffer could have changed, and be != avio_ctx_buffer */
     if (avio_ctx)
         av_freep(&avio_ctx->buffer);
