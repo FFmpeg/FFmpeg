@@ -313,7 +313,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     }
 
     // match timestamps and packet size
-    frame->pts = frame->best_effort_timestamp = p->m.timestamp;
+    frame->pts = p->m.timestamp;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_pts = p->m.timestamp;
