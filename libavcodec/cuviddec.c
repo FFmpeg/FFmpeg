@@ -634,6 +634,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
 error:
+    if (ret < 0)
+        av_frame_unref(frame);
+
     if (mapped_frame)
         eret = CHECK_CU(ctx->cvdl->cuvidUnmapVideoFrame(ctx->cudecoder, mapped_frame));
 
