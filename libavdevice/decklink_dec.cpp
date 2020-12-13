@@ -1320,34 +1320,26 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     switch(ctx->raw_format) {
     case bmdFormat8BitYUV:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codecpar->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
         st->codecpar->format      = AV_PIX_FMT_UYVY422;
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 16, st->time_base.den, st->time_base.num);
         break;
     case bmdFormat10BitYUV:
         st->codecpar->codec_id    = AV_CODEC_ID_V210;
-        st->codecpar->codec_tag   = MKTAG('V','2','1','0');
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 64, st->time_base.den, st->time_base.num * 3);
-        st->codecpar->bits_per_coded_sample = 10;
         break;
     case bmdFormat8BitARGB:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
         st->codecpar->format      = AV_PIX_FMT_0RGB;
-        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
         break;
     case bmdFormat8BitBGRA:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
         st->codecpar->format      = AV_PIX_FMT_BGR0;
-        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
         break;
     case bmdFormat10BitRGB:
         st->codecpar->codec_id    = AV_CODEC_ID_R210;
-        st->codecpar->codec_tag   = MKTAG('R','2','1','0');
-        st->codecpar->format      = AV_PIX_FMT_RGB48LE;
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 30, st->time_base.den, st->time_base.num);
-        st->codecpar->bits_per_coded_sample = 10;
         break;
     default:
         char fourcc_str[AV_FOURCC_MAX_STRING_SIZE] = {0};
