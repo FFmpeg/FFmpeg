@@ -1220,7 +1220,6 @@ TESTPROGS = avpacket                                                    \
             imgconvert                                                  \
             jpeg2000dwt                                                 \
             mathops                                                    \
-            options                                                     \
             utils                                                       \
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
