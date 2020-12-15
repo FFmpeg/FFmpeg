@@ -13551,6 +13551,10 @@ Upper bound. Defaults to the highest allowed value for the input.
 Specify which planes will be processed. Defaults to all available.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section loop
 
 Loop video frames.
