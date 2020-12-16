@@ -514,22 +514,54 @@ static int config_filter(AVFilterLink *outlink, int reset)
     case bass:
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
     case lowshelf:
-        s->a0 =          (A + 1) + (A - 1) * cos(w0) + beta * alpha;
-        s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
-        s->a2 =          (A + 1) + (A - 1) * cos(w0) - beta * alpha;
-        s->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + beta * alpha);
-        s->b1 = 2 * A * ((A - 1) - (A + 1) * cos(w0));
-        s->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - beta * alpha);
+        if (s->poles == 1) {
+            double A = ff_exp10(s->gain / 20);
+            double ro = -sin(w0 / 2. - M_PI_4 / (sin(w0 / 2. + M_PI_4)));
+            double n = (A + 1) / (A - 1);
+            double alpha1 = A == 1. ? 0. : n - FFSIGN(n) * sqrt(n * n - 1);
+            double beta0 = ((1 + A) + (1 - A) * alpha1) * 0.5;
+            double beta1 = ((1 - A) + (1 + A) * alpha1) * 0.5;
+
+            s->a0 = 1 + ro * alpha1;
+            s->a1 = -ro - alpha1;
+            s->a2 = 0;
+            s->b0 = beta0 + ro * beta1;
+            s->b1 = -beta1 - ro * beta0;
+            s->b2 = 0;
+        } else {
+            s->a0 =          (A + 1) + (A - 1) * cos(w0) + beta * alpha;
+            s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
+            s->a2 =          (A + 1) + (A - 1) * cos(w0) - beta * alpha;
+            s->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + beta * alpha);
+            s->b1 = 2 * A * ((A - 1) - (A + 1) * cos(w0));
+            s->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - beta * alpha);
+        }
         break;
     case treble:
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
     case highshelf:
-        s->a0 =          (A + 1) - (A - 1) * cos(w0) + beta * alpha;
-        s->a1 =     2 * ((A - 1) - (A + 1) * cos(w0));
-        s->a2 =          (A + 1) - (A - 1) * cos(w0) - beta * alpha;
-        s->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + beta * alpha);
-        s->b1 =-2 * A * ((A - 1) + (A + 1) * cos(w0));
-        s->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - beta * alpha);
+        if (s->poles == 1) {
+            double A = ff_exp10(s->gain / 20);
+            double ro = sin(w0 / 2. - M_PI_4 / (sin(w0 / 2. + M_PI_4)));
+            double n = (A + 1) / (A - 1);
+            double alpha1 = A == 1. ? 0. : n - FFSIGN(n) * sqrt(n * n - 1);
+            double beta0 = ((1 + A) + (1 - A) * alpha1) * 0.5;
+            double beta1 = ((1 - A) + (1 + A) * alpha1) * 0.5;
+
+            s->a0 = 1 + ro * alpha1;
+            s->a1 = ro + alpha1;
+            s->a2 = 0;
+            s->b0 = beta0 + ro * beta1;
+            s->b1 = beta1 + ro * beta0;
+            s->b2 = 0;
+        } else {
+            s->a0 =          (A + 1) - (A - 1) * cos(w0) + beta * alpha;
+            s->a1 =     2 * ((A - 1) - (A + 1) * cos(w0));
+            s->a2 =          (A + 1) - (A - 1) * cos(w0) - beta * alpha;
+            s->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + beta * alpha);
+            s->b1 =-2 * A * ((A - 1) + (A + 1) * cos(w0));
+            s->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - beta * alpha);
+        }
         break;
     case bandpass:
         if (s->csg) {
@@ -914,6 +946,8 @@ static const AVOption bass_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
+    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
     {"mix", "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"m",   "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
@@ -953,6 +987,8 @@ static const AVOption treble_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
+    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
     {"mix", "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"m",   "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
@@ -1184,6 +1220,8 @@ static const AVOption lowshelf_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
+    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
     {"mix", "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"m",   "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
@@ -1223,6 +1261,8 @@ static const AVOption highshelf_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
+    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
     {"mix", "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"m",   "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
