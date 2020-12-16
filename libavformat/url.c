@@ -211,8 +211,8 @@ int ff_make_absolute_url(char *buf, int size, const char *base,
 
     if (!base)
         base = "";
-    if ((ret = ff_url_decompose(&ub, base, NULL) < 0) ||
-        (ret = ff_url_decompose(&uc, rel,  NULL) < 0))
+    if ((ret = ff_url_decompose(&ub, base, NULL)) < 0 ||
+        (ret = ff_url_decompose(&uc, rel,  NULL)) < 0)
         goto error;
 
     keep = ub.url;
