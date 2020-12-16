@@ -9959,6 +9959,10 @@ Set the input name of the dnn network.
 @item output
 Set the output name of the dnn network.
 
+@item async
+use DNN async execution if set (default: set),
+roll back to sync execution if the backend does not support async.
+
 @end table
 
 @subsection Examples
