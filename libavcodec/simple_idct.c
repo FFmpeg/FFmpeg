@@ -175,7 +175,8 @@ static inline void idct4col_add(uint8_t *dest, ptrdiff_t line_size, const int16_
 #define R_SHIFT 11
 static inline void idct4row(int16_t *row)
 {
-    int c0, c1, c2, c3, a0, a1, a2, a3;
+    unsigned c0, c1, c2, c3;
+    int a0, a1, a2, a3;
 
     a0 = row[0];
     a1 = row[1];
