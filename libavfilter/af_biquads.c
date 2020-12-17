@@ -516,7 +516,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
     case lowshelf:
         if (s->poles == 1) {
             double A = ff_exp10(s->gain / 20);
-            double ro = -sin(w0 / 2. - M_PI_4 / (sin(w0 / 2. + M_PI_4)));
+            double ro = -sin(w0 / 2. - M_PI_4) / sin(w0 / 2. + M_PI_4);
             double n = (A + 1) / (A - 1);
             double alpha1 = A == 1. ? 0. : n - FFSIGN(n) * sqrt(n * n - 1);
             double beta0 = ((1 + A) + (1 - A) * alpha1) * 0.5;
@@ -542,7 +542,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
     case highshelf:
         if (s->poles == 1) {
             double A = ff_exp10(s->gain / 20);
-            double ro = sin(w0 / 2. - M_PI_4 / (sin(w0 / 2. + M_PI_4)));
+            double ro = sin(w0 / 2. - M_PI_4) / sin(w0 / 2. + M_PI_4);
             double n = (A + 1) / (A - 1);
             double alpha1 = A == 1. ? 0. : n - FFSIGN(n) * sqrt(n * n - 1);
             double beta0 = ((1 + A) + (1 - A) * alpha1) * 0.5;
