@@ -131,7 +131,7 @@ struct MpegTSContext {
     int fix_teletext_pts;
 
     int64_t cur_pcr;    /**< used to estimate the exact PCR */
-    int pcr_incr;       /**< used to estimate the exact PCR */
+    int64_t pcr_incr;   /**< used to estimate the exact PCR */
 
     /* data needed to handle file based ts */
     /** stop parsing loop */
