@@ -786,7 +786,7 @@ static int read_header(FFV1Context *f)
 
             if (f->version == 2) {
                 int idx = get_symbol(c, state, 0);
-                if (idx > (unsigned)f->quant_table_count) {
+                if (idx >= (unsigned)f->quant_table_count) {
                     av_log(f->avctx, AV_LOG_ERROR,
                            "quant_table_index out of range\n");
                     return AVERROR_INVALIDDATA;
