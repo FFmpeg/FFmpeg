@@ -816,7 +816,11 @@ static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingLi
                 next_coef = 8;
                 coef_num  = FFMIN(64, 1 << (4 + (size_id << 1)));
                 if (size_id > 1) {
-                    scaling_list_dc_coef[size_id - 2][matrix_id] = get_se_golomb(gb) + 8;
+                    int scaling_list_coeff_minus8 = get_se_golomb(gb);
+                    if (scaling_list_coeff_minus8 < -7 ||
+                        scaling_list_coeff_minus8 > 247)
+                        return AVERROR_INVALIDDATA;
+                    scaling_list_dc_coef[size_id - 2][matrix_id] = scaling_list_coeff_minus8 + 8;
                     next_coef = scaling_list_dc_coef[size_id - 2][matrix_id];
                     sl->sl_dc[size_id - 2][matrix_id] = next_coef;
                 }
