@@ -32,7 +32,7 @@
 enum { Y, U, V, A };
 enum { R, G, B };
 
-enum FillMode { FM_SMEAR, FM_MIRROR, FM_FIXED, FM_REFLECT, FM_WRAP, FM_NB_MODES };
+enum FillMode { FM_SMEAR, FM_MIRROR, FM_FIXED, FM_REFLECT, FM_WRAP, FM_FADE, FM_NB_MODES };
 
 typedef struct Borders {
     int left, right, top, bottom;
@@ -402,6 +402,99 @@ static void wrap_borders16(FillBordersContext *s, AVFrame *frame)
     }
 }
 
+static int lerp8(int fill, int src, int pos, int size)
+{
+    return av_clip_uint8(((fill * 256 * pos / size) + (src * 256 * (size - pos) / size)) >> 8);
+}
+
+static int lerp16(int fill, int src, int pos, int size, int depth)
+{
+    return av_clip_uintp2_c(((fill * (1LL << depth) * pos / size) + (src * (1LL << depth) * (size - pos) / size)) >> depth, depth);
+}
+
+static void fade_borders8(FillBordersContext *s, AVFrame *frame)
+{
+    int p, y, x;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        uint8_t *ptr = frame->data[p];
+        const uint8_t fill = s->fill[p];
+        const int linesize = frame->linesize[p];
+        const int start_left = s->borders[p].left;
+        const int start_right = s->planewidth[p] - s->borders[p].right;
+        const int start_top = s->borders[p].top;
+        const int start_bottom = s->planeheight[p] - s->borders[p].bottom;
+
+        for (y = 0; y < start_top; y++) {
+            for (x = 0; x < s->planewidth[p]; x++) {
+                int src = ptr[y * linesize + x];
+                ptr[y * linesize + x] = lerp8(fill, src, start_top - y, start_top);
+            }
+        }
+
+        for (y = start_bottom; y < s->planeheight[p]; y++) {
+            for (x = 0; x < s->planewidth[p]; x++) {
+                int src = ptr[y * linesize + x];
+                ptr[y * linesize + x] = lerp8(fill, src, y - start_bottom, s->borders[p].bottom);
+            }
+        }
+
+        for (y = 0; y < s->planeheight[p]; y++) {
+            for (x = 0; x < start_left; x++) {
+                int src = ptr[y * linesize + x];
+                ptr[y * linesize + x] = lerp8(fill, src, start_left - x, start_left);
+            }
+
+            for (x = 0; x < s->borders[p].right; x++) {
+                int src = ptr[y * linesize + start_right + x];
+                ptr[y * linesize + start_right + x] = lerp8(fill, src, x, s->borders[p].right);
+            }
+        }
+    }
+}
+
+static void fade_borders16(FillBordersContext *s, AVFrame *frame)
+{
+    const int depth = s->depth;
+    int p, y, x;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        uint16_t *ptr = (uint16_t *)frame->data[p];
+        const uint16_t fill = s->fill[p] << (depth - 8);
+        const int linesize = frame->linesize[p] / 2;
+        const int start_left = s->borders[p].left;
+        const int start_right = s->planewidth[p] - s->borders[p].right;
+        const int start_top = s->borders[p].top;
+        const int start_bottom = s->planeheight[p] - s->borders[p].bottom;
+
+        for (y = 0; y < start_top; y++) {
+            for (x = 0; x < s->planewidth[p]; x++) {
+                int src = ptr[y * linesize + x];
+                ptr[y * linesize + x] = lerp16(fill, src, start_top - y, start_top, depth);
+            }
+        }
+
+        for (y = start_bottom; y < s->planeheight[p]; y++) {
+            for (x = 0; x < s->planewidth[p]; x++) {
+                int src = ptr[y * linesize + x];
+                ptr[y * linesize + x] = lerp16(fill, src, y - start_bottom, s->borders[p].bottom, depth);
+            }
+        }
+
+        for (y = 0; y < s->planeheight[p]; y++) {
+            for (x = 0; x < start_left; x++) {
+                int src = ptr[y * linesize + x];
+                ptr[y * linesize + x] = lerp16(fill, src, start_left - x, start_left, depth);
+            }
+
+            for (x = 0; x < s->borders[p].right; x++) {
+                int src = ptr[y * linesize + start_right + x];
+                ptr[y * linesize + start_right + x] = lerp16(fill, src, x, s->borders[p].right, depth);
+            }
+        }
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     FillBordersContext *s = inlink->dst->priv;
@@ -460,6 +553,7 @@ static int config_input(AVFilterLink *inlink)
     case FM_FIXED:  s->fillborders = s->depth <= 8 ? fixed_borders8  : fixed_borders16;  break;
     case FM_REFLECT:s->fillborders = s->depth <= 8 ? reflect_borders8: reflect_borders16;break;
     case FM_WRAP:   s->fillborders = s->depth <= 8 ? wrap_borders8   : wrap_borders16;   break;
+    case FM_FADE:   s->fillborders = s->depth <= 8 ? fade_borders8   : fade_borders16;   break;
     default: av_assert0(0);
     }
 
@@ -508,7 +602,8 @@ static const AVOption fillborders_options[] = {
         { "fixed",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_FIXED},  0, 0, FLAGS, "mode" },
         { "reflect",NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_REFLECT},0, 0, FLAGS, "mode" },
         { "wrap",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_WRAP},   0, 0, FLAGS, "mode" },
-    { "color",  "set the color for the fixed mode", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
+        { "fade",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_FADE},   0, 0, FLAGS, "mode" },
+    { "color",  "set the color for the fixed/fade mode", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
     { NULL }
 };
 
