@@ -64,6 +64,7 @@ DNNReturnType proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_NV12:
         sws_ctx = sws_getContext(frame->width,
                                  frame->height,
                                  AV_PIX_FMT_GRAYF32,
@@ -135,6 +136,7 @@ DNNReturnType proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_c
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_NV12:
         sws_ctx = sws_getContext(frame->width,
                                  frame->height,
                                  AV_PIX_FMT_GRAY8,

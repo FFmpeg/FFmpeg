@@ -113,6 +113,7 @@ static int query_formats(AVFilterContext *context)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAYF32,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_NV12,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -161,6 +162,7 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_NV12:
         if (model_input->channels != 1) {
             LOG_FORMAT_CHANNEL_MISMATCH();
             return AVERROR(EIO);
@@ -212,15 +214,22 @@ static int prepare_uv_scale(AVFilterLink *outlink)
 
     if (isPlanarYUV(fmt)) {
         if (inlink->w != outlink->w || inlink->h != outlink->h) {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-            int sws_src_h = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-            int sws_src_w = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-            int sws_dst_h = AV_CEIL_RSHIFT(outlink->h, desc->log2_chroma_h);
-            int sws_dst_w = AV_CEIL_RSHIFT(outlink->w, desc->log2_chroma_w);
-            ctx->sws_uv_scale = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
-                                               sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8,
-                                               SWS_BICUBIC, NULL, NULL, NULL);
-            ctx->sws_uv_height = sws_src_h;
+            if (fmt == AV_PIX_FMT_NV12) {
+                ctx->sws_uv_scale = sws_getContext(inlink->w >> 1, inlink->h >> 1, AV_PIX_FMT_YA8,
+                                                   outlink->w >> 1, outlink->h >> 1, AV_PIX_FMT_YA8,
+                                                   SWS_BICUBIC, NULL, NULL, NULL);
+                ctx->sws_uv_height = inlink->h >> 1;
+            } else {
+                const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+                int sws_src_h = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+                int sws_src_w = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+                int sws_dst_h = AV_CEIL_RSHIFT(outlink->h, desc->log2_chroma_h);
+                int sws_dst_w = AV_CEIL_RSHIFT(outlink->w, desc->log2_chroma_w);
+                ctx->sws_uv_scale = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
+                                                   sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8,
+                                                   SWS_BICUBIC, NULL, NULL, NULL);
+                ctx->sws_uv_height = sws_src_h;
+            }
         }
     }
 
@@ -262,6 +271,9 @@ static int copy_uv_planes(DnnProcessingContext *ctx, AVFrame *out, const AVFrame
                                 in->data[i], in->linesize[i],
                                 bytewidth, uv_height);
         }
+    } else if (in->format == AV_PIX_FMT_NV12) {
+        sws_scale(ctx->sws_uv_scale, (const uint8_t **)(in->data + 1), in->linesize + 1,
+                  0, ctx->sws_uv_height, out->data + 1, out->linesize + 1);
     } else {
         sws_scale(ctx->sws_uv_scale, (const uint8_t **)(in->data + 1), in->linesize + 1,
                   0, ctx->sws_uv_height, out->data + 1, out->linesize + 1);
