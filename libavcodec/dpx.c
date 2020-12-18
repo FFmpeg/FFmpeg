@@ -333,10 +333,12 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 50: // RGB
         elements = 3;
+        yuv = 0;
         break;
     case 52: // ABGR
     case 51: // RGBA
         elements = 4;
+        yuv = 0;
         break;
     case 100: // UYVY422
         elements = 2;
