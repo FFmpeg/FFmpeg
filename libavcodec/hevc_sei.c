@@ -169,7 +169,7 @@ static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s, GetB
     int ret;
 
     if (size < 3)
-       return AVERROR(EINVAL);
+       return AVERROR_INVALIDDATA;
 
     ret = ff_parse_a53_cc(&s->buf_ref, gb->buffer + get_bits_count(gb) / 8, size);
 
@@ -241,7 +241,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
     int country_code, provider_code;
 
     if (size < 3)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     size -= 3;
 
     country_code = get_bits(gb, 8);
@@ -271,7 +271,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
         uint8_t application_identifier;
 
         if (size < 3)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         size -= 3;
 
         provider_oriented_code = get_bits(gb, 16);
@@ -286,7 +286,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
         uint32_t user_identifier;
 
         if (size < 4)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         size -= 4;
 
         user_identifier = get_bits_long(gb, 32);
