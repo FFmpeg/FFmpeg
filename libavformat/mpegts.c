@@ -3090,7 +3090,6 @@ static int mpegts_read_header(AVFormatContext *s)
         AVStream *st;
         int pcr_pid, pid, nb_packets, nb_pcrs, ret, pcr_l;
         int64_t pcrs[2], pcr_h;
-        int packet_count[2];
         uint8_t packet[TS_PACKET_SIZE];
         const uint8_t *data;
 
@@ -3116,7 +3115,6 @@ static int mpegts_read_header(AVFormatContext *s)
                 parse_pcr(&pcr_h, &pcr_l, data) == 0) {
                 finished_reading_packet(s, ts->raw_packet_size);
                 pcr_pid = pid;
-                packet_count[nb_pcrs] = nb_packets;
                 pcrs[nb_pcrs] = pcr_h * 300 + pcr_l;
                 nb_pcrs++;
                 if (nb_pcrs >= 2) {
@@ -3126,7 +3124,6 @@ static int mpegts_read_header(AVFormatContext *s)
                     } else {
                         av_log(ts->stream, AV_LOG_WARNING, "invalid pcr pair %"PRId64" >= %"PRId64"\n", pcrs[0], pcrs[1]);
                         pcrs[0] = pcrs[1];
-                        packet_count[0] = packet_count[1];
                         nb_pcrs--;
                     }
                 }
@@ -3138,8 +3135,8 @@ static int mpegts_read_header(AVFormatContext *s)
 
         /* NOTE1: the bitrate is computed without the FEC */
         /* NOTE2: it is only the bitrate of the start of the stream */
-        ts->pcr_incr = (pcrs[1] - pcrs[0]) / (packet_count[1] - packet_count[0]);
-        ts->cur_pcr  = pcrs[0] - ts->pcr_incr * packet_count[0];
+        ts->pcr_incr = pcrs[1] - pcrs[0];
+        ts->cur_pcr  = pcrs[0] - ts->pcr_incr * (nb_packets - 1);
         s->bit_rate  = TS_PACKET_SIZE * 8 * 27000000LL / ts->pcr_incr;
         st->codecpar->bit_rate = s->bit_rate;
         st->start_time      = ts->cur_pcr;
