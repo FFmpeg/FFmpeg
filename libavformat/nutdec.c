@@ -193,13 +193,13 @@ static int decode_main_header(NUTContext *nut)
 {
     AVFormatContext *s = nut->avf;
     AVIOContext *bc    = s->pb;
-    uint64_t tmp, end;
+    uint64_t tmp, end, length;
     unsigned int stream_count;
     int i, j, count, ret;
     int tmp_stream, tmp_mul, tmp_pts, tmp_size, tmp_res, tmp_head_idx;
 
-    end  = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
-    end += avio_tell(bc);
+    length = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
+    end = length + avio_tell(bc);
 
     nut->version = ffio_read_varlen(bc);
     if (nut->version < NUT_MIN_VERSION ||
@@ -219,7 +219,7 @@ static int decode_main_header(NUTContext *nut)
         nut->max_distance = 65536;
     }
 
-    GET_V(nut->time_base_count, tmp > 0 && tmp < INT_MAX / sizeof(AVRational));
+    GET_V(nut->time_base_count, tmp > 0 && tmp < INT_MAX / sizeof(AVRational) && tmp < length/2);
     nut->time_base = av_malloc_array(nut->time_base_count, sizeof(AVRational));
     if (!nut->time_base)
         return AVERROR(ENOMEM);
