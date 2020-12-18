@@ -11756,10 +11756,16 @@ It accepts the following values:
 fill pixels using outermost pixels
 
 @item mirror
-fill pixels using mirroring
+fill pixels using mirroring (half sample symmetric)
 
 @item fixed
 fill pixels with constant value
+
+@item reflect
+fill pixels using reflecting (whole sample symmetric)
+
+@item wrap
+fill pixels using wrapping
 @end table
 
 Default is @var{smear}.

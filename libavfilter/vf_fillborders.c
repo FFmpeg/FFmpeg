@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
@@ -31,7 +32,7 @@
 enum { Y, U, V, A };
 enum { R, G, B };
 
-enum FillMode { FM_SMEAR, FM_MIRROR, FM_FIXED, FM_NB_MODES };
+enum FillMode { FM_SMEAR, FM_MIRROR, FM_FIXED, FM_REFLECT, FM_WRAP, FM_NB_MODES };
 
 typedef struct Borders {
     int left, right, top, bottom;
@@ -269,6 +270,138 @@ static void fixed_borders16(FillBordersContext *s, AVFrame *frame)
     }
 }
 
+static void reflect_borders8(FillBordersContext *s, AVFrame *frame)
+{
+    int p, y, x;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        uint8_t *ptr = frame->data[p];
+        int linesize = frame->linesize[p];
+
+        for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
+            for (x = 0; x < s->borders[p].left; x++) {
+                ptr[y * linesize + x] = ptr[y * linesize + s->borders[p].left * 2 - x];
+            }
+
+            for (x = 0; x < s->borders[p].right; x++) {
+                ptr[y * linesize + s->planewidth[p] - s->borders[p].right + x] =
+                    ptr[y * linesize + s->planewidth[p] - s->borders[p].right - 2 - x];
+            }
+        }
+
+        for (y = 0; y < s->borders[p].top; y++) {
+            memcpy(ptr + y * linesize,
+                   ptr + (s->borders[p].top * 2 - y) * linesize,
+                   s->planewidth[p]);
+        }
+
+        for (y = 0; y < s->borders[p].bottom; y++) {
+            memcpy(ptr + (s->planeheight[p] - s->borders[p].bottom + y) * linesize,
+                   ptr + (s->planeheight[p] - s->borders[p].bottom - 2 - y) * linesize,
+                   s->planewidth[p]);
+        }
+    }
+}
+
+static void reflect_borders16(FillBordersContext *s, AVFrame *frame)
+{
+    int p, y, x;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        uint16_t *ptr = (uint16_t *)frame->data[p];
+        int linesize = frame->linesize[p] / 2;
+
+        for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
+            for (x = 0; x < s->borders[p].left; x++) {
+                ptr[y * linesize + x] = ptr[y * linesize + s->borders[p].left * 2 - x];
+            }
+
+            for (x = 0; x < s->borders[p].right; x++) {
+                ptr[y * linesize + s->planewidth[p] - s->borders[p].right + x] =
+                    ptr[y * linesize + s->planewidth[p] - s->borders[p].right - 2 - x];
+            }
+        }
+
+        for (y = 0; y < s->borders[p].top; y++) {
+            memcpy(ptr + y * linesize,
+                   ptr + (s->borders[p].top * 2 - y) * linesize,
+                   s->planewidth[p] * 2);
+        }
+
+        for (y = 0; y < s->borders[p].bottom; y++) {
+            memcpy(ptr + (s->planeheight[p] - s->borders[p].bottom + y) * linesize,
+                   ptr + (s->planeheight[p] - s->borders[p].bottom - 2 - y) * linesize,
+                   s->planewidth[p] * 2);
+        }
+    }
+}
+
+static void wrap_borders8(FillBordersContext *s, AVFrame *frame)
+{
+    int p, y, x;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        uint8_t *ptr = frame->data[p];
+        int linesize = frame->linesize[p];
+
+        for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
+            for (x = 0; x < s->borders[p].left; x++) {
+                ptr[y * linesize + x] = ptr[y * linesize + s->planewidth[p] - s->borders[p].right - s->borders[p].left + x];
+            }
+
+            for (x = 0; x < s->borders[p].right; x++) {
+                ptr[y * linesize + s->planewidth[p] - s->borders[p].right + x] =
+                    ptr[y * linesize + s->borders[p].left + x];
+            }
+        }
+
+        for (y = 0; y < s->borders[p].top; y++) {
+            memcpy(ptr + y * linesize,
+                   ptr + (s->planeheight[p] - s->borders[p].bottom - s->borders[p].top + y) * linesize,
+                   s->planewidth[p]);
+        }
+
+        for (y = 0; y < s->borders[p].bottom; y++) {
+            memcpy(ptr + (s->planeheight[p] - s->borders[p].bottom + y) * linesize,
+                   ptr + (s->borders[p].top + y) * linesize,
+                   s->planewidth[p]);
+        }
+    }
+}
+
+static void wrap_borders16(FillBordersContext *s, AVFrame *frame)
+{
+    int p, y, x;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        uint16_t *ptr = (uint16_t *)frame->data[p];
+        int linesize = frame->linesize[p] / 2;
+
+        for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
+            for (x = 0; x < s->borders[p].left; x++) {
+                ptr[y * linesize + x] = ptr[y * linesize + s->planewidth[p] - s->borders[p].right - s->borders[p].left + x];
+            }
+
+            for (x = 0; x < s->borders[p].right; x++) {
+                ptr[y * linesize + s->planewidth[p] - s->borders[p].right + x] =
+                    ptr[y * linesize + s->borders[p].left + x];
+            }
+        }
+
+        for (y = 0; y < s->borders[p].top; y++) {
+            memcpy(ptr + y * linesize,
+                   ptr + (s->planeheight[p] - s->borders[p].bottom - s->borders[p].top + y) * linesize,
+                   s->planewidth[p] * 2);
+        }
+
+        for (y = 0; y < s->borders[p].bottom; y++) {
+            memcpy(ptr + (s->planeheight[p] - s->borders[p].bottom + y) * linesize,
+                   ptr + (s->borders[p].top + y) * linesize,
+                   s->planewidth[p] * 2);
+        }
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     FillBordersContext *s = inlink->dst->priv;
@@ -325,6 +458,9 @@ static int config_input(AVFilterLink *inlink)
     case FM_SMEAR:  s->fillborders = s->depth <= 8 ? smear_borders8  : smear_borders16;  break;
     case FM_MIRROR: s->fillborders = s->depth <= 8 ? mirror_borders8 : mirror_borders16; break;
     case FM_FIXED:  s->fillborders = s->depth <= 8 ? fixed_borders8  : fixed_borders16;  break;
+    case FM_REFLECT:s->fillborders = s->depth <= 8 ? reflect_borders8: reflect_borders16;break;
+    case FM_WRAP:   s->fillborders = s->depth <= 8 ? wrap_borders8   : wrap_borders16;   break;
+    default: av_assert0(0);
     }
 
     s->yuv_color[Y] = RGB_TO_Y_CCIR(s->rgba_color[R], s->rgba_color[G], s->rgba_color[B]);
@@ -370,6 +506,8 @@ static const AVOption fillborders_options[] = {
         { "smear",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_SMEAR},  0, 0, FLAGS, "mode" },
         { "mirror", NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_MIRROR}, 0, 0, FLAGS, "mode" },
         { "fixed",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_FIXED},  0, 0, FLAGS, "mode" },
+        { "reflect",NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_REFLECT},0, 0, FLAGS, "mode" },
+        { "wrap",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_WRAP},   0, 0, FLAGS, "mode" },
     { "color",  "set the color for the fixed mode", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
     { NULL }
 };
