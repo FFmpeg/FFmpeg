@@ -97,9 +97,8 @@ fate-dpx: CMD = framecrc -i $(TARGET_SAMPLES)/dpx/lighthouse_rgb48.dpx
 FATE_SAMPLES_AVCONV-$(call PARSERDEMDEC, DPX, IMAGE2PIPE, DPX) += fate-dpxparser
 fate-dpxparser: CMD = framecrc -f image2pipe -i $(TARGET_SAMPLES)/dpx/lena_4x_concat.dpx -sws_flags +accurate_rnd+bitexact
 
-FATE_IMAGE-$(call DEMDEC, IMAGE2, DPX) += fate-dpx-probe
-fate-dpx-probe: SRC = $(TARGET_SAMPLES)/dpx/cyan.dpx
-fate-dpx-probe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames -show_entries frame=color_transfer,color_range,color_space,color_primaries,sample_aspect_ratio -print_format default -bitexact -v 0 -i "$(SRC)"
+FATE_IMAGE_PROBE-$(call DEMDEC, IMAGE2, DPX) += fate-dpx-probe
+fate-dpx-probe: CMD = probeframes -show_entries frame=color_transfer,color_range,color_space,color_primaries,sample_aspect_ratio $(TARGET_SAMPLES)/dpx/cyan.dpx
 
 FATE_EXR += fate-exr-slice-raw
 fate-exr-slice-raw: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_slice_raw.exr -pix_fmt gbrapf32le
@@ -518,6 +517,9 @@ FATE_IMAGE += $(FATE_XBM-yes)
 fate-xbm: $(FATE_XBM-yes)
 
 FATE_IMAGE += $(FATE_IMAGE-yes)
+FATE_IMAGE_PROBE += $(FATE_IMAGE_PROBE-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_IMAGE)
-fate-image: $(FATE_IMAGE)
+FATE_SAMPLES_FFPROBE += $(FATE_IMAGE_PROBE)
+
+fate-image: $(FATE_IMAGE) $(FATE_IMAGE_PROBE)
