@@ -45,6 +45,8 @@ typedef struct ASoftClipContext {
     int type;
     int oversample;
     int64_t delay;
+    double threshold;
+    double output;
     double param;
 
     SwrContext *up_ctx;
@@ -71,6 +73,8 @@ static const AVOption asoftclip_options[] = {
     { "quintic",             NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_QUINTIC},0,          0, A, "types" },
     { "sin",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_SIN},    0,          0, A, "types" },
     { "erf",                 NULL,            0, AV_OPT_TYPE_CONST,  {.i64=ASC_ERF},    0,          0, A, "types" },
+    { "threshold", "set softclip threshold", OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.000001, 1, A },
+    { "output", "set softclip output gain", OFFSET(output), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.000001, 16, A },
     { "param", "set softclip parameter", OFFSET(param), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.01,        3, A },
     { "oversample", "set oversample factor", OFFSET(oversample), AV_OPT_TYPE_INT, {.i64=1}, 1, 32, F },
     { NULL }
@@ -108,13 +112,14 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-#define SQR(x) ((x) * (x))
-
 static void filter_flt(ASoftClipContext *s,
                        void **dptr, const void **sptr,
                        int nb_samples, int channels,
                        int start, int end)
 {
+    float threshold = s->threshold;
+    float gain = s->output * threshold;
+    float factor = 1.f / threshold;
     float param = s->param;
 
     for (int c = start; c < end; c++) {
@@ -124,53 +129,73 @@ static void filter_flt(ASoftClipContext *s,
         switch (s->type) {
         case ASC_HARD:
             for (int n = 0; n < nb_samples; n++) {
-                dst[n] = av_clipf(src[n], -1.f, 1.f);
+                dst[n] = av_clipf(src[n] * factor, -1.f, 1.f);
+                dst[n] *= gain;
             }
             break;
         case ASC_TANH:
             for (int n = 0; n < nb_samples; n++) {
-                dst[n] = tanhf(src[n] * param);
+                dst[n] = tanhf(src[n] * factor * param);
+                dst[n] *= gain;
             }
             break;
         case ASC_ATAN:
-            for (int n = 0; n < nb_samples; n++)
-                dst[n] = 2.f / M_PI * atanf(src[n] * param);
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = 2.f / M_PI * atanf(src[n] * factor * param);
+                dst[n] *= gain;
+            }
             break;
         case ASC_CUBIC:
             for (int n = 0; n < nb_samples; n++) {
-                if (FFABS(src[n]) >= 1.5f)
-                    dst[n] = FFSIGN(src[n]);
+                float sample = src[n] * factor;
+
+                if (FFABS(sample) >= 1.5f)
+                    dst[n] = FFSIGN(sample);
                 else
-                    dst[n] = src[n] - 0.1481f * powf(src[n], 3.f);
+                    dst[n] = sample - 0.1481f * powf(sample, 3.f);
+                dst[n] *= gain;
             }
             break;
         case ASC_EXP:
-            for (int n = 0; n < nb_samples; n++)
-                dst[n] = 2.f / (1.f + expf(-2.f * src[n])) - 1.;
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = 2.f / (1.f + expf(-2.f * src[n] * factor)) - 1.;
+                dst[n] *= gain;
+            }
             break;
         case ASC_ALG:
-            for (int n = 0; n < nb_samples; n++)
-                dst[n] = src[n] / (sqrtf(param + src[n] * src[n]));
+            for (int n = 0; n < nb_samples; n++) {
+                float sample = src[n] * factor;
+
+                dst[n] = sample / (sqrtf(param + sample * sample));
+                dst[n] *= gain;
+            }
             break;
         case ASC_QUINTIC:
             for (int n = 0; n < nb_samples; n++) {
-                if (FFABS(src[n]) >= 1.25)
-                    dst[n] = FFSIGN(src[n]);
+                float sample = src[n] * factor;
+
+                if (FFABS(sample) >= 1.25)
+                    dst[n] = FFSIGN(sample);
                 else
-                    dst[n] = src[n] - 0.08192f * powf(src[n], 5.f);
+                    dst[n] = sample - 0.08192f * powf(sample, 5.f);
+                dst[n] *= gain;
             }
             break;
         case ASC_SIN:
             for (int n = 0; n < nb_samples; n++) {
-                if (FFABS(src[n]) >= M_PI_2)
-                    dst[n] = FFSIGN(src[n]);
+                float sample = src[n] * factor;
+
+                if (FFABS(sample) >= M_PI_2)
+                    dst[n] = FFSIGN(sample);
                 else
-                    dst[n] = sinf(src[n]);
+                    dst[n] = sinf(sample);
+                dst[n] *= gain;
             }
             break;
         case ASC_ERF:
             for (int n = 0; n < nb_samples; n++) {
-                dst[n] = erff(src[n]);
+                dst[n] = erff(src[n] * factor);
+                dst[n] *= gain;
             }
             break;
         default:
@@ -184,6 +209,9 @@ static void filter_dbl(ASoftClipContext *s,
                        int nb_samples, int channels,
                        int start, int end)
 {
+    double threshold = s->threshold;
+    double gain = s->output * threshold;
+    double factor = 1. / threshold;
     double param = s->param;
 
     for (int c = start; c < end; c++) {
@@ -193,53 +221,73 @@ static void filter_dbl(ASoftClipContext *s,
         switch (s->type) {
         case ASC_HARD:
             for (int n = 0; n < nb_samples; n++) {
-                dst[n] = av_clipd(src[n], -1., 1.);
+                dst[n] = av_clipd(src[n] * factor, -1., 1.);
+                dst[n] *= gain;
             }
             break;
         case ASC_TANH:
             for (int n = 0; n < nb_samples; n++) {
-                dst[n] = tanh(src[n] * param);
+                dst[n] = tanh(src[n] * factor * param);
+                dst[n] *= gain;
             }
             break;
         case ASC_ATAN:
-            for (int n = 0; n < nb_samples; n++)
-                dst[n] = 2. / M_PI * atan(src[n] * param);
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = 2. / M_PI * atan(src[n] * factor * param);
+                dst[n] *= gain;
+            }
             break;
         case ASC_CUBIC:
             for (int n = 0; n < nb_samples; n++) {
-                if (FFABS(src[n]) >= 1.5)
-                    dst[n] = FFSIGN(src[n]);
+                double sample = src[n] * factor;
+
+                if (FFABS(sample) >= 1.5)
+                    dst[n] = FFSIGN(sample);
                 else
-                    dst[n] = src[n] - 0.1481 * pow(src[n], 3.);
+                    dst[n] = sample - 0.1481 * pow(sample, 3.);
+                dst[n] *= gain;
             }
             break;
         case ASC_EXP:
-            for (int n = 0; n < nb_samples; n++)
-                dst[n] = 2. / (1. + exp(-2. * src[n])) - 1.;
+            for (int n = 0; n < nb_samples; n++) {
+                dst[n] = 2. / (1. + exp(-2. * src[n] * factor)) - 1.;
+                dst[n] *= gain;
+            }
             break;
         case ASC_ALG:
-            for (int n = 0; n < nb_samples; n++)
-                dst[n] = src[n] / (sqrt(param + src[n] * src[n]));
+            for (int n = 0; n < nb_samples; n++) {
+                double sample = src[n] * factor;
+
+                dst[n] = sample / (sqrt(param + sample * sample));
+                dst[n] *= gain;
+            }
             break;
         case ASC_QUINTIC:
             for (int n = 0; n < nb_samples; n++) {
-                if (FFABS(src[n]) >= 1.25)
-                    dst[n] = FFSIGN(src[n]);
+                double sample = src[n] * factor;
+
+                if (FFABS(sample) >= 1.25)
+                    dst[n] = FFSIGN(sample);
                 else
-                    dst[n] = src[n] - 0.08192 * pow(src[n], 5.);
+                    dst[n] = sample - 0.08192 * pow(sample, 5.);
+                dst[n] *= gain;
             }
             break;
         case ASC_SIN:
             for (int n = 0; n < nb_samples; n++) {
-                if (FFABS(src[n]) >= M_PI_2)
-                    dst[n] = FFSIGN(src[n]);
+                double sample = src[n] * factor;
+
+                if (FFABS(sample) >= M_PI_2)
+                    dst[n] = FFSIGN(sample);
                 else
-                    dst[n] = sin(src[n]);
+                    dst[n] = sin(sample);
+                dst[n] *= gain;
             }
             break;
         case ASC_ERF:
             for (int n = 0; n < nb_samples; n++) {
-                dst[n] = erf(src[n]);
+                dst[n] = erf(src[n] * factor);
+                dst[n] *= gain;
             }
             break;
         default:

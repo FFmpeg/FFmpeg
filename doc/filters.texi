@@ -2454,6 +2454,12 @@ It accepts the following values:
 @item erf
 @end table
 
+@item threshold
+Set threshold from where to start clipping. Default value is 0dB or 1.
+
+@item output
+Set gain applied to output. Default value is 0dB or 1.
+
 @item param
 Set additional parameter which controls sigmoid function.
 
