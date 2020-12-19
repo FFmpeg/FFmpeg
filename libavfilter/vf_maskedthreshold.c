@@ -43,7 +43,7 @@ typedef struct MaskedThresholdContext {
 } MaskedThresholdContext;
 
 #define OFFSET(x) offsetof(MaskedThresholdContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 typedef struct ThreadData {
     AVFrame *src, *ref, *dst;
@@ -295,4 +295,5 @@ AVFilter ff_vf_maskedthreshold = {
     .inputs        = maskedthreshold_inputs,
     .outputs       = maskedthreshold_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

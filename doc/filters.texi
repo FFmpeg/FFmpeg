@@ -14055,6 +14055,10 @@ copied from second stream.
 By default value 0xf, all planes will be processed.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section maskfun
 Create mask from input video.
 
