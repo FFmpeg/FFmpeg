@@ -783,7 +783,7 @@ static void set_default_scaling_list_data(ScalingList *sl)
 static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingList *sl, HEVCSPS *sps)
 {
     uint8_t scaling_list_pred_mode_flag;
-    int32_t scaling_list_dc_coef[2][6];
+    uint8_t scaling_list_dc_coef[2][6];
     int size_id, matrix_id, pos;
     int i;
 
