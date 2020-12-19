@@ -55,7 +55,7 @@ typedef struct BilateralContext {
 } BilateralContext;
 
 #define OFFSET(x) offsetof(BilateralContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption bilateral_options[] = {
     { "sigmaS", "set spatial sigma",    OFFSET(sigmaS), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0, 512, FLAGS },
@@ -92,19 +92,30 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 }
 
-static int config_input(AVFilterLink *inlink)
+static int config_params(AVFilterContext *ctx)
 {
-    BilateralContext *s = inlink->dst->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    BilateralContext *s = ctx->priv;
     float inv_sigma_range;
 
-    s->depth = desc->comp[0].depth;
     inv_sigma_range = 1.0f / (s->sigmaR * ((1 << s->depth) - 1));
     s->alpha = expf(-sqrtf(2.f) / s->sigmaS);
 
     //compute a lookup table
     for (int i = 0; i < (1 << s->depth); i++)
         s->range_table[i] = s->alpha * expf(-i * inv_sigma_range);
+
+    return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    BilateralContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    s->depth = desc->comp[0].depth;
+
+    config_params(ctx);
 
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0] = s->planewidth[3] = inlink->w;
@@ -335,6 +346,21 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->line_factor_b);
 }
 
+static int process_command(AVFilterContext *ctx,
+                           const char *cmd,
+                           const char *arg,
+                           char *res,
+                           int res_len,
+                           int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return config_params(ctx);
+}
+
 static const AVFilterPad bilateral_inputs[] = {
     {
         .name         = "default",
@@ -363,4 +389,5 @@ AVFilter ff_vf_bilateral = {
     .inputs        = bilateral_inputs,
     .outputs       = bilateral_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = process_command,
 };
