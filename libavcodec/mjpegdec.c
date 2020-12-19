@@ -3025,6 +3025,6 @@ AVCodec ff_smvjpeg_decoder = {
     .flush          = decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING |
-                      FF_CODEC_CAP_SETS_PKT_DTS,
+                      FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
