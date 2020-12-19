@@ -7666,6 +7666,9 @@ Set planes to filter. Default value is to filter all
 planes except alpha plane.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+
 @section chromahold
 Remove all color information for all colors except for certain one.
 
