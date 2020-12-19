@@ -5,7 +5,7 @@ duration_ts=529200
 [/STREAM]
 [FORMAT]
 start_time=0.000000
-duration=12.024000
+duration=12.000000
 [/FORMAT]
 packet|pts=-1024|dts=-1024|duration=1024|flags=KDside_data|
 
