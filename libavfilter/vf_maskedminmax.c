@@ -28,7 +28,7 @@
 #include "framesync.h"
 
 #define OFFSET(x) offsetof(MaskedMinMaxContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 typedef struct ThreadData {
     AVFrame *src, *f1, *f2, *dst;
@@ -50,7 +50,7 @@ typedef struct MaskedMinMaxContext {
 } MaskedMinMaxContext;
 
 static const AVOption maskedminmax_options[] = {
-    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,        FLAGS },
+    { "planes", "set planes", OFFSET(planes), AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF, FLAGS },
     { NULL }
 };
 
@@ -340,6 +340,7 @@ AVFilter ff_vf_maskedmin = {
     .inputs        = maskedminmax_inputs,
     .outputs       = maskedminmax_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
 
 #define maskedmax_options maskedminmax_options
@@ -357,4 +358,5 @@ AVFilter ff_vf_maskedmax = {
     .inputs        = maskedminmax_inputs,
     .outputs       = maskedminmax_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

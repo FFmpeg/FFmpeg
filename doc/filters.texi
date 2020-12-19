@@ -13991,6 +13991,10 @@ copied from first stream.
 By default value 0xf, all planes will be processed.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section maskedmerge
 
 Merge the first input stream with the second input stream using per pixel
@@ -14025,6 +14029,10 @@ Set which planes will be processed as bitmap, unprocessed planes will be
 copied from first stream.
 By default value 0xf, all planes will be processed.
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section maskedthreshold
 Pick pixels comparing absolute difference of two video streams with fixed
