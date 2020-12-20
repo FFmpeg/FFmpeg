@@ -816,6 +816,12 @@ for codecs that support it. See also @file{doc/examples/export_mvs.c}.
 @item prft
 Export encoder Producer Reference Time into packet side-data (see @code{AV_PKT_DATA_PRFT})
 for codecs that support it.
+@item venc_params
+Export video encoding parameters through frame side data (see @code{AV_FRAME_DATA_VIDEO_ENC_PARAMS})
+for codecs that support it. At present, those are H.264 and VP9.
+@item film_grain
+Export film grain parameters through frame side data (see @code{AV_FRAME_DATA_FILM_GRAIN_PARAMS}).
+Supported at present by AV1 decoders.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})
