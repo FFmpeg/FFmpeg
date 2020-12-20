@@ -63,16 +63,17 @@ After starting the broker, an FFmpeg client may stream data to the broker using
 the command:
 
 @example
-ffmpeg -re -i input -f mpegts amqp://[[user]:[password]@@]hostname[:port]
+ffmpeg -re -i input -f mpegts amqp://[[user]:[password]@@]hostname[:port][/vhost]
 @end example
 
 Where hostname and port (default is 5672) is the address of the broker. The
 client may also set a user/password for authentication. The default for both
-fields is "guest".
+fields is "guest". Name of virtual host on broker can be set with vhost. The
+default value is "/".
 
 Muliple subscribers may stream from the broker using the command:
 @example
-ffplay amqp://[[user]:[password]@@]hostname[:port]
+ffplay amqp://[[user]:[password]@@]hostname[:port][/vhost]
 @end example
 
 In RabbitMQ all data published to the broker flows through a specific exchange,
