@@ -126,7 +126,7 @@ static int filter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const void **s = td->s;
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
-    float mult = td->mult;
+    double mult = td->mult;
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -195,7 +195,7 @@ static int filter_dblp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const void **s = td->s;
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
-    float mult = td->mult;
+    double mult = td->mult;
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
