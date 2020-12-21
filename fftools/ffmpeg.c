@@ -1685,6 +1685,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     double speed;
     int64_t pts = INT64_MIN + 1;
     static int64_t last_time = -1;
+    static int first_report = 1;
     static int qp_histogram[52];
     int hours, mins, secs, us;
     const char *hours_sign;
@@ -1697,9 +1698,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     if (!is_last_report) {
         if (last_time == -1) {
             last_time = cur_time;
-            return;
         }
-        if ((cur_time - last_time) < stats_period)
+        if ((cur_time - last_time) < stats_period && !first_report)
             return;
         last_time = cur_time;
     }
@@ -1875,6 +1875,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                        "Error closing progress log, loss of information possible: %s\n", av_err2str(ret));
         }
     }
+
+    first_report = 0;
 
     if (is_last_report)
         print_final_stats(total_size);
