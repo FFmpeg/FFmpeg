@@ -89,6 +89,7 @@ const AVOption ff_rtsp_options[] = {
     RTSP_FLAG_OPTS("rtsp_flags", "set RTSP flags"),
     { "listen", "wait for incoming connections", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_LISTEN}, 0, 0, DEC, "rtsp_flags" },
     { "prefer_tcp", "try RTP via TCP first, if available", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_PREFER_TCP}, 0, 0, DEC|ENC, "rtsp_flags" },
+    { "satip_raw", "export raw MPEG-TS stream instead of demuxing", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_SATIP_RAW}, 0, 0, DEC, "rtsp_flags" },
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "set media types to accept from the server"),
     { "min_port", "set minimum local UDP port", OFFSET(rtp_port_min), AV_OPT_TYPE_INT, {.i64 = RTSP_RTP_PORT_MIN}, 0, 65535, DEC|ENC },
     { "max_port", "set maximum local UDP port", OFFSET(rtp_port_max), AV_OPT_TYPE_INT, {.i64 = RTSP_RTP_PORT_MAX}, 0, 65535, DEC|ENC },
@@ -265,9 +266,19 @@ static int init_satip_stream(AVFormatContext *s)
     av_strlcpy(rtsp_st->control_url,
                rt->control_uri, sizeof(rtsp_st->control_url));
 
-    rtsp_st->stream_index = -1;
-    init_rtp_handler(&ff_mpegts_dynamic_handler, rtsp_st, NULL);
-    finalize_rtp_handler_init(s, rtsp_st, NULL);
+    if (rt->rtsp_flags & RTSP_FLAG_SATIP_RAW) {
+        AVStream *st = avformat_new_stream(s, NULL);
+        if (!st)
+            return AVERROR(ENOMEM);
+        st->id = rt->nb_rtsp_streams - 1;
+        rtsp_st->stream_index = st->index;
+        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+        st->codecpar->codec_id   = AV_CODEC_ID_MPEG2TS;
+    } else {
+        rtsp_st->stream_index = -1;
+        init_rtp_handler(&ff_mpegts_dynamic_handler, rtsp_st, NULL);
+        finalize_rtp_handler_init(s, rtsp_st, NULL);
+    }
     return 0;
 }
 
