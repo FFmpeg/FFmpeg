@@ -305,7 +305,7 @@ static const AVFilterPad outputs[] = {
 
 AVFilter ff_af_crystalizer = {
     .name           = "crystalizer",
-    .description    = NULL_IF_CONFIG_SMALL("Simple expand audio dynamic range filter."),
+    .description    = NULL_IF_CONFIG_SMALL("Simple audio noise sharpening filter."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(CrystalizerContext),
     .priv_class     = &crystalizer_class,

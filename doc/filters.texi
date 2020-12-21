@@ -3682,7 +3682,9 @@ Set output gain. Default is 1.
 This filter supports the all above options as @ref{commands}.
 
 @section crystalizer
-Simple algorithm to expand audio dynamic range.
+Simple algorithm for audio noise sharpening.
+
+This filter linearly increases differences betweeen each audio sample.
 
 The filter accepts the following options:
 
