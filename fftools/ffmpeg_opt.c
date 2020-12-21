@@ -174,6 +174,7 @@ int filter_nbthreads = 0;
 int filter_complex_nbthreads = 0;
 int vstats_version = 2;
 int auto_conversion_filters = 1;
+int64_t stats_period = 500000;
 
 
 static int intra_only         = 0;
@@ -280,6 +281,21 @@ static int opt_abort_on(void *optctx, const char *opt, const char *arg)
     const AVClass *pclass = &class;
 
     return av_opt_eval_flags(&pclass, &opts[0], arg, &abort_on_flags);
+}
+
+static int opt_stats_period(void *optctx, const char *opt, const char *arg)
+{
+    int64_t user_stats_period = parse_time_or_die(opt, arg, 1);
+
+    if (user_stats_period <= 0) {
+        av_log(NULL, AV_LOG_ERROR, "stats_period %s must be positive.\n", arg);
+        return AVERROR(EINVAL);
+    }
+
+    stats_period = user_stats_period;
+    av_log(NULL, AV_LOG_INFO, "ffmpeg stats and -progress period set to %s.\n", arg);
+
+    return 0;
 }
 
 static int opt_sameq(void *optctx, const char *opt, const char *arg)
@@ -3557,6 +3573,8 @@ const OptionDef options[] = {
         "enable automatic conversion filters globally" },
     { "stats",          OPT_BOOL,                                    { &print_stats },
         "print progress report during encoding", },
+    { "stats_period",    HAS_ARG | OPT_EXPERT,                       { .func_arg = opt_stats_period },
+        "set the period at which ffmpeg updates stats and -progress output", "time" },
     { "attach",         HAS_ARG | OPT_PERFILE | OPT_EXPERT |
                         OPT_OUTPUT,                                  { .func_arg = opt_attach },
         "add an attachment to the output file", "filename" },
