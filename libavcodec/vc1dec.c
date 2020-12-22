@@ -434,8 +434,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     v->s.avctx = avctx;
 
-    if ((ret = ff_vc1_init_common(v)) < 0)
-        return ret;
+    ff_vc1_init_common(v);
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3 || avctx->codec_id == AV_CODEC_ID_WMV3IMAGE) {
         int count = 0;

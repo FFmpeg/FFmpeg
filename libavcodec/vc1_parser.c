@@ -283,7 +283,8 @@ static av_cold int vc1_parse_init(AVCodecParserContext *s)
     vpc->bytes_to_skip = 0;
     vpc->unesc_index = 0;
     vpc->search_state = NO_MATCH;
-    return ff_vc1_init_common(&vpc->v);
+    ff_vc1_init_common(&vpc->v);
+    return 0;
 }
 
 AVCodecParser ff_vc1_parser = {

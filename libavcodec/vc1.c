@@ -1695,7 +1695,7 @@ static av_cold void vc1_init_static(void)
  * @param v The VC1Context to initialize
  * @return Status
  */
-av_cold int ff_vc1_init_common(VC1Context *v)
+av_cold void ff_vc1_init_common(VC1Context *v)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
@@ -1709,6 +1709,4 @@ av_cold int ff_vc1_init_common(VC1Context *v)
 
     /* VLC tables */
     ff_thread_once(&init_static_once, vc1_init_static);
-
-    return 0;
 }
