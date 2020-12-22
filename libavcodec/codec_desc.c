@@ -3446,6 +3446,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .mime_types= MT("application/octet-stream"),
     },
     {
+        .id        = AV_CODEC_ID_MPEG2TS,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "mpegts",
+        .long_name = NULL_IF_CONFIG_SMALL("raw MPEG-TS stream"),
+        .mime_types= MT("application/MP2T"),
+    },
+    {
         .id        = AV_CODEC_ID_WRAPPED_AVFRAME,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "wrapped_avframe",
