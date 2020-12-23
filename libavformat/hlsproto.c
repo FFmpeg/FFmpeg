@@ -22,7 +22,7 @@
 /**
  * @file
  * Apple HTTP Live Streaming Protocol Handler
- * http://tools.ietf.org/html/draft-pantos-http-live-streaming
+ * https://www.rfc-editor.org/rfc/rfc8216.txt
  */
 
 #include "libavutil/avstring.h"
