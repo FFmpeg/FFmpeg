@@ -23,7 +23,7 @@
 /**
  * @file
  * Apple HTTP Live Streaming demuxer
- * http://tools.ietf.org/html/draft-pantos-http-live-streaming
+ * https://www.rfc-editor.org/rfc/rfc8216.txt
  */
 
 #include "libavformat/http.h"
