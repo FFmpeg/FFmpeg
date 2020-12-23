@@ -1372,6 +1372,12 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (dst == src || psrc->transform_type == 0)
         return 0;
 
+    if (pdst->plane[0].idwt_size != psrc->plane[0].idwt_size ||
+        pdst->a_format != psrc->a_format ||
+        pdst->a_width != psrc->a_width ||
+        pdst->a_height != psrc->a_height)
+        free_buffers(pdst);
+
     pdst->a_format = psrc->a_format;
     pdst->a_width  = psrc->a_width;
     pdst->a_height = psrc->a_height;
