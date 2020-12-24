@@ -341,12 +341,12 @@ static const float mlt_quant[7][14] = {
     { 0.0f, 1.964f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
 };
 
-static const float noise_category5[20] = {
+static const float noise_category5[21] = {
     0.70711f, 0.6179f, 0.5005f, 0.3220f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f,
     0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f, 0.17678f
 };
 
-static const float noise_category6[20] = {
+static const float noise_category6[21] = {
     0.70711f, 0.5686f, 0.3563f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f,
     0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f
 };
