@@ -932,17 +932,17 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         s->picture[i].f = av_frame_alloc();
         if (!s->picture[i].f)
-            return AVERROR(ENOMEM);
+            goto fail_nomem;
     }
 
     if (!(s->next_picture.f    = av_frame_alloc()) ||
         !(s->last_picture.f    = av_frame_alloc()) ||
         !(s->current_picture.f = av_frame_alloc()) ||
         !(s->new_picture.f     = av_frame_alloc()))
-        return AVERROR(ENOMEM);
+        goto fail_nomem;
 
     if ((ret = init_context_frame(s)))
-        return AVERROR(ENOMEM);
+        goto fail;
 
     s->parse_context.state = -1;
 
@@ -956,10 +956,10 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
             if (i) {
                 s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
                 if (!s->thread_context[i])
-                    return AVERROR(ENOMEM);
+                    goto fail_nomem;
             }
             if ((ret = init_duplicate_context(s->thread_context[i])) < 0)
-                return ret;
+                goto fail;
             s->thread_context[i]->start_mb_y =
                 (s->mb_height * (i) + nb_slices / 2) / nb_slices;
             s->thread_context[i]->end_mb_y   =
@@ -967,7 +967,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         }
     } else {
         if ((ret = init_duplicate_context(s)) < 0)
-            return ret;
+            goto fail;
         s->start_mb_y = 0;
         s->end_mb_y   = s->mb_height;
     }
@@ -975,6 +975,11 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
 //     }
 
     return 0;
+ fail_nomem:
+    ret = AVERROR(ENOMEM);
+ fail:
+    ff_mpv_common_end(s);
+    return ret;
 }
 
 /**
@@ -1067,17 +1072,17 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 
     if ((s->width || s->height) &&
         (err = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
-        return err;
+        goto fail;
 
     /* set chroma shifts */
     err = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
                                            &s->chroma_x_shift,
                                            &s->chroma_y_shift);
     if (err < 0)
-        return err;
+        goto fail;
 
     if ((err = init_context_frame(s)))
-        return err;
+        goto fail;
 
     memset(s->thread_context, 0, sizeof(s->thread_context));
     s->thread_context[0]   = s;
@@ -1089,11 +1094,12 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
                 if (i) {
                     s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
                     if (!s->thread_context[i]) {
-                        return AVERROR(ENOMEM);
+                        err = AVERROR(ENOMEM);
+                        goto fail;
                     }
                 }
                 if ((err = init_duplicate_context(s->thread_context[i])) < 0)
-                    return err;
+                    goto fail;
                 s->thread_context[i]->start_mb_y =
                     (s->mb_height * (i) + nb_slices / 2) / nb_slices;
                 s->thread_context[i]->end_mb_y   =
@@ -1102,7 +1108,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
         } else {
             err = init_duplicate_context(s);
             if (err < 0)
-                return err;
+                goto fail;
             s->start_mb_y = 0;
             s->end_mb_y   = s->mb_height;
         }
@@ -1110,6 +1116,9 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
     }
 
     return 0;
+ fail:
+    ff_mpv_common_end(s);
+    return err;
 }
 
 /* init common structure for both encoder and decoder */
