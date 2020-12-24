@@ -158,14 +158,10 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
                         chrY + chrH,
                         lumY + lumH};
 
-    uint8_t *const src_[4] = {src[0] + (relative ? 0 : start[0]) * stride[0],
-                              src[1] + (relative ? 0 : start[1]) * stride[1],
-                              src[2] + (relative ? 0 : start[2]) * stride[2],
-                              src[3] + (relative ? 0 : start[3]) * stride[3]};
-
     s->width = srcW;
 
-    for (i = 0; i < 4; ++i) {
+    for (i = 0; i < 4 && src[i] != NULL; ++i) {
+        uint8_t *const src_i = src[i] + (relative ? 0 : start[i]) * stride[i];
         int j;
         int first = s->plane[i].sliceY;
         int n = s->plane[i].available_lines;
@@ -175,13 +171,13 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
         if (start[i] >= first && n >= tot_lines) {
             s->plane[i].sliceH = FFMAX(tot_lines, s->plane[i].sliceH);
             for (j = 0; j < lines; j+= 1)
-                s->plane[i].line[start[i] - first + j] = src_[i] +  j * stride[i];
+                s->plane[i].line[start[i] - first + j] = src_i +  j * stride[i];
         } else {
             s->plane[i].sliceY = start[i];
             lines = lines > n ? n : lines;
             s->plane[i].sliceH = lines;
             for (j = 0; j < lines; j+= 1)
-                s->plane[i].line[j] = src_[i] +  j * stride[i];
+                s->plane[i].line[j] = src_i +  j * stride[i];
         }
 
     }
