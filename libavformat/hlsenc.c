@@ -3032,8 +3032,8 @@ static int hls_init(AVFormatContext *s)
 
                     r = strftime_expand(vs->fmp4_init_filename, &expanded);
                     if (r < 0) {
-                      av_log(s, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
-                      return r;
+                        av_log(s, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
+                        return r;
                     }
                     av_free(vs->fmp4_init_filename);
                     vs->fmp4_init_filename = expanded;
