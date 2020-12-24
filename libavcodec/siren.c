@@ -625,7 +625,7 @@ static int decode_vector(SirenContext *s, int number_of_regions,
 
         coefs_ptr = coefs + (region * REGION_SIZE);
 
-        if (category == 5) {
+        if (category == 5 || category == 6) {
             i = 0;
             for (j = 0; j < REGION_SIZE; j++) {
                 if (*coefs_ptr != 0)
@@ -633,15 +633,10 @@ static int decode_vector(SirenContext *s, int number_of_regions,
                 coefs_ptr++;
             }
 
-            noise = decoder_standard_deviation[region] * noise_category5[i];
-        } else if (category == 6) {
-            i = 0;
-            for (j = 0; j < REGION_SIZE; j++) {
-                if (*coefs_ptr++ != 0)
-                    i++;
-            }
-
-            noise = decoder_standard_deviation[region] * noise_category6[i];
+            if (category == 5) {
+                noise = decoder_standard_deviation[region] * noise_category5[i];
+            } else
+                noise = decoder_standard_deviation[region] * noise_category6[i];
         } else if (category == 7) {
             noise = decoder_standard_deviation[region] * 0.70711f;
         } else {
