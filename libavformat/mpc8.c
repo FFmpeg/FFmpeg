@@ -292,7 +292,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_EOF;
 
         mpc8_get_chunk_header(s->pb, &tag, &size);
-        if (size < 0)
+        if (size < 0 || size > INT_MAX)
             return -1;
         if(tag == TAG_AUDIOPACKET){
             if ((ret = av_get_packet(s->pb, pkt, size)) < 0)
