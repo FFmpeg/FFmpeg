@@ -817,7 +817,7 @@ static int jpeg_probe(const AVProbeData *p)
         return AVPROBE_SCORE_EXTENSION + 1;
     if (state == SOS)
         return AVPROBE_SCORE_EXTENSION / 2;
-    return AVPROBE_SCORE_EXTENSION / 8;
+    return AVPROBE_SCORE_EXTENSION / 8 + 1;
 }
 
 static int jpegls_probe(const AVProbeData *p)
