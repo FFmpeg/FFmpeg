@@ -457,6 +457,15 @@ static void free_duplicate_context(MpegEncContext *s)
     s->block = NULL;
 }
 
+static void free_duplicate_contexts(MpegEncContext *s)
+{
+    for (int i = 1; i < s->slice_context_count; i++) {
+        free_duplicate_context(s->thread_context[i]);
+        av_freep(&s->thread_context[i]);
+    }
+    free_duplicate_context(s);
+}
+
 static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 {
 #define COPY(a) bak->a = src->a
@@ -988,13 +997,16 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
 }
 
 /**
- * Frees and resets MpegEncContext fields depending on the resolution.
+ * Frees and resets MpegEncContext fields depending on the resolution
+ * as well as the slice thread contexts.
  * Is used during resolution changes to avoid a full reinitialization of the
  * codec.
  */
 static void free_context_frame(MpegEncContext *s)
 {
     int i, j, k;
+
+    free_duplicate_contexts(s);
 
     av_freep(&s->mb_type);
     av_freep(&s->p_mv_table_base);
@@ -1047,16 +1059,6 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 
     if (!s->context_initialized)
         return AVERROR(EINVAL);
-
-    if (s->slice_context_count > 1) {
-        for (i = 0; i < s->slice_context_count; i++) {
-            free_duplicate_context(s->thread_context[i]);
-        }
-        for (i = 1; i < s->slice_context_count; i++) {
-            av_freep(&s->thread_context[i]);
-        }
-    } else
-        free_duplicate_context(s);
 
     free_context_frame(s);
 
@@ -1112,15 +1114,9 @@ void ff_mpv_common_end(MpegEncContext *s)
     if (!s)
         return;
 
-    if (s->slice_context_count > 1) {
-        for (i = 0; i < s->slice_context_count; i++) {
-            free_duplicate_context(s->thread_context[i]);
-        }
-        for (i = 1; i < s->slice_context_count; i++) {
-            av_freep(&s->thread_context[i]);
-        }
+    free_context_frame(s);
+    if (s->slice_context_count > 1)
         s->slice_context_count = 1;
-    } else free_duplicate_context(s);
 
     av_freep(&s->parse_context.buffer);
     s->parse_context.buffer_size = 0;
@@ -1151,8 +1147,6 @@ void ff_mpv_common_end(MpegEncContext *s)
     ff_free_picture_tables(&s->new_picture);
     ff_mpeg_unref_picture(s->avctx, &s->new_picture);
     av_frame_free(&s->new_picture.f);
-
-    free_context_frame(s);
 
     s->context_initialized      = 0;
     s->last_picture_ptr         =
