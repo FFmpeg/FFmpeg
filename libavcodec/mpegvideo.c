@@ -366,13 +366,6 @@ static int init_duplicate_context(MpegEncContext *s)
     if (s->mb_height & 1)
         yc_size += 2*s->b8_stride + 2*s->mb_stride;
 
-    s->sc.edge_emu_buffer =
-    s->me.scratchpad   =
-    s->me.temp         =
-    s->sc.rd_scratchpad   =
-    s->sc.b_scratchpad    =
-    s->sc.obmc_scratchpad = NULL;
-
     if (s->encoding) {
         if (!FF_ALLOCZ_TYPED_ARRAY(s->me.map,       ME_MAP_SIZE) ||
             !FF_ALLOCZ_TYPED_ARRAY(s->me.score_map, ME_MAP_SIZE))
@@ -411,6 +404,35 @@ static int init_duplicate_context(MpegEncContext *s)
     }
 
     return 0;
+}
+
+/**
+ * Initialize an MpegEncContext's thread contexts. Presumes that
+ * slice_context_count is already set and that all the fields
+ * that are freed/reset in free_duplicate_context() are NULL.
+ */
+static int init_duplicate_contexts(MpegEncContext *s)
+{
+    int nb_slices = s->slice_context_count, ret;
+
+    /* We initialize the copies before the original so that
+     * fields allocated in init_duplicate_context are NULL after
+     * copying. This prevents double-frees upon allocation error. */
+    for (int i = 1; i < nb_slices; i++) {
+        s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
+        if (!s->thread_context[i])
+            return AVERROR(ENOMEM);
+        if ((ret = init_duplicate_context(s->thread_context[i])) < 0)
+            return ret;
+        s->thread_context[i]->start_mb_y =
+            (s->mb_height * (i    ) + nb_slices / 2) / nb_slices;
+        s->thread_context[i]->end_mb_y   =
+            (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
+    }
+    s->start_mb_y = 0;
+    s->end_mb_y   = nb_slices > 1 ? (s->mb_height + nb_slices / 2) / nb_slices
+                                  : s->mb_height;
+    return init_duplicate_context(s);
 }
 
 static void free_duplicate_context(MpegEncContext *s)
@@ -949,29 +971,12 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     s->context_initialized = 1;
     memset(s->thread_context, 0, sizeof(s->thread_context));
     s->thread_context[0]   = s;
+    s->slice_context_count = nb_slices;
 
 //     if (s->width && s->height) {
-    if (nb_slices > 1) {
-        for (i = 0; i < nb_slices; i++) {
-            if (i) {
-                s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
-                if (!s->thread_context[i])
-                    goto fail_nomem;
-            }
-            if ((ret = init_duplicate_context(s->thread_context[i])) < 0)
-                goto fail;
-            s->thread_context[i]->start_mb_y =
-                (s->mb_height * (i) + nb_slices / 2) / nb_slices;
-            s->thread_context[i]->end_mb_y   =
-                (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
-        }
-    } else {
-        if ((ret = init_duplicate_context(s)) < 0)
-            goto fail;
-        s->start_mb_y = 0;
-        s->end_mb_y   = s->mb_height;
-    }
-    s->slice_context_count = nb_slices;
+    ret = init_duplicate_contexts(s);
+    if (ret < 0)
+        goto fail;
 //     }
 
     return 0;
@@ -1088,31 +1093,9 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
     s->thread_context[0]   = s;
 
     if (s->width && s->height) {
-        int nb_slices = s->slice_context_count;
-        if (nb_slices > 1) {
-            for (i = 0; i < nb_slices; i++) {
-                if (i) {
-                    s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
-                    if (!s->thread_context[i]) {
-                        err = AVERROR(ENOMEM);
-                        goto fail;
-                    }
-                }
-                if ((err = init_duplicate_context(s->thread_context[i])) < 0)
-                    goto fail;
-                s->thread_context[i]->start_mb_y =
-                    (s->mb_height * (i) + nb_slices / 2) / nb_slices;
-                s->thread_context[i]->end_mb_y   =
-                    (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
-            }
-        } else {
-            err = init_duplicate_context(s);
-            if (err < 0)
-                goto fail;
-            s->start_mb_y = 0;
-            s->end_mb_y   = s->mb_height;
-        }
-        s->slice_context_count = nb_slices;
+        err = init_duplicate_contexts(s);
+        if (err < 0)
+            goto fail;
     }
 
     return 0;
