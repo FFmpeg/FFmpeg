@@ -950,7 +950,7 @@ const uint16_t ff_celt_qn_exp2[] = {
     16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048
 };
 
-const uint32_t ff_celt_pvq_u[1272] = {
+static const uint32_t celt_pvq_u[1272] = {
     /* N = 0, K = 0...176 */
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1153,9 +1153,9 @@ const float ff_celt_window2[120] = {
 };
 
 const uint32_t * const ff_celt_pvq_u_row[15] = {
-    ff_celt_pvq_u +    0, ff_celt_pvq_u +  176, ff_celt_pvq_u +  351,
-    ff_celt_pvq_u +  525, ff_celt_pvq_u +  698, ff_celt_pvq_u +  870,
-    ff_celt_pvq_u + 1041, ff_celt_pvq_u + 1131, ff_celt_pvq_u + 1178,
-    ff_celt_pvq_u + 1207, ff_celt_pvq_u + 1226, ff_celt_pvq_u + 1240,
-    ff_celt_pvq_u + 1248, ff_celt_pvq_u + 1254, ff_celt_pvq_u + 1257
+    celt_pvq_u +    0, celt_pvq_u +  176, celt_pvq_u +  351,
+    celt_pvq_u +  525, celt_pvq_u +  698, celt_pvq_u +  870,
+    celt_pvq_u + 1041, celt_pvq_u + 1131, celt_pvq_u + 1178,
+    celt_pvq_u + 1207, celt_pvq_u + 1226, celt_pvq_u + 1240,
+    celt_pvq_u + 1248, celt_pvq_u + 1254, celt_pvq_u + 1257
 };
