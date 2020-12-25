@@ -162,7 +162,7 @@ static int config_input(AVFilterLink *inlink)
     s->buf = av_calloc(inlink->channels, sizeof(*s->buf));
     if (!s->buf)
         return AVERROR(ENOMEM);
-    s->buf_size = inlink->sample_rate * 0.005;
+    s->buf_size = lrint(inlink->sample_rate * 0.005 + 0.5);
     for (c = 0; c < s->channels; c++) {
         s->buf[c] = av_malloc_array(s->buf_size, sizeof(*s->buf[c]));
         if (!s->buf[c])
@@ -170,7 +170,7 @@ static int config_input(AVFilterLink *inlink)
     }
     s->buf_index = 0;
 
-    s->wave_table_size = inlink->sample_rate / s->freq;
+    s->wave_table_size = lrint(inlink->sample_rate / s->freq + 0.5);
     s->wave_table = av_malloc_array(s->wave_table_size, sizeof(*s->wave_table));
     if (!s->wave_table)
         return AVERROR(ENOMEM);
