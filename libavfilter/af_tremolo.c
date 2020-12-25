@@ -126,7 +126,7 @@ static int config_input(AVFilterLink *inlink)
     const double offset = 1. - s->depth / 2.;
     int i;
 
-    s->table_size = inlink->sample_rate / s->freq;
+    s->table_size = lrint(inlink->sample_rate / s->freq + 0.5);
     s->table = av_malloc_array(s->table_size, sizeof(*s->table));
     if (!s->table)
         return AVERROR(ENOMEM);
