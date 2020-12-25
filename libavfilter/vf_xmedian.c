@@ -344,13 +344,32 @@ static int activate(AVFilterContext *ctx)
     return ff_framesync_activate(&s->fs);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    XMedianContext *s = ctx->priv;
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    if (s->nb_inputs & 1)
+        s->index = s->radius * 2.f * s->percentile;
+    else
+        s->index = av_clip(s->radius * 2.f * s->percentile, 1, s->nb_inputs - 1);
+
+    return 0;
+}
+
 #define OFFSET(x) offsetof(XMedianContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption xmedian_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3},  3, 255, .flags = FLAGS },
-    { "planes", "set planes to filter", OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=15}, 0,  15, .flags = FLAGS },
-    { "percentile", "set percentile",   OFFSET(percentile),AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1, .flags = FLAGS },
+    { "planes", "set planes to filter", OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=15}, 0,  15, .flags =TFLAGS },
+    { "percentile", "set percentile",   OFFSET(percentile),AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1, .flags =TFLAGS },
     { NULL },
 };
 
@@ -377,6 +396,7 @@ AVFilter ff_vf_xmedian = {
     .uninit        = uninit,
     .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #endif /* CONFIG_XMEDIAN_FILTER */
@@ -422,8 +442,8 @@ static int tmedian_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVOption tmedian_options[] = {
     { "radius",     "set median filter radius", OFFSET(radius),     AV_OPT_TYPE_INT,   {.i64=1},   1, 127, .flags = FLAGS },
-    { "planes",     "set planes to filter",     OFFSET(planes),     AV_OPT_TYPE_INT,   {.i64=15},  0,  15, .flags = FLAGS },
-    { "percentile", "set percentile",           OFFSET(percentile), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,   1, .flags = FLAGS },
+    { "planes",     "set planes to filter",     OFFSET(planes),     AV_OPT_TYPE_INT,   {.i64=15},  0,  15, .flags =TFLAGS },
+    { "percentile", "set percentile",           OFFSET(percentile), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,   1, .flags =TFLAGS },
     { NULL },
 };
 
@@ -458,6 +478,7 @@ AVFilter ff_vf_tmedian = {
     .init          = init,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #endif /* CONFIG_TMEDIAN_FILTER */

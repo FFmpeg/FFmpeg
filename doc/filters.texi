@@ -19315,6 +19315,10 @@ Default value of @code{0.5} will pick always median values, while @code{0} will 
 minimum values, and @code{1} maximum values.
 @end table
 
+@subsection Commands
+
+This filter supports all above options as @ref{commands}, excluding option @code{radius}.
+
 @section tmix
 
 Mix successive video frames.
@@ -21258,6 +21262,10 @@ Set median percentile. Default value is @code{0.5}.
 Default value of @code{0.5} will pick always median values, while @code{0} will pick
 minimum values, and @code{1} maximum values.
 @end table
+
+@subsection Commands
+
+This filter supports all above options as @ref{commands}, excluding option @code{inputs}.
 
 @section xstack
 Stack video inputs into custom layout.
