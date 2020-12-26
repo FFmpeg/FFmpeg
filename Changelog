@@ -54,6 +54,7 @@ version <next>:
 - AV1 monochrome encoding support via libaom >= 2.0.1
 - asuperpass and asuperstop filter
 - shufflepixels filter
+- tmidequalizer filter
 
 
 version 4.3:

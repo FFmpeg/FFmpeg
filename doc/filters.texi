@@ -19323,6 +19323,28 @@ minimum values, and @code{1} maximum values.
 
 This filter supports all above options as @ref{commands}, excluding option @code{radius}.
 
+@section tmidequalizer
+
+Apply Temporal Midway Video Equalization effect.
+
+Midway Video Equalization adjusts a sequence of video frames to have the same
+histograms, while maintaining their dynamics as much as possible. It's
+useful for e.g. matching exposures from a video frames sequence.
+
+This filter accepts the following option:
+
+@table @option
+@item radius
+Set filtering radius. Default is @code{5}. Allowed range is from 1 to 127.
+
+@item sigma
+Set filtering sigma. Default is @code{0.5}. This controls strength of filtering.
+Setting this option to 0 effectively does nothing.
+
+@item planes
+Set which planes to process. Default is @code{15}, which is all available planes.
+@end table
+
 @section tmix
 
 Mix successive video frames.
