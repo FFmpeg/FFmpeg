@@ -576,8 +576,7 @@ static av_cold void opus_decode_flush(AVCodecContext *ctx)
         memset(&s->packet, 0, sizeof(s->packet));
         s->delayed_samples = 0;
 
-        if (s->celt_delay)
-            av_audio_fifo_drain(s->celt_delay, av_audio_fifo_size(s->celt_delay));
+        av_audio_fifo_drain(s->celt_delay, av_audio_fifo_size(s->celt_delay));
         swr_close(s->swr);
 
         av_audio_fifo_drain(c->sync_buffers[i], av_audio_fifo_size(c->sync_buffers[i]));
