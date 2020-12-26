@@ -762,7 +762,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             }
 
             for (k = 2; k < opt_order; k++)
-                quant_cof[k] = (quant_cof[k] * (1 << 14)) + (add_base << 13);
+                quant_cof[k] = (quant_cof[k] * (1U << 14)) + (add_base << 13);
         }
     }
 
