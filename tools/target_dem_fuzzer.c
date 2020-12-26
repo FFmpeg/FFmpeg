@@ -88,7 +88,7 @@ static int64_t io_seek(void *opaque, int64_t offset, int whence)
 
 // Ensure we don't loop forever
 const uint32_t maxiteration = 8096;
-const int maxblocks= 100000;
+const int maxblocks= 50000;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
