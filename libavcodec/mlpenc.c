@@ -1947,24 +1947,16 @@ static void rematrix_channels(MLPEncodeContext *ctx)
  ****************************************************************************/
 
 typedef struct {
-    char    path[MAJOR_HEADER_INTERVAL + 3];
+    char    path[MAJOR_HEADER_INTERVAL + 2];
+    int     cur_idx;
     int     bitcount;
 } PathCounter;
 
-static const char *path_counter_codebook[] = { "0", "1", "2", "3", };
-
-#define ZERO_PATH               '0'
 #define CODEBOOK_CHANGE_BITS    21
 
 static void clear_path_counter(PathCounter *path_counter)
 {
-    unsigned int i;
-
-    for (i = 0; i < NUM_CODEBOOKS + 1; i++) {
-        path_counter[i].path[0]  = ZERO_PATH;
-        path_counter[i].path[1]  =      0x00;
-        path_counter[i].bitcount =         0;
-    }
+    memset(path_counter, 0, (NUM_CODEBOOKS + 1) * sizeof(*path_counter));
 }
 
 static int compare_best_offset(BestOffset *prev, BestOffset *cur)
@@ -1978,18 +1970,11 @@ static int compare_best_offset(BestOffset *prev, BestOffset *cur)
 static int best_codebook_path_cost(MLPEncodeContext *ctx, unsigned int channel,
                                    PathCounter *src, int cur_codebook)
 {
-    BestOffset *cur_bo, *prev_bo = restart_best_offset;
+    int idx = src->cur_idx;
+    BestOffset *cur_bo = ctx->best_offset[idx][channel],
+              *prev_bo = idx ? ctx->best_offset[idx - 1][channel] : restart_best_offset;
     int bitcount = src->bitcount;
-    char *path = src->path + 1;
-    int prev_codebook;
-    int i;
-
-    for (i = 0; path[i]; i++)
-        prev_bo = ctx->best_offset[i][channel];
-
-    prev_codebook = path[i - 1] - ZERO_PATH;
-
-    cur_bo = ctx->best_offset[i][channel];
+    int prev_codebook = src->path[idx];
 
     bitcount += cur_bo[cur_codebook].bitcount;
 
@@ -2052,7 +2037,8 @@ static void set_best_codebook(MLPEncodeContext *ctx)
                         prev_best_bitcount = temp_bitcount;
                         if (src_path != dst_path)
                             memcpy(dst_path, src_path, sizeof(PathCounter));
-                        av_strlcat(dst_path->path, path_counter_codebook[codebook], sizeof(dst_path->path));
+                        if (dst_path->cur_idx < FF_ARRAY_ELEMS(dst_path->path) - 1)
+                            dst_path->path[++dst_path->cur_idx] = codebook;
                         dst_path->bitcount = temp_bitcount;
                     }
                 }
@@ -2069,7 +2055,7 @@ static void set_best_codebook(MLPEncodeContext *ctx)
         for (index = 0; index < ctx->number_of_subblocks; index++) {
             ChannelParams *cp = ctx->seq_channel_params + index*(ctx->avctx->channels) + channel;
 
-            best_codebook = *best_path++ - ZERO_PATH;
+            best_codebook = *best_path++;
             cur_bo = &ctx->best_offset[index][channel][best_codebook];
 
             cp->huff_offset      = cur_bo->offset;
