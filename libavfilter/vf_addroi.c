@@ -26,8 +26,8 @@ enum {
     X, Y, W, H,
     NB_PARAMS,
 };
-static const char *addroi_param_names[] = {
-    "x", "y", "w", "h",
+static const char addroi_param_names[] = {
+    'x', 'y', 'w', 'h',
 };
 
 enum {
@@ -74,12 +74,12 @@ static int addroi_config_input(AVFilterLink *inlink)
 
         val = av_expr_eval(ctx->region_expr[i], vars, NULL);
         if (val < 0.0) {
-            av_log(avctx, AV_LOG_WARNING, "Calculated value %g for %s is "
+            av_log(avctx, AV_LOG_WARNING, "Calculated value %g for %c is "
                    "less than zero - using zero instead.\n", val,
                    addroi_param_names[i]);
             val = 0.0;
         } else if (val > max_value) {
-            av_log(avctx, AV_LOG_WARNING, "Calculated value %g for %s is "
+            av_log(avctx, AV_LOG_WARNING, "Calculated value %g for %c is "
                    "greater than maximum allowed value %d - "
                    "using %d instead.\n", val, addroi_param_names[i],
                    max_value, max_value);
@@ -194,7 +194,7 @@ static av_cold int addroi_init(AVFilterContext *avctx)
                             0, avctx);
         if (err < 0) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Error parsing %s expression '%s'.\n",
+                   "Error parsing %c expression '%s'.\n",
                    addroi_param_names[i], ctx->region_str[i]);
             return err;
         }
