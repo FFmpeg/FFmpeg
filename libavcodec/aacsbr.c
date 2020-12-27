@@ -31,7 +31,6 @@
 #include "sbr.h"
 #include "aacsbr.h"
 #include "aacsbrdata.h"
-#include "aacsbr_tablegen.h"
 #include "fft.h"
 #include "internal.h"
 #include "aacps.h"
