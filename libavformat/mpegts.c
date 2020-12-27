@@ -285,16 +285,12 @@ static void clear_avprogram(MpegTSContext *ts, unsigned int programid)
     prg->nb_stream_indexes = 0;
 }
 
-static void clear_program(MpegTSContext *ts, unsigned int programid)
+static void clear_program(struct Program *p)
 {
-    int i;
-
-    clear_avprogram(ts, programid);
-    for (i = 0; i < ts->nb_prg; i++)
-        if (ts->prg[i].id == programid) {
-            ts->prg[i].nb_pids = 0;
-            ts->prg[i].pmt_found = 0;
-        }
+    if (!p)
+        return;
+    p->nb_pids = 0;
+    p->pmt_found = 0;
 }
 
 static void clear_programs(MpegTSContext *ts)
@@ -303,24 +299,22 @@ static void clear_programs(MpegTSContext *ts)
     ts->nb_prg = 0;
 }
 
-static void add_pat_entry(MpegTSContext *ts, unsigned int programid)
+static struct Program * add_program(MpegTSContext *ts, unsigned int programid)
 {
     struct Program *p;
     if (av_reallocp_array(&ts->prg, ts->nb_prg + 1, sizeof(*ts->prg)) < 0) {
         ts->nb_prg = 0;
-        return;
+        return NULL;
     }
     p = &ts->prg[ts->nb_prg];
     p->id = programid;
-    p->nb_pids = 0;
-    p->pmt_found = 0;
+    clear_program(p);
     ts->nb_prg++;
+    return p;
 }
 
-static void add_pid_to_pmt(MpegTSContext *ts, unsigned int programid,
-                           unsigned int pid)
+static void add_pid_to_program(struct Program *p, unsigned int pid)
 {
-    struct Program *p = get_program(ts, programid);
     int i;
     if (!p)
         return;
@@ -333,15 +327,6 @@ static void add_pid_to_pmt(MpegTSContext *ts, unsigned int programid,
             return;
 
     p->pids[p->nb_pids++] = pid;
-}
-
-static void set_pmt_found(MpegTSContext *ts, unsigned int programid)
-{
-    struct Program *p = get_program(ts, programid);
-    if (!p)
-        return;
-
-    p->pmt_found = 1;
 }
 
 static void update_av_program_info(AVFormatContext *s, unsigned int programid,
@@ -2290,6 +2275,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int desc_list_len;
     uint32_t prog_reg_desc = 0; /* registration descriptor */
     int stream_identifier = -1;
+    struct Program *prg;
 
     int mp4_descr_count = 0;
     Mp4Descr mp4_descr[MAX_MP4_DESCR_COUNT] = { { 0 } };
@@ -2313,16 +2299,20 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (!ts->scan_all_pmts && ts->skip_changes)
         return;
 
-    if (ts->skip_unknown_pmt && !get_program(ts, h->id))
+    prg = get_program(ts, h->id);
+
+    if (ts->skip_unknown_pmt && !prg)
         return;
-    if (!ts->skip_clear)
-        clear_program(ts, h->id);
+    if (!ts->skip_clear) {
+        clear_avprogram(ts, h->id);
+        clear_program(prg);
+    }
 
     pcr_pid = get16(&p, p_end);
     if (pcr_pid < 0)
         return;
     pcr_pid &= 0x1fff;
-    add_pid_to_pmt(ts, h->id, pcr_pid);
+    add_pid_to_program(prg, pcr_pid);
     update_av_program_info(ts->stream, h->id, pcr_pid, h->version);
 
     av_log(ts->stream, AV_LOG_TRACE, "pcr_pid=0x%x\n", pcr_pid);
@@ -2362,8 +2352,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (!ts->pkt)
         ts->stop_parse = 2;
 
-    set_pmt_found(ts, h->id);
-
+    if (prg)
+        prg->pmt_found = 1;
 
     for (i = 0; ; i++) {
         st = 0;
@@ -2453,7 +2443,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (pes && !pes->stream_type)
             mpegts_set_stream_info(st, pes, stream_type, prog_reg_desc);
 
-        add_pid_to_pmt(ts, h->id, pid);
+        add_pid_to_program(prg, pid);
 
         av_program_add_stream_index(ts->stream, h->id, st->index);
 
@@ -2532,6 +2522,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             /* NIT info */
         } else {
             MpegTSFilter *fil = ts->pids[pmt_pid];
+            struct Program *prg;
             program = av_new_program(ts->stream, sid);
             if (program) {
                 program->program_num = sid;
@@ -2545,8 +2536,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
             if (!ts->pids[pmt_pid])
                 mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
-            add_pat_entry(ts, sid);
-            add_pid_to_pmt(ts, sid, pmt_pid);
+            prg = add_program(ts, sid);
+            add_pid_to_program(prg, pmt_pid);
         }
     }
 
