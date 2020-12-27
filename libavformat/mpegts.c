@@ -380,6 +380,9 @@ static int discard_pid(MpegTSContext *ts, unsigned int pid)
     int used = 0, discarded = 0;
     struct Program *p;
 
+    if (pid == PAT_PID)
+        return 0;
+
     /* If none of the programs have .discard=AVDISCARD_ALL then there's
      * no way we have to discard this packet */
     for (k = 0; k < ts->stream->nb_programs; k++)
@@ -2543,7 +2546,6 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (!ts->pids[pmt_pid])
                 mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
             add_pat_entry(ts, sid);
-            add_pid_to_pmt(ts, sid, 0); // add pat pid to program
             add_pid_to_pmt(ts, sid, pmt_pid);
         }
     }
