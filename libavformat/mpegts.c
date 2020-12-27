@@ -107,11 +107,19 @@ struct MpegTSFilter {
     } u;
 };
 
-#define MAX_PIDS_PER_PROGRAM 64
+struct Stream {
+    int idx;
+    int stream_identifier;
+};
+
+#define MAX_STREAMS_PER_PROGRAM 128
+#define MAX_PIDS_PER_PROGRAM (MAX_STREAMS_PER_PROGRAM + 2)
 struct Program {
     unsigned int id; // program id/service id
     unsigned int nb_pids;
     unsigned int pids[MAX_PIDS_PER_PROGRAM];
+    unsigned int nb_streams;
+    struct Stream streams[MAX_STREAMS_PER_PROGRAM];
 
     /** have we found pmt for this program */
     int pmt_found;
@@ -291,6 +299,7 @@ static void clear_program(struct Program *p)
     if (!p)
         return;
     p->nb_pids = 0;
+    p->nb_streams = 0;
     p->pmt_found = 0;
 }
 
@@ -2193,25 +2202,20 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
 }
 
 static AVStream *find_matching_stream(MpegTSContext *ts, int pid, unsigned int programid,
-                                      int stream_identifier, int pmt_stream_idx)
+                                      int stream_identifier, int pmt_stream_idx, struct Program *p)
 {
     AVFormatContext *s = ts->stream;
     int i;
     AVStream *found = NULL;
 
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        if (st->program_num != programid)
-            continue;
-        if (stream_identifier != -1) { /* match based on "stream identifier descriptor" if present */
-            if (st->stream_identifier == stream_identifier+1) {
-                found = st;
-                break;
-            }
-        } else if (st->pmt_stream_idx == pmt_stream_idx) { /* match based on position within the PMT */
-            found = st;
-            break;
+    if (stream_identifier) { /* match based on "stream identifier descriptor" if present */
+        for (i = 0; i < p->nb_streams; i++) {
+            if (p->streams[i].stream_identifier == stream_identifier)
+                if (!found || pmt_stream_idx == i) /* fallback to idx based guess if multiple streams have the same identifier */
+                    found = s->streams[p->streams[i].idx];
         }
+    } else if (pmt_stream_idx < p->nb_streams) { /* match based on position within the PMT */
+        found = s->streams[p->streams[pmt_stream_idx].idx];
     }
 
     if (found) {
@@ -2270,6 +2274,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
     MpegTSSectionFilter *tssf = &filter->u.section_filter;
+    struct Program old_program;
     SectionHeader h1, *h = &h1;
     PESContext *pes;
     AVStream *st;
@@ -2303,6 +2308,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
 
     prg = get_program(ts, h->id);
+    if (prg)
+        old_program = *prg;
+    else
+        clear_program(&old_program);
 
     if (ts->skip_unknown_pmt && !prg)
         return;
@@ -2360,7 +2369,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (prg)
         prg->pmt_found = 1;
 
-    for (i = 0; ; i++) {
+    for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {
         st = 0;
         pes = NULL;
         stream_type = get8(&p, p_end);
@@ -2373,14 +2382,13 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (pid == ts->current_pid)
             goto out;
 
-        if (ts->merge_pmt_versions)
-            stream_identifier = parse_stream_identifier_desc(p, p_end);
+        stream_identifier = parse_stream_identifier_desc(p, p_end) + 1;
 
         /* now create stream */
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
             pes = ts->pids[pid]->u.pes_filter.opaque;
             if (ts->merge_pmt_versions && !pes->st) {
-                st = find_matching_stream(ts, pid, h->id, stream_identifier, i);
+                st = find_matching_stream(ts, pid, h->id, stream_identifier, i, &old_program);
                 if (st) {
                     pes->st = st;
                     pes->stream_type = stream_type;
@@ -2402,7 +2410,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 mpegts_close_filter(ts, ts->pids[pid]); // wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid);
             if (ts->merge_pmt_versions && pes && !pes->st) {
-                st = find_matching_stream(ts, pid, h->id, stream_identifier, i);
+                st = find_matching_stream(ts, pid, h->id, stream_identifier, i, &old_program);
                 if (st) {
                     pes->st = st;
                     pes->stream_type = stream_type;
@@ -2424,7 +2432,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 st = ts->stream->streams[idx];
             }
             if (ts->merge_pmt_versions && !st) {
-                st = find_matching_stream(ts, pid, h->id, stream_identifier, i);
+                st = find_matching_stream(ts, pid, h->id, stream_identifier, i, &old_program);
             }
             if (!st) {
                 st = avformat_new_stream(ts->stream, NULL);
@@ -2449,6 +2457,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             mpegts_set_stream_info(st, pes, stream_type, prog_reg_desc);
 
         add_pid_to_program(prg, pid);
+        if (prg) {
+            prg->streams[i].idx = st->index;
+            prg->streams[i].stream_identifier = stream_identifier;
+            prg->nb_streams++;
+        }
 
         av_program_add_stream_index(ts->stream, h->id, st->index);
 
