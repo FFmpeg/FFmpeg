@@ -267,7 +267,7 @@ static int activate(AVFilterContext *ctx)
     }
     if (ret < 0) {
         return ret;
-    } else if (dm->eof & ((1 << INPUT_MAIN) | (dm->ppsrc << INPUT_CLEANSRC))) {
+    } else if (dm->eof == ((1 << INPUT_MAIN) | ((dm->ppsrc << INPUT_CLEANSRC) * dm->ppsrc))) {
         ff_outlink_set_status(ctx->outputs[0], AVERROR_EOF, dm->last_pts);
         return 0;
     } else if (!(dm->eof & (1 << INPUT_MAIN)) && ff_inlink_acknowledge_status(ctx->inputs[INPUT_MAIN], &status, &pts)) {
@@ -279,6 +279,7 @@ static int activate(AVFilterContext *ctx)
     } else if (dm->ppsrc && !(dm->eof & (1 << INPUT_CLEANSRC)) && ff_inlink_acknowledge_status(ctx->inputs[INPUT_CLEANSRC], &status, &pts)) {
         if (status == AVERROR_EOF) { // flushing
             dm->eof |= 1 << INPUT_CLEANSRC;
+            filter_frame(ctx->inputs[INPUT_MAIN], NULL);
             return filter_frame(ctx->inputs[INPUT_CLEANSRC], NULL);
         }
     }
