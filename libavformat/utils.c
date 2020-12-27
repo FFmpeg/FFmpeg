@@ -2874,7 +2874,7 @@ skip_duration_calc:
 }
 
 /* 1:1 map to AVDurationEstimationMethod */
-static const char *duration_name[] = {
+static const char *const duration_name[] = {
     [AVFMT_DURATION_FROM_PTS]     = "pts",
     [AVFMT_DURATION_FROM_STREAM]  = "stream",
     [AVFMT_DURATION_FROM_BITRATE] = "bit rate",

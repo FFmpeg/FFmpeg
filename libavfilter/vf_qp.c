@@ -55,7 +55,7 @@ static int config_input(AVFilterLink *inlink)
     int i;
     int ret;
     AVExpr *e = NULL;
-    static const char *var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
+    static const char *const var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
 
     if (!s->qp_expr_str)
         return 0;
@@ -144,7 +144,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 AVVideoBlockParams *b = av_video_enc_params_block(par_out, block_idx);
                 int qp = sd_in ? in_qp_global + BLOCK_QP_DELTA(block_idx) : NAN;
                 double var_values[] = { !!sd_in, qp, x, y, s->qstride, s->h, 0};
-                static const char *var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
+                static const char *const var_names[] = { "known", "qp", "x", "y", "w", "h", NULL };
                 double temp_val;
 
                 ret = av_expr_parse_and_eval(&temp_val, s->qp_expr_str,

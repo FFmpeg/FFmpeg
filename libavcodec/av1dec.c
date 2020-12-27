@@ -1110,7 +1110,7 @@ AVCodec ff_av1_decoder = {
                              FF_CODEC_CAP_SETS_PKT_DTS,
     .flush                 = av1_decode_flush,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
-    .hw_configs            = (const AVCodecHWConfigInternal * []) {
+    .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_AV1_DXVA2_HWACCEL
         HWACCEL_DXVA2(av1),
 #endif

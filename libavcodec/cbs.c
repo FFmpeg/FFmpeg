@@ -28,7 +28,7 @@
 #include "cbs_internal.h"
 
 
-static const CodedBitstreamType *cbs_type_table[] = {
+static const CodedBitstreamType *const cbs_type_table[] = {
 #if CONFIG_CBS_AV1
     &ff_cbs_type_av1,
 #endif

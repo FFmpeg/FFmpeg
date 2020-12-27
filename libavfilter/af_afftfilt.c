@@ -118,7 +118,7 @@ static double realf(void *priv, double x, double ch) { return getreal(priv, x, c
 static double imagf(void *priv, double x, double ch) { return getimag(priv, x, ch); }
 
 static const char *const func2_names[]    = { "real", "imag", NULL };
-double (*func2[])(void *, double, double) = {  realf,  imagf, NULL };
+static double (*const func2[])(void *, double, double) = {  realf,  imagf, NULL };
 
 static int config_input(AVFilterLink *inlink)
 {

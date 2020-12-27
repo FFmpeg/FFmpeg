@@ -146,7 +146,7 @@ nsc:
     return si;
 }
 
-static const char *hevc_nal_type_name[64] = {
+static const char *const hevc_nal_type_name[64] = {
     "TRAIL_N", // HEVC_NAL_TRAIL_N
     "TRAIL_R", // HEVC_NAL_TRAIL_R
     "TSA_N", // HEVC_NAL_TSA_N
@@ -219,7 +219,7 @@ static const char *hevc_nal_unit_name(int nal_type)
     return hevc_nal_type_name[nal_type];
 }
 
-static const char *h264_nal_type_name[32] = {
+static const char *const h264_nal_type_name[32] = {
     "Unspecified 0", //H264_NAL_UNSPECIFIED
     "Coded slice of a non-IDR picture", // H264_NAL_SLICE
     "Coded slice data partition A", // H264_NAL_DPA

@@ -88,7 +88,7 @@ static const uint8_t swb_size_1024_8[] = {
     32, 36, 36, 40, 44, 48, 52, 56, 60, 64, 80
 };
 
-const uint8_t *ff_aac_swb_size_128[] = {
+const uint8_t *const ff_aac_swb_size_128[] = {
     swb_size_128_96, swb_size_128_96, swb_size_128_64,
     swb_size_128_48, swb_size_128_48, swb_size_128_48,
     swb_size_128_24, swb_size_128_24, swb_size_128_16,
@@ -96,7 +96,7 @@ const uint8_t *ff_aac_swb_size_128[] = {
     swb_size_128_8
 };
 
-const uint8_t *ff_aac_swb_size_1024[] = {
+const uint8_t *const ff_aac_swb_size_1024[] = {
     swb_size_1024_96, swb_size_1024_96, swb_size_1024_64,
     swb_size_1024_48, swb_size_1024_48, swb_size_1024_32,
     swb_size_1024_24, swb_size_1024_24, swb_size_1024_16,

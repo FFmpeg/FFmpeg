@@ -1132,7 +1132,7 @@ DECLARE_ALIGNED(32, static const float, ff_celt_window_padded)[136] = {
     1.00000000f, 1.00000000f, 1.00000000f,
 };
 
-const float *ff_celt_window = &ff_celt_window_padded[8];
+const float *const ff_celt_window = &ff_celt_window_padded[8];
 
 /* square of the window, used for the postfilter */
 const float ff_celt_window2[120] = {

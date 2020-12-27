@@ -1894,7 +1894,7 @@ AVCodec ff_vp9_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp9_decode_update_thread_context),
     .profiles              = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     .bsfs                  = "vp9_superframe_split",
-    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+    .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_VP9_DXVA2_HWACCEL
                                HWACCEL_DXVA2(vp9),
 #endif

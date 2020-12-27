@@ -61,7 +61,7 @@ enum correction_method {
     NB_CORRECTION_METHODS,
 };
 
-static const char *color_names[NB_RANGES] = {
+static const char *const color_names[NB_RANGES] = {
     "red", "yellow", "green", "cyan", "blue", "magenta", "white", "neutral", "black"
 };
 

@@ -51,7 +51,7 @@ void av_spherical_tile_bounds(const AVSphericalMapping *map,
     *bottom = orig_height - height - *top;
 }
 
-static const char *spherical_projection_names[] = {
+static const char *const spherical_projection_names[] = {
     [AV_SPHERICAL_EQUIRECTANGULAR]      = "equirectangular",
     [AV_SPHERICAL_CUBEMAP]              = "cubemap",
     [AV_SPHERICAL_EQUIRECTANGULAR_TILE] = "tiled equirectangular",
