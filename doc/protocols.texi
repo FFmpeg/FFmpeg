@@ -175,6 +175,16 @@ Caching wrapper for input stream.
 
 Cache the input stream to temporary file. It brings seeking capability to live streams.
 
+The accepted options are:
+@table @option
+
+@item read_ahead_limit
+Amount in bytes that may be read ahead when seeking isn't supported. Range is -1 to INT_MAX.
+-1 for unlimited. Default is 65536.
+
+@end table
+
+URL Syntax is
 @example
 cache:@var{URL}
 @end example
