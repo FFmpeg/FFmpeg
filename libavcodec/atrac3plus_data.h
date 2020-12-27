@@ -393,7 +393,7 @@ static const uint8_t atrac3p_ct_restricted_to_full[2][7][4] = {
 
 /* If the first entry of a subtable is negative, it means
  * that another VLC is to be reused. */
-static int8_t atrac3p_spectra_cbs[][12] = {
+static const int8_t atrac3p_spectra_cbs[][12] = {
     {  1,  0,  0,  1,  7,  0, 19,  5, 13, 21,  6,  8 },
     {  0,  1,  0,  4, 11,  0,  1, 29,  6, 20,  7,  2 },
     {  0,  0,  1,  8,  0, 13, 18,  7,  2,  0,  0,  0 },
