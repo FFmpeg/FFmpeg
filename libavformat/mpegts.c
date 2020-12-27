@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/buffer.h"
+#include "libavutil/common.h"
 #include "libavutil/crc.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -301,7 +302,9 @@ static void clear_programs(MpegTSContext *ts)
 
 static struct Program * add_program(MpegTSContext *ts, unsigned int programid)
 {
-    struct Program *p;
+    struct Program *p = get_program(ts, programid);
+    if (p)
+        return p;
     if (av_reallocp_array(&ts->prg, ts->nb_prg + 1, sizeof(*ts->prg)) < 0) {
         ts->nb_prg = 0;
         return NULL;
@@ -2303,10 +2306,12 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     if (ts->skip_unknown_pmt && !prg)
         return;
-    if (!ts->skip_clear) {
+    if (prg && prg->nb_pids && prg->pids[0] != ts->current_pid)
+        return;
+    if (!ts->skip_clear)
         clear_avprogram(ts, h->id);
-        clear_program(prg);
-    }
+    clear_program(prg);
+    add_pid_to_program(prg, ts->current_pid);
 
     pcr_pid = get16(&p, p_end);
     if (pcr_pid < 0)
@@ -2485,6 +2490,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
+    int nb_prg = 0;
     AVProgram *program;
 
     av_log(ts->stream, AV_LOG_TRACE, "PAT:\n");
@@ -2503,7 +2509,6 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     ts->stream->ts_id = h->id;
 
-    clear_programs(ts);
     for (;;) {
         sid = get16(&p, p_end);
         if (sid < 0)
@@ -2537,9 +2542,19 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (!ts->pids[pmt_pid])
                 mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
             prg = add_program(ts, sid);
-            add_pid_to_program(prg, pmt_pid);
+            if (prg) {
+                unsigned prg_idx = prg - ts->prg;
+                if (prg->nb_pids && prg->pids[0] != pmt_pid)
+                    clear_program(prg);
+                add_pid_to_program(prg, pmt_pid);
+                if (prg_idx > nb_prg)
+                    FFSWAP(struct Program, ts->prg[nb_prg], ts->prg[prg_idx]);
+                if (prg_idx >= nb_prg)
+                    nb_prg++;
+            }
         }
     }
+    ts->nb_prg = nb_prg;
 
     if (sid < 0) {
         int i,j;
