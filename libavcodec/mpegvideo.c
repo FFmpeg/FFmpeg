@@ -787,7 +787,7 @@ static int init_context_frame(MpegEncContext *s)
     }
 
     /* which mb is an intra block,  init macroblock skip table */
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->mbintra_table, mb_array_size) ||
+    if (!FF_ALLOC_TYPED_ARRAY(s->mbintra_table, mb_array_size) ||
         // Note the + 1 is for a quicker MPEG-4 slice_end detection
         !FF_ALLOCZ_TYPED_ARRAY(s->mbskip_table,  mb_array_size + 2))
         return AVERROR(ENOMEM);
