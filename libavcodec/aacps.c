@@ -26,7 +26,6 @@
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
-#include "get_bits.h"
 #include "aacps.h"
 #if USE_FIXED
 #include "aacps_fixed_tablegen.h"
@@ -34,117 +33,11 @@
 #include "libavutil/internal.h"
 #include "aacps_tablegen.h"
 #endif /* USE_FIXED */
-#include "aacpsdata.c"
 
-#define PS_BASELINE 0  ///< Operate in Baseline PS mode
-                       ///< Baseline implies 10 or 20 stereo bands,
-                       ///< mixing mode A, and no ipd/opd
-
-#define numQMFSlots 32 //numTimeSlots * RATE
-
-static const int8_t num_env_tab[2][4] = {
-    { 0, 1, 2, 4, },
-    { 1, 2, 3, 4, },
+static const INTFLOAT g1_Q2[] = {
+    Q31(0.0f),  Q31(0.01899487526049f), Q31(0.0f), Q31(-0.07293139167538f),
+    Q31(0.0f),  Q31(0.30596630545168f), Q31(0.5f)
 };
-
-static const int8_t nr_iidicc_par_tab[] = {
-    10, 20, 34, 10, 20, 34,
-};
-
-static const int8_t nr_iidopd_par_tab[] = {
-     5, 11, 17,  5, 11, 17,
-};
-
-enum {
-    huff_iid_df1,
-    huff_iid_dt1,
-    huff_iid_df0,
-    huff_iid_dt0,
-    huff_icc_df,
-    huff_icc_dt,
-    huff_ipd_df,
-    huff_ipd_dt,
-    huff_opd_df,
-    huff_opd_dt,
-};
-
-static const int huff_iid[] = {
-    huff_iid_df0,
-    huff_iid_df1,
-    huff_iid_dt0,
-    huff_iid_dt1,
-};
-
-static VLC vlc_ps[10];
-
-#define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION) \
-/** \
- * Read Inter-channel Intensity Difference/Inter-Channel Coherence/ \
- * Inter-channel Phase Difference/Overall Phase Difference parameters from the \
- * bitstream. \
- * \
- * @param avctx contains the current codec context \
- * @param gb    pointer to the input bitstream \
- * @param ps    pointer to the Parametric Stereo context \
- * @param PAR   pointer to the parameter to be read \
- * @param e     envelope to decode \
- * @param dt    1: time delta-coded, 0: frequency delta-coded \
- */ \
-static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, \
-                        int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
-{ \
-    int b, num = ps->nr_ ## PAR ## _par; \
-    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table; \
-    if (dt) { \
-        int e_prev = e ? e - 1 : ps->num_env_old - 1; \
-        e_prev = FFMAX(e_prev, 0); \
-        for (b = 0; b < num; b++) { \
-            int val = PAR[e_prev][b] + get_vlc2(gb, vlc_table, 9, 3) - OFFSET; \
-            if (MASK) val &= MASK; \
-            PAR[e][b] = val; \
-            if (ERR_CONDITION) \
-                goto err; \
-        } \
-    } else { \
-        int val = 0; \
-        for (b = 0; b < num; b++) { \
-            val += get_vlc2(gb, vlc_table, 9, 3) - OFFSET; \
-            if (MASK) val &= MASK; \
-            PAR[e][b] = val; \
-            if (ERR_CONDITION) \
-                goto err; \
-        } \
-    } \
-    return 0; \
-err: \
-    av_log(avctx, AV_LOG_ERROR, "illegal "#PAR"\n"); \
-    return AVERROR_INVALIDDATA; \
-}
-
-READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant)
-READ_PAR_DATA(icc,    huff_offset[table_idx],    0, ps->icc_par[e][b] > 7U)
-READ_PAR_DATA(ipdopd,                      0, 0x07, 0)
-
-static int ps_read_extension_data(GetBitContext *gb, PSContext *ps, int ps_extension_id)
-{
-    int e;
-    int count = get_bits_count(gb);
-
-    if (ps_extension_id)
-        return 0;
-
-    ps->enable_ipdopd = get_bits1(gb);
-    if (ps->enable_ipdopd) {
-        for (e = 0; e < ps->num_env; e++) {
-            int dt = get_bits1(gb);
-            read_ipdopd_data(NULL, gb, ps, ps->ipd_par, dt ? huff_ipd_dt : huff_ipd_df, e, dt);
-            dt = get_bits1(gb);
-            read_ipdopd_data(NULL, gb, ps, ps->opd_par, dt ? huff_opd_dt : huff_opd_df, e, dt);
-        }
-    }
-    skip_bits1(gb);      //reserved_ps
-    return get_bits_count(gb) - count;
-}
 
 static void ipdopd_reset(int8_t *ipd_hist, int8_t *opd_hist)
 {
@@ -153,163 +46,6 @@ static void ipdopd_reset(int8_t *ipd_hist, int8_t *opd_hist)
         opd_hist[i] = 0;
         ipd_hist[i] = 0;
     }
-}
-
-int AAC_RENAME(ff_ps_read_data)(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps, int bits_left)
-{
-    int e;
-    int bit_count_start = get_bits_count(gb_host);
-    int header;
-    int bits_consumed;
-    GetBitContext gbc = *gb_host, *gb = &gbc;
-
-    header = get_bits1(gb);
-    if (header) {     //enable_ps_header
-        ps->enable_iid = get_bits1(gb);
-        if (ps->enable_iid) {
-            int iid_mode = get_bits(gb, 3);
-            if (iid_mode > 5) {
-                av_log(avctx, AV_LOG_ERROR, "iid_mode %d is reserved.\n",
-                       iid_mode);
-                goto err;
-            }
-            ps->nr_iid_par    = nr_iidicc_par_tab[iid_mode];
-            ps->iid_quant     = iid_mode > 2;
-            ps->nr_ipdopd_par = nr_iidopd_par_tab[iid_mode];
-        }
-        ps->enable_icc = get_bits1(gb);
-        if (ps->enable_icc) {
-            ps->icc_mode = get_bits(gb, 3);
-            if (ps->icc_mode > 5) {
-                av_log(avctx, AV_LOG_ERROR, "icc_mode %d is reserved.\n",
-                       ps->icc_mode);
-                goto err;
-            }
-            ps->nr_icc_par = nr_iidicc_par_tab[ps->icc_mode];
-        }
-        ps->enable_ext = get_bits1(gb);
-    }
-
-    ps->frame_class = get_bits1(gb);
-    ps->num_env_old = ps->num_env;
-    ps->num_env     = num_env_tab[ps->frame_class][get_bits(gb, 2)];
-
-    ps->border_position[0] = -1;
-    if (ps->frame_class) {
-        for (e = 1; e <= ps->num_env; e++) {
-            ps->border_position[e] = get_bits(gb, 5);
-            if (ps->border_position[e] < ps->border_position[e-1]) {
-                av_log(avctx, AV_LOG_ERROR, "border_position non monotone.\n");
-                goto err;
-            }
-        }
-    } else
-        for (e = 1; e <= ps->num_env; e++)
-            ps->border_position[e] = (e * numQMFSlots >> ff_log2_tab[ps->num_env]) - 1;
-
-    if (ps->enable_iid) {
-        for (e = 0; e < ps->num_env; e++) {
-            int dt = get_bits1(gb);
-            if (read_iid_data(avctx, gb, ps, ps->iid_par, huff_iid[2*dt+ps->iid_quant], e, dt))
-                goto err;
-        }
-    } else
-        memset(ps->iid_par, 0, sizeof(ps->iid_par));
-
-    if (ps->enable_icc)
-        for (e = 0; e < ps->num_env; e++) {
-            int dt = get_bits1(gb);
-            if (read_icc_data(avctx, gb, ps, ps->icc_par, dt ? huff_icc_dt : huff_icc_df, e, dt))
-                goto err;
-        }
-    else
-        memset(ps->icc_par, 0, sizeof(ps->icc_par));
-
-    if (ps->enable_ext) {
-        int cnt = get_bits(gb, 4);
-        if (cnt == 15) {
-            cnt += get_bits(gb, 8);
-        }
-        cnt *= 8;
-        while (cnt > 7) {
-            int ps_extension_id = get_bits(gb, 2);
-            cnt -= 2 + ps_read_extension_data(gb, ps, ps_extension_id);
-        }
-        if (cnt < 0) {
-            av_log(avctx, AV_LOG_ERROR, "ps extension overflow %d\n", cnt);
-            goto err;
-        }
-        skip_bits(gb, cnt);
-    }
-
-    ps->enable_ipdopd &= !PS_BASELINE;
-
-    //Fix up envelopes
-    if (!ps->num_env || ps->border_position[ps->num_env] < numQMFSlots - 1) {
-        //Create a fake envelope
-        int source = ps->num_env ? ps->num_env - 1 : ps->num_env_old - 1;
-        int b;
-        if (source >= 0 && source != ps->num_env) {
-            if (ps->enable_iid) {
-                memcpy(ps->iid_par+ps->num_env, ps->iid_par+source, sizeof(ps->iid_par[0]));
-            }
-            if (ps->enable_icc) {
-                memcpy(ps->icc_par+ps->num_env, ps->icc_par+source, sizeof(ps->icc_par[0]));
-            }
-            if (ps->enable_ipdopd) {
-                memcpy(ps->ipd_par+ps->num_env, ps->ipd_par+source, sizeof(ps->ipd_par[0]));
-                memcpy(ps->opd_par+ps->num_env, ps->opd_par+source, sizeof(ps->opd_par[0]));
-            }
-        }
-        if (ps->enable_iid){
-            for (b = 0; b < ps->nr_iid_par; b++) {
-                if (FFABS(ps->iid_par[ps->num_env][b]) > 7 + 8 * ps->iid_quant) {
-                    av_log(avctx, AV_LOG_ERROR, "iid_par invalid\n");
-                    goto err;
-                }
-            }
-        }
-        if (ps->enable_icc){
-            for (b = 0; b < ps->nr_iid_par; b++) {
-                if (ps->icc_par[ps->num_env][b] > 7U) {
-                    av_log(avctx, AV_LOG_ERROR, "icc_par invalid\n");
-                    goto err;
-                }
-            }
-        }
-        ps->num_env++;
-        ps->border_position[ps->num_env] = numQMFSlots - 1;
-    }
-
-
-    ps->is34bands_old = ps->is34bands;
-    if (!PS_BASELINE && (ps->enable_iid || ps->enable_icc))
-        ps->is34bands = (ps->enable_iid && ps->nr_iid_par == 34) ||
-                        (ps->enable_icc && ps->nr_icc_par == 34);
-
-    //Baseline
-    if (!ps->enable_ipdopd) {
-        memset(ps->ipd_par, 0, sizeof(ps->ipd_par));
-        memset(ps->opd_par, 0, sizeof(ps->opd_par));
-    }
-
-    if (header)
-        ps->start = 1;
-
-    bits_consumed = get_bits_count(gb) - bit_count_start;
-    if (bits_consumed <= bits_left) {
-        skip_bits_long(gb_host, bits_consumed);
-        return bits_consumed;
-    }
-    av_log(avctx, AV_LOG_ERROR, "Expected to read %d PS bits actually read %d.\n", bits_left, bits_consumed);
-err:
-    ps->start = 0;
-    skip_bits_long(gb_host, bits_left);
-    memset(ps->iid_par, 0, sizeof(ps->iid_par));
-    memset(ps->icc_par, 0, sizeof(ps->icc_par));
-    memset(ps->ipd_par, 0, sizeof(ps->ipd_par));
-    memset(ps->opd_par, 0, sizeof(ps->opd_par));
-    return bits_left;
 }
 
 /** Split one subband into 2 subsubbands with a symmetric real filter.
@@ -672,14 +408,14 @@ static void decorrelation(PSContext *ps, INTFLOAT (*out)[32][2], const INTFLOAT 
     const float transient_impact  = 1.5f;
     const float a_smooth          = 0.25f; ///< Smoothing coefficient
 #endif /* USE_FIXED */
-    const int8_t *k_to_i = is34 ? k_to_i_34 : k_to_i_20;
+    const int8_t *const k_to_i = is34 ? ff_k_to_i_34 : ff_k_to_i_20;
     int i, k, m, n;
     int n0 = 0, nL = 32;
     const INTFLOAT peak_decay_factor = Q31(0.76592833836465f);
 
     memset(power, 0, 34 * sizeof(*power));
 
-    if (is34 != ps->is34bands_old) {
+    if (is34 != ps->common.is34bands_old) {
         memset(ps->peak_decay_nrg,         0, sizeof(ps->peak_decay_nrg));
         memset(ps->power_smooth,           0, sizeof(ps->power_smooth));
         memset(ps->peak_decay_diff_smooth, 0, sizeof(ps->peak_decay_diff_smooth));
@@ -821,6 +557,7 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
 {
     int e, b, k;
 
+    PSCommonContext *const ps2 = &ps->common;
     INTFLOAT (*H11)[PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC] = ps->H11;
     INTFLOAT (*H12)[PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC] = ps->H12;
     INTFLOAT (*H21)[PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC] = ps->H21;
@@ -835,29 +572,29 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
     int8_t (*icc_mapped)[PS_MAX_NR_IIDICC] = icc_mapped_buf;
     int8_t (*ipd_mapped)[PS_MAX_NR_IIDICC] = ipd_mapped_buf;
     int8_t (*opd_mapped)[PS_MAX_NR_IIDICC] = opd_mapped_buf;
-    const int8_t *k_to_i = is34 ? k_to_i_34 : k_to_i_20;
-    TABLE_CONST INTFLOAT (*H_LUT)[8][4] = (PS_BASELINE || ps->icc_mode < 3) ? HA : HB;
+    const int8_t *const k_to_i = is34 ? ff_k_to_i_34 : ff_k_to_i_20;
+    TABLE_CONST INTFLOAT (*H_LUT)[8][4] = (PS_BASELINE || ps2->icc_mode < 3) ? HA : HB;
 
     //Remapping
-    if (ps->num_env_old) {
-        memcpy(H11[0][0], H11[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H11[0][0][0]));
-        memcpy(H11[1][0], H11[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H11[1][0][0]));
-        memcpy(H12[0][0], H12[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H12[0][0][0]));
-        memcpy(H12[1][0], H12[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H12[1][0][0]));
-        memcpy(H21[0][0], H21[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H21[0][0][0]));
-        memcpy(H21[1][0], H21[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H21[1][0][0]));
-        memcpy(H22[0][0], H22[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H22[0][0][0]));
-        memcpy(H22[1][0], H22[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H22[1][0][0]));
+    if (ps2->num_env_old) {
+        memcpy(H11[0][0], H11[0][ps2->num_env_old], sizeof(H11[0][0]));
+        memcpy(H11[1][0], H11[1][ps2->num_env_old], sizeof(H11[1][0]));
+        memcpy(H12[0][0], H12[0][ps2->num_env_old], sizeof(H12[0][0]));
+        memcpy(H12[1][0], H12[1][ps2->num_env_old], sizeof(H12[1][0]));
+        memcpy(H21[0][0], H21[0][ps2->num_env_old], sizeof(H21[0][0]));
+        memcpy(H21[1][0], H21[1][ps2->num_env_old], sizeof(H21[1][0]));
+        memcpy(H22[0][0], H22[0][ps2->num_env_old], sizeof(H22[0][0]));
+        memcpy(H22[1][0], H22[1][ps2->num_env_old], sizeof(H22[1][0]));
     }
 
     if (is34) {
-        remap34(&iid_mapped, ps->iid_par, ps->nr_iid_par, ps->num_env, 1);
-        remap34(&icc_mapped, ps->icc_par, ps->nr_icc_par, ps->num_env, 1);
-        if (ps->enable_ipdopd) {
-            remap34(&ipd_mapped, ps->ipd_par, ps->nr_ipdopd_par, ps->num_env, 0);
-            remap34(&opd_mapped, ps->opd_par, ps->nr_ipdopd_par, ps->num_env, 0);
+        remap34(&iid_mapped, ps2->iid_par, ps2->nr_iid_par, ps2->num_env, 1);
+        remap34(&icc_mapped, ps2->icc_par, ps2->nr_icc_par, ps2->num_env, 1);
+        if (ps2->enable_ipdopd) {
+            remap34(&ipd_mapped, ps2->ipd_par, ps2->nr_ipdopd_par, ps2->num_env, 0);
+            remap34(&opd_mapped, ps2->opd_par, ps2->nr_ipdopd_par, ps2->num_env, 0);
         }
-        if (!ps->is34bands_old) {
+        if (!ps2->is34bands_old) {
             map_val_20_to_34(H11[0][0]);
             map_val_20_to_34(H11[1][0]);
             map_val_20_to_34(H12[0][0]);
@@ -869,13 +606,13 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
             ipdopd_reset(ipd_hist, opd_hist);
         }
     } else {
-        remap20(&iid_mapped, ps->iid_par, ps->nr_iid_par, ps->num_env, 1);
-        remap20(&icc_mapped, ps->icc_par, ps->nr_icc_par, ps->num_env, 1);
-        if (ps->enable_ipdopd) {
-            remap20(&ipd_mapped, ps->ipd_par, ps->nr_ipdopd_par, ps->num_env, 0);
-            remap20(&opd_mapped, ps->opd_par, ps->nr_ipdopd_par, ps->num_env, 0);
+        remap20(&iid_mapped, ps2->iid_par, ps2->nr_iid_par, ps2->num_env, 1);
+        remap20(&icc_mapped, ps2->icc_par, ps2->nr_icc_par, ps2->num_env, 1);
+        if (ps2->enable_ipdopd) {
+            remap20(&ipd_mapped, ps2->ipd_par, ps2->nr_ipdopd_par, ps2->num_env, 0);
+            remap20(&opd_mapped, ps2->opd_par, ps2->nr_ipdopd_par, ps2->num_env, 0);
         }
-        if (ps->is34bands_old) {
+        if (ps2->is34bands_old) {
             map_val_34_to_20(H11[0][0]);
             map_val_34_to_20(H11[1][0]);
             map_val_34_to_20(H12[0][0]);
@@ -889,15 +626,15 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
     }
 
     //Mixing
-    for (e = 0; e < ps->num_env; e++) {
+    for (e = 0; e < ps2->num_env; e++) {
         for (b = 0; b < NR_PAR_BANDS[is34]; b++) {
             INTFLOAT h11, h12, h21, h22;
-            h11 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps->iid_quant][icc_mapped[e][b]][0];
-            h12 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps->iid_quant][icc_mapped[e][b]][1];
-            h21 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps->iid_quant][icc_mapped[e][b]][2];
-            h22 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps->iid_quant][icc_mapped[e][b]][3];
+            h11 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps2->iid_quant][icc_mapped[e][b]][0];
+            h12 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps2->iid_quant][icc_mapped[e][b]][1];
+            h21 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps2->iid_quant][icc_mapped[e][b]][2];
+            h22 = H_LUT[iid_mapped[e][b] + 7 + 23 * ps2->iid_quant][icc_mapped[e][b]][3];
 
-            if (!PS_BASELINE && ps->enable_ipdopd && b < NR_IPDOPD_BANDS[is34]) {
+            if (!PS_BASELINE && ps2->enable_ipdopd && b < NR_IPDOPD_BANDS[is34]) {
                 //The spec say says to only run this smoother when enable_ipdopd
                 //is set but the reference decoder appears to run it constantly
                 INTFLOAT h11i, h12i, h21i, h22i;
@@ -934,8 +671,8 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
         for (k = 0; k < NR_BANDS[is34]; k++) {
             LOCAL_ALIGNED_16(INTFLOAT, h, [2], [4]);
             LOCAL_ALIGNED_16(INTFLOAT, h_step, [2], [4]);
-            int start = ps->border_position[e];
-            int stop  = ps->border_position[e+1];
+            int start = ps2->border_position[e];
+            int stop  = ps2->border_position[e+1];
             INTFLOAT width = Q30(1.f) / ((stop - start) ? (stop - start) : 1);
 #if USE_FIXED
             width = FFMIN(2U*width, INT_MAX);
@@ -945,7 +682,7 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
             h[0][1] = H12[0][e][b];
             h[0][2] = H21[0][e][b];
             h[0][3] = H22[0][e][b];
-            if (!PS_BASELINE && ps->enable_ipdopd) {
+            if (!PS_BASELINE && ps2->enable_ipdopd) {
             //Is this necessary? ps_04_new seems unchanged
             if ((is34 && k <= 13 && k >= 9) || (!is34 && k <= 1)) {
                 h[1][0] = -H11[1][e][b];
@@ -964,14 +701,14 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
             h_step[0][1] = AAC_MSUB31_V3(H12[0][e+1][b], h[0][1], width);
             h_step[0][2] = AAC_MSUB31_V3(H21[0][e+1][b], h[0][2], width);
             h_step[0][3] = AAC_MSUB31_V3(H22[0][e+1][b], h[0][3], width);
-            if (!PS_BASELINE && ps->enable_ipdopd) {
+            if (!PS_BASELINE && ps2->enable_ipdopd) {
                 h_step[1][0] = AAC_MSUB31_V3(H11[1][e+1][b], h[1][0], width);
                 h_step[1][1] = AAC_MSUB31_V3(H12[1][e+1][b], h[1][1], width);
                 h_step[1][2] = AAC_MSUB31_V3(H21[1][e+1][b], h[1][2], width);
                 h_step[1][3] = AAC_MSUB31_V3(H22[1][e+1][b], h[1][3], width);
             }
             if (stop - start)
-                ps->dsp.stereo_interpolate[!PS_BASELINE && ps->enable_ipdopd](
+                ps->dsp.stereo_interpolate[!PS_BASELINE && ps2->enable_ipdopd](
                     l[k] + 1 + start, r[k] + 1 + start,
                     h, h_step, stop - start);
         }
@@ -983,7 +720,7 @@ int AAC_RENAME(ff_ps_apply)(AVCodecContext *avctx, PSContext *ps, INTFLOAT L[2][
     INTFLOAT (*Lbuf)[32][2] = ps->Lbuf;
     INTFLOAT (*Rbuf)[32][2] = ps->Rbuf;
     const int len = 32;
-    int is34 = ps->is34bands;
+    int is34 = ps->common.is34bands;
 
     top += NR_BANDS[is34] - 64;
     memset(ps->delay+top, 0, (NR_BANDS[is34] - top)*sizeof(ps->delay[0]));
@@ -999,45 +736,9 @@ int AAC_RENAME(ff_ps_apply)(AVCodecContext *avctx, PSContext *ps, INTFLOAT L[2][
     return 0;
 }
 
-#define PS_INIT_VLC_STATIC(num, size) \
-    INIT_VLC_STATIC(&vlc_ps[num], 9, ps_tmp[num].table_size / ps_tmp[num].elem_size,    \
-                    ps_tmp[num].ps_bits, 1, 1,                                          \
-                    ps_tmp[num].ps_codes, ps_tmp[num].elem_size, ps_tmp[num].elem_size, \
-                    size);
-
-#define PS_VLC_ROW(name) \
-    { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
-
 av_cold void AAC_RENAME(ff_ps_init)(void) {
-    // Syntax initialization
-    static const struct {
-        const void *ps_codes, *ps_bits;
-        const unsigned int table_size, elem_size;
-    } ps_tmp[] = {
-        PS_VLC_ROW(huff_iid_df1),
-        PS_VLC_ROW(huff_iid_dt1),
-        PS_VLC_ROW(huff_iid_df0),
-        PS_VLC_ROW(huff_iid_dt0),
-        PS_VLC_ROW(huff_icc_df),
-        PS_VLC_ROW(huff_icc_dt),
-        PS_VLC_ROW(huff_ipd_df),
-        PS_VLC_ROW(huff_ipd_dt),
-        PS_VLC_ROW(huff_opd_df),
-        PS_VLC_ROW(huff_opd_dt),
-    };
-
-    PS_INIT_VLC_STATIC(0, 1544);
-    PS_INIT_VLC_STATIC(1,  832);
-    PS_INIT_VLC_STATIC(2, 1024);
-    PS_INIT_VLC_STATIC(3, 1036);
-    PS_INIT_VLC_STATIC(4,  544);
-    PS_INIT_VLC_STATIC(5,  544);
-    PS_INIT_VLC_STATIC(6,  512);
-    PS_INIT_VLC_STATIC(7,  512);
-    PS_INIT_VLC_STATIC(8,  512);
-    PS_INIT_VLC_STATIC(9,  512);
-
     ps_tableinit();
+    ff_ps_init_common();
 }
 
 av_cold void AAC_RENAME(ff_ps_ctx_init)(PSContext *ps)

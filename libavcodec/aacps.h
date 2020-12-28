@@ -37,8 +37,13 @@
 #define PS_MAX_DELAY 14
 #define PS_AP_LINKS 3
 #define PS_MAX_AP_DELAY 5
+#define PS_BASELINE 0  ///< Operate in Baseline PS mode
+                       ///< Baseline implies 10 or 20 stereo bands,
+                       ///< mixing mode A, and no ipd/opd
 
-typedef struct PSContext {
+#define numQMFSlots 32 //numTimeSlots * RATE
+
+typedef struct PSCommonContext {
     int    start;
     int    enable_iid;
     int    iid_quant;
@@ -60,6 +65,10 @@ typedef struct PSContext {
     int8_t opd_par[PS_MAX_NUM_ENV][PS_MAX_NR_IIDICC]; ///< Overall Phase Difference Parameters
     int    is34bands;
     int    is34bands_old;
+} PSCommonContext;
+
+typedef struct PSContext {
+    PSCommonContext common;
 
     DECLARE_ALIGNED(16, INTFLOAT, in_buf)[5][44][2];
     DECLARE_ALIGNED(16, INTFLOAT, delay)[PS_MAX_SSB][PS_QMF_TIME_SLOTS + PS_MAX_DELAY][2];
@@ -78,9 +87,14 @@ typedef struct PSContext {
     PSDSPContext dsp;
 } PSContext;
 
+extern const int8_t ff_k_to_i_20[];
+extern const int8_t ff_k_to_i_34[];
+
+void ff_ps_init_common(void);
 void AAC_RENAME(ff_ps_init)(void);
 void AAC_RENAME(ff_ps_ctx_init)(PSContext *ps);
-int AAC_RENAME(ff_ps_read_data)(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, int bits_left);
+int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb,
+                     PSCommonContext *ps, int bits_left);
 int AAC_RENAME(ff_ps_apply)(AVCodecContext *avctx, PSContext *ps, INTFLOAT L[2][38][64], INTFLOAT R[2][38][64], int top);
 
 #endif /* AVCODEC_AACPS_H */
