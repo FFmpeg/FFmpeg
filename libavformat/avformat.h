@@ -1096,12 +1096,12 @@ typedef struct AVStream {
      */
     int stream_identifier;
 
-    /**
-     * Details of the MPEG-TS program which created this stream.
-     */
-    int program_num;
-    int pmt_version;
-    int pmt_stream_idx;
+#if LIBAVFORMAT_VERSION_MAJOR < 59
+    // kept for ABI compatibility only, do not access in any way
+    int unused8;
+    int unused9;
+    int unused10;
+#endif
 
     /**
      * An opaque field for libavformat internal usage.
