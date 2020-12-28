@@ -61,7 +61,7 @@ static const int huff_iid[] = {
 
 static VLC vlc_ps[10];
 
-#define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION) \
+#define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION, NB_BITS, MAX_DEPTH) \
 /** \
  * Read Inter-channel Intensity Difference/Inter-Channel Coherence/ \
  * Inter-channel Phase Difference/Overall Phase Difference parameters from the \
@@ -83,7 +83,7 @@ static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSCom
         int e_prev = e ? e - 1 : ps->num_env_old - 1; \
         e_prev = FFMAX(e_prev, 0); \
         for (b = 0; b < num; b++) { \
-            int val = PAR[e_prev][b] + get_vlc2(gb, vlc_table, 9, 3) - OFFSET; \
+            int val = PAR[e_prev][b] + get_vlc2(gb, vlc_table, NB_BITS, MAX_DEPTH) - OFFSET; \
             if (MASK) val &= MASK; \
             PAR[e][b] = val; \
             if (ERR_CONDITION) \
@@ -92,7 +92,7 @@ static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSCom
     } else { \
         int val = 0; \
         for (b = 0; b < num; b++) { \
-            val += get_vlc2(gb, vlc_table, 9, 3) - OFFSET; \
+            val += get_vlc2(gb, vlc_table, NB_BITS, MAX_DEPTH) - OFFSET; \
             if (MASK) val &= MASK; \
             PAR[e][b] = val; \
             if (ERR_CONDITION) \
@@ -105,9 +105,9 @@ err: \
     return AVERROR_INVALIDDATA; \
 }
 
-READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant)
-READ_PAR_DATA(icc,    huff_offset[table_idx],    0, ps->icc_par[e][b] > 7U)
-READ_PAR_DATA(ipdopd,                      0, 0x07, 0)
+READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant, 9, 3)
+READ_PAR_DATA(icc,    huff_offset[table_idx],    0, ps->icc_par[e][b] > 7U, 9, 2)
+READ_PAR_DATA(ipdopd,                      0, 0x07, 0, 5, 1)
 
 static int ps_read_extension_data(GetBitContext *gb, PSCommonContext *ps,
                                   int ps_extension_id)
@@ -289,8 +289,8 @@ err:
     return bits_left;
 }
 
-#define PS_INIT_VLC_STATIC(num, size) \
-    INIT_VLC_STATIC(&vlc_ps[num], 9, ps_tmp[num].table_size / ps_tmp[num].elem_size,    \
+#define PS_INIT_VLC_STATIC(num, nb_bits, size)                          \
+    INIT_VLC_STATIC(&vlc_ps[num], nb_bits, ps_tmp[num].table_size / ps_tmp[num].elem_size,    \
                     ps_tmp[num].ps_bits, 1, 1,                                          \
                     ps_tmp[num].ps_codes, ps_tmp[num].elem_size, ps_tmp[num].elem_size, \
                     size);
@@ -317,16 +317,16 @@ static av_cold void ps_init_common(void)
         PS_VLC_ROW(huff_opd_dt),
     };
 
-    PS_INIT_VLC_STATIC(0, 1544);
-    PS_INIT_VLC_STATIC(1,  832);
-    PS_INIT_VLC_STATIC(2, 1024);
-    PS_INIT_VLC_STATIC(3, 1036);
-    PS_INIT_VLC_STATIC(4,  544);
-    PS_INIT_VLC_STATIC(5,  544);
-    PS_INIT_VLC_STATIC(6,  512);
-    PS_INIT_VLC_STATIC(7,  512);
-    PS_INIT_VLC_STATIC(8,  512);
-    PS_INIT_VLC_STATIC(9,  512);
+    PS_INIT_VLC_STATIC(0, 9, 1544);
+    PS_INIT_VLC_STATIC(1, 9,  832);
+    PS_INIT_VLC_STATIC(2, 9, 1024);
+    PS_INIT_VLC_STATIC(3, 9, 1036);
+    PS_INIT_VLC_STATIC(4, 9,  544);
+    PS_INIT_VLC_STATIC(5, 9,  544);
+    PS_INIT_VLC_STATIC(6, 5,   32);
+    PS_INIT_VLC_STATIC(7, 5,   32);
+    PS_INIT_VLC_STATIC(8, 5,   32);
+    PS_INIT_VLC_STATIC(9, 5,   32);
 }
 
 av_cold void ff_ps_init_common(void)
