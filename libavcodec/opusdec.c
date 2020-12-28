@@ -630,17 +630,14 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
 
     /* find out the channel configuration */
     ret = ff_opus_parse_extradata(avctx, c);
-    if (ret < 0) {
-        av_freep(&c->fdsp);
+    if (ret < 0)
         return ret;
-    }
 
     /* allocate and init each independent decoder */
     c->streams = av_mallocz_array(c->nb_streams, sizeof(*c->streams));
     if (!c->streams) {
         c->nb_streams = 0;
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < c->nb_streams; i++) {
@@ -660,10 +657,8 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
         s->fdsp = c->fdsp;
 
         s->swr =swr_alloc();
-        if (!s->swr) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!s->swr)
+            return AVERROR(ENOMEM);
 
         layout = (s->output_channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
         av_opt_set_int(s->swr, "in_sample_fmt",      avctx->sample_fmt,  0);
@@ -675,31 +670,24 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
 
         ret = ff_silk_init(avctx, &s->silk, s->output_channels);
         if (ret < 0)
-            goto fail;
+            return ret;
 
         ret = ff_celt_init(avctx, &s->celt, s->output_channels, c->apply_phase_inv);
         if (ret < 0)
-            goto fail;
+            return ret;
 
         s->celt_delay = av_audio_fifo_alloc(avctx->sample_fmt,
                                             s->output_channels, 1024);
-        if (!s->celt_delay) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!s->celt_delay)
+            return AVERROR(ENOMEM);
 
         s->sync_buffer = av_audio_fifo_alloc(avctx->sample_fmt,
                                              s->output_channels, 32);
-        if (!s->sync_buffer) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!s->sync_buffer)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
-fail:
-    opus_decode_close(avctx);
-    return ret;
 }
 
 #define OFFSET(x) offsetof(OpusContext, x)
@@ -728,4 +716,5 @@ AVCodec ff_opus_decoder = {
     .decode          = opus_decode_packet,
     .flush           = opus_decode_flush,
     .capabilities    = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
 };
