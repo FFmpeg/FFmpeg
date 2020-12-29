@@ -35,7 +35,7 @@
 #include "h261.h"
 #include "internal.h"
 
-#define H261_MBA_VLC_BITS 9
+#define H261_MBA_VLC_BITS 8
 #define H261_MTYPE_VLC_BITS 6
 #define H261_MV_VLC_BITS 7
 #define H261_CBP_VLC_BITS 9
@@ -52,7 +52,7 @@ static av_cold void h261_decode_init_static(void)
 {
     INIT_VLC_STATIC(&h261_mba_vlc, H261_MBA_VLC_BITS, 35,
                     ff_h261_mba_bits, 1, 1,
-                    ff_h261_mba_code, 1, 1, 662);
+                    ff_h261_mba_code, 1, 1, 540);
     INIT_VLC_STATIC(&h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
                     ff_h261_mtype_bits, 1, 1,
                     ff_h261_mtype_code, 1, 1, 80);
