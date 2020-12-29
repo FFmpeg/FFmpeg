@@ -96,10 +96,6 @@ enum dv_pack_type {
  */
 #define DV_MAX_BPM 8
 
-#define TEX_VLC_BITS 10
-
-extern RL_VLC_ELEM ff_dv_rl_vlc[1664];
-
 int ff_dv_init_dynamic_tables(DVVideoContext *s, const AVDVProfile *d);
 
 int ff_dvvideo_init(AVCodecContext *avctx);
