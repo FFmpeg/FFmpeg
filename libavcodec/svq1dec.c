@@ -43,6 +43,7 @@
 #include "mathops.h"
 #include "svq1.h"
 
+#define SVQ1_BLOCK_TYPE_VLC_BITS 3
 static VLC svq1_block_type;
 static VLC svq1_motion_component;
 static VLC svq1_intra_multistage[6];
@@ -456,7 +457,8 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
     int result = 0;
 
     /* get block type */
-    block_type = get_vlc2(bitbuf, svq1_block_type.table, 2, 2);
+    block_type = get_vlc2(bitbuf, svq1_block_type.table,
+                          SVQ1_BLOCK_TYPE_VLC_BITS, 1);
 
     /* reset motion vectors */
     if (block_type == SVQ1_BLOCK_SKIP || block_type == SVQ1_BLOCK_INTRA) {
@@ -765,9 +767,9 @@ err:
 
 static av_cold void svq1_static_init(void)
 {
-    INIT_VLC_STATIC(&svq1_block_type, 2, 4,
+    INIT_VLC_STATIC(&svq1_block_type, SVQ1_BLOCK_TYPE_VLC_BITS, 4,
                     &ff_svq1_block_type_vlc[0][1], 2, 1,
-                    &ff_svq1_block_type_vlc[0][0], 2, 1, 6);
+                    &ff_svq1_block_type_vlc[0][0], 2, 1, 8);
 
     INIT_VLC_STATIC(&svq1_motion_component, 7, 33,
                     &ff_mvtab[0][1], 2, 1,
