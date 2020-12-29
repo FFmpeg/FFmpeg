@@ -40,6 +40,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "dv.h"
@@ -142,12 +143,6 @@ static void dv_init_static(void)
     uint8_t    new_dv_vlc_run[NB_DV_VLC * 2];
     int16_t  new_dv_vlc_level[NB_DV_VLC * 2];
     int i, j;
-    static int done = 0;
-
-    if (done)
-        return;
-
-    done = 1;
 
     /* it's faster to include sign bit in a generic VLC parsing scheme */
     for (i = 0, j = 0; i < NB_DV_VLC; i++, j++) {
@@ -240,6 +235,7 @@ static void dv_init_weight_tables(DVVideoContext *ctx, const AVDVProfile *d)
 
 static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     DVVideoContext *s = avctx->priv_data;
     int i;
 
@@ -259,7 +255,7 @@ static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
     s->idct_put[0] = s->idsp.idct_put;
     s->idct_put[1] = ff_simple_idct248_put;
 
-    dv_init_static();
+    ff_thread_once(&init_static_once, dv_init_static);
 
     return ff_dvvideo_init(avctx);
 }
@@ -695,4 +691,5 @@ const AVCodec ff_dvvideo_decoder = {
     .decode         = dvvideo_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
     .max_lowres     = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
