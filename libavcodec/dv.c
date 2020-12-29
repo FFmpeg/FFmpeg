@@ -202,7 +202,8 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
     int i, j;
 
     if (!done) {
-        VLC dv_vlc;
+        VLC_TYPE vlc_buf[FF_ARRAY_ELEMS(ff_dv_rl_vlc)][2] = { 0 };
+        VLC dv_vlc = { .table = vlc_buf, .table_allocated = FF_ARRAY_ELEMS(vlc_buf) };
         uint16_t  new_dv_vlc_bits[NB_DV_VLC * 2];
         uint8_t    new_dv_vlc_len[NB_DV_VLC * 2];
         uint8_t    new_dv_vlc_run[NB_DV_VLC * 2];
@@ -232,7 +233,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
         /* NOTE: as a trick, we use the fact the no codes are unused
          * to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, j, new_dv_vlc_len,
-                 1, 1, new_dv_vlc_bits, 2, 2, 0);
+                 1, 1, new_dv_vlc_bits, 2, 2, INIT_VLC_USE_NEW_STATIC);
         av_assert1(dv_vlc.table_size == 1664);
 
         for (i = 0; i < dv_vlc.table_size; i++) {
@@ -251,7 +252,6 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
             ff_dv_rl_vlc[i].level = level;
             ff_dv_rl_vlc[i].run   = run;
         }
-        ff_free_vlc(&dv_vlc);
     }
 
     s->avctx = avctx;
