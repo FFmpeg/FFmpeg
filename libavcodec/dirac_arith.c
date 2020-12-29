@@ -28,7 +28,7 @@
 #include "dirac_arith.h"
 
 
-const uint16_t ff_dirac_prob[256] = {
+static const uint16_t dirac_prob[256] = {
     0,    2,    5,    8,    11,   15,   20,   24,
     29,   35,   41,   47,   53,   60,   67,   74,
     82,   89,   97,   106,  114,  123,  132,  141,
@@ -88,8 +88,8 @@ av_cold void ff_dirac_init_arith_tables(void)
     int i;
 
     for (i = 0; i < 256; i++) {
-        ff_dirac_prob_branchless[i][0] =  ff_dirac_prob[255-i];
-        ff_dirac_prob_branchless[i][1] = -ff_dirac_prob[i];
+        ff_dirac_prob_branchless[i][0] =  dirac_prob[255-i];
+        ff_dirac_prob_branchless[i][1] = -dirac_prob[i];
     }
 }
 
