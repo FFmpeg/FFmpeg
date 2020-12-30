@@ -208,7 +208,10 @@ static void infer_completion_callback(void *args)
 
     if (task->async) {
         request->task = NULL;
-        ff_safe_queue_push_back(task->ov_model->request_queue, request);
+        if (ff_safe_queue_push_back(task->ov_model->request_queue, request) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to push back request_queue.\n");
+            return;
+        }
     }
 
     task->done = 1;
@@ -436,7 +439,10 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
         item->infer_request = request;
         item->callback.completeCallBackFunc = infer_completion_callback;
         item->callback.args = item;
-        ff_safe_queue_push_back(ov_model->request_queue, item);
+        if (ff_safe_queue_push_back(ov_model->request_queue, item) < 0) {
+            av_freep(&item);
+            goto err;
+        }
     }
 
     ov_model->task_queue = ff_queue_create();
@@ -527,7 +533,11 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
     task->output_name = output_names[0];
     task->out_frame = out_frame;
     task->ov_model = ov_model;
-    ff_queue_push_back(ov_model->task_queue, task);
+    if (ff_queue_push_back(ov_model->task_queue, task) < 0) {
+        av_freep(&task);
+        av_log(ctx, AV_LOG_ERROR, "unable to push back task_queue.\n");
+        return DNN_ERROR;
+    }
 
     request = ff_safe_queue_pop_front(ov_model->request_queue);
     if (!request) {

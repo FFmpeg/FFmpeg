@@ -56,8 +56,10 @@ FFSafeQueue *ff_safe_queue_create(void)
         return NULL;
 
     sq->q = ff_queue_create();
-    if (!sq->q)
+    if (!sq->q) {
+        av_freep(&sq);
         return NULL;
+    }
 
     ff_mutex_init(&sq->mutex, NULL);
     dnn_cond_init(&sq->cond, NULL);
@@ -80,20 +82,24 @@ size_t ff_safe_queue_size(FFSafeQueue *sq)
     return sq ? ff_queue_size(sq->q) : 0;
 }
 
-void ff_safe_queue_push_front(FFSafeQueue *sq, void *v)
+int ff_safe_queue_push_front(FFSafeQueue *sq, void *v)
 {
+    int ret;
     ff_mutex_lock(&sq->mutex);
-    ff_queue_push_front(sq->q, v);
+    ret = ff_queue_push_front(sq->q, v);
     dnn_cond_signal(&sq->cond);
     ff_mutex_unlock(&sq->mutex);
+    return ret;
 }
 
-void ff_safe_queue_push_back(FFSafeQueue *sq, void *v)
+int ff_safe_queue_push_back(FFSafeQueue *sq, void *v)
 {
+    int ret;
     ff_mutex_lock(&sq->mutex);
-    ff_queue_push_back(sq->q, v);
+    ret = ff_queue_push_back(sq->q, v);
     dnn_cond_signal(&sq->cond);
     ff_mutex_unlock(&sq->mutex);
+    return ret;
 }
 
 void *ff_safe_queue_pop_front(FFSafeQueue *sq)
