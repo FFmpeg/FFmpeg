@@ -33,6 +33,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "dv.h"
@@ -68,8 +69,6 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
         return ret;
     }
 
-    dv_vlc_map_tableinit();
-
     memset(&fdsp,0, sizeof(fdsp));
     memset(&mecc,0, sizeof(mecc));
     memset(&pdsp,0, sizeof(pdsp));
@@ -83,6 +82,13 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 
     s->fdct[0]    = fdsp.fdct;
     s->fdct[1]    = fdsp.fdct248;
+
+#if !CONFIG_HARDCODED_TABLES
+    {
+        static AVOnce init_static_once = AV_ONCE_INIT;
+        ff_thread_once(&init_static_once, dv_vlc_map_tableinit);
+    }
+#endif
 
     return ff_dvvideo_init(avctx);
 }
@@ -1212,4 +1218,5 @@ const AVCodec ff_dvvideo_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
     .priv_class     = &dvvideo_encode_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
