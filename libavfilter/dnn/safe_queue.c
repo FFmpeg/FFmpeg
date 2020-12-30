@@ -25,10 +25,28 @@
 #include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 
+#if HAVE_PTHREAD_CANCEL
+#define DNNCond pthread_cond_t
+#define dnn_cond_init pthread_cond_init
+#define dnn_cond_destroy pthread_cond_destroy
+#define dnn_cond_signal pthread_cond_signal
+#define dnn_cond_wait pthread_cond_wait
+#else
+#define DNNCond char
+static inline int dnn_cond_init(DNNCond *cond, const void *attr) { return 0; }
+static inline int dnn_cond_destroy(DNNCond *cond) { return 0; }
+static inline int dnn_cond_signal(DNNCond *cond) { return 0; }
+static inline int dnn_cond_wait(DNNCond *cond, AVMutex *mutex)
+{
+    av_assert0(!"should not reach here");
+    return 0;
+}
+#endif
+
 struct FFSafeQueue {
     FFQueue *q;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
+    AVMutex mutex;
+    DNNCond cond;
 };
 
 FFSafeQueue *ff_safe_queue_create(void)
@@ -41,8 +59,8 @@ FFSafeQueue *ff_safe_queue_create(void)
     if (!sq->q)
         return NULL;
 
-    pthread_mutex_init(&sq->mutex, NULL);
-    pthread_cond_init(&sq->cond, NULL);
+    ff_mutex_init(&sq->mutex, NULL);
+    dnn_cond_init(&sq->cond, NULL);
     return sq;
 }
 
@@ -52,8 +70,8 @@ void ff_safe_queue_destroy(FFSafeQueue *sq)
         return;
 
     ff_queue_destroy(sq->q);
-    pthread_mutex_destroy(&sq->mutex);
-    pthread_cond_destroy(&sq->cond);
+    ff_mutex_destroy(&sq->mutex);
+    dnn_cond_destroy(&sq->cond);
     av_freep(&sq);
 }
 
@@ -64,29 +82,29 @@ size_t ff_safe_queue_size(FFSafeQueue *sq)
 
 void ff_safe_queue_push_front(FFSafeQueue *sq, void *v)
 {
-    pthread_mutex_lock(&sq->mutex);
+    ff_mutex_lock(&sq->mutex);
     ff_queue_push_front(sq->q, v);
-    pthread_cond_signal(&sq->cond);
-    pthread_mutex_unlock(&sq->mutex);
+    dnn_cond_signal(&sq->cond);
+    ff_mutex_unlock(&sq->mutex);
 }
 
 void ff_safe_queue_push_back(FFSafeQueue *sq, void *v)
 {
-    pthread_mutex_lock(&sq->mutex);
+    ff_mutex_lock(&sq->mutex);
     ff_queue_push_back(sq->q, v);
-    pthread_cond_signal(&sq->cond);
-    pthread_mutex_unlock(&sq->mutex);
+    dnn_cond_signal(&sq->cond);
+    ff_mutex_unlock(&sq->mutex);
 }
 
 void *ff_safe_queue_pop_front(FFSafeQueue *sq)
 {
     void *value;
-    pthread_mutex_lock(&sq->mutex);
+    ff_mutex_lock(&sq->mutex);
     while (ff_queue_size(sq->q) == 0) {
-        pthread_cond_wait(&sq->cond, &sq->mutex);
+        dnn_cond_wait(&sq->cond, &sq->mutex);
     }
     value = ff_queue_pop_front(sq->q);
-    pthread_cond_signal(&sq->cond);
-    pthread_mutex_unlock(&sq->mutex);
+    dnn_cond_signal(&sq->cond);
+    ff_mutex_unlock(&sq->mutex);
     return value;
 }

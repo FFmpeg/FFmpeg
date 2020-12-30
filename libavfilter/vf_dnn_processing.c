@@ -110,6 +110,13 @@ static av_cold int init(AVFilterContext *context)
         av_log(ctx, AV_LOG_WARNING, "this backend does not support async execution, roll back to sync.\n");
     }
 
+#if !HAVE_PTHREAD_CANCEL
+    if (ctx->async) {
+        ctx->async = 0;
+        av_log(ctx, AV_LOG_WARNING, "pthread is not supported, roll back to sync.\n");
+    }
+#endif
+
     return 0;
 }
 
