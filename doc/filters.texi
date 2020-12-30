@@ -20922,6 +20922,9 @@ Only deinterlace frames marked as interlaced.
 Default value is @samp{all}.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+
 @section waveform
 Video waveform monitor.
 
