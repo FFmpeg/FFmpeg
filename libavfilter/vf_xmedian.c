@@ -244,14 +244,20 @@ static int process_frame(FFFrameSync *fs)
             return ret;
     }
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (ctx->is_disabled) {
+        out = av_frame_clone(in[0]);
+    } else {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    }
     if (!out)
         return AVERROR(ENOMEM);
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
-    td.in = in;
-    td.out = out;
-    ctx->internal->execute(ctx, s->median_frames, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+    if (!ctx->is_disabled) {
+        td.in = in;
+        td.out = out;
+        ctx->internal->execute(ctx, s->median_frames, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+    }
 
     return ff_filter_frame(outlink, out);
 }
@@ -395,7 +401,8 @@ AVFilter ff_vf_xmedian = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,
 };
 
