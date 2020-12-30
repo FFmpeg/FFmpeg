@@ -25,19 +25,19 @@
 #include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 
-typedef struct _safe_queue {
-    queue *q;
+struct FFSafeQueue {
+    FFQueue *q;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-}safe_queue;
+};
 
-safe_queue *safe_queue_create(void)
+FFSafeQueue *ff_safe_queue_create(void)
 {
-    safe_queue *sq = av_malloc(sizeof(*sq));
+    FFSafeQueue *sq = av_malloc(sizeof(*sq));
     if (!sq)
         return NULL;
 
-    sq->q = queue_create();
+    sq->q = ff_queue_create();
     if (!sq->q)
         return NULL;
 
@@ -46,46 +46,46 @@ safe_queue *safe_queue_create(void)
     return sq;
 }
 
-void safe_queue_destroy(safe_queue *sq)
+void ff_safe_queue_destroy(FFSafeQueue *sq)
 {
     if (!sq)
         return;
 
-    queue_destroy(sq->q);
+    ff_queue_destroy(sq->q);
     pthread_mutex_destroy(&sq->mutex);
     pthread_cond_destroy(&sq->cond);
     av_freep(&sq);
 }
 
-size_t safe_queue_size(safe_queue *sq)
+size_t ff_safe_queue_size(FFSafeQueue *sq)
 {
-    return sq ? queue_size(sq->q) : 0;
+    return sq ? ff_queue_size(sq->q) : 0;
 }
 
-void safe_queue_push_front(safe_queue *sq, void *v)
+void ff_safe_queue_push_front(FFSafeQueue *sq, void *v)
 {
     pthread_mutex_lock(&sq->mutex);
-    queue_push_front(sq->q, v);
+    ff_queue_push_front(sq->q, v);
     pthread_cond_signal(&sq->cond);
     pthread_mutex_unlock(&sq->mutex);
 }
 
-void safe_queue_push_back(safe_queue *sq, void *v)
+void ff_safe_queue_push_back(FFSafeQueue *sq, void *v)
 {
     pthread_mutex_lock(&sq->mutex);
-    queue_push_back(sq->q, v);
+    ff_queue_push_back(sq->q, v);
     pthread_cond_signal(&sq->cond);
     pthread_mutex_unlock(&sq->mutex);
 }
 
-void *safe_queue_pop_front(safe_queue *sq)
+void *ff_safe_queue_pop_front(FFSafeQueue *sq)
 {
     void *value;
     pthread_mutex_lock(&sq->mutex);
-    while (queue_size(sq->q) == 0) {
+    while (ff_queue_size(sq->q) == 0) {
         pthread_cond_wait(&sq->cond, &sq->mutex);
     }
-    value = queue_pop_front(sq->q);
+    value = ff_queue_pop_front(sq->q);
     pthread_cond_signal(&sq->cond);
     pthread_mutex_unlock(&sq->mutex);
     return value;

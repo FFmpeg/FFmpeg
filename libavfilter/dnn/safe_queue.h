@@ -21,16 +21,16 @@
 #ifndef AVFILTER_DNN_SAFE_QUEUE_H
 #define AVFILTER_DNN_SAFE_QUEUE_H
 
-typedef struct _safe_queue safe_queue;
+typedef struct FFSafeQueue FFSafeQueue;
 
-safe_queue *safe_queue_create(void);
-void safe_queue_destroy(safe_queue *sq);
+FFSafeQueue *ff_safe_queue_create(void);
+void ff_safe_queue_destroy(FFSafeQueue *sq);
 
-size_t safe_queue_size(safe_queue *sq);
+size_t ff_safe_queue_size(FFSafeQueue *sq);
 
-void safe_queue_push_front(safe_queue *sq, void *v);
-void safe_queue_push_back(safe_queue *sq, void *v);
+void ff_safe_queue_push_front(FFSafeQueue *sq, void *v);
+void ff_safe_queue_push_back(FFSafeQueue *sq, void *v);
 
-void *safe_queue_pop_front(safe_queue *sq);
+void *ff_safe_queue_pop_front(FFSafeQueue *sq);
 
 #endif
