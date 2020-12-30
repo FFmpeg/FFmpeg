@@ -16,11 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
+/* This was introduced in version 4.6. And may not exist all without an
+ * optional package. So to prevent a hard dependency on needing the Linux
+ * kernel headers to compile, make this optional. */
+#if HAVE_LINUX_DMA_BUF_H
 #include <linux/dma-buf.h>
 #include <sys/ioctl.h>
+#endif
 
 #include <drm.h>
 #include <xf86drm.h>
@@ -97,14 +105,12 @@ static void drm_unmap_frame(AVHWFramesContext *hwfc,
                             HWMapDescriptor *hwmap)
 {
     DRMMapping *map = hwmap->priv;
-    struct dma_buf_sync sync = { .flags = DMA_BUF_SYNC_END | map->sync_flags };
-    int i, ret;
 
-    for (i = 0; i < map->nb_regions; i++) {
-        ret = ioctl(map->object[i], DMA_BUF_IOCTL_SYNC, &sync);
-        if (ret)
-            av_log(hwfc, AV_LOG_ERROR, "Failed to issue ioctl sync to DRM object "
-                   "%d: %d.\n", map->object[i], errno);
+    for (int i = 0; i < map->nb_regions; i++) {
+#if HAVE_LINUX_DMA_BUF_H
+        struct dma_buf_sync sync = { .flags = DMA_BUF_SYNC_END | map->sync_flags };
+        ioctl(map->object[i], DMA_BUF_IOCTL_SYNC, &sync);
+#endif
         munmap(map->address[i], map->length[i]);
     }
 
@@ -115,7 +121,9 @@ static int drm_map_frame(AVHWFramesContext *hwfc,
                          AVFrame *dst, const AVFrame *src, int flags)
 {
     const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor*)src->data[0];
+#if HAVE_LINUX_DMA_BUF_H
     struct dma_buf_sync sync_start = { 0 };
+#endif
     DRMMapping *map;
     int err, i, p, plane;
     int mmap_prot;
@@ -126,16 +134,18 @@ static int drm_map_frame(AVHWFramesContext *hwfc,
         return AVERROR(ENOMEM);
 
     mmap_prot = 0;
-    if (flags & AV_HWFRAME_MAP_READ) {
+    if (flags & AV_HWFRAME_MAP_READ)
         mmap_prot |= PROT_READ;
-        map->sync_flags |= DMA_BUF_SYNC_READ;
-    }
-    if (flags & AV_HWFRAME_MAP_WRITE) {
+    if (flags & AV_HWFRAME_MAP_WRITE)
         mmap_prot |= PROT_WRITE;
-        map->sync_flags |= DMA_BUF_SYNC_WRITE;
-    }
 
+#if HAVE_LINUX_DMA_BUF_H
+    if (flags & AV_HWFRAME_MAP_READ)
+        map->sync_flags |= DMA_BUF_SYNC_READ;
+    if (flags & AV_HWFRAME_MAP_WRITE)
+        map->sync_flags |= DMA_BUF_SYNC_WRITE;
     sync_start.flags = DMA_BUF_SYNC_START | map->sync_flags;
+#endif
 
     av_assert0(desc->nb_objects <= AV_DRM_MAX_PLANES);
     for (i = 0; i < desc->nb_objects; i++) {
@@ -152,13 +162,11 @@ static int drm_map_frame(AVHWFramesContext *hwfc,
         map->length[i]  = desc->objects[i].size;
         map->object[i] = desc->objects[i].fd;
 
-        err = ioctl(desc->objects[i].fd, DMA_BUF_IOCTL_SYNC, &sync_start);
-        if (err) {
-            err = AVERROR(errno);
-            av_log(hwfc, AV_LOG_ERROR, "Failed to issue ioctl sync to DRM object "
-                   "%d: %d.\n", desc->objects[i].fd, errno);
-            goto fail;
-        }
+#if HAVE_LINUX_DMA_BUF_H
+        /* We're not checking for errors here because the kernel may not
+         * support the ioctl, in which case its okay to carry on */
+        ioctl(desc->objects[i].fd, DMA_BUF_IOCTL_SYNC, &sync_start);
+#endif
     }
     map->nb_regions = i;
 

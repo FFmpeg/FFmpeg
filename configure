@@ -2125,6 +2125,7 @@ HEADERS_LIST="
     ES2_gl_h
     gsm_h
     io_h
+    linux_dma_buf_h
     linux_perf_event_h
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
@@ -6151,6 +6152,9 @@ check_headers dxgidebug.h
 check_headers dxva.h
 check_headers dxva2api.h -D_WIN32_WINNT=0x0600
 check_headers io.h
+enabled libdrm &&
+    check_headers linux/dma-buf.h
+
 check_headers linux/perf_event.h
 check_headers libcrystalhd/libcrystalhd_if.h
 check_headers malloc.h
