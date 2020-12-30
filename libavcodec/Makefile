@@ -141,7 +141,7 @@ OBJS-$(CONFIG_RANGECODER)              += rangecoder.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o
 OBJS-$(CONFIG_RV34DSP)                 += rv34dsp.o
 OBJS-$(CONFIG_SHARED)                  += log2_tab.o reverse.o
-OBJS-$(CONFIG_SINEWIN)                 += sinewin.o sinewin_fixed.o
+OBJS-$(CONFIG_SINEWIN)                 += sinewin.o
 OBJS-$(CONFIG_SNAPPY)                  += snappy.o
 OBJS-$(CONFIG_STARTCODE)               += startcode.o
 OBJS-$(CONFIG_TEXTUREDSP)              += texturedsp.o
@@ -1281,6 +1281,7 @@ $(GEN_HEADERS): $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)cbrt_data.o: $(SUBDIR)cbrt_tables.h
 $(SUBDIR)cbrt_data_fixed.o: $(SUBDIR)cbrt_fixed_tables.h
+$(SUBDIR)aacdec_fixed.o: $(SUBDIR)sinewin_fixed_tables.h
 $(SUBDIR)aacps_float.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aacps_fixed.o: $(SUBDIR)aacps_fixed_tables.h
 $(SUBDIR)aactab_fixed.o: $(SUBDIR)aac_fixed_tables.h
@@ -1292,5 +1293,4 @@ $(SUBDIR)mpegaudiodec_float.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h
 $(SUBDIR)qdm2.o: $(SUBDIR)qdm2_tables.h
 $(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
-$(SUBDIR)sinewin_fixed.o: $(SUBDIR)sinewin_fixed_tables.h
 endif

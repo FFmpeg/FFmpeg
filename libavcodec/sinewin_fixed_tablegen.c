@@ -20,5 +20,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define USE_FIXED 1
-#include "sinewin_tablegen_template.c"
+#include "tableprint.h"
+
+#define BUILD_TABLES
+#define CONFIG_HARDCODED_TABLES 0
+#include "sinewin_fixed_tablegen.h"
+
+int main(void)
+{
+    write_fileheader();
+
+    init_sine_windows_fixed();
+#define PRINT_TABLE(size)                               \
+    printf("SINETABLE("#size") = {\n");                 \
+    write_int32_t_array(sine_ ## size ## _fixed, size); \
+    printf("};\n")
+    PRINT_TABLE(128);
+    PRINT_TABLE(512);
+    PRINT_TABLE(1024);
+    return 0;
+}
