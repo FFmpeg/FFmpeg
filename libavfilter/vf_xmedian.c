@@ -322,7 +322,7 @@ static int config_output(AVFilterLink *outlink)
         in[i].time_base = inlink->time_base;
         in[i].sync   = 1;
         in[i].before = EXT_STOP;
-        in[i].after  = EXT_STOP;
+        in[i].after  = EXT_INFINITY;
     }
 
     ret = ff_framesync_configure(&s->fs);
@@ -389,7 +389,7 @@ static const AVFilterPad outputs[] = {
 };
 
 #if CONFIG_XMEDIAN_FILTER
-AVFILTER_DEFINE_CLASS(xmedian);
+FRAMESYNC_DEFINE_CLASS(xmedian, XMedianContext, fs);
 
 AVFilter ff_vf_xmedian = {
     .name          = "xmedian",
@@ -398,6 +398,7 @@ AVFilter ff_vf_xmedian = {
     .priv_class    = &xmedian_class,
     .query_formats = query_formats,
     .outputs       = outputs,
+    .preinit       = xmedian_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
