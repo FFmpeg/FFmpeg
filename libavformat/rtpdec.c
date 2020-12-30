@@ -36,48 +36,48 @@
 
 #define MIN_FEEDBACK_INTERVAL 200000 /* 200 ms in us */
 
-static RTPDynamicProtocolHandler l24_dynamic_handler = {
+static const RTPDynamicProtocolHandler l24_dynamic_handler = {
     .enc_name   = "L24",
     .codec_type = AVMEDIA_TYPE_AUDIO,
     .codec_id   = AV_CODEC_ID_PCM_S24BE,
 };
 
-static RTPDynamicProtocolHandler gsm_dynamic_handler = {
+static const RTPDynamicProtocolHandler gsm_dynamic_handler = {
     .enc_name   = "GSM",
     .codec_type = AVMEDIA_TYPE_AUDIO,
     .codec_id   = AV_CODEC_ID_GSM,
 };
 
-static RTPDynamicProtocolHandler realmedia_mp3_dynamic_handler = {
+static const RTPDynamicProtocolHandler realmedia_mp3_dynamic_handler = {
     .enc_name   = "X-MP3-draft-00",
     .codec_type = AVMEDIA_TYPE_AUDIO,
     .codec_id   = AV_CODEC_ID_MP3ADU,
 };
 
-static RTPDynamicProtocolHandler speex_dynamic_handler = {
+static const RTPDynamicProtocolHandler speex_dynamic_handler = {
     .enc_name   = "speex",
     .codec_type = AVMEDIA_TYPE_AUDIO,
     .codec_id   = AV_CODEC_ID_SPEEX,
 };
 
-static RTPDynamicProtocolHandler opus_dynamic_handler = {
+static const RTPDynamicProtocolHandler opus_dynamic_handler = {
     .enc_name   = "opus",
     .codec_type = AVMEDIA_TYPE_AUDIO,
     .codec_id   = AV_CODEC_ID_OPUS,
 };
 
-static RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
+static const RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
     .enc_name   = "t140",
     .codec_type = AVMEDIA_TYPE_SUBTITLE,
     .codec_id   = AV_CODEC_ID_TEXT,
 };
 
-extern RTPDynamicProtocolHandler ff_rdt_video_handler;
-extern RTPDynamicProtocolHandler ff_rdt_audio_handler;
-extern RTPDynamicProtocolHandler ff_rdt_live_video_handler;
-extern RTPDynamicProtocolHandler ff_rdt_live_audio_handler;
+extern const RTPDynamicProtocolHandler ff_rdt_video_handler;
+extern const RTPDynamicProtocolHandler ff_rdt_audio_handler;
+extern const RTPDynamicProtocolHandler ff_rdt_live_video_handler;
+extern const RTPDynamicProtocolHandler ff_rdt_live_audio_handler;
 
-static const RTPDynamicProtocolHandler *rtp_dynamic_protocol_handler_list[] = {
+static const RTPDynamicProtocolHandler *const rtp_dynamic_protocol_handler_list[] = {
     /* rtp */
     &ff_ac3_dynamic_handler,
     &ff_amr_nb_dynamic_handler,

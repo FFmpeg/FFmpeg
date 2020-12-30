@@ -241,7 +241,7 @@ static void qt_rtp_close(PayloadContext *qt)
 }
 
 #define RTP_QT_HANDLER(m, n, s, t) \
-RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
+const RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \
