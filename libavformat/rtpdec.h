@@ -134,8 +134,6 @@ struct RTPDynamicProtocolHandler {
     /** Parse handler for this dynamic packet */
     DynamicPayloadPacketHandlerProc parse_packet;
     int (*need_keyframe)(PayloadContext *context);
-
-    struct RTPDynamicProtocolHandler *next;
 };
 
 typedef struct RTPPacket {
