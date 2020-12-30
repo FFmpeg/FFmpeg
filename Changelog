@@ -55,6 +55,7 @@ version <next>:
 - asuperpass and asuperstop filter
 - shufflepixels filter
 - tmidequalizer filter
+- estdif filter
 
 
 version 4.3:

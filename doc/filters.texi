@@ -11065,6 +11065,70 @@ Flags to local 3x3 coordinates maps like this:
 
 This filter supports the all above options as @ref{commands}.
 
+@section estdif
+
+Deinterlace the input video ("estdif" stands for "Edge Slope
+Tracing Deinterlacing Filter").
+
+Spatial only filter that uses edge slope tracing algorithm
+to interpolate missing lines.
+It accepts the following parameters:
+
+@table @option
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item frame
+Output one frame for each frame.
+@item field
+Output one frame for each field.
+@end table
+
+The default value is @code{field}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item tff
+Assume the top field is first.
+@item bff
+Assume the bottom field is first.
+@item auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
+@item deint
+Specify which frames to deinterlace. Accepts one of the following
+values:
+
+@table @option
+@item all
+Deinterlace all frames.
+@item interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+The default value is @code{all}.
+
+@item rslope
+Specify the search radius for edge slope tracing. Default value is 1.
+Allowed range is from 1 to 15.
+
+@item redge
+Specify the search radius for best edge matching. Default value is 2.
+Allowed range is from 0 to 15.
+@end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+
 @section extractplanes
 
 Extract color channel components from input video stream into
