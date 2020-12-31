@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 #include "libavutil/frame.h"
-typedef struct AVFilterContext AVFilterContext;
+#include "avfilter.h"
 
 typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
