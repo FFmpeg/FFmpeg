@@ -431,23 +431,39 @@ static int h264_metadata_handle_display_orientation(AVBSFContext *bsf,
         data = av_packet_get_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX, &size);
         if (data && size >= 9 * sizeof(int32_t)) {
             int32_t matrix[9];
-            int hflip, vflip;
-            double angle;
+            double dmatrix[9];
+            int hflip, vflip, i;
+            double scale_x, scale_y, angle;
 
             memcpy(matrix, data, sizeof(matrix));
 
-            hflip = vflip = 0;
-            if (matrix[0] < 0 && matrix[4] > 0)
-                hflip = 1;
-            else if (matrix[0] > 0 && matrix[4] < 0)
-                vflip = 1;
-            av_display_matrix_flip(matrix, hflip, vflip);
+            for (i = 0; i < 9; i++)
+                dmatrix[i] = matrix[i] / 65536.0;
 
-            angle = av_display_rotation_get(matrix);
+            // Extract scale factors.
+            scale_x = hypot(dmatrix[0], dmatrix[3]);
+            scale_y = hypot(dmatrix[1], dmatrix[4]);
 
-            if (!(angle >= -180.0 && angle <= 180.0 /* also excludes NaN */) ||
-                matrix[2] != 0 || matrix[5] != 0 ||
-                matrix[6] != 0 || matrix[7] != 0) {
+            // Select flips to make the main diagonal positive.
+            hflip = dmatrix[0] < 0.0;
+            vflip = dmatrix[4] < 0.0;
+            if (hflip)
+                scale_x = -scale_x;
+            if (vflip)
+                scale_y = -scale_y;
+
+            // Rescale.
+            for (i = 0; i < 9; i += 3) {
+                dmatrix[i]     /= scale_x;
+                dmatrix[i + 1] /= scale_y;
+            }
+
+            // Extract rotation.
+            angle = atan2(dmatrix[3], dmatrix[0]);
+
+            if (!(angle >= -M_PI && angle <= M_PI) ||
+                matrix[2] != 0.0 || matrix[5] != 0.0 ||
+                matrix[6] != 0.0 || matrix[7] != 0.0) {
                 av_log(bsf, AV_LOG_WARNING, "Input display matrix is not "
                        "representable in H.264 parameters.\n");
             } else {
@@ -455,8 +471,8 @@ static int h264_metadata_handle_display_orientation(AVBSFContext *bsf,
                 disp->ver_flip = vflip;
                 disp->anticlockwise_rotation =
                     (uint16_t)rint((angle >= 0.0 ? angle
-                                                 : angle + 360.0) *
-                                   65536.0 / 360.0);
+                                                 : angle + 2 * M_PI) *
+                                   32768.0 / M_PI);
                 write = 1;
             }
         }
