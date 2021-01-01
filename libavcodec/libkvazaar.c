@@ -95,6 +95,9 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg->target_bitrate = avctx->bit_rate;
     cfg->vui.sar_width  = avctx->sample_aspect_ratio.num;
     cfg->vui.sar_height = avctx->sample_aspect_ratio.den;
+    if (avctx->bit_rate) {
+        cfg->rc_algorithm = KVZ_LAMBDA;
+    }
 
     if (ctx->kvz_params) {
         AVDictionary *dict = NULL;
