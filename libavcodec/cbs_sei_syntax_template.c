@@ -103,17 +103,15 @@ static int FUNC(mastering_display_colour_volume)
     HEADER("Mastering Display Colour Volume");
 
     for (c = 0; c < 3; c++) {
-        us(16, display_primaries_x[c], 0, 50000, 1, c);
-        us(16, display_primaries_y[c], 0, 50000, 1, c);
+        ubs(16, display_primaries_x[c], 1, c);
+        ubs(16, display_primaries_y[c], 1, c);
     }
 
-    u(16, white_point_x, 0, 50000);
-    u(16, white_point_y, 0, 50000);
+    ub(16, white_point_x);
+    ub(16, white_point_y);
 
-    u(32, max_display_mastering_luminance,
-      1, MAX_UINT_BITS(32));
-    u(32, min_display_mastering_luminance,
-      0, current->max_display_mastering_luminance - 1);
+    ub(32, max_display_mastering_luminance);
+    ub(32, min_display_mastering_luminance);
 
     return 0;
 }
