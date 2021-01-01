@@ -24,6 +24,7 @@
 
 #include "cbs.h"
 #include "cbs_h2645.h"
+#include "cbs_sei.h"
 #include "h264.h"
 
 
@@ -274,21 +275,6 @@ typedef struct H264RawSEIPanScanRect {
     uint16_t pan_scan_rect_repetition_period;
 } H264RawSEIPanScanRect;
 
-typedef struct H264RawSEIUserDataRegistered {
-    uint8_t itu_t_t35_country_code;
-    uint8_t itu_t_t35_country_code_extension_byte;
-    uint8_t     *data;
-    AVBufferRef *data_ref;
-    size_t       data_length;
-} H264RawSEIUserDataRegistered;
-
-typedef struct H264RawSEIUserDataUnregistered {
-    uint8_t uuid_iso_iec_11578[16];
-    uint8_t     *data;
-    AVBufferRef *data_ref;
-    size_t       data_length;
-} H264RawSEIUserDataUnregistered;
-
 typedef struct H264RawSEIRecoveryPoint {
     uint16_t recovery_frame_cnt;
     uint8_t exact_match_flag;
@@ -305,19 +291,6 @@ typedef struct H264RawSEIDisplayOrientation {
     uint8_t display_orientation_extension_flag;
 } H264RawSEIDisplayOrientation;
 
-typedef struct H264RawSEIMasteringDisplayColourVolume {
-    uint16_t display_primaries_x[3];
-    uint16_t display_primaries_y[3];
-    uint16_t white_point_x;
-    uint16_t white_point_y;
-    uint32_t max_display_mastering_luminance;
-    uint32_t min_display_mastering_luminance;
-} H264RawSEIMasteringDisplayColourVolume;
-
-typedef struct H264RawSEIAlternativeTransferCharacteristics {
-    uint8_t preferred_transfer_characteristics;
-} H264RawSEIAlternativeTransferCharacteristics;
-
 typedef struct H264RawSEIPayload {
     uint32_t payload_type;
     uint32_t payload_size;
@@ -326,12 +299,12 @@ typedef struct H264RawSEIPayload {
         H264RawSEIPicTiming pic_timing;
         H264RawSEIPanScanRect pan_scan_rect;
         // H264RawSEIFiller filler -> no fields.
-        H264RawSEIUserDataRegistered user_data_registered;
-        H264RawSEIUserDataUnregistered user_data_unregistered;
+        SEIRawUserDataRegistered user_data_registered;
+        SEIRawUserDataUnregistered user_data_unregistered;
         H264RawSEIRecoveryPoint recovery_point;
         H264RawSEIDisplayOrientation display_orientation;
-        H264RawSEIMasteringDisplayColourVolume mastering_display_colour_volume;
-        H264RawSEIAlternativeTransferCharacteristics
+        SEIRawMasteringDisplayColourVolume mastering_display_colour_volume;
+        SEIRawAlternativeTransferCharacteristics
             alternative_transfer_characteristics;
         struct {
             uint8_t     *data;

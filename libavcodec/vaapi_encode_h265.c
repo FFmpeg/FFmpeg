@@ -76,8 +76,8 @@ typedef struct VAAPIEncodeH265Context {
     H265RawSEI   raw_sei;
     H265RawSlice raw_slice;
 
-    H265RawSEIMasteringDisplayColourVolume sei_mastering_display;
-    H265RawSEIContentLightLevelInfo        sei_content_light_level;
+    SEIRawMasteringDisplayColourVolume sei_mastering_display;
+    SEIRawContentLightLevelInfo        sei_content_light_level;
 
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
@@ -219,7 +219,8 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
 
         if (priv->sei_needed & SEI_MASTERING_DISPLAY) {
             sei->payload[i].payload_type = HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO;
-            sei->payload[i].payload.mastering_display = priv->sei_mastering_display;
+            sei->payload[i].payload.mastering_display_colour_volume =
+                priv->sei_mastering_display;
             ++i;
         }
 
@@ -781,7 +782,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
 
             // SEI is needed when both the primaries and luminance are set
             if (mdm->has_primaries && mdm->has_luminance) {
-                H265RawSEIMasteringDisplayColourVolume *mdcv =
+                SEIRawMasteringDisplayColourVolume *mdcv =
                     &priv->sei_mastering_display;
                 const int mapping[3] = {1, 2, 0};
                 const int chroma_den = 50000;
@@ -826,7 +827,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
         if (sd) {
             AVContentLightMetadata *clm =
                 (AVContentLightMetadata *)sd->data;
-            H265RawSEIContentLightLevelInfo *clli =
+            SEIRawContentLightLevelInfo *clli =
                 &priv->sei_content_light_level;
 
             clli->max_content_light_level     = FFMIN(clm->MaxCLL,  65535);

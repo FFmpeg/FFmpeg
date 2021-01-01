@@ -253,9 +253,11 @@ static int cbs_h265_payload_extension_present(GetBitContext *gbc, uint32_t paylo
             return err; \
     } while (0)
 
-#define FUNC_NAME(rw, codec, name) cbs_ ## codec ## _ ## rw ## _ ## name
-#define FUNC_H264(rw, name) FUNC_NAME(rw, h264, name)
-#define FUNC_H265(rw, name) FUNC_NAME(rw, h265, name)
+#define FUNC_NAME2(rw, codec, name) cbs_ ## codec ## _ ## rw ## _ ## name
+#define FUNC_NAME1(rw, codec, name) FUNC_NAME2(rw, codec, name)
+#define FUNC_H264(name) FUNC_NAME1(READWRITE, h264, name)
+#define FUNC_H265(name) FUNC_NAME1(READWRITE, h265, name)
+#define FUNC_SEI(name)  FUNC_NAME1(READWRITE, sei,  name)
 
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
@@ -356,11 +358,15 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
         name = name ## _ref->data; \
     } while (0)
 
-#define FUNC(name) FUNC_H264(READWRITE, name)
+#define FUNC(name) FUNC_SEI(name)
+#include "cbs_sei_syntax_template.c"
+#undef FUNC
+
+#define FUNC(name) FUNC_H264(name)
 #include "cbs_h264_syntax_template.c"
 #undef FUNC
 
-#define FUNC(name) FUNC_H265(READWRITE, name)
+#define FUNC(name) FUNC_H265(name)
 #include "cbs_h265_syntax_template.c"
 #undef FUNC
 
@@ -428,11 +434,15 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
         } \
     } while (0)
 
-#define FUNC(name) FUNC_H264(READWRITE, name)
+#define FUNC(name) FUNC_SEI(name)
+#include "cbs_sei_syntax_template.c"
+#undef FUNC
+
+#define FUNC(name) FUNC_H264(name)
 #include "cbs_h264_syntax_template.c"
 #undef FUNC
 
-#define FUNC(name) FUNC_H265(READWRITE, name)
+#define FUNC(name) FUNC_H265(name)
 #include "cbs_h265_syntax_template.c"
 #undef FUNC
 

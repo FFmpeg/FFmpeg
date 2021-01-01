@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "cbs_h2645.h"
+#include "cbs_sei.h"
 #include "hevc.h"
 
 enum {
@@ -596,21 +597,6 @@ typedef struct H265RawSEIPanScanRect {
     uint16_t pan_scan_rect_persistence_flag;
 } H265RawSEIPanScanRect;
 
-typedef struct H265RawSEIUserDataRegistered {
-    uint8_t itu_t_t35_country_code;
-    uint8_t itu_t_t35_country_code_extension_byte;
-    uint8_t     *data;
-    AVBufferRef *data_ref;
-    size_t       data_length;
-} H265RawSEIUserDataRegistered;
-
-typedef struct H265RawSEIUserDataUnregistered {
-    uint8_t uuid_iso_iec_11578[16];
-    uint8_t     *data;
-    AVBufferRef *data_ref;
-    size_t       data_length;
-} H265RawSEIUserDataUnregistered;
-
 typedef struct H265RawSEIRecoveryPoint {
     int16_t recovery_poc_cnt;
     uint8_t exact_match_flag;
@@ -661,24 +647,6 @@ typedef struct H265RawSEITimeCode {
     int32_t  time_offset_value[3];
 } H265RawSEITimeCode;
 
-typedef struct H265RawSEIMasteringDisplayColourVolume {
-    uint16_t display_primaries_x[3];
-    uint16_t display_primaries_y[3];
-    uint16_t white_point_x;
-    uint16_t white_point_y;
-    uint32_t max_display_mastering_luminance;
-    uint32_t min_display_mastering_luminance;
-} H265RawSEIMasteringDisplayColourVolume;
-
-typedef struct H265RawSEIContentLightLevelInfo {
-    uint16_t max_content_light_level;
-    uint16_t max_pic_average_light_level;
-} H265RawSEIContentLightLevelInfo;
-
-typedef struct H265RawSEIAlternativeTransferCharacteristics {
-    uint8_t preferred_transfer_characteristics;
-} H265RawSEIAlternativeTransferCharacteristics;
-
 typedef struct H265RawSEIAlphaChannelInfo {
     uint8_t  alpha_channel_cancel_flag;
     uint8_t  alpha_channel_use_idc;
@@ -697,16 +665,17 @@ typedef struct H265RawSEIPayload {
         H265RawSEIBufferingPeriod buffering_period;
         H265RawSEIPicTiming pic_timing;
         H265RawSEIPanScanRect pan_scan_rect;
-        H265RawSEIUserDataRegistered user_data_registered;
-        H265RawSEIUserDataUnregistered user_data_unregistered;
+        SEIRawUserDataRegistered user_data_registered;
+        SEIRawUserDataUnregistered user_data_unregistered;
         H265RawSEIRecoveryPoint recovery_point;
         H265RawSEIDisplayOrientation display_orientation;
         H265RawSEIActiveParameterSets active_parameter_sets;
         H265RawSEIDecodedPictureHash decoded_picture_hash;
         H265RawSEITimeCode time_code;
-        H265RawSEIMasteringDisplayColourVolume mastering_display;
-        H265RawSEIContentLightLevelInfo content_light_level;
-        H265RawSEIAlternativeTransferCharacteristics
+        SEIRawMasteringDisplayColourVolume
+            mastering_display_colour_volume;
+        SEIRawContentLightLevelInfo content_light_level;
+        SEIRawAlternativeTransferCharacteristics
             alternative_transfer_characteristics;
         H265RawSEIAlphaChannelInfo alpha_channel_info;
         struct {

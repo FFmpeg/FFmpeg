@@ -96,7 +96,7 @@ typedef struct VAAPIEncodeH264Context {
     H264RawSEIBufferingPeriod      sei_buffering_period;
     H264RawSEIPicTiming            sei_pic_timing;
     H264RawSEIRecoveryPoint        sei_recovery_point;
-    H264RawSEIUserDataUnregistered sei_identifier;
+    SEIRawUserDataUnregistered     sei_identifier;
     char                          *sei_identifier_string;
 
     int aud_needed;

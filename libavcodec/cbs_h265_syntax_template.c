@@ -1808,70 +1808,6 @@ static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext *rw,
-                                          H265RawSEIUserDataRegistered *current,
-                                          uint32_t *payload_size)
-{
-    int err, i, j;
-
-    HEADER("User Data Registered ITU-T T.35");
-
-    u(8, itu_t_t35_country_code, 0x00, 0xff);
-    if (current->itu_t_t35_country_code != 0xff)
-        i = 1;
-    else {
-        u(8, itu_t_t35_country_code_extension_byte, 0x00, 0xff);
-        i = 2;
-    }
-
-#ifdef READ
-    if (*payload_size < i) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR,
-               "Invalid SEI user data registered payload.\n");
-        return AVERROR_INVALIDDATA;
-    }
-    current->data_length = *payload_size - i;
-#else
-    *payload_size = i + current->data_length;
-#endif
-
-    allocate(current->data, current->data_length);
-    for (j = 0; j < current->data_length; j++)
-        xu(8, itu_t_t35_payload_byte[i], current->data[j], 0x00, 0xff, 1, i + j);
-
-    return 0;
-}
-
-static int FUNC(sei_user_data_unregistered)(CodedBitstreamContext *ctx, RWContext *rw,
-                                            H265RawSEIUserDataUnregistered *current,
-                                            uint32_t *payload_size)
-{
-    int err, i;
-
-    HEADER("User Data Unregistered");
-
-#ifdef READ
-    if (*payload_size < 16) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR,
-               "Invalid SEI user data unregistered payload.\n");
-        return AVERROR_INVALIDDATA;
-    }
-    current->data_length = *payload_size - 16;
-#else
-    *payload_size = 16 + current->data_length;
-#endif
-
-    for (i = 0; i < 16; i++)
-        us(8, uuid_iso_iec_11578[i], 0x00, 0xff, 1, i);
-
-    allocate(current->data, current->data_length);
-
-    for (i = 0; i < current->data_length; i++)
-        xu(8, user_data_payload_byte[i], current->data[i], 0x00, 0xff, 1, i);
-
-    return 0;
-}
-
 static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
                                     H265RawSEIRecoveryPoint *current)
 {
@@ -2022,55 +1958,6 @@ static int FUNC(sei_time_code)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_mastering_display)(CodedBitstreamContext *ctx, RWContext *rw,
-                                       H265RawSEIMasteringDisplayColourVolume *current)
-{
-    int err, c;
-
-    HEADER("Mastering Display Colour Volume");
-
-    for (c = 0; c < 3; c++) {
-        us(16, display_primaries_x[c], 0, 50000, 1, c);
-        us(16, display_primaries_y[c], 0, 50000, 1, c);
-    }
-
-    u(16, white_point_x, 0, 50000);
-    u(16, white_point_y, 0, 50000);
-
-    u(32, max_display_mastering_luminance,
-      1, MAX_UINT_BITS(32));
-    u(32, min_display_mastering_luminance,
-      0, current->max_display_mastering_luminance - 1);
-
-    return 0;
-}
-
-static int FUNC(sei_content_light_level)(CodedBitstreamContext *ctx, RWContext *rw,
-                                         H265RawSEIContentLightLevelInfo *current)
-{
-    int err;
-
-    HEADER("Content Light Level");
-
-    ub(16, max_content_light_level);
-    ub(16, max_pic_average_light_level);
-
-    return 0;
-}
-
-static int FUNC(sei_alternative_transfer_characteristics)(CodedBitstreamContext *ctx,
-                                                          RWContext *rw,
-                                                          H265RawSEIAlternativeTransferCharacteristics *current)
-{
-    int err;
-
-    HEADER("Alternative Transfer Characteristics");
-
-    ub(8, preferred_transfer_characteristics);
-
-    return 0;
-}
-
 static int FUNC(sei_alpha_channel_info)(CodedBitstreamContext *ctx,
                                         RWContext *rw,
                                         H265RawSEIAlphaChannelInfo *current)
@@ -2180,20 +2067,32 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                                  &more_data)); \
         break
 
+#define SEI_TYPE_N2(type, prefix_valid, suffix_valid, name) \
+    case HEVC_SEI_TYPE_ ## type: \
+        SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
+        CHECK(FUNC_SEI(sei_ ## name)(ctx, rw, &current->payload.name)); \
+        break
+#define SEI_TYPE_S2(type, prefix_valid, suffix_valid, name) \
+    case HEVC_SEI_TYPE_ ## type: \
+        SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
+        CHECK(FUNC_SEI(sei_ ## name)(ctx, rw, &current->payload.name, \
+                                     &current->payload_size)); \
+        break
+
         SEI_TYPE_E(BUFFERING_PERIOD,         1, 0, buffering_period);
         SEI_TYPE_N(PICTURE_TIMING,           1, 0, pic_timing);
         SEI_TYPE_N(PAN_SCAN_RECT,            1, 0, pan_scan_rect);
-        SEI_TYPE_S(USER_DATA_REGISTERED_ITU_T_T35,
+        SEI_TYPE_S2(USER_DATA_REGISTERED_ITU_T_T35,
                                              1, 1, user_data_registered);
-        SEI_TYPE_S(USER_DATA_UNREGISTERED,   1, 1, user_data_unregistered);
+        SEI_TYPE_S2(USER_DATA_UNREGISTERED,  1, 1, user_data_unregistered);
         SEI_TYPE_N(RECOVERY_POINT,           1, 0, recovery_point);
         SEI_TYPE_N(DISPLAY_ORIENTATION,      1, 0, display_orientation);
         SEI_TYPE_N(ACTIVE_PARAMETER_SETS,    1, 0, active_parameter_sets);
         SEI_TYPE_N(DECODED_PICTURE_HASH,     0, 1, decoded_picture_hash);
         SEI_TYPE_N(TIME_CODE,                1, 0, time_code);
-        SEI_TYPE_N(MASTERING_DISPLAY_INFO,   1, 0, mastering_display);
-        SEI_TYPE_N(CONTENT_LIGHT_LEVEL_INFO, 1, 0, content_light_level);
-        SEI_TYPE_N(ALTERNATIVE_TRANSFER_CHARACTERISTICS,
+        SEI_TYPE_N2(MASTERING_DISPLAY_INFO,  1, 0, mastering_display_colour_volume);
+        SEI_TYPE_N2(CONTENT_LIGHT_LEVEL_INFO,1, 0, content_light_level);
+        SEI_TYPE_N2(ALTERNATIVE_TRANSFER_CHARACTERISTICS,
                                              1, 0, alternative_transfer_characteristics);
         SEI_TYPE_N(ALPHA_CHANNEL_INFO,       1, 0, alpha_channel_info);
 

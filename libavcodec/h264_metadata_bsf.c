@@ -416,7 +416,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
         H264RawSEIPayload payload = {
             .payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED,
         };
-        H264RawSEIUserDataUnregistered *udu =
+        SEIRawUserDataUnregistered *udu =
             &payload.payload.user_data_unregistered;
 
         for (i = j = 0; j < 32 && ctx->sei_user_data[i]; i++) {
