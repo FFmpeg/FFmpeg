@@ -21,16 +21,13 @@
 #include "libavutil/opt.h"
 
 #include "bsf.h"
-#include "bsf_internal.h"
 #include "cbs.h"
+#include "cbs_bsf.h"
 #include "cbs_mpeg2.h"
 #include "mpeg12.h"
 
 typedef struct MPEG2MetadataContext {
-    const AVClass *class;
-
-    CodedBitstreamContext *cbc;
-    CodedBitstreamFragment fragment;
+    CBSBSFContext common;
 
     MPEG2RawExtensionData sequence_display_extension;
 
@@ -48,6 +45,7 @@ typedef struct MPEG2MetadataContext {
 
 
 static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
+                                          AVPacket *pkt,
                                           CodedBitstreamFragment *frag)
 {
     MPEG2MetadataContext             *ctx = bsf->priv_data;
@@ -170,49 +168,16 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
     return 0;
 }
 
-static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
-{
-    MPEG2MetadataContext *ctx = bsf->priv_data;
-    CodedBitstreamFragment *frag = &ctx->fragment;
-    int err;
-
-    err = ff_bsf_get_packet_ref(bsf, pkt);
-    if (err < 0)
-        return err;
-
-    err = ff_cbs_read_packet(ctx->cbc, frag, pkt);
-    if (err < 0) {
-        av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
-        goto fail;
-    }
-
-    err = mpeg2_metadata_update_fragment(bsf, frag);
-    if (err < 0) {
-        av_log(bsf, AV_LOG_ERROR, "Failed to update frame fragment.\n");
-        goto fail;
-    }
-
-    err = ff_cbs_write_packet(ctx->cbc, pkt, frag);
-    if (err < 0) {
-        av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
-        goto fail;
-    }
-
-    err = 0;
-fail:
-    ff_cbs_fragment_reset(frag);
-
-    if (err < 0)
-        av_packet_unref(pkt);
-
-    return err;
-}
+static const CBSBSFType mpeg2_metadata_type = {
+    .codec_id        = AV_CODEC_ID_MPEG2VIDEO,
+    .fragment_name   = "frame",
+    .unit_name       = "start code",
+    .update_fragment = &mpeg2_metadata_update_fragment,
+};
 
 static int mpeg2_metadata_init(AVBSFContext *bsf)
 {
     MPEG2MetadataContext *ctx = bsf->priv_data;
-    CodedBitstreamFragment *frag = &ctx->fragment;
-    int err;
 
 #define VALIDITY_CHECK(name) do { \
         if (!ctx->name) { \
@@ -226,42 +191,7 @@ static int mpeg2_metadata_init(AVBSFContext *bsf)
     VALIDITY_CHECK(matrix_coefficients);
 #undef VALIDITY_CHECK
 
-    err = ff_cbs_init(&ctx->cbc, AV_CODEC_ID_MPEG2VIDEO, bsf);
-    if (err < 0)
-        return err;
-
-    if (bsf->par_in->extradata) {
-        err = ff_cbs_read_extradata(ctx->cbc, frag, bsf->par_in);
-        if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
-            goto fail;
-        }
-
-        err = mpeg2_metadata_update_fragment(bsf, frag);
-        if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to update metadata fragment.\n");
-            goto fail;
-        }
-
-        err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, frag);
-        if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
-            goto fail;
-        }
-    }
-
-    err = 0;
-fail:
-    ff_cbs_fragment_reset(frag);
-    return err;
-}
-
-static void mpeg2_metadata_close(AVBSFContext *bsf)
-{
-    MPEG2MetadataContext *ctx = bsf->priv_data;
-
-    ff_cbs_fragment_free(&ctx->fragment);
-    ff_cbs_close(&ctx->cbc);
+    return ff_cbs_bsf_generic_init(bsf, &mpeg2_metadata_type);
 }
 
 #define OFFSET(x) offsetof(MPEG2MetadataContext, x)
@@ -307,7 +237,7 @@ const AVBitStreamFilter ff_mpeg2_metadata_bsf = {
     .priv_data_size = sizeof(MPEG2MetadataContext),
     .priv_class     = &mpeg2_metadata_class,
     .init           = &mpeg2_metadata_init,
-    .close          = &mpeg2_metadata_close,
-    .filter         = &mpeg2_metadata_filter,
+    .close          = &ff_cbs_bsf_generic_close,
+    .filter         = &ff_cbs_bsf_generic_filter,
     .codec_ids      = mpeg2_metadata_codec_ids,
 };
