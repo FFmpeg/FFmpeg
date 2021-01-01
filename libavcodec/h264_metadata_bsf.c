@@ -56,6 +56,7 @@ typedef struct H264MetadataContext {
     int done_first_au;
 
     int aud;
+    H264RawAUD aud_nal;
 
     AVRational sample_aspect_ratio;
 
@@ -90,6 +91,59 @@ typedef struct H264MetadataContext {
     int level;
 } H264MetadataContext;
 
+
+static int h264_metadata_insert_aud(AVBSFContext *bsf,
+                                    CodedBitstreamFragment *au)
+{
+    H264MetadataContext *ctx = bsf->priv_data;
+    int primary_pic_type_mask = 0xff;
+    int err, i, j;
+
+    static const int primary_pic_type_table[] = {
+        0x084, // 2, 7
+        0x0a5, // 0, 2, 5, 7
+        0x0e7, // 0, 1, 2, 5, 6, 7
+        0x210, // 4, 9
+        0x318, // 3, 4, 8, 9
+        0x294, // 2, 4, 7, 9
+        0x3bd, // 0, 2, 3, 4, 5, 7, 8, 9
+        0x3ff, // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    };
+
+    for (i = 0; i < au->nb_units; i++) {
+        if (au->units[i].type == H264_NAL_SLICE ||
+            au->units[i].type == H264_NAL_IDR_SLICE) {
+            H264RawSlice *slice = au->units[i].content;
+            for (j = 0; j < FF_ARRAY_ELEMS(primary_pic_type_table); j++) {
+                if (!(primary_pic_type_table[j] &
+                      (1 << slice->header.slice_type)))
+                    primary_pic_type_mask &= ~(1 << j);
+            }
+        }
+    }
+    for (j = 0; j < FF_ARRAY_ELEMS(primary_pic_type_table); j++)
+        if (primary_pic_type_mask & (1 << j))
+            break;
+    if (j >= FF_ARRAY_ELEMS(primary_pic_type_table)) {
+        av_log(bsf, AV_LOG_ERROR, "No usable primary_pic_type: "
+               "invalid slice types?\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ctx->aud_nal = (H264RawAUD) {
+        .nal_unit_header.nal_unit_type = H264_NAL_AUD,
+        .primary_pic_type = j,
+    };
+
+    err = ff_cbs_insert_unit_content(au, 0, H264_NAL_AUD,
+                                     &ctx->aud_nal, NULL);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
+        return err;
+    }
+
+    return 0;
+}
 
 static int h264_metadata_update_sps(AVBSFContext *bsf,
                                     H264RawSPS *sps)
@@ -322,160 +376,51 @@ static int h264_metadata_update_side_data(AVBSFContext *bsf, AVPacket *pkt)
     return 0;
 }
 
-static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
+static int h264_metadata_handle_display_orientation(AVBSFContext *bsf,
+                                                    AVPacket *pkt,
+                                                    CodedBitstreamFragment *au,
+                                                    int seek_point)
 {
     H264MetadataContext *ctx = bsf->priv_data;
-    CodedBitstreamFragment *au = &ctx->access_unit;
-    int err, i, j, has_sps;
-    H264RawAUD aud;
+    SEIRawMessage *message;
+    int err;
 
-    err = ff_bsf_get_packet_ref(bsf, pkt);
-    if (err < 0)
-        return err;
+    message = NULL;
+    while (ff_cbs_sei_find_message(ctx->output, au,
+                                   SEI_TYPE_DISPLAY_ORIENTATION,
+                                   &message) == 0) {
+        H264RawSEIDisplayOrientation *disp = message->payload;
+        int32_t *matrix;
 
-    err = h264_metadata_update_side_data(bsf, pkt);
-    if (err < 0)
-        goto fail;
+        matrix = av_malloc(9 * sizeof(int32_t));
+        if (!matrix)
+            return AVERROR(ENOMEM);
 
-    err = ff_cbs_read_packet(ctx->input, au, pkt);
-    if (err < 0) {
-        av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
-        goto fail;
-    }
+        av_display_rotation_set(matrix,
+                                disp->anticlockwise_rotation *
+                                180.0 / 65536.0);
+        av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
 
-    if (au->nb_units == 0) {
-        av_log(bsf, AV_LOG_ERROR, "No NAL units in packet.\n");
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
-
-    // If an AUD is present, it must be the first NAL unit.
-    if (au->units[0].type == H264_NAL_AUD) {
-        if (ctx->aud == REMOVE)
-            ff_cbs_delete_unit(au, 0);
-    } else {
-        if (ctx->aud == INSERT) {
-            static const int primary_pic_type_table[] = {
-                0x084, // 2, 7
-                0x0a5, // 0, 2, 5, 7
-                0x0e7, // 0, 1, 2, 5, 6, 7
-                0x210, // 4, 9
-                0x318, // 3, 4, 8, 9
-                0x294, // 2, 4, 7, 9
-                0x3bd, // 0, 2, 3, 4, 5, 7, 8, 9
-                0x3ff, // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-            };
-            int primary_pic_type_mask = 0xff;
-
-            for (i = 0; i < au->nb_units; i++) {
-                if (au->units[i].type == H264_NAL_SLICE ||
-                    au->units[i].type == H264_NAL_IDR_SLICE) {
-                    H264RawSlice *slice = au->units[i].content;
-                    for (j = 0; j < FF_ARRAY_ELEMS(primary_pic_type_table); j++) {
-                         if (!(primary_pic_type_table[j] &
-                               (1 << slice->header.slice_type)))
-                             primary_pic_type_mask &= ~(1 << j);
-                    }
-                }
-            }
-            for (j = 0; j < FF_ARRAY_ELEMS(primary_pic_type_table); j++)
-                if (primary_pic_type_mask & (1 << j))
-                    break;
-            if (j >= FF_ARRAY_ELEMS(primary_pic_type_table)) {
-                av_log(bsf, AV_LOG_ERROR, "No usable primary_pic_type: "
-                       "invalid slice types?\n");
-                err = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-
-            aud = (H264RawAUD) {
-                .nal_unit_header.nal_unit_type = H264_NAL_AUD,
-                .primary_pic_type = j,
-            };
-
-            err = ff_cbs_insert_unit_content(au,
-                                             0, H264_NAL_AUD, &aud, NULL);
-            if (err < 0) {
-                av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
-                goto fail;
-            }
-        }
-    }
-
-    has_sps = 0;
-    for (i = 0; i < au->nb_units; i++) {
-        if (au->units[i].type == H264_NAL_SPS) {
-            err = h264_metadata_update_sps(bsf, au->units[i].content);
-            if (err < 0)
-                goto fail;
-            has_sps = 1;
-        }
-    }
-
-    // Only insert the SEI in access units containing SPSs, and also
-    // unconditionally in the first access unit we ever see.
-    if (ctx->sei_user_data && (has_sps || !ctx->done_first_au)) {
-        err = ff_cbs_sei_add_message(ctx->output, au, 1,
-                                     SEI_TYPE_USER_DATA_UNREGISTERED,
-                                     &ctx->sei_user_data_payload, NULL);
+        // If there are multiple display orientation messages in an
+        // access unit, then the last one added to the packet (i.e.
+        // the first one in the access unit) will prevail.
+        err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
+                                      (uint8_t*)matrix,
+                                      9 * sizeof(int32_t));
         if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
-                   "message to access unit.\n");
-            goto fail;
+            av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
+                   "displaymatrix side data to packet.\n");
+            av_free(matrix);
+            return AVERROR(ENOMEM);
         }
     }
 
-    if (ctx->delete_filler) {
-        for (i = au->nb_units - 1; i >= 0; i--) {
-            if (au->units[i].type == H264_NAL_FILLER_DATA) {
-                ff_cbs_delete_unit(au, i);
-                continue;
-            }
-        }
-
+    if (ctx->display_orientation == REMOVE ||
+        ctx->display_orientation == INSERT) {
         ff_cbs_sei_delete_message_type(ctx->output, au,
-                                       SEI_TYPE_FILLER_PAYLOAD);
+                                       SEI_TYPE_DISPLAY_ORIENTATION);
     }
 
-    if (ctx->display_orientation != PASS) {
-        SEIRawMessage *message = NULL;
-        while (ff_cbs_sei_find_message(ctx->output, au,
-                                       SEI_TYPE_DISPLAY_ORIENTATION,
-                                       &message) == 0) {
-            H264RawSEIDisplayOrientation *disp = message->payload;
-            int32_t *matrix;
-
-            matrix = av_malloc(9 * sizeof(int32_t));
-            if (!matrix) {
-                err = AVERROR(ENOMEM);
-                goto fail;
-            }
-
-            av_display_rotation_set(matrix,
-                                    disp->anticlockwise_rotation *
-                                    180.0 / 65536.0);
-            av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
-
-            // If there are multiple display orientation messages in an
-            // access unit, then the last one added to the packet (i.e.
-            // the first one in the access unit) will prevail.
-            err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
-                                          (uint8_t*)matrix,
-                                          9 * sizeof(int32_t));
-            if (err < 0) {
-                av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
-                       "displaymatrix side data to packet.\n");
-                av_free(matrix);
-                goto fail;
-            }
-        }
-
-        if (ctx->display_orientation == REMOVE ||
-            ctx->display_orientation == INSERT) {
-            ff_cbs_sei_delete_message_type(ctx->output, au,
-                                           SEI_TYPE_DISPLAY_ORIENTATION);
-        }
-    }
     if (ctx->display_orientation == INSERT) {
         H264RawSEIDisplayOrientation *disp =
             &ctx->display_orientation_payload;
@@ -516,7 +461,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
             }
         }
 
-        if (has_sps || !ctx->done_first_au) {
+        if (seek_point) {
             if (!isnan(ctx->rotate)) {
                 disp->anticlockwise_rotation =
                     (uint16_t)rint((ctx->rotate >= 0.0 ? ctx->rotate
@@ -540,9 +485,98 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to add display orientation "
                        "SEI message to access unit.\n");
-                goto fail;
+                return err;
             }
         }
+    }
+
+    return 0;
+}
+
+static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
+{
+    H264MetadataContext *ctx = bsf->priv_data;
+    CodedBitstreamFragment *au = &ctx->access_unit;
+    int err, i, has_sps, seek_point;
+
+    err = ff_bsf_get_packet_ref(bsf, pkt);
+    if (err < 0)
+        return err;
+
+    err = h264_metadata_update_side_data(bsf, pkt);
+    if (err < 0)
+        goto fail;
+
+    err = ff_cbs_read_packet(ctx->input, au, pkt);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
+        goto fail;
+    }
+
+    if (au->nb_units == 0) {
+        av_log(bsf, AV_LOG_ERROR, "No NAL units in packet.\n");
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    // If an AUD is present, it must be the first NAL unit.
+    if (au->units[0].type == H264_NAL_AUD) {
+        if (ctx->aud == REMOVE)
+            ff_cbs_delete_unit(au, 0);
+    } else {
+        if (ctx->aud == INSERT) {
+            err = h264_metadata_insert_aud(bsf, au);
+            if (err < 0)
+                goto fail;
+        }
+    }
+
+    has_sps = 0;
+    for (i = 0; i < au->nb_units; i++) {
+        if (au->units[i].type == H264_NAL_SPS) {
+            err = h264_metadata_update_sps(bsf, au->units[i].content);
+            if (err < 0)
+                goto fail;
+            has_sps = 1;
+        }
+    }
+
+    // The current packet should be treated as a seek point for metadata
+    // insertion if any of:
+    // - It is the first packet in the stream.
+    // - It contains an SPS, indicating that a sequence might start here.
+    // - It is marked as containing a key frame.
+    seek_point = !ctx->done_first_au || has_sps ||
+        (pkt->flags & AV_PKT_FLAG_KEY);
+
+    if (ctx->sei_user_data && seek_point) {
+        err = ff_cbs_sei_add_message(ctx->output, au, 1,
+                                     SEI_TYPE_USER_DATA_UNREGISTERED,
+                                     &ctx->sei_user_data_payload, NULL);
+        if (err < 0) {
+            av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
+                   "message to access unit.\n");
+            goto fail;
+        }
+    }
+
+    if (ctx->delete_filler) {
+        for (i = au->nb_units - 1; i >= 0; i--) {
+            if (au->units[i].type == H264_NAL_FILLER_DATA) {
+                ff_cbs_delete_unit(au, i);
+                continue;
+            }
+        }
+
+        ff_cbs_sei_delete_message_type(ctx->output, au,
+                                       SEI_TYPE_FILLER_PAYLOAD);
+    }
+
+    if (ctx->display_orientation != PASS) {
+        err = h264_metadata_handle_display_orientation(bsf, pkt, au,
+                                                       seek_point);
+        if (err < 0)
+            goto fail;
     }
 
     err = ff_cbs_write_packet(ctx->output, pkt, au);
