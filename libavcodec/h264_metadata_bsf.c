@@ -78,6 +78,7 @@ typedef struct H264MetadataContext {
     int crop_bottom;
 
     const char *sei_user_data;
+    H264RawSEIPayload sei_user_data_payload;
 
     int delete_filler;
 
@@ -413,54 +414,10 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     // Only insert the SEI in access units containing SPSs, and also
     // unconditionally in the first access unit we ever see.
     if (ctx->sei_user_data && (has_sps || !ctx->done_first_au)) {
-        H264RawSEIPayload payload = {
-            .payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED,
-        };
-        SEIRawUserDataUnregistered *udu =
-            &payload.payload.user_data_unregistered;
-
-        for (i = j = 0; j < 32 && ctx->sei_user_data[i]; i++) {
-            int c, v;
-            c = ctx->sei_user_data[i];
-            if (c == '-') {
-                continue;
-            } else if (av_isxdigit(c)) {
-                c = av_tolower(c);
-                v = (c <= '9' ? c - '0' : c - 'a' + 10);
-            } else {
-                goto invalid_user_data;
-            }
-            if (j & 1)
-                udu->uuid_iso_iec_11578[j / 2] |= v;
-            else
-                udu->uuid_iso_iec_11578[j / 2] = v << 4;
-            ++j;
-        }
-        if (j == 32 && ctx->sei_user_data[i] == '+') {
-            size_t len = strlen(ctx->sei_user_data + i + 1);
-
-            udu->data_ref = av_buffer_alloc(len + 1);
-            if (!udu->data_ref) {
-                err = AVERROR(ENOMEM);
-                goto fail;
-            }
-
-            udu->data        = udu->data_ref->data;
-            udu->data_length = len + 1;
-            memcpy(udu->data, ctx->sei_user_data + i + 1, len + 1);
-
-            err = ff_cbs_h264_add_sei_message(au, &payload);
-            if (err < 0) {
-                av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
-                       "message to access unit.\n");
-                goto fail;
-            }
-
-        } else {
-        invalid_user_data:
-            av_log(bsf, AV_LOG_ERROR, "Invalid user data: "
-                   "must be \"UUID+string\".\n");
-            err = AVERROR(EINVAL);
+        err = ff_cbs_h264_add_sei_message(au, &ctx->sei_user_data_payload);
+        if (err < 0) {
+            av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
+                   "message to access unit.\n");
             goto fail;
         }
     }
@@ -626,6 +583,44 @@ static int h264_metadata_init(AVBSFContext *bsf)
     H264MetadataContext *ctx = bsf->priv_data;
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i;
+
+    if (ctx->sei_user_data) {
+        SEIRawUserDataUnregistered *udu =
+            &ctx->sei_user_data_payload.payload.user_data_unregistered;
+        int j;
+
+        ctx->sei_user_data_payload.payload_type =
+            H264_SEI_TYPE_USER_DATA_UNREGISTERED;
+
+        // Parse UUID.  It must be a hex string of length 32, possibly
+        // containing '-'s between hex digits (which we ignore).
+        for (i = j = 0; j < 32 && i < 64 && ctx->sei_user_data[i]; i++) {
+            int c, v;
+            c = ctx->sei_user_data[i];
+            if (c == '-') {
+                continue;
+            } else if (av_isxdigit(c)) {
+                c = av_tolower(c);
+                v = (c <= '9' ? c - '0' : c - 'a' + 10);
+            } else {
+                break;
+            }
+            if (j & 1)
+                udu->uuid_iso_iec_11578[j / 2] |= v;
+            else
+                udu->uuid_iso_iec_11578[j / 2] = v << 4;
+            ++j;
+        }
+        if (j == 32 && ctx->sei_user_data[i] == '+') {
+            udu->data = (uint8_t*)ctx->sei_user_data + i + 1;
+            udu->data_length = strlen(udu->data) + 1;
+        } else {
+            av_log(bsf, AV_LOG_ERROR, "Invalid user data: "
+                   "must be \"UUID+string\".\n");
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
 
     err = ff_cbs_init(&ctx->input,  AV_CODEC_ID_H264, bsf);
     if (err < 0)
