@@ -73,7 +73,6 @@ typedef struct VAAPIEncodeH265Context {
     H265RawVPS   raw_vps;
     H265RawSPS   raw_sps;
     H265RawPPS   raw_pps;
-    H265RawSEI   raw_sei;
     H265RawSlice raw_slice;
 
     SEIRawMasteringDisplayColourVolume sei_mastering_display;
@@ -195,11 +194,9 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
 {
     VAAPIEncodeH265Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
-    int err, i;
+    int err;
 
     if (priv->sei_needed) {
-        H265RawSEI *sei = &priv->raw_sei;
-
         if (priv->aud_needed) {
             err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
             if (err < 0)
@@ -207,35 +204,22 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
             priv->aud_needed = 0;
         }
 
-        *sei = (H265RawSEI) {
-            .nal_unit_header = {
-                .nal_unit_type         = HEVC_NAL_SEI_PREFIX,
-                .nuh_layer_id          = 0,
-                .nuh_temporal_id_plus1 = 1,
-            },
-        };
-
-        i = 0;
-
         if (priv->sei_needed & SEI_MASTERING_DISPLAY) {
-            sei->payload[i].payload_type = SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME;
-            sei->payload[i].payload.mastering_display_colour_volume =
-                priv->sei_mastering_display;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME,
+                                         &priv->sei_mastering_display, NULL);
+            if (err < 0)
+                goto fail;
         }
 
         if (priv->sei_needed & SEI_CONTENT_LIGHT_LEVEL) {
-            sei->payload[i].payload_type = SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO;
-            sei->payload[i].payload.content_light_level = priv->sei_content_light_level;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO,
+                                         &priv->sei_content_light_level, NULL);
+            if (err < 0)
+                goto fail;
         }
 
-        sei->payload_count = i;
-        av_assert0(sei->payload_count > 0);
-
-        err = vaapi_encode_h265_add_nal(avctx, au, sei);
-        if (err < 0)
-            goto fail;
         priv->sei_needed = 0;
 
         err = vaapi_encode_h265_write_access_unit(avctx, data, data_len, au);

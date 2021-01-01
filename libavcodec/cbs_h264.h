@@ -291,34 +291,9 @@ typedef struct H264RawSEIDisplayOrientation {
     uint8_t display_orientation_extension_flag;
 } H264RawSEIDisplayOrientation;
 
-typedef struct H264RawSEIPayload {
-    uint32_t payload_type;
-    uint32_t payload_size;
-    union {
-        H264RawSEIBufferingPeriod buffering_period;
-        H264RawSEIPicTiming pic_timing;
-        H264RawSEIPanScanRect pan_scan_rect;
-        // H264RawSEIFiller filler -> no fields.
-        SEIRawUserDataRegistered user_data_registered;
-        SEIRawUserDataUnregistered user_data_unregistered;
-        H264RawSEIRecoveryPoint recovery_point;
-        H264RawSEIDisplayOrientation display_orientation;
-        SEIRawMasteringDisplayColourVolume mastering_display_colour_volume;
-        SEIRawAlternativeTransferCharacteristics
-            alternative_transfer_characteristics;
-        struct {
-            uint8_t     *data;
-            AVBufferRef *data_ref;
-            size_t       data_length;
-        } other;
-    } payload;
-} H264RawSEIPayload;
-
 typedef struct H264RawSEI {
     H264RawNALUnitHeader nal_unit_header;
-
-    H264RawSEIPayload payload[H264_MAX_SEI_PAYLOADS];
-    uint8_t payload_count;
+    SEIRawMessageList    message_list;
 } H264RawSEI;
 
 typedef struct H264RawSliceHeader {
@@ -437,28 +412,5 @@ typedef struct CodedBitstreamH264Context {
     // otherwise unknown.
     uint8_t last_slice_nal_unit_type;
 } CodedBitstreamH264Context;
-
-
-/**
- * Add an SEI message to an access unit.
- *
- * On success, the payload will be owned by a unit in access_unit;
- * on failure, the content of the payload will be freed.
- */
-int ff_cbs_h264_add_sei_message(CodedBitstreamFragment *access_unit,
-                                H264RawSEIPayload *payload);
-
-/**
- * Delete an SEI message from an access unit.
- *
- * Deletes from nal_unit, which must be an SEI NAL unit.  If this is the
- * last message in nal_unit, also deletes it from access_unit.
- *
- * Requires nal_unit to be a unit in access_unit and position to be >= 0
- * and < the payload count of the SEI nal_unit.
- */
-void ff_cbs_h264_delete_sei_message(CodedBitstreamFragment *access_unit,
-                                    CodedBitstreamUnit *nal_unit,
-                                    int position);
 
 #endif /* AVCODEC_CBS_H264_H */

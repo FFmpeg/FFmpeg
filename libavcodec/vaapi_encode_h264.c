@@ -90,7 +90,6 @@ typedef struct VAAPIEncodeH264Context {
     H264RawAUD   raw_aud;
     H264RawSPS   raw_sps;
     H264RawPPS   raw_pps;
-    H264RawSEI   raw_sei;
     H264RawSlice raw_slice;
 
     H264RawSEIBufferingPeriod      sei_buffering_period;
@@ -210,11 +209,9 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 {
     VAAPIEncodeH264Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
-    int err, i;
+    int err;
 
     if (priv->sei_needed) {
-        H264RawSEI *sei = &priv->raw_sei;
-
         if (priv->aud_needed) {
             err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_aud);
             if (err < 0)
@@ -222,41 +219,35 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
             priv->aud_needed = 0;
         }
 
-        *sei = (H264RawSEI) {
-            .nal_unit_header = {
-                .nal_unit_type = H264_NAL_SEI,
-            },
-        };
-
-        i = 0;
-
         if (priv->sei_needed & SEI_IDENTIFIER) {
-            sei->payload[i].payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
-            sei->payload[i].payload.user_data_unregistered = priv->sei_identifier;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_USER_DATA_UNREGISTERED,
+                                         &priv->sei_identifier, NULL);
+            if (err < 0)
+                goto fail;
         }
         if (priv->sei_needed & SEI_TIMING) {
             if (pic->type == PICTURE_TYPE_IDR) {
-                sei->payload[i].payload_type = SEI_TYPE_BUFFERING_PERIOD;
-                sei->payload[i].payload.buffering_period = priv->sei_buffering_period;
-                ++i;
+                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                             SEI_TYPE_BUFFERING_PERIOD,
+                                             &priv->sei_buffering_period, NULL);
+                if (err < 0)
+                    goto fail;
             }
-            sei->payload[i].payload_type = SEI_TYPE_PIC_TIMING;
-            sei->payload[i].payload.pic_timing = priv->sei_pic_timing;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_PIC_TIMING,
+                                         &priv->sei_pic_timing, NULL);
+            if (err < 0)
+                goto fail;
         }
         if (priv->sei_needed & SEI_RECOVERY_POINT) {
-            sei->payload[i].payload_type = SEI_TYPE_RECOVERY_POINT;
-            sei->payload[i].payload.recovery_point = priv->sei_recovery_point;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_RECOVERY_POINT,
+                                         &priv->sei_recovery_point, NULL);
+            if (err < 0)
+                goto fail;
         }
 
-        sei->payload_count = i;
-        av_assert0(sei->payload_count > 0);
-
-        err = vaapi_encode_h264_add_nal(avctx, au, sei);
-        if (err < 0)
-            goto fail;
         priv->sei_needed = 0;
 
         err = vaapi_encode_h264_write_access_unit(avctx, data, data_len, au);

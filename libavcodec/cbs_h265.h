@@ -658,40 +658,9 @@ typedef struct H265RawSEIAlphaChannelInfo {
     uint8_t  alpha_channel_clip_type_flag;
 } H265RawSEIAlphaChannelInfo;
 
-typedef struct H265RawSEIPayload {
-    uint32_t payload_type;
-    uint32_t payload_size;
-    union {
-        H265RawSEIBufferingPeriod buffering_period;
-        H265RawSEIPicTiming pic_timing;
-        H265RawSEIPanScanRect pan_scan_rect;
-        SEIRawUserDataRegistered user_data_registered;
-        SEIRawUserDataUnregistered user_data_unregistered;
-        H265RawSEIRecoveryPoint recovery_point;
-        H265RawSEIDisplayOrientation display_orientation;
-        H265RawSEIActiveParameterSets active_parameter_sets;
-        H265RawSEIDecodedPictureHash decoded_picture_hash;
-        H265RawSEITimeCode time_code;
-        SEIRawMasteringDisplayColourVolume
-            mastering_display_colour_volume;
-        SEIRawContentLightLevelInfo content_light_level;
-        SEIRawAlternativeTransferCharacteristics
-            alternative_transfer_characteristics;
-        H265RawSEIAlphaChannelInfo alpha_channel_info;
-        struct {
-            uint8_t     *data;
-            AVBufferRef *data_ref;
-            size_t       data_length;
-        } other;
-    } payload;
-    H265RawExtensionData extension_data;
-} H265RawSEIPayload;
-
 typedef struct H265RawSEI {
     H265RawNALUnitHeader nal_unit_header;
-
-    H265RawSEIPayload payload[H265_MAX_SEI_PAYLOADS];
-    uint8_t payload_count;
+    SEIRawMessageList    message_list;
 } H265RawSEI;
 
 typedef struct CodedBitstreamH265Context {

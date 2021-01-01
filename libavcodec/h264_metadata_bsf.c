@@ -78,13 +78,14 @@ typedef struct H264MetadataContext {
     int crop_bottom;
 
     const char *sei_user_data;
-    H264RawSEIPayload sei_user_data_payload;
+    SEIRawUserDataUnregistered sei_user_data_payload;
 
     int delete_filler;
 
     int display_orientation;
     double rotate;
     int flip;
+    H264RawSEIDisplayOrientation display_orientation_payload;
 
     int level;
 } H264MetadataContext;
@@ -414,7 +415,9 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     // Only insert the SEI in access units containing SPSs, and also
     // unconditionally in the first access unit we ever see.
     if (ctx->sei_user_data && (has_sps || !ctx->done_first_au)) {
-        err = ff_cbs_h264_add_sei_message(au, &ctx->sei_user_data_payload);
+        err = ff_cbs_sei_add_message(ctx->output, au, 1,
+                                     SEI_TYPE_USER_DATA_UNREGISTERED,
+                                     &ctx->sei_user_data_payload, NULL);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
                    "message to access unit.\n");
@@ -428,74 +431,54 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
                 ff_cbs_delete_unit(au, i);
                 continue;
             }
-
-            if (au->units[i].type == H264_NAL_SEI) {
-                // Filler SEI messages.
-                H264RawSEI *sei = au->units[i].content;
-
-                for (j = sei->payload_count - 1; j >= 0; j--) {
-                    if (sei->payload[j].payload_type ==
-                        SEI_TYPE_FILLER_PAYLOAD)
-                        ff_cbs_h264_delete_sei_message(au, &au->units[i], j);
-                }
-            }
         }
+
+        ff_cbs_sei_delete_message_type(ctx->output, au,
+                                       SEI_TYPE_FILLER_PAYLOAD);
     }
 
     if (ctx->display_orientation != PASS) {
-        for (i = au->nb_units - 1; i >= 0; i--) {
-            H264RawSEI *sei;
-            if (au->units[i].type != H264_NAL_SEI)
-                continue;
-            sei = au->units[i].content;
+        SEIRawMessage *message = NULL;
+        while (ff_cbs_sei_find_message(ctx->output, au,
+                                       SEI_TYPE_DISPLAY_ORIENTATION,
+                                       &message) == 0) {
+            H264RawSEIDisplayOrientation *disp = message->payload;
+            int32_t *matrix;
 
-            for (j = sei->payload_count - 1; j >= 0; j--) {
-                H264RawSEIDisplayOrientation *disp;
-                int32_t *matrix;
-
-                if (sei->payload[j].payload_type !=
-                    SEI_TYPE_DISPLAY_ORIENTATION)
-                    continue;
-                disp = &sei->payload[j].payload.display_orientation;
-
-                if (ctx->display_orientation == REMOVE ||
-                    ctx->display_orientation == INSERT) {
-                    ff_cbs_h264_delete_sei_message(au, &au->units[i], j);
-                    continue;
-                }
-
-                matrix = av_malloc(9 * sizeof(int32_t));
-                if (!matrix) {
-                    err = AVERROR(ENOMEM);
-                    goto fail;
-                }
-
-                av_display_rotation_set(matrix,
-                                        disp->anticlockwise_rotation *
-                                        180.0 / 65536.0);
-                av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
-
-                // If there are multiple display orientation messages in an
-                // access unit, then the last one added to the packet (i.e.
-                // the first one in the access unit) will prevail.
-                err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
-                                              (uint8_t*)matrix,
-                                              9 * sizeof(int32_t));
-                if (err < 0) {
-                    av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
-                           "displaymatrix side data to packet.\n");
-                    av_free(matrix);
-                    goto fail;
-                }
+            matrix = av_malloc(9 * sizeof(int32_t));
+            if (!matrix) {
+                err = AVERROR(ENOMEM);
+                goto fail;
             }
+
+            av_display_rotation_set(matrix,
+                                    disp->anticlockwise_rotation *
+                                    180.0 / 65536.0);
+            av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
+
+            // If there are multiple display orientation messages in an
+            // access unit, then the last one added to the packet (i.e.
+            // the first one in the access unit) will prevail.
+            err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
+                                          (uint8_t*)matrix,
+                                          9 * sizeof(int32_t));
+            if (err < 0) {
+                av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
+                       "displaymatrix side data to packet.\n");
+                av_free(matrix);
+                goto fail;
+            }
+        }
+
+        if (ctx->display_orientation == REMOVE ||
+            ctx->display_orientation == INSERT) {
+            ff_cbs_sei_delete_message_type(ctx->output, au,
+                                           SEI_TYPE_DISPLAY_ORIENTATION);
         }
     }
     if (ctx->display_orientation == INSERT) {
-        H264RawSEIPayload payload = {
-            .payload_type = SEI_TYPE_DISPLAY_ORIENTATION,
-        };
         H264RawSEIDisplayOrientation *disp =
-            &payload.payload.display_orientation;
+            &ctx->display_orientation_payload;
         uint8_t *data;
         int size;
         int write = 0;
@@ -551,7 +534,9 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
         if (write) {
             disp->display_orientation_repetition_period = 1;
 
-            err = ff_cbs_h264_add_sei_message(au, &payload);
+            err = ff_cbs_sei_add_message(ctx->output, au, 1,
+                                         SEI_TYPE_DISPLAY_ORIENTATION,
+                                         disp, NULL);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to add display orientation "
                        "SEI message to access unit.\n");
@@ -585,12 +570,8 @@ static int h264_metadata_init(AVBSFContext *bsf)
     int err, i;
 
     if (ctx->sei_user_data) {
-        SEIRawUserDataUnregistered *udu =
-            &ctx->sei_user_data_payload.payload.user_data_unregistered;
+        SEIRawUserDataUnregistered *udu = &ctx->sei_user_data_payload;
         int j;
-
-        ctx->sei_user_data_payload.payload_type =
-            SEI_TYPE_USER_DATA_UNREGISTERED;
 
         // Parse UUID.  It must be a hex string of length 32, possibly
         // containing '-'s between hex digits (which we ignore).

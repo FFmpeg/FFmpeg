@@ -511,7 +511,8 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
-                                      H264RawSEIBufferingPeriod *current)
+                                      H264RawSEIBufferingPeriod *current,
+                                      SEIMessageState *sei)
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
     const H264RawSPS *sps;
@@ -604,7 +605,8 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
-                                H264RawSEIPicTiming *current)
+                                H264RawSEIPicTiming *current,
+                                SEIMessageState *sei)
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
     const H264RawSPS *sps;
@@ -675,7 +677,8 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
-                                   H264RawSEIPanScanRect *current)
+                                   H264RawSEIPanScanRect *current,
+                                   SEIMessageState *sei)
 {
     int err, i;
 
@@ -701,7 +704,8 @@ static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
-                                    H264RawSEIRecoveryPoint *current)
+                                    H264RawSEIRecoveryPoint *current,
+                                    SEIMessageState *sei)
 {
     int err;
 
@@ -716,7 +720,8 @@ static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *rw,
-                                         H264RawSEIDisplayOrientation *current)
+                                         H264RawSEIDisplayOrientation *current,
+                                         SEIMessageState *sei)
 {
     int err;
 
@@ -734,171 +739,17 @@ static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *
     return 0;
 }
 
-static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
-                             H264RawSEIPayload *current)
-{
-    int err, i;
-    int start_position, end_position;
-
-#ifdef READ
-    start_position = get_bits_count(rw);
-#else
-    start_position = put_bits_count(rw);
-#endif
-
-    switch (current->payload_type) {
-    case SEI_TYPE_BUFFERING_PERIOD:
-        CHECK(FUNC(sei_buffering_period)
-              (ctx, rw, &current->payload.buffering_period));
-        break;
-    case SEI_TYPE_PIC_TIMING:
-        CHECK(FUNC(sei_pic_timing)
-              (ctx, rw, &current->payload.pic_timing));
-        break;
-    case SEI_TYPE_PAN_SCAN_RECT:
-        CHECK(FUNC(sei_pan_scan_rect)
-              (ctx, rw, &current->payload.pan_scan_rect));
-        break;
-    case SEI_TYPE_FILLER_PAYLOAD:
-        {
-            for (i = 0; i  < current->payload_size; i++)
-                fixed(8, ff_byte, 0xff);
-        }
-        break;
-    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
-        CHECK(FUNC_SEI(sei_user_data_registered)
-              (ctx, rw, &current->payload.user_data_registered, &current->payload_size));
-        break;
-    case SEI_TYPE_USER_DATA_UNREGISTERED:
-        CHECK(FUNC_SEI(sei_user_data_unregistered)
-              (ctx, rw, &current->payload.user_data_unregistered, &current->payload_size));
-        break;
-    case SEI_TYPE_RECOVERY_POINT:
-        CHECK(FUNC(sei_recovery_point)
-              (ctx, rw, &current->payload.recovery_point));
-        break;
-    case SEI_TYPE_DISPLAY_ORIENTATION:
-        CHECK(FUNC(sei_display_orientation)
-              (ctx, rw, &current->payload.display_orientation));
-        break;
-    case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
-        CHECK(FUNC_SEI(sei_mastering_display_colour_volume)
-              (ctx, rw, &current->payload.mastering_display_colour_volume));
-        break;
-    case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
-        CHECK(FUNC_SEI(sei_alternative_transfer_characteristics)
-              (ctx, rw, &current->payload.alternative_transfer_characteristics));
-        break;
-    default:
-        {
-#ifdef READ
-            current->payload.other.data_length = current->payload_size;
-#endif
-            allocate(current->payload.other.data, current->payload.other.data_length);
-            for (i = 0; i < current->payload.other.data_length; i++)
-                xu(8, payload_byte[i], current->payload.other.data[i], 0, 255, 1, i);
-        }
-    }
-
-    if (byte_alignment(rw)) {
-        fixed(1, bit_equal_to_one, 1);
-        while (byte_alignment(rw))
-            fixed(1, bit_equal_to_zero, 0);
-    }
-
-#ifdef READ
-    end_position = get_bits_count(rw);
-    if (end_position < start_position + 8 * current->payload_size) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Incorrect SEI payload length: "
-               "header %"PRIu32" bits, actually %d bits.\n",
-               8 * current->payload_size,
-               end_position - start_position);
-        return AVERROR_INVALIDDATA;
-    }
-#else
-    end_position = put_bits_count(rw);
-    current->payload_size = (end_position - start_position) / 8;
-#endif
-
-    return 0;
-}
-
 static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
                      H264RawSEI *current)
 {
-    int err, k;
+    int err;
 
     HEADER("Supplemental Enhancement Information");
 
     CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
                                 1 << H264_NAL_SEI));
 
-#ifdef READ
-    for (k = 0; k < H264_MAX_SEI_PAYLOADS; k++) {
-        uint32_t payload_type = 0;
-        uint32_t payload_size = 0;
-        uint32_t tmp;
-
-        while (show_bits(rw, 8) == 0xff) {
-            fixed(8, ff_byte, 0xff);
-            payload_type += 255;
-        }
-        xu(8, last_payload_type_byte, tmp, 0, 254, 0);
-        payload_type += tmp;
-
-        while (show_bits(rw, 8) == 0xff) {
-            fixed(8, ff_byte, 0xff);
-            payload_size += 255;
-        }
-        xu(8, last_payload_size_byte, tmp, 0, 254, 0);
-        payload_size += tmp;
-
-        current->payload[k].payload_type = payload_type;
-        current->payload[k].payload_size = payload_size;
-
-        current->payload_count++;
-        CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
-
-        if (!cbs_h2645_read_more_rbsp_data(rw))
-            break;
-    }
-    if (k >= H264_MAX_SEI_PAYLOADS) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many payloads in "
-               "SEI message: found %d.\n", k);
-        return AVERROR_INVALIDDATA;
-    }
-#else
-    for (k = 0; k < current->payload_count; k++) {
-        PutBitContext start_state;
-        uint32_t tmp;
-        int need_size, i;
-
-        // Somewhat clumsy: we write the payload twice when
-        // we don't know the size in advance.  This will mess
-        // with trace output, but is otherwise harmless.
-        start_state = *rw;
-        need_size = !current->payload[k].payload_size;
-        for (i = 0; i < 1 + need_size; i++) {
-            *rw = start_state;
-
-            tmp = current->payload[k].payload_type;
-            while (tmp >= 255) {
-                fixed(8, ff_byte, 0xff);
-                tmp -= 255;
-            }
-            xu(8, last_payload_type_byte, tmp, 0, 254, 0);
-
-            tmp = current->payload[k].payload_size;
-            while (tmp >= 255) {
-                fixed(8, ff_byte, 0xff);
-                tmp -= 255;
-            }
-            xu(8, last_payload_size_byte, tmp, 0, 254, 0);
-
-            CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
-        }
-    }
-#endif
+    CHECK(FUNC_SEI(message_list)(ctx, rw, &current->message_list, 1));
 
     CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
 
