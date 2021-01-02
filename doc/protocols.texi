@@ -1652,8 +1652,9 @@ tcp://@var{hostname}:@var{port}[?@var{options}]
 The list of supported options follows.
 
 @table @option
-@item listen=@var{1|0}
-Listen for an incoming connection. Default value is 0.
+@item listen=@var{2|1|0}
+Listen for an incoming connection. 0 disables listen, 1 enables listen in
+single client mode, 2 enables listen in multi-client mode. Default value is 0.
 
 @item timeout=@var{microseconds}
 Set raise error timeout, expressed in microseconds.
