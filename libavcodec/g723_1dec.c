@@ -221,16 +221,16 @@ static void gen_fcb_excitation(int16_t *vector, G723_1_Subframe *subfrm,
         j = PULSE_MAX - pulses[index];
         temp = subfrm->pulse_pos;
         for (i = 0; i < SUBFRAME_LEN / GRID_SIZE; i++) {
-            temp -= combinatorial_table[j][i];
+            temp -= ff_g723_1_combinatorial_table[j][i];
             if (temp >= 0)
                 continue;
-            temp += combinatorial_table[j++][i];
+            temp += ff_g723_1_combinatorial_table[j++][i];
             if (subfrm->pulse_sign & (1 << (PULSE_MAX - j))) {
                 vector[subfrm->grid_index + GRID_SIZE * i] =
-                                        -fixed_cb_gain[subfrm->amp_index];
+                                        -ff_g723_1_fixed_cb_gain[subfrm->amp_index];
             } else {
                 vector[subfrm->grid_index + GRID_SIZE * i] =
-                                         fixed_cb_gain[subfrm->amp_index];
+                                         ff_g723_1_fixed_cb_gain[subfrm->amp_index];
             }
             if (j == PULSE_MAX)
                 break;
@@ -238,7 +238,7 @@ static void gen_fcb_excitation(int16_t *vector, G723_1_Subframe *subfrm,
         if (subfrm->dirac_train == 1)
             ff_g723_1_gen_dirac_train(vector, pitch_lag);
     } else { /* 5300 bps */
-        int cb_gain  = fixed_cb_gain[subfrm->amp_index];
+        int cb_gain  = ff_g723_1_fixed_cb_gain[subfrm->amp_index];
         int cb_shift = subfrm->grid_index;
         int cb_sign  = subfrm->pulse_sign;
         int cb_pos   = subfrm->pulse_pos;
@@ -915,7 +915,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                 int16_t *vector_ptr = p->excitation + PITCH_MAX;
 
                 /* Update interpolation gain memory */
-                p->interp_gain = fixed_cb_gain[(p->subframe[2].amp_index +
+                p->interp_gain = ff_g723_1_fixed_cb_gain[(p->subframe[2].amp_index +
                                                 p->subframe[3].amp_index) >> 1];
                 for (i = 0; i < SUBFRAMES; i++) {
                     gen_fcb_excitation(vector_ptr, &p->subframe[i], p->cur_rate,

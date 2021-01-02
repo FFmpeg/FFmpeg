@@ -242,14 +242,14 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
     p    = 0;
     temp = 0;
     for (i = 0; i <= LPC_ORDER / 2; i++)
-        temp += f[2 * i] * cos_tab[0];
+        temp += f[2 * i] * G723_1_COS_TAB_FIRST_ELEMENT;
     prev_val = av_clipl_int32(temp << 1);
     count    = 0;
     for (i = 1; i < COS_TBL_SIZE / 2; i++) {
         /* Evaluate */
         temp = 0;
         for (j = 0; j <= LPC_ORDER / 2; j++)
-            temp += f[LPC_ORDER - 2 * j + p] * cos_tab[i * j % COS_TBL_SIZE];
+            temp += f[LPC_ORDER - 2 * j + p] * ff_g723_1_cos_tab[i * j % COS_TBL_SIZE];
         cur_val = av_clipl_int32(temp << 1);
 
         /* Check for sign change, indicating a zero crossing */
@@ -273,7 +273,7 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
             temp = 0;
             for (j = 0; j <= LPC_ORDER / 2; j++)
                 temp += f[LPC_ORDER - 2 * j + p] *
-                        cos_tab[i * j % COS_TBL_SIZE];
+                        ff_g723_1_cos_tab[i * j % COS_TBL_SIZE];
             cur_val = av_clipl_int32(temp << 1);
         }
         prev_val = cur_val;
@@ -298,11 +298,11 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
                                                                               \
     for (i = 0; i < LSP_CB_SIZE; i++) {                                       \
         for (j = 0; j < size; j++){                                           \
-            temp[j] = (weight[j + (offset)] * lsp_band##num[i][j] +           \
+            temp[j] = (weight[j + (offset)] * ff_g723_1_lsp_band##num[i][j] + \
                       (1 << 14)) >> 15;                                       \
         }                                                                     \
         error  = ff_g723_1_dot_product(lsp + (offset), temp, size) << 1;      \
-        error -= ff_g723_1_dot_product(lsp_band##num[i], temp, size);         \
+        error -= ff_g723_1_dot_product(ff_g723_1_lsp_band##num[i], temp, size); \
         if (error > max) {                                                    \
             max = error;                                                      \
             lsp_index[num] = i;                                               \
@@ -642,7 +642,7 @@ static void acb_search(G723_1_ChannelContext *p, int16_t *residual,
 {
     int16_t flt_buf[PITCH_ORDER][SUBFRAME_LEN];
 
-    const int16_t *cb_tbl = adaptive_cb_gain85;
+    const int16_t *cb_tbl = ff_g723_1_adaptive_cb_gain85;
 
     int ccr_buf[PITCH_ORDER * SUBFRAMES << 2];
 
@@ -720,7 +720,7 @@ static void acb_search(G723_1_ChannelContext *p, int16_t *residual,
         /* Select quantization table */
         if (!odd_frame && pitch_lag + i - 1 >= SUBFRAME_LEN - 2 ||
             odd_frame && pitch_lag >= SUBFRAME_LEN - 2) {
-            cb_tbl   = adaptive_cb_gain170;
+            cb_tbl   = ff_g723_1_adaptive_cb_gain170;
             tbl_size = 170;
         }
 
@@ -838,7 +838,7 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
         min           = 1 << 30;
         max_amp_index = GAIN_LEVELS - 2;
         for (j = max_amp_index; j >= 2; j--) {
-            temp = av_clipl_int32((int64_t) fixed_cb_gain[j] *
+            temp = av_clipl_int32((int64_t) ff_g723_1_fixed_cb_gain[j] *
                                   impulse_corr[0] << 1);
             temp = FFABS(temp - amp);
             if (temp < min) {
@@ -855,7 +855,7 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
                 ccr2[k]      = ccr1[k];
             }
             param.amp_index = max_amp_index + j - 2;
-            amp             = fixed_cb_gain[param.amp_index];
+            amp             = ff_g723_1_fixed_cb_gain[param.amp_index];
 
             param.pulse_sign[0] = (ccr2[param.pulse_pos[0]] < 0) ? -amp : amp;
             temp_corr[param.pulse_pos[0]] = 1;
@@ -942,7 +942,7 @@ static void pack_fcb_param(G723_1_Subframe *subfrm, FCBParam *optim,
     for (i = 0; i < SUBFRAME_LEN >> 1; i++) {
         int val = buf[optim->grid_index + (i << 1)];
         if (!val) {
-            subfrm->pulse_pos += combinatorial_table[j][i];
+            subfrm->pulse_pos += ff_g723_1_combinatorial_table[j][i];
         } else {
             subfrm->pulse_sign <<= 1;
             if (val < 0)
