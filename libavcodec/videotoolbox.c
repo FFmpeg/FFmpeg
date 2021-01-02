@@ -1088,7 +1088,13 @@ static int videotoolbox_common_init(AVCodecContext *avctx)
     vtctx->vt_ctx->cv_pix_fmt_type =
         av_map_videotoolbox_format_from_pixfmt2(hw_frames->sw_format, full_range);
     if (!vtctx->vt_ctx->cv_pix_fmt_type) {
-        av_log(avctx, AV_LOG_ERROR, "Unknown sw_format.\n");
+        const AVPixFmtDescriptor *attempted_format =
+            av_pix_fmt_desc_get(hw_frames->sw_format);
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to map underlying FFmpeg pixel format %s (%s range) to "
+               "a VideoToolbox format!\n",
+               attempted_format ? attempted_format->name : "<unknown>",
+               av_color_range_name(avctx->color_range));
         err = AVERROR(EINVAL);
         goto fail;
     }
