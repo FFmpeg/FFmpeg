@@ -40,10 +40,7 @@ extern const TwinVQModeTab ff_metasound_mode2224s;
 extern const TwinVQModeTab ff_metasound_mode2232;
 extern const TwinVQModeTab ff_metasound_mode2232s;
 extern const TwinVQModeTab ff_metasound_mode4432;
-extern const TwinVQModeTab ff_metasound_mode4432s;
 extern const TwinVQModeTab ff_metasound_mode4440;
-extern const TwinVQModeTab ff_metasound_mode4440s;
 extern const TwinVQModeTab ff_metasound_mode4448;
-extern const TwinVQModeTab ff_metasound_mode4448s;
 
 #endif /* AVCODEC_METASOUND_DATA_H */
