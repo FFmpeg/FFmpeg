@@ -179,8 +179,7 @@ static const int16_t coeff_table_token_15[2] = { 5, -5 };
 static const int16_t coeff_table_token_16[2] = { 6, -6 };
 
 static const int16_t coeff_table_token_23_24_25_26_27_28_29[2] = { 1, -1 };
-static const int16_t coeff_table_token_30[4] = { 2, 3, -2, -3 };
-static const int16_t coeff_table_token_31[4] = { 2, 3, -2, -3 };
+static const int16_t coeff_table_token_30_31[4] = { 2, 3, -2, -3 };
 
 static const int16_t coeff_table_token_17[4] = {
     7, 8, -7, -8
@@ -377,8 +376,8 @@ static const int16_t *const coeff_tables[32] = {
     coeff_table_token_23_24_25_26_27_28_29,
     coeff_table_token_23_24_25_26_27_28_29,
     coeff_table_token_23_24_25_26_27_28_29,
-    coeff_table_token_30,
-    coeff_table_token_31
+    coeff_table_token_30_31,
+    coeff_table_token_30_31
 };
 
 static const uint8_t vp3_bias[5 * 16][32][2] = {
