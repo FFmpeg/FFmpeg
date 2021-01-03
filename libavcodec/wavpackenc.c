@@ -644,9 +644,9 @@ static uint32_t log2sample(uint32_t v, int limit, uint32_t *result)
     uint32_t dbits = count_bits(v);
 
     if ((v += v >> 9) < (1 << 8)) {
-        *result += (dbits << 8) + wp_log2_table[(v << (9 - dbits)) & 0xff];
+        *result += (dbits << 8) + ff_wp_log2_table[(v << (9 - dbits)) & 0xff];
     } else {
-        *result += dbits = (dbits << 8) + wp_log2_table[(v >> (dbits - 9)) & 0xff];
+        *result += dbits = (dbits << 8) + ff_wp_log2_table[(v >> (dbits - 9)) & 0xff];
 
         if (limit && dbits >= limit)
             return 1;
