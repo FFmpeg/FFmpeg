@@ -796,15 +796,18 @@ AVFilter ff_vf_convolution = {
 
 #endif /* CONFIG_CONVOLUTION_FILTER */
 
-#if CONFIG_PREWITT_FILTER
+#if CONFIG_PREWITT_FILTER || CONFIG_ROBERTS_FILTER || CONFIG_SOBEL_FILTER
 
-static const AVOption prewitt_options[] = {
+static const AVOption prewitt_roberts_sobel_options[] = {
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
     { "scale",  "set scale",            OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0,  65535, FLAGS},
     { "delta",  "set delta",            OFFSET(delta), AV_OPT_TYPE_FLOAT, {.dbl=0}, -65535, 65535, FLAGS},
     { NULL }
 };
 
+#if CONFIG_PREWITT_FILTER
+
+#define prewitt_options prewitt_roberts_sobel_options
 AVFILTER_DEFINE_CLASS(prewitt);
 
 AVFilter ff_vf_prewitt = {
@@ -824,13 +827,7 @@ AVFilter ff_vf_prewitt = {
 
 #if CONFIG_SOBEL_FILTER
 
-static const AVOption sobel_options[] = {
-    { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
-    { "scale",  "set scale",            OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0,  65535, FLAGS},
-    { "delta",  "set delta",            OFFSET(delta), AV_OPT_TYPE_FLOAT, {.dbl=0}, -65535, 65535, FLAGS},
-    { NULL }
-};
-
+#define sobel_options prewitt_roberts_sobel_options
 AVFILTER_DEFINE_CLASS(sobel);
 
 AVFilter ff_vf_sobel = {
@@ -850,13 +847,7 @@ AVFilter ff_vf_sobel = {
 
 #if CONFIG_ROBERTS_FILTER
 
-static const AVOption roberts_options[] = {
-    { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
-    { "scale",  "set scale",            OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0,  65535, FLAGS},
-    { "delta",  "set delta",            OFFSET(delta), AV_OPT_TYPE_FLOAT, {.dbl=0}, -65535, 65535, FLAGS},
-    { NULL }
-};
-
+#define roberts_options prewitt_roberts_sobel_options
 AVFILTER_DEFINE_CLASS(roberts);
 
 AVFilter ff_vf_roberts = {
@@ -873,3 +864,4 @@ AVFilter ff_vf_roberts = {
 };
 
 #endif /* CONFIG_ROBERTS_FILTER */
+#endif /* CONFIG_PREWITT_FILTER || CONFIG_ROBERTS_FILTER || CONFIG_SOBEL_FILTER */
