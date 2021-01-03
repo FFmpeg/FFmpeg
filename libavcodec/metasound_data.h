@@ -27,6 +27,12 @@
 
 #include "twinvq.h"
 
+extern const float ff_metasound_lsp8[];
+extern const float ff_metasound_lsp11[];
+extern const float ff_metasound_lsp16[];
+extern const float ff_metasound_lsp22[];
+extern const float ff_metasound_lsp44[];
+
 extern const TwinVQModeTab ff_metasound_mode0806;
 extern const TwinVQModeTab ff_metasound_mode0806s;
 extern const TwinVQModeTab ff_metasound_mode0808;

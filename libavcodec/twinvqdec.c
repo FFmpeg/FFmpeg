@@ -27,6 +27,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "twinvq.h"
+#include "metasound_data.h"
 #include "twinvq_data.h"
 
 static const TwinVQModeTab mode_08_08 = {
@@ -35,7 +36,7 @@ static const TwinVQModeTab mode_08_08 = {
         { 2, bark_tab_m08_256, 20, tab.fcb08m, 2, 5, tab.cb0808m0, tab.cb0808m1, 16 },
         { 1, bark_tab_l08_512, 30, tab.fcb08l, 3, 6, tab.cb0808l0, tab.cb0808l1, 17 }
     },
-    512, 12, tab.lsp08, 1, 5, 3, 3, tab.shape08, 8, 28, 20, 6, 40
+    512, 12, ff_metasound_lsp8, 1, 5, 3, 3, tab.shape08, 8, 28, 20, 6, 40
 };
 
 static const TwinVQModeTab mode_11_08 = {
@@ -44,7 +45,7 @@ static const TwinVQModeTab mode_11_08 = {
         { 2, bark_tab_m11_256, 20, tab.fcb11m, 2, 5, tab.cb1108m0, tab.cb1108m1, 24 },
         { 1, bark_tab_l11_512, 30, tab.fcb11l, 3, 6, tab.cb1108l0, tab.cb1108l1, 27 }
     },
-    512, 16, tab.lsp11, 1, 6, 4, 3, tab.shape11, 9, 36, 30, 7, 90
+    512, 16, ff_metasound_lsp11, 1, 6, 4, 3, tab.shape11, 9, 36, 30, 7, 90
 };
 
 static const TwinVQModeTab mode_11_10 = {
@@ -53,7 +54,7 @@ static const TwinVQModeTab mode_11_10 = {
         { 2, bark_tab_m11_256, 20, tab.fcb11m, 2, 5, tab.cb1110m0, tab.cb1110m1, 18 },
         { 1, bark_tab_l11_512, 30, tab.fcb11l, 3, 6, tab.cb1110l0, tab.cb1110l1, 20 }
     },
-    512, 16, tab.lsp11, 1, 6, 4, 3, tab.shape11, 9, 36, 30, 7, 90
+    512, 16, ff_metasound_lsp11, 1, 6, 4, 3, tab.shape11, 9, 36, 30, 7, 90
 };
 
 static const TwinVQModeTab mode_16_16 = {
@@ -62,7 +63,7 @@ static const TwinVQModeTab mode_16_16 = {
         { 2, bark_tab_m16_512,  20, tab.fcb16m, 2, 5, tab.cb1616m0, tab.cb1616m1, 15 },
         { 1, bark_tab_l16_1024, 30, tab.fcb16l, 3, 6, tab.cb1616l0, tab.cb1616l1, 16 }
     },
-    1024, 16, tab.lsp16, 1, 6, 4, 3, tab.shape16, 9, 56, 60, 7, 180
+    1024, 16, ff_metasound_lsp16, 1, 6, 4, 3, tab.shape16, 9, 56, 60, 7, 180
 };
 
 static const TwinVQModeTab mode_22_20 = {
@@ -71,7 +72,7 @@ static const TwinVQModeTab mode_22_20 = {
         { 2, bark_tab_m22_512,  20, tab.fcb22m_1, 2, 6, tab.cb2220m0, tab.cb2220m1, 17 },
         { 1, bark_tab_l22_1024, 32, tab.fcb22l_1, 4, 6, tab.cb2220l0, tab.cb2220l1, 18 }
     },
-    1024, 16, tab.lsp22_1, 1, 6, 4, 3, tab.shape22_1, 9, 56, 36, 7, 144
+    1024, 16, ff_metasound_lsp22, 1, 6, 4, 3, tab.shape22_1, 9, 56, 36, 7, 144
 };
 
 static const TwinVQModeTab mode_22_24 = {
@@ -80,7 +81,7 @@ static const TwinVQModeTab mode_22_24 = {
         { 2, bark_tab_m22_512,  20, tab.fcb22m_1, 2, 6, tab.cb2224m0, tab.cb2224m1, 14 },
         { 1, bark_tab_l22_1024, 32, tab.fcb22l_1, 4, 6, tab.cb2224l0, tab.cb2224l1, 15 }
     },
-    1024, 16, tab.lsp22_1, 1, 6, 4, 3, tab.shape22_1, 9, 56, 36, 7, 144
+    1024, 16, ff_metasound_lsp22, 1, 6, 4, 3, tab.shape22_1, 9, 56, 36, 7, 144
 };
 
 static const TwinVQModeTab mode_22_32 = {
@@ -98,7 +99,7 @@ static const TwinVQModeTab mode_44_40 = {
         { 4,  bark_tab_m44_512,  20, tab.fcb44m, 2, 6, tab.cb4440m0, tab.cb4440m1, 17 },
         { 1,  bark_tab_l44_2048, 40, tab.fcb44l, 4, 6, tab.cb4440l0, tab.cb4440l1, 17 }
     },
-    2048, 20, tab.lsp44, 1, 6, 4, 4, tab.shape44, 9, 84, 54, 7, 432
+    2048, 20, ff_metasound_lsp44, 1, 6, 4, 4, tab.shape44, 9, 84, 54, 7, 432
 };
 
 static const TwinVQModeTab mode_44_48 = {
@@ -107,7 +108,7 @@ static const TwinVQModeTab mode_44_48 = {
         { 4,  bark_tab_m44_512,  20, tab.fcb44m, 2, 6, tab.cb4448m0, tab.cb4448m1, 14 },
         { 1,  bark_tab_l44_2048, 40, tab.fcb44l, 4, 6, tab.cb4448l0, tab.cb4448l1, 14 }
     },
-    2048, 20, tab.lsp44, 1, 6, 4, 4, tab.shape44, 9, 84, 54, 7, 432
+    2048, 20, ff_metasound_lsp44, 1, 6, 4, 4, tab.shape44, 9, 84, 54, 7, 432
 };
 
 /**

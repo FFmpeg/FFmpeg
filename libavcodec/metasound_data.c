@@ -19,8 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "metasound_data.h"
 
+#if CONFIG_METASOUND_DECODER
 static const int16_t cb0806sl0[] = {
       -417,   -225,    -84,     16,   -106,    -34,   -246,   -164,
        112,     48,    -47,     36,    -65,    -68,   -172,  -1655,
@@ -12101,8 +12103,9 @@ static const int16_t fcb44sm[] = {
       -623,   -588,     38,    -58,    975,   1529,   -986,   -891,
      -1121,   -619,   1967,   -463,     -7,    632,    768,    953,
 };
+#endif /* CONFIG_METASOUND_DECODER */
 
-static const float lsp8[] = {
+const float ff_metasound_lsp8[] = {
      0.2702,  0.5096,  0.6437,  0.7672,  0.9639,  1.0696,  1.2625,  1.5789,
      1.9285,  2.2383,  2.5129,  2.8470,  0.1740,  0.3677,  0.6082,  0.8387,
      1.1084,  1.3721,  1.6362,  1.8733,  2.0640,  2.3442,  2.6087,  2.8548,
@@ -12168,7 +12171,7 @@ static const float lsp8[] = {
      0.2217,  0.2632,  0.2706,  0.2624,  0.2162,  0.2453,  0.2460,  0.2531,
 };
 
-static const float lsp11[] = {
+const float ff_metasound_lsp11[] = {
      0.1103,  0.3862,  0.6863,  0.8447,  0.9231,  1.0261,  1.1248,  1.4057,
      1.6621,  1.8010,  1.8692,  2.0704,  2.3490,  2.6060,  2.7539,  2.8977,
      0.1273,  0.2407,  0.3812,  0.6004,  0.7767,  0.9383,  1.1344,  1.3351,
@@ -12335,7 +12338,7 @@ static const float lsp11[] = {
      0.1486,  0.1342,  0.1215,  0.1423,  0.1634,  0.1588,  0.1539,  0.1857,
 };
 
-static const float lsp16[] = {
+const float ff_metasound_lsp16[] = {
      0.1813,  0.3911,  0.6301,  0.8012,  1.0057,  1.2041,  1.4271,  1.6943,
      1.9402,  2.1733,  2.3521,  2.4989,  2.5839,  2.6846,  2.7634,  2.8950,
      0.1311,  0.3183,  0.4659,  0.5601,  0.6658,  0.7828,  1.0065,  1.2717,
@@ -12514,7 +12517,7 @@ static const float lsp16[] = {
     -0.0429, -0.0615, -0.0893, -0.0618, -0.0384, -0.0134, -0.0232, -0.0238,
 };
 
-static const float lsp22[] = {
+const float ff_metasound_lsp22[] = {
      0.0664,  0.1875,  0.4300,  0.6730,  0.8793,  1.0640,  1.2563,  1.4433,
      1.6394,  1.8176,  2.0029,  2.1921,  2.3796,  2.5671,  2.7595,  2.9536,
      0.2128,  0.4052,  0.5311,  0.6404,  0.7875,  0.8775,  1.0974,  1.3261,
@@ -12681,7 +12684,7 @@ static const float lsp22[] = {
      0.4239,  0.4331,  0.4522,  0.4423,  0.4475,  0.4387,  0.4525,  0.4446,
 };
 
-static const float lsp44s[] = {
+const float ff_metasound_lsp44[] = {
      0.0927,  0.2291,  0.4059,  0.5779,  0.7288,  0.8821,  1.0377,  1.1915,
      1.3433,  1.4931,  1.6475,  1.7989,  1.9381,  2.0858,  2.2321,  2.3765,
      2.5187,  2.6530,  2.7895,  2.9354,  0.0944,  0.1974,  0.3046,  0.4714,
@@ -12889,6 +12892,7 @@ static const float lsp44s[] = {
      0.1897,  0.1772,  0.1651,  0.1247,  0.1041,  0.1231,  0.1809,  0.2234,
 };
 
+#if CONFIG_METASOUND_DECODER
 static const int16_t shape8[] = {
       2765,   1262,   6624,    867,    688,   1884,   3245,   1248,
      -2160,    593,    182,  -1004,  -1067,    687,   1021,   -920,
@@ -14612,7 +14616,7 @@ const TwinVQModeTab ff_metasound_mode0806 = {
         {  2, bark_tab_m8_256, 20, fcb8m, 2, 5, cb0806sm0, cb0806sm1, 22 },
         {  1, bark_tab_l8_512, 30, fcb8l, 3, 6, cb0806sl0, cb0806sl1, 24 }
     },
-    512, 12, lsp8, 1, 5, 3, 3, shape8, 8, 28, 20, 6, 200
+    512, 12, ff_metasound_lsp8, 1, 5, 3, 3, shape8, 8, 28, 20, 6, 200
 };
 
 const TwinVQModeTab ff_metasound_mode0806s = {
@@ -14621,7 +14625,7 @@ const TwinVQModeTab ff_metasound_mode0806s = {
         {  2, bark_tab_m8s_256, 20, fcb8sm, 2, 5, cb0806sm0, cb0806sm1, 22 },
         {  1, bark_tab_l8s_512, 30, fcb8sl, 3, 6, cb0806sl0, cb0806sl1, 24 }
     },
-    512, 12, lsp8, 1, 5, 3, 3, shape8s, 8, 28, 20, 6, 200
+    512, 12, ff_metasound_lsp8, 1, 5, 3, 3, shape8s, 8, 28, 20, 6, 200
 };
 
 const TwinVQModeTab ff_metasound_mode0808 = {
@@ -14630,7 +14634,7 @@ const TwinVQModeTab ff_metasound_mode0808 = {
         { 2, bark_tab_m8_256, 20, fcb8m, 2, 5, cb0808m0, cb0808m1, 16 },
         { 1, bark_tab_l8_512, 30, fcb8l, 3, 6, cb0808l0, cb0808l1, 17 }
     },
-    512, 12, lsp8, 1, 5, 3, 3, shape8, 8, 28, 20, 6, 200
+    512, 12, ff_metasound_lsp8, 1, 5, 3, 3, shape8, 8, 28, 20, 6, 200
 };
 
 const TwinVQModeTab ff_metasound_mode0808s = {
@@ -14639,7 +14643,7 @@ const TwinVQModeTab ff_metasound_mode0808s = {
         {  2, bark_tab_m8s_256, 20, fcb8sm, 2, 5, cb0808sm0, cb0808sm1, 16 },
         {  1, bark_tab_l8s_512, 30, fcb8sl, 3, 6, cb0808sl0, cb0808sl1, 17 }
     },
-    512, 12, lsp8, 1, 5, 3, 3, shape8s, 8, 28, 20, 6, 200
+    512, 12, ff_metasound_lsp8, 1, 5, 3, 3, shape8s, 8, 28, 20, 6, 200
 };
 
 const TwinVQModeTab ff_metasound_mode1110 = {
@@ -14648,7 +14652,7 @@ const TwinVQModeTab ff_metasound_mode1110 = {
         {  2, bark_tab_m11_256, 16, fcb11m, 2, 5, cb1110m0, cb1110m1, 18 },
         {  1, bark_tab_l11_512, 24, fcb11l, 3, 6, cb1110l0, cb1110l1, 19 }
     },
-    512, 16, lsp11, 1, 6, 4, 3, shape11, 9, 28, 20, 7, 200
+    512, 16, ff_metasound_lsp11, 1, 6, 4, 3, shape11, 9, 28, 20, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode1110s = {
@@ -14657,7 +14661,7 @@ const TwinVQModeTab ff_metasound_mode1110s = {
         {  2, bark_tab_m11s_256, 20, fcb11sm, 2, 5, cb1110sm0, cb1110sm1, 18 },
         {  1, bark_tab_l11s_512, 30, fcb11sl, 3, 6, cb1110sl0, cb1110sl1, 20 }
     },
-    512, 16, lsp11, 1, 6, 4, 3, shape11s, 9, 36, 30, 7, 200
+    512, 16, ff_metasound_lsp11, 1, 6, 4, 3, shape11s, 9, 36, 30, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode1616 = {
@@ -14666,7 +14670,7 @@ const TwinVQModeTab ff_metasound_mode1616 = {
         { 2, bark_tab_m16_512,  24, fcb16m, 2, 5, cb1616m0, cb1616m1, 15 },
         { 1, bark_tab_l16_1024, 30, fcb16l, 3, 6, cb1616l0, cb1616l1, 16 }
     },
-    1024, 16, lsp16, 1, 6, 4, 3, shape16, 9, 28, 30, 7, 200
+    1024, 16, ff_metasound_lsp16, 1, 6, 4, 3, shape16, 9, 28, 30, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode1616s = {
@@ -14675,7 +14679,7 @@ const TwinVQModeTab ff_metasound_mode1616s = {
         { 2, bark_tab_m16s_512,  20, fcb16sm, 2, 5, cb1616sm0, cb1616sm1, 15 },
         { 1, bark_tab_l16s_1024, 30, fcb16sl, 3, 6, cb1616sl0, cb1616sl1, 16 }
     },
-    1024, 16, lsp16, 1, 6, 4, 3, shape16s, 9, 56, 60, 7, 200
+    1024, 16, ff_metasound_lsp16, 1, 6, 4, 3, shape16s, 9, 56, 60, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode2224 = {
@@ -14684,7 +14688,7 @@ const TwinVQModeTab ff_metasound_mode2224 = {
         { 2, bark_tab_m22_512,  20, fcb22m, 2, 6, cb2224m0, cb2224m1, 14 },
         { 1, bark_tab_l22_1024, 32, fcb22l, 4, 6, cb2224l0, cb2224l1, 15 }
     },
-    1024, 16, lsp22, 1, 6, 4, 3, shape22, 9, 56, 36, 7, 200
+    1024, 16, ff_metasound_lsp22, 1, 6, 4, 3, shape22, 9, 56, 36, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode2224s = {
@@ -14693,7 +14697,7 @@ const TwinVQModeTab ff_metasound_mode2224s = {
         { 2, bark_tab_m22s_512,  20, fcb22sm, 2, 6, cb2224sm0, cb2224sm1, 14 },
         { 1, bark_tab_l22s_1024, 32, fcb22sl, 4, 6, cb2224sl0, cb2224sl1, 15 }
     },
-    1024, 16, lsp22, 1, 6, 4, 3, shape22s, 9, 56, 36, 7, 200
+    1024, 16, ff_metasound_lsp22, 1, 6, 4, 3, shape22s, 9, 56, 36, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode4432 = {
@@ -14702,7 +14706,7 @@ const TwinVQModeTab ff_metasound_mode4432 = {
         {  4, bark_tab_m44_512,  20, fcb44sm, 2, 6, cb4432m0, cb4432m1, 21 },
         {  1, bark_tab_l44_2048, 40, fcb44sl, 4, 6, cb4432l0, cb4432l1, 22 }
     },
-    2048, 20, lsp44s, 1, 6, 4, 4, shape44s, 9, 84, 54, 7, 200,
+    2048, 20, ff_metasound_lsp44, 1, 6, 4, 4, shape44s, 9, 84, 54, 7, 200,
 };
 
 const TwinVQModeTab ff_metasound_mode4440 = {
@@ -14711,7 +14715,7 @@ const TwinVQModeTab ff_metasound_mode4440 = {
         {  4, bark_tab_m44_512,  20, fcb44sm, 2, 6, cb4440sm0, cb4440sm1, 17 },
         {  1, bark_tab_l44_2048, 40, fcb44sl, 4, 6, cb4440sl0, cb4440sl1, 17 }
     },
-    2048, 20, lsp44s, 1, 6, 4, 4, shape44s, 9, 84, 54, 7, 200
+    2048, 20, ff_metasound_lsp44, 1, 6, 4, 4, shape44s, 9, 84, 54, 7, 200
 };
 
 const TwinVQModeTab ff_metasound_mode4448 = {
@@ -14720,5 +14724,6 @@ const TwinVQModeTab ff_metasound_mode4448 = {
         {  4, bark_tab_m44_512,  20, fcb44sm, 2, 6, cb4448sm0, cb4448sm1, 14 },
         {  1, bark_tab_l44_2048, 40, fcb44sl, 4, 6, cb4448sl0, cb4448sl1, 14 }
     },
-    2048, 20, lsp44s, 1, 6, 4, 4, shape44s, 9, 84, 54, 7, 200
+    2048, 20, ff_metasound_lsp44, 1, 6, 4, 4, shape44s, 9, 84, 54, 7, 200
 };
+#endif /* CONFIG_METASOUND_DECODER */
