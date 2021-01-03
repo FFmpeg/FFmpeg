@@ -42,6 +42,13 @@
   #define AVISYNTH_LIB AVISYNTH_NAME SLIBSUF
 #endif
 
+/* Endianness guards for audio */
+#if HAVE_BIGENDIAN
+    #define PCM(format) (AV_CODEC_ID_PCM_ ## format ## BE)
+#else
+    #define PCM(format) (AV_CODEC_ID_PCM_ ## format ## LE)
+#endif
+
 #include <avisynth/avisynth_c.h>
 
 typedef struct AviSynthLibrary {
@@ -513,16 +520,16 @@ static int avisynth_create_stream_audio(AVFormatContext *s, AVStream *st)
         st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
         break;
     case AVS_SAMPLE_INT16:
-        st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+        st->codecpar->codec_id = PCM(S16);
         break;
     case AVS_SAMPLE_INT24:
-        st->codecpar->codec_id = AV_CODEC_ID_PCM_S24LE;
+        st->codecpar->codec_id = PCM(S24);
         break;
     case AVS_SAMPLE_INT32:
-        st->codecpar->codec_id = AV_CODEC_ID_PCM_S32LE;
+        st->codecpar->codec_id = PCM(S32);
         break;
     case AVS_SAMPLE_FLOAT:
-        st->codecpar->codec_id = AV_CODEC_ID_PCM_F32LE;
+        st->codecpar->codec_id = PCM(F32);
         break;
     default:
         av_log(s, AV_LOG_ERROR,
