@@ -99,6 +99,9 @@ typedef struct TestSourceContext {
 
 #define COMMON_OPTIONS SIZE_OPTIONS COMMON_OPTIONS_NOSIZE
 
+#define NOSIZE_OPTIONS_OFFSET 2
+/* Filters using COMMON_OPTIONS_NOSIZE also use the following options
+ * via &options[NOSIZE_OPTIONS_OFFSET]. So don't break it. */
 static const AVOption options[] = {
     COMMON_OPTIONS
     { NULL }
@@ -1653,11 +1656,7 @@ AVFilter ff_vsrc_smptehdbars = {
 
 #if CONFIG_ALLYUV_FILTER
 
-static const AVOption allyuv_options[] = {
-    COMMON_OPTIONS_NOSIZE
-    { NULL }
-};
-
+#define allyuv_options &options[NOSIZE_OPTIONS_OFFSET]
 AVFILTER_DEFINE_CLASS(allyuv);
 
 static void allyuv_fill_picture(AVFilterContext *ctx, AVFrame *frame)
@@ -1734,11 +1733,7 @@ AVFilter ff_vsrc_allyuv = {
 
 #if CONFIG_ALLRGB_FILTER
 
-static const AVOption allrgb_options[] = {
-    COMMON_OPTIONS_NOSIZE
-    { NULL }
-};
-
+#define allrgb_options &options[NOSIZE_OPTIONS_OFFSET]
 AVFILTER_DEFINE_CLASS(allrgb);
 
 static void allrgb_fill_picture(AVFilterContext *ctx, AVFrame *frame)
