@@ -873,7 +873,6 @@ AVFILTER_DEFINE_CLASS(name_);                                           \
 static av_cold int name_##_init(AVFilterContext *ctx)                   \
 {                                                                       \
     BiquadsContext *s = ctx->priv;                                      \
-    s->class = &name_##_class;                                          \
     s->filter_type = name_;                                             \
     return 0;                                                           \
 }                                                                       \
