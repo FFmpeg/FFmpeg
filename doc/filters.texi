@@ -20931,6 +20931,35 @@ More-complex filter coefficient set.
 @end table
 Default value is @samp{complex}.
 
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item frame
+Output one frame for each frame.
+@item field
+Output one frame for each field.
+@end table
+
+The default value is @code{field}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item tff
+Assume the top field is first.
+@item bff
+Assume the bottom field is first.
+@item auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
 @item deint
 Specify which frames to deinterlace. Accepts one of the following values:
 

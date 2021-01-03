@@ -34,6 +34,8 @@
 typedef struct W3FDIFContext {
     const AVClass *class;
     int filter;           ///< 0 is simple, 1 is more complex
+    int mode;             ///< 0 is frame, 1 is field
+    int parity;           ///< frame field parity
     int deint;            ///< which frames to deinterlace
     int linesize[4];      ///< bytes of pixel data per line for each plane
     int planeheight[4];   ///< height of each plane
@@ -56,6 +58,13 @@ static const AVOption w3fdif_options[] = {
     { "filter", "specify the filter", OFFSET(filter), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "filter" },
     CONST("simple",  NULL, 0, "filter"),
     CONST("complex", NULL, 1, "filter"),
+    { "mode",   "specify the interlacing mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "mode"},
+    CONST("frame", "send one frame for each frame", 0, "mode"),
+    CONST("field", "send one frame for each field", 1, "mode"),
+    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, FLAGS, "parity" },
+    CONST("tff",  "assume top field first",     0, "parity"),
+    CONST("bff",  "assume bottom field first",  1, "parity"),
+    CONST("auto", "auto detect parity",        -1, "parity"),
     { "deint",  "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "deint" },
     CONST("all",        "deinterlace all frames",                       0, "deint"),
     CONST("interlaced", "only deinterlace frames marked as interlaced", 1, "deint"),
@@ -372,10 +381,11 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const int start = (height * jobnr) / nb_jobs;
     const int end = (height * (jobnr+1)) / nb_jobs;
     const int max = s->max;
+    const int tff = s->field == (s->parity == -1 ? cur->top_field_first == 1 : s->parity == 0 ? 1 : 0);
     int j, y_in, y_out;
 
     /* copy unchanged the lines of the field */
-    y_out = start + ((s->field == cur->top_field_first) ^ (start & 1));
+    y_out = start + (tff ^ (start & 1));
 
     in_line  = cur_data + (y_out * cur_line_stride);
     out_line = dst_data + (y_out * dst_line_stride);
@@ -388,7 +398,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     }
 
     /* interpolate other lines of the field */
-    y_out = start + ((s->field != cur->top_field_first) ^ (start & 1));
+    y_out = start + ((!tff) ^ (start & 1));
 
     out_line = dst_data + (y_out * dst_line_stride);
 
@@ -489,7 +499,8 @@ static int filter(AVFilterContext *ctx, int is_second)
         ctx->internal->execute(ctx, deinterlace_slice, &td, NULL, FFMIN(s->planeheight[plane], s->nb_threads));
     }
 
-    s->field = !s->field;
+    if (s->mode)
+        s->field = !s->field;
 
     return ff_filter_frame(outlink, out);
 }
@@ -526,7 +537,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return 0;
 
     ret = filter(ctx, 0);
-    if (ret < 0)
+    if (ret < 0 || s->mode == 0)
         return ret;
 
     return filter(ctx, 1);
