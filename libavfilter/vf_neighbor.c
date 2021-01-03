@@ -371,60 +371,44 @@ AVFilter ff_vf_##name_ = {                                   \
     .process_command = ff_filter_process_command,            \
 }
 
-#if CONFIG_EROSION_FILTER
-
-static const AVOption erosion_options[] = {
+/* The following options are shared between all filters here;
+ * the de/inflate filters only use the threshold* options. */
+#define DEINFLATE_OPTIONS_OFFSET (CONFIG_EROSION_FILTER || CONFIG_DILATION_FILTER)
+static const AVOption options[] = {
+#if CONFIG_EROSION_FILTER || CONFIG_DILATION_FILTER
+    { "coordinates", "set coordinates",               OFFSET(coordinates),    AV_OPT_TYPE_INT, {.i64=255},   0, 255,   FLAGS },
+#endif
     { "threshold0",  "set threshold for 1st plane",   OFFSET(threshold[0]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
     { "threshold1",  "set threshold for 2nd plane",   OFFSET(threshold[1]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
     { "threshold2",  "set threshold for 3rd plane",   OFFSET(threshold[2]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
     { "threshold3",  "set threshold for 4th plane",   OFFSET(threshold[3]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "coordinates", "set coordinates",               OFFSET(coordinates),    AV_OPT_TYPE_INT, {.i64=255},   0, 255,   FLAGS },
     { NULL }
 };
 
+#if CONFIG_EROSION_FILTER
+
+#define erosion_options options
 DEFINE_NEIGHBOR_FILTER(erosion, "Apply erosion effect.");
 
 #endif /* CONFIG_EROSION_FILTER */
 
 #if CONFIG_DILATION_FILTER
 
-static const AVOption dilation_options[] = {
-    { "threshold0",  "set threshold for 1st plane",   OFFSET(threshold[0]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold1",  "set threshold for 2nd plane",   OFFSET(threshold[1]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold2",  "set threshold for 3rd plane",   OFFSET(threshold[2]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold3",  "set threshold for 4th plane",   OFFSET(threshold[3]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "coordinates", "set coordinates",               OFFSET(coordinates),    AV_OPT_TYPE_INT, {.i64=255},   0, 255,   FLAGS },
-    { NULL }
-};
-
+#define dilation_options options
 DEFINE_NEIGHBOR_FILTER(dilation, "Apply dilation effect.");
 
 #endif /* CONFIG_DILATION_FILTER */
 
 #if CONFIG_DEFLATE_FILTER
 
-static const AVOption deflate_options[] = {
-    { "threshold0", "set threshold for 1st plane",   OFFSET(threshold[0]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold1", "set threshold for 2nd plane",   OFFSET(threshold[1]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold2", "set threshold for 3rd plane",   OFFSET(threshold[2]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold3", "set threshold for 4th plane",   OFFSET(threshold[3]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { NULL }
-};
-
+#define deflate_options &options[DEINFLATE_OPTIONS_OFFSET]
 DEFINE_NEIGHBOR_FILTER(deflate, "Apply deflate effect.");
 
 #endif /* CONFIG_DEFLATE_FILTER */
 
 #if CONFIG_INFLATE_FILTER
 
-static const AVOption inflate_options[] = {
-    { "threshold0", "set threshold for 1st plane",   OFFSET(threshold[0]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold1", "set threshold for 2nd plane",   OFFSET(threshold[1]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold2", "set threshold for 3rd plane",   OFFSET(threshold[2]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { "threshold3", "set threshold for 4th plane",   OFFSET(threshold[3]),   AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, FLAGS },
-    { NULL }
-};
-
+#define inflate_options &options[DEINFLATE_OPTIONS_OFFSET]
 DEFINE_NEIGHBOR_FILTER(inflate, "Apply inflate effect.");
 
 #endif /* CONFIG_INFLATE_FILTER */
