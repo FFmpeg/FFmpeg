@@ -84,6 +84,7 @@ typedef struct MXFLocalTagPair {
 } MXFLocalTagPair;
 
 extern const uint8_t ff_mxf_mastering_display_prefix[13];
+extern const uint8_t ff_mxf_random_index_pack_key[16];
 extern const MXFLocalTagPair ff_mxf_mastering_display_local_tags[4];
 
 #define FF_MXF_MASTERING_CHROMA_DEN 50000
