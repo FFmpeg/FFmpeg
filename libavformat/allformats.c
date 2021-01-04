@@ -541,7 +541,7 @@ const AVOutputFormat *av_muxer_iterate(void **opaque)
 
     if (i < size) {
         f = muxer_list[i];
-    } else if (indev_list) {
+    } else if (outdev_list) {
         f = outdev_list[i - size];
     }
 
@@ -558,7 +558,7 @@ const AVInputFormat *av_demuxer_iterate(void **opaque)
 
     if (i < size) {
         f = demuxer_list[i];
-    } else if (outdev_list) {
+    } else if (indev_list) {
         f = indev_list[i - size];
     }
 
