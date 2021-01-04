@@ -278,7 +278,7 @@ static int init_out_session(AVFilterContext *ctx)
     mfxIMPL impl;
     mfxVideoParam par;
     mfxStatus err;
-    int i;
+    int i, ret;
 
 #if QSV_HAVE_OPAQUE
     opaque = !!(in_frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
@@ -315,11 +315,10 @@ static int init_out_session(AVFilterContext *ctx)
 
     /* create a "slave" session with those same properties, to be used for
      * actual scaling */
-    err = MFXInit(impl, &ver, &s->session);
-    if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error initializing a session for scaling\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = ff_qsvvpp_create_mfx_session(ctx, device_hwctx->loader, impl, &ver,
+                                       &s->session);
+    if (ret)
+        return ret;
 
     if (handle) {
         err = MFXVideoCORE_SetHandle(s->session, handle_type, handle);

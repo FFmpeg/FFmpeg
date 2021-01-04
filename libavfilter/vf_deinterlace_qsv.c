@@ -163,7 +163,7 @@ static int init_out_session(AVFilterContext *ctx)
     mfxIMPL impl;
     mfxVideoParam par;
     mfxStatus err;
-    int i;
+    int i, ret;
 
 #if QSV_HAVE_OPAQUE
     opaque = !!(hw_frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
@@ -198,13 +198,10 @@ static int init_out_session(AVFilterContext *ctx)
 
     /* create a "slave" session with those same properties, to be used for
      * actual deinterlacing */
-    err = MFXInit(impl, &ver, &s->session);
-    if (err < 0)
-        return ff_qsvvpp_print_error(ctx, err, "Error initializing a session for deinterlacing");
-    else if (err > 0) {
-        ff_qsvvpp_print_warning(ctx, err, "Warning in session initialization");
-        return AVERROR_UNKNOWN;
-    }
+    ret = ff_qsvvpp_create_mfx_session(ctx, device_hwctx->loader, impl, &ver,
+                                       &s->session);
+    if (ret)
+        return ret;
 
     if (handle) {
         err = MFXVideoCORE_SetHandle(s->session, handle_type, handle);

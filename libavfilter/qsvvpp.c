@@ -23,14 +23,18 @@
 
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_qsv.h"
 #include "libavutil/time.h"
 #include "libavutil/pixdesc.h"
 
 #include "internal.h"
 #include "qsvvpp.h"
 #include "video.h"
+
+#if QSV_ONEVPL
+#include <mfxdispatcher.h>
+#else
+#define MFXUnload(a) do { } while(0)
+#endif
 
 #define IS_VIDEO_MEMORY(mode)  (mode & (MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET | \
                                         MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET))
@@ -620,13 +624,10 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
     }
 
     /* create a "slave" session with those same properties, to be used for vpp */
-    ret = MFXInit(impl, &ver, &s->session);
-    if (ret < 0)
-        return ff_qsvvpp_print_error(avctx, ret, "Error initializing a session");
-    else if (ret > 0) {
-        ff_qsvvpp_print_warning(avctx, ret, "Warning in session initialization");
-        return AVERROR_UNKNOWN;
-    }
+    ret = ff_qsvvpp_create_mfx_session(avctx, device_hwctx->loader, impl, &ver,
+                                       &s->session);
+    if (ret)
+        return ret;
 
     if (handle) {
         ret = MFXVideoCORE_SetHandle(s->session, handle_type, handle);
@@ -912,3 +913,93 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
 
     return 0;
 }
+
+#if QSV_ONEVPL
+
+int ff_qsvvpp_create_mfx_session(void *ctx,
+                                 void *loader,
+                                 mfxIMPL implementation,
+                                 mfxVersion *pver,
+                                 mfxSession *psession)
+{
+    mfxStatus sts;
+    mfxSession session = NULL;
+    uint32_t impl_idx = 0;
+
+    av_log(ctx, AV_LOG_VERBOSE,
+           "Use Intel(R) oneVPL to create MFX session with the specified MFX loader\n");
+
+    if (!loader) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid MFX Loader handle\n");
+        return AVERROR(EINVAL);
+    }
+
+    while (1) {
+        /* Enumerate all implementations */
+        mfxImplDescription *impl_desc;
+
+        sts = MFXEnumImplementations(loader, impl_idx,
+                                     MFX_IMPLCAPS_IMPLDESCSTRUCTURE,
+                                     (mfxHDL *)&impl_desc);
+        /* Failed to find an available implementation */
+        if (sts == MFX_ERR_NOT_FOUND)
+            break;
+        else if (sts != MFX_ERR_NONE) {
+            impl_idx++;
+            continue;
+        }
+
+        sts = MFXCreateSession(loader, impl_idx, &session);
+        MFXDispReleaseImplDescription(loader, impl_desc);
+        if (sts == MFX_ERR_NONE)
+            break;
+
+        impl_idx++;
+    }
+
+    if (sts < 0)
+        return ff_qsvvpp_print_error(ctx, sts,
+                                     "Error creating a MFX session");
+    else if (sts > 0) {
+        ff_qsvvpp_print_warning(ctx, sts,
+                                "Warning in MFX session creation");
+        return AVERROR_UNKNOWN;
+    }
+
+    *psession = session;
+
+    return 0;
+}
+
+#else
+
+int ff_qsvvpp_create_mfx_session(void *ctx,
+                                 void *loader,
+                                 mfxIMPL implementation,
+                                 mfxVersion *pver,
+                                 mfxSession *psession)
+{
+    mfxSession session = NULL;
+    mfxStatus sts;
+
+    av_log(ctx, AV_LOG_VERBOSE,
+           "Use Intel(R) Media SDK to create MFX session, API version is "
+           "%d.%d, the required implementation version is %d.%d\n",
+           MFX_VERSION_MAJOR, MFX_VERSION_MINOR, pver->Major, pver->Minor);
+
+    *psession = NULL;
+    sts = MFXInit(implementation, pver, &session);
+    if (sts < 0)
+        return ff_qsvvpp_print_error(ctx, sts,
+                                     "Error initializing an MFX session");
+    else if (sts > 0) {
+        ff_qsvvpp_print_warning(ctx, sts, "Warning in MFX session initialization");
+        return AVERROR_UNKNOWN;
+    }
+
+    *psession = session;
+
+    return 0;
+}
+
+#endif
