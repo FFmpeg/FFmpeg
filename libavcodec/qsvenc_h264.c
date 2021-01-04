@@ -32,7 +32,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "qsv.h"
-#include "qsv_internal.h"
 #include "qsvenc.h"
 #include "atsc_a53.h"
 

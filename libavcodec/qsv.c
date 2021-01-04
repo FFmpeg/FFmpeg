@@ -45,6 +45,12 @@
 #include <mfxplugin.h>
 #endif
 
+#if QSV_ONEVPL
+#include <mfxdispatcher.h>
+#else
+#define MFXUnload(a) do { } while(0)
+#endif
+
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
 {
     switch (codec_id) {
@@ -425,6 +431,193 @@ static int ff_qsv_set_display_handle(AVCodecContext *avctx, QSVSession *qs)
 }
 #endif //AVCODEC_QSV_LINUX_SESSION_HANDLE
 
+#if QSV_ONEVPL
+static int qsv_new_mfx_loader(AVCodecContext *avctx,
+                              mfxIMPL implementation,
+                              mfxVersion *pver,
+                              void **ploader)
+{
+    mfxStatus sts;
+    mfxLoader loader = NULL;
+    mfxConfig cfg;
+    mfxVariant impl_value;
+
+    loader = MFXLoad();
+    if (!loader) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating a MFX loader\n");
+        goto fail;
+    }
+
+    /* Create configurations for implementation */
+    cfg = MFXCreateConfig(loader);
+    if (!cfg) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating a MFX configurations\n");
+        goto fail;
+    }
+
+    impl_value.Type = MFX_VARIANT_TYPE_U32;
+    impl_value.Data.U32 = (implementation == MFX_IMPL_SOFTWARE) ?
+        MFX_IMPL_TYPE_SOFTWARE : MFX_IMPL_TYPE_HARDWARE;
+    sts = MFXSetConfigFilterProperty(cfg,
+                                     (const mfxU8 *)"mfxImplDescription.Impl", impl_value);
+    if (sts != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error adding a MFX configuration "
+               "property: %d\n", sts);
+        goto fail;
+    }
+
+    impl_value.Type = MFX_VARIANT_TYPE_U32;
+    impl_value.Data.U32 = pver->Version;
+    sts = MFXSetConfigFilterProperty(cfg,
+                                     (const mfxU8 *)"mfxImplDescription.ApiVersion.Version",
+                                     impl_value);
+    if (sts != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error adding a MFX configuration "
+               "property: %d\n", sts);
+        goto fail;
+    }
+
+    *ploader = loader;
+
+    return 0;
+
+fail:
+    if (loader)
+        MFXUnload(loader);
+
+    *ploader = NULL;
+    return AVERROR_UNKNOWN;
+}
+
+static int qsv_create_mfx_session_from_loader(void *ctx, mfxLoader loader, mfxSession *psession)
+{
+    mfxStatus sts;
+    mfxSession session = NULL;
+    uint32_t impl_idx = 0;
+
+    while (1) {
+        /* Enumerate all implementations */
+        mfxImplDescription *impl_desc;
+
+        sts = MFXEnumImplementations(loader, impl_idx,
+                                     MFX_IMPLCAPS_IMPLDESCSTRUCTURE,
+                                     (mfxHDL *)&impl_desc);
+        /* Failed to find an available implementation */
+        if (sts == MFX_ERR_NOT_FOUND)
+            break;
+        else if (sts != MFX_ERR_NONE) {
+            impl_idx++;
+            continue;
+        }
+
+        sts = MFXCreateSession(loader, impl_idx, &session);
+        MFXDispReleaseImplDescription(loader, impl_desc);
+        if (sts == MFX_ERR_NONE)
+            break;
+
+        impl_idx++;
+    }
+
+    if (sts != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error creating a MFX session: %d.\n", sts);
+        goto fail;
+    }
+
+    *psession = session;
+
+    return 0;
+
+fail:
+    if (session)
+        MFXClose(session);
+
+    *psession = NULL;
+    return AVERROR_UNKNOWN;
+}
+
+static int qsv_create_mfx_session(AVCodecContext *avctx,
+                                  mfxIMPL implementation,
+                                  mfxVersion *pver,
+                                  int gpu_copy,
+                                  mfxSession *psession,
+                                  void **ploader)
+{
+    mfxLoader loader = NULL;
+
+    /* Don't create a new MFX loader if the input loader is valid */
+    if (*ploader == NULL) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "Use Intel(R) oneVPL to create MFX session, the required "
+               "implementation version is %d.%d\n",
+               pver->Major, pver->Minor);
+
+        if (qsv_new_mfx_loader(avctx, implementation, pver, (void **)&loader))
+            goto fail;
+
+        av_assert0(loader);
+    } else {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "Use Intel(R) oneVPL to create MFX session with the specified MFX loader\n");
+
+        loader = *ploader;
+    }
+
+    if (qsv_create_mfx_session_from_loader(avctx, loader, psession))
+        goto fail;
+
+    if (!*ploader)
+        *ploader = loader;
+
+    return 0;
+
+fail:
+    if (!*ploader && loader)
+        MFXUnload(loader);
+
+    return AVERROR_UNKNOWN;
+}
+
+#else
+
+static int qsv_create_mfx_session(AVCodecContext *avctx,
+                                  mfxIMPL implementation,
+                                  mfxVersion *pver,
+                                  int gpu_copy,
+                                  mfxSession *psession,
+                                  void **ploader)
+{
+    mfxInitParam init_par = { MFX_IMPL_AUTO_ANY };
+    mfxSession session = NULL;
+    mfxStatus sts;
+
+    av_log(avctx, AV_LOG_VERBOSE,
+           "Use Intel(R) Media SDK to create MFX session, the required "
+           "implementation version is %d.%d\n",
+           pver->Major, pver->Minor);
+
+    *psession = NULL;
+    *ploader = NULL;
+
+    init_par.GPUCopy = gpu_copy;
+    init_par.Implementation = implementation;
+    init_par.Version = *pver;
+    sts = MFXInitEx(init_par, &session);
+    if (sts < 0)
+        return ff_qsv_print_error(avctx, sts,
+                                  "Error initializing a MFX session");
+    else if (sts > 0) {
+        ff_qsv_print_warning(avctx, sts,
+                             "Warning in MFX initialization");
+        return AVERROR_UNKNOWN;
+    }
+
+    *psession = session;
+
+    return 0;
+}
+
+#endif
+
 int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
                                  const char *load_plugins, int gpu_copy)
 {
@@ -434,18 +627,12 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
     mfxIMPL          impl = MFX_IMPL_AUTO_ANY;
 #endif
     mfxVersion        ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
-    mfxInitParam init_par = { MFX_IMPL_AUTO_ANY };
 
     const char *desc;
-    int ret;
-
-    init_par.GPUCopy        = gpu_copy;
-    init_par.Implementation = impl;
-    init_par.Version        = ver;
-    ret = MFXInitEx(init_par, &qs->session);
-    if (ret < 0)
-        return ff_qsv_print_error(avctx, ret,
-                                  "Error initializing an internal MFX session");
+    int ret = qsv_create_mfx_session(avctx, impl, &ver, gpu_copy, &qs->session,
+                                     &qs->loader);
+    if (ret)
+        return ret;
 
 #ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
     ret = ff_qsv_set_display_handle(avctx, qs);
@@ -749,7 +936,7 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
     AVHWDeviceContext    *device_ctx = (AVHWDeviceContext*)device_ref->data;
     AVQSVDeviceContext *device_hwctx = device_ctx->hwctx;
     mfxSession        parent_session = device_hwctx->session;
-    mfxInitParam            init_par = { MFX_IMPL_AUTO_ANY };
+    void                     *loader = device_hwctx->loader;
     mfxHDL                    handle = NULL;
     int          hw_handle_supported = 0;
 
@@ -790,13 +977,10 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
                "from the session\n");
     }
 
-    init_par.GPUCopy        = gpu_copy;
-    init_par.Implementation = impl;
-    init_par.Version        = ver;
-    err = MFXInitEx(init_par, &session);
-    if (err != MFX_ERR_NONE)
-        return ff_qsv_print_error(avctx, err,
-                                  "Error initializing a child MFX session");
+    ret = qsv_create_mfx_session(avctx, impl, &ver, gpu_copy, &session,
+                                 &loader);
+    if (ret)
+        return ret;
 
     if (handle) {
         err = MFXVideoCORE_SetHandle(session, handle_type, handle);
@@ -875,6 +1059,12 @@ int ff_qsv_close_internal_session(QSVSession *qs)
         MFXClose(qs->session);
         qs->session = NULL;
     }
+
+    if (qs->loader) {
+        MFXUnload(qs->loader);
+        qs->loader = NULL;
+    }
+
 #ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
     av_buffer_unref(&qs->va_device_ref);
 #endif

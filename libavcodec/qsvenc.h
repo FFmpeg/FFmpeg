@@ -28,6 +28,9 @@
 
 #include <mfxvideo.h>
 
+#include "libavutil/common.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_qsv.h"
 #include "libavutil/avutil.h"
 #include "libavutil/fifo.h"
 
