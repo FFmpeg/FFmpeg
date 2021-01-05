@@ -42,7 +42,6 @@ static int sbc_parse_header(AVCodecParserContext *s, AVCodecContext *avctx,
 
     if (data[0] == MSBC_SYNCWORD && data[1] == 0 && data[2] == 0) {
         avctx->channels = 1;
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
         avctx->sample_rate = 16000;
         avctx->frame_size = 120;
         s->duration = avctx->frame_size;
@@ -66,7 +65,6 @@ static int sbc_parse_header(AVCodecParserContext *s, AVCodecContext *avctx,
                  + (joint * subbands)) + 7) / 8;
 
     avctx->channels = channels;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->sample_rate = sample_rates[sr];
     avctx->frame_size = subbands * blocks;
     s->duration = avctx->frame_size;
