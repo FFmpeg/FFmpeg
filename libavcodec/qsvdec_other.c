@@ -189,170 +189,54 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#if CONFIG_MPEG2_QSV_DECODER
-static const AVClass mpeg2_qsv_class = {
-    .class_name = "mpeg2_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define DEFINE_QSV_DECODER(x, X, bsf_name) \
+static const AVClass x##_qsv_class = { \
+    .class_name = #x "_qsv", \
+    .item_name  = av_default_item_name, \
+    .option     = options, \
+    .version    = LIBAVUTIL_VERSION_INT, \
+}; \
+AVCodec ff_##x##_qsv_decoder = { \
+    .name           = #x "_qsv", \
+    .long_name      = NULL_IF_CONFIG_SMALL(#X " video (Intel Quick Sync Video acceleration)"), \
+    .priv_data_size = sizeof(QSVOtherContext), \
+    .type           = AVMEDIA_TYPE_VIDEO, \
+    .id             = AV_CODEC_ID_##X, \
+    .init           = qsv_decode_init, \
+    .decode         = qsv_decode_frame, \
+    .flush          = qsv_decode_flush, \
+    .close          = qsv_decode_close, \
+    .bsfs           = bsf_name, \
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID, \
+    .priv_class     = &x##_qsv_class, \
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12, \
+                                                    AV_PIX_FMT_P010, \
+                                                    AV_PIX_FMT_QSV, \
+                                                    AV_PIX_FMT_NONE }, \
+    .hw_configs     = ff_qsv_hw_configs, \
+    .wrapper_name   = "qsv", \
+}; \
 
-AVCodec ff_mpeg2_qsv_decoder = {
-    .name           = "mpeg2_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVOtherContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &mpeg2_qsv_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .wrapper_name   = "qsv",
-};
+#if CONFIG_MPEG2_QSV_DECODER
+DEFINE_QSV_DECODER(mpeg2, MPEG2VIDEO, NULL)
 #endif
 
 #if CONFIG_VC1_QSV_DECODER
-static const AVClass vc1_qsv_class = {
-    .class_name = "vc1_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_vc1_qsv_decoder = {
-    .name           = "vc1_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("VC-1 video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVOtherContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VC1,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &vc1_qsv_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .wrapper_name   = "qsv",
-};
-#endif
-
-#if CONFIG_VP8_QSV_DECODER
-static const AVClass vp8_qsv_class = {
-    .class_name = "vp8_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_vp8_qsv_decoder = {
-    .name           = "vp8_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("VP8 video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVOtherContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP8,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &vp8_qsv_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .wrapper_name   = "qsv",
-};
+DEFINE_QSV_DECODER(vc1, VC1, NULL)
 #endif
 
 #if CONFIG_MJPEG_QSV_DECODER
-static const AVClass mjpeg_qsv_class = {
-    .class_name = "mjpeg_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+DEFINE_QSV_DECODER(mjpeg, MJPEG, NULL)
+#endif
 
-AVCodec ff_mjpeg_qsv_decoder = {
-    .name           = "mjpeg_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("MJPEG video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVOtherContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MJPEG,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &mjpeg_qsv_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-};
+#if CONFIG_VP8_QSV_DECODER
+DEFINE_QSV_DECODER(vp8, VP8, NULL)
 #endif
 
 #if CONFIG_VP9_QSV_DECODER
-static const AVClass vp9_qsv_class = {
-    .class_name = "vp9_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_vp9_qsv_decoder = {
-    .name           = "vp9_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("VP9 video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVOtherContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP9,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &vp9_qsv_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_P010,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .wrapper_name   = "qsv",
-};
+DEFINE_QSV_DECODER(vp9, VP9, NULL)
 #endif
 
 #if CONFIG_AV1_QSV_DECODER
-static const AVClass av1_qsv_class = {
-    .class_name = "av1_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_av1_qsv_decoder = {
-    .name           = "av1_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("AV1 video (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVOtherContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AV1,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &av1_qsv_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_P010,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .wrapper_name   = "qsv",
-};
+DEFINE_QSV_DECODER(av1, AV1, NULL)
 #endif
