@@ -682,21 +682,12 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
 {
     QSVDecContext *s = avctx->priv_data;
     int ret;
+    const char *uid = NULL;
 
     if (avctx->codec_id == AV_CODEC_ID_VP8) {
-        static const char *uid_vp8dec_hw = "f622394d8d87452f878c51f2fc9b4131";
-
-        av_freep(&s->qsv.load_plugins);
-        s->qsv.load_plugins = av_strdup(uid_vp8dec_hw);
-        if (!s->qsv.load_plugins)
-            return AVERROR(ENOMEM);
+        uid = "f622394d8d87452f878c51f2fc9b4131";
     } else if (avctx->codec_id == AV_CODEC_ID_VP9) {
-        static const char *uid_vp9dec_hw = "a922394d8d87452f878c51f2fc9b4131";
-
-        av_freep(&s->qsv.load_plugins);
-        s->qsv.load_plugins = av_strdup(uid_vp9dec_hw);
-        if (!s->qsv.load_plugins)
-            return AVERROR(ENOMEM);
+        uid = "a922394d8d87452f878c51f2fc9b4131";
     }
     else if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
         static const char * const uid_hevcdec_sw = "15dd936825ad475ea34e35f3f54217a6";
@@ -707,15 +698,17 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
                    "load_plugins is not empty, but load_plugin is not set to 'none'."
                    "The load_plugin value will be ignored.\n");
         } else {
-            av_freep(&s->qsv.load_plugins);
-
             if (s->load_plugin == LOAD_PLUGIN_HEVC_SW)
-                s->qsv.load_plugins = av_strdup(uid_hevcdec_sw);
+                uid = uid_hevcdec_sw;
             else
-                s->qsv.load_plugins = av_strdup(uid_hevcdec_hw);
-            if (!s->qsv.load_plugins)
-                return AVERROR(ENOMEM);
+                uid = uid_hevcdec_hw;
         }
+    }
+    if (uid) {
+        av_freep(&s->qsv.load_plugins);
+        s->qsv.load_plugins = av_strdup(uid);
+        if (!s->qsv.load_plugins)
+            return AVERROR(ENOMEM);
     }
 
     s->qsv.orig_pix_fmt = AV_PIX_FMT_NV12;
