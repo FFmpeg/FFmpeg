@@ -303,13 +303,6 @@ static const enum AVPixelFormat out_gray12_lowpass_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static const enum AVPixelFormat flat_pix_fmts[] = {
-    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
-    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
-    AV_PIX_FMT_YUV444P12,
-    AV_PIX_FMT_NONE
-};
-
 static int query_formats(AVFilterContext *ctx)
 {
     WaveformContext *s = ctx->priv;
