@@ -76,6 +76,110 @@ static const mfxHandleType handle_types[] = {
 
 static const AVRational default_tb = { 1, 90000 };
 
+static const struct {
+    int mfx_iopattern;
+    const char *desc;
+} qsv_iopatterns[] = {
+    {MFX_IOPATTERN_IN_VIDEO_MEMORY,     "input is video memory surface"         },
+    {MFX_IOPATTERN_IN_SYSTEM_MEMORY,    "input is system memory surface"        },
+    {MFX_IOPATTERN_IN_OPAQUE_MEMORY,    "input is opaque memory surface"        },
+    {MFX_IOPATTERN_OUT_VIDEO_MEMORY,    "output is video memory surface"        },
+    {MFX_IOPATTERN_OUT_SYSTEM_MEMORY,   "output is system memory surface"       },
+    {MFX_IOPATTERN_OUT_OPAQUE_MEMORY,   "output is opaque memory surface"       },
+};
+
+int ff_qsvvpp_print_iopattern(void *log_ctx, int mfx_iopattern,
+                              const char *extra_string)
+{
+    const char *desc = NULL;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(qsv_iopatterns); i++) {
+        if (qsv_iopatterns[i].mfx_iopattern == mfx_iopattern) {
+            desc = qsv_iopatterns[i].desc;
+        }
+    }
+    if (!desc)
+        desc = "unknown iopattern";
+
+    av_log(log_ctx, AV_LOG_VERBOSE, "%s: %s\n", extra_string, desc);
+    return 0;
+}
+
+static const struct {
+    mfxStatus   mfxerr;
+    int         averr;
+    const char *desc;
+} qsv_errors[] = {
+    { MFX_ERR_NONE,                     0,               "success"                              },
+    { MFX_ERR_UNKNOWN,                  AVERROR_UNKNOWN, "unknown error"                        },
+    { MFX_ERR_NULL_PTR,                 AVERROR(EINVAL), "NULL pointer"                         },
+    { MFX_ERR_UNSUPPORTED,              AVERROR(ENOSYS), "unsupported"                          },
+    { MFX_ERR_MEMORY_ALLOC,             AVERROR(ENOMEM), "failed to allocate memory"            },
+    { MFX_ERR_NOT_ENOUGH_BUFFER,        AVERROR(ENOMEM), "insufficient input/output buffer"     },
+    { MFX_ERR_INVALID_HANDLE,           AVERROR(EINVAL), "invalid handle"                       },
+    { MFX_ERR_LOCK_MEMORY,              AVERROR(EIO),    "failed to lock the memory block"      },
+    { MFX_ERR_NOT_INITIALIZED,          AVERROR_BUG,     "not initialized"                      },
+    { MFX_ERR_NOT_FOUND,                AVERROR(ENOSYS), "specified object was not found"       },
+    /* the following 3 errors should always be handled explicitly, so those "mappings"
+     * are for completeness only */
+    { MFX_ERR_MORE_DATA,                AVERROR_UNKNOWN, "expect more data at input"            },
+    { MFX_ERR_MORE_SURFACE,             AVERROR_UNKNOWN, "expect more surface at output"        },
+    { MFX_ERR_MORE_BITSTREAM,           AVERROR_UNKNOWN, "expect more bitstream at output"      },
+    { MFX_ERR_ABORTED,                  AVERROR_UNKNOWN, "operation aborted"                    },
+    { MFX_ERR_DEVICE_LOST,              AVERROR(EIO),    "device lost"                          },
+    { MFX_ERR_INCOMPATIBLE_VIDEO_PARAM, AVERROR(EINVAL), "incompatible video parameters"        },
+    { MFX_ERR_INVALID_VIDEO_PARAM,      AVERROR(EINVAL), "invalid video parameters"             },
+    { MFX_ERR_UNDEFINED_BEHAVIOR,       AVERROR_BUG,     "undefined behavior"                   },
+    { MFX_ERR_DEVICE_FAILED,            AVERROR(EIO),    "device failed"                        },
+    { MFX_ERR_INCOMPATIBLE_AUDIO_PARAM, AVERROR(EINVAL), "incompatible audio parameters"        },
+    { MFX_ERR_INVALID_AUDIO_PARAM,      AVERROR(EINVAL), "invalid audio parameters"             },
+
+    { MFX_WRN_IN_EXECUTION,             0,               "operation in execution"               },
+    { MFX_WRN_DEVICE_BUSY,              0,               "device busy"                          },
+    { MFX_WRN_VIDEO_PARAM_CHANGED,      0,               "video parameters changed"             },
+    { MFX_WRN_PARTIAL_ACCELERATION,     0,               "partial acceleration"                 },
+    { MFX_WRN_INCOMPATIBLE_VIDEO_PARAM, 0,               "incompatible video parameters"        },
+    { MFX_WRN_VALUE_NOT_CHANGED,        0,               "value is saturated"                   },
+    { MFX_WRN_OUT_OF_RANGE,             0,               "value out of range"                   },
+    { MFX_WRN_FILTER_SKIPPED,           0,               "filter skipped"                       },
+    { MFX_WRN_INCOMPATIBLE_AUDIO_PARAM, 0,               "incompatible audio parameters"        },
+};
+
+static int qsv_map_error(mfxStatus mfx_err, const char **desc)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(qsv_errors); i++) {
+        if (qsv_errors[i].mfxerr == mfx_err) {
+            if (desc)
+                *desc = qsv_errors[i].desc;
+            return qsv_errors[i].averr;
+        }
+    }
+    if (desc)
+        *desc = "unknown error";
+    return AVERROR_UNKNOWN;
+}
+
+int ff_qsvvpp_print_error(void *log_ctx, mfxStatus err,
+                          const char *error_string)
+{
+    const char *desc;
+    int ret;
+    ret = qsv_map_error(err, &desc);
+    av_log(log_ctx, AV_LOG_ERROR, "%s: %s (%d)\n", error_string, desc, err);
+    return ret;
+}
+
+int ff_qsvvpp_print_warning(void *log_ctx, mfxStatus err,
+                            const char *warning_string)
+{
+    const char *desc;
+    int ret;
+    ret = qsv_map_error(err, &desc);
+    av_log(log_ctx, AV_LOG_WARNING, "%s: %s (%d)\n", warning_string, desc, err);
+    return ret;
+}
+
 /* functions for frameAlloc */
 static mfxStatus frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
                              mfxFrameAllocResponse *resp)

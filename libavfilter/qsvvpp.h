@@ -71,4 +71,13 @@ int ff_qsvvpp_free(QSVVPPContext **vpp);
 /* vpp filter frame and call the cb if needed */
 int ff_qsvvpp_filter_frame(QSVVPPContext *vpp, AVFilterLink *inlink, AVFrame *frame);
 
+int ff_qsvvpp_print_iopattern(void *log_ctx, int mfx_iopattern,
+                              const char *extra_string);
+
+int ff_qsvvpp_print_error(void *log_ctx, mfxStatus err,
+                          const char *error_string);
+
+int ff_qsvvpp_print_warning(void *log_ctx, mfxStatus err,
+                            const char *warning_string);
+
 #endif /* AVFILTER_QSVVPP_H */
