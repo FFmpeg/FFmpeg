@@ -683,7 +683,22 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
     QSVDecContext *s = avctx->priv_data;
     int ret;
 
-    if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
+    if (avctx->codec_id == AV_CODEC_ID_VP8) {
+        static const char *uid_vp8dec_hw = "f622394d8d87452f878c51f2fc9b4131";
+
+        av_freep(&s->qsv.load_plugins);
+        s->qsv.load_plugins = av_strdup(uid_vp8dec_hw);
+        if (!s->qsv.load_plugins)
+            return AVERROR(ENOMEM);
+    } else if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        static const char *uid_vp9dec_hw = "a922394d8d87452f878c51f2fc9b4131";
+
+        av_freep(&s->qsv.load_plugins);
+        s->qsv.load_plugins = av_strdup(uid_vp9dec_hw);
+        if (!s->qsv.load_plugins)
+            return AVERROR(ENOMEM);
+    }
+    else if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
         static const char * const uid_hevcdec_sw = "15dd936825ad475ea34e35f3f54217a6";
         static const char * const uid_hevcdec_hw = "33a61c0b4c27454ca8d85dde757c6f8e";
 
@@ -845,4 +860,28 @@ static const AVOption options[] = {
 
 #if CONFIG_H264_QSV_DECODER
 DEFINE_QSV_DECODER(h264, H264, "h264_mp4toannexb")
+#endif
+
+#if CONFIG_MPEG2_QSV_DECODER
+DEFINE_QSV_DECODER(mpeg2, MPEG2VIDEO, NULL)
+#endif
+
+#if CONFIG_VC1_QSV_DECODER
+DEFINE_QSV_DECODER(vc1, VC1, NULL)
+#endif
+
+#if CONFIG_MJPEG_QSV_DECODER
+DEFINE_QSV_DECODER(mjpeg, MJPEG, NULL)
+#endif
+
+#if CONFIG_VP8_QSV_DECODER
+DEFINE_QSV_DECODER(vp8, VP8, NULL)
+#endif
+
+#if CONFIG_VP9_QSV_DECODER
+DEFINE_QSV_DECODER(vp9, VP9, NULL)
+#endif
+
+#if CONFIG_AV1_QSV_DECODER
+DEFINE_QSV_DECODER(av1, AV1, NULL)
 #endif
