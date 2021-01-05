@@ -318,9 +318,8 @@ static const int dv100_qstep_inv[16] = {
         65536,  65536,  32768,  21845,  16384,  13107,  10923,  9362,  8192,  4096,  3641,  3277,  2979,  2731,  2341,  1260,
 };
 
-/* DV100 weights are pre-zigzagged, inverted and multiplied by 2^(dv100_weight_shift)
+/* DV100 weights are pre-zigzagged, inverted and multiplied by 2^16
    (in DV100 the AC components are divided by the spec weights) */
-static const int dv100_weight_shift = 16;
 static const int dv_weight_1080[2][64] = {
     { 8192, 65536, 65536, 61681, 61681, 61681, 58254, 58254,
       58254, 58254, 58254, 58254, 55188, 58254, 58254, 55188,
