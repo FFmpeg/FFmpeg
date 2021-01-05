@@ -184,6 +184,36 @@ static void qsv_decode_flush(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(QSVH2645Context, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
+#define DEFINE_QSV_DECODER_WITH_OPTION(x, X, bsf_name, opt) \
+static const AVClass x##_qsv_class = { \
+    .class_name = #x "_qsv", \
+    .item_name  = av_default_item_name, \
+    .option     = opt, \
+    .version    = LIBAVUTIL_VERSION_INT, \
+}; \
+AVCodec ff_##x##_qsv_decoder = { \
+    .name           = #x "_qsv", \
+    .long_name      = NULL_IF_CONFIG_SMALL(#X " video (Intel Quick Sync Video acceleration)"), \
+    .priv_data_size = sizeof(QSVH2645Context), \
+    .type           = AVMEDIA_TYPE_VIDEO, \
+    .id             = AV_CODEC_ID_##X, \
+    .init           = qsv_decode_init, \
+    .decode         = qsv_decode_frame, \
+    .flush          = qsv_decode_flush, \
+    .close          = qsv_decode_close, \
+    .bsfs           = bsf_name, \
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID, \
+    .priv_class     = &x##_qsv_class, \
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12, \
+                                                    AV_PIX_FMT_P010, \
+                                                    AV_PIX_FMT_QSV, \
+                                                    AV_PIX_FMT_NONE }, \
+    .hw_configs     = ff_qsv_hw_configs, \
+    .wrapper_name   = "qsv", \
+}; \
+
+#define DEFINE_QSV_DECODER(x, X, bsf_name) DEFINE_QSV_DECODER_WITH_OPTION(x, X, bsf_name, options)
+
 #if CONFIG_HEVC_QSV_DECODER
 static const AVOption hevc_options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 1, INT_MAX, VD },
@@ -202,37 +232,9 @@ static const AVOption hevc_options[] = {
         { "off",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_GPUCOPY_OFF },     0, 0, VD, "gpu_copy"},
     { NULL },
 };
-
-static const AVClass hevc_class = {
-    .class_name = "hevc_qsv",
-    .item_name  = av_default_item_name,
-    .option     = hevc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_hevc_qsv_decoder = {
-    .name           = "hevc_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("HEVC (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVH2645Context),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &hevc_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_P010,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .bsfs           = "hevc_mp4toannexb",
-    .wrapper_name   = "qsv",
-};
+DEFINE_QSV_DECODER_WITH_OPTION(hevc, HEVC, "hevc_mp4toannexb", hevc_options)
 #endif
 
-#if CONFIG_H264_QSV_DECODER
 static const AVOption options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 1, INT_MAX, VD },
 
@@ -243,31 +245,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass class = {
-    .class_name = "h264_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_h264_qsv_decoder = {
-    .name           = "h264_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (Intel Quick Sync Video acceleration)"),
-    .priv_data_size = sizeof(QSVH2645Context),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .init           = qsv_decode_init,
-    .decode         = qsv_decode_frame,
-    .flush          = qsv_decode_flush,
-    .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID,
-    .priv_class     = &class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
-                                                    AV_PIX_FMT_P010,
-                                                    AV_PIX_FMT_QSV,
-                                                    AV_PIX_FMT_NONE },
-    .hw_configs     = ff_qsv_hw_configs,
-    .bsfs           = "h264_mp4toannexb",
-    .wrapper_name   = "qsv",
-};
+#if CONFIG_H264_QSV_DECODER
+DEFINE_QSV_DECODER(h264, H264, "h264_mp4toannexb")
 #endif
