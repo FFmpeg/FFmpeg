@@ -202,16 +202,20 @@ static int init_out_session(AVFilterContext *ctx)
         }
     }
 
-    if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error getting the session handle\n");
+    if (err < 0)
+        return ff_qsvvpp_print_error(ctx, err, "Error getting the session handle");
+    else if (err > 0) {
+        ff_qsvvpp_print_warning(ctx, err, "Warning in getting the session handle");
         return AVERROR_UNKNOWN;
     }
 
     /* create a "slave" session with those same properties, to be used for
      * actual deinterlacing */
     err = MFXInit(impl, &ver, &s->session);
-    if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error initializing a session for deinterlacing\n");
+    if (err < 0)
+        return ff_qsvvpp_print_error(ctx, err, "Error initializing a session for deinterlacing");
+    else if (err > 0) {
+        ff_qsvvpp_print_warning(ctx, err, "Warning in session initialization");
         return AVERROR_UNKNOWN;
     }
 
@@ -309,9 +313,17 @@ static int init_out_session(AVFilterContext *ctx)
         par.vpp.Out.FrameRateExtD = ctx->outputs[0]->time_base.den;
     }
 
+    /* Print input memory mode */
+    ff_qsvvpp_print_iopattern(ctx, par.IOPattern & 0x0F, "VPP");
+    /* Print output memory mode */
+    ff_qsvvpp_print_iopattern(ctx, par.IOPattern & 0xF0, "VPP");
     err = MFXVideoVPP_Init(s->session, &par);
-    if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error opening the VPP for deinterlacing: %d\n", err);
+    if (err < 0)
+        return ff_qsvvpp_print_error(ctx, err,
+                                     "Error opening the VPP for deinterlacing");
+    else if (err > 0) {
+        ff_qsvvpp_print_warning(ctx, err,
+                                "Warning in VPP initialization");
         return AVERROR_UNKNOWN;
     }
 
@@ -482,8 +494,13 @@ static int process_frame(AVFilterContext *ctx, const AVFrame *in,
         return QSVDEINT_MORE_INPUT;
     }
 
-    if ((err < 0 && err != MFX_ERR_MORE_SURFACE) || !sync) {
-        av_log(ctx, AV_LOG_ERROR, "Error during deinterlacing: %d\n", err);
+    if (err < 0 && err != MFX_ERR_MORE_SURFACE) {
+        ret = ff_qsvvpp_print_error(ctx, err, "Error during deinterlacing");
+        goto fail;
+    }
+
+    if (!sync) {
+        av_log(ctx, AV_LOG_ERROR, "No sync during deinterlacing\n");
         ret = AVERROR_UNKNOWN;
         goto fail;
     }
@@ -494,8 +511,7 @@ static int process_frame(AVFilterContext *ctx, const AVFrame *in,
         err = MFXVideoCORE_SyncOperation(s->session, sync, 1000);
     } while (err == MFX_WRN_IN_EXECUTION);
     if (err < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
-        ret = AVERROR_UNKNOWN;
+        ret = ff_qsvvpp_print_error(ctx, err, "Error synchronizing the operation");
         goto fail;
     }
 

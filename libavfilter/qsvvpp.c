@@ -609,15 +609,19 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         }
     }
 
-    if (ret != MFX_ERR_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting the session handle\n");
+    if (ret < 0)
+        return ff_qsvvpp_print_error(avctx, ret, "Error getting the session handle");
+    else if (ret > 0) {
+        ff_qsvvpp_print_warning(avctx, ret, "Warning in getting the session handle");
         return AVERROR_UNKNOWN;
     }
 
     /* create a "slave" session with those same properties, to be used for vpp */
     ret = MFXInit(impl, &ver, &s->session);
-    if (ret != MFX_ERR_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing a session for scaling\n");
+    if (ret < 0)
+        return ff_qsvvpp_print_error(avctx, ret, "Error initializing a session");
+    else if (ret > 0) {
+        ff_qsvvpp_print_warning(avctx, ret, "Warning in session initialization");
         return AVERROR_UNKNOWN;
     }
 
@@ -750,11 +754,16 @@ int ff_qsvvpp_create(AVFilterContext *avctx, QSVVPPContext **vpp, QSVVPPParam *p
     else if (IS_OPAQUE_MEMORY(s->out_mem_mode))
         s->vpp_param.IOPattern |= MFX_IOPATTERN_OUT_OPAQUE_MEMORY;
 
+    /* Print input memory mode */
+    ff_qsvvpp_print_iopattern(avctx, s->vpp_param.IOPattern & 0x0F, "VPP");
+    /* Print output memory mode */
+    ff_qsvvpp_print_iopattern(avctx, s->vpp_param.IOPattern & 0xF0, "VPP");
     ret = MFXVideoVPP_Init(s->session, &s->vpp_param);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create a qsvvpp, ret = %d.\n", ret);
+        ret = ff_qsvvpp_print_error(avctx, ret, "Failed to create a qsvvpp");
         goto failed;
-    }
+    } else if (ret > 0)
+        ff_qsvvpp_print_warning(avctx, ret, "Warning When creating qsvvpp");
 
     *vpp = s;
     return 0;

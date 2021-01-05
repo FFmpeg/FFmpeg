@@ -1132,6 +1132,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (!iopattern)
         iopattern = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
     q->param.IOPattern = iopattern;
+    ff_qsv_print_iopattern(avctx, iopattern, "Encoder");
 
     ret = qsvenc_init_session(avctx, q);
     if (ret < 0)
