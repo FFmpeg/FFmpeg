@@ -27,7 +27,6 @@
 #include <stdio.h>
 
 #include "libavutil/common.h"
-#include "libavutil/mem_internal.h"
 
 #define WRITE_1D_FUNC_ARGV(type, linebrk, fmtstr, ...)\
 void write_##type##_array(const type *data, int len)\
