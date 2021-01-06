@@ -789,7 +789,7 @@ static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
     return pts;
 }
 
-int get_bmd_timecode(AVFormatContext *avctx, AVTimecode *tc, AVRational frame_rate, BMDTimecodeFormat tc_format, IDeckLinkVideoInputFrame *videoFrame)
+static int get_bmd_timecode(AVFormatContext *avctx, AVTimecode *tc, AVRational frame_rate, BMDTimecodeFormat tc_format, IDeckLinkVideoInputFrame *videoFrame)
 {
     IDeckLinkTimecode *timecode;
     int ret = AVERROR(ENOENT);
@@ -811,7 +811,7 @@ int get_bmd_timecode(AVFormatContext *avctx, AVTimecode *tc, AVRational frame_ra
     return ret;
 }
 
-int get_frame_timecode(AVFormatContext *avctx, decklink_ctx *ctx, AVTimecode *tc, IDeckLinkVideoInputFrame *videoFrame)
+static int get_frame_timecode(AVFormatContext *avctx, decklink_ctx *ctx, AVTimecode *tc, IDeckLinkVideoInputFrame *videoFrame)
 {
     AVRational frame_rate = ctx->video_st->r_frame_rate;
     int ret;
