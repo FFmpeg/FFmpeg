@@ -4614,9 +4614,14 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base,
         return NULL;
     }
 
-    for (i = 0; i < s->nb_chapters; i++)
-        if (s->chapters[i]->id == id)
-            chapter = s->chapters[i];
+    if (!s->nb_chapters) {
+        s->internal->chapter_ids_monotonic = 1;
+    } else if (!s->internal->chapter_ids_monotonic || s->chapters[s->nb_chapters-1]->id >= id) {
+        s->internal->chapter_ids_monotonic = 0;
+        for (i = 0; i < s->nb_chapters; i++)
+            if (s->chapters[i]->id == id)
+                chapter = s->chapters[i];
+    }
 
     if (!chapter) {
         chapter = av_mallocz(sizeof(AVChapter));
