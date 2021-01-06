@@ -248,7 +248,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 #endif /* FFT_FIXED_32 */
 
 
-    if (s->fft_permutation == FF_FFT_PERM_AVX) {
+    if (ARCH_X86 && FFT_FLOAT && s->fft_permutation == FF_FFT_PERM_AVX) {
         fft_perm_avx(s);
     } else {
 #define PROCESS_FFT_PERM_SWAP_LSBS(num) do {\
