@@ -173,7 +173,7 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacenc_tns.o \
                                           aacenc_ltp.o \
                                           aacenc_pred.o \
-                                          psymodel.o mpeg4audio.o kbdwin.o cbrt_data.o
+                                          psymodel.o mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AAC_MF_ENCODER)          += mfenc.o mf_utils.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
