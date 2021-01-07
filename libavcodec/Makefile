@@ -357,7 +357,8 @@ OBJS-$(CONFIG_H261_DECODER)            += h261dec.o h261data.o h261.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261data.o h261.o
 OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o ituh263dec.o        \
                                           mpeg4video.o mpeg4videodec.o \
-                                          intelh263dec.o h263data.o
+                                          h263data.o
+OBJS-$(CONFIG_H263I_DECODER)           += intelh263dec.o
 OBJS-$(CONFIG_H263_ENCODER)            += mpeg4videoenc.o mpeg4video.o  \
                                           h263.o ituh263enc.o h263data.o
 OBJS-$(CONFIG_H263_V4L2M2M_DECODER)    += v4l2_m2m_dec.o
