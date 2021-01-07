@@ -33,6 +33,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "libswscale/swscale.h"
+#include "libavutil/time.h"
 
 typedef struct DnnProcessingContext {
     const AVClass *class;
@@ -369,6 +370,37 @@ static int activate_sync(AVFilterContext *filter_ctx)
     return FFERROR_NOT_READY;
 }
 
+static int flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
+{
+    DnnProcessingContext *ctx = outlink->src->priv;
+    int ret;
+    DNNAsyncStatusType async_state;
+
+    ret = (ctx->dnn_module->flush)(ctx->model);
+    if (ret != DNN_SUCCESS) {
+        return -1;
+    }
+
+    do {
+        AVFrame *in_frame = NULL;
+        AVFrame *out_frame = NULL;
+        async_state = (ctx->dnn_module->get_async_result)(ctx->model, &in_frame, &out_frame);
+        if (out_frame) {
+            if (isPlanarYUV(in_frame->format))
+                copy_uv_planes(ctx, out_frame, in_frame);
+            av_frame_free(&in_frame);
+            ret = ff_filter_frame(outlink, out_frame);
+            if (ret < 0)
+                return ret;
+            if (out_pts)
+                *out_pts = out_frame->pts + pts;
+        }
+        av_usleep(5000);
+    } while (async_state >= DAST_NOT_READY);
+
+    return 0;
+}
+
 static int activate_async(AVFilterContext *filter_ctx)
 {
     AVFilterLink *inlink = filter_ctx->inputs[0];
@@ -396,7 +428,7 @@ static int activate_async(AVFilterContext *filter_ctx)
             av_frame_copy_props(out, in);
             if ((ctx->dnn_module->execute_model_async)(ctx->model, ctx->model_inputname, in,
                                                        (const char **)&ctx->model_outputname, 1, out) != DNN_SUCCESS) {
-                return FFERROR_NOT_READY;
+                return AVERROR(EIO);
             }
         }
     } while (ret > 0);
@@ -423,14 +455,16 @@ static int activate_async(AVFilterContext *filter_ctx)
 
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
-            ff_outlink_set_status(outlink, status, pts);
+            int64_t out_pts = pts;
+            ret = flush_frame(outlink, pts, &out_pts);
+            ff_outlink_set_status(outlink, status, out_pts);
             return ret;
         }
     }
 
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
-    return FFERROR_NOT_READY;
+    return 0;
 }
 
 static int activate(AVFilterContext *filter_ctx)
