@@ -116,6 +116,16 @@ static const struct {
     #if CONFIG_HEVC_DECODER
         { "hevc_add_res", checkasm_check_hevc_add_res },
         { "hevc_idct", checkasm_check_hevc_idct },
+        { "hevc_qpel", checkasm_check_hevc_qpel },
+        { "hevc_qpel_uni", checkasm_check_hevc_qpel_uni },
+        { "hevc_qpel_uni_w", checkasm_check_hevc_qpel_uni_w },
+        { "hevc_qpel_bi", checkasm_check_hevc_qpel_bi },
+        { "hevc_qpel_bi_w", checkasm_check_hevc_qpel_bi_w },
+        { "hevc_epel", checkasm_check_hevc_epel },
+        { "hevc_epel_uni", checkasm_check_hevc_epel_uni },
+        { "hevc_epel_uni_w", checkasm_check_hevc_epel_uni_w },
+        { "hevc_epel_bi", checkasm_check_hevc_epel_bi },
+        { "hevc_epel_bi_w", checkasm_check_hevc_epel_bi_w },
         { "hevc_sao", checkasm_check_hevc_sao },
     #endif
     #if CONFIG_HUFFYUV_DECODER
