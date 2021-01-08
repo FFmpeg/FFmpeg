@@ -2128,6 +2128,38 @@ midpoint is passed in rather than calculated for a specific clip or chunk.
 The valid range is [0, 10000]. 0 (default) uses standard VBR.
 @item enable-tpl @var{boolean}
 Enable temporal dependency model.
+@item ref-frame-config
+Using per-frame metadata, set members of the structure @code{vpx_svc_ref_frame_config_t} in @code{vpx/vp8cx.h} to fine-control referencing schemes and frame buffer management.
+@*Use a :-separated list of key=value pairs.
+For example,
+@example
+av_dict_set(&av_frame->metadata, "ref-frame-config", \
+"rfc_update_buffer_slot=7:rfc_lst_fb_idx=0:rfc_gld_fb_idx=1:rfc_alt_fb_idx=2:rfc_reference_last=0:rfc_reference_golden=0:rfc_reference_alt_ref=0");
+@end example
+@table @option
+@item rfc_update_buffer_slot
+Indicates the buffer slot number to update
+@item rfc_update_last
+Indicates whether to update the LAST frame
+@item rfc_update_golden
+Indicates whether to update GOLDEN frame
+@item rfc_update_alt_ref
+Indicates whether to update ALT_REF frame
+@item rfc_lst_fb_idx
+LAST frame buffer index
+@item rfc_gld_fb_idx
+GOLDEN frame buffer index
+@item rfc_alt_fb_idx
+ALT_REF frame buffer index
+@item rfc_reference_last
+Indicates whether to reference LAST frame
+@item rfc_reference_golden
+Indicates whether to reference GOLDEN frame
+@item rfc_reference_alt_ref
+Indicates whether to reference ALT_REF frame
+@item rfc_reference_duration
+Indicates frame duration
+@end table
 @end table
 
 @end table
