@@ -85,7 +85,7 @@ typedef void FFTComplex;
         (dim)   = (int)(((accu) + 0x40000000) >> 31);                          \
     } while (0)
 
-#define RESCALE(x) (lrintf((x) * 2147483648.0))
+#define RESCALE(x) (av_clip64(lrintf((x) * 2147483648.0), INT32_MIN, INT32_MAX))
 
 #define FOLD(x, y) ((int)((x) + (unsigned)(y) + 32) >> 6)
 
