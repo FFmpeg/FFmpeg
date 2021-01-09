@@ -43,39 +43,6 @@ typedef struct AC3DSPContext {
     void (*ac3_exponent_min)(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 
     /**
-     * Calculate the maximum MSB of the absolute value of each element in an
-     * array of int16_t.
-     * @param src input array
-     *            constraints: align 16. values must be in range [-32767,32767]
-     * @param len number of values in the array
-     *            constraints: multiple of 16 greater than 0
-     * @return    a value with the same MSB as max(abs(src[]))
-     */
-    int (*ac3_max_msb_abs_int16)(const int16_t *src, int len);
-
-    /**
-     * Left-shift each value in an array of int16_t by a specified amount.
-     * @param src    input array
-     *               constraints: align 16
-     * @param len    number of values in the array
-     *               constraints: multiple of 32 greater than 0
-     * @param shift  left shift amount
-     *               constraints: range [0,15]
-     */
-    void (*ac3_lshift_int16)(int16_t *src, unsigned int len, unsigned int shift);
-
-    /**
-     * Right-shift each value in an array of int32_t by a specified amount.
-     * @param src    input array
-     *               constraints: align 16
-     * @param len    number of values in the array
-     *               constraints: multiple of 16 greater than 0
-     * @param shift  right shift amount
-     *               constraints: range [0,31]
-     */
-    void (*ac3_rshift_int32)(int32_t *src, unsigned int len, unsigned int shift);
-
-    /**
      * Convert an array of float in range [-1.0,1.0] to int32_t with range
      * [-(1<<24),(1<<24)]
      *
@@ -136,20 +103,6 @@ typedef struct AC3DSPContext {
     int in_channels;
     void (*downmix)(float **samples, float **matrix, int len);
     void (*downmix_fixed)(int32_t **samples, int16_t **matrix, int len);
-
-    /**
-     * Apply symmetric window in 16-bit fixed-point.
-     * @param output destination array
-     *               constraints: 16-byte aligned
-     * @param input  source array
-     *               constraints: 16-byte aligned
-     * @param window window array
-     *               constraints: 16-byte aligned, at least len/2 elements
-     * @param len    full window length
-     *               constraints: multiple of ? greater than zero
-     */
-    void (*apply_window_int16)(int16_t *output, const int16_t *input,
-                               const int16_t *window, unsigned int len);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);

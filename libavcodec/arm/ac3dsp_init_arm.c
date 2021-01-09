@@ -26,13 +26,8 @@
 #include "config.h"
 
 void ff_ac3_exponent_min_neon(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
-int ff_ac3_max_msb_abs_int16_neon(const int16_t *src, int len);
-void ff_ac3_lshift_int16_neon(int16_t *src, unsigned len, unsigned shift);
-void ff_ac3_rshift_int32_neon(int32_t *src, unsigned len, unsigned shift);
 void ff_float_to_fixed24_neon(int32_t *dst, const float *src, unsigned int len);
 void ff_ac3_extract_exponents_neon(uint8_t *exp, int32_t *coef, int nb_coefs);
-void ff_apply_window_int16_neon(int16_t *dst, const int16_t *src,
-                                const int16_t *window, unsigned n);
 void ff_ac3_sum_square_butterfly_int32_neon(int64_t sum[4],
                                             const int32_t *coef0,
                                             const int32_t *coef1,
@@ -61,12 +56,8 @@ av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact)
 
     if (have_neon(cpu_flags)) {
         c->ac3_exponent_min      = ff_ac3_exponent_min_neon;
-        c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_neon;
-        c->ac3_lshift_int16      = ff_ac3_lshift_int16_neon;
-        c->ac3_rshift_int32      = ff_ac3_rshift_int32_neon;
         c->float_to_fixed24      = ff_float_to_fixed24_neon;
         c->extract_exponents     = ff_ac3_extract_exponents_neon;
-        c->apply_window_int16    = ff_apply_window_int16_neon;
         c->sum_square_butterfly_int32 = ff_ac3_sum_square_butterfly_int32_neon;
         c->sum_square_butterfly_float = ff_ac3_sum_square_butterfly_float_neon;
     }
