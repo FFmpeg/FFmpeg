@@ -101,15 +101,13 @@ static av_cold int ac3_fixed_mdct_init(AC3EncodeContext *s)
 {
     float fwin[AC3_BLOCK_SIZE];
 
-    int32_t *iwin = av_malloc_array(AC3_WINDOW_SIZE, sizeof(*iwin));
+    int32_t *iwin = av_malloc_array(AC3_BLOCK_SIZE, sizeof(*iwin));
     if (!iwin)
         return AVERROR(ENOMEM);
 
-    ff_kbd_window_init(fwin, 5.0, AC3_WINDOW_SIZE/2);
-    for (int i = 0; i < AC3_WINDOW_SIZE/2; i++) {
+    ff_kbd_window_init(fwin, 5.0, AC3_BLOCK_SIZE);
+    for (int i = 0; i < AC3_BLOCK_SIZE; i++)
         iwin[i] = lrintf(fwin[i] * (1 << 22));
-        iwin[AC3_WINDOW_SIZE-1-i] = lrintf(fwin[i] * (1 << 22));
-    }
 
     s->mdct_window = iwin;
 

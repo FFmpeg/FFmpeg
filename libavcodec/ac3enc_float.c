@@ -108,23 +108,16 @@ static av_cold void ac3_float_mdct_end(AC3EncodeContext *s)
  */
 static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 {
-    float *window;
-    int i, n, n2;
-
-    n  = 1 << 9;
-    n2 = n >> 1;
-
-    window = av_malloc_array(n, sizeof(*window));
+    float *window = av_malloc_array(AC3_BLOCK_SIZE, sizeof(*window));
     if (!window) {
         av_log(s->avctx, AV_LOG_ERROR, "Cannot allocate memory.\n");
         return AVERROR(ENOMEM);
     }
-    ff_kbd_window_init(window, 5.0, n2);
-    for (i = 0; i < n2; i++)
-        window[n-1-i] = window[i];
+
+    ff_kbd_window_init(window, 5.0, AC3_BLOCK_SIZE);
     s->mdct_window = window;
 
-    return ff_mdct_init(&s->mdct, 9, 0, -2.0 / n);
+    return ff_mdct_init(&s->mdct, 9, 0, -2.0 / AC3_WINDOW_SIZE);
 }
 
 

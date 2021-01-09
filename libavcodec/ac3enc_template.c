@@ -92,7 +92,10 @@ static void apply_mdct(AC3EncodeContext *s)
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
             s->fdsp->vector_fmul(s->windowed_samples, input_samples,
-                                 s->mdct_window, AC3_WINDOW_SIZE);
+                                 s->mdct_window, AC3_BLOCK_SIZE);
+            s->fdsp->vector_fmul_reverse(s->windowed_samples + AC3_BLOCK_SIZE,
+                                         &input_samples[AC3_BLOCK_SIZE],
+                                         s->mdct_window, AC3_BLOCK_SIZE);
 
             s->mdct.mdct_calc(&s->mdct, block->mdct_coef[ch+1],
                               s->windowed_samples);
