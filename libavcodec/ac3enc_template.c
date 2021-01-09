@@ -91,18 +91,11 @@ static void apply_mdct(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
-#if AC3ENC_FLOAT
             s->fdsp->vector_fmul(s->windowed_samples, input_samples,
-                                s->mdct_window, AC3_WINDOW_SIZE);
-#else
-            s->ac3dsp.apply_window_int16(s->windowed_samples, input_samples,
-                                         s->mdct_window, AC3_WINDOW_SIZE);
+                                 s->mdct_window, AC3_WINDOW_SIZE);
 
-            block->coeff_shift[ch + 1] = normalize_samples(s);
-#endif
-
-            s->mdct.mdct_calcw(&s->mdct, block->mdct_coef[ch+1],
-                               s->windowed_samples);
+            s->mdct.mdct_calc(&s->mdct, block->mdct_coef[ch+1],
+                              s->windowed_samples);
         }
     }
 }
@@ -390,9 +383,6 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
 
     apply_mdct(s);
 
-    if (!AC3ENC_FLOAT)
-        scale_coefficients(s);
-
     clip_coefficients(&s->adsp, s->blocks[0].mdct_coef[1],
                       AC3_MAX_COEFS * s->num_blocks * s->channels);
 
@@ -404,8 +394,9 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
 
     compute_rematrixing_strategy(s);
 
-    if (AC3ENC_FLOAT)
-        scale_coefficients(s);
+#if AC3ENC_FLOAT
+    scale_coefficients(s);
+#endif
 
     return ff_ac3_encode_frame_common_end(avctx, avpkt, frame, got_packet_ptr);
 }

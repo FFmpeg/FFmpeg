@@ -30,8 +30,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/float_dsp.h"
-
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "avcodec.h"
@@ -53,6 +51,7 @@
 #define AC3ENC_TYPE_EAC3        2
 
 #if AC3ENC_FLOAT
+#include "libavutil/float_dsp.h"
 #define AC3_NAME(x) ff_ac3_float_ ## x
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 #define COEF_MIN (-16777215.0/16777216.0)
@@ -62,12 +61,13 @@ typedef float SampleType;
 typedef float CoefType;
 typedef float CoefSumType;
 #else
+#include "libavutil/fixed_dsp.h"
 #define AC3_NAME(x) ff_ac3_fixed_ ## x
 #define MAC_COEF(d,a,b) MAC64(d,a,b)
 #define COEF_MIN -16777215
 #define COEF_MAX  16777215
 #define NEW_CPL_COORD_THRESHOLD 503317
-typedef int16_t SampleType;
+typedef int32_t SampleType;
 typedef int32_t CoefType;
 typedef int64_t CoefSumType;
 #endif
@@ -141,7 +141,6 @@ typedef struct AC3Block {
     uint16_t **qmant;                           ///< quantized mantissas
     uint8_t  **cpl_coord_exp;                   ///< coupling coord exponents           (cplcoexp)
     uint8_t  **cpl_coord_mant;                  ///< coupling coord mantissas           (cplcomant)
-    uint8_t  coeff_shift[AC3_MAX_CHANNELS];     ///< fixed-point coefficient shift values
     uint8_t  new_rematrixing_strategy;          ///< send new rematrixing flags in this block
     int      num_rematrixing_bands;             ///< number of rematrixing bands
     uint8_t  rematrixing_flags[4];              ///< rematrixing flags
@@ -165,7 +164,11 @@ typedef struct AC3EncodeContext {
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
     AudioDSPContext adsp;
+#if AC3ENC_FLOAT
     AVFloatDSPContext *fdsp;
+#else
+    AVFixedDSPContext *fdsp;
+#endif
     MECmpContext mecc;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation

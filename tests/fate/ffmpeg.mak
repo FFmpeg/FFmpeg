@@ -83,7 +83,7 @@ fate-unknown_layout-pcm: CMD = md5 \
 FATE_FFMPEG-$(call ALLYES, PCM_S16LE_DEMUXER AC3_MUXER PCM_S16LE_DECODER AC3_FIXED_ENCODER) += fate-unknown_layout-ac3
 fate-unknown_layout-ac3: $(AREF)
 fate-unknown_layout-ac3: CMD = md5 -auto_conversion_filters \
-  -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
+  -guess_layout_max 0 -f s32le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
   -f ac3 -flags +bitexact -c ac3_fixed
 
 

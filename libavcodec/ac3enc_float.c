@@ -97,7 +97,6 @@ static void sum_square_butterfly(AC3EncodeContext *s, float sum[4],
 static av_cold void ac3_float_mdct_end(AC3EncodeContext *s)
 {
     ff_mdct_end(&s->mdct);
-    av_freep(&s->mdct_window);
 }
 
 
