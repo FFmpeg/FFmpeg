@@ -383,9 +383,6 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
 
     apply_mdct(s);
 
-    clip_coefficients(&s->adsp, s->blocks[0].mdct_coef[1],
-                      AC3_MAX_COEFS * s->num_blocks * s->channels);
-
     s->cpl_on = s->cpl_enabled;
     ff_ac3_compute_coupling_strategy(s);
 
