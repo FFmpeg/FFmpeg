@@ -5,8 +5,7 @@ OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
                                           arm/ac3dsp_arm.o
 OBJS-$(CONFIG_AUDIODSP)                += arm/audiodsp_init_arm.o
 OBJS-$(CONFIG_BLOCKDSP)                += arm/blockdsp_init_arm.o
-OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o            \
-                                          arm/fft_fixed_init_arm.o
+OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o
 OBJS-$(CONFIG_FLACDSP)                 += arm/flacdsp_init_arm.o        \
                                           arm/flacdsp_arm.o
 OBJS-$(CONFIG_FMTCONVERT)              += arm/fmtconvert_init_arm.o
@@ -108,8 +107,7 @@ NEON-OBJS-$(CONFIG_AUDIODSP)           += arm/audiodsp_init_neon.o      \
                                           arm/int_neon.o
 NEON-OBJS-$(CONFIG_BLOCKDSP)           += arm/blockdsp_init_neon.o      \
                                           arm/blockdsp_neon.o
-NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
-                                          arm/fft_fixed_neon.o
+NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o
 NEON-OBJS-$(CONFIG_FMTCONVERT)         += arm/fmtconvert_neon.o
 NEON-OBJS-$(CONFIG_G722DSP)            += arm/g722dsp_neon.o
 NEON-OBJS-$(CONFIG_H264CHROMA)         += arm/h264cmc_neon.o
@@ -123,8 +121,7 @@ NEON-OBJS-$(CONFIG_HPELDSP)            += arm/hpeldsp_init_neon.o       \
 NEON-OBJS-$(CONFIG_IDCTDSP)            += arm/idctdsp_init_neon.o       \
                                           arm/idctdsp_neon.o            \
                                           arm/simple_idct_neon.o
-NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
-                                          arm/mdct_fixed_neon.o
+NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o
 NEON-OBJS-$(CONFIG_MPEGVIDEO)          += arm/mpegvideo_neon.o
 NEON-OBJS-$(CONFIG_PIXBLOCKDSP)        += arm/pixblockdsp_neon.o
 NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o

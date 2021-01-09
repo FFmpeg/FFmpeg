@@ -52,12 +52,6 @@ typedef float FFTDouble;
 
 typedef int32_t FFTSample;
 
-#else /* FFT_FIXED_32 */
-
-#define FFT_NAME(x) x ## _fixed
-
-typedef int16_t FFTSample;
-
 #endif /* FFT_FIXED_32 */
 
 typedef struct FFTComplex {
@@ -108,7 +102,6 @@ struct FFTContext {
     void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
-    void (*mdct_calcw)(struct FFTContext *s, FFTDouble *output, const FFTSample *input);
     enum fft_permutation_type fft_permutation;
     enum mdct_permutation_type mdct_permutation;
     uint32_t *revtab32;
@@ -162,8 +155,6 @@ void ff_fft_init_x86(FFTContext *s);
 void ff_fft_init_arm(FFTContext *s);
 void ff_fft_init_mips(FFTContext *s);
 void ff_fft_init_ppc(FFTContext *s);
-
-void ff_fft_fixed_init_arm(FFTContext *s);
 
 void ff_fft_end(FFTContext *s);
 

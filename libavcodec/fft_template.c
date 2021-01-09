@@ -236,11 +236,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     if (ARCH_ARM)     ff_fft_init_arm(s);
     if (ARCH_PPC)     ff_fft_init_ppc(s);
     if (ARCH_X86)     ff_fft_init_x86(s);
-    if (CONFIG_MDCT)  s->mdct_calcw = s->mdct_calc;
     if (HAVE_MIPSFPU) ff_fft_init_mips(s);
-#else
-    if (CONFIG_MDCT)  s->mdct_calcw = ff_mdct_calcw_c;
-    if (ARCH_ARM)     ff_fft_fixed_init_arm(s);
 #endif
     for(j=4; j<=nbits; j++) {
         ff_init_ff_cos_tabs(j);
