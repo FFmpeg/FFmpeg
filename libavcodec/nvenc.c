@@ -1829,7 +1829,7 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     pkt->pts = params->outputTimeStamp;
     pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
 
-    pkt->dts -= FFMAX(avctx->max_b_frames, 0) * FFMIN(avctx->ticks_per_frame, 1);
+    pkt->dts -= FFMAX(avctx->max_b_frames, 0) * FFMAX(avctx->ticks_per_frame, 1);
 
     return 0;
 }
