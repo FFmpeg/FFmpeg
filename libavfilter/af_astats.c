@@ -329,11 +329,11 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
 
     drop = p->win_samples[p->win_pos];
     p->win_samples[p->win_pos] = nd;
-    index = av_clip(FFABS(av_clipd(nd, -1.0, 1.0)) * HISTOGRAM_MAX, 0, HISTOGRAM_MAX);
+    index = av_clip(lrint(av_clipd(FFABS(nd), 0.0, 1.0) * HISTOGRAM_MAX), 0, HISTOGRAM_MAX);
     p->max_index = FFMAX(p->max_index, index);
     p->histogram[index]++;
     if (!isnan(p->noise_floor))
-        p->histogram[av_clip(FFABS(drop) * HISTOGRAM_MAX, 0, HISTOGRAM_MAX)]--;
+        p->histogram[av_clip(lrint(av_clipd(FFABS(drop), 0.0, 1.0) * HISTOGRAM_MAX), 0, HISTOGRAM_MAX)]--;
     p->win_pos++;
 
     while (p->histogram[p->max_index] == 0)
