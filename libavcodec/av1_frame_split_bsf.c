@@ -214,7 +214,7 @@ static int av1_frame_split_init(AVBSFContext *ctx)
     if (ret < 0)
         return ret;
 
-    s->cbc->decompose_unit_types    = (CodedBitstreamUnitType*)decompose_unit_types;
+    s->cbc->decompose_unit_types    = decompose_unit_types;
     s->cbc->nb_decompose_unit_types = FF_ARRAY_ELEMS(decompose_unit_types);
 
     if (!ctx->par_in->extradata_size)

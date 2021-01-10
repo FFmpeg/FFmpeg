@@ -191,7 +191,7 @@ static av_cold int av1_parser_init(AVCodecParserContext *ctx)
     if (ret < 0)
         return ret;
 
-    s->cbc->decompose_unit_types    = (CodedBitstreamUnitType *)decompose_unit_types;
+    s->cbc->decompose_unit_types    = decompose_unit_types;
     s->cbc->nb_decompose_unit_types = FF_ARRAY_ELEMS(decompose_unit_types);
 
     return 0;
