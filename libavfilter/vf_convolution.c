@@ -523,11 +523,11 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
         for (y = slice_start; y < slice_end; y++) {
             const int xoff = mode == MATRIX_COLUMN ? (y - slice_start) * bpc : radius * bpc;
-            const int yoff = mode == MATRIX_COLUMN ? radius * stride : 0;
+            const int yoff = mode == MATRIX_COLUMN ? radius * dstride : 0;
 
             for (x = 0; x < radius; x++) {
                 const int xoff = mode == MATRIX_COLUMN ? (y - slice_start) * bpc : x * bpc;
-                const int yoff = mode == MATRIX_COLUMN ? x * stride : 0;
+                const int yoff = mode == MATRIX_COLUMN ? x * dstride : 0;
 
                 s->setup[plane](radius, c, src, stride, x, width, y, height, bpc);
                 s->filter[plane](dst + yoff + xoff, 1, rdiv,
@@ -540,7 +540,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                              dstride, stride);
             for (x = sizew - radius; x < sizew; x++) {
                 const int xoff = mode == MATRIX_COLUMN ? (y - slice_start) * bpc : x * bpc;
-                const int yoff = mode == MATRIX_COLUMN ? x * stride : 0;
+                const int yoff = mode == MATRIX_COLUMN ? x * dstride : 0;
 
                 s->setup[plane](radius, c, src, stride, x, width, y, height, bpc);
                 s->filter[plane](dst + yoff + xoff, 1, rdiv,
