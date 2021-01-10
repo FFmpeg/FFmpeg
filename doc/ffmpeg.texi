@@ -1739,6 +1739,11 @@ No packets were passed to the muxer, the output is empty.
 No packets were passed to the muxer in some of the output streams.
 @end table
 
+@item -max_error_rate (@emph{global})
+Set fraction of decoding frame failures across all inputs which when crossed
+ffmpeg will return exit code 69. Crossing this threshold does not terminate
+processing. Range is a floating-point number between 0 to 1. Default is 2/3.
+
 @item -xerror (@emph{global})
 Stop and exit on error
 
