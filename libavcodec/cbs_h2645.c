@@ -1207,6 +1207,22 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
+                                             CodedBitstreamUnitType type,
+                                             int nal_unit_index)
+{
+    // Section B.1.2 in H.264, section B.2.2 in H.265.
+    if (nal_unit_index == 0) {
+        // Assume that this is the first NAL unit in an access unit.
+        return 1;
+    }
+    if (codec_id == AV_CODEC_ID_H264)
+        return type == H264_NAL_SPS || type == H264_NAL_PPS;
+    if (codec_id == AV_CODEC_ID_HEVC)
+        return type == HEVC_NAL_VPS || type == HEVC_NAL_SPS || type == HEVC_NAL_PPS;
+    return 0;
+}
+
 static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
                                        CodedBitstreamFragment *frag)
 {
@@ -1241,14 +1257,7 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
                 frag->data_bit_padding = unit->data_bit_padding;
         }
 
-        if ((ctx->codec->codec_id == AV_CODEC_ID_H264 &&
-             (unit->type == H264_NAL_SPS ||
-              unit->type == H264_NAL_PPS)) ||
-            (ctx->codec->codec_id == AV_CODEC_ID_HEVC &&
-             (unit->type == HEVC_NAL_VPS ||
-              unit->type == HEVC_NAL_SPS ||
-              unit->type == HEVC_NAL_PPS)) ||
-            i == 0 /* (Assume this is the start of an access unit.) */) {
+        if (cbs_h2645_unit_requires_zero_byte(ctx->codec->codec_id, unit->type, i)) {
             // zero_byte
             data[dp++] = 0;
         }
