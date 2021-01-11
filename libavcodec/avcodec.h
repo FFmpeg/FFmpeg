@@ -1961,6 +1961,9 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_HEVC_MAIN_STILL_PICTURE          3
 #define FF_PROFILE_HEVC_REXT                        4
 
+#define FF_PROFILE_VVC_MAIN_10                      1
+#define FF_PROFILE_VVC_MAIN_10_444                 33
+
 #define FF_PROFILE_AV1_MAIN                         0
 #define FF_PROFILE_AV1_HIGH                         1
 #define FF_PROFILE_AV1_PROFESSIONAL                 2
