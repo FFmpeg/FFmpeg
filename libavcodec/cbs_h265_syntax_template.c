@@ -2197,7 +2197,9 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                                              1, 0, alternative_transfer_characteristics);
         SEI_TYPE_N(ALPHA_CHANNEL_INFO,       1, 0, alpha_channel_info);
 
-#undef SEI_TYPE
+#undef SEI_TYPE_N
+#undef SEI_TYPE_S
+#undef SEI_TYPE_E
     default:
         {
 #ifdef READ
