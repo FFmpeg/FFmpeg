@@ -854,6 +854,9 @@ static int amf_skip_tag(AVIOContext *pb, AMFDataType type, int depth)
     if (depth > MAX_DEPTH)
         return AVERROR_PATCHWELCOME;
 
+    if (avio_feof(pb))
+        return AVERROR_EOF;
+
     switch (type) {
     case AMF_DATA_TYPE_NUMBER:
         avio_skip(pb, 8);
