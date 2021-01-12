@@ -607,10 +607,14 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
                 break;
             } else if (ea->audio_codec == AV_CODEC_ID_PCM_S16LE_PLANAR ||
                        ea->audio_codec == AV_CODEC_ID_MP3) {
+                if (chunk_size < 12)
+                    return AVERROR_INVALIDDATA;
                 num_samples = avio_rl32(pb);
                 avio_skip(pb, 8);
                 chunk_size -= 12;
             } else if (ea->audio_codec == AV_CODEC_ID_ADPCM_PSX) {
+                if (chunk_size < 8)
+                    return AVERROR_INVALIDDATA;
                 avio_skip(pb, 8);
                 chunk_size -= 8;
             }
@@ -693,6 +697,8 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
         case fVGT_TAG:
         case MADm_TAG:
         case MADe_TAG:
+            if (chunk_size > INT_MAX - 8)
+                return AVERROR_INVALIDDATA;
             avio_seek(pb, -8, SEEK_CUR);    // include chunk preamble
             chunk_size += 8;
             goto get_video_packet;
