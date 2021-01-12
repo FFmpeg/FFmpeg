@@ -51,6 +51,8 @@ enum AVTXType {
      * For inverse transforms, the stride specifies the spacing between each
      * sample in the input array in bytes. The output will be a flat array.
      * Stride must be a non-zero multiple of sizeof(float).
+     * NOTE: the inverse transform is half-length, meaning the output will not
+     * contain redundant data. This is what most codecs work with.
      */
     AV_TX_FLOAT_MDCT = 1,
     /**
@@ -93,8 +95,7 @@ typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
 
 /**
  * Initialize a transform context with the given configuration
- * Currently power of two lengths from 2 to 131072 are supported, along with
- * any length decomposable to a power of two and either 3, 5 or 15.
+ * (i)MDCTs with an odd length are currently not supported.
  *
  * @param ctx the context to allocate, will be NULL on error
  * @param tx pointer to the transform function pointer to set

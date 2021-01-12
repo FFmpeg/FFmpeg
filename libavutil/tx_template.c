@@ -397,6 +397,31 @@ static void monolithic_fft(AVTXContext *s, void *_out, void *_in,
     fft_dispatch[mb](out);
 }
 
+static void naive_fft(AVTXContext *s, void *_out, void *_in,
+                      ptrdiff_t stride)
+{
+    FFTComplex *in = _in;
+    FFTComplex *out = _out;
+    const int n = s->n;
+    double phase = s->inv ? 2.0*M_PI/n : -2.0*M_PI/n;
+
+    for(int i = 0; i < n; i++) {
+        FFTComplex tmp = { 0 };
+        for(int j = 0; j < n; j++) {
+            const double factor = phase*i*j;
+            const FFTComplex mult = {
+                RESCALE(cos(factor)),
+                RESCALE(sin(factor)),
+            };
+            FFTComplex res;
+            CMUL3(res, in[j], mult);
+            tmp.re += res.re;
+            tmp.im += res.im;
+        }
+        out[i] = tmp;
+    }
+}
+
 #define DECL_COMP_IMDCT(N)                                                     \
 static void compound_imdct_##N##xM(AVTXContext *s, void *_dst, void *_src,     \
                                    ptrdiff_t stride)                           \
@@ -553,6 +578,57 @@ static void monolithic_mdct(AVTXContext *s, void *_dst, void *_src,
     }
 }
 
+static void naive_imdct(AVTXContext *s, void *_dst, void *_src,
+                        ptrdiff_t stride)
+{
+    int len = s->n;
+    int len2 = len*2;
+    FFTSample *src = _src;
+    FFTSample *dst = _dst;
+    double scale = s->scale;
+    const double phase = M_PI/(4.0*len2);
+
+    stride /= sizeof(*src);
+
+    for (int i = 0; i < len; i++) {
+        double sum_d = 0.0;
+        double sum_u = 0.0;
+        double i_d = phase * (4*len  - 2*i - 1);
+        double i_u = phase * (3*len2 + 2*i + 1);
+        for (int j = 0; j < len2; j++) {
+            double a = (2 * j + 1);
+            double a_d = cos(a * i_d);
+            double a_u = cos(a * i_u);
+            double val = UNSCALE(src[j*stride]);
+            sum_d += a_d * val;
+            sum_u += a_u * val;
+        }
+        dst[i +   0] = RESCALE( sum_d*scale);
+        dst[i + len] = RESCALE(-sum_u*scale);
+    }
+}
+
+static void naive_mdct(AVTXContext *s, void *_dst, void *_src,
+                       ptrdiff_t stride)
+{
+    int len = s->n*2;
+    FFTSample *src = _src;
+    FFTSample *dst = _dst;
+    double scale = s->scale;
+    const double phase = M_PI/(4.0*len);
+
+    stride /= sizeof(*dst);
+
+    for (int i = 0; i < len; i++) {
+        double sum = 0.0;
+        for (int j = 0; j < len*2; j++) {
+            int a = (2*j + 1 + len) * (2*i + 1);
+            sum += UNSCALE(src[j]) * cos(a * phase);
+        }
+        dst[i*stride] = RESCALE(sum*scale);
+    }
+}
+
 static int gen_mdct_exptab(AVTXContext *s, int len4, double scale)
 {
     const double theta = (scale < 0 ? len4 : 0) + 1.0/8.0;
@@ -575,10 +651,12 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
                                  const void *scale, uint64_t flags)
 {
     const int is_mdct = ff_tx_type_is_mdct(type);
-    int err, n = 1, m = 1, max_ptwo = 1 << (FF_ARRAY_ELEMS(fft_dispatch) - 1);
+    int err, l, n = 1, m = 1, max_ptwo = 1 << (FF_ARRAY_ELEMS(fft_dispatch) - 1);
 
     if (is_mdct)
         len >>= 1;
+
+    l = len;
 
 #define CHECK_FACTOR(DST, FACTOR, SRC)                                         \
     if (DST == 1 && !(SRC % FACTOR)) {                                         \
@@ -601,12 +679,23 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     s->inv = inv;
     s->type = type;
 
-    /* Filter out direct 3, 5 and 15 transforms, too niche */
+    /* If we weren't able to split the length into factors we can handle,
+     * resort to using the naive and slow FT. This also filters out
+     * direct 3, 5 and 15 transforms as they're too niche. */
     if (len > 1 || m == 1) {
-        av_log(NULL, AV_LOG_ERROR, "Unsupported transform size: n = %i, "
-               "m = %i, residual = %i!\n", n, m, len);
-        return AVERROR(EINVAL);
-    } else if (n > 1 && m > 1) { /* 2D transform case */
+        if (is_mdct && (l & 1)) /* Odd (i)MDCTs are not supported yet */
+            return AVERROR(ENOTSUP);
+        s->n = l;
+        s->m = 1;
+        *tx = naive_fft;
+        if (is_mdct) {
+            s->scale = *((SCALE_TYPE *)scale);
+            *tx = inv ? naive_imdct : naive_mdct;
+        }
+        return 0;
+    }
+
+    if (n > 1 && m > 1) { /* 2D transform case */
         if ((err = ff_tx_gen_compound_mapping(s)))
             return err;
         if (!(s->tmp = av_malloc(n*m*sizeof(*s->tmp))))
