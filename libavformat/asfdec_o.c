@@ -1661,6 +1661,9 @@ static int detect_unknown_subobject(AVFormatContext *s, int64_t offset, int64_t 
     ff_asf_guid guid;
     int ret;
 
+    if (offset > INT64_MAX - size)
+        return AVERROR_INVALIDDATA;
+
     while (avio_tell(pb) <= offset + size) {
         if (avio_tell(pb) == asf->offset)
             break;
