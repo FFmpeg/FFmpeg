@@ -348,7 +348,7 @@ redo:
             goto fail;
     }
     if ((s->http_code == 301 || s->http_code == 302 ||
-         s->http_code == 303 || s->http_code == 307) &&
+         s->http_code == 303 || s->http_code == 307 || s->http_code == 308) &&
         location_changed == 1) {
         /* url moved, get next */
         ffurl_closep(&s->hd);
