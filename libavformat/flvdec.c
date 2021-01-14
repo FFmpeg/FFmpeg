@@ -1231,7 +1231,7 @@ retry_duration:
         if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
-            pts = dts + cts;
+            pts = av_sat_add64(dts, cts);
             if (cts < 0) { // dts might be wrong
                 if (!flv->wrong_dts)
                     av_log(s, AV_LOG_WARNING,
