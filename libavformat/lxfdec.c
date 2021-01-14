@@ -195,7 +195,7 @@ static int get_packet_header(AVFormatContext *s)
             return AVERROR_PATCHWELCOME;
         }
 
-        samples = track_size * 8 / st->codecpar->bits_per_coded_sample;
+        samples = track_size * 8LL / st->codecpar->bits_per_coded_sample;
 
         //use audio packet size to determine video standard
         //for NTSC we have one 8008-sample audio frame per five video frames
@@ -210,6 +210,8 @@ static int get_packet_header(AVFormatContext *s)
             avpriv_set_pts_info(s->streams[0], 64, 1, 25);
         }
 
+        if (av_popcount(channels) * (uint64_t)track_size > INT_MAX)
+            return AVERROR_INVALIDDATA;
         //TODO: warning if track mask != (1 << channels) - 1?
         ret = av_popcount(channels) * track_size;
 
