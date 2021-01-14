@@ -142,7 +142,7 @@ static int mcc_read_header(AVFormatContext *s)
         if (av_sscanf(line, "%d:%d:%d:%d", &hh, &mm, &ss, &fs) != 4)
             continue;
 
-        ts = av_rescale(hh * 3600LL + mm * 60LL + ss, rate.num, rate.den) + fs;
+        ts = av_sat_add64(av_rescale(hh * 3600LL + mm * 60LL + ss, rate.num, rate.den), fs);
 
         lline = (char *)&line;
         lline += 12;
