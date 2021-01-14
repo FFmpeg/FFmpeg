@@ -736,12 +736,14 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     if (*q)
         return AVERROR(EINVAL);
 
-    if (INT64_MAX / suffix < t)
+    if (INT64_MAX / suffix < t || t < INT64_MIN / suffix)
         return AVERROR(ERANGE);
     t *= suffix;
     if (INT64_MAX - microseconds < t)
         return AVERROR(ERANGE);
     t += microseconds;
+    if (t == INT64_MIN && negative)
+        return AVERROR(ERANGE);
     *timeval = negative ? -t : t;
     return 0;
 }
