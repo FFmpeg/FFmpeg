@@ -443,23 +443,23 @@ static int librav1e_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
             return ret;
 
         if (frame->buf[0]) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
 
-        rframe = rav1e_frame_new(ctx->ctx);
-        if (!rframe) {
-            av_log(avctx, AV_LOG_ERROR, "Could not allocate new rav1e frame.\n");
+            rframe = rav1e_frame_new(ctx->ctx);
+            if (!rframe) {
+                av_log(avctx, AV_LOG_ERROR, "Could not allocate new rav1e frame.\n");
+                av_frame_unref(frame);
+                return AVERROR(ENOMEM);
+            }
+
+            for (int i = 0; i < desc->nb_components; i++) {
+                int shift = i ? desc->log2_chroma_h : 0;
+                int bytes = desc->comp[0].depth == 8 ? 1 : 2;
+                rav1e_frame_fill_plane(rframe, i, frame->data[i],
+                                       (frame->height >> shift) * frame->linesize[i],
+                                       frame->linesize[i], bytes);
+            }
             av_frame_unref(frame);
-            return AVERROR(ENOMEM);
-        }
-
-        for (int i = 0; i < desc->nb_components; i++) {
-            int shift = i ? desc->log2_chroma_h : 0;
-            int bytes = desc->comp[0].depth == 8 ? 1 : 2;
-            rav1e_frame_fill_plane(rframe, i, frame->data[i],
-                                   (frame->height >> shift) * frame->linesize[i],
-                                   frame->linesize[i], bytes);
-        }
-        av_frame_unref(frame);
         }
     }
 
@@ -468,7 +468,7 @@ static int librav1e_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         if (ret == RA_ENCODER_STATUS_ENOUGH_DATA) {
             ctx->rframe = rframe; /* Queue is full. Store the RaFrame to retry next call */
         } else {
-         rav1e_frame_unref(rframe); /* No need to unref if flushing. */
+            rav1e_frame_unref(rframe); /* No need to unref if flushing. */
             ctx->rframe = NULL;
         }
 
