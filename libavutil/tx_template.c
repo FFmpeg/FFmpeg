@@ -684,7 +684,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
      * direct 3, 5 and 15 transforms as they're too niche. */
     if (len > 1 || m == 1) {
         if (is_mdct && (l & 1)) /* Odd (i)MDCTs are not supported yet */
-            return AVERROR(ENOTSUP);
+            return AVERROR(ENOSYS);
         s->n = l;
         s->m = 1;
         *tx = naive_fft;
