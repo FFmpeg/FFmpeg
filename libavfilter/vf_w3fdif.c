@@ -382,7 +382,9 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const int start = (height * jobnr) / nb_jobs;
     const int end = (height * (jobnr+1)) / nb_jobs;
     const int max = s->max;
-    const int tff = (s->field == (s->parity == -1 ? cur->top_field_first == cur->interlaced_frame : s->parity == 0 ? !cur->interlaced_frame : cur->interlaced_frame));
+    const int interlaced = cur->interlaced_frame;
+    const int tff = s->field == (s->parity == -1 ? interlaced ? cur->top_field_first : 1 :
+                                 s->parity ^ 1);
     int j, y_in, y_out;
 
     /* copy unchanged the lines of the field */
