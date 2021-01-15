@@ -1564,6 +1564,10 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         sequence = 0;
     }
 
+    if (hls->flags & HLS_I_FRAMES_ONLY) {
+        hls->version = 4;
+    }
+
     if (hls->flags & HLS_INDEPENDENT_SEGMENTS) {
         hls->version = 6;
     }
