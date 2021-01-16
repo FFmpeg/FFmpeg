@@ -181,6 +181,7 @@ static int str_to_time(const char *str, int64_t *rtime)
     char *end;
     int hours, minutes;
     double seconds = 0;
+    int64_t ts = 0;
 
     if (*cur < '0' || *cur > '9')
         return 0;
@@ -196,8 +197,9 @@ static int str_to_time(const char *str, int64_t *rtime)
         seconds = strtod(cur + 1, &end);
         if (end > cur + 1)
             cur = end;
+        ts = av_clipd(seconds * AV_TIME_BASE, INT64_MIN/2, INT64_MAX/2);
     }
-    *rtime = (hours * 3600LL + minutes * 60LL + seconds) * AV_TIME_BASE;
+    *rtime = (hours * 3600LL + minutes * 60LL) * AV_TIME_BASE + ts;
     return cur - str;
 }
 
