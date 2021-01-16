@@ -30,17 +30,12 @@
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
-    int fmt;
+    int ret;
 
-    for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        int ret;
-        if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
-            continue;
-        if ((ret = ff_add_format(&formats, fmt)) < 0)
-            return ret;
-    }
-
+    ret = ff_formats_pixdesc_filter(&formats, 0,
+                                    AV_PIX_FMT_FLAG_HWACCEL);
+    if (ret < 0)
+        return ret;
     return ff_set_common_formats(ctx, formats);
 }
 
