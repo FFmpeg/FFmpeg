@@ -262,24 +262,28 @@ static int async_open(URLContext *h, const char *arg, int flags, AVDictionary **
 
     ret = pthread_mutex_init(&c->mutex, NULL);
     if (ret != 0) {
+        ret = AVERROR(ret);
         av_log(h, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n", av_err2str(ret));
         goto mutex_fail;
     }
 
     ret = pthread_cond_init(&c->cond_wakeup_main, NULL);
     if (ret != 0) {
+        ret = AVERROR(ret);
         av_log(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", av_err2str(ret));
         goto cond_wakeup_main_fail;
     }
 
     ret = pthread_cond_init(&c->cond_wakeup_background, NULL);
     if (ret != 0) {
+        ret = AVERROR(ret);
         av_log(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", av_err2str(ret));
         goto cond_wakeup_background_fail;
     }
 
     ret = pthread_create(&c->async_buffer_thread, NULL, async_buffer_task, h);
     if (ret) {
+        ret = AVERROR(ret);
         av_log(h, AV_LOG_ERROR, "pthread_create failed : %s\n", av_err2str(ret));
         goto thread_fail;
     }
