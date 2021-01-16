@@ -252,7 +252,7 @@ int av_timecode_init_from_string(AVTimecode *tc, AVRational rate, const char *st
     char c;
     int hh, mm, ss, ff, flags;
 
-    if (sscanf(str, "%02u:%02u:%02u%c%02u", &hh, &mm, &ss, &c, &ff) != 5) {
+    if (sscanf(str, "%d:%d:%d%c%d", &hh, &mm, &ss, &c, &ff) != 5) {
         av_log(log_ctx, AV_LOG_ERROR, "Unable to parse timecode, "
                                       "syntax: hh:mm:ss[:;.]ff\n");
         return AVERROR_INVALIDDATA;
