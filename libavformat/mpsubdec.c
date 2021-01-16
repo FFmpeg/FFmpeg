@@ -72,8 +72,8 @@ static int parse_line(const char *line, int64_t *value, int64_t *value2)
                 fracval *= 10;
             for (;p2 - p1 > 7 + 1; p1++)
                 fracval /= 10;
-            if (intval > 0) intval += fracval;
-            else            intval -= fracval;
+            if (intval > 0) intval = av_sat_add64(intval, fracval);
+            else            intval = av_sat_sub64(intval, fracval);
             line += p2;
         } else
             line += p1;
