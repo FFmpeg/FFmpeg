@@ -94,7 +94,7 @@ static int read_header(AVFormatContext *s)
     vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codecpar->codec_id   = AV_CODEC_ID_MOTIONPIXELS;
 
-    mvi->get_int = (vst->codecpar->width * vst->codecpar->height < (1 << 16)) ? avio_rl16 : avio_rl24;
+    mvi->get_int = (vst->codecpar->width * (int64_t)vst->codecpar->height < (1 << 16)) ? avio_rl16 : avio_rl24;
 
     mvi->audio_frame_size   = ((uint64_t)mvi->audio_data_size << MVI_FRAC_BITS) / frames_count;
     if (mvi->audio_frame_size <= 1 << MVI_FRAC_BITS - 1) {
