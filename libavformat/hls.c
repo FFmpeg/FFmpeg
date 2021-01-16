@@ -112,13 +112,13 @@ struct playlist {
     int finished;
     enum PlaylistType type;
     int64_t target_duration;
-    int start_seq_no;
+    int64_t start_seq_no;
     int n_segments;
     struct segment **segments;
     int needed;
     int broken;
-    int cur_seq_no;
-    int last_seq_no;
+    int64_t cur_seq_no;
+    int64_t last_seq_no;
     int m3u8_hold_counters;
     int64_t cur_seg_offset;
     int64_t last_load_time;
@@ -199,7 +199,7 @@ typedef struct HLSContext {
     int n_renditions;
     struct rendition **renditions;
 
-    int cur_seq_no;
+    int64_t cur_seq_no;
     int m3u8_hold_counters;
     int live_start_index;
     int first_packet;
@@ -722,7 +722,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     int is_http = av_strstart(url, "http", NULL);
     struct segment **prev_segments = NULL;
     int prev_n_segments = 0;
-    int prev_start_seq_no = -1;
+    int64_t prev_start_seq_no = -1;
 
     if (is_http && !in && c->http_persistent && c->playlist_pb) {
         in = c->playlist_pb;
@@ -808,10 +808,17 @@ static int parse_playlist(HLSContext *c, const char *url,
                 goto fail;
             pls->target_duration = strtoll(ptr, NULL, 10) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
+            uint64_t seq_no;
             ret = ensure_playlist(c, &pls, url);
             if (ret < 0)
                 goto fail;
-            pls->start_seq_no = atoi(ptr);
+            seq_no = strtoull(ptr, NULL, 10);
+            if (seq_no > INT64_MAX) {
+                av_log(c->ctx, AV_LOG_DEBUG, "MEDIA-SEQUENCE higher than "
+                        "INT64_MAX, mask out the highest bit\n");
+                seq_no &= INT64_MAX;
+            }
+            pls->start_seq_no = seq_no;
         } else if (av_strstart(line, "#EXT-X-PLAYLIST-TYPE:", &ptr)) {
             ret = ensure_playlist(c, &pls, url);
             if (ret < 0)
@@ -832,9 +839,9 @@ static int parse_playlist(HLSContext *c, const char *url,
             if (has_iv) {
                 memcpy(cur_init_section->iv, iv, sizeof(iv));
             } else {
-                int seq = pls->start_seq_no + pls->n_segments;
+                int64_t seq = pls->start_seq_no + pls->n_segments;
                 memset(cur_init_section->iv, 0, sizeof(cur_init_section->iv));
-                AV_WB32(cur_init_section->iv + 12, seq);
+                AV_WB64(cur_init_section->iv + 8, seq);
             }
 
             if (key_type != KEY_NONE) {
@@ -889,9 +896,9 @@ static int parse_playlist(HLSContext *c, const char *url,
                 if (has_iv) {
                     memcpy(seg->iv, iv, sizeof(iv));
                 } else {
-                    int seq = pls->start_seq_no + pls->n_segments;
+                    int64_t seq = pls->start_seq_no + pls->n_segments;
                     memset(seg->iv, 0, sizeof(seg->iv));
-                    AV_WB32(seg->iv + 12, seq);
+                    AV_WB64(seg->iv + 8, seq);
                 }
 
                 if (key_type != KEY_NONE) {
@@ -954,16 +961,17 @@ static int parse_playlist(HLSContext *c, const char *url,
     if (prev_segments) {
         if (pls->start_seq_no > prev_start_seq_no && c->first_timestamp != AV_NOPTS_VALUE) {
             int64_t prev_timestamp = c->first_timestamp;
-            int i, diff = pls->start_seq_no - prev_start_seq_no;
+            int i;
+            int64_t diff = pls->start_seq_no - prev_start_seq_no;
             for (i = 0; i < prev_n_segments && i < diff; i++) {
                 c->first_timestamp += prev_segments[i]->duration;
             }
-            av_log(c->ctx, AV_LOG_DEBUG, "Media sequence change (%d -> %d)"
+            av_log(c->ctx, AV_LOG_DEBUG, "Media sequence change (%"PRId64" -> %"PRId64")"
                    " reflected in first_timestamp: %"PRId64" -> %"PRId64"\n",
                    prev_start_seq_no, pls->start_seq_no,
                    prev_timestamp, c->first_timestamp);
         } else if (pls->start_seq_no < prev_start_seq_no) {
-            av_log(c->ctx, AV_LOG_WARNING, "Media sequence changed unexpectedly: %d -> %d\n",
+            av_log(c->ctx, AV_LOG_WARNING, "Media sequence changed unexpectedly: %"PRId64" -> %"PRId64"\n",
                    prev_start_seq_no, pls->start_seq_no);
         }
         free_segment_dynarray(prev_segments, prev_n_segments);
@@ -991,7 +999,7 @@ static struct segment *current_segment(struct playlist *pls)
 
 static struct segment *next_segment(struct playlist *pls)
 {
-    int n = pls->cur_seq_no - pls->start_seq_no + 1;
+    int64_t n = pls->cur_seq_no - pls->start_seq_no + 1;
     if (n >= pls->n_segments)
         return NULL;
     return pls->segments[n];
@@ -1457,7 +1465,7 @@ reload:
         }
         if (v->cur_seq_no < v->start_seq_no) {
             av_log(v->parent, AV_LOG_WARNING,
-                   "skipping %d segments ahead, expired from playlists\n",
+                   "skipping %"PRId64" segments ahead, expired from playlists\n",
                    v->start_seq_no - v->cur_seq_no);
             v->cur_seq_no = v->start_seq_no;
         }
@@ -1503,7 +1511,7 @@ reload:
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
-            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %d of playlist %d\n",
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %"PRId64" of playlist %d\n",
                    v->cur_seq_no,
                    v->index);
             v->cur_seq_no += 1;
@@ -1528,7 +1536,7 @@ reload:
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
-            av_log(v->parent, AV_LOG_WARNING, "Failed to open next segment %d of playlist %d\n",
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %"PRId64" of playlist %d\n",
                    v->cur_seq_no + 1,
                    v->index);
         } else {
@@ -1625,7 +1633,7 @@ static void add_metadata_from_renditions(AVFormatContext *s, struct playlist *pl
 /* if timestamp was in valid range: returns 1 and sets seq_no
  * if not: returns 0 and sets seq_no to closest segment */
 static int find_timestamp_in_playlist(HLSContext *c, struct playlist *pls,
-                                      int64_t timestamp, int *seq_no)
+                                      int64_t timestamp, int64_t *seq_no)
 {
     int i;
     int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ?
@@ -1650,9 +1658,9 @@ static int find_timestamp_in_playlist(HLSContext *c, struct playlist *pls,
     return 0;
 }
 
-static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
+static int64_t select_cur_seq_no(HLSContext *c, struct playlist *pls)
 {
-    int seq_no;
+    int64_t seq_no;
 
     if (!pls->finished && !c->first_packet &&
         av_gettime_relative() - pls->last_load_time >= default_reload_interval(pls))
@@ -1844,7 +1852,7 @@ static int hls_read_header(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
     int ret = 0, i;
-    int highest_cur_seq_no = 0;
+    int64_t highest_cur_seq_no = 0;
 
     c->ctx                = s;
     c->interrupt_callback = &s->interrupt_callback;
@@ -2077,7 +2085,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
                 pls->seek_flags = AVSEEK_FLAG_ANY;
                 pls->seek_stream_index = -1;
             }
-            av_log(s, AV_LOG_INFO, "Now receiving playlist %d, segment %d\n", i, pls->cur_seq_no);
+            av_log(s, AV_LOG_INFO, "Now receiving playlist %d, segment %"PRId64"\n", i, pls->cur_seq_no);
         } else if (first && !cur_needed && pls->needed) {
             ff_format_io_close(pls->parent, &pls->input);
             pls->input_read_done = 0;
@@ -2274,10 +2282,10 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
 {
     HLSContext *c = s->priv_data;
     struct playlist *seek_pls = NULL;
-    int i, seq_no;
-    int j;
+    int i, j;
     int stream_subdemuxer_index;
     int64_t first_timestamp, seek_timestamp, duration;
+    int64_t seq_no;
 
     if ((flags & AVSEEK_FLAG_BYTE) || (c->ctx->ctx_flags & AVFMTCTX_UNSEEKABLE))
         return AVERROR(ENOSYS);
