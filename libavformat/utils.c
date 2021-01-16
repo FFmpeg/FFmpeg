@@ -1106,6 +1106,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
         dts           == AV_NOPTS_VALUE ||
         st->cur_dts   == AV_NOPTS_VALUE ||
         st->cur_dts < INT_MIN + RELATIVE_TS_BASE ||
+        dts  < INT_MIN + (st->cur_dts - RELATIVE_TS_BASE) ||
         is_relative(dts))
         return;
 
