@@ -296,7 +296,7 @@ static int decode_main_header(NUTContext *nut)
         if (tmp_fields > 5)
             count = ffio_read_varlen(bc);
         else
-            count = tmp_mul - tmp_size;
+            count = tmp_mul - (unsigned)tmp_size;
         if (tmp_fields > 6)
             get_s(bc);
         if (tmp_fields > 7)
