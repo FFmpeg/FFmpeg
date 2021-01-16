@@ -54,7 +54,7 @@ static int64_t read_ts(const char *s)
     if (sscanf(s,    "%u:%u.%u",      &mm, &ss, &ms) == 3) return (            mm*60LL + ss) * 100LL + ms;
     if (sscanf(s,    "%u:%u"   ,      &mm, &ss     ) == 2) return (            mm*60LL + ss) * 100LL;
     if (sscanf(s,       "%u.%u",           &ss, &ms) == 2) return (                      ss) * 100LL + ms;
-    return strtol(s, NULL, 10) * 100LL;
+    return strtoll(s, NULL, 10) * 100ULL;
 }
 
 static int realtext_read_header(AVFormatContext *s)
