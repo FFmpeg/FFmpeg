@@ -74,7 +74,7 @@ typedef struct PhaseContext {
 } PhaseContext;
 
 #define OFFSET(x) offsetof(PhaseContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 #define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, 0, 0, FLAGS, unit }
 
 static const AVOption phase_options[] = {
@@ -245,4 +245,5 @@ AVFilter ff_vf_phase = {
     .inputs        = phase_inputs,
     .outputs       = phase_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .process_command = ff_filter_process_command,
 };

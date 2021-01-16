@@ -15777,6 +15777,10 @@ Filter selects among @samp{t}, @samp{b} and @samp{p} using image analysis only.
 @end table
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section photosensitivity
 Reduce various flashes in video, so to help users with epilepsy.
 
