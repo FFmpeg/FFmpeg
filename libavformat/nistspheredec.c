@@ -90,6 +90,8 @@ static int nist_read_header(AVFormatContext *s)
             return 0;
         } else if (!memcmp(buffer, "channel_count", 13)) {
             sscanf(buffer, "%*s %*s %u", &st->codecpar->channels);
+            if (st->codecpar->channels <= 0 || st->codecpar->channels > INT16_MAX)
+                return AVERROR_INVALIDDATA;
         } else if (!memcmp(buffer, "sample_byte_format", 18)) {
             sscanf(buffer, "%*s %*s %31s", format);
 
@@ -109,12 +111,14 @@ static int nist_read_header(AVFormatContext *s)
             sscanf(buffer, "%*s %*s %"SCNd64, &st->duration);
         } else if (!memcmp(buffer, "sample_n_bytes", 14)) {
             sscanf(buffer, "%*s %*s %d", &bps);
-            if (bps > INT_MAX/8U)
+            if (bps > INT16_MAX/8U)
                 return AVERROR_INVALIDDATA;
         } else if (!memcmp(buffer, "sample_rate", 11)) {
             sscanf(buffer, "%*s %*s %d", &st->codecpar->sample_rate);
         } else if (!memcmp(buffer, "sample_sig_bits", 15)) {
             sscanf(buffer, "%*s %*s %d", &st->codecpar->bits_per_coded_sample);
+            if (st->codecpar->bits_per_coded_sample <= 0 || st->codecpar->bits_per_coded_sample > INT16_MAX)
+                return AVERROR_INVALIDDATA;
         } else {
             char key[32], value[32];
             if (sscanf(buffer, "%31s %*s %31s", key, value) == 2) {
