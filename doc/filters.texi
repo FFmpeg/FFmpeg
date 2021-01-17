@@ -9207,6 +9207,9 @@ Set background opacity.
 
 @item format
 Set display number format. Can be @code{hex}, or @code{dec}. Default is @code{hex}.
+
+@item components
+Set pixel components to display. By default all pixel components are displayed.
 @end table
 
 @section dblur
