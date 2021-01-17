@@ -33,13 +33,14 @@
 typedef struct BBoxContext {
     const AVClass *class;
     int min_val;
+    int depth;
 } BBoxContext;
 
 #define OFFSET(x) offsetof(BBoxContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption bbox_options[] = {
-    { "min_val", "set minimum luminance value for bounding box", OFFSET(min_val), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, 254, FLAGS },
+    { "min_val", "set minimum luminance value for bounding box", OFFSET(min_val), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, UINT16_MAX, FLAGS },
     { NULL }
 };
 
@@ -48,11 +49,26 @@ AVFILTER_DEFINE_CLASS(bbox);
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
+        AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE,
     };
 
@@ -75,7 +91,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     has_bbox =
         ff_calculate_bounding_box(&box,
                                   frame->data[0], frame->linesize[0],
-                                  inlink->w, inlink->h, bbox->min_val, 8);
+                                  inlink->w, inlink->h, bbox->min_val, bbox->depth);
     w = box.x2 - box.x1 + 1;
     h = box.y2 - box.y1 + 1;
 
@@ -105,6 +121,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+static int config_output(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    BBoxContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc;
+
+    desc = av_pix_fmt_desc_get(outlink->format);
+    if (!desc)
+        return AVERROR_BUG;
+    s->depth = desc->comp[0].depth;
+
+    return 0;
+}
+
 static const AVFilterPad bbox_inputs[] = {
     {
         .name         = "default",
@@ -118,6 +148,7 @@ static const AVFilterPad bbox_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
     },
     { NULL }
 };
