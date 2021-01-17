@@ -14649,9 +14649,9 @@ Set which set of weights to use in the predictor.
 Can be one of the following:
 
 @table @samp
-@item a
+@item a, abs
 weights trained to minimize absolute error
-@item s
+@item s, mse
 weights trained to minimize squared error
 @end table
 
@@ -14673,13 +14673,15 @@ Can be one of the following:
 @item none
 @item original
 @item new
+@item new2
+@item new3
 @end table
 
 Default is @code{new}.
-
-@item fapprox
-Set various debugging flags.
 @end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options, excluding @var{weights} option.
 
 @section noformat
 
