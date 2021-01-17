@@ -7144,6 +7144,10 @@ The filter accepts the following option:
 Set the minimal luminance value. Default is @code{16}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section bilateral
 Apply bilateral filter, spatial smoothing while preserving edges.
 

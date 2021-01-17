@@ -37,7 +37,7 @@ typedef struct BBoxContext {
 } BBoxContext;
 
 #define OFFSET(x) offsetof(BBoxContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption bbox_options[] = {
     { "min_val", "set minimum luminance value for bounding box", OFFSET(min_val), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, UINT16_MAX, FLAGS },
@@ -162,4 +162,5 @@ AVFilter ff_vf_bbox = {
     .inputs        = bbox_inputs,
     .outputs       = bbox_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = ff_filter_process_command,
 };
