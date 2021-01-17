@@ -14092,6 +14092,10 @@ copied from first stream.
 By default value 0xf, all planes will be processed.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section maskedmin
 
 Merge the second and third input stream into output stream using absolute differences
