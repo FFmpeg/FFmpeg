@@ -1016,6 +1016,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         p[0] = b;
         p = dstp[2] + x + y * dst_linesizep[2];
         p[0] = r;
+        break;
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
