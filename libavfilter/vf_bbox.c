@@ -75,7 +75,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     has_bbox =
         ff_calculate_bounding_box(&box,
                                   frame->data[0], frame->linesize[0],
-                                  inlink->w, inlink->h, bbox->min_val);
+                                  inlink->w, inlink->h, bbox->min_val, 8);
     w = box.x2 - box.x1 + 1;
     h = box.y2 - box.y1 + 1;
 

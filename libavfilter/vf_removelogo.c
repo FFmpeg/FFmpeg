@@ -342,8 +342,8 @@ static av_cold int init(AVFilterContext *ctx)
 
     /* Calculate our bounding rectangles, which determine in what
      * region the logo resides for faster processing. */
-    ff_calculate_bounding_box(&s->full_mask_bbox, s->full_mask_data, w, w, h, 0);
-    ff_calculate_bounding_box(&s->half_mask_bbox, s->half_mask_data, w/2, w/2, h/2, 0);
+    ff_calculate_bounding_box(&s->full_mask_bbox, s->full_mask_data, w, w, h, 0, 8);
+    ff_calculate_bounding_box(&s->half_mask_bbox, s->half_mask_data, w/2, w/2, h/2, 0, 8);
 
 #define SHOW_LOGO_INFO(mask_type)                                       \
     av_log(ctx, AV_LOG_VERBOSE, #mask_type " x1:%d x2:%d y1:%d y2:%d max_mask_size:%d\n", \
