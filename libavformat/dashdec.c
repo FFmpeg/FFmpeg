@@ -155,6 +155,7 @@ typedef struct DASHContext {
     /* Flags for init section*/
     int is_init_section_common_video;
     int is_init_section_common_audio;
+    int is_init_section_common_subtitle;
 
 } DASHContext;
 
@@ -2084,11 +2085,11 @@ static int dash_read_header(AVFormatContext *s)
     }
 
     if (c->n_subtitles)
-        c->is_init_section_common_audio = is_common_init_section_exist(c->subtitles, c->n_subtitles);
+        c->is_init_section_common_subtitle = is_common_init_section_exist(c->subtitles, c->n_subtitles);
 
     for (i = 0; i < c->n_subtitles; i++) {
         rep = c->subtitles[i];
-        if (i > 0 && c->is_init_section_common_audio) {
+        if (i > 0 && c->is_init_section_common_subtitle) {
             ret = copy_init_section(rep, c->subtitles[0]);
             if (ret < 0)
                 goto fail;
