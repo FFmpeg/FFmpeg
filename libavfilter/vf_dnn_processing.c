@@ -159,7 +159,7 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
         return AVERROR(EIO);
     }
     if (model_input->dt != DNN_FLOAT) {
-        av_log(ctx, AV_LOG_ERROR, "only support dnn models with input data type as float32.\n");
+        avpriv_report_missing_feature(ctx, "data type rather than DNN_FLOAT");
         return AVERROR(EIO);
     }
 
@@ -184,7 +184,7 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
         }
         return 0;
     default:
-        av_log(ctx, AV_LOG_ERROR, "%s not supported.\n", av_get_pix_fmt_name(fmt));
+        avpriv_report_missing_feature(ctx, "%s", av_get_pix_fmt_name(fmt));
         return AVERROR(EIO);
     }
 

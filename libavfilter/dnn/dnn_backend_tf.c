@@ -424,7 +424,7 @@ static DNNReturnType add_conv_layer(TFModel *tf_model, TF_Operation *transpose_o
         op_desc = TF_NewOperation(tf_model->graph, "Sigmoid", name_buffer);
         break;
     default:
-        av_log(ctx, AV_LOG_ERROR, "Unsupported convolutional activation function\n");
+        avpriv_report_missing_feature(ctx, "convolutional activation function %d", params->activation);
         return DNN_ERROR;
     }
     input.oper = *cur_op;
@@ -750,7 +750,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     if (nb_output != 1) {
         // currently, the filter does not need multiple outputs,
         // so we just pending the support until we really need it.
-        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
+        avpriv_report_missing_feature(ctx, "multiple outputs");
         return DNN_ERROR;
     }
 

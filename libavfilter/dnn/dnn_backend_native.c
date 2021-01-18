@@ -327,7 +327,7 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
     if (nb_output != 1) {
         // currently, the filter does not need multiple outputs,
         // so we just pending the support until we really need it.
-        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
+        avpriv_report_missing_feature(ctx, "multiple outputs");
         return DNN_ERROR;
     }
 

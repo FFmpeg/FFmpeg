@@ -588,12 +588,12 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     if (nb_output != 1) {
         // currently, the filter does not need multiple outputs,
         // so we just pending the support until we really need it.
-        av_log(ctx, AV_LOG_ERROR, "do not support multiple outputs\n");
+        avpriv_report_missing_feature(ctx, "multiple outputs");
         return DNN_ERROR;
     }
 
     if (ctx->options.batch_size > 1) {
-        av_log(ctx, AV_LOG_ERROR, "do not support batch mode for sync execution.\n");
+        avpriv_report_missing_feature(ctx, "batch mode for sync execution");
         return DNN_ERROR;
     }
 
