@@ -1992,7 +1992,12 @@ static int is_common_init_section_exist(struct representation **pls, int n_pls)
     url_offset = first_init_section->url_offset;
     size = pls[0]->init_section->size;
     for (i=0;i<n_pls;i++) {
-        if (av_strcasecmp(pls[i]->init_section->url,url) || pls[i]->init_section->url_offset != url_offset || pls[i]->init_section->size != size) {
+        if (!pls[i]->init_section)
+            continue;
+
+        if (av_strcasecmp(pls[i]->init_section->url, url) ||
+            pls[i]->init_section->url_offset != url_offset ||
+            pls[i]->init_section->size != size) {
             return 0;
         }
     }
