@@ -544,8 +544,15 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
         goto err;
 
     status = ie_core_read_network(ov_model->core, model_filename, NULL, &ov_model->network);
-    if (status != OK)
+    if (status != OK) {
+        ie_version_t ver;
+        ver = ie_c_api_version();
+        av_log(ctx, AV_LOG_ERROR, "Failed to read the network from model file %s,\n"
+                                  "Please check if the model version matches the runtime OpenVINO %s\n",
+                                   model_filename, ver.api_version);
+        ie_version_free(&ver);
         goto err;
+    }
 
     model->get_input = &get_input_ov;
     model->get_output = &get_output_ov;
