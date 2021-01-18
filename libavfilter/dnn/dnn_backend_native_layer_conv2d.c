@@ -26,19 +26,19 @@
 #define CLAMP_TO_EDGE(x, w) ((x) < 0 ? 0 : ((x) >= (w) ? (w - 1) : (x)))
 
 //struct to pass parameters
-typedef struct thread_common_param{
+typedef struct ThreadCommonParam{
     DnnOperand *operands;
     const int32_t *input_operand_indexes;
     int32_t output_operand_index;
     const void *parameters;
     NativeContext *ctx;
     float *output_data;
-} thread_common_param;
+} ThreadCommonParam;
 
-typedef struct thread_param{
-    thread_common_param *thread_common_param;
+typedef struct ThreadParam{
+    ThreadCommonParam *thread_common_param;
     int thread_start, thread_end;
-} thread_param;
+} ThreadParam;
 
 int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
@@ -108,8 +108,8 @@ int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int fil
 static void * dnn_execute_layer_conv2d_thread(void *threadarg)
 {
     //pass parameters
-    thread_param *thread_param = (struct thread_param *)threadarg;
-    thread_common_param *thread_common_param = thread_param->thread_common_param;
+    ThreadParam *thread_param = threadarg;
+    ThreadCommonParam *thread_common_param = thread_param->thread_common_param;
     DnnOperand *operands = thread_common_param->operands;
     int32_t input_operand_index = thread_common_param->input_operand_indexes[0];
     int height = operands[input_operand_index].dims[1];
@@ -190,8 +190,8 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
     pthread_t *thread_id = av_malloc(thread_num * sizeof(pthread_t));
     int thread_stride;
 #endif
-    thread_param **thread_param = av_malloc(thread_num * sizeof(*thread_param));
-    thread_common_param thread_common_param;
+    ThreadParam **thread_param = av_malloc(thread_num * sizeof(*thread_param));
+    ThreadCommonParam thread_common_param;
     const ConvolutionalParams *conv_params = (const ConvolutionalParams *)(parameters);
     int height = operands[input_operand_indexes[0]].dims[1];
     int width = operands[input_operand_indexes[0]].dims[2];
