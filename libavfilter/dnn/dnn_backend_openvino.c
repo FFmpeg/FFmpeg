@@ -325,14 +325,6 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
                 return DNN_ERROR;
             }
 
-            // The order of dims in the openvino is fixed and it is always NCHW for 4-D data.
-            // while we pass NHWC data from FFmpeg to openvino
-            status = ie_network_set_input_layout(ov_model->network, input_name, NHWC);
-            if (status != OK) {
-                av_log(ctx, AV_LOG_ERROR, "Input \"%s\" does not match layout NHWC\n", input_name);
-                return DNN_ERROR;
-            }
-
             input->channels = dims.dims[1];
             input->height   = dims.dims[2];
             input->width    = dims.dims[3];
