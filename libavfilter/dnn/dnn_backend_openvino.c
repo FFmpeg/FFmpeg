@@ -38,6 +38,7 @@ typedef struct OVOptions{
     char *device_type;
     int nireq;
     int batch_size;
+    int input_resizable;
 } OVOptions;
 
 typedef struct OVContext {
@@ -86,6 +87,7 @@ static const AVOption dnn_openvino_options[] = {
     { "device", "device to run model", OFFSET(options.device_type), AV_OPT_TYPE_STRING, { .str = "CPU" }, 0, 0, FLAGS },
     { "nireq",  "number of request",   OFFSET(options.nireq),       AV_OPT_TYPE_INT,    { .i64 = 0 },     0, INT_MAX, FLAGS },
     { "batch_size",  "batch size per request", OFFSET(options.batch_size),  AV_OPT_TYPE_INT,    { .i64 = 1 },     1, 1000, FLAGS},
+    { "input_resizable", "can input be resizable or not", OFFSET(options.input_resizable), AV_OPT_TYPE_BOOL,   { .i64 = 0 },     0, 1, FLAGS },
     { NULL }
 };
 
@@ -400,6 +402,7 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
     size_t model_input_count = 0;
     dimensions_t dims;
     precision_e precision;
+    int input_resizable = ctx->options.input_resizable;
 
     status = ie_network_get_inputs_number(ov_model->network, &model_input_count);
     if (status != OK) {
@@ -423,8 +426,8 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
             }
 
             input->channels = dims.dims[1];
-            input->height   = dims.dims[2];
-            input->width    = dims.dims[3];
+            input->height   = input_resizable ? -1 : dims.dims[2];
+            input->width    = input_resizable ? -1 : dims.dims[3];
             input->dt       = precision_to_datatype(precision);
             return DNN_SUCCESS;
         } else {
@@ -450,6 +453,8 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     AVFrame *in_frame = av_frame_alloc();
     AVFrame *out_frame = NULL;
     TaskItem *ptask = &task;
+    IEStatusCode status;
+    input_shapes_t input_shapes;
 
     if (!in_frame) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for input frame\n");
@@ -463,6 +468,18 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     }
     in_frame->width = input_width;
     in_frame->height = input_height;
+
+    if (ctx->options.input_resizable) {
+        status = ie_network_get_input_shapes(ov_model->network, &input_shapes);
+        input_shapes.shapes->shape.dims[2] = input_height;
+        input_shapes.shapes->shape.dims[3] = input_width;
+        status |= ie_network_reshape(ov_model->network, input_shapes);
+        ie_network_input_shapes_free(&input_shapes);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to reshape input size for %s\n", input_name);
+            return DNN_ERROR;
+        }
+    }
 
     if (!ov_model->exe_network) {
         if (init_model_ov(ov_model) != DNN_SUCCESS) {
