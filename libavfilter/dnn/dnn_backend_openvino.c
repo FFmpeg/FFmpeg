@@ -160,7 +160,7 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
             if (ov_model->model->pre_proc != NULL) {
                 ov_model->model->pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
             } else {
-                proc_from_frame_to_dnn(task->in_frame, &input, ctx);
+                ff_proc_from_frame_to_dnn(task->in_frame, &input, ctx);
             }
         }
         input.data = (uint8_t *)input.data
@@ -228,7 +228,7 @@ static void infer_completion_callback(void *args)
             if (task->ov_model->model->post_proc != NULL) {
                 task->ov_model->model->post_proc(task->out_frame, &output, task->ov_model->model->filter_ctx);
             } else {
-                proc_from_dnn_to_frame(task->out_frame, &output, ctx);
+                ff_proc_from_dnn_to_frame(task->out_frame, &output, ctx);
             }
         } else {
             task->out_frame->width = output.width;

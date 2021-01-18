@@ -22,7 +22,7 @@
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
 
-DNNReturnType proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
+DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
@@ -92,7 +92,7 @@ DNNReturnType proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_
     return DNN_SUCCESS;
 }
 
-DNNReturnType proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
+DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
