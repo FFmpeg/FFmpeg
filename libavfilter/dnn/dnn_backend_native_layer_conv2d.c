@@ -70,7 +70,7 @@ int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int fil
         return 0;
     }
 
-    conv_params->kernel = av_malloc(kernel_size * sizeof(float));
+    conv_params->kernel = av_malloc_array(kernel_size, sizeof(*conv_params->kernel));
     if (!conv_params->kernel) {
         av_freep(&conv_params);
         return 0;
@@ -81,7 +81,7 @@ int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int fil
 
     conv_params->biases = NULL;
     if (conv_params->has_bias) {
-        conv_params->biases = av_malloc(conv_params->output_num * sizeof(float));
+        conv_params->biases = av_malloc_array(conv_params->output_num, sizeof(*conv_params->biases));
         if (!conv_params->biases){
             av_freep(&conv_params->kernel);
             av_freep(&conv_params);
@@ -187,10 +187,10 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
     int thread_num = (ctx->options.conv2d_threads <= 0 || ctx->options.conv2d_threads > av_cpu_count())
         ? (av_cpu_count() + 1) : (ctx->options.conv2d_threads);
 #if HAVE_PTHREAD_CANCEL
-    pthread_t *thread_id = av_malloc(thread_num * sizeof(pthread_t));
+    pthread_t *thread_id = av_malloc_array(thread_num, sizeof(*thread_id));
     int thread_stride;
 #endif
-    ThreadParam **thread_param = av_malloc(thread_num * sizeof(*thread_param));
+    ThreadParam **thread_param = av_malloc_array(thread_num, sizeof(*thread_param));
     ThreadCommonParam thread_common_param;
     const ConvolutionalParams *conv_params = (const ConvolutionalParams *)(parameters);
     int height = operands[input_operand_indexes[0]].dims[1];
@@ -224,7 +224,7 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
     thread_stride = (height - pad_size * 2) / thread_num;
     //create threads
     for (int i = 0; i < thread_num; i++){
-        thread_param[i] = av_malloc(sizeof(**thread_param));
+        thread_param[i] = av_malloc(sizeof(*thread_param[0]));
         thread_param[i]->thread_common_param = &thread_common_param;
         thread_param[i]->thread_start = thread_stride * i + pad_size;
         thread_param[i]->thread_end = (i == thread_num - 1) ? (height - pad_size) : (thread_param[i]->thread_start + thread_stride);
@@ -237,20 +237,20 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
     }
 
     //release memory
-    av_free(thread_id);
+    av_freep(&thread_id);
 
     for (int i = 0; i < thread_num; i++){
-        av_free(thread_param[i]);
+        av_freep(&thread_param[i]);
     }
 #else
-    thread_param[0] = av_malloc(sizeof(**thread_param));
+    thread_param[0] = av_malloc(sizeof(*thread_param[0]));
     thread_param[0]->thread_common_param = &thread_common_param;
     thread_param[0]->thread_start = pad_size;
     thread_param[0]->thread_end = height - pad_size;
     dnn_execute_layer_conv2d_thread((void *)thread_param[0]);
-    av_free(thread_param[0]);
+    av_freep(&thread_param[0]);
 #endif
 
-    av_free(thread_param);
+    av_freep(&thread_param);
     return DNN_SUCCESS;
 }
