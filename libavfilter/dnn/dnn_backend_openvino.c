@@ -55,8 +55,8 @@ typedef struct OVModel{
     ie_infer_request_t *infer_request;
 
     /* for async execution */
-    FFSafeQueue *request_queue;   // holds RequestItem
-    FFQueue *task_queue;          // holds TaskItem
+    SafeQueue *request_queue;   // holds RequestItem
+    Queue *task_queue;          // holds TaskItem
 } OVModel;
 
 typedef struct TaskItem {

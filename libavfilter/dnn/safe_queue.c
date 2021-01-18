@@ -43,15 +43,15 @@ static inline int dnn_cond_wait(DNNCond *cond, AVMutex *mutex)
 }
 #endif
 
-struct FFSafeQueue {
-    FFQueue *q;
+struct SafeQueue {
+    Queue *q;
     AVMutex mutex;
     DNNCond cond;
 };
 
-FFSafeQueue *ff_safe_queue_create(void)
+SafeQueue *ff_safe_queue_create(void)
 {
-    FFSafeQueue *sq = av_malloc(sizeof(*sq));
+    SafeQueue *sq = av_malloc(sizeof(*sq));
     if (!sq)
         return NULL;
 
@@ -66,7 +66,7 @@ FFSafeQueue *ff_safe_queue_create(void)
     return sq;
 }
 
-void ff_safe_queue_destroy(FFSafeQueue *sq)
+void ff_safe_queue_destroy(SafeQueue *sq)
 {
     if (!sq)
         return;
@@ -77,12 +77,12 @@ void ff_safe_queue_destroy(FFSafeQueue *sq)
     av_freep(&sq);
 }
 
-size_t ff_safe_queue_size(FFSafeQueue *sq)
+size_t ff_safe_queue_size(SafeQueue *sq)
 {
     return sq ? ff_queue_size(sq->q) : 0;
 }
 
-int ff_safe_queue_push_front(FFSafeQueue *sq, void *v)
+int ff_safe_queue_push_front(SafeQueue *sq, void *v)
 {
     int ret;
     ff_mutex_lock(&sq->mutex);
@@ -92,7 +92,7 @@ int ff_safe_queue_push_front(FFSafeQueue *sq, void *v)
     return ret;
 }
 
-int ff_safe_queue_push_back(FFSafeQueue *sq, void *v)
+int ff_safe_queue_push_back(SafeQueue *sq, void *v)
 {
     int ret;
     ff_mutex_lock(&sq->mutex);
@@ -102,7 +102,7 @@ int ff_safe_queue_push_back(FFSafeQueue *sq, void *v)
     return ret;
 }
 
-void *ff_safe_queue_pop_front(FFSafeQueue *sq)
+void *ff_safe_queue_pop_front(SafeQueue *sq)
 {
     void *value;
     ff_mutex_lock(&sq->mutex);

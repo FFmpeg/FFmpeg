@@ -22,20 +22,20 @@
 #ifndef AVFILTER_DNN_QUEUE_H
 #define AVFILTER_DNN_QUEUE_H
 
-typedef struct FFQueue FFQueue;
+typedef struct Queue Queue;
 
-FFQueue *ff_queue_create(void);
-void ff_queue_destroy(FFQueue *q);
+Queue *ff_queue_create(void);
+void ff_queue_destroy(Queue *q);
 
-size_t ff_queue_size(FFQueue *q);
+size_t ff_queue_size(Queue *q);
 
-void *ff_queue_peek_front(FFQueue *q);
-void *ff_queue_peek_back(FFQueue *q);
+void *ff_queue_peek_front(Queue *q);
+void *ff_queue_peek_back(Queue *q);
 
-int ff_queue_push_front(FFQueue *q, void *v);
-int ff_queue_push_back(FFQueue *q, void *v);
+int ff_queue_push_front(Queue *q, void *v);
+int ff_queue_push_back(Queue *q, void *v);
 
-void *ff_queue_pop_front(FFQueue *q);
-void *ff_queue_pop_back(FFQueue *q);
+void *ff_queue_pop_front(Queue *q);
+void *ff_queue_pop_back(Queue *q);
 
 #endif

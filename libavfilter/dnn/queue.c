@@ -23,31 +23,31 @@
 #include "libavutil/mem.h"
 #include "libavutil/avassert.h"
 
-typedef struct FFQueueEntry FFQueueEntry;
+typedef struct QueueEntry QueueEntry;
 
-struct FFQueueEntry {
+struct QueueEntry {
     void *value;
-    FFQueueEntry *prev;
-    FFQueueEntry *next;
+    QueueEntry *prev;
+    QueueEntry *next;
 };
 
-struct FFQueue {
-    FFQueueEntry *head;
-    FFQueueEntry *tail;
+struct Queue {
+    QueueEntry *head;
+    QueueEntry *tail;
     size_t length;
 };
 
-static inline FFQueueEntry *create_entry(void *val)
+static inline QueueEntry *create_entry(void *val)
 {
-    FFQueueEntry *entry = av_malloc(sizeof(*entry));
+    QueueEntry *entry = av_malloc(sizeof(*entry));
     if (entry)
         entry->value = val;
     return entry;
 }
 
-FFQueue* ff_queue_create(void)
+Queue* ff_queue_create(void)
 {
-    FFQueue *q = av_malloc(sizeof(*q));
+    Queue *q = av_malloc(sizeof(*q));
     if (!q)
         return NULL;
 
@@ -70,15 +70,15 @@ FFQueue* ff_queue_create(void)
     return q;
 }
 
-void ff_queue_destroy(FFQueue *q)
+void ff_queue_destroy(Queue *q)
 {
-    FFQueueEntry *entry;
+    QueueEntry *entry;
     if (!q)
         return;
 
     entry = q->head;
     while (entry != NULL) {
-        FFQueueEntry *temp = entry;
+        QueueEntry *temp = entry;
         entry = entry->next;
         av_freep(&temp);
     }
@@ -86,12 +86,12 @@ void ff_queue_destroy(FFQueue *q)
     av_freep(&q);
 }
 
-size_t ff_queue_size(FFQueue *q)
+size_t ff_queue_size(Queue *q)
 {
      return q ? q->length : 0;
 }
 
-void *ff_queue_peek_front(FFQueue *q)
+void *ff_queue_peek_front(Queue *q)
 {
     if (!q || q->length == 0)
         return NULL;
@@ -99,7 +99,7 @@ void *ff_queue_peek_front(FFQueue *q)
     return q->head->next->value;
 }
 
-void *ff_queue_peek_back(FFQueue *q)
+void *ff_queue_peek_back(Queue *q)
 {
     if (!q || q->length == 0)
         return NULL;
@@ -107,10 +107,10 @@ void *ff_queue_peek_back(FFQueue *q)
     return q->tail->prev->value;
 }
 
-int ff_queue_push_front(FFQueue *q, void *v)
+int ff_queue_push_front(Queue *q, void *v)
 {
-    FFQueueEntry *new_entry;
-    FFQueueEntry *original_next;
+    QueueEntry *new_entry;
+    QueueEntry *original_next;
     if (!q)
         return 0;
 
@@ -128,10 +128,10 @@ int ff_queue_push_front(FFQueue *q, void *v)
     return q->length;
 }
 
-int ff_queue_push_back(FFQueue *q, void *v)
+int ff_queue_push_back(Queue *q, void *v)
 {
-    FFQueueEntry *new_entry;
-    FFQueueEntry *original_prev;
+    QueueEntry *new_entry;
+    QueueEntry *original_prev;
     if (!q)
         return 0;
 
@@ -149,10 +149,10 @@ int ff_queue_push_back(FFQueue *q, void *v)
     return q->length;
 }
 
-void *ff_queue_pop_front(FFQueue *q)
+void *ff_queue_pop_front(Queue *q)
 {
-    FFQueueEntry *front;
-    FFQueueEntry *new_head_next;
+    QueueEntry *front;
+    QueueEntry *new_head_next;
     void *ret;
 
     if (!q || q->length == 0)
@@ -170,10 +170,10 @@ void *ff_queue_pop_front(FFQueue *q)
     return ret;
 }
 
-void *ff_queue_pop_back(FFQueue *q)
+void *ff_queue_pop_back(Queue *q)
 {
-    FFQueueEntry *back;
-    FFQueueEntry *new_tail_prev;
+    QueueEntry *back;
+    QueueEntry *new_tail_prev;
     void *ret;
 
     if (!q || q->length == 0)
