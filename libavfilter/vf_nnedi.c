@@ -37,30 +37,27 @@ static const uint8_t NNEDI_XDIM[] = { 8, 16, 32, 48, 8, 16, 32 };
 static const uint8_t NNEDI_YDIM[] = { 6, 6, 6, 6, 4, 4, 4 };
 static const uint16_t NNEDI_NNS[] = { 16, 32, 64, 128, 256 };
 
-static const unsigned NNEDI_DIMS0 = 49 * 4 + 5 * 4 + 9 * 4;
-static const unsigned NNEDI_DIMS0_NEW = 4 * 65 + 4 * 5;
-
 typedef struct PrescreenerOldCoefficients {
     DECLARE_ALIGNED(32, float, kernel_l0)[4][14 * 4];
-    float bias_l0[4];
+    DECLARE_ALIGNED(32, float, bias_l0)[4];
 
     DECLARE_ALIGNED(32, float, kernel_l1)[4][4];
-    float bias_l1[4];
+    DECLARE_ALIGNED(32, float, bias_l1)[4];
 
     DECLARE_ALIGNED(32, float, kernel_l2)[4][8];
-    float bias_l2[4];
+    DECLARE_ALIGNED(32, float, bias_l2)[4];
 } PrescreenerOldCoefficients;
 
 typedef struct PrescreenerNewCoefficients {
     DECLARE_ALIGNED(32, float, kernel_l0)[4][16 * 4];
-    float bias_l0[4];
+    DECLARE_ALIGNED(32, float, bias_l0)[4];
 
     DECLARE_ALIGNED(32, float, kernel_l1)[4][4];
-    float bias_l1[4];
+    DECLARE_ALIGNED(32, float, bias_l1)[4];
 } PrescreenerNewCoefficients;
 
 typedef struct PredictorCoefficients {
-    int xdim, ydim, nns;
+    int xdim, ydim, nns, nsize;
     float *data;
     float *softmax_q1;
     float *elliott_q1;
@@ -226,22 +223,11 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 static float dot_dsp(NNEDIContext *s, const float *kernel, const float *input,
-                     unsigned n, float scale, float bias)
+                     int n, float scale, float bias)
 {
     float sum;
 
     sum = s->fdsp->scalarproduct_float(kernel, input, n);
-
-    return sum * scale + bias;
-}
-
-static float dot_product(const float *kernel, const float *input,
-                         unsigned n, float scale, float bias)
-{
-    float sum = 0.0f;
-
-    for (int i = 0; i < n; i++)
-        sum += kernel[i] * input[i];
 
     return sum * scale + bias;
 }
@@ -263,7 +249,7 @@ static void process_old(AVFilterContext *ctx,
                         void *data)
 {
     NNEDIContext *s = ctx->priv;
-    PrescreenerOldCoefficients *m_data = data;
+    const PrescreenerOldCoefficients *const m_data = data;
     const float *src_p = src;
 
     // Adjust source pointer to point to top-left of filter window.
@@ -283,12 +269,12 @@ static void process_old(AVFilterContext *ctx,
 
         // Layer 1.
         for (int n = 0; n < 4; n++)
-            state[n + 4] = dot_product(m_data->kernel_l1[n], state, 4, 1.0f, m_data->bias_l1[n]);
+            state[n + 4] = dot_dsp(s, m_data->kernel_l1[n], state, 4, 1.0f, m_data->bias_l1[n]);
         transform_elliott(state + 4, 3);
 
         // Layer 2.
         for (int n = 0; n < 4; n++)
-            state[n + 8] = dot_product(m_data->kernel_l2[n], state, 8, 1.0f, m_data->bias_l2[n]);
+            state[n + 8] = dot_dsp(s, m_data->kernel_l2[n], state, 8, 1.0f, m_data->bias_l2[n]);
 
         prescreen[j] = FFMAX(state[10], state[11]) <= FFMAX(state[8], state[9]) ? 255 : 0;
     }
@@ -300,7 +286,7 @@ static void process_new(AVFilterContext *ctx,
                         void *data)
 {
     NNEDIContext *s = ctx->priv;
-    PrescreenerNewCoefficients *m_data = data;
+    const PrescreenerNewCoefficients *const m_data = data;
     const float *src_p = src;
 
     // Adjust source pointer to point to top-left of filter window.
@@ -318,60 +304,68 @@ static void process_new(AVFilterContext *ctx,
         transform_elliott(state, 4);
 
         for (int n = 0; n < 4; n++)
-            state[n + 4] = dot_product(m_data->kernel_l1[n], state, 4, 1.0f, m_data->bias_l1[n]);
+            state[n + 4] = dot_dsp(s, m_data->kernel_l1[n], state, 4, 1.0f, m_data->bias_l1[n]);
 
         for (int n = 0; n < 4; n++)
             prescreen[j + n] = state[n + 4] > 0.f;
     }
 }
 
-static int filter_offset(unsigned nn, PredictorCoefficients *model)
+static int filter_offset(int nn, const PredictorCoefficients *const model)
 {
-    return nn * model->xdim * model->ydim;
+    return nn * model->nsize;
 }
 
-static const float *softmax_q1_filter(unsigned nn, PredictorCoefficients *model)
+static const float *softmax_q1_filter(int nn,
+                                      const PredictorCoefficients *const model)
 {
     return model->softmax_q1 + filter_offset(nn, model);
 }
 
-static const float *elliott_q1_filter(unsigned nn, PredictorCoefficients *model)
+static const float *elliott_q1_filter(int nn,
+                                      const PredictorCoefficients *const model)
 {
     return model->elliott_q1 + filter_offset(nn, model);
 }
 
-static const float *softmax_q2_filter(unsigned nn, PredictorCoefficients *model)
+static const float *softmax_q2_filter(int nn,
+                                      const PredictorCoefficients *const model)
 {
     return model->softmax_q2 + filter_offset(nn, model);
 }
 
-static const float *elliott_q2_filter(unsigned nn, PredictorCoefficients *model)
+static const float *elliott_q2_filter(int nn,
+                                      const PredictorCoefficients *const model)
 {
     return model->elliott_q2 + filter_offset(nn, model);
 }
 
 static void gather_input(const float *src, ptrdiff_t src_stride,
                          float *buf, float mstd[4],
-                         PredictorCoefficients *model)
+                         const PredictorCoefficients *const model)
 {
     float sum = 0;
     float sum_sq = 0;
     float tmp;
 
     for (int i = 0; i < model->ydim; i++) {
-        for (int j = 0; j < model->xdim; j++) {
-            float val = src[i * src_stride + j];
+        memcpy(buf, src, model->xdim * sizeof(float));
 
-            buf[i * model->xdim + j] = val;
+        for (int j = 0; j < model->xdim; j++) {
+            const float val = src[j];
+
             sum += val;
             sum_sq += val * val;
         }
+
+        src += src_stride;
+        buf += model->xdim;
     }
 
-    mstd[0] = sum / (model->xdim * model->ydim);
+    mstd[0] = sum / model->nsize;
     mstd[3] = 0.f;
 
-    tmp = sum_sq / (model->xdim * model->ydim) - mstd[0] * mstd[0];
+    tmp = sum_sq / model->nsize - mstd[0] * mstd[0];
     if (tmp < FLT_EPSILON) {
         mstd[1] = 0.0f;
         mstd[2] = 0.0f;
@@ -393,7 +387,7 @@ static void transform_softmax_exp(float *input, int size)
 }
 
 static void wae5(const float *softmax, const float *el,
-                 unsigned n, float mstd[4])
+                 int n, float mstd[4])
 {
     float vsum = 0.0f, wsum = 0.0f;
 
@@ -414,13 +408,13 @@ static void predictor(AVFilterContext *ctx,
                       void *data, int use_q2)
 {
     NNEDIContext *s = ctx->priv;
-    PredictorCoefficients *model = data;
+    const PredictorCoefficients *const model = data;
     const float *src_p = src;
     float *dst_p = dst;
 
     // Adjust source pointer to point to top-left of filter window.
     const float *window = src_p - (model->ydim / 2) * src_stride - (model->xdim / 2 - 1);
-    int filter_size = model->xdim * model->ydim;
+    int filter_size = model->nsize;
     int nns = model->nns;
 
     for (int i = 0; i < N; i++) {
@@ -534,7 +528,7 @@ static void write_words(const float *src, uint8_t *dstp,
 }
 
 static void interpolation(const void *src, ptrdiff_t src_stride,
-                          void *dst, const uint8_t *prescreen, unsigned n)
+                          void *dst, const uint8_t *prescreen, int n)
 {
     const float *src_p = src;
     float *dst_p = dst;
@@ -844,6 +838,7 @@ static int allocate_model(PredictorCoefficients *coeffs, int xdim, int ydim, int
     coeffs->data = data;
     coeffs->xdim = xdim;
     coeffs->ydim = ydim;
+    coeffs->nsize = xdim * ydim;
     coeffs->nns  = nns;
 
     coeffs->softmax_q1 = allocate(&data, filter_size);
@@ -966,7 +961,7 @@ static void subtract_mean_new(PrescreenerNewCoefficients *coeffs, float half)
 
 static void subtract_mean_predictor(PredictorCoefficients *model)
 {
-    int filter_size = model->xdim * model->ydim;
+    int filter_size = model->nsize;
     int nns = model->nns;
 
     float softmax_means[256]; // Average of individual softmax filters.
@@ -1013,8 +1008,8 @@ static void subtract_mean_predictor(PredictorCoefficients *model)
 
     mean_bias = mean(model->softmax_bias_q2, nns);
 
-    for (unsigned nn = 0; nn < nns; nn++) {
-        for (unsigned k = 0; k < filter_size; k++) {
+    for (int nn = 0; nn < nns; nn++) {
+        for (int k = 0; k < filter_size; k++) {
             model->softmax_q2[nn * filter_size + k] -= softmax_means[nn] + mean_filter[k];
             model->elliott_q2[nn * filter_size + k] -= elliott_means[nn];
         }
