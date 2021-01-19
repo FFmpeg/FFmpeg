@@ -27,11 +27,12 @@
 static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
-    int i, j, ret, size, linesize;
+    int i, j, commas, ret, size, linesize;
     uint8_t *ptr, *buf;
 
     linesize = (avctx->width + 7) / 8;
-    size     = avctx->height * (linesize * 7 + 2) + 110;
+    commas   = avctx->height * linesize;
+    size     = avctx->height * (linesize * 7 + 2) + 109;
     if ((ret = ff_alloc_packet2(avctx, pkt, size, 0)) < 0)
         return ret;
 
@@ -42,8 +43,11 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf += snprintf(buf, 33, "#define image_height %u\n", avctx->height);
     buf += snprintf(buf, 40, "static unsigned char image_bits[] = {\n");
     for (i = 0; i < avctx->height; i++) {
-        for (j = 0; j < linesize; j++)
-            buf += snprintf(buf, 7, " 0x%02X,", ff_reverse[*ptr++]);
+        for (j = 0; j < linesize; j++) {
+            buf += snprintf(buf, 6, " 0x%02X", ff_reverse[*ptr++]);
+            if (--commas > 0)
+                buf += snprintf(buf, 2, ",");
+        }
         ptr += p->linesize[0] - linesize;
         buf += snprintf(buf, 2, "\n");
     }
