@@ -24,15 +24,25 @@
 #include "internal.h"
 #include "mathops.h"
 
+#define ANSI_MIN_READLINE 509
+
 static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
-    int i, j, commas, ret, size, linesize;
+    int i, j, l, commas, ret, size, linesize, lineout, rowsout;
     uint8_t *ptr, *buf;
 
-    linesize = (avctx->width + 7) / 8;
+    linesize = lineout = (avctx->width + 7) / 8;
     commas   = avctx->height * linesize;
-    size     = avctx->height * (linesize * 6 + 1) + 106;
+
+    /* ANSI worst case minimum readline is 509 chars. */
+    rowsout  = avctx->height;
+    if (lineout > (ANSI_MIN_READLINE / 6)) {
+        lineout = ANSI_MIN_READLINE / 6;
+        rowsout = (commas + lineout - 1) / lineout;
+    }
+
+    size     = rowsout * (lineout * 6 + 1) + 106;
     if ((ret = ff_alloc_packet2(avctx, pkt, size, 0)) < 0)
         return ret;
 
@@ -42,14 +52,20 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf += snprintf(buf, 32, "#define image_width %u\n", avctx->width);
     buf += snprintf(buf, 33, "#define image_height %u\n", avctx->height);
     buf += snprintf(buf, 39, "static unsigned char image_bits[] = {\n");
-    for (i = 0; i < avctx->height; i++) {
+    for (i = 0, l = lineout; i < avctx->height; i++) {
         for (j = 0; j < linesize; j++) {
             buf += snprintf(buf, 6, " 0x%02X", ff_reverse[*ptr++]);
-            if (--commas > 0)
-                buf += snprintf(buf, 2, ",");
+            if (--commas <= 0) {
+                buf += snprintf(buf, 2, "\n");
+                break;
+            }
+            buf += snprintf(buf, 2, ",");
+            if (--l <= 0) {
+                buf += snprintf(buf, 2, "\n");
+                l = lineout;
+            }
         }
         ptr += p->linesize[0] - linesize;
-        buf += snprintf(buf, 2, "\n");
     }
     buf += snprintf(buf, 5, " };\n");
 
