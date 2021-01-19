@@ -948,10 +948,10 @@ static void subtract_mean_predictor(PredictorCoefficients *model)
     int filter_size = model->nsize;
     int nns = model->nns;
 
-    float softmax_means[256]; // Average of individual softmax filters.
-    float elliott_means[256]; // Average of individual elliott filters.
-    float mean_filter[48 * 6]; // Pointwise average of all softmax filters.
-    float mean_bias;
+    double softmax_means[256]; // Average of individual softmax filters.
+    double elliott_means[256]; // Average of individual elliott filters.
+    double mean_filter[48 * 6]; // Pointwise average of all softmax filters.
+    double mean_bias;
 
     // Quality 1.
     for (int nn = 0; nn < nns; nn++) {
@@ -976,7 +976,7 @@ static void subtract_mean_predictor(PredictorCoefficients *model)
     }
 
     // Quality 2.
-    memset(mean_filter, 0, 48 * 6 * sizeof(float));
+    memset(mean_filter, 0, sizeof(mean_filter));
 
     for (int nn = 0; nn < nns; nn++) {
         softmax_means[nn] = mean(model->softmax_q2 + nn * filter_size, filter_size);
