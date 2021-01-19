@@ -136,6 +136,10 @@ static int read_header(AVFormatContext *s)
     p->start_offset   = avio_rl32(pb);
     p->max_video_blks = avio_rl32(pb);
     p->max_audio_blks = avio_rl32(pb);
+
+    if (avio_feof(pb))
+        return AVERROR_INVALIDDATA;
+
     if (p->buffer_size    < 175  ||
         p->max_audio_blks < 2    ||
         p->max_video_blks < 1    ||
