@@ -245,6 +245,9 @@ static int asf_read_marker(AVFormatContext *s, const GUIDParseTable *g)
         avio_skip(pb, 4); // flags
         len = avio_rl32(pb);
 
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
+
         if ((ret = avio_get_str16le(pb, len, name,
                                     sizeof(name))) < len)
             avio_skip(pb, len - ret);
