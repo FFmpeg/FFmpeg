@@ -325,7 +325,7 @@ static void process_new(AVFilterContext *ctx,
     }
 }
 
-static size_t filter_offset(unsigned nn, PredictorCoefficients *model)
+static int filter_offset(unsigned nn, PredictorCoefficients *model)
 {
     return nn * model->xdim * model->ydim;
 }
@@ -420,8 +420,8 @@ static void predictor(AVFilterContext *ctx,
 
     // Adjust source pointer to point to top-left of filter window.
     const float *window = src_p - (model->ydim / 2) * src_stride - (model->xdim / 2 - 1);
-    unsigned filter_size = model->xdim * model->ydim;
-    unsigned nns = model->nns;
+    int filter_size = model->xdim * model->ydim;
+    int nns = model->nns;
 
     for (int i = 0; i < N; i++) {
         LOCAL_ALIGNED_32(float, input, [48 * 6]);
@@ -816,13 +816,13 @@ static int request_frame(AVFilterLink *link)
     return 0;
 }
 
-static void read(float *dst, size_t n, const float **data)
+static void copy_weights(float *dst, int n, const float **data)
 {
     memcpy(dst, *data, n * sizeof(float));
     *data += n;
 }
 
-static float *allocate(float **ptr, size_t size)
+static float *allocate(float **ptr, int size)
 {
     float *ret = *ptr;
 
@@ -833,8 +833,8 @@ static float *allocate(float **ptr, size_t size)
 
 static int allocate_model(PredictorCoefficients *coeffs, int xdim, int ydim, int nns)
 {
-    size_t filter_size = nns * xdim * ydim;
-    size_t bias_size = nns;
+    int filter_size = nns * xdim * ydim;
+    int bias_size = nns;
     float *data;
 
     data = av_malloc_array(filter_size + bias_size, 4 * sizeof(float));
@@ -864,25 +864,25 @@ static int read_weights(AVFilterContext *ctx, const float *bdata)
     NNEDIContext *s = ctx->priv;
     int ret;
 
-    read(&s->prescreener_old.kernel_l0[0][0], 4 * 48, &bdata);
-    read(s->prescreener_old.bias_l0, 4, &bdata);
+    copy_weights(&s->prescreener_old.kernel_l0[0][0], 4 * 48, &bdata);
+    copy_weights(s->prescreener_old.bias_l0, 4, &bdata);
 
-    read(&s->prescreener_old.kernel_l1[0][0], 4 * 4, &bdata);
-    read(s->prescreener_old.bias_l1, 4, &bdata);
+    copy_weights(&s->prescreener_old.kernel_l1[0][0], 4 * 4, &bdata);
+    copy_weights(s->prescreener_old.bias_l1, 4, &bdata);
 
-    read(&s->prescreener_old.kernel_l2[0][0], 4 * 8, &bdata);
-    read(s->prescreener_old.bias_l2, 4, &bdata);
+    copy_weights(&s->prescreener_old.kernel_l2[0][0], 4 * 8, &bdata);
+    copy_weights(s->prescreener_old.bias_l2, 4, &bdata);
 
     for (int i = 0; i < 3; i++) {
         PrescreenerNewCoefficients *data = &s->prescreener_new[i];
         float kernel_l0_shuffled[4 * 64];
         float kernel_l1_shuffled[4 * 4];
 
-        read(kernel_l0_shuffled, 4 * 64, &bdata);
-        read(data->bias_l0, 4, &bdata);
+        copy_weights(kernel_l0_shuffled, 4 * 64, &bdata);
+        copy_weights(data->bias_l0, 4, &bdata);
 
-        read(kernel_l1_shuffled, 4 * 4, &bdata);
-        read(data->bias_l1, 4, &bdata);
+        copy_weights(kernel_l1_shuffled, 4 * 4, &bdata);
+        copy_weights(data->bias_l1, 4, &bdata);
 
         for (int n = 0; n < 4; n++) {
             for (int k = 0; k < 64; k++)
@@ -902,27 +902,27 @@ static int read_weights(AVFilterContext *ctx, const float *bdata)
                 PredictorCoefficients *model = &s->coeffs[m][i][j];
                 int xdim = NNEDI_XDIM[j];
                 int ydim = NNEDI_YDIM[j];
-                size_t filter_size = xdim * ydim;
+                int filter_size = xdim * ydim;
 
                 ret = allocate_model(model, xdim, ydim, nns);
                 if (ret < 0)
                     return ret;
 
                 // Quality 1 model. NNS[i] * (XDIM[j] * YDIM[j]) * 2 coefficients.
-                read(model->softmax_q1, nns * filter_size, &bdata);
-                read(model->elliott_q1, nns * filter_size, &bdata);
+                copy_weights(model->softmax_q1, nns * filter_size, &bdata);
+                copy_weights(model->elliott_q1, nns * filter_size, &bdata);
 
                 // Quality 1 model bias. NNS[i] * 2 coefficients.
-                read(model->softmax_bias_q1, nns, &bdata);
-                read(model->elliott_bias_q1, nns, &bdata);
+                copy_weights(model->softmax_bias_q1, nns, &bdata);
+                copy_weights(model->elliott_bias_q1, nns, &bdata);
 
                 // Quality 2 model. NNS[i] * (XDIM[j] * YDIM[j]) * 2 coefficients.
-                read(model->softmax_q2, nns * filter_size, &bdata);
-                read(model->elliott_q2, nns * filter_size, &bdata);
+                copy_weights(model->softmax_q2, nns * filter_size, &bdata);
+                copy_weights(model->elliott_q2, nns * filter_size, &bdata);
 
                 // Quality 2 model bias. NNS[i] * 2 coefficients.
-                read(model->softmax_bias_q2, nns, &bdata);
-                read(model->elliott_bias_q2, nns, &bdata);
+                copy_weights(model->softmax_bias_q2, nns, &bdata);
+                copy_weights(model->elliott_bias_q2, nns, &bdata);
             }
         }
     }
@@ -966,7 +966,7 @@ static void subtract_mean_new(PrescreenerNewCoefficients *coeffs, float half)
 
 static void subtract_mean_predictor(PredictorCoefficients *model)
 {
-    size_t filter_size = model->xdim * model->ydim;
+    int filter_size = model->xdim * model->ydim;
     int nns = model->nns;
 
     float softmax_means[256]; // Average of individual softmax filters.
