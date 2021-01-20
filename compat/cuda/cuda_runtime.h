@@ -1,7 +1,7 @@
 /*
  * Minimum CUDA compatibility definitions header
  *
- * Copyright (c) 2019 Rodger Combs
+ * Copyright (c) 2019 rcombs
  *
  * This file is part of FFmpeg.
  *
