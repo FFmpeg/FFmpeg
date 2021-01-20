@@ -2905,7 +2905,7 @@ static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
 
 static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
 {
-    INTFLOAT *in    = sce->coeffs;
+    UINTFLOAT *in   = sce->coeffs;
     INTFLOAT *out   = sce->ret;
     INTFLOAT *saved = sce->saved;
     INTFLOAT *buf  = ac->buf_mdct;
