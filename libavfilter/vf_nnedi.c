@@ -21,6 +21,7 @@
 
 #include <float.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/imgutils.h"
@@ -217,11 +218,13 @@ static int query_formats(AVFilterContext *ctx)
 static float dot_dsp(const NNEDIContext *const s, const float *kernel, const float *input,
                      int n, float scale, float bias)
 {
-    float sum;
+    float sum, y;
 
     sum = s->fdsp->scalarproduct_float(kernel, input, n);
 
-    return sum * scale + bias;
+    y = sum * scale + bias + 1e-20f;
+
+    return y;
 }
 
 static float elliott(float x)
@@ -334,6 +337,7 @@ static void gather_input(const float *src, ptrdiff_t src_stride,
                          float *buf, float mstd[4],
                          const PredictorCoefficients *const model)
 {
+    const float scale = 1.f / model->nsize;
     float sum = 0.f;
     float sum_sq = 0.f;
     float tmp;
@@ -352,10 +356,10 @@ static void gather_input(const float *src, ptrdiff_t src_stride,
         buf += model->xdim;
     }
 
-    mstd[0] = sum / model->nsize;
+    mstd[0] = sum * scale;
     mstd[3] = 0.f;
 
-    tmp = sum_sq / model->nsize - mstd[0] * mstd[0];
+    tmp = sum_sq * scale - mstd[0] * mstd[0];
     if (tmp < FLT_EPSILON) {
         mstd[1] = 0.0f;
         mstd[2] = 0.0f;
@@ -945,8 +949,9 @@ static void subtract_mean_new(PrescreenerCoefficients *coeffs, float half)
 
 static void subtract_mean_predictor(PredictorCoefficients *model)
 {
-    int filter_size = model->nsize;
-    int nns = model->nns;
+    const int filter_size = model->nsize;
+    const int nns = model->nns;
+    const float scale = 1.f / nns;
 
     double softmax_means[256]; // Average of individual softmax filters.
     double elliott_means[256]; // Average of individual elliott filters.
@@ -963,7 +968,7 @@ static void subtract_mean_predictor(PredictorCoefficients *model)
     }
 
     for (int k = 0; k < filter_size; k++)
-        mean_filter[k] /= nns;
+        mean_filter[k] *= scale;
 
     mean_bias = mean(model->softmax_bias_q1, nns);
 
@@ -988,7 +993,7 @@ static void subtract_mean_predictor(PredictorCoefficients *model)
     }
 
     for (int k = 0; k < filter_size; k++)
-        mean_filter[k] /= nns;
+        mean_filter[k] *= scale;
 
     mean_bias = mean(model->softmax_bias_q2, nns);
 
