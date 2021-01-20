@@ -67,11 +67,9 @@ typedef struct NNEDIContext {
 
     char *weights_file;
 
-    AVFrame *src;
-    AVFrame *second;
-    AVFrame *dst;
+    AVFrame *prev;
     int eof;
-    int64_t cur_pts;
+    int64_t pts;
 
     AVFloatDSPContext *fdsp;
     int depth;
@@ -545,8 +543,8 @@ static void interpolation(const void *src, ptrdiff_t src_stride,
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     const NNEDIContext *const s = ctx->priv;
-    AVFrame *out = s->dst;
-    AVFrame *in = s->src;
+    AVFrame *out = arg;
+    AVFrame *in = s->prev;
     const float in_scale = s->in_scale;
     const float out_scale = s->out_scale;
     const int depth = s->depth;
@@ -669,105 +667,54 @@ static int get_frame(AVFilterContext *ctx, int is_second)
 {
     NNEDIContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *src = s->src;
+    AVFrame *dst;
 
-    s->dst = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!s->dst)
+    dst = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!dst)
         return AVERROR(ENOMEM);
-    av_frame_copy_props(s->dst, src);
-    s->dst->interlaced_frame = 0;
+    av_frame_copy_props(dst, s->prev);
+    dst->interlaced_frame = 0;
+    dst->pts = s->pts;
 
-    ctx->internal->execute(ctx, filter_slice, NULL, NULL, FFMIN(s->planeheight[1] / 2, s->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, dst, NULL, FFMIN(s->planeheight[1] / 2, s->nb_threads));
 
     if (s->field == -2 || s->field > 1)
         s->field_n = !s->field_n;
 
-    return 0;
+    return ff_filter_frame(outlink, dst);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *src)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    AVFilterLink *outlink = ctx->outputs[0];
     NNEDIContext *s = ctx->priv;
     int ret;
 
-    if ((s->field > 1 ||
-         s->field == -2) && !s->second) {
-        goto second;
-    } else if (s->field > 1 ||
-               s->field == -2) {
-        AVFrame *dst;
-
-        s->src = s->second;
-        ret = get_frame(ctx, 1);
-        if (ret < 0) {
-            av_frame_free(&s->dst);
-            av_frame_free(&s->second);
-            s->src = NULL;
-            return ret;
-        }
-        dst = s->dst;
-
-        if (src->pts != AV_NOPTS_VALUE &&
-            dst->pts != AV_NOPTS_VALUE)
-            dst->pts += src->pts;
-        else
-            dst->pts = AV_NOPTS_VALUE;
-
-        ret = ff_filter_frame(outlink, dst);
-        if (ret < 0)
-            return ret;
-        if (s->eof)
-            return 0;
-        s->cur_pts = s->second->pts;
-        av_frame_free(&s->second);
-second:
-        if ((s->deint && src->interlaced_frame &&
-             !ctx->is_disabled) ||
-            (!s->deint && !ctx->is_disabled)) {
-            s->second = src;
-        }
+    if (!s->prev) {
+        s->prev = in;
+        return 0;
     }
 
-    if ((s->deint && !src->interlaced_frame) || ctx->is_disabled) {
-        AVFrame *dst = av_frame_clone(src);
-        if (!dst) {
-            av_frame_free(&src);
-            av_frame_free(&s->second);
-            return AVERROR(ENOMEM);
-        }
-
-        if (s->field > 1 || s->field == -2) {
-            av_frame_free(&s->second);
-            if ((s->deint && src->interlaced_frame) ||
-                (!s->deint))
-                s->second = src;
-        } else {
-            av_frame_free(&src);
-        }
-        if (dst->pts != AV_NOPTS_VALUE)
-            dst->pts *= 2;
-        return ff_filter_frame(outlink, dst);
-    }
-
-    s->src = src;
-    ret = get_frame(ctx, 0);
-    if (ret < 0) {
-        av_frame_free(&s->dst);
-        av_frame_free(&s->src);
-        av_frame_free(&s->second);
+    if ((s->deint && !in->interlaced_frame) || ctx->is_disabled) {
+        s->prev->pts *= 2;
+        ret = ff_filter_frame(ctx->outputs[0], s->prev);
+        s->prev = in;
         return ret;
     }
 
-    if (src->pts != AV_NOPTS_VALUE)
-        s->dst->pts = src->pts * 2;
-    if (s->field <= 1 && s->field > -2) {
-        av_frame_free(&src);
-        s->src = NULL;
+    s->pts = s->prev->pts * 2;
+    ret = get_frame(ctx, 0);
+    if (ret < 0 || (s->field > -2 && s->field < 2)) {
+        av_frame_free(&s->prev);
+        s->prev = in;
+        return ret;
     }
 
-    return ff_filter_frame(outlink, s->dst);
+    s->pts = s->prev->pts + in->pts;
+    ret = get_frame(ctx, 1);
+    av_frame_free(&s->prev);
+    s->prev = in;
+    return ret;
 }
 
 static int request_frame(AVFilterLink *link)
@@ -781,21 +728,22 @@ static int request_frame(AVFilterLink *link)
 
     ret  = ff_request_frame(ctx->inputs[0]);
 
-    if (ret == AVERROR_EOF && s->second) {
-        AVFrame *next = av_frame_clone(s->second);
+    if (ret == AVERROR_EOF && s->prev) {
+        AVFrame *next = av_frame_clone(s->prev);
 
         if (!next)
             return AVERROR(ENOMEM);
 
-        next->pts = s->second->pts * 2 - s->cur_pts;
+        next->pts = s->prev->pts + av_rescale_q(1, av_inv_q(ctx->outputs[0]->frame_rate),
+                                                ctx->outputs[0]->time_base);
         s->eof = 1;
 
-        filter_frame(ctx->inputs[0], next);
+        ret = filter_frame(ctx->inputs[0], next);
     } else if (ret < 0) {
         return ret;
     }
 
-    return 0;
+    return ret;
 }
 
 static void copy_weights(float *dst, int n, const float **data)
@@ -1187,7 +1135,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         }
     }
 
-    av_frame_free(&s->second);
+    av_frame_free(&s->prev);
 }
 
 static const AVFilterPad inputs[] = {
