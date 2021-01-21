@@ -36,7 +36,7 @@ static const AVOption dnn_native_options[] = {
     { NULL },
 };
 
-const AVClass dnn_native_class = {
+static const AVClass dnn_native_class = {
     .class_name = "dnn_native",
     .item_name  = av_default_item_name,
     .option     = dnn_native_options,
