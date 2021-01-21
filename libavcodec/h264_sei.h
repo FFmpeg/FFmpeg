@@ -21,24 +21,8 @@
 
 #include "get_bits.h"
 #include "h264_ps.h"
+#include "sei.h"
 
-/**
- * SEI message types
- */
-typedef enum {
-    H264_SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
-    H264_SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
-    H264_SEI_TYPE_PAN_SCAN_RECT          = 2,   ///< pan-scan rectangle
-    H264_SEI_TYPE_FILLER_PAYLOAD         = 3,   ///< filler data
-    H264_SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
-    H264_SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
-    H264_SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
-    H264_SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
-    H264_SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
-    H264_SEI_TYPE_GREEN_METADATA         = 56,  ///< GreenMPEG information
-    H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME = 137,  ///< mastering display properties
-    H264_SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
-} H264_SEI_Type;
 
 /**
  * pic_struct in picture timing SEI message

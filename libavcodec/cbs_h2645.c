@@ -1384,18 +1384,18 @@ static void cbs_h265_close(CodedBitstreamContext *ctx)
 static void cbs_h264_free_sei_payload(H264RawSEIPayload *payload)
 {
     switch (payload->payload_type) {
-    case H264_SEI_TYPE_BUFFERING_PERIOD:
-    case H264_SEI_TYPE_PIC_TIMING:
-    case H264_SEI_TYPE_PAN_SCAN_RECT:
-    case H264_SEI_TYPE_RECOVERY_POINT:
-    case H264_SEI_TYPE_DISPLAY_ORIENTATION:
-    case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
-    case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
+    case SEI_TYPE_BUFFERING_PERIOD:
+    case SEI_TYPE_PIC_TIMING:
+    case SEI_TYPE_PAN_SCAN_RECT:
+    case SEI_TYPE_RECOVERY_POINT:
+    case SEI_TYPE_DISPLAY_ORIENTATION:
+    case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+    case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
         break;
-    case H264_SEI_TYPE_USER_DATA_REGISTERED:
+    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         av_buffer_unref(&payload->payload.user_data_registered.data_ref);
         break;
-    case H264_SEI_TYPE_USER_DATA_UNREGISTERED:
+    case SEI_TYPE_USER_DATA_UNREGISTERED:
         av_buffer_unref(&payload->payload.user_data_unregistered.data_ref);
         break;
     default:

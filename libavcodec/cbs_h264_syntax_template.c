@@ -747,45 +747,45 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
 #endif
 
     switch (current->payload_type) {
-    case H264_SEI_TYPE_BUFFERING_PERIOD:
+    case SEI_TYPE_BUFFERING_PERIOD:
         CHECK(FUNC(sei_buffering_period)
               (ctx, rw, &current->payload.buffering_period));
         break;
-    case H264_SEI_TYPE_PIC_TIMING:
+    case SEI_TYPE_PIC_TIMING:
         CHECK(FUNC(sei_pic_timing)
               (ctx, rw, &current->payload.pic_timing));
         break;
-    case H264_SEI_TYPE_PAN_SCAN_RECT:
+    case SEI_TYPE_PAN_SCAN_RECT:
         CHECK(FUNC(sei_pan_scan_rect)
               (ctx, rw, &current->payload.pan_scan_rect));
         break;
-    case H264_SEI_TYPE_FILLER_PAYLOAD:
+    case SEI_TYPE_FILLER_PAYLOAD:
         {
             for (i = 0; i  < current->payload_size; i++)
                 fixed(8, ff_byte, 0xff);
         }
         break;
-    case H264_SEI_TYPE_USER_DATA_REGISTERED:
+    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         CHECK(FUNC_SEI(sei_user_data_registered)
               (ctx, rw, &current->payload.user_data_registered, &current->payload_size));
         break;
-    case H264_SEI_TYPE_USER_DATA_UNREGISTERED:
+    case SEI_TYPE_USER_DATA_UNREGISTERED:
         CHECK(FUNC_SEI(sei_user_data_unregistered)
               (ctx, rw, &current->payload.user_data_unregistered, &current->payload_size));
         break;
-    case H264_SEI_TYPE_RECOVERY_POINT:
+    case SEI_TYPE_RECOVERY_POINT:
         CHECK(FUNC(sei_recovery_point)
               (ctx, rw, &current->payload.recovery_point));
         break;
-    case H264_SEI_TYPE_DISPLAY_ORIENTATION:
+    case SEI_TYPE_DISPLAY_ORIENTATION:
         CHECK(FUNC(sei_display_orientation)
               (ctx, rw, &current->payload.display_orientation));
         break;
-    case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+    case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
         CHECK(FUNC_SEI(sei_mastering_display_colour_volume)
               (ctx, rw, &current->payload.mastering_display_colour_volume));
         break;
-    case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
+    case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
         CHECK(FUNC_SEI(sei_alternative_transfer_characteristics)
               (ctx, rw, &current->payload.alternative_transfer_characteristics));
         break;

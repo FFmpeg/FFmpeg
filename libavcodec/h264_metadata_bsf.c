@@ -435,7 +435,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 
                 for (j = sei->payload_count - 1; j >= 0; j--) {
                     if (sei->payload[j].payload_type ==
-                        H264_SEI_TYPE_FILLER_PAYLOAD)
+                        SEI_TYPE_FILLER_PAYLOAD)
                         ff_cbs_h264_delete_sei_message(au, &au->units[i], j);
                 }
             }
@@ -454,7 +454,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
                 int32_t *matrix;
 
                 if (sei->payload[j].payload_type !=
-                    H264_SEI_TYPE_DISPLAY_ORIENTATION)
+                    SEI_TYPE_DISPLAY_ORIENTATION)
                     continue;
                 disp = &sei->payload[j].payload.display_orientation;
 
@@ -492,7 +492,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     }
     if (ctx->display_orientation == INSERT) {
         H264RawSEIPayload payload = {
-            .payload_type = H264_SEI_TYPE_DISPLAY_ORIENTATION,
+            .payload_type = SEI_TYPE_DISPLAY_ORIENTATION,
         };
         H264RawSEIDisplayOrientation *disp =
             &payload.payload.display_orientation;
@@ -590,7 +590,7 @@ static int h264_metadata_init(AVBSFContext *bsf)
         int j;
 
         ctx->sei_user_data_payload.payload_type =
-            H264_SEI_TYPE_USER_DATA_UNREGISTERED;
+            SEI_TYPE_USER_DATA_UNREGISTERED;
 
         // Parse UUID.  It must be a hex string of length 32, possibly
         // containing '-'s between hex digits (which we ignore).

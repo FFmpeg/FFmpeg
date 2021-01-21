@@ -444,31 +444,31 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             return ret;
 
         switch (type) {
-        case H264_SEI_TYPE_PIC_TIMING: // Picture timing SEI
+        case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(&h->picture_timing, &gb_payload, logctx);
             break;
-        case H264_SEI_TYPE_USER_DATA_REGISTERED:
+        case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
             ret = decode_registered_user_data(h, &gb_payload, logctx, size);
             break;
-        case H264_SEI_TYPE_USER_DATA_UNREGISTERED:
+        case SEI_TYPE_USER_DATA_UNREGISTERED:
             ret = decode_unregistered_user_data(&h->unregistered, &gb_payload, logctx, size);
             break;
-        case H264_SEI_TYPE_RECOVERY_POINT:
+        case SEI_TYPE_RECOVERY_POINT:
             ret = decode_recovery_point(&h->recovery_point, &gb_payload, logctx);
             break;
-        case H264_SEI_TYPE_BUFFERING_PERIOD:
+        case SEI_TYPE_BUFFERING_PERIOD:
             ret = decode_buffering_period(&h->buffering_period, &gb_payload, ps, logctx);
             break;
-        case H264_SEI_TYPE_FRAME_PACKING:
+        case SEI_TYPE_FRAME_PACKING_ARRANGEMENT:
             ret = decode_frame_packing_arrangement(&h->frame_packing, &gb_payload);
             break;
-        case H264_SEI_TYPE_DISPLAY_ORIENTATION:
+        case SEI_TYPE_DISPLAY_ORIENTATION:
             ret = decode_display_orientation(&h->display_orientation, &gb_payload);
             break;
-        case H264_SEI_TYPE_GREEN_METADATA:
+        case SEI_TYPE_GREEN_METADATA:
             ret = decode_green_metadata(&h->green_metadata, &gb_payload);
             break;
-        case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
+        case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
             ret = decode_alternative_transfer(&h->alternative_transfer, &gb_payload);
             break;
         default:

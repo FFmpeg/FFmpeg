@@ -231,22 +231,22 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
         i = 0;
 
         if (priv->sei_needed & SEI_IDENTIFIER) {
-            sei->payload[i].payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
+            sei->payload[i].payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
             sei->payload[i].payload.user_data_unregistered = priv->sei_identifier;
             ++i;
         }
         if (priv->sei_needed & SEI_TIMING) {
             if (pic->type == PICTURE_TYPE_IDR) {
-                sei->payload[i].payload_type = H264_SEI_TYPE_BUFFERING_PERIOD;
+                sei->payload[i].payload_type = SEI_TYPE_BUFFERING_PERIOD;
                 sei->payload[i].payload.buffering_period = priv->sei_buffering_period;
                 ++i;
             }
-            sei->payload[i].payload_type = H264_SEI_TYPE_PIC_TIMING;
+            sei->payload[i].payload_type = SEI_TYPE_PIC_TIMING;
             sei->payload[i].payload.pic_timing = priv->sei_pic_timing;
             ++i;
         }
         if (priv->sei_needed & SEI_RECOVERY_POINT) {
-            sei->payload[i].payload_type = H264_SEI_TYPE_RECOVERY_POINT;
+            sei->payload[i].payload_type = SEI_TYPE_RECOVERY_POINT;
             sei->payload[i].payload.recovery_point = priv->sei_recovery_point;
             ++i;
         }
