@@ -377,6 +377,9 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ff_dlog(s, "bitmap: ch=%d fmt=%d %dx%d (linesize=%d) len=%d->%ld pal=%d\n",
                     ch_id, bmp_fmt, width, height, linesize, len, out_len, colormapsize);
 
+            if (len * 17373LL < out_len)
+                goto bitmap_end_skip;
+
             zbuf = av_malloc(len);
             if (!zbuf) {
                 res = AVERROR(ENOMEM);
