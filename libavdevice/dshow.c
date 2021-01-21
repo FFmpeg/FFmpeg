@@ -87,13 +87,13 @@ dshow_read_close(AVFormatContext *s)
     }
 
     if (ctx->capture_pin[VideoDevice])
-        libAVPin_Release(ctx->capture_pin[VideoDevice]);
+        ff_dshow_pin_Release(ctx->capture_pin[VideoDevice]);
     if (ctx->capture_pin[AudioDevice])
-        libAVPin_Release(ctx->capture_pin[AudioDevice]);
+        ff_dshow_pin_Release(ctx->capture_pin[AudioDevice]);
     if (ctx->capture_filter[VideoDevice])
-        libAVFilter_Release(ctx->capture_filter[VideoDevice]);
+        ff_dshow_filter_Release(ctx->capture_filter[VideoDevice]);
     if (ctx->capture_filter[AudioDevice])
-        libAVFilter_Release(ctx->capture_filter[AudioDevice]);
+        ff_dshow_filter_Release(ctx->capture_filter[AudioDevice]);
 
     if (ctx->device_pin[VideoDevice])
         IPin_Release(ctx->device_pin[VideoDevice]);
@@ -731,8 +731,8 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
     char *device_filter_unique_name = NULL;
     IGraphBuilder *graph = ctx->graph;
     IPin *device_pin = NULL;
-    libAVPin *capture_pin = NULL;
-    libAVFilter *capture_filter = NULL;
+    DShowPin *capture_pin = NULL;
+    DShowFilter *capture_filter = NULL;
     ICaptureGraphBuilder2 *graph_builder2 = NULL;
     int ret = AVERROR(EIO);
     int r;
@@ -807,7 +807,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
 
     ctx->device_pin[devtype] = device_pin;
 
-    capture_filter = libAVFilter_Create(avctx, callback, devtype);
+    capture_filter = ff_dshow_filter_Create(avctx, callback, devtype);
     if (!capture_filter) {
         av_log(avctx, AV_LOG_ERROR, "Could not create grabber filter.\n");
         goto error;
@@ -863,7 +863,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         goto error;
     }
 
-    libAVPin_AddRef(capture_filter->pin);
+    ff_dshow_pin_AddRef(capture_filter->pin);
     capture_pin = capture_filter->pin;
     ctx->capture_pin[devtype] = capture_pin;
 
@@ -953,7 +953,7 @@ dshow_add_device(AVFormatContext *avctx,
 
     ctx->capture_filter[devtype]->stream_index = st->index;
 
-    libAVPin_ConnectionMediaType(ctx->capture_pin[devtype], &type);
+    ff_dshow_pin_ConnectionMediaType(ctx->capture_pin[devtype], &type);
 
     par = st->codecpar;
     if (devtype == VideoDevice) {

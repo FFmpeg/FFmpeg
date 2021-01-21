@@ -21,21 +21,20 @@
 
 #include "dshow_capture.h"
 
-DECLARE_QUERYINTERFACE(libAVEnumPins,
+DECLARE_QUERYINTERFACE(enumpins, DShowEnumPins,
     { {&IID_IUnknown,0}, {&IID_IEnumPins,0} })
-DECLARE_ADDREF(libAVEnumPins)
-DECLARE_RELEASE(libAVEnumPins)
+DECLARE_ADDREF(enumpins, DShowEnumPins)
+DECLARE_RELEASE(enumpins, DShowEnumPins)
 
-long WINAPI
-libAVEnumPins_Next(libAVEnumPins *this, unsigned long n, IPin **pins,
+long ff_dshow_enumpins_Next(DShowEnumPins *this, unsigned long n, IPin **pins,
                    unsigned long *fetched)
 {
     int count = 0;
-    dshowdebug("libAVEnumPins_Next(%p)\n", this);
+    dshowdebug("ff_dshow_enumpins_Next(%p)\n", this);
     if (!pins)
         return E_POINTER;
     if (!this->pos && n == 1) {
-        libAVPin_AddRef(this->pin);
+        ff_dshow_pin_AddRef(this->pin);
         *pins = (IPin *) this->pin;
         count = 1;
         this->pos = 1;
@@ -46,29 +45,26 @@ libAVEnumPins_Next(libAVEnumPins *this, unsigned long n, IPin **pins,
         return S_FALSE;
     return S_OK;
 }
-long WINAPI
-libAVEnumPins_Skip(libAVEnumPins *this, unsigned long n)
+long ff_dshow_enumpins_Skip(DShowEnumPins *this, unsigned long n)
 {
-    dshowdebug("libAVEnumPins_Skip(%p)\n", this);
+    dshowdebug("ff_dshow_enumpins_Skip(%p)\n", this);
     if (n) /* Any skip will always fall outside of the only valid pin. */
         return S_FALSE;
     return S_OK;
 }
-long WINAPI
-libAVEnumPins_Reset(libAVEnumPins *this)
+long ff_dshow_enumpins_Reset(DShowEnumPins *this)
 {
-    dshowdebug("libAVEnumPins_Reset(%p)\n", this);
+    dshowdebug("ff_dshow_enumpins_Reset(%p)\n", this);
     this->pos = 0;
     return S_OK;
 }
-long WINAPI
-libAVEnumPins_Clone(libAVEnumPins *this, libAVEnumPins **pins)
+long ff_dshow_enumpins_Clone(DShowEnumPins *this, DShowEnumPins **pins)
 {
-    libAVEnumPins *new;
-    dshowdebug("libAVEnumPins_Clone(%p)\n", this);
+    DShowEnumPins *new;
+    dshowdebug("ff_dshow_enumpins_Clone(%p)\n", this);
     if (!pins)
         return E_POINTER;
-    new = libAVEnumPins_Create(this->pin, this->filter);
+    new = ff_dshow_enumpins_Create(this->pin, this->filter);
     if (!new)
         return E_OUTOFMEMORY;
     new->pos = this->pos;
@@ -76,30 +72,28 @@ libAVEnumPins_Clone(libAVEnumPins *this, libAVEnumPins **pins)
     return S_OK;
 }
 
-static int
-libAVEnumPins_Setup(libAVEnumPins *this, libAVPin *pin, libAVFilter *filter)
+static int ff_dshow_enumpins_Setup(DShowEnumPins *this, DShowPin *pin, DShowFilter *filter)
 {
     IEnumPinsVtbl *vtbl = this->vtbl;
-    SETVTBL(vtbl, libAVEnumPins, QueryInterface);
-    SETVTBL(vtbl, libAVEnumPins, AddRef);
-    SETVTBL(vtbl, libAVEnumPins, Release);
-    SETVTBL(vtbl, libAVEnumPins, Next);
-    SETVTBL(vtbl, libAVEnumPins, Skip);
-    SETVTBL(vtbl, libAVEnumPins, Reset);
-    SETVTBL(vtbl, libAVEnumPins, Clone);
+    SETVTBL(vtbl, enumpins, QueryInterface);
+    SETVTBL(vtbl, enumpins, AddRef);
+    SETVTBL(vtbl, enumpins, Release);
+    SETVTBL(vtbl, enumpins, Next);
+    SETVTBL(vtbl, enumpins, Skip);
+    SETVTBL(vtbl, enumpins, Reset);
+    SETVTBL(vtbl, enumpins, Clone);
 
     this->pin = pin;
     this->filter = filter;
-    libAVFilter_AddRef(this->filter);
+    ff_dshow_filter_AddRef(this->filter);
 
     return 1;
 }
-static int
-libAVEnumPins_Cleanup(libAVEnumPins *this)
+static int ff_dshow_enumpins_Cleanup(DShowEnumPins *this)
 {
-    libAVFilter_Release(this->filter);
+    ff_dshow_filter_Release(this->filter);
     return 1;
 }
-DECLARE_CREATE(libAVEnumPins, libAVEnumPins_Setup(this, pin, filter),
-               libAVPin *pin, libAVFilter *filter)
-DECLARE_DESTROY(libAVEnumPins, libAVEnumPins_Cleanup)
+DECLARE_CREATE(enumpins, DShowEnumPins, ff_dshow_enumpins_Setup(this, pin, filter),
+               DShowPin *pin, DShowFilter *filter)
+DECLARE_DESTROY(enumpins, DShowEnumPins, ff_dshow_enumpins_Cleanup)

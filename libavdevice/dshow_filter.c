@@ -21,53 +21,47 @@
 
 #include "dshow_capture.h"
 
-DECLARE_QUERYINTERFACE(libAVFilter,
+DECLARE_QUERYINTERFACE(filter, DShowFilter,
     { {&IID_IUnknown,0}, {&IID_IBaseFilter,0} })
-DECLARE_ADDREF(libAVFilter)
-DECLARE_RELEASE(libAVFilter)
+DECLARE_ADDREF(filter, DShowFilter)
+DECLARE_RELEASE(filter, DShowFilter)
 
-long WINAPI
-libAVFilter_GetClassID(libAVFilter *this, CLSID *id)
+long ff_dshow_filter_GetClassID(DShowFilter *this, CLSID *id)
 {
-    dshowdebug("libAVFilter_GetClassID(%p)\n", this);
+    dshowdebug("ff_dshow_filter_GetClassID(%p)\n", this);
     /* I'm not creating a ClassID just for this. */
     return E_FAIL;
 }
-long WINAPI
-libAVFilter_Stop(libAVFilter *this)
+long ff_dshow_filter_Stop(DShowFilter *this)
 {
-    dshowdebug("libAVFilter_Stop(%p)\n", this);
+    dshowdebug("ff_dshow_filter_Stop(%p)\n", this);
     this->state = State_Stopped;
     return S_OK;
 }
-long WINAPI
-libAVFilter_Pause(libAVFilter *this)
+long ff_dshow_filter_Pause(DShowFilter *this)
 {
-    dshowdebug("libAVFilter_Pause(%p)\n", this);
+    dshowdebug("ff_dshow_filter_Pause(%p)\n", this);
     this->state = State_Paused;
     return S_OK;
 }
-long WINAPI
-libAVFilter_Run(libAVFilter *this, REFERENCE_TIME start)
+long ff_dshow_filter_Run(DShowFilter *this, REFERENCE_TIME start)
 {
-    dshowdebug("libAVFilter_Run(%p) %"PRId64"\n", this, start);
+    dshowdebug("ff_dshow_filter_Run(%p) %"PRId64"\n", this, start);
     this->state = State_Running;
     this->start_time = start;
     return S_OK;
 }
-long WINAPI
-libAVFilter_GetState(libAVFilter *this, DWORD ms, FILTER_STATE *state)
+long ff_dshow_filter_GetState(DShowFilter *this, DWORD ms, FILTER_STATE *state)
 {
-    dshowdebug("libAVFilter_GetState(%p)\n", this);
+    dshowdebug("ff_dshow_filter_GetState(%p)\n", this);
     if (!state)
         return E_POINTER;
     *state = this->state;
     return S_OK;
 }
-long WINAPI
-libAVFilter_SetSyncSource(libAVFilter *this, IReferenceClock *clock)
+long ff_dshow_filter_SetSyncSource(DShowFilter *this, IReferenceClock *clock)
 {
-    dshowdebug("libAVFilter_SetSyncSource(%p)\n", this);
+    dshowdebug("ff_dshow_filter_SetSyncSource(%p)\n", this);
 
     if (this->clock != clock) {
         if (this->clock)
@@ -79,10 +73,9 @@ libAVFilter_SetSyncSource(libAVFilter *this, IReferenceClock *clock)
 
     return S_OK;
 }
-long WINAPI
-libAVFilter_GetSyncSource(libAVFilter *this, IReferenceClock **clock)
+long ff_dshow_filter_GetSyncSource(DShowFilter *this, IReferenceClock **clock)
 {
-    dshowdebug("libAVFilter_GetSyncSource(%p)\n", this);
+    dshowdebug("ff_dshow_filter_GetSyncSource(%p)\n", this);
 
     if (!clock)
         return E_POINTER;
@@ -92,32 +85,30 @@ libAVFilter_GetSyncSource(libAVFilter *this, IReferenceClock **clock)
 
     return S_OK;
 }
-long WINAPI
-libAVFilter_EnumPins(libAVFilter *this, IEnumPins **enumpin)
+long ff_dshow_filter_EnumPins(DShowFilter *this, IEnumPins **enumpin)
 {
-    libAVEnumPins *new;
-    dshowdebug("libAVFilter_EnumPins(%p)\n", this);
+    DShowEnumPins *new;
+    dshowdebug("ff_dshow_filter_EnumPins(%p)\n", this);
 
     if (!enumpin)
         return E_POINTER;
-    new = libAVEnumPins_Create(this->pin, this);
+    new = ff_dshow_enumpins_Create(this->pin, this);
     if (!new)
         return E_OUTOFMEMORY;
 
     *enumpin = (IEnumPins *) new;
     return S_OK;
 }
-long WINAPI
-libAVFilter_FindPin(libAVFilter *this, const wchar_t *id, IPin **pin)
+long ff_dshow_filter_FindPin(DShowFilter *this, const wchar_t *id, IPin **pin)
 {
-    libAVPin *found = NULL;
-    dshowdebug("libAVFilter_FindPin(%p)\n", this);
+    DShowPin *found = NULL;
+    dshowdebug("ff_dshow_filter_FindPin(%p)\n", this);
 
     if (!id || !pin)
         return E_POINTER;
     if (!wcscmp(id, L"In")) {
         found = this->pin;
-        libAVPin_AddRef(found);
+        ff_dshow_pin_AddRef(found);
     }
     *pin = (IPin *) found;
     if (!found)
@@ -125,10 +116,9 @@ libAVFilter_FindPin(libAVFilter *this, const wchar_t *id, IPin **pin)
 
     return S_OK;
 }
-long WINAPI
-libAVFilter_QueryFilterInfo(libAVFilter *this, FILTER_INFO *info)
+long ff_dshow_filter_QueryFilterInfo(DShowFilter *this, FILTER_INFO *info)
 {
-    dshowdebug("libAVFilter_QueryFilterInfo(%p)\n", this);
+    dshowdebug("ff_dshow_filter_QueryFilterInfo(%p)\n", this);
 
     if (!info)
         return E_POINTER;
@@ -138,11 +128,10 @@ libAVFilter_QueryFilterInfo(libAVFilter *this, FILTER_INFO *info)
 
     return S_OK;
 }
-long WINAPI
-libAVFilter_JoinFilterGraph(libAVFilter *this, IFilterGraph *graph,
+long ff_dshow_filter_JoinFilterGraph(DShowFilter *this, IFilterGraph *graph,
                             const wchar_t *name)
 {
-    dshowdebug("libAVFilter_JoinFilterGraph(%p)\n", this);
+    dshowdebug("ff_dshow_filter_JoinFilterGraph(%p)\n", this);
 
     this->info.pGraph = graph;
     if (name)
@@ -150,10 +139,9 @@ libAVFilter_JoinFilterGraph(libAVFilter *this, IFilterGraph *graph,
 
     return S_OK;
 }
-long WINAPI
-libAVFilter_QueryVendorInfo(libAVFilter *this, wchar_t **info)
+long ff_dshow_filter_QueryVendorInfo(DShowFilter *this, wchar_t **info)
 {
-    dshowdebug("libAVFilter_QueryVendorInfo(%p)\n", this);
+    dshowdebug("ff_dshow_filter_QueryVendorInfo(%p)\n", this);
 
     if (!info)
         return E_POINTER;
@@ -161,27 +149,27 @@ libAVFilter_QueryVendorInfo(libAVFilter *this, wchar_t **info)
 }
 
 static int
-libAVFilter_Setup(libAVFilter *this, void *priv_data, void *callback,
+ff_dshow_filter_Setup(DShowFilter *this, void *priv_data, void *callback,
                   enum dshowDeviceType type)
 {
     IBaseFilterVtbl *vtbl = this->vtbl;
-    SETVTBL(vtbl, libAVFilter, QueryInterface);
-    SETVTBL(vtbl, libAVFilter, AddRef);
-    SETVTBL(vtbl, libAVFilter, Release);
-    SETVTBL(vtbl, libAVFilter, GetClassID);
-    SETVTBL(vtbl, libAVFilter, Stop);
-    SETVTBL(vtbl, libAVFilter, Pause);
-    SETVTBL(vtbl, libAVFilter, Run);
-    SETVTBL(vtbl, libAVFilter, GetState);
-    SETVTBL(vtbl, libAVFilter, SetSyncSource);
-    SETVTBL(vtbl, libAVFilter, GetSyncSource);
-    SETVTBL(vtbl, libAVFilter, EnumPins);
-    SETVTBL(vtbl, libAVFilter, FindPin);
-    SETVTBL(vtbl, libAVFilter, QueryFilterInfo);
-    SETVTBL(vtbl, libAVFilter, JoinFilterGraph);
-    SETVTBL(vtbl, libAVFilter, QueryVendorInfo);
+    SETVTBL(vtbl, filter, QueryInterface);
+    SETVTBL(vtbl, filter, AddRef);
+    SETVTBL(vtbl, filter, Release);
+    SETVTBL(vtbl, filter, GetClassID);
+    SETVTBL(vtbl, filter, Stop);
+    SETVTBL(vtbl, filter, Pause);
+    SETVTBL(vtbl, filter, Run);
+    SETVTBL(vtbl, filter, GetState);
+    SETVTBL(vtbl, filter, SetSyncSource);
+    SETVTBL(vtbl, filter, GetSyncSource);
+    SETVTBL(vtbl, filter, EnumPins);
+    SETVTBL(vtbl, filter, FindPin);
+    SETVTBL(vtbl, filter, QueryFilterInfo);
+    SETVTBL(vtbl, filter, JoinFilterGraph);
+    SETVTBL(vtbl, filter, QueryVendorInfo);
 
-    this->pin = libAVPin_Create(this);
+    this->pin = ff_dshow_pin_Create(this);
 
     this->priv_data = priv_data;
     this->callback  = callback;
@@ -189,12 +177,11 @@ libAVFilter_Setup(libAVFilter *this, void *priv_data, void *callback,
 
     return 1;
 }
-static int
-libAVFilter_Cleanup(libAVFilter *this)
+static int ff_dshow_filter_Cleanup(DShowFilter *this)
 {
-    libAVPin_Release(this->pin);
+    ff_dshow_pin_Release(this->pin);
     return 1;
 }
-DECLARE_CREATE(libAVFilter, libAVFilter_Setup(this, priv_data, callback, type),
+DECLARE_CREATE(filter, DShowFilter, ff_dshow_filter_Setup(this, priv_data, callback, type),
                void *priv_data, void *callback, enum dshowDeviceType type)
-DECLARE_DESTROY(libAVFilter, libAVFilter_Cleanup)
+DECLARE_DESTROY(filter, DShowFilter, ff_dshow_filter_Cleanup)

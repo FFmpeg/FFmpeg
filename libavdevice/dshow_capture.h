@@ -68,20 +68,20 @@ enum dshowSourceFilterType {
     AudioSourceDevice = 1,
 };
 
-#define DECLARE_QUERYINTERFACE(class, ...)                                   \
-long WINAPI                                                                  \
-class##_QueryInterface(class *this, const GUID *riid, void **ppvObject)      \
+#define DECLARE_QUERYINTERFACE(prefix, class, ...)                           \
+long                                                                         \
+ff_dshow_##prefix##_QueryInterface(class *this, const GUID *riid, void **ppvObject) \
 {                                                                            \
     struct GUIDoffset ifaces[] = __VA_ARGS__;                                \
     int i;                                                                   \
-    dshowdebug(AV_STRINGIFY(class)"_QueryInterface(%p, %p, %p)\n", this, riid, ppvObject); \
+    dshowdebug("ff_dshow_"AV_STRINGIFY(prefix)"_QueryInterface(%p, %p, %p)\n", this, riid, ppvObject); \
     ff_printGUID(riid);                                                      \
     if (!ppvObject)                                                          \
         return E_POINTER;                                                    \
     for (i = 0; i < sizeof(ifaces)/sizeof(ifaces[0]); i++) {                 \
         if (IsEqualGUID(riid, ifaces[i].iid)) {                              \
             void *obj = (void *) ((uint8_t *) this + ifaces[i].offset);      \
-            class##_AddRef(this);                                            \
+            ff_dshow_##prefix##_AddRef(this);                                \
             dshowdebug("\tfound %d with offset %d\n", i, ifaces[i].offset);  \
             *ppvObject = (void *) obj;                                       \
             return S_OK;                                                     \
@@ -91,28 +91,28 @@ class##_QueryInterface(class *this, const GUID *riid, void **ppvObject)      \
     *ppvObject = NULL;                                                       \
     return E_NOINTERFACE;                                                    \
 }
-#define DECLARE_ADDREF(class)                                                \
-unsigned long WINAPI                                                         \
-class##_AddRef(class *this)                                                  \
+#define DECLARE_ADDREF(prefix, class)                                        \
+unsigned long                                                                \
+ff_dshow_##prefix##_AddRef(class *this)                                      \
 {                                                                            \
-    dshowdebug(AV_STRINGIFY(class)"_AddRef(%p)\t%ld\n", this, this->ref+1);  \
+    dshowdebug("ff_dshow_"AV_STRINGIFY(prefix)"_AddRef(%p)\t%ld\n", this, this->ref+1); \
     return InterlockedIncrement(&this->ref);                                 \
 }
-#define DECLARE_RELEASE(class)                                               \
-unsigned long WINAPI                                                         \
-class##_Release(class *this)                                                 \
+#define DECLARE_RELEASE(prefix, class)                                       \
+unsigned long                                                                \
+ff_dshow_##prefix##_Release(class *this)                                     \
 {                                                                            \
     long ref = InterlockedDecrement(&this->ref);                             \
-    dshowdebug(AV_STRINGIFY(class)"_Release(%p)\t%ld\n", this, ref);         \
+    dshowdebug("ff_dshow_"AV_STRINGIFY(prefix)"_Release(%p)\t%ld\n", this, ref); \
     if (!ref)                                                                \
-        class##_Destroy(this);                                               \
+        ff_dshow_##prefix##_Destroy(this);                                   \
     return ref;                                                              \
 }
 
-#define DECLARE_DESTROY(class, func)                                         \
-void class##_Destroy(class *this)                                            \
+#define DECLARE_DESTROY(prefix, class, func)                                 \
+void ff_dshow_##prefix##_Destroy(class *this)                                \
 {                                                                            \
-    dshowdebug(AV_STRINGIFY(class)"_Destroy(%p)\n", this);                   \
+    dshowdebug("ff_dshow_"AV_STRINGIFY(prefix)"_Destroy(%p)\n", this);       \
     func(this);                                                              \
     if (this) {                                                              \
         if (this->vtbl)                                                      \
@@ -120,12 +120,12 @@ void class##_Destroy(class *this)                                            \
         CoTaskMemFree(this);                                                 \
     }                                                                        \
 }
-#define DECLARE_CREATE(class, setup, ...)                                    \
-class *class##_Create(__VA_ARGS__)                                           \
+#define DECLARE_CREATE(prefix, class, setup, ...)                            \
+class *ff_dshow_##prefix##_Create(__VA_ARGS__)                               \
 {                                                                            \
     class *this = CoTaskMemAlloc(sizeof(class));                             \
     void  *vtbl = CoTaskMemAlloc(sizeof(*this->vtbl));                       \
-    dshowdebug(AV_STRINGIFY(class)"_Create(%p)\n", this);                    \
+    dshowdebug("ff_dshow_"AV_STRINGIFY(prefix)"_Create(%p)\n", this);        \
     if (!this || !vtbl)                                                      \
         goto fail;                                                           \
     ZeroMemory(this, sizeof(class));                                         \
@@ -134,123 +134,123 @@ class *class##_Create(__VA_ARGS__)                                           \
     this->vtbl = vtbl;                                                       \
     if (!setup)                                                              \
         goto fail;                                                           \
-    dshowdebug("created "AV_STRINGIFY(class)" %p\n", this);                  \
+    dshowdebug("created ff_dshow_"AV_STRINGIFY(prefix)" %p\n", this);        \
     return this;                                                             \
 fail:                                                                        \
-    class##_Destroy(this);                                                   \
-    dshowdebug("could not create "AV_STRINGIFY(class)"\n");                  \
+    ff_dshow_##prefix##_Destroy(this);                                       \
+    dshowdebug("could not create ff_dshow_"AV_STRINGIFY(prefix)"\n");        \
     return NULL;                                                             \
 }
 
-#define SETVTBL(vtbl, class, fn) \
-    do { (vtbl)->fn = (void *) class##_##fn; } while(0)
+#define SETVTBL(vtbl, prefix, fn) \
+    do { (vtbl)->fn = (void *) ff_dshow_##prefix##_##fn; } while(0)
 
 /*****************************************************************************
  * Forward Declarations
  ****************************************************************************/
-typedef struct libAVPin libAVPin;
-typedef struct libAVMemInputPin libAVMemInputPin;
-typedef struct libAVEnumPins libAVEnumPins;
-typedef struct libAVEnumMediaTypes libAVEnumMediaTypes;
-typedef struct libAVFilter libAVFilter;
+typedef struct DShowPin DShowPin;
+typedef struct DShowMemInputPin DShowMemInputPin;
+typedef struct DShowEnumPins DShowEnumPins;
+typedef struct DShowEnumMediaTypes DShowEnumMediaTypes;
+typedef struct DShowFilter DShowFilter;
 
 /*****************************************************************************
- * libAVPin
+ * DShowPin
  ****************************************************************************/
-struct libAVPin {
+struct DShowPin {
     IPinVtbl *vtbl;
     long ref;
-    libAVFilter *filter;
+    DShowFilter *filter;
     IPin *connectedto;
     AM_MEDIA_TYPE type;
     IMemInputPinVtbl *imemvtbl;
 };
 
-long          WINAPI libAVPin_QueryInterface          (libAVPin *, const GUID *, void **);
-unsigned long WINAPI libAVPin_AddRef                  (libAVPin *);
-unsigned long WINAPI libAVPin_Release                 (libAVPin *);
-long          WINAPI libAVPin_Connect                 (libAVPin *, IPin *, const AM_MEDIA_TYPE *);
-long          WINAPI libAVPin_ReceiveConnection       (libAVPin *, IPin *, const AM_MEDIA_TYPE *);
-long          WINAPI libAVPin_Disconnect              (libAVPin *);
-long          WINAPI libAVPin_ConnectedTo             (libAVPin *, IPin **);
-long          WINAPI libAVPin_ConnectionMediaType     (libAVPin *, AM_MEDIA_TYPE *);
-long          WINAPI libAVPin_QueryPinInfo            (libAVPin *, PIN_INFO *);
-long          WINAPI libAVPin_QueryDirection          (libAVPin *, PIN_DIRECTION *);
-long          WINAPI libAVPin_QueryId                 (libAVPin *, wchar_t **);
-long          WINAPI libAVPin_QueryAccept             (libAVPin *, const AM_MEDIA_TYPE *);
-long          WINAPI libAVPin_EnumMediaTypes          (libAVPin *, IEnumMediaTypes **);
-long          WINAPI libAVPin_QueryInternalConnections(libAVPin *, IPin **, unsigned long *);
-long          WINAPI libAVPin_EndOfStream             (libAVPin *);
-long          WINAPI libAVPin_BeginFlush              (libAVPin *);
-long          WINAPI libAVPin_EndFlush                (libAVPin *);
-long          WINAPI libAVPin_NewSegment              (libAVPin *, REFERENCE_TIME, REFERENCE_TIME, double);
+long          ff_dshow_pin_QueryInterface          (DShowPin *, const GUID *, void **);
+unsigned long ff_dshow_pin_AddRef                  (DShowPin *);
+unsigned long ff_dshow_pin_Release                 (DShowPin *);
+long          ff_dshow_pin_Connect                 (DShowPin *, IPin *, const AM_MEDIA_TYPE *);
+long          ff_dshow_pin_ReceiveConnection       (DShowPin *, IPin *, const AM_MEDIA_TYPE *);
+long          ff_dshow_pin_Disconnect              (DShowPin *);
+long          ff_dshow_pin_ConnectedTo             (DShowPin *, IPin **);
+long          ff_dshow_pin_ConnectionMediaType     (DShowPin *, AM_MEDIA_TYPE *);
+long          ff_dshow_pin_QueryPinInfo            (DShowPin *, PIN_INFO *);
+long          ff_dshow_pin_QueryDirection          (DShowPin *, PIN_DIRECTION *);
+long          ff_dshow_pin_QueryId                 (DShowPin *, wchar_t **);
+long          ff_dshow_pin_QueryAccept             (DShowPin *, const AM_MEDIA_TYPE *);
+long          ff_dshow_pin_EnumMediaTypes          (DShowPin *, IEnumMediaTypes **);
+long          ff_dshow_pin_QueryInternalConnections(DShowPin *, IPin **, unsigned long *);
+long          ff_dshow_pin_EndOfStream             (DShowPin *);
+long          ff_dshow_pin_BeginFlush              (DShowPin *);
+long          ff_dshow_pin_EndFlush                (DShowPin *);
+long          ff_dshow_pin_NewSegment              (DShowPin *, REFERENCE_TIME, REFERENCE_TIME, double);
 
-long          WINAPI libAVMemInputPin_QueryInterface          (libAVMemInputPin *, const GUID *, void **);
-unsigned long WINAPI libAVMemInputPin_AddRef                  (libAVMemInputPin *);
-unsigned long WINAPI libAVMemInputPin_Release                 (libAVMemInputPin *);
-long          WINAPI libAVMemInputPin_GetAllocator            (libAVMemInputPin *, IMemAllocator **);
-long          WINAPI libAVMemInputPin_NotifyAllocator         (libAVMemInputPin *, IMemAllocator *, BOOL);
-long          WINAPI libAVMemInputPin_GetAllocatorRequirements(libAVMemInputPin *, ALLOCATOR_PROPERTIES *);
-long          WINAPI libAVMemInputPin_Receive                 (libAVMemInputPin *, IMediaSample *);
-long          WINAPI libAVMemInputPin_ReceiveMultiple         (libAVMemInputPin *, IMediaSample **, long, long *);
-long          WINAPI libAVMemInputPin_ReceiveCanBlock         (libAVMemInputPin *);
+long          ff_dshow_meminputpin_QueryInterface          (DShowMemInputPin *, const GUID *, void **);
+unsigned long ff_dshow_meminputpin_AddRef                  (DShowMemInputPin *);
+unsigned long ff_dshow_meminputpin_Release                 (DShowMemInputPin *);
+long          ff_dshow_meminputpin_GetAllocator            (DShowMemInputPin *, IMemAllocator **);
+long          ff_dshow_meminputpin_NotifyAllocator         (DShowMemInputPin *, IMemAllocator *, BOOL);
+long          ff_dshow_meminputpin_GetAllocatorRequirements(DShowMemInputPin *, ALLOCATOR_PROPERTIES *);
+long          ff_dshow_meminputpin_Receive                 (DShowMemInputPin *, IMediaSample *);
+long          ff_dshow_meminputpin_ReceiveMultiple         (DShowMemInputPin *, IMediaSample **, long, long *);
+long          ff_dshow_meminputpin_ReceiveCanBlock         (DShowMemInputPin *);
 
-void                 libAVPin_Destroy(libAVPin *);
-libAVPin            *libAVPin_Create (libAVFilter *filter);
+void                 ff_dshow_pin_Destroy(DShowPin *);
+DShowPin            *ff_dshow_pin_Create (DShowFilter *filter);
 
-void                 libAVMemInputPin_Destroy(libAVMemInputPin *);
+void                 ff_dshow_meminputpin_Destroy(DShowMemInputPin *);
 
 /*****************************************************************************
- * libAVEnumPins
+ * DShowEnumPins
  ****************************************************************************/
-struct libAVEnumPins {
+struct DShowEnumPins {
     IEnumPinsVtbl *vtbl;
     long ref;
     int pos;
-    libAVPin *pin;
-    libAVFilter *filter;
+    DShowPin *pin;
+    DShowFilter *filter;
 };
 
-long          WINAPI libAVEnumPins_QueryInterface(libAVEnumPins *, const GUID *, void **);
-unsigned long WINAPI libAVEnumPins_AddRef        (libAVEnumPins *);
-unsigned long WINAPI libAVEnumPins_Release       (libAVEnumPins *);
-long          WINAPI libAVEnumPins_Next          (libAVEnumPins *, unsigned long, IPin **, unsigned long *);
-long          WINAPI libAVEnumPins_Skip          (libAVEnumPins *, unsigned long);
-long          WINAPI libAVEnumPins_Reset         (libAVEnumPins *);
-long          WINAPI libAVEnumPins_Clone         (libAVEnumPins *, libAVEnumPins **);
+long          ff_dshow_enumpins_QueryInterface(DShowEnumPins *, const GUID *, void **);
+unsigned long ff_dshow_enumpins_AddRef        (DShowEnumPins *);
+unsigned long ff_dshow_enumpins_Release       (DShowEnumPins *);
+long          ff_dshow_enumpins_Next          (DShowEnumPins *, unsigned long, IPin **, unsigned long *);
+long          ff_dshow_enumpins_Skip          (DShowEnumPins *, unsigned long);
+long          ff_dshow_enumpins_Reset         (DShowEnumPins *);
+long          ff_dshow_enumpins_Clone         (DShowEnumPins *, DShowEnumPins **);
 
-void                 libAVEnumPins_Destroy(libAVEnumPins *);
-libAVEnumPins       *libAVEnumPins_Create (libAVPin *pin, libAVFilter *filter);
+void                 ff_dshow_enumpins_Destroy(DShowEnumPins *);
+DShowEnumPins       *ff_dshow_enumpins_Create (DShowPin *pin, DShowFilter *filter);
 
 /*****************************************************************************
- * libAVEnumMediaTypes
+ * DShowEnumMediaTypes
  ****************************************************************************/
-struct libAVEnumMediaTypes {
+struct DShowEnumMediaTypes {
     IEnumMediaTypesVtbl *vtbl;
     long ref;
     int pos;
     AM_MEDIA_TYPE type;
 };
 
-long          WINAPI libAVEnumMediaTypes_QueryInterface(libAVEnumMediaTypes *, const GUID *, void **);
-unsigned long WINAPI libAVEnumMediaTypes_AddRef        (libAVEnumMediaTypes *);
-unsigned long WINAPI libAVEnumMediaTypes_Release       (libAVEnumMediaTypes *);
-long          WINAPI libAVEnumMediaTypes_Next          (libAVEnumMediaTypes *, unsigned long, AM_MEDIA_TYPE **, unsigned long *);
-long          WINAPI libAVEnumMediaTypes_Skip          (libAVEnumMediaTypes *, unsigned long);
-long          WINAPI libAVEnumMediaTypes_Reset         (libAVEnumMediaTypes *);
-long          WINAPI libAVEnumMediaTypes_Clone         (libAVEnumMediaTypes *, libAVEnumMediaTypes **);
+long          ff_dshow_enummediatypes_QueryInterface(DShowEnumMediaTypes *, const GUID *, void **);
+unsigned long ff_dshow_enummediatypes_AddRef        (DShowEnumMediaTypes *);
+unsigned long ff_dshow_enummediatypes_Release       (DShowEnumMediaTypes *);
+long          ff_dshow_enummediatypes_Next          (DShowEnumMediaTypes *, unsigned long, AM_MEDIA_TYPE **, unsigned long *);
+long          ff_dshow_enummediatypes_Skip          (DShowEnumMediaTypes *, unsigned long);
+long          ff_dshow_enummediatypes_Reset         (DShowEnumMediaTypes *);
+long          ff_dshow_enummediatypes_Clone         (DShowEnumMediaTypes *, DShowEnumMediaTypes **);
 
-void                 libAVEnumMediaTypes_Destroy(libAVEnumMediaTypes *);
-libAVEnumMediaTypes *libAVEnumMediaTypes_Create(const AM_MEDIA_TYPE *type);
+void                 ff_dshow_enummediatypes_Destroy(DShowEnumMediaTypes *);
+DShowEnumMediaTypes *ff_dshow_enummediatypes_Create(const AM_MEDIA_TYPE *type);
 
 /*****************************************************************************
- * libAVFilter
+ * DShowFilter
  ****************************************************************************/
-struct libAVFilter {
+struct DShowFilter {
     IBaseFilterVtbl *vtbl;
     long ref;
     const wchar_t *name;
-    libAVPin *pin;
+    DShowPin *pin;
     FILTER_INFO info;
     FILTER_STATE state;
     IReferenceClock *clock;
@@ -261,24 +261,24 @@ struct libAVFilter {
     void (*callback)(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType type);
 };
 
-long          WINAPI libAVFilter_QueryInterface (libAVFilter *, const GUID *, void **);
-unsigned long WINAPI libAVFilter_AddRef         (libAVFilter *);
-unsigned long WINAPI libAVFilter_Release        (libAVFilter *);
-long          WINAPI libAVFilter_GetClassID     (libAVFilter *, CLSID *);
-long          WINAPI libAVFilter_Stop           (libAVFilter *);
-long          WINAPI libAVFilter_Pause          (libAVFilter *);
-long          WINAPI libAVFilter_Run            (libAVFilter *, REFERENCE_TIME);
-long          WINAPI libAVFilter_GetState       (libAVFilter *, DWORD, FILTER_STATE *);
-long          WINAPI libAVFilter_SetSyncSource  (libAVFilter *, IReferenceClock *);
-long          WINAPI libAVFilter_GetSyncSource  (libAVFilter *, IReferenceClock **);
-long          WINAPI libAVFilter_EnumPins       (libAVFilter *, IEnumPins **);
-long          WINAPI libAVFilter_FindPin        (libAVFilter *, const wchar_t *, IPin **);
-long          WINAPI libAVFilter_QueryFilterInfo(libAVFilter *, FILTER_INFO *);
-long          WINAPI libAVFilter_JoinFilterGraph(libAVFilter *, IFilterGraph *, const wchar_t *);
-long          WINAPI libAVFilter_QueryVendorInfo(libAVFilter *, wchar_t **);
+long          ff_dshow_filter_QueryInterface (DShowFilter *, const GUID *, void **);
+unsigned long ff_dshow_filter_AddRef         (DShowFilter *);
+unsigned long ff_dshow_filter_Release        (DShowFilter *);
+long          ff_dshow_filter_GetClassID     (DShowFilter *, CLSID *);
+long          ff_dshow_filter_Stop           (DShowFilter *);
+long          ff_dshow_filter_Pause          (DShowFilter *);
+long          ff_dshow_filter_Run            (DShowFilter *, REFERENCE_TIME);
+long          ff_dshow_filter_GetState       (DShowFilter *, DWORD, FILTER_STATE *);
+long          ff_dshow_filter_SetSyncSource  (DShowFilter *, IReferenceClock *);
+long          ff_dshow_filter_GetSyncSource  (DShowFilter *, IReferenceClock **);
+long          ff_dshow_filter_EnumPins       (DShowFilter *, IEnumPins **);
+long          ff_dshow_filter_FindPin        (DShowFilter *, const wchar_t *, IPin **);
+long          ff_dshow_filter_QueryFilterInfo(DShowFilter *, FILTER_INFO *);
+long          ff_dshow_filter_JoinFilterGraph(DShowFilter *, IFilterGraph *, const wchar_t *);
+long          ff_dshow_filter_QueryVendorInfo(DShowFilter *, wchar_t **);
 
-void                 libAVFilter_Destroy(libAVFilter *);
-libAVFilter         *libAVFilter_Create (void *, void *, enum dshowDeviceType);
+void                 ff_dshow_filter_Destroy(DShowFilter *);
+DShowFilter         *ff_dshow_filter_Create (void *, void *, enum dshowDeviceType);
 
 /*****************************************************************************
  * dshow_ctx
@@ -314,8 +314,8 @@ struct dshow_ctx {
 
     IBaseFilter *device_filter[2];
     IPin        *device_pin[2];
-    libAVFilter *capture_filter[2];
-    libAVPin    *capture_pin[2];
+    DShowFilter *capture_filter[2];
+    DShowPin    *capture_pin[2];
 
     HANDLE mutex;
     HANDLE event[2]; /* event[0] is set by DirectShow
