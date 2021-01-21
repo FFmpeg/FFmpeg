@@ -40,7 +40,6 @@ typedef struct DBlurContext {
     int planeheight[4];
     float *buffer;
     int nb_planes;
-    void (*horiz_slice)(float *buffer, int width, int height, int steps, float nu, float bscale);
 } DBlurContext;
 
 #define OFFSET(x) offsetof(DBlurContext, x)
