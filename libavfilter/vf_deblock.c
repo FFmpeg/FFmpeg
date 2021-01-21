@@ -285,14 +285,14 @@ static int config_output(AVFilterLink *outlink)
     if (s->depth <= 8 && s->filter == WEAK) {
         s->deblockh = deblockh8_weak;
         s->deblockv = deblockv8_weak;
-    } else if (s->depth >= 8 && s->filter == WEAK) {
+    } else if (s->depth > 8 && s->filter == WEAK) {
         s->deblockh = deblockh16_weak;
         s->deblockv = deblockv16_weak;
     }
     if (s->depth <= 8 && s->filter == STRONG) {
         s->deblockh = deblockh8_strong;
         s->deblockv = deblockv8_strong;
-    } else if (s->depth >= 8 && s->filter == STRONG) {
+    } else if (s->depth > 8 && s->filter == STRONG) {
         s->deblockh = deblockh16_strong;
         s->deblockv = deblockv16_strong;
     }
