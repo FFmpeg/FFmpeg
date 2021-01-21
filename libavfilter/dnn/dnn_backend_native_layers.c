@@ -29,14 +29,14 @@
 #include "dnn_backend_native_layer_avgpool.h"
 #include "dnn_backend_native_layer_dense.h"
 
-const LayerFunc layer_funcs[DLT_COUNT] = {
+const LayerFunc ff_layer_funcs[DLT_COUNT] = {
     {NULL, NULL},
-    {dnn_execute_layer_conv2d,      dnn_load_layer_conv2d},
-    {dnn_execute_layer_depth2space, dnn_load_layer_depth2space},
-    {dnn_execute_layer_pad,         dnn_load_layer_pad},
-    {dnn_execute_layer_maximum,     dnn_load_layer_maximum},
-    {dnn_execute_layer_math_binary, dnn_load_layer_math_binary},
-    {dnn_execute_layer_math_unary,  dnn_load_layer_math_unary},
-    {dnn_execute_layer_avg_pool,  dnn_load_layer_avg_pool},
-    {dnn_execute_layer_dense,  dnn_load_layer_dense},
+    {ff_dnn_execute_layer_conv2d,      ff_dnn_load_layer_conv2d},
+    {ff_dnn_execute_layer_depth2space, ff_dnn_load_layer_depth2space},
+    {ff_dnn_execute_layer_pad,         ff_dnn_load_layer_pad},
+    {ff_dnn_execute_layer_maximum,     ff_dnn_load_layer_maximum},
+    {ff_dnn_execute_layer_math_binary, ff_dnn_load_layer_math_binary},
+    {ff_dnn_execute_layer_math_unary,  ff_dnn_load_layer_math_unary},
+    {ff_dnn_execute_layer_avg_pool,    ff_dnn_load_layer_avg_pool},
+    {ff_dnn_execute_layer_dense,       ff_dnn_load_layer_dense},
 };

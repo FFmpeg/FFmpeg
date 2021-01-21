@@ -34,7 +34,7 @@ typedef struct ConvolutionalParams{
     float *biases;
 } ConvolutionalParams;
 
-int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
-int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
-                             int32_t output_operand_index, const void *parameters, NativeContext *ctx);
+int ff_dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
+int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
+                                int32_t output_operand_index, const void *parameters, NativeContext *ctx);
 #endif

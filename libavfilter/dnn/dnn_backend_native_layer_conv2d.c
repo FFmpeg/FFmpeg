@@ -40,7 +40,7 @@ typedef struct ThreadParam{
     int thread_start, thread_end;
 } ThreadParam;
 
-int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
+int ff_dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
     ConvolutionalParams *conv_params;
     int kernel_size;
@@ -181,8 +181,8 @@ static void * dnn_execute_layer_conv2d_thread(void *threadarg)
 }
 
 
-int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
-                             int32_t output_operand_index, const void *parameters, NativeContext *ctx)
+int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
+                                int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     int thread_num = (ctx->options.conv2d_threads <= 0 || ctx->options.conv2d_threads > av_cpu_count())
         ? (av_cpu_count() + 1) : (ctx->options.conv2d_threads);
@@ -203,7 +203,7 @@ int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_
     output_operand->dims[2] = width - pad_size * 2;
     output_operand->dims[3] = conv_params->output_num;
     output_operand->data_type = operands[input_operand_indexes[0]].data_type;
-    output_operand->length = calculate_operand_data_length(output_operand);
+    output_operand->length = ff_calculate_operand_data_length(output_operand);
     if (output_operand->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;

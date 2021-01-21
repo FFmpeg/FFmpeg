@@ -27,7 +27,7 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_depth2space.h"
 
-int dnn_load_layer_depth2space(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
+int ff_dnn_load_layer_depth2space(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
     DepthToSpaceParams *params;
     int dnn_size = 0;
@@ -49,8 +49,8 @@ int dnn_load_layer_depth2space(Layer *layer, AVIOContext *model_file_context, in
     return dnn_size;
 }
 
-int dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_operand_indexes,
-                                  int32_t output_operand_index, const void *parameters, NativeContext *ctx)
+int ff_dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_operand_indexes,
+                                     int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     float *output;
     const DepthToSpaceParams *params = (const DepthToSpaceParams *)parameters;
@@ -74,7 +74,7 @@ int dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_ope
     output_operand->dims[2] = width * block_size;
     output_operand->dims[3] = new_channels;
     output_operand->data_type = operands[input_operand_index].data_type;
-    output_operand->length = calculate_operand_data_length(output_operand);
+    output_operand->length = ff_calculate_operand_data_length(output_operand);
     if (output_operand->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;

@@ -33,6 +33,6 @@ typedef struct LayerFunc {
     LAYER_LOAD_FUNC pf_load;
 }LayerFunc;
 
-extern const LayerFunc layer_funcs[DLT_COUNT];
+extern const LayerFunc ff_layer_funcs[DLT_COUNT];
 
 #endif

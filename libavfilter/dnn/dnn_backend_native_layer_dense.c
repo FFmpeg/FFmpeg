@@ -21,7 +21,7 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_dense.h"
 
-int dnn_load_layer_dense(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
+int ff_dnn_load_layer_dense(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
     DenseParams *dense_params;
     int kernel_size;
@@ -82,8 +82,8 @@ int dnn_load_layer_dense(Layer *layer, AVIOContext *model_file_context, int file
     return dnn_size;
 }
 
-int dnn_execute_layer_dense(DnnOperand *operands, const int32_t *input_operand_indexes,
-                             int32_t output_operand_index, const void *parameters, NativeContext *ctx)
+int ff_dnn_execute_layer_dense(DnnOperand *operands, const int32_t *input_operand_indexes,
+                               int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     float *output;
     int32_t input_operand_index = input_operand_indexes[0];
@@ -101,7 +101,7 @@ int dnn_execute_layer_dense(DnnOperand *operands, const int32_t *input_operand_i
     output_operand->dims[2] = width;
     output_operand->dims[3] = dense_params->output_num;
     output_operand->data_type = operands[input_operand_index].data_type;
-    output_operand->length = calculate_operand_data_length(output_operand);
+    output_operand->length = ff_calculate_operand_data_length(output_operand);
     if (output_operand->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;

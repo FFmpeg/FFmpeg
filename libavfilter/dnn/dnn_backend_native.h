@@ -137,6 +137,6 @@ void ff_dnn_free_model_native(DNNModel **model);
 
 // NOTE: User must check for error (return value <= 0) to handle
 // case like integer overflow.
-int32_t calculate_operand_data_length(const DnnOperand *oprd);
-int32_t calculate_operand_dims_count(const DnnOperand *oprd);
+int32_t ff_calculate_operand_data_length(const DnnOperand *oprd);
+int32_t ff_calculate_operand_dims_count(const DnnOperand *oprd);
 #endif

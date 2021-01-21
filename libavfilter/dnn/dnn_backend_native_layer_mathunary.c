@@ -29,7 +29,7 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_mathunary.h"
 
-int dnn_load_layer_math_unary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
+int ff_dnn_load_layer_math_unary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
     DnnLayerMathUnaryParams *params;
     int dnn_size = 0;
@@ -52,8 +52,8 @@ int dnn_load_layer_math_unary(Layer *layer, AVIOContext *model_file_context, int
 
 }
 
-int dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_operand_indexes,
-                                int32_t output_operand_index, const void *parameters, NativeContext *ctx)
+int ff_dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_operand_indexes,
+                                    int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     const DnnOperand *input = &operands[input_operand_indexes[0]];
     DnnOperand *output = &operands[output_operand_index];
@@ -66,7 +66,7 @@ int dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_oper
         output->dims[i] = input->dims[i];
 
     output->data_type = input->data_type;
-    output->length = calculate_operand_data_length(output);
+    output->length = ff_calculate_operand_data_length(output);
     if (output->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;
@@ -77,7 +77,7 @@ int dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_oper
         return DNN_ERROR;
     }
 
-    dims_count = calculate_operand_dims_count(output);
+    dims_count = ff_calculate_operand_dims_count(output);
     src = input->data;
     dst = output->data;
 
