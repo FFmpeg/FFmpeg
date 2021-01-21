@@ -2009,7 +2009,7 @@ static inline VkFormat drm_to_vulkan_fmt(uint32_t drm_fourcc)
 }
 
 static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **frame,
-                                          AVDRMFrameDescriptor *desc)
+                                          const AVFrame *src)
 {
     int err = 0;
     VkResult ret;
@@ -2020,6 +2020,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFramesPriv *fp = hwfc->internal->priv;
     AVVulkanFramesContext *frames_hwctx = hwfc->hwctx;
+    const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
     const int has_modifiers = !!(p->extensions & EXT_DRM_MODIFIER_FLAGS);
     VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
     VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { 0 };
@@ -2085,7 +2086,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         };
 
         get_plane_wh(&create_info.extent.width, &create_info.extent.height,
-                     hwfc->sw_format, hwfc->width, hwfc->height, i);
+                     hwfc->sw_format, src->width, src->height, i);
 
         for (int j = 0; j < planes; j++) {
             plane_data[j].offset     = desc->layers[i].planes[j].offset;
@@ -2246,9 +2247,7 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     AVVkFrame *f;
     VulkanMapping *map = NULL;
 
-    err = vulkan_map_from_drm_frame_desc(hwfc, &f,
-                                         (AVDRMFrameDescriptor *)src->data[0]);
-    if (err)
+    if ((err = vulkan_map_from_drm_frame_desc(hwfc, &f, src)))
         return err;
 
     /* The unmapping function will free this */
