@@ -54,14 +54,14 @@ typedef struct Super2xSaIContext {
     + ((((A & q_lo_pixel_mask) + (B & q_lo_pixel_mask) + (C & q_lo_pixel_mask) + (D & q_lo_pixel_mask)) >> 2) & q_lo_pixel_mask)
 
 static void super2xsai(AVFilterContext *ctx,
-                       uint8_t *src, int src_linesize,
+                       const uint8_t *src, int src_linesize,
                        uint8_t *dst, int dst_linesize,
                        int width, int height)
 {
     Super2xSaIContext *s = ctx->priv;
     unsigned int x, y;
     uint32_t color[4][4];
-    unsigned char *src_line[4];
+    const uint8_t *src_line[4];
     const int bpp = s->bpp;
     const uint32_t hi_pixel_mask = s->hi_pixel_mask;
     const uint32_t lo_pixel_mask = s->lo_pixel_mask;
