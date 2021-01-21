@@ -24,40 +24,8 @@
 #include <stdint.h>
 
 #include "get_bits.h"
+#include "sei.h"
 
-/**
- * SEI message types
- */
-typedef enum {
-    HEVC_SEI_TYPE_BUFFERING_PERIOD                     = 0,
-    HEVC_SEI_TYPE_PICTURE_TIMING                       = 1,
-    HEVC_SEI_TYPE_PAN_SCAN_RECT                        = 2,
-    HEVC_SEI_TYPE_FILLER_PAYLOAD                       = 3,
-    HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35       = 4,
-    HEVC_SEI_TYPE_USER_DATA_UNREGISTERED               = 5,
-    HEVC_SEI_TYPE_RECOVERY_POINT                       = 6,
-    HEVC_SEI_TYPE_SCENE_INFO                           = 9,
-    HEVC_SEI_TYPE_FULL_FRAME_SNAPSHOT                  = 15,
-    HEVC_SEI_TYPE_PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
-    HEVC_SEI_TYPE_PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
-    HEVC_SEI_TYPE_FILM_GRAIN_CHARACTERISTICS           = 19,
-    HEVC_SEI_TYPE_POST_FILTER_HINT                     = 22,
-    HEVC_SEI_TYPE_TONE_MAPPING_INFO                    = 23,
-    HEVC_SEI_TYPE_FRAME_PACKING                        = 45,
-    HEVC_SEI_TYPE_DISPLAY_ORIENTATION                  = 47,
-    HEVC_SEI_TYPE_SOP_DESCRIPTION                      = 128,
-    HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS                = 129,
-    HEVC_SEI_TYPE_DECODING_UNIT_INFO                   = 130,
-    HEVC_SEI_TYPE_TEMPORAL_LEVEL0_INDEX                = 131,
-    HEVC_SEI_TYPE_DECODED_PICTURE_HASH                 = 132,
-    HEVC_SEI_TYPE_SCALABLE_NESTING                     = 133,
-    HEVC_SEI_TYPE_REGION_REFRESH_INFO                  = 134,
-    HEVC_SEI_TYPE_TIME_CODE                            = 136,
-    HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO               = 137,
-    HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
-    HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
-    HEVC_SEI_TYPE_ALPHA_CHANNEL_INFO                   = 165,
-} HEVC_SEI_Type;
 
 typedef enum {
         HEVC_SEI_PIC_STRUCT_FRAME_DOUBLING = 7,

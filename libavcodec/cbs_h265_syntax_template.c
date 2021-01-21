@@ -2049,18 +2049,18 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
             } \
         } while (0)
 #define SEI_TYPE_N(type, prefix_valid, suffix_valid, name) \
-    case HEVC_SEI_TYPE_ ## type: \
+    case SEI_TYPE_ ## type: \
         SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
         CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name)); \
         break
 #define SEI_TYPE_S(type, prefix_valid, suffix_valid, name) \
-    case HEVC_SEI_TYPE_ ## type: \
+    case SEI_TYPE_ ## type: \
         SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
         CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name, \
                                  &current->payload_size)); \
         break
 #define SEI_TYPE_E(type, prefix_valid, suffix_valid, name) \
-    case HEVC_SEI_TYPE_ ## type: \
+    case SEI_TYPE_ ## type: \
         SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
         CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name, \
                                  &current->payload_size, \
@@ -2068,19 +2068,19 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         break
 
 #define SEI_TYPE_N2(type, prefix_valid, suffix_valid, name) \
-    case HEVC_SEI_TYPE_ ## type: \
+    case SEI_TYPE_ ## type: \
         SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
         CHECK(FUNC_SEI(sei_ ## name)(ctx, rw, &current->payload.name)); \
         break
 #define SEI_TYPE_S2(type, prefix_valid, suffix_valid, name) \
-    case HEVC_SEI_TYPE_ ## type: \
+    case SEI_TYPE_ ## type: \
         SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
         CHECK(FUNC_SEI(sei_ ## name)(ctx, rw, &current->payload.name, \
                                      &current->payload_size)); \
         break
 
         SEI_TYPE_E(BUFFERING_PERIOD,         1, 0, buffering_period);
-        SEI_TYPE_N(PICTURE_TIMING,           1, 0, pic_timing);
+        SEI_TYPE_N(PIC_TIMING,               1, 0, pic_timing);
         SEI_TYPE_N(PAN_SCAN_RECT,            1, 0, pan_scan_rect);
         SEI_TYPE_S2(USER_DATA_REGISTERED_ITU_T_T35,
                                              1, 1, user_data_registered);
@@ -2090,7 +2090,8 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         SEI_TYPE_N(ACTIVE_PARAMETER_SETS,    1, 0, active_parameter_sets);
         SEI_TYPE_N(DECODED_PICTURE_HASH,     0, 1, decoded_picture_hash);
         SEI_TYPE_N(TIME_CODE,                1, 0, time_code);
-        SEI_TYPE_N2(MASTERING_DISPLAY_INFO,  1, 0, mastering_display_colour_volume);
+        SEI_TYPE_N2(MASTERING_DISPLAY_COLOUR_VOLUME,
+                                             1, 0, mastering_display_colour_volume);
         SEI_TYPE_N2(CONTENT_LIGHT_LEVEL_INFO,1, 0, content_light_level);
         SEI_TYPE_N2(ALTERNATIVE_TRANSFER_CHARACTERISTICS,
                                              1, 0, alternative_transfer_characteristics);

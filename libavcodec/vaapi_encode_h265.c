@@ -218,14 +218,14 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
         i = 0;
 
         if (priv->sei_needed & SEI_MASTERING_DISPLAY) {
-            sei->payload[i].payload_type = HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO;
+            sei->payload[i].payload_type = SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME;
             sei->payload[i].payload.mastering_display_colour_volume =
                 priv->sei_mastering_display;
             ++i;
         }
 
         if (priv->sei_needed & SEI_CONTENT_LIGHT_LEVEL) {
-            sei->payload[i].payload_type = HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO;
+            sei->payload[i].payload_type = SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO;
             sei->payload[i].payload.content_light_level = priv->sei_content_light_level;
             ++i;
         }

@@ -402,25 +402,25 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
     switch (type) {
     case 256:  // Mismatched value from HM 8.1
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gb);
-    case HEVC_SEI_TYPE_FRAME_PACKING:
+    case SEI_TYPE_FRAME_PACKING_ARRANGEMENT:
         return decode_nal_sei_frame_packing_arrangement(&s->frame_packing, gb);
-    case HEVC_SEI_TYPE_DISPLAY_ORIENTATION:
+    case SEI_TYPE_DISPLAY_ORIENTATION:
         return decode_nal_sei_display_orientation(&s->display_orientation, gb);
-    case HEVC_SEI_TYPE_PICTURE_TIMING:
+    case SEI_TYPE_PIC_TIMING:
         return decode_nal_sei_pic_timing(s, gb, ps, logctx, size);
-    case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
+    case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
         return decode_nal_sei_mastering_display_info(&s->mastering_display, gb);
-    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
         return decode_nal_sei_content_light_info(&s->content_light, gb);
-    case HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS:
+    case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
-    case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
+    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         return decode_nal_sei_user_data_registered_itu_t_t35(s, gb, logctx, size);
-    case HEVC_SEI_TYPE_USER_DATA_UNREGISTERED:
+    case SEI_TYPE_USER_DATA_UNREGISTERED:
         return decode_nal_sei_user_data_unregistered(&s->unregistered, gb, size);
-    case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
+    case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
         return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gb);
-    case HEVC_SEI_TYPE_TIME_CODE:
+    case SEI_TYPE_TIME_CODE:
         return decode_nal_sei_timecode(&s->timecode, gb);
     default:
         av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
@@ -433,7 +433,7 @@ static int decode_nal_sei_suffix(GetBitContext *gb, void *logctx, HEVCSEI *s,
                                  int type, int size)
 {
     switch (type) {
-    case HEVC_SEI_TYPE_DECODED_PICTURE_HASH:
+    case SEI_TYPE_DECODED_PICTURE_HASH:
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gb);
     default:
         av_log(logctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", type);

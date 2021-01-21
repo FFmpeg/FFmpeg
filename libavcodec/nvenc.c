@@ -2247,7 +2247,7 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
             if (tc_data) {
                 sei_data[sei_count].payloadSize = (uint32_t)tc_size;
-                sei_data[sei_count].payloadType = HEVC_SEI_TYPE_TIME_CODE;
+                sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
                 sei_data[sei_count].payload = (uint8_t*)tc_data;
                 sei_count ++;
             }

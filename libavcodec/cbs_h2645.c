@@ -1445,23 +1445,23 @@ static const CodedBitstreamUnitTypeDescriptor cbs_h264_unit_types[] = {
 static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
 {
     switch (payload->payload_type) {
-    case HEVC_SEI_TYPE_BUFFERING_PERIOD:
-    case HEVC_SEI_TYPE_PICTURE_TIMING:
-    case HEVC_SEI_TYPE_PAN_SCAN_RECT:
-    case HEVC_SEI_TYPE_RECOVERY_POINT:
-    case HEVC_SEI_TYPE_DISPLAY_ORIENTATION:
-    case HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS:
-    case HEVC_SEI_TYPE_DECODED_PICTURE_HASH:
-    case HEVC_SEI_TYPE_TIME_CODE:
-    case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
-    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
-    case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
-    case HEVC_SEI_TYPE_ALPHA_CHANNEL_INFO:
+    case SEI_TYPE_BUFFERING_PERIOD:
+    case SEI_TYPE_PIC_TIMING:
+    case SEI_TYPE_PAN_SCAN_RECT:
+    case SEI_TYPE_RECOVERY_POINT:
+    case SEI_TYPE_DISPLAY_ORIENTATION:
+    case SEI_TYPE_ACTIVE_PARAMETER_SETS:
+    case SEI_TYPE_DECODED_PICTURE_HASH:
+    case SEI_TYPE_TIME_CODE:
+    case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+    case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
+    case SEI_TYPE_ALPHA_CHANNEL_INFO:
         break;
-    case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
+    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         av_buffer_unref(&payload->payload.user_data_registered.data_ref);
         break;
-    case HEVC_SEI_TYPE_USER_DATA_UNREGISTERED:
+    case SEI_TYPE_USER_DATA_UNREGISTERED:
         av_buffer_unref(&payload->payload.user_data_unregistered.data_ref);
         break;
     default:
