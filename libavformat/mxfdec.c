@@ -2865,8 +2865,11 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         int ret;
         int tag = avio_rb16(pb);
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
-        uint64_t next = avio_tell(pb) + size;
+        int64_t next = avio_tell(pb);
         UID uid = {0};
+        if (next < 0 || next > INT64_MAX - size)
+            return next < 0 ? next : AVERROR_INVALIDDATA;
+        next += size;
 
         av_log(mxf->fc, AV_LOG_TRACE, "local tag %#04x size %d\n", tag, size);
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
