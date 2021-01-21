@@ -28,7 +28,6 @@
 #include "dnn_backend_native_layer_mathbinary.h"
 
 typedef float (*FunType)(float src0, float src1);
-FunType pfun;
 
 static float sub(float src0, float src1)
 {
