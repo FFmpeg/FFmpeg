@@ -62,7 +62,7 @@ typedef struct ScanItem {
     int found;
     int white;
     int black;
-    uint64_t histogram[256];
+    uint64_t *histogram;
     uint8_t byte[2];
 
     CodeItem *code;
@@ -77,8 +77,13 @@ typedef struct ReadEIA608Context {
     int chp;
     int lp;
 
+    int depth;
+    int max;
     int nb_allocated;
     ScanItem *scan;
+
+    void (*read_line[2])(AVFrame *in, int nb_line,
+                         LineItem *line, int lp, int w);
 } ReadEIA608Context;
 
 #define OFFSET(x) offsetof(ReadEIA608Context, x)
@@ -98,13 +103,26 @@ AVFILTER_DEFINE_CLASS(readeia608);
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
+        AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
@@ -142,11 +160,13 @@ static int config_filter(AVFilterContext *ctx, int start, int end)
     for (int i = 0; i < s->nb_allocated; i++) {
         ScanItem *scan = &s->scan[i];
 
+        if (!scan->histogram)
+            scan->histogram = av_calloc(s->max + 1, sizeof(*scan->histogram));
         if (!scan->line)
             scan->line = av_calloc(size, sizeof(*scan->line));
         if (!scan->code)
             scan->code = av_calloc(size, sizeof(*scan->code));
-        if (!scan->line || !scan->code)
+        if (!scan->line || !scan->code || !scan->histogram)
             return AVERROR(ENOMEM);
     }
 
@@ -156,17 +176,9 @@ static int config_filter(AVFilterContext *ctx, int start, int end)
     return 0;
 }
 
-static int config_input(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->dst;
-    ReadEIA608Context *s = ctx->priv;
-
-    return config_filter(ctx, s->start, s->end);
-}
-
 static void build_histogram(ReadEIA608Context *s, ScanItem *scan, const LineItem *line, int len)
 {
-    memset(scan->histogram, 0, sizeof(scan->histogram));
+    memset(scan->histogram, 0, (s->max + 1) * sizeof(*scan->histogram));
 
     for (int i = LAG; i < len + LAG; i++)
         scan->histogram[line[i].input]++;
@@ -174,18 +186,19 @@ static void build_histogram(ReadEIA608Context *s, ScanItem *scan, const LineItem
 
 static void find_black_and_white(ReadEIA608Context *s, ScanItem *scan)
 {
+    const int max = s->max;
     int start = 0, end = 0, middle;
     int black = 0, white = 0;
     int cnt;
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i <= max; i++) {
         if (scan->histogram[i]) {
             start = i;
             break;
         }
     }
 
-    for (int i = 255; i >= 0; i--) {
+    for (int i = max; i >= 0; i--) {
         if (scan->histogram[i]) {
             end = i;
             break;
@@ -308,12 +321,54 @@ static void dump_code(AVFilterContext *ctx, ScanItem *scan, int len, int item)
     av_log(ctx, AV_LOG_DEBUG, "\n");
 }
 
+#define READ_LINE(type, name)                                                 \
+static void read_##name(AVFrame *in, int nb_line, LineItem *line, int lp, int w) \
+{                                                                             \
+    const type *src = (const type *)(&in->data[0][nb_line * in->linesize[0]]);\
+                                                                              \
+    if (lp) {                                                                 \
+        for (int i = 0; i < w; i++) {                                         \
+            int a = FFMAX(i - 3, 0);                                          \
+            int b = FFMAX(i - 2, 0);                                          \
+            int c = FFMAX(i - 1, 0);                                          \
+            int d = FFMIN(i + 3, w-1);                                        \
+            int e = FFMIN(i + 2, w-1);                                        \
+            int f = FFMIN(i + 1, w-1);                                        \
+                                                                              \
+            line[LAG + i].input = (src[a] + src[b] + src[c] + src[i] +        \
+                                   src[d] + src[e] + src[f] + 6) / 7;         \
+        }                                                                     \
+    } else {                                                                  \
+        for (int i = 0; i < w; i++) {                                         \
+            line[LAG + i].input = src[i];                                     \
+        }                                                                     \
+    }                                                                         \
+}
+
+READ_LINE(uint8_t, byte)
+READ_LINE(uint16_t, word)
+
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    ReadEIA608Context *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    if (!desc)
+        return AVERROR_BUG;
+    s->depth = desc->comp[0].depth;
+    s->max = (1 << desc->comp[0].depth) - 1;
+    s->read_line[0] = read_byte;
+    s->read_line[1] = read_word;
+
+    return config_filter(ctx, s->start, s->end);
+}
+
 static void extract_line(AVFilterContext *ctx, AVFrame *in, ScanItem *scan, int w, int nb_line)
 {
     ReadEIA608Context *s = ctx->priv;
     LineItem *line = scan->line;
     int i, j, ch, len;
-    const uint8_t *src;
     uint8_t codes[19] = { 0 };
     float bit_size = 0.f;
     int parity;
@@ -322,23 +377,7 @@ static void extract_line(AVFilterContext *ctx, AVFrame *in, ScanItem *scan, int 
     scan->byte[0] = scan->byte[1] = 0;
     scan->found = 0;
 
-    src = &in->data[0][nb_line * in->linesize[0]];
-    if (s->lp) {
-        for (i = 0; i < w; i++) {
-            int a = FFMAX(i - 3, 0);
-            int b = FFMAX(i - 2, 0);
-            int c = FFMAX(i - 1, 0);
-            int d = FFMIN(i + 3, w-1);
-            int e = FFMIN(i + 2, w-1);
-            int f = FFMIN(i + 1, w-1);
-
-            line[LAG + i].input = (src[a] + src[b] + src[c] + src[i] + src[d] + src[e] + src[f] + 6) / 7;
-        }
-    } else {
-        for (i = 0; i < w; i++) {
-            line[LAG + i].input = src[i];
-        }
-    }
+    s->read_line[s->depth > 8](in, nb_line, line, s->lp, w);
 
     build_histogram(s, scan, line, w);
     find_black_and_white(s, scan);
@@ -471,6 +510,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (int i = 0; i < s->nb_allocated; i++) {
         ScanItem *scan = &s->scan[i];
 
+        av_freep(&scan->histogram);
         av_freep(&scan->code);
         av_freep(&scan->line);
     }
