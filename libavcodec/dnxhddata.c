@@ -932,7 +932,7 @@ static const uint8_t dnxhd_1250_run[62] = {
     49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
 };
 
-const CIDEntry ff_dnxhd_cid_table[] = {
+static const CIDEntry dnxhd_cid_table[] = {
     { 1235, 1920, 1080, 917504, 917504,
       0, 6, 10, 4,
       dnxhd_1235_luma_weight, dnxhd_1235_chroma_weight,
@@ -1075,31 +1075,31 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       { 0 }, { 5888, 255} },
 };
 
-int ff_dnxhd_get_cid_table(int cid)
+const CIDEntry *ff_dnxhd_get_cid_table(int cid)
 {
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++)
-        if (ff_dnxhd_cid_table[i].cid == cid)
-            return i;
-    return -1;
+    for (int i = 0; i < FF_ARRAY_ELEMS(dnxhd_cid_table); i++)
+        if (dnxhd_cid_table[i].cid == cid)
+            return &dnxhd_cid_table[i];
+    return NULL;
 }
 
 int avpriv_dnxhd_get_frame_size(int cid)
 {
-    int i = ff_dnxhd_get_cid_table(cid);
-    if (i<0)
-        return i;
-    return ff_dnxhd_cid_table[i].frame_size;
+    const CIDEntry *entry = ff_dnxhd_get_cid_table(cid);
+    if (!entry)
+        return -1;
+    return entry->frame_size;
 }
 
 int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h)
 {
-    int result, i = ff_dnxhd_get_cid_table(cid);
+    const CIDEntry *entry = ff_dnxhd_get_cid_table(cid);
+    int result;
 
-    if (i < 0)
-        return i;
+    if (!entry)
+        return -1;
 
-    result = ((h + 15) / 16) * ((w + 15) / 16) * (int64_t)ff_dnxhd_cid_table[i].packet_scale.num / ff_dnxhd_cid_table[i].packet_scale.den;
+    result = ((h + 15) / 16) * ((w + 15) / 16) * (int64_t)entry->packet_scale.num / entry->packet_scale.den;
     result = (result + 2048) / 4096 * 4096;
 
     return FFMAX(result, 8192);
@@ -1107,10 +1107,10 @@ int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h)
 
 int avpriv_dnxhd_get_interlaced(int cid)
 {
-    int i = ff_dnxhd_get_cid_table(cid);
-    if (i < 0)
-        return i;
-    return ff_dnxhd_cid_table[i].flags & DNXHD_INTERLACED ? 1 : 0;
+    const CIDEntry *entry = ff_dnxhd_get_cid_table(cid);
+    if (!entry)
+        return -1;
+    return entry->flags & DNXHD_INTERLACED ? 1 : 0;
 }
 
 static int dnxhd_find_hr_cid(AVCodecContext *avctx)
@@ -1140,8 +1140,8 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
 
     if (!mbs)
         return 0;
-    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
-        const CIDEntry *cid = &ff_dnxhd_cid_table[i];
+    for (i = 0; i < FF_ARRAY_ELEMS(dnxhd_cid_table); i++) {
+        const CIDEntry *cid = &dnxhd_cid_table[i];
         int interlaced = cid->flags & DNXHD_INTERLACED ? 1 : 0;
         if (cid->width == avctx->width && cid->height == avctx->height &&
             interlaced == !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) &&
@@ -1163,8 +1163,8 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
 void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel)
 {
     int i, j;
-    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
-        const CIDEntry *cid = &ff_dnxhd_cid_table[i];
+    for (i = 0; i < FF_ARRAY_ELEMS(dnxhd_cid_table); i++) {
+        const CIDEntry *cid = &dnxhd_cid_table[i];
         for (j = 0; j < FF_ARRAY_ELEMS(cid->bit_rates); j++) {
             if (!cid->bit_rates[j])
                 break;

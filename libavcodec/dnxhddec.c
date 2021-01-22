@@ -113,18 +113,19 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
 {
     if (cid != ctx->cid) {
-        int index;
+        const CIDEntry *cid_table = ff_dnxhd_get_cid_table(cid);
 
-        if ((index = ff_dnxhd_get_cid_table(cid)) < 0) {
+        if (!cid_table) {
             av_log(ctx->avctx, AV_LOG_ERROR, "unsupported cid %"PRIu32"\n", cid);
             return AVERROR(ENOSYS);
         }
-        if (ff_dnxhd_cid_table[index].bit_depth != bitdepth &&
-            ff_dnxhd_cid_table[index].bit_depth != DNXHD_VARIABLE) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "bit depth mismatches %d %d\n", ff_dnxhd_cid_table[index].bit_depth, bitdepth);
+        if (cid_table->bit_depth != bitdepth &&
+            cid_table->bit_depth != DNXHD_VARIABLE) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "bit depth mismatches %d %d\n",
+                   cid_table->bit_depth, bitdepth);
             return AVERROR_INVALIDDATA;
         }
-        ctx->cid_table = &ff_dnxhd_cid_table[index];
+        ctx->cid_table = cid_table;
         av_log(ctx->avctx, AV_LOG_VERBOSE, "Profile cid %"PRIu32".\n", cid);
 
         ff_free_vlc(&ctx->ac_vlc);

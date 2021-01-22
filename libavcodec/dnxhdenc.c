@@ -351,7 +351,7 @@ static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
 static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
-    int i, index, ret;
+    int i, ret;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV422P:
@@ -411,10 +411,8 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    index = ff_dnxhd_get_cid_table(ctx->cid);
-    av_assert0(index >= 0);
-
-    ctx->cid_table = &ff_dnxhd_cid_table[index];
+    ctx->cid_table = ff_dnxhd_get_cid_table(ctx->cid);
+    av_assert0(ctx->cid_table);
 
     ctx->m.avctx    = avctx;
     ctx->m.mb_intra = 1;
