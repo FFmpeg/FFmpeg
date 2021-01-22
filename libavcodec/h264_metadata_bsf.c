@@ -528,7 +528,7 @@ static int h264_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
     if (pkt)
         ctx->done_first_au = 1;
 
-    return err;
+    return 0;
 }
 
 static const CBSBSFType h264_metadata_type = {
