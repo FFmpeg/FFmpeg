@@ -359,17 +359,16 @@ static const int16_t coef_hf[2][5] = {{ -2048,  4096, -2048,     0,    0},
 
 typedef struct ThreadData {
     AVFrame *out, *cur, *adj;
-    int plane;
 } ThreadData;
 
-static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static int deinterlace_plane_slice(AVFilterContext *ctx, void *arg,
+                                   int jobnr, int nb_jobs, int plane)
 {
     W3FDIFContext *s = ctx->priv;
     ThreadData *td = arg;
     AVFrame *out = td->out;
     AVFrame *cur = td->cur;
     AVFrame *adj = td->adj;
-    const int plane = td->plane;
     const int filter = s->filter;
     uint8_t *in_line, *in_lines_cur[5], *in_lines_adj[5];
     uint8_t *out_line, *out_pixel;
@@ -470,13 +469,23 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     return 0;
 }
 
+static int deinterlace_slice(AVFilterContext *ctx, void *arg,
+                             int jobnr, int nb_jobs)
+{
+    W3FDIFContext *s = ctx->priv;
+
+    for (int p = 0; p < s->nb_planes; p++)
+        deinterlace_plane_slice(ctx, arg, jobnr, nb_jobs, p);
+
+    return 0;
+}
+
 static int filter(AVFilterContext *ctx, int is_second)
 {
     W3FDIFContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *adj;
     ThreadData td;
-    int plane;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
@@ -500,10 +509,7 @@ static int filter(AVFilterContext *ctx, int is_second)
 
     adj = s->field ? s->next : s->prev;
     td.out = out; td.cur = s->cur; td.adj = adj;
-    for (plane = 0; plane < s->nb_planes; plane++) {
-        td.plane = plane;
-        ctx->internal->execute(ctx, deinterlace_slice, &td, NULL, FFMIN(s->planeheight[plane], s->nb_threads));
-    }
+    ctx->internal->execute(ctx, deinterlace_slice, &td, NULL, FFMIN(s->planeheight[1], s->nb_threads));
 
     if (s->mode)
         s->field = !s->field;
