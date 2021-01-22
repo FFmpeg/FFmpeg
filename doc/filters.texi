@@ -11140,6 +11140,19 @@ Allowed range is from 1 to 15.
 @item redge
 Specify the search radius for best edge matching. Default value is 2.
 Allowed range is from 0 to 15.
+
+@item interp
+Specify the interpolation used. Default is 4-point interpolation. It accepts one
+of the following values:
+
+@table @option
+@item 2p
+Two-point interpolation.
+@item 4p
+Four-point interpolation.
+@item 6p
+Six-point interpolation.
+@end table
 @end table
 
 @subsection Commands
