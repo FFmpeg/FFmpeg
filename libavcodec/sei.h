@@ -85,6 +85,7 @@ enum {
     SEI_TYPE_GREEN_METADATA                              = 56,
     SEI_TYPE_STRUCTURE_OF_PICTURES_INFO                  = 128,
     SEI_TYPE_ACTIVE_PARAMETER_SETS                       = 129,
+    SEI_TYPE_PARAMETER_SETS_INCLUSION_INDICATION         = SEI_TYPE_ACTIVE_PARAMETER_SETS,
     SEI_TYPE_DECODING_UNIT_INFO                          = 130,
     SEI_TYPE_TEMPORAL_SUB_LAYER_ZERO_IDX                 = 131,
     SEI_TYPE_DECODED_PICTURE_HASH                        = 132,
