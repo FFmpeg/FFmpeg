@@ -59,7 +59,7 @@ static int test(void)
     print(list(output.flatten()))
     */
 
-    ConvolutionalParams params;
+    DenseParams params;
     DnnOperand operands[2];
     int32_t input_indexes[1];
     float input[1*5*6*3] = {

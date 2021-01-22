@@ -1,6 +1,7 @@
 DNNTESTPROGS += dnn-layer-pad
 DNNTESTPROGS += dnn-layer-conv2d
 DNNTESTPROGS += dnn-layer-depth2space
+DNNTESTPROGS += dnn-layer-dense
 DNNTESTPROGS += dnn-layer-mathbinary
 DNNTESTPROGS += dnn-layer-maximum
 DNNTESTPROGS += dnn-layer-mathunary
