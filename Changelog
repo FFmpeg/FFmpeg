@@ -56,6 +56,7 @@ version <next>:
 - shufflepixels filter
 - tmidequalizer filter
 - estdif filter
+- epx filter
 
 
 version 4.3:

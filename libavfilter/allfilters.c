@@ -234,6 +234,7 @@ extern AVFilter ff_vf_drawtext;
 extern AVFilter ff_vf_edgedetect;
 extern AVFilter ff_vf_elbg;
 extern AVFilter ff_vf_entropy;
+extern AVFilter ff_vf_epx;
 extern AVFilter ff_vf_eq;
 extern AVFilter ff_vf_erosion;
 extern AVFilter ff_vf_erosion_opencl;

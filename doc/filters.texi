@@ -10943,6 +10943,18 @@ Can be either @var{normal} or @var{diff}. Default is @var{normal}.
 between neighbour histogram values.
 @end table
 
+@section epx
+Apply the EPX magnification filter which is designed for pixel art.
+
+It accepts the following option:
+
+@table @option
+@item n
+Set the scaling dimension: @code{2} for @code{2xEPX}, @code{3} for
+@code{3xEPX}.
+Default is @code{3}.
+@end table
+
 @section eq
 Set brightness, contrast, saturation and approximate gamma adjustment.
 
