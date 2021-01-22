@@ -1751,7 +1751,7 @@ static int copy_replace_length_codes(
             remaining_dst_size--;
 
             wrote_bytes = write_sei(sei,
-                                    SEI_TYPE_USER_DATA_REGISTERED,
+                                    SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35,
                                     dst_data,
                                     remaining_dst_size);
 
@@ -1807,7 +1807,7 @@ static int copy_replace_length_codes(
                 return status;
 
             wrote_bytes = write_sei(sei,
-                                    SEI_TYPE_USER_DATA_REGISTERED,
+                                    SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35,
                                     new_sei,
                                     remaining_dst_size - old_sei_length);
             if (wrote_bytes < 0)
@@ -1903,7 +1903,7 @@ static int vtenc_cm_to_avpacket(
 
     if (sei) {
         size_t msg_size = get_sei_msg_bytes(sei,
-                                            SEI_TYPE_USER_DATA_REGISTERED);
+                                            SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35);
 
         sei_nalu_size = sizeof(start_code) + 1 + msg_size + 1;
     }
