@@ -135,7 +135,7 @@ static av_cold int init(AVFilterContext *ctx)
         s->size |= 1;
     }
     s->radius = s->size / 2;
-    s->mid = s->radius + 1;
+    s->mid = s->radius;
 
     return 0;
 }
@@ -429,7 +429,7 @@ static int config_input(AVFilterLink *inlink)
     for (int p = 0; p < s->nb_planes; p++) {
         float sigma = s->radius * s->sigma[p];
 
-        s->weights[p][s->mid] = 1.f;
+        s->weights[p][s->radius] = 1.f;
         for (int n = 1; n <= s->radius; n++) {
             s->weights[p][s->radius + n] =
             s->weights[p][s->radius - n] = expf(-0.5 * (n + 1) * (n + 1) / (sigma * sigma));
