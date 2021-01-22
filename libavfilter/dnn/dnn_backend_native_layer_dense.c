@@ -92,7 +92,7 @@ int ff_dnn_execute_layer_dense(DnnOperand *operands, const int32_t *input_operan
     int width = operands[input_operand_index].dims[2];
     int channel = operands[input_operand_index].dims[3];
     const float *input = operands[input_operand_index].data;
-    const DenseParams *dense_params = (const DenseParams *)parameters;
+    const DenseParams *dense_params = parameters;
 
     int src_linesize = width * channel;
     DnnOperand *output_operand = &operands[output_operand_index];

@@ -116,7 +116,7 @@ static void * dnn_execute_layer_conv2d_thread(void *threadarg)
     int width = operands[input_operand_index].dims[2];
     int channel = operands[input_operand_index].dims[3];
     const float *input = operands[input_operand_index].data;
-    const ConvolutionalParams *conv_params = (const ConvolutionalParams *)(thread_common_param->parameters);
+    const ConvolutionalParams *conv_params = thread_common_param->parameters;
 
     int radius = conv_params->kernel_size >> 1;
     int src_linesize = width * conv_params->input_num;
@@ -192,7 +192,7 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
 #endif
     ThreadParam **thread_param = av_malloc_array(thread_num, sizeof(*thread_param));
     ThreadCommonParam thread_common_param;
-    const ConvolutionalParams *conv_params = (const ConvolutionalParams *)(parameters);
+    const ConvolutionalParams *conv_params = parameters;
     int height = operands[input_operand_indexes[0]].dims[1];
     int width = operands[input_operand_indexes[0]].dims[2];
     int pad_size = (conv_params->padding_method == VALID) ? (conv_params->kernel_size - 1) / 2 * conv_params->dilation : 0;

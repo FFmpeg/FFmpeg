@@ -97,7 +97,7 @@ static TF_Buffer *read_graph(const char *model_filename)
     }
 
     graph_buf = TF_NewBuffer();
-    graph_buf->data = (void *)graph_data;
+    graph_buf->data = graph_data;
     graph_buf->length = size;
     graph_buf->data_deallocator = free_buffer;
 
@@ -128,7 +128,7 @@ static TF_Tensor *allocate_input_tensor(const DNNData *input)
 
 static DNNReturnType get_input_tf(void *model, DNNData *input, const char *input_name)
 {
-    TFModel *tf_model = (TFModel *)model;
+    TFModel *tf_model = model;
     TFContext *ctx = &tf_model->ctx;
     TF_Status *status;
     int64_t dims[4];
@@ -165,7 +165,7 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
                                    const char *output_name, int *output_width, int *output_height)
 {
     DNNReturnType ret;
-    TFModel *tf_model = (TFModel *)model;
+    TFModel *tf_model = model;
     TFContext *ctx = &tf_model->ctx;
     AVFrame *in_frame = av_frame_alloc();
     AVFrame *out_frame = NULL;
@@ -586,7 +586,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
         return DNN_ERROR;
     }
 
-    native_model = (NativeModel *)model->model;
+    native_model = model->model;
     tf_model->graph = TF_NewGraph();
     tf_model->status = TF_NewStatus();
 
@@ -700,7 +700,7 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, const char *options, 
         }
     }
 
-    model->model = (void *)tf_model;
+    model->model = tf_model;
     model->get_input = &get_input_tf;
     model->get_output = &get_output_tf;
     model->options = options;
@@ -714,7 +714,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
                                       int do_ioproc)
 {
     TF_Output *tf_outputs;
-    TFModel *tf_model = (TFModel *)model->model;
+    TFModel *tf_model = model->model;
     TFContext *ctx = &tf_model->ctx;
     DNNData input, output;
     TF_Tensor **output_tensors;
@@ -822,7 +822,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
 DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                       const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
-    TFModel *tf_model = (TFModel *)model->model;
+    TFModel *tf_model = model->model;
     TFContext *ctx = &tf_model->ctx;
 
     if (!in_frame) {
@@ -843,7 +843,7 @@ void ff_dnn_free_model_tf(DNNModel **model)
     TFModel *tf_model;
 
     if (*model){
-        tf_model = (TFModel *)(*model)->model;
+        tf_model = (*model)->model;
         if (tf_model->graph){
             TF_DeleteGraph(tf_model->graph);
         }

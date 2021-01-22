@@ -66,7 +66,7 @@ int ff_dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_ope
     int width = operands[input_operand_index].dims[2];
     int channel = operands[input_operand_index].dims[3];
     const float *input = operands[input_operand_index].data;
-    const AvgPoolParams *avgpool_params = (const AvgPoolParams *)parameters;
+    const AvgPoolParams *avgpool_params = parameters;
 
     int kernel_strides = avgpool_params->strides;
     int src_linesize = width * channel;

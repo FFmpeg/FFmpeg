@@ -81,7 +81,7 @@ int ff_dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_
     int32_t before_paddings;
     int32_t after_paddings;
     float* output;
-    const LayerPadParams *params = (const LayerPadParams *)parameters;
+    const LayerPadParams *params = parameters;
 
     // suppose format is <N, H, W, C>
     int32_t input_operand_index = input_operand_indexes[0];

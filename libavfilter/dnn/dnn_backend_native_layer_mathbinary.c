@@ -152,7 +152,7 @@ int ff_dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_
 {
     const DnnOperand *input = &operands[input_operand_indexes[0]];
     DnnOperand *output = &operands[output_operand_index];
-    const DnnLayerMathBinaryParams *params = (const DnnLayerMathBinaryParams *)parameters;
+    const DnnLayerMathBinaryParams *params = parameters;
 
     for (int i = 0; i < 4; ++i)
         output->dims[i] = input->dims[i];

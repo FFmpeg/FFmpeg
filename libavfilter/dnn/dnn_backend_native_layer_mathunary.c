@@ -57,7 +57,7 @@ int ff_dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_o
 {
     const DnnOperand *input = &operands[input_operand_indexes[0]];
     DnnOperand *output = &operands[output_operand_index];
-    const DnnLayerMathUnaryParams *params = (const DnnLayerMathUnaryParams *)parameters;
+    const DnnLayerMathUnaryParams *params = parameters;
     int dims_count;
     const float *src;
     float *dst;

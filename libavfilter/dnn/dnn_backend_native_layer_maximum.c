@@ -54,7 +54,7 @@ int ff_dnn_execute_layer_maximum(DnnOperand *operands, const int32_t *input_oper
 {
     const DnnOperand *input = &operands[input_operand_indexes[0]];
     DnnOperand *output = &operands[output_operand_index];
-    const DnnLayerMaximumParams *params = (const DnnLayerMaximumParams *)parameters;
+    const DnnLayerMaximumParams *params = parameters;
     int dims_count;
     const float *src;
     float *dst;

@@ -50,7 +50,7 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
 
 static DNNReturnType get_input_native(void *model, DNNData *input, const char *input_name)
 {
-    NativeModel *native_model = (NativeModel *)model;
+    NativeModel *native_model = model;
     NativeContext *ctx = &native_model->ctx;
 
     for (int i = 0; i < native_model->operands_num; ++i) {
@@ -78,7 +78,7 @@ static DNNReturnType get_output_native(void *model, const char *input_name, int 
                                        const char *output_name, int *output_width, int *output_height)
 {
     DNNReturnType ret;
-    NativeModel *native_model = (NativeModel *)model;
+    NativeModel *native_model = model;
     NativeContext *ctx = &native_model->ctx;
     AVFrame *in_frame = av_frame_alloc();
     AVFrame *out_frame = NULL;
@@ -269,7 +269,7 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
                                           const char **output_names, uint32_t nb_output, AVFrame *out_frame,
                                           int do_ioproc)
 {
-    NativeModel *native_model = (NativeModel *)model->model;
+    NativeModel *native_model = model->model;
     NativeContext *ctx = &native_model->ctx;
     int32_t layer;
     DNNData input, output;
@@ -382,7 +382,7 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
 DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                           const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
-    NativeModel *native_model = (NativeModel *)model->model;
+    NativeModel *native_model = model->model;
     NativeContext *ctx = &native_model->ctx;
 
     if (!in_frame) {
@@ -428,7 +428,7 @@ void ff_dnn_free_model_native(DNNModel **model)
     if (*model)
     {
         if ((*model)->model) {
-            native_model = (NativeModel *)(*model)->model;
+            native_model = (*model)->model;
             if (native_model->layers) {
                 for (layer = 0; layer < native_model->layers_num; ++layer){
                     if (native_model->layers[layer].type == DLT_CONV2D){

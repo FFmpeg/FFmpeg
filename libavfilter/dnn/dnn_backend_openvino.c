@@ -394,7 +394,7 @@ static DNNReturnType execute_model_ov(RequestItem *request)
 
 static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input_name)
 {
-    OVModel *ov_model = (OVModel *)model;
+    OVModel *ov_model = model;
     OVContext *ctx = &ov_model->ctx;
     char *model_input_name = NULL;
     char *all_input_names = NULL;
@@ -446,7 +446,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
                                    const char *output_name, int *output_width, int *output_height)
 {
     DNNReturnType ret;
-    OVModel *ov_model = (OVModel *)model;
+    OVModel *ov_model = model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
     RequestItem request;
@@ -527,7 +527,7 @@ DNNModel *ff_dnn_load_model_ov(const char *model_filename, const char *options, 
         av_freep(&model);
         return NULL;
     }
-    model->model = (void *)ov_model;
+    model->model = ov_model;
     ov_model->model = model;
     ov_model->ctx.class = &dnn_openvino_class;
     ctx = &ov_model->ctx;
@@ -569,7 +569,7 @@ err:
 DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                       const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
-    OVModel *ov_model = (OVModel *)model->model;
+    OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
     RequestItem request;
@@ -623,7 +623,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
 DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                             const char **output_names, uint32_t nb_output, AVFrame *out_frame)
 {
-    OVModel *ov_model = (OVModel *)model->model;
+    OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     RequestItem *request;
     TaskItem *task;
@@ -677,7 +677,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
 
 DNNAsyncStatusType ff_dnn_get_async_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out)
 {
-    OVModel *ov_model = (OVModel *)model->model;
+    OVModel *ov_model = model->model;
     TaskItem *task = ff_queue_peek_front(ov_model->task_queue);
 
     if (!task) {
@@ -698,7 +698,7 @@ DNNAsyncStatusType ff_dnn_get_async_result_ov(const DNNModel *model, AVFrame **i
 
 DNNReturnType ff_dnn_flush_ov(const DNNModel *model)
 {
-    OVModel *ov_model = (OVModel *)model->model;
+    OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     RequestItem *request;
     IEStatusCode status;
@@ -741,7 +741,7 @@ DNNReturnType ff_dnn_flush_ov(const DNNModel *model)
 void ff_dnn_free_model_ov(DNNModel **model)
 {
     if (*model){
-        OVModel *ov_model = (OVModel *)(*model)->model;
+        OVModel *ov_model = (*model)->model;
         while (ff_safe_queue_size(ov_model->request_queue) != 0) {
             RequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
             if (item && item->infer_request) {

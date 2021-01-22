@@ -53,7 +53,7 @@ int ff_dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_
                                      int32_t output_operand_index, const void *parameters, NativeContext *ctx)
 {
     float *output;
-    const DepthToSpaceParams *params = (const DepthToSpaceParams *)parameters;
+    const DepthToSpaceParams *params = parameters;
     int block_size = params->block_size;
     int32_t input_operand_index = input_operand_indexes[0];
     int number = operands[input_operand_index].dims[0];
