@@ -79,26 +79,6 @@ double   ff_tget_double(GetByteContext *gb, int le);
 /** Reads a byte from the bytestream using given endianness. */
 unsigned ff_tget(GetByteContext *gb, int type, int le);
 
-/** Returns an allocated string containing count
- *  rational values using the given separator.
- */
-char *ff_trationals2str(int *rp, int count, const char *sep);
-
-/** Returns an allocated string containing count
- *  long values using the given separator.
- */
-char *ff_tlongs2str(int32_t *lp, int count, const char *sep);
-
-/** Returns an allocated string containing count
- *  double values using the given separator.
- */
-char *ff_tdoubles2str(double *dp, int count, const char *sep);
-
-/** Returns an allocated string containing count
- *  short values using the given separator.
- */
-char *ff_tshorts2str(int16_t *sp, int count, const char *sep);
-
 /** Adds count rationals converted to a string
  *  into the metadata dictionary.
  */
