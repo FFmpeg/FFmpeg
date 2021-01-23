@@ -49,8 +49,6 @@
 #define MB_TYPE_B_VLC_BITS 4
 #define STUDIO_INTRA_BITS 9
 
-static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb);
-
 static VLC dc_lum, dc_chrom;
 static VLC sprite_trajectory;
 static VLC mb_type_b_vlc;
@@ -2148,6 +2146,158 @@ static void mpeg4_load_default_matrices(MpegEncContext *s)
     }
 }
 
+static int read_quant_matrix_ext(MpegEncContext *s, GetBitContext *gb)
+{
+    int i, j, v;
+
+    if (get_bits1(gb)) {
+        if (get_bits_left(gb) < 64*8)
+            return AVERROR_INVALIDDATA;
+        /* intra_quantiser_matrix */
+        for (i = 0; i < 64; i++) {
+            v = get_bits(gb, 8);
+            j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
+            s->intra_matrix[j]        = v;
+            s->chroma_intra_matrix[j] = v;
+        }
+    }
+
+    if (get_bits1(gb)) {
+        if (get_bits_left(gb) < 64*8)
+            return AVERROR_INVALIDDATA;
+        /* non_intra_quantiser_matrix */
+        for (i = 0; i < 64; i++) {
+            get_bits(gb, 8);
+        }
+    }
+
+    if (get_bits1(gb)) {
+        if (get_bits_left(gb) < 64*8)
+            return AVERROR_INVALIDDATA;
+        /* chroma_intra_quantiser_matrix */
+        for (i = 0; i < 64; i++) {
+            v = get_bits(gb, 8);
+            j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
+            s->chroma_intra_matrix[j] = v;
+        }
+    }
+
+    if (get_bits1(gb)) {
+        if (get_bits_left(gb) < 64*8)
+            return AVERROR_INVALIDDATA;
+        /* chroma_non_intra_quantiser_matrix */
+        for (i = 0; i < 64; i++) {
+            get_bits(gb, 8);
+        }
+    }
+
+    next_start_code_studio(gb);
+    return 0;
+}
+
+static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id)
+{
+    uint32_t startcode;
+    uint8_t extension_type;
+
+    startcode = show_bits_long(gb, 32);
+    if (startcode == USER_DATA_STARTCODE || startcode == EXT_STARTCODE) {
+
+        if ((id == 2 || id == 4) && startcode == EXT_STARTCODE) {
+            skip_bits_long(gb, 32);
+            extension_type = get_bits(gb, 4);
+            if (extension_type == QUANT_MATRIX_EXT_ID)
+                read_quant_matrix_ext(s, gb);
+        }
+    }
+}
+
+static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
+{
+    MpegEncContext *s = &ctx->m;
+    int width, height;
+    int bits_per_raw_sample;
+    int rgb, chroma_format;
+
+    // random_accessible_vol and video_object_type_indication have already
+    // been read by the caller decode_vol_header()
+    skip_bits(gb, 4); /* video_object_layer_verid */
+    ctx->shape = get_bits(gb, 2); /* video_object_layer_shape */
+    skip_bits(gb, 4); /* video_object_layer_shape_extension */
+    skip_bits1(gb); /* progressive_sequence */
+    if (ctx->shape != RECT_SHAPE) {
+        avpriv_request_sample(s->avctx, "MPEG-4 Studio profile non rectangular shape");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (ctx->shape != BIN_ONLY_SHAPE) {
+        rgb = get_bits1(gb); /* rgb_components */
+        chroma_format = get_bits(gb, 2); /* chroma_format */
+        if (!chroma_format || chroma_format == CHROMA_420 || (rgb && chroma_format == CHROMA_422)) {
+            av_log(s->avctx, AV_LOG_ERROR, "illegal chroma format\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        bits_per_raw_sample = get_bits(gb, 4); /* bit_depth */
+        if (bits_per_raw_sample == 10) {
+            if (rgb) {
+                s->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+            } else {
+                s->avctx->pix_fmt = chroma_format == CHROMA_422 ? AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV444P10;
+            }
+        } else {
+            avpriv_request_sample(s->avctx, "MPEG-4 Studio profile bit-depth %u", bits_per_raw_sample);
+            return AVERROR_PATCHWELCOME;
+        }
+        if (rgb != ctx->rgb || s->chroma_format != chroma_format)
+            s->context_reinit = 1;
+        s->avctx->bits_per_raw_sample = bits_per_raw_sample;
+        ctx->rgb = rgb;
+        s->chroma_format = chroma_format;
+    }
+    if (ctx->shape == RECT_SHAPE) {
+        check_marker(s->avctx, gb, "before video_object_layer_width");
+        width  = get_bits(gb, 14); /* video_object_layer_width */
+        check_marker(s->avctx, gb, "before video_object_layer_height");
+        height = get_bits(gb, 14); /* video_object_layer_height */
+        check_marker(s->avctx, gb, "after video_object_layer_height");
+
+        /* Do the same check as non-studio profile */
+        if (width && height) {
+            if (s->width && s->height &&
+                (s->width != width || s->height != height))
+                s->context_reinit = 1;
+            s->width  = width;
+            s->height = height;
+        }
+    }
+    s->aspect_ratio_info = get_bits(gb, 4);
+    if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
+        s->avctx->sample_aspect_ratio.num = get_bits(gb, 8);  // par_width
+        s->avctx->sample_aspect_ratio.den = get_bits(gb, 8);  // par_height
+    } else {
+        s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[s->aspect_ratio_info];
+    }
+    skip_bits(gb, 4); /* frame_rate_code */
+    skip_bits(gb, 15); /* first_half_bit_rate */
+    check_marker(s->avctx, gb, "after first_half_bit_rate");
+    skip_bits(gb, 15); /* latter_half_bit_rate */
+    check_marker(s->avctx, gb, "after latter_half_bit_rate");
+    skip_bits(gb, 15); /* first_half_vbv_buffer_size */
+    check_marker(s->avctx, gb, "after first_half_vbv_buffer_size");
+    skip_bits(gb, 3); /* latter_half_vbv_buffer_size */
+    skip_bits(gb, 11); /* first_half_vbv_buffer_size */
+    check_marker(s->avctx, gb, "after first_half_vbv_buffer_size");
+    skip_bits(gb, 15); /* latter_half_vbv_occupancy */
+    check_marker(s->avctx, gb, "after latter_half_vbv_occupancy");
+    s->low_delay  = get_bits1(gb);
+    s->mpeg_quant = get_bits1(gb); /* mpeg2_stream */
+
+    next_start_code_studio(gb);
+    extension_and_user_data(s, gb, 2);
+
+    return 0;
+}
+
 static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
@@ -2972,72 +3122,6 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     return 0;
 }
 
-static int read_quant_matrix_ext(MpegEncContext *s, GetBitContext *gb)
-{
-    int i, j, v;
-
-    if (get_bits1(gb)) {
-        if (get_bits_left(gb) < 64*8)
-            return AVERROR_INVALIDDATA;
-        /* intra_quantiser_matrix */
-        for (i = 0; i < 64; i++) {
-            v = get_bits(gb, 8);
-            j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
-            s->intra_matrix[j]        = v;
-            s->chroma_intra_matrix[j] = v;
-        }
-    }
-
-    if (get_bits1(gb)) {
-        if (get_bits_left(gb) < 64*8)
-            return AVERROR_INVALIDDATA;
-        /* non_intra_quantiser_matrix */
-        for (i = 0; i < 64; i++) {
-            get_bits(gb, 8);
-        }
-    }
-
-    if (get_bits1(gb)) {
-        if (get_bits_left(gb) < 64*8)
-            return AVERROR_INVALIDDATA;
-        /* chroma_intra_quantiser_matrix */
-        for (i = 0; i < 64; i++) {
-            v = get_bits(gb, 8);
-            j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
-            s->chroma_intra_matrix[j] = v;
-        }
-    }
-
-    if (get_bits1(gb)) {
-        if (get_bits_left(gb) < 64*8)
-            return AVERROR_INVALIDDATA;
-        /* chroma_non_intra_quantiser_matrix */
-        for (i = 0; i < 64; i++) {
-            get_bits(gb, 8);
-        }
-    }
-
-    next_start_code_studio(gb);
-    return 0;
-}
-
-static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id)
-{
-    uint32_t startcode;
-    uint8_t extension_type;
-
-    startcode = show_bits_long(gb, 32);
-    if (startcode == USER_DATA_STARTCODE || startcode == EXT_STARTCODE) {
-
-        if ((id == 2 || id == 4) && startcode == EXT_STARTCODE) {
-            skip_bits_long(gb, 32);
-            extension_type = get_bits(gb, 4);
-            if (extension_type == QUANT_MATRIX_EXT_ID)
-                read_quant_matrix_ext(s, gb);
-        }
-    }
-}
-
 static void decode_smpte_tc(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
@@ -3126,94 +3210,6 @@ static int decode_studiovisualobject(Mpeg4DecContext *ctx, GetBitContext *gb)
 
         next_start_code_studio(gb);
         extension_and_user_data(s, gb, 1);
-
-    return 0;
-}
-
-static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
-{
-    MpegEncContext *s = &ctx->m;
-    int width, height;
-    int bits_per_raw_sample;
-    int rgb, chroma_format;
-
-            // random_accessible_vol and video_object_type_indication have already
-            // been read by the caller decode_vol_header()
-            skip_bits(gb, 4); /* video_object_layer_verid */
-            ctx->shape = get_bits(gb, 2); /* video_object_layer_shape */
-            skip_bits(gb, 4); /* video_object_layer_shape_extension */
-            skip_bits1(gb); /* progressive_sequence */
-            if (ctx->shape != RECT_SHAPE) {
-                avpriv_request_sample(s->avctx, "MPEG-4 Studio profile non rectangular shape");
-                return AVERROR_PATCHWELCOME;
-            }
-            if (ctx->shape != BIN_ONLY_SHAPE) {
-                rgb = get_bits1(gb); /* rgb_components */
-                chroma_format = get_bits(gb, 2); /* chroma_format */
-                if (!chroma_format || chroma_format == CHROMA_420 || (rgb && chroma_format == CHROMA_422)) {
-                    av_log(s->avctx, AV_LOG_ERROR, "illegal chroma format\n");
-                    return AVERROR_INVALIDDATA;
-                }
-
-                bits_per_raw_sample = get_bits(gb, 4); /* bit_depth */
-                if (bits_per_raw_sample == 10) {
-                    if (rgb) {
-                        s->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-                    }
-                    else {
-                        s->avctx->pix_fmt = chroma_format == CHROMA_422 ? AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV444P10;
-                    }
-                }
-                else {
-                    avpriv_request_sample(s->avctx, "MPEG-4 Studio profile bit-depth %u", bits_per_raw_sample);
-                    return AVERROR_PATCHWELCOME;
-                }
-                if (rgb != ctx->rgb || s->chroma_format != chroma_format)
-                    s->context_reinit = 1;
-                s->avctx->bits_per_raw_sample = bits_per_raw_sample;
-                ctx->rgb = rgb;
-                s->chroma_format = chroma_format;
-            }
-            if (ctx->shape == RECT_SHAPE) {
-                check_marker(s->avctx, gb, "before video_object_layer_width");
-                width = get_bits(gb, 14); /* video_object_layer_width */
-                check_marker(s->avctx, gb, "before video_object_layer_height");
-                height = get_bits(gb, 14); /* video_object_layer_height */
-                check_marker(s->avctx, gb, "after video_object_layer_height");
-
-                /* Do the same check as non-studio profile */
-                if (width && height) {
-                    if (s->width && s->height &&
-                        (s->width != width || s->height != height))
-                        s->context_reinit = 1;
-                    s->width  = width;
-                    s->height = height;
-                }
-            }
-            s->aspect_ratio_info = get_bits(gb, 4);
-            if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
-                s->avctx->sample_aspect_ratio.num = get_bits(gb, 8);  // par_width
-                s->avctx->sample_aspect_ratio.den = get_bits(gb, 8);  // par_height
-            } else {
-                s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[s->aspect_ratio_info];
-            }
-            skip_bits(gb, 4); /* frame_rate_code */
-            skip_bits(gb, 15); /* first_half_bit_rate */
-            check_marker(s->avctx, gb, "after first_half_bit_rate");
-            skip_bits(gb, 15); /* latter_half_bit_rate */
-            check_marker(s->avctx, gb, "after latter_half_bit_rate");
-            skip_bits(gb, 15); /* first_half_vbv_buffer_size */
-            check_marker(s->avctx, gb, "after first_half_vbv_buffer_size");
-            skip_bits(gb, 3); /* latter_half_vbv_buffer_size */
-            skip_bits(gb, 11); /* first_half_vbv_buffer_size */
-            check_marker(s->avctx, gb, "after first_half_vbv_buffer_size");
-            skip_bits(gb, 15); /* latter_half_vbv_occupancy */
-            check_marker(s->avctx, gb, "after latter_half_vbv_occupancy");
-            s->low_delay = get_bits1(gb);
-            s->mpeg_quant = get_bits1(gb); /* mpeg2_stream */
-
-            next_start_code_studio(gb);
-            extension_and_user_data(s, gb, 2);
 
     return 0;
 }
