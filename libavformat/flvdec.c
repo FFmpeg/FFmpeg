@@ -842,9 +842,12 @@ static void clear_index_entries(AVFormatContext *s, int64_t pos)
     }
 }
 
-static int amf_skip_tag(AVIOContext *pb, AMFDataType type)
+static int amf_skip_tag(AVIOContext *pb, AMFDataType type, int depth)
 {
     int nb = -1, ret, parse_name = 1;
+
+    if (depth > MAX_DEPTH)
+        return AVERROR_PATCHWELCOME;
 
     switch (type) {
     case AMF_DATA_TYPE_NUMBER:
@@ -870,7 +873,7 @@ static int amf_skip_tag(AVIOContext *pb, AMFDataType type)
                 }
                 avio_skip(pb, size);
             }
-            if ((ret = amf_skip_tag(pb, avio_r8(pb))) < 0)
+            if ((ret = amf_skip_tag(pb, avio_r8(pb), depth + 1)) < 0)
                 return ret;
         }
         break;
@@ -914,7 +917,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
             else
                 break;
         } else {
-            if ((ret = amf_skip_tag(pb, type)) < 0)
+            if ((ret = amf_skip_tag(pb, type, 0)) < 0)
                 goto skip;
         }
     }
