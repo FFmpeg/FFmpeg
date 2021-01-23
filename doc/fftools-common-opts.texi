@@ -352,6 +352,12 @@ Possible flags for this option are:
 @item k8
 @end table
 @end table
+
+@item -max_alloc @var{bytes}
+Set the maximum size limit for allocating a block on the heap by ffmpeg's
+family of malloc functions. Exercise @strong{extreme caution} when using
+this option. Don't use if you do not understand the full consequence of doing so.
+Default is INT_MAX.
 @end table
 
 @section AVOptions
