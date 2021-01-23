@@ -316,12 +316,6 @@ static const uint8_t vp8_pred4x4_prob_intra[10][10][9] = {
     },
 };
 
-static const int8_t vp8_segmentid_tree[][2] = {
-    {  1,  2 },
-    { -0, -1 }, // '00', '01'
-    { -2, -3 }, // '10', '11'
-};
-
 static const uint8_t vp8_coeff_band[16] = {
     0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7
 };
