@@ -104,25 +104,6 @@ static const uint8_t atrac3p_sf_xlats[] = {
      0,  1,  2, 14, 15,  3, 13,  4, 12,  5, 11,  6,  7,  9, 10,
 };
 
-static const uint8_t atrac3p_ct_huff1[4][2] = {
-    { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 3 },
-};
-
-static const uint8_t atrac3p_ct_huff2[8][2] = {
-    { 0, 2 }, { 1, 3 }, { 2, 3 }, { 3, 3 }, { 4, 3 }, { 5, 3 }, { 6, 4 },
-    { 7, 4 },
-};
-
-static const uint8_t atrac3p_ct_huff3[8][2] = {
-    { 0, 2 }, { 1, 3 }, { 2, 3 }, { 3, 3 }, { 6, 3 }, { 7, 3 }, { 4, 4 },
-    { 5, 4 },
-};
-
-static const uint8_t atrac3p_ct_huff4[8][2] = {
-    { 0, 1 }, { 1, 3 }, { 2, 4 }, { 3, 4 }, { 4, 4 }, { 5, 4 }, { 6, 4 },
-    { 7, 4 },
-};
-
 /* weights for quantized word lengths */
 static const int8_t atrac3p_wl_weights[6][32] = {
     { 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0, 0, 0, 0, 0,
