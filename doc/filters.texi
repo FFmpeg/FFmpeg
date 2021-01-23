@@ -8065,6 +8065,9 @@ Adjust contribution of input red, green, blue and alpha channels for output alph
 Default is @code{1} for @var{aa}, and @code{0} for @var{ar}, @var{ag} and @var{ab}.
 
 Allowed ranges for options are @code{[-2.0, 2.0]}.
+
+@item pl
+Preserve lightness when changing colors. Default is disabled.
 @end table
 
 @subsection Examples
