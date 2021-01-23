@@ -1424,11 +1424,6 @@ static const float pred_fac[LP_FILTER_ORDER] = {
 
 // fixed tables
 
-/**
- * number of pulses per mode
- */
-static const uint8_t pulses_nb_per_mode[] = {2, 2, 2, 3, 4, 4, 8, 10};
-
 /** track start positions for algebraic code book routines */
 static const uint8_t track_position[16] = {
     0, 2, 0, 3, 0, 2, 0, 3, 1, 3, 2, 4, 1, 4, 1, 4
