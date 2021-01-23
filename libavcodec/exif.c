@@ -95,22 +95,15 @@ static int exif_decode_tag(void *logctx, GetByteContext *gbytes, int le,
         ret = ff_exif_decode_ifd(logctx, gbytes, le, depth + 1, metadata);
     } else {
         const char *name = exif_get_tag_name(id);
-        char *use_name   = (char*) name;
-
-        if (!use_name) {
-            use_name = av_malloc(7);
-            if (!use_name) {
-                return AVERROR(ENOMEM);
-            }
-            snprintf(use_name, 7, "0x%04X", id);
-        }
-
-        ret = exif_add_metadata(logctx, count, type, use_name, NULL,
-                                gbytes, le, metadata);
+        char buf[7];
 
         if (!name) {
-            av_freep(&use_name);
+            name = buf;
+            snprintf(buf, sizeof(buf), "0x%04X", id);
         }
+
+        ret = exif_add_metadata(logctx, count, type, name, NULL,
+                                gbytes, le, metadata);
     }
 
     bytestream2_seek(gbytes, cur_pos, SEEK_SET);
