@@ -81,6 +81,14 @@
 #define FFNABS(a) ((a) <= 0 ? (a) : (-(a)))
 
 /**
+ * Unsigned Absolute value.
+ * This takes the absolute value of a signed int and returns it as a unsigned.
+ * This also works with INT_MIN which would otherwise not be representable
+ * As with many macros, this evaluates its argument twice.
+ */
+#define FFABSU(a) ((a) <= 0 ? -(unsigned)(a) : (unsigned)(a))
+
+/**
  * Comparator.
  * For two numerical expressions x and y, gives 1 if x > y, -1 if x < y, and 0
  * if x == y. This is useful for instance in a qsort comparator callback.
