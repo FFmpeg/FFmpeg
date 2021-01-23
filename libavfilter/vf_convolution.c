@@ -159,6 +159,55 @@ static void filter16_sobel(uint8_t *dstp, int width,
     }
 }
 
+static void filter16_kirsch(uint8_t *dstp, int width,
+                            float scale, float delta, const int *const matrix,
+                            const uint8_t *c[], int peak, int radius,
+                            int dstride, int stride)
+{
+    uint16_t *dst = (uint16_t *)dstp;
+    const uint16_t *c0 = (const uint16_t *)c[0], *c1 = (const uint16_t *)c[1], *c2 = (const uint16_t *)c[2];
+    const uint16_t *c3 = (const uint16_t *)c[3], *c5 = (const uint16_t *)c[5];
+    const uint16_t *c6 = (const uint16_t *)c[6], *c7 = (const uint16_t *)c[7], *c8 = (const uint16_t *)c[8];
+    int x;
+
+    for (x = 0; x < width; x++) {
+        int sum0 = c0[x] *  5 + c1[x] *  5 + c2[x] *  5 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] * -3;
+        int sum1 = c0[x] * -3 + c1[x] *  5 + c2[x] *  5 +
+                   c3[x] *  5 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] * -3;
+        int sum2 = c0[x] * -3 + c1[x] * -3 + c2[x] *  5 +
+                   c3[x] *  5 + c5[x] *  5 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] * -3;
+        int sum3 = c0[x] * -3 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] *  5 + c5[x] *  5 +
+                   c6[x] *  5 + c7[x] * -3 + c8[x] * -3;
+        int sum4 = c0[x] * -3 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] *  5 +
+                   c6[x] *  5 + c7[x] *  5 + c8[x] * -3;
+        int sum5 = c0[x] * -3 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] *  5 + c7[x] *  5 + c8[x] *  5;
+        int sum6 = c0[x] *  5 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] *  5 + c8[x] *  5;
+        int sum7 = c0[x] *  5 + c1[x] *  5 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] *  5;
+
+        sum0 = FFMAX(sum0, sum1);
+        sum2 = FFMAX(sum2, sum3);
+        sum4 = FFMAX(sum4, sum5);
+        sum6 = FFMAX(sum6, sum7);
+        sum0 = FFMAX(sum0, sum2);
+        sum4 = FFMAX(sum4, sum6);
+        sum0 = FFMAX(sum0, sum4);
+
+        dst[x] = av_clip(FFABS(sum0) * scale + delta, 0, peak);
+    }
+}
+
 static void filter_prewitt(uint8_t *dst, int width,
                            float scale, float delta, const int *const matrix,
                            const uint8_t *c[], int peak, int radius,
@@ -211,6 +260,54 @@ static void filter_sobel(uint8_t *dst, int width,
                      c5[x] *  2 + c6[x] * -1 + c8[x] *  1;
 
         dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
+    }
+}
+
+static void filter_kirsch(uint8_t *dst, int width,
+                          float scale, float delta, const int *const matrix,
+                          const uint8_t *c[], int peak, int radius,
+                          int dstride, int stride)
+{
+    const uint8_t *c0 = c[0], *c1 = c[1], *c2 = c[2];
+    const uint8_t *c3 = c[3], *c5 = c[5];
+    const uint8_t *c6 = c[6], *c7 = c[7], *c8 = c[8];
+    int x;
+
+    for (x = 0; x < width; x++) {
+        int sum0 = c0[x] *  5 + c1[x] *  5 + c2[x] *  5 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] * -3;
+        int sum1 = c0[x] * -3 + c1[x] *  5 + c2[x] *  5 +
+                   c3[x] *  5 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] * -3;
+        int sum2 = c0[x] * -3 + c1[x] * -3 + c2[x] *  5 +
+                   c3[x] *  5 + c5[x] *  5 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] * -3;
+        int sum3 = c0[x] * -3 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] *  5 + c5[x] *  5 +
+                   c6[x] *  5 + c7[x] * -3 + c8[x] * -3;
+        int sum4 = c0[x] * -3 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] *  5 +
+                   c6[x] *  5 + c7[x] *  5 + c8[x] * -3;
+        int sum5 = c0[x] * -3 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] *  5 + c7[x] *  5 + c8[x] *  5;
+        int sum6 = c0[x] *  5 + c1[x] * -3 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] *  5 + c8[x] *  5;
+        int sum7 = c0[x] *  5 + c1[x] *  5 + c2[x] * -3 +
+                   c3[x] * -3 + c5[x] * -3 +
+                   c6[x] * -3 + c7[x] * -3 + c8[x] *  5;
+
+        sum0 = FFMAX(sum0, sum1);
+        sum2 = FFMAX(sum2, sum3);
+        sum4 = FFMAX(sum4, sum5);
+        sum6 = FFMAX(sum6, sum7);
+        sum0 = FFMAX(sum0, sum2);
+        sum4 = FFMAX(sum4, sum6);
+        sum0 = FFMAX(sum0, sum4);
+
+        dst[x] = av_clip_uint8(FFABS(sum0) * scale + delta);
     }
 }
 
@@ -604,6 +701,10 @@ static int config_input(AVFilterLink *inlink)
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)
                 s->filter[p] = filter16_sobel;
+    } else if (!strcmp(ctx->filter->name, "kirsch")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_kirsch;
     }
 
     return 0;
@@ -744,6 +845,17 @@ static av_cold int init(AVFilterContext *ctx)
             s->rdiv[i] = s->scale;
             s->bias[i] = s->delta;
         }
+    } else if (!strcmp(ctx->filter->name, "kirsch")) {
+        for (i = 0; i < 4; i++) {
+            if ((1 << i) & s->planes)
+                s->filter[i] = filter_kirsch;
+            else
+                s->copy[i] = 1;
+            s->size[i] = 3;
+            s->setup[i] = setup_3x3;
+            s->rdiv[i] = s->scale;
+            s->bias[i] = s->delta;
+        }
     }
 
     return 0;
@@ -864,4 +976,25 @@ AVFilter ff_vf_roberts = {
 };
 
 #endif /* CONFIG_ROBERTS_FILTER */
+
+#if CONFIG_KIRSCH_FILTER
+
+#define kirsch_options prewitt_roberts_sobel_options
+AVFILTER_DEFINE_CLASS(kirsch);
+
+AVFilter ff_vf_kirsch = {
+    .name          = "kirsch",
+    .description   = NULL_IF_CONFIG_SMALL("Apply kirsch operator."),
+    .priv_size     = sizeof(ConvolutionContext),
+    .priv_class    = &kirsch_class,
+    .init          = init,
+    .query_formats = query_formats,
+    .inputs        = convolution_inputs,
+    .outputs       = convolution_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
+};
+
+#endif /* CONFIG_KIRSCH_FILTER */
+
 #endif /* CONFIG_PREWITT_FILTER || CONFIG_ROBERTS_FILTER || CONFIG_SOBEL_FILTER */

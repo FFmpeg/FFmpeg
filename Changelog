@@ -59,6 +59,7 @@ version <next>:
 - epx filter
 - Dolby E parser
 - shear filter
+- kirsch filter
 
 
 version 4.3:

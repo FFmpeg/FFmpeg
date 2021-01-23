@@ -283,6 +283,7 @@ extern AVFilter ff_vf_inflate;
 extern AVFilter ff_vf_interlace;
 extern AVFilter ff_vf_interleave;
 extern AVFilter ff_vf_kerndeint;
+extern AVFilter ff_vf_kirsch;
 extern AVFilter ff_vf_lagfun;
 extern AVFilter ff_vf_lenscorrection;
 extern AVFilter ff_vf_lensfun;

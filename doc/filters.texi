@@ -13400,6 +13400,27 @@ kerndeint=map=1
 @end example
 @end itemize
 
+@section kirsch
+Apply kirsch operator to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+
+@item delta
+Set value which will be added to filtered result.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section lagfun
 
 Slowly update darker pixels.
