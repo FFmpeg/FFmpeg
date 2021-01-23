@@ -1505,6 +1505,12 @@ is enabled.
 
 This option has been deprecated. Use the @code{aresample} audio filter instead.
 
+@item -adrift_threshold @var{time}
+Set the minimum difference between timestamps and audio data (in seconds) to trigger
+adding/dropping samples to make it match the timestamps. This option effectively is
+a threshold to select between hard (add/drop) and soft (squeeze/stretch) compensation.
+@code{-async} must be set to a positive value.
+
 @item -copyts
 Do not process input timestamps, but keep their values without trying
 to sanitize them. In particular, do not remove the initial start time
