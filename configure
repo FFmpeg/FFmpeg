@@ -4268,7 +4268,7 @@ case "$toolchain" in
         ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin.exe -symbols"
         ar_default="lib.exe"
-        case "$arch" in
+        case "${arch:-$arch_default}" in
         aarch64|arm64)
             as_default="armasm64.exe"
             ;;
