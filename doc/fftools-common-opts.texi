@@ -122,6 +122,9 @@ Use the @option{-protocols} option to get a list of all protocols.
 @item -version
 Show version.
 
+@item -buildconf
+Show the build configuration, one option per line.
+
 @item -formats
 Show available formats (including devices).
 
