@@ -41,6 +41,8 @@
 
 #define RESYNC_BUFFER_SIZE (1<<20)
 
+#define MAX_DEPTH 16      ///< arbitrary limit to prevent unbounded recursion
+
 typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
@@ -454,6 +456,9 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     AMFDataType amf_type;
     char str_val[1024];
     double num_val;
+
+    if (depth > MAX_DEPTH)
+        return AVERROR_PATCHWELCOME;
 
     num_val  = 0;
     ioc      = s->pb;
