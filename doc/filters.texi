@@ -17818,6 +17818,33 @@ Keep the same colorspace property (default).
 @end table
 @end table
 
+@section shear
+Apply shear transform to input video.
+
+This filter supports the following options:
+
+@table @option
+@item shx
+Shear factor in X-direction. Default value is 0.
+Allowed range is from -2 to 2.
+
+@item shy
+Shear factor in Y-direction. Default value is 0.
+Allowed range is from -2 to 2.
+
+@item fillcolor, c
+Set the color used to fill the output area not covered by the transformed
+video. For the general syntax of this option, check the
+@ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
+If the special value "none" is selected then no
+background is printed (useful for example if the background is never shown).
+
+Default value is "black".
+
+@item interp
+Set interpolation type. Can be @code{bilinear} or @code{nearest}. Default is @code{bilinear}.
+@end table
+
 @section showinfo
 
 Show a line containing various information for each input video frame.

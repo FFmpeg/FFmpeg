@@ -384,6 +384,7 @@ extern AVFilter ff_vf_setrange;
 extern AVFilter ff_vf_setsar;
 extern AVFilter ff_vf_settb;
 extern AVFilter ff_vf_sharpness_vaapi;
+extern AVFilter ff_vf_shear;
 extern AVFilter ff_vf_showinfo;
 extern AVFilter ff_vf_showpalette;
 extern AVFilter ff_vf_shuffleframes;

@@ -58,6 +58,7 @@ version <next>:
 - estdif filter
 - epx filter
 - Dolby E parser
+- shear filter
 
 
 version 4.3:
