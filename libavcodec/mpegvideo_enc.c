@@ -3881,8 +3881,8 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         for(i=1;i<64;i++){
             int j= s->idsp.idct_permutation[ff_zigzag_direct[i]];
 
-            s->intra_matrix[j] = sp5x_quant_table[5*2+0][i];
-            s->chroma_intra_matrix[j] = sp5x_quant_table[5*2+1][i];
+            s->intra_matrix[j]        = sp5x_qscale_five_quant_table[0][i];
+            s->chroma_intra_matrix[j] = sp5x_qscale_five_quant_table[1][i];
         }
         s->y_dc_scale_table= y;
         s->c_dc_scale_table= c;

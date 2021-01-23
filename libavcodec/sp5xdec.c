@@ -35,7 +35,6 @@ int ff_sp5x_process_packet(AVCodecContext *avctx, AVPacket *avpkt)
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AVBufferRef *buf_recoded;
-    const int qscale = 5;
     uint8_t *recoded;
     int i = 0, j = 0;
 
@@ -52,8 +51,8 @@ int ff_sp5x_process_packet(AVCodecContext *avctx, AVPacket *avpkt)
     recoded[j++] = 0xD8;
 
     memcpy(recoded+j, &sp5x_data_dqt[0], sizeof(sp5x_data_dqt));
-    memcpy(recoded+j+5, &sp5x_quant_table[qscale * 2], 64);
-    memcpy(recoded+j+70, &sp5x_quant_table[(qscale * 2) + 1], 64);
+    memcpy(recoded + j + 5,  &sp5x_qscale_five_quant_table[0], 64);
+    memcpy(recoded + j + 70, &sp5x_qscale_five_quant_table[1], 64);
     j += sizeof(sp5x_data_dqt);
 
     memcpy(recoded+j, &sp5x_data_dht[0], sizeof(sp5x_data_dht));
