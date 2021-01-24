@@ -590,6 +590,7 @@ typedef struct AVOutputFormat {
      * @see avdevice_list_devices() for more details.
      */
     int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
+#if LIBAVFORMAT_VERSION_MAJOR < 59
     /**
      * Initialize device capabilities submodule.
      * @see avdevice_capabilities_create() for more details.
@@ -600,6 +601,7 @@ typedef struct AVOutputFormat {
      * @see avdevice_capabilities_free() for more details.
      */
     int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
+#endif
     enum AVCodecID data_codec; /**< default data codec */
     /**
      * Initialize format. May allocate data here, and set any AVFormatContext or
@@ -769,6 +771,7 @@ typedef struct AVInputFormat {
      */
     int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
 
+#if LIBAVFORMAT_VERSION_MAJOR < 59
     /**
      * Initialize device capabilities submodule.
      * @see avdevice_capabilities_create() for more details.
@@ -780,6 +783,7 @@ typedef struct AVInputFormat {
      * @see avdevice_capabilities_free() for more details.
      */
     int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
+#endif
 } AVInputFormat;
 /**
  * @}

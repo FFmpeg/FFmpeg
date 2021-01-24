@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-02-14 - xxxxxxxxxx - lavd 58.12.100 - avdevice.h
+  Deprecated avdevice_capabilities_create() and
+  avdevice_capabilities_free().
+
 2021-02-xx - xxxxxxxxxx - lavu 56.xx.100 - common.h
   Add FFABS64U()
 
