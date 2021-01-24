@@ -2141,15 +2141,16 @@ typedef struct AVCodecContext {
      */
     int seek_preroll;
 
+#if FF_API_DEBUG_MV
     /**
-     * debug motion vectors
-     * - encoding: Set by user.
-     * - decoding: Set by user.
+     * @deprecated unused
      */
+    attribute_deprecated
     int debug_mv;
 #define FF_DEBUG_VIS_MV_P_FOR  0x00000001 //visualize forward predicted MVs of P frames
 #define FF_DEBUG_VIS_MV_B_FOR  0x00000002 //visualize forward predicted MVs of B frames
 #define FF_DEBUG_VIS_MV_B_BACK 0x00000004 //visualize backward predicted MVs of B frames
+#endif
 
     /**
      * custom intra quantization matrix
