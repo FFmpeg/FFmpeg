@@ -13440,6 +13440,9 @@ no correction. Default is 0.
 @item k2
 Coefficient of the double quadratic correction term. This value has a range [-1,1].
 0 means no correction. Default is 0.
+@item i
+Set interpolation type. Can be @code{nearest} or @code{bilinear}.
+Default is @code{nearest}.
 @end table
 
 The formula that generates the correction is:

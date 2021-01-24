@@ -41,7 +41,11 @@ typedef struct LenscorrectionCtx {
     int hsub, vsub;
     int nb_planes;
     double cx, cy, k1, k2;
+    int interpolation;
+
     int32_t *correction[4];
+
+    int (*filter_slice)(AVFilterContext *ctx, void *arg, int job, int nb_jobs);
 } LenscorrectionCtx;
 
 #define OFFSET(x) offsetof(LenscorrectionCtx, x)
@@ -51,6 +55,9 @@ static const AVOption lenscorrection_options[] = {
     { "cy", "set relative center y", OFFSET(cy), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
     { "k1", "set quadratic distortion factor", OFFSET(k1), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -1, 1, .flags=FLAGS },
     { "k2", "set double quadratic distortion factor", OFFSET(k2), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -1, 1, .flags=FLAGS },
+    { "i",  "set interpolation type", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=0}, 0, 64, .flags=FLAGS, "i" },
+    {  "nearest",  "nearest neighbour", 0,                   AV_OPT_TYPE_CONST, {.i64=0},0, 0, .flags=FLAGS, "i" },
+    {  "bilinear", "bilinear",          0,                   AV_OPT_TYPE_CONST, {.i64=1},0, 0, .flags=FLAGS, "i" },
     { NULL }
 };
 
@@ -97,6 +104,62 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     return 0;
 }
 
+static int filter_slice_bilinear(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+
+    const int64_t max = (1 << 24) - 1;
+    const int64_t add = (1 << 23);
+    const int w = td->w, h = td->h;
+    const int xcenter = td->xcenter;
+    const int ycenter = td->ycenter;
+    const int start = (h *  job   ) / nb_jobs;
+    const int end   = (h * (job+1)) / nb_jobs;
+    const int plane = td->plane;
+    const int inlinesize = in->linesize[plane];
+    const int outlinesize = out->linesize[plane];
+    const uint8_t *indata = in->data[plane];
+    uint8_t *outrow = out->data[plane] + start * outlinesize;
+
+    for (int i = start; i < end; i++, outrow += outlinesize) {
+        const int off_y = i - ycenter;
+        uint8_t *out = outrow;
+
+        for (int j = 0; j < w; j++) {
+            const int off_x = j - xcenter;
+            const int64_t radius_mult = td->correction[j + i*w];
+            const int x = xcenter + ((radius_mult * off_x + (1<<23)) >> 24);
+            const int y = ycenter + ((radius_mult * off_y + (1<<23)) >> 24);
+            const char isvalid = x >= 0 && x <= w - 1 && y >= 0 && y <= h - 1;
+
+            if (isvalid) {
+                const int nx = FFMIN(x + 1, w - 1);
+                const int ny = FFMIN(y + 1, h - 1);
+                const int64_t du = off_x >= 0 ? (radius_mult * off_x + add) & max : max - ((radius_mult * -off_x + add) & max);
+                const int64_t dv = off_y >= 0 ? (radius_mult * off_y + add) & max : max - ((radius_mult * -off_y + add) & max);
+                const int64_t p0 = indata[ y * inlinesize +  x];
+                const int64_t p1 = indata[ y * inlinesize + nx];
+                const int64_t p2 = indata[ny * inlinesize +  x];
+                const int64_t p3 = indata[ny * inlinesize + nx];
+                int64_t sum = 0;
+
+                sum += (max - du) * (max - dv) * p0;
+                sum += (      du) * (max - dv) * p1;
+                sum += (max - du) * (      dv) * p2;
+                sum += (      du) * (      dv) * p3;
+
+                out[j] = av_clip_uint8((sum + (1LL << 47)) >> 48);
+            } else {
+                out[j] = 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
@@ -135,6 +198,9 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = rect->width = inlink->w;
     outlink->h = rect->height = inlink->h;
     rect->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    rect->filter_slice = filter_slice;
+    if (rect->interpolation)
+        rect->filter_slice = filter_slice_bilinear;
     return 0;
 }
 
@@ -192,7 +258,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         td.correction = rect->correction[plane];
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
+        ctx->internal->execute(ctx, rect->filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
 
     av_frame_free(&in);
