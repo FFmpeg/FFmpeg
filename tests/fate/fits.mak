@@ -5,6 +5,7 @@ tests/data/fits-multi.fits: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
         -y $(TARGET_PATH)/$(@) 2>/dev/null
 
 #mapping of fits file formats to png filenames
+# TODO: Use an actual 64bit input file and fix the gbrp16 test on big-endian
 map.tests/data/lena-gray.fits    := gray8
 map.tests/data/lena-gbrp.fits    := rgb24
 map.tests/data/lena-gbrp16.fits  := rgb48
