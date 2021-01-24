@@ -637,7 +637,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 width, 1, in_scale);
 
         for (int y = 0; y < slice_end - slice_start; y += 2) {
-            if (s->prescreen > 0)
+            if (s->pscrn > 0)
                 s->prescreen[s->pscrn > 1](ctx, srcbuf + (y / 2) * srcbuf_stride + 32,
                              srcbuf_stride, prescreen_buf, width,
                              &s->prescreener[s->pscrn - 1]);
@@ -649,7 +649,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                       prescreen_buf, width,
                       &s->coeffs[s->etype][s->nnsparam][s->nsize], s->qual == 2);
 
-            if (s->prescreen > 0)
+            if (s->pscrn > 0)
                 interpolation(srcbuf + (y / 2) * srcbuf_stride + 32,
                               srcbuf_stride,
                               dstbuf + (y / 2) * dstbuf_stride,
