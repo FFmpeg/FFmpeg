@@ -106,7 +106,7 @@ tests/data/hls_fmp4_ac3.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(TARGET_PATH)/tests/data/hls_fmp4_ac3.m3u8 2>/dev/null
 
 FATE_HLSENC-$(call ALLYES, HLS_DEMUXER EAC3_DEMUXER) += fate-hls-fmp4_ac3
-fate-hls-fmp4_ac3: tests/data/hls_fmp4_ac3.m3u8
+fate-hls-fmp4_ac3: ffprobe$(PROGSSUF)$(EXESUF) tests/data/hls_fmp4_ac3.m3u8
 fate-hls-fmp4_ac3: CMD = probeaudiostream $(TARGET_PATH)/tests/data/now_ac3.mp4
 
 FATE_SAMPLES_FFMPEG += $(FATE_HLSENC-yes)
