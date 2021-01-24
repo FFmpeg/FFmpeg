@@ -4032,11 +4032,7 @@ static int check_keyboard_interaction(int64_t cur_time)
         if(key == 'D') {
             debug = input_streams[0]->dec_ctx->debug << 1;
             if(!debug) debug = 1;
-            while(debug & (FF_DEBUG_DCT_COEFF
-#if FF_API_DEBUG_MV
-                                             |FF_DEBUG_VIS_QP|FF_DEBUG_VIS_MB_TYPE
-#endif
-                                                                                  )) //unsupported, would just crash
+            while (debug & FF_DEBUG_DCT_COEFF) //unsupported, would just crash
                 debug += debug;
         }else{
             char buf[32];

@@ -203,9 +203,6 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
     }
 
     if (out_format == FMT_H263 || encoding ||
-#if FF_API_DEBUG_MV
-        avctx->debug_mv ||
-#endif
         (avctx->export_side_data & AV_CODEC_EXPORT_DATA_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
