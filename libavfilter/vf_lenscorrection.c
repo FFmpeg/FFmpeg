@@ -292,5 +292,5 @@ AVFilter ff_vf_lenscorrection = {
     .outputs       = lenscorrection_outputs,
     .priv_class    = &lenscorrection_class,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
