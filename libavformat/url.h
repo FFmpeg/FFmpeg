@@ -87,8 +87,8 @@ typedef struct URLProtocol {
                                      int *numhandles);
     int (*url_get_short_seek)(URLContext *h);
     int (*url_shutdown)(URLContext *h, int flags);
-    int priv_data_size;
     const AVClass *priv_data_class;
+    int priv_data_size;
     int flags;
     int (*url_check)(URLContext *h, int mask);
     int (*url_open_dir)(URLContext *h);
