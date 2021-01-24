@@ -44,12 +44,13 @@ typedef struct LenscorrectionCtx {
     int32_t *correction[4];
 } LenscorrectionCtx;
 
+#define OFFSET(x) offsetof(LenscorrectionCtx, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption lenscorrection_options[] = {
-    { "cx",     "set relative center x", offsetof(LenscorrectionCtx, cx), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
-    { "cy",     "set relative center y", offsetof(LenscorrectionCtx, cy), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
-    { "k1",     "set quadratic distortion factor", offsetof(LenscorrectionCtx, k1), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -1, 1, .flags=FLAGS },
-    { "k2",     "set double quadratic distortion factor", offsetof(LenscorrectionCtx, k2), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -1, 1, .flags=FLAGS },
+    { "cx", "set relative center x", OFFSET(cx), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
+    { "cy", "set relative center y", OFFSET(cy), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
+    { "k1", "set quadratic distortion factor", OFFSET(k1), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -1, 1, .flags=FLAGS },
+    { "k2", "set double quadratic distortion factor", OFFSET(k2), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -1, 1, .flags=FLAGS },
     { NULL }
 };
 
