@@ -39,6 +39,7 @@ typedef struct LenscorrectionCtx {
     int width;
     int height;
     int hsub, vsub;
+    int depth;
     int nb_planes;
     double cx, cy, k1, k2;
     int interpolation;
@@ -66,113 +67,137 @@ AVFILTER_DEFINE_CLASS(lenscorrection);
 typedef struct ThreadData {
     AVFrame *in, *out;
     int w, h;
+    int depth;
     int plane;
     int xcenter, ycenter;
     int32_t *correction;
 } ThreadData;
 
-static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
-{
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-
-    const int w = td->w, h = td->h;
-    const int xcenter = td->xcenter;
-    const int ycenter = td->ycenter;
-    const int start = (h *  job   ) / nb_jobs;
-    const int end   = (h * (job+1)) / nb_jobs;
-    const int plane = td->plane;
-    const int inlinesize = in->linesize[plane];
-    const int outlinesize = out->linesize[plane];
-    const uint8_t *indata = in->data[plane];
-    uint8_t *outrow = out->data[plane] + start * outlinesize;
-    int i;
-    for (i = start; i < end; i++, outrow += outlinesize) {
-        const int off_y = i - ycenter;
-        uint8_t *out = outrow;
-        int j;
-        for (j = 0; j < w; j++) {
-            const int off_x = j - xcenter;
-            const int64_t radius_mult = td->correction[j + i*w];
-            const int x = xcenter + ((radius_mult * off_x + (1<<23))>>24);
-            const int y = ycenter + ((radius_mult * off_y + (1<<23))>>24);
-            const char isvalid = x >= 0 && x < w && y >= 0 && y < h;
-            *out++ =  isvalid ? indata[y * inlinesize + x] : 0;
-        }
-    }
-    return 0;
+#define NEAREST(type, name)                                                    \
+static int filter##name##_slice(AVFilterContext *ctx, void *arg, int job,      \
+                                int nb_jobs)                                   \
+{                                                                              \
+    ThreadData *td = arg;                                                      \
+    AVFrame *in = td->in;                                                      \
+    AVFrame *out = td->out;                                                    \
+                                                                               \
+    const int w = td->w, h = td->h;                                            \
+    const int xcenter = td->xcenter;                                           \
+    const int ycenter = td->ycenter;                                           \
+    const int start = (h *  job   ) / nb_jobs;                                 \
+    const int end   = (h * (job+1)) / nb_jobs;                                 \
+    const int plane = td->plane;                                               \
+    const int inlinesize = in->linesize[plane] / sizeof(type);                 \
+    const int outlinesize = out->linesize[plane] / sizeof(type);               \
+    const type *indata = (const type *)in->data[plane];                        \
+    type *outrow = (type *)out->data[plane] + start * outlinesize;             \
+    for (int i = start; i < end; i++, outrow += outlinesize) {                 \
+        const int off_y = i - ycenter;                                         \
+        type *out = outrow;                                                    \
+        for (int j = 0; j < w; j++) {                                          \
+            const int off_x = j - xcenter;                                     \
+            const int64_t radius_mult = td->correction[j + i*w];               \
+            const int x = xcenter + ((radius_mult * off_x + (1<<23))>>24);     \
+            const int y = ycenter + ((radius_mult * off_y + (1<<23))>>24);     \
+            const char isvalid = x >= 0 && x < w && y >= 0 && y < h;           \
+            *out++ =  isvalid ? indata[y * inlinesize + x] : 0;                \
+        }                                                                      \
+    }                                                                          \
+    return 0;                                                                  \
 }
 
-static int filter_slice_bilinear(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
-{
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
 
-    const int64_t max = (1 << 24) - 1;
-    const int64_t add = (1 << 23);
-    const int w = td->w, h = td->h;
-    const int xcenter = td->xcenter;
-    const int ycenter = td->ycenter;
-    const int start = (h *  job   ) / nb_jobs;
-    const int end   = (h * (job+1)) / nb_jobs;
-    const int plane = td->plane;
-    const int inlinesize = in->linesize[plane];
-    const int outlinesize = out->linesize[plane];
-    const uint8_t *indata = in->data[plane];
-    uint8_t *outrow = out->data[plane] + start * outlinesize;
+NEAREST(uint8_t, 8)
+NEAREST(uint16_t, 16)
 
-    for (int i = start; i < end; i++, outrow += outlinesize) {
-        const int off_y = i - ycenter;
-        uint8_t *out = outrow;
-
-        for (int j = 0; j < w; j++) {
-            const int off_x = j - xcenter;
-            const int64_t radius_mult = td->correction[j + i*w];
-            const int x = xcenter + ((radius_mult * off_x + (1<<23)) >> 24);
-            const int y = ycenter + ((radius_mult * off_y + (1<<23)) >> 24);
-            const char isvalid = x >= 0 && x <= w - 1 && y >= 0 && y <= h - 1;
-
-            if (isvalid) {
-                const int nx = FFMIN(x + 1, w - 1);
-                const int ny = FFMIN(y + 1, h - 1);
-                const int64_t du = off_x >= 0 ? (radius_mult * off_x + add) & max : max - ((radius_mult * -off_x + add) & max);
-                const int64_t dv = off_y >= 0 ? (radius_mult * off_y + add) & max : max - ((radius_mult * -off_y + add) & max);
-                const int64_t p0 = indata[ y * inlinesize +  x];
-                const int64_t p1 = indata[ y * inlinesize + nx];
-                const int64_t p2 = indata[ny * inlinesize +  x];
-                const int64_t p3 = indata[ny * inlinesize + nx];
-                int64_t sum = 0;
-
-                sum += (max - du) * (max - dv) * p0;
-                sum += (      du) * (max - dv) * p1;
-                sum += (max - du) * (      dv) * p2;
-                sum += (      du) * (      dv) * p3;
-
-                out[j] = av_clip_uint8((sum + (1LL << 47)) >> 48);
-            } else {
-                out[j] = 0;
-            }
-        }
-    }
-
-    return 0;
+#define BILINEAR(type, name)                                                   \
+static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
+                                         int job, int nb_jobs)                 \
+{                                                                              \
+    ThreadData *td = arg;                                                      \
+    AVFrame *in = td->in;                                                      \
+    AVFrame *out = td->out;                                                    \
+                                                                               \
+    const int depth = td->depth;                                               \
+    const uint64_t max = (1 << 24) - 1;                                        \
+    const uint64_t add = (1 << 23);                                            \
+    const int w = td->w, h = td->h;                                            \
+    const int xcenter = td->xcenter;                                           \
+    const int ycenter = td->ycenter;                                           \
+    const int start = (h *  job   ) / nb_jobs;                                 \
+    const int end   = (h * (job+1)) / nb_jobs;                                 \
+    const int plane = td->plane;                                               \
+    const int inlinesize = in->linesize[plane] / sizeof(type);                 \
+    const int outlinesize = out->linesize[plane] / sizeof(type);               \
+    const type *indata = (const type *)in->data[plane];                        \
+    type *outrow = (type *)out->data[plane] + start * outlinesize;             \
+                                                                               \
+    for (int i = start; i < end; i++, outrow += outlinesize) {                 \
+        const int off_y = i - ycenter;                                         \
+        type *out = outrow;                                                    \
+                                                                               \
+        for (int j = 0; j < w; j++) {                                          \
+            const int off_x = j - xcenter;                                     \
+            const int64_t radius_mult = td->correction[j + i*w];               \
+            const int x = xcenter + ((radius_mult * off_x + (1<<23)) >> 24);   \
+            const int y = ycenter + ((radius_mult * off_y + (1<<23)) >> 24);   \
+            const char isvalid = x >= 0 && x <= w - 1 && y >= 0 && y <= h - 1; \
+                                                                               \
+            if (isvalid) {                                                     \
+                const int nx = FFMIN(x + 1, w - 1);                            \
+                const int ny = FFMIN(y + 1, h - 1);                            \
+                const uint64_t du = off_x >= 0 ? (radius_mult * off_x + add) & max : max - ((radius_mult * -off_x + add) & max); \
+                const uint64_t dv = off_y >= 0 ? (radius_mult * off_y + add) & max : max - ((radius_mult * -off_y + add) & max); \
+                const uint64_t p0 = indata[ y * inlinesize +  x];              \
+                const uint64_t p1 = indata[ y * inlinesize + nx];              \
+                const uint64_t p2 = indata[ny * inlinesize +  x];              \
+                const uint64_t p3 = indata[ny * inlinesize + nx];              \
+                uint64_t sum = 0;                                              \
+                                                                               \
+                sum += (max - du) * (max - dv) * p0;                           \
+                sum += (      du) * (max - dv) * p1;                           \
+                sum += (max - du) * (      dv) * p2;                           \
+                sum += (      du) * (      dv) * p3;                           \
+                                                                               \
+                out[j] = av_clip_uintp2_c((sum + (1ULL << 47)) >> 48, depth);  \
+            } else {                                                           \
+                out[j] = 0;                                                    \
+            }                                                                  \
+        }                                                                      \
+    }                                                                          \
+                                                                               \
+    return 0;                                                                  \
 }
+
+BILINEAR(uint8_t, 8)
+BILINEAR(uint16_t, 16)
 
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
+        AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUVJ411P,
-        AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -197,14 +222,16 @@ static int config_props(AVFilterLink *outlink)
     LenscorrectionCtx *rect = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
+
+    rect->depth = pixdesc->comp[0].depth;
     rect->hsub = pixdesc->log2_chroma_w;
     rect->vsub = pixdesc->log2_chroma_h;
     outlink->w = rect->width = inlink->w;
     outlink->h = rect->height = inlink->h;
     rect->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    rect->filter_slice = filter_slice;
+    rect->filter_slice = rect->depth <= 8 ? filter8_slice : filter16_slice;
     if (rect->interpolation)
-        rect->filter_slice = filter_slice_bilinear;
+        rect->filter_slice = rect->depth <= 8 ? filter8_slice_bilinear : filter16_slice_bilinear;
     return 0;
 }
 
@@ -239,7 +266,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             .h  = h,
             .xcenter = xcenter,
             .ycenter = ycenter,
-            .plane = plane};
+            .plane = plane,
+            .depth = rect->depth,
+        };
 
         if (!rect->correction[plane]) {
             int i,j;
