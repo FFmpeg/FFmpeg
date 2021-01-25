@@ -8550,6 +8550,28 @@ For example to convert the input to SMPTE-240M, use the command:
 colorspace=smpte240m
 @end example
 
+@section colortemperature
+Adjust color temperature in video to simulate variations in ambient color temperature.
+
+The filter accepts the following options:
+
+@table @option
+@item temperature
+Set the temperature in Kelvin. Allowed range is from 1000 to 40000.
+Default value is 6500 K.
+
+@item mix
+Set mixing with filtered output. Allowed range is from 0 to 1.
+Default value is 1.
+
+@item pl
+Set the amount of preserving lightness. Allowed range is from 0 to 1.
+Default value is 0.
+@end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+
 @section convolution
 
 Apply convolution of 3x3, 5x5, 7x7 or horizontal/vertical up to 49 elements.

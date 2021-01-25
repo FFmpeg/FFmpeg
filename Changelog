@@ -60,6 +60,7 @@ version <next>:
 - Dolby E parser
 - shear filter
 - kirsch filter
+- colortemperature filter
 
 
 version 4.3:

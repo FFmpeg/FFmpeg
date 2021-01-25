@@ -192,6 +192,7 @@ extern AVFilter ff_vf_colorhold;
 extern AVFilter ff_vf_colorlevels;
 extern AVFilter ff_vf_colormatrix;
 extern AVFilter ff_vf_colorspace;
+extern AVFilter ff_vf_colortemperature;
 extern AVFilter ff_vf_convolution;
 extern AVFilter ff_vf_convolution_opencl;
 extern AVFilter ff_vf_convolve;
