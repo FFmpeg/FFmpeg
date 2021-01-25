@@ -40,6 +40,7 @@ OBJS = ac3_parser.o                                                     \
        d3d11va.o                                                        \
        decode.o                                                         \
        dirac.o                                                          \
+       dolby_e_parser.o                                                 \
        dv_profile.o                                                     \
        encode.o                                                         \
        imgconvert.o                                                     \
