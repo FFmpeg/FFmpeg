@@ -57,6 +57,7 @@ version <next>:
 - tmidequalizer filter
 - estdif filter
 - epx filter
+- Dolby E parser
 
 
 version 4.3:

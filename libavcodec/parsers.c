@@ -36,6 +36,7 @@ extern AVCodecParser ff_cook_parser;
 extern AVCodecParser ff_dca_parser;
 extern AVCodecParser ff_dirac_parser;
 extern AVCodecParser ff_dnxhd_parser;
+extern AVCodecParser ff_dolby_e_parser;
 extern AVCodecParser ff_dpx_parser;
 extern AVCodecParser ff_dvaudio_parser;
 extern AVCodecParser ff_dvbsub_parser;

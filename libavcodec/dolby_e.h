@@ -75,16 +75,27 @@ typedef struct DBEChannel {
 } DBEChannel;
 
 typedef struct DBEContext {
-    AVCodecContext  *avctx;
+    void        *avctx;
     GetBitContext   gb;
 
-    uint8_t     *input;
+    const uint8_t *input;
     int         input_size;
 
     int         word_bits;
     int         word_bytes;
     int         key_present;
 
+    uint8_t     buffer[1024 * 3 + AV_INPUT_BUFFER_PADDING_SIZE];
+} DBEContext;
+
+/**
+ * @struct DolbyEHeaderInfo
+ * Coded Dolby E header values up to end_gain element, plus derived values.
+ */
+typedef struct DolbyEHeaderInfo {
+    /** @name Coded elements
+     * @{
+     */
     int         prog_conf;
     int         nb_channels;
     int         nb_programs;
@@ -99,8 +110,27 @@ typedef struct DBEContext {
     int         rev_id[MAX_CHANNELS];
     int         begin_gain[MAX_CHANNELS];
     int         end_gain[MAX_CHANNELS];
+    /** @} */
 
+    /** @name Derived values
+     * @{
+     */
     int         multi_prog_warned;
+    /** @} */
+} DolbyEHeaderInfo;
+
+typedef struct DBEParseContext {
+    ParseContext pc;
+    DBEContext dectx;
+
+    DolbyEHeaderInfo metadata;
+} DBEParseContext;
+
+typedef struct DBEDecodeContext {
+    AVCodecContext  *avctx;
+    DBEContext  dectx;
+
+    DolbyEHeaderInfo metadata;
 
     DBEChannel  channels[MAX_SEGMENTS][MAX_CHANNELS];
 
@@ -108,9 +138,7 @@ typedef struct DBEContext {
 
     FFTContext          imdct[3];
     AVFloatDSPContext   *fdsp;
-
-    uint8_t     buffer[1024 * 3 + AV_INPUT_BUFFER_PADDING_SIZE];
-} DBEContext;
+} DBEDecodeContext;
 
 static const uint8_t nb_programs_tab[MAX_PROG_CONF + 1] = {
     2, 3, 2, 3, 4, 5, 4, 5, 6, 7, 8, 1, 2, 3, 3, 4, 5, 6, 1, 2, 3, 4, 1, 1

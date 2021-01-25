@@ -26,13 +26,15 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
+#include "parser.h"
 #include "dolby_e.h"
 #include "fft.h"
 
 static int skip_input(DBEContext *s, int nb_words)
 {
     if (nb_words > s->input_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -44,7 +46,7 @@ static int skip_input(DBEContext *s, int nb_words)
 static int parse_key(DBEContext *s)
 {
     if (s->key_present) {
-        uint8_t *key = s->input;
+        const uint8_t *key = s->input;
         int      ret = skip_input(s, 1);
         if (ret < 0)
             return ret;
@@ -55,7 +57,7 @@ static int parse_key(DBEContext *s)
 
 static int convert_input(DBEContext *s, int nb_words, int key)
 {
-    uint8_t *src = s->input;
+    const uint8_t *src = s->input;
     uint8_t *dst = s->buffer;
     PutBitContext pb;
     int i;
@@ -63,7 +65,8 @@ static int convert_input(DBEContext *s, int nb_words, int key)
     av_assert0(nb_words <= 1024u);
 
     if (nb_words > s->input_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -89,7 +92,7 @@ static int convert_input(DBEContext *s, int nb_words, int key)
     return init_get_bits(&s->gb, s->buffer, nb_words * s->word_bits);
 }
 
-static int parse_metadata(DBEContext *s)
+static int parse_metadata(DBEContext *s, DolbyEHeaderInfo *hdr)
 {
     int i, ret, key, mtd_size;
 
@@ -101,7 +104,8 @@ static int parse_metadata(DBEContext *s)
     skip_bits(&s->gb, 4);
     mtd_size = get_bits(&s->gb, 10);
     if (!mtd_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid metadata size\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid metadata size\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -109,49 +113,53 @@ static int parse_metadata(DBEContext *s)
         return ret;
 
     skip_bits(&s->gb, 14);
-    s->prog_conf = get_bits(&s->gb, 6);
-    if (s->prog_conf > MAX_PROG_CONF) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid program configuration\n");
+    hdr->prog_conf = get_bits(&s->gb, 6);
+    if (hdr->prog_conf > MAX_PROG_CONF) {
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid program configuration\n");
         return AVERROR_INVALIDDATA;
     }
 
-    s->nb_channels = nb_channels_tab[s->prog_conf];
-    s->nb_programs = nb_programs_tab[s->prog_conf];
+    hdr->nb_channels = nb_channels_tab[hdr->prog_conf];
+    hdr->nb_programs = nb_programs_tab[hdr->prog_conf];
 
-    s->fr_code      = get_bits(&s->gb, 4);
-    s->fr_code_orig = get_bits(&s->gb, 4);
-    if (!sample_rate_tab[s->fr_code] ||
-        !sample_rate_tab[s->fr_code_orig]) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid frame rate code\n");
+    hdr->fr_code      = get_bits(&s->gb, 4);
+    hdr->fr_code_orig = get_bits(&s->gb, 4);
+    if (!sample_rate_tab[hdr->fr_code] ||
+        !sample_rate_tab[hdr->fr_code_orig]) {
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid frame rate code\n");
         return AVERROR_INVALIDDATA;
     }
 
     skip_bits_long(&s->gb, 88);
-    for (i = 0; i < s->nb_channels; i++)
-        s->ch_size[i] = get_bits(&s->gb, 10);
-    s->mtd_ext_size = get_bits(&s->gb, 8);
-    s->meter_size   = get_bits(&s->gb, 8);
+    for (i = 0; i < hdr->nb_channels; i++)
+        hdr->ch_size[i] = get_bits(&s->gb, 10);
+    hdr->mtd_ext_size = get_bits(&s->gb, 8);
+    hdr->meter_size   = get_bits(&s->gb, 8);
 
-    skip_bits_long(&s->gb, 10 * s->nb_programs);
-    for (i = 0; i < s->nb_channels; i++) {
-        s->rev_id[i]     = get_bits(&s->gb,  4);
+    skip_bits_long(&s->gb, 10 * hdr->nb_programs);
+    for (i = 0; i < hdr->nb_channels; i++) {
+        hdr->rev_id[i]     = get_bits(&s->gb,  4);
         skip_bits1(&s->gb);
-        s->begin_gain[i] = get_bits(&s->gb, 10);
-        s->end_gain[i]   = get_bits(&s->gb, 10);
+        hdr->begin_gain[i] = get_bits(&s->gb, 10);
+        hdr->end_gain[i]   = get_bits(&s->gb, 10);
     }
 
     if (get_bits_left(&s->gb) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Read past end of metadata\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Read past end of metadata\n");
         return AVERROR_INVALIDDATA;
     }
 
     return skip_input(s, mtd_size + 1);
 }
 
-static int parse_metadata_ext(DBEContext *s)
+static int parse_metadata_ext(DBEDecodeContext *s1)
 {
-    if (s->mtd_ext_size)
-        return skip_input(s, s->key_present + s->mtd_ext_size + 1);
+    DBEContext *s = &s1->dectx;
+    if (s1->metadata.mtd_ext_size)
+        return skip_input(s, s->key_present + s1->metadata.mtd_ext_size + 1);
     return 0;
 }
 
@@ -279,8 +287,9 @@ static void bit_allocate(int nb_exponent, int nb_code, int fr_code,
     }
 }
 
-static int parse_bit_alloc(DBEContext *s, DBEChannel *c)
+static int parse_bit_alloc(DBEDecodeContext *s1, DBEChannel *c)
 {
+    DBEContext *s = &s1->dectx;
     DBEGroup *p, *g;
     int bap_strategy[MAX_GROUPS], fg_spc[MAX_GROUPS];
     int fg_ofs[MAX_GROUPS], msk_mod[MAX_GROUPS];
@@ -312,7 +321,7 @@ static int parse_bit_alloc(DBEContext *s, DBEChannel *c)
 
     for (i = 0, p = NULL, g = c->groups; i < c->nb_groups; i++, p = g, g++) {
         if (c->exp_strategy[i] || bap_strategy[i]) {
-            bit_allocate(g->nb_exponent, g->imdct_idx, s->fr_code,
+            bit_allocate(g->nb_exponent, g->imdct_idx, s1->metadata.fr_code,
                          c->exponents + g->exp_ofs, c->bap + g->exp_ofs,
                          fg_spc[i], fg_ofs[i], msk_mod[i], snr_ofs);
         } else {
@@ -412,17 +421,18 @@ static int parse_mantissas(DBEContext *s, DBEChannel *c)
     return 0;
 }
 
-static int parse_channel(DBEContext *s, int ch, int seg_id)
+static int parse_channel(DBEDecodeContext *s1, int ch, int seg_id)
 {
-    DBEChannel *c = &s->channels[seg_id][ch];
+    DBEContext *s = &s1->dectx;
+    DBEChannel *c = &s1->channels[seg_id][ch];
     int i, ret;
 
-    if (s->rev_id[ch] > 1) {
-        avpriv_report_missing_feature(s->avctx, "Encoder revision %d", s->rev_id[ch]);
+    if (s1->metadata.rev_id[ch] > 1) {
+        avpriv_report_missing_feature(s->avctx, "Encoder revision %d", s1->metadata.rev_id[ch]);
         return AVERROR_PATCHWELCOME;
     }
 
-    if (ch == lfe_channel_tab[s->prog_conf]) {
+    if (ch == lfe_channel_tab[s1->metadata.prog_conf]) {
         c->gr_code = 3;
         c->bw_code = 29;
     } else {
@@ -447,7 +457,7 @@ static int parse_channel(DBEContext *s, int ch, int seg_id)
 
     if ((ret = parse_exponents(s, c)) < 0)
         return ret;
-    if ((ret = parse_bit_alloc(s, c)) < 0)
+    if ((ret = parse_bit_alloc(s1, c)) < 0)
         return ret;
     if ((ret = parse_indices(s, c)) < 0)
         return ret;
@@ -462,42 +472,44 @@ static int parse_channel(DBEContext *s, int ch, int seg_id)
     return 0;
 }
 
-static int parse_audio(DBEContext *s, int start, int end, int seg_id)
+static int parse_audio(DBEDecodeContext *s1, int start, int end, int seg_id)
 {
+    DBEContext *s = &s1->dectx;
     int ch, ret, key;
 
     if ((key = parse_key(s)) < 0)
         return key;
 
     for (ch = start; ch < end; ch++) {
-        if (!s->ch_size[ch]) {
-            s->channels[seg_id][ch].nb_groups = 0;
+        if (!s1->metadata.ch_size[ch]) {
+            s1->channels[seg_id][ch].nb_groups = 0;
             continue;
         }
-        if ((ret = convert_input(s, s->ch_size[ch], key)) < 0)
+        if ((ret = convert_input(s, s1->metadata.ch_size[ch], key)) < 0)
             return ret;
-        if ((ret = parse_channel(s, ch, seg_id)) < 0) {
-            if (s->avctx->err_recognition & AV_EF_EXPLODE)
+        if ((ret = parse_channel(s1, ch, seg_id)) < 0) {
+            if (s1->avctx->err_recognition & AV_EF_EXPLODE)
                 return ret;
-            s->channels[seg_id][ch].nb_groups = 0;
+            s1->channels[seg_id][ch].nb_groups = 0;
         }
-        if ((ret = skip_input(s, s->ch_size[ch])) < 0)
+        if ((ret = skip_input(s, s1->metadata.ch_size[ch])) < 0)
             return ret;
     }
 
     return skip_input(s, 1);
 }
 
-static int parse_meter(DBEContext *s)
+static int parse_meter(DBEDecodeContext *s1)
 {
-    if (s->meter_size)
-        return skip_input(s, s->key_present + s->meter_size + 1);
+    DBEContext *s = &s1->dectx;
+    if (s1->metadata.meter_size)
+        return skip_input(s, s->key_present + s1->metadata.meter_size + 1);
     return 0;
 }
 
-static void imdct_calc(DBEContext *s, DBEGroup *g, float *result, float *values)
+static void imdct_calc(DBEDecodeContext *s1, DBEGroup *g, float *result, float *values)
 {
-    FFTContext *imdct = &s->imdct[g->imdct_idx];
+    FFTContext *imdct = &s1->imdct[g->imdct_idx];
     int n   = 1 << imdct_bits_tab[g->imdct_idx];
     int n2  = n >> 1;
     int i;
@@ -521,7 +533,7 @@ static void imdct_calc(DBEContext *s, DBEGroup *g, float *result, float *values)
     }
 }
 
-static void transform(DBEContext *s, DBEChannel *c, float *history, float *output)
+static void transform(DBEDecodeContext *s1, DBEChannel *c, float *history, float *output)
 {
     LOCAL_ALIGNED_32(float, buffer, [2048]);
     LOCAL_ALIGNED_32(float, result, [1152]);
@@ -534,8 +546,8 @@ static void transform(DBEContext *s, DBEChannel *c, float *history, float *outpu
         float *dst = result + g->dst_ofs;
         float *win = window + g->win_ofs;
 
-        imdct_calc(s, g, buffer, c->mantissas + g->mnt_ofs);
-        s->fdsp->vector_fmul_add(dst, src, win, dst, g->win_len);
+        imdct_calc(s1, g, buffer, c->mantissas + g->mnt_ofs);
+        s1->fdsp->vector_fmul_add(dst, src, win, dst, g->win_len);
     }
 
     for (i = 0; i < 256; i++)
@@ -546,7 +558,7 @@ static void transform(DBEContext *s, DBEChannel *c, float *history, float *outpu
         history[i] = result[896 + i];
 }
 
-static void apply_gain(DBEContext *s, int begin, int end, float *output)
+static void apply_gain(DBEDecodeContext *s, int begin, int end, float *output)
 {
     if (begin == 960 && end == 960)
         return;
@@ -563,16 +575,16 @@ static void apply_gain(DBEContext *s, int begin, int end, float *output)
     }
 }
 
-static int filter_frame(DBEContext *s, AVFrame *frame)
+static int filter_frame(DBEDecodeContext *s, AVFrame *frame)
 {
     const uint8_t *reorder;
     int ch, ret;
 
-    if (s->nb_channels == 4)
+    if (s->metadata.nb_channels == 4)
         reorder = ch_reorder_4;
-    else if (s->nb_channels == 6)
+    else if (s->metadata.nb_channels == 6)
         reorder = ch_reorder_6;
-    else if (s->nb_programs == 1 && !(s->avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE))
+    else if (s->metadata.nb_programs == 1 && !(s->avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE))
         reorder = ch_reorder_8;
     else
         reorder = ch_reorder_n;
@@ -581,26 +593,24 @@ static int filter_frame(DBEContext *s, AVFrame *frame)
     if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
 
-    for (ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->metadata.nb_channels; ch++) {
         float *output = (float *)frame->extended_data[reorder[ch]];
         transform(s, &s->channels[0][ch], s->history[ch], output);
         transform(s, &s->channels[1][ch], s->history[ch], output + FRAME_SAMPLES / 2);
-        apply_gain(s, s->begin_gain[ch], s->end_gain[ch], output);
+        apply_gain(s, s->metadata.begin_gain[ch], s->metadata.end_gain[ch], output);
     }
 
     return 0;
 }
 
-static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
-                                int *got_frame_ptr, AVPacket *avpkt)
+static int dolby_e_sync(DBEContext *s, const uint8_t *buf, int buf_size)
 {
-    DBEContext *s = avctx->priv_data;
-    int i, j, hdr, ret;
+    int hdr;
 
-    if (avpkt->size < 3)
+    if (buf_size < 3)
         return AVERROR_INVALIDDATA;
 
-    hdr = AV_RB24(avpkt->data);
+    hdr = AV_RB24(buf);
     if ((hdr & 0xfffffe) == 0x7888e) {
         s->word_bits = 24;
     } else if ((hdr & 0xffffe0) == 0x788e0) {
@@ -608,25 +618,35 @@ static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
     } else if ((hdr & 0xfffe00) == 0x78e00) {
         s->word_bits = 16;
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Invalid frame header\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid frame header\n");
         return AVERROR_INVALIDDATA;
     }
 
     s->word_bytes  = s->word_bits + 7 >> 3;
-    s->input       = avpkt->data + s->word_bytes;
-    s->input_size  = avpkt->size / s->word_bytes - 1;
+    s->input       = buf + s->word_bytes;
+    s->input_size  = buf_size / s->word_bytes - 1;
     s->key_present = hdr >> 24 - s->word_bits & 1;
 
-    if ((ret = parse_metadata(s)) < 0)
-        return ret;
+    return 0;
+}
 
-    if (s->nb_programs > 1 && !s->multi_prog_warned) {
-        av_log(avctx, AV_LOG_WARNING, "Stream has %d programs (configuration %d), "
-               "channels will be output in native order.\n", s->nb_programs, s->prog_conf);
-        s->multi_prog_warned = 1;
-    }
+static int dolby_e_parse(AVCodecParserContext *s2, AVCodecContext *avctx,
+                        const uint8_t **poutbuf, int *poutbuf_size,
+                        const uint8_t *buf, int buf_size)
+{
+    DBEParseContext *s1 = s2->priv_data;
+    DBEContext *s = &s1->dectx;
+    int ret;
 
-    switch (s->nb_channels) {
+    if ((ret = dolby_e_sync(s, buf, buf_size)) < 0)
+        goto end;
+
+    if ((ret = parse_metadata(s, &s1->metadata)) < 0)
+        goto end;
+
+    s2->duration = FRAME_SAMPLES;
+    switch (s1->metadata.nb_channels) {
     case 4:
         avctx->channel_layout = AV_CH_LAYOUT_4POINT0;
         break;
@@ -638,25 +658,68 @@ static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
 
-    avctx->channels    = s->nb_channels;
-    avctx->sample_rate = sample_rate_tab[s->fr_code];
+    avctx->channels    = s1->metadata.nb_channels;
+    avctx->sample_rate = sample_rate_tab[s1->metadata.fr_code];
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 
-    i = s->nb_channels / 2;
-    j = s->nb_channels;
-    if ((ret = parse_audio(s, 0, i, 0)) < 0)
+end:
+    /* always return the full packet. this parser isn't doing any splitting or
+       combining, only packet analysis */
+    *poutbuf      = buf;
+    *poutbuf_size = buf_size;
+    return buf_size;
+}
+
+static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
+                                int *got_frame_ptr, AVPacket *avpkt)
+{
+    DBEDecodeContext *s1 = avctx->priv_data;
+    DBEContext *s = &s1->dectx;
+    int i, j, ret;
+
+    if ((ret = dolby_e_sync(s, avpkt->data, avpkt->size)) < 0)
         return ret;
-    if ((ret = parse_audio(s, i, j, 0)) < 0)
+
+    if ((ret = parse_metadata(s, &s1->metadata)) < 0)
         return ret;
-    if ((ret = parse_metadata_ext(s)) < 0)
+
+    if (s1->metadata.nb_programs > 1 && !s1->metadata.multi_prog_warned) {
+        av_log(avctx, AV_LOG_WARNING, "Stream has %d programs (configuration %d), "
+               "channels will be output in native order.\n", s1->metadata.nb_programs, s1->metadata.prog_conf);
+        s1->metadata.multi_prog_warned = 1;
+    }
+
+    switch (s1->metadata.nb_channels) {
+    case 4:
+        avctx->channel_layout = AV_CH_LAYOUT_4POINT0;
+        break;
+    case 6:
+        avctx->channel_layout = AV_CH_LAYOUT_5POINT1;
+        break;
+    case 8:
+        avctx->channel_layout = AV_CH_LAYOUT_7POINT1;
+        break;
+    }
+
+    avctx->channels    = s1->metadata.nb_channels;
+    avctx->sample_rate = sample_rate_tab[s1->metadata.fr_code];
+    avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
+
+    i = s1->metadata.nb_channels / 2;
+    j = s1->metadata.nb_channels;
+    if ((ret = parse_audio(s1, 0, i, 0)) < 0)
         return ret;
-    if ((ret = parse_audio(s, 0, i, 1)) < 0)
+    if ((ret = parse_audio(s1, i, j, 0)) < 0)
         return ret;
-    if ((ret = parse_audio(s, i, j, 1)) < 0)
+    if ((ret = parse_metadata_ext(s1)) < 0)
         return ret;
-    if ((ret = parse_meter(s)) < 0)
+    if ((ret = parse_audio(s1, 0, i, 1)) < 0)
         return ret;
-    if ((ret = filter_frame(s, data)) < 0)
+    if ((ret = parse_audio(s1, i, j, 1)) < 0)
+        return ret;
+    if ((ret = parse_meter(s1)) < 0)
+        return ret;
+    if ((ret = filter_frame(s1, data)) < 0)
         return ret;
 
     *got_frame_ptr = 1;
@@ -665,14 +728,14 @@ static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold void dolby_e_flush(AVCodecContext *avctx)
 {
-    DBEContext *s = avctx->priv_data;
+    DBEDecodeContext *s = avctx->priv_data;
 
     memset(s->history, 0, sizeof(s->history));
 }
 
 static av_cold int dolby_e_close(AVCodecContext *avctx)
 {
-    DBEContext *s = avctx->priv_data;
+    DBEDecodeContext *s = avctx->priv_data;
     int i;
 
     for (i = 0; i < 3; i++)
@@ -772,7 +835,7 @@ static av_cold void init_tables(void)
 static av_cold int dolby_e_init(AVCodecContext *avctx)
 {
     static AVOnce init_once = AV_ONCE_INIT;
-    DBEContext *s = avctx->priv_data;
+    DBEDecodeContext *s = avctx->priv_data;
     int i;
 
     if (ff_thread_once(&init_once, init_tables))
@@ -785,17 +848,24 @@ static av_cold int dolby_e_init(AVCodecContext *avctx)
     if (!(s->fdsp = avpriv_float_dsp_alloc(0)))
         return AVERROR(ENOMEM);
 
-    s->multi_prog_warned = !!(avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE);
-    s->avctx = avctx;
+    s->metadata.multi_prog_warned = !!(avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE);
+    s->dectx.avctx = s->avctx = avctx;
     return 0;
 }
+
+AVCodecParser ff_dolby_e_parser = {
+    .codec_ids      = { AV_CODEC_ID_DOLBY_E },
+    .priv_data_size = sizeof(DBEParseContext),
+    .parser_parse   = dolby_e_parse,
+    .parser_close   = ff_parse_close,
+};
 
 AVCodec ff_dolby_e_decoder = {
     .name           = "dolby_e",
     .long_name      = NULL_IF_CONFIG_SMALL("Dolby E"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_DOLBY_E,
-    .priv_data_size = sizeof(DBEContext),
+    .priv_data_size = sizeof(DBEDecodeContext),
     .init           = dolby_e_init,
     .decode         = dolby_e_decode_frame,
     .close          = dolby_e_close,
