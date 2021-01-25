@@ -97,7 +97,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
             const int64_t radius_mult = td->correction[j + i*w];
             const int x = xcenter + ((radius_mult * off_x + (1<<23))>>24);
             const int y = ycenter + ((radius_mult * off_y + (1<<23))>>24);
-            const char isvalid = x > 0 && x < w - 1 && y > 0 && y < h - 1;
+            const char isvalid = x >= 0 && x < w && y >= 0 && y < h;
             *out++ =  isvalid ? indata[y * inlinesize + x] : 0;
         }
     }
