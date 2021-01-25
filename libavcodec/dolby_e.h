@@ -21,6 +21,7 @@
 #ifndef AVCODEC_DOLBY_E_H
 #define AVCODEC_DOLBY_E_H
 
+#include <stdint.h>
 #include "get_bits.h"
 
 #define FRAME_SAMPLES   1792
@@ -81,5 +82,23 @@ typedef struct DolbyEHeaderInfo {
 static const uint16_t sample_rate_tab[16] = {
     0, 42965, 43008, 44800, 53706, 53760
 };
+/**
+ * Initialize DBEContext.
+ * Set word_bits/word_bytes, input, input_size, key_present.
+ * @param[out] s DBEContext.
+ * @param[in]  buf raw input buffer.
+ * @param[in]  buf_size must be 3 bytes at least.
+ * @return Returns 0 on success, AVERROR_INVALIDDATA on error
+ */
+int ff_dolby_e_parse_init(DBEContext *s, const uint8_t *buf, int buf_size);
+
+/**
+ * Parse Dolby E metadata.
+ * Parse the header up to the end_gain element.
+ * @param[in]  s DBEContext .
+ * @param[out] hdr Pointer to struct where header info is written.
+ * @return Returns 0 on success, AVERROR_INVALIDDATA on error
+ */
+int ff_dolby_e_parse_header(DBEContext *s, DolbyEHeaderInfo *hdr);
 
 #endif

@@ -40,7 +40,6 @@ OBJS = ac3_parser.o                                                     \
        d3d11va.o                                                        \
        decode.o                                                         \
        dirac.o                                                          \
-       dolby_e_parser.o                                                 \
        dv_profile.o                                                     \
        encode.o                                                         \
        imgconvert.o                                                     \
@@ -286,7 +285,7 @@ OBJS-$(CONFIG_DIRAC_DECODER)           += diracdec.o dirac.o diracdsp.o diractab
 OBJS-$(CONFIG_DFA_DECODER)             += dfa.o
 OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o dnxhddata.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o
-OBJS-$(CONFIG_DOLBY_E_DECODER)         += dolby_e.o kbdwin.o
+OBJS-$(CONFIG_DOLBY_E_DECODER)         += dolby_e.o dolby_e_parse.o kbdwin.o
 OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DPX_ENCODER)             += dpxenc.o
 OBJS-$(CONFIG_DSD_LSBF_DECODER)        += dsddec.o dsd.o
@@ -1087,6 +1086,7 @@ OBJS-$(CONFIG_COOK_PARSER)             += cook_parser.o
 OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o dca_exss.o dca.o
 OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o
 OBJS-$(CONFIG_DNXHD_PARSER)            += dnxhd_parser.o dnxhddata.o
+OBJS-$(CONFIG_DOLBY_E_PARSER)          += dolby_e_parser.o dolby_e_parse.o
 OBJS-$(CONFIG_DPX_PARSER)              += dpx_parser.o
 OBJS-$(CONFIG_DVAUDIO_PARSER)          += dvaudio_parser.o
 OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o
