@@ -423,7 +423,7 @@ static void encode_slice_params(VC2EncContext *s)
 }
 
 /* 1st idx = LL, second - vertical, third - horizontal, fourth - total */
-const uint8_t vc2_qm_col_tab[][4] = {
+static const uint8_t vc2_qm_col_tab[][4] = {
     {20,  9, 15,  4},
     { 0,  6,  6,  4},
     { 0,  3,  3,  5},
@@ -431,7 +431,7 @@ const uint8_t vc2_qm_col_tab[][4] = {
     { 0, 11, 10, 11}
 };
 
-const uint8_t vc2_qm_flat_tab[][4] = {
+static const uint8_t vc2_qm_flat_tab[][4] = {
     { 0,  0,  0,  0},
     { 0,  0,  0,  0},
     { 0,  0,  0,  0},
