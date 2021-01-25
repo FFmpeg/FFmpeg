@@ -26,11 +26,13 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "drawutils.h"
 #include "internal.h"
 #include "video.h"
 
@@ -43,6 +45,8 @@ typedef struct LenscorrectionCtx {
     int nb_planes;
     double cx, cy, k1, k2;
     int interpolation;
+    uint8_t fill_rgba[4];
+    int fill_color[4];
 
     int32_t *correction[4];
 
@@ -59,6 +63,7 @@ static const AVOption lenscorrection_options[] = {
     { "i",  "set interpolation type", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=0}, 0, 64, .flags=FLAGS, "i" },
     {  "nearest",  "nearest neighbour", 0,                   AV_OPT_TYPE_CONST, {.i64=0},0, 0, .flags=FLAGS, "i" },
     {  "bilinear", "bilinear",          0,                   AV_OPT_TYPE_CONST, {.i64=1},0, 0, .flags=FLAGS, "i" },
+    { "fc", "set the color of the unmapped pixels", OFFSET(fill_rgba), AV_OPT_TYPE_COLOR, {.str="black@0"}, .flags = FLAGS },
     { NULL }
 };
 
@@ -69,6 +74,7 @@ typedef struct ThreadData {
     int w, h;
     int depth;
     int plane;
+    int fill_color;
     int xcenter, ycenter;
     int32_t *correction;
 } ThreadData;
@@ -81,6 +87,7 @@ static int filter##name##_slice(AVFilterContext *ctx, void *arg, int job,      \
     AVFrame *in = td->in;                                                      \
     AVFrame *out = td->out;                                                    \
                                                                                \
+    const int fill_color = td->fill_color;                                     \
     const int w = td->w, h = td->h;                                            \
     const int xcenter = td->xcenter;                                           \
     const int ycenter = td->ycenter;                                           \
@@ -100,7 +107,7 @@ static int filter##name##_slice(AVFilterContext *ctx, void *arg, int job,      \
             const int x = xcenter + ((radius_mult * off_x + (1<<23))>>24);     \
             const int y = ycenter + ((radius_mult * off_y + (1<<23))>>24);     \
             const char isvalid = x >= 0 && x < w && y >= 0 && y < h;           \
-            *out++ =  isvalid ? indata[y * inlinesize + x] : 0;                \
+            *out++ =  isvalid ? indata[y * inlinesize + x] : fill_color;       \
         }                                                                      \
     }                                                                          \
     return 0;                                                                  \
@@ -118,6 +125,7 @@ static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
     AVFrame *in = td->in;                                                      \
     AVFrame *out = td->out;                                                    \
                                                                                \
+    const int fill_color = td->fill_color;                                     \
     const int depth = td->depth;                                               \
     const uint64_t max = (1 << 24) - 1;                                        \
     const uint64_t add = (1 << 23);                                            \
@@ -161,7 +169,7 @@ static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
                                                                                \
                 out[j] = av_clip_uintp2_c((sum + (1ULL << 47)) >> 48, depth);  \
             } else {                                                           \
-                out[j] = 0;                                                    \
+                out[j] = fill_color;                                           \
             }                                                                  \
         }                                                                      \
     }                                                                          \
@@ -222,8 +230,13 @@ static int config_props(AVFilterLink *outlink)
     LenscorrectionCtx *rect = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
+    int is_rgb = !!(pixdesc->flags & AV_PIX_FMT_FLAG_RGB);
+    uint8_t rgba_map[4];
+    int factor;
 
+    ff_fill_rgba_map(rgba_map, inlink->format);
     rect->depth = pixdesc->comp[0].depth;
+    factor = 1 << (rect->depth - 8);
     rect->hsub = pixdesc->log2_chroma_w;
     rect->vsub = pixdesc->log2_chroma_h;
     outlink->w = rect->width = inlink->w;
@@ -232,7 +245,19 @@ static int config_props(AVFilterLink *outlink)
     rect->filter_slice = rect->depth <= 8 ? filter8_slice : filter16_slice;
     if (rect->interpolation)
         rect->filter_slice = rect->depth <= 8 ? filter8_slice_bilinear : filter16_slice_bilinear;
-    return 0;
+
+    if (is_rgb) {
+        rect->fill_color[rgba_map[0]] = rect->fill_rgba[0] * factor;
+        rect->fill_color[rgba_map[1]] = rect->fill_rgba[1] * factor;
+        rect->fill_color[rgba_map[2]] = rect->fill_rgba[2] * factor;
+        rect->fill_color[rgba_map[3]] = rect->fill_rgba[3] * factor;
+    } else {
+        rect->fill_color[0] = RGB_TO_Y_BT709(rect->fill_rgba[0], rect->fill_rgba[1], rect->fill_rgba[2]) * factor;
+        rect->fill_color[1] = RGB_TO_U_BT709(rect->fill_rgba[0], rect->fill_rgba[1], rect->fill_rgba[2], 0) * factor;
+        rect->fill_color[2] = RGB_TO_V_BT709(rect->fill_rgba[0], rect->fill_rgba[1], rect->fill_rgba[2], 0) * factor;
+        rect->fill_color[3] = rect->fill_rgba[3] * factor;
+    }
+     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -268,6 +293,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             .ycenter = ycenter,
             .plane = plane,
             .depth = rect->depth,
+            .fill_color = rect->fill_color[plane],
         };
 
         if (!rect->correction[plane]) {

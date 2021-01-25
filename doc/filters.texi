@@ -13455,6 +13455,10 @@ Coefficient of the double quadratic correction term. This value has a range [-1,
 @item i
 Set interpolation type. Can be @code{nearest} or @code{bilinear}.
 Default is @code{nearest}.
+@item fc
+Specify the color of the unmapped pixels. For the syntax of this option,
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils
+manual,ffmpeg-utils}. Default color is @code{black@@0}.
 @end table
 
 The formula that generates the correction is:
