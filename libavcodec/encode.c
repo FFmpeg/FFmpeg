@@ -356,6 +356,7 @@ int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *
     return 0;
 }
 
+#if FF_API_OLD_ENCDEC
 static int compat_encode(AVCodecContext *avctx, AVPacket *avpkt,
                          int *got_packet, const AVFrame *frame)
 {
@@ -456,3 +457,4 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     return ret;
 }
+#endif

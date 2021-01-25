@@ -221,8 +221,10 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
     if (ret < 0)
         goto finish;
 
+#if FF_API_OLD_ENCDEC
     if (avctx->codec->receive_frame)
         avci->compat_decode_consumed += pkt->size;
+#endif
 
     return 0;
 finish:
@@ -469,7 +471,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+#if FF_API_OLD_ENCDEC
     avci->compat_decode_consumed += ret;
+#endif
 
     if (ret >= pkt->size || ret < 0) {
         av_packet_unref(pkt);
@@ -693,6 +697,8 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
     return 0;
 }
 
+#if FF_API_OLD_ENCDEC
+FF_DISABLE_DEPRECATION_WARNINGS
 static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
 {
     int ret;
@@ -834,6 +840,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
 {
     return compat_decode(avctx, frame, got_frame_ptr, avpkt);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 static void get_subtitle_defaults(AVSubtitle *sub)
 {

@@ -1345,6 +1345,7 @@ typedef struct AVCodecContext {
      */
     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
 
+#if FF_API_OLD_ENCDEC
     /**
      * If non-zero, the decoded audio and video frames returned from
      * avcodec_decode_video2() and avcodec_decode_audio4() are reference-counted
@@ -1360,6 +1361,7 @@ typedef struct AVCodecContext {
      */
     attribute_deprecated
     int refcounted_frames;
+#endif
 
     /* - encoding parameters */
     float qcompress;  ///< amount of qscale change between easy & hard scenes (0.0-1.0)
@@ -2959,6 +2961,7 @@ int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos);
  */
 enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos);
 
+#if FF_API_OLD_ENCDEC
 /**
  * Decode the audio frame of size avpkt->size from avpkt->data into frame.
  *
@@ -3065,6 +3068,7 @@ attribute_deprecated
 int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          const AVPacket *avpkt);
+#endif
 
 /**
  * Decode a subtitle message.
@@ -3602,6 +3606,7 @@ void av_parser_close(AVCodecParserContext *s);
  * @{
  */
 
+#if FF_API_OLD_ENCDEC
 /**
  * Encode a frame of audio.
  *
@@ -3684,6 +3689,7 @@ int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
 attribute_deprecated
 int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
                           const AVFrame *frame, int *got_packet_ptr);
+#endif
 
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                             const AVSubtitle *sub);

@@ -441,7 +441,9 @@ static const AVOption avcodec_options[] = {
 #if FF_API_ASS_TIMING
 {"ass_with_timings", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS}, INT_MIN, INT_MAX, S|D, "sub_text_format"},
 #endif
+#if FF_API_OLD_ENCDEC
 {"refcounted_frames", NULL, OFFSET(refcounted_frames), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|V|D },
+#endif
 #if FF_API_SIDEDATA_ONLY_PKT
 {"side_data_only_packets", NULL, OFFSET(side_data_only_packets), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, A|V|E },
 #endif
