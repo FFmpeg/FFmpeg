@@ -38,8 +38,6 @@
 
 typedef struct LenscorrectionCtx {
     const AVClass *av_class;
-    int width;
-    int height;
     int planewidth[4];
     int planeheight[4];
     int depth;
@@ -262,8 +260,6 @@ static int config_output(AVFilterLink *outlink)
     rect->planeheight[0] = rect->planeheight[3] = inlink->h;
     rect->planewidth[1]  = rect->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, pixdesc->log2_chroma_w);
     rect->planewidth[0]  = rect->planewidth[3]  = inlink->w;
-    outlink->w = rect->width = inlink->w;
-    outlink->h = rect->height = inlink->h;
     rect->nb_planes = av_pix_fmt_count_planes(inlink->format);
     rect->filter_slice = rect->depth <= 8 ? filter8_slice : filter16_slice;
     if (rect->interpolation)
