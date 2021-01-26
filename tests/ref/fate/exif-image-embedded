@@ -29,12 +29,6 @@ color_transfer=unknown
 chroma_location=center
 TAG:UserComment=AppleMark
 
-[SIDE_DATA]
-side_data_type=QP table data
-[/SIDE_DATA]
-[SIDE_DATA]
-side_data_type=QP table properties
-[/SIDE_DATA]
 [/FRAME]
 [FRAME]
 media_type=audio
