@@ -1771,13 +1771,11 @@ static const uint8_t table1_mvy[1099] = {
 };
 
 MVTable ff_mv_tables[2] = {
-    { 1099,
-      table0_mv_code,
+    { table0_mv_code,
       table0_mv_bits,
       table0_mvx,
       table0_mvy, },
-    { 1099,
-      table1_mv_code,
+    { table1_mv_code,
       table1_mv_bits,
       table1_mvx,
       table1_mvy, }

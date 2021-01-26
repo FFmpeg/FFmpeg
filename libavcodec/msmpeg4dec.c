@@ -321,11 +321,11 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         memcpy(ff_rl_table[5].rl_vlc, ff_h263_rl_inter.rl_vlc, sizeof(ff_rl_table[5].rl_vlc));
 
         mv = &ff_mv_tables[0];
-        INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, mv->n + 1,
+        INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, MSMPEG4_MV_TABLES_NB_ELEMS + 1,
                     mv->table_mv_bits, 1, 1,
                     mv->table_mv_code, 2, 2, 3714);
         mv = &ff_mv_tables[1];
-        INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, mv->n + 1,
+        INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, MSMPEG4_MV_TABLES_NB_ELEMS + 1,
                     mv->table_mv_bits, 1, 1,
                     mv->table_mv_code, 2, 2, 2694);
 
@@ -836,7 +836,7 @@ void ff_msmpeg4_decode_motion(MpegEncContext *s, int *mx_ptr, int *my_ptr)
     mv = &ff_mv_tables[s->mv_table_index];
 
     code = get_vlc2(&s->gb, mv->vlc.table, MV_VLC_BITS, 2);
-    if (code == mv->n) {
+    if (code == MSMPEG4_MV_TABLES_NB_ELEMS) {
         mx = get_bits(&s->gb, 6);
         my = get_bits(&s->gb, 6);
     } else {
