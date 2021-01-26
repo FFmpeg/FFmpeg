@@ -88,9 +88,10 @@ static int convert_input(DBEContext *s, int nb_words, int key)
     return init_get_bits(&s->gb, s->buffer, nb_words * s->word_bits);
 }
 
-int ff_dolby_e_parse_init(DBEContext *s, const uint8_t *buf, int buf_size)
+int ff_dolby_e_parse_header(DBEContext *s, const uint8_t *buf, int buf_size)
 {
-    int hdr;
+    DolbyEHeaderInfo *const header = &s->metadata;
+    int hdr, ret, key, mtd_size;
 
     if (buf_size < 3)
         return AVERROR_INVALIDDATA;
@@ -113,13 +114,6 @@ int ff_dolby_e_parse_init(DBEContext *s, const uint8_t *buf, int buf_size)
     s->input_size  = buf_size / s->word_bytes - 1;
     s->key_present = hdr >> 24 - s->word_bits & 1;
 
-    return 0;
-}
-
-int ff_dolby_e_parse_header(DBEContext *s, DolbyEHeaderInfo *hdr)
-{
-    int i, ret, key, mtd_size;
-
     if ((key = parse_key(s)) < 0)
         return key;
     if ((ret = convert_input(s, 1, key)) < 0)
@@ -137,37 +131,37 @@ int ff_dolby_e_parse_header(DBEContext *s, DolbyEHeaderInfo *hdr)
         return ret;
 
     skip_bits(&s->gb, 14);
-    hdr->prog_conf = get_bits(&s->gb, 6);
-    if (hdr->prog_conf > MAX_PROG_CONF) {
+    header->prog_conf = get_bits(&s->gb, 6);
+    if (header->prog_conf > MAX_PROG_CONF) {
         if (s->avctx)
             av_log(s->avctx, AV_LOG_ERROR, "Invalid program configuration\n");
         return AVERROR_INVALIDDATA;
     }
 
-    hdr->nb_channels = nb_channels_tab[hdr->prog_conf];
-    hdr->nb_programs = nb_programs_tab[hdr->prog_conf];
+    header->nb_channels = nb_channels_tab[header->prog_conf];
+    header->nb_programs = nb_programs_tab[header->prog_conf];
 
-    hdr->fr_code      = get_bits(&s->gb, 4);
-    hdr->fr_code_orig = get_bits(&s->gb, 4);
-    if (!sample_rate_tab[hdr->fr_code] ||
-        !sample_rate_tab[hdr->fr_code_orig]) {
+    header->fr_code      = get_bits(&s->gb, 4);
+    header->fr_code_orig = get_bits(&s->gb, 4);
+    if (!sample_rate_tab[header->fr_code] ||
+        !sample_rate_tab[header->fr_code_orig]) {
         if (s->avctx)
             av_log(s->avctx, AV_LOG_ERROR, "Invalid frame rate code\n");
         return AVERROR_INVALIDDATA;
     }
 
     skip_bits_long(&s->gb, 88);
-    for (i = 0; i < hdr->nb_channels; i++)
-        hdr->ch_size[i] = get_bits(&s->gb, 10);
-    hdr->mtd_ext_size = get_bits(&s->gb, 8);
-    hdr->meter_size   = get_bits(&s->gb, 8);
+    for (int i = 0; i < header->nb_channels; i++)
+        header->ch_size[i] = get_bits(&s->gb, 10);
+    header->mtd_ext_size = get_bits(&s->gb, 8);
+    header->meter_size   = get_bits(&s->gb, 8);
 
-    skip_bits_long(&s->gb, 10 * hdr->nb_programs);
-    for (i = 0; i < hdr->nb_channels; i++) {
-        hdr->rev_id[i]     = get_bits(&s->gb,  4);
+    skip_bits_long(&s->gb, 10 * header->nb_programs);
+    for (int i = 0; i < header->nb_channels; i++) {
+        header->rev_id[i]     = get_bits(&s->gb,  4);
         skip_bits1(&s->gb);
-        hdr->begin_gain[i] = get_bits(&s->gb, 10);
-        hdr->end_gain[i]   = get_bits(&s->gb, 10);
+        header->begin_gain[i] = get_bits(&s->gb, 10);
+        header->end_gain[i]   = get_bits(&s->gb, 10);
     }
 
     if (get_bits_left(&s->gb) < 0) {

@@ -24,8 +24,6 @@
 
 typedef struct DBEParseContext {
     DBEContext dectx;
-
-    DolbyEHeaderInfo metadata;
 } DBEParseContext;
 
 static int dolby_e_parse(AVCodecParserContext *s2, AVCodecContext *avctx,
@@ -36,14 +34,11 @@ static int dolby_e_parse(AVCodecParserContext *s2, AVCodecContext *avctx,
     DBEContext *s = &s1->dectx;
     int ret;
 
-    if ((ret = ff_dolby_e_parse_init(s, buf, buf_size)) < 0)
-        goto end;
-
-    if ((ret = ff_dolby_e_parse_header(s, &s1->metadata)) < 0)
+    if ((ret = ff_dolby_e_parse_header(s, buf, buf_size)) < 0)
         goto end;
 
     s2->duration = FRAME_SAMPLES;
-    switch (s1->metadata.nb_channels) {
+    switch (s->metadata.nb_channels) {
     case 4:
         avctx->channel_layout = AV_CH_LAYOUT_4POINT0;
         break;
@@ -55,8 +50,8 @@ static int dolby_e_parse(AVCodecParserContext *s2, AVCodecContext *avctx,
         break;
     }
 
-    avctx->channels    = s1->metadata.nb_channels;
-    avctx->sample_rate = sample_rate_tab[s1->metadata.fr_code];
+    avctx->channels    = s->metadata.nb_channels;
+    avctx->sample_rate = sample_rate_tab[s->metadata.fr_code];
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 
 end:
