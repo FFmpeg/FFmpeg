@@ -29,7 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "filters.h"
-#include "dnn_interface.h"
+#include "dnn_filter_common.h"
 #include "formats.h"
 #include "internal.h"
 #include "libswscale/swscale.h"
@@ -37,22 +37,12 @@
 
 typedef struct DnnProcessingContext {
     const AVClass *class;
-
-    char *model_filename;
-    DNNBackendType backend_type;
-    char *model_inputname;
-    char *model_outputname;
-    char *backend_options;
-    int async;
-
-    DNNModule *dnn_module;
-    DNNModel *model;
-
+    DnnContext dnnctx;
     struct SwsContext *sws_uv_scale;
     int sws_uv_height;
 } DnnProcessingContext;
 
-#define OFFSET(x) offsetof(DnnProcessingContext, x)
+#define OFFSET(x) offsetof(DnnProcessingContext, dnnctx.x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption dnn_processing_options[] = {
     { "dnn_backend", "DNN backend",                OFFSET(backend_type),     AV_OPT_TYPE_INT,       { .i64 = 0 },    INT_MIN, INT_MAX, FLAGS, "backend" },
@@ -63,11 +53,7 @@ static const AVOption dnn_processing_options[] = {
 #if (CONFIG_LIBOPENVINO == 1)
     { "openvino",    "openvino backend flag",      0,                        AV_OPT_TYPE_CONST,     { .i64 = 2 },    0, 0, FLAGS, "backend" },
 #endif
-    { "model",       "path to model file",         OFFSET(model_filename),   AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
-    { "input",       "input name of the model",    OFFSET(model_inputname),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
-    { "output",      "output name of the model",   OFFSET(model_outputname), AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
-    { "options",     "backend options",            OFFSET(backend_options),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
-    { "async",       "use DNN async inference",    OFFSET(async),            AV_OPT_TYPE_BOOL,      { .i64 = 1},     0, 1, FLAGS},
+    DNN_COMMON_OPTIONS
     { NULL }
 };
 
@@ -76,49 +62,7 @@ AVFILTER_DEFINE_CLASS(dnn_processing);
 static av_cold int init(AVFilterContext *context)
 {
     DnnProcessingContext *ctx = context->priv;
-
-    if (!ctx->model_filename) {
-        av_log(ctx, AV_LOG_ERROR, "model file for network is not specified\n");
-        return AVERROR(EINVAL);
-    }
-    if (!ctx->model_inputname) {
-        av_log(ctx, AV_LOG_ERROR, "input name of the model network is not specified\n");
-        return AVERROR(EINVAL);
-    }
-    if (!ctx->model_outputname) {
-        av_log(ctx, AV_LOG_ERROR, "output name of the model network is not specified\n");
-        return AVERROR(EINVAL);
-    }
-
-    ctx->dnn_module = ff_get_dnn_module(ctx->backend_type);
-    if (!ctx->dnn_module) {
-        av_log(ctx, AV_LOG_ERROR, "could not create DNN module for requested backend\n");
-        return AVERROR(ENOMEM);
-    }
-    if (!ctx->dnn_module->load_model) {
-        av_log(ctx, AV_LOG_ERROR, "load_model for network is not specified\n");
-        return AVERROR(EINVAL);
-    }
-
-    ctx->model = (ctx->dnn_module->load_model)(ctx->model_filename, ctx->backend_options, context);
-    if (!ctx->model) {
-        av_log(ctx, AV_LOG_ERROR, "could not load DNN model\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (!ctx->dnn_module->execute_model_async && ctx->async) {
-        ctx->async = 0;
-        av_log(ctx, AV_LOG_WARNING, "this backend does not support async execution, roll back to sync.\n");
-    }
-
-#if !HAVE_PTHREAD_CANCEL
-    if (ctx->async) {
-        ctx->async = 0;
-        av_log(ctx, AV_LOG_WARNING, "pthread is not supported, roll back to sync.\n");
-    }
-#endif
-
-    return 0;
+    return ff_dnn_init(&ctx->dnnctx, context);
 }
 
 static int query_formats(AVFilterContext *context)
@@ -199,7 +143,7 @@ static int config_input(AVFilterLink *inlink)
     DNNData model_input;
     int check;
 
-    result = ctx->model->get_input(ctx->model->model, &model_input, ctx->model_inputname);
+    result = ff_dnn_get_input(&ctx->dnnctx, &model_input);
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not get input from the model\n");
         return AVERROR(EIO);
@@ -259,8 +203,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = context->inputs[0];
 
     // have a try run in case that the dnn model resize the frame
-    result = ctx->model->get_output(ctx->model->model, ctx->model_inputname, inlink->w, inlink->h,
-                                    ctx->model_outputname, &outlink->w, &outlink->h);
+    result = ff_dnn_get_output(&ctx->dnnctx, inlink->w, inlink->h, &outlink->w, &outlink->h);
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
         return AVERROR(EIO);
@@ -314,8 +257,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    dnn_result = (ctx->dnn_module->execute_model)(ctx->model, ctx->model_inputname, in,
-                                                  (const char **)&ctx->model_outputname, 1, out);
+    dnn_result = ff_dnn_execute_model(&ctx->dnnctx, in, out);
     if (dnn_result != DNN_SUCCESS){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         av_frame_free(&in);
@@ -376,7 +318,7 @@ static int flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
     int ret;
     DNNAsyncStatusType async_state;
 
-    ret = (ctx->dnn_module->flush)(ctx->model);
+    ret = ff_dnn_flush(&ctx->dnnctx);
     if (ret != DNN_SUCCESS) {
         return -1;
     }
@@ -384,7 +326,7 @@ static int flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = (ctx->dnn_module->get_async_result)(ctx->model, &in_frame, &out_frame);
+        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
         if (out_frame) {
             if (isPlanarYUV(in_frame->format))
                 copy_uv_planes(ctx, out_frame, in_frame);
@@ -405,7 +347,7 @@ static int activate_async(AVFilterContext *filter_ctx)
 {
     AVFilterLink *inlink = filter_ctx->inputs[0];
     AVFilterLink *outlink = filter_ctx->outputs[0];
-    DnnProcessingContext *ctx = (DnnProcessingContext *)filter_ctx->priv;
+    DnnProcessingContext *ctx = filter_ctx->priv;
     AVFrame *in = NULL, *out = NULL;
     int64_t pts;
     int ret, status;
@@ -426,8 +368,7 @@ static int activate_async(AVFilterContext *filter_ctx)
                 return AVERROR(ENOMEM);
             }
             av_frame_copy_props(out, in);
-            if ((ctx->dnn_module->execute_model_async)(ctx->model, ctx->model_inputname, in,
-                                                       (const char **)&ctx->model_outputname, 1, out) != DNN_SUCCESS) {
+            if (ff_dnn_execute_model_async(&ctx->dnnctx, in, out) != DNN_SUCCESS) {
                 return AVERROR(EIO);
             }
         }
@@ -437,7 +378,7 @@ static int activate_async(AVFilterContext *filter_ctx)
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = (ctx->dnn_module->get_async_result)(ctx->model, &in_frame, &out_frame);
+        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
         if (out_frame) {
             if (isPlanarYUV(in_frame->format))
                 copy_uv_planes(ctx, out_frame, in_frame);
@@ -471,7 +412,7 @@ static int activate(AVFilterContext *filter_ctx)
 {
     DnnProcessingContext *ctx = filter_ctx->priv;
 
-    if (ctx->async)
+    if (ctx->dnnctx.async)
         return activate_async(filter_ctx);
     else
         return activate_sync(filter_ctx);
@@ -482,11 +423,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     DnnProcessingContext *context = ctx->priv;
 
     sws_freeContext(context->sws_uv_scale);
-
-    if (context->dnn_module)
-        (context->dnn_module->free_model)(&context->model);
-
-    av_freep(&context->dnn_module);
+    ff_dnn_uninit(&context->dnnctx);
 }
 
 static const AVFilterPad dnn_processing_inputs[] = {
