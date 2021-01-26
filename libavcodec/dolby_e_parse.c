@@ -53,7 +53,7 @@ static int parse_key(DBEContext *s)
     return 0;
 }
 
-static int convert_input(DBEContext *s, int nb_words, int key)
+int ff_dolby_e_convert_input(DBEContext *s, int nb_words, int key)
 {
     const uint8_t *src = s->input;
     uint8_t *dst = s->buffer;
@@ -63,6 +63,8 @@ static int convert_input(DBEContext *s, int nb_words, int key)
     av_assert0(nb_words <= 1024u);
 
     if (nb_words > s->input_size) {
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -116,7 +118,7 @@ int ff_dolby_e_parse_header(DBEContext *s, const uint8_t *buf, int buf_size)
 
     if ((key = parse_key(s)) < 0)
         return key;
-    if ((ret = convert_input(s, 1, key)) < 0)
+    if ((ret = ff_dolby_e_convert_input(s, 1, key)) < 0)
         return ret;
 
     skip_bits(&s->gb, 4);
@@ -127,7 +129,7 @@ int ff_dolby_e_parse_header(DBEContext *s, const uint8_t *buf, int buf_size)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = convert_input(s, mtd_size, key)) < 0)
+    if ((ret = ff_dolby_e_convert_input(s, mtd_size, key)) < 0)
         return ret;
 
     skip_bits(&s->gb, 14);

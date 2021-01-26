@@ -25,7 +25,6 @@
 
 #include "internal.h"
 #include "get_bits.h"
-#include "put_bits.h"
 #include "dolby_e.h"
 #include "kbdwin.h"
 #include "fft.h"
@@ -626,42 +625,6 @@ static int parse_key(DBEContext *s)
     return 0;
 }
 
-static int convert_input(DBEContext *s, int nb_words, int key)
-{
-    const uint8_t *src = s->input;
-    uint8_t *dst = s->buffer;
-    PutBitContext pb;
-    int i;
-
-    av_assert0(nb_words <= 1024u);
-
-    if (nb_words > s->input_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    switch (s->word_bits) {
-    case 16:
-        for (i = 0; i < nb_words; i++, src += 2, dst += 2)
-            AV_WB16(dst, AV_RB16(src) ^ key);
-        break;
-    case 20:
-        init_put_bits(&pb, s->buffer, sizeof(s->buffer));
-        for (i = 0; i < nb_words; i++, src += 3)
-            put_bits(&pb, 20, AV_RB24(src) >> 4 ^ key);
-        flush_put_bits(&pb);
-        break;
-    case 24:
-        for (i = 0; i < nb_words; i++, src += 3, dst += 3)
-            AV_WB24(dst, AV_RB24(src) ^ key);
-        break;
-    default:
-        av_assert0(0);
-    }
-
-    return init_get_bits(&s->gb, s->buffer, nb_words * s->word_bits);
-}
-
 static int parse_metadata_ext(DBEDecodeContext *s1)
 {
     DBEContext *s = &s1->dectx;
@@ -992,7 +955,8 @@ static int parse_audio(DBEDecodeContext *s1, int start, int end, int seg_id)
             s1->channels[seg_id][ch].nb_groups = 0;
             continue;
         }
-        if ((ret = convert_input(s, s->metadata.ch_size[ch], key)) < 0)
+        ret = ff_dolby_e_convert_input(s, s->metadata.ch_size[ch], key);
+        if (ret < 0)
             return ret;
         if ((ret = parse_channel(s1, ch, seg_id)) < 0) {
             if (s1->avctx->err_recognition & AV_EF_EXPLODE)

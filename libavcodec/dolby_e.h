@@ -84,6 +84,13 @@ typedef struct DBEContext {
 static const uint16_t sample_rate_tab[16] = {
     0, 42965, 43008, 44800, 53706, 53760
 };
+
+/**
+ * Use the provided key to transform the input into data (put into s->buffer)
+ * suitable for further processing and initialize s->gb to read said data.
+ */
+int ff_dolby_e_convert_input(DBEContext *s, int nb_words, int key);
+
 /**
  * Initialize DBEContext and parse Dolby E metadata.
  * Set word_bits/word_bytes, input, input_size, key_present
