@@ -44,7 +44,7 @@ typedef struct ColorChannelMixerContext {
     double br, bg, bb, ba;
     double ar, ag, ab, aa;
     double sr, sg, sb;
-    int preserve_lightness;
+    double preserve_lightness;
 
     int *lut[4][4];
 
@@ -75,7 +75,7 @@ static const AVOption colorchannelmixer_options[] = {
     { "ag", "set the green gain for the alpha channel", OFFSET(ag), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -2, 2, FLAGS },
     { "ab", "set the blue gain for the alpha channel",  OFFSET(ab), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -2, 2, FLAGS },
     { "aa", "set the alpha gain for the alpha channel", OFFSET(aa), AV_OPT_TYPE_DOUBLE, {.dbl=1}, -2, 2, FLAGS },
-    { "pl", "preserve lightness",       OFFSET(preserve_lightness), AV_OPT_TYPE_BOOL,   {.i64=0},  0, 1, FLAGS },
+    { "pl", "preserve lightness",       OFFSET(preserve_lightness), AV_OPT_TYPE_DOUBLE, {.dbl=0},  0, 1, FLAGS },
     { NULL }
 };
 
@@ -106,6 +106,11 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
+static float lerpf(float v0, float v1, float f)
+{
+    return v0 + (v1 - v0) * f;
+}
+
 static void preservel(float *r, float *g, float *b, float lin, float lout)
 {
     *r *= lout / lin;
@@ -120,6 +125,10 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
+    const float l = s->preserve_lightness;
+    const float sr = s->sr;
+    const float sg = s->sg;
+    const float sb = s->sb;
     const int slice_start = (out->height * jobnr) / nb_jobs;
     const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
     const uint8_t *srcg = in->data[0] + slice_start * in->linesize[0];
@@ -142,7 +151,7 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
             float lin;
 
             if (pl)
-                lin = FFMAX3(rin, gin, bin) / 255.f + FFMIN3(rin, gin, bin) / 255.f;
+                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -158,16 +167,16 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
-                float frout = rout / (255.f * s->sr);
-                float fgout = gout / (255.f * s->sg);
-                float fbout = bout / (255.f * s->sb);
+                float frout = rout / sr;
+                float fgout = gout / sg;
+                float fbout = bout / sb;
                 float lout = FFMAX3(frout, fgout, fbout) + FFMIN3(frout, fgout, fbout);
 
                 preservel(&frout, &fgout, &fbout, lin, lout);
 
-                rout = lrintf(frout * 255.f);
-                gout = lrintf(fgout * 255.f);
-                bout = lrintf(fbout * 255.f);
+                rout = lrintf(lerpf(rout, frout, l));
+                gout = lrintf(lerpf(gout, fgout, l));
+                bout = lrintf(lerpf(bout, fbout, l));
             }
 
             dstr[j] = av_clip_uint8(rout);
@@ -202,6 +211,10 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
+    const float l = s->preserve_lightness;
+    const float sr = s->sr;
+    const float sg = s->sg;
+    const float sb = s->sb;
     const int slice_start = (out->height * jobnr) / nb_jobs;
     const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
     const uint16_t *srcg = (const uint16_t *)(in->data[0] + slice_start * in->linesize[0]);
@@ -212,8 +225,6 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
     uint16_t *dstb = (uint16_t *)(out->data[1] + slice_start * out->linesize[1]);
     uint16_t *dstr = (uint16_t *)(out->data[2] + slice_start * out->linesize[2]);
     uint16_t *dsta = (uint16_t *)(out->data[3] + slice_start * out->linesize[3]);
-    const float scale = 1.f / ((1 << depth) - 1);
-    const float factor = (1 << depth) - 1;
     int i, j;
 
     for (i = slice_start; i < slice_end; i++) {
@@ -226,7 +237,7 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
             float lin;
 
             if (pl)
-                lin = FFMAX3(rin, gin, bin) * scale + FFMIN3(rin, gin, bin) * scale;
+                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -242,16 +253,16 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
-                float frout = rout / (factor * s->sr);
-                float fgout = gout / (factor * s->sg);
-                float fbout = bout / (factor * s->sb);
+                float frout = rout / sr;
+                float fgout = gout / sg;
+                float fbout = bout / sb;
                 float lout = FFMAX3(frout, fgout, fbout) + FFMIN3(frout, fgout, fbout);
 
                 preservel(&frout, &fgout, &fbout, lin, lout);
 
-                rout = lrintf(frout * factor);
-                gout = lrintf(fgout * factor);
-                bout = lrintf(fbout * factor);
+                rout = lrintf(lerpf(rout, frout, l));
+                gout = lrintf(lerpf(gout, fgout, l));
+                bout = lrintf(lerpf(bout, fbout, l));
             }
 
             dstr[j] = av_clip_uintp2(rout, depth);
@@ -386,6 +397,10 @@ static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void 
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
+    const float l = s->preserve_lightness;
+    const float sr = s->sr;
+    const float sg = s->sg;
+    const float sb = s->sb;
     const int slice_start = (out->height * jobnr) / nb_jobs;
     const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
     const uint8_t roffset = s->rgba_map[R];
@@ -409,7 +424,7 @@ static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void 
             float lin;
 
             if (pl)
-                lin = FFMAX3(rin, gin, bin) / 255.f + FFMIN3(rin, gin, bin) / 255.f;
+                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -425,16 +440,16 @@ static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void 
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
-                float frout = rout / (255.f * s->sr);
-                float fgout = gout / (255.f * s->sg);
-                float fbout = bout / (255.f * s->sb);
+                float frout = rout / sr;
+                float fgout = gout / sg;
+                float fbout = bout / sb;
                 float lout = FFMAX3(frout, fgout, fbout) + FFMIN3(frout, fgout, fbout);
 
                 preservel(&frout, &fgout, &fbout, lin, lout);
 
-                rout = lrintf(frout * 255.f);
-                gout = lrintf(fgout * 255.f);
-                bout = lrintf(fbout * 255.f);
+                rout = lrintf(lerpf(rout, frout, l));
+                gout = lrintf(lerpf(gout, fgout, l));
+                bout = lrintf(lerpf(bout, fbout, l));
             }
 
             dst[j + roffset] = av_clip_uint8(rout);
@@ -464,6 +479,10 @@ static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, voi
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
+    const float l = s->preserve_lightness;
+    const float sr = s->sr;
+    const float sg = s->sg;
+    const float sb = s->sb;
     const int slice_start = (out->height * jobnr) / nb_jobs;
     const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
     const uint8_t roffset = s->rgba_map[R];
@@ -487,7 +506,7 @@ static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, voi
             float lin;
 
             if (pl)
-                lin = FFMAX3(rin, gin, bin) / 65535.f + FFMIN3(rin, gin, bin) / 65535.f;
+                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -503,16 +522,16 @@ static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, voi
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
-                float frout = rout / (65535.f * s->sr);
-                float fgout = gout / (65535.f * s->sg);
-                float fbout = bout / (65535.f * s->sb);
+                float frout = rout / sr;
+                float fgout = gout / sg;
+                float fbout = bout / sb;
                 float lout = FFMAX3(frout, fgout, fbout) + FFMIN3(frout, fgout, fbout);
 
                 preservel(&frout, &fgout, &fbout, lin, lout);
 
-                rout = lrintf(frout * 65535.f);
-                gout = lrintf(fgout * 65535.f);
-                bout = lrintf(fbout * 65535.f);
+                rout = lrintf(lerpf(rout, frout, l));
+                gout = lrintf(lerpf(gout, fgout, l));
+                bout = lrintf(lerpf(bout, fbout, l));
             }
 
             dst[j + roffset] = av_clip_uint16(rout);
@@ -720,7 +739,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     ColorChannelMixerContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    const int pl = s->preserve_lightness;
+    const int pl = s->preserve_lightness > 0.;
     ThreadData td;
     AVFrame *out;
 

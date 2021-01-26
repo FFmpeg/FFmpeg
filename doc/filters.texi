@@ -8067,7 +8067,8 @@ Default is @code{1} for @var{aa}, and @code{0} for @var{ar}, @var{ag} and @var{a
 Allowed ranges for options are @code{[-2.0, 2.0]}.
 
 @item pl
-Preserve lightness when changing colors. Default is disabled.
+Preserve lightness when changing colors. Allowed range is from @code{[0.0, 1.0]}.
+Default is @code{0.0}, thus disabled.
 @end table
 
 @subsection Examples
