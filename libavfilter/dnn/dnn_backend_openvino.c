@@ -485,7 +485,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
         if (init_model_ov(ov_model) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
-        };
+        }
     }
 
     task.done = 0;
@@ -601,7 +601,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
         if (init_model_ov(ov_model) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
-        };
+        }
     }
 
     task.done = 0;
@@ -648,7 +648,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
         if (init_model_ov(ov_model) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
-        };
+        }
     }
 
     task->done = 0;
