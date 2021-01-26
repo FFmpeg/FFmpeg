@@ -40,7 +40,8 @@ typedef struct LenscorrectionCtx {
     const AVClass *av_class;
     int width;
     int height;
-    int hsub, vsub;
+    int planewidth[4];
+    int planeheight[4];
     int depth;
     int nb_planes;
     double cx, cy, k1, k2;
@@ -50,7 +51,7 @@ typedef struct LenscorrectionCtx {
 
     int32_t *correction[4];
 
-    int (*filter_slice)(AVFilterContext *ctx, void *arg, int job, int nb_jobs);
+    int (*filter_slice)(AVFilterContext *ctx, void *arg, int job, int nb_jobs, int plane);
 } LenscorrectionCtx;
 
 #define OFFSET(x) offsetof(LenscorrectionCtx, x)
@@ -71,29 +72,24 @@ AVFILTER_DEFINE_CLASS(lenscorrection);
 
 typedef struct ThreadData {
     AVFrame *in, *out;
-    int w, h;
-    int depth;
-    int plane;
-    int fill_color;
-    int xcenter, ycenter;
-    int32_t *correction;
 } ThreadData;
 
 #define NEAREST(type, name)                                                    \
 static int filter##name##_slice(AVFilterContext *ctx, void *arg, int job,      \
-                                int nb_jobs)                                   \
+                                int nb_jobs, int plane)                        \
 {                                                                              \
+    LenscorrectionCtx *rect = ctx->priv;                                       \
     ThreadData *td = arg;                                                      \
     AVFrame *in = td->in;                                                      \
     AVFrame *out = td->out;                                                    \
                                                                                \
-    const int fill_color = td->fill_color;                                     \
-    const int w = td->w, h = td->h;                                            \
-    const int xcenter = td->xcenter;                                           \
-    const int ycenter = td->ycenter;                                           \
+    const int32_t *correction = rect->correction[plane];                       \
+    const int fill_color = rect->fill_color[plane];                            \
+    const int w = rect->planewidth[plane], h = rect->planeheight[plane];       \
+    const int xcenter = rect->cx * w;                                          \
+    const int ycenter = rect->cy * h;                                          \
     const int start = (h *  job   ) / nb_jobs;                                 \
     const int end   = (h * (job+1)) / nb_jobs;                                 \
-    const int plane = td->plane;                                               \
     const int inlinesize = in->linesize[plane] / sizeof(type);                 \
     const int outlinesize = out->linesize[plane] / sizeof(type);               \
     const type *indata = (const type *)in->data[plane];                        \
@@ -103,7 +99,7 @@ static int filter##name##_slice(AVFilterContext *ctx, void *arg, int job,      \
         type *out = outrow;                                                    \
         for (int j = 0; j < w; j++) {                                          \
             const int off_x = j - xcenter;                                     \
-            const int64_t radius_mult = td->correction[j + i*w];               \
+            const int64_t radius_mult = correction[j + i*w];                   \
             const int x = xcenter + ((radius_mult * off_x + (1<<23))>>24);     \
             const int y = ycenter + ((radius_mult * off_y + (1<<23))>>24);     \
             const char isvalid = x >= 0 && x < w && y >= 0 && y < h;           \
@@ -119,22 +115,23 @@ NEAREST(uint16_t, 16)
 
 #define BILINEAR(type, name)                                                   \
 static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
-                                         int job, int nb_jobs)                 \
+                                         int job, int nb_jobs, int plane)      \
 {                                                                              \
+    LenscorrectionCtx *rect = ctx->priv;                                       \
     ThreadData *td = arg;                                                      \
     AVFrame *in = td->in;                                                      \
     AVFrame *out = td->out;                                                    \
                                                                                \
-    const int fill_color = td->fill_color;                                     \
-    const int depth = td->depth;                                               \
+    const int32_t *correction = rect->correction[plane];                       \
+    const int fill_color = rect->fill_color[plane];                            \
+    const int depth = rect->depth;                                             \
     const uint64_t max = (1 << 24) - 1;                                        \
     const uint64_t add = (1 << 23);                                            \
-    const int w = td->w, h = td->h;                                            \
-    const int xcenter = td->xcenter;                                           \
-    const int ycenter = td->ycenter;                                           \
+    const int w = rect->planewidth[plane], h = rect->planeheight[plane];       \
+    const int xcenter = rect->cx * w;                                          \
+    const int ycenter = rect->cy * h;                                          \
     const int start = (h *  job   ) / nb_jobs;                                 \
     const int end   = (h * (job+1)) / nb_jobs;                                 \
-    const int plane = td->plane;                                               \
     const int inlinesize = in->linesize[plane] / sizeof(type);                 \
     const int outlinesize = out->linesize[plane] / sizeof(type);               \
     const type *indata = (const type *)in->data[plane];                        \
@@ -146,7 +143,7 @@ static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
                                                                                \
         for (int j = 0; j < w; j++) {                                          \
             const int off_x = j - xcenter;                                     \
-            const int64_t radius_mult = td->correction[j + i*w];               \
+            const int64_t radius_mult = correction[j + i*w];                   \
             const int x = xcenter + ((radius_mult * off_x + (1<<23)) >> 24);   \
             const int y = ycenter + ((radius_mult * off_y + (1<<23)) >> 24);   \
             const char isvalid = x >= 0 && x <= w - 1 && y >= 0 && y <= h - 1; \
@@ -227,10 +224,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 static void calc_correction(AVFilterContext *ctx, int plane)
 {
     LenscorrectionCtx *rect = ctx->priv;
-    int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
-    int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
-    int w = AV_CEIL_RSHIFT(rect->width, hsub);
-    int h = AV_CEIL_RSHIFT(rect->height, vsub);
+    int w = rect->planewidth[plane];
+    int h = rect->planeheight[plane];
     int xcenter = rect->cx * w;
     int ycenter = rect->cy * h;
     int k1 = rect->k1 * (1<<24);
@@ -263,8 +258,10 @@ static int config_output(AVFilterLink *outlink)
     ff_fill_rgba_map(rgba_map, inlink->format);
     rect->depth = pixdesc->comp[0].depth;
     factor = 1 << (rect->depth - 8);
-    rect->hsub = pixdesc->log2_chroma_w;
-    rect->vsub = pixdesc->log2_chroma_h;
+    rect->planeheight[1] = rect->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, pixdesc->log2_chroma_h);
+    rect->planeheight[0] = rect->planeheight[3] = inlink->h;
+    rect->planewidth[1]  = rect->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, pixdesc->log2_chroma_w);
+    rect->planewidth[0]  = rect->planewidth[3]  = inlink->w;
     outlink->w = rect->width = inlink->w;
     outlink->h = rect->height = inlink->h;
     rect->nb_planes = av_pix_fmt_count_planes(inlink->format);
@@ -285,10 +282,8 @@ static int config_output(AVFilterLink *outlink)
     }
 
     for (int plane = 0; plane < rect->nb_planes; plane++) {
-        int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
-        int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
-        int w = AV_CEIL_RSHIFT(rect->width, hsub);
-        int h = AV_CEIL_RSHIFT(rect->height, vsub);
+        int w = rect->planewidth[plane];
+        int h = rect->planeheight[plane];
 
         if (!rect->correction[plane])
             rect->correction[plane] = av_malloc_array(w, h * sizeof(**rect->correction));
@@ -300,13 +295,24 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+static int filter_slice(AVFilterContext *ctx, void *arg, int job,
+                        int nb_jobs)
+{
+    LenscorrectionCtx *rect = ctx->priv;
+
+    for (int plane = 0; plane < rect->nb_planes; plane++)
+        rect->filter_slice(ctx, arg, job, nb_jobs, plane);
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    LenscorrectionCtx *rect = (LenscorrectionCtx*)ctx->priv;
+    LenscorrectionCtx *rect = ctx->priv;
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    int plane;
+    ThreadData td;
 
     if (!out) {
         av_frame_free(&in);
@@ -315,28 +321,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     av_frame_copy_props(out, in);
 
-    for (plane = 0; plane < rect->nb_planes; ++plane) {
-        int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
-        int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
-        int w = AV_CEIL_RSHIFT(rect->width, hsub);
-        int h = AV_CEIL_RSHIFT(rect->height, vsub);
-        int xcenter = rect->cx * w;
-        int ycenter = rect->cy * h;
-        ThreadData td = {
-            .in = in,
-            .out  = out,
-            .w  = w,
-            .h  = h,
-            .xcenter = xcenter,
-            .ycenter = ycenter,
-            .plane = plane,
-            .depth = rect->depth,
-            .fill_color = rect->fill_color[plane],
-            .correction = rect->correction[plane],
-        };
-
-        ctx->internal->execute(ctx, rect->filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
-    }
+    td.in = in; td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(rect->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
