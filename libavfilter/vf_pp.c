@@ -145,7 +145,6 @@ static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
     if (ret < 0) {
         av_frame_free(&inbuf);
         av_frame_free(&outbuf);
-        av_freep(&qp_table);
         return ret;
     }
 
