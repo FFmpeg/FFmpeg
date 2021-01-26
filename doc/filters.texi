@@ -13468,6 +13468,10 @@ The formula that generates the correction is:
 where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
 distances from the focal point in the source and target images, respectively.
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section lensfun
 
 Apply lens correction via the lensfun library (@url{http://lensfun.sourceforge.net/}).

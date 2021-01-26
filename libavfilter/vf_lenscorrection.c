@@ -54,7 +54,7 @@ typedef struct LenscorrectionCtx {
 } LenscorrectionCtx;
 
 #define OFFSET(x) offsetof(LenscorrectionCtx, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption lenscorrection_options[] = {
     { "cx", "set relative center x", OFFSET(cx), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
     { "cy", "set relative center y", OFFSET(cy), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 1, .flags=FLAGS },
@@ -224,7 +224,33 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 }
 
-static int config_props(AVFilterLink *outlink)
+static void calc_correction(AVFilterContext *ctx, int plane)
+{
+    LenscorrectionCtx *rect = ctx->priv;
+    int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
+    int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
+    int w = AV_CEIL_RSHIFT(rect->width, hsub);
+    int h = AV_CEIL_RSHIFT(rect->height, vsub);
+    int xcenter = rect->cx * w;
+    int ycenter = rect->cy * h;
+    int k1 = rect->k1 * (1<<24);
+    int k2 = rect->k2 * (1<<24);
+    const int64_t r2inv = (4LL<<60) / (w * w + h * h);
+
+    for (int j = 0; j < h; j++) {
+        const int off_y = j - ycenter;
+        const int off_y2 = off_y * off_y;
+        for (int i = 0; i < w; i++) {
+            const int off_x = i - xcenter;
+            const int64_t r2 = ((off_x * off_x + off_y2) * r2inv + (1LL<<31)) >> 32;
+            const int64_t r4 = (r2 * r2 + (1<<27)) >> 28;
+            const int radius_mult = (r2 * k1 + r4 * k2 + (1LL<<27) + (1LL<<52))>>28;
+            rect->correction[plane][j * w + i] = radius_mult;
+        }
+    }
+}
+
+static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     LenscorrectionCtx *rect = ctx->priv;
@@ -257,7 +283,21 @@ static int config_props(AVFilterLink *outlink)
         rect->fill_color[2] = RGB_TO_V_BT709(rect->fill_rgba[0], rect->fill_rgba[1], rect->fill_rgba[2], 0) * factor;
         rect->fill_color[3] = rect->fill_rgba[3] * factor;
     }
-     return 0;
+
+    for (int plane = 0; plane < rect->nb_planes; plane++) {
+        int hsub = plane == 1 || plane == 2 ? rect->hsub : 0;
+        int vsub = plane == 1 || plane == 2 ? rect->vsub : 0;
+        int w = AV_CEIL_RSHIFT(rect->width, hsub);
+        int h = AV_CEIL_RSHIFT(rect->height, vsub);
+
+        if (!rect->correction[plane])
+            rect->correction[plane] = av_malloc_array(w, h * sizeof(**rect->correction));
+        if (!rect->correction[plane])
+            return AVERROR(ENOMEM);
+        calc_correction(ctx, plane);
+    }
+
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -282,8 +322,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int h = AV_CEIL_RSHIFT(rect->height, vsub);
         int xcenter = rect->cx * w;
         int ycenter = rect->cy * h;
-        int k1 = rect->k1 * (1<<24);
-        int k2 = rect->k2 * (1<<24);
         ThreadData td = {
             .in = in,
             .out  = out,
@@ -294,34 +332,29 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             .plane = plane,
             .depth = rect->depth,
             .fill_color = rect->fill_color[plane],
+            .correction = rect->correction[plane],
         };
 
-        if (!rect->correction[plane]) {
-            int i,j;
-            const int64_t r2inv = (4LL<<60) / (w * w + h * h);
-
-            rect->correction[plane] = av_malloc_array(w, h * sizeof(**rect->correction));
-            if (!rect->correction[plane])
-                return AVERROR(ENOMEM);
-            for (j = 0; j < h; j++) {
-                const int off_y = j - ycenter;
-                const int off_y2 = off_y * off_y;
-                for (i = 0; i < w; i++) {
-                    const int off_x = i - xcenter;
-                    const int64_t r2 = ((off_x * off_x + off_y2) * r2inv + (1LL<<31)) >> 32;
-                    const int64_t r4 = (r2 * r2 + (1<<27)) >> 28;
-                    const int radius_mult = (r2 * k1 + r4 * k2 + (1LL<<27) + (1LL<<52))>>28;
-                    rect->correction[plane][j * w + i] = radius_mult;
-                }
-            }
-        }
-
-        td.correction = rect->correction[plane];
         ctx->internal->execute(ctx, rect->filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
+}
+
+static int process_command(AVFilterContext *ctx,
+                           const char *cmd,
+                           const char *arg,
+                           char *res,
+                           int res_len,
+                           int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return config_output(ctx->outputs[0]);
 }
 
 static const AVFilterPad lenscorrection_inputs[] = {
@@ -337,7 +370,7 @@ static const AVFilterPad lenscorrection_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_props,
+        .config_props = config_output,
     },
     { NULL }
 };
@@ -352,4 +385,5 @@ AVFilter ff_vf_lenscorrection = {
     .priv_class    = &lenscorrection_class,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
