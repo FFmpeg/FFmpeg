@@ -1483,7 +1483,7 @@ resync:
             }
         }
 
-        if (dv_demux) {
+        if (CONFIG_DV_DEMUXER && dv_demux) {
             AVBufferRef *avbuf = pkt->buf;
             size = avpriv_dv_produce_packet(avi->dv_demux, pkt,
                                             pkt->data, pkt->size, pkt->pos);
