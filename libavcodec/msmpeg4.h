@@ -59,7 +59,7 @@ void ff_msmpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 int ff_msmpeg4_decode_init(AVCodecContext *avctx);
 int ff_msmpeg4_decode_picture_header(MpegEncContext *s);
 int ff_msmpeg4_decode_ext_header(MpegEncContext *s, int buf_size);
-int ff_msmpeg4_decode_motion(MpegEncContext * s, int *mx_ptr, int *my_ptr);
+void ff_msmpeg4_decode_motion(MpegEncContext * s, int *mx_ptr, int *my_ptr);
 int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
                             int n, int coded, const uint8_t *scan_table);
 int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,

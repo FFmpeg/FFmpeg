@@ -278,22 +278,16 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
     return 0;
 }
 
-static inline int wmv2_decode_motion(Wmv2Context *w, int *mx_ptr, int *my_ptr)
+static inline void wmv2_decode_motion(Wmv2Context *w, int *mx_ptr, int *my_ptr)
 {
     MpegEncContext *const s = &w->s;
-    int ret;
 
-    ret = ff_msmpeg4_decode_motion(s, mx_ptr, my_ptr);
-
-    if (ret < 0)
-        return ret;
+    ff_msmpeg4_decode_motion(s, mx_ptr, my_ptr);
 
     if ((((*mx_ptr) | (*my_ptr)) & 1) && s->mspel)
         w->hshift = get_bits1(&s->gb);
     else
         w->hshift = 0;
-
-    return 0;
 }
 
 static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py)
@@ -409,8 +403,6 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
 
         code = get_vlc2(&s->gb, ff_mb_non_intra_vlc[w->cbp_table_index].table,
                         MB_NON_INTRA_VLC_BITS, 3);
-        if (code < 0)
-            return AVERROR_INVALIDDATA;
         s->mb_intra = (~code & 0x40) >> 6;
 
         cbp = code & 0x3f;
@@ -419,11 +411,6 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
         if (get_bits_left(&s->gb) <= 0)
             return AVERROR_INVALIDDATA;
         code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
-        if (code < 0) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "II-cbp illegal at %d %d\n", s->mb_x, s->mb_y);
-            return AVERROR_INVALIDDATA;
-        }
         /* predict coded block pattern */
         cbp = 0;
         for (i = 0; i < 6; i++) {
@@ -456,8 +443,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 w->per_block_abt = 0;
         }
 
-        if ((ret = wmv2_decode_motion(w, &mx, &my)) < 0)
-            return ret;
+        wmv2_decode_motion(w, &mx, &my);
 
         s->mv_dir      = MV_DIR_FORWARD;
         s->mv_type     = MV_TYPE_16X16;

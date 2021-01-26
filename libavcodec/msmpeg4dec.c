@@ -228,8 +228,6 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
         }
 
         code = get_vlc2(&s->gb, ff_mb_non_intra_vlc[DEFAULT_INTER_INDEX].table, MB_NON_INTRA_VLC_BITS, 3);
-        if (code < 0)
-            return -1;
         //s->mb_intra = (code & 0x40) ? 0 : 1;
         s->mb_intra = (~code & 0x40) >> 6;
 
@@ -237,8 +235,6 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
     } else {
         s->mb_intra = 1;
         code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
-        if (code < 0)
-            return -1;
         /* predict coded block pattern */
         cbp = 0;
         for(i=0;i<6;i++) {
@@ -259,8 +255,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
             s->rl_chroma_table_index = s->rl_table_index;
         }
         ff_h263_pred_motion(s, 0, 0, &mx, &my);
-        if (ff_msmpeg4_decode_motion(s, &mx, &my) < 0)
-            return -1;
+        ff_msmpeg4_decode_motion(s, &mx, &my);
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16;
         s->mv[0][0][0] = mx;
@@ -612,11 +607,6 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         } else {
             level = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table, DC_VLC_BITS, 3);
         }
-        if (level < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
-            *dir_ptr = 0;
-            return -1;
-        }
 
         if (level == DC_MAX) {
             level = get_bits(&s->gb, 8);
@@ -838,8 +828,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
     return 0;
 }
 
-int ff_msmpeg4_decode_motion(MpegEncContext * s,
-                                 int *mx_ptr, int *my_ptr)
+void ff_msmpeg4_decode_motion(MpegEncContext *s, int *mx_ptr, int *my_ptr)
 {
     MVTable *mv;
     int code, mx, my;
@@ -847,10 +836,6 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
     mv = &ff_mv_tables[s->mv_table_index];
 
     code = get_vlc2(&s->gb, mv->vlc.table, MV_VLC_BITS, 2);
-    if (code < 0){
-        av_log(s->avctx, AV_LOG_ERROR, "illegal MV code at %d %d\n", s->mb_x, s->mb_y);
-        return -1;
-    }
     if (code == mv->n) {
         mx = get_bits(&s->gb, 6);
         my = get_bits(&s->gb, 6);
@@ -873,7 +858,6 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
         my -= 64;
     *mx_ptr = mx;
     *my_ptr = my;
-    return 0;
 }
 
 AVCodec ff_msmpeg4v1_decoder = {
