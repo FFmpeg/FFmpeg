@@ -58,6 +58,8 @@ typedef struct DolbyEHeaderInfo {
      * @{
      */
     int         multi_prog_warned;
+
+    int         sample_rate;
     /** @} */
 } DolbyEHeaderInfo;
 
@@ -80,10 +82,6 @@ typedef struct DBEContext {
 
     uint8_t     buffer[1024 * 3 + AV_INPUT_BUFFER_PADDING_SIZE];
 } DBEContext;
-
-static const uint16_t sample_rate_tab[16] = {
-    0, 42965, 43008, 44800, 53706, 53760
-};
 
 /**
  * Use the provided key to transform the input into data (put into s->buffer)

@@ -30,6 +30,10 @@ static const uint8_t nb_channels_tab[MAX_PROG_CONF + 1] = {
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 6, 6, 6, 6, 6, 6, 4, 4, 4, 4, 8, 8
 };
 
+static const uint16_t sample_rate_tab[16] = {
+    0, 42965, 43008, 44800, 53706, 53760
+};
+
 static int skip_input(DBEContext *s, int nb_words)
 {
     if (nb_words > s->input_size) {
@@ -145,7 +149,7 @@ int ff_dolby_e_parse_header(DBEContext *s, const uint8_t *buf, int buf_size)
 
     header->fr_code      = get_bits(&s->gb, 4);
     header->fr_code_orig = get_bits(&s->gb, 4);
-    if (!sample_rate_tab[header->fr_code] ||
+    if (!(header->sample_rate = sample_rate_tab[header->fr_code]) ||
         !sample_rate_tab[header->fr_code_orig]) {
         if (s->avctx)
             av_log(s->avctx, AV_LOG_ERROR, "Invalid frame rate code\n");

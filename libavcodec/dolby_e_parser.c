@@ -51,7 +51,7 @@ static int dolby_e_parse(AVCodecParserContext *s2, AVCodecContext *avctx,
     }
 
     avctx->channels    = s->metadata.nb_channels;
-    avctx->sample_rate = sample_rate_tab[s->metadata.fr_code];
+    avctx->sample_rate = s->metadata.sample_rate;
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 
 end:

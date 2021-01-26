@@ -1105,7 +1105,7 @@ static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     avctx->channels    = s->metadata.nb_channels;
-    avctx->sample_rate = sample_rate_tab[s->metadata.fr_code];
+    avctx->sample_rate = s->metadata.sample_rate;
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 
     i = s->metadata.nb_channels / 2;
