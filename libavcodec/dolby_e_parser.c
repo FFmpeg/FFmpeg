@@ -18,14 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "parser.h"
-
 #include "dolby_e.h"
 #include "get_bits.h"
 #include "put_bits.h"
 
 typedef struct DBEParseContext {
-    ParseContext pc;
     DBEContext dectx;
 
     DolbyEHeaderInfo metadata;
@@ -74,5 +71,4 @@ AVCodecParser ff_dolby_e_parser = {
     .codec_ids      = { AV_CODEC_ID_DOLBY_E },
     .priv_data_size = sizeof(DBEParseContext),
     .parser_parse   = dolby_e_parse,
-    .parser_close   = ff_parse_close,
 };
