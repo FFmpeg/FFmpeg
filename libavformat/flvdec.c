@@ -384,13 +384,18 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
 
 static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize)
 {
+    int ret;
     int length = avio_rb16(ioc);
     if (length >= buffsize) {
         avio_skip(ioc, length);
         return -1;
     }
 
-    avio_read(ioc, buffer, length);
+    ret = avio_read(ioc, buffer, length);
+    if (ret < 0)
+        return ret;
+    if (ret < length)
+        return AVERROR_INVALIDDATA;
 
     buffer[length] = '\0';
 
