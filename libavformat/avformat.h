@@ -954,7 +954,11 @@ typedef struct AVStream {
      * decoding: set by libavformat, must not be modified by the caller.
      * encoding: unused
      */
+#if FF_API_INIT_PACKET
     AVPacket attached_pic;
+#else
+    AVPacket *attached_pic;
+#endif
 
     /**
      * An array of side data that applies to the whole stream (i.e. the

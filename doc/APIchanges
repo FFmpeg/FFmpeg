@@ -15,6 +15,11 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-xx - xxxxxxxxxx - lavc 58.133.100 - codec.h
+  Deprecated av_init_packet(). Once removed, sizeof(AVPacket) will
+  no longer be a part of the public ABI.
+  Deprecated AVPacketList.
+
 2021-03-xx - xxxxxxxxxx - lavc 58.132.100 - codec.h
   Add AV_CODEC_CAP_OTHER_THREADS as a new name for
   AV_CODEC_CAP_AUTO_THREADS. AV_CODEC_CAP_AUTO_THREADS
