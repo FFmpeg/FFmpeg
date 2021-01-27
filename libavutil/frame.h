@@ -194,7 +194,7 @@ enum AVFrameSideDataType {
     AV_FRAME_DATA_SEI_UNREGISTERED,
 
     /**
-     * Film grain parameters for a frame, described by AVFilmGrainParameters.
+     * Film grain parameters for a frame, described by AVFilmGrainParams.
      * Must be present for every frame which should have film grain applied.
      */
     AV_FRAME_DATA_FILM_GRAIN_PARAMS,
