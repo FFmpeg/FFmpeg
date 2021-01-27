@@ -13866,6 +13866,8 @@ Use values from the nearest defined point.
 Interpolate values using the 8 points defining a cube.
 @item tetrahedral
 Interpolate values using a tetrahedron.
+@item pyramid
+Interpolate values using a pyramid.
 @end table
 @end table
 

@@ -49,6 +49,7 @@ enum interp_mode {
     INTERPOLATE_NEAREST,
     INTERPOLATE_TRILINEAR,
     INTERPOLATE_TETRAHEDRAL,
+    INTERPOLATE_PYRAMID,
     NB_INTERP_MODE
 };
 
@@ -103,6 +104,7 @@ typedef struct ThreadData {
         { "nearest",     "use values from the nearest defined points",            0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_NEAREST},     INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
         { "trilinear",   "interpolate values using the 8 points defining a cube", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TRILINEAR},   INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
         { "tetrahedral", "interpolate values using a tetrahedron",                0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TETRAHEDRAL}, INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
+        { "pyramid",     "interpolate values using a pyramid",                    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PYRAMID},     INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
     { NULL }
 
 #define EXPONENT_MASK 0x7F800000
@@ -182,6 +184,56 @@ static inline struct rgbvec interp_trilinear(const LUT3DContext *lut3d,
     const struct rgbvec c0   = lerp(&c00,  &c10,  d.g);
     const struct rgbvec c1   = lerp(&c01,  &c11,  d.g);
     const struct rgbvec c    = lerp(&c0,   &c1,   d.b);
+    return c;
+}
+
+static inline struct rgbvec interp_pyramid(const LUT3DContext *lut3d,
+                                           const struct rgbvec *s)
+{
+    const int lutsize2 = lut3d->lutsize2;
+    const int lutsize  = lut3d->lutsize;
+    const int prev[] = {PREV(s->r), PREV(s->g), PREV(s->b)};
+    const int next[] = {NEXT(s->r), NEXT(s->g), NEXT(s->b)};
+    const struct rgbvec d = {s->r - prev[0], s->g - prev[1], s->b - prev[2]};
+    const struct rgbvec c000 = lut3d->lut[prev[0] * lutsize2 + prev[1] * lutsize + prev[2]];
+    const struct rgbvec c111 = lut3d->lut[next[0] * lutsize2 + next[1] * lutsize + next[2]];
+    struct rgbvec c;
+
+    if (d.g > d.r && d.b > d.r) {
+        const struct rgbvec c001 = lut3d->lut[prev[0] * lutsize2 + prev[1] * lutsize + next[2]];
+        const struct rgbvec c010 = lut3d->lut[prev[0] * lutsize2 + next[1] * lutsize + prev[2]];
+        const struct rgbvec c011 = lut3d->lut[prev[0] * lutsize2 + next[1] * lutsize + next[2]];
+
+        c.r = c000.r + (c111.r - c011.r) * d.r + (c010.r - c000.r) * d.g + (c001.r - c000.r) * d.b +
+              (c011.r - c001.r - c010.r + c000.r) * d.g * d.b;
+        c.g = c000.g + (c111.g - c011.g) * d.r + (c010.g - c000.g) * d.g + (c001.g - c000.g) * d.b +
+              (c011.g - c001.g - c010.g + c000.g) * d.g * d.b;
+        c.b = c000.b + (c111.b - c011.b) * d.r + (c010.b - c000.b) * d.g + (c001.b - c000.b) * d.b +
+              (c011.b - c001.b - c010.b + c000.b) * d.g * d.b;
+    } else if (d.r > d.g && d.b > d.g) {
+        const struct rgbvec c001 = lut3d->lut[prev[0] * lutsize2 + prev[1] * lutsize + next[2]];
+        const struct rgbvec c100 = lut3d->lut[next[0] * lutsize2 + prev[1] * lutsize + prev[2]];
+        const struct rgbvec c101 = lut3d->lut[next[0] * lutsize2 + prev[1] * lutsize + next[2]];
+
+        c.r = c000.r + (c100.r - c000.r) * d.r + (c111.r - c101.r) * d.g + (c001.r - c000.r) * d.b +
+              (c101.r - c001.r - c100.r + c000.r) * d.r * d.b;
+        c.g = c000.g + (c100.g - c000.g) * d.r + (c111.g - c101.g) * d.g + (c001.g - c000.g) * d.b +
+              (c101.g - c001.g - c100.g + c000.g) * d.r * d.b;
+        c.b = c000.b + (c100.b - c000.b) * d.r + (c111.b - c101.b) * d.g + (c001.b - c000.b) * d.b +
+              (c101.b - c001.b - c100.b + c000.b) * d.r * d.b;
+    } else {
+        const struct rgbvec c010 = lut3d->lut[prev[0] * lutsize2 + next[1] * lutsize + prev[2]];
+        const struct rgbvec c110 = lut3d->lut[next[0] * lutsize2 + next[1] * lutsize + prev[2]];
+        const struct rgbvec c100 = lut3d->lut[next[0] * lutsize2 + prev[1] * lutsize + prev[2]];
+
+        c.r = c000.r + (c100.r - c000.r) * d.r + (c010.r - c000.r) * d.g + (c111.r - c110.r) * d.b +
+              (c110.r - c100.r - c010.r + c000.r) * d.r * d.g;
+        c.g = c000.g + (c100.g - c000.g) * d.r + (c010.g - c000.g) * d.g + (c111.g - c110.g) * d.b +
+              (c110.g - c100.g - c010.g + c000.g) * d.r * d.g;
+        c.b = c000.b + (c100.b - c000.b) * d.r + (c010.b - c000.b) * d.g + (c111.b - c110.b) * d.b +
+              (c110.b - c100.b - c010.b + c000.b) * d.r * d.g;
+    }
+
     return c;
 }
 
@@ -337,26 +389,32 @@ static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, i
 DEFINE_INTERP_FUNC_PLANAR(nearest,     8, 8)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   8, 8)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 8, 8)
+DEFINE_INTERP_FUNC_PLANAR(pyramid,     8, 8)
 
 DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 9)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 9)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 9)
+DEFINE_INTERP_FUNC_PLANAR(pyramid,     16, 9)
 
 DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 10)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 10)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 10)
+DEFINE_INTERP_FUNC_PLANAR(pyramid,     16, 10)
 
 DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 12)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 12)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 12)
+DEFINE_INTERP_FUNC_PLANAR(pyramid,     16, 12)
 
 DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 14)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 14)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 14)
+DEFINE_INTERP_FUNC_PLANAR(pyramid,     16, 14)
 
 DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 16)
 DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 16)
 DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 16)
+DEFINE_INTERP_FUNC_PLANAR(pyramid,     16, 16)
 
 #define DEFINE_INTERP_FUNC_PLANAR_FLOAT(name, depth)                                                   \
 static int interp_##name##_pf##depth(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)          \
@@ -422,6 +480,7 @@ static int interp_##name##_pf##depth(AVFilterContext *ctx, void *arg, int jobnr,
 DEFINE_INTERP_FUNC_PLANAR_FLOAT(nearest,     32)
 DEFINE_INTERP_FUNC_PLANAR_FLOAT(trilinear,   32)
 DEFINE_INTERP_FUNC_PLANAR_FLOAT(tetrahedral, 32)
+DEFINE_INTERP_FUNC_PLANAR_FLOAT(pyramid,     32)
 
 #define DEFINE_INTERP_FUNC(name, nbits)                                                             \
 static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)         \
@@ -475,10 +534,12 @@ static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, i
 DEFINE_INTERP_FUNC(nearest,     8)
 DEFINE_INTERP_FUNC(trilinear,   8)
 DEFINE_INTERP_FUNC(tetrahedral, 8)
+DEFINE_INTERP_FUNC(pyramid,     8)
 
 DEFINE_INTERP_FUNC(nearest,     16)
 DEFINE_INTERP_FUNC(trilinear,   16)
 DEFINE_INTERP_FUNC(tetrahedral, 16)
+DEFINE_INTERP_FUNC(pyramid,     16)
 
 #define MAX_LINE_SIZE 512
 
@@ -1086,6 +1147,7 @@ static int config_input(AVFilterLink *inlink)
     case INTERPOLATE_NEAREST:     SET_FUNC(nearest);        break;
     case INTERPOLATE_TRILINEAR:   SET_FUNC(trilinear);      break;
     case INTERPOLATE_TETRAHEDRAL: SET_FUNC(tetrahedral);    break;
+    case INTERPOLATE_PYRAMID:     SET_FUNC(pyramid);        break;
     default:
         av_assert0(0);
     }
