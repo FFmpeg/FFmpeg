@@ -107,7 +107,7 @@ COMPILE_MSA = $(call COMPILE,CC,MSAFLAGS)
 %.c %.h %.pc %.ver %.version: TAG = GEN
 
 # Dummy rule to stop make trying to rebuild removed or renamed headers
-%.h:
+%.h %_template.c:
 	@:
 
 # Disable suffix rules.  Most of the builtin rules are suffix rules,
