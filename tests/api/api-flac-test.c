@@ -154,6 +154,10 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         enc_pkt.data = NULL;
         enc_pkt.size = 0;
 
+        result = av_frame_make_writable(in_frame);
+        if (result < 0)
+            return result;
+
         generate_raw_frame((uint16_t*)(in_frame->data[0]), i, enc_ctx->sample_rate,
                            enc_ctx->channels, enc_ctx->frame_size);
         in_frame_bytes = in_frame->nb_samples * in_frame->channels * sizeof(uint16_t);
