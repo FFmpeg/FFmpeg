@@ -201,27 +201,27 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
                 return result;
             }
 
-                if (in_frame->nb_samples != out_frame->nb_samples) {
-                    av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different number of samples\n");
-                    return AVERROR_UNKNOWN;
-                }
+            if (in_frame->nb_samples != out_frame->nb_samples) {
+                av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different number of samples\n");
+                return AVERROR_UNKNOWN;
+            }
 
-                if (in_frame->channel_layout != out_frame->channel_layout) {
-                    av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different channel layout\n");
-                    return AVERROR_UNKNOWN;
-                }
+            if (in_frame->channel_layout != out_frame->channel_layout) {
+                av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different channel layout\n");
+                return AVERROR_UNKNOWN;
+            }
 
-                if (in_frame->format != out_frame->format) {
-                    av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different sample format\n");
-                    return AVERROR_UNKNOWN;
-                }
-                out_frame_bytes = out_frame->nb_samples * out_frame->channels * sizeof(uint16_t);
-                if (out_frame_bytes > out_frame->linesize[0]) {
-                    av_log(NULL, AV_LOG_ERROR, "Incorrect value of output frame linesize\n");
-                    return 1;
-                }
-                memcpy(raw_out + out_offset, out_frame->data[0], out_frame_bytes);
-                out_offset += out_frame_bytes;
+            if (in_frame->format != out_frame->format) {
+                av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different sample format\n");
+                return AVERROR_UNKNOWN;
+            }
+            out_frame_bytes = out_frame->nb_samples * out_frame->channels * sizeof(uint16_t);
+            if (out_frame_bytes > out_frame->linesize[0]) {
+                av_log(NULL, AV_LOG_ERROR, "Incorrect value of output frame linesize\n");
+                return 1;
+            }
+            memcpy(raw_out + out_offset, out_frame->data[0], out_frame_bytes);
+            out_offset += out_frame_bytes;
         }
     }
 
