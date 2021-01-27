@@ -13868,6 +13868,8 @@ Interpolate values using the 8 points defining a cube.
 Interpolate values using a tetrahedron.
 @item pyramid
 Interpolate values using a pyramid.
+@item prism
+Interpolate values using a prism.
 @end table
 @end table
 
