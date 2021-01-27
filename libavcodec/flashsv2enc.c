@@ -142,6 +142,7 @@ static void init_blocks(FlashSV2Context * s, Block * blocks,
 {
     int row, col;
     Block *b;
+    memset(blocks, 0, s->cols * s->rows * sizeof(*blocks));
     for (col = 0; col < s->cols; col++) {
         for (row = 0; row < s->rows; row++) {
             b = blocks + (col + row * s->cols);
