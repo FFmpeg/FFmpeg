@@ -31,7 +31,6 @@
 
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/log.h"
 #include "libavutil/avassert.h"
 
 #include "defs.h"
@@ -608,16 +607,6 @@ static inline unsigned int show_bits_long(GetBitContext *s, int n)
         GetBitContext gb = *s;
         return get_bits_long(&gb, n);
     }
-}
-
-static inline int check_marker(void *logctx, GetBitContext *s, const char *msg)
-{
-    int bit = get_bits1(s);
-    if (!bit)
-        av_log(logctx, AV_LOG_INFO, "Marker bit missing at %d of %d %s\n",
-               get_bits_count(s) - 1, s->size_in_bits, msg);
-
-    return bit;
 }
 
 static inline int init_get_bits_xe(GetBitContext *s, const uint8_t *buffer,

@@ -21,6 +21,7 @@
 #include "codec_internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "h263data.h"
 #include "h263dec.h"
 #include "mpegvideodata.h"
