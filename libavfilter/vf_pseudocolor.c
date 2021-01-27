@@ -596,13 +596,43 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    PseudoColorContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+
+    for (int plane = 0; plane < s->nb_planes; plane++) {
+        const int slice_start = (s->height[plane] * jobnr) / nb_jobs;
+        const int slice_end = (s->height[plane] * (jobnr+1)) / nb_jobs;
+        const int islice_start = (s->height[s->index] * jobnr) / nb_jobs;
+        ptrdiff_t ilinesize = in->linesize[s->index];
+        ptrdiff_t slinesize = in->linesize[plane];
+        ptrdiff_t dlinesize = out->linesize[plane];
+        const uint8_t *index = in->data[s->index] + islice_start * ilinesize;
+        const uint8_t *src = in->data[plane] + slice_start * slinesize;
+        uint8_t *dst = out->data[plane] + slice_start * dlinesize;
+
+        s->filter[plane](s->max, s->width[plane], slice_end - slice_start,
+                         index, src, dst, ilinesize, slinesize,
+                         dlinesize, s->lut[plane]);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     PseudoColorContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
     AVFrame *out;
-    int plane;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -611,18 +641,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    for (plane = 0; plane < s->nb_planes; plane++) {
-        const uint8_t *index = in->data[s->index];
-        const uint8_t *src = in->data[plane];
-        uint8_t *dst = out->data[plane];
-        ptrdiff_t ilinesize = in->linesize[s->index];
-        ptrdiff_t slinesize = in->linesize[plane];
-        ptrdiff_t dlinesize = out->linesize[plane];
-
-        s->filter[plane](s->max, s->width[plane], s->height[plane],
-                         index, src, dst, ilinesize, slinesize,
-                         dlinesize, s->lut[plane]);
-    }
+    td.out = out, td.in = in;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -668,5 +688,5 @@ AVFilter ff_vf_pseudocolor = {
     .query_formats = query_formats,
     .inputs        = inputs,
     .outputs       = outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
