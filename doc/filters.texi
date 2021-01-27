@@ -17850,6 +17850,10 @@ Default value is "black".
 Set interpolation type. Can be @code{bilinear} or @code{nearest}. Default is @code{bilinear}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section showinfo
 
 Show a line containing various information for each input video frame.
