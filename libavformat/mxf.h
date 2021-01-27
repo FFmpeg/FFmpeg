@@ -83,9 +83,13 @@ typedef struct MXFLocalTagPair {
     UID uid;
 } MXFLocalTagPair;
 
-extern const uint8_t ff_mxf_mastering_display_prefix[13];
 extern const uint8_t ff_mxf_random_index_pack_key[16];
-extern const MXFLocalTagPair ff_mxf_mastering_display_local_tags[4];
+
+#define FF_MXF_MasteringDisplay_PREFIX                  0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x04,0x20,0x04,0x01,0x01
+#define FF_MXF_MasteringDisplayPrimaries                { FF_MXF_MasteringDisplay_PREFIX,0x01,0x00,0x00 }
+#define FF_MXF_MasteringDisplayWhitePointChromaticity   { FF_MXF_MasteringDisplay_PREFIX,0x02,0x00,0x00 }
+#define FF_MXF_MasteringDisplayMaximumLuminance         { FF_MXF_MasteringDisplay_PREFIX,0x03,0x00,0x00 }
+#define FF_MXF_MasteringDisplayMinimumLuminance         { FF_MXF_MasteringDisplay_PREFIX,0x04,0x00,0x00 }
 
 #define FF_MXF_MASTERING_CHROMA_DEN 50000
 #define FF_MXF_MASTERING_LUMA_DEN   10000

@@ -228,38 +228,6 @@ static const UID mxf_d10_container_uls[] = {
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x06,0x01 }, // D-10 525/50 NTSC 30mb/s
 };
 
-typedef struct MXFContext {
-    AVClass *av_class;
-    int64_t footer_partition_offset;
-    int essence_container_count;
-    AVRational time_base;
-    int header_written;
-    MXFIndexEntry *index_entries;
-    unsigned edit_units_count;
-    uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
-    uint8_t slice_count;  ///< index slice count minus 1 (1 if no audio, 0 otherwise)
-    int last_indexed_edit_unit;
-    uint64_t *body_partition_offset;
-    unsigned body_partitions_count;
-    int last_key_index;  ///< index of last key frame
-    uint64_t duration;
-    AVTimecode tc;       ///< timecode context
-    AVStream *timecode_track;
-    int timecode_base;       ///< rounded time code base (25 or 30)
-    int edit_unit_byte_count; ///< fixed edit unit byte count
-    int content_package_rate; ///< content package rate in system element, see SMPTE 326M
-    uint64_t body_offset;
-    uint32_t instance_number;
-    uint8_t umid[16];        ///< unique material identifier
-    int channel_count;
-    int signal_standard;
-    uint32_t tagged_value_count;
-    AVRational audio_edit_rate;
-    int store_user_comments;
-    int track_instance_count; // used to generate MXFTrack uuids
-    int cbr_index;           ///< use a constant bitrate index
-} MXFContext;
-
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
 static const uint8_t umid_ul[]              = { 0x06,0x0A,0x2B,0x34,0x01,0x01,0x01,0x05,0x01,0x01,0x0D,0x00,0x13 };
 
@@ -403,20 +371,56 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     // Wave Audio Essence Descriptor
     { 0x3D09, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x03,0x05,0x00,0x00,0x00}}, /* Average Bytes Per Second */
     { 0x3D0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x02,0x01,0x00,0x00,0x00}}, /* Block Align */
-};
-
-static const MXFLocalTagPair mxf_avc_subdescriptor_local_tags[] = {
+    // mxf_user_comments_local_tag
+    { 0x4406, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0C,0x00,0x00,0x00}}, /* User Comments */
+    { 0x5001, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x09,0x01,0x00,0x00}}, /* Name */
+    { 0x5003, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0A,0x01,0x00,0x00}}, /* Value */
+    // mxf_avc_subdescriptor_local_tags
     { 0x8100, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x04,0x06,0x10,0x00,0x00}}, /* SubDescriptors */
     { 0x8200, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0E,0x00,0x00}}, /* AVC Decoding Delay */
     { 0x8201, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0A,0x00,0x00}}, /* AVC Profile */
     { 0x8202, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0D,0x00,0x00}}, /* AVC Level */
+    // ff_mxf_mastering_display_local_tags
+    { 0x8301, FF_MXF_MasteringDisplayPrimaries },
+    { 0x8302, FF_MXF_MasteringDisplayWhitePointChromaticity },
+    { 0x8303, FF_MXF_MasteringDisplayMaximumLuminance },
+    { 0x8304, FF_MXF_MasteringDisplayMinimumLuminance },
 };
 
-static const MXFLocalTagPair mxf_user_comments_local_tag[] = {
-    { 0x4406, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0C,0x00,0x00,0x00}}, /* User Comments */
-    { 0x5001, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x09,0x01,0x00,0x00}}, /* Name */
-    { 0x5003, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0A,0x01,0x00,0x00}}, /* Value */
-};
+#define MXF_NUM_TAGS FF_ARRAY_ELEMS(mxf_local_tag_batch)
+
+typedef struct MXFContext {
+    AVClass *av_class;
+    int64_t footer_partition_offset;
+    int essence_container_count;
+    AVRational time_base;
+    int header_written;
+    MXFIndexEntry *index_entries;
+    unsigned edit_units_count;
+    uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
+    uint8_t slice_count;  ///< index slice count minus 1 (1 if no audio, 0 otherwise)
+    int last_indexed_edit_unit;
+    uint64_t *body_partition_offset;
+    unsigned body_partitions_count;
+    int last_key_index;  ///< index of last key frame
+    uint64_t duration;
+    AVTimecode tc;       ///< timecode context
+    AVStream *timecode_track;
+    int timecode_base;       ///< rounded time code base (25 or 30)
+    int edit_unit_byte_count; ///< fixed edit unit byte count
+    int content_package_rate; ///< content package rate in system element, see SMPTE 326M
+    uint64_t body_offset;
+    uint32_t instance_number;
+    uint8_t umid[16];        ///< unique material identifier
+    int channel_count;
+    int signal_standard;
+    uint32_t tagged_value_count;
+    AVRational audio_edit_rate;
+    int store_user_comments;
+    int track_instance_count; // used to generate MXFTrack uuids
+    int cbr_index;           ///< use a constant bitrate index
+    uint8_t unused_tags[MXF_NUM_TAGS];  ///< local tags that we know will not be used
+} MXFContext;
 
 static void mxf_write_uuid(AVIOContext *pb, enum MXFMetadataSetType type, int value)
 {
@@ -492,38 +496,66 @@ static int mxf_get_essence_container_ul_index(enum AVCodecID id)
     return -1;
 }
 
-static void mxf_write_local_tags(AVIOContext *pb, const MXFLocalTagPair *local_tags, int count)
+static const MXFLocalTagPair* mxf_lookup_local_tag(int tag)
 {
-    int i;
-    for (i = 0; i < count; i++) {
-        avio_wb16(pb, local_tags[i].local_tag);
-        avio_write(pb, local_tags[i].uid, 16);
+    for (int i = 0; i < MXF_NUM_TAGS; i++) {
+        if (mxf_local_tag_batch[i].local_tag == tag) {
+            return &mxf_local_tag_batch[i];
+        }
     }
+
+    // this assert can only be hit during development
+    av_assert0(0 && "you forgot to add your new tag to mxf_local_tag_batch");
+}
+
+static void mxf_mark_tag_unused(MXFContext *mxf, int tag)
+{
+    const MXFLocalTagPair *pair = mxf_lookup_local_tag(tag);
+    mxf->unused_tags[pair - mxf_local_tag_batch] = 1;
 }
 
 static void mxf_write_primer_pack(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int local_tag_number, i = 0;
-    int avc_tags_count = 0;
-    int mastering_tags_count = 0;
-
-    local_tag_number = FF_ARRAY_ELEMS(mxf_local_tag_batch);
-    local_tag_number += mxf->store_user_comments * FF_ARRAY_ELEMS(mxf_user_comments_local_tag);
+    int local_tag_number = MXF_NUM_TAGS, i;
+    int will_have_avc_tags = 0, will_have_mastering_tags = 0;
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
         if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
-            avc_tags_count = FF_ARRAY_ELEMS(mxf_avc_subdescriptor_local_tags);
+            will_have_avc_tags = 1;
         }
         if (av_stream_get_side_data(s->streams[i], AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL)) {
-            mastering_tags_count = FF_ARRAY_ELEMS(ff_mxf_mastering_display_local_tags);
+            will_have_mastering_tags = 1;
         }
     }
 
-    local_tag_number += avc_tags_count;
-    local_tag_number += mastering_tags_count;
+    if (!mxf->store_user_comments) {
+        mxf_mark_tag_unused(mxf, 0x4406);
+        mxf_mark_tag_unused(mxf, 0x5001);
+        mxf_mark_tag_unused(mxf, 0x5003);
+    }
+
+    if (!will_have_avc_tags) {
+        mxf_mark_tag_unused(mxf, 0x8100);
+        mxf_mark_tag_unused(mxf, 0x8200);
+        mxf_mark_tag_unused(mxf, 0x8201);
+        mxf_mark_tag_unused(mxf, 0x8202);
+    }
+
+    if (!will_have_mastering_tags) {
+        mxf_mark_tag_unused(mxf, 0x8301);
+        mxf_mark_tag_unused(mxf, 0x8302);
+        mxf_mark_tag_unused(mxf, 0x8303);
+        mxf_mark_tag_unused(mxf, 0x8304);
+    }
+
+    for (i = 0; i < MXF_NUM_TAGS; i++) {
+        if (mxf->unused_tags[i]) {
+            local_tag_number--;
+        }
+    }
 
     avio_write(pb, primer_pack_key, 16);
     klv_encode_ber_length(pb, local_tag_number * 18 + 8);
@@ -531,23 +563,23 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     avio_wb32(pb, local_tag_number); // local_tag num
     avio_wb32(pb, 18); // item size, always 18 according to the specs
 
-    for (i = 0; i < FF_ARRAY_ELEMS(mxf_local_tag_batch); i++) {
-        avio_wb16(pb, mxf_local_tag_batch[i].local_tag);
-        avio_write(pb, mxf_local_tag_batch[i].uid, 16);
-    }
-    if (mxf->store_user_comments)
-        for (i = 0; i < FF_ARRAY_ELEMS(mxf_user_comments_local_tag); i++) {
-            avio_wb16(pb, mxf_user_comments_local_tag[i].local_tag);
-            avio_write(pb, mxf_user_comments_local_tag[i].uid, 16);
+    for (i = 0; i < MXF_NUM_TAGS; i++) {
+        if (mxf->unused_tags[i] == 0) {
+            avio_wb16(pb, mxf_local_tag_batch[i].local_tag);
+            avio_write(pb, mxf_local_tag_batch[i].uid, 16);
         }
-    if (avc_tags_count > 0)
-        mxf_write_local_tags(pb, mxf_avc_subdescriptor_local_tags, avc_tags_count);
-    if (mastering_tags_count > 0)
-        mxf_write_local_tags(pb, ff_mxf_mastering_display_local_tags, mastering_tags_count);
+    }
 }
 
-static void mxf_write_local_tag(AVIOContext *pb, int size, int tag)
+static void mxf_write_local_tag(AVFormatContext *s, int size, int tag)
 {
+    MXFContext *mxf = s->priv_data;
+    AVIOContext *pb = s->pb;
+    const MXFLocalTagPair *pair = mxf_lookup_local_tag(tag);
+
+    // make sure the tag was not declared unnecessary upfront
+    av_assert0(mxf->unused_tags[pair - mxf_local_tag_batch] == 0);
+
     avio_wb16(pb, tag);
     avio_wb16(pb, size);
 }
@@ -604,44 +636,44 @@ static void mxf_write_preface(AVFormatContext *s)
     klv_encode_ber_length(pb, 138 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write preface set uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, Preface, 0);
     PRINT_KEY(s, "preface uid", pb->buf_ptr - 16);
 
     // last modified date
-    mxf_write_local_tag(pb, 8, 0x3B02);
+    mxf_write_local_tag(s, 8, 0x3B02);
     avio_wb64(pb, mxf->timestamp);
 
     // write version
-    mxf_write_local_tag(pb, 2, 0x3B05);
+    mxf_write_local_tag(s, 2, 0x3B05);
     avio_wb16(pb, 259); // v1.3
 
     // Object Model Version
-    mxf_write_local_tag(pb, 4, 0x3B07);
+    mxf_write_local_tag(s, 4, 0x3B07);
     avio_wb32(pb, 1);
 
     // write identification_refs
-    mxf_write_local_tag(pb, 16 + 8, 0x3B06);
+    mxf_write_local_tag(s, 16 + 8, 0x3B06);
     mxf_write_refs_count(pb, 1);
     mxf_write_uuid(pb, Identification, 0);
 
     // write content_storage_refs
-    mxf_write_local_tag(pb, 16, 0x3B03);
+    mxf_write_local_tag(s, 16, 0x3B03);
     mxf_write_uuid(pb, ContentStorage, 0);
 
     // operational pattern
-    mxf_write_local_tag(pb, 16, 0x3B09);
+    mxf_write_local_tag(s, 16, 0x3B09);
     if (s->oformat == &ff_mxf_opatom_muxer)
         avio_write(pb, opatom_ul, 16);
     else
         avio_write(pb, op1a_ul, 16);
 
     // write essence_container_refs
-    mxf_write_local_tag(pb, 8 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count), 0x3B0A);
+    mxf_write_local_tag(s, 8 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count), 0x3B0A);
     mxf_write_essence_container_refs(s);
 
     // write dm_scheme_refs
-    mxf_write_local_tag(pb, 8, 0x3B0B);
+    mxf_write_local_tag(s, 8, 0x3B0B);
     avio_wb64(pb, 0);
 }
 
@@ -690,8 +722,9 @@ static int mxf_utf16_local_tag_length(const char *utf8_str)
 /*
  * Write a local tag containing an utf-8 string as utf-16
  */
-static void mxf_write_local_tag_utf16(AVIOContext *pb, int tag, const char *value)
+static void mxf_write_local_tag_utf16(AVFormatContext *s, int tag, const char *value)
 {
+    AVIOContext *pb = s->pb;
     uint64_t size = mxf_utf16len(value);
 
     if (size >= UINT16_MAX/2) {
@@ -699,7 +732,7 @@ static void mxf_write_local_tag_utf16(AVIOContext *pb, int tag, const char *valu
         return;
     }
 
-    mxf_write_local_tag(pb, size*2, tag);
+    mxf_write_local_tag(s, size*2, tag);
     avio_put_str16be(pb, value);
 }
 
@@ -739,30 +772,30 @@ static void mxf_write_identification(AVFormatContext *s)
     klv_encode_ber_length(pb, length);
 
     // write uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, Identification, 0);
     PRINT_KEY(s, "identification uid", pb->buf_ptr - 16);
 
     // write generation uid
-    mxf_write_local_tag(pb, 16, 0x3C09);
+    mxf_write_local_tag(s, 16, 0x3C09);
     mxf_write_uuid(pb, Identification, 1);
-    mxf_write_local_tag_utf16(pb, 0x3C01, company); // Company Name
-    mxf_write_local_tag_utf16(pb, 0x3C02, product); // Product Name
+    mxf_write_local_tag_utf16(s, 0x3C01, company); // Company Name
+    mxf_write_local_tag_utf16(s, 0x3C02, product); // Product Name
 
-    mxf_write_local_tag(pb, 10, 0x3C03); // Product Version
+    mxf_write_local_tag(s, 10, 0x3C03); // Product Version
     store_version(s);
 
-    mxf_write_local_tag_utf16(pb, 0x3C04, version); // Version String
+    mxf_write_local_tag_utf16(s, 0x3C04, version); // Version String
 
     // write product uid
-    mxf_write_local_tag(pb, 16, 0x3C05);
+    mxf_write_local_tag(s, 16, 0x3C05);
     mxf_write_uuid(pb, Identification, 2);
 
     // modification date
-    mxf_write_local_tag(pb, 8, 0x3C06);
+    mxf_write_local_tag(s, 8, 0x3C06);
     avio_wb64(pb, mxf->timestamp);
 
-    mxf_write_local_tag(pb, 10, 0x3C07); // Toolkit Version
+    mxf_write_local_tag(s, 10, 0x3C07); // Toolkit Version
     store_version(s);
 }
 
@@ -776,19 +809,19 @@ static void mxf_write_content_storage(AVFormatContext *s, MXFPackage *packages, 
     klv_encode_ber_length(pb, 60 + (16 * package_count));
 
     // write uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, ContentStorage, 0);
     PRINT_KEY(s, "content storage uid", pb->buf_ptr - 16);
 
     // write package reference
-    mxf_write_local_tag(pb, 16 * package_count + 8, 0x1901);
+    mxf_write_local_tag(s, 16 * package_count + 8, 0x1901);
     mxf_write_refs_count(pb, package_count);
     for (i = 0; i < package_count; i++) {
         mxf_write_uuid(pb, packages[i].type, packages[i].instance);
     }
 
     // write essence container data
-    mxf_write_local_tag(pb, 8 + 16, 0x1902);
+    mxf_write_local_tag(s, 8 + 16, 0x1902);
     mxf_write_refs_count(pb, 1);
     mxf_write_uuid(pb, EssenceContainerData, 0);
 }
@@ -804,23 +837,23 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, MXFPackage *packag
     klv_encode_ber_length(pb, 80);
 
     // write track uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, Track, mxf->track_instance_count);
     PRINT_KEY(s, "track uid", pb->buf_ptr - 16);
 
     // write track id
-    mxf_write_local_tag(pb, 4, 0x4801);
+    mxf_write_local_tag(s, 4, 0x4801);
     avio_wb32(pb, st->index+2);
 
     // write track number
-    mxf_write_local_tag(pb, 4, 0x4804);
+    mxf_write_local_tag(s, 4, 0x4804);
     if (package->type == MaterialPackage)
         avio_wb32(pb, 0); // track number of material package is 0
     else
         avio_write(pb, sc->track_essence_element_key + 12, 4);
 
     // write edit rate
-    mxf_write_local_tag(pb, 8, 0x4B01);
+    mxf_write_local_tag(s, 8, 0x4B01);
 
     if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer) {
         avio_wb32(pb, mxf->tc.rate.num);
@@ -831,11 +864,11 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, MXFPackage *packag
     }
 
     // write origin
-    mxf_write_local_tag(pb, 8, 0x4B02);
+    mxf_write_local_tag(s, 8, 0x4B02);
     avio_wb64(pb, 0);
 
     // write sequence refs
-    mxf_write_local_tag(pb, 16, 0x4803);
+    mxf_write_local_tag(s, 16, 0x4803);
     mxf_write_uuid(pb, Sequence, mxf->track_instance_count);
 }
 
@@ -847,7 +880,7 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
     AVIOContext *pb = s->pb;
 
     // find data define uls
-    mxf_write_local_tag(pb, 16, 0x0201);
+    mxf_write_local_tag(s, 16, 0x0201);
     if (st == mxf->timecode_track)
         avio_write(pb, smpte_12m_timecode_track_data_ul, 16);
     else {
@@ -856,7 +889,7 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
     }
 
     // write duration
-    mxf_write_local_tag(pb, 8, 0x0202);
+    mxf_write_local_tag(s, 8, 0x0202);
 
     if (st != mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
@@ -875,14 +908,14 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, MXFPackage *pac
     PRINT_KEY(s, "sequence key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 80);
 
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, Sequence, mxf->track_instance_count);
 
     PRINT_KEY(s, "sequence uid", pb->buf_ptr - 16);
     mxf_write_common_fields(s, st);
 
     // write structural component
-    mxf_write_local_tag(pb, 16 + 8, 0x1001);
+    mxf_write_local_tag(s, 16 + 8, 0x1001);
     mxf_write_refs_count(pb, 1);
     if (st == mxf->timecode_track)
         component = TimecodeComponent;
@@ -901,21 +934,21 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, MXFPa
     klv_encode_ber_length(pb, 75);
 
     // UID
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, TimecodeComponent, mxf->track_instance_count);
 
     mxf_write_common_fields(s, st);
 
     // Start Time Code
-    mxf_write_local_tag(pb, 8, 0x1501);
+    mxf_write_local_tag(s, 8, 0x1501);
     avio_wb64(pb, mxf->tc.start);
 
     // Rounded Time Code Base
-    mxf_write_local_tag(pb, 2, 0x1502);
+    mxf_write_local_tag(s, 2, 0x1502);
     avio_wb16(pb, mxf->timecode_base);
 
     // Drop Frame
-    mxf_write_local_tag(pb, 1, 0x1503);
+    mxf_write_local_tag(s, 1, 0x1503);
     avio_w8(pb, !!(mxf->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
 }
 
@@ -930,18 +963,18 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXF
     klv_encode_ber_length(pb, 108);
 
     // write uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, SourceClip, mxf->track_instance_count);
 
     PRINT_KEY(s, "structural component uid", pb->buf_ptr - 16);
     mxf_write_common_fields(s, st);
 
     // write start_position
-    mxf_write_local_tag(pb, 8, 0x1201);
+    mxf_write_local_tag(s, 8, 0x1201);
     avio_wb64(pb, 0);
 
     // write source package uid, end of the reference
-    mxf_write_local_tag(pb, 32, 0x1101);
+    mxf_write_local_tag(s, 32, 0x1101);
     if (!package->ref) {
         for (i = 0; i < 4; i++)
             avio_wb64(pb, 0);
@@ -949,7 +982,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXF
         mxf_write_umid(s, package->ref->instance);
 
     // write source track id
-    mxf_write_local_tag(pb, 4, 0x1102);
+    mxf_write_local_tag(s, 4, 0x1102);
     if (package->type == SourcePackage && !package->ref)
         avio_wb32(pb, 0);
     else
@@ -963,7 +996,7 @@ static void mxf_write_tape_descriptor(AVFormatContext *s)
     mxf_write_metadata_key(pb, 0x012e00);
     PRINT_KEY(s, "tape descriptor key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 20);
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, TapeDescriptor, 0);
     PRINT_KEY(s, "tape_desc uid", pb->buf_ptr - 16);
 }
@@ -980,17 +1013,17 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
     PRINT_KEY(s, "multiple descriptor key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 64 + 16LL * s->nb_streams);
 
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, MultipleDescriptor, 0);
     PRINT_KEY(s, "multi_desc uid", pb->buf_ptr - 16);
 
     // write sample rate
-    mxf_write_local_tag(pb, 8, 0x3001);
+    mxf_write_local_tag(s, 8, 0x3001);
     avio_wb32(pb, mxf->time_base.den);
     avio_wb32(pb, mxf->time_base.num);
 
     // write essence container ul
-    mxf_write_local_tag(pb, 16, 0x3004);
+    mxf_write_local_tag(s, 16, 0x3004);
     if (mxf->essence_container_count > 1)
         ul = multiple_desc_ul;
     else {
@@ -1000,7 +1033,7 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
     avio_write(pb, ul, 16);
 
     // write sub descriptor refs
-    mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x3F01);
+    mxf_write_local_tag(s, s->nb_streams * 16 + 8, 0x3F01);
     mxf_write_refs_count(pb, s->nb_streams);
     for (i = 0; i < s->nb_streams; i++)
         mxf_write_uuid(pb, SubDescriptor, i);
@@ -1017,13 +1050,13 @@ static int64_t mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UI
     klv_encode_ber4_length(pb, 0);
     pos = avio_tell(pb);
 
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, SubDescriptor, st->index);
 
-    mxf_write_local_tag(pb, 4, 0x3006);
+    mxf_write_local_tag(s, 4, 0x3006);
     avio_wb32(pb, st->index+2);
 
-    mxf_write_local_tag(pb, 8, 0x3001);
+    mxf_write_local_tag(s, 8, 0x3001);
     if (s->oformat == &ff_mxf_d10_muxer) {
         avio_wb32(pb, mxf->time_base.den);
         avio_wb32(pb, mxf->time_base.num);
@@ -1038,7 +1071,7 @@ static int64_t mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UI
         }
     }
 
-    mxf_write_local_tag(pb, 16, 0x3004);
+    mxf_write_local_tag(s, 16, 0x3004);
     avio_write(pb, *sc->container_ul, 16);
 
     return pos;
@@ -1090,43 +1123,43 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     if (!stored_width)
         stored_width = (st->codecpar->width+15)/16*16;
 
-    mxf_write_local_tag(pb, 4, 0x3203);
+    mxf_write_local_tag(s, 4, 0x3203);
     avio_wb32(pb, stored_width);
 
-    mxf_write_local_tag(pb, 4, 0x3202);
+    mxf_write_local_tag(s, 4, 0x3202);
     avio_wb32(pb, stored_height>>sc->interlaced);
 
     if (s->oformat == &ff_mxf_d10_muxer) {
         //Stored F2 Offset
-        mxf_write_local_tag(pb, 4, 0x3216);
+        mxf_write_local_tag(s, 4, 0x3216);
         avio_wb32(pb, 0);
 
         //Image Start Offset
-        mxf_write_local_tag(pb, 4, 0x3213);
+        mxf_write_local_tag(s, 4, 0x3213);
         avio_wb32(pb, 0);
 
         //Image End Offset
-        mxf_write_local_tag(pb, 4, 0x3214);
+        mxf_write_local_tag(s, 4, 0x3214);
         avio_wb32(pb, 0);
     }
 
     //Sampled width
-    mxf_write_local_tag(pb, 4, 0x3205);
+    mxf_write_local_tag(s, 4, 0x3205);
     avio_wb32(pb, stored_width);
 
     //Samples height
-    mxf_write_local_tag(pb, 4, 0x3204);
+    mxf_write_local_tag(s, 4, 0x3204);
     avio_wb32(pb, st->codecpar->height>>sc->interlaced);
 
     //Sampled X Offset
-    mxf_write_local_tag(pb, 4, 0x3206);
+    mxf_write_local_tag(s, 4, 0x3206);
     avio_wb32(pb, 0);
 
     //Sampled Y Offset
-    mxf_write_local_tag(pb, 4, 0x3207);
+    mxf_write_local_tag(s, 4, 0x3207);
     avio_wb32(pb, 0);
 
-    mxf_write_local_tag(pb, 4, 0x3209);
+    mxf_write_local_tag(s, 4, 0x3209);
     avio_wb32(pb, stored_width);
 
     if (st->codecpar->height == 608) // PAL + VBI
@@ -1136,41 +1169,41 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     else
         display_height = st->codecpar->height;
 
-    mxf_write_local_tag(pb, 4, 0x3208);
+    mxf_write_local_tag(s, 4, 0x3208);
     avio_wb32(pb, display_height>>sc->interlaced);
 
     // display X offset
-    mxf_write_local_tag(pb, 4, 0x320A);
+    mxf_write_local_tag(s, 4, 0x320A);
     avio_wb32(pb, 0);
 
     // display Y offset
-    mxf_write_local_tag(pb, 4, 0x320B);
+    mxf_write_local_tag(s, 4, 0x320B);
     avio_wb32(pb, (st->codecpar->height - display_height)>>sc->interlaced);
 
     if (sc->interlaced) {
         //Display F2 Offset
-        mxf_write_local_tag(pb, 4, 0x3217);
+        mxf_write_local_tag(s, 4, 0x3217);
         avio_wb32(pb, -((st->codecpar->height - display_height)&1));
     }
 
     // component depth
-    mxf_write_local_tag(pb, 4, 0x3301);
+    mxf_write_local_tag(s, 4, 0x3301);
     avio_wb32(pb, sc->component_depth);
 
     // horizontal subsampling
-    mxf_write_local_tag(pb, 4, 0x3302);
+    mxf_write_local_tag(s, 4, 0x3302);
     avio_wb32(pb, sc->h_chroma_sub_sample);
 
     // vertical subsampling
-    mxf_write_local_tag(pb, 4, 0x3308);
+    mxf_write_local_tag(s, 4, 0x3308);
     avio_wb32(pb, sc->v_chroma_sub_sample);
 
     // color siting
-    mxf_write_local_tag(pb, 1, 0x3303);
+    mxf_write_local_tag(s, 1, 0x3303);
     avio_w8(pb, sc->color_siting);
 
     // Padding Bits
-    mxf_write_local_tag(pb, 2, 0x3307);
+    mxf_write_local_tag(s, 2, 0x3307);
     avio_wb16(pb, 0);
 
     if (st->codecpar->color_range != AVCOL_RANGE_UNSPECIFIED) {
@@ -1182,21 +1215,21 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
             white = 235 << (sc->component_depth - 8);
             color = (14 << (sc->component_depth - 4)) + 1;
         }
-        mxf_write_local_tag(pb, 4, 0x3304);
+        mxf_write_local_tag(s, 4, 0x3304);
         avio_wb32(pb, black);
-        mxf_write_local_tag(pb, 4, 0x3305);
+        mxf_write_local_tag(s, 4, 0x3305);
         avio_wb32(pb, white);
-        mxf_write_local_tag(pb, 4, 0x3306);
+        mxf_write_local_tag(s, 4, 0x3306);
         avio_wb32(pb, color);
     }
 
     if (sc->signal_standard) {
-        mxf_write_local_tag(pb, 1, 0x3215);
+        mxf_write_local_tag(s, 1, 0x3215);
         avio_w8(pb, sc->signal_standard);
     }
 
     // frame layout
-    mxf_write_local_tag(pb, 1, 0x320C);
+    mxf_write_local_tag(s, 1, 0x320C);
     avio_w8(pb, sc->interlaced);
 
     // video line map
@@ -1216,32 +1249,32 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     }
 
 
-    mxf_write_local_tag(pb, 16, 0x320D);
+    mxf_write_local_tag(s, 16, 0x320D);
     avio_wb32(pb, 2);
     avio_wb32(pb, 4);
     avio_wb32(pb, f1);
     avio_wb32(pb, f2);
 
-    mxf_write_local_tag(pb, 8, 0x320E);
+    mxf_write_local_tag(s, 8, 0x320E);
     avio_wb32(pb, sc->aspect_ratio.num);
     avio_wb32(pb, sc->aspect_ratio.den);
 
     if (color_primaries_ul->uid[0]) {
-        mxf_write_local_tag(pb, 16, 0x3219);
+        mxf_write_local_tag(s, 16, 0x3219);
         avio_write(pb, color_primaries_ul->uid, 16);
     };
 
     if (color_trc_ul->uid[0]) {
-        mxf_write_local_tag(pb, 16, 0x3210);
+        mxf_write_local_tag(s, 16, 0x3210);
         avio_write(pb, color_trc_ul->uid, 16);
     };
 
     if (color_space_ul->uid[0]) {
-        mxf_write_local_tag(pb, 16, 0x321A);
+        mxf_write_local_tag(s, 16, 0x321A);
         avio_write(pb, color_space_ul->uid, 16);
     };
 
-    mxf_write_local_tag(pb, 16, 0x3201);
+    mxf_write_local_tag(s, 16, 0x3201);
     avio_write(pb, *sc->codec_ul, 16);
 
     // Mastering Display metadata
@@ -1249,23 +1282,23 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     if (side_data) {
         const AVMasteringDisplayMetadata *metadata = (const AVMasteringDisplayMetadata*)side_data;
         if (metadata->has_primaries) {
-            mxf_write_local_tag(pb, 12, ff_mxf_mastering_display_local_tags[0].local_tag);
+            mxf_write_local_tag(s, 12, 0x8301);
             avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[0][0]));
             avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[0][1]));
             avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[1][0]));
             avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[1][1]));
             avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[2][0]));
             avio_wb16(pb, rescale_mastering_chroma(metadata->display_primaries[2][1]));
-            mxf_write_local_tag(pb, 4, ff_mxf_mastering_display_local_tags[1].local_tag);
+            mxf_write_local_tag(s, 4, 0x8302);
             avio_wb16(pb, rescale_mastering_chroma(metadata->white_point[0]));
             avio_wb16(pb, rescale_mastering_chroma(metadata->white_point[1]));
         } else {
             av_log(NULL, AV_LOG_VERBOSE, "Not writing mastering display primaries. Missing data.\n");
         }
         if (metadata->has_luminance) {
-            mxf_write_local_tag(pb, 4, ff_mxf_mastering_display_local_tags[2].local_tag);
+            mxf_write_local_tag(s, 4, 0x8303);
             avio_wb32(pb, rescale_mastering_luma(metadata->max_luminance));
-            mxf_write_local_tag(pb, 4, ff_mxf_mastering_display_local_tags[3].local_tag);
+            mxf_write_local_tag(s, 4, 0x8304);
             avio_wb32(pb, rescale_mastering_luma(metadata->min_luminance));
         } else {
             av_log(NULL, AV_LOG_VERBOSE, "Not writing mastering display luminances. Missing data.\n");
@@ -1273,13 +1306,13 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     }
 
     if (sc->interlaced && sc->field_dominance) {
-        mxf_write_local_tag(pb, 1, 0x3212);
+        mxf_write_local_tag(s, 1, 0x3212);
         avio_w8(pb, sc->field_dominance);
     }
 
     if (st->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
         // write avc sub descriptor ref
-        mxf_write_local_tag(pb, 8 + 16, 0x8100);
+        mxf_write_local_tag(s, 8 + 16, 0x8100);
         mxf_write_refs_count(pb, 1);
         mxf_write_uuid(pb, AVCSubDescriptor, 0);
     }
@@ -1305,16 +1338,16 @@ static void mxf_write_avc_subdesc(AVFormatContext *s, AVStream *st)
     klv_encode_ber4_length(pb, 0);
     pos = avio_tell(pb);
 
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, AVCSubDescriptor, 0);
 
-    mxf_write_local_tag(pb, 1, 0x8200);
+    mxf_write_local_tag(s, 1, 0x8200);
     avio_w8(pb, 0xFF); // AVC Decoding Delay, unknown
 
-    mxf_write_local_tag(pb, 1, 0x8201);
+    mxf_write_local_tag(s, 1, 0x8201);
     avio_w8(pb, st->codecpar->profile); // AVC Profile
 
-    mxf_write_local_tag(pb, 1, 0x8202);
+    mxf_write_local_tag(s, 1, 0x8202);
     avio_w8(pb, st->codecpar->level); // AVC Level
 
     mxf_update_klv_size(s->pb, pos);
@@ -1357,29 +1390,29 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 
     if (st->codecpar->codec_id != AV_CODEC_ID_H264) {
         // bit rate
-        mxf_write_local_tag(pb, 4, 0x8000);
+        mxf_write_local_tag(s, 4, 0x8000);
         avio_wb32(pb, sc->video_bit_rate);
 
         // profile and level
-        mxf_write_local_tag(pb, 1, 0x8007);
+        mxf_write_local_tag(s, 1, 0x8007);
         if (!st->codecpar->profile)
             profile_and_level |= 0x80; // escape bit
         avio_w8(pb, profile_and_level);
 
         // low delay
-        mxf_write_local_tag(pb, 1, 0x8003);
+        mxf_write_local_tag(s, 1, 0x8003);
         avio_w8(pb, sc->low_delay);
 
         // closed gop
-        mxf_write_local_tag(pb, 1, 0x8004);
+        mxf_write_local_tag(s, 1, 0x8004);
         avio_w8(pb, sc->seq_closed_gop);
 
         // max gop
-        mxf_write_local_tag(pb, 2, 0x8006);
+        mxf_write_local_tag(s, 2, 0x8006);
         avio_wb16(pb, sc->max_gop);
 
         // b picture count
-        mxf_write_local_tag(pb, 2, 0x8008);
+        mxf_write_local_tag(s, 2, 0x8008);
         avio_wb16(pb, sc->b_picture_count);
     }
 
@@ -1394,25 +1427,25 @@ static int64_t mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, 
     int64_t pos = mxf_write_generic_desc(s, st, key);
 
     if (s->oformat == &ff_mxf_opatom_muxer) {
-        mxf_write_local_tag(pb, 8, 0x3002);
+        mxf_write_local_tag(s, 8, 0x3002);
         avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
     }
 
     // audio locked
-    mxf_write_local_tag(pb, 1, 0x3D02);
+    mxf_write_local_tag(s, 1, 0x3D02);
     avio_w8(pb, 1);
 
     // write audio sampling rate
-    mxf_write_local_tag(pb, 8, 0x3D03);
+    mxf_write_local_tag(s, 8, 0x3D03);
     avio_wb32(pb, st->codecpar->sample_rate);
     avio_wb32(pb, 1);
 
     if (s->oformat == &ff_mxf_d10_muxer) {
-        mxf_write_local_tag(pb, 1, 0x3D04);
+        mxf_write_local_tag(s, 1, 0x3D04);
         avio_w8(pb, 0);
     }
 
-    mxf_write_local_tag(pb, 4, 0x3D07);
+    mxf_write_local_tag(s, 4, 0x3D07);
     if (mxf->channel_count == -1) {
         if (show_warnings && (s->oformat == &ff_mxf_d10_muxer) && (st->codecpar->channels != 4) && (st->codecpar->channels != 8))
             av_log(s, AV_LOG_WARNING, "the number of audio channels shall be 4 or 8 : the output will not comply to MXF D-10 specs, use -d10_channelcount to fix this\n");
@@ -1427,7 +1460,7 @@ static int64_t mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, 
         avio_wb32(pb, st->codecpar->channels);
     }
 
-    mxf_write_local_tag(pb, 4, 0x3D01);
+    mxf_write_local_tag(s, 4, 0x3D01);
     avio_wb32(pb, av_get_bits_per_sample(st->codecpar->codec_id));
 
     return pos;
@@ -1438,11 +1471,11 @@ static int64_t mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID 
     AVIOContext *pb = s->pb;
     int64_t pos = mxf_write_generic_sound_common(s, st, key);
 
-    mxf_write_local_tag(pb, 2, 0x3D0A);
+    mxf_write_local_tag(s, 2, 0x3D0A);
     avio_wb16(pb, st->codecpar->block_align);
 
     // avg bytes per sec
-    mxf_write_local_tag(pb, 4, 0x3D09);
+    mxf_write_local_tag(s, 4, 0x3D09);
     avio_wb32(pb, st->codecpar->block_align*st->codecpar->sample_rate);
 
     return pos;
@@ -1482,14 +1515,14 @@ static int mxf_write_tagged_value(AVFormatContext *s, const char* name, const ch
     klv_encode_ber_length(pb, 24 + name_size + indirect_value_size);
 
     // write instance UID
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, TaggedValue, mxf->tagged_value_count);
 
     // write name
-    mxf_write_local_tag_utf16(pb, 0x5001, name); // Name
+    mxf_write_local_tag_utf16(s, 0x5001, name); // Name
 
     // write indirect value
-    mxf_write_local_tag(pb, indirect_value_size, 0x5003);
+    mxf_write_local_tag(s, indirect_value_size, 0x5003);
     avio_write(pb, mxf_indirect_value_utf16le, 17);
     avio_put_str16le(pb, value);
 
@@ -1536,30 +1569,30 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
     }
 
     // write uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, package->type, package->instance);
     av_log(s, AV_LOG_DEBUG, "package type:%d\n", package->type);
     PRINT_KEY(s, "package uid", pb->buf_ptr - 16);
 
     // write package umid
-    mxf_write_local_tag(pb, 32, 0x4401);
+    mxf_write_local_tag(s, 32, 0x4401);
     mxf_write_umid(s, package->instance);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
 
     // package name
     if (name_size)
-        mxf_write_local_tag_utf16(pb, 0x4402, package->name);
+        mxf_write_local_tag_utf16(s, 0x4402, package->name);
 
     // package creation date
-    mxf_write_local_tag(pb, 8, 0x4405);
+    mxf_write_local_tag(s, 8, 0x4405);
     avio_wb64(pb, mxf->timestamp);
 
     // package modified date
-    mxf_write_local_tag(pb, 8, 0x4404);
+    mxf_write_local_tag(s, 8, 0x4404);
     avio_wb64(pb, mxf->timestamp);
 
     // write track refs
-    mxf_write_local_tag(pb, track_count*16 + 8, 0x4403);
+    mxf_write_local_tag(s, track_count*16 + 8, 0x4403);
     mxf_write_refs_count(pb, track_count);
     // these are the uuids of the tracks the will be written in mxf_write_track
     for (i = 0; i < track_count; i++)
@@ -1567,7 +1600,7 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
 
     // write user comment refs
     if (mxf->store_user_comments) {
-        mxf_write_local_tag(pb, user_comment_count*16 + 8, 0x4406);
+        mxf_write_local_tag(s, user_comment_count*16 + 8, 0x4406);
         mxf_write_refs_count(pb, user_comment_count);
         for (i = 0; i < user_comment_count; i++)
             mxf_write_uuid(pb, TaggedValue, mxf->tagged_value_count - user_comment_count + i);
@@ -1575,14 +1608,14 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
 
     // write multiple descriptor reference
     if (package->type == SourcePackage && package->instance == 1) {
-        mxf_write_local_tag(pb, 16, 0x4701);
+        mxf_write_local_tag(s, 16, 0x4701);
         if (s->nb_streams > 1) {
             mxf_write_uuid(pb, MultipleDescriptor, 0);
             mxf_write_multi_descriptor(s);
         } else
             mxf_write_uuid(pb, SubDescriptor, 0);
     } else if (package->type == SourcePackage && package->instance == 2) {
-        mxf_write_local_tag(pb, 16, 0x4701);
+        mxf_write_local_tag(s, 16, 0x4701);
         mxf_write_uuid(pb, TapeDescriptor, 0);
         mxf_write_tape_descriptor(s);
     }
@@ -1622,16 +1655,16 @@ static int mxf_write_essence_container_data(AVFormatContext *s)
     mxf_write_metadata_key(pb, 0x012300);
     klv_encode_ber_length(pb, 72);
 
-    mxf_write_local_tag(pb, 16, 0x3C0A); // Instance UID
+    mxf_write_local_tag(s, 16, 0x3C0A); // Instance UID
     mxf_write_uuid(pb, EssenceContainerData, 0);
 
-    mxf_write_local_tag(pb, 32, 0x2701); // Linked Package UID
+    mxf_write_local_tag(s, 32, 0x2701); // Linked Package UID
     mxf_write_umid(s, 1);
 
-    mxf_write_local_tag(pb, 4, 0x3F07); // BodySID
+    mxf_write_local_tag(s, 4, 0x3F07); // BodySID
     avio_wb32(pb, 1);
 
-    mxf_write_local_tag(pb, 4, 0x3F06); // IndexSID
+    mxf_write_local_tag(s, 4, 0x3F06); // IndexSID
     avio_wb32(pb, 2);
 
     return 0;
@@ -1716,43 +1749,43 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     pos = avio_tell(pb);
 
     // instance id
-    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_local_tag(s, 16, 0x3C0A);
     mxf_write_uuid(pb, IndexTableSegment, 0);
 
     // index edit rate
-    mxf_write_local_tag(pb, 8, 0x3F0B);
+    mxf_write_local_tag(s, 8, 0x3F0B);
     avio_wb32(pb, mxf->time_base.den);
     avio_wb32(pb, mxf->time_base.num);
 
     // index start position
-    mxf_write_local_tag(pb, 8, 0x3F0C);
+    mxf_write_local_tag(s, 8, 0x3F0C);
     avio_wb64(pb, mxf->last_indexed_edit_unit);
 
     // index duration
-    mxf_write_local_tag(pb, 8, 0x3F0D);
+    mxf_write_local_tag(s, 8, 0x3F0D);
     if (mxf->edit_unit_byte_count)
         avio_wb64(pb, 0); // index table covers whole container
     else
         avio_wb64(pb, mxf->edit_units_count);
 
     // edit unit byte count
-    mxf_write_local_tag(pb, 4, 0x3F05);
+    mxf_write_local_tag(s, 4, 0x3F05);
     avio_wb32(pb, mxf->edit_unit_byte_count);
 
     // index sid
-    mxf_write_local_tag(pb, 4, 0x3F06);
+    mxf_write_local_tag(s, 4, 0x3F06);
     avio_wb32(pb, 2);
 
     // body sid
-    mxf_write_local_tag(pb, 4, 0x3F07);
+    mxf_write_local_tag(s, 4, 0x3F07);
     avio_wb32(pb, 1);
 
     // real slice count - 1
-    mxf_write_local_tag(pb, 1, 0x3F08);
+    mxf_write_local_tag(s, 1, 0x3F08);
     avio_w8(pb, !mxf->edit_unit_byte_count); // only one slice for CBR
 
     // delta entry array
-    mxf_write_local_tag(pb, 8 + (s->nb_streams+1)*6, 0x3F09);
+    mxf_write_local_tag(s, 8 + (s->nb_streams+1)*6, 0x3F09);
     avio_wb32(pb, s->nb_streams+1); // num of entries
     avio_wb32(pb, 6);               // size of one entry
     // write system item delta entry
@@ -1784,7 +1817,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
     if (!mxf->edit_unit_byte_count) {
         MXFStreamContext *sc = s->streams[0]->priv_data;
-        mxf_write_local_tag(pb, 8 + mxf->edit_units_count*15, 0x3F0A);
+        mxf_write_local_tag(s, 8 + mxf->edit_units_count*15, 0x3F0A);
         avio_wb32(pb, mxf->edit_units_count);  // num of entries
         avio_wb32(pb, 15);  // size of one entry
 

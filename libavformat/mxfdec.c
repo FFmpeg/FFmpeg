@@ -336,6 +336,14 @@ static const uint8_t mxf_indirect_value_utf16be[]          = { 0x42,0x01,0x10,0x
 static const uint8_t mxf_apple_coll_max_cll[]              = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01,0x01 };
 static const uint8_t mxf_apple_coll_max_fall[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01,0x02 };
 
+static uint8_t mxf_mastering_display_prefix[13]            = { FF_MXF_MasteringDisplay_PREFIX };
+static uint8_t mxf_mastering_display_uls[4][16] = {
+    FF_MXF_MasteringDisplayPrimaries,
+    FF_MXF_MasteringDisplayWhitePointChromaticity,
+    FF_MXF_MasteringDisplayMaximumLuminance,
+    FF_MXF_MasteringDisplayMinimumLuminance,
+};
+
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
 static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
@@ -1280,13 +1288,13 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
                 rsiz == FF_PROFILE_JPEG2000_DCINEMA_4K)
                 descriptor->pix_fmt = AV_PIX_FMT_XYZ12;
         }
-        if (IS_KLV_KEY(uid, ff_mxf_mastering_display_prefix)) {
+        if (IS_KLV_KEY(uid, mxf_mastering_display_prefix)) {
             if (!descriptor->mastering) {
                 descriptor->mastering = av_mastering_display_metadata_alloc();
                 if (!descriptor->mastering)
                     return AVERROR(ENOMEM);
             }
-            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[0].uid)) {
+            if (IS_KLV_KEY(uid, mxf_mastering_display_uls[0])) {
                 for (int i = 0; i < 3; i++) {
                     /* Order: large x, large y, other (i.e. RGB) */
                     descriptor->mastering->display_primaries[i][0] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
@@ -1296,20 +1304,20 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
                 if (descriptor->mastering->white_point[0].den != 0)
                     descriptor->mastering->has_primaries = 1;
             }
-            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[1].uid)) {
+            if (IS_KLV_KEY(uid, mxf_mastering_display_uls[1])) {
                 descriptor->mastering->white_point[0] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
                 descriptor->mastering->white_point[1] = av_make_q(avio_rb16(pb), FF_MXF_MASTERING_CHROMA_DEN);
                 /* Check we have seen mxf_mastering_display_primaries */
                 if (descriptor->mastering->display_primaries[0][0].den != 0)
                     descriptor->mastering->has_primaries = 1;
             }
-            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[2].uid)) {
+            if (IS_KLV_KEY(uid, mxf_mastering_display_uls[2])) {
                 descriptor->mastering->max_luminance = av_make_q(avio_rb32(pb), FF_MXF_MASTERING_LUMA_DEN);
                 /* Check we have seen mxf_mastering_display_minimum_luminance */
                 if (descriptor->mastering->min_luminance.den != 0)
                     descriptor->mastering->has_luminance = 1;
             }
-            if (IS_KLV_KEY(uid, ff_mxf_mastering_display_local_tags[3].uid)) {
+            if (IS_KLV_KEY(uid, mxf_mastering_display_uls[3])) {
                 descriptor->mastering->min_luminance = av_make_q(avio_rb32(pb), FF_MXF_MASTERING_LUMA_DEN);
                 /* Check we have seen mxf_mastering_display_maximum_luminance */
                 if (descriptor->mastering->max_luminance.den != 0)
