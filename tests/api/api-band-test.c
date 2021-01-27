@@ -167,10 +167,8 @@ static int video_decode(const char *input_filename)
             continue;
         }
 
-        if (result < 0)
-            result = avcodec_send_packet(ctx, NULL);
-        else
-            result = avcodec_send_packet(ctx, pkt);
+        // pkt will be empty on read error/EOF
+        result = avcodec_send_packet(ctx, pkt);
 
         av_packet_unref(pkt);
 
