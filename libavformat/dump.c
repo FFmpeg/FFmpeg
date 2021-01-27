@@ -696,7 +696,7 @@ void av_dump_format(AVFormatContext *ic, int index,
         av_log(NULL, AV_LOG_INFO,
                "end %f\n", ch->end * av_q2d(ch->time_base));
 
-        dump_metadata(NULL, ch->metadata, "    ");
+        dump_metadata(NULL, ch->metadata, "      ");
     }
 
     if (ic->nb_programs) {
