@@ -183,6 +183,13 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
+#define PCLIP(v, max, dst, src, x) \
+    if (v >= 0 && v <= max) {      \
+        dst[x] = v;                \
+    } else {                       \
+        dst[x] = src[x];           \
+    }
+
 static void pseudocolor_filter(int max, int width, int height,
                                const uint8_t *index,
                                const uint8_t *src,
@@ -198,11 +205,7 @@ static void pseudocolor_filter(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[x]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         index += ilinesize;
         src += slinesize;
@@ -225,11 +228,7 @@ static void pseudocolor_filter_11(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[(y << 1) * ilinesize + (x << 1)]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         src += slinesize;
         dst += dlinesize;
@@ -251,11 +250,7 @@ static void pseudocolor_filter_11d(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[(y >> 1) * ilinesize + (x >> 1)]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         src += slinesize;
         dst += dlinesize;
@@ -277,11 +272,7 @@ static void pseudocolor_filter_10(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[x << 1]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         index += ilinesize;
         src += slinesize;
@@ -304,11 +295,7 @@ static void pseudocolor_filter_10d(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[x >> 1]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         index += ilinesize;
         src += slinesize;
@@ -334,11 +321,7 @@ static void pseudocolor_filter_16(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[x]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         index += ilinesize / 2;
         src += slinesize / 2;
@@ -364,11 +347,7 @@ static void pseudocolor_filter_16_10(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[x << 1]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         index += ilinesize / 2;
         src += slinesize / 2;
@@ -394,11 +373,7 @@ static void pseudocolor_filter_16_10d(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[x >> 1]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         index += ilinesize / 2;
         src += slinesize / 2;
@@ -428,11 +403,7 @@ static void pseudocolor_filter_16_11(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[(y << 1) * ilinesize + (x << 1)]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         src += slinesize;
         dst += dlinesize;
@@ -461,11 +432,7 @@ static void pseudocolor_filter_16_11d(int max, int width, int height,
         for (x = 0; x < width; x++) {
             int v = lut[index[(y >> 1) * ilinesize + (x >> 1)]];
 
-            if (v >= 0 && v <= max) {
-                dst[x] = v;
-            } else {
-                dst[x] = src[x];
-            }
+            PCLIP(v, max, dst, src, x);
         }
         src += slinesize;
         dst += dlinesize;
