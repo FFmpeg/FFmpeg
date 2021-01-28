@@ -1284,7 +1284,6 @@ $(SUBDIR)cbrt_data_fixed.o: $(SUBDIR)cbrt_fixed_tables.h
 $(SUBDIR)aacdec_fixed.o: $(SUBDIR)sinewin_fixed_tables.h
 $(SUBDIR)aacps_float.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aacps_fixed.o: $(SUBDIR)aacps_fixed_tables.h
-$(SUBDIR)aactab_fixed.o: $(SUBDIR)aac_fixed_tables.h
 $(SUBDIR)dvenc.o: $(SUBDIR)dv_tables.h
 $(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
 $(SUBDIR)mpegaudiodec_common.o: $(SUBDIR)mpegaudiodec_common_tables.h
