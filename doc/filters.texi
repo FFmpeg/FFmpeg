@@ -16246,6 +16246,10 @@ The maximum allowed component value.
 
 All expressions default to "val".
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @subsection Examples
 
 @itemize
