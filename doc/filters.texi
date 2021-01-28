@@ -16208,6 +16208,20 @@ set pixel fourth component expression, corresponds to the alpha component
 
 @item i
 set component to use as base for altering colors
+
+@item p
+Pick one of built-in LUTs. By default is set to none.
+
+Available LUTs:
+@table @samp
+@item magma
+@item inferno
+@item plasma
+@item viridis
+@item turbo
+@item cividis
+@end table
+
 @end table
 
 Each of them specifies the expression to use for computing the lookup table for
