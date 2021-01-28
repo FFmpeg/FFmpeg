@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#define BUILD_TABLES
 #define CONFIG_HARDCODED_TABLES 0
 #include "aac_defines.h"
 

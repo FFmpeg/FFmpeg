@@ -36,8 +36,12 @@
 #else
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/mem.h"
+#ifdef BUILD_TABLES
+#undef DECLARE_ALIGNED
+#define DECLARE_ALIGNED(align, type, variable) type variable
+#else
 #include "libavutil/mem_internal.h"
+#endif
 
 #include "aac_defines.h"
 #include "libavutil/softfloat.h"
