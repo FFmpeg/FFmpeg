@@ -260,15 +260,6 @@ void ff_amf_write_field_name(uint8_t **dst, const char *str);
 void ff_amf_write_object_end(uint8_t **dst);
 
 /**
- * Read AMF boolean value.
- *
- *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
- *@param[out]    val 0 or 1
- *@return 0 on success or an AVERROR code on failure
-*/
-int ff_amf_read_bool(GetByteContext *gbc, int *val);
-
-/**
  * Read AMF number value.
  *
  *@param[in,out] gbc GetByteContext initialized with AMF-formatted data

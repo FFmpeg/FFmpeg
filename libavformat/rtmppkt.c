@@ -84,14 +84,6 @@ void ff_amf_write_object_end(uint8_t **dst)
     bytestream_put_be24(dst, AMF_DATA_TYPE_OBJECT_END);
 }
 
-int ff_amf_read_bool(GetByteContext *bc, int *val)
-{
-    if (bytestream2_get_byte(bc) != AMF_DATA_TYPE_BOOL)
-        return AVERROR_INVALIDDATA;
-    *val = bytestream2_get_byte(bc);
-    return 0;
-}
-
 int ff_amf_read_number(GetByteContext *bc, double *val)
 {
     uint64_t read;
