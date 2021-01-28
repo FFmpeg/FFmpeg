@@ -23,6 +23,21 @@
  * bitstream reader API header.
  */
 
+/*
+ * Bit order (endianness) is controlled by #defining BITSTREAM_BE and/or
+ * BITSTREAM_LE before #including this header. The corresponding bitreading
+ * functions are provided as bits_*_be()/bits_*_le() respectively.
+ *
+ * If neither or only BITSTREAM_BE is defined, then the default (unsuffixed)
+ * bits_*() will resolve to the big-endian implementation. If only BITSTREAM_LE
+ * is defined, little-endian will be the default.
+ *
+ * If both are defined, then the default can be controlled by defining at most
+ * one of BITSTREAM_DEFAULT_LE/BE. When BITSTREAM_DEFAULT_* is not defined, no
+ * default is provided and you must always explicitly use the _be() or _le()
+ * variants.
+ */
+
 #ifndef AVCODEC_BITSTREAM_H
 #define AVCODEC_BITSTREAM_H
 
@@ -42,461 +57,80 @@
 #define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
 #endif
 
-typedef struct BitstreamContext {
-    uint64_t bits;       // stores bits read from the buffer
-    const uint8_t *buffer, *buffer_end;
-    const uint8_t *ptr;  // pointer to the position inside a buffer
-    unsigned bits_valid; // number of bits left in bits field
-    unsigned size_in_bits;
-} BitstreamContext;
+// select the default endianness, if any
+#if defined(BITSTREAM_LE) && defined(BITSTREAM_BE)
 
-/**
- * @return
- * - 0 on successful refill
- * - a negative number when bitstream end is hit
- *
- * Always succeeds when UNCHECKED_BITSTREAM_READER is enabled.
- */
-static inline int bits_priv_refill_64(BitstreamContext *bc)
-{
-#if !UNCHECKED_BITSTREAM_READER
-    if (bc->ptr >= bc->buffer_end)
-        return -1;
+# if defined(BITSTREAM_DEFAULT_BE) && defined(BITSTREAM_DEFAULT_LE)
+#  error "At most one of BITSTREAM_DEFAULT_BE/LE must be defined"
+# elif   defined(BITSTREAM_DEFAULT_BE)
+#  define BITS_DEFAULT_BE
+# elif   defined(BITSTREAM_DEFAULT_LE)
+#  define BITS_DEFAULT_LE
+# endif
+
+#elif defined(BITSTREAM_LE)
+# define BITS_DEFAULT_LE
+#else // select BE if nothing is requested explicitly
+# define BITS_DEFAULT_BE
+# define BITSTREAM_WANT_BE
 #endif
 
-#ifdef BITSTREAM_READER_LE
-    bc->bits       = AV_RL64(bc->ptr);
-#else
-    bc->bits       = AV_RB64(bc->ptr);
-#endif
-    bc->ptr       += 8;
-    bc->bits_valid = 64;
+#if defined(BITS_DEFAULT_LE)
 
-    return 0;
-}
+# define BitstreamContext   BitstreamContextLE
+# define bits_init          bits_init_le
+# define bits_init8         bits_init8_le
+# define bits_tell          bits_tell_le
+# define bits_size          bits_size_le
+# define bits_left          bits_left_le
+# define bits_read_bit      bits_read_bit_le
+# define bits_read_nz       bits_read_nz_le
+# define bits_read          bits_read_le
+# define bits_read_63       bits_read_63_le
+# define bits_read_64       bits_read_64_le
+# define bits_read_signed   bits_read_signed_le
+# define bits_peek_nz       bits_peek_nz_le
+# define bits_peek          bits_peek_le
+# define bits_peek_signed   bits_peek_signed_le
+# define bits_skip          bits_skip_le
+# define bits_seek          bits_seek_le
+# define bits_align         bits_align_le
+# define bits_read_xbits    bits_read_xbits_le
+# define bits_decode012     bits_decode012_le
+# define bits_decode210     bits_decode210_le
+# define bits_apply_sign    bits_apply_sign_le
+# define bits_read_vlc      bits_read_vlc_le
 
-/**
- * @return
- * - 0 on successful refill
- * - a negative number when bitstream end is hit
- *
- * Always succeeds when UNCHECKED_BITSTREAM_READER is enabled.
- */
-static inline int bits_priv_refill_32(BitstreamContext *bc)
-{
-#if !UNCHECKED_BITSTREAM_READER
-    if (bc->ptr >= bc->buffer_end)
-        return -1;
-#endif
+#elif defined(BITS_DEFAULT_BE)
 
-#ifdef BITSTREAM_READER_LE
-    bc->bits      |= (uint64_t)AV_RL32(bc->ptr) << bc->bits_valid;
-#else
-    bc->bits      |= (uint64_t)AV_RB32(bc->ptr) << (32 - bc->bits_valid);
-#endif
-    bc->ptr        += 4;
-    bc->bits_valid += 32;
+# define BitstreamContext   BitstreamContextBE
+# define bits_init          bits_init_be
+# define bits_init8         bits_init8_be
+# define bits_tell          bits_tell_be
+# define bits_size          bits_size_be
+# define bits_left          bits_left_be
+# define bits_read_bit      bits_read_bit_be
+# define bits_read_nz       bits_read_nz_be
+# define bits_read          bits_read_be
+# define bits_read_63       bits_read_63_be
+# define bits_read_64       bits_read_64_be
+# define bits_read_signed   bits_read_signed_be
+# define bits_peek_nz       bits_peek_nz_be
+# define bits_peek          bits_peek_be
+# define bits_peek_signed   bits_peek_signed_be
+# define bits_skip          bits_skip_be
+# define bits_seek          bits_seek_be
+# define bits_align         bits_align_be
+# define bits_read_xbits    bits_read_xbits_be
+# define bits_decode012     bits_decode012_be
+# define bits_decode210     bits_decode210_be
+# define bits_apply_sign    bits_apply_sign_be
+# define bits_read_vlc      bits_read_vlc_be
 
-    return 0;
-}
-
-/**
- * Initialize BitstreamContext.
- * @param buffer bitstream buffer, must be AV_INPUT_BUFFER_PADDING_SIZE bytes
- *        larger than the actual read bits because some optimized bitstream
- *        readers read 32 or 64 bits at once and could read over the end
- * @param bit_size the size of the buffer in bits
- * @return 0 on success, AVERROR_INVALIDDATA if the buffer_size would overflow.
- */
-static inline int bits_init(BitstreamContext *bc, const uint8_t *buffer,
-                            unsigned int bit_size)
-{
-    unsigned int buffer_size;
-
-    if (bit_size > INT_MAX - 7 || !buffer) {
-        bc->buffer     = NULL;
-        bc->ptr        = NULL;
-        bc->bits_valid = 0;
-        return AVERROR_INVALIDDATA;
-    }
-
-    buffer_size = (bit_size + 7) >> 3;
-
-    bc->buffer       = buffer;
-    bc->buffer_end   = buffer + buffer_size;
-    bc->ptr          = bc->buffer;
-    bc->size_in_bits = bit_size;
-    bc->bits_valid   = 0;
-    bc->bits         = 0;
-
-    bits_priv_refill_64(bc);
-
-    return 0;
-}
-
-/**
- * Initialize BitstreamContext.
- * @param buffer bitstream buffer, must be AV_INPUT_BUFFER_PADDING_SIZE bytes
- *        larger than the actual read bits because some optimized bitstream
- *        readers read 32 or 64 bits at once and could read over the end
- * @param byte_size the size of the buffer in bytes
- * @return 0 on success, AVERROR_INVALIDDATA if the buffer_size would overflow
- */
-static inline int bits_init8(BitstreamContext *bc, const uint8_t *buffer,
-                             unsigned int byte_size)
-{
-    if (byte_size > INT_MAX / 8)
-        return AVERROR_INVALIDDATA;
-    return bits_init(bc, buffer, byte_size * 8);
-}
-
-/**
- * Return number of bits already read.
- */
-static inline int bits_tell(const BitstreamContext *bc)
-{
-    return (bc->ptr - bc->buffer) * 8 - bc->bits_valid;
-}
-
-/**
- * Return buffer size in bits.
- */
-static inline int bits_size(const BitstreamContext *bc)
-{
-    return bc->size_in_bits;
-}
-
-/**
- * Return the number of the bits left in a buffer.
- */
-static inline int bits_left(const BitstreamContext *bc)
-{
-    return (bc->buffer - bc->ptr) * 8 + bc->size_in_bits + bc->bits_valid;
-}
-
-static inline uint64_t bits_priv_val_show(BitstreamContext *bc, unsigned int n)
-{
-    av_assert2(n > 0 && n <= 64);
-
-#ifdef BITSTREAM_READER_LE
-    return bc->bits & (UINT64_MAX >> (64 - n));
-#else
-    return bc->bits >> (64 - n);
-#endif
-}
-
-static inline void bits_priv_skip_remaining(BitstreamContext *bc, unsigned int n)
-{
-#ifdef BITSTREAM_READER_LE
-    bc->bits >>= n;
-#else
-    bc->bits <<= n;
-#endif
-    bc->bits_valid -= n;
-}
-
-static inline uint64_t bits_priv_val_get(BitstreamContext *bc, unsigned int n)
-{
-    uint64_t ret;
-
-    av_assert2(n > 0 && n < 64);
-
-    ret = bits_priv_val_show(bc, n);
-    bits_priv_skip_remaining(bc, n);
-
-    return ret;
-}
-
-/**
- * Return one bit from the buffer.
- */
-static inline unsigned int bits_read_bit(BitstreamContext *bc)
-{
-    if (!bc->bits_valid && bits_priv_refill_64(bc) < 0)
-        return 0;
-
-    return bits_priv_val_get(bc, 1);
-}
-
-/**
- * Return n bits from the buffer, n has to be in the 1-32 range.
- * May be faster than bits_read() when n is not a compile-time constant and is
- * known to be non-zero;
- */
-static inline uint32_t bits_read_nz(BitstreamContext *bc, unsigned int n)
-{
-    av_assert2(n > 0 && n <= 32);
-
-    if (n > bc->bits_valid) {
-        if (bits_priv_refill_32(bc) < 0)
-            bc->bits_valid = n;
-    }
-
-    return bits_priv_val_get(bc, n);
-}
-
-/**
- * Return n bits from the buffer, n has to be in the 0-32  range.
- */
-static inline uint32_t bits_read(BitstreamContext *bc, unsigned int n)
-{
-    av_assert2(n <= 32);
-
-    if (!n)
-        return 0;
-
-    return bits_read_nz(bc, n);
-}
-
-/**
- * Return n bits from the buffer, n has to be in the 0-63 range.
- */
-static inline uint64_t bits_read_63(BitstreamContext *bc, unsigned int n)
-{
-    uint64_t ret = 0;
-    unsigned left = 0;
-
-    av_assert2(n <= 63);
-
-    if (!n)
-        return 0;
-
-    if (n > bc->bits_valid) {
-        left = bc->bits_valid;
-        n   -= left;
-
-        if (left)
-            ret = bits_priv_val_get(bc, left);
-
-        if (bits_priv_refill_64(bc) < 0)
-            bc->bits_valid = n;
-
-    }
-
-#ifdef BITSTREAM_READER_LE
-    ret = bits_priv_val_get(bc, n) << left | ret;
-#else
-    ret = bits_priv_val_get(bc, n) | ret << n;
 #endif
 
-    return ret;
-}
-
-/**
- * Return n bits from the buffer, n has to be in the 0-64 range.
- */
-static inline uint64_t bits_read_64(BitstreamContext *bc, unsigned int n)
-{
-    av_assert2(n <= 64);
-
-    if (n == 64) {
-        uint64_t ret = bits_read_63(bc, 63);
-#ifdef BITSTREAM_READER_LE
-        return ret | ((uint64_t)bits_read_bit(bc) << 63);
-#else
-        return (ret << 1) | (uint64_t)bits_read_bit(bc);
-#endif
-    }
-    return bits_read_63(bc, n);
-}
-
-/**
- * Return n bits from the buffer as a signed integer.
- * n has to be in the 0-32 range.
- */
-static inline int32_t bits_read_signed(BitstreamContext *bc, unsigned int n)
-{
-    return sign_extend(bits_read(bc, n), n);
-}
-
-/**
- * Return n bits from the buffer but do not change the buffer state.
- * n has to be in the 1-32 range. May
- */
-static inline uint32_t bits_peek_nz(BitstreamContext *bc, unsigned int n)
-{
-    av_assert2(n > 0 && n <= 32);
-
-    if (n > bc->bits_valid)
-        bits_priv_refill_32(bc);
-
-    return bits_priv_val_show(bc, n);
-}
-
-/**
- * Return n bits from the buffer but do not change the buffer state.
- * n has to be in the 0-32 range.
- */
-static inline uint32_t bits_peek(BitstreamContext *bc, unsigned int n)
-{
-    av_assert2(n <= 32);
-
-    if (!n)
-        return 0;
-
-    return bits_peek_nz(bc, n);
-}
-
-/**
- * Return n bits from the buffer as a signed integer,
- * do not change the buffer state.
- * n has to be in the 0-32 range.
- */
-static inline int bits_peek_signed(BitstreamContext *bc, unsigned int n)
-{
-    return sign_extend(bits_peek(bc, n), n);
-}
-
-/**
- * Skip n bits in the buffer.
- */
-static inline void bits_skip(BitstreamContext *bc, unsigned int n)
-{
-    if (n < bc->bits_valid)
-        bits_priv_skip_remaining(bc, n);
-    else {
-        n -= bc->bits_valid;
-        bc->bits       = 0;
-        bc->bits_valid = 0;
-
-        if (n >= 64) {
-            unsigned int skip = n / 8;
-
-            n -= skip * 8;
-            bc->ptr += skip;
-        }
-        bits_priv_refill_64(bc);
-        if (n)
-            bits_priv_skip_remaining(bc, n);
-    }
-}
-
-/**
- * Seek to the given bit position.
- */
-static inline void bits_seek(BitstreamContext *bc, unsigned pos)
-{
-    bc->ptr        = bc->buffer;
-    bc->bits       = 0;
-    bc->bits_valid = 0;
-
-    bits_skip(bc, pos);
-}
-
-/**
- * Skip bits to a byte boundary.
- */
-static inline const uint8_t *bits_align(BitstreamContext *bc)
-{
-    unsigned int n = -bits_tell(bc) & 7;
-    if (n)
-        bits_skip(bc, n);
-    return bc->buffer + (bits_tell(bc) >> 3);
-}
-
-/**
- * Read MPEG-1 dc-style VLC (sign bit + mantissa with no MSB).
- * If MSB not set it is negative.
- * @param n length in bits
- */
-static inline int bits_read_xbits(BitstreamContext *bc, unsigned int n)
-{
-    int32_t cache = bits_peek(bc, 32);
-    int sign = ~cache >> 31;
-    bits_priv_skip_remaining(bc, n);
-
-    return ((((uint32_t)(sign ^ cache)) >> (32 - n)) ^ sign) - sign;
-}
-
-/**
- * Return decoded truncated unary code for the values 0, 1, 2.
- */
-static inline int bits_decode012(BitstreamContext *bc)
-{
-    if (!bits_read_bit(bc))
-        return 0;
-    else
-        return bits_read_bit(bc) + 1;
-}
-
-/**
- * Return decoded truncated unary code for the values 2, 1, 0.
- */
-static inline int bits_decode210(BitstreamContext *bc)
-{
-    if (bits_read_bit(bc))
-        return 0;
-    else
-        return 2 - bits_read_bit(bc);
-}
-
-/* Read sign bit and flip the sign of the provided value accordingly. */
-static inline int bits_apply_sign(BitstreamContext *bc, int val)
-{
-    int sign = bits_read_signed(bc, 1);
-    return (val ^ sign) - sign;
-}
-
-static inline int bits_skip_1stop_8data(BitstreamContext *s)
-{
-    if (bits_left(s) <= 0)
-        return AVERROR_INVALIDDATA;
-
-    while (bits_read_bit(s)) {
-        bits_skip(s, 8);
-        if (bits_left(s) <= 0)
-            return AVERROR_INVALIDDATA;
-    }
-
-    return 0;
-}
-
-/**
- * Return the LUT element for the given bitstream configuration.
- */
-static inline int bits_priv_set_idx(BitstreamContext *bc, int code, int *n, int *nb_bits,
-                                    const VLCElem *table)
-{
-    unsigned idx;
-
-    *nb_bits = -*n;
-    idx = bits_peek(bc, *nb_bits) + code;
-    *n = table[idx].len;
-
-    return table[idx].sym;
-}
-
-/**
- * Parse a vlc code.
- * @param bits is the number of bits which will be read at once, must be
- *             identical to nb_bits in init_vlc()
- * @param max_depth is the number of times bits bits must be read to completely
- *                  read the longest vlc code
- *                  = (max_vlc_length + bits - 1) / bits
- * If the vlc code is invalid and max_depth=1, then no bits will be removed.
- * If the vlc code is invalid and max_depth>1, then the number of bits removed
- * is undefined.
- */
-static inline int bits_read_vlc(BitstreamContext *bc, const VLCElem *table,
-                                int bits, int max_depth)
-{
-    int nb_bits;
-    unsigned idx = bits_peek(bc, bits);
-    int code     = table[idx].sym;
-    int n        = table[idx].len;
-
-    if (max_depth > 1 && n < 0) {
-        bits_priv_skip_remaining(bc, bits);
-        code = bits_priv_set_idx(bc, code, &n, &nb_bits, table);
-        if (max_depth > 2 && n < 0) {
-            bits_priv_skip_remaining(bc, nb_bits);
-            code = bits_priv_set_idx(bc, code, &n, &nb_bits, table);
-        }
-    }
-    bits_priv_skip_remaining(bc, n);
-
-    return code;
-}
+#undef BITS_DEFAULT_LE
+#undef BITS_DEFAULT_BE
 
 #define BITS_RL_VLC(level, run, bc, table, bits, max_depth) \
     do {                                                    \
@@ -527,3 +161,32 @@ static inline int bits_read_vlc(BitstreamContext *bc, const VLCElem *table,
     } while (0)
 
 #endif /* AVCODEC_BITSTREAM_H */
+
+// the following is deliberately outside of the standard #include guards
+
+#if  defined(BITSTREAM_LE) && !defined(BITSTREAM_WANT_LE)
+# define BITSTREAM_WANT_LE
+#endif
+
+#if defined(BITSTREAM_BE) && !defined(BITSTREAM_WANT_BE)
+# define BITSTREAM_WANT_BE
+#endif
+
+#if defined(BITSTREAM_WANT_LE) && !defined(AVCODEC_BITSTREAM_LE)
+#define AVCODEC_BITSTREAM_LE
+
+#define BITSTREAM_TEMPLATE_LE
+#include "bitstream_template.h"
+#undef BITSTREAM_TEMPLATE_LE
+
+#endif
+
+#if defined(BITSTREAM_WANT_BE) && !defined(AVCODEC_BITSTREAM_BE)
+#define AVCODEC_BITSTREAM_BE
+
+#include "bitstream_template.h"
+
+#endif
+
+#undef BITSTREAM_WANT_LE
+#undef BITSTREAM_WANT_BE
