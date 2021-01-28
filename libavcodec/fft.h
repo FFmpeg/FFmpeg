@@ -109,8 +109,16 @@ struct FFTContext {
 
 #if CONFIG_HARDCODED_TABLES
 #define COSTABLE_CONST const
+#define ff_init_ff_cos_tabs(index)
 #else
 #define COSTABLE_CONST
+#define ff_init_ff_cos_tabs FFT_NAME(ff_init_ff_cos_tabs)
+
+/**
+ * Initialize the cosine table in ff_cos_tabs[index]
+ * @param index index in ff_cos_tabs array of the table to initialize
+ */
+void ff_init_ff_cos_tabs(int index);
 #endif
 
 #define COSTABLE(size) \
@@ -131,14 +139,6 @@ extern COSTABLE(32768);
 extern COSTABLE(65536);
 extern COSTABLE(131072);
 extern COSTABLE_CONST FFTSample* const FFT_NAME(ff_cos_tabs)[18];
-
-#define ff_init_ff_cos_tabs FFT_NAME(ff_init_ff_cos_tabs)
-
-/**
- * Initialize the cosine table in ff_cos_tabs[index]
- * @param index index in ff_cos_tabs array of the table to initialize
- */
-void ff_init_ff_cos_tabs(int index);
 
 #define ff_fft_init FFT_NAME(ff_fft_init)
 #define ff_fft_end  FFT_NAME(ff_fft_end)

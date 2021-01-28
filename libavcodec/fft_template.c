@@ -113,6 +113,10 @@ static CosTabsInitOnce cos_tabs_init_once[] = {
     { init_ff_cos_tabs_131072, AV_ONCE_INIT },
 };
 
+av_cold void ff_init_ff_cos_tabs(int index)
+{
+    ff_thread_once(&cos_tabs_init_once[index].control, cos_tabs_init_once[index].func);
+}
 #endif
 COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     NULL, NULL, NULL, NULL,
@@ -148,12 +152,6 @@ static int split_radix_permutation(int i, int n, int inverse)
     else                  return split_radix_permutation(i, m, inverse)*4 - 1;
 }
 
-av_cold void ff_init_ff_cos_tabs(int index)
-{
-#if (!CONFIG_HARDCODED_TABLES) && (!FFT_FIXED_32)
-    ff_thread_once(&cos_tabs_init_once[index].control, cos_tabs_init_once[index].func);
-#endif
-}
 
 static const int avx_tab[] = {
     0, 4, 1, 5, 8, 12, 9, 13, 2, 6, 3, 7, 10, 14, 11, 15
