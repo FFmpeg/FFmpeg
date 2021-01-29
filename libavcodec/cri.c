@@ -37,6 +37,7 @@
 
 typedef struct CRIContext {
     AVCodecContext *jpeg_avctx;   // wrapper context for MJPEG
+    AVPacket *jpkt;               // encoded JPEG tile
     AVFrame *jpgframe;            // decoded JPEG tile
 
     GetByteContext gb;
@@ -54,6 +55,10 @@ static av_cold int cri_decode_init(AVCodecContext *avctx)
 
     s->jpgframe = av_frame_alloc();
     if (!s->jpgframe)
+        return AVERROR(ENOMEM);
+
+    s->jpkt = av_packet_alloc();
+    if (!s->jpkt)
         return AVERROR(ENOMEM);
 
     codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
@@ -345,13 +350,11 @@ skip:
         unsigned offset = 0;
 
         for (int tile = 0; tile < 4; tile++) {
-            AVPacket jpkt;
+            av_packet_unref(s->jpkt);
+            s->jpkt->data = (uint8_t *)s->data + offset;
+            s->jpkt->size = s->tile_size[tile];
 
-            av_init_packet(&jpkt);
-            jpkt.data = (uint8_t *)s->data + offset;
-            jpkt.size = s->tile_size[tile];
-
-            ret = avcodec_send_packet(s->jpeg_avctx, &jpkt);
+            ret = avcodec_send_packet(s->jpeg_avctx, s->jpkt);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error submitting a packet for decoding\n");
                 return ret;
@@ -415,6 +418,7 @@ static av_cold int cri_decode_close(AVCodecContext *avctx)
     CRIContext *s = avctx->priv_data;
 
     av_frame_free(&s->jpgframe);
+    av_packet_free(&s->jpkt);
     avcodec_free_context(&s->jpeg_avctx);
 
     return 0;
