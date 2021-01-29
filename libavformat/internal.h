@@ -365,8 +365,6 @@ do {\
 } while(0)
 #endif
 
-struct tm *ff_brktimegm(time_t secs, struct tm *tm);
-
 /**
  * Automatically create sub-directories
  *

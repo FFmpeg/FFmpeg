@@ -29,6 +29,7 @@
  */
 #include <time.h>
 
+#include "libavutil/time_internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/dv_profile.h"
@@ -71,6 +72,14 @@ static const int dv_aaux_packs_dist[12][9] = {
     { 0xff, 0xff, 0xff, 0x50, 0x51, 0x52, 0x53, 0xff, 0xff },
     { 0x50, 0x51, 0x52, 0x53, 0xff, 0xff, 0xff, 0xff, 0xff },
 };
+
+static void brktimegm(time_t secs, struct tm *tm)
+{
+    tm = gmtime_r(&secs, tm);
+
+    tm->tm_year += 1900; /* unlike gmtime_r we store complete year here */
+    tm->tm_mon  += 1;    /* unlike gmtime_r tm_mon is from 1 to 12 */
+}
 
 static int dv_audio_frame_size(const AVDVProfile* sys, int frame, int sample_rate)
 {
@@ -143,7 +152,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     case dv_video_recdate:  /* VAUX recording date */
         ct = c->start_time + av_rescale_rnd(c->frames, c->sys->time_base.num,
                                             c->sys->time_base.den, AV_ROUND_DOWN);
-        ff_brktimegm(ct, &tc);
+        brktimegm(ct, &tc);
         buf[1] = 0xff; /* ds, tm, tens of time zone, units of time zone */
                        /* 0xff is very likely to be "unknown" */
         buf[2] = (3 << 6) | /* reserved -- always 1 */
@@ -159,7 +168,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     case dv_video_rectime:  /* VAUX recording time */
         ct = c->start_time + av_rescale_rnd(c->frames, c->sys->time_base.num,
                                                        c->sys->time_base.den, AV_ROUND_DOWN);
-        ff_brktimegm(ct, &tc);
+        brktimegm(ct, &tc);
         buf[1] = (3 << 6) | /* reserved -- always 1 */
                  0x3f; /* tens of frame, units of frame: 0x3f - "unknown" ? */
         buf[2] = (1 << 7) | /* reserved -- always 1 */
