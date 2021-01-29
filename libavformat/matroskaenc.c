@@ -137,7 +137,7 @@ typedef struct MatroskaMuxContext {
     mkv_cues            cues;
     int64_t             cues_pos;
 
-    AVPacket            cur_audio_pkt;
+    AVPacket           *cur_audio_pkt;
 
     unsigned            nb_attachments;
     int                 have_video;
@@ -451,7 +451,7 @@ static void mkv_deinit(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
 
-    av_packet_unref(&mkv->cur_audio_pkt);
+    av_packet_free(&mkv->cur_audio_pkt);
 
     ffio_free_dyn_buf(&mkv->cluster_bc);
     ffio_free_dyn_buf(&mkv->info.bc);
@@ -1933,8 +1933,6 @@ static int mkv_write_header(AVFormatContext *s)
             mkv->reserve_cues_space = -1;
     }
 
-    av_init_packet(&mkv->cur_audio_pkt);
-    mkv->cur_audio_pkt.size = 0;
     mkv->cluster_pos = -1;
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
@@ -2431,9 +2429,9 @@ static int mkv_write_packet(AVFormatContext *s, const AVPacket *pkt)
                           keyframe && (mkv->have_video ? codec_type == AVMEDIA_TYPE_VIDEO : 1) ? AVIO_DATA_MARKER_SYNC_POINT : AVIO_DATA_MARKER_BOUNDARY_POINT);
 
     // check if we have an audio packet cached
-    if (mkv->cur_audio_pkt.size > 0) {
-        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
-        av_packet_unref(&mkv->cur_audio_pkt);
+    if (mkv->cur_audio_pkt->size > 0) {
+        ret = mkv_write_packet_internal(s, mkv->cur_audio_pkt);
+        av_packet_unref(mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Could not write cached audio packet ret:%d\n", ret);
@@ -2445,7 +2443,7 @@ static int mkv_write_packet(AVFormatContext *s, const AVPacket *pkt)
     // keyframe's timecode is contained in the same cluster for WebM
     if (codec_type == AVMEDIA_TYPE_AUDIO) {
         if (pkt->size > 0)
-            ret = av_packet_ref(&mkv->cur_audio_pkt, pkt);
+            ret = av_packet_ref(mkv->cur_audio_pkt, pkt);
     } else
         ret = mkv_write_packet_internal(s, pkt);
     return ret;
@@ -2477,8 +2475,8 @@ static int mkv_write_trailer(AVFormatContext *s)
     int ret, ret2 = 0;
 
     // check if we have an audio packet cached
-    if (mkv->cur_audio_pkt.size > 0) {
-        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
+    if (mkv->cur_audio_pkt->size > 0) {
+        ret = mkv_write_packet_internal(s, mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Could not write cached audio packet ret:%d\n", ret);
@@ -2702,6 +2700,9 @@ static int mkv_init(struct AVFormatContext *s)
     } else
         mkv->mode = MODE_MATROSKAv2;
 
+    mkv->cur_audio_pkt = av_packet_alloc();
+    if (!mkv->cur_audio_pkt)
+        return AVERROR(ENOMEM);
     mkv->tracks = av_mallocz_array(s->nb_streams, sizeof(*mkv->tracks));
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
