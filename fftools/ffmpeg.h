@@ -652,7 +652,6 @@ int guess_input_channel_layout(InputStream *ist);
 
 enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *avctx,
                                     const AVCodec *codec, enum AVPixelFormat target);
-void choose_sample_fmt(AVStream *st, const AVCodec *codec);
 
 int configure_filtergraph(FilterGraph *fg);
 int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out);
