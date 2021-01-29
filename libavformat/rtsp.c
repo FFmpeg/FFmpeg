@@ -1941,12 +1941,15 @@ redirect:
         break;
     }
 
-    if (CONFIG_RTSP_DEMUXER && s->iformat) {
+#if CONFIG_RTSP_DEMUXER
+    if (s->iformat) {
         if (rt->server_type == RTSP_SERVER_SATIP)
             err = init_satip_stream(s);
         else
             err = ff_rtsp_setup_input_streams(s, reply);
-    } else if (CONFIG_RTSP_MUXER)
+    } else
+#endif
+           if (CONFIG_RTSP_MUXER)
         err = ff_rtsp_setup_output_streams(s, host);
     else
         av_assert0(0);
