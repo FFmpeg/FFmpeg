@@ -62,8 +62,8 @@ typedef struct AMVContext
 
     int32_t aframe_size;  /* Expected audio frame size.      */
     int32_t ablock_align; /* Expected audio block align.     */
-    AVPacket apad;        /* Dummy audio packet for padding. */
-    AVPacket vpad;        /* Most recent video frame, for padding. */
+    AVPacket *apad;       /* Dummy audio packet for padding. */
+    AVPacket *vpad;       /* Most recent video frame, for padding. */
 
     /*
      * Cumulative PTS values for each stream, used for the final
@@ -183,16 +183,25 @@ static av_cold int amv_init(AVFormatContext *s)
     }
 
     /* Allocate and fill dummy packet so we can pad the audio. */
-    if ((ret = av_new_packet(&amv->apad, amv->ablock_align)) < 0)
+    amv->apad = av_packet_alloc();
+    if (!amv->apad)
+        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(amv->apad, amv->ablock_align)) < 0) {
+        av_packet_free(&amv->apad);
         return ret;
+    }
 
-    amv->apad.stream_index = AMV_STREAM_AUDIO;
-    memset(amv->apad.data, 0, amv->ablock_align);
-    AV_WL32(amv->apad.data + 4, amv->aframe_size);
+    amv->apad->stream_index = AMV_STREAM_AUDIO;
+    memset(amv->apad->data, 0, amv->ablock_align);
+    AV_WL32(amv->apad->data + 4, amv->aframe_size);
 
-    av_init_packet(&amv->vpad);
-    amv->vpad.stream_index = AMV_STREAM_VIDEO;
-    amv->vpad.duration     = 1;
+    amv->vpad = av_packet_alloc();
+    if (!amv->vpad) {
+        av_packet_free(&amv->apad);
+        return AVERROR(ENOMEM);
+    }
+    amv->vpad->stream_index = AMV_STREAM_VIDEO;
+    amv->vpad->duration     = 1;
     return 0;
 }
 
@@ -200,8 +209,8 @@ static void amv_deinit(AVFormatContext *s)
 {
     AMVContext *amv = s->priv_data;
 
-    av_packet_unref(&amv->apad);
-    av_packet_unref(&amv->vpad);
+    av_packet_free(&amv->apad);
+    av_packet_free(&amv->vpad);
 }
 
 static void amv_write_vlist(AVFormatContext *s, AVCodecParameters *par)
@@ -325,9 +334,9 @@ static int amv_pad(AVFormatContext *s, AVPacket *pkt)
 
     stream_index = (stream_index + 1) % s->nb_streams;
     if (stream_index == AMV_STREAM_VIDEO)
-        return amv_write_packet_internal(s, &amv->vpad);
+        return amv_write_packet_internal(s, amv->vpad);
     else if (stream_index == AMV_STREAM_AUDIO)
-        return amv_write_packet_internal(s, &amv->apad);
+        return amv_write_packet_internal(s, amv->apad);
     else
         av_assert0(0);
 
@@ -348,8 +357,8 @@ static int amv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt->stream_index == AMV_STREAM_VIDEO) {
         /* Save the last packet for padding. */
-        av_packet_unref(&amv->vpad);
-        if ((ret = av_packet_ref(&amv->vpad, pkt)) < 0)
+        av_packet_unref(amv->vpad);
+        if ((ret = av_packet_ref(amv->vpad, pkt)) < 0)
             return ret;
     }
 
@@ -366,7 +375,7 @@ static int amv_write_trailer(AVFormatContext *s)
 
     /* Pad-out one last audio frame if needed. */
     if (amv->last_stream == AMV_STREAM_VIDEO) {
-        if ((ret = amv_write_packet_internal(s, &amv->apad)) < 0)
+        if ((ret = amv_write_packet_internal(s, amv->apad)) < 0)
             return ret;
     }
 
