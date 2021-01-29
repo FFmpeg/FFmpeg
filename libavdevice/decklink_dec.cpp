@@ -675,8 +675,7 @@ static void handle_klv(AVFormatContext *avctx, decklink_ctx *ctx, IDeckLinkVideo
                 klv.insert(klv.end(), packet.data.begin(), packet.data.end());
         }
 
-        AVPacket klv_packet;
-        av_init_packet(&klv_packet);
+        AVPacket klv_packet = { 0 };
         klv_packet.pts = pts;
         klv_packet.dts = pts;
         klv_packet.flags |= AV_PKT_FLAG_KEY;
@@ -874,8 +873,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
     // Handle Video Frame
     if (videoFrame) {
-        AVPacket pkt;
-        av_init_packet(&pkt);
+        AVPacket pkt = { 0 };
         if (ctx->frameCount % 25 == 0) {
             unsigned long long qsize = avpacket_queue_size(&ctx->queue);
             av_log(avctx, AV_LOG_DEBUG,
@@ -977,7 +975,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
         if (!no_video) {
             IDeckLinkVideoFrameAncillary *vanc;
-            AVPacket txt_pkt;
+            AVPacket txt_pkt = { 0 };
             uint8_t txt_buf0[3531]; // 35 * 46 bytes decoded teletext lines + 1 byte data_identifier + 1920 bytes OP47 decode buffer
             uint8_t *txt_buf = txt_buf0;
 
@@ -1036,7 +1034,6 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                         txt_buf[1] = 0x2c; // data_unit_length
                         txt_buf += 46;
                     }
-                    av_init_packet(&txt_pkt);
                     txt_pkt.pts = pkt.pts;
                     txt_pkt.dts = pkt.dts;
                     txt_pkt.stream_index = ctx->teletext_st->index;
@@ -1060,9 +1057,8 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
     // Handle Audio Frame
     if (audioFrame) {
-        AVPacket pkt;
+        AVPacket pkt = { 0 };
         BMDTimeValue audio_pts;
-        av_init_packet(&pkt);
 
         //hack among hacks
         pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (ctx->audio_depth / 8);
