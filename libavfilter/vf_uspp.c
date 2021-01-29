@@ -51,6 +51,7 @@ typedef struct USPPContext {
     int outbuf_size;
     uint8_t *outbuf;
     AVCodecContext *avctx_enc[BLOCK*BLOCK];
+    AVPacket *pkt;
     AVFrame *frame;
     AVFrame *frame_dec;
     int8_t *non_b_qp_table;
@@ -240,24 +241,24 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         const int y1c = y1 >> p->vsub;
         const int BLOCKc = BLOCK >> p->hsub;
         int offset;
-        AVPacket pkt = {0};
+        AVPacket *pkt = p->pkt;
         int got_pkt_ptr;
 
-        av_init_packet(&pkt);
-        pkt.data = p->outbuf;
-        pkt.size = p->outbuf_size;
+        av_packet_unref(pkt);
+        pkt->data = p->outbuf;
+        pkt->size = p->outbuf_size;
 
         p->frame->data[0] = p->src[0] + x1   + y1   * p->frame->linesize[0];
         p->frame->data[1] = p->src[1] + x1c  + y1c  * p->frame->linesize[1];
         p->frame->data[2] = p->src[2] + x1c  + y1c  * p->frame->linesize[2];
         p->frame->format  = p->avctx_enc[i]->pix_fmt;
 
-        ret = avcodec_encode_video2(p->avctx_enc[i], &pkt, p->frame, &got_pkt_ptr);
+        ret = avcodec_encode_video2(p->avctx_enc[i], pkt, p->frame, &got_pkt_ptr);
         if (ret < 0) {
             av_log(p->avctx_enc[i], AV_LOG_ERROR, "Encoding failed\n");
             continue;
         }
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
 
         p->frame_dec = p->avctx_enc[i]->coded_frame;
 
@@ -374,6 +375,8 @@ static int config_input(AVFilterLink *inlink)
     uspp->outbuf_size = (width + BLOCK) * (height + BLOCK) * 10;
     if (!(uspp->frame = av_frame_alloc()))
         return AVERROR(ENOMEM);
+    if (!(uspp->pkt = av_packet_alloc()))
+        return AVERROR(ENOMEM);
     if (!(uspp->outbuf = av_malloc(uspp->outbuf_size)))
         return AVERROR(ENOMEM);
 
@@ -468,6 +471,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&uspp->non_b_qp_table);
     av_freep(&uspp->outbuf);
+    av_packet_free(&uspp->pkt);
     av_frame_free(&uspp->frame);
 }
 
