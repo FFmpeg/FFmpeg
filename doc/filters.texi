@@ -16224,6 +16224,8 @@ Available LUTs:
 @item viridis
 @item turbo
 @item cividis
+@item range1
+@item range2
 @end table
 
 @end table
