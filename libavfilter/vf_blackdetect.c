@@ -89,48 +89,47 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    BlackDetectContext *blackdetect = ctx->priv;
+    BlackDetectContext *s = ctx->priv;
 
-    blackdetect->black_min_duration =
-        blackdetect->black_min_duration_time / av_q2d(inlink->time_base);
+    s->black_min_duration = s->black_min_duration_time / av_q2d(inlink->time_base);
 
-    blackdetect->pixel_black_th_i = ff_fmt_is_in(inlink->format, yuvj_formats) ?
+    s->pixel_black_th_i = ff_fmt_is_in(inlink->format, yuvj_formats) ?
         // luminance_minimum_value + pixel_black_th * luminance_range_size
-             blackdetect->pixel_black_th *  255 :
-        16 + blackdetect->pixel_black_th * (235 - 16);
+             s->pixel_black_th *  255 :
+        16 + s->pixel_black_th * (235 - 16);
 
-    av_log(blackdetect, AV_LOG_VERBOSE,
+    av_log(s, AV_LOG_VERBOSE,
            "black_min_duration:%s pixel_black_th:%f pixel_black_th_i:%d picture_black_ratio_th:%f\n",
-           av_ts2timestr(blackdetect->black_min_duration, &inlink->time_base),
-           blackdetect->pixel_black_th, blackdetect->pixel_black_th_i,
-           blackdetect->picture_black_ratio_th);
+           av_ts2timestr(s->black_min_duration, &inlink->time_base),
+           s->pixel_black_th, s->pixel_black_th_i,
+           s->picture_black_ratio_th);
     return 0;
 }
 
 static void check_black_end(AVFilterContext *ctx)
 {
-    BlackDetectContext *blackdetect = ctx->priv;
+    BlackDetectContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
 
-    if ((blackdetect->black_end - blackdetect->black_start) >= blackdetect->black_min_duration) {
-        av_log(blackdetect, AV_LOG_INFO,
+    if ((s->black_end - s->black_start) >= s->black_min_duration) {
+        av_log(s, AV_LOG_INFO,
                "black_start:%s black_end:%s black_duration:%s\n",
-               av_ts2timestr(blackdetect->black_start, &inlink->time_base),
-               av_ts2timestr(blackdetect->black_end,   &inlink->time_base),
-               av_ts2timestr(blackdetect->black_end - blackdetect->black_start, &inlink->time_base));
+               av_ts2timestr(s->black_start, &inlink->time_base),
+               av_ts2timestr(s->black_end,   &inlink->time_base),
+               av_ts2timestr(s->black_end - s->black_start, &inlink->time_base));
     }
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    BlackDetectContext *blackdetect = ctx->priv;
+    BlackDetectContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     int ret = ff_request_frame(inlink);
 
-    if (ret == AVERROR_EOF && blackdetect->black_started) {
+    if (ret == AVERROR_EOF && s->black_started) {
         // FIXME: black_end should be set to last_picref_pts + last_picref_duration
-        blackdetect->black_end = blackdetect->last_picref_pts;
+        s->black_end = s->last_picref_pts;
         check_black_end(ctx);
     }
     return ret;
@@ -139,18 +138,18 @@ static int request_frame(AVFilterLink *outlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
-    BlackDetectContext *blackdetect = ctx->priv;
+    BlackDetectContext *s = ctx->priv;
     double picture_black_ratio = 0;
     const uint8_t *p = picref->data[0];
     int x, i;
 
     for (i = 0; i < inlink->h; i++) {
         for (x = 0; x < inlink->w; x++)
-            blackdetect->nb_black_pixels += p[x] <= blackdetect->pixel_black_th_i;
+            s->nb_black_pixels += p[x] <= s->pixel_black_th_i;
         p += picref->linesize[0];
     }
 
-    picture_black_ratio = (double)blackdetect->nb_black_pixels / (inlink->w * inlink->h);
+    picture_black_ratio = (double)s->nb_black_pixels / (inlink->w * inlink->h);
 
     av_log(ctx, AV_LOG_DEBUG,
            "frame:%"PRId64" picture_black_ratio:%f pts:%s t:%s type:%c\n",
@@ -158,25 +157,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
            av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base),
            av_get_picture_type_char(picref->pict_type));
 
-    if (picture_black_ratio >= blackdetect->picture_black_ratio_th) {
-        if (!blackdetect->black_started) {
+    if (picture_black_ratio >= s->picture_black_ratio_th) {
+        if (!s->black_started) {
             /* black starts here */
-            blackdetect->black_started = 1;
-            blackdetect->black_start = picref->pts;
+            s->black_started = 1;
+            s->black_start = picref->pts;
             av_dict_set(&picref->metadata, "lavfi.black_start",
-                av_ts2timestr(blackdetect->black_start, &inlink->time_base), 0);
+                av_ts2timestr(s->black_start, &inlink->time_base), 0);
         }
-    } else if (blackdetect->black_started) {
+    } else if (s->black_started) {
         /* black ends here */
-        blackdetect->black_started = 0;
-        blackdetect->black_end = picref->pts;
+        s->black_started = 0;
+        s->black_end = picref->pts;
         check_black_end(ctx);
         av_dict_set(&picref->metadata, "lavfi.black_end",
-            av_ts2timestr(blackdetect->black_end, &inlink->time_base), 0);
+            av_ts2timestr(s->black_end, &inlink->time_base), 0);
     }
 
-    blackdetect->last_picref_pts = picref->pts;
-    blackdetect->nb_black_pixels = 0;
+    s->last_picref_pts = picref->pts;
+    s->nb_black_pixels = 0;
     return ff_filter_frame(inlink->dst->outputs[0], picref);
 }
 
