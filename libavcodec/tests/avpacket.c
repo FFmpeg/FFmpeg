@@ -63,9 +63,6 @@ static int initializations(AVPacket* avpkt)
     const static uint8_t* data = "selftest for av_packet_clone(...)";
     int ret = 0;
 
-    /* initialize avpkt */
-    av_init_packet(avpkt);
-
     /* set values for avpkt */
     avpkt->pts = 17;
     avpkt->dts = 2;
@@ -82,16 +79,24 @@ static int initializations(AVPacket* avpkt)
 
 int main(void)
 {
-    AVPacket avpkt;
+    AVPacket *avpkt = NULL;
     AVPacket *avpkt_clone = NULL;
     int ret = 0;
 
-    if(initializations(&avpkt) < 0){
+    /* test av_packet_alloc */
+    avpkt = av_packet_alloc();
+    if(!avpkt) {
+        av_log(NULL, AV_LOG_ERROR, "av_packet_alloc failed to allcoate AVPacket\n");
+        return 1;
+    }
+
+    if (initializations(avpkt) < 0) {
         printf("failed to initialize variables\n");
+        av_packet_free(&avpkt);
         return 1;
     }
     /* test av_packet_clone*/
-    avpkt_clone = av_packet_clone(&avpkt);
+    avpkt_clone = av_packet_clone(avpkt);
 
     if(!avpkt_clone) {
         av_log(NULL, AV_LOG_ERROR,"av_packet_clone failed to clone AVPacket\n");
@@ -121,7 +126,7 @@ int main(void)
     }
     /*clean up*/
     av_packet_free(&avpkt_clone);
-    av_packet_unref(&avpkt);
+    av_packet_free(&avpkt);
 
 
     return ret;
