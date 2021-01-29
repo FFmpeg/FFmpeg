@@ -77,6 +77,7 @@ typedef struct MpegTSWrite {
     MpegTSSection pat; /* MPEG-2 PAT table */
     MpegTSSection sdt; /* MPEG-2 SDT table context */
     MpegTSService **services;
+    AVPacket *pkt;
     int64_t sdt_period; /* SDT period in PCR time base */
     int64_t pat_period; /* PAT/PMT period in PCR time base */
     int nb_services;
@@ -1022,6 +1023,10 @@ static int mpegts_init(AVFormatContext *s)
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque       = s;
 
+    ts->pkt = av_packet_alloc();
+    if (!ts->pkt)
+        return AVERROR(ENOMEM);
+
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -1745,23 +1750,23 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         }
         if ((AV_RB16(pkt->data) & 0xfff0) != 0xfff0) {
             int ret;
-            AVPacket pkt2;
+            AVPacket *pkt2 = ts->pkt;
 
             if (!ts_st->amux) {
                 av_log(s, AV_LOG_ERROR, "AAC bitstream not in ADTS format "
                                         "and extradata missing\n");
             } else {
-                av_init_packet(&pkt2);
-                pkt2.data = pkt->data;
-                pkt2.size = pkt->size;
+                av_packet_unref(pkt2);
+                pkt2->data = pkt->data;
+                pkt2->size = pkt->size;
                 av_assert0(pkt->dts != AV_NOPTS_VALUE);
-                pkt2.dts = av_rescale_q(pkt->dts, st->time_base, ts_st->amux->streams[0]->time_base);
+                pkt2->dts = av_rescale_q(pkt->dts, st->time_base, ts_st->amux->streams[0]->time_base);
 
                 ret = avio_open_dyn_buf(&ts_st->amux->pb);
                 if (ret < 0)
                     return ret;
 
-                ret = av_write_frame(ts_st->amux, &pkt2);
+                ret = av_write_frame(ts_st->amux, pkt2);
                 if (ret < 0) {
                     ffio_free_dyn_buf(&ts_st->amux->pb);
                     return ret;
@@ -2019,6 +2024,8 @@ static void mpegts_deinit(AVFormatContext *s)
     MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
     int i;
+
+    av_packet_free(&ts->pkt);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
