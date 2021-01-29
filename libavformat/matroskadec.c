@@ -2953,6 +2953,8 @@ static int matroska_read_header(AVFormatContext *s)
             goto fail;
         pos = avio_tell(matroska->ctx->pb);
         res = ebml_parse(matroska, matroska_segment, matroska);
+        if (res == AVERROR(EIO)) // EOF is translated to EIO, this exists the loop on EOF
+            goto fail;
     }
     /* Set data_offset as it might be needed later by seek_frame_generic. */
     if (matroska->current_id == MATROSKA_ID_CLUSTER)
