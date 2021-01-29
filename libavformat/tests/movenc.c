@@ -56,6 +56,7 @@ int out_size;
 struct AVMD5* md5;
 uint8_t hash[HASH_SIZE];
 
+AVPacket *pkt;
 AVStream *video_st, *audio_st;
 int64_t audio_dts, video_dts;
 
@@ -248,68 +249,67 @@ static void mux_frames(int n, int c)
 {
     int end_frames = frames + n;
     while (1) {
-        AVPacket pkt;
         uint8_t pktdata[8] = { 0 };
-        av_init_packet(&pkt);
+        av_packet_unref(pkt);
 
         if (av_compare_ts(audio_dts, audio_st->time_base, video_dts, video_st->time_base) < 0) {
-            pkt.dts = pkt.pts = audio_dts;
-            pkt.stream_index = 1;
-            pkt.duration = audio_duration;
+            pkt->dts = pkt->pts = audio_dts;
+            pkt->stream_index = 1;
+            pkt->duration = audio_duration;
             audio_dts += audio_duration;
         } else {
             if (frames == end_frames)
                 break;
-            pkt.dts = video_dts;
-            pkt.stream_index = 0;
-            pkt.duration = duration;
+            pkt->dts = video_dts;
+            pkt->stream_index = 0;
+            pkt->duration = duration;
             if ((frames % gop_size) == 0) {
-                pkt.flags |= AV_PKT_FLAG_KEY;
+                pkt->flags |= AV_PKT_FLAG_KEY;
                 last_picture = AV_PICTURE_TYPE_I;
-                pkt.pts = pkt.dts + duration;
-                video_dts = pkt.pts;
+                pkt->pts = pkt->dts + duration;
+                video_dts = pkt->pts;
             } else {
                 if (last_picture == AV_PICTURE_TYPE_P) {
                     last_picture = AV_PICTURE_TYPE_B;
-                    pkt.pts = pkt.dts;
+                    pkt->pts = pkt->dts;
                     video_dts = next_p_pts;
                 } else {
                     last_picture = AV_PICTURE_TYPE_P;
                     if (((frames + 1) % gop_size) == 0) {
-                        pkt.pts = pkt.dts + duration;
-                        video_dts = pkt.pts;
+                        pkt->pts = pkt->dts + duration;
+                        video_dts = pkt->pts;
                     } else {
-                        next_p_pts = pkt.pts = pkt.dts + 2 * duration;
+                        next_p_pts = pkt->pts = pkt->dts + 2 * duration;
                         video_dts += duration;
                     }
                 }
             }
             if (!bframes)
-                pkt.pts = pkt.dts;
+                pkt->pts = pkt->dts;
             if (fake_pkt_duration)
-                pkt.duration = fake_pkt_duration;
+                pkt->duration = fake_pkt_duration;
             frames++;
         }
 
         if (clear_duration)
-            pkt.duration = 0;
-        AV_WB32(pktdata + 4, pkt.pts);
-        pkt.data = pktdata;
-        pkt.size = 8;
+            pkt->duration = 0;
+        AV_WB32(pktdata + 4, pkt->pts);
+        pkt->data = pktdata;
+        pkt->size = 8;
         if (skip_write)
             continue;
-        if (skip_write_audio && pkt.stream_index == 1)
+        if (skip_write_audio && pkt->stream_index == 1)
             continue;
 
         if (c) {
-            pkt.pts += (1LL<<32);
-            pkt.dts += (1LL<<32);
+            pkt->pts += (1LL<<32);
+            pkt->dts += (1LL<<32);
         }
 
         if (do_interleave)
-            av_interleaved_write_frame(ctx, &pkt);
+            av_interleaved_write_frame(ctx, pkt);
         else
-            av_write_frame(ctx, &pkt);
+            av_write_frame(ctx, pkt);
     }
 }
 
@@ -327,19 +327,16 @@ static void skip_gops(int n)
 
 static void signal_init_ts(void)
 {
-    AVPacket pkt;
-    av_init_packet(&pkt);
-    pkt.size = 0;
-    pkt.data = NULL;
+    av_packet_unref(pkt);
 
-    pkt.stream_index = 0;
-    pkt.dts = video_dts;
-    pkt.pts = 0;
-    av_write_frame(ctx, &pkt);
+    pkt->stream_index = 0;
+    pkt->dts = video_dts;
+    pkt->pts = 0;
+    av_write_frame(ctx, pkt);
 
-    pkt.stream_index = 1;
-    pkt.dts = pkt.pts = audio_dts;
-    av_write_frame(ctx, &pkt);
+    pkt->stream_index = 1;
+    pkt->dts = pkt->pts = audio_dts;
+    av_write_frame(ctx, pkt);
 }
 
 static void finish(void)
@@ -382,6 +379,11 @@ int main(int argc, char **argv)
     md5 = av_md5_alloc();
     if (!md5)
         return 1;
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        av_free(md5);
+        return 1;
+    }
 
     // Write a fragmented file with an initial moov that actually contains some
     // samples. One moov+mdat with 1 second of data and one moof+mdat with 1
@@ -786,6 +788,7 @@ int main(int argc, char **argv)
     close_out();
 
     av_free(md5);
+    av_packet_free(&pkt);
 
     return check_faults > 0 ? 1 : 0;
 }
