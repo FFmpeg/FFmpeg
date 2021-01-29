@@ -981,7 +981,7 @@ static void reset_pes_packet_state(PESContext *pes)
 
 static void new_data_packet(const uint8_t *buffer, int len, AVPacket *pkt)
 {
-    av_init_packet(pkt);
+    av_packet_unref(pkt);
     pkt->data = (uint8_t *)buffer;
     pkt->size = len;
 }
@@ -990,7 +990,7 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
     uint8_t *sd;
 
-    av_init_packet(pkt);
+    av_packet_unref(pkt);
 
     pkt->buf  = pes->buffer;
     pkt->data = pes->buffer->data;
@@ -3298,33 +3298,37 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
                               int64_t *ppos, int64_t pos_limit)
 {
     MpegTSContext *ts = s->priv_data;
+    AVPacket *pkt;
     int64_t pos;
     int pos47 = ts->pos47_full % ts->raw_packet_size;
     pos = ((*ppos  + ts->raw_packet_size - 1 - pos47) / ts->raw_packet_size) * ts->raw_packet_size + pos47;
     ff_read_frame_flush(s);
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
+    pkt = av_packet_alloc();
+    if (!pkt)
+        return AV_NOPTS_VALUE;
     while(pos < pos_limit) {
-        int ret;
-        AVPacket pkt;
-        av_init_packet(&pkt);
-        ret = av_read_frame(s, &pkt);
-        if (ret < 0)
+        int ret = av_read_frame(s, pkt);
+        if (ret < 0) {
+            av_packet_free(&pkt);
             return AV_NOPTS_VALUE;
-        if (pkt.dts != AV_NOPTS_VALUE && pkt.pos >= 0) {
-            ff_reduce_index(s, pkt.stream_index);
-            av_add_index_entry(s->streams[pkt.stream_index], pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME /* FIXME keyframe? */);
-            if (pkt.stream_index == stream_index && pkt.pos >= *ppos) {
-                int64_t dts = pkt.dts;
-                *ppos = pkt.pos;
-                av_packet_unref(&pkt);
+        }
+        if (pkt->dts != AV_NOPTS_VALUE && pkt->pos >= 0) {
+            ff_reduce_index(s, pkt->stream_index);
+            av_add_index_entry(s->streams[pkt->stream_index], pkt->pos, pkt->dts, 0, 0, AVINDEX_KEYFRAME /* FIXME keyframe? */);
+            if (pkt->stream_index == stream_index && pkt->pos >= *ppos) {
+                int64_t dts = pkt->dts;
+                *ppos = pkt->pos;
+                av_packet_free(&pkt);
                 return dts;
             }
         }
-        pos = pkt.pos;
-        av_packet_unref(&pkt);
+        pos = pkt->pos;
+        av_packet_unref(pkt);
     }
 
+    av_packet_free(&pkt);
     return AV_NOPTS_VALUE;
 }
 
