@@ -58,6 +58,7 @@ typedef struct TiffContext {
 
     /* JPEG decoding for DNG */
     AVCodecContext *avctx_mjpeg; // wrapper context for MJPEG
+    AVPacket *jpkt;              // encoded JPEG tile
     AVFrame *jpgframe;           // decoded JPEG tile
 
     int get_subimage;
@@ -877,7 +878,6 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
                            int tile_byte_count, int dst_x, int dst_y, int w, int h)
 {
     TiffContext *s = avctx->priv_data;
-    AVPacket jpkt;
     uint8_t *dst_data, *src_data;
     uint32_t dst_offset; /* offset from dst buffer in pixels */
     int is_single_comp, is_u16, pixel_size;
@@ -887,9 +887,9 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
 
     /* Prepare a packet and send to the MJPEG decoder */
-    av_init_packet(&jpkt);
-    jpkt.data = (uint8_t*)s->gb.buffer;
-    jpkt.size = tile_byte_count;
+    av_packet_unref(s->jpkt);
+    s->jpkt->data = (uint8_t*)s->gb.buffer;
+    s->jpkt->size = tile_byte_count;
 
     if (s->is_bayer) {
         MJpegDecodeContext *mjpegdecctx = s->avctx_mjpeg->priv_data;
@@ -898,7 +898,7 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
         mjpegdecctx->bayer = 1;
     }
 
-    ret = avcodec_send_packet(s->avctx_mjpeg, &jpkt);
+    ret = avcodec_send_packet(s->avctx_mjpeg, s->jpkt);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error submitting a packet for decoding\n");
         return ret;
@@ -2158,7 +2158,8 @@ static av_cold int tiff_init(AVCodecContext *avctx)
 
     /* Allocate JPEG frame */
     s->jpgframe = av_frame_alloc();
-    if (!s->jpgframe)
+    s->jpkt     = av_packet_alloc();
+    if (!s->jpgframe || !s->jpkt)
         return AVERROR(ENOMEM);
 
     /* Prepare everything needed for JPEG decoding */
@@ -2194,6 +2195,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     av_freep(&s->fax_buffer);
     s->fax_buffer_size = 0;
     av_frame_free(&s->jpgframe);
+    av_packet_free(&s->jpkt);
     avcodec_free_context(&s->avctx_mjpeg);
     return 0;
 }
