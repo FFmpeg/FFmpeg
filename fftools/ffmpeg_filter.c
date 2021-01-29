@@ -60,7 +60,7 @@ static const enum AVPixelFormat *get_compliance_unofficial_pix_fmts(enum AVCodec
     }
 }
 
-enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx,
+static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx,
                                     const AVCodec *codec, enum AVPixelFormat target)
 {
     if (codec && codec->pix_fmts) {
@@ -645,7 +645,8 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     return 0;
 }
 
-int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
+static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter,
+                                   AVFilterInOut *out)
 {
     if (!ofilter->ost) {
         av_log(NULL, AV_LOG_FATAL, "Filter %s has an unconnected output\n", ofilter->name);
