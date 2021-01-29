@@ -561,6 +561,7 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
     return amf_get_field_value2(&gb, name, dst, dst_size);
 }
 
+#ifdef DEBUG
 static const char* rtmp_packet_type(int type)
 {
     switch (type) {
@@ -677,6 +678,7 @@ void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p)
         av_log(ctx, AV_LOG_DEBUG, "\n");
     }
 }
+#endif
 
 int ff_amf_match_string(const uint8_t *data, int size, const char *str)
 {
