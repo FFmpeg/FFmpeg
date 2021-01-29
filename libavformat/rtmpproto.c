@@ -3119,7 +3119,8 @@ static const AVOption rtmp_options[] = {
     { NULL },
 };
 
-#define RTMP_PROTOCOL(flavor)                    \
+#define RTMP_PROTOCOL_0(flavor)
+#define RTMP_PROTOCOL_1(flavor)                  \
 static const AVClass flavor##_class = {          \
     .class_name = #flavor,                       \
     .item_name  = av_default_item_name,          \
@@ -3139,11 +3140,16 @@ const URLProtocol ff_##flavor##_protocol = {     \
     .flags          = URL_PROTOCOL_FLAG_NETWORK, \
     .priv_data_class= &flavor##_class,           \
 };
+#define RTMP_PROTOCOL_2(flavor, enabled)         \
+    RTMP_PROTOCOL_ ## enabled(flavor)
+#define RTMP_PROTOCOL_3(flavor, config)          \
+    RTMP_PROTOCOL_2(flavor, config)
+#define RTMP_PROTOCOL(flavor, uppercase)         \
+    RTMP_PROTOCOL_3(flavor, CONFIG_ ## uppercase ## _PROTOCOL)
 
-
-RTMP_PROTOCOL(rtmp)
-RTMP_PROTOCOL(rtmpe)
-RTMP_PROTOCOL(rtmps)
-RTMP_PROTOCOL(rtmpt)
-RTMP_PROTOCOL(rtmpte)
-RTMP_PROTOCOL(rtmpts)
+RTMP_PROTOCOL(rtmp,   RTMP)
+RTMP_PROTOCOL(rtmpe,  RTMPE)
+RTMP_PROTOCOL(rtmps,  RTMPS)
+RTMP_PROTOCOL(rtmpt,  RTMPT)
+RTMP_PROTOCOL(rtmpte, RTMPTE)
+RTMP_PROTOCOL(rtmpts, RTMPTS)
