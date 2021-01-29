@@ -159,18 +159,6 @@ DECLARE_ASM_ALIGNED(1, const uint8_t, ff_h264_cabac_tables)[512 + 4*2*64 + 4*64 
 };
 
 /**
- * @param buf_size size of buf in bits
- */
-void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){
-    init_put_bits(&c->pb, buf, buf_size);
-
-    c->low= 0;
-    c->range= 0x1FE;
-    c->outstanding_count= 0;
-    c->pb.bit_left++; //avoids firstBitFlag
-}
-
-/**
  *
  * @param buf_size size of buf in bits
  */
