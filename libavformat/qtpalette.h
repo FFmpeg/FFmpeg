@@ -24,7 +24,7 @@
 #define AVFORMAT_QTPALETTE_H
 
 #include <stdint.h>
-#include "avformat.h"
+#include "avio.h"
 
 /**
  * Retrieve the palette (or "color table" in QuickTime terms), either

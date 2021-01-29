@@ -24,8 +24,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "avformat.h"
-#include "libavutil/intreadwrite.h"
+#include "libavcodec/codec_id.h"
+#include "avio.h"
 #include "qtpalette.h"
 
 static const uint8_t qt_default_palette_2[2 * 3] = {
