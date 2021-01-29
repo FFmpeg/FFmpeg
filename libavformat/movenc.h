@@ -134,7 +134,7 @@ typedef struct MOVTrack {
     uint32_t    default_size;
 
     HintSampleQueue sample_queue;
-    AVPacket cover_image;
+    AVPacket *cover_image;
 
     AVIOContext *mdat_buf;
     int64_t     data_offset;
@@ -214,6 +214,8 @@ typedef struct MOVMuxContext {
 
     int per_stream_grouping;
     AVFormatContext *fc;
+
+    AVPacket *pkt;
 
     int use_editlist;
     float gamma;

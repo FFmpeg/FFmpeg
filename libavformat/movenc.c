@@ -365,7 +365,7 @@ static int mov_write_ac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *trac
 }
 
 struct eac3_info {
-    AVPacket pkt;
+    AVPacket *pkt;
     uint8_t ec3_done;
     uint8_t num_blocks;
 
@@ -406,6 +406,9 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
     if (!track->eac3_priv && !(track->eac3_priv = av_mallocz(sizeof(*info))))
         return AVERROR(ENOMEM);
     info = track->eac3_priv;
+
+    if (!info->pkt && !(info->pkt = av_packet_alloc()))
+        return AVERROR(ENOMEM);
 
     if (avpriv_ac3_parse_header(&hdr, pkt->data, pkt->size) < 0) {
         /* drop the packets until we see a good one */
@@ -511,20 +514,20 @@ concatenate:
     }
 
     if (!info->num_blocks) {
-        ret = av_packet_ref(&info->pkt, pkt);
+        ret = av_packet_ref(info->pkt, pkt);
         if (!ret)
             info->num_blocks = num_blocks;
         goto end;
     } else {
-        if ((ret = av_grow_packet(&info->pkt, pkt->size)) < 0)
+        if ((ret = av_grow_packet(info->pkt, pkt->size)) < 0)
             goto end;
-        memcpy(info->pkt.data + info->pkt.size - pkt->size, pkt->data, pkt->size);
+        memcpy(info->pkt->data + info->pkt->size - pkt->size, pkt->data, pkt->size);
         info->num_blocks += num_blocks;
-        info->pkt.duration += pkt->duration;
+        info->pkt->duration += pkt->duration;
         if (info->num_blocks != 6)
             goto end;
         av_packet_unref(pkt);
-        av_packet_move_ref(pkt, &info->pkt);
+        av_packet_move_ref(pkt, info->pkt);
         info->num_blocks = 0;
     }
     ret = pkt->size;
@@ -3733,7 +3736,7 @@ static int mov_write_covr(AVIOContext *pb, AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         MOVTrack *trk = &mov->tracks[i];
 
-        if (!is_cover_image(trk->st) || trk->cover_image.size <= 0)
+        if (!is_cover_image(trk->st) || trk->cover_image->size <= 0)
             continue;
 
         if (!pos) {
@@ -3741,11 +3744,11 @@ static int mov_write_covr(AVIOContext *pb, AVFormatContext *s)
             avio_wb32(pb, 0);
             ffio_wfourcc(pb, "covr");
         }
-        avio_wb32(pb, 16 + trk->cover_image.size);
+        avio_wb32(pb, 16 + trk->cover_image->size);
         ffio_wfourcc(pb, "data");
         avio_wb32(pb, trk->tag);
         avio_wb32(pb , 0);
-        avio_write(pb, trk->cover_image.data, trk->cover_image.size);
+        avio_write(pb, trk->cover_image->data, trk->cover_image->size);
     }
 
     return pos ? update_size(pb, pos) : 0;
@@ -5969,20 +5972,20 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
 static int mov_write_subtitle_end_packet(AVFormatContext *s,
                                          int stream_index,
                                          int64_t dts) {
-    AVPacket end;
+    MOVMuxContext *mov = s->priv_data;
+    AVPacket *end = mov->pkt;
     uint8_t data[2] = {0};
     int ret;
 
-    av_init_packet(&end);
-    end.size = sizeof(data);
-    end.data = data;
-    end.pts = dts;
-    end.dts = dts;
-    end.duration = 0;
-    end.stream_index = stream_index;
+    end->size = sizeof(data);
+    end->data = data;
+    end->pts = dts;
+    end->dts = dts;
+    end->duration = 0;
+    end->stream_index = stream_index;
 
-    ret = mov_write_single_packet(s, &end);
-    av_packet_unref(&end);
+    ret = mov_write_single_packet(s, end);
+    av_packet_unref(end);
 
     return ret;
 }
@@ -6009,7 +6012,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
         }
 
-        if ((ret = av_packet_ref(&trk->cover_image, pkt)) < 0)
+        if ((ret = av_packet_ref(trk->cover_image, pkt)) < 0)
             return ret;
 
         return 0;
@@ -6095,7 +6098,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
 
     MOVMuxContext *mov = s->priv_data;
     MOVTrack *track = &mov->tracks[tracknum];
-    AVPacket pkt = { .stream_index = tracknum, .flags = AV_PKT_FLAG_KEY };
+    AVPacket *pkt = mov->pkt;
     int i, len;
 
     track->mode = mov->mode;
@@ -6157,13 +6160,16 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     }
 #endif
 
+    pkt->stream_index = tracknum;
+    pkt->flags = AV_PKT_FLAG_KEY;
+
     for (i = 0; i < s->nb_chapters; i++) {
         AVChapter *c = s->chapters[i];
         AVDictionaryEntry *t;
 
         int64_t end = av_rescale_q(c->end, c->time_base, (AVRational){1,MOV_TIMESCALE});
-        pkt.pts = pkt.dts = av_rescale_q(c->start, c->time_base, (AVRational){1,MOV_TIMESCALE});
-        pkt.duration = end - pkt.dts;
+        pkt->pts = pkt->dts = av_rescale_q(c->start, c->time_base, (AVRational){1,MOV_TIMESCALE});
+        pkt->duration = end - pkt->dts;
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
             static const char encd[12] = {
@@ -6171,17 +6177,21 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
                 'e',  'n',  'c',  'd',
                 0x00, 0x00, 0x01, 0x00 };
             len      = strlen(t->value);
-            pkt.size = len + 2 + 12;
-            pkt.data = av_malloc(pkt.size);
-            if (!pkt.data)
+            pkt->size = len + 2 + 12;
+            pkt->data = av_malloc(pkt->size);
+            if (!pkt->data) {
+                av_packet_unref(pkt);
                 return AVERROR(ENOMEM);
-            AV_WB16(pkt.data, len);
-            memcpy(pkt.data + 2, t->value, len);
-            memcpy(pkt.data + len + 2, encd, sizeof(encd));
-            ff_mov_write_packet(s, &pkt);
-            av_freep(&pkt.data);
+            }
+            AV_WB16(pkt->data, len);
+            memcpy(pkt->data + 2, t->value, len);
+            memcpy(pkt->data + len + 2, encd, sizeof(encd));
+            ff_mov_write_packet(s, pkt);
+            av_freep(&pkt->data);
         }
     }
+
+    av_packet_unref(mov->pkt);
 
     return 0;
 }
@@ -6202,9 +6212,9 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     MOVTrack *track     = &mov->tracks[index];
     AVStream *src_st    = s->streams[src_index];
     uint8_t data[4];
-    AVPacket pkt    = { .data = data, .stream_index = index,
-                        .flags = AV_PKT_FLAG_KEY, .size = 4 };
+    AVPacket *pkt = mov->pkt;
     AVRational rate = find_fps(s, src_st);
+    int ret;
 
     /* tmcd track based on video stream */
     track->mode      = mov->mode;
@@ -6226,8 +6236,14 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     track->st->avg_frame_rate = av_inv_q(rate);
 
     /* the tmcd track just contains one packet with the frame number */
-    AV_WB32(pkt.data, tc.start);
-    return ff_mov_write_packet(s, &pkt);
+    pkt->data = data;
+    pkt->stream_index = index;
+    pkt->flags = AV_PKT_FLAG_KEY;
+    pkt->size = 4;
+    AV_WB32(pkt->data, tc.start);
+    ret = ff_mov_write_packet(s, pkt);
+    av_packet_unref(pkt);
+    return ret;
 }
 
 /*
@@ -6288,6 +6304,8 @@ static void mov_free(AVFormatContext *s)
     MOVMuxContext *mov = s->priv_data;
     int i;
 
+    av_packet_free(&mov->pkt);
+
     if (!mov->tracks)
         return;
 
@@ -6302,11 +6320,11 @@ static void mov_free(AVFormatContext *s)
             av_freep(&mov->tracks[i].par);
         av_freep(&mov->tracks[i].cluster);
         av_freep(&mov->tracks[i].frag_info);
-        av_packet_unref(&mov->tracks[i].cover_image);
+        av_packet_free(&mov->tracks[i].cover_image);
 
         if (mov->tracks[i].eac3_priv) {
             struct eac3_info *info = mov->tracks[i].eac3_priv;
-            av_packet_unref(&info->pkt);
+            av_packet_free(&info->pkt);
             av_freep(&mov->tracks[i].eac3_priv);
         }
         if (mov->tracks[i].vos_len)
@@ -6537,6 +6555,10 @@ static int mov_init(AVFormatContext *s)
         mov->nb_streams += mov->nb_meta_tmcd;
     }
 
+    mov->pkt = av_packet_alloc();
+    if (!mov->pkt)
+        return AVERROR(ENOMEM);
+
     // Reserve an extra stream for chapters for the case where chapters
     // are written in the trailer
     mov->tracks = av_mallocz_array((mov->nb_streams + 1), sizeof(*mov->tracks));
@@ -6643,6 +6665,11 @@ static int mov_init(AVFormatContext *s)
                  * so just forbid muxing VP8 streams altogether until a new version does */
                 av_log(s, AV_LOG_ERROR, "VP8 muxing is currently not supported.\n");
                 return AVERROR_PATCHWELCOME;
+            }
+            if (is_cover_image(st)) {
+                track->cover_image = av_packet_alloc();
+                if (!track->cover_image)
+                    return AVERROR(ENOMEM);
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             track->timescale = st->codecpar->sample_rate;

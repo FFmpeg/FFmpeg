@@ -408,7 +408,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
     uint8_t *buf = NULL;
     int size;
     AVIOContext *hintbuf = NULL;
-    AVPacket hint_pkt;
+    AVPacket *hint_pkt = mov->pkt;
     int ret = 0, count;
 
     if (!rtp_ctx)
@@ -437,21 +437,22 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
     /* Open a buffer for writing the hint */
     if ((ret = avio_open_dyn_buf(&hintbuf)) < 0)
         goto done;
-    av_init_packet(&hint_pkt);
-    count = write_hint_packets(hintbuf, buf, size, trk, &hint_pkt.dts);
+    av_packet_unref(hint_pkt);
+    count = write_hint_packets(hintbuf, buf, size, trk, &hint_pkt->dts);
     av_freep(&buf);
 
     /* Write the hint data into the hint track */
-    hint_pkt.size = size = avio_close_dyn_buf(hintbuf, &buf);
-    hint_pkt.data = buf;
-    hint_pkt.pts  = hint_pkt.dts;
-    hint_pkt.stream_index = track_index;
+    hint_pkt->size = size = avio_close_dyn_buf(hintbuf, &buf);
+    hint_pkt->data = buf;
+    hint_pkt->pts  = hint_pkt->dts;
+    hint_pkt->stream_index = track_index;
     if (pkt->flags & AV_PKT_FLAG_KEY)
-        hint_pkt.flags |= AV_PKT_FLAG_KEY;
+        hint_pkt->flags |= AV_PKT_FLAG_KEY;
     if (count > 0)
-        ff_mov_write_packet(s, &hint_pkt);
+        ff_mov_write_packet(s, hint_pkt);
 done:
     av_free(buf);
+    av_packet_unref(hint_pkt);
     sample_queue_retain(&trk->sample_queue);
     return ret;
 }
