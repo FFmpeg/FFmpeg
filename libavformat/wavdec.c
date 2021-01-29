@@ -922,6 +922,10 @@ static int w64_read_header(AVFormatContext *s)
                     return AVERROR(ENOMEM);
 
                 ret = avio_get_str16le(pb, chunk_size, value, chunk_size);
+                if (ret < 0) {
+                    av_free(value);
+                    return ret;
+                }
                 avio_skip(pb, chunk_size - ret);
 
                 av_dict_set(&s->metadata, chunk_key, value, AV_DICT_DONT_STRDUP_VAL);
