@@ -66,6 +66,7 @@ typedef struct AVIIndex {
 
 typedef struct AVIContext {
     const AVClass *class;
+    AVPacket *empty_packet;
     int64_t riff_start, movi_list, odml_list;
     int64_t frames_hdr_all;
     int riff_id;
@@ -273,6 +274,10 @@ static int avi_write_header(AVFormatContext *s)
                ">"AV_STRINGIFY(AVI_MAX_STREAM_COUNT)" streams\n");
         return AVERROR(EINVAL);
     }
+
+    avi->empty_packet = av_packet_alloc();
+    if (!avi->empty_packet)
+        return AVERROR(ENOMEM);
 
     for (n = 0; n < s->nb_streams; n++) {
         s->streams[n]->priv_data = av_mallocz(sizeof(AVIStream));
@@ -739,24 +744,21 @@ static int avi_write_idx1(AVFormatContext *s)
 
 static int write_skip_frames(AVFormatContext *s, int stream_index, int64_t dts)
 {
+    AVIContext *avi = s->priv_data;
     AVIStream *avist    = s->streams[stream_index]->priv_data;
     AVCodecParameters *par = s->streams[stream_index]->codecpar;
 
     ff_dlog(s, "dts:%s packet_count:%d stream_index:%d\n", av_ts2str(dts), avist->packet_count, stream_index);
     while (par->block_align == 0 && dts != AV_NOPTS_VALUE &&
            dts > avist->packet_count && par->codec_id != AV_CODEC_ID_XSUB && avist->packet_count) {
-        AVPacket empty_packet;
 
         if (dts - avist->packet_count > 60000) {
             av_log(s, AV_LOG_ERROR, "Too large number of skipped frames %"PRId64" > 60000\n", dts - avist->packet_count);
             return AVERROR(EINVAL);
         }
 
-        av_init_packet(&empty_packet);
-        empty_packet.size         = 0;
-        empty_packet.data         = NULL;
-        empty_packet.stream_index = stream_index;
-        avi_write_packet_internal(s, &empty_packet);
+        avi->empty_packet->stream_index = stream_index;
+        avi_write_packet_internal(s, avi->empty_packet);
         ff_dlog(s, "dup dts:%s packet_count:%d\n", av_ts2str(dts), avist->packet_count);
     }
 
@@ -978,6 +980,10 @@ static int avi_write_trailer(AVFormatContext *s)
 
 static void avi_deinit(AVFormatContext *s)
 {
+    AVIContext *avi = s->priv_data;
+
+    av_packet_free(&avi->empty_packet);
+
     for (int i = 0; i < s->nb_streams; i++) {
         AVIStream *avist = s->streams[i]->priv_data;
         if (!avist)
