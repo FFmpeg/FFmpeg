@@ -2453,13 +2453,11 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
                                  const ReadInterval *interval, int64_t *cur_ts)
 {
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
-    AVPacket pkt;
+    AVPacket *pkt = NULL;
     AVFrame *frame = NULL;
     int ret = 0, i = 0, frame_count = 0;
     int64_t start = -INT64_MAX, end = interval->end;
     int has_start = 0, has_end = interval->has_end && !interval->end_is_offset;
-
-    av_init_packet(&pkt);
 
     av_log(NULL, AV_LOG_VERBOSE, "Processing read interval ");
     log_read_interval(interval, NULL, AV_LOG_VERBOSE);
@@ -2493,18 +2491,23 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    while (!av_read_frame(fmt_ctx, &pkt)) {
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    while (!av_read_frame(fmt_ctx, pkt)) {
         if (fmt_ctx->nb_streams > nb_streams) {
             REALLOCZ_ARRAY_STREAM(nb_streams_frames,  nb_streams, fmt_ctx->nb_streams);
             REALLOCZ_ARRAY_STREAM(nb_streams_packets, nb_streams, fmt_ctx->nb_streams);
             REALLOCZ_ARRAY_STREAM(selected_streams,   nb_streams, fmt_ctx->nb_streams);
             nb_streams = fmt_ctx->nb_streams;
         }
-        if (selected_streams[pkt.stream_index]) {
-            AVRational tb = ifile->streams[pkt.stream_index].st->time_base;
+        if (selected_streams[pkt->stream_index]) {
+            AVRational tb = ifile->streams[pkt->stream_index].st->time_base;
 
-            if (pkt.pts != AV_NOPTS_VALUE)
-                *cur_ts = av_rescale_q(pkt.pts, tb, AV_TIME_BASE_Q);
+            if (pkt->pts != AV_NOPTS_VALUE)
+                *cur_ts = av_rescale_q(pkt->pts, tb, AV_TIME_BASE_Q);
 
             if (!has_start && *cur_ts != AV_NOPTS_VALUE) {
                 start = *cur_ts;
@@ -2526,26 +2529,27 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
             frame_count++;
             if (do_read_packets) {
                 if (do_show_packets)
-                    show_packet(w, ifile, &pkt, i++);
-                nb_streams_packets[pkt.stream_index]++;
+                    show_packet(w, ifile, pkt, i++);
+                nb_streams_packets[pkt->stream_index]++;
             }
             if (do_read_frames) {
                 int packet_new = 1;
-                while (process_frame(w, ifile, frame, &pkt, &packet_new) > 0);
+                while (process_frame(w, ifile, frame, pkt, &packet_new) > 0);
             }
         }
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
     }
-    av_packet_unref(&pkt);
+    av_packet_unref(pkt);
     //Flush remaining frames that are cached in the decoder
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
-        pkt.stream_index = i;
+        pkt->stream_index = i;
         if (do_read_frames)
-            while (process_frame(w, ifile, frame, &pkt, &(int){1}) > 0);
+            while (process_frame(w, ifile, frame, pkt, &(int){1}) > 0);
     }
 
 end:
     av_frame_free(&frame);
+    av_packet_free(&pkt);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Could not read packets in interval ");
         log_read_interval(interval, NULL, AV_LOG_ERROR);
