@@ -70,8 +70,6 @@ typedef struct H265ProfileDescriptor {
 } H265ProfileDescriptor;
 
 
-const H265LevelDescriptor *ff_h265_get_level(int level_idc);
-
 const H265ProfileDescriptor *ff_h265_get_profile(const H265RawProfileTierLevel *ptl);
 
 

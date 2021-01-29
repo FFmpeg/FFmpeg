@@ -36,9 +36,6 @@ typedef struct H264LevelDescriptor {
     uint8_t     max_mvs_per_2mb;
 } H264LevelDescriptor;
 
-const H264LevelDescriptor *ff_h264_get_level(int level_idc,
-                                             int constraint_set3_flag);
-
 /**
  * Guess the level of a stream from some parameters.
  *
