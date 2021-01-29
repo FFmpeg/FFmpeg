@@ -964,7 +964,7 @@ int ff_parse_fmtp(AVFormatContext *s,
 int ff_rtp_finalize_packet(AVPacket *pkt, AVIOContext **dyn_buf, int stream_idx)
 {
     int ret;
-    av_init_packet(pkt);
+    av_packet_unref(pkt);
 
     pkt->size         = avio_close_dyn_buf(*dyn_buf, &pkt->data);
     pkt->stream_index = stream_idx;

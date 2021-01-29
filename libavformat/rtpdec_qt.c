@@ -34,10 +34,20 @@
 #include "libavcodec/get_bits.h"
 
 struct PayloadContext {
-    AVPacket pkt;
+    AVPacket *pkt;
     int bytes_per_frame, remaining;
     uint32_t timestamp;
 };
+
+static av_cold int qt_rtp_init(AVFormatContext *ctx, int st_index,
+                               PayloadContext *qt)
+{
+    qt->pkt = av_packet_alloc();
+    if (!qt->pkt)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
 
 static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
                                AVStream *st, AVPacket *pkt,
@@ -51,18 +61,18 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         keyframe, ret;
 
     if (qt->remaining) {
-        int num = qt->pkt.size / qt->bytes_per_frame;
+        int num = qt->pkt->size / qt->bytes_per_frame;
 
         if ((ret = av_new_packet(pkt, qt->bytes_per_frame)) < 0)
             return ret;
         pkt->stream_index = st->index;
-        pkt->flags        = qt->pkt.flags;
+        pkt->flags        = qt->pkt->flags;
         memcpy(pkt->data,
-               &qt->pkt.data[(num - qt->remaining) * qt->bytes_per_frame],
+               &qt->pkt->data[(num - qt->remaining) * qt->bytes_per_frame],
                qt->bytes_per_frame);
         if (--qt->remaining == 0) {
-            av_freep(&qt->pkt.data);
-            qt->pkt.size = 0;
+            av_freep(&qt->pkt->data);
+            qt->pkt->size = 0;
         }
         return qt->remaining > 0;
     }
@@ -171,31 +181,31 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 
     switch (packing_scheme) {
     case 3: /* one data packet spread over 1 or multiple RTP packets */
-        if (qt->pkt.size > 0 && qt->timestamp == *timestamp) {
+        if (qt->pkt->size > 0 && qt->timestamp == *timestamp) {
             int err;
-            if ((err = av_reallocp(&qt->pkt.data, qt->pkt.size + alen +
+            if ((err = av_reallocp(&qt->pkt->data, qt->pkt->size + alen +
                                    AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
-                qt->pkt.size = 0;
+                qt->pkt->size = 0;
                 return err;
             }
         } else {
-            av_freep(&qt->pkt.data);
-            av_init_packet(&qt->pkt);
-            qt->pkt.data = av_realloc(NULL, alen + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!qt->pkt.data)
+            av_freep(&qt->pkt->data);
+            av_packet_unref(qt->pkt);
+            qt->pkt->data = av_realloc(NULL, alen + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!qt->pkt->data)
                 return AVERROR(ENOMEM);
-            qt->pkt.size = 0;
+            qt->pkt->size = 0;
             qt->timestamp = *timestamp;
         }
-        memcpy(qt->pkt.data + qt->pkt.size, buf + avio_tell(&pb), alen);
-        qt->pkt.size += alen;
+        memcpy(qt->pkt->data + qt->pkt->size, buf + avio_tell(&pb), alen);
+        qt->pkt->size += alen;
         if (has_marker_bit) {
-            int ret = av_packet_from_data(pkt, qt->pkt.data, qt->pkt.size);
+            int ret = av_packet_from_data(pkt, qt->pkt->data, qt->pkt->size);
             if (ret < 0)
                 return ret;
 
-            qt->pkt.size = 0;
-            qt->pkt.data = NULL;
+            qt->pkt->size = 0;
+            qt->pkt->data = NULL;
             pkt->flags        = keyframe ? AV_PKT_FLAG_KEY : 0;
             pkt->stream_index = st->index;
             memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
@@ -214,17 +224,17 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         pkt->flags = keyframe ? AV_PKT_FLAG_KEY : 0;
         pkt->stream_index = st->index;
         if (qt->remaining > 0) {
-            av_freep(&qt->pkt.data);
-            qt->pkt.data = av_realloc(NULL, qt->remaining * qt->bytes_per_frame);
-            if (!qt->pkt.data) {
+            av_freep(&qt->pkt->data);
+            qt->pkt->data = av_realloc(NULL, qt->remaining * qt->bytes_per_frame);
+            if (!qt->pkt->data) {
                 av_packet_unref(pkt);
                 return AVERROR(ENOMEM);
             }
-            qt->pkt.size = qt->remaining * qt->bytes_per_frame;
-            memcpy(qt->pkt.data,
+            qt->pkt->size = qt->remaining * qt->bytes_per_frame;
+            memcpy(qt->pkt->data,
                    buf + avio_tell(&pb) + qt->bytes_per_frame,
                    qt->remaining * qt->bytes_per_frame);
-            qt->pkt.flags = pkt->flags;
+            qt->pkt->flags = pkt->flags;
             return 1;
         }
         return 0;
@@ -237,7 +247,8 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 
 static void qt_rtp_close(PayloadContext *qt)
 {
-    av_freep(&qt->pkt.data);
+    av_freep(&qt->pkt->data);
+    av_packet_free(&qt->pkt);
 }
 
 #define RTP_QT_HANDLER(m, n, s, t) \
@@ -246,6 +257,7 @@ const RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \
     .priv_data_size   = sizeof(PayloadContext), \
+    .init             = qt_rtp_init,    \
     .close            = qt_rtp_close,   \
     .parse_packet     = qt_rtp_parse_packet, \
 }
