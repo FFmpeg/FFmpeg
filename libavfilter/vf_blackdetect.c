@@ -26,6 +26,7 @@
 
 #include <float.h>
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -45,6 +46,7 @@ typedef struct BlackDetectContext {
 
     unsigned int nb_black_pixels;   ///< number of black pixels counted so far
     AVRational   time_base;
+    int          depth;
 } BlackDetectContext;
 
 #define OFFSET(x) offsetof(BlackDetectContext, x)
@@ -78,6 +80,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_NV12, AV_PIX_FMT_NV21,
         YUVJ_FORMATS,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
+        AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE
     };
 
@@ -91,14 +106,19 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const int depth = desc->comp[0].depth;
+    const int max = (1 << depth) - 1;
+    const int factor = (1 << (depth - 8));
 
+    s->depth = depth;
     s->time_base = inlink->time_base;
     s->black_min_duration = s->black_min_duration_time / av_q2d(s->time_base);
 
     s->pixel_black_th_i = ff_fmt_is_in(inlink->format, yuvj_formats) ?
         // luminance_minimum_value + pixel_black_th * luminance_range_size
-             s->pixel_black_th *  255 :
-        16 + s->pixel_black_th * (235 - 16);
+             s->pixel_black_th *  max :
+        16 * factor + s->pixel_black_th * (235 - 16) * factor;
 
     av_log(s, AV_LOG_VERBOSE,
            "black_min_duration:%s pixel_black_th:%f pixel_black_th_i:%d picture_black_ratio_th:%f\n",
@@ -126,13 +146,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *s = ctx->priv;
     double picture_black_ratio = 0;
-    const uint8_t *p = picref->data[0];
-    int x, i;
 
-    for (i = 0; i < inlink->h; i++) {
-        for (x = 0; x < inlink->w; x++)
-            s->nb_black_pixels += p[x] <= s->pixel_black_th_i;
-        p += picref->linesize[0];
+    if (s->depth == 8) {
+        const uint8_t *p = picref->data[0];
+
+        for (int i = 0; i < inlink->h; i++) {
+            for (int x = 0; x < inlink->w; x++)
+                s->nb_black_pixels += p[x] <= s->pixel_black_th_i;
+            p += picref->linesize[0];
+        }
+    } else {
+        const uint16_t *p = (const uint16_t *)picref->data[0];
+
+        for (int i = 0; i < inlink->h; i++) {
+            for (int x = 0; x < inlink->w; x++)
+                s->nb_black_pixels += p[x] <= s->pixel_black_th_i;
+            p += picref->linesize[0] / 2;
+        }
     }
 
     picture_black_ratio = (double)s->nb_black_pixels / (inlink->w * inlink->h);
