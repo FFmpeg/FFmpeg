@@ -2920,6 +2920,9 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     int ret;
     AVRational fps, aspect;
 
+    if (get_bits_left(gb) < 206)
+        return AVERROR_INVALIDDATA;
+
     s->theora_header = 0;
     s->theora = get_bits(gb, 24);
     av_log(avctx, AV_LOG_DEBUG, "Theora bitstream version %X\n", s->theora);
