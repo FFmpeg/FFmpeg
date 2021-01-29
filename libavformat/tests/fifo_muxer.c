@@ -81,9 +81,11 @@ static int fifo_basic_test(AVFormatContext *oc, AVDictionary **opts,
                              const FailingMuxerPacketData *pkt_data)
 {
     int ret = 0, i;
-    AVPacket pkt;
+    AVPacket *pkt;
 
-    av_init_packet(&pkt);
+    pkt = av_packet_alloc();
+    if (!pkt)
+        return AVERROR(ENOMEM);
 
 
     ret = avformat_write_header(oc, opts);
@@ -94,20 +96,22 @@ static int fifo_basic_test(AVFormatContext *oc, AVDictionary **opts,
     }
 
     for (i = 0; i < 15; i++ ) {
-        ret = prepare_packet(&pkt, pkt_data, i);
+        ret = prepare_packet(pkt, pkt_data, i);
         if (ret < 0) {
             fprintf(stderr, "Failed to prepare test packet: %s\n",
                     av_err2str(ret));
             goto write_trailer_and_fail;
         }
-        ret = av_write_frame(oc, &pkt);
-        av_packet_unref(&pkt);
+        ret = av_write_frame(oc, pkt);
+        av_packet_unref(pkt);
         if (ret < 0) {
             fprintf(stderr, "Unexpected write_frame error: %s\n",
                     av_err2str(ret));
+            av_packet_free(&pkt);
             goto write_trailer_and_fail;
         }
     }
+    av_packet_free(&pkt);
 
     ret = av_write_frame(oc, NULL);
     if (ret < 0) {
@@ -135,9 +139,11 @@ static int fifo_overflow_drop_test(AVFormatContext *oc, AVDictionary **opts,
 {
     int ret = 0, i;
     int64_t write_pkt_start, write_pkt_end, duration;
-    AVPacket pkt;
+    AVPacket *pkt;
 
-    av_init_packet(&pkt);
+    pkt = av_packet_alloc();
+    if (!pkt)
+        return AVERROR(ENOMEM);
 
     ret = avformat_write_header(oc, opts);
     if (ret) {
@@ -148,18 +154,20 @@ static int fifo_overflow_drop_test(AVFormatContext *oc, AVDictionary **opts,
 
     write_pkt_start = av_gettime_relative();
     for (i = 0; i < 6; i++ ) {
-        ret = prepare_packet(&pkt, data, i);
+        ret = prepare_packet(pkt, data, i);
         if (ret < 0) {
             fprintf(stderr, "Failed to prepare test packet: %s\n",
                     av_err2str(ret));
             goto fail;
         }
-        ret = av_write_frame(oc, &pkt);
-        av_packet_unref(&pkt);
+        ret = av_write_frame(oc, pkt);
+        av_packet_unref(pkt);
         if (ret < 0) {
             break;
         }
     }
+    av_packet_free(&pkt);
+
     write_pkt_end = av_gettime_relative();
     duration = write_pkt_end - write_pkt_start;
     if (duration > (SLEEPTIME_50_MS*6)/2) {
