@@ -612,7 +612,8 @@ int main(void)
     /*
      * test normal read
      */
-    ret = ffurl_open(&h, "async:async-test:", AVIO_FLAG_READ, NULL, NULL);
+    ret = ffurl_open_whitelist(&h, "async:async-test:", AVIO_FLAG_READ,
+                               NULL, NULL, NULL, NULL, NULL);
     printf("open: %d\n", ret);
 
     size = ffurl_size(h);
@@ -688,7 +689,8 @@ int main(void)
      */
     ffurl_close(h);
     av_dict_set_int(&opts, "async-test-read-error", -10000, 0);
-    ret = ffurl_open(&h, "async:async-test:", AVIO_FLAG_READ, NULL, &opts);
+    ret = ffurl_open_whitelist(&h, "async:async-test:", AVIO_FLAG_READ,
+                               NULL, &opts, NULL, NULL, NULL);
     printf("open: %d\n", ret);
 
     ret = ffurl_read(h, buf, 1);

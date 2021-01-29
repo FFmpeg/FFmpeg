@@ -56,8 +56,8 @@ typedef struct URLProtocol {
     int     (*url_open)( URLContext *h, const char *url, int flags);
     /**
      * This callback is to be used by protocols which open further nested
-     * protocols. options are then to be passed to ffurl_open()/ffurl_connect()
-     * for those nested protocols.
+     * protocols. options are then to be passed to ffurl_open_whitelist()
+     * or ffurl_connect() for those nested protocols.
      */
     int     (*url_open2)(URLContext *h, const char *url, int flags, AVDictionary **options);
     int     (*url_accept)(URLContext *s, URLContext **c);
@@ -147,9 +147,6 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options,
                const char *whitelist, const char* blacklist,
                URLContext *parent);
-
-int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb, AVDictionary **options);
 
 /**
  * Accept an URLContext c on an URLContext s

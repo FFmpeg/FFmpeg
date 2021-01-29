@@ -354,13 +354,6 @@ fail:
     return ret;
 }
 
-int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb, AVDictionary **options)
-{
-    return ffurl_open_whitelist(puc, filename, flags,
-                                int_cb, options, NULL, NULL, NULL);
-}
-
 static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
                                          int size, int size_min,
                                          int (*transfer_func)(URLContext *h,
