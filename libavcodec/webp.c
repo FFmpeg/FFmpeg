@@ -189,6 +189,7 @@ typedef struct WebPContext {
     VP8Context v;                       /* VP8 Context used for lossy decoding */
     GetBitContext gb;                   /* bitstream reader for main image chunk */
     AVFrame *alpha_frame;               /* AVFrame for alpha data decompressed from VP8L */
+    AVPacket *pkt;                      /* AVPacket to be passed to the underlying VP8 decoder */
     AVCodecContext *avctx;              /* parent AVCodecContext */
     int initialized;                    /* set once the VP8 context is initialized */
     int has_alpha;                      /* has a separate alpha chunk */
@@ -1290,7 +1291,6 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                   unsigned int data_size)
 {
     WebPContext *s = avctx->priv_data;
-    AVPacket pkt;
     int ret;
 
     if (!s->initialized) {
@@ -1306,11 +1306,11 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_PATCHWELCOME;
     }
 
-    av_init_packet(&pkt);
-    pkt.data = data_start;
-    pkt.size = data_size;
+    av_packet_unref(s->pkt);
+    s->pkt->data = data_start;
+    s->pkt->size = data_size;
 
-    ret = ff_vp8_decode_frame(avctx, p, got_frame, &pkt);
+    ret = ff_vp8_decode_frame(avctx, p, got_frame, s->pkt);
     if (ret < 0)
         return ret;
 
@@ -1527,9 +1527,22 @@ exif_end:
     return avpkt->size;
 }
 
+static av_cold int webp_decode_init(AVCodecContext *avctx)
+{
+    WebPContext *s = avctx->priv_data;
+
+    s->pkt = av_packet_alloc();
+    if (!s->pkt)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static av_cold int webp_decode_close(AVCodecContext *avctx)
 {
     WebPContext *s = avctx->priv_data;
+
+    av_packet_free(&s->pkt);
 
     if (s->initialized)
         return ff_vp8_decode_free(avctx);
@@ -1543,6 +1556,7 @@ AVCodec ff_webp_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WEBP,
     .priv_data_size = sizeof(WebPContext),
+    .init           = webp_decode_init,
     .decode         = webp_decode_frame,
     .close          = webp_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
