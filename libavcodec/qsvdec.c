@@ -754,8 +754,6 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 {
     QSVDecContext *s = avctx->priv_data;
 
-    av_freep(&s->qsv.load_plugins);
-
     qsv_decode_close_qsvcontext(&s->qsv);
 
     qsv_clear_buffers(s);
