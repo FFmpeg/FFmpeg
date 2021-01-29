@@ -186,8 +186,6 @@ static int xcbgrab_frame(AVFormatContext *s, AVPacket *pkt)
     data   = xcb_get_image_data(img);
     length = xcb_get_image_data_length(img);
 
-    av_init_packet(pkt);
-
     pkt->buf = av_buffer_create(data, length, xcbgrab_image_reply_free, img, 0);
     if (!pkt->buf) {
         free(img);
@@ -302,8 +300,6 @@ static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
     }
 
     free(img);
-
-    av_init_packet(pkt);
 
     pkt->buf = buf;
     pkt->data = buf->data;
