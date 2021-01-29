@@ -2482,6 +2482,8 @@ static int matroska_read_header(AVFormatContext *s)
             goto fail;
         pos = avio_tell(matroska->ctx->pb);
         res = ebml_parse(matroska, matroska_segment, matroska);
+        if (res == AVERROR(EIO)) // EOF is translated to EIO, this exists the loop on EOF
+            goto fail;
     }
     matroska_execute_seekhead(matroska);
 
