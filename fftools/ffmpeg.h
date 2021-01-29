@@ -310,6 +310,7 @@ typedef struct InputStream {
     const AVCodec *dec;
     AVFrame *decoded_frame;
     AVFrame *filter_frame; /* a ref of decoded_frame, to be sent to filters */
+    AVPacket *pkt;
 
     int64_t       start;     /* time when read started */
     /* predicted dts of the next packet read for this stream or (when there are
@@ -418,6 +419,8 @@ typedef struct InputFile {
     int rate_emu;
     int accurate_seek;
 
+    AVPacket *pkt;
+
 #if HAVE_THREADS
     AVThreadMessageQueue *in_thread_queue;
     pthread_t thread;           /* thread reading from this file */
@@ -474,6 +477,7 @@ typedef struct OutputStream {
     int64_t max_frames;
     AVFrame *filtered_frame;
     AVFrame *last_frame;
+    AVPacket *pkt;
     int last_dropped;
     int last_nb0_frames[3];
 

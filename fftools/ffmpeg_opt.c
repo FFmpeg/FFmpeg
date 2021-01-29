@@ -1280,6 +1280,9 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->loop = o->loop;
     f->duration = 0;
     f->time_base = (AVRational){ 1, 1 };
+    f->pkt = av_packet_alloc();
+    if (!f->pkt)
+        exit_program(1);
 #if HAVE_THREADS
     f->thread_queue_size = o->thread_queue_size;
 #endif
@@ -1571,7 +1574,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     ost->max_muxing_queue_size = 128;
     MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, ost->max_muxing_queue_size, oc, st);
-    ost->max_muxing_queue_size *= sizeof(AVPacket);
+    ost->max_muxing_queue_size *= sizeof(ost->pkt);
 
     ost->muxing_queue_data_size = 0;
 
