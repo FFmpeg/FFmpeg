@@ -81,7 +81,7 @@ enum channel {
  *  modes that suit your needs, as performance will be better.
  */
 enum mode {
-  /** can call ff_ebur128_loudness_momentary */
+  /** can resurrrect and call ff_ebur128_loudness_momentary */
     FF_EBUR128_MODE_M = (1 << 0),
   /** can call ff_ebur128_loudness_shortterm */
     FF_EBUR128_MODE_S = (1 << 1) | FF_EBUR128_MODE_M,
@@ -151,40 +151,8 @@ int ff_ebur128_set_channel(FFEBUR128State * st,
  *  @param src array of source frames. Channels must be interleaved.
  *  @param frames number of frames. Not number of samples!
  */
-void ff_ebur128_add_frames_short(FFEBUR128State * st,
-                                 const short *src, size_t frames);
-/** \brief See \ref ebur128_add_frames_short */
-void ff_ebur128_add_frames_int(FFEBUR128State * st,
-                               const int *src, size_t frames);
-/** \brief See \ref ebur128_add_frames_short */
-void ff_ebur128_add_frames_float(FFEBUR128State * st,
-                                 const float *src, size_t frames);
-/** \brief See \ref ebur128_add_frames_short */
 void ff_ebur128_add_frames_double(FFEBUR128State * st,
                                   const double *src, size_t frames);
-
-/** \brief Add frames to be processed.
- *
- *  @param st library state.
- *  @param srcs array of source frame channel data pointers
- *  @param frames number of frames. Not number of samples!
- *  @param stride number of samples to skip to for the next sample of the same channel
- */
-void ff_ebur128_add_frames_planar_short(FFEBUR128State * st,
-                                        const short **srcs,
-                                        size_t frames, int stride);
-/** \brief See \ref ebur128_add_frames_planar_short */
-void ff_ebur128_add_frames_planar_int(FFEBUR128State * st,
-                                      const int **srcs,
-                                      size_t frames, int stride);
-/** \brief See \ref ebur128_add_frames_planar_short */
-void ff_ebur128_add_frames_planar_float(FFEBUR128State * st,
-                                        const float **srcs,
-                                        size_t frames, int stride);
-/** \brief See \ref ebur128_add_frames_planar_short */
-void ff_ebur128_add_frames_planar_double(FFEBUR128State * st,
-                                         const double **srcs,
-                                         size_t frames, int stride);
 
 /** \brief Get global integrated loudness in LUFS.
  *
@@ -196,28 +164,7 @@ void ff_ebur128_add_frames_planar_double(FFEBUR128State * st,
  *    - AVERROR(EINVAL) if mode "FF_EBUR128_MODE_I" has not been set.
  */
 int ff_ebur128_loudness_global(FFEBUR128State * st, double *out);
-/** \brief Get global integrated loudness in LUFS across multiple instances.
- *
- *  @param sts array of library states.
- *  @param size length of sts
- *  @param out integrated loudness in LUFS. -HUGE_VAL if result is negative
- *             infinity.
- *  @return
- *    - 0 on success.
- *    - AVERROR(EINVAL) if mode "FF_EBUR128_MODE_I" has not been set.
- */
-int ff_ebur128_loudness_global_multiple(FFEBUR128State ** sts,
-                                        size_t size, double *out);
 
-/** \brief Get momentary loudness (last 400ms) in LUFS.
- *
- *  @param st library state.
- *  @param out momentary loudness in LUFS. -HUGE_VAL if result is negative
- *             infinity.
- *  @return
- *    - 0 on success.
- */
-int ff_ebur128_loudness_momentary(FFEBUR128State * st, double *out);
 /** \brief Get short-term loudness (last 3s) in LUFS.
  *
  *  @param st library state.
@@ -228,20 +175,6 @@ int ff_ebur128_loudness_momentary(FFEBUR128State * st, double *out);
  *    - AVERROR(EINVAL) if mode "FF_EBUR128_MODE_S" has not been set.
  */
 int ff_ebur128_loudness_shortterm(FFEBUR128State * st, double *out);
-
-/** \brief Get loudness of the specified window in LUFS.
- *
- *  window must not be larger than the current window set in st.
- *
- *  @param st library state.
- *  @param window window in ms to calculate loudness.
- *  @param out loudness in LUFS. -HUGE_VAL if result is negative infinity.
- *  @return
- *    - 0 on success.
- *    - AVERROR(EINVAL) if window larger than current window in st.
- */
-int ff_ebur128_loudness_window(FFEBUR128State * st,
-                               unsigned long window, double *out);
 
 /** \brief Get loudness range (LRA) of programme in LU.
  *
