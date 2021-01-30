@@ -92,6 +92,11 @@ struct AVFormatInternal {
      */
     struct PacketList *parse_queue;
     struct PacketList *parse_queue_end;
+
+    /**
+     * Used to hold temporary packets.
+     */
+    AVPacket *pkt;
     /**
      * Remaining size available for raw_packet_buffer, in bytes.
      */

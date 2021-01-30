@@ -4451,6 +4451,7 @@ void avformat_free_context(AVFormatContext *s)
     av_freep(&s->chapters);
     av_dict_free(&s->metadata);
     av_dict_free(&s->internal->id3v2_meta);
+    av_packet_free(&s->internal->pkt);
     av_freep(&s->streams);
     flush_packet_queue(s);
     av_freep(&s->internal);

@@ -220,6 +220,12 @@ AVFormatContext *avformat_alloc_context(void)
         av_free(ic);
         return NULL;
     }
+    internal->pkt = av_packet_alloc();
+    if (!internal->pkt) {
+        av_free(internal);
+        av_free(ic);
+        return NULL;
+    }
     avformat_get_context_defaults(ic);
     ic->internal = internal;
     ic->internal->offset = AV_NOPTS_VALUE;

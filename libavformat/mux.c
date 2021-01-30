@@ -1211,7 +1211,7 @@ static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleav
 
 int av_write_frame(AVFormatContext *s, AVPacket *in)
 {
-    AVPacket local_pkt, *pkt = &local_pkt;
+    AVPacket *pkt = s->internal->pkt;
     int ret;
 
     if (!in) {
@@ -1232,6 +1232,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *in)
          * The following avoids copying in's data unnecessarily.
          * Copying side data is unavoidable as a bitstream filter
          * may change it, e.g. free it on errors. */
+        av_packet_unref(pkt);
         pkt->buf  = NULL;
         pkt->data = in->data;
         pkt->size = in->size;
@@ -1273,14 +1274,14 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 int av_write_trailer(AVFormatContext *s)
 {
     int i, ret1, ret = 0;
-    AVPacket pkt = {0};
-    av_init_packet(&pkt);
+    AVPacket *pkt = s->internal->pkt;
 
+    av_packet_unref(pkt);
     for (i = 0; i < s->nb_streams; i++) {
         if (s->streams[i]->internal->bsfc) {
-            ret1 = write_packets_from_bsfs(s, s->streams[i], &pkt, 1/*interleaved*/);
+            ret1 = write_packets_from_bsfs(s, s->streams[i], pkt, 1/*interleaved*/);
             if (ret1 < 0)
-                av_packet_unref(&pkt);
+                av_packet_unref(pkt);
             if (ret >= 0)
                 ret = ret1;
         }
@@ -1354,7 +1355,7 @@ static void uncoded_frame_free(void *unused, uint8_t *data)
 static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
                                         AVFrame *frame, int interleaved)
 {
-    AVPacket pkt, *pktp;
+    AVPacket *pkt = s->internal->pkt;
 
     av_assert0(s->oformat);
     if (!s->oformat->write_uncoded_frame) {
@@ -1363,18 +1364,17 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
     }
 
     if (!frame) {
-        pktp = NULL;
+        pkt = NULL;
     } else {
         size_t   bufsize = sizeof(frame) + AV_INPUT_BUFFER_PADDING_SIZE;
         AVFrame **framep = av_mallocz(bufsize);
 
         if (!framep)
             goto fail;
-        pktp = &pkt;
-        av_init_packet(&pkt);
-        pkt.buf = av_buffer_create((void *)framep, bufsize,
+        av_packet_unref(pkt);
+        pkt->buf = av_buffer_create((void *)framep, bufsize,
                                    uncoded_frame_free, NULL, 0);
-        if (!pkt.buf) {
+        if (!pkt->buf) {
             av_free(framep);
     fail:
             av_frame_free(&frame);
@@ -1382,17 +1382,17 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
         }
         *framep = frame;
 
-        pkt.data         = (void *)framep;
-        pkt.size         = sizeof(frame);
-        pkt.pts          =
-        pkt.dts          = frame->pts;
-        pkt.duration     = frame->pkt_duration;
-        pkt.stream_index = stream_index;
-        pkt.flags |= AV_PKT_FLAG_UNCODED_FRAME;
+        pkt->data         = (void *)framep;
+        pkt->size         = sizeof(frame);
+        pkt->pts          =
+        pkt->dts          = frame->pts;
+        pkt->duration     = frame->pkt_duration;
+        pkt->stream_index = stream_index;
+        pkt->flags |= AV_PKT_FLAG_UNCODED_FRAME;
     }
 
-    return interleaved ? av_interleaved_write_frame(s, pktp) :
-                         av_write_frame(s, pktp);
+    return interleaved ? av_interleaved_write_frame(s, pkt) :
+                         av_write_frame(s, pkt);
 }
 
 int av_write_uncoded_frame(AVFormatContext *s, int stream_index,
