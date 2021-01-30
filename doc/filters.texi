@@ -13458,6 +13458,10 @@ Set factor for decaying. Default is .95. Allowed range is from 0 to 1.
 Set which planes to filter. Default is all. Allowed range is from 0 to 15.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section lenscorrection
 
 Correct radial lens distortion

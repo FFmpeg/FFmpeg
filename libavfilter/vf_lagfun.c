@@ -211,7 +211,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 }
 
 #define OFFSET(x) offsetof(LagfunContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption lagfun_options[] = {
     { "decay",  "set decay",                 OFFSET(decay),  AV_OPT_TYPE_FLOAT, {.dbl=.95},  0,  1,  FLAGS },
@@ -249,4 +249,5 @@ AVFilter ff_vf_lagfun = {
     .outputs       = outputs,
     .inputs        = inputs,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
