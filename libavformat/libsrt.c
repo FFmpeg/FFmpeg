@@ -219,12 +219,10 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
     if (srt_setsockopt(fd, SOL_SOCKET, SRTO_REUSEADDR, &reuse, sizeof(reuse))) {
         av_log(h, AV_LOG_WARNING, "setsockopt(SRTO_REUSEADDR) failed\n");
     }
-    ret = srt_bind(fd, addr, addrlen);
-    if (ret)
+    if (srt_bind(fd, addr, addrlen))
         return libsrt_neterrno(h);
 
-    ret = srt_listen(fd, 1);
-    if (ret)
+    if (srt_listen(fd, 1))
         return libsrt_neterrno(h);
 
     ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
@@ -244,8 +242,7 @@ static int libsrt_listen_connect(int eid, int fd, const struct sockaddr *addr, s
 {
     int ret;
 
-    ret = srt_connect(fd, addr, addrlen);
-    if (ret < 0)
+    if (srt_connect(fd, addr, addrlen) < 0)
         return libsrt_neterrno(h);
 
     ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
@@ -443,9 +440,10 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
         fd = ret;
     } else {
         if (s->mode == SRT_MODE_RENDEZVOUS) {
-            ret = srt_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
-            if (ret)
+            if (srt_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen)) {
+                ret = libsrt_neterrno(h);
                 goto fail1;
+            }
         }
 
         if ((ret = libsrt_listen_connect(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
