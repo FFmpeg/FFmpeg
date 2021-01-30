@@ -90,15 +90,51 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int weave_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    WeaveContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+
+    const int weave = (s->double_weave && !(inlink->frame_count_out & 1));
+    const int field1 = weave ? s->first_field : (!s->first_field);
+    const int field2 = weave ? (!s->first_field) : s->first_field;
+
+    for (int i = 0; i < s->nb_planes; i++) {
+        const int height = s->planeheight[i];
+        const int start = (height * jobnr) / nb_jobs;
+        const int end = (height * (jobnr+1)) / nb_jobs;
+
+        av_image_copy_plane(out->data[i] + out->linesize[i] * field1 +
+                            out->linesize[i] * start * 2,
+                            out->linesize[i] * 2,
+                            in->data[i] + start * in->linesize[i],
+                            in->linesize[i],
+                            s->linesize[i], end - start);
+        av_image_copy_plane(out->data[i] + out->linesize[i] * field2 +
+                            out->linesize[i] * start * 2,
+                            out->linesize[i] * 2,
+                            s->prev->data[i] + start * s->prev->linesize[i],
+                            s->prev->linesize[i],
+                            s->linesize[i], end - start);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     WeaveContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
     AVFrame *out;
-    int i;
-    int weave;
-    int field1, field2;
 
     if (!s->prev) {
         s->prev = in;
@@ -113,19 +149,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    weave = (s->double_weave && !(inlink->frame_count_out & 1));
-    field1 = weave ? s->first_field : (!s->first_field);
-    field2 = weave ? (!s->first_field) : s->first_field;
-    for (i = 0; i < s->nb_planes; i++) {
-        av_image_copy_plane(out->data[i] + out->linesize[i] * field1,
-                            out->linesize[i] * 2,
-                            in->data[i], in->linesize[i],
-                            s->linesize[i], s->planeheight[i]);
-        av_image_copy_plane(out->data[i] + out->linesize[i] * field2,
-                            out->linesize[i] * 2,
-                            s->prev->data[i], s->prev->linesize[i],
-                            s->linesize[i], s->planeheight[i]);
-    }
+    td.out = out, td.in = in;
+    ctx->internal->execute(ctx, weave_slice, &td, NULL, FFMIN(s->planeheight[1],
+                                                              ff_filter_get_nb_threads(ctx)));
 
     out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
     out->interlaced_frame = 1;
@@ -173,6 +199,7 @@ AVFilter ff_vf_weave = {
     .uninit        = uninit,
     .inputs        = weave_inputs,
     .outputs       = weave_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
 
 static av_cold int init(AVFilterContext *ctx)
@@ -198,4 +225,5 @@ AVFilter ff_vf_doubleweave = {
     .uninit        = uninit,
     .inputs        = weave_inputs,
     .outputs       = weave_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
