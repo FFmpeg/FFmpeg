@@ -47,6 +47,8 @@ typedef struct BlackDetectContext {
     unsigned int nb_black_pixels;   ///< number of black pixels counted so far
     AVRational   time_base;
     int          depth;
+    int          nb_threads;
+    unsigned int *counter;
 } BlackDetectContext;
 
 #define OFFSET(x) offsetof(BlackDetectContext, x)
@@ -112,8 +114,12 @@ static int config_input(AVFilterLink *inlink)
     const int factor = (1 << (depth - 8));
 
     s->depth = depth;
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
     s->time_base = inlink->time_base;
     s->black_min_duration = s->black_min_duration_time / av_q2d(s->time_base);
+    s->counter = av_calloc(s->nb_threads, sizeof(*s->counter));
+    if (!s->counter)
+        return AVERROR(ENOMEM);
 
     s->pixel_black_th_i = ff_fmt_is_in(inlink->format, yuvj_formats) ?
         // luminance_minimum_value + pixel_black_th * luminance_range_size
@@ -141,29 +147,55 @@ static void check_black_end(AVFilterContext *ctx)
     }
 }
 
+static int black_counter(AVFilterContext *ctx, void *arg,
+                         int jobnr, int nb_jobs)
+{
+    BlackDetectContext *s = ctx->priv;
+    const unsigned int threshold = s->pixel_black_th_i;
+    unsigned int *counterp = &s->counter[jobnr];
+    AVFrame *in = arg;
+    const int linesize = in->linesize[0];
+    const int w = in->width;
+    const int h = in->height;
+    const int start = (h * jobnr) / nb_jobs;
+    const int end = (h * (jobnr+1)) / nb_jobs;
+    const int size = end - start;
+    unsigned int counter = 0;
+
+    if (s->depth == 8) {
+        const uint8_t *p = in->data[0] + start * linesize;
+
+        for (int i = 0; i < size; i++) {
+            for (int x = 0; x < w; x++)
+                counter += p[x] <= threshold;
+            p += linesize;
+        }
+    } else {
+        const uint16_t *p = (const uint16_t *)(in->data[0] + start * linesize);
+
+        for (int i = 0; i < size; i++) {
+            for (int x = 0; x < w; x++)
+                counter += p[x] <= threshold;
+            p += linesize / 2;
+        }
+    }
+
+    *counterp = counter;
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *s = ctx->priv;
     double picture_black_ratio = 0;
 
-    if (s->depth == 8) {
-        const uint8_t *p = picref->data[0];
+    ctx->internal->execute(ctx, black_counter, picref, NULL,
+                           FFMIN(inlink->h, s->nb_threads));
 
-        for (int i = 0; i < inlink->h; i++) {
-            for (int x = 0; x < inlink->w; x++)
-                s->nb_black_pixels += p[x] <= s->pixel_black_th_i;
-            p += picref->linesize[0];
-        }
-    } else {
-        const uint16_t *p = (const uint16_t *)picref->data[0];
-
-        for (int i = 0; i < inlink->h; i++) {
-            for (int x = 0; x < inlink->w; x++)
-                s->nb_black_pixels += p[x] <= s->pixel_black_th_i;
-            p += picref->linesize[0] / 2;
-        }
-    }
+    for (int i = 0; i < s->nb_threads; i++)
+        s->nb_black_pixels += s->counter[i];
 
     picture_black_ratio = (double)s->nb_black_pixels / (inlink->w * inlink->h);
 
@@ -199,6 +231,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     BlackDetectContext *s = ctx->priv;
 
+    av_freep(&s->counter);
+
     if (s->black_started) {
         // FIXME: black_end should be set to last_picref_pts + last_picref_duration
         s->black_end = s->last_picref_pts;
@@ -233,4 +267,5 @@ AVFilter ff_vf_blackdetect = {
     .outputs       = blackdetect_outputs,
     .uninit        = uninit,
     .priv_class    = &blackdetect_class,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
