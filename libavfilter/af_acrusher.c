@@ -68,7 +68,7 @@ typedef struct ACrusherContext {
 } ACrusherContext;
 
 #define OFFSET(x) offsetof(ACrusherContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption acrusher_options[] = {
     { "level_in", "set level in",         OFFSET(level_in),  AV_OPT_TYPE_DOUBLE, {.dbl=1},    0.015625, 64, A },
@@ -325,11 +325,25 @@ static int config_input(AVFilterLink *inlink)
     s->lfo.srate = inlink->sample_rate;
     s->lfo.amount = .5;
 
-    s->sr = av_calloc(inlink->channels, sizeof(*s->sr));
+    if (!s->sr)
+        s->sr = av_calloc(inlink->channels, sizeof(*s->sr));
     if (!s->sr)
         return AVERROR(ENOMEM);
 
     return 0;
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(inlink);
 }
 
 static const AVFilterPad avfilter_af_acrusher_inputs[] = {
@@ -359,4 +373,5 @@ AVFilter ff_af_acrusher = {
     .query_formats = query_formats,
     .inputs        = avfilter_af_acrusher_inputs,
     .outputs       = avfilter_af_acrusher_outputs,
+    .process_command = process_command,
 };

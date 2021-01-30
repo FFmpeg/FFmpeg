@@ -640,6 +640,10 @@ Set LFO range.
 Set LFO rate.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section acue
 
 Delay audio filtering until a given wallclock timestamp. See the @ref{cue}
