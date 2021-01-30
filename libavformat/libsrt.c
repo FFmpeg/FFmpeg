@@ -163,15 +163,25 @@ static int libsrt_socket_nonblock(int socket, int enable)
     return srt_setsockopt(socket, 0, SRTO_RCVSYN, &blocking, sizeof(blocking));
 }
 
-static int libsrt_network_wait_fd(URLContext *h, int eid, int fd, int write)
+static int libsrt_epoll_create(URLContext *h, int fd, int write)
+{
+    int modes = SRT_EPOLL_ERR | (write ? SRT_EPOLL_OUT : SRT_EPOLL_IN);
+    int eid = srt_epoll_create();
+    if (eid < 0)
+        return libsrt_neterrno(h);
+    if (srt_epoll_add_usock(eid, fd, &modes) < 0) {
+        srt_epoll_release(eid);
+        return libsrt_neterrno(h);
+    }
+    return eid;
+}
+
+static int libsrt_network_wait_fd(URLContext *h, int eid, int write)
 {
     int ret, len = 1, errlen = 1;
-    int modes = SRT_EPOLL_ERR | (write ? SRT_EPOLL_OUT : SRT_EPOLL_IN);
     SRTSOCKET ready[1];
     SRTSOCKET error[1];
 
-    if (srt_epoll_add_usock(eid, fd, &modes) < 0)
-        return libsrt_neterrno(h);
     if (write) {
         ret = srt_epoll_wait(eid, error, &errlen, ready, &len, POLLING_TIME, 0, 0, 0, 0);
     } else {
@@ -185,14 +195,12 @@ static int libsrt_network_wait_fd(URLContext *h, int eid, int fd, int write)
     } else {
         ret = errlen ? AVERROR(EIO) : 0;
     }
-    if (srt_epoll_remove_usock(eid, fd) < 0)
-        return libsrt_neterrno(h);
     return ret;
 }
 
 /* TODO de-duplicate code from ff_network_wait_fd_timeout() */
 
-static int libsrt_network_wait_fd_timeout(URLContext *h, int eid, int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb)
+static int libsrt_network_wait_fd_timeout(URLContext *h, int eid, int write, int64_t timeout, AVIOInterruptCB *int_cb)
 {
     int ret;
     int64_t wait_start = 0;
@@ -200,7 +208,7 @@ static int libsrt_network_wait_fd_timeout(URLContext *h, int eid, int fd, int wr
     while (1) {
         if (ff_check_interrupt(int_cb))
             return AVERROR_EXIT;
-        ret = libsrt_network_wait_fd(h, eid, fd, write);
+        ret = libsrt_network_wait_fd(h, eid, write);
         if (ret != AVERROR(EAGAIN))
             return ret;
         if (timeout > 0) {
@@ -225,7 +233,7 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
     if (srt_listen(fd, 1))
         return libsrt_neterrno(h);
 
-    ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
+    ret = libsrt_network_wait_fd_timeout(h, eid, 1, timeout, &h->interrupt_callback);
     if (ret < 0)
         return ret;
 
@@ -245,7 +253,7 @@ static int libsrt_listen_connect(int eid, int fd, const struct sockaddr *addr, s
     if (srt_connect(fd, addr, addrlen) < 0)
         return libsrt_neterrno(h);
 
-    ret = libsrt_network_wait_fd_timeout(h, eid, fd, 1, timeout, &h->interrupt_callback);
+    ret = libsrt_network_wait_fd_timeout(h, eid, 1, timeout, &h->interrupt_callback);
     if (ret < 0) {
         if (will_try_next) {
             av_log(h, AV_LOG_WARNING,
@@ -359,7 +367,7 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
 static int libsrt_setup(URLContext *h, const char *uri, int flags)
 {
     struct addrinfo hints = { 0 }, *ai, *cur_ai;
-    int port, fd = -1;
+    int port, fd;
     SRTContext *s = h->priv_data;
     const char *p;
     char buf[256];
@@ -367,7 +375,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
     int64_t open_timeout = 0;
-    int eid;
+    int eid, write_eid;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -404,11 +412,6 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
 
     cur_ai = ai;
 
-    eid = srt_epoll_create();
-    if (eid < 0)
-        return libsrt_neterrno(h);
-    s->eid = eid;
-
  restart:
 
     fd = srt_socket(cur_ai->ai_family, cur_ai->ai_socktype, 0);
@@ -432,9 +435,14 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     if (libsrt_socket_nonblock(fd, 1) < 0)
         av_log(h, AV_LOG_DEBUG, "libsrt_socket_nonblock failed\n");
 
+    ret = write_eid = libsrt_epoll_create(h, fd, 1);
+    if (ret < 0)
+        goto fail1;
     if (s->mode == SRT_MODE_LISTENER) {
         // multi-client
-        if ((ret = libsrt_listen(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, s->listen_timeout)) < 0)
+        ret = libsrt_listen(write_eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, s->listen_timeout);
+        srt_epoll_release(write_eid);
+        if (ret < 0)
             goto fail1;
         srt_close(fd);
         fd = ret;
@@ -442,12 +450,15 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
         if (s->mode == SRT_MODE_RENDEZVOUS) {
             if (srt_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen)) {
                 ret = libsrt_neterrno(h);
+                srt_epoll_release(write_eid);
                 goto fail1;
             }
         }
 
-        if ((ret = libsrt_listen_connect(s->eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                          open_timeout, h, !!cur_ai->ai_next)) < 0) {
+        ret = libsrt_listen_connect(write_eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                    open_timeout, h, !!cur_ai->ai_next);
+        srt_epoll_release(write_eid);
+        if (ret < 0) {
             if (ret == AVERROR_EXIT)
                 goto fail1;
             else
@@ -468,8 +479,13 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
             h->max_packet_size = packet_size;
     }
 
+    ret = eid = libsrt_epoll_create(h, fd, flags & AVIO_FLAG_WRITE);
+    if (eid < 0)
+        goto fail1;
+
     h->is_streamed = 1;
     s->fd = fd;
+    s->eid = eid;
 
     freeaddrinfo(ai);
     return 0;
@@ -487,7 +503,6 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     if (fd >= 0)
         srt_close(fd);
     freeaddrinfo(ai);
-    srt_epoll_release(s->eid);
     return ret;
 }
 
@@ -644,7 +659,7 @@ static int libsrt_read(URLContext *h, uint8_t *buf, int size)
     int ret;
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
-        ret = libsrt_network_wait_fd_timeout(h, s->eid, s->fd, 0, h->rw_timeout, &h->interrupt_callback);
+        ret = libsrt_network_wait_fd_timeout(h, s->eid, 0, h->rw_timeout, &h->interrupt_callback);
         if (ret)
             return ret;
     }
@@ -663,7 +678,7 @@ static int libsrt_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
-        ret = libsrt_network_wait_fd_timeout(h, s->eid, s->fd, 1, h->rw_timeout, &h->interrupt_callback);
+        ret = libsrt_network_wait_fd_timeout(h, s->eid, 1, h->rw_timeout, &h->interrupt_callback);
         if (ret)
             return ret;
     }
@@ -680,8 +695,8 @@ static int libsrt_close(URLContext *h)
 {
     SRTContext *s = h->priv_data;
 
-    srt_close(s->fd);
     srt_epoll_release(s->eid);
+    srt_close(s->fd);
 
     srt_cleanup();
 
