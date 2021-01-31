@@ -5557,6 +5557,10 @@ static int mov_read_st3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_ERROR, "Empty stereoscopic video box\n");
         return AVERROR_INVALIDDATA;
     }
+
+    if (sc->stereo3d)
+        return AVERROR_INVALIDDATA;
+
     avio_skip(pb, 4); /* version + flags */
 
     mode = avio_r8(pb);
