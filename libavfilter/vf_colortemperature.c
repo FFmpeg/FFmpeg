@@ -73,6 +73,27 @@ static float lerpf(float v0, float v1, float f)
     return v0 + (v1 - v0) * f;
 }
 
+#define PROCESS()                                                   \
+    nr = r * color[0];                                              \
+    ng = g * color[1];                                              \
+    nb = b * color[2];                                              \
+                                                                    \
+    nr = lerpf(r, nr, mix);                                         \
+    ng = lerpf(g, ng, mix);                                         \
+    nb = lerpf(b, nb, mix);                                         \
+                                                                    \
+    l0 = (FFMAX3(r, g, b) + FFMIN3(r, g, b)) + FLT_EPSILON;         \
+    l1 = (FFMAX3(nr, ng, nb) + FFMIN3(nr, ng, nb)) + FLT_EPSILON;   \
+    l = l0 / l1;                                                    \
+                                                                    \
+    r = nr * l;                                                     \
+    g = ng * l;                                                     \
+    b = nb * l;                                                     \
+                                                                    \
+    nr = lerpf(nr, r, preserve);                                    \
+    ng = lerpf(ng, g, preserve);                                    \
+    nb = lerpf(nb, b, preserve);
+
 static int temperature_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorTemperatureContext *s = ctx->priv;
@@ -99,25 +120,7 @@ static int temperature_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb
             float nr, ng, nb;
             float l0, l1, l;
 
-            nr = r * color[0];
-            ng = g * color[1];
-            nb = b * color[2];
-
-            nr = lerpf(r, nr, mix);
-            ng = lerpf(g, ng, mix);
-            nb = lerpf(b, nb, mix);
-
-            l0 = (FFMAX3(r, g, b) + FFMIN3(r, g, b)) + FLT_EPSILON;
-            l1 = (FFMAX3(nr, ng, nb) + FFMIN3(nr, ng, nb)) + FLT_EPSILON;
-            l = l0 / l1;
-
-            r = nr * l;
-            g = ng * l;
-            b = nb * l;
-
-            nr = lerpf(nr, r, preserve);
-            ng = lerpf(ng, g, preserve);
-            nb = lerpf(nb, b, preserve);
+            PROCESS()
 
             gptr[x] = av_clip_uint8(ng);
             bptr[x] = av_clip_uint8(nb);
@@ -159,25 +162,7 @@ static int temperature_slice16(AVFilterContext *ctx, void *arg, int jobnr, int n
             float nr, ng, nb;
             float l0, l1, l;
 
-            nr = r * color[0];
-            ng = g * color[1];
-            nb = b * color[2];
-
-            nr = lerpf(r, nr, mix);
-            ng = lerpf(g, ng, mix);
-            nb = lerpf(b, nb, mix);
-
-            l0 = (FFMAX3(r, g, b) + FFMIN3(r, g, b)) + FLT_EPSILON;
-            l1 = (FFMAX3(nr, ng, nb) + FFMIN3(nr, ng, nb)) + FLT_EPSILON;
-            l = l0 / l1;
-
-            r = nr * l;
-            g = ng * l;
-            b = nb * l;
-
-            nr = lerpf(nr, r, preserve);
-            ng = lerpf(ng, g, preserve);
-            nb = lerpf(nb, b, preserve);
+            PROCESS()
 
             gptr[x] = av_clip_uintp2_c(ng, depth);
             bptr[x] = av_clip_uintp2_c(nb, depth);
