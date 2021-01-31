@@ -462,7 +462,7 @@ static int h264_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
     int err, i, has_sps, seek_point;
 
     // If an AUD is present, it must be the first NAL unit.
-    if (au->units[0].type == H264_NAL_AUD) {
+    if (au->nb_units && au->units[0].type == H264_NAL_AUD) {
         if (ctx->aud == BSF_ELEMENT_REMOVE)
             ff_cbs_delete_unit(au, 0);
     } else {
