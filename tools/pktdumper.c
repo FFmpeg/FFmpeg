@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     char fntemplate[FILENAME_BUF_SIZE];
     char pktfilename[FILENAME_BUF_SIZE];
     AVFormatContext *fctx = NULL;
-    AVPacket pkt;
+    AVPacket *pkt;
     int64_t pktnum  = 0;
     int64_t maxpkts = 0;
     int donotquit   = 0;
@@ -101,30 +101,35 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    av_init_packet(&pkt);
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        fprintf(stderr, "av_packet_alloc: error %d\n", AVERROR(ENOMEM));
+        return 1;
+    }
 
-    while ((err = av_read_frame(fctx, &pkt)) >= 0) {
+    while ((err = av_read_frame(fctx, pkt)) >= 0) {
         int fd;
         snprintf(pktfilename, sizeof(pktfilename), fntemplate, pktnum,
-                 pkt.stream_index, pkt.pts, pkt.size,
-                 (pkt.flags & AV_PKT_FLAG_KEY) ? 'K' : '_');
-        printf(PKTFILESUFF "\n", pktnum, pkt.stream_index, pkt.pts, pkt.size,
-               (pkt.flags & AV_PKT_FLAG_KEY) ? 'K' : '_');
+                 pkt->stream_index, pkt->pts, pkt->size,
+                 (pkt->flags & AV_PKT_FLAG_KEY) ? 'K' : '_');
+        printf(PKTFILESUFF "\n", pktnum, pkt->stream_index, pkt->pts, pkt->size,
+               (pkt->flags & AV_PKT_FLAG_KEY) ? 'K' : '_');
         if (!nowrite) {
             fd  = open(pktfilename, O_WRONLY | O_CREAT, 0644);
-            err = write(fd, pkt.data, pkt.size);
+            err = write(fd, pkt->data, pkt->size);
             if (err < 0) {
                 fprintf(stderr, "write: error %d\n", err);
                 return 1;
             }
             close(fd);
         }
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
         pktnum++;
         if (maxpkts && (pktnum >= maxpkts))
             break;
     }
 
+    av_packet_free(&pkt);
     avformat_close_input(&fctx);
 
     while (donotquit)
