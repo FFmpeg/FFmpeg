@@ -356,6 +356,8 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }
+    if (get_bits_left(gb) < 8LL*payload_size)
+        return AVERROR_INVALIDDATA;
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
         return decode_nal_sei_prefix(s, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
