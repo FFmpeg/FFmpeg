@@ -62,6 +62,7 @@ version <next>:
 - kirsch filter
 - colortemperature filter
 - colorcontrast filter
+- PFM encoder
 
 
 version 4.3:

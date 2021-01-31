@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
@@ -77,25 +78,53 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         n  = avctx->width * 2;
         h1 = (h * 3) / 2;
         break;
+    case AV_PIX_FMT_GBRPF32:
+        c  = 'F';
+        n  = avctx->width * 4;
+        break;
     default:
         return -1;
     }
     snprintf(bytestream, bytestream_end - bytestream,
              "P%c\n%d %d\n", c, avctx->width, h1);
     bytestream += strlen(bytestream);
-    if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE) {
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32)
+        snprintf(bytestream, bytestream_end - bytestream,
+                 "%f\n", avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE ? 1.f: -1.f);
+    bytestream += strlen(bytestream);
+    if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE &&
+        avctx->pix_fmt != AV_PIX_FMT_GBRPF32) {
         int maxdepth = (1 << av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth) - 1;
         snprintf(bytestream, bytestream_end - bytestream,
                  "%d\n", maxdepth);
         bytestream += strlen(bytestream);
     }
 
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32) {
+        float *r = (float *)p->data[2];
+        float *g = (float *)p->data[0];
+        float *b = (float *)p->data[1];
+
+        for (int i = 0; i < avctx->height; i++) {
+            for (int j = 0; j < avctx->width; j++) {
+                AV_WN32(bytestream + 0, av_float2int(r[j]));
+                AV_WN32(bytestream + 4, av_float2int(g[j]));
+                AV_WN32(bytestream + 8, av_float2int(b[j]));
+                bytestream += 12;
+            }
+
+            r += p->linesize[2] / 4;
+            g += p->linesize[0] / 4;
+            b += p->linesize[1] / 4;
+        }
+    } else {
     ptr      = p->data[0];
     linesize = p->linesize[0];
     for (i = 0; i < h; i++) {
         memcpy(bytestream, ptr, n);
         bytestream += n;
         ptr        += linesize;
+    }
     }
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUV420P || avctx->pix_fmt == AV_PIX_FMT_YUV420P16BE) {
@@ -186,6 +215,20 @@ AVCodec ff_pbm_encoder = {
     .encode2        = pnm_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_MONOWHITE,
                                                   AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+};
+#endif
+
+#if CONFIG_PFM_ENCODER
+AVCodec ff_pfm_encoder = {
+    .name           = "pfm",
+    .long_name      = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_PFM,
+    .init           = pnm_encode_init,
+    .encode2        = pnm_encode_frame,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_GBRPF32,
+                                                    AV_PIX_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
