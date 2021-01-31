@@ -641,13 +641,6 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         pad_idx = 0;
     }
 
-    if (audio_volume != 256 && 0) {
-        char args[256];
-
-        snprintf(args, sizeof(args), "%f", audio_volume / 256.);
-        AUTO_INSERT_FILTER("-vol", "volume", args);
-    }
-
     if (ost->apad && of->shortest) {
         char args[256];
         int i;
