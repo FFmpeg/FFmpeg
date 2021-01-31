@@ -888,8 +888,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         int trailer = 3 + 5*!!f->ec;
         int v;
 
-        if (i || f->version > 2) v = AV_RB24(buf_p-trailer) + trailer;
-        else                     v = buf_p - c->bytestream_start;
+        if (i || f->version > 2) {
+            if (trailer > buf_p - buf) v = INT_MAX;
+            else                       v = AV_RB24(buf_p-trailer) + trailer;
+        } else                         v = buf_p - c->bytestream_start;
         if (buf_p - c->bytestream_start < v) {
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
             ff_thread_report_progress(&f->picture, INT_MAX, 0);
