@@ -1511,6 +1511,11 @@ adding/dropping samples to make it match the timestamps. This option effectively
 a threshold to select between hard (add/drop) and soft (squeeze/stretch) compensation.
 @code{-async} must be set to a positive value.
 
+@item -apad @var{parameters} (@emph{output,per-stream})
+Pad the output audio stream(s). This is the same as applying @code{-af apad}.
+Argument is a string of filter parameters composed the same as with the @code{apad} filter.
+@code{-shortest} must be set for this output for the option to take effect.
+
 @item -copyts
 Do not process input timestamps, but keep their values without trying
 to sanitize them. In particular, do not remove the initial start time
