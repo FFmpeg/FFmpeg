@@ -42,7 +42,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint8_t *last = data;
     const uint8_t *end = data + size;
     AVBSFContext *bsf = NULL;
-    AVPacket in, out;
+    AVPacket *in, *out;
     uint64_t keyframes = 0;
     uint64_t flushpattern = -1;
     int res;
@@ -119,10 +119,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         return 0; // Failure of av_bsf_init() does not imply that a issue was found
     }
 
-    av_init_packet(&in);
-    av_init_packet(&out);
-    out.data = NULL;
-    out.size = 0;
+    in = av_packet_alloc();
+    out = av_packet_alloc();
+    if (!in || !out)
+        error("Failed memory allocation");
+
     while (data < end) {
         // Search for the TAG
         while (data + sizeof(fuzz_tag) < end) {
@@ -133,11 +134,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         if (data + sizeof(fuzz_tag) > end)
             data = end;
 
-        res = av_new_packet(&in, data - last);
+        res = av_new_packet(in, data - last);
         if (res < 0)
             error("Failed memory allocation");
-        memcpy(in.data, last, data - last);
-        in.flags = (keyframes & 1) * AV_PKT_FLAG_DISCARD + (!!(keyframes & 2)) * AV_PKT_FLAG_KEY;
+        memcpy(in->data, last, data - last);
+        in->flags = (keyframes & 1) * AV_PKT_FLAG_DISCARD + (!!(keyframes & 2)) * AV_PKT_FLAG_KEY;
         keyframes = (keyframes >> 2) + (keyframes<<62);
         data += sizeof(fuzz_tag);
         last = data;
@@ -146,26 +147,28 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             av_bsf_flush(bsf);
         flushpattern = (flushpattern >> 3) + (flushpattern << 61);
 
-        while (in.size) {
-            res = av_bsf_send_packet(bsf, &in);
+        while (in->size) {
+            res = av_bsf_send_packet(bsf, in);
             if (res < 0 && res != AVERROR(EAGAIN))
                 break;
-            res = av_bsf_receive_packet(bsf, &out);
+            res = av_bsf_receive_packet(bsf, out);
             if (res < 0)
                 break;
-            av_packet_unref(&out);
+            av_packet_unref(out);
         }
-        av_packet_unref(&in);
+        av_packet_unref(in);
     }
 
     res = av_bsf_send_packet(bsf, NULL);
     while (!res) {
-        res = av_bsf_receive_packet(bsf, &out);
+        res = av_bsf_receive_packet(bsf, out);
         if (res < 0)
             break;
-        av_packet_unref(&out);
+        av_packet_unref(out);
     }
 
+    av_packet_free(&in);
+    av_packet_free(&out);
     av_bsf_free(&bsf);
     return 0;
 }
