@@ -295,13 +295,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     int got_frame;
     AVFrame *frame = av_frame_alloc();
-    if (!frame)
+    AVPacket *avpkt = av_packet_alloc();
+    AVPacket *parsepkt = av_packet_alloc();
+    if (!frame || !avpkt || !parsepkt)
         error("Failed memory allocation");
 
     // Read very simple container
-    AVPacket avpkt, parsepkt;
-    av_init_packet(&avpkt);
-    av_init_packet(&parsepkt);
     while (data < end && it < maxiteration) {
         // Search for the TAG
         while (data + sizeof(fuzz_tag) < end) {
@@ -312,43 +311,42 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         if (data + sizeof(fuzz_tag) > end)
             data = end;
 
-        res = av_new_packet(&parsepkt, data - last);
+        res = av_new_packet(parsepkt, data - last);
         if (res < 0)
             error("Failed memory allocation");
-        memcpy(parsepkt.data, last, data - last);
-        parsepkt.flags = (keyframes & 1) * AV_PKT_FLAG_DISCARD + (!!(keyframes & 2)) * AV_PKT_FLAG_KEY;
+        memcpy(parsepkt->data, last, data - last);
+        parsepkt->flags = (keyframes & 1) * AV_PKT_FLAG_DISCARD + (!!(keyframes & 2)) * AV_PKT_FLAG_KEY;
         keyframes = (keyframes >> 2) + (keyframes<<62);
         data += sizeof(fuzz_tag);
         last = data;
 
-        while (parsepkt.size > 0) {
+        while (parsepkt->size > 0) {
             int decode_more;
 
             if (parser) {
-                av_init_packet(&avpkt);
-                int ret = av_parser_parse2(parser, parser_avctx, &avpkt.data, &avpkt.size,
-                                           parsepkt.data, parsepkt.size,
-                                           parsepkt.pts, parsepkt.dts, parsepkt.pos);
-                if (avpkt.data == parsepkt.data) {
-                    avpkt.buf = av_buffer_ref(parsepkt.buf);
-                    if (!avpkt.buf)
+                int ret = av_parser_parse2(parser, parser_avctx, &avpkt->data, &avpkt->size,
+                                           parsepkt->data, parsepkt->size,
+                                           parsepkt->pts, parsepkt->dts, parsepkt->pos);
+                if (avpkt->data == parsepkt->data) {
+                    avpkt->buf = av_buffer_ref(parsepkt->buf);
+                    if (!avpkt->buf)
                         error("Failed memory allocation");
                 } else {
-                    if (av_packet_make_refcounted(&avpkt) < 0)
+                    if (av_packet_make_refcounted(avpkt) < 0)
                         error("Failed memory allocation");
                 }
-                parsepkt.data += ret;
-                parsepkt.size -= ret;
-                parsepkt.pos  += ret;
-                avpkt.pts = parser->pts;
-                avpkt.dts = parser->dts;
-                avpkt.pos = parser->pos;
+                parsepkt->data += ret;
+                parsepkt->size -= ret;
+                parsepkt->pos  += ret;
+                avpkt->pts = parser->pts;
+                avpkt->dts = parser->dts;
+                avpkt->pos = parser->pos;
                 if ( parser->key_frame == 1 ||
                     (parser->key_frame == -1 && parser->pict_type == AV_PICTURE_TYPE_I))
-                    avpkt.flags |= AV_PKT_FLAG_KEY;
-                avpkt.flags |= parsepkt.flags & AV_PKT_FLAG_DISCARD;
+                    avpkt->flags |= AV_PKT_FLAG_KEY;
+                avpkt->flags |= parsepkt->flags & AV_PKT_FLAG_DISCARD;
             } else {
-                av_packet_move_ref(&avpkt, &parsepkt);
+                av_packet_move_ref(avpkt, parsepkt);
             }
 
           if (!(flushpattern & 7))
@@ -356,7 +354,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
           flushpattern = (flushpattern >> 3) + (flushpattern << 61);
 
           if (ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-              int ret = avcodec_send_packet(ctx, &avpkt);
+              int ret = avcodec_send_packet(ctx, avpkt);
               decode_more = ret >= 0;
               if(!decode_more) {
                     ec_pixels += (ctx->width + 32LL) * (ctx->height + 32LL);
@@ -371,7 +369,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
           // Iterate through all data
           while (decode_more && it++ < maxiteration) {
             av_frame_unref(frame);
-            int ret = decode_handler(ctx, frame, &got_frame, &avpkt);
+            int ret = decode_handler(ctx, frame, &got_frame, avpkt);
 
             ec_pixels += (ctx->width + 32LL) * (ctx->height + 32LL);
             if (it > 20 || ec_pixels > 4 * ctx->max_pixels)
@@ -381,30 +379,30 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
             if (ctx->codec_type == AVMEDIA_TYPE_AUDIO &&
                 frame->nb_samples == 0 && !got_frame &&
-                (avpkt.flags & AV_PKT_FLAG_DISCARD))
+                (avpkt->flags & AV_PKT_FLAG_DISCARD))
                 nb_samples += ctx->max_samples;
 
             nb_samples += frame->nb_samples;
             if (nb_samples > maxsamples)
                 goto maximums_reached;
 
-            if (ret <= 0 || ret > avpkt.size)
+            if (ret <= 0 || ret > avpkt->size)
                break;
 
             if (ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-                avpkt.data += ret;
-                avpkt.size -= ret;
-                decode_more = avpkt.size > 0;
+                avpkt->data += ret;
+                avpkt->size -= ret;
+                decode_more = avpkt->size > 0;
             } else
                 decode_more = ret >= 0;
           }
-          av_packet_unref(&avpkt);
+          av_packet_unref(avpkt);
         }
-        av_packet_unref(&parsepkt);
+        av_packet_unref(parsepkt);
     }
 maximums_reached:
 
-    av_packet_unref(&avpkt);
+    av_packet_unref(avpkt);
 
     if (ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
         avcodec_send_packet(ctx, NULL);
@@ -412,7 +410,7 @@ maximums_reached:
     do {
         got_frame = 0;
         av_frame_unref(frame);
-        decode_handler(ctx, frame, &got_frame, &avpkt);
+        decode_handler(ctx, frame, &got_frame, avpkt);
     } while (got_frame == 1 && it++ < maxiteration);
 
     fprintf(stderr, "pixels decoded: %"PRId64", samples decoded: %"PRId64", iterations: %d\n", ec_pixels, nb_samples, it);
@@ -421,7 +419,8 @@ maximums_reached:
     avcodec_free_context(&ctx);
     avcodec_free_context(&parser_avctx);
     av_parser_close(parser);
-    av_packet_unref(&parsepkt);
+    av_packet_free(&avpkt);
+    av_packet_free(&parsepkt);
     av_dict_free(&opts);
     return 0;
 }
