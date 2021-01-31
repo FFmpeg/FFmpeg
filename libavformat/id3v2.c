@@ -1162,7 +1162,7 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
 
         av_dict_set(&st->metadata, "comment", apic->type, 0);
 
-        av_init_packet(&st->attached_pic);
+        av_packet_unref(&st->attached_pic);
         st->attached_pic.buf          = apic->buf;
         st->attached_pic.data         = apic->buf->data;
         st->attached_pic.size         = apic->buf->size - AV_INPUT_BUFFER_PADDING_SIZE;
