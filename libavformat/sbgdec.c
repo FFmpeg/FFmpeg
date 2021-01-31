@@ -199,7 +199,7 @@ static int str_to_time(const char *str, int64_t *rtime)
             cur = end;
         ts = av_clipd(seconds * AV_TIME_BASE, INT64_MIN/2, INT64_MAX/2);
     }
-    *rtime = (hours * 3600LL + minutes * 60LL) * AV_TIME_BASE + ts;
+    *rtime = av_sat_add64((hours * 3600LL + minutes * 60LL) * AV_TIME_BASE, ts);
     return cur - str;
 }
 
