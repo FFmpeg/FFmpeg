@@ -2207,8 +2207,12 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                 return 0;
             }
             atom_size = bytestream2_get_be32u(&s->g);
+            if (atom_size < 16 || (int64_t)bytestream2_tell(&s->g) + atom_size - 16 > INT_MAX)
+                return AVERROR_INVALIDDATA;
             atom_end  = bytestream2_tell(&s->g) + atom_size - 16;
         } else {
+            if (atom_size <  8 || (int64_t)bytestream2_tell(&s->g) + atom_size -  8 > INT_MAX)
+                return AVERROR_INVALIDDATA;
             atom_end  = bytestream2_tell(&s->g) + atom_size -  8;
         }
 
