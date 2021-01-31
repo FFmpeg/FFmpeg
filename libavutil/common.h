@@ -87,6 +87,7 @@
  * As with many macros, this evaluates its argument twice.
  */
 #define FFABSU(a) ((a) <= 0 ? -(unsigned)(a) : (unsigned)(a))
+#define FFABS64U(a) ((a) <= 0 ? -(uint64_t)(a) : (uint64_t)(a))
 
 /**
  * Comparator.
