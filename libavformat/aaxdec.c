@@ -264,6 +264,11 @@ static int aax_read_header(AVFormatContext *s)
         }
     }
 
+    if (!a->segments[0].end) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     st = avformat_new_stream(s, NULL);
     if (!st) {
         ret = AVERROR(ENOMEM);
