@@ -23,9 +23,14 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+
+#define R 0
+#define G 1
+#define B 2
 
 typedef struct ColorTemperatureContext {
     const AVClass *class;
@@ -36,7 +41,9 @@ typedef struct ColorTemperatureContext {
 
     float color[3];
 
+    int step;
     int depth;
+    uint8_t rgba_map[4];
 
     int (*do_slice)(AVFilterContext *s, void *arg,
                     int jobnr, int nb_jobs);
@@ -177,6 +184,85 @@ static int temperature_slice16(AVFilterContext *ctx, void *arg, int jobnr, int n
     return 0;
 }
 
+static int temperature_slice8p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorTemperatureContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const int step = s->step;
+    const int width = frame->width;
+    const int height = frame->height;
+    const float mix = s->mix;
+    const float preserve = s->preserve;
+    const float *color = s->color;
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int linesize = frame->linesize[0];
+    uint8_t *ptr = frame->data[0] + slice_start * linesize;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            float g = ptr[x * step + goffset];
+            float b = ptr[x * step + boffset];
+            float r = ptr[x * step + roffset];
+            float nr, ng, nb;
+            float l0, l1, l;
+
+            PROCESS()
+
+            ptr[x * step + goffset] = av_clip_uint8(ng);
+            ptr[x * step + boffset] = av_clip_uint8(nb);
+            ptr[x * step + roffset] = av_clip_uint8(nr);
+        }
+
+        ptr += linesize;
+    }
+
+    return 0;
+}
+
+static int temperature_slice16p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorTemperatureContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const int step = s->step;
+    const int depth = s->depth;
+    const int width = frame->width;
+    const int height = frame->height;
+    const float preserve = s->preserve;
+    const float mix = s->mix;
+    const float *color = s->color;
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int linesize = frame->linesize[0] / sizeof(uint16_t);
+    uint16_t *ptr = (uint16_t *)frame->data[0] + slice_start * linesize;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            float g = ptr[x * step + goffset];
+            float b = ptr[x * step + boffset];
+            float r = ptr[x * step + roffset];
+            float nr, ng, nb;
+            float l0, l1, l;
+
+            PROCESS()
+
+            ptr[x * step + goffset] = av_clip_uintp2_c(ng, depth);
+            ptr[x * step + boffset] = av_clip_uintp2_c(nb, depth);
+            ptr[x * step + roffset] = av_clip_uintp2_c(nr, depth);
+        }
+
+        ptr += linesize;
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -193,10 +279,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static av_cold int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_0RGB, AV_PIX_FMT_0BGR,
+        AV_PIX_FMT_RGB0, AV_PIX_FMT_BGR0,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
         AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
 
@@ -214,9 +307,21 @@ static av_cold int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ColorTemperatureContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+
+    s->step = desc->nb_components;
+    if (inlink->format == AV_PIX_FMT_RGB0 ||
+        inlink->format == AV_PIX_FMT_0RGB ||
+        inlink->format == AV_PIX_FMT_BGR0 ||
+        inlink->format == AV_PIX_FMT_0BGR)
+        s->step = 4;
 
     s->depth = desc->comp[0].depth;
     s->do_slice = s->depth <= 8 ? temperature_slice8 : temperature_slice16;
+    if (!planar)
+        s->do_slice = s->depth <= 8 ? temperature_slice8p : temperature_slice16p;
+
+    ff_fill_rgba_map(s->rgba_map, inlink->format);
 
     return 0;
 }
@@ -244,7 +349,7 @@ static const AVFilterPad outputs[] = {
 #define VF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption colortemperature_options[] = {
-    { "temperature", "set the temperature in Kelvins",         OFFSET(temperature), AV_OPT_TYPE_FLOAT, {.dbl=6500}, 1000,  40000, VF },
+    { "temperature", "set the temperature in Kelvin",          OFFSET(temperature), AV_OPT_TYPE_FLOAT, {.dbl=6500}, 1000,  40000, VF },
     { "mix",         "set the mix with filtered output",       OFFSET(mix),         AV_OPT_TYPE_FLOAT, {.dbl=1},       0,      1, VF },
     { "pl",          "set the amount of preserving lightness", OFFSET(preserve),    AV_OPT_TYPE_FLOAT, {.dbl=0},       0,      1, VF },
     { NULL }
