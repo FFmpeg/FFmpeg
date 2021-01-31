@@ -218,7 +218,8 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         return AVERROR_INVALIDDATA;
 
     /* more check if YUV420 */
-    if (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_PLANAR) {
+    if ((av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+        avctx->pix_fmt != AV_PIX_FMT_GBRPF32) {
         if ((avctx->width & 1) != 0)
             return AVERROR_INVALIDDATA;
         h = (avctx->height * 2);
