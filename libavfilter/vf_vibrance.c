@@ -21,9 +21,14 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+
+#define R 0
+#define G 1
+#define B 2
 
 typedef struct VibranceContext {
     const AVClass *class;
@@ -33,7 +38,9 @@ typedef struct VibranceContext {
     float lcoeffs[3];
     int alternate;
 
+    int step;
     int depth;
+    uint8_t rgba_map[4];
 
     int (*do_slice)(AVFilterContext *s, void *arg,
                     int jobnr, int nb_jobs);
@@ -160,6 +167,118 @@ static int vibrance_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb
     return 0;
 }
 
+static int vibrance_slice8p(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
+{
+    VibranceContext *s = avctx->priv;
+    AVFrame *frame = arg;
+    const int step = s->step;
+    const int width = frame->width;
+    const int height = frame->height;
+    const float scale = 1.f / 255.f;
+    const float gc = s->lcoeffs[0];
+    const float bc = s->lcoeffs[1];
+    const float rc = s->lcoeffs[2];
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const float intensity = s->intensity;
+    const float alternate = s->alternate ? 1.f : -1.f;
+    const float gintensity = intensity * s->balance[0];
+    const float bintensity = intensity * s->balance[1];
+    const float rintensity = intensity * s->balance[2];
+    const float sgintensity = alternate * FFSIGN(gintensity);
+    const float sbintensity = alternate * FFSIGN(bintensity);
+    const float srintensity = alternate * FFSIGN(rintensity);
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int linesize = frame->linesize[0];
+    uint8_t *ptr = frame->data[0] + slice_start * linesize;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            float g = ptr[x * step + goffset] * scale;
+            float b = ptr[x * step + boffset] * scale;
+            float r = ptr[x * step + roffset] * scale;
+            float max_color = FFMAX3(r, g, b);
+            float min_color = FFMIN3(r, g, b);
+            float color_saturation = max_color - min_color;
+            float luma = g * gc + r * rc + b * bc;
+            const float cg = 1.f + gintensity * (1.f - sgintensity * color_saturation);
+            const float cb = 1.f + bintensity * (1.f - sbintensity * color_saturation);
+            const float cr = 1.f + rintensity * (1.f - srintensity * color_saturation);
+
+            g = lerpf(luma, g, cg);
+            b = lerpf(luma, b, cb);
+            r = lerpf(luma, r, cr);
+
+            ptr[x * step + goffset] = av_clip_uint8(g * 255.f);
+            ptr[x * step + boffset] = av_clip_uint8(b * 255.f);
+            ptr[x * step + roffset] = av_clip_uint8(r * 255.f);
+        }
+
+        ptr += linesize;
+    }
+
+    return 0;
+}
+
+static int vibrance_slice16p(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
+{
+    VibranceContext *s = avctx->priv;
+    AVFrame *frame = arg;
+    const int step = s->step;
+    const int depth = s->depth;
+    const float max = (1 << depth) - 1;
+    const float scale = 1.f / max;
+    const float gc = s->lcoeffs[0];
+    const float bc = s->lcoeffs[1];
+    const float rc = s->lcoeffs[2];
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const int width = frame->width;
+    const int height = frame->height;
+    const float intensity = s->intensity;
+    const float alternate = s->alternate ? 1.f : -1.f;
+    const float gintensity = intensity * s->balance[0];
+    const float bintensity = intensity * s->balance[1];
+    const float rintensity = intensity * s->balance[2];
+    const float sgintensity = alternate * FFSIGN(gintensity);
+    const float sbintensity = alternate * FFSIGN(bintensity);
+    const float srintensity = alternate * FFSIGN(rintensity);
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int linesize = frame->linesize[0] / 2;
+    uint16_t *ptr = (uint16_t *)frame->data[0] + slice_start * linesize;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            float g = ptr[x * step + goffset] * scale;
+            float b = ptr[x * step + boffset] * scale;
+            float r = ptr[x * step + roffset] * scale;
+            float max_color = FFMAX3(r, g, b);
+            float min_color = FFMIN3(r, g, b);
+            float color_saturation = max_color - min_color;
+            float luma = g * gc + r * rc + b * bc;
+            const float cg = 1.f + gintensity * (1.f - sgintensity * color_saturation);
+            const float cb = 1.f + bintensity * (1.f - sbintensity * color_saturation);
+            const float cr = 1.f + rintensity * (1.f - srintensity * color_saturation);
+
+            g = lerpf(luma, g, cg);
+            b = lerpf(luma, b, cb);
+            r = lerpf(luma, r, cr);
+
+            ptr[x * step + goffset] = av_clip_uintp2_c(g * max, depth);
+            ptr[x * step + boffset] = av_clip_uintp2_c(b * max, depth);
+            ptr[x * step + roffset] = av_clip_uintp2_c(r * max, depth);
+        }
+
+        ptr += linesize;
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *avctx = link->dst;
@@ -176,10 +295,17 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 static av_cold int query_formats(AVFilterContext *avctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_0RGB, AV_PIX_FMT_0BGR,
+        AV_PIX_FMT_RGB0, AV_PIX_FMT_BGR0,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
         AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
 
@@ -197,9 +323,21 @@ static av_cold int config_input(AVFilterLink *inlink)
     AVFilterContext *avctx = inlink->dst;
     VibranceContext *s = avctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+
+    s->step = desc->nb_components;
+    if (inlink->format == AV_PIX_FMT_RGB0 ||
+        inlink->format == AV_PIX_FMT_0RGB ||
+        inlink->format == AV_PIX_FMT_BGR0 ||
+        inlink->format == AV_PIX_FMT_0BGR)
+        s->step = 4;
 
     s->depth = desc->comp[0].depth;
     s->do_slice = s->depth <= 8 ? vibrance_slice8 : vibrance_slice16;
+    if (!planar)
+        s->do_slice = s->depth <= 8 ? vibrance_slice8p : vibrance_slice16p;
+
+    ff_fill_rgba_map(s->rgba_map, inlink->format);
 
     return 0;
 }
