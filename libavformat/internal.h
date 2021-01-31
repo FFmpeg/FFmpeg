@@ -90,6 +90,7 @@ struct AVFormatInternal {
     /**
      * Packets split by the parser get queued here.
      */
+    AVPacket *parse_pkt;
     struct PacketList *parse_queue;
     struct PacketList *parse_queue_end;
 

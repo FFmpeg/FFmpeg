@@ -221,7 +221,10 @@ AVFormatContext *avformat_alloc_context(void)
         return NULL;
     }
     internal->pkt = av_packet_alloc();
-    if (!internal->pkt) {
+    internal->parse_pkt = av_packet_alloc();
+    if (!internal->pkt || !internal->parse_pkt) {
+        av_packet_free(&internal->pkt);
+        av_packet_free(&internal->parse_pkt);
         av_free(internal);
         av_free(ic);
         return NULL;
