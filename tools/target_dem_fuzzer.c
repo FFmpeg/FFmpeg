@@ -96,7 +96,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint64_t fuzz_tag = FUZZ_TAG;
     uint32_t it = 0;
     AVFormatContext *avfmt = avformat_alloc_context();
-    AVPacket pkt;
+    AVPacket *pkt;
     char filename[1025] = {0};
     AVIOContext *fuzzed_pb = NULL;
     uint8_t *io_buffer;
@@ -165,6 +165,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (!io_buffer_size || size / io_buffer_size > maxblocks)
         io_buffer_size = size;
 
+    pkt = av_packet_alloc();
+    if (!pkt)
+        error("Failed to allocate pkt");
+
     io_buffer = av_malloc(io_buffer_size);
     if (!io_buffer)
         error("Failed to allocate io_buffer");
@@ -190,17 +194,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     ret = avformat_find_stream_info(avfmt, NULL);
 
-    av_init_packet(&pkt);
-
     //TODO, test seeking
 
     for(it = 0; it < maxiteration; it++) {
-        ret = av_read_frame(avfmt, &pkt);
+        ret = av_read_frame(avfmt, pkt);
         if (ret < 0)
             break;
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
     }
 
+    av_packet_free(&pkt);
     av_freep(&fuzzed_pb->buffer);
     avio_context_free(&fuzzed_pb);
     avformat_close_input(&avfmt);
