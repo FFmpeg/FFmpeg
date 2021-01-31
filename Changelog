@@ -61,6 +61,7 @@ version <next>:
 - shear filter
 - kirsch filter
 - colortemperature filter
+- colorcontrast filter
 
 
 version 4.3:

@@ -8026,6 +8026,36 @@ colorbalance=rs=.3
 
 This filter supports the all above options as @ref{commands}.
 
+@section colorcontrast
+
+Adjust color contrast between RGB components.
+
+The filter accepts the following options:
+
+@table @option
+@item rc
+Set the red-cyan contrast. Defaults is 0.0. Allowed range is from -1.0 to 1.0.
+
+@item gm
+Set the green-magenta contrast. Defaults is 0.0. Allowed range is from -1.0 to 1.0.
+
+@item by
+Set the blue-yellow contrast. Defaults is 0.0. Allowed range is from -1.0 to 1.0.
+
+@item rcw
+@item gmw
+@item byw
+Set the weight of each @code{rc}, @code{gm}, @code{by} option value. Default value is 0.0.
+Allowed range is from 0.0 to 1.0. If all weights are 0.0 filtering is disabled.
+
+@item pl
+Set the amount of preserving lightness. Default value is 0.0. Allowed range is from 0.0 to 1.0.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section colorchannelmixer
 
 Adjust video input frames by re-mixing color channels.
