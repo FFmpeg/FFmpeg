@@ -51,7 +51,7 @@ static int video_dst_bufsize;
 
 static int video_stream_idx = -1, audio_stream_idx = -1;
 static AVFrame *frame = NULL;
-static AVPacket pkt;
+static AVPacket *pkt = NULL;
 static int video_frame_count = 0;
 static int audio_frame_count = 0;
 
@@ -303,10 +303,12 @@ int main (int argc, char **argv)
         goto end;
     }
 
-    /* initialize packet, set data to NULL, let the demuxer fill it */
-    av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        fprintf(stderr, "Could not allocate packet\n");
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     if (video_stream)
         printf("Demuxing video from file '%s' into '%s'\n", src_filename, video_dst_filename);
@@ -314,14 +316,14 @@ int main (int argc, char **argv)
         printf("Demuxing audio from file '%s' into '%s'\n", src_filename, audio_dst_filename);
 
     /* read frames from the file */
-    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
+    while (av_read_frame(fmt_ctx, pkt) >= 0) {
         // check if the packet belongs to a stream we are interested in, otherwise
         // skip it
-        if (pkt.stream_index == video_stream_idx)
-            ret = decode_packet(video_dec_ctx, &pkt);
-        else if (pkt.stream_index == audio_stream_idx)
-            ret = decode_packet(audio_dec_ctx, &pkt);
-        av_packet_unref(&pkt);
+        if (pkt->stream_index == video_stream_idx)
+            ret = decode_packet(video_dec_ctx, pkt);
+        else if (pkt->stream_index == audio_stream_idx)
+            ret = decode_packet(audio_dec_ctx, pkt);
+        av_packet_unref(pkt);
         if (ret < 0)
             break;
     }
@@ -372,6 +374,7 @@ end:
         fclose(video_dst_file);
     if (audio_dst_file)
         fclose(audio_dst_file);
+    av_packet_free(&pkt);
     av_frame_free(&frame);
     av_free(video_dst_data[0]);
 
