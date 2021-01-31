@@ -95,6 +95,11 @@ static int sami_read_header(AVFormatContext *s)
                 const char *p = ff_smil_get_attr_ptr(buf.str, "Start");
                 sub->pos      = pos;
                 sub->pts      = p ? strtol(p, NULL, 10) : 0;
+                if (sub->pts <= INT64_MIN/2 || sub->pts >= INT64_MAX/2) {
+                    res = AVERROR_PATCHWELCOME;
+                    goto end;
+                }
+
                 sub->duration = -1;
             }
         }
