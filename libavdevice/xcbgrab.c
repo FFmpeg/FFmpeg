@@ -513,21 +513,26 @@ static int pixfmt_from_pixmap_format(AVFormatContext *s, int depth,
             switch (depth) {
             case 32:
                 if (fmt->bits_per_pixel == 32)
-                    *pix_fmt = AV_PIX_FMT_0RGB;
+                    *pix_fmt = setup->image_byte_order == XCB_IMAGE_ORDER_LSB_FIRST ?
+                               AV_PIX_FMT_BGR0 : AV_PIX_FMT_0RGB;
                 break;
             case 24:
                 if (fmt->bits_per_pixel == 32)
-                    *pix_fmt = AV_PIX_FMT_0RGB32;
+                    *pix_fmt = setup->image_byte_order == XCB_IMAGE_ORDER_LSB_FIRST ?
+                               AV_PIX_FMT_BGR0 : AV_PIX_FMT_0RGB;
                 else if (fmt->bits_per_pixel == 24)
-                    *pix_fmt = AV_PIX_FMT_RGB24;
+                    *pix_fmt = setup->image_byte_order == XCB_IMAGE_ORDER_LSB_FIRST ?
+                               AV_PIX_FMT_BGR24 : AV_PIX_FMT_RGB24;
                 break;
             case 16:
                 if (fmt->bits_per_pixel == 16)
-                    *pix_fmt = AV_PIX_FMT_RGB565;
+                    *pix_fmt = setup->image_byte_order == XCB_IMAGE_ORDER_LSB_FIRST ?
+                               AV_PIX_FMT_RGB565LE : AV_PIX_FMT_RGB565BE;
                 break;
             case 15:
                 if (fmt->bits_per_pixel == 16)
-                    *pix_fmt = AV_PIX_FMT_RGB555;
+                    *pix_fmt = setup->image_byte_order == XCB_IMAGE_ORDER_LSB_FIRST ?
+                               AV_PIX_FMT_RGB555LE : AV_PIX_FMT_RGB555BE;
                 break;
             case 8:
                 if (fmt->bits_per_pixel == 8)
