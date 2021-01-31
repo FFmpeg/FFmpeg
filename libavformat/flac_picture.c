@@ -165,7 +165,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size, int tr
         RETURN_ERROR(AVERROR(ENOMEM));
     }
 
-    av_init_packet(&st->attached_pic);
+    av_packet_unref(&st->attached_pic);
     st->attached_pic.buf          = data;
     st->attached_pic.data         = data->data;
     st->attached_pic.size         = len;
