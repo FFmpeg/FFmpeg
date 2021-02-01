@@ -197,6 +197,7 @@ OBJS-$(CONFIG_CODECVIEW_FILTER)              += vf_codecview.o qp_table.o
 OBJS-$(CONFIG_COLORBALANCE_FILTER)           += vf_colorbalance.o
 OBJS-$(CONFIG_COLORCHANNELMIXER_FILTER)      += vf_colorchannelmixer.o
 OBJS-$(CONFIG_COLORCONTRAST_FILTER)          += vf_colorcontrast.o
+OBJS-$(CONFIG_COLORCORRECT_FILTER)           += vf_colorcorrect.o
 OBJS-$(CONFIG_COLORKEY_FILTER)               += vf_colorkey.o
 OBJS-$(CONFIG_COLORKEY_OPENCL_FILTER)        += vf_colorkey_opencl.o opencl.o \
                                                 opencl/colorkey.o

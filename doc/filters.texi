@@ -8056,6 +8056,39 @@ Set the amount of preserving lightness. Default value is 0.0. Allowed range is f
 
 This filter supports the all above options as @ref{commands}.
 
+@section colorcorrect
+
+Adjust color white balance selectively for blacks and whites.
+This filter operates in YUV colorspace.
+
+The filter accepts the following options:
+
+@table @option
+@item rl
+Set the red shadow spot. Allowed range is from -1.0 to 1.0.
+Default value is 0.
+
+@item bl
+Set the blue shadow spot. Allowed range is from -1.0 to 1.0.
+Default value is 0.
+
+@item rh
+Set the red highlight spot. Allowed range is from -1.0 to 1.0.
+Default value is 0.
+
+@item bh
+Set the red highlight spot. Allowed range is from -1.0 to 1.0.
+Default value is 0.
+
+@item saturation
+Set the amount of saturation. Allowed range is from -3.0 to 3.0.
+Default value is 1.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section colorchannelmixer
 
 Adjust video input frames by re-mixing color channels.

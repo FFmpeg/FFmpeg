@@ -63,6 +63,7 @@ version <next>:
 - colortemperature filter
 - colorcontrast filter
 - PFM encoder
+- colorcorrect filter
 
 
 version 4.3:
