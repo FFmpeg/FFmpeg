@@ -661,8 +661,10 @@ static int ipmovie_read_header(AVFormatContext *s)
         ipmovie->palette[i] = 0xFFU << 24;
 
     /* process the first chunk which should be CHUNK_INIT_VIDEO */
-    if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO)
+    if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO) {
+        av_packet_unref(&pkt);
         return AVERROR_INVALIDDATA;
+    }
 
     /* peek ahead to the next chunk-- if it is an init audio chunk, process
      * it; if it is the first video chunk, this is a silent file */
@@ -674,8 +676,10 @@ static int ipmovie_read_header(AVFormatContext *s)
 
     if (chunk_type == CHUNK_VIDEO)
         ipmovie->audio_type = AV_CODEC_ID_NONE;  /* no audio */
-    else if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO)
+    else if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO) {
+        av_packet_unref(&pkt);
         return AVERROR_INVALIDDATA;
+    }
 
     /* initialize the stream decoders */
     st = avformat_new_stream(s, NULL);
