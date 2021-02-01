@@ -752,12 +752,14 @@ static void store_version(AVFormatContext *s){
     avio_wb16(pb, 0); // release
 }
 
+#define PLATFROM_IDENT "Lavf " AV_STRINGIFY((OS_NAME))
 static void mxf_write_identification(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     const char *company = "FFmpeg";
     const char *product = s->oformat != &ff_mxf_opatom_muxer ? "OP1a Muxer" : "OPAtom Muxer";
+    const char *platform = s->flags & AVFMT_FLAG_BITEXACT ? "Lavf" : PLATFROM_IDENT;
     const char *version;
     int length;
 
@@ -768,6 +770,7 @@ static void mxf_write_identification(AVFormatContext *s)
         "0.0.0" : AV_STRINGIFY(LIBAVFORMAT_VERSION);
     length = 100 +mxf_utf16_local_tag_length(company) +
                   mxf_utf16_local_tag_length(product) +
+                  mxf_utf16_local_tag_length(platform) +
                   mxf_utf16_local_tag_length(version);
     klv_encode_ber_length(pb, length);
 
@@ -786,6 +789,7 @@ static void mxf_write_identification(AVFormatContext *s)
     store_version(s);
 
     mxf_write_local_tag_utf16(s, 0x3C04, version); // Version String
+    mxf_write_local_tag_utf16(s, 0x3C08, platform); // Platform
 
     // write product uid
     mxf_write_local_tag(s, 16, 0x3C05);
