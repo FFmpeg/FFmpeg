@@ -108,6 +108,8 @@ typedef struct OptionsContext {
     int        nb_audio_sample_rate;
     SpecifierOpt *frame_rates;
     int        nb_frame_rates;
+    SpecifierOpt *max_frame_rates;
+    int        nb_max_frame_rates;
     SpecifierOpt *frame_sizes;
     int        nb_frame_sizes;
     SpecifierOpt *frame_pix_fmts;
@@ -479,6 +481,7 @@ typedef struct OutputStream {
 
     /* video only */
     AVRational frame_rate;
+    AVRational max_frame_rate;
     int is_cfr;
     int force_fps;
     int top_field_first;
