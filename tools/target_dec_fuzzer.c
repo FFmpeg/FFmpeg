@@ -98,7 +98,7 @@ static int audio_video_handler(AVCodecContext *avctx, AVFrame *frame,
 
 // Ensure we don't loop forever
 const uint32_t maxiteration = 8096;
-const uint64_t maxpixels_per_frame = 4096 * 4096;
+uint64_t maxpixels_per_frame = 4096 * 4096;
 uint64_t maxpixels;
 
 uint64_t maxsamples_per_frame = 256*1024*32;
@@ -197,6 +197,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     maxsamples_per_frame = FFMIN(maxsamples_per_frame, maxsamples);
+    maxpixels_per_frame  = FFMIN(maxpixels_per_frame , maxpixels);
 
     AVCodecContext* ctx = avcodec_alloc_context3(c);
     AVCodecContext* parser_avctx = avcodec_alloc_context3(NULL);
