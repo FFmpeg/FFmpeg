@@ -5,6 +5,7 @@
  *
  * Ported from arm/hevcdsp_idct_neon.S by
  * Copyright (c) 2020 Reimar Döffinger
+ * Copyright (c) 2020 Josh Dekker
  *
  * This file is part of FFmpeg.
  *
@@ -568,3 +569,53 @@ tr_16x4 secondpass_10, 20 - 10, 512, 1
 
 idct_16x16 8
 idct_16x16 10
+
+// void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
+.macro idct_dc size, bitdepth
+function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
+        movi          v1.8h,  #((1 << (14 - \bitdepth))+1)
+        ld1r         {v4.8h}, [x0]
+        add           v4.8h,  v4.8h,  v1.8h
+        sshr          v0.8h,  v4.8h,  #(15 - \bitdepth)
+        sshr          v1.8h,  v4.8h,  #(15 - \bitdepth)
+.if \size > 4
+        sshr          v2.8h,  v4.8h,  #(15 - \bitdepth)
+        sshr          v3.8h,  v4.8h,  #(15 - \bitdepth)
+.if \size > 16 /* dc 32x32 */
+        mov              x2,  #4
+1:
+        subs             x2,  x2, #1
+.endif
+        add             x12,  x0, #64
+        mov             x13,  #128
+.if \size > 8 /* dc 16x16 */
+        st1            {v0.8h-v3.8h},  [x0], x13
+        st1            {v0.8h-v3.8h}, [x12], x13
+        st1            {v0.8h-v3.8h},  [x0], x13
+        st1            {v0.8h-v3.8h}, [x12], x13
+        st1            {v0.8h-v3.8h},  [x0], x13
+        st1            {v0.8h-v3.8h}, [x12], x13
+.endif /* dc 8x8 */
+        st1            {v0.8h-v3.8h},  [x0], x13
+        st1            {v0.8h-v3.8h}, [x12], x13
+.if \size > 16 /* dc 32x32 */
+        bne             1b
+.endif
+.else /* dc 4x4 */
+        st1            {v0.8h-v1.8h},  [x0]
+.endif
+        ret
+endfunc
+.endm
+
+idct_dc 4, 8
+idct_dc 4, 10
+
+idct_dc 8, 8
+idct_dc 8, 10
+
+idct_dc 16, 8
+idct_dc 16, 10
+
+idct_dc 32, 8
+idct_dc 32, 10
