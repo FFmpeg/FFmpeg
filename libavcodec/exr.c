@@ -1214,6 +1214,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             return AVERROR_PATCHWELCOME;
         }
 
+        if (tile_x && s->tile_attr.xSize + (int64_t)FFMAX(s->xmin, 0) >= INT_MAX / tile_x )
+            return AVERROR_INVALIDDATA;
+        if (tile_y && s->tile_attr.ySize + (int64_t)FFMAX(s->ymin, 0) >= INT_MAX / tile_y )
+            return AVERROR_INVALIDDATA;
+
         line = s->ymin + s->tile_attr.ySize * tile_y;
         col = s->tile_attr.xSize * tile_x;
 
