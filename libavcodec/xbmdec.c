@@ -37,10 +37,8 @@ static int convert(uint8_t x)
     return x;
 }
 
-static int parse_str_int(const uint8_t *p, int len, const uint8_t *key)
+static int parse_str_int(const uint8_t *p, const uint8_t *end, const uint8_t *key)
 {
-    const uint8_t *end = p + len;
-
     for(; p<end - strlen(key); p++) {
         if (!memcmp(p, key, strlen(key)))
             break;
@@ -72,8 +70,8 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
     end = avpkt->data + avpkt->size;
 
-    width  = parse_str_int(avpkt->data, avpkt->size, "_width");
-    height = parse_str_int(avpkt->data, avpkt->size, "_height");
+    width  = parse_str_int(avpkt->data, end, "_width");
+    height = parse_str_int(avpkt->data, end, "_height");
 
     if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
         return ret;
