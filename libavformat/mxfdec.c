@@ -1978,6 +1978,15 @@ static int mxf_umid_to_str(UID ul, UID uid, char **str)
     return 0;
 }
 
+static int mxf_version_to_str(uint16_t major, uint16_t minor, uint16_t tertiary,
+                              uint16_t patch, uint16_t release, char **str)
+{
+    *str = av_asprintf("%d.%d.%d.%d.%d", major, minor, tertiary, patch, release);
+    if (!*str)
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
 static int mxf_add_umid_metadata(AVDictionary **pm, const char *key, MXFPackage* package)
 {
     char *str;
@@ -2739,6 +2748,17 @@ static int64_t mxf_timestamp_to_int64(uint64_t timestamp)
     av_dict_set(&s->metadata, name, str, AV_DICT_DONT_STRDUP_VAL); \
 } while (0)
 
+#define SET_VERSION_METADATA(pb, name, major, minor, tertiary, patch, release, str) do { \
+    major = avio_rb16(pb); \
+    minor = avio_rb16(pb); \
+    tertiary = avio_rb16(pb); \
+    patch = avio_rb16(pb); \
+    release = avio_rb16(pb); \
+    if ((ret = mxf_version_to_str(major, minor, tertiary, patch, release, &str)) < 0) \
+        return ret; \
+    av_dict_set(&s->metadata, name, str, AV_DICT_DONT_STRDUP_VAL); \
+} while (0)
+
 #define SET_UID_METADATA(pb, name, var, str) do { \
     avio_read(pb, var, 16); \
     if ((ret = mxf_uid_to_str(var, &str)) < 0) \
@@ -2760,6 +2780,7 @@ static int mxf_read_identification_metadata(void *arg, AVIOContext *pb, int tag,
     UID uid = { 0 };
     char *str = NULL;
     uint64_t ts;
+    uint16_t major, minor, tertiary, patch, release;
     switch (tag) {
     case 0x3C01:
         SET_STR_METADATA(pb, "company_name", str);
@@ -2775,6 +2796,9 @@ static int mxf_read_identification_metadata(void *arg, AVIOContext *pb, int tag,
         break;
     case 0x3C06:
         SET_TS_METADATA(pb, "modification_date", ts, str);
+        break;
+    case 0x3C07:
+        SET_VERSION_METADATA(pb, "toolkit_version", major, minor, tertiary, patch, release, str);
         break;
     case 0x3C08:
         SET_STR_METADATA(pb, "application_platform", str);
