@@ -335,6 +335,9 @@ skip:
         for (int y = 0; y < avctx->height; y++) {
             uint16_t *dst = (uint16_t *)(p->data[0] + y * p->linesize[0]);
 
+            if (get_bits_left(&gbit) < avctx->width * bps)
+                break;
+
             for (int x = 0; x < avctx->width; x++)
                 dst[x] = get_bits(&gbit, bps) << shift;
         }
