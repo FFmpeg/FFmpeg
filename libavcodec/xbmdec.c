@@ -28,12 +28,12 @@
 
 static int convert(uint8_t x)
 {
-    if (x >= 'a')
-        x -= 87;
-    else if (x >= 'A')
-        x -= 55;
-    else
+    if (x <= '9')
         x -= '0';
+    else if (x >= 'a')
+        x -= ('a' - 10);
+    else
+        x -= ('A' - 10);
     return x;
 }
 
