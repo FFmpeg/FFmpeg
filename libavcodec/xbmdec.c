@@ -39,11 +39,14 @@ static int convert(uint8_t x)
 
 static int parse_str_int(const uint8_t *p, const uint8_t *end, const uint8_t *key)
 {
-    for(; p<end - strlen(key); p++) {
-        if (!memcmp(p, key, strlen(key)))
+    int keylen = strlen(key);
+    const uint8_t *e = end - keylen;
+
+    for(; p < e; p++) {
+        if (!memcmp(p, key, keylen))
             break;
     }
-    p += strlen(key);
+    p += keylen;
     if (p >= end)
         return INT_MIN;
 
