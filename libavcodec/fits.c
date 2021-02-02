@@ -205,8 +205,12 @@ int avpriv_fits_header_parse_line(void *avcl, FITSHeader *header, const uint8_t 
         } else if (!strcmp(keyword, "GROUPS") && sscanf(value, "%c", &c) == 1) {
             header->groups = (c == 'T');
         } else if (!strcmp(keyword, "GCOUNT") && sscanf(value, "%"SCNd64"", &t) == 1) {
+            if (t < 0 || t > INT_MAX)
+                return AVERROR_INVALIDDATA;
             header->gcount = t;
         } else if (!strcmp(keyword, "PCOUNT") && sscanf(value, "%"SCNd64"", &t) == 1) {
+            if (t < 0 || t > INT_MAX)
+                return AVERROR_INVALIDDATA;
             header->pcount = t;
         }
         dict_set_if_not_null(metadata, keyword, value);
