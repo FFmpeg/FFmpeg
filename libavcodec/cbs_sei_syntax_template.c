@@ -238,6 +238,7 @@ static int FUNC(message_list)(CodedBitstreamContext *ctx, RWContext *rw,
         uint32_t payload_type = 0;
         uint32_t payload_size = 0;
         uint32_t tmp;
+        GetBitContext payload_gbc;
 
         while (show_bits(rw, 8) == 0xff) {
             fixed(8, ff_byte, 0xff);
@@ -253,13 +254,27 @@ static int FUNC(message_list)(CodedBitstreamContext *ctx, RWContext *rw,
         xu(8, last_payload_size_byte, tmp, 0, 254, 0);
         payload_size += tmp;
 
+        // There must be space remaining for both the payload and
+        // the trailing bits on the SEI NAL unit.
+        if (payload_size + 1 > get_bits_left(rw) / 8) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR,
+                   "Invalid SEI message: payload_size too large "
+                   "(%"PRIu32" bytes).\n", payload_size);
+            return AVERROR_INVALIDDATA;
+        }
+        CHECK(init_get_bits(&payload_gbc, rw->buffer,
+                            get_bits_count(rw) + 8 * payload_size));
+        skip_bits_long(&payload_gbc, get_bits_count(rw));
+
         CHECK(ff_cbs_sei_list_add(current));
         message = &current->messages[k];
 
         message->payload_type = payload_type;
         message->payload_size = payload_size;
 
-        CHECK(FUNC(message)(ctx, rw, message));
+        CHECK(FUNC(message)(ctx, &payload_gbc, message));
+
+        skip_bits_long(rw, 8 * payload_size);
 
         if (!cbs_h2645_read_more_rbsp_data(rw))
             break;
