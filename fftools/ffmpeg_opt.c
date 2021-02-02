@@ -2641,6 +2641,9 @@ loop_end:
         if(o->recording_time != INT64_MAX)
             av_dict_set(&oc->metadata, "duration", NULL, 0);
         av_dict_set(&oc->metadata, "creation_time", NULL, 0);
+        av_dict_set(&oc->metadata, "company_name", NULL, 0);
+        av_dict_set(&oc->metadata, "product_name", NULL, 0);
+        av_dict_set(&oc->metadata, "product_version", NULL, 0);
     }
     if (!o->metadata_streams_manual)
         for (i = of->ost_index; i < nb_output_streams; i++) {
