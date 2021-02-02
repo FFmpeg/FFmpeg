@@ -111,7 +111,7 @@ typedef struct ThreadData {
     int dst_linesize;
     int src_linesize;
 
-    double coeff;
+    float coeff;
     uint8_t offset;
 
     int h;
@@ -135,7 +135,7 @@ typedef struct ThreadData {
                                                                 \
     int imin = td->imin;                                        \
     int omin = td->omin;                                        \
-    double coeff = td->coeff;
+    float coeff = td->coeff;
 
 static int colorlevel_slice_8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
@@ -198,7 +198,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int imax = lrint(r->in_max  * UINT8_MAX);
             int omin = lrint(r->out_min * UINT8_MAX);
             int omax = lrint(r->out_max * UINT8_MAX);
-            double coeff;
+            float coeff;
             ThreadData td;
 
             if (imin < 0) {
@@ -250,7 +250,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int imax = lrint(r->in_max  * UINT16_MAX);
             int omin = lrint(r->out_min * UINT16_MAX);
             int omax = lrint(r->out_max * UINT16_MAX);
-            double coeff;
+            float coeff;
             ThreadData td;
 
             if (imin < 0) {
