@@ -440,6 +440,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             memcpy(dst, src, avctx->width * s->bpp);
             dst -= frame->linesize[0];
             src += s->stride * 4;
+            if (bytestream2_tell_p(pb) < y*s->stride * 4)
+                break;
         }
     } else {
         unsigned block, nb_blocks;
