@@ -120,22 +120,22 @@ typedef struct ThreadData {
     int omin;
 } ThreadData;
 
-#define LOAD_COMMON\
-    ColorLevelsContext *s = ctx->priv;\
-    const ThreadData *td = arg;\
-\
-    int process_h = td->h;\
-    const int slice_start = (process_h *  jobnr   ) / nb_jobs;\
-    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;\
-    int x, y;\
-    const uint8_t *srcrow = td->srcrow;\
-    uint8_t *dstrow = td->dstrow;\
-    const int step = s->step;\
-    const uint8_t offset = td->offset;\
-\
-    int imin = td->imin;\
-    int omin = td->omin;\
-    double coeff = td->coeff;\
+#define LOAD_COMMON                                             \
+    ColorLevelsContext *s = ctx->priv;                          \
+    const ThreadData *td = arg;                                 \
+                                                                \
+    int process_h = td->h;                                      \
+    const int slice_start = (process_h *  jobnr   ) / nb_jobs;  \
+    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;  \
+    int x, y;                                                   \
+    const uint8_t *srcrow = td->srcrow;                         \
+    uint8_t *dstrow = td->dstrow;                               \
+    const int step = s->step;                                   \
+    const uint8_t offset = td->offset;                          \
+                                                                \
+    int imin = td->imin;                                        \
+    int omin = td->omin;                                        \
+    double coeff = td->coeff;
 
 static int colorlevel_slice_8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
