@@ -105,7 +105,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-struct thread_data {
+typedef struct ThreadData {
     const uint8_t *srcrow;
     uint8_t *dstrow;
     int dst_linesize;
@@ -118,11 +118,11 @@ struct thread_data {
 
     int imin;
     int omin;
-};
+} ThreadData;
 
 #define LOAD_COMMON\
     ColorLevelsContext *s = ctx->priv;\
-    const struct thread_data *td = arg;\
+    const ThreadData *td = arg;\
 \
     int process_h = td->h;\
     const int slice_start = (process_h *  jobnr   ) / nb_jobs;\
@@ -199,7 +199,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int omin = lrint(r->out_min * UINT8_MAX);
             int omax = lrint(r->out_max * UINT8_MAX);
             double coeff;
-            struct thread_data td;
+            ThreadData td;
 
             if (imin < 0) {
                 imin = UINT8_MAX;
@@ -251,7 +251,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             int omin = lrint(r->out_min * UINT16_MAX);
             int omax = lrint(r->out_max * UINT16_MAX);
             double coeff;
-            struct thread_data td;
+            ThreadData td;
 
             if (imin < 0) {
                 imin = UINT16_MAX;
