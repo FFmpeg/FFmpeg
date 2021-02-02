@@ -352,6 +352,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
           if (ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
               int ret = avcodec_send_packet(ctx, &avpkt);
               decode_more = ret >= 0;
+              if(!decode_more) {
+                    ec_pixels += (ctx->width + 32LL) * (ctx->height + 32LL);
+                    if (it > 20 || ec_pixels > 4 * ctx->max_pixels)
+                        ctx->error_concealment = 0;
+                    if (ec_pixels > maxpixels)
+                        goto maximums_reached;
+              }
           } else
               decode_more = 1;
 
