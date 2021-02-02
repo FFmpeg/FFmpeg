@@ -64,6 +64,7 @@ version <next>:
 - colorcontrast filter
 - PFM encoder
 - colorcorrect filter
+- binka demuxer
 
 
 version 4.3:

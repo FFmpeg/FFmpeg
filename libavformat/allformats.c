@@ -94,6 +94,7 @@ extern AVInputFormat  ff_bethsoftvid_demuxer;
 extern AVInputFormat  ff_bfi_demuxer;
 extern AVInputFormat  ff_bintext_demuxer;
 extern AVInputFormat  ff_bink_demuxer;
+extern AVInputFormat  ff_binka_demuxer;
 extern AVInputFormat  ff_bit_demuxer;
 extern AVOutputFormat ff_bit_muxer;
 extern AVInputFormat  ff_bmv_demuxer;
