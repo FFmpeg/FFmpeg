@@ -108,10 +108,10 @@ static const Range spec2_range[] = {{0, 16}, {16, 22}, {22, 226}, {226, 236}, {2
 static const Range shadows_range[] = {{0, 32}, {32, 256}};
 static const Range highlights_range[] = {{0, 214}, {214, 224}, {224, 256}};
 
-static const Fill spec1_fills[] = {{0.5f, 0.f, .5f, 1.f}, {-1.f, -1.f, -1.f, 1.f}, {1.f, 0.f, 0.f, 1.f}};
-static const Fill spec2_fills[] = {{0.5f, 0.f, .5f, 1.f}, {0.f, 1.f, 1.f, 1.f}, {-1.f, -1.f, -1.f, 1.f}, {1.f, 1.f, 0.f, 1.f}, {1.f, 0.f, 0.f, 1.f}};
-static const Fill shadows_fills[] = {{0.8f, 0.4f, .8f, 1.f}, {-1.f, -1.f, -1.f, 1.f}};
-static const Fill highlights_fills[] = {{-1.f, -1.f, -1.f, 1.f}, {1.f, 0.3f, 0.6f, 1.f}, {1.f, 0.2f, .5f, 1.f}};
+static const Fill spec1_fills[] = {{{0.5f, 0.f, .5f, 1.f}}, {{-1.f, -1.f, -1.f, 1.f}}, {{1.f, 0.f, 0.f, 1.f}}};
+static const Fill spec2_fills[] = {{{0.5f, 0.f, .5f, 1.f}}, {{0.f, 1.f, 1.f, 1.f}}, {{-1.f, -1.f, -1.f, 1.f}}, {{1.f, 1.f, 0.f, 1.f}}, {{1.f, 0.f, 0.f, 1.f}}};
+static const Fill shadows_fills[] = {{{0.8f, 0.4f, .8f, 1.f}}, {{-1.f, -1.f, -1.f, 1.f}}};
+static const Fill highlights_fills[] = {{{-1.f, -1.f, -1.f, 1.f}}, {{1.f, 0.3f, 0.6f, 1.f}}, {{1.f, 0.2f, .5f, 1.f}}};
 
 static const Curve curves[] =
 {
