@@ -1369,6 +1369,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
         if (current->nal_unit_header.nal_unit_type != HEVC_NAL_IDR_W_RADL &&
             current->nal_unit_header.nal_unit_type != HEVC_NAL_IDR_N_LP) {
             const H265RawSTRefPicSet *rps;
+            int dpb_slots_remaining;
 
             ub(sps->log2_max_pic_order_cnt_lsb_minus4 + 4, slice_pic_order_cnt_lsb);
 
@@ -1387,6 +1388,22 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 rps = &sps->st_ref_pic_set[0];
             }
 
+            dpb_slots_remaining = HEVC_MAX_DPB_SIZE - 1 -
+                rps->num_negative_pics - rps->num_positive_pics;
+            if (pps->pps_curr_pic_ref_enabled_flag &&
+                (sps->sample_adaptive_offset_enabled_flag ||
+                 !pps->pps_deblocking_filter_disabled_flag ||
+                 pps->deblocking_filter_override_enabled_flag)) {
+                // This picture will occupy two DPB slots.
+                if (dpb_slots_remaining == 0) {
+                    av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+                           "short-term ref pic set contains too many pictures "
+                           "to use with current picture reference enabled.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                --dpb_slots_remaining;
+            }
+
             num_pic_total_curr = 0;
             for (i = 0; i < rps->num_negative_pics; i++)
                 if (rps->used_by_curr_pic_s0_flag[i])
@@ -1399,13 +1416,15 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 unsigned int idx_size;
 
                 if (sps->num_long_term_ref_pics_sps > 0) {
-                    ue(num_long_term_sps, 0, sps->num_long_term_ref_pics_sps);
+                    ue(num_long_term_sps, 0, FFMIN(sps->num_long_term_ref_pics_sps,
+                                                   dpb_slots_remaining));
                     idx_size = av_log2(sps->num_long_term_ref_pics_sps - 1) + 1;
+                    dpb_slots_remaining -= current->num_long_term_sps;
                 } else {
                     infer(num_long_term_sps, 0);
                     idx_size = 0;
                 }
-                ue(num_long_term_pics, 0, HEVC_MAX_REFS - current->num_long_term_sps);
+                ue(num_long_term_pics, 0, dpb_slots_remaining);
 
                 for (i = 0; i < current->num_long_term_sps +
                                 current->num_long_term_pics; i++) {
