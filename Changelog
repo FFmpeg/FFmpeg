@@ -65,6 +65,7 @@ version <next>:
 - PFM encoder
 - colorcorrect filter
 - binka demuxer
+- XBM parser
 
 
 version 4.3:
