@@ -100,7 +100,7 @@ int ff_text_peek_r8(FFTextReader *r);
 void ff_text_read(FFTextReader *r, char *buf, size_t size);
 
 typedef struct {
-    AVPacket *subs;         ///< array of subtitles packets
+    AVPacket **subs;         ///< array of subtitles packets
     int nb_subs;            ///< number of subtitles packets
     int allocated_size;     ///< allocated size for subs
     int current_sub_idx;    ///< current position for the read packet callback

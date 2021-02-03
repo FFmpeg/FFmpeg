@@ -250,7 +250,7 @@ static int jacosub_read_header(AVFormatContext *s)
     /* SHIFT and TIMERES affect the whole script so packet timing can only be
      * done in a second pass */
     for (i = 0; i < jacosub->q.nb_subs; i++) {
-        AVPacket *sub = &jacosub->q.subs[i];
+        AVPacket *sub = jacosub->q.subs[i];
         read_ts(jacosub, sub->data, &sub->pts, &sub->duration);
     }
     ff_subtitles_queue_finalize(s, &jacosub->q);

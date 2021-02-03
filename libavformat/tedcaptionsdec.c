@@ -293,9 +293,9 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
     }
     ff_subtitles_queue_finalize(avf, &tc->subs);
     for (i = 0; i < tc->subs.nb_subs; i++)
-        tc->subs.subs[i].pts += tc->start_time;
+        tc->subs.subs[i]->pts += tc->start_time;
 
-    last = &tc->subs.subs[tc->subs.nb_subs - 1];
+    last = tc->subs.subs[tc->subs.nb_subs - 1];
     st->codecpar->codec_type     = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id       = AV_CODEC_ID_TEXT;
     avpriv_set_pts_info(st, 64, 1, 1000);
