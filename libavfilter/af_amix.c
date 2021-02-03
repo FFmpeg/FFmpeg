@@ -164,6 +164,7 @@ typedef struct MixContext {
     int duration_mode;          /**< mode for determining duration */
     float dropout_transition;   /**< transition time when an input drops out */
     char *weights_str;          /**< string for custom weights for every input */
+    int sum;                    /**< inputs are not scaled, only added */
 
     int nb_channels;            /**< number of channels */
     int sample_rate;            /**< sample rate */
@@ -195,6 +196,8 @@ static const AVOption amix_options[] = {
             OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { .dbl = 2.0 }, 0, INT_MAX, A|F },
     { "weights", "Set weight for each input.",
             OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, A|F|T },
+    { "sum", "Do not scale inputs instead do only sum",
+            OFFSET(sum), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, A|F|T },
     { NULL }
 };
 
@@ -227,10 +230,14 @@ static void calculate_scales(MixContext *s, int nb_samples)
     }
 
     for (i = 0; i < s->nb_inputs; i++) {
-        if (s->input_state[i] & INPUT_ON)
-            s->input_scale[i] = 1.0f / s->scale_norm[i] * FFSIGN(s->weights[i]);
-        else
+        if (s->input_state[i] & INPUT_ON) {
+            if (s->sum)
+                s->input_scale[i] = 1.0f;
+            else
+                s->input_scale[i] = 1.0f / s->scale_norm[i] * FFSIGN(s->weights[i]);
+        } else {
             s->input_scale[i] = 0.0f;
+        }
     }
 }
 
