@@ -336,8 +336,8 @@ static const uint8_t mxf_indirect_value_utf16be[]          = { 0x42,0x01,0x10,0x
 static const uint8_t mxf_apple_coll_max_cll[]              = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01,0x01 };
 static const uint8_t mxf_apple_coll_max_fall[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x0e,0x20,0x04,0x01,0x05,0x03,0x01,0x02 };
 
-static uint8_t mxf_mastering_display_prefix[13]            = { FF_MXF_MasteringDisplay_PREFIX };
-static uint8_t mxf_mastering_display_uls[4][16] = {
+static const uint8_t mxf_mastering_display_prefix[13]      = { FF_MXF_MasteringDisplay_PREFIX };
+static const uint8_t mxf_mastering_display_uls[4][16] = {
     FF_MXF_MasteringDisplayPrimaries,
     FF_MXF_MasteringDisplayWhitePointChromaticity,
     FF_MXF_MasteringDisplayMaximumLuminance,
