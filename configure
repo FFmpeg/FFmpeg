@@ -341,6 +341,7 @@ External library support:
   --disable-ffnvcodec      disable dynamically linked Nvidia code [autodetect]
   --enable-libdrm          enable DRM code (Linux) [no]
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
+  --enable-libvpl          enable Intel oneVPL code via libvpl if libmfx is not used [no]
   --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
   --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
   --disable-nvdec          disable Nvidia video decoding acceleration (via hwaccel) [autodetect]
@@ -1921,6 +1922,7 @@ HWACCEL_LIBRARY_NONFREE_LIST="
 HWACCEL_LIBRARY_LIST="
     $HWACCEL_LIBRARY_NONFREE_LIST
     libmfx
+    libvpl
     mmal
     omx
     opencl
@@ -6577,23 +6579,34 @@ enabled libjxl            && require_pkg_config libjxl "libjxl >= 0.7.0" jxl/dec
 enabled libklvanc         && require libklvanc libklvanc/vanc.h klvanc_context_create -lklvanc
 enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
 enabled liblensfun        && require_pkg_config liblensfun lensfun lensfun.h lf_db_new
+
+if enabled libmfx && enabled libvpl; then
+   die "ERROR: can not use libmfx and libvpl together"
 # While it may appear that require is being used as a pkg-config
 # fallback for libmfx, it is actually being used to detect a different
 # installation route altogether.  If libmfx is installed via the Intel
 # Media SDK or Intel Media Server Studio, these don't come with
 # pkg-config support.  Instead, users should make sure that the build
 # can find the libraries and headers through other means.
-enabled libmfx            && { { check_pkg_config libmfx "libmfx >= 1.28 libmfx < 2.0" "mfxvideo.h" MFXInit ||
+elif enabled libmfx; then
+    { check_pkg_config libmfx "libmfx >= 1.28 libmfx < 2.0" "mfxvideo.h" MFXInit ||
 # Some old versions of libmfx have the following settings in libmfx.pc:
 #   includedir=/usr/include
 #   Cflags: -I${includedir}
 # So add -I${includedir}/mfx to CFLAGS
-                                 { check_pkg_config libmfx "libmfx >= 1.28 libmfx < 2.0" "mfx/mfxvideo.h" MFXInit && add_cflags -I${libmfx_incdir}/mfx; } ||
-                                 { require libmfx "mfxvideo.h mfxdefs.h" MFXInit "-llibmfx $advapi32_extralibs" &&
-                                   { test_cpp_condition mfxdefs.h "MFX_VERSION >= 1028 && MFX_VERSION < 2000" || die "ERROR: libmfx version must be >= 1.28 and < 2.0"; }  &&
-                                     warn "using libmfx without pkg-config"; } } &&
-                               warn "build FFmpeg against libmfx 1.x, obsolete features of libmfx such as OPAQUE memory,\n"\
-                                    "multi-frame encode, user plugins and LA_EXT rate control mode are enabled"; }
+      { check_pkg_config libmfx "libmfx >= 1.28 libmfx < 2.0" "mfx/mfxvideo.h" MFXInit && add_cflags -I${libmfx_incdir}/mfx; } ||
+      { require libmfx "mfxvideo.h mfxdefs.h" MFXInit "-llibmfx $advapi32_extralibs" &&
+        { test_cpp_condition mfxdefs.h "MFX_VERSION >= 1028 && MFX_VERSION < 2000" || die "ERROR: libmfx version must be >= 1.28 and < 2.0"; }  &&
+        warn "using libmfx without pkg-config"; } } &&
+    warn "build FFmpeg against libmfx 1.x, obsolete features of libmfx such as OPAQUE memory,\n"\
+         "multi-frame encode, user plugins and LA_EXT rate control mode are enabled"
+elif enabled libvpl; then
+# Consider pkg-config only. The name of libmfx is still passed to check_pkg_config function for --enable-libvpl option
+# because QSV has dependency on libmfx, we can use the same dependency if using libmfx in this check. The package name
+# is extracted from "vpl >= 2.6"
+    check_pkg_config libmfx "vpl >= 2.6" "mfxvideo.h mfxdispatcher.h" MFXLoad || \
+            die "ERROR: libvpl >= 2.6 not found"
+fi
 
 if enabled libmfx; then
    check_cc MFX_CODEC_VP9 "mfxdefs.h mfxstructures.h" "MFX_CODEC_VP9"
