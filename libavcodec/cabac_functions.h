@@ -27,6 +27,7 @@
 #ifndef AVCODEC_CABAC_FUNCTIONS_H
 #define AVCODEC_CABAC_FUNCTIONS_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "cabac.h"

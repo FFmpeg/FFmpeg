@@ -21,6 +21,8 @@
 #ifndef AVCODEC_X86_CABAC_H
 #define AVCODEC_X86_CABAC_H
 
+#include <stddef.h>
+
 #include "libavcodec/cabac.h"
 #include "libavutil/attributes.h"
 #include "libavutil/macros.h"
