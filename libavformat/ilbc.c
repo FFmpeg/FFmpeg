@@ -99,15 +99,11 @@ static int ilbc_read_packet(AVFormatContext *s,
     AVCodecParameters *par = s->streams[0]->codecpar;
     int ret;
 
-    if ((ret = av_new_packet(pkt, par->block_align)) < 0)
-        return ret;
+    if ((ret = av_get_packet(s->pb, pkt, par->block_align)) != par->block_align)
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
 
     pkt->stream_index = 0;
-    pkt->pos = avio_tell(s->pb);
     pkt->duration = par->block_align == 38 ? 160 : 240;
-    if ((ret = avio_read(s->pb, pkt->data, par->block_align)) != par->block_align) {
-        return ret < 0 ? ret : AVERROR(EIO);
-    }
 
     return 0;
 }
