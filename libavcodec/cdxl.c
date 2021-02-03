@@ -43,6 +43,7 @@
 typedef struct CDXLVideoContext {
     AVCodecContext *avctx;
     int            bpp;
+    int            type;
     int            format;
     int            padded_bits;
     const uint8_t  *palette;
@@ -65,14 +66,19 @@ static av_cold int cdxl_decode_init(AVCodecContext *avctx)
 
 static void import_palette(CDXLVideoContext *c, uint32_t *new_palette)
 {
-    int i;
-
-    for (i = 0; i < c->palette_size / 2; i++) {
-        unsigned rgb = AV_RB16(&c->palette[i * 2]);
-        unsigned r   = ((rgb >> 8) & 0xF) * 0x11;
-        unsigned g   = ((rgb >> 4) & 0xF) * 0x11;
-        unsigned b   =  (rgb       & 0xF) * 0x11;
-        AV_WN32(&new_palette[i], (0xFFU << 24) | (r << 16) | (g << 8) | b);
+    if (c->type == 1) {
+        for (int i = 0; i < c->palette_size / 2; i++) {
+            unsigned rgb = AV_RB16(&c->palette[i * 2]);
+            unsigned r   = ((rgb >> 8) & 0xF) * 0x11;
+            unsigned g   = ((rgb >> 4) & 0xF) * 0x11;
+            unsigned b   =  (rgb       & 0xF) * 0x11;
+            AV_WN32(&new_palette[i], (0xFFU << 24) | (r << 16) | (g << 8) | b);
+        }
+    } else {
+        for (int i = 0; i < c->palette_size / 3; i++) {
+            unsigned rgb = AV_RB24(&c->palette[i * 3]);
+            AV_WN32(&new_palette[i], (0xFFU << 24) | rgb);
+        }
     }
 }
 
@@ -246,6 +252,7 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
 
     if (buf_size < 32)
         return AVERROR_INVALIDDATA;
+    c->type         = buf[0];
     encoding        = buf[1] & 7;
     c->format       = buf[1] & 0xE0;
     w               = AV_RB16(&buf[14]);
@@ -256,7 +263,11 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
     c->video        = c->palette + c->palette_size;
     c->video_size   = buf_size - c->palette_size - 32;
 
-    if (c->palette_size > 512)
+    if (c->type > 1)
+        return AVERROR_INVALIDDATA;
+    if (c->type == 1 && c->palette_size > 512)
+        return AVERROR_INVALIDDATA;
+    if (c->type == 0 && c->palette_size > 768)
         return AVERROR_INVALIDDATA;
     if (buf_size < c->palette_size + 32)
         return AVERROR_INVALIDDATA;

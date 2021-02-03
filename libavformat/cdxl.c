@@ -47,16 +47,18 @@ static int cdxl_read_probe(const AVProbeData *p)
     if (p->buf_size < CDXL_HEADER_SIZE)
         return 0;
 
-    /* reserved bytes should always be set to 0 */
-    if (AV_RN64(&p->buf[24]) || AV_RN16(&p->buf[10]))
+    /* check type */
+    if (p->buf[0] > 1)
         return 0;
 
-    /* check type */
-    if (p->buf[0] != 1)
+    /* reserved bytes should always be set to 0 */
+    if (p->buf[0] == 1 && (AV_RN64(&p->buf[24]) || AV_RN16(&p->buf[10])))
         return 0;
 
     /* check palette size */
-    if (AV_RB16(&p->buf[20]) > 512)
+    if (p->buf[0] == 1 && AV_RB16(&p->buf[20]) > 512)
+        return 0;
+    if (p->buf[0] == 0 && AV_RB16(&p->buf[20]) > 768)
         return 0;
 
     /* check number of planes */
@@ -111,7 +113,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t current_size, video_size, image_size;
     uint16_t audio_size, palette_size, width, height;
     int64_t  pos;
-    int      format, frames, ret;
+    int      type, format, frames, ret;
 
     if (avio_feof(pb))
         return AVERROR_EOF;
@@ -120,17 +122,18 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!cdxl->read_chunk &&
         avio_read(pb, cdxl->header, CDXL_HEADER_SIZE) != CDXL_HEADER_SIZE)
         return AVERROR_EOF;
-    if (cdxl->header[0] != 1) {
-        av_log(s, AV_LOG_ERROR, "non-standard cdxl file\n");
+    if (cdxl->header[0] > 1) {
+        av_log(s, AV_LOG_ERROR, "unsupported cdxl file\n");
         return AVERROR_INVALIDDATA;
     }
 
+    type         = cdxl->header[0];
     format       = cdxl->header[1] & 0xE0;
     current_size = AV_RB32(&cdxl->header[2]);
     width        = AV_RB16(&cdxl->header[14]);
     height       = AV_RB16(&cdxl->header[16]);
     palette_size = AV_RB16(&cdxl->header[20]);
-    audio_size   = AV_RB16(&cdxl->header[22]);
+    audio_size   = AV_RB16(&cdxl->header[22]) * (1 + !!(cdxl->header[1] & 0x10));
     if (cdxl->header[19] == 0 ||
         FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
@@ -140,7 +143,8 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         image_size = FFALIGN(width, 16) * height * cdxl->header[19] / 8;
     video_size   = palette_size + image_size;
 
-    if (palette_size > 512)
+    if ((type == 1 && palette_size > 512) ||
+        (type == 0 && palette_size > 768))
         return AVERROR_INVALIDDATA;
     if (current_size < (uint64_t)audio_size + video_size + CDXL_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
@@ -153,7 +157,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             st->codecpar->codec_type    = AVMEDIA_TYPE_AUDIO;
             st->codecpar->codec_tag     = 0;
-            st->codecpar->codec_id      = AV_CODEC_ID_PCM_S8;
+            st->codecpar->codec_id      = AV_CODEC_ID_PCM_S8_PLANAR;
             if (cdxl->header[1] & 0x10) {
                 st->codecpar->channels       = 2;
                 st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
@@ -189,7 +193,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (audio_size + video_size && cdxl->filesize > 0) {
                 frames = cdxl->filesize / (audio_size + video_size);
 
-                if(cdxl->framerate)
+                if (cdxl->framerate)
                     st->duration = frames;
                 else
                     st->duration = frames * (int64_t)audio_size;

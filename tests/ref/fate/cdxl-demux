@@ -5,7 +5,7 @@
 #sar 0: 0/1
 #tb 1: 1/11025
 #media_type 1: audio
-#codec_id 1: pcm_s8
+#codec_id 1: pcm_s8_planar
 #sample_rate 1: 11025
 #channel_layout 1: 4
 #channel_layout_name 1: mono
