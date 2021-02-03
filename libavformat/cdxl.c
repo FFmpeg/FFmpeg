@@ -30,10 +30,9 @@
 
 typedef struct CDXLDemuxContext {
     AVClass     *class;
-    int         sample_rate;
-    char        *framerate;
-    AVRational  fps;
     int         read_chunk;
+    int         frate;
+    int         srate;
     uint8_t     header[CDXL_HEADER_SIZE];
     int         video_stream_index;
     int         audio_stream_index;
@@ -43,42 +42,55 @@ typedef struct CDXLDemuxContext {
 static int cdxl_read_probe(const AVProbeData *p)
 {
     int score = AVPROBE_SCORE_EXTENSION + 10;
+    const uint8_t *buf = p->buf;
 
     if (p->buf_size < CDXL_HEADER_SIZE)
         return 0;
 
     /* check type */
-    if (p->buf[0] > 1)
+    if (buf[0] > 1)
         return 0;
 
     /* reserved bytes should always be set to 0 */
-    if (p->buf[0] == 1 && (AV_RN64(&p->buf[24]) || AV_RN16(&p->buf[10])))
+    if (AV_RL24(&buf[29]))
         return 0;
 
     /* check palette size */
-    if (p->buf[0] == 1 && AV_RB16(&p->buf[20]) > 512)
+    if (!AV_RN16(&buf[20]))
         return 0;
-    if (p->buf[0] == 0 && AV_RB16(&p->buf[20]) > 768)
+    if (buf[0] == 1 && AV_RB16(&buf[20]) > 512)
+        return 0;
+    if (buf[0] == 0 && AV_RB16(&buf[20]) > 768)
+        return 0;
+
+    if (!AV_RN16(&buf[22]) && AV_RN16(&buf[24]))
+        return 0;
+
+    if (buf[0] == 0 && (!buf[26] || !AV_RB16(&buf[24])))
         return 0;
 
     /* check number of planes */
-    if (p->buf[18] || !p->buf[19])
+    if (buf[19] != 6 && buf[19] != 8 && buf[19] != 24)
+        return 0;
+
+    if (buf[18])
         return 0;
 
     /* check widh and height */
-    if (!AV_RN16(&p->buf[14]) || !AV_RN16(&p->buf[16]))
+    if (AV_RB16(&buf[14]) > 640 || AV_RB16(&buf[16]) > 480 ||
+        AV_RB16(&buf[14]) == 0 || AV_RB16(&buf[16]) == 0)
         return 0;
 
     /* chunk size */
-    if (AV_RB32(&p->buf[2]) < AV_RB16(&p->buf[22]) + AV_RB16(&p->buf[20]) + CDXL_HEADER_SIZE)
+    if (AV_RB32(&buf[2]) <= AV_RB16(&buf[20]) + AV_RB16(&buf[22]) * (1 + !!(buf[1] & 0x10)) + CDXL_HEADER_SIZE)
         return 0;
 
     /* previous chunk size */
-    if (AV_RN32(&p->buf[6]))
+    if (AV_RN32(&buf[6]))
         score /= 2;
 
     /* current frame number, usually starts from 1 */
-    if (AV_RB16(&p->buf[12]) != 1)
+    if (AV_RB32(&buf[10]) != 1)
         score /= 2;
 
     return score;
@@ -87,13 +99,6 @@ static int cdxl_read_probe(const AVProbeData *p)
 static int cdxl_read_header(AVFormatContext *s)
 {
     CDXLDemuxContext *cdxl = s->priv_data;
-    int ret;
-
-    if (cdxl->framerate && (ret = av_parse_video_rate(&cdxl->fps, cdxl->framerate)) < 0) {
-        av_log(s, AV_LOG_ERROR,
-               "Could not parse framerate: %s.\n", cdxl->framerate);
-        return ret;
-    }
 
     cdxl->read_chunk         =  0;
     cdxl->video_stream_index = -1;
@@ -134,6 +139,12 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     height       = AV_RB16(&cdxl->header[16]);
     palette_size = AV_RB16(&cdxl->header[20]);
     audio_size   = AV_RB16(&cdxl->header[22]) * (1 + !!(cdxl->header[1] & 0x10));
+    cdxl->srate  = AV_RB16(&cdxl->header[24]);
+    if (!cdxl->srate)
+        cdxl->srate = 11025;
+    cdxl->frate  = cdxl->header[26];
+    if (!cdxl->frate)
+        cdxl->frate = 25;
     if (cdxl->header[19] == 0 ||
         FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
@@ -165,10 +176,10 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
                 st->codecpar->channels       = 1;
                 st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            st->codecpar->sample_rate   = cdxl->sample_rate;
+            st->codecpar->sample_rate= cdxl->srate;
             st->start_time           = 0;
             cdxl->audio_stream_index = st->index;
-            avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, cdxl->srate);
         }
 
         ret = av_get_packet(pb, pkt, audio_size);
@@ -193,17 +204,17 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (audio_size + video_size && cdxl->filesize > 0) {
                 frames = cdxl->filesize / (audio_size + video_size);
 
-                if (cdxl->framerate)
+                if (cdxl->frate)
                     st->duration = frames;
                 else
                     st->duration = frames * (int64_t)audio_size;
             }
             st->start_time           = 0;
             cdxl->video_stream_index = st->index;
-            if (cdxl->framerate)
-                avpriv_set_pts_info(st, 64, cdxl->fps.den, cdxl->fps.num);
+            if (cdxl->frate)
+                avpriv_set_pts_info(st, 64, 1, cdxl->frate);
             else
-                avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
+                avpriv_set_pts_info(st, 64, 1, cdxl->srate);
         }
 
         if ((ret = av_new_packet(pkt, video_size + CDXL_HEADER_SIZE)) < 0)
@@ -217,7 +228,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index  = cdxl->video_stream_index;
         pkt->flags        |= AV_PKT_FLAG_KEY;
         pkt->pos           = pos;
-        pkt->duration      = cdxl->framerate ? 1 : audio_size ? audio_size : 220;
+        pkt->duration      = cdxl->frate ? 1 : audio_size ? audio_size : 220;
         cdxl->read_chunk   = audio_size;
     }
 
@@ -225,20 +236,6 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         avio_skip(pb, current_size - audio_size - video_size - CDXL_HEADER_SIZE);
     return ret;
 }
-
-#define OFFSET(x) offsetof(CDXLDemuxContext, x)
-static const AVOption cdxl_options[] = {
-    { "sample_rate", "", OFFSET(sample_rate), AV_OPT_TYPE_INT,    { .i64 = 11025 }, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "framerate",   "", OFFSET(framerate),   AV_OPT_TYPE_STRING, { .str = NULL },  0, 0,       AV_OPT_FLAG_DECODING_PARAM },
-    { NULL },
-};
-
-static const AVClass cdxl_demuxer_class = {
-    .class_name = "CDXL demuxer",
-    .item_name  = av_default_item_name,
-    .option     = cdxl_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
 
 AVInputFormat ff_cdxl_demuxer = {
     .name           = "cdxl",
@@ -249,5 +246,4 @@ AVInputFormat ff_cdxl_demuxer = {
     .read_packet    = cdxl_read_packet,
     .extensions     = "cdxl,xl",
     .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &cdxl_demuxer_class,
 };
