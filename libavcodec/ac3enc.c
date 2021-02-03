@@ -2536,8 +2536,8 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
     }
 
     if (CONFIG_EAC3_ENCODER && s->eac3) {
-        static AVOnce init_static_once = AV_ONCE_INIT;
-        ff_thread_once(&init_static_once, ff_eac3_exponent_init);
+        static AVOnce init_static_once_eac3 = AV_ONCE_INIT;
+        ff_thread_once(&init_static_once_eac3, ff_eac3_exponent_init);
         s->output_frame_header = ff_eac3_output_frame_header;
     } else
         s->output_frame_header = ac3_output_frame_header;
