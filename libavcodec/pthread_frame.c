@@ -81,7 +81,7 @@ typedef struct PerThreadContext {
 
     AVCodecContext *avctx;          ///< Context used to decode packets passed to this thread.
 
-    AVPacket       avpkt;           ///< Input packet (for decoding) or output (for encoding).
+    AVPacket       *avpkt;          ///< Input packet (for decoding) or output (for encoding).
 
     AVFrame *frame;                 ///< Output frame (for decoding) or input (for encoding).
     int     got_frame;              ///< The output of got_picture_ptr from the last avcodec_decode_video() call.
@@ -208,7 +208,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         av_frame_unref(p->frame);
         p->got_frame = 0;
-        p->result = codec->decode(avctx, p->frame, &p->got_frame, &p->avpkt);
+        p->result = codec->decode(avctx, p->frame, &p->got_frame, p->avpkt);
 
         if ((p->result < 0 || !p->got_frame) && p->frame->buf[0]) {
             if (avctx->codec->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS)
@@ -438,8 +438,8 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
         }
     }
 
-    av_packet_unref(&p->avpkt);
-    ret = av_packet_ref(&p->avpkt, avpkt);
+    av_packet_unref(p->avpkt);
+    ret = av_packet_ref(p->avpkt, avpkt);
     if (ret < 0) {
         pthread_mutex_unlock(&p->mutex);
         av_log(p->avctx, AV_LOG_ERROR, "av_packet_ref() failed in submit_packet()\n");
@@ -550,7 +550,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 
         av_frame_move_ref(picture, p->frame);
         *got_picture_ptr = p->got_frame;
-        picture->pkt_dts = p->avpkt.dts;
+        picture->pkt_dts = p->avpkt->dts;
         err = p->result;
 
         /*
@@ -725,7 +725,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_destroy(&p->input_cond);
         pthread_cond_destroy(&p->progress_cond);
         pthread_cond_destroy(&p->output_cond);
-        av_packet_unref(&p->avpkt);
+        av_packet_free(&p->avpkt);
 
 #if FF_API_THREAD_SAFE_CALLBACKS
         for (int j = 0; j < p->released_buffers_allocated; j++)
@@ -822,6 +822,12 @@ int ff_frame_thread_init(AVCodecContext *avctx)
             err = AVERROR(ENOMEM);
             goto error;
         }
+        p->avpkt = av_packet_alloc();
+        if (!p->avpkt) {
+            av_freep(&copy);
+            err = AVERROR(ENOMEM);
+            goto error;
+        }
 
         p->parent = fctx;
         p->avctx  = copy;
@@ -841,7 +847,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         }
         *copy->internal = *src->internal;
         copy->internal->thread_ctx = p;
-        copy->internal->last_pkt_props = &p->avpkt;
+        copy->internal->last_pkt_props = p->avpkt;
 
         copy->delay = avctx->delay;
 
