@@ -1031,6 +1031,13 @@ static int pam_probe(const AVProbeData *p)
     return pnm_magic_check(p, 7) ? pnm_probe(p) : 0;
 }
 
+static int xbm_probe(const AVProbeData *p)
+{
+    if (!memcmp(p->buf, "#define", 7))
+        return AVPROBE_SCORE_MAX - 1;
+    return 0;
+}
+
 static int xpm_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -1139,5 +1146,6 @@ IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)
 IMAGEAUTO_DEMUXER(svg,     AV_CODEC_ID_SVG)
 IMAGEAUTO_DEMUXER(tiff,    AV_CODEC_ID_TIFF)
 IMAGEAUTO_DEMUXER(webp,    AV_CODEC_ID_WEBP)
+IMAGEAUTO_DEMUXER(xbm,     AV_CODEC_ID_XBM)
 IMAGEAUTO_DEMUXER(xpm,     AV_CODEC_ID_XPM)
 IMAGEAUTO_DEMUXER(xwd,     AV_CODEC_ID_XWD)

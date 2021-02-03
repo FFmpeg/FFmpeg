@@ -66,6 +66,7 @@ version <next>:
 - colorcorrect filter
 - binka demuxer
 - XBM parser
+- xbm_pipe demuxer
 
 
 version 4.3:
