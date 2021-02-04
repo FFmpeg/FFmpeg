@@ -21,8 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <string.h>
-
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
@@ -31,11 +29,8 @@
 #include "h261.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
-#include "mjpegenc.h"
-#include "msmpeg4.h"
 #include "qpeldsp.h"
 #include "wmv2.h"
-#include <limits.h>
 
 static void gmc1_motion(MpegEncContext *s,
                         uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
