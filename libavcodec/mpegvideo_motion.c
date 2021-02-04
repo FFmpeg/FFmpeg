@@ -213,16 +213,16 @@ static inline int hpel_motion(MpegEncContext *s,
         dxy |= (motion_y & 1) << 1;
     src += src_y * s->linesize + src_x;
 
-        if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 1) - 7, 0) ||
-            (unsigned)src_y >= FFMAX(s->v_edge_pos - (motion_y & 1) - 7, 0)) {
-            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, src,
-                                     s->linesize, s->linesize,
-                                     9, 9,
-                                     src_x, src_y,
-                                     s->h_edge_pos, s->v_edge_pos);
-            src = s->sc.edge_emu_buffer;
-            emu = 1;
-        }
+    if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 1) - 7, 0) ||
+        (unsigned)src_y >= FFMAX(s->v_edge_pos - (motion_y & 1) - 7, 0)) {
+        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, src,
+                                 s->linesize, s->linesize,
+                                 9, 9,
+                                 src_x, src_y,
+                                 s->h_edge_pos, s->v_edge_pos);
+        src = s->sc.edge_emu_buffer;
+        emu = 1;
+    }
     pix_op[dxy](dest, src, s->linesize, 8);
     return emu;
 }
@@ -916,62 +916,61 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
         break;
     case MV_TYPE_16X8:
         if (CONFIG_SMALL || is_mpeg12) {
-        for (i = 0; i < 2; i++) {
-            uint8_t **ref2picture;
+            for (i = 0; i < 2; i++) {
+                uint8_t **ref2picture;
 
-            if ((s->picture_structure == s->field_select[dir][i] + 1
-                || s->pict_type == AV_PICTURE_TYPE_B || s->first_field) && ref_picture[0]) {
-                ref2picture = ref_picture;
-            } else {
-                ref2picture = s->current_picture_ptr->f->data;
+                if ((s->picture_structure == s->field_select[dir][i] + 1 ||
+                     s->pict_type == AV_PICTURE_TYPE_B || s->first_field) &&
+                    ref_picture[0]) {
+                    ref2picture = ref_picture;
+                } else {
+                    ref2picture = s->current_picture_ptr->f->data;
+                }
+
+                mpeg_motion(s, dest_y, dest_cb, dest_cr,
+                            s->field_select[dir][i],
+                            ref2picture, pix_op,
+                            s->mv[dir][i][0], s->mv[dir][i][1],
+                            8, 1, (mb_y & ~1) + i);
+
+                dest_y  += 16 * s->linesize;
+                dest_cb += (16 >> s->chroma_y_shift) * s->uvlinesize;
+                dest_cr += (16 >> s->chroma_y_shift) * s->uvlinesize;
             }
-
-            mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                        s->field_select[dir][i],
-                        ref2picture, pix_op,
-                        s->mv[dir][i][0], s->mv[dir][i][1],
-                        8, 1, (mb_y & ~1) + i);
-
-            dest_y  += 16 * s->linesize;
-            dest_cb += (16 >> s->chroma_y_shift) * s->uvlinesize;
-            dest_cr += (16 >> s->chroma_y_shift) * s->uvlinesize;
-        }
-        break;
+            break;
         }
     case MV_TYPE_DMV:
         if (CONFIG_SMALL || is_mpeg12) {
-        if (s->picture_structure == PICT_FRAME) {
-            for (i = 0; i < 2; i++) {
-                int j;
-                for (j = 0; j < 2; j++)
-                    mpeg_motion_field(s, dest_y, dest_cb, dest_cr,
-                                      j, j ^ i, ref_picture, pix_op,
-                                      s->mv[dir][2 * i + j][0],
-                                      s->mv[dir][2 * i + j][1], 8, mb_y);
-                pix_op = s->hdsp.avg_pixels_tab;
-            }
-        } else {
-            if (!ref_picture[0]) {
-                ref_picture = s->current_picture_ptr->f->data;
-            }
-            for (i = 0; i < 2; i++) {
-                mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                            s->picture_structure != i + 1,
-                            ref_picture, pix_op,
-                            s->mv[dir][2 * i][0], s->mv[dir][2 * i][1],
-                            16, 0, mb_y >> 1);
-
-                // after put we make avg of the same block
-                pix_op = s->hdsp.avg_pixels_tab;
-
-                /* opposite parity is always in the same frame if this is
-                 * second field */
-                if (!s->first_field) {
+            if (s->picture_structure == PICT_FRAME) {
+                for (i = 0; i < 2; i++) {
+                    for (int j = 0; j < 2; j++)
+                        mpeg_motion_field(s, dest_y, dest_cb, dest_cr,
+                                          j, j ^ i, ref_picture, pix_op,
+                                          s->mv[dir][2 * i + j][0],
+                                          s->mv[dir][2 * i + j][1], 8, mb_y);
+                    pix_op = s->hdsp.avg_pixels_tab;
+                }
+            } else {
+                if (!ref_picture[0]) {
                     ref_picture = s->current_picture_ptr->f->data;
                 }
+                for (i = 0; i < 2; i++) {
+                    mpeg_motion(s, dest_y, dest_cb, dest_cr,
+                                s->picture_structure != i + 1,
+                                ref_picture, pix_op,
+                                s->mv[dir][2 * i][0], s->mv[dir][2 * i][1],
+                                16, 0, mb_y >> 1);
+
+                    // after put we make avg of the same block
+                    pix_op = s->hdsp.avg_pixels_tab;
+
+                    /* opposite parity is always in the same frame if this is
+                     * second field */
+                    if (!s->first_field)
+                        ref_picture = s->current_picture_ptr->f->data;
+                }
             }
-        }
-        break;
+            break;
         }
     default: av_assert2(0);
     }
