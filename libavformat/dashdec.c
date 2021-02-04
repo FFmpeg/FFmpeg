@@ -1626,8 +1626,15 @@ static struct fragment *get_current_fragment(struct representation *pls)
         }
     }
     if (seg) {
-        char *tmpfilename= av_mallocz(c->max_url_size);
+        char *tmpfilename;
+        if (!pls->url_template) {
+            av_log(pls->parent, AV_LOG_ERROR, "Cannot get fragment, missing template URL\n");
+            av_free(seg);
+            return NULL;
+        }
+        tmpfilename = av_mallocz(c->max_url_size);
         if (!tmpfilename) {
+            av_free(seg);
             return NULL;
         }
         ff_dash_fill_tmpl_params(tmpfilename, c->max_url_size, pls->url_template, 0, pls->cur_seq_no, 0, get_segment_start_time_based_on_timeline(pls, pls->cur_seq_no));
@@ -1638,6 +1645,7 @@ static struct fragment *get_current_fragment(struct representation *pls)
             if (!seg->url) {
                 av_log(pls->parent, AV_LOG_ERROR, "Cannot resolve template url '%s'\n", pls->url_template);
                 av_free(tmpfilename);
+                av_free(seg);
                 return NULL;
             }
         }
