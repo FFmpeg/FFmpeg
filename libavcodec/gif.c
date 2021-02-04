@@ -47,6 +47,7 @@ typedef struct GIFContext {
     const AVClass *class;
     LZWState *lzw;
     uint8_t *buf;
+    uint8_t *shrunk_buf;
     int buf_size;
     AVFrame *last_frame;
     int flags;
@@ -62,6 +63,38 @@ enum {
     GF_OFFSETTING = 1<<0,
     GF_TRANSDIFF  = 1<<1,
 };
+
+static void shrink_palette(const uint32_t *src, uint8_t *map,
+                           uint32_t *dst, size_t *palette_count)
+{
+    size_t colors_seen = 0;
+
+    for (size_t i = 0; i < AVPALETTE_COUNT; i++) {
+        int seen = 0;
+        for (size_t c = 0; c < colors_seen; c++) {
+            if (src[i] == dst[c]) {
+                seen = 1;
+                break;
+            }
+        }
+        if (!seen) {
+            dst[colors_seen] = src[i];
+            map[i] = colors_seen;
+            colors_seen++;
+        }
+    }
+
+    *palette_count = colors_seen;
+}
+
+static void remap_frame_to_palette(const uint8_t *src, int src_linesize,
+                                   uint8_t *dst, int dst_linesize,
+                                   int w, int h, uint8_t *map)
+{
+    for (int i = 0; i < h; i++)
+        for (int j = 0; j < w; j++)
+            dst[i * dst_linesize + j] = map[src[i * src_linesize + j]];
+}
 
 static int is_image_translucent(AVCodecContext *avctx,
                                 const uint8_t *buf, const int linesize)
@@ -267,6 +300,17 @@ static int gif_image_write_image(AVCodecContext *avctx,
     int x_start = 0, y_start = 0, trans = s->transparent_index;
     int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
     const uint8_t *ptr;
+    uint32_t shrunk_palette[AVPALETTE_COUNT];
+    uint8_t map[AVPALETTE_COUNT] = { 0 };
+    size_t shrunk_palette_count = 0;
+
+    /*
+     * We memset to 0xff instead of 0x00 so that the transparency detection
+     * doesn't pick anything after the palette entries as the transparency
+     * index, and because GIF89a requires us to always write a power-of-2
+     * number of palette entries.
+     */
+    memset(shrunk_palette, 0xff, AVPALETTE_SIZE);
 
     if (!s->image && is_image_translucent(avctx, buf, linesize)) {
         gif_crop_translucent(avctx, buf, linesize, &width, &height, &x_start, &y_start);
@@ -315,6 +359,11 @@ static int gif_image_write_image(AVCodecContext *avctx,
     if (trans < 0)
         honor_transparency = 0;
 
+    if (palette || !s->use_global_palette) {
+        const uint32_t *pal = palette ? palette : s->palette;
+        shrink_palette(pal, map, shrunk_palette, &shrunk_palette_count);
+    }
+
     bcid = honor_transparency || disposal == GCE_DISPOSAL_BACKGROUND ? trans : get_palette_transparency_index(palette);
 
     /* graphic control extension */
@@ -323,7 +372,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     bytestream_put_byte(bytestream, 0x04); /* block size */
     bytestream_put_byte(bytestream, disposal<<2 | (bcid >= 0));
     bytestream_put_le16(bytestream, 5); // default delay
-    bytestream_put_byte(bytestream, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid);
+    bytestream_put_byte(bytestream, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : (shrunk_palette_count ? map[bcid] : bcid));
     bytestream_put_byte(bytestream, 0x00);
 
     /* image block */
@@ -335,9 +384,11 @@ static int gif_image_write_image(AVCodecContext *avctx,
 
     if (palette || !s->use_global_palette) {
         const uint32_t *pal = palette ? palette : s->palette;
+        unsigned pow2_count = av_log2(shrunk_palette_count - 1);
         unsigned i;
-        bytestream_put_byte(bytestream, 1<<7 | 0x7); /* flags */
-        for (i = 0; i < AVPALETTE_COUNT; i++) {
+
+        bytestream_put_byte(bytestream, 1<<7 | pow2_count); /* flags */
+        for (i = 0; i < 1 << (pow2_count + 1); i++) {
             const uint32_t v = pal[i];
             bytestream_put_be24(bytestream, v);
         }
@@ -350,7 +401,19 @@ static int gif_image_write_image(AVCodecContext *avctx,
     ff_lzw_encode_init(s->lzw, s->buf, s->buf_size,
                        12, FF_LZW_GIF, 1);
 
-    ptr = buf + y_start*linesize + x_start;
+    if (shrunk_palette_count) {
+        if (!s->shrunk_buf) {
+            s->shrunk_buf = av_malloc(avctx->height * linesize);
+            if (!s->shrunk_buf) {
+                av_log(avctx, AV_LOG_ERROR, "Could not allocated remapped frame buffer.\n");
+                return AVERROR(ENOMEM);
+            }
+        }
+        remap_frame_to_palette(buf, linesize, s->shrunk_buf, linesize, avctx->width, avctx->height, map);
+        ptr = s->shrunk_buf + y_start*linesize + x_start;
+    } else {
+        ptr = buf + y_start*linesize + x_start;
+    }
     if (honor_transparency) {
         const int ref_linesize = s->last_frame->linesize[0];
         const uint8_t *ref = s->last_frame->data[0] + y_start*ref_linesize + x_start;
@@ -464,6 +527,7 @@ static int gif_encode_close(AVCodecContext *avctx)
 
     av_freep(&s->lzw);
     av_freep(&s->buf);
+    av_freep(&s->shrunk_buf);
     s->buf_size = 0;
     av_frame_free(&s->last_frame);
     av_freep(&s->tmpl);
