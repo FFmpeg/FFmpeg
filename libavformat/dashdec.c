@@ -162,7 +162,7 @@ typedef struct DASHContext {
 static int ishttp(char *url)
 {
     const char *proto_name = avio_find_protocol_name(url);
-    return av_strstart(proto_name, "http", NULL);
+    return proto_name && av_strstart(proto_name, "http", NULL);
 }
 
 static int aligned(int val)
