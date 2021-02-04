@@ -306,9 +306,9 @@ void mpeg_motion_internal(MpegEncContext *s,
 
     if ((unsigned)src_x >= FFMAX(s->h_edge_pos - (motion_x & 1) - 15   , 0) ||
         (unsigned)src_y >= FFMAX(   v_edge_pos - (motion_y & 1) - h + 1, 0)) {
-        if (is_mpeg12 ||
-            s->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
-            s->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
+        if (is_mpeg12 || (CONFIG_SMALL &&
+                          (s->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
+                           s->codec_id == AV_CODEC_ID_MPEG1VIDEO))) {
             av_log(s->avctx, AV_LOG_DEBUG,
                    "MPEG motion vector out of boundary (%d %d)\n", src_x,
                    src_y);
@@ -853,7 +853,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
 
     switch (s->mv_type) {
     case MV_TYPE_16X16:
-        if (s->mcsel) {
+        if (!is_mpeg12 && s->mcsel) {
             if (s->real_sprite_warping_points == 1) {
                 gmc1_motion(s, dest_y, dest_cb, dest_cr,
                             ref_picture);
@@ -915,6 +915,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
         }
         break;
     case MV_TYPE_16X8:
+        if (CONFIG_SMALL || is_mpeg12) {
         for (i = 0; i < 2; i++) {
             uint8_t **ref2picture;
 
@@ -936,7 +937,9 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
             dest_cr += (16 >> s->chroma_y_shift) * s->uvlinesize;
         }
         break;
+        }
     case MV_TYPE_DMV:
+        if (CONFIG_SMALL || is_mpeg12) {
         if (s->picture_structure == PICT_FRAME) {
             for (i = 0; i < 2; i++) {
                 int j;
@@ -969,6 +972,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
             }
         }
         break;
+        }
     default: av_assert2(0);
     }
 }
