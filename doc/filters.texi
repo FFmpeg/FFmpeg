@@ -7455,6 +7455,9 @@ tblend=all_mode=grainextract
 @end example
 @end itemize
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+
 @section bm3d
 
 Denoise frames using Block-Matching 3D algorithm.

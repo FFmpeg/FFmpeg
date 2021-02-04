@@ -61,7 +61,7 @@ typedef struct ThreadData {
 } ThreadData;
 
 #define OFFSET(x) offsetof(BlendContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption blend_options[] = {
     { "c0_mode", "set component #0 blend mode", OFFSET(params[0].mode), AV_OPT_TYPE_INT, {.i64=0}, 0, BLEND_NB-1, FLAGS, "mode" },
@@ -780,13 +780,45 @@ void ff_blend_init(FilterParams *param, int depth)
         ff_blend_init_x86(param, depth);
 }
 
+static int config_params(AVFilterContext *ctx)
+{
+    BlendContext *s = ctx->priv;
+    int ret;
+
+    for (int plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
+        FilterParams *param = &s->params[plane];
+
+        if (s->all_mode >= 0)
+            param->mode = s->all_mode;
+        if (s->all_opacity < 1)
+            param->opacity = s->all_opacity;
+
+        ff_blend_init(param, s->depth);
+
+        if (s->all_expr && !param->expr_str) {
+            param->expr_str = av_strdup(s->all_expr);
+            if (!param->expr_str)
+                return AVERROR(ENOMEM);
+        }
+        if (param->expr_str) {
+            ret = av_expr_parse(&param->e, param->expr_str, var_names,
+                                NULL, NULL, NULL, NULL, 0, ctx);
+            if (ret < 0)
+                return ret;
+            param->blend = s->depth > 8 ? s->depth > 16 ? blend_expr_32bit : blend_expr_16bit : blend_expr_8bit;
+        }
+    }
+
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *toplink = ctx->inputs[TOP];
     BlendContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
-    int ret, plane;
+    int ret;
 
     if (!s->tblend) {
         AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
@@ -821,29 +853,9 @@ static int config_output(AVFilterLink *outlink)
         if ((ret = ff_framesync_init_dualinput(&s->fs, ctx)) < 0)
             return ret;
 
-    for (plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
-        FilterParams *param = &s->params[plane];
-
-        if (s->all_mode >= 0)
-            param->mode = s->all_mode;
-        if (s->all_opacity < 1)
-            param->opacity = s->all_opacity;
-
-        ff_blend_init(param, s->depth);
-
-        if (s->all_expr && !param->expr_str) {
-            param->expr_str = av_strdup(s->all_expr);
-            if (!param->expr_str)
-                return AVERROR(ENOMEM);
-        }
-        if (param->expr_str) {
-            ret = av_expr_parse(&param->e, param->expr_str, var_names,
-                                NULL, NULL, NULL, NULL, 0, ctx);
-            if (ret < 0)
-                return ret;
-            param->blend = s->depth > 8 ? s->depth > 16 ? blend_expr_32bit : blend_expr_16bit : blend_expr_8bit;
-        }
-    }
+    ret = config_params(ctx);
+    if (ret < 0)
+        return ret;
 
     if (s->tblend)
         return 0;
@@ -852,6 +864,18 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base = s->fs.time_base;
 
     return ret;
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_params(ctx);
 }
 
 #if CONFIG_BLEND_FILTER
@@ -895,6 +919,7 @@ AVFilter ff_vf_blend = {
     .outputs       = blend_outputs,
     .priv_class    = &blend_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #endif
@@ -954,6 +979,7 @@ AVFilter ff_vf_tblend = {
     .inputs        = tblend_inputs,
     .outputs       = tblend_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #endif
