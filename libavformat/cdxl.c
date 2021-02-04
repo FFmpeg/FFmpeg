@@ -31,12 +31,13 @@
 typedef struct CDXLDemuxContext {
     AVClass     *class;
     int         read_chunk;
-    int         frate;
+    AVRational  frate;
     int         srate;
     uint8_t     header[CDXL_HEADER_SIZE];
     int         video_stream_index;
     int         audio_stream_index;
     int64_t     filesize;
+    int64_t     pos;
 } CDXLDemuxContext;
 
 static int cdxl_read_probe(const AVProbeData *p)
@@ -117,34 +118,34 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     uint32_t current_size, video_size, image_size;
     uint16_t audio_size, palette_size, width, height;
-    int64_t  pos;
-    int      type, format, frames, ret;
+    int      channels, type, format, ret;
 
     if (avio_feof(pb))
         return AVERROR_EOF;
 
-    pos = avio_tell(pb);
-    if (!cdxl->read_chunk &&
-        avio_read(pb, cdxl->header, CDXL_HEADER_SIZE) != CDXL_HEADER_SIZE)
-        return AVERROR_EOF;
+    if (!cdxl->read_chunk) {
+        cdxl->pos = avio_tell(pb);
+        if (avio_read(pb, cdxl->header, CDXL_HEADER_SIZE) != CDXL_HEADER_SIZE)
+            return AVERROR_EOF;
+    }
     if (cdxl->header[0] > 1) {
         av_log(s, AV_LOG_ERROR, "unsupported cdxl file\n");
         return AVERROR_INVALIDDATA;
     }
 
     type         = cdxl->header[0];
+    channels     = 1 + !!(cdxl->header[1] & 0x10);
     format       = cdxl->header[1] & 0xE0;
     current_size = AV_RB32(&cdxl->header[2]);
     width        = AV_RB16(&cdxl->header[14]);
     height       = AV_RB16(&cdxl->header[16]);
     palette_size = AV_RB16(&cdxl->header[20]);
-    audio_size   = AV_RB16(&cdxl->header[22]) * (1 + !!(cdxl->header[1] & 0x10));
+    audio_size   = AV_RB16(&cdxl->header[22]) * channels;
     cdxl->srate  = AV_RB16(&cdxl->header[24]);
-    if (!cdxl->srate)
+    if (!cdxl->srate && audio_size)
         cdxl->srate = 11025;
-    cdxl->frate  = cdxl->header[26];
-    if (!cdxl->frate)
-        cdxl->frate = 25;
+    cdxl->frate.num = cdxl->header[26];
+    cdxl->frate.den = 1;
     if (cdxl->header[19] == 0 ||
         FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
@@ -160,6 +161,12 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (current_size < (uint64_t)audio_size + video_size + CDXL_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
+    if (!cdxl->frate.num && audio_size && cdxl->srate > 0) {
+        cdxl->frate = (AVRational){ cdxl->srate, audio_size };
+    } else if (!cdxl->frate.num) {
+        cdxl->frate.num = 15;
+    }
+
     if (cdxl->read_chunk && audio_size) {
         if (cdxl->audio_stream_index == -1) {
             AVStream *st = avformat_new_stream(s, NULL);
@@ -169,25 +176,22 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codecpar->codec_type    = AVMEDIA_TYPE_AUDIO;
             st->codecpar->codec_tag     = 0;
             st->codecpar->codec_id      = AV_CODEC_ID_PCM_S8_PLANAR;
-            if (cdxl->header[1] & 0x10) {
-                st->codecpar->channels       = 2;
-                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else {
-                st->codecpar->channels       = 1;
-                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-            }
+            st->codecpar->channels      = channels;
+            st->codecpar->channel_layout = channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
             st->codecpar->sample_rate= cdxl->srate;
             st->start_time           = 0;
             cdxl->audio_stream_index = st->index;
             avpriv_set_pts_info(st, 64, 1, cdxl->srate);
+            if (current_size && cdxl->filesize > 0 && audio_size > 0)
+                st->duration = (cdxl->filesize / current_size) * audio_size / channels;
         }
 
         ret = av_get_packet(pb, pkt, audio_size);
         if (ret < 0)
             return ret;
         pkt->stream_index = cdxl->audio_stream_index;
-        pkt->pos          = pos;
-        pkt->duration     = audio_size;
+        pkt->pos          = cdxl->pos;
+        pkt->duration     = audio_size / channels;
         cdxl->read_chunk  = 0;
     } else {
         if (cdxl->video_stream_index == -1) {
@@ -201,20 +205,11 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codecpar->width         = width;
             st->codecpar->height        = height;
 
-            if (audio_size + video_size && cdxl->filesize > 0) {
-                frames = cdxl->filesize / (audio_size + video_size);
-
-                if (cdxl->frate)
-                    st->duration = frames;
-                else
-                    st->duration = frames * (int64_t)audio_size;
-            }
+            if (current_size && cdxl->filesize > 0)
+                st->nb_frames = cdxl->filesize / current_size;
             st->start_time           = 0;
             cdxl->video_stream_index = st->index;
-            if (cdxl->frate)
-                avpriv_set_pts_info(st, 64, 1, cdxl->frate);
-            else
-                avpriv_set_pts_info(st, 64, 1, cdxl->srate);
+            avpriv_set_pts_info(st, 64, cdxl->frate.den, cdxl->frate.num);
         }
 
         if ((ret = av_new_packet(pkt, video_size + CDXL_HEADER_SIZE)) < 0)
@@ -227,14 +222,24 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_shrink_packet(pkt, CDXL_HEADER_SIZE + ret);
         pkt->stream_index  = cdxl->video_stream_index;
         pkt->flags        |= AV_PKT_FLAG_KEY;
-        pkt->pos           = pos;
-        pkt->duration      = cdxl->frate ? 1 : audio_size ? audio_size : 220;
+        pkt->pos           = cdxl->pos;
+        pkt->duration      = 1;
         cdxl->read_chunk   = audio_size;
     }
 
     if (!cdxl->read_chunk)
         avio_skip(pb, current_size - audio_size - video_size - CDXL_HEADER_SIZE);
     return ret;
+}
+
+static int read_seek(AVFormatContext *s, int stream_index,
+                     int64_t timestamp, int flags)
+{
+    CDXLDemuxContext *cdxl = s->priv_data;
+
+    cdxl->read_chunk = 0;
+
+    return -1;
 }
 
 AVInputFormat ff_cdxl_demuxer = {
@@ -244,6 +249,7 @@ AVInputFormat ff_cdxl_demuxer = {
     .read_probe     = cdxl_read_probe,
     .read_header    = cdxl_read_header,
     .read_packet    = cdxl_read_packet,
+    .read_seek      = read_seek,
     .extensions     = "cdxl,xl",
     .flags          = AVFMT_GENERIC_INDEX,
 };
