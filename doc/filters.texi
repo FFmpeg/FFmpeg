@@ -2353,6 +2353,10 @@ in the final filter output. Set this option to -1 to hear actual
 noise removed from input signal.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section asetnsamples
 
 Set the number of samples per each output audio frame.

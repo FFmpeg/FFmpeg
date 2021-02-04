@@ -129,7 +129,7 @@ typedef struct DenoiseState {
     float mem_hp_x[2];
     float lastg[NB_BANDS];
     float history[FRAME_SIZE];
-    RNNState rnn;
+    RNNState rnn[2];
     AVTXContext *tx, *txi;
     av_tx_fn tx_fn, txi_fn;
 } DenoiseState;
@@ -146,7 +146,7 @@ typedef struct AudioRNNContext {
     DECLARE_ALIGNED(32, float, window)[WINDOW_SIZE];
     DECLARE_ALIGNED(32, float, dct_table)[FFALIGN(NB_BANDS, 4)][FFALIGN(NB_BANDS, 4)];
 
-    RNNModel *model;
+    RNNModel *model[2];
 
     AVFloatDSPContext *fdsp;
 } AudioRNNContext;
@@ -350,27 +350,34 @@ static int config_input(AVFilterLink *inlink)
 
     s->channels = inlink->channels;
 
-    s->st = av_calloc(s->channels, sizeof(DenoiseState));
+    if (!s->st)
+        s->st = av_calloc(s->channels, sizeof(DenoiseState));
     if (!s->st)
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < s->channels; i++) {
         DenoiseState *st = &s->st[i];
 
-        st->rnn.model = s->model;
-        st->rnn.vad_gru_state = av_calloc(sizeof(float), FFALIGN(s->model->vad_gru_size, 16));
-        st->rnn.noise_gru_state = av_calloc(sizeof(float), FFALIGN(s->model->noise_gru_size, 16));
-        st->rnn.denoise_gru_state = av_calloc(sizeof(float), FFALIGN(s->model->denoise_gru_size, 16));
-        if (!st->rnn.vad_gru_state ||
-            !st->rnn.noise_gru_state ||
-            !st->rnn.denoise_gru_state)
+        st->rnn[0].model = s->model[0];
+        st->rnn[0].vad_gru_state = av_calloc(sizeof(float), FFALIGN(s->model[0]->vad_gru_size, 16));
+        st->rnn[0].noise_gru_state = av_calloc(sizeof(float), FFALIGN(s->model[0]->noise_gru_size, 16));
+        st->rnn[0].denoise_gru_state = av_calloc(sizeof(float), FFALIGN(s->model[0]->denoise_gru_size, 16));
+        if (!st->rnn[0].vad_gru_state ||
+            !st->rnn[0].noise_gru_state ||
+            !st->rnn[0].denoise_gru_state)
             return AVERROR(ENOMEM);
+    }
 
-        ret = av_tx_init(&st->tx, &st->tx_fn, AV_TX_FLOAT_FFT, 0, WINDOW_SIZE, NULL, 0);
+    for (int i = 0; i < s->channels; i++) {
+        DenoiseState *st = &s->st[i];
+
+        if (!st->tx)
+            ret = av_tx_init(&st->tx, &st->tx_fn, AV_TX_FLOAT_FFT, 0, WINDOW_SIZE, NULL, 0);
         if (ret < 0)
             return ret;
 
-        ret = av_tx_init(&st->txi, &st->txi_fn, AV_TX_FLOAT_FFT, 1, WINDOW_SIZE, NULL, 0);
+        if (!st->txi)
+            ret = av_tx_init(&st->txi, &st->txi_fn, AV_TX_FLOAT_FFT, 1, WINDOW_SIZE, NULL, 0);
         if (ret < 0)
             return ret;
     }
@@ -1368,7 +1375,7 @@ static float rnnoise_channel(AudioRNNContext *s, DenoiseState *st, float *out, c
     silence = compute_frame_features(s, st, X, P, Ex, Ep, Exp, features, x);
 
     if (!silence && !disabled) {
-        compute_rnn(s, &st->rnn, g, &vad_prob, features);
+        compute_rnn(s, &st->rnn[0], g, &vad_prob, features);
         pitch_filter(X, P, Ex, Ep, Exp, g);
         for (int i = 0; i < NB_BANDS; i++) {
             float alpha = .6f;
@@ -1458,14 +1465,10 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static av_cold int init(AVFilterContext *ctx)
+static int open_model(AVFilterContext *ctx, RNNModel **model)
 {
     AudioRNNContext *s = ctx->priv;
     FILE *f;
-
-    s->fdsp = avpriv_float_dsp_alloc(0);
-    if (!s->fdsp)
-        return AVERROR(ENOMEM);
 
     if (!s->model_name)
         return AVERROR(EINVAL);
@@ -1473,10 +1476,26 @@ static av_cold int init(AVFilterContext *ctx)
     if (!f)
         return AVERROR(EINVAL);
 
-    s->model = rnnoise_model_from_file(f);
+    *model = rnnoise_model_from_file(f);
     fclose(f);
-    if (!s->model)
+    if (!*model)
         return AVERROR(EINVAL);
+
+    return 0;
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    AudioRNNContext *s = ctx->priv;
+    int ret;
+
+    s->fdsp = avpriv_float_dsp_alloc(0);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
+
+    ret = open_model(ctx, &s->model[0]);
+    if (ret < 0)
+        return ret;
 
     for (int i = 0; i < FRAME_SIZE; i++) {
         s->window[i] = sin(.5*M_PI*sin(.5*M_PI*(i+.5)/FRAME_SIZE) * sin(.5*M_PI*(i+.5)/FRAME_SIZE));
@@ -1494,22 +1513,59 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static void free_model(AVFilterContext *ctx, int n)
+{
+    AudioRNNContext *s = ctx->priv;
+
+    rnnoise_model_free(s->model[n]);
+    s->model[n] = NULL;
+
+    for (int ch = 0; ch < s->channels && s->st; ch++) {
+        av_freep(&s->st[ch].rnn[n].vad_gru_state);
+        av_freep(&s->st[ch].rnn[n].noise_gru_state);
+        av_freep(&s->st[ch].rnn[n].denoise_gru_state);
+    }
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    AudioRNNContext *s = ctx->priv;
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    ret = open_model(ctx, &s->model[1]);
+    if (ret < 0)
+        return ret;
+
+    FFSWAP(RNNModel *, s->model[0], s->model[1]);
+    for (int ch = 0; ch < s->channels; ch++)
+        FFSWAP(RNNState, s->st[ch].rnn[0], s->st[ch].rnn[1]);
+
+    ret = config_input(ctx->inputs[0]);
+    if (ret < 0) {
+        for (int ch = 0; ch < s->channels; ch++)
+            FFSWAP(RNNState, s->st[ch].rnn[0], s->st[ch].rnn[1]);
+        FFSWAP(RNNModel *, s->model[0], s->model[1]);
+        return ret;
+    }
+
+    free_model(ctx, 1);
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioRNNContext *s = ctx->priv;
 
     av_freep(&s->fdsp);
-    rnnoise_model_free(s->model);
-    s->model = NULL;
-
-    if (s->st) {
-        for (int ch = 0; ch < s->channels; ch++) {
-            av_freep(&s->st[ch].rnn.vad_gru_state);
-            av_freep(&s->st[ch].rnn.noise_gru_state);
-            av_freep(&s->st[ch].rnn.denoise_gru_state);
-            av_tx_uninit(&s->st[ch].tx);
-            av_tx_uninit(&s->st[ch].txi);
-        }
+    free_model(ctx, 0);
+    for (int ch = 0; ch < s->channels && s->st; ch++) {
+        av_tx_uninit(&s->st[ch].tx);
+        av_tx_uninit(&s->st[ch].txi);
     }
     av_freep(&s->st);
 }
@@ -1532,7 +1588,7 @@ static const AVFilterPad outputs[] = {
 };
 
 #define OFFSET(x) offsetof(AudioRNNContext, x)
-#define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption arnndn_options[] = {
     { "model", "set model name", OFFSET(model_name), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, AF },
@@ -1556,4 +1612,5 @@ AVFilter ff_af_arnndn = {
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
