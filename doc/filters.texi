@@ -8170,6 +8170,33 @@ colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
 
 This filter supports the all above options as @ref{commands}.
 
+@section colorize
+Overlay a solid color on the video stream.
+
+The filter accepts the following options:
+
+@table @option
+@item hue
+Set the color hue. Allowed range is from 0 to 360.
+Default value is 0.
+
+@item saturation
+Set the color saturation. Allowed range is from 0 to 1.
+Default value is 0.5.
+
+@item lightness
+Set the color lightness. Allowed range is from 0 to 1.
+Default value is 0.5.
+
+@item mix
+Set the mix of source lightness. By default is set to 1.0.
+Allowed range is from 0.0 to 1.0.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section colorkey
 RGB colorspace color keying.
 
