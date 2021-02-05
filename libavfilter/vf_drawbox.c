@@ -322,7 +322,7 @@ static const AVOption drawbox_options[] = {
     { "c",         "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, 0, 0, FLAGS },
     { "thickness", "set the box thickness",                        OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       0, 0, FLAGS },
     { "t",         "set the box thickness",                        OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       0, 0, FLAGS },
-    { "replace",   "replace color & alpha",                        OFFSET(replace),   AV_OPT_TYPE_BOOL,   { .i64=0 },         0,        1,        FLAGS },
+    { "replace",   "replace color & alpha",                        OFFSET(replace),   AV_OPT_TYPE_BOOL,   { .i64=0   },       0, 1, FLAGS },
     { NULL }
 };
 
