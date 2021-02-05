@@ -59,7 +59,8 @@ static int xbm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     uint16_t state16 = bpc->state16;
     int next = END_NOT_FOUND, i = 0;
 
-    s->pict_type = AV_PICTURE_TYPE_NONE;
+    s->pict_type = AV_PICTURE_TYPE_I;
+    s->key_frame = 1;
     s->duration  = 1;
 
     *poutbuf_size = 0;
