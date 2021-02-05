@@ -64,19 +64,6 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
     c->band[1].scale_factor = 2;
     c->prev_samples_pos = 22;
 
-    if (avctx->trellis) {
-        int frontier = 1 << avctx->trellis;
-        int max_paths = frontier * FREEZE_INTERVAL;
-        int i;
-        for (i = 0; i < 2; i++) {
-            c->paths[i] = av_mallocz_array(max_paths, sizeof(**c->paths));
-            c->node_buf[i] = av_mallocz_array(frontier, 2 * sizeof(**c->node_buf));
-            c->nodep_buf[i] = av_mallocz_array(frontier, 2 * sizeof(**c->nodep_buf));
-            if (!c->paths[i] || !c->node_buf[i] || !c->nodep_buf[i])
-                return AVERROR(ENOMEM);
-        }
-    }
-
     if (avctx->frame_size) {
         /* validate frame size */
         if (avctx->frame_size & 1 || avctx->frame_size > MAX_FRAME_SIZE) {
@@ -109,6 +96,18 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
                    "allowed. Using %d instead of %d\n", new_trellis,
                    avctx->trellis);
             avctx->trellis = new_trellis;
+        }
+        if (avctx->trellis) {
+            int frontier = 1 << avctx->trellis;
+            int max_paths = frontier * FREEZE_INTERVAL;
+
+            for (int i = 0; i < 2; i++) {
+                c->paths[i]     = av_calloc(max_paths, sizeof(**c->paths));
+                c->node_buf[i]  = av_calloc(frontier, 2 * sizeof(**c->node_buf));
+                c->nodep_buf[i] = av_calloc(frontier, 2 * sizeof(**c->nodep_buf));
+                if (!c->paths[i] || !c->node_buf[i] || !c->nodep_buf[i])
+                    return AVERROR(ENOMEM);
+            }
         }
     }
 
