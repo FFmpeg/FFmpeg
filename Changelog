@@ -68,6 +68,7 @@ version <next>:
 - XBM parser
 - xbm_pipe demuxer
 - colorize filter
+- CRI parser
 
 
 version 4.3:
