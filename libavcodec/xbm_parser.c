@@ -34,7 +34,11 @@ typedef struct XBMParseContext {
     int count;
 } XBMParseContext;
 
-#define KEY (((uint64_t)'\n' << 56) | ((uint64_t)'#' << 48) | ((uint64_t)'d' << 40) | ((uint64_t)'e' << 32) | ((uint64_t)'f' << 24) | ('i' << 16) | ('n' << 8) | ('e' << 0))
+#define KEY (((uint64_t)'\n' << 56) | ((uint64_t)'#' << 48) | \
+             ((uint64_t)'d' << 40)  | ((uint64_t)'e' << 32) | \
+             ((uint64_t)'f' << 24) | ('i' << 16) | ('n' << 8) | \
+             ('e' << 0))
+
 #define END ((';' << 8) | ('\n' << 0))
 
 static int xbm_init(AVCodecParserContext *s)
