@@ -147,10 +147,10 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    lensfun->lens = lf_lens_new();
-    lensfun->camera = lf_camera_new();
+    lensfun->lens = lf_lens_create();
+    lensfun->camera = lf_camera_create();
 
-    db = lf_db_new();
+    db = lf_db_create();
     if (lf_db_load(db) != LF_NO_ERROR) {
         lf_db_destroy(db);
         av_log(ctx, AV_LOG_FATAL, "Failed to load lensfun database\n");
@@ -169,7 +169,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
     lf_free(cameras);
 
-    lenses = lf_db_find_lenses_hd(db, lensfun->camera, NULL, lensfun->lens_model, 0);
+    lenses = lf_db_find_lenses(db, lensfun->camera, NULL, lensfun->lens_model, 0);
     if (lenses && *lenses) {
         lf_lens_copy(lensfun->lens, *lenses);
         av_log(ctx, AV_LOG_INFO, "Using lens %s\n", lensfun->lens->Model);
@@ -210,30 +210,23 @@ static int config_props(AVFilterLink *inlink)
     LensfunContext *lensfun = ctx->priv;
     int index;
     float a;
-    int lensfun_mode = 0;
 
     if (!lensfun->modifier) {
         if (lensfun->camera && lensfun->lens) {
-            lensfun->modifier = lf_modifier_new(lensfun->lens,
-                                                lensfun->camera->CropFactor,
-                                                inlink->w,
-                                                inlink->h);
+            lensfun->modifier = lf_modifier_create(lensfun->lens,
+                                                   lensfun->focal_length,
+                                                   lensfun->camera->CropFactor,
+                                                   inlink->w,
+                                                   inlink->h, LF_PF_U8, lensfun->reverse);
             if (lensfun->mode & VIGNETTING)
-                lensfun_mode |= LF_MODIFY_VIGNETTING;
-            if (lensfun->mode & GEOMETRY_DISTORTION)
-                lensfun_mode |= LF_MODIFY_DISTORTION | LF_MODIFY_GEOMETRY | LF_MODIFY_SCALE;
+                lf_modifier_enable_vignetting_correction(lensfun->modifier, lensfun->aperture, lensfun->focus_distance);
+            if (lensfun->mode & GEOMETRY_DISTORTION) {
+                lf_modifier_enable_distortion_correction(lensfun->modifier);
+                lf_modifier_enable_projection_transform(lensfun->modifier, lensfun->target_geometry);
+                lf_modifier_enable_scaling(lensfun->modifier, lensfun->scale);
+            }
             if (lensfun->mode & SUBPIXEL_DISTORTION)
-                lensfun_mode |= LF_MODIFY_TCA;
-            lf_modifier_initialize(lensfun->modifier,
-                                   lensfun->lens,
-                                   LF_PF_U8,
-                                   lensfun->focal_length,
-                                   lensfun->aperture,
-                                   lensfun->focus_distance,
-                                   lensfun->scale,
-                                   lensfun->target_geometry,
-                                   lensfun_mode,
-                                   lensfun->reverse);
+                lf_modifier_enable_tca_correction(lensfun->modifier);
         } else {
             // lensfun->camera and lensfun->lens should have been initialized
             return AVERROR_BUG;
