@@ -424,6 +424,7 @@ AVFilter ff_vf_frei0r = {
     .inputs        = avfilter_vf_frei0r_inputs,
     .outputs       = avfilter_vf_frei0r_outputs,
     .process_command = process_command,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 static av_cold int source_init(AVFilterContext *ctx)
