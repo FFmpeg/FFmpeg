@@ -136,26 +136,35 @@ static av_cold int init(AVFilterContext *ctx)
     const lfCamera **cameras;
     const lfLens **lenses;
 
-    if (!lensfun->make) {
-        av_log(ctx, AV_LOG_FATAL, "Option \"make\" not specified\n");
-        return AVERROR(EINVAL);
-    } else if (!lensfun->model) {
-        av_log(ctx, AV_LOG_FATAL, "Option \"model\" not specified\n");
-        return AVERROR(EINVAL);
-    } else if (!lensfun->lens_model) {
-        av_log(ctx, AV_LOG_FATAL, "Option \"lens_model\" not specified\n");
-        return AVERROR(EINVAL);
-    }
-
-    lensfun->lens = lf_lens_create();
-    lensfun->camera = lf_camera_create();
-
     db = lf_db_create();
     if (lf_db_load(db) != LF_NO_ERROR) {
         lf_db_destroy(db);
         av_log(ctx, AV_LOG_FATAL, "Failed to load lensfun database\n");
         return AVERROR_INVALIDDATA;
     }
+
+    if (!lensfun->make || !lensfun->model) {
+        const lfCamera *const *cameras = lf_db_get_cameras(db);
+
+        av_log(ctx, AV_LOG_FATAL, "Option \"make\" or option \"model\" not specified\n");
+        av_log(ctx, AV_LOG_INFO, "Available values for \"make\" and \"model\":\n");
+        for (int i = 0; cameras && cameras[i]; i++)
+            av_log(ctx, AV_LOG_INFO, "\t%s\t%s\n", cameras[i]->Maker, cameras[i]->Model);
+        lf_db_destroy(db);
+        return AVERROR(EINVAL);
+    } else if (!lensfun->lens_model) {
+        const lfLens *const *lenses = lf_db_get_lenses(db);
+
+        av_log(ctx, AV_LOG_FATAL, "Option \"lens_model\" not specified\n");
+        av_log(ctx, AV_LOG_INFO, "Available values for \"lens_model\":\n");
+        for (int i = 0; lenses && lenses[i]; i++)
+            av_log(ctx, AV_LOG_INFO, "\t%s\t(make %s)\n", lenses[i]->Model, lenses[i]->Maker);
+        lf_db_destroy(db);
+        return AVERROR(EINVAL);
+    }
+
+    lensfun->lens = lf_lens_create();
+    lensfun->camera = lf_camera_create();
 
     cameras = lf_db_find_cameras(db, lensfun->make, lensfun->model);
     if (cameras && *cameras) {
