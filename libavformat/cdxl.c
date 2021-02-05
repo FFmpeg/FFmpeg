@@ -33,6 +33,8 @@ typedef struct CDXLDemuxContext {
     int         read_chunk;
     AVRational  frate;
     int         srate;
+    AVRational  frame_rate;
+    int         sample_rate;
     uint8_t     header[CDXL_HEADER_SIZE];
     int         video_stream_index;
     int         audio_stream_index;
@@ -143,7 +145,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     audio_size   = AV_RB16(&cdxl->header[22]) * channels;
     cdxl->srate  = AV_RB16(&cdxl->header[24]);
     if (!cdxl->srate && audio_size)
-        cdxl->srate = 11025;
+        cdxl->srate = cdxl->sample_rate;
     cdxl->frate.num = cdxl->header[26];
     cdxl->frate.den = 1;
     if (cdxl->header[19] == 0 ||
@@ -164,7 +166,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!cdxl->frate.num && audio_size && cdxl->srate > 0) {
         cdxl->frate = (AVRational){ cdxl->srate, audio_size };
     } else if (!cdxl->frate.num) {
-        cdxl->frate.num = 15;
+        cdxl->frate = cdxl->frame_rate;
     }
 
     if (cdxl->read_chunk && audio_size) {
@@ -242,10 +244,25 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return -1;
 }
 
+#define OFFSET(x) offsetof(CDXLDemuxContext, x)
+static const AVOption cdxl_options[] = {
+    { "sample_rate", "", OFFSET(sample_rate), AV_OPT_TYPE_INT, { .i64=11025 }, 8000, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "frame_rate", "", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, { .str="15" }, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass cdxl_demuxer_class = {
+    .class_name = "CDXL demuxer",
+    .item_name  = av_default_item_name,
+    .option     = cdxl_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_cdxl_demuxer = {
     .name           = "cdxl",
     .long_name      = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
     .priv_data_size = sizeof(CDXLDemuxContext),
+    .priv_class     = &cdxl_demuxer_class,
     .read_probe     = cdxl_read_probe,
     .read_header    = cdxl_read_header,
     .read_packet    = cdxl_read_packet,
