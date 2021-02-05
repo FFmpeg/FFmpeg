@@ -1033,6 +1033,9 @@ static int pam_probe(const AVProbeData *p)
 
 static int xbm_probe(const AVProbeData *p)
 {
+    if (!memcmp(p->buf, "/* XBM X10 format */", 20))
+        return AVPROBE_SCORE_MAX;
+
     if (!memcmp(p->buf, "#define", 7))
         return AVPROBE_SCORE_MAX - 1;
     return 0;
