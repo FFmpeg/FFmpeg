@@ -138,6 +138,16 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
 int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags);
 
 /**
+ * Convenience wrapper for av_dict_get that converts the value to a pointer
+ * and stores it.
+ *
+ */
+int av_dict_set_intptr(AVDictionary **pm, const char *key, uintptr_t value, int flags);
+uintptr_t av_dict_get_intptr(const AVDictionary *m, const char* key);
+uintptr_t av_dict_strtoptr(char * value);
+char * av_dict_ptrtostr(uintptr_t value);
+
+/**
  * Parse the key/value pairs list and add the parsed entries to a dictionary.
  *
  * In case of failure, all the successfully set entries are stored in
