@@ -13914,6 +13914,10 @@ Interpolate values using the spline interpolation.
 @end table
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @anchor{lut3d}
 @section lut3d
 
