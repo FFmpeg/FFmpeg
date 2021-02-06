@@ -2605,7 +2605,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     entries = avio_rb32(pb);
 
     /* Each entry contains a size (4 bytes) and format (4 bytes). */
-    if (entries <= 0 || entries > atom.size / 8) {
+    if (entries <= 0 || entries > atom.size / 8 || entries > 1024) {
         av_log(c->fc, AV_LOG_ERROR, "invalid STSD entries %d\n", entries);
         return AVERROR_INVALIDDATA;
     }
