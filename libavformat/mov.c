@@ -7113,14 +7113,20 @@ static int mov_probe(const AVProbeData *p)
     offset = 0;
     for (;;) {
         int64_t size;
+        int minsize = 8;
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
             break;
         size = AV_RB32(p->buf + offset);
         if (size == 1 && offset + 16 > (unsigned int)p->buf_size) {
             size = AV_RB64(p->buf+offset + 8);
+            minsize = 16;
         } else if (size == 0) {
             size = p->buf_size - offset;
+        }
+        if (size < minsize) {
+            offset += 4;
+            continue;
         }
         tag = AV_RL32(p->buf + offset + 4);
         switch(tag) {
@@ -7131,9 +7137,7 @@ static int mov_probe(const AVProbeData *p)
         case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
         case MKTAG('f','t','y','p'):
-            if (size < 8) {
-                score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
-            } else if (tag == MKTAG('f','t','y','p') &&
+            if (tag == MKTAG('f','t','y','p') &&
                        (   AV_RL32(p->buf + offset + 8) == MKTAG('j','p','2',' ')
                         || AV_RL32(p->buf + offset + 8) == MKTAG('j','p','x',' ')
                     )) {
@@ -7158,7 +7162,7 @@ static int mov_probe(const AVProbeData *p)
             score  = FFMAX(score, AVPROBE_SCORE_EXTENSION);
             break;
         }
-        offset = FFMAX(4, size) + offset;
+        offset += size;
     }
     if (score > AVPROBE_SCORE_MAX - 50 && moov_offset != -1) {
         /* moov atom in the header - we should make sure that this is not a
