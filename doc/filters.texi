@@ -9518,6 +9518,10 @@ deblock=filter=strong:block=4:alpha=0.12:beta=0.07:gamma=0.06:delta=0.05:planes=
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @anchor{decimate}
 @section decimate
 
