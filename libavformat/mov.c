@@ -7141,7 +7141,6 @@ static int mov_probe(const AVProbeData *p)
             } else {
                 score = AVPROBE_SCORE_MAX;
             }
-            offset = FFMAX(4, size) + offset;
             break;
         /* those are more common words, so rate then a bit less */
         case MKTAG('e','d','i','w'): /* xdcam files have reverted first tags */
@@ -7150,7 +7149,6 @@ static int mov_probe(const AVProbeData *p)
         case MKTAG('j','u','n','k'):
         case MKTAG('p','i','c','t'):
             score  = FFMAX(score, AVPROBE_SCORE_MAX - 5);
-            offset = FFMAX(4, size) + offset;
             break;
         case MKTAG(0x82,0x82,0x7f,0x7d):
         case MKTAG('s','k','i','p'):
@@ -7158,11 +7156,9 @@ static int mov_probe(const AVProbeData *p)
         case MKTAG('p','r','f','l'):
             /* if we only find those cause probedata is too small at least rate them */
             score  = FFMAX(score, AVPROBE_SCORE_EXTENSION);
-            offset = FFMAX(4, size) + offset;
             break;
-        default:
-            offset = FFMAX(4, size) + offset;
         }
+        offset = FFMAX(4, size) + offset;
     }
     if (score > AVPROBE_SCORE_MAX - 50 && moov_offset != -1) {
         /* moov atom in the header - we should make sure that this is not a
