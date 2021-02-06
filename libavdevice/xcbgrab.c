@@ -206,7 +206,7 @@ static int64_t wait_frame(AVFormatContext *s, AVPacket *pkt)
     c->time_frame += c->frame_duration;
 
     for (;;) {
-        curtime = av_gettime();
+        curtime = av_gettime_relative();
         delay   = c->time_frame - curtime;
         if (delay <= 0)
             break;
@@ -422,7 +422,8 @@ static int xcbgrab_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = 0;
     int64_t pts;
 
-    pts = wait_frame(s, pkt);
+    wait_frame(s, pkt);
+    pts = av_gettime();
 
     if (c->follow_mouse || c->draw_mouse) {
         pc  = xcb_query_pointer(c->conn, c->screen->root);
@@ -596,7 +597,7 @@ static int create_stream(AVFormatContext *s)
     c->time_base  = (AVRational){ st->avg_frame_rate.den,
                                   st->avg_frame_rate.num };
     c->frame_duration = av_rescale_q(1, c->time_base, AV_TIME_BASE_Q);
-    c->time_frame = av_gettime();
+    c->time_frame = av_gettime_relative();
 
     ret = pixfmt_from_pixmap_format(s, geo->depth, &st->codecpar->format, &c->bpp);
     free(geo);

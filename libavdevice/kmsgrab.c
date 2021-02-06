@@ -268,7 +268,7 @@ static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     int64_t now;
     int err;
 
-    now = av_gettime();
+    now = av_gettime_relative();
     if (ctx->frame_last) {
         int64_t delay;
         while (1) {
@@ -276,10 +276,11 @@ static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
             if (delay <= 0)
                 break;
             av_usleep(delay);
-            now = av_gettime();
+            now = av_gettime_relative();
         }
     }
     ctx->frame_last = now;
+    now = av_gettime();
 
     plane = drmModeGetPlane(ctx->hwctx->fd, ctx->plane_id);
     if (!plane) {

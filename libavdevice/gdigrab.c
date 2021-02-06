@@ -394,7 +394,7 @@ gdigrab_read_header(AVFormatContext *s1)
     gdigrab->header_size = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
                            (bpp <= 8 ? (1 << bpp) : 0) * sizeof(RGBQUAD) /* palette size */;
     gdigrab->time_base   = av_inv_q(gdigrab->framerate);
-    gdigrab->time_frame  = av_gettime() / av_q2d(gdigrab->time_base);
+    gdigrab->time_frame  = av_gettime_relative() / av_q2d(gdigrab->time_base);
 
     gdigrab->hwnd       = hwnd;
     gdigrab->source_hdc = source_hdc;
@@ -551,7 +551,7 @@ static int gdigrab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     /* wait based on the frame rate */
     for (;;) {
-        curtime = av_gettime();
+        curtime = av_gettime_relative();
         delay = time_frame * av_q2d(time_base) - curtime;
         if (delay <= 0) {
             if (delay < INT64_C(-1000000) * av_q2d(time_base)) {
@@ -568,7 +568,7 @@ static int gdigrab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (av_new_packet(pkt, file_size) < 0)
         return AVERROR(ENOMEM);
-    pkt->pts = curtime;
+    pkt->pts = av_gettime();
 
     /* Blit screen grab */
     if (!BitBlt(dest_hdc, 0, 0,
