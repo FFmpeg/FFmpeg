@@ -7117,6 +7117,11 @@ static int mov_probe(const AVProbeData *p)
         if ((offset + 8) > (unsigned int)p->buf_size)
             break;
         size = AV_RB32(p->buf + offset);
+        if (size == 1 && offset + 16 > (unsigned int)p->buf_size) {
+            size = AV_RB64(p->buf+offset + 8);
+        } else if (size == 0) {
+            size = p->buf_size - offset;
+        }
         tag = AV_RL32(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
