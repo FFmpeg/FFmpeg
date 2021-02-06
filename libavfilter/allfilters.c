@@ -39,6 +39,7 @@ extern AVFilter ff_af_aderivative;
 extern AVFilter ff_af_aecho;
 extern AVFilter ff_af_aemphasis;
 extern AVFilter ff_af_aeval;
+extern AVFilter ff_af_aexciter;
 extern AVFilter ff_af_afade;
 extern AVFilter ff_af_afftdn;
 extern AVFilter ff_af_afftfilt;

@@ -69,6 +69,7 @@ version <next>:
 - xbm_pipe demuxer
 - colorize filter
 - CRI parser
+- aexciter audio filter
 
 
 version 4.3:

@@ -46,6 +46,7 @@ OBJS-$(CONFIG_ADERIVATIVE_FILTER)            += af_aderivative.o
 OBJS-$(CONFIG_AECHO_FILTER)                  += af_aecho.o
 OBJS-$(CONFIG_AEMPHASIS_FILTER)              += af_aemphasis.o
 OBJS-$(CONFIG_AEVAL_FILTER)                  += aeval.o
+OBJS-$(CONFIG_AEXCITER_FILTER)               += af_aexciter.o
 OBJS-$(CONFIG_AFADE_FILTER)                  += af_afade.o
 OBJS-$(CONFIG_AFFTDN_FILTER)                 += af_afftdn.o
 OBJS-$(CONFIG_AFFTFILT_FILTER)               += af_afftfilt.o
