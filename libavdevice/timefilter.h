@@ -39,16 +39,6 @@ typedef struct TimeFilter TimeFilter;
 /**
  * Create a new Delay Locked Loop time filter
  *
- * feedback2_factor and feedback3_factor are the factors used for the
- * multiplications that are respectively performed in the second and third
- * feedback paths of the loop.
- *
- * Unless you know what you are doing, you should set these as follow:
- *
- * o = 2 * M_PI * bandwidth * period_in_seconds
- * feedback2_factor = sqrt(2) * o
- * feedback3_factor = o * o
- *
  * Where bandwidth is up to you to choose. Smaller values will filter out more
  * of the jitter, but also take a longer time for the loop to settle. A good
  * starting point is something between 0.3 and 3 Hz.
@@ -59,11 +49,8 @@ typedef struct TimeFilter TimeFilter;
  * @param brandwidth  filtering bandwidth, in Hz
  *
  * @return a pointer to a TimeFilter struct, or NULL on error
- *
- * For more details about these parameters and background concepts please see:
- * http://www.kokkinizita.net/papers/usingdll.pdf
  */
-TimeFilter * ff_timefilter_new(double clock_period, double feedback2_factor, double feedback3_factor);
+TimeFilter * ff_timefilter_new(double time_base, double period, double bandwidth);
 
 /**
  * Update the filter
