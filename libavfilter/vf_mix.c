@@ -201,6 +201,14 @@ static int process_frame(FFFrameSync *fs)
             return ret;
     }
 
+    if (ctx->is_disabled) {
+        out = av_frame_clone(s->frames[0]);
+        if (!out)
+            return AVERROR(ENOMEM);
+        out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
+        return ff_filter_frame(outlink, out);
+    }
+
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
         return AVERROR(ENOMEM);
@@ -337,7 +345,8 @@ AVFilter ff_vf_mix = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 
 #endif /* CONFIG_MIX_FILTER */
