@@ -48,6 +48,7 @@ typedef struct PulseData {
     pa_threaded_mainloop *mainloop;
     pa_context *context;
     pa_stream *stream;
+    size_t pa_frame_size;
 
     TimeFilter *timefilter;
     int last_period;
@@ -250,6 +251,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
         goto unlock_and_fail;
     }
     pd->fragment_size = queried_attr->fragsize;
+    pd->pa_frame_size = pa_frame_size(&ss);
 
     pa_threaded_mainloop_unlock(pd->mainloop);
 
@@ -261,7 +263,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
     pd->timefilter = ff_timefilter_new(1000000.0 / pd->sample_rate,
-                                       1000, 1.5E-6);
+                                       pd->fragment_size / pd->pa_frame_size, 1.5E-6);
 
     if (!pd->timefilter) {
         pulse_close(s);
@@ -286,12 +288,13 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t dts;
     pa_usec_t latency;
     int negative;
+    ptrdiff_t pos = 0;
 
     pa_threaded_mainloop_lock(pd->mainloop);
 
     CHECK_DEAD_GOTO(pd, ret, unlock_and_fail);
 
-    while (!read_data) {
+    while (pos < pd->fragment_size) {
         int r;
 
         r = pa_stream_peek(pd->stream, &read_data, &read_length);
@@ -305,43 +308,51 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
                 * silence, but that wouldn't work for compressed streams. */
             r = pa_stream_drop(pd->stream);
             CHECK_SUCCESS_GOTO(ret, r == 0, unlock_and_fail);
+        } else {
+            if (!pos) {
+                if (av_new_packet(pkt, pd->fragment_size) < 0) {
+                    ret = AVERROR(ENOMEM);
+                    goto unlock_and_fail;
+                }
+
+                dts = av_gettime();
+                pa_operation_unref(pa_stream_update_timing_info(pd->stream, NULL, NULL));
+
+                if (pa_stream_get_latency(pd->stream, &latency, &negative) >= 0) {
+                    if (negative) {
+                        dts += latency;
+                    } else
+                        dts -= latency;
+                } else {
+                    av_log(s, AV_LOG_WARNING, "pa_stream_get_latency() failed\n");
+                }
+            }
+            if (pkt->size - pos < read_length) {
+                if (pos)
+                    break;
+                pa_stream_drop(pd->stream);
+                /* Oversized fragment??? */
+                ret = AVERROR_EXTERNAL;
+                goto unlock_and_fail;
+            }
+            memcpy(pkt->data + pos, read_data, read_length);
+            pos += read_length;
+            pa_stream_drop(pd->stream);
         }
     }
 
-    if (av_new_packet(pkt, read_length) < 0) {
-        ret = AVERROR(ENOMEM);
-        goto unlock_and_fail;
-    }
-
-    dts = av_gettime();
-    pa_operation_unref(pa_stream_update_timing_info(pd->stream, NULL, NULL));
-
-    if (pa_stream_get_latency(pd->stream, &latency, &negative) >= 0) {
-        enum AVCodecID codec_id =
-            s->audio_codec_id == AV_CODEC_ID_NONE ? DEFAULT_CODEC_ID : s->audio_codec_id;
-        int frame_size = ((av_get_bits_per_sample(codec_id) >> 3) * pd->channels);
-        int frame_duration = read_length / frame_size;
-
-
-        if (negative) {
-            dts += latency;
-        } else
-            dts -= latency;
-        if (pd->wallclock)
-            pkt->pts = ff_timefilter_update(pd->timefilter, dts, pd->last_period);
-
-        pd->last_period = frame_duration;
-    } else {
-        av_log(s, AV_LOG_WARNING, "pa_stream_get_latency() failed\n");
-    }
-
-    memcpy(pkt->data, read_data, read_length);
-    pa_stream_drop(pd->stream);
-
     pa_threaded_mainloop_unlock(pd->mainloop);
+
+    av_shrink_packet(pkt, pos);
+
+    if (pd->wallclock)
+        pkt->pts = ff_timefilter_update(pd->timefilter, dts, pd->last_period);
+    pd->last_period = pkt->size / pd->pa_frame_size;
+
     return 0;
 
 unlock_and_fail:
+    av_packet_unref(pkt);
     pa_threaded_mainloop_unlock(pd->mainloop);
     return ret;
 }
