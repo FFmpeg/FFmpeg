@@ -7108,9 +7108,11 @@ static int mov_probe(const AVProbeData *p)
     /* check file header */
     offset = 0;
     for (;;) {
+        int64_t size;
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
             break;
+        size = AV_RB32(p->buf + offset);
         tag = AV_RL32(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
@@ -7120,8 +7122,8 @@ static int mov_probe(const AVProbeData *p)
         case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
         case MKTAG('f','t','y','p'):
-            if (AV_RB32(p->buf+offset) < 8 &&
-                (AV_RB32(p->buf+offset) != 1 ||
+            if (size < 8 &&
+                (size != 1 ||
                  offset + 12 > (unsigned int)p->buf_size ||
                  AV_RB64(p->buf+offset + 8) == 0)) {
                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
@@ -7133,7 +7135,7 @@ static int mov_probe(const AVProbeData *p)
             } else {
                 score = AVPROBE_SCORE_MAX;
             }
-            offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
+            offset = FFMAX(4, size) + offset;
             break;
         /* those are more common words, so rate then a bit less */
         case MKTAG('e','d','i','w'): /* xdcam files have reverted first tags */
@@ -7142,7 +7144,7 @@ static int mov_probe(const AVProbeData *p)
         case MKTAG('j','u','n','k'):
         case MKTAG('p','i','c','t'):
             score  = FFMAX(score, AVPROBE_SCORE_MAX - 5);
-            offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
+            offset = FFMAX(4, size) + offset;
             break;
         case MKTAG(0x82,0x82,0x7f,0x7d):
         case MKTAG('s','k','i','p'):
@@ -7150,10 +7152,10 @@ static int mov_probe(const AVProbeData *p)
         case MKTAG('p','r','f','l'):
             /* if we only find those cause probedata is too small at least rate them */
             score  = FFMAX(score, AVPROBE_SCORE_EXTENSION);
-            offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
+            offset = FFMAX(4, size) + offset;
             break;
         default:
-            offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
+            offset = FFMAX(4, size) + offset;
         }
     }
     if (score > AVPROBE_SCORE_MAX - 50 && moov_offset != -1) {
