@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -44,6 +45,9 @@ typedef struct ThumbContext {
     int n_frames;               ///< number of frames for analysis
     struct thumb_frame *frames; ///< the n_frames frames
     AVRational tb;              ///< copy of the input timebase to ease access
+
+    int planewidth[4];
+    int planeheight[4];
 } ThumbContext;
 
 #define OFFSET(x) offsetof(ThumbContext, x)
@@ -140,14 +144,29 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     // keep a reference of each frame
     s->frames[s->n].buf = frame;
 
-    // update current frame RGB histogram
-    for (j = 0; j < inlink->h; j++) {
-        for (i = 0; i < inlink->w; i++) {
-            hist[0*256 + p[i*3    ]]++;
-            hist[1*256 + p[i*3 + 1]]++;
-            hist[2*256 + p[i*3 + 2]]++;
+    // update current frame histogram
+    switch (inlink->format) {
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
+        for (j = 0; j < inlink->h; j++) {
+            for (i = 0; i < inlink->w; i++) {
+                hist[0*256 + p[i*3    ]]++;
+                hist[1*256 + p[i*3 + 1]]++;
+                hist[2*256 + p[i*3 + 2]]++;
+            }
+            p += frame->linesize[0];
         }
-        p += frame->linesize[0];
+        break;
+    default:
+        for (int plane = 0; plane < 3; plane++) {
+            const uint8_t *p = frame->data[plane];
+            for (j = 0; j < s->planeheight[plane]; j++) {
+                for (i = 0; i < s->planewidth[plane]; i++)
+                    hist[256*plane + p[i]]++;
+                p += frame->linesize[plane];
+            }
+        }
+        break;
     }
 
     // no selection until the buffer of N frames is filled up
@@ -188,8 +207,14 @@ static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ThumbContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     s->tb = inlink->time_base;
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0]  = s->planewidth[3]  = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
     return 0;
 }
 
@@ -197,6 +222,14 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
