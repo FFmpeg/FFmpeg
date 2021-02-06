@@ -67,11 +67,44 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, formats);
 }
 
-static av_cold int init(AVFilterContext *ctx)
+static int parse_weights(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
     char *p, *arg, *saveptr = NULL;
-    int i, ret, last = 0;
+    int i, last = 0;
+
+    s->wfactor = 0.f;
+    p = s->weights_str;
+    for (i = 0; i < s->nb_inputs; i++) {
+        if (!(arg = av_strtok(p, " |", &saveptr)))
+            break;
+
+        p = NULL;
+        if (av_sscanf(arg, "%f", &s->weights[i]) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for weights[%d].\n", i);
+            return AVERROR(EINVAL);
+        }
+        s->wfactor += s->weights[i];
+        last = i;
+    }
+
+    for (; i < s->nb_inputs; i++) {
+        s->weights[i] = s->weights[last];
+        s->wfactor += s->weights[i];
+    }
+    if (s->scale == 0) {
+        s->wfactor = 1 / s->wfactor;
+    } else {
+        s->wfactor = s->scale;
+    }
+
+    return 0;
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    MixContext *s = ctx->priv;
+    int ret;
 
     s->tmix = !strcmp(ctx->filter->name, "tmix");
 
@@ -84,7 +117,7 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     if (!s->tmix) {
-        for (i = 0; i < s->nb_inputs; i++) {
+        for (int i = 0; i < s->nb_inputs; i++) {
             AVFilterPad pad = { 0 };
 
             pad.type = AVMEDIA_TYPE_VIDEO;
@@ -99,30 +132,7 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
-    p = s->weights_str;
-    for (i = 0; i < s->nb_inputs; i++) {
-        if (!(arg = av_strtok(p, " ", &saveptr)))
-            break;
-
-        p = NULL;
-        if (av_sscanf(arg, "%f", &s->weights[i]) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for weights[%d].\n", i);
-            return AVERROR(EINVAL);
-        }
-        s->wfactor += s->weights[i];
-        last = i;
-    }
-    for (; i < s->nb_inputs; i++) {
-        s->weights[i] = s->weights[last];
-        s->wfactor += s->weights[i];
-    }
-    if (s->scale == 0) {
-        s->wfactor = 1 / s->wfactor;
-    } else {
-        s->wfactor = s->scale;
-    }
-
-    return 0;
+    return parse_weights(ctx);
 }
 
 typedef struct ThreadData {
@@ -303,6 +313,18 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->frames);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return parse_weights(ctx);
+}
+
 static int activate(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
@@ -311,11 +333,12 @@ static int activate(AVFilterContext *ctx)
 
 #define OFFSET(x) offsetof(MixContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption mix_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=2}, 2, INT16_MAX, .flags = FLAGS },
-    { "weights", "set weight for each input", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, .flags = FLAGS },
-    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = FLAGS },
+    { "weights", "set weight for each input", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, .flags = TFLAGS },
+    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = TFLAGS },
     { "duration", "how to determine end of stream", OFFSET(duration), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, .flags = FLAGS, "duration" },
         { "longest",  "Duration of longest input",  0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "duration" },
         { "shortest", "Duration of shortest input", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "duration" },
@@ -347,6 +370,7 @@ AVFilter ff_vf_mix = {
     .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .process_command = process_command,
 };
 
 #endif /* CONFIG_MIX_FILTER */
@@ -395,8 +419,8 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVOption tmix_options[] = {
     { "frames", "set number of successive frames to mix", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3}, 1, 128, .flags = FLAGS },
-    { "weights", "set weight for each frame", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1 1"}, 0, 0, .flags = FLAGS },
-    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = FLAGS },
+    { "weights", "set weight for each frame", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1 1"}, 0, 0, .flags = TFLAGS },
+    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = TFLAGS },
     { NULL },
 };
 
@@ -422,6 +446,7 @@ AVFilter ff_vf_tmix = {
     .init          = init,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #endif /* CONFIG_TMIX_FILTER */

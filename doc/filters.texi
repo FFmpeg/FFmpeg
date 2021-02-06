@@ -14665,6 +14665,15 @@ The duration of the first input.
 @end table
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item weights
+@item scale
+Syntax is same as option with same name.
+@end table
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
@@ -19700,6 +19709,15 @@ Similar as above but only showing temporal differences:
 tmix=frames=3:weights="-1 2 -1":scale=1
 @end example
 @end itemize
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item weights
+@item scale
+Syntax is same as option with same name.
+@end table
 
 @anchor{tonemap}
 @section tonemap
