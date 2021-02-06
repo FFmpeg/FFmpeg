@@ -385,6 +385,7 @@ library:
     @tab Audio format used on the PS2.
 @item APNG                      @tab X @tab X
 @item ASF                       @tab X @tab X
+    @tab Advanced / Active Streaming Format.
 @item AST                       @tab X @tab X
     @tab Audio format used on the Nintendo Wii.
 @item AVI                       @tab X @tab X
@@ -400,14 +401,20 @@ library:
 @item Binary text               @tab   @tab X
 @item Bink                      @tab   @tab X
     @tab Multimedia format used by many games.
+@item Bink Audio                @tab   @tab X
+    @tab Audio only multimedia format used by some games.
 @item Bitmap Brothers JV        @tab   @tab X
     @tab Used in Z and Z95 games.
+@item BRP                       @tab   @tab X
+    @tab Argonaut Games format.
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
 @item BFSTM                     @tab   @tab X
     @tab Audio format used on the Nintendo WiiU (based on BRSTM).
 @item BRSTM                     @tab   @tab X
     @tab Audio format used on the Nintendo Wii.
+@item BW64                      @tab   @tab X
+    @tab Broadcast Wave 64bit.
 @item BWF                       @tab X @tab X
 @item codec2 (raw)              @tab X @tab X
     @tab Must be given -mode format option to decode correctly.
@@ -630,6 +637,7 @@ library:
 @item RedSpark                  @tab   @tab X
 @item Renderware TeXture Dictionary @tab   @tab X
 @item Resolume DXV              @tab   @tab X
+@item RF64                      @tab   @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RPL/ARMovie               @tab   @tab X
@@ -719,10 +727,13 @@ following image formats are supported:
     @tab Alias/Wavefront PIX image format
 @item animated GIF @tab X @tab X
 @item APNG         @tab X @tab X
+    @tab Animated Portable Network Graphics
 @item BMP          @tab X @tab X
     @tab Microsoft BMP image
 @item BRender PIX  @tab   @tab X
     @tab Argonaut BRender 3D engine image format.
+@item CRI          @tab   @tab X
+    @tab Cintel RAW
 @item DPX          @tab X @tab X
     @tab Digital Picture Exchange
 @item EXR          @tab   @tab X
@@ -741,8 +752,12 @@ following image formats are supported:
     @tab PAM is a PNM extension with alpha support.
 @item PBM          @tab X @tab X
     @tab Portable BitMap image
+@item PCD          @tab   @tab X
+    @tab PhotoCD
 @item PCX          @tab X @tab X
     @tab PC Paintbrush
+@item PFM          @tab X @tab X
+    @tab Portable FloatMap image
 @item PGM          @tab X @tab X
     @tab Portable GrayMap image
 @item PGMYUV       @tab X @tab X
@@ -752,6 +767,7 @@ following image formats are supported:
 @item PIC          @tab @tab X
     @tab Pictor/PC Paint
 @item PNG          @tab X @tab X
+    @tab Portable Network Graphics image
 @item PPM          @tab X @tab X
     @tab Portable PixelMap image
 @item PSD          @tab   @tab X
@@ -805,6 +821,8 @@ following image formats are supported:
     @tab fourcc: apch,apcn,apcs,apco,ap4h,ap4x
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
+@item Argonaut Video         @tab     @tab  X
+    @tab Used in some Argonaut games.
 @item Asus v1                @tab  X  @tab  X
     @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X
