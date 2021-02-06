@@ -1133,11 +1133,11 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
     int64_t last_time, cur_time;
 
 #define UPDATE_TIME(t) \
-    cur_time = av_gettime(); \
+    cur_time = av_gettime_relative(); \
     t += cur_time - last_time; \
     last_time = cur_time
 
-    last_time = av_gettime();
+    last_time = av_gettime_relative();
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
     if (s->attack_data) {
