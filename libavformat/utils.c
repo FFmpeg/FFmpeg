@@ -3021,6 +3021,10 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
         /* Force thread count to 1 since the H.264 decoder will not extract
          * SPS and PPS to extradata during multi-threaded decoding. */
         av_dict_set(options ? options : &thread_opt, "threads", "1", 0);
+        /* Force lowres to 0. The decoder might reduce the video size by the
+         * lowres factor, and we don't want that propagated to the stream's
+         * codecpar */
+        av_dict_set(options ? options : &thread_opt, "lowres", "0", 0);
         if (s->codec_whitelist)
             av_dict_set(options ? options : &thread_opt, "codec_whitelist", s->codec_whitelist, 0);
         ret = avcodec_open2(avctx, codec, options ? options : &thread_opt);
@@ -3662,6 +3666,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         /* Force thread count to 1 since the H.264 decoder will not extract
          * SPS and PPS to extradata during multi-threaded decoding. */
         av_dict_set(options ? &options[i] : &thread_opt, "threads", "1", 0);
+        /* Force lowres to 0. The decoder might reduce the video size by the
+         * lowres factor, and we don't want that propagated to the stream's
+         * codecpar */
+        av_dict_set(options ? &options[i] : &thread_opt, "lowres", "0", 0);
 
         if (ic->codec_whitelist)
             av_dict_set(options ? &options[i] : &thread_opt, "codec_whitelist", ic->codec_whitelist, 0);
@@ -4108,21 +4116,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         st = ic->streams[i];
 
         if (st->internal->avctx_inited) {
-            int orig_w = st->codecpar->width;
-            int orig_h = st->codecpar->height;
             ret = avcodec_parameters_from_context(st->codecpar, st->internal->avctx);
             if (ret < 0)
                 goto find_stream_info_err;
             ret = add_coded_side_data(st, st->internal->avctx);
             if (ret < 0)
                 goto find_stream_info_err;
-#if FF_API_LOWRES
-            // The decoder might reduce the video size by the lowres factor.
-            if (st->internal->avctx->lowres && orig_w) {
-                st->codecpar->width = orig_w;
-                st->codecpar->height = orig_h;
-            }
-#endif
         }
 
 #if FF_API_LAVF_AVCTX
