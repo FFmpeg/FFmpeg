@@ -70,6 +70,10 @@ int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_GBRAP12BE:
     case AV_PIX_FMT_GBRAP16LE:
     case AV_PIX_FMT_GBRAP16BE:
+    case AV_PIX_FMT_GBRPF32LE:
+    case AV_PIX_FMT_GBRPF32BE:
+    case AV_PIX_FMT_GBRAPF32LE:
+    case AV_PIX_FMT_GBRAPF32BE:
     case AV_PIX_FMT_GBRP:  rgba_map[GREEN] = 0; rgba_map[BLUE ] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
     default:                    /* unsupported */
         return AVERROR(EINVAL);
