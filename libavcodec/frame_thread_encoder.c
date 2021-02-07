@@ -286,10 +286,11 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
     av_freep(&avctx->internal->frame_thread_encoder);
 }
 
-int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet_ptr){
+int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                                 AVFrame *frame, int *got_packet_ptr)
+{
     ThreadContext *c = avctx->internal->frame_thread_encoder;
     Task *outtask, task;
-    int ret;
 
     av_assert1(!*got_packet_ptr);
 
@@ -297,11 +298,7 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
         AVFrame *new = av_frame_alloc();
         if(!new)
             return AVERROR(ENOMEM);
-        ret = av_frame_ref(new, frame);
-        if(ret < 0) {
-            av_frame_free(&new);
-            return ret;
-        }
+        av_frame_move_ref(new, frame);
 
         task.index = c->task_index;
         task.indata = (void*)new;
