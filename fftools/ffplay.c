@@ -654,26 +654,24 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             av_packet_unref(d->pkt);
         } while (1);
 
-        {
-            if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-                int got_frame = 0;
-                ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, d->pkt);
-                if (ret < 0) {
-                    ret = AVERROR(EAGAIN);
-                } else {
-                    if (got_frame && !d->pkt->data) {
-                       d->packet_pending = 1;
-                    }
-                    ret = got_frame ? 0 : (d->pkt->data ? AVERROR(EAGAIN) : AVERROR_EOF);
-                }
-                av_packet_unref(d->pkt);
+        if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            int got_frame = 0;
+            ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, d->pkt);
+            if (ret < 0) {
+                ret = AVERROR(EAGAIN);
             } else {
-                if (avcodec_send_packet(d->avctx, d->pkt) == AVERROR(EAGAIN)) {
-                    av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
+                if (got_frame && !d->pkt->data) {
                     d->packet_pending = 1;
-                } else {
-                    av_packet_unref(d->pkt);
                 }
+                ret = got_frame ? 0 : (d->pkt->data ? AVERROR(EAGAIN) : AVERROR_EOF);
+            }
+            av_packet_unref(d->pkt);
+        } else {
+            if (avcodec_send_packet(d->avctx, d->pkt) == AVERROR(EAGAIN)) {
+                av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
+                d->packet_pending = 1;
+            } else {
+                av_packet_unref(d->pkt);
             }
         }
     }
@@ -1646,37 +1644,37 @@ retry:
             }
 
             if (is->subtitle_st) {
-                    while (frame_queue_nb_remaining(&is->subpq) > 0) {
-                        sp = frame_queue_peek(&is->subpq);
+                while (frame_queue_nb_remaining(&is->subpq) > 0) {
+                    sp = frame_queue_peek(&is->subpq);
 
-                        if (frame_queue_nb_remaining(&is->subpq) > 1)
-                            sp2 = frame_queue_peek_next(&is->subpq);
-                        else
-                            sp2 = NULL;
+                    if (frame_queue_nb_remaining(&is->subpq) > 1)
+                        sp2 = frame_queue_peek_next(&is->subpq);
+                    else
+                        sp2 = NULL;
 
-                        if (sp->serial != is->subtitleq.serial
-                                || (is->vidclk.pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
-                                || (sp2 && is->vidclk.pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
-                        {
-                            if (sp->uploaded) {
-                                int i;
-                                for (i = 0; i < sp->sub.num_rects; i++) {
-                                    AVSubtitleRect *sub_rect = sp->sub.rects[i];
-                                    uint8_t *pixels;
-                                    int pitch, j;
+                    if (sp->serial != is->subtitleq.serial
+                            || (is->vidclk.pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
+                            || (sp2 && is->vidclk.pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
+                    {
+                        if (sp->uploaded) {
+                            int i;
+                            for (i = 0; i < sp->sub.num_rects; i++) {
+                                AVSubtitleRect *sub_rect = sp->sub.rects[i];
+                                uint8_t *pixels;
+                                int pitch, j;
 
-                                    if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)&pixels, &pitch)) {
-                                        for (j = 0; j < sub_rect->h; j++, pixels += pitch)
-                                            memset(pixels, 0, sub_rect->w << 2);
-                                        SDL_UnlockTexture(is->sub_texture);
-                                    }
+                                if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)&pixels, &pitch)) {
+                                    for (j = 0; j < sub_rect->h; j++, pixels += pitch)
+                                        memset(pixels, 0, sub_rect->w << 2);
+                                    SDL_UnlockTexture(is->sub_texture);
                                 }
                             }
-                            frame_queue_next(&is->subpq);
-                        } else {
-                            break;
                         }
+                        frame_queue_next(&is->subpq);
+                    } else {
+                        break;
                     }
+                }
             }
 
             frame_queue_next(&is->pictq);
@@ -2968,15 +2966,12 @@ static int read_thread(void *arg)
                 av_log(NULL, AV_LOG_ERROR,
                        "%s: error while seeking\n", is->ic->url);
             } else {
-                if (is->audio_stream >= 0) {
+                if (is->audio_stream >= 0)
                     packet_queue_flush(&is->audioq);
-                }
-                if (is->subtitle_stream >= 0) {
+                if (is->subtitle_stream >= 0)
                     packet_queue_flush(&is->subtitleq);
-                }
-                if (is->video_stream >= 0) {
+                if (is->video_stream >= 0)
                     packet_queue_flush(&is->videoq);
-                }
                 if (is->seek_flags & AVSEEK_FLAG_BYTE) {
                    set_clock(&is->extclk, NAN, 0);
                 } else {
