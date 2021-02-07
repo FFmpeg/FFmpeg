@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/dict.h"
+#include "libavutil/fifo.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/avassert.h"
@@ -111,13 +112,12 @@ const int program_birth_year = 2003;
 static unsigned sws_flags = SWS_BICUBIC;
 
 typedef struct MyAVPacketList {
-    AVPacket pkt;
-    struct MyAVPacketList *next;
+    AVPacket *pkt;
     int serial;
 } MyAVPacketList;
 
 typedef struct PacketQueue {
-    MyAVPacketList *first_pkt, *last_pkt;
+    AVFifoBuffer *pkt_list;
     int nb_packets;
     int size;
     int64_t duration;
@@ -187,7 +187,7 @@ enum {
 };
 
 typedef struct Decoder {
-    AVPacket pkt;
+    AVPacket *pkt;
     PacketQueue *queue;
     AVCodecContext *avctx;
     int pkt_serial;
@@ -425,26 +425,23 @@ int64_t get_valid_channel_layout(int64_t channel_layout, int channels)
 
 static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 {
-    MyAVPacketList *pkt1;
+    MyAVPacketList pkt1;
 
     if (q->abort_request)
        return -1;
 
-    pkt1 = av_malloc(sizeof(MyAVPacketList));
-    if (!pkt1)
-        return -1;
-    pkt1->pkt = *pkt;
-    pkt1->next = NULL;
-    pkt1->serial = q->serial;
+    if (av_fifo_space(q->pkt_list) < sizeof(pkt1)) {
+        if (av_fifo_grow(q->pkt_list, sizeof(pkt1)) < 0)
+            return -1;
+    }
 
-    if (!q->last_pkt)
-        q->first_pkt = pkt1;
-    else
-        q->last_pkt->next = pkt1;
-    q->last_pkt = pkt1;
+    pkt1.pkt = pkt;
+    pkt1.serial = q->serial;
+
+    av_fifo_generic_write(q->pkt_list, &pkt1, sizeof(pkt1), NULL);
     q->nb_packets++;
-    q->size += pkt1->pkt.size + sizeof(*pkt1);
-    q->duration += pkt1->pkt.duration;
+    q->size += pkt1.pkt->size + sizeof(pkt1);
+    q->duration += pkt1.pkt->duration;
     /* XXX: should duplicate packet data in DV case */
     SDL_CondSignal(q->cond);
     return 0;
@@ -452,24 +449,28 @@ static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 
 static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
+    AVPacket *pkt1;
     int ret;
 
+    pkt1 = av_packet_alloc();
+    if (!pkt1) {
+        av_packet_unref(pkt);
+        return -1;
+    }
+    av_packet_move_ref(pkt1, pkt);
+
     SDL_LockMutex(q->mutex);
-    ret = packet_queue_put_private(q, pkt);
+    ret = packet_queue_put_private(q, pkt1);
     SDL_UnlockMutex(q->mutex);
 
     if (ret < 0)
-        av_packet_unref(pkt);
+        av_packet_free(&pkt1);
 
     return ret;
 }
 
-static int packet_queue_put_nullpacket(PacketQueue *q, int stream_index)
+static int packet_queue_put_nullpacket(PacketQueue *q, AVPacket *pkt, int stream_index)
 {
-    AVPacket pkt1, *pkt = &pkt1;
-    av_init_packet(pkt);
-    pkt->data = NULL;
-    pkt->size = 0;
     pkt->stream_index = stream_index;
     return packet_queue_put(q, pkt);
 }
@@ -478,6 +479,9 @@ static int packet_queue_put_nullpacket(PacketQueue *q, int stream_index)
 static int packet_queue_init(PacketQueue *q)
 {
     memset(q, 0, sizeof(PacketQueue));
+    q->pkt_list = av_fifo_alloc(sizeof(MyAVPacketList));
+    if (!q->pkt_list)
+        return AVERROR(ENOMEM);
     q->mutex = SDL_CreateMutex();
     if (!q->mutex) {
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
@@ -494,16 +498,13 @@ static int packet_queue_init(PacketQueue *q)
 
 static void packet_queue_flush(PacketQueue *q)
 {
-    MyAVPacketList *pkt, *pkt1;
+    MyAVPacketList pkt1;
 
     SDL_LockMutex(q->mutex);
-    for (pkt = q->first_pkt; pkt; pkt = pkt1) {
-        pkt1 = pkt->next;
-        av_packet_unref(&pkt->pkt);
-        av_freep(&pkt);
+    while (av_fifo_size(q->pkt_list) >= sizeof(pkt1)) {
+        av_fifo_generic_read(q->pkt_list, &pkt1, sizeof(pkt1), NULL);
+        av_packet_free(&pkt1.pkt);
     }
-    q->last_pkt = NULL;
-    q->first_pkt = NULL;
     q->nb_packets = 0;
     q->size = 0;
     q->duration = 0;
@@ -514,6 +515,7 @@ static void packet_queue_flush(PacketQueue *q)
 static void packet_queue_destroy(PacketQueue *q)
 {
     packet_queue_flush(q);
+    av_fifo_freep(&q->pkt_list);
     SDL_DestroyMutex(q->mutex);
     SDL_DestroyCond(q->cond);
 }
@@ -540,7 +542,7 @@ static void packet_queue_start(PacketQueue *q)
 /* return < 0 if aborted, 0 if no packet and > 0 if packet.  */
 static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *serial)
 {
-    MyAVPacketList *pkt1;
+    MyAVPacketList pkt1;
     int ret;
 
     SDL_LockMutex(q->mutex);
@@ -551,18 +553,15 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
             break;
         }
 
-        pkt1 = q->first_pkt;
-        if (pkt1) {
-            q->first_pkt = pkt1->next;
-            if (!q->first_pkt)
-                q->last_pkt = NULL;
+        if (av_fifo_size(q->pkt_list) >= sizeof(pkt1)) {
+            av_fifo_generic_read(q->pkt_list, &pkt1, sizeof(pkt1), NULL);
             q->nb_packets--;
-            q->size -= pkt1->pkt.size + sizeof(*pkt1);
-            q->duration -= pkt1->pkt.duration;
-            *pkt = pkt1->pkt;
+            q->size -= pkt1.pkt->size + sizeof(pkt1);
+            q->duration -= pkt1.pkt->duration;
+            av_packet_move_ref(pkt, pkt1.pkt);
             if (serial)
-                *serial = pkt1->serial;
-            av_free(pkt1);
+                *serial = pkt1.serial;
+            av_packet_free(&pkt1.pkt);
             ret = 1;
             break;
         } else if (!block) {
@@ -576,13 +575,17 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
     return ret;
 }
 
-static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, SDL_cond *empty_queue_cond) {
+static int decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, SDL_cond *empty_queue_cond) {
     memset(d, 0, sizeof(Decoder));
+    d->pkt = av_packet_alloc();
+    if (!d->pkt)
+        return AVERROR(ENOMEM);
     d->avctx = avctx;
     d->queue = queue;
     d->empty_queue_cond = empty_queue_cond;
     d->start_pts = AV_NOPTS_VALUE;
     d->pkt_serial = -1;
+    return 0;
 }
 
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
@@ -637,7 +640,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                 d->packet_pending = 0;
             } else {
                 int old_serial = d->pkt_serial;
-                if (packet_queue_get(d->queue, &d->pkt, 1, &d->pkt_serial) < 0)
+                if (packet_queue_get(d->queue, d->pkt, 1, &d->pkt_serial) < 0)
                     return -1;
                 if (old_serial != d->pkt_serial) {
                     avcodec_flush_buffers(d->avctx);
@@ -648,28 +651,28 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             }
             if (d->queue->serial == d->pkt_serial)
                 break;
-            av_packet_unref(&d->pkt);
+            av_packet_unref(d->pkt);
         } while (1);
 
         {
             if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                 int got_frame = 0;
-                ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &d->pkt);
+                ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, d->pkt);
                 if (ret < 0) {
                     ret = AVERROR(EAGAIN);
                 } else {
-                    if (got_frame && !d->pkt.data) {
+                    if (got_frame && !d->pkt->data) {
                        d->packet_pending = 1;
                     }
-                    ret = got_frame ? 0 : (d->pkt.data ? AVERROR(EAGAIN) : AVERROR_EOF);
+                    ret = got_frame ? 0 : (d->pkt->data ? AVERROR(EAGAIN) : AVERROR_EOF);
                 }
-                av_packet_unref(&d->pkt);
+                av_packet_unref(d->pkt);
             } else {
-                if (avcodec_send_packet(d->avctx, &d->pkt) == AVERROR(EAGAIN)) {
+                if (avcodec_send_packet(d->avctx, d->pkt) == AVERROR(EAGAIN)) {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
                 } else {
-                    av_packet_unref(&d->pkt);
+                    av_packet_unref(d->pkt);
                 }
             }
         }
@@ -677,7 +680,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
 }
 
 static void decoder_destroy(Decoder *d) {
-    av_packet_unref(&d->pkt);
+    av_packet_free(&d->pkt);
     avcodec_free_context(&d->avctx);
 }
 
@@ -2681,7 +2684,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
 
-        decoder_init(&is->auddec, avctx, &is->audioq, is->continue_read_thread);
+        if ((ret = decoder_init(&is->auddec, avctx, &is->audioq, is->continue_read_thread)) < 0)
+            goto fail;
         if ((is->ic->iformat->flags & (AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK)) && !is->ic->iformat->read_seek) {
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
@@ -2694,7 +2698,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
 
-        decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread);
+        if ((ret = decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread)) < 0)
+            goto fail;
         if ((ret = decoder_start(&is->viddec, video_thread, "video_decoder", is)) < 0)
             goto out;
         is->queue_attachments_req = 1;
@@ -2703,7 +2708,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->subtitle_stream = stream_index;
         is->subtitle_st = ic->streams[stream_index];
 
-        decoder_init(&is->subdec, avctx, &is->subtitleq, is->continue_read_thread);
+        if ((ret = decoder_init(&is->subdec, avctx, &is->subtitleq, is->continue_read_thread)) < 0)
+            goto fail;
         if ((ret = decoder_start(&is->subdec, subtitle_thread, "subtitle_decoder", is)) < 0)
             goto out;
         break;
@@ -2756,7 +2762,7 @@ static int read_thread(void *arg)
     AVFormatContext *ic = NULL;
     int err, i, ret;
     int st_index[AVMEDIA_TYPE_NB];
-    AVPacket pkt1, *pkt = &pkt1;
+    AVPacket *pkt = NULL;
     int64_t stream_start_time;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
@@ -2773,6 +2779,12 @@ static int read_thread(void *arg)
     memset(st_index, -1, sizeof(st_index));
     is->eof = 0;
 
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate packet.\n");
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     ic = avformat_alloc_context();
     if (!ic) {
         av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
@@ -2979,11 +2991,10 @@ static int read_thread(void *arg)
         }
         if (is->queue_attachments_req) {
             if (is->video_st && is->video_st->disposition & AV_DISPOSITION_ATTACHED_PIC) {
-                AVPacket copy;
-                if ((ret = av_packet_ref(&copy, &is->video_st->attached_pic)) < 0)
+                if ((ret = av_packet_ref(pkt, &is->video_st->attached_pic)) < 0)
                     goto fail;
-                packet_queue_put(&is->videoq, &copy);
-                packet_queue_put_nullpacket(&is->videoq, is->video_stream);
+                packet_queue_put(&is->videoq, pkt);
+                packet_queue_put_nullpacket(&is->videoq, pkt, is->video_stream);
             }
             is->queue_attachments_req = 0;
         }
@@ -3014,11 +3025,11 @@ static int read_thread(void *arg)
         if (ret < 0) {
             if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) {
                 if (is->video_stream >= 0)
-                    packet_queue_put_nullpacket(&is->videoq, is->video_stream);
+                    packet_queue_put_nullpacket(&is->videoq, pkt, is->video_stream);
                 if (is->audio_stream >= 0)
-                    packet_queue_put_nullpacket(&is->audioq, is->audio_stream);
+                    packet_queue_put_nullpacket(&is->audioq, pkt, is->audio_stream);
                 if (is->subtitle_stream >= 0)
-                    packet_queue_put_nullpacket(&is->subtitleq, is->subtitle_stream);
+                    packet_queue_put_nullpacket(&is->subtitleq, pkt, is->subtitle_stream);
                 is->eof = 1;
             }
             if (ic->pb && ic->pb->error) {
@@ -3059,6 +3070,7 @@ static int read_thread(void *arg)
     if (ic && !is->ic)
         avformat_close_input(&ic);
 
+    av_packet_free(&pkt);
     if (ret != 0) {
         SDL_Event event;
 
