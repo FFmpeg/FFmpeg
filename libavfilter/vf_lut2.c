@@ -79,12 +79,13 @@ typedef struct ThreadData {
 
 #define OFFSET(x) offsetof(LUT2Context, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption options[] = {
-    { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
-    { "c1", "set component #1 expression", OFFSET(comp_expr_str[1]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
-    { "c2", "set component #2 expression", OFFSET(comp_expr_str[2]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
-    { "c3", "set component #3 expression", OFFSET(comp_expr_str[3]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
+    { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
+    { "c1", "set component #1 expression", OFFSET(comp_expr_str[1]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
+    { "c2", "set component #2 expression", OFFSET(comp_expr_str[2]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
+    { "c3", "set component #3 expression", OFFSET(comp_expr_str[3]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
     { "d",  "set output depth",            OFFSET(odepth),            AV_OPT_TYPE_INT,    { .i64 =  0  }, 0, 16, .flags = FLAGS },
     { NULL }
 };
@@ -353,7 +354,8 @@ static int config_output(AVFilterLink *outlink)
     }
 
     for (p = 0; p < s->nb_planes; p++) {
-        s->lut[p] = av_malloc_array(1 << s->depth, sizeof(uint16_t));
+        if (!s->lut[p])
+            s->lut[p] = av_malloc_array(1 << s->depth, sizeof(uint16_t));
         if (!s->lut[p])
             return AVERROR(ENOMEM);
     }
@@ -543,6 +545,17 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return config_output(ctx->outputs[0]);
+}
+
 #define lut2_options options
 
 FRAMESYNC_DEFINE_CLASS(lut2, LUT2Context, fs);
@@ -560,6 +573,7 @@ AVFilter ff_vf_lut2 = {
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #if CONFIG_TLUT2_FILTER
@@ -610,10 +624,10 @@ static int tlut2_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 }
 
 static const AVOption tlut2_options[] = {
-    { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
-    { "c1", "set component #1 expression", OFFSET(comp_expr_str[1]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
-    { "c2", "set component #2 expression", OFFSET(comp_expr_str[2]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
-    { "c3", "set component #3 expression", OFFSET(comp_expr_str[3]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = FLAGS },
+    { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
+    { "c1", "set component #1 expression", OFFSET(comp_expr_str[1]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
+    { "c2", "set component #2 expression", OFFSET(comp_expr_str[2]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
+    { "c3", "set component #3 expression", OFFSET(comp_expr_str[3]),  AV_OPT_TYPE_STRING, { .str = "x" }, .flags = TFLAGS },
     { NULL }
 };
 
@@ -650,6 +664,7 @@ AVFilter ff_vf_tlut2 = {
     .outputs       = tlut2_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 #endif

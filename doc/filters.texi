@@ -14221,6 +14221,10 @@ The second input video bit depth.
 
 All expressions default to "x".
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands} except option @code{d}.
+
 @subsection Examples
 
 @itemize
