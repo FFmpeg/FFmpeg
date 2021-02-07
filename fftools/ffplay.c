@@ -361,8 +361,6 @@ static int filter_nbthreads = 0;
 static int is_full_screen;
 static int64_t audio_callback_time;
 
-static AVPacket flush_pkt;
-
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Window *window;
@@ -437,8 +435,6 @@ static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
         return -1;
     pkt1->pkt = *pkt;
     pkt1->next = NULL;
-    if (pkt == &flush_pkt)
-        q->serial++;
     pkt1->serial = q->serial;
 
     if (!q->last_pkt)
@@ -462,7 +458,7 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
     ret = packet_queue_put_private(q, pkt);
     SDL_UnlockMutex(q->mutex);
 
-    if (pkt != &flush_pkt && ret < 0)
+    if (ret < 0)
         av_packet_unref(pkt);
 
     return ret;
@@ -511,6 +507,7 @@ static void packet_queue_flush(PacketQueue *q)
     q->nb_packets = 0;
     q->size = 0;
     q->duration = 0;
+    q->serial++;
     SDL_UnlockMutex(q->mutex);
 }
 
@@ -536,7 +533,7 @@ static void packet_queue_start(PacketQueue *q)
 {
     SDL_LockMutex(q->mutex);
     q->abort_request = 0;
-    packet_queue_put_private(q, &flush_pkt);
+    q->serial++;
     SDL_UnlockMutex(q->mutex);
 }
 
@@ -642,20 +639,22 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                 av_packet_move_ref(&pkt, &d->pkt);
                 d->packet_pending = 0;
             } else {
+                int old_serial = d->pkt_serial;
                 if (packet_queue_get(d->queue, &pkt, 1, &d->pkt_serial) < 0)
                     return -1;
+                if (old_serial != d->pkt_serial) {
+                    avcodec_flush_buffers(d->avctx);
+                    d->finished = 0;
+                    d->next_pts = d->start_pts;
+                    d->next_pts_tb = d->start_pts_tb;
+                }
             }
             if (d->queue->serial == d->pkt_serial)
                 break;
             av_packet_unref(&pkt);
         } while (1);
 
-        if (pkt.data == flush_pkt.data) {
-            avcodec_flush_buffers(d->avctx);
-            d->finished = 0;
-            d->next_pts = d->start_pts;
-            d->next_pts_tb = d->start_pts_tb;
-        } else {
+        {
             if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                 int got_frame = 0;
                 ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &pkt);
@@ -2962,15 +2961,12 @@ static int read_thread(void *arg)
             } else {
                 if (is->audio_stream >= 0) {
                     packet_queue_flush(&is->audioq);
-                    packet_queue_put(&is->audioq, &flush_pkt);
                 }
                 if (is->subtitle_stream >= 0) {
                     packet_queue_flush(&is->subtitleq);
-                    packet_queue_put(&is->subtitleq, &flush_pkt);
                 }
                 if (is->video_stream >= 0) {
                     packet_queue_flush(&is->videoq);
-                    packet_queue_put(&is->videoq, &flush_pkt);
                 }
                 if (is->seek_flags & AVSEEK_FLAG_BYTE) {
                    set_clock(&is->extclk, NAN, 0);
@@ -3737,9 +3733,6 @@ int main(int argc, char **argv)
 
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
-
-    av_init_packet(&flush_pkt);
-    flush_pkt.data = (uint8_t *)&flush_pkt;
 
     if (!display_disable) {
         int flags = SDL_WINDOW_HIDDEN;
