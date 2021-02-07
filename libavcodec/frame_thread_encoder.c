@@ -40,7 +40,7 @@
 typedef struct{
     AVFrame  *indata;
     AVPacket *outdata;
-    int64_t return_code;
+    int       return_code;
     int       finished;
 } Task;
 
