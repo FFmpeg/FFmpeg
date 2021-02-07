@@ -305,6 +305,7 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     while (!outtask->finished) {
         pthread_cond_wait(&c->finished_task_cond, &c->finished_task_mutex);
     }
+    pthread_mutex_unlock(&c->finished_task_mutex);
     /* We now own outtask completely: No worker thread touches it any more,
      * because there is no outstanding task with this index. */
     outtask->finished = 0;
@@ -312,7 +313,6 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if(pkt->data)
         *got_packet_ptr = 1;
     c->finished_task_index = (c->finished_task_index + 1) % c->max_tasks;
-    pthread_mutex_unlock(&c->finished_task_mutex);
 
     return outtask->return_code;
 }
