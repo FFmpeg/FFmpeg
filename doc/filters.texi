@@ -11375,6 +11375,25 @@ Six-point interpolation.
 @subsection Commands
 This filter supports same @ref{commands} as options.
 
+@section exposure
+Adjust exposure of the video stream.
+
+The filter accepts the following options:
+
+@table @option
+@item exposure
+Set the exposure correction in EV. Allowed range is from -3.0 to 3.0 EV
+Default value is 0 EV.
+
+@item black
+Set the black level correction. Allowed range is from -1.0 to 1.0.
+Default value is 0.
+@end table
+
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
+
 @section extractplanes
 
 Extract color channel components from input video stream into
