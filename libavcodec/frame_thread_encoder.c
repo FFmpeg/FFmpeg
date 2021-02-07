@@ -182,8 +182,10 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     c->parent_avctx = avctx;
 
     c->task_fifo = av_fifo_alloc_array(BUFFER_SIZE, sizeof(Task));
-    if(!c->task_fifo)
-        goto fail;
+    if (!c->task_fifo) {
+        av_freep(&avctx->internal->frame_thread_encoder);
+        return AVERROR(ENOMEM);
+    }
 
     pthread_mutex_init(&c->task_fifo_mutex, NULL);
     pthread_mutex_init(&c->finished_task_mutex, NULL);
