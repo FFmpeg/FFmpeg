@@ -12814,6 +12814,10 @@ This filter also supports the @ref{framesync} options.
 More information about the Hald CLUT can be found on Eskil Steenberg's website
 (Hald CLUT author) at @url{http://www.quelsolaar.com/technology/clut.html}.
 
+@subsection Commands
+
+This filter supports the @code{interp} option as @ref{commands}.
+
 @subsection Workflow examples
 
 @subsubsection Hald CLUT video stream
@@ -13991,6 +13995,10 @@ Interpolate values using a pyramid.
 Interpolate values using a prism.
 @end table
 @end table
+
+@subsection Commands
+
+This filter supports the @code{interp} option as @ref{commands}.
 
 @section lumakey
 

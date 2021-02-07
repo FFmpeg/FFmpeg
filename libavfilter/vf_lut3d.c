@@ -102,12 +102,12 @@ typedef struct ThreadData {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 #define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 #define COMMON_OPTIONS \
-    { "interp", "select interpolation mode", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, NB_INTERP_MODE-1, FLAGS, "interp_mode" }, \
-        { "nearest",     "use values from the nearest defined points",            0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_NEAREST},     INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
-        { "trilinear",   "interpolate values using the 8 points defining a cube", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TRILINEAR},   INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
-        { "tetrahedral", "interpolate values using a tetrahedron",                0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TETRAHEDRAL}, INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
-        { "pyramid",     "interpolate values using a pyramid",                    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PYRAMID},     INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
-        { "prism",       "interpolate values using a prism",                      0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PRISM},       INT_MIN, INT_MAX, FLAGS, "interp_mode" }, \
+    { "interp", "select interpolation mode", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, NB_INTERP_MODE-1, TFLAGS, "interp_mode" }, \
+        { "nearest",     "use values from the nearest defined points",            0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_NEAREST},     0, 0, TFLAGS, "interp_mode" }, \
+        { "trilinear",   "interpolate values using the 8 points defining a cube", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TRILINEAR},   0, 0, TFLAGS, "interp_mode" }, \
+        { "tetrahedral", "interpolate values using a tetrahedron",                0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, 0, TFLAGS, "interp_mode" }, \
+        { "pyramid",     "interpolate values using a pyramid",                    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PYRAMID},     0, 0, TFLAGS, "interp_mode" }, \
+        { "prism",       "interpolate values using a prism",                      0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PRISM},       0, 0, TFLAGS, "interp_mode" }, \
     { NULL }
 
 #define EXPONENT_MASK 0x7F800000
@@ -1251,6 +1251,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
+}
+
 #if CONFIG_LUT3D_FILTER
 static const AVOption lut3d_options[] = {
     { "file", "set 3D LUT file name", OFFSET(file), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
@@ -1352,6 +1364,7 @@ AVFilter ff_vf_lut3d = {
     .outputs       = lut3d_outputs,
     .priv_class    = &lut3d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 #endif
 
@@ -1620,6 +1633,7 @@ AVFilter ff_vf_haldclut = {
     .outputs       = haldclut_outputs,
     .priv_class    = &haldclut_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 #endif
 
