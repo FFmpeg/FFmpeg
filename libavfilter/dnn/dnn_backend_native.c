@@ -321,7 +321,7 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
         if (native_model->model->pre_proc != NULL) {
             native_model->model->pre_proc(in_frame, &input, native_model->model->filter_ctx);
         } else {
-            ff_proc_from_frame_to_dnn(in_frame, &input, ctx);
+            ff_proc_from_frame_to_dnn(in_frame, &input, native_model->model->func_type, ctx);
         }
     }
 

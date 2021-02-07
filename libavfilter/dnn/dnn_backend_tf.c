@@ -744,7 +744,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
         if (tf_model->model->pre_proc != NULL) {
             tf_model->model->pre_proc(in_frame, &input, tf_model->model->filter_ctx);
         } else {
-            ff_proc_from_frame_to_dnn(in_frame, &input, ctx);
+            ff_proc_from_frame_to_dnn(in_frame, &input, tf_model->model->func_type, ctx);
         }
     }
 

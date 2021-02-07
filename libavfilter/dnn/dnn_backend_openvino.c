@@ -99,6 +99,8 @@ static DNNDataType precision_to_datatype(precision_e precision)
     {
     case FP32:
         return DNN_FLOAT;
+    case U8:
+        return DNN_UINT8;
     default:
         av_assert0(!"not supported yet.");
         return DNN_FLOAT;
@@ -111,6 +113,8 @@ static int get_datatype_size(DNNDataType dt)
     {
     case DNN_FLOAT:
         return sizeof(float);
+    case DNN_UINT8:
+        return sizeof(uint8_t);
     default:
         av_assert0(!"not supported yet.");
         return 1;
@@ -152,6 +156,9 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
     input.channels = dims.dims[1];
     input.data = blob_buffer.buffer;
     input.dt = precision_to_datatype(precision);
+    // all models in openvino open model zoo use BGR as input,
+    // change to be an option when necessary.
+    input.order = DCO_BGR;
 
     av_assert0(request->task_count <= dims.dims[0]);
     for (int i = 0; i < request->task_count; ++i) {
@@ -160,7 +167,7 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
             if (ov_model->model->pre_proc != NULL) {
                 ov_model->model->pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
             } else {
-                ff_proc_from_frame_to_dnn(task->in_frame, &input, ctx);
+                ff_proc_from_frame_to_dnn(task->in_frame, &input, ov_model->model->func_type, ctx);
             }
         }
         input.data = (uint8_t *)input.data
@@ -288,6 +295,20 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to set layout as NHWC for output %s\n", output_name);
         goto err;
+    }
+
+    // all models in openvino open model zoo use BGR with range [0.0f, 255.0f] as input,
+    // we don't have a AVPixelFormat to descibe it, so we'll use AV_PIX_FMT_BGR24 and
+    // ask openvino to do the conversion internally.
+    // the current supported SR model (frame processing) is generated from tensorflow model,
+    // and its input is Y channel as float with range [0.0f, 1.0f], so do not set for this case.
+    // TODO: we need to get a final clear&general solution with all backends/formats considered.
+    if (ov_model->model->func_type != DFT_PROCESS_FRAME) {
+        status = ie_network_set_input_precision(ov_model->network, input_name, U8);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to set input precision as U8 for %s\n", input_name);
+            return DNN_ERROR;
+        }
     }
 
     status = ie_core_load_network(ov_model->core, ov_model->network, ctx->options.device_type, &config, &ov_model->exe_network);
