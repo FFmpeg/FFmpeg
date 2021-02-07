@@ -22,7 +22,6 @@
 
 #include "frame_thread_encoder.h"
 
-#include "libavutil/fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
@@ -49,8 +48,7 @@ typedef struct{
     AVCodecContext *parent_avctx;
     pthread_mutex_t buffer_mutex;
 
-    AVFifoBuffer *task_fifo;
-    pthread_mutex_t task_fifo_mutex;
+    pthread_mutex_t task_fifo_mutex; /* Used to guard (next_)task_index */
     pthread_cond_t task_fifo_cond;
 
     unsigned max_tasks;
@@ -58,6 +56,7 @@ typedef struct{
     pthread_mutex_t finished_task_mutex; /* Guards tasks[i].finished */
     pthread_cond_t finished_task_cond;
 
+    unsigned next_task_index;
     unsigned task_index;
     unsigned finished_task_index;
 
@@ -77,14 +76,15 @@ static void * attribute_align_arg worker(void *v){
         unsigned task_index;
 
         pthread_mutex_lock(&c->task_fifo_mutex);
-        while (av_fifo_size(c->task_fifo) <= 0 || atomic_load(&c->exit)) {
+        while (c->next_task_index == c->task_index || atomic_load(&c->exit)) {
             if (atomic_load(&c->exit)) {
                 pthread_mutex_unlock(&c->task_fifo_mutex);
                 goto end;
             }
             pthread_cond_wait(&c->task_fifo_cond, &c->task_fifo_mutex);
         }
-        av_fifo_generic_read(c->task_fifo, &task_index, sizeof(task_index), NULL);
+        task_index         = c->next_task_index;
+        c->next_task_index = (c->next_task_index + 1) % c->max_tasks;
         pthread_mutex_unlock(&c->task_fifo_mutex);
         /* The main thread ensures that any two outstanding tasks have
          * different indices, ergo each worker thread owns its element
@@ -187,12 +187,6 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     c->parent_avctx = avctx;
 
-    c->task_fifo = av_fifo_alloc_array(BUFFER_SIZE, sizeof(unsigned));
-    if (!c->task_fifo) {
-        av_freep(&avctx->internal->frame_thread_encoder);
-        return AVERROR(ENOMEM);
-    }
-
     pthread_mutex_init(&c->task_fifo_mutex, NULL);
     pthread_mutex_init(&c->finished_task_mutex, NULL);
     pthread_mutex_init(&c->buffer_mutex, NULL);
@@ -278,7 +272,6 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
     pthread_mutex_destroy(&c->buffer_mutex);
     pthread_cond_destroy(&c->task_fifo_cond);
     pthread_cond_destroy(&c->finished_task_cond);
-    av_fifo_freep(&c->task_fifo);
     av_freep(&avctx->internal->frame_thread_encoder);
 }
 
@@ -294,16 +287,15 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_frame_move_ref(c->tasks[c->task_index].indata, frame);
 
         pthread_mutex_lock(&c->task_fifo_mutex);
-        av_fifo_generic_write(c->task_fifo, &c->task_index,
-                              sizeof(c->task_index), NULL);
+        c->task_index = (c->task_index + 1) % c->max_tasks;
         pthread_cond_signal(&c->task_fifo_cond);
         pthread_mutex_unlock(&c->task_fifo_mutex);
-
-        c->task_index = (c->task_index + 1) % c->max_tasks;
     }
 
     outtask = &c->tasks[c->finished_task_index];
     pthread_mutex_lock(&c->finished_task_mutex);
+    /* The access to task_index in the following code is ok,
+     * because it is only ever changed by the main thread. */
     if (c->task_index == c->finished_task_index ||
         (frame && !outtask->finished &&
          (c->task_index - c->finished_task_index + c->max_tasks) % c->max_tasks <= avctx->thread_count)) {
