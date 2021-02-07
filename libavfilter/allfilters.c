@@ -230,6 +230,7 @@ extern AVFilter ff_vf_detelecine;
 extern AVFilter ff_vf_dilation;
 extern AVFilter ff_vf_dilation_opencl;
 extern AVFilter ff_vf_displace;
+extern AVFilter ff_vf_dnn_detect;
 extern AVFilter ff_vf_dnn_processing;
 extern AVFilter ff_vf_doubleweave;
 extern AVFilter ff_vf_drawbox;
