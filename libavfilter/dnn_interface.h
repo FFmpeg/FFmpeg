@@ -43,6 +43,13 @@ typedef enum {
     DAST_SUCCESS            // got a result frame successfully
 } DNNAsyncStatusType;
 
+typedef enum {
+    DFT_NONE,
+    DFT_PROCESS_FRAME,      // process the whole frame
+    DFT_ANALYTICS_DETECT,   // detect from the whole frame
+    // we can add more such as detect_from_crop, classify_from_bbox, etc.
+}DNNFunctionType;
+
 typedef struct DNNData{
     void *data;
     DNNDataType dt;
@@ -56,6 +63,8 @@ typedef struct DNNModel{
     const char *options;
     // Stores FilterContext used for the interaction between AVFrame and DNNData
     AVFilterContext *filter_ctx;
+    // Stores function type of the model
+    DNNFunctionType func_type;
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
     DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
@@ -73,7 +82,7 @@ typedef struct DNNModel{
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
-    DNNModel *(*load_model)(const char *model_filename, const char *options, AVFilterContext *filter_ctx);
+    DNNModel *(*load_model)(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
     DNNReturnType (*execute_model)(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                    const char **output_names, uint32_t nb_output, AVFrame *out_frame);

@@ -128,7 +128,7 @@ typedef struct NativeModel{
     int32_t operands_num;
 } NativeModel;
 
-DNNModel *ff_dnn_load_model_native(const char *model_filename, const char *options, AVFilterContext *filter_ctx);
+DNNModel *ff_dnn_load_model_native(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
 
 DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
                                           const char **output_names, uint32_t nb_output, AVFrame *out_frame);

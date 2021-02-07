@@ -18,7 +18,7 @@
 
 #include "dnn_filter_common.h"
 
-int ff_dnn_init(DnnContext *ctx, AVFilterContext *filter_ctx)
+int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx)
 {
     if (!ctx->model_filename) {
         av_log(filter_ctx, AV_LOG_ERROR, "model file for network is not specified\n");
@@ -43,7 +43,7 @@ int ff_dnn_init(DnnContext *ctx, AVFilterContext *filter_ctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->model = (ctx->dnn_module->load_model)(ctx->model_filename, ctx->backend_options, filter_ctx);
+    ctx->model = (ctx->dnn_module->load_model)(ctx->model_filename, func_type, ctx->backend_options, filter_ctx);
     if (!ctx->model) {
         av_log(filter_ctx, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EINVAL);

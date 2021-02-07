@@ -62,7 +62,7 @@ AVFILTER_DEFINE_CLASS(dnn_processing);
 static av_cold int init(AVFilterContext *context)
 {
     DnnProcessingContext *ctx = context->priv;
-    return ff_dnn_init(&ctx->dnnctx, context);
+    return ff_dnn_init(&ctx->dnnctx, DFT_PROCESS_FRAME, context);
 }
 
 static int query_formats(AVFilterContext *context)

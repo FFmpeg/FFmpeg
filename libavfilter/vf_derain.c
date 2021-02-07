@@ -100,7 +100,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static av_cold int init(AVFilterContext *ctx)
 {
     DRContext *dr_context = ctx->priv;
-    return ff_dnn_init(&dr_context->dnnctx, ctx);
+    return ff_dnn_init(&dr_context->dnnctx, DFT_PROCESS_FRAME, ctx);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
