@@ -42,7 +42,6 @@ typedef struct{
     AVFrame  *indata;
     AVPacket *outdata;
     int64_t return_code;
-    unsigned index;
     int       finished;
 } Task;
 
@@ -74,7 +73,8 @@ static void * attribute_align_arg worker(void *v){
         int got_packet = 0, ret;
         AVPacket *pkt;
         AVFrame *frame;
-        Task task;
+        Task *task;
+        unsigned task_index;
 
         pthread_mutex_lock(&c->task_fifo_mutex);
         while (av_fifo_size(c->task_fifo) <= 0 || atomic_load(&c->exit)) {
@@ -84,14 +84,15 @@ static void * attribute_align_arg worker(void *v){
             }
             pthread_cond_wait(&c->task_fifo_cond, &c->task_fifo_mutex);
         }
-        av_fifo_generic_read(c->task_fifo, &task, sizeof(task), NULL);
+        av_fifo_generic_read(c->task_fifo, &task_index, sizeof(task_index), NULL);
         pthread_mutex_unlock(&c->task_fifo_mutex);
         /* The main thread ensures that any two outstanding tasks have
          * different indices, ergo each worker thread owns its element
          * of c->tasks with the exception of finished, which is shared
          * with the main thread and guarded by finished_task_mutex. */
-        frame = task.indata;
-        pkt   = c->tasks[task.index].outdata;
+        task  = &c->tasks[task_index];
+        frame = task->indata;
+        pkt   = task->outdata;
 
         ret = avctx->codec->encode2(avctx, pkt, frame, &got_packet);
         if(got_packet) {
@@ -106,10 +107,9 @@ static void * attribute_align_arg worker(void *v){
         pthread_mutex_lock(&c->buffer_mutex);
         av_frame_unref(frame);
         pthread_mutex_unlock(&c->buffer_mutex);
-        av_frame_free(&frame);
         pthread_mutex_lock(&c->finished_task_mutex);
-        c->tasks[task.index].return_code = ret;
-        c->tasks[task.index].finished    = 1;
+        task->return_code = ret;
+        task->finished    = 1;
         pthread_cond_signal(&c->finished_task_cond);
         pthread_mutex_unlock(&c->finished_task_mutex);
     }
@@ -187,7 +187,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     c->parent_avctx = avctx;
 
-    c->task_fifo = av_fifo_alloc_array(BUFFER_SIZE, sizeof(Task));
+    c->task_fifo = av_fifo_alloc_array(BUFFER_SIZE, sizeof(unsigned));
     if (!c->task_fifo) {
         av_freep(&avctx->internal->frame_thread_encoder);
         return AVERROR(ENOMEM);
@@ -202,7 +202,8 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     c->max_tasks = avctx->thread_count + 2;
     for (unsigned i = 0; i < c->max_tasks; i++) {
-        if (!(c->tasks[i].outdata = av_packet_alloc()))
+        if (!(c->tasks[i].indata  = av_frame_alloc()) ||
+            !(c->tasks[i].outdata = av_packet_alloc()))
             goto fail;
     }
 
@@ -267,13 +268,8 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
          pthread_join(c->worker[i], NULL);
     }
 
-    while (av_fifo_size(c->task_fifo) > 0) {
-        Task task;
-        av_fifo_generic_read(c->task_fifo, &task, sizeof(task), NULL);
-        av_frame_free(&task.indata);
-    }
-
     for (unsigned i = 0; i < c->max_tasks; i++) {
+        av_frame_free(&c->tasks[i].indata);
         av_packet_free(&c->tasks[i].outdata);
     }
 
@@ -290,20 +286,16 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                  AVFrame *frame, int *got_packet_ptr)
 {
     ThreadContext *c = avctx->internal->frame_thread_encoder;
-    Task *outtask, task;
+    Task *outtask;
 
     av_assert1(!*got_packet_ptr);
 
     if(frame){
-        AVFrame *new = av_frame_alloc();
-        if(!new)
-            return AVERROR(ENOMEM);
-        av_frame_move_ref(new, frame);
+        av_frame_move_ref(c->tasks[c->task_index].indata, frame);
 
-        task.index = c->task_index;
-        task.indata = (void*)new;
         pthread_mutex_lock(&c->task_fifo_mutex);
-        av_fifo_generic_write(c->task_fifo, &task, sizeof(task), NULL);
+        av_fifo_generic_write(c->task_fifo, &c->task_index,
+                              sizeof(c->task_index), NULL);
         pthread_cond_signal(&c->task_fifo_cond);
         pthread_mutex_unlock(&c->task_fifo_mutex);
 
