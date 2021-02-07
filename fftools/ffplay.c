@@ -589,8 +589,6 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
     int ret = AVERROR(EAGAIN);
 
     for (;;) {
-        AVPacket pkt;
-
         if (d->queue->serial == d->pkt_serial) {
             do {
                 if (d->queue->abort_request)
@@ -636,11 +634,10 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             if (d->queue->nb_packets == 0)
                 SDL_CondSignal(d->empty_queue_cond);
             if (d->packet_pending) {
-                av_packet_move_ref(&pkt, &d->pkt);
                 d->packet_pending = 0;
             } else {
                 int old_serial = d->pkt_serial;
-                if (packet_queue_get(d->queue, &pkt, 1, &d->pkt_serial) < 0)
+                if (packet_queue_get(d->queue, &d->pkt, 1, &d->pkt_serial) < 0)
                     return -1;
                 if (old_serial != d->pkt_serial) {
                     avcodec_flush_buffers(d->avctx);
@@ -651,30 +648,30 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             }
             if (d->queue->serial == d->pkt_serial)
                 break;
-            av_packet_unref(&pkt);
+            av_packet_unref(&d->pkt);
         } while (1);
 
         {
             if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                 int got_frame = 0;
-                ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &pkt);
+                ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &d->pkt);
                 if (ret < 0) {
                     ret = AVERROR(EAGAIN);
                 } else {
-                    if (got_frame && !pkt.data) {
+                    if (got_frame && !d->pkt.data) {
                        d->packet_pending = 1;
-                       av_packet_move_ref(&d->pkt, &pkt);
                     }
-                    ret = got_frame ? 0 : (pkt.data ? AVERROR(EAGAIN) : AVERROR_EOF);
+                    ret = got_frame ? 0 : (d->pkt.data ? AVERROR(EAGAIN) : AVERROR_EOF);
                 }
+                av_packet_unref(&d->pkt);
             } else {
-                if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) {
+                if (avcodec_send_packet(d->avctx, &d->pkt) == AVERROR(EAGAIN)) {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
-                    av_packet_move_ref(&d->pkt, &pkt);
+                } else {
+                    av_packet_unref(&d->pkt);
                 }
             }
-            av_packet_unref(&pkt);
         }
     }
 }
