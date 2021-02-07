@@ -516,6 +516,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         tag1                             = avio_rl32(pb);
         avio_skip(pb, 20);
         if (sizeX > 40) {
+            if (size < sizeX - 40)
+                return AVERROR_INVALIDDATA;
             st->codecpar->extradata_size = ffio_limit(pb, sizeX - 40);
             st->codecpar->extradata      = av_mallocz(st->codecpar->extradata_size +
                                                    AV_INPUT_BUFFER_PADDING_SIZE);
