@@ -117,7 +117,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static float frand(int x, int y)
 {
-    const float r = sinf(x * 12.9898 + y * 78.233) * 43758.545;
+    const float r = sinf(x * 12.9898f + y * 78.233f) * 43758.545f;
 
     return r - floorf(r);
 }
