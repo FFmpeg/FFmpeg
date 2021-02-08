@@ -1046,6 +1046,22 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     }
 }
 
+int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset)
+{
+    AVStream *st;
+
+    if (stream_index < 0 || stream_index >= s->nb_streams)
+        return AVERROR(EINVAL);
+
+    st = s->streams[stream_index];
+    *offset = st->internal->mux_ts_offset;
+
+    if (s->output_ts_offset)
+        *offset += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
+
+    return 0;
+}
+
 int ff_interleaved_peek(AVFormatContext *s, int stream,
                         AVPacket *pkt, int add_offset)
 {
