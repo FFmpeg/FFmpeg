@@ -14114,6 +14114,10 @@ expression
 
 All expressions default to "val".
 
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
+
 @subsection Examples
 
 @itemize
@@ -14775,6 +14779,10 @@ It accepts the following option:
 @item negate_alpha
 With value 1, it negates the alpha component, if present. Default value is 0.
 @end table
+
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
 
 @anchor{nlmeans}
 @section nlmeans

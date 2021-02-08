@@ -81,7 +81,7 @@ typedef struct LutContext {
 #define A 3
 
 #define OFFSET(x) offsetof(LutContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption options[] = {
     { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
@@ -566,6 +566,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return config_props(ctx->inputs[0]);
+}
+
 static const AVFilterPad inputs[] = {
     { .name         = "default",
       .type         = AVMEDIA_TYPE_VIDEO,
@@ -592,7 +603,9 @@ static const AVFilterPad outputs[] = {
         .query_formats = query_formats,                                 \
         .inputs        = inputs,                                        \
         .outputs       = outputs,                                       \
-        .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,        \
+        .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |       \
+                         AVFILTER_FLAG_SLICE_THREADS,                   \
+        .process_command = process_command,                             \
     }
 
 #if CONFIG_LUT_FILTER
@@ -654,17 +667,12 @@ AVFILTER_DEFINE_CLASS(negate);
 static av_cold int negate_init(AVFilterContext *ctx)
 {
     LutContext *s = ctx->priv;
-    int i;
 
-    av_log(ctx, AV_LOG_DEBUG, "negate_alpha:%d\n", s->negate_alpha);
-
-    for (i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         s->comp_expr_str[i] = av_strdup((i == 3 && !s->negate_alpha) ?
                                           "val" : "negval");
-        if (!s->comp_expr_str[i]) {
-            uninit(ctx);
+        if (!s->comp_expr_str[i])
             return AVERROR(ENOMEM);
-        }
     }
 
     return 0;
