@@ -616,7 +616,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
         return DNN_ERROR;
     }
 
-    if (!out_frame) {
+    if (!out_frame && model->func_type == DFT_PROCESS_FRAME) {
         av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
         return DNN_ERROR;
     }
@@ -669,7 +669,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
         return DNN_ERROR;
     }
 
-    if (!out_frame) {
+    if (!out_frame && model->func_type == DFT_PROCESS_FRAME) {
         av_log(ctx, AV_LOG_ERROR, "out frame is NULL when async execute model.\n");
         return DNN_ERROR;
     }
