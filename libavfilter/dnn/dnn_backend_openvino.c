@@ -250,7 +250,7 @@ static void infer_completion_callback(void *args)
     }
 }
 
-static DNNReturnType init_model_ov(OVModel *ov_model)
+static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, const char *output_name)
 {
     OVContext *ctx = &ov_model->ctx;
     IEStatusCode status;
@@ -274,6 +274,19 @@ static DNNReturnType init_model_ov(OVModel *ov_model)
         ie_network_input_shapes_free(&input_shapes);
         if (status != OK)
             goto err;
+    }
+
+    // The order of dims in the openvino is fixed and it is always NCHW for 4-D data.
+    // while we pass NHWC data from FFmpeg to openvino
+    status = ie_network_set_input_layout(ov_model->network, input_name, NHWC);
+    if (status != OK) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to set layout as NHWC for input %s\n", input_name);
+        goto err;
+    }
+    status = ie_network_set_output_layout(ov_model->network, output_name, NHWC);
+    if (status != OK) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to set layout as NHWC for output %s\n", output_name);
+        goto err;
     }
 
     status = ie_core_load_network(ov_model->core, ov_model->network, ctx->options.device_type, &config, &ov_model->exe_network);
@@ -482,7 +495,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     }
 
     if (!ov_model->exe_network) {
-        if (init_model_ov(ov_model) != DNN_SUCCESS) {
+        if (init_model_ov(ov_model, input_name, output_name) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
@@ -598,7 +611,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     }
 
     if (!ov_model->exe_network) {
-        if (init_model_ov(ov_model) != DNN_SUCCESS) {
+        if (init_model_ov(ov_model, input_name, output_names[0]) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
@@ -645,7 +658,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
     }
 
     if (!ov_model->exe_network) {
-        if (init_model_ov(ov_model) != DNN_SUCCESS) {
+        if (init_model_ov(ov_model, input_name, output_names[0]) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
