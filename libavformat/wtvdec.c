@@ -799,7 +799,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
 
         ff_get_guid(pb, &g);
         len = avio_rl32(pb);
-        if (len < 32) {
+        if (len < 32 || len > INT_MAX - 7) {
             int ret;
             if (avio_feof(pb))
                 return AVERROR_EOF;
