@@ -157,6 +157,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             p += frame->linesize[0];
         }
         break;
+    case AV_PIX_FMT_RGB0:
+    case AV_PIX_FMT_BGR0:
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_BGRA:
+        for (j = 0; j < inlink->h; j++) {
+            for (i = 0; i < inlink->w; i++) {
+                hist[0*256 + p[i*4    ]]++;
+                hist[1*256 + p[i*4 + 1]]++;
+                hist[2*256 + p[i*4 + 2]]++;
+            }
+            p += frame->linesize[0];
+        }
+        break;
+    case AV_PIX_FMT_0RGB:
+    case AV_PIX_FMT_0BGR:
+    case AV_PIX_FMT_ARGB:
+    case AV_PIX_FMT_ABGR:
+        for (j = 0; j < inlink->h; j++) {
+            for (i = 0; i < inlink->w; i++) {
+                hist[0*256 + p[i*4 + 1]]++;
+                hist[1*256 + p[i*4 + 2]]++;
+                hist[2*256 + p[i*4 + 3]]++;
+            }
+            p += frame->linesize[0];
+        }
+        break;
     default:
         for (int plane = 0; plane < 3; plane++) {
             const uint8_t *p = frame->data[plane];
@@ -222,6 +248,10 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,  AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_RGB0,  AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_ABGR,  AV_PIX_FMT_ARGB,
+        AV_PIX_FMT_0BGR,  AV_PIX_FMT_0RGB,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
