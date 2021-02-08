@@ -14816,6 +14816,33 @@ This filter supports the following commands:
 Syntax is same as option with same name.
 @end table
 
+@section monochrome
+Convert video to gray using custom color filter.
+
+A description of the accepted options follows.
+
+@table @option
+@item cb
+Set the chroma blue spot. Allowed range is from -1 to 1.
+Default value is 0.
+
+@item cr
+Set the chroma red spot. Allowed range is from -1 to 1.
+Default value is 0.
+
+@item size
+Set the color filter size. Allowed range is from .1 to 10.
+Default value is 1.
+
+@item high
+Set the highlights strength. Allowed range is from 0 to 1.
+Default value is 0.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in

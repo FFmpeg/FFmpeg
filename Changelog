@@ -71,6 +71,7 @@ version <next>:
 - CRI parser
 - aexciter audio filter
 - exposure video filter
+- monochrome video filter
 
 
 version 4.3:

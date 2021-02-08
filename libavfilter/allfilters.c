@@ -317,6 +317,7 @@ extern AVFilter ff_vf_metadata;
 extern AVFilter ff_vf_midequalizer;
 extern AVFilter ff_vf_minterpolate;
 extern AVFilter ff_vf_mix;
+extern AVFilter ff_vf_monochrome;
 extern AVFilter ff_vf_mpdecimate;
 extern AVFilter ff_vf_negate;
 extern AVFilter ff_vf_nlmeans;
