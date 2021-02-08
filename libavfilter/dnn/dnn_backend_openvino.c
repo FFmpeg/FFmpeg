@@ -178,6 +178,7 @@ static void infer_completion_callback(void *args)
     IEStatusCode status;
     RequestItem *request = args;
     TaskItem *task = request->tasks[0];
+    SafeQueue *requestq = task->ov_model->request_queue;
     ie_blob_t *output_blob = NULL;
     ie_blob_buffer_t blob_buffer;
     DNNData output;
@@ -243,7 +244,7 @@ static void infer_completion_callback(void *args)
     request->task_count = 0;
 
     if (task->async) {
-        if (ff_safe_queue_push_back(task->ov_model->request_queue, request) < 0) {
+        if (ff_safe_queue_push_back(requestq, request) < 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed to push back request_queue.\n");
             return;
         }
