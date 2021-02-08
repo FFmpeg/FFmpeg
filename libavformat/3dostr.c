@@ -64,7 +64,7 @@ static int threedostr_read_header(AVFormatContext *s)
             st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
             st->codecpar->sample_rate = avio_rb32(s->pb);
             st->codecpar->channels    = avio_rb32(s->pb);
-            if (st->codecpar->channels <= 0)
+            if (st->codecpar->channels <= 0 || st->codecpar->sample_rate <= 0)
                 return AVERROR_INVALIDDATA;
             codec                  = avio_rl32(s->pb);
             avio_skip(s->pb, 4);
