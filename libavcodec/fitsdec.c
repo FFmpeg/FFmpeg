@@ -63,7 +63,7 @@ static int fill_data_min_max(const uint8_t *ptr8, FITSHeader *header, const uint
     int i, j;
 
     header->data_min = DBL_MAX;
-    header->data_max = DBL_MIN;
+    header->data_max = -DBL_MAX;
     switch (header->bitpix) {
 #define CASE_N(a, t, rd) \
     case a: \
