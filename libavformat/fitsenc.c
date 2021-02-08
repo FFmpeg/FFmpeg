@@ -45,7 +45,8 @@ static int fits_write_header(AVFormatContext *s)
  * @param lines_written to keep track of lines written so far
  * @return 0
  */
-static int write_keyword_value(AVFormatContext *s, const char *keyword, int value, int *lines_written)
+static int write_keyword_value(AVFormatContext *s, const char *fmt,
+                               const char *keyword, void *value, int *lines_written)
 {
     int len, ret;
     uint8_t header[80];
@@ -57,7 +58,12 @@ static int write_keyword_value(AVFormatContext *s, const char *keyword, int valu
     header[8] = '=';
     header[9] = ' ';
 
-    ret = snprintf(header + 10, 70, "%d", value);
+    if (!strcmp(fmt, "%d")) {
+        ret = snprintf(header + 10, 70, fmt, *(int *)value);
+    } else {
+        ret = snprintf(header + 10, 70, fmt, *(float *)value);
+    }
+
     memset(&header[ret + 10], ' ', sizeof(header) - (ret + 10));
 
     avio_write(s->pb, header, sizeof(header));
@@ -72,16 +78,22 @@ static int write_image_header(AVFormatContext *s)
     FITSContext *fitsctx = s->priv_data;
     uint8_t buffer[80];
     int bitpix, naxis, naxis3 = 1, bzero = 0, rgb = 0, lines_written = 0, lines_left;
+    int pcount = 0, gcount = 1;
+    float datamax, datamin;
 
     switch (encctx->format) {
         case AV_PIX_FMT_GRAY8:
             bitpix = 8;
             naxis = 2;
+            datamin = 0;
+            datamax = 255;
             break;
         case AV_PIX_FMT_GRAY16BE:
             bitpix = 16;
             naxis = 2;
             bzero = 32768;
+            datamin = 0;
+            datamax = 65535;
             break;
         case AV_PIX_FMT_GBRP:
         case AV_PIX_FMT_GBRAP:
@@ -93,6 +105,8 @@ static int write_image_header(AVFormatContext *s)
             } else {
                 naxis3 = 4;
             }
+            datamin = 0;
+            datamax = 255;
             break;
         case AV_PIX_FMT_GBRP16BE:
         case AV_PIX_FMT_GBRAP16BE:
@@ -105,6 +119,8 @@ static int write_image_header(AVFormatContext *s)
                 naxis3 = 4;
             }
             bzero = 32768;
+            datamin = 0;
+            datamax = 65535;
             break;
         default:
             return AVERROR(EINVAL);
@@ -122,20 +138,23 @@ static int write_image_header(AVFormatContext *s)
     }
     lines_written++;
 
-    write_keyword_value(s, "BITPIX", bitpix, &lines_written);         // no of bits per pixel
-    write_keyword_value(s, "NAXIS", naxis, &lines_written);           // no of dimensions of image
-    write_keyword_value(s, "NAXIS1", encctx->width, &lines_written);   // first dimension i.e. width
-    write_keyword_value(s, "NAXIS2", encctx->height, &lines_written);  // second dimension i.e. height
+    write_keyword_value(s, "%d", "BITPIX", &bitpix, &lines_written);         // no of bits per pixel
+    write_keyword_value(s, "%d", "NAXIS", &naxis, &lines_written);           // no of dimensions of image
+    write_keyword_value(s, "%d", "NAXIS1", &encctx->width, &lines_written);   // first dimension i.e. width
+    write_keyword_value(s, "%d", "NAXIS2", &encctx->height, &lines_written);  // second dimension i.e. height
 
     if (rgb)
-        write_keyword_value(s, "NAXIS3", naxis3, &lines_written);     // third dimension to store RGBA planes
+        write_keyword_value(s, "%d", "NAXIS3", &naxis3, &lines_written);     // third dimension to store RGBA planes
 
     if (!fitsctx->first_image) {
-        write_keyword_value(s, "PCOUNT", 0, &lines_written);
-        write_keyword_value(s, "GCOUNT", 1, &lines_written);
+        write_keyword_value(s, "%d", "PCOUNT", &pcount, &lines_written);
+        write_keyword_value(s, "%d", "GCOUNT", &gcount, &lines_written);
     } else {
         fitsctx->first_image = 0;
     }
+
+    write_keyword_value(s, "%g", "DATAMIN", &datamin, &lines_written);
+    write_keyword_value(s, "%g", "DATAMAX", &datamax, &lines_written);
 
     /*
      * Since FITS does not support unsigned 16 bit integers,
@@ -143,7 +162,7 @@ static int write_image_header(AVFormatContext *s)
      * signed integers so that it can be read properly.
      */
     if (bitpix == 16)
-        write_keyword_value(s, "BZERO", bzero, &lines_written);
+        write_keyword_value(s, "%d", "BZERO", &bzero, &lines_written);
 
     if (rgb) {
         memcpy(buffer, "CTYPE3  = 'RGB     '", 20);
