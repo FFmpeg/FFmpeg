@@ -2168,8 +2168,6 @@ static void show_packet(WriterContext *w, InputFile *ifile, AVPacket *pkt, int p
     print_time("dts_time",        pkt->dts, &st->time_base);
     print_duration_ts("duration",        pkt->duration);
     print_duration_time("duration_time", pkt->duration, &st->time_base);
-    print_duration_ts("convergence_duration", pkt->convergence_duration);
-    print_duration_time("convergence_duration_time", pkt->convergence_duration, &st->time_base);
     print_val("size",             pkt->size, unit_byte_str);
     if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
     else                print_str_opt("pos", "N/A");
@@ -2633,10 +2631,6 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     s = av_get_media_type_string(par->codec_type);
     if (s) print_str    ("codec_type", s);
     else   print_str_opt("codec_type", "unknown");
-#if FF_API_LAVF_AVCTX
-    if (dec_ctx)
-        print_q("codec_time_base", dec_ctx->time_base, '/');
-#endif
 
     /* print AVI/FourCC tag */
     print_str("codec_tag_string",    av_fourcc2str(par->codec_tag));
@@ -2688,15 +2682,6 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         else
             print_str_opt("field_order", "unknown");
 
-#if FF_API_PRIVATE_OPT
-        if (dec_ctx && dec_ctx->timecode_frame_start >= 0) {
-            char tcbuf[AV_TIMECODE_STR_SIZE];
-            av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);
-            print_str("timecode", tcbuf);
-        } else {
-            print_str_opt("timecode", "N/A");
-        }
-#endif
         if (dec_ctx)
             print_int("refs", dec_ctx->refs);
         break;
@@ -3250,9 +3235,6 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
             PRINT_PIX_FMT_FLAG(HWACCEL,   "hwaccel");
             PRINT_PIX_FMT_FLAG(PLANAR,    "planar");
             PRINT_PIX_FMT_FLAG(RGB,       "rgb");
-#if FF_API_PSEUDOPAL
-            PRINT_PIX_FMT_FLAG(PSEUDOPAL, "pseudopal");
-#endif
             PRINT_PIX_FMT_FLAG(ALPHA,     "alpha");
             writer_print_section_footer(w);
         }
