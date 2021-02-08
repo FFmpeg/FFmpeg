@@ -9486,6 +9486,10 @@ e.g. banding detection threshold is triggered for all color components.
 The default is disabled.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section deblock
 
 Remove blocking artifacts from input video.
