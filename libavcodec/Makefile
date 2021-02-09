@@ -276,7 +276,7 @@ OBJS-$(CONFIG_CYUV_DECODER)            += cyuv.o
 OBJS-$(CONFIG_DCA_DECODER)             += dcadec.o dca.o dcadata.o dcahuff.o \
                                           dca_core.o dca_exss.o dca_xll.o dca_lbr.o \
                                           dcadsp.o dcadct.o synth_filter.o
-OBJS-$(CONFIG_DCA_ENCODER)             += dcaenc.o dca.o dcadata.o dcahuff.o \
+OBJS-$(CONFIG_DCA_ENCODER)             += dcaenc.o dcadata.o dcahuff.o \
                                           dcaadpcm.o
 OBJS-$(CONFIG_DDS_DECODER)             += dds.o
 OBJS-$(CONFIG_DERF_DPCM_DECODER)       += dpcm.o
