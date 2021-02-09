@@ -22393,6 +22393,13 @@ Possible values are:
 
 @item npl
 Set the nominal peak luminance.
+
+@item param_a
+Parameter A for scaling filters. Parameter "b" for bicubic, and the number of
+filter taps for lanczos.
+
+@item param_b
+Parameter B for scaling filters. Parameter "c" for bicubic.
 @end table
 
 The values of the @option{w} and @option{h} options are expressions

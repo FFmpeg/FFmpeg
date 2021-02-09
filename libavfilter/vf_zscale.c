@@ -101,6 +101,8 @@ typedef struct ZScaleContext {
     char *size_str;
     double nominal_peak_luminance;
     int approximate_gamma;
+    double param_a;
+    double param_b;
 
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
@@ -601,6 +603,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->params.resample_filter_uv = s->filter;
         s->params.nominal_peak_luminance = s->nominal_peak_luminance;
         s->params.allow_approximate_gamma = s->approximate_gamma;
+        s->params.filter_param_a = s->params.filter_param_a_uv = s->param_a;
+        s->params.filter_param_b = s->params.filter_param_b_uv = s->param_b;
 
         format_init(&s->src_format, in, desc, s->colorspace_in,
                     s->primaries_in, s->trc_in, s->range_in, s->chromal_in);
@@ -897,6 +901,9 @@ static const AVOption zscale_options[] = {
     { "cin",        "set input chroma location", OFFSET(chromal_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
     { "npl",       "set nominal peak luminance", OFFSET(nominal_peak_luminance), AV_OPT_TYPE_DOUBLE, {.dbl = NAN}, 0, DBL_MAX, FLAGS },
     { "agamma",       "allow approximate gamma", OFFSET(approximate_gamma),      AV_OPT_TYPE_BOOL,   {.i64 = 1},   0, 1,       FLAGS },
+    { "param_a", "parameter A, which is parameter \"b\" for bicubic, "
+                 "and the number of filter taps for lanczos", OFFSET(param_a), AV_OPT_TYPE_DOUBLE, {.dbl = NAN}, -DBL_MAX, DBL_MAX, FLAGS },
+    { "param_b", "parameter B, which is parameter \"c\" for bicubic", OFFSET(param_b), AV_OPT_TYPE_DOUBLE, {.dbl = NAN}, -DBL_MAX, DBL_MAX, FLAGS },
     { NULL }
 };
 
