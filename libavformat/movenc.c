@@ -2025,7 +2025,6 @@ static int mov_write_clli_tag(AVIOContext *pb, MOVTrack *track)
 
     side_data = av_stream_get_side_data(track->st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, NULL);
     if (!side_data) {
-        av_log(NULL, AV_LOG_VERBOSE, "Not writing 'clli' atom. No content light level info.\n");
         return 0;
     }
     content_light_metadata = (const AVContentLightMetadata*)side_data;
@@ -2052,7 +2051,6 @@ static int mov_write_mdcv_tag(AVIOContext *pb, MOVTrack *track)
     side_data = av_stream_get_side_data(track->st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
     metadata = (const AVMasteringDisplayMetadata*)side_data;
     if (!metadata || !metadata->has_primaries || !metadata->has_luminance) {
-        av_log(NULL, AV_LOG_VERBOSE, "Not writing 'mdcv' atom. Missing mastering metadata.\n");
         return 0;
     }
 
