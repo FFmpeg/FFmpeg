@@ -14403,6 +14403,10 @@ average, output frame will be completely filled with value set by @var{fill} opt
 Typically useful for scene changes when used in combination with @code{tblend} filter.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section mcdeint
 
 Apply motion-compensation deinterlacing.
