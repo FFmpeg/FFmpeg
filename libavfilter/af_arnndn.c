@@ -185,7 +185,7 @@ static void rnnoise_model_free(RNNModel *model)
     av_free(model);
 }
 
-static RNNModel *rnnoise_model_from_file(FILE *f)
+static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
 {
     RNNModel *ret;
     DenseLayer *input_dense;
@@ -197,17 +197,17 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
     int in;
 
     if (fscanf(f, "rnnoise-nu model file version %d\n", &in) != 1 || in != 1)
-        return NULL;
+        return AVERROR_INVALIDDATA;
 
     ret = av_calloc(1, sizeof(RNNModel));
     if (!ret)
-        return NULL;
+        return AVERROR(ENOMEM);
 
 #define ALLOC_LAYER(type, name) \
     name = av_calloc(1, sizeof(type)); \
     if (!name) { \
         rnnoise_model_free(ret); \
-        return NULL; \
+        return AVERROR(ENOMEM); \
     } \
     ret->name = name
 
@@ -221,7 +221,7 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
 #define INPUT_VAL(name) do { \
     if (fscanf(f, "%d", &in) != 1 || in < 0 || in > 128) { \
         rnnoise_model_free(ret); \
-        return NULL; \
+        return AVERROR(EINVAL); \
     } \
     name = in; \
     } while (0)
@@ -245,13 +245,13 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
     float *values = av_calloc((len), sizeof(float)); \
     if (!values) { \
         rnnoise_model_free(ret); \
-        return NULL; \
+        return AVERROR(ENOMEM); \
     } \
     name = values; \
     for (int i = 0; i < (len); i++) { \
         if (fscanf(f, "%d", &in) != 1) { \
             rnnoise_model_free(ret); \
-            return NULL; \
+            return AVERROR(EINVAL); \
         } \
         values[i] = in; \
     } \
@@ -261,7 +261,7 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
     float *values = av_calloc(FFALIGN((len0), 4) * FFALIGN((len1), 4) * (len2), sizeof(float)); \
     if (!values) { \
         rnnoise_model_free(ret); \
-        return NULL; \
+        return AVERROR(ENOMEM); \
     } \
     name = values; \
     for (int k = 0; k < (len0); k++) { \
@@ -269,7 +269,7 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
             for (int j = 0; j < (len1); j++) { \
                 if (fscanf(f, "%d", &in) != 1) { \
                     rnnoise_model_free(ret); \
-                    return NULL; \
+                    return AVERROR(EINVAL); \
                 } \
                 values[j * (len2) * FFALIGN((len0), 4) + i * FFALIGN((len0), 4) + k] = in; \
             } \
@@ -305,10 +305,12 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
 
     if (vad_output->nb_neurons != 1) {
         rnnoise_model_free(ret);
-        return NULL;
+        return AVERROR(EINVAL);
     }
 
-    return ret;
+    *rnn = ret;
+
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -1468,18 +1470,21 @@ static int activate(AVFilterContext *ctx)
 static int open_model(AVFilterContext *ctx, RNNModel **model)
 {
     AudioRNNContext *s = ctx->priv;
+    int ret;
     FILE *f;
 
     if (!s->model_name)
         return AVERROR(EINVAL);
     f = av_fopen_utf8(s->model_name, "r");
-    if (!f)
+    if (!f) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to open model file: %s\n", s->model_name);
         return AVERROR(EINVAL);
+    }
 
-    *model = rnnoise_model_from_file(f);
+    ret = rnnoise_model_from_file(f, model);
     fclose(f);
-    if (!*model)
-        return AVERROR(EINVAL);
+    if (!*model || ret < 0)
+        return ret;
 
     return 0;
 }
