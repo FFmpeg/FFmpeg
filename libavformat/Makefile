@@ -681,6 +681,8 @@ OBJS-$(CONFIG_LIBZMQ_PROTOCOL)           += libzmq.o
 
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                                += log2_tab.o
+SHLIBOBJS-$(CONFIG_HLS_DEMUXER)          += ac3_channel_layout_tab.o
+SHLIBOBJS-$(CONFIG_MOV_DEMUXER)          += ac3_channel_layout_tab.o
 SHLIBOBJS-$(CONFIG_MXF_MUXER)            += golomb_tab.o
 SHLIBOBJS-$(CONFIG_RTP_MUXER)            += golomb_tab.o
 

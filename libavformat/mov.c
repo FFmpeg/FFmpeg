@@ -813,7 +813,7 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     acmod = (ac3info >> 11) & 0x7;
     lfeon = (ac3info >> 10) & 0x1;
     st->codecpar->channels = ((int[]){2,1,2,3,3,4,4,5})[acmod] + lfeon;
-    st->codecpar->channel_layout = avpriv_ac3_channel_layout_tab[acmod];
+    st->codecpar->channel_layout = ff_ac3_channel_layout_tab[acmod];
     if (lfeon)
         st->codecpar->channel_layout |= AV_CH_LOW_FREQUENCY;
     *ast = bsmod;
@@ -846,7 +846,7 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     bsmod = (eac3info >> 12) & 0x1f;
     acmod = (eac3info >>  9) & 0x7;
     lfeon = (eac3info >>  8) & 0x1;
-    st->codecpar->channel_layout = avpriv_ac3_channel_layout_tab[acmod];
+    st->codecpar->channel_layout = ff_ac3_channel_layout_tab[acmod];
     if (lfeon)
         st->codecpar->channel_layout |= AV_CH_LOW_FREQUENCY;
     st->codecpar->channels = av_get_channel_layout_nb_channels(st->codecpar->channel_layout);

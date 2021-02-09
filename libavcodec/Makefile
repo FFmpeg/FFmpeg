@@ -175,8 +175,10 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           psymodel.o mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AAC_MF_ENCODER)          += mfenc.o mf_utils.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
-OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
-OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
+OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o \
+                                          kbdwin.o ac3tab.o ac3_channel_layout_tab.o
+OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o \
+                                          kbdwin.o ac3tab.o ac3_channel_layout_tab.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3enc.o ac3tab.o \
                                           ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3enc.o ac3tab.o ac3.o kbdwin.o
@@ -992,7 +994,6 @@ OBJS-$(CONFIG_FITS_DEMUXER)            += fits.o
 OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
-OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
@@ -1001,6 +1002,8 @@ OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o
 
 # libavformat dependencies for static builds
+STLIBOBJS-$(CONFIG_HLS_DEMUXER)        += ac3_channel_layout_tab.o
+STLIBOBJS-$(CONFIG_MOV_DEMUXER)        += ac3_channel_layout_tab.o
 STLIBOBJS-$(CONFIG_MXF_MUXER)          += golomb.o
 STLIBOBJS-$(CONFIG_RTP_MUXER)          += golomb.o
 
@@ -1087,7 +1090,8 @@ OBJS-$(CONFIG_LIBZVBI_TELETEXT_DECODER)   += libzvbi-teletextdec.o ass.o
 OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
                                           mpeg4audio.o
-OBJS-$(CONFIG_AC3_PARSER)              += ac3tab.o aac_ac3_parser.o
+OBJS-$(CONFIG_AC3_PARSER)              += aac_ac3_parser.o ac3tab.o \
+                                          ac3_channel_layout_tab.o
 OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
 OBJS-$(CONFIG_AMR_PARSER)              += amr_parser.o
 OBJS-$(CONFIG_AV1_PARSER)              += av1_parser.o
