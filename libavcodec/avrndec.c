@@ -21,8 +21,6 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "mjpeg.h"
-#include "mjpegdec.h"
 #include "libavutil/imgutils.h"
 
 typedef struct {
