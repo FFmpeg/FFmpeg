@@ -466,6 +466,27 @@ void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
     }
 }
 
+/* isn't this function nicer than the one in the libjpeg ? */
+void ff_mjpeg_build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
+                                  const uint8_t *bits_table,
+                                  const uint8_t *val_table)
+{
+    int k, code;
+
+    k = 0;
+    code = 0;
+    for (int i = 1; i <= 16; i++) {
+        int nb = bits_table[i];
+        for (int j = 0; j < nb; j++) {
+            int sym = val_table[k++];
+            huff_size[sym] = i;
+            huff_code[sym] = code;
+            code++;
+        }
+        code <<= 1;
+    }
+}
+
 /**
  * Builds all 4 optimal Huffman tables.
  *

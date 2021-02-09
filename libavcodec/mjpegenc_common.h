@@ -35,6 +35,9 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
 void ff_mjpeg_encode_picture_frame(MpegEncContext *s);
 void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits);
 void ff_mjpeg_escape_FF(PutBitContext *pb, int start);
+void ff_mjpeg_build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
+                                  const uint8_t *bits_table,
+                                  const uint8_t *val_table);
 int ff_mjpeg_encode_stuffing(MpegEncContext *s);
 void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4]);
 
