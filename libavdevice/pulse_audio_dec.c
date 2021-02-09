@@ -149,6 +149,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
 
     pa_buffer_attr attr = { -1 };
     pa_channel_map cmap;
+    const pa_buffer_attr *queried_attr;
 
     pa_channel_map_init_extend(&cmap, pd->channels, PA_CHANNEL_MAP_WAVEEX);
 
@@ -241,6 +242,14 @@ static av_cold int pulse_read_header(AVFormatContext *s)
         /* Wait until the stream is ready */
         pa_threaded_mainloop_wait(pd->mainloop);
     }
+
+    /* Query actual fragment size */
+    queried_attr = pa_stream_get_buffer_attr(pd->stream);
+    if (!queried_attr || queried_attr->fragsize > INT_MAX/100) {
+        ret = AVERROR_EXTERNAL;
+        goto unlock_and_fail;
+    }
+    pd->fragment_size = queried_attr->fragsize;
 
     pa_threaded_mainloop_unlock(pd->mainloop);
 
