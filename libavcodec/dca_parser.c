@@ -267,7 +267,7 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
 
     *duration = h.npcmblocks * DCA_PCMBLOCK_SAMPLES;
-    *sample_rate = avpriv_dca_sample_rates[h.sr_code];
+    *sample_rate = ff_dca_sample_rates[h.sr_code];
     if (*profile != FF_PROFILE_UNKNOWN)
         return 0;
 

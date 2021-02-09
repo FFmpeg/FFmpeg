@@ -129,7 +129,7 @@ static int parse_frame_header(DCACoreDecoder *s)
     s->npcmblocks           = h.npcmblocks;
     s->frame_size           = h.frame_size;
     s->audio_mode           = h.audio_mode;
-    s->sample_rate          = avpriv_dca_sample_rates[h.sr_code];
+    s->sample_rate          = ff_dca_sample_rates[h.sr_code];
     s->bit_rate             = ff_dca_bit_rates[h.br_code];
     s->drc_present          = h.drc_present;
     s->ts_present           = h.ts_present;

@@ -33,11 +33,6 @@
 #include "get_bits.h"
 #include "put_bits.h"
 
-const uint32_t avpriv_dca_sample_rates[16] = {
-    0, 8000, 16000, 32000, 0, 0, 11025, 22050, 44100, 0, 0,
-    12000, 24000, 48000, 96000, 192000
-};
-
 const uint32_t ff_dca_sampling_freqs[16] = {
       8000,  16000, 32000, 64000, 128000, 22050,  44100,  88200,
     176400, 352800, 12000, 24000,  48000, 96000, 192000, 384000,
@@ -112,7 +107,7 @@ int ff_dca_parse_core_frame_header(DCACoreFrameHeader *h, GetBitContext *gb)
         return DCA_PARSE_ERROR_AMODE;
 
     h->sr_code = get_bits(gb, 4);
-    if (!avpriv_dca_sample_rates[h->sr_code])
+    if (!ff_dca_sample_rates[h->sr_code])
         return DCA_PARSE_ERROR_SAMPLE_RATE;
 
     h->br_code = get_bits(gb, 5);

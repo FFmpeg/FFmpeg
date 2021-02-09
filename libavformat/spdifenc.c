@@ -263,7 +263,7 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
     case DCA_SYNCWORD_CORE_BE:
         blocks = (AV_RB16(pkt->data + 4) >> 2) & 0x7f;
         core_size = ((AV_RB24(pkt->data + 5) >> 4) & 0x3fff) + 1;
-        sample_rate = avpriv_dca_sample_rates[(pkt->data[8] >> 2) & 0x0f];
+        sample_rate = ff_dca_sample_rates[(pkt->data[8] >> 2) & 0x0f];
         break;
     case DCA_SYNCWORD_CORE_LE:
         blocks = (AV_RL16(pkt->data + 4) >> 2) & 0x7f;

@@ -32,7 +32,6 @@
 #include "libavutil/intreadwrite.h"
 
 #include "get_bits.h"
-#include "internal.h"
 
 #define DCA_CORE_FRAME_HEADER_SIZE      18
 
@@ -195,8 +194,7 @@ enum DCADownMixType {
     DCA_DMIX_TYPE_COUNT
 };
 
-extern av_export_avcodec const uint32_t avpriv_dca_sample_rates[16];
-
+extern const uint32_t ff_dca_sample_rates[16];
 extern const uint32_t ff_dca_sampling_freqs[16];
 extern const uint8_t ff_dca_freq_ranges[16];
 extern const uint8_t ff_dca_bits_per_sample[8];
