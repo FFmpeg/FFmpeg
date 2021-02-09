@@ -73,4 +73,7 @@ av_cold void ff_cfhdencdsp_init(CFHDEncDSPContext *c)
 {
     c->horiz_filter = horiz_filter;
     c->vert_filter = vert_filter;
+
+    if (ARCH_X86)
+        ff_cfhdencdsp_init_x86(c);
 }
