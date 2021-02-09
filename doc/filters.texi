@@ -19168,6 +19168,10 @@ The timestamp expressed in seconds. It's NAN if the input timestamp is unknown.
 the position in the file of the input frame, NAN if unknown
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section swapuv
 Swap U & V plane.
 
