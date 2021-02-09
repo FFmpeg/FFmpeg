@@ -675,6 +675,60 @@ Remove extradata from all frames.
 @end table
 @end table
 
+@section setts
+Set PTS and DTS in packets.
+
+It accepts the following parameters:
+@table @option
+@item ts
+@item pts
+@item dts
+Set expressions for PTS, DTS or both.
+@end table
+
+The expressions are evaluated through the eval API and can contain the following
+constants:
+
+@table @option
+@item N
+The count of the input packet. Starting from 0.
+
+@item TS
+The demux timestamp in input in case of @code{ts} or @code{dts} option or presentation
+timestamp in case of @code{pts} option.
+
+@item POS
+The original position in the file of the packet, or undefined if undefined
+for the current packet
+
+@item DTS
+The demux timestamp in input.
+
+@item PTS
+The presentation timestamp in input.
+
+@item STARTDTS
+The DTS of the first packet.
+
+@item STARTPTS
+The PTS of the first packet.
+
+@item PREV_INDTS
+The previous input DTS.
+
+@item PREV_INPTS
+The previous input PTS.
+
+@item PREV_OUTDTS
+The previous output DTS.
+
+@item PREV_OUTPTS
+The previous output PTS.
+
+@item TB
+The timebase of stream packet belongs.
+@end table
+
 @anchor{text2movsub}
 @section text2movsub
 

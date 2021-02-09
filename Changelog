@@ -72,6 +72,7 @@ version <next>:
 - aexciter audio filter
 - exposure video filter
 - monochrome video filter
+- setts bitstream filter
 
 
 version 4.3:
