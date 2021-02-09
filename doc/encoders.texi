@@ -1684,6 +1684,17 @@ Enable interintra compound. Default is true.
 @item enable-smooth-interintra (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable smooth interintra mode. Default is true.
 
+@item aom-params
+Set libaom options using a list of @var{key}=@var{value} pairs separated
+by ":". For a list of supported options, see @command{aomenc --help} under the
+section "AV1 Specific Options".
+
+For example to specify libaom encoding options with @option{-aom-params}:
+
+@example
+ffmpeg -i input -c:v libaom-av1 -b:v 500K -aom-params tune=psnr:enable-tpl-model=1 output.mp4
+@end example
+
 @end table
 
 @section libsvtav1
