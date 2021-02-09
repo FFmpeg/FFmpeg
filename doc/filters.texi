@@ -9257,6 +9257,10 @@ Save Gnuplot script of the curves in specified file.
 To avoid some filtergraph syntax conflicts, each key points list need to be
 defined using the following syntax: @code{x0/y0 x1/y1 x2/y2 ...}.
 
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
+
 @subsection Examples
 
 @itemize

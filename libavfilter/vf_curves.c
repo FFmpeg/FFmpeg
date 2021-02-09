@@ -69,8 +69,10 @@ typedef struct CurvesContext {
     uint8_t rgba_map[4];
     int step;
     char *plot_filename;
+    int saved_plot;
     int is_16bit;
     int depth;
+    int parsed_psfile;
 
     int (*filter_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } CurvesContext;
@@ -80,20 +82,20 @@ typedef struct ThreadData {
 } ThreadData;
 
 #define OFFSET(x) offsetof(CurvesContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption curves_options[] = {
     { "preset", "select a color curves preset", OFFSET(preset), AV_OPT_TYPE_INT, {.i64=PRESET_NONE}, PRESET_NONE, NB_PRESETS-1, FLAGS, "preset_name" },
-        { "none",               NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_NONE},                 INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "color_negative",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_COLOR_NEGATIVE},       INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "cross_process",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_CROSS_PROCESS},        INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "darker",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_DARKER},               INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "increase_contrast",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_INCREASE_CONTRAST},    INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "lighter",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_LIGHTER},              INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "linear_contrast",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_LINEAR_CONTRAST},      INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "medium_contrast",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_MEDIUM_CONTRAST},      INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "negative",           NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_NEGATIVE},             INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "strong_contrast",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_STRONG_CONTRAST},      INT_MIN, INT_MAX, FLAGS, "preset_name" },
-        { "vintage",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_VINTAGE},              INT_MIN, INT_MAX, FLAGS, "preset_name" },
+        { "none",               NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_NONE},                 0, 0, FLAGS, "preset_name" },
+        { "color_negative",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_COLOR_NEGATIVE},       0, 0, FLAGS, "preset_name" },
+        { "cross_process",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_CROSS_PROCESS},        0, 0, FLAGS, "preset_name" },
+        { "darker",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_DARKER},               0, 0, FLAGS, "preset_name" },
+        { "increase_contrast",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_INCREASE_CONTRAST},    0, 0, FLAGS, "preset_name" },
+        { "lighter",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_LIGHTER},              0, 0, FLAGS, "preset_name" },
+        { "linear_contrast",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_LINEAR_CONTRAST},      0, 0, FLAGS, "preset_name" },
+        { "medium_contrast",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_MEDIUM_CONTRAST},      0, 0, FLAGS, "preset_name" },
+        { "negative",           NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_NEGATIVE},             0, 0, FLAGS, "preset_name" },
+        { "strong_contrast",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_STRONG_CONTRAST},      0, 0, FLAGS, "preset_name" },
+        { "vintage",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=PRESET_VINTAGE},              0, 0, FLAGS, "preset_name" },
     { "master","set master points coordinates",OFFSET(comp_points_str[NB_COMP]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "m",     "set master points coordinates",OFFSET(comp_points_str[NB_COMP]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "red",   "set red points coordinates",   OFFSET(comp_points_str[0]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
@@ -486,10 +488,11 @@ static av_cold int curves_init(AVFilterContext *ctx)
         }
     }
 
-    if (curves->psfile) {
+    if (curves->psfile && !curves->parsed_psfile) {
         ret = parse_psfile(ctx, curves->psfile);
         if (ret < 0)
             return ret;
+        curves->parsed_psfile = 1;
     }
 
     if (curves->preset != PRESET_NONE) {
@@ -504,6 +507,7 @@ static av_cold int curves_init(AVFilterContext *ctx)
         SET_COMP_IF_NOT_SET(1, g);
         SET_COMP_IF_NOT_SET(2, b);
         SET_COMP_IF_NOT_SET(3, master);
+        curves->preset = PRESET_NONE;
     }
 
     return 0;
@@ -664,7 +668,8 @@ static int config_input(AVFilterLink *inlink)
     curves->filter_slice = desc->flags & AV_PIX_FMT_FLAG_PLANAR ? filter_slice_planar : filter_slice_packed;
 
     for (i = 0; i < NB_COMP + 1; i++) {
-        curves->graph[i] = av_mallocz_array(curves->lut_size, sizeof(*curves->graph[0]));
+        if (!curves->graph[i])
+            curves->graph[i] = av_mallocz_array(curves->lut_size, sizeof(*curves->graph[0]));
         if (!curves->graph[i])
             return AVERROR(ENOMEM);
         ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i], curves->lut_size);
@@ -699,8 +704,10 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
-    if (curves->plot_filename)
+    if (curves->plot_filename && !curves->saved_plot) {
         dump_curves(curves->plot_filename, curves->graph, comp_points, curves->lut_size);
+        curves->saved_plot = 1;
+    }
 
     for (i = 0; i < NB_COMP + 1; i++) {
         struct keypoint *point = comp_points[i];
@@ -743,6 +750,42 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    CurvesContext *curves = ctx->priv;
+    int ret;
+
+    if (!strcmp(cmd, "plot")) {
+        curves->saved_plot = 0;
+    } else if (!strcmp(cmd, "all") || !strcmp(cmd, "preset") || !strcmp(cmd, "psfile")) {
+        if (!strcmp(cmd, "psfile"))
+            curves->parsed_psfile = 0;
+        av_freep(&curves->comp_points_str_all);
+        av_freep(&curves->comp_points_str[0]);
+        av_freep(&curves->comp_points_str[1]);
+        av_freep(&curves->comp_points_str[2]);
+        av_freep(&curves->comp_points_str[NB_COMP]);
+    } else if (!strcmp(cmd, "red") || !strcmp(cmd, "r")) {
+        av_freep(&curves->comp_points_str[0]);
+    } else if (!strcmp(cmd, "green") || !strcmp(cmd, "g")) {
+        av_freep(&curves->comp_points_str[1]);
+    } else if (!strcmp(cmd, "blue") || !strcmp(cmd, "b")) {
+        av_freep(&curves->comp_points_str[2]);
+    } else if (!strcmp(cmd, "master") || !strcmp(cmd, "m")) {
+        av_freep(&curves->comp_points_str[NB_COMP]);
+    }
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    ret = curves_init(ctx);
+    if (ret < 0)
+        return ret;
+    return config_input(ctx->inputs[0]);
+}
+
 static av_cold void curves_uninit(AVFilterContext *ctx)
 {
     int i;
@@ -781,4 +824,5 @@ AVFilter ff_vf_curves = {
     .outputs       = curves_outputs,
     .priv_class    = &curves_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
