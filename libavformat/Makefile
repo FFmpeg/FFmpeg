@@ -61,7 +61,6 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_vp9.o                \
                                             rtpdec_xiph.o
 OBJS-$(CONFIG_RTPENC_CHAIN)              += rtpenc_chain.o rtp.o
-OBJS-$(CONFIG_SHARED)                    += log2_tab.o golomb_tab.o
 OBJS-$(CONFIG_SRTP)                      += srtp.o
 
 # muxers/demuxers
@@ -679,6 +678,11 @@ OBJS-$(CONFIG_LIBSMBCLIENT_PROTOCOL)     += libsmbclient.o
 OBJS-$(CONFIG_LIBSRT_PROTOCOL)           += libsrt.o
 OBJS-$(CONFIG_LIBSSH_PROTOCOL)           += libssh.o
 OBJS-$(CONFIG_LIBZMQ_PROTOCOL)           += libzmq.o
+
+# Objects duplicated from other libraries for shared builds
+SHLIBOBJS                                += log2_tab.o
+SHLIBOBJS-$(CONFIG_MXF_MUXER)            += golomb_tab.o
+SHLIBOBJS-$(CONFIG_RTP_MUXER)            += golomb_tab.o
 
 # libavdevice dependencies
 OBJS-$(CONFIG_IEC61883_INDEV)            += dv.o

@@ -139,7 +139,6 @@ OBJS-$(CONFIG_QSVENC)                  += qsvenc.o
 OBJS-$(CONFIG_RANGECODER)              += rangecoder.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o
 OBJS-$(CONFIG_RV34DSP)                 += rv34dsp.o
-OBJS-$(CONFIG_SHARED)                  += log2_tab.o reverse.o
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o
 OBJS-$(CONFIG_SNAPPY)                  += snappy.o
 OBJS-$(CONFIG_STARTCODE)               += startcode.o
@@ -981,7 +980,10 @@ OBJS-$(CONFIG_VP9_VDPAU_HWACCEL)          += vdpau_vp9.o
 OBJS-$(CONFIG_VP9_VIDEOTOOLBOX_HWACCEL)   += videotoolbox_vp9.o
 OBJS-$(CONFIG_VP8_QSV_HWACCEL)            += qsvdec.o
 
-# libavformat dependencies
+# Objects duplicated from other libraries for shared builds
+SHLIBOBJS                              += log2_tab.o reverse.o
+
+# General libavformat dependencies
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o
 
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
@@ -996,6 +998,10 @@ OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o
+
+# libavformat dependencies for static builds
+STLIBOBJS-$(CONFIG_MXF_MUXER)          += golomb.o
+STLIBOBJS-$(CONFIG_RTP_MUXER)          += golomb.o
 
 # libavfilter dependencies
 OBJS-$(CONFIG_ELBG_FILTER)             += elbg.o
