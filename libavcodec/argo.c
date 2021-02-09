@@ -565,7 +565,7 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *frame)
     GetByteContext *gb = &s->gb;
     const int w = frame->width;
     const int h = frame->height;
-    const int l = frame->linesize[0] / 4;
+    const int l = frame->linesize[0];
     uint8_t *dst = frame->data[0];
     int pos = 0, y = 0;
 
