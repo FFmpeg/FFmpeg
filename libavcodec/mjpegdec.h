@@ -161,6 +161,8 @@ typedef struct MJpegDecodeContext {
     void *hwaccel_picture_private;
 } MJpegDecodeContext;
 
+int ff_mjpeg_build_vlc(VLC *vlc, const uint8_t *bits_table,
+                       const uint8_t *val_table, int is_ac, void *logctx);
 int ff_mjpeg_decode_init(AVCodecContext *avctx);
 int ff_mjpeg_decode_end(AVCodecContext *avctx);
 int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame);

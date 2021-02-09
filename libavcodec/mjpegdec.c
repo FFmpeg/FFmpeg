@@ -51,40 +51,6 @@
 #include "bytestream.h"
 
 
-static void build_huffman_codes(uint8_t *huff_size, const uint8_t *bits_table)
-{
-    for (int i = 1, k = 0; i <= 16; i++) {
-        int nb = bits_table[i];
-        for (int j = 0; j < nb;j++) {
-            huff_size[k] = i;
-            k++;
-        }
-    }
-}
-
-static int build_vlc(VLC *vlc, const uint8_t *bits_table,
-                     const uint8_t *val_table, int nb_codes,
-                     int is_ac, void *logctx)
-{
-    uint8_t huff_size[256];
-    uint16_t huff_sym[256];
-    int i;
-
-    av_assert0(nb_codes <= 256);
-
-    build_huffman_codes(huff_size, bits_table);
-
-    for (i = 0; i < nb_codes; i++) {
-        huff_sym[i] = val_table[i] + 16 * is_ac;
-
-        if (is_ac && !val_table[i])
-            huff_sym[i] = 16 * 256;
-    }
-
-    return ff_init_vlc_from_lengths(vlc, 9, nb_codes, huff_size, 1,
-                                    huff_sym, 2, 2, 0, 0, logctx);
-}
-
 static int init_default_huffman_tables(MJpegDecodeContext *s)
 {
     static const struct {
@@ -110,9 +76,9 @@ static int init_default_huffman_tables(MJpegDecodeContext *s)
     int i, ret;
 
     for (i = 0; i < FF_ARRAY_ELEMS(ht); i++) {
-        ret = build_vlc(&s->vlcs[ht[i].class][ht[i].index],
-                        ht[i].bits, ht[i].values, ht[i].length,
-                        ht[i].class == 1, s->avctx);
+        ret = ff_mjpeg_build_vlc(&s->vlcs[ht[i].class][ht[i].index],
+                                 ht[i].bits, ht[i].values,
+                                 ht[i].class == 1, s->avctx);
         if (ret < 0)
             return ret;
 
@@ -307,14 +273,14 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         ff_free_vlc(&s->vlcs[class][index]);
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
                class, index, n);
-        if ((ret = build_vlc(&s->vlcs[class][index], bits_table, val_table,
-                             n, class > 0, s->avctx)) < 0)
+        if ((ret = ff_mjpeg_build_vlc(&s->vlcs[class][index], bits_table,
+                                      val_table, class > 0, s->avctx)) < 0)
             return ret;
 
         if (class > 0) {
             ff_free_vlc(&s->vlcs[2][index]);
-            if ((ret = build_vlc(&s->vlcs[2][index], bits_table, val_table,
-                                 n, 0, s->avctx)) < 0)
+            if ((ret = ff_mjpeg_build_vlc(&s->vlcs[2][index], bits_table,
+                                          val_table, 0, s->avctx)) < 0)
                 return ret;
         }
 

@@ -342,7 +342,7 @@ OBJS-$(CONFIG_FMVC_DECODER)            += fmvc.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
 OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
-OBJS-$(CONFIG_G2M_DECODER)             += g2meet.o elsdec.o
+OBJS-$(CONFIG_G2M_DECODER)             += g2meet.o elsdec.o mjpegdec_common.o
 OBJS-$(CONFIG_G723_1_DECODER)          += g723_1dec.o g723_1.o \
                                           acelp_vectors.o celp_filters.o celp_math.o
 OBJS-$(CONFIG_G723_1_ENCODER)          += g723_1enc.o g723_1.o \
@@ -451,7 +451,7 @@ OBJS-$(CONFIG_METASOUND_DECODER)       += metasound.o metasound_data.o \
                                           twinvq.o
 OBJS-$(CONFIG_MICRODVD_DECODER)        += microdvddec.o ass.o
 OBJS-$(CONFIG_MIMIC_DECODER)           += mimic.o
-OBJS-$(CONFIG_MJPEG_DECODER)           += mjpegdec.o
+OBJS-$(CONFIG_MJPEG_DECODER)           += mjpegdec.o mjpegdec_common.o
 OBJS-$(CONFIG_MJPEG_QSV_DECODER)       += qsvdec.o
 OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpegenc.o mjpegenc_common.o \
                                           mjpegenc_huffman.o
