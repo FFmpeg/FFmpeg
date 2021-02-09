@@ -976,7 +976,6 @@ OBJS-$(CONFIG_VP8_QSV_HWACCEL)            += qsvdec.o
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o
 
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
-OBJS-$(CONFIG_CAF_DEMUXER)             += ac3tab.o
 OBJS-$(CONFIG_CODEC2_DEMUXER)          += codec2utils.o
 OBJS-$(CONFIG_CODEC2_MUXER)            += codec2utils.o
 OBJS-$(CONFIG_CODEC2RAW_DEMUXER)       += codec2utils.o
