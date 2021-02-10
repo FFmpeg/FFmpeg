@@ -60,7 +60,7 @@ OBJS = ac3_parser.o                                                     \
 # subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
-OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio.o
+OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio_sample_rates.o
 OBJS-$(CONFIG_AMF)                     += amfenc.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
 OBJS-$(CONFIG_ATSC_A53)                += atsc_a53.o
@@ -124,7 +124,7 @@ OBJS-$(CONFIG_MPEGAUDIODSP)            += mpegaudiodsp.o                \
                                           mpegaudiodsp_fixed.o          \
                                           mpegaudiodsp_float.o
 OBJS-$(CONFIG_MPEGAUDIOHEADER)         += mpegaudiodecheader.o mpegaudiodata.o
-OBJS-$(CONFIG_MPEG4AUDIO)              += mpeg4audio.o
+OBJS-$(CONFIG_MPEG4AUDIO)              += mpeg4audio.o mpeg4audio_sample_rates.o
 OBJS-$(CONFIG_MPEGVIDEO)               += mpegvideo.o mpegvideodsp.o rl.o \
                                           mpegvideo_motion.o mpegutils.o \
                                           mpegvideodata.o mpegpicture.o
@@ -173,7 +173,8 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacenc_tns.o \
                                           aacenc_ltp.o \
                                           aacenc_pred.o \
-                                          psymodel.o mpeg4audio.o kbdwin.o
+                                          psymodel.o kbdwin.o \
+                                          mpeg4audio_sample_rates.o
 OBJS-$(CONFIG_AAC_MF_ENCODER)          += mfenc.o mf_utils.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o \
@@ -992,17 +993,18 @@ SHLIBOBJS                              += log2_tab.o reverse.o
 OBJS-$(CONFIG_ISO_MEDIA)               += mpegaudiodata.o
 
 OBJS-$(CONFIG_FITS_DEMUXER)            += fits.o
-OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
-OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 
 # libavformat dependencies for static builds
+STLIBOBJS-$(CONFIG_FLV_MUXER)          += mpeg4audio_sample_rates.o
 STLIBOBJS-$(CONFIG_HLS_DEMUXER)        += ac3_channel_layout_tab.o
+STLIBOBJS-$(CONFIG_MATROSKA_DEMUXER)   += mpeg4audio_sample_rates.o
 STLIBOBJS-$(CONFIG_MOV_DEMUXER)        += ac3_channel_layout_tab.o
 STLIBOBJS-$(CONFIG_MXF_MUXER)          += golomb.o
 STLIBOBJS-$(CONFIG_RTPDEC)             += jpegtables.o
-STLIBOBJS-$(CONFIG_RTP_MUXER)          += golomb.o jpegtables.o
+STLIBOBJS-$(CONFIG_RTP_MUXER)          += golomb.o jpegtables.o \
+                                          mpeg4audio_sample_rates.o
 STLIBOBJS-$(CONFIG_SPDIF_MUXER)        += dca_sample_rate_tab.o
 
 # libavfilter dependencies

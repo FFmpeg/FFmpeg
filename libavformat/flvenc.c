@@ -24,6 +24,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
+#include "libavcodec/mpeg4audio.h"
 #include "avio_internal.h"
 #include "avio.h"
 #include "avc.h"
@@ -33,7 +34,6 @@
 #include "metadata.h"
 #include "libavutil/opt.h"
 #include "libavcodec/put_bits.h"
-#include "libavcodec/aacenctab.h"
 
 
 static const AVCodecTag flv_video_codec_ids[] = {
@@ -514,7 +514,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
                 for (samplerate_index = 0; samplerate_index < 16;
                         samplerate_index++)
                     if (flv->audio_par->sample_rate
-                            == mpeg4audio_sample_rates[samplerate_index])
+                            == ff_mpeg4audio_sample_rates[samplerate_index])
                         break;
 
                 init_put_bits(&pbc, data, sizeof(data));

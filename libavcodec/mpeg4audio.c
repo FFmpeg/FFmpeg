@@ -57,13 +57,6 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c, void *logctx
     return 0;
 }
 
-/* XXX: make sure to update the copies in the different encoders if you change
- * this table */
-const int avpriv_mpeg4audio_sample_rates[16] = {
-    96000, 88200, 64000, 48000, 44100, 32000,
-    24000, 22050, 16000, 12000, 11025, 8000, 7350
-};
-
 const uint8_t ff_mpeg4audio_channels[14] = {
     0,
     1, // mono (1/0)
@@ -93,7 +86,7 @@ static inline int get_sample_rate(GetBitContext *gb, int *index)
 {
     *index = get_bits(gb, 4);
     return *index == 0x0f ? get_bits(gb, 24) :
-        avpriv_mpeg4audio_sample_rates[*index];
+        ff_mpeg4audio_sample_rates[*index];
 }
 
 int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,

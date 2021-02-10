@@ -998,7 +998,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     /* Samplerate */
     for (i = 0; i < 16; i++)
-        if (avctx->sample_rate == avpriv_mpeg4audio_sample_rates[i])
+        if (avctx->sample_rate == ff_mpeg4audio_sample_rates[i])
             break;
     s->samplerate_index = i;
     ERROR_IF(s->samplerate_index == 16 ||
@@ -1143,7 +1143,7 @@ const AVCodec ff_aac_encoder = {
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
     .defaults       = aac_encode_defaults,
-    .supported_samplerates = mpeg4audio_sample_rates,
+    .supported_samplerates = ff_mpeg4audio_sample_rates,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
