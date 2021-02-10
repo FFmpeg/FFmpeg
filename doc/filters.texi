@@ -9358,6 +9358,10 @@ Set display number format. Can be @code{hex}, or @code{dec}. Default is @code{he
 Set pixel components to display. By default all pixel components are displayed.
 @end table
 
+@subsection Commands
+
+This filter supports same @ref{commands} as options excluding @code{size} option.
+
 @section dblur
 Apply Directional blur filter.
 
