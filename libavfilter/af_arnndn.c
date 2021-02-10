@@ -187,7 +187,7 @@ static void rnnoise_model_free(RNNModel *model)
 
 static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
 {
-    RNNModel *ret;
+    RNNModel *ret = NULL;
     DenseLayer *input_dense;
     GRULayer *vad_gru;
     GRULayer *noise_gru;
@@ -277,13 +277,24 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     } \
     } while (0)
 
+#define NEW_LINE() do { \
+    int c; \
+    while ((c = fgetc(f)) != EOF) { \
+        if (c == '\n') \
+        break; \
+    } \
+    } while (0)
+
 #define INPUT_DENSE(name) do { \
     INPUT_VAL(name->nb_inputs); \
     INPUT_VAL(name->nb_neurons); \
     ret->name ## _size = name->nb_neurons; \
     INPUT_ACTIVATION(name->activation); \
+    NEW_LINE(); \
     INPUT_ARRAY(name->input_weights, name->nb_inputs * name->nb_neurons); \
+    NEW_LINE(); \
     INPUT_ARRAY(name->bias, name->nb_neurons); \
+    NEW_LINE(); \
     } while (0)
 
 #define INPUT_GRU(name) do { \
@@ -291,9 +302,13 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     INPUT_VAL(name->nb_neurons); \
     ret->name ## _size = name->nb_neurons; \
     INPUT_ACTIVATION(name->activation); \
+    NEW_LINE(); \
     INPUT_ARRAY3(name->input_weights, name->nb_inputs, name->nb_neurons, 3); \
+    NEW_LINE(); \
     INPUT_ARRAY3(name->recurrent_weights, name->nb_neurons, name->nb_neurons, 3); \
+    NEW_LINE(); \
     INPUT_ARRAY(name->bias, name->nb_neurons * 3); \
+    NEW_LINE(); \
     } while (0)
 
     INPUT_DENSE(input_dense);
