@@ -62,8 +62,10 @@ retry:
     } else if (pnmctx.type < 4) {
         next = END_NOT_FOUND;
     } else {
-        next = pnmctx.bytestream - pnmctx.bytestream_start + skip
-               + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
+        int ret = av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
+        next = pnmctx.bytestream - pnmctx.bytestream_start + skip;
+        if (ret >= 0)
+            next += ret;
         if (pnmctx.bytestream_start != buf + skip)
             next -= pc->index;
         if (next > buf_size)
