@@ -104,7 +104,11 @@ static int lagfun_frame8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
                 float v = FFMAX(src[x], osrc[x] * decay);
 
                 osrc[x] = v;
-                dst[x] = lrintf(v);
+                if (ctx->is_disabled) {
+                    dst[x] = src[x];
+                } else {
+                    dst[x] = lrintf(v);
+                }
             }
 
             src += in->linesize[p];
@@ -143,7 +147,11 @@ static int lagfun_frame16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                 float v = FFMAX(src[x], osrc[x] * decay);
 
                 osrc[x] = v;
-                dst[x] = lrintf(v);
+                if (ctx->is_disabled) {
+                    dst[x] = src[x];
+                } else {
+                    dst[x] = lrintf(v);
+                }
             }
 
             src += in->linesize[p] / 2;
@@ -256,6 +264,6 @@ AVFilter ff_vf_lagfun = {
     .uninit        = uninit,
     .outputs       = outputs,
     .inputs        = inputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
