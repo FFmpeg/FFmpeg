@@ -30,16 +30,16 @@
 
 typedef struct LagfunContext {
     const AVClass *class;
-    const AVPixFmtDescriptor *desc;
     float decay;
     int planes;
 
     int depth;
     int nb_planes;
     int linesize[4];
-    int height[4];
+    int planewidth[4];
+    int planeheight[4];
 
-    AVFrame *old;
+    float *old[4];
 
     int (*lagfun)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } LagfunContext;
@@ -74,7 +74,7 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 typedef struct ThreadData {
-    AVFrame *in, *out, *old;
+    AVFrame *in, *out;
 } ThreadData;
 
 static int lagfun_frame8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -84,13 +84,12 @@ static int lagfun_frame8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    AVFrame *old = td->old;
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;
+        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
         const uint8_t *src = in->data[p] + slice_start * in->linesize[p];
-        const uint8_t *osrc = old->data[p] + slice_start * old->linesize[p];
+        float *osrc = s->old[p] + slice_start * s->planewidth[p];
         uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
 
         if (!((1 << p) & s->planes)) {
@@ -101,11 +100,15 @@ static int lagfun_frame8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         }
 
         for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->linesize[p]; x++)
-                dst[x] = FFMAX(src[x], osrc[x] * decay);
+            for (int x = 0; x < s->planewidth[p]; x++) {
+                float v = FFMAX(src[x], osrc[x] * decay);
+
+                osrc[x] = v;
+                dst[x] = lrintf(v);
+            }
 
             src += in->linesize[p];
-            osrc += old->linesize[p];
+            osrc += s->planewidth[p];
             dst += out->linesize[p];
         }
     }
@@ -120,13 +123,12 @@ static int lagfun_frame16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    AVFrame *old = td->old;
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;
+        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
         const uint16_t *src = (const uint16_t *)in->data[p] + slice_start * in->linesize[p] / 2;
-        const uint16_t *osrc = (const uint16_t *)old->data[p] + slice_start * old->linesize[p] / 2;
+        float *osrc = s->old[p] + slice_start * s->planewidth[p];
         uint16_t *dst = (uint16_t *)out->data[p] + slice_start * out->linesize[p] / 2;
 
         if (!((1 << p) & s->planes)) {
@@ -137,11 +139,15 @@ static int lagfun_frame16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         }
 
         for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->linesize[p] / 2; x++)
-                dst[x] = FFMAX(src[x], osrc[x] * decay);
+            for (int x = 0; x < s->planewidth[p]; x++) {
+                float v = FFMAX(src[x], osrc[x] * decay);
+
+                osrc[x] = v;
+                dst[x] = lrintf(v);
+            }
 
             src += in->linesize[p] / 2;
-            osrc += old->linesize[p] / 2;
+            osrc += s->planewidth[p];
             dst += out->linesize[p] / 2;
         }
     }
@@ -154,20 +160,29 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     LagfunContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    const AVPixFmtDescriptor *desc;
     int ret;
 
-    s->desc = av_pix_fmt_desc_get(outlink->format);
-    if (!s->desc)
+    desc = av_pix_fmt_desc_get(outlink->format);
+    if (!desc)
         return AVERROR_BUG;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
-    s->depth = s->desc->comp[0].depth;
+    s->depth = desc->comp[0].depth;
     s->lagfun = s->depth <= 8 ? lagfun_frame8 : lagfun_frame16;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
-    s->height[0] = s->height[3] = inlink->h;
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0]  = s->planewidth[3]  = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
+    for (int p = 0; p < s->nb_planes; p++) {
+        s->old[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof(*s->old[0]));
+        if (!s->old[p])
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -180,11 +195,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ThreadData td;
     AVFrame *out;
 
-    if (!s->old) {
-        s->old = av_frame_clone(in);
-        return ff_filter_frame(outlink, in);
-    }
-
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
@@ -194,12 +204,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.out = out;
     td.in = in;
-    td.old = s->old;
-    ctx->internal->execute(ctx, s->lagfun, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+    ctx->internal->execute(ctx, s->lagfun, &td, NULL, FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
-    av_frame_free(&s->old);
     av_frame_free(&in);
-    s->old = av_frame_clone(out);
     return ff_filter_frame(outlink, out);
 }
 
@@ -207,7 +214,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     LagfunContext *s = ctx->priv;
 
-    av_frame_free(&s->old);
+    for (int p = 0; p < s->nb_planes; p++)
+        av_freep(&s->old[p]);
 }
 
 #define OFFSET(x) offsetof(LagfunContext, x)
