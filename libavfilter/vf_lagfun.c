@@ -77,91 +77,55 @@ typedef struct ThreadData {
     AVFrame *in, *out;
 } ThreadData;
 
-static int lagfun_frame8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    LagfunContext *s = ctx->priv;
-    const float decay = s->decay;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-
-    for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
-        const uint8_t *src = in->data[p] + slice_start * in->linesize[p];
-        float *osrc = s->old[p] + slice_start * s->planewidth[p];
-        uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
-
-        if (!((1 << p) & s->planes)) {
-            av_image_copy_plane(dst, out->linesize[p],
-                                src, in->linesize[p],
-                                s->linesize[p], slice_end - slice_start);
-            continue;
-        }
-
-        for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->planewidth[p]; x++) {
-                float v = FFMAX(src[x], osrc[x] * decay);
-
-                osrc[x] = v;
-                if (ctx->is_disabled) {
-                    dst[x] = src[x];
-                } else {
-                    dst[x] = lrintf(v);
-                }
-            }
-
-            src += in->linesize[p];
-            osrc += s->planewidth[p];
-            dst += out->linesize[p];
-        }
-    }
-
-    return 0;
+#define LAGFUN(name, type)                                                \
+static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
+                              int jobnr, int nb_jobs)                     \
+{                                                                         \
+    LagfunContext *s = ctx->priv;                                         \
+    const float decay = s->decay;                                         \
+    ThreadData *td = arg;                                                 \
+    AVFrame *in = td->in;                                                 \
+    AVFrame *out = td->out;                                               \
+                                                                          \
+    for (int p = 0; p < s->nb_planes; p++) {                              \
+        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;    \
+        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;  \
+        const type *src = (const type *)in->data[p] +                     \
+                          slice_start * in->linesize[p] / sizeof(type);   \
+        float *osrc = s->old[p] + slice_start * s->planewidth[p];         \
+        type *dst = (type *)out->data[p] +                                \
+                    slice_start * out->linesize[p] / sizeof(type);        \
+                                                                          \
+        if (!((1 << p) & s->planes)) {                                    \
+            av_image_copy_plane((uint8_t *)dst, out->linesize[p],         \
+                                (const uint8_t *)src, in->linesize[p],    \
+                                s->linesize[p], slice_end - slice_start); \
+            continue;                                                     \
+        }                                                                 \
+                                                                          \
+        for (int y = slice_start; y < slice_end; y++) {                   \
+            for (int x = 0; x < s->planewidth[p]; x++) {                  \
+                float v = FFMAX(src[x], osrc[x] * decay);                 \
+                                                                          \
+                osrc[x] = v;                                              \
+                if (ctx->is_disabled) {                                   \
+                    dst[x] = src[x];                                      \
+                } else {                                                  \
+                    dst[x] = lrintf(v);                                   \
+                }                                                         \
+            }                                                             \
+                                                                          \
+            src += in->linesize[p] / sizeof(type);                        \
+            osrc += s->planewidth[p];                                     \
+            dst += out->linesize[p] / sizeof(type);                       \
+        }                                                                 \
+    }                                                                     \
+                                                                          \
+    return 0;                                                             \
 }
 
-static int lagfun_frame16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    LagfunContext *s = ctx->priv;
-    const float decay = s->decay;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-
-    for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
-        const uint16_t *src = (const uint16_t *)in->data[p] + slice_start * in->linesize[p] / 2;
-        float *osrc = s->old[p] + slice_start * s->planewidth[p];
-        uint16_t *dst = (uint16_t *)out->data[p] + slice_start * out->linesize[p] / 2;
-
-        if (!((1 << p) & s->planes)) {
-            av_image_copy_plane((uint8_t *)dst, out->linesize[p],
-                                (uint8_t *)src, in->linesize[p],
-                                s->linesize[p], slice_end - slice_start);
-            continue;
-        }
-
-        for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->planewidth[p]; x++) {
-                float v = FFMAX(src[x], osrc[x] * decay);
-
-                osrc[x] = v;
-                if (ctx->is_disabled) {
-                    dst[x] = src[x];
-                } else {
-                    dst[x] = lrintf(v);
-                }
-            }
-
-            src += in->linesize[p] / 2;
-            osrc += s->planewidth[p];
-            dst += out->linesize[p] / 2;
-        }
-    }
-
-    return 0;
-}
+LAGFUN(8, uint8_t)
+LAGFUN(16, uint16_t)
 
 static int config_output(AVFilterLink *outlink)
 {
