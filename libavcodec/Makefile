@@ -980,7 +980,6 @@ OBJS-$(CONFIG_CODEC2_MUXER)            += codec2utils.o
 OBJS-$(CONFIG_CODEC2RAW_DEMUXER)       += codec2utils.o
 OBJS-$(CONFIG_DNXHD_DEMUXER)           += dnxhddata.o
 OBJS-$(CONFIG_FITS_DEMUXER)            += fits.o
-OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
