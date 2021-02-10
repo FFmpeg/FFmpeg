@@ -20,13 +20,11 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mathematics.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
 #include "aiff.h"
-#include "isom.h"
 #include "id3v2.h"
 #include "mov_chan.h"
 #include "replaygain.h"
