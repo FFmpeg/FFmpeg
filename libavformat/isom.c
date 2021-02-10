@@ -418,45 +418,6 @@ static const MovChannelLayout mov_channel_layout[] = {
     { AV_CH_LAYOUT_4POINT0|AV_CH_LOW_FREQUENCY,  (137<<16) | 5}, // kCAFChannelLayoutTag_DVD_11
     { 0, 0},
 };
-#if 0
-int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
-{
-    AVCodecContext *codec= st->codec;
-    uint32_t layout_tag;
-    AVIOContext *pb = s->pb;
-    const MovChannelLayout *layouts = mov_channel_layout;
-
-    if (size < 12)
-        return AVERROR_INVALIDDATA;
-
-    layout_tag = avio_rb32(pb);
-    size -= 4;
-    if (layout_tag == 0) { // kCAFChannelLayoutTag_UseChannelDescriptions
-        // Channel descriptions not implemented
-        av_log_ask_for_sample(s, "Unimplemented container channel layout.\n");
-        avio_skip(pb, size);
-        return 0;
-    }
-    if (layout_tag == 0x10000) { // kCAFChannelLayoutTag_UseChannelBitmap
-        codec->channel_layout = avio_rb32(pb);
-        size -= 4;
-        avio_skip(pb, size);
-        return 0;
-    }
-    while (layouts->channel_layout) {
-        if (layout_tag == layouts->layout_tag) {
-            codec->channel_layout = layouts->channel_layout;
-            break;
-        }
-        layouts++;
-    }
-    if (!codec->channel_layout)
-        av_log(s, AV_LOG_WARNING, "Unknown container channel layout.\n");
-    avio_skip(pb, size);
-
-    return 0;
-}
-#endif
 
 void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout)
 {
