@@ -327,20 +327,20 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
 
         switch (t) {
         case 0:
-            lengths = avpriv_mjpeg_bits_dc_luminance + 1;
-            values  = avpriv_mjpeg_val_dc;
+            lengths = ff_mjpeg_bits_dc_luminance + 1;
+            values  = ff_mjpeg_val_dc;
             break;
         case 1:
-            lengths = avpriv_mjpeg_bits_ac_luminance + 1;
-            values  = avpriv_mjpeg_val_ac_luminance;
+            lengths = ff_mjpeg_bits_ac_luminance + 1;
+            values  = ff_mjpeg_val_ac_luminance;
             break;
         case 2:
-            lengths = avpriv_mjpeg_bits_dc_chrominance + 1;
-            values  = avpriv_mjpeg_val_dc;
+            lengths = ff_mjpeg_bits_dc_chrominance + 1;
+            values  = ff_mjpeg_val_dc;
             break;
         case 3:
-            lengths = avpriv_mjpeg_bits_ac_chrominance + 1;
-            values  = avpriv_mjpeg_val_ac_chrominance;
+            lengths = ff_mjpeg_bits_ac_chrominance + 1;
+            values  = ff_mjpeg_val_ac_chrominance;
             break;
         }
 

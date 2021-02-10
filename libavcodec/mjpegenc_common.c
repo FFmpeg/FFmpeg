@@ -121,15 +121,15 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         size += put_huffman_table(p, 1, 1, s->mjpeg_ctx->bits_ac_chrominance,
                                   s->mjpeg_ctx->val_ac_chrominance);
     } else {
-        size += put_huffman_table(p, 0, 0, avpriv_mjpeg_bits_dc_luminance,
-                                  avpriv_mjpeg_val_dc);
-        size += put_huffman_table(p, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
-                                  avpriv_mjpeg_val_dc);
+        size += put_huffman_table(p, 0, 0, ff_mjpeg_bits_dc_luminance,
+                                  ff_mjpeg_val_dc);
+        size += put_huffman_table(p, 0, 1, ff_mjpeg_bits_dc_chrominance,
+                                  ff_mjpeg_val_dc);
 
-        size += put_huffman_table(p, 1, 0, avpriv_mjpeg_bits_ac_luminance,
-                                  avpriv_mjpeg_val_ac_luminance);
-        size += put_huffman_table(p, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
-                                  avpriv_mjpeg_val_ac_chrominance);
+        size += put_huffman_table(p, 1, 0, ff_mjpeg_bits_ac_luminance,
+                                  ff_mjpeg_val_ac_luminance);
+        size += put_huffman_table(p, 1, 1, ff_mjpeg_bits_ac_chrominance,
+                                  ff_mjpeg_val_ac_chrominance);
     }
     AV_WB16(ptr, size);
 }

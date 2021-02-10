@@ -101,8 +101,8 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
                 switch (buf[i + 1]) {
                 case 0x00:
                     if (   dht_size >= 29
-                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_dc_luminance + 1, 16)
-                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_dc, 12)) {
+                        && !memcmp(buf + i +  2, ff_mjpeg_bits_dc_luminance + 1, 16)
+                        && !memcmp(buf + i + 18, ff_mjpeg_val_dc, 12)) {
                         default_huffman_tables |= 1;
                         i += 29;
                         dht_size -= 29;
@@ -113,8 +113,8 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
                     break;
                 case 0x01:
                     if (   dht_size >= 29
-                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_dc_chrominance + 1, 16)
-                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_dc, 12)) {
+                        && !memcmp(buf + i +  2, ff_mjpeg_bits_dc_chrominance + 1, 16)
+                        && !memcmp(buf + i + 18, ff_mjpeg_val_dc, 12)) {
                         default_huffman_tables |= 1 << 1;
                         i += 29;
                         dht_size -= 29;
@@ -125,8 +125,8 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
                     break;
                 case 0x10:
                     if (   dht_size >= 179
-                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_ac_luminance   + 1, 16)
-                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_ac_luminance, 162)) {
+                        && !memcmp(buf + i +  2, ff_mjpeg_bits_ac_luminance   + 1, 16)
+                        && !memcmp(buf + i + 18, ff_mjpeg_val_ac_luminance, 162)) {
                         default_huffman_tables |= 1 << 2;
                         i += 179;
                         dht_size -= 179;
@@ -137,8 +137,8 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
                     break;
                 case 0x11:
                     if (   dht_size >= 179
-                        && !memcmp(buf + i +  2, avpriv_mjpeg_bits_ac_chrominance + 1, 16)
-                        && !memcmp(buf + i + 18, avpriv_mjpeg_val_ac_chrominance, 162)) {
+                        && !memcmp(buf + i +  2, ff_mjpeg_bits_ac_chrominance + 1, 16)
+                        && !memcmp(buf + i + 18, ff_mjpeg_val_ac_chrominance, 162)) {
                         default_huffman_tables |= 1 << 3;
                         i += 179;
                         dht_size -= 179;

@@ -1,5 +1,8 @@
 /*
- * JPEG-related tables
+ * MJPEG tables
+ * Copyright (c) 2000, 2001 Fabrice Bellard
+ * Copyright (c) 2003 Alex Beregszaszi
+ * Copyright (c) 2003-2004 Michael Niedermayer
  *
  * This file is part of FFmpeg.
  *
@@ -18,20 +21,4 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_JPEGTABLES_H
-#define AVCODEC_JPEGTABLES_H
-
-#include <stdint.h>
-
-extern const uint8_t ff_mjpeg_bits_dc_luminance[];
-extern const uint8_t ff_mjpeg_val_dc[];
-
-extern const uint8_t ff_mjpeg_bits_dc_chrominance[];
-
-extern const uint8_t ff_mjpeg_bits_ac_luminance[];
-extern const uint8_t ff_mjpeg_val_ac_luminance[];
-
-extern const uint8_t ff_mjpeg_bits_ac_chrominance[];
-extern const uint8_t ff_mjpeg_val_ac_chrominance[];
-
-#endif /* AVCODEC_JPEGTABLES_H */
+#include "libavcodec/jpegtabs.h"

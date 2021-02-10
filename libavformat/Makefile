@@ -684,7 +684,8 @@ SHLIBOBJS                                += log2_tab.o
 SHLIBOBJS-$(CONFIG_HLS_DEMUXER)          += ac3_channel_layout_tab.o
 SHLIBOBJS-$(CONFIG_MOV_DEMUXER)          += ac3_channel_layout_tab.o
 SHLIBOBJS-$(CONFIG_MXF_MUXER)            += golomb_tab.o
-SHLIBOBJS-$(CONFIG_RTP_MUXER)            += golomb_tab.o
+SHLIBOBJS-$(CONFIG_RTPDEC)               += jpegtables.o
+SHLIBOBJS-$(CONFIG_RTP_MUXER)            += golomb_tab.o jpegtables.o
 SHLIBOBJS-$(CONFIG_SPDIF_MUXER)          += dca_sample_rate_tab.o
 
 # libavdevice dependencies
