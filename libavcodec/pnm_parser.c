@@ -65,8 +65,10 @@ retry:
 #endif
         next = END_NOT_FOUND;
     } else {
-        next = pnmctx.bytestream - pnmctx.bytestream_start
-               + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+        int ret = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+        next = pnmctx.bytestream - pnmctx.bytestream_start;
+        if (ret >= 0)
+            next += ret;
         if (pnmctx.bytestream_start != buf)
             next -= pc->index;
         if (next > buf_size)
