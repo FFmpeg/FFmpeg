@@ -30,7 +30,7 @@
  * @param[in] c        MPEG4AudioConfig structure to fill
  * @return on success 0 is returned, otherwise a value < 0
  */
-static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
+static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c, void *logctx)
 {
     if (get_bits_left(gb) < 112)
         return AVERROR_INVALIDDATA;
@@ -43,7 +43,7 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
     c->sample_rate = get_bits_long(gb, 32);
 
     if (c->sample_rate <= 0) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid sample rate %d\n", c->sample_rate);
+        av_log(logctx, AV_LOG_ERROR, "Invalid sample rate %d\n", c->sample_rate);
         return AVERROR_INVALIDDATA;
     }
 
@@ -136,7 +136,7 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
 
         specific_config_bitindex = get_bits_count(gb);
 
-        ret = parse_config_ALS(gb, c);
+        ret = parse_config_ALS(gb, c, logctx);
         if (ret < 0)
             return ret;
     }
