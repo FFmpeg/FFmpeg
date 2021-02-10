@@ -106,22 +106,25 @@ typedef void FFTComplex;
 
 /* Used by asm, reorder with care */
 struct AVTXContext {
-    int n;              /* Nptwo part */
-    int m;              /* Ptwo part */
-    int inv;            /* Is inverted */
+    int n;              /* Non-power-of-two part */
+    int m;              /* Power-of-two part */
+    int inv;            /* Is inverse */
     int type;           /* Type */
+    uint64_t flags;     /* Flags */
     double scale;       /* Scale */
 
     FFTComplex *exptab; /* MDCT exptab */
     FFTComplex *tmp;    /* Temporary buffer needed for all compound transforms */
     int        *pfatab; /* Input/Output mapping for compound transforms */
     int        *revtab; /* Input mapping for power of two transforms */
+    int   *inplace_idx; /* Required indices to revtab for in-place transforms */
 };
 
 /* Shared functions */
 int ff_tx_type_is_mdct(enum AVTXType type);
 int ff_tx_gen_compound_mapping(AVTXContext *s);
 int ff_tx_gen_ptwo_revtab(AVTXContext *s);
+int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
 
 /* Also used by SIMD init */
 static inline int split_radix_permutation(int i, int n, int inverse)

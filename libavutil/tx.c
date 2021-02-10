@@ -107,6 +107,42 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s)
     return 0;
 }
 
+int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
+{
+    int nb_inplace_idx = 0;
+
+    if (!(s->inplace_idx = av_malloc(s->m*sizeof(*s->inplace_idx))))
+        return AVERROR(ENOMEM);
+
+    for (int d = 1; d < s->m; d++) {
+        int src = d;
+        int dst = s->revtab[src];
+
+        if (dst <= src)
+            continue;
+
+        int found = 0;
+        int start_src = src;
+        do {
+            src = dst;
+            for (int j = 0; j < nb_inplace_idx; j++) {
+                if (dst == s->inplace_idx[j]) {
+                    found = 1;
+                    break;
+                }
+            }
+            dst = s->revtab[dst];
+        } while (dst != start_src && !found);
+
+        if (!found)
+            s->inplace_idx[nb_inplace_idx++] = start_src;
+    }
+
+    s->inplace_idx[nb_inplace_idx++] = 0;
+
+    return 0;
+}
+
 av_cold void av_tx_uninit(AVTXContext **ctx)
 {
     if (!(*ctx))
@@ -115,6 +151,7 @@ av_cold void av_tx_uninit(AVTXContext **ctx)
     av_free((*ctx)->pfatab);
     av_free((*ctx)->exptab);
     av_free((*ctx)->revtab);
+    av_free((*ctx)->inplace_idx);
     av_free((*ctx)->tmp);
 
     av_freep(ctx);

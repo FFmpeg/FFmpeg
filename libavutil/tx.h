@@ -99,6 +99,18 @@ enum AVTXType {
 typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
 
 /**
+ * Flags for av_tx_init()
+ */
+enum AVTXFlags {
+    /**
+     * Performs an in-place transformation on the input. The output parameter
+     * to av_tn_fn() will be ignored. May be unsupported or slower for some
+     * transform types.
+     */
+    AV_TX_INPLACE = 1ULL << 0,
+};
+
+/**
  * Initialize a transform context with the given configuration
  * (i)MDCTs with an odd length are currently not supported.
  *
@@ -108,7 +120,7 @@ typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
  * @param inv whether to do an inverse or a forward transform
  * @param len the size of the transform in samples
  * @param scale pointer to the value to scale the output if supported by type
- * @param flags currently unused
+ * @param flags a bitmask of AVTXFlags or 0
  *
  * @return 0 on success, negative error code on failure
  */

@@ -392,8 +392,28 @@ static void monolithic_fft(AVTXContext *s, void *_out, void *_in,
     FFTComplex *in = _in;
     FFTComplex *out = _out;
     int m = s->m, mb = av_log2(m);
-    for (int i = 0; i < m; i++)
-        out[s->revtab[i]] = in[i];
+
+    if (s->flags & AV_TX_INPLACE) {
+        FFTComplex tmp;
+        int src, dst, *inplace_idx = s->inplace_idx;
+
+        out = in;
+        src = *inplace_idx++;
+
+        do {
+            tmp = out[src];
+            dst = s->revtab[src];
+            do {
+                FFSWAP(FFTComplex, tmp, out[dst]);
+                dst = s->revtab[dst];
+            } while (dst != src); /* Can be > as well, but is less predictable */
+            out[dst] = tmp;
+        } while ((src = *inplace_idx++));
+    } else {
+        for (int i = 0; i < m; i++)
+            out[s->revtab[i]] = in[i];
+    }
+
     fft_dispatch[mb](out);
 }
 
@@ -678,12 +698,15 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     s->m = m;
     s->inv = inv;
     s->type = type;
+    s->flags = flags;
 
     /* If we weren't able to split the length into factors we can handle,
      * resort to using the naive and slow FT. This also filters out
      * direct 3, 5 and 15 transforms as they're too niche. */
     if (len > 1 || m == 1) {
         if (is_mdct && (l & 1)) /* Odd (i)MDCTs are not supported yet */
+            return AVERROR(ENOSYS);
+        if (flags & AV_TX_INPLACE) /* Neither are in-place naive transforms */
             return AVERROR(ENOSYS);
         s->n = l;
         s->m = 1;
@@ -716,7 +739,14 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     if (n != 1)
         init_cos_tabs(0);
     if (m != 1) {
-        ff_tx_gen_ptwo_revtab(s);
+        if ((err = ff_tx_gen_ptwo_revtab(s)))
+            return err;
+        if (flags & AV_TX_INPLACE) {
+            if (is_mdct) /* In-place MDCTs are not supported yet */
+                return AVERROR(ENOSYS);
+            if ((err = ff_tx_gen_ptwo_inplace_revtab_idx(s)))
+                return err;
+        }
         for (int i = 4; i <= av_log2(m); i++)
             init_cos_tabs(i);
     }
