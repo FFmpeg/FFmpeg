@@ -218,7 +218,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
 
     ret = pa_stream_connect_record(pd->stream, device, &attr,
                                     PA_STREAM_INTERPOLATE_TIMING
-                                    |PA_STREAM_ADJUST_LATENCY
+                                    | (pd->fragment_size == -1 ? PA_STREAM_ADJUST_LATENCY : 0)
                                     |PA_STREAM_AUTO_TIMING_UPDATE);
 
     if (ret < 0) {
