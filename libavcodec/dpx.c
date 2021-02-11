@@ -497,6 +497,14 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     switch (1000 * descriptor + 10 * bits_per_color + endian) {
+    case 1081:
+    case 1080:
+    case 2081:
+    case 2080:
+    case 3081:
+    case 3080:
+    case 4081:
+    case 4080:
     case 6081:
     case 6080:
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
