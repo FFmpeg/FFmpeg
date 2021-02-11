@@ -125,8 +125,8 @@ static const char *read_ts(JACOsubContext *jacosub, const char *buf,
     return NULL;
 
 shift_and_ret:
-    ts_start64  = (ts_start + jacosub->shift) * 100LL / jacosub->timeres;
-    ts_end64    = (ts_end   + jacosub->shift) * 100LL / jacosub->timeres;
+    ts_start64  = (ts_start + (int64_t)jacosub->shift) * 100LL / jacosub->timeres;
+    ts_end64    = (ts_end   + (int64_t)jacosub->shift) * 100LL / jacosub->timeres;
     *start    = ts_start64;
     *duration = ts_end64 - ts_start64;
     return buf + len;
