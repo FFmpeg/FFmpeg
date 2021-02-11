@@ -88,7 +88,7 @@ typedef struct Curve {
 } Curve;
 
 typedef struct Fill {
-    float fill[3];
+    float fill[4];
 } Fill;
 
 typedef struct Range {
@@ -108,10 +108,10 @@ static const Range spec2_range[] = {{0, 16}, {16, 22}, {22, 226}, {226, 236}, {2
 static const Range shadows_range[] = {{0, 32}, {32, 256}};
 static const Range highlights_range[] = {{0, 214}, {214, 224}, {224, 256}};
 
-static const Fill spec1_fills[] = {{0.5f, 0.f, .5f}, {-1.f, -1.f, -1.f}, {1.f, 0.f, 0.f}};
-static const Fill spec2_fills[] = {{0.5f, 0.f, .5f}, {0.f, 1.f, 1.f}, {-1.f, -1.f, -1.f}, {1.f, 1.f, 0.f}, {1.f, 0.f, 0.f}};
-static const Fill shadows_fills[] = {{0.8f, 0.4f, .8f}, {-1.f, -1.f, -1.f}};
-static const Fill highlights_fills[] = {{-1.f, -1.f, -1.f}, {1.f, 0.3f, 0.6f}, {1.f, 0.2f, .5f}};
+static const Fill spec1_fills[] = {{0.5f, 0.f, .5f, 1.f}, {-1.f, -1.f, -1.f, 1.f}, {1.f, 0.f, 0.f, 1.f}};
+static const Fill spec2_fills[] = {{0.5f, 0.f, .5f, 1.f}, {0.f, 1.f, 1.f, 1.f}, {-1.f, -1.f, -1.f, 1.f}, {1.f, 1.f, 0.f, 1.f}, {1.f, 0.f, 0.f, 1.f}};
+static const Fill shadows_fills[] = {{0.8f, 0.4f, .8f, 1.f}, {-1.f, -1.f, -1.f, 1.f}};
+static const Fill highlights_fills[] = {{-1.f, -1.f, -1.f, 1.f}, {1.f, 0.3f, 0.6f, 1.f}, {1.f, 0.2f, .5f, 1.f}};
 
 static const Curve curves[] =
 {
@@ -627,11 +627,12 @@ static int config_input(AVFilterLink *inlink)
                     const Fill fill = presets[s->preset].fills[seg];
 
                     for (int j = 0; j < factor; j++) {
-                        double r, g, b;
+                        double r, g, b, a;
 
                         g = fill.fill[1];
                         b = fill.fill[2];
                         r = fill.fill[0];
+                        a = fill.fill[3];
 
                         if (g >= 0.f && b >= 0.f && r >= 0.f) {
                             g *= s->max;
@@ -652,6 +653,7 @@ static int config_input(AVFilterLink *inlink)
                         s->lut[0][i*factor+j] = g;
                         s->lut[1][i*factor+j] = b;
                         s->lut[2][i*factor+j] = r;
+                        s->lut[3][i*factor+j] = a * s->max;
                     }
                 } else {
                     const Curve curve = presets[s->preset].curves[seg];
@@ -677,6 +679,7 @@ static int config_input(AVFilterLink *inlink)
                         s->lut[0][i*factor+j] = g;
                         s->lut[1][i*factor+j] = b;
                         s->lut[2][i*factor+j] = r;
+                        s->lut[3][i*factor+j] = 1.f * s->max;
                     }
                 }
             }
