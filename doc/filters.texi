@@ -656,44 +656,44 @@ Samples detected as impulsive noise are replaced by interpolated samples using
 autoregressive modelling.
 
 @table @option
-@item w
+@item window, w
 Set window size, in milliseconds. Allowed range is from @code{10} to
 @code{100}. Default value is @code{55} milliseconds.
 This sets size of window which will be processed at once.
 
-@item o
+@item overlap, o
 Set window overlap, in percentage of window size. Allowed range is from
 @code{50} to @code{95}. Default value is @code{75} percent.
 Setting this to a very high value increases impulsive noise removal but makes
 whole process much slower.
 
-@item a
+@item arorder, a
 Set autoregression order, in percentage of window size. Allowed range is from
 @code{0} to @code{25}. Default value is @code{2} percent. This option also
 controls quality of interpolated samples using neighbour good samples.
 
-@item t
+@item threshold, t
 Set threshold value. Allowed range is from @code{1} to @code{100}.
 Default value is @code{2}.
 This controls the strength of impulsive noise which is going to be removed.
 The lower value, the more samples will be detected as impulsive noise.
 
-@item b
+@item burst, b
 Set burst fusion, in percentage of window size. Allowed range is @code{0} to
 @code{10}. Default value is @code{2}.
 If any two samples detected as noise are spaced less than this value then any
 sample between those two samples will be also detected as noise.
 
-@item m
+@item method, m
 Set overlap method.
 
 It accepts the following values:
 @table @option
-@item a
+@item add, a
 Select overlap-add method. Even not interpolated samples are slightly
 changed with this method.
 
-@item s
+@item save, s
 Select overlap-save method. Not interpolated samples remain unchanged.
 @end table
 
@@ -707,38 +707,38 @@ Samples detected as clipped are replaced by interpolated samples using
 autoregressive modelling.
 
 @table @option
-@item w
+@item window, w
 Set window size, in milliseconds. Allowed range is from @code{10} to @code{100}.
 Default value is @code{55} milliseconds.
 This sets size of window which will be processed at once.
 
-@item o
+@item overlap, o
 Set window overlap, in percentage of window size. Allowed range is from @code{50}
 to @code{95}. Default value is @code{75} percent.
 
-@item a
+@item arorder, a
 Set autoregression order, in percentage of window size. Allowed range is from
 @code{0} to @code{25}. Default value is @code{8} percent. This option also controls
 quality of interpolated samples using neighbour good samples.
 
-@item t
+@item threshold, t
 Set threshold value. Allowed range is from @code{1} to @code{100}.
 Default value is @code{10}. Higher values make clip detection less aggressive.
 
-@item n
+@item hsize, n
 Set size of histogram used to detect clips. Allowed range is from @code{100} to @code{9999}.
 Default value is @code{1000}. Higher values make clip detection less aggressive.
 
-@item m
+@item method, m
 Set overlap method.
 
 It accepts the following values:
 @table @option
-@item a
+@item add, a
 Select overlap-add method. Even not interpolated samples are slightly changed
 with this method.
 
-@item s
+@item save, s
 Select overlap-save method. Not interpolated samples remain unchanged.
 @end table
 

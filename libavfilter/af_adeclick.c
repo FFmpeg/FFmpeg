@@ -92,13 +92,21 @@ typedef struct AudioDeclickContext {
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption adeclick_options[] = {
+    { "window", "set window size",     OFFSET(w),         AV_OPT_TYPE_DOUBLE, {.dbl=55}, 10,  100, AF },
     { "w", "set window size",          OFFSET(w),         AV_OPT_TYPE_DOUBLE, {.dbl=55}, 10,  100, AF },
+    { "overlap", "set window overlap", OFFSET(overlap),   AV_OPT_TYPE_DOUBLE, {.dbl=75}, 50,   95, AF },
     { "o", "set window overlap",       OFFSET(overlap),   AV_OPT_TYPE_DOUBLE, {.dbl=75}, 50,   95, AF },
+    { "arorder", "set autoregression order", OFFSET(ar),  AV_OPT_TYPE_DOUBLE, {.dbl=2},   0,   25, AF },
     { "a", "set autoregression order", OFFSET(ar),        AV_OPT_TYPE_DOUBLE, {.dbl=2},   0,   25, AF },
+    { "threshold", "set threshold",    OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=2},   1,  100, AF },
     { "t", "set threshold",            OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=2},   1,  100, AF },
+    { "burst", "set burst fusion",     OFFSET(burst),     AV_OPT_TYPE_DOUBLE, {.dbl=2},   0,   10, AF },
     { "b", "set burst fusion",         OFFSET(burst),     AV_OPT_TYPE_DOUBLE, {.dbl=2},   0,   10, AF },
+    { "method", "set overlap method",  OFFSET(method),    AV_OPT_TYPE_INT,    {.i64=0},   0,    1, AF, "m" },
     { "m", "set overlap method",       OFFSET(method),    AV_OPT_TYPE_INT,    {.i64=0},   0,    1, AF, "m" },
+    { "add", "overlap-add",            0,                 AV_OPT_TYPE_CONST,  {.i64=0},   0,    0, AF, "m" },
     { "a", "overlap-add",              0,                 AV_OPT_TYPE_CONST,  {.i64=0},   0,    0, AF, "m" },
+    { "save", "overlap-save",          0,                 AV_OPT_TYPE_CONST,  {.i64=1},   0,    0, AF, "m" },
     { "s", "overlap-save",             0,                 AV_OPT_TYPE_CONST,  {.i64=1},   0,    0, AF, "m" },
     { NULL }
 };
@@ -769,14 +777,22 @@ AVFilter ff_af_adeclick = {
 };
 
 static const AVOption adeclip_options[] = {
-    { "w", "set window size",          OFFSET(w),              AV_OPT_TYPE_DOUBLE, {.dbl=55},     10,  100, AF },
-    { "o", "set window overlap",       OFFSET(overlap),        AV_OPT_TYPE_DOUBLE, {.dbl=75},     50,   95, AF },
-    { "a", "set autoregression order", OFFSET(ar),             AV_OPT_TYPE_DOUBLE, {.dbl=8},       0,   25, AF },
-    { "t", "set threshold",            OFFSET(threshold),      AV_OPT_TYPE_DOUBLE, {.dbl=10},      1,  100, AF },
-    { "n", "set histogram size",       OFFSET(nb_hbins),       AV_OPT_TYPE_INT,    {.i64=1000},  100, 9999, AF },
-    { "m", "set overlap method",       OFFSET(method),         AV_OPT_TYPE_INT,    {.i64=0},       0,    1, AF, "m" },
-    { "a", "overlap-add",              0,                      AV_OPT_TYPE_CONST,  {.i64=0},       0,    0, AF, "m" },
-    { "s", "overlap-save",             0,                      AV_OPT_TYPE_CONST,  {.i64=1},       0,    0, AF, "m" },
+    { "window", "set window size",     OFFSET(w),         AV_OPT_TYPE_DOUBLE, {.dbl=55},     10,  100, AF },
+    { "w", "set window size",          OFFSET(w),         AV_OPT_TYPE_DOUBLE, {.dbl=55},     10,  100, AF },
+    { "overlap", "set window overlap", OFFSET(overlap),   AV_OPT_TYPE_DOUBLE, {.dbl=75},     50,   95, AF },
+    { "o", "set window overlap",       OFFSET(overlap),   AV_OPT_TYPE_DOUBLE, {.dbl=75},     50,   95, AF },
+    { "arorder", "set autoregression order", OFFSET(ar),  AV_OPT_TYPE_DOUBLE, {.dbl=8},       0,   25, AF },
+    { "a", "set autoregression order", OFFSET(ar),        AV_OPT_TYPE_DOUBLE, {.dbl=8},       0,   25, AF },
+    { "threshold", "set threshold",    OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=10},      1,  100, AF },
+    { "t", "set threshold",            OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=10},      1,  100, AF },
+    { "hsize", "set histogram size",   OFFSET(nb_hbins),  AV_OPT_TYPE_INT,    {.i64=1000},  100, 9999, AF },
+    { "n", "set histogram size",       OFFSET(nb_hbins),  AV_OPT_TYPE_INT,    {.i64=1000},  100, 9999, AF },
+    { "method", "set overlap method",  OFFSET(method),    AV_OPT_TYPE_INT,    {.i64=0},       0,    1, AF, "m" },
+    { "m", "set overlap method",       OFFSET(method),    AV_OPT_TYPE_INT,    {.i64=0},       0,    1, AF, "m" },
+    { "add", "overlap-add",            0,                 AV_OPT_TYPE_CONST,  {.i64=0},       0,    0, AF, "m" },
+    { "a", "overlap-add",              0,                 AV_OPT_TYPE_CONST,  {.i64=0},       0,    0, AF, "m" },
+    { "save", "overlap-save",          0,                 AV_OPT_TYPE_CONST,  {.i64=1},       0,    0, AF, "m" },
+    { "s", "overlap-save",             0,                 AV_OPT_TYPE_CONST,  {.i64=1},       0,    0, AF, "m" },
     { NULL }
 };
 
