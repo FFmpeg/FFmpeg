@@ -297,6 +297,30 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         break;
+    case AV_PIX_FMT_GRAYF32:
+        if (avctx->width * avctx->height * 4 > s->bytestream_end - s->bytestream)
+            return AVERROR_INVALIDDATA;
+        scale = 1.f / s->scale;
+        if (s->endian) {
+            float *g = (float *)p->data[0];
+            for (int i = 0; i < avctx->height; i++) {
+                for (int j = 0; j < avctx->width; j++) {
+                    g[j] = av_int2float(AV_RL32(s->bytestream)) * scale;
+                    s->bytestream += 4;
+                }
+                g += p->linesize[0] / 4;
+            }
+        } else {
+            float *g = (float *)p->data[0];
+            for (int i = 0; i < avctx->height; i++) {
+                for (int j = 0; j < avctx->width; j++) {
+                    g[j] = av_int2float(AV_RB32(s->bytestream)) * scale;
+                    s->bytestream += 4;
+                }
+                g += p->linesize[0] / 4;
+            }
+        }
+        break;
     }
     *got_frame = 1;
 
