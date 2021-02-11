@@ -16465,6 +16465,8 @@ Available LUTs:
 @item cividis
 @item range1
 @item range2
+@item shadows
+@item highlights
 @end table
 
 @item opacity

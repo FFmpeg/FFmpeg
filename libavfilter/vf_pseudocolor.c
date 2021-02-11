@@ -78,6 +78,8 @@ enum Presets {
     PRESET_CIVIDIS,
     PRESET_RANGE1,
     PRESET_RANGE2,
+    PRESET_SHADOWS,
+    PRESET_HIGHLIGHTS,
     NB_PRESETS,
 };
 
@@ -103,9 +105,13 @@ typedef struct Preset {
 static const Range full_range   = {0, 256};
 static const Range spec1_range[] = {{0, 16}, {16, 236}, {236, 256}};
 static const Range spec2_range[] = {{0, 16}, {16, 22}, {22, 226}, {226, 236}, {236, 256}};
+static const Range shadows_range[] = {{0, 32}, {32, 256}};
+static const Range highlights_range[] = {{0, 214}, {214, 224}, {224, 256}};
 
 static const Fill spec1_fills[] = {{0.5f, 0.f, .5f}, {-1.f, -1.f, -1.f}, {1.f, 0.f, 0.f}};
 static const Fill spec2_fills[] = {{0.5f, 0.f, .5f}, {0.f, 1.f, 1.f}, {-1.f, -1.f, -1.f}, {1.f, 1.f, 0.f}, {1.f, 0.f, 0.f}};
+static const Fill shadows_fills[] = {{0.8f, 0.4f, .8f}, {-1.f, -1.f, -1.f}};
+static const Fill highlights_fills[] = {{-1.f, -1.f, -1.f}, {1.f, 0.3f, 0.6f}, {1.f, 0.2f, .5f}};
 
 static const Curve curves[] =
 {
@@ -151,6 +157,8 @@ static const Preset presets[] =
     [PRESET_CIVIDIS] = { 1, &full_range, &curves[CIVIDIS], NULL },
     [PRESET_RANGE1]  = { 3, spec1_range, NULL,             spec1_fills },
     [PRESET_RANGE2]  = { 5, spec2_range, NULL,             spec2_fills },
+    [PRESET_SHADOWS] = { 2, shadows_range, NULL,           shadows_fills },
+    [PRESET_HIGHLIGHTS] = { 3, highlights_range, NULL,     highlights_fills },
 };
 
 typedef struct PseudoColorContext {
@@ -199,6 +207,8 @@ static const AVOption pseudocolor_options[] = {
     { "cividis",    NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_CIVIDIS}, .flags = FLAGS, "preset" },
     { "range1",     NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_RANGE1},  .flags = FLAGS, "preset" },
     { "range2",     NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_RANGE2},  .flags = FLAGS, "preset" },
+    { "shadows",    NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SHADOWS}, .flags = FLAGS, "preset" },
+    { "highlights", NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_HIGHLIGHTS},.flags=FLAGS, "preset" },
     { "opacity", "set pseudocolor opacity",OFFSET(opacity),          AV_OPT_TYPE_FLOAT,  {.dbl=1}, 0, 1, .flags = FLAGS },
     { NULL }
 };
