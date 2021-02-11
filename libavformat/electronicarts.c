@@ -728,6 +728,7 @@ get_video_packet:
                 ret = av_get_packet(pb, pkt, chunk_size);
             if (ret < 0) {
                 packet_read = 1;
+                partial_packet = 0;
                 break;
             }
             partial_packet = chunk_type == MVIh_TAG;
