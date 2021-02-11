@@ -515,6 +515,9 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps,
             s->sao_pixel_buffer_v[c_idx] =
                 av_malloc((h * 2 * sps->ctb_width) <<
                           sps->pixel_shift);
+            if (!s->sao_pixel_buffer_h[c_idx] ||
+                !s->sao_pixel_buffer_v[c_idx])
+                goto fail;
         }
     }
 
@@ -525,6 +528,10 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps,
 
 fail:
     pic_arrays_free(s);
+    for (i = 0; i < 3; i++) {
+        av_freep(&s->sao_pixel_buffer_h[i]);
+        av_freep(&s->sao_pixel_buffer_v[i]);
+    }
     s->ps.sps = NULL;
     return ret;
 }
@@ -2624,13 +2631,19 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 
-    if (!s->sList[1]) {
-        for (i = 1; i < s->threads_number; i++) {
-            s->sList[i] = av_malloc(sizeof(HEVCContext));
-            memcpy(s->sList[i], s, sizeof(HEVCContext));
-            s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
-            s->sList[i]->HEVClc = s->HEVClcList[i];
+    for (i = 1; i < s->threads_number; i++) {
+        if (s->sList[i] && s->HEVClcList[i])
+            continue;
+        av_freep(&s->sList[i]);
+        av_freep(&s->HEVClcList[i]);
+        s->sList[i] = av_malloc(sizeof(HEVCContext));
+        s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
+        if (!s->sList[i] || !s->HEVClcList[i]) {
+            res = AVERROR_INVALIDDATA;
+            goto error;
         }
+        memcpy(s->sList[i], s, sizeof(HEVCContext));
+        s->sList[i]->HEVClc = s->HEVClcList[i];
     }
 
     offset = (lc->gb.index >> 3);
