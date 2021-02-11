@@ -16449,10 +16449,10 @@ set pixel third component expression
 @item c3
 set pixel fourth component expression, corresponds to the alpha component
 
-@item i
+@item index, i
 set component to use as base for altering colors
 
-@item p
+@item preset, p
 Pick one of built-in LUTs. By default is set to none.
 
 Available LUTs:
@@ -16467,10 +16467,13 @@ Available LUTs:
 @item range2
 @end table
 
+@item opacity
+Set opacity of output colors. Allowed range is from 0 to 1.
+Default value is set to 1.
 @end table
 
-Each of them specifies the expression to use for computing the lookup table for
-the corresponding pixel component values.
+Each of the expression options specifies the expression to use for computing
+the lookup table for the corresponding pixel component values.
 
 The expressions can contain the following constants and functions:
 
