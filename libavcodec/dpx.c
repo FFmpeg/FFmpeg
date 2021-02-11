@@ -159,8 +159,8 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *const p = data;
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
     uint32_t header_version, version = 0;
-    char creator[101];
-    char input_device[33];
+    char creator[101] = { 0 };
+    char input_device[33] = { 0 };
 
     unsigned int offset;
     int magic_num, endian;
@@ -327,6 +327,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     switch (descriptor) {
+    case 1:  // R
+    case 2:  // G
+    case 3:  // B
+    case 4:  // A
     case 6:  // Y
         elements = 1;
         yuv = 1;
@@ -385,8 +389,10 @@ static int decode_frame(AVCodecContext *avctx,
     case 16:
         stride = 2 * avctx->width * elements;
         break;
-    case 1:
     case 32:
+        stride = 4 * avctx->width * elements;
+        break;
+    case 1:
     case 64:
         avpriv_report_missing_feature(avctx, "Depth %d", bits_per_color);
         return AVERROR_PATCHWELCOME;
@@ -499,6 +505,20 @@ static int decode_frame(AVCodecContext *avctx,
     case 6120:
         avctx->pix_fmt = AV_PIX_FMT_GRAY12;
         break;
+    case 1320:
+    case 2320:
+    case 3320:
+    case 4320:
+    case 6320:
+        avctx->pix_fmt = AV_PIX_FMT_GRAYF32LE;
+        break;
+    case 1321:
+    case 2321:
+    case 3321:
+    case 4321:
+    case 6321:
+        avctx->pix_fmt = AV_PIX_FMT_GRAYF32BE;
+        break;
     case 50081:
     case 50080:
         avctx->pix_fmt = AV_PIX_FMT_RGB24;
@@ -549,6 +569,18 @@ static int decode_frame(AVCodecContext *avctx,
     case 51160:
         avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
         break;
+    case 50320:
+        avctx->pix_fmt = AV_PIX_FMT_GBRPF32LE;
+        break;
+    case 50321:
+        avctx->pix_fmt = AV_PIX_FMT_GBRPF32BE;
+        break;
+    case 51320:
+        avctx->pix_fmt = AV_PIX_FMT_GBRAPF32LE;
+        break;
+    case 51321:
+        avctx->pix_fmt = AV_PIX_FMT_GBRAPF32BE;
+        break;
     case 100081:
         avctx->pix_fmt = AV_PIX_FMT_UYVY422;
         break;
@@ -559,7 +591,8 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported format\n");
+        av_log(avctx, AV_LOG_ERROR, "Unsupported format %d\n",
+               1000 * descriptor + 10 * bits_per_color + endian);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -655,6 +688,36 @@ static int decode_frame(AVCodecContext *avctx,
                 ptr[i] += p->linesize[i];
             // Jump to next aligned position
             buf += need_align;
+        }
+        break;
+    case 32:
+        if (elements == 1) {
+            av_image_copy_plane(ptr[0], p->linesize[0],
+                                buf, stride,
+                                elements * avctx->width * 4, avctx->height);
+        } else {
+            for (y = 0; y < avctx->height; y++) {
+                ptr[0] = p->data[0] + y * p->linesize[0];
+                ptr[1] = p->data[1] + y * p->linesize[1];
+                ptr[2] = p->data[2] + y * p->linesize[2];
+                ptr[3] = p->data[3] + y * p->linesize[3];
+                for (x = 0; x < avctx->width; x++) {
+                    AV_WN32(ptr[2], AV_RN32(buf));
+                    AV_WN32(ptr[0], AV_RN32(buf + 4));
+                    AV_WN32(ptr[1], AV_RN32(buf + 8));
+                    if (avctx->pix_fmt == AV_PIX_FMT_GBRAPF32BE ||
+                        avctx->pix_fmt == AV_PIX_FMT_GBRAPF32LE) {
+                        AV_WN32(ptr[3], AV_RN32(buf + 12));
+                        buf += 4;
+                        ptr[3] += 4;
+                    }
+
+                    buf += 12;
+                    ptr[2] += 4;
+                    ptr[0] += 4;
+                    ptr[1] += 4;
+                }
+            }
         }
         break;
     case 16:
