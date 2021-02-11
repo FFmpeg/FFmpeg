@@ -711,13 +711,13 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             s->bpp += byte_depth;
         }
 
-        if ((ret = ff_thread_get_buffer(avctx, &s->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
-            return ret;
         if (avctx->codec_id == AV_CODEC_ID_APNG && s->last_dispose_op != APNG_DISPOSE_OP_PREVIOUS) {
             ff_thread_release_buffer(avctx, &s->previous_picture);
             if ((ret = ff_thread_get_buffer(avctx, &s->previous_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
         }
+        if ((ret = ff_thread_get_buffer(avctx, &s->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+            return ret;
         p->pict_type        = AV_PICTURE_TYPE_I;
         p->key_frame        = 1;
         p->interlaced_frame = !!s->interlace_type;
