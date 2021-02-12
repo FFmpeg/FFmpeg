@@ -154,7 +154,7 @@ static int do_psnr(FFFrameSync *fs)
     ret = ff_framesync_dualinput_get(fs, &master, &ref);
     if (ret < 0)
         return ret;
-    if (!ref)
+    if (ctx->is_disabled || !ref)
         return ff_filter_frame(ctx->outputs[0], master);
     metadata = &master->metadata;
 
@@ -427,4 +427,5 @@ AVFilter ff_vf_psnr = {
     .priv_class    = &psnr_class,
     .inputs        = psnr_inputs,
     .outputs       = psnr_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
