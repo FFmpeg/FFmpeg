@@ -132,7 +132,7 @@ void compute_images_mse(PSNRContext *s,
 static void set_meta(AVDictionary **metadata, const char *key, char comp, float d)
 {
     char value[128];
-    snprintf(value, sizeof(value), "%0.2f", d);
+    snprintf(value, sizeof(value), "%f", d);
     if (comp) {
         char key2[128];
         snprintf(key2, sizeof(key2), "%s%c", key, comp);
