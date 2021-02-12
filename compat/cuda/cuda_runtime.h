@@ -73,7 +73,7 @@ typedef struct __device_builtin__ __align__(4) uchar4
 
 typedef struct __device_builtin__ __align__(8) ushort4
 {
-    unsigned char x, y, z, w;
+    unsigned short x, y, z, w;
 } ushort4;
 
 typedef struct __device_builtin__ __align__(16) int4
