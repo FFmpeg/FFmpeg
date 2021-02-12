@@ -1936,10 +1936,10 @@ stream ends. The default value is 2 seconds.
 Specify weight of each input audio stream as sequence.
 Each weight is separated by space. By default all inputs have same weight.
 
-@item sum
-Do not scale inputs but instead do only summation of samples.
-Beware of heavy clipping if inputs are not normalized prior of filtering
-or output from @var{amix} normalized after filtering. By default is disabled.
+@item normalize
+Always scale inputs instead of only doing summation of samples.
+Beware of heavy clipping if inputs are not normalized prior or after filtering
+by this filter if this option is disabled. By default is enabled.
 @end table
 
 @subsection Commands
