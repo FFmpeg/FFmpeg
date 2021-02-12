@@ -167,8 +167,11 @@ static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
         ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, data_size);
         av_freep(&data);
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
-        ret = AVERROR_INVALIDDATA;
+        const int warn = is_avc && (avctx->codec_tag == MKTAG('a','v','c','1') ||
+                                    avctx->codec_tag == MKTAG('a','v','c','2'));
+        av_log(avctx, warn ? AV_LOG_WARNING : AV_LOG_DEBUG,
+               "Could not extract PPS/SPS from extradata\n");
+        ret = 0;
     }
 
 done:
@@ -254,8 +257,10 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 
         av_freep(&data);
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Could not extract VPS/PPS/SPS from extradata");
-        ret = AVERROR_INVALIDDATA;
+        const int warn = is_nalff && avctx->codec_tag == MKTAG('h','v','c','1');
+        av_log(avctx, warn ? AV_LOG_WARNING : AV_LOG_DEBUG,
+               "Could not extract VPS/PPS/SPS from extradata\n");
+        ret = 0;
     }
 
 done:
