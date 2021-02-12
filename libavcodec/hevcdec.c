@@ -2639,7 +2639,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         s->sList[i] = av_malloc(sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
         if (!s->sList[i] || !s->HEVClcList[i]) {
-            res = AVERROR_INVALIDDATA;
+            res = AVERROR(ENOMEM);
             goto error;
         }
         memcpy(s->sList[i], s, sizeof(HEVCContext));
