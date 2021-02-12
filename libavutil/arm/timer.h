@@ -24,7 +24,13 @@
 #include <stdint.h>
 #include "config.h"
 
-#if HAVE_INLINE_ASM && defined(__ARM_ARCH_7A__)
+#if defined(__APPLE__)
+
+#include <mach/mach_time.h>
+
+#define AV_READ_TIME mach_absolute_time
+
+#elif HAVE_INLINE_ASM && defined(__ARM_ARCH_7A__)
 
 #define AV_READ_TIME read_time
 
