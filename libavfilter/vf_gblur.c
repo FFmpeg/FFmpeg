@@ -25,6 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <float.h>
+
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -157,7 +159,8 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 {
     GBlurContext *s = ctx->priv;
     ThreadData *td = arg;
-    const float max = (1 << s->depth) - 1;
+    const float max = s->flt ?  FLT_MAX : (1 << s->depth) - 1;
+    const float min = s->flt ? -FLT_MAX : 0.f;
     const int height = td->height;
     const int width = td->width;
     const int64_t numpixels = width * (int64_t)height;
@@ -169,7 +172,7 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 
     for (i = slice_start; i < slice_end; i++) {
         buffer[i] *= postscale;
-        buffer[i] = av_clipf(buffer[i], 0.f, max);
+        buffer[i] = av_clipf(buffer[i], min, max);
     }
 
     return 0;
@@ -214,6 +217,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
+        AV_PIX_FMT_GRAYF32,
         AV_PIX_FMT_NONE
     };
 
@@ -233,6 +238,7 @@ static int config_input(AVFilterLink *inlink)
     GBlurContext *s = inlink->dst->priv;
 
     s->depth = desc->comp[0].depth;
+    s->flt = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0] = s->planewidth[3] = inlink->w;
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
@@ -303,7 +309,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             continue;
         }
 
-        if (s->depth == 8) {
+        if (s->flt) {
+            av_image_copy_plane((uint8_t *)bptr, width * sizeof(float),
+                                in->data[plane], in->linesize[plane],
+                                width * sizeof(float), height);
+        } else if (s->depth == 8) {
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
                     bptr[x] = src[x];
@@ -324,7 +334,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         gaussianiir2d(ctx, plane);
 
         bptr = s->buffer;
-        if (s->depth == 8) {
+        if (s->flt) {
+            av_image_copy_plane(out->data[plane], out->linesize[plane],
+                                (uint8_t *)bptr, width * sizeof(float),
+                                width * sizeof(float), height);
+        } else if (s->depth == 8) {
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
                     dst[x] = bptr[x];

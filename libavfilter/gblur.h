@@ -37,6 +37,7 @@ typedef struct GBlurContext {
     int steps;
     int planes;
 
+    int flt;
     int depth;
     int planewidth[4];
     int planeheight[4];
