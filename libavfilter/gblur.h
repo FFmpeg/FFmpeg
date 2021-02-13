@@ -50,7 +50,9 @@ typedef struct GBlurContext {
     float nuV;
     int nb_planes;
     void (*horiz_slice)(float *buffer, int width, int height, int steps, float nu, float bscale);
+    void (*postscale_slice)(float *buffer, int length, float postscale, float min, float max);
 } GBlurContext;
+
 void ff_gblur_init(GBlurContext *s);
 void ff_gblur_init_x86(GBlurContext *s);
 #endif

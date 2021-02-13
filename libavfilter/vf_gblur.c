@@ -54,6 +54,15 @@ typedef struct ThreadData {
     int width;
 } ThreadData;
 
+static void postscale_c(float *buffer, int length,
+                        float postscale, float min, float max)
+{
+    for (int i = 0; i < length; i++) {
+        buffer[i] *= postscale;
+        buffer[i] = av_clipf(buffer[i], min, max);
+    }
+}
+
 static void horiz_slice_c(float *buffer, int width, int height, int steps,
                           float nu, float bscale)
 {
@@ -154,7 +163,6 @@ static int filter_vertically(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     return 0;
 }
 
-
 static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     GBlurContext *s = ctx->priv;
@@ -164,16 +172,12 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int height = td->height;
     const int width = td->width;
     const int64_t numpixels = width * (int64_t)height;
-    const unsigned slice_start = (numpixels *  jobnr   ) / nb_jobs;
-    const unsigned slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
+    const int slice_start = (numpixels *  jobnr   ) / nb_jobs;
+    const int slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
     const float postscale = s->postscale * s->postscaleV;
-    float *buffer = s->buffer;
-    unsigned i;
+    float *buffer = s->buffer + slice_start;
 
-    for (i = slice_start; i < slice_end; i++) {
-        buffer[i] *= postscale;
-        buffer[i] = av_clipf(buffer[i], min, max);
-    }
+    s->postscale_slice(buffer, slice_end - slice_start, postscale, min, max);
 
     return 0;
 }
@@ -228,6 +232,7 @@ static int query_formats(AVFilterContext *ctx)
 void ff_gblur_init(GBlurContext *s)
 {
     s->horiz_slice = horiz_slice_c;
+    s->postscale_slice = postscale_c;
     if (ARCH_X86_64)
         ff_gblur_init_x86(s);
 }
