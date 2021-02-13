@@ -171,13 +171,14 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const float min = s->flt ? -FLT_MAX : 0.f;
     const int height = td->height;
     const int width = td->width;
-    const int64_t numpixels = width * (int64_t)height;
-    const int slice_start = (numpixels *  jobnr   ) / nb_jobs;
-    const int slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
+    const int awidth = FFALIGN(width, 64);
+    const int slice_start = (height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
     const float postscale = s->postscale * s->postscaleV;
-    float *buffer = s->buffer + slice_start;
+    const int slice_size = slice_end - slice_start;
 
-    s->postscale_slice(buffer, slice_end - slice_start, postscale, min, max);
+    s->postscale_slice(s->buffer + slice_start * awidth,
+                       slice_size * awidth, postscale, min, max);
 
     return 0;
 }
@@ -251,7 +252,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    s->buffer = av_malloc_array(FFALIGN(inlink->w, 16), FFALIGN(inlink->h, 16) * sizeof(*s->buffer));
+    s->buffer = av_malloc_array(FFALIGN(inlink->w, 64), FFALIGN(inlink->h, 64) * sizeof(*s->buffer));
     if (!s->buffer)
         return AVERROR(ENOMEM);
 
