@@ -4131,7 +4131,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             goto find_stream_info_err;
 
-#if FF_API_LOWRES
         // The old API (AVStream.codec) "requires" the resolution to be adjusted
         // by the lowres factor.
         if (st->internal->avctx->lowres && st->internal->avctx->width) {
@@ -4139,7 +4138,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
             st->codec->width = st->internal->avctx->width;
             st->codec->height = st->internal->avctx->height;
         }
-#endif
 
         if (st->codec->codec_tag != MKTAG('t','m','c','d')) {
             st->codec->time_base = st->internal->avctx->time_base;

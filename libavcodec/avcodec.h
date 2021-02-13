@@ -1741,14 +1741,12 @@ typedef struct AVCodecContext {
      */
     int bits_per_raw_sample;
 
-#if FF_API_LOWRES
     /**
      * low resolution decoding, 1-> 1/2 size, 2->1/4 size
      * - encoding: unused
      * - decoding: Set by user.
      */
      int lowres;
-#endif
 
 #if FF_API_CODED_FRAME
     /**
@@ -2084,15 +2082,6 @@ typedef struct AVCodecContext {
      */
     const AVCodecDescriptor *codec_descriptor;
 
-#if !FF_API_LOWRES
-    /**
-     * low resolution decoding, 1-> 1/2 size, 2->1/4 size
-     * - encoding: unused
-     * - decoding: Set by user.
-     */
-     int lowres;
-#endif
-
     /**
      * Current statistics for PTS correction.
      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
@@ -2366,12 +2355,10 @@ void                     av_codec_set_codec_descriptor(AVCodecContext *avctx, co
 attribute_deprecated
 unsigned av_codec_get_codec_properties(const AVCodecContext *avctx);
 
-#if FF_API_LOWRES
 attribute_deprecated
 int  av_codec_get_lowres(const AVCodecContext *avctx);
 attribute_deprecated
 void av_codec_set_lowres(AVCodecContext *avctx, int val);
-#endif
 
 attribute_deprecated
 int  av_codec_get_seek_preroll(const AVCodecContext *avctx);
