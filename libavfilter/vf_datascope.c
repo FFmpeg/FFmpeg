@@ -494,13 +494,13 @@ typedef struct PixscopeContext {
 #define POFFSET(x) offsetof(PixscopeContext, x)
 
 static const AVOption pixscope_options[] = {
-    { "x",  "set scope x offset",  POFFSET(xpos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
-    { "y",  "set scope y offset",  POFFSET(ypos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
-    { "w",  "set scope width",     POFFSET(w),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
-    { "h",  "set scope height",    POFFSET(h),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
-    { "o",  "set window opacity",  POFFSET(o),    AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
-    { "wx", "set window x offset", POFFSET(wx),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGS },
-    { "wy", "set window y offset", POFFSET(wy),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGS },
+    { "x",  "set scope x offset",  POFFSET(xpos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGSR },
+    { "y",  "set scope y offset",  POFFSET(ypos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGSR },
+    { "w",  "set scope width",     POFFSET(w),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGSR },
+    { "h",  "set scope height",    POFFSET(h),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGSR },
+    { "o",  "set window opacity",  POFFSET(o),    AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGSR },
+    { "wx", "set window x offset", POFFSET(wx),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGSR },
+    { "wy", "set window y offset", POFFSET(wy),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGSR },
     { NULL }
 };
 
@@ -709,6 +709,18 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int pixscope_process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                                    char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return pixscope_config_input(ctx->inputs[0]);
+}
+
 static const AVFilterPad pixscope_inputs[] = {
     {
         .name           = "default",
@@ -736,6 +748,7 @@ AVFilter ff_vf_pixscope = {
     .inputs        = pixscope_inputs,
     .outputs       = pixscope_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = pixscope_process_command,
 };
 
 typedef struct PixelValues {

@@ -16218,6 +16218,10 @@ Set window X position, relative offset on X axis.
 Set window Y position, relative offset on Y axis.
 @end table
 
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
+
 @section pp
 
 Enable the specified chain of postprocessing subfilters using libpostproc. This
