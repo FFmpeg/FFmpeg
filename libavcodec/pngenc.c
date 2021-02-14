@@ -1174,7 +1174,7 @@ AVCodec ff_apng_encoder = {
         AV_PIX_FMT_PAL8,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
         AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
-        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
+        AV_PIX_FMT_NONE
     },
     .priv_class     = &apngenc_class,
 };
