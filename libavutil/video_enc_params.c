@@ -63,6 +63,10 @@ av_video_enc_params_create_side_data(AVFrame *frame, enum AVVideoEncParamsType t
     par = av_video_enc_params_alloc(type, nb_blocks, &size);
     if (!par)
         return NULL;
+    if (size > INT_MAX) {
+        av_free(par);
+        return NULL;
+    }
     buf = av_buffer_create((uint8_t *)par, size, NULL, NULL, 0);
     if (!buf) {
         av_freep(&par);
