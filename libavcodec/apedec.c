@@ -243,6 +243,7 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo is supported\n");
         return AVERROR(EINVAL);
     }
+    avctx->bits_per_raw_sample =
     s->bps = avctx->bits_per_coded_sample;
     switch (s->bps) {
     case 8:
