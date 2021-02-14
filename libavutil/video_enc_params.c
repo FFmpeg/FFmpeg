@@ -33,8 +33,7 @@ AVVideoEncParams *av_video_enc_params_alloc(enum AVVideoEncParamsType type,
     size_t size;
 
     size = sizeof(*par);
-    if (nb_blocks > SIZE_MAX / sizeof(AVVideoBlockParams) ||
-        nb_blocks * sizeof(AVVideoBlockParams) > SIZE_MAX - size)
+    if (nb_blocks > (SIZE_MAX - size) / sizeof(AVVideoBlockParams))
         return NULL;
     size += sizeof(AVVideoBlockParams) * nb_blocks;
 
