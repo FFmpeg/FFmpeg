@@ -109,6 +109,7 @@ extern AVCodec ff_eightsvx_exp_decoder;
 extern AVCodec ff_eightsvx_fib_decoder;
 extern AVCodec ff_escape124_decoder;
 extern AVCodec ff_escape130_decoder;
+extern AVCodec ff_exr_encoder;
 extern AVCodec ff_exr_decoder;
 extern AVCodec ff_ffv1_encoder;
 extern AVCodec ff_ffv1_decoder;

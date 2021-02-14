@@ -74,6 +74,7 @@ version <next>:
 - monochrome video filter
 - setts bitstream filter
 - vif video filter
+- OpenEXR image encoder
 
 
 version 4.3:
