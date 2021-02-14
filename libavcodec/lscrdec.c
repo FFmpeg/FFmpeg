@@ -274,6 +274,5 @@ AVCodec ff_lscr_decoder = {
     .decode         = decode_frame_lscr,
     .flush          = lscr_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM | FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
