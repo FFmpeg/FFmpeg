@@ -171,7 +171,7 @@ static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
 
     if (luma_width  < 16 || luma_width  > 640 ||
         luma_height < 16 || luma_height > 480 ||
-        luma_width  &  3 || luma_height &   3) {
+        luma_width  &  1 || luma_height &   1) {
         av_log(avctx, AV_LOG_ERROR, "Invalid picture dimensions: %d x %d!\n",
                luma_width, luma_height);
         return AVERROR_INVALIDDATA;
