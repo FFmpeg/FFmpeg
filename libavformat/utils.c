@@ -1426,7 +1426,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
         pkt->pos = -1;
         /* increment read pointer */
-        data += len;
+        data  = len ? data + len : data;
         size -= len;
 
         got_output = !!out_pkt.size;
