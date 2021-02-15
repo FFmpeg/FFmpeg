@@ -752,7 +752,7 @@ static void store_version(AVFormatContext *s){
     avio_wb16(pb, 0); // release
 }
 
-#define PLATFROM_IDENT "Lavf " AV_STRINGIFY((OS_NAME))
+#define PLATFORM_IDENT "Lavf " AV_STRINGIFY((OS_NAME))
 static void mxf_write_identification(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -762,7 +762,7 @@ static void mxf_write_identification(AVFormatContext *s)
     AVDictionaryEntry *version_entry = av_dict_get(s->metadata, "product_version", NULL, 0);
     const char *company = com_entry ? com_entry->value : "FFmpeg";
     const char *product = product_entry ? product_entry->value : s->oformat != &ff_mxf_opatom_muxer ? "OP1a Muxer" : "OPAtom Muxer";
-    const char *platform = s->flags & AVFMT_FLAG_BITEXACT ? "Lavf" : PLATFROM_IDENT;
+    const char *platform = s->flags & AVFMT_FLAG_BITEXACT ? "Lavf" : PLATFORM_IDENT;
     const char *version = version_entry ? version_entry->value :
                               s->flags & AVFMT_FLAG_BITEXACT ? "0.0.0" :
                                   AV_STRINGIFY(LIBAVFORMAT_VERSION);
