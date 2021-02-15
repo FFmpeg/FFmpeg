@@ -1151,7 +1151,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     StreamInfo *stream = st->priv_data;
     int64_t pts, dts;
     PacketDesc *pkt_desc;
-    int preload;
+    int preload, ret;
     const int is_iframe = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                           (pkt->flags & AV_PKT_FLAG_KEY);
 
@@ -1207,8 +1207,9 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
 
-    if (av_fifo_realloc2(stream->fifo, av_fifo_size(stream->fifo) + size) < 0)
-        return -1;
+    ret = av_fifo_realloc2(stream->fifo, av_fifo_size(stream->fifo) + size);
+    if (ret < 0)
+        return ret;
 
     if (s->is_dvd) {
         // min VOBU length 0.4 seconds (mpucoder)
