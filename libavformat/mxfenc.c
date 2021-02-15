@@ -762,16 +762,15 @@ static void mxf_write_identification(AVFormatContext *s)
     AVDictionaryEntry *version_entry = av_dict_get(s->metadata, "product_version", NULL, 0);
     const char *company = com_entry ? com_entry->value : "FFmpeg";
     const char *product = product_entry ? product_entry->value : s->oformat != &ff_mxf_opatom_muxer ? "OP1a Muxer" : "OPAtom Muxer";
-    const char *product_version = version_entry ? version_entry->value : AV_STRINGIFY(LIBAVFORMAT_VERSION);
     const char *platform = s->flags & AVFMT_FLAG_BITEXACT ? "Lavf" : PLATFROM_IDENT;
-    const char *version;
+    const char *version = version_entry ? version_entry->value :
+                              s->flags & AVFMT_FLAG_BITEXACT ? "0.0.0" :
+                                  AV_STRINGIFY(LIBAVFORMAT_VERSION);
     int length;
 
     mxf_write_metadata_key(pb, 0x013000);
     PRINT_KEY(s, "identification key", pb->buf_ptr - 16);
 
-    version = s->flags & AVFMT_FLAG_BITEXACT ?
-        "0.0.0" : product_version;
     length = 100 +mxf_utf16_local_tag_length(company) +
                   mxf_utf16_local_tag_length(product) +
                   mxf_utf16_local_tag_length(platform) +
