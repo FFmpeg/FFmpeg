@@ -1262,6 +1262,11 @@ static void mpeg_mux_deinit(AVFormatContext *ctx)
         StreamInfo *stream = ctx->streams[i]->priv_data;
         if (!stream)
             continue;
+        for (PacketDesc *pkt = stream->predecode_packet; pkt; ) {
+            PacketDesc *tmp = pkt->next;
+            av_free(pkt);
+            pkt = tmp;
+        }
         av_fifo_freep(&stream->fifo);
     }
 }
