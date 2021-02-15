@@ -1179,18 +1179,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     av_log(ctx, AV_LOG_TRACE, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n",
             dts / 90000.0, pts / 90000.0, pkt->flags,
             pkt->stream_index, pts != AV_NOPTS_VALUE);
-    pkt_desc                 = av_mallocz(sizeof(PacketDesc));
-    if (!pkt_desc)
-        return AVERROR(ENOMEM);
-    if (!stream->predecode_packet) {
-        stream->predecode_packet  = pkt_desc;
-    } else
-        stream->last_packet->next = pkt_desc;
-    stream->last_packet = pkt_desc;
-    if (!stream->premux_packet)
-        stream->premux_packet = pkt_desc;
-    pkt_desc->pts            = pts;
-    pkt_desc->dts            = dts;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
         if (size < 3) {
@@ -1204,6 +1192,18 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         size -= 3;
     }
 
+    pkt_desc                 = av_mallocz(sizeof(PacketDesc));
+    if (!pkt_desc)
+        return AVERROR(ENOMEM);
+    if (!stream->predecode_packet) {
+        stream->predecode_packet  = pkt_desc;
+    } else
+        stream->last_packet->next = pkt_desc;
+    stream->last_packet = pkt_desc;
+    if (!stream->premux_packet)
+        stream->premux_packet = pkt_desc;
+    pkt_desc->pts            = pts;
+    pkt_desc->dts            = dts;
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
 
