@@ -26,6 +26,7 @@
 
 #include "avformat.h"
 #include "movenccenc.h"
+#include "libavcodec/packet_internal.h"
 
 #define MOV_FRAG_INFO_ALLOC_INCREMENT 64
 #define MOV_INDEX_CLUSTER_SIZE 1024
@@ -163,6 +164,10 @@ typedef struct MOVTrack {
     int pal_done;
 
     int is_unaligned_qt_rgb;
+
+    unsigned int squash_fragment_samples_to_one; //< flag to note formats where all samples for a fragment are to be squashed
+
+    PacketList *squashed_packet_queue, *squashed_packet_queue_end;
 } MOVTrack;
 
 typedef enum {

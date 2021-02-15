@@ -109,6 +109,10 @@ fate-sub-dvb: CMD = framecrc -i $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts -map 
 FATE_SUBTITLES-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL SRT_DEMUXER SUBRIP_DECODER TTML_ENCODER TTML_MUXER) += fate-sub-ttmlenc
 fate-sub-ttmlenc: CMD = fmtstdout ttml -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
+FATE_SUBTITLES-$(call ALLYES, FILE_PROTOCOL SRT_DEMUXER MOV_DEMUXER SUBRIP_DECODER TTML_ENCODER TTML_MUXER MOV_MUXER) += fate-sub-ttml-mp4-stpp fate-sub-ttml-mp4-dfxp
+fate-sub-ttml-mp4-stpp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000" "-map 0 -c copy" "" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"
+fate-sub-ttml-mp4-dfxp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000 -tag:s dfxp -strict unofficial" "-map 0 -c copy" "" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"
+
 FATE_SUBTITLES-$(call ENCMUX, ASS, ASS) += $(FATE_SUBTITLES_ASS-yes)
 FATE_SUBTITLES += $(FATE_SUBTITLES-yes)
 

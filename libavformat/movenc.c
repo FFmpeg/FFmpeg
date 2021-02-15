@@ -57,6 +57,8 @@
 #include "hevc.h"
 #include "rtpenc.h"
 #include "mov_chan.h"
+#include "movenc_ttml.h"
+#include "ttmlenc.h"
 #include "vpcc.h"
 
 static const AVOption options[] = {
@@ -120,6 +122,7 @@ static const AVClass mov_isobmff_muxer_class = {
 };
 
 static int get_moov_size(AVFormatContext *s);
+static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt);
 
 static int utf8len(const uint8_t *b)
 {
@@ -1788,7 +1791,29 @@ static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
 
     if (track->par->codec_id == AV_CODEC_ID_DVD_SUBTITLE)
         mov_write_esds_tag(pb, track);
-    else if (track->par->extradata_size)
+    else if (track->par->codec_id == AV_CODEC_ID_TTML) {
+        switch (track->par->codec_tag) {
+        case MOV_ISMV_TTML_TAG:
+            // ISMV dfxp requires no extradata.
+            break;
+        case MOV_MP4_TTML_TAG:
+            // As specified in 14496-30, XMLSubtitleSampleEntry
+            // Namespace
+            avio_put_str(pb, "http://www.w3.org/ns/ttml");
+            // Empty schema_location
+            avio_w8(pb, 0);
+            // Empty auxiliary_mime_types
+            avio_w8(pb, 0);
+            break;
+        default:
+            av_log(NULL, AV_LOG_ERROR,
+                   "Unknown codec tag '%s' utilized for TTML stream with "
+                   "index %d (track id %d)!\n",
+                   av_fourcc2str(track->par->codec_tag), track->st->index,
+                   track->track_id);
+            return AVERROR(EINVAL);
+        }
+    } else if (track->par->extradata_size)
         avio_write(pb, track->par->extradata, track->par->extradata_size);
 
     if (track->mode == MODE_MP4 &&
@@ -2662,6 +2687,14 @@ static int mov_write_nmhd_tag(AVIOContext *pb)
     return 12;
 }
 
+static int mov_write_sthd_tag(AVIOContext *pb)
+{
+    avio_wb32(pb, 12);
+    ffio_wfourcc(pb, "sthd");
+    avio_wb32(pb, 0);
+    return 12;
+}
+
 static int mov_write_tcmi_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2788,6 +2821,8 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
                     hdlr_type = "sbtl";
                 } else if (track->tag == MKTAG('m','p','4','s')) {
                     hdlr_type = "subp";
+                } else if (track->tag == MOV_MP4_TTML_TAG) {
+                    hdlr_type = "subt";
                 } else {
                     hdlr_type = "text";
                 }
@@ -2866,6 +2901,8 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     else if (track->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         if (track->tag == MKTAG('t','e','x','t') || is_clcp_track(track)) {
             mov_write_gmhd_tag(pb, track);
+        } else if (track->tag == MOV_MP4_TTML_TAG) {
+            mov_write_sthd_tag(pb);
         } else {
             mov_write_nmhd_tag(pb);
         }
@@ -5251,6 +5288,68 @@ static int mov_flush_fragment_interleaving(AVFormatContext *s, MOVTrack *track)
     return 0;
 }
 
+static int mov_write_squashed_packet(AVFormatContext *s, MOVTrack *track)
+{
+    MOVMuxContext *mov = s->priv_data;
+    AVPacket *squashed_packet = mov->pkt;
+    int ret = AVERROR_BUG;
+
+    switch (track->st->codecpar->codec_id) {
+    case AV_CODEC_ID_TTML: {
+        int had_packets = !!track->squashed_packet_queue;
+
+        if ((ret = ff_mov_generate_squashed_ttml_packet(s, track, squashed_packet)) < 0) {
+            goto finish_squash;
+        }
+
+        // We have generated a padding packet (no actual input packets in
+        // queue) and its duration is zero. Skipping writing it.
+        if (!had_packets && squashed_packet->duration == 0) {
+            goto finish_squash;
+        }
+
+        track->end_reliable = 1;
+        break;
+    }
+    default:
+        ret = AVERROR(EINVAL);
+        goto finish_squash;
+    }
+
+    squashed_packet->stream_index = track->st->index;
+
+    ret = mov_write_single_packet(s, squashed_packet);
+
+finish_squash:
+    av_packet_unref(squashed_packet);
+
+    return ret;
+}
+
+static int mov_write_squashed_packets(AVFormatContext *s)
+{
+    MOVMuxContext *mov = s->priv_data;
+
+    for (int i = 0; i < s->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        int ret = AVERROR_BUG;
+
+        if (track->squash_fragment_samples_to_one && !track->entry) {
+            if ((ret = mov_write_squashed_packet(s, track)) < 0) {
+                av_log(s, AV_LOG_ERROR,
+                       "Failed to write squashed packet for %s stream with "
+                       "index %d and track id %d. Error: %s\n",
+                       avcodec_get_name(track->st->codecpar->codec_id),
+                       track->st->index, track->track_id,
+                       av_err2str(ret));
+                return ret;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int mov_flush_fragment(AVFormatContext *s, int force)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -5261,6 +5360,11 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
+
+    // Check if we have any tracks that require squashing.
+    // In that case, we'll have to write the packet here.
+    if ((ret = mov_write_squashed_packets(s)) < 0)
+        return ret;
 
     // Try to fill in the duration of the last packet in each stream
     // from queued packets in the interleave queues. If the flushing
@@ -5727,7 +5831,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].entries          = samples_in_chunk;
     trk->cluster[trk->entry].dts              = pkt->dts;
     trk->cluster[trk->entry].pts              = pkt->pts;
-    if (!trk->entry && trk->start_dts != AV_NOPTS_VALUE) {
+    if (!trk->squash_fragment_samples_to_one &&
+        !trk->entry && trk->start_dts != AV_NOPTS_VALUE) {
         if (!trk->frag_discont) {
             /* First packet of a new fragment. We already wrote the duration
              * of the last packet of the previous fragment based on track_duration,
@@ -6022,6 +6127,33 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
+        if (trk->squash_fragment_samples_to_one) {
+            /*
+             * If the track has to have its samples squashed into one sample,
+             * we just take it into the track's queue.
+             * This will then be utilized as the samples get written in either
+             * mov_flush_fragment or when the mux is finalized in
+             * mov_write_trailer.
+             */
+            int ret = AVERROR_BUG;
+
+            if (pkt->pts == AV_NOPTS_VALUE) {
+                av_log(s, AV_LOG_ERROR,
+                       "Packets without a valid presentation timestamp are "
+                       "not supported with packet squashing!\n");
+                return AVERROR(EINVAL);
+            }
+
+            if ((ret = avpriv_packet_list_put(&trk->squashed_packet_queue,
+                                              &trk->squashed_packet_queue_end,
+                                              pkt, av_packet_ref, 0)) < 0) {
+                return ret;
+            }
+
+            return 0;
+        }
+
+
         if (trk->mode == MODE_MOV && trk->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVPacket *opkt = pkt;
             int reshuffle_ret, ret;
@@ -6300,6 +6432,11 @@ static void mov_free(AVFormatContext *s)
 
         ff_mov_cenc_free(&mov->tracks[i].cenc);
         ffio_free_dyn_buf(&mov->tracks[i].mdat_buf);
+
+        if (mov->tracks[i].squashed_packet_queue) {
+            avpriv_packet_list_free(&(mov->tracks[i].squashed_packet_queue),
+                                    &(mov->tracks[i].squashed_packet_queue_end));
+        }
     }
 
     av_freep(&mov->tracks);
@@ -6690,6 +6827,36 @@ static int mov_init(AVFormatContext *s)
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             track->timescale = st->time_base.den;
+
+            if (track->par->codec_id == AV_CODEC_ID_TTML) {
+                /* 14496-30 requires us to use a single sample per fragment
+                   for TTML, for which we define a per-track flag.
+
+                   We set the flag in case we are receiving TTML paragraphs
+                   from the input, in other words in case we are not doing
+                   stream copy. */
+                track->squash_fragment_samples_to_one =
+                    ff_is_ttml_stream_paragraph_based(track->par);
+
+                if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
+                    track->squash_fragment_samples_to_one) {
+                    av_log(s, AV_LOG_ERROR,
+                           "Fragmentation is not currently supported for "
+                           "TTML in MP4/ISMV (track synchronization between "
+                           "subtitles and other media is not yet implemented)!\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+
+                if (track->mode != MODE_ISM &&
+                    track->par->codec_tag == MOV_ISMV_TTML_TAG &&
+                    s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+                    av_log(s, AV_LOG_ERROR,
+                           "ISMV style TTML support with the 'dfxp' tag in "
+                           "non-ISMV formats is not officially supported. Add "
+                           "'-strict unofficial' if you want to use it.\n");
+                    return AVERROR_EXPERIMENTAL;
+                }
+            }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             track->timescale = st->time_base.den;
         } else {
@@ -7036,6 +7203,11 @@ static int mov_write_trailer(AVFormatContext *s)
         }
     }
 
+    // Check if we have any tracks that require squashing.
+    // In that case, we'll have to write the packet here.
+    if ((res = mov_write_squashed_packets(s)) < 0)
+        return res;
+
     // If there were no chapters when the header was written, but there
     // are chapters now, write them in the trailer.  This only works
     // when we are not doing fragments.
@@ -7180,6 +7352,8 @@ static const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_MOV_TEXT,        MKTAG('t', 'x', '3', 'g') },
     { AV_CODEC_ID_BIN_DATA,        MKTAG('g', 'p', 'm', 'd') },
     { AV_CODEC_ID_MPEGH_3D_AUDIO,  MKTAG('m', 'h', 'm', '1') },
+    { AV_CODEC_ID_TTML,            MOV_MP4_TTML_TAG          },
+    { AV_CODEC_ID_TTML,            MOV_ISMV_TTML_TAG         },
     { AV_CODEC_ID_NONE,               0 },
 };
 #if CONFIG_MP4_MUXER || CONFIG_PSP_MUXER
@@ -7188,6 +7362,7 @@ static const AVCodecTag *const mp4_codec_tags_list[] = { codec_mp4_tags, NULL };
 
 static const AVCodecTag codec_ism_tags[] = {
     { AV_CODEC_ID_WMAPRO      , MKTAG('w', 'm', 'a', ' ') },
+    { AV_CODEC_ID_TTML        , MOV_ISMV_TTML_TAG         },
     { AV_CODEC_ID_NONE        ,    0 },
 };
 
