@@ -267,7 +267,7 @@ static uint8_t *read_sb_block(AVIOContext *src, unsigned *size,
     *size = n;
     n -= 8;
 
-    if (avio_read(src, buf+8, n) < n) {
+    if (avio_read(src, buf+8, n) != n) {
         av_free(buf);
         return NULL;
     }
