@@ -727,6 +727,9 @@ The previous output PTS.
 
 @item TB
 The timebase of stream packet belongs.
+
+@item SR
+The sample rate of stream packet belongs.
 @end table
 
 @anchor{text2movsub}

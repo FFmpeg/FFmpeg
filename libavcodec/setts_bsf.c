@@ -43,6 +43,7 @@ static const char *const var_names[] = {
     "STARTPTS",    ///< PTS at start of movie
     "STARTDTS",    ///< DTS at start of movie
     "TB",          ///< timebase of the stream
+    "SR",          ///< sample rate of the stream
     NULL
 };
 
@@ -59,6 +60,7 @@ enum var_name {
     VAR_STARTPTS,
     VAR_STARTDTS,
     VAR_TB,
+    VAR_SR,
     VAR_VARS_NB
 };
 
@@ -151,6 +153,7 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     s->var_values[VAR_STARTPTS]    = s->start_pts;
     s->var_values[VAR_STARTDTS]    = s->start_dts;
     s->var_values[VAR_TB]          = av_q2d(ctx->time_base_out);
+    s->var_values[VAR_SR]          = ctx->par_in->sample_rate;
 
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
 
