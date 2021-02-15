@@ -134,6 +134,7 @@ typedef struct EXRContext {
     const AVPixFmtDescriptor *desc;
 
     int w, h;
+    uint32_t sar;
     int32_t xmax, xmin;
     int32_t ymax, ymin;
     uint32_t xdelta, ydelta;
@@ -1309,7 +1310,7 @@ static int check_header_variable(EXRContext *s,
 static int decode_header(EXRContext *s, AVFrame *frame)
 {
     AVDictionary *metadata = NULL;
-    int magic_number, version, i, flags, sar = 0;
+    int magic_number, version, i, flags;
     int layer_match = 0;
     int ret;
     int dup_channels = 0;
@@ -1580,7 +1581,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            sar = bytestream2_get_le32(&s->gb);
+            s->sar = bytestream2_get_le32(&s->gb);
 
             continue;
         } else if ((var_size = check_header_variable(s, "compression",
@@ -1662,8 +1663,6 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         // Skip variable length
         bytestream2_skip(&s->gb, bytestream2_get_le32(&s->gb));
     }
-
-    ff_set_sar(s->avctx, av_d2q(av_int2float(sar), 255));
 
     if (s->compression == EXR_UNKN) {
         av_log(s->avctx, AV_LOG_ERROR, "Missing compression attribute.\n");
@@ -1787,6 +1786,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     if ((ret = ff_set_dimensions(avctx, s->w, s->h)) < 0)
         return ret;
+
+    ff_set_sar(s->avctx, av_d2q(av_int2float(s->sar), 255));
 
     s->desc          = av_pix_fmt_desc_get(avctx->pix_fmt);
     if (!s->desc)
