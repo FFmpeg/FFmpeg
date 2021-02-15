@@ -48,9 +48,9 @@ typedef struct StreamInfo {
     uint8_t id;
     int max_buffer_size; /* in bytes */
     int buffer_index;
-    PacketDesc *predecode_packet;
+    PacketDesc *predecode_packet; /* start of packet queue */
+    PacketDesc *last_packet;      /* end of packet queue */
     PacketDesc *premux_packet;
-    PacketDesc **next_packet;
     int packet_number;
     uint8_t lpcm_header[3];
     int lpcm_align;
@@ -986,6 +986,8 @@ static int remove_decoded_packets(AVFormatContext *ctx, int64_t scr)
             }
             stream->buffer_index    -= pkt_desc->size;
             stream->predecode_packet = pkt_desc->next;
+            if (!stream->predecode_packet)
+                stream->last_packet = NULL;
             av_freep(&pkt_desc);
         }
     }
@@ -1177,12 +1179,16 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     av_log(ctx, AV_LOG_TRACE, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n",
             dts / 90000.0, pts / 90000.0, pkt->flags,
             pkt->stream_index, pts != AV_NOPTS_VALUE);
-    if (!stream->premux_packet)
-        stream->next_packet = &stream->premux_packet;
-    *stream->next_packet     =
     pkt_desc                 = av_mallocz(sizeof(PacketDesc));
     if (!pkt_desc)
         return AVERROR(ENOMEM);
+    if (!stream->predecode_packet) {
+        stream->predecode_packet  = pkt_desc;
+    } else
+        stream->last_packet->next = pkt_desc;
+    stream->last_packet = pkt_desc;
+    if (!stream->premux_packet)
+        stream->premux_packet = pkt_desc;
     pkt_desc->pts            = pts;
     pkt_desc->dts            = dts;
 
@@ -1200,9 +1206,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
-    if (!stream->predecode_packet)
-        stream->predecode_packet = pkt_desc;
-    stream->next_packet = &pkt_desc->next;
 
     if (av_fifo_realloc2(stream->fifo, av_fifo_size(stream->fifo) + size) < 0)
         return -1;
