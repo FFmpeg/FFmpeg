@@ -2289,10 +2289,10 @@ int vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
         s->mv_bounds.mv_min.x = -MARGIN;
         s->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
-        if (vpX_rac_is_end(&s->c)) {
-            return AVERROR_INVALIDDATA;
-        }
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
+            if (vpX_rac_is_end(&s->c)) {
+                return AVERROR_INVALIDDATA;
+            }
             if (mb_y == 0)
                 AV_WN32A((mb - s->mb_width - 1)->intra4x4_pred_mode_top,
                          DC_PRED * 0x01010101);
