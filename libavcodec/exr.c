@@ -1635,6 +1635,17 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             av_dict_set(&metadata, "writer", key, 0);
 
             continue;
+        } else if ((var_size = check_header_variable(s, "framesPerSecond",
+                                                     "rational", 33)) >= 0) {
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+
+            s->avctx->framerate.num = bytestream2_get_le32(&s->gb);
+            s->avctx->framerate.den = bytestream2_get_le32(&s->gb);
+
+            continue;
         }
 
         // Check if there are enough bytes for a header
