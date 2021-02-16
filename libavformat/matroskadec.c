@@ -1006,15 +1006,15 @@ static int ebml_read_ascii(AVIOContext *pb, int size,
         if (!res)
             return AVERROR(ENOMEM);
     } else {
-    /* EBML strings are usually not 0-terminated, so we allocate one
-     * byte more, read the string and NULL-terminate it ourselves. */
-    if (!(res = av_malloc(size + 1)))
-        return AVERROR(ENOMEM);
-    if ((ret = avio_read(pb, (uint8_t *) res, size)) != size) {
-        av_free(res);
-        return ret < 0 ? ret : NEEDS_CHECKING;
-    }
-    (res)[size] = '\0';
+        /* EBML strings are usually not 0-terminated, so we allocate one
+         * byte more, read the string and NUL-terminate it ourselves. */
+        if (!(res = av_malloc(size + 1)))
+            return AVERROR(ENOMEM);
+        if ((ret = avio_read(pb, (uint8_t *) res, size)) != size) {
+            av_free(res);
+            return ret < 0 ? ret : NEEDS_CHECKING;
+        }
+        (res)[size] = '\0';
     }
     av_free(*str);
     *str = res;
