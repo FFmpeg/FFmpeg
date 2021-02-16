@@ -22,6 +22,8 @@
 #ifndef AVFILTER_VIF_H
 #define AVFILTER_VIF_H
 
+#include "avfilter.h"
+
 int ff_compute_vif2(AVFilterContext *ctx,
                     const float *ref, const float *main, int w, int h,
                     int ref_stride, int main_stride, float *score,
