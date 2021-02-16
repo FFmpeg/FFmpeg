@@ -1604,14 +1604,20 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             continue;
         } else if ((var_size = check_header_variable(s, "displayWindow",
                                                      "box2i", 34)) >= 0) {
+            int32_t sx, sy, dx, dy;
+
             if (!var_size) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
 
-            bytestream2_skip(&s->gb, 8);
-            s->w = bytestream2_get_le32(&s->gb) + 1;
-            s->h = bytestream2_get_le32(&s->gb) + 1;
+            sx = bytestream2_get_le32(&s->gb);
+            sy = bytestream2_get_le32(&s->gb);
+            dx = bytestream2_get_le32(&s->gb);
+            dy = bytestream2_get_le32(&s->gb);
+
+            s->w = dx - sx + 1;
+            s->h = dy - sy + 1;
 
             continue;
         } else if ((var_size = check_header_variable(s, "lineOrder",
