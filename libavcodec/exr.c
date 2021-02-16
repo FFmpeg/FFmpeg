@@ -143,6 +143,8 @@ typedef struct EXRContext {
 
     EXRTileAttribute tile_attr; /* header data attribute of tile */
     int is_tile; /* 0 if scanline, 1 if tile */
+    int is_multipart;
+    int current_part;
 
     int is_luma;/* 1 if there is an Y plane */
 
@@ -153,10 +155,12 @@ typedef struct EXRContext {
     EXRChannel *channels;
     int nb_channels;
     int current_channel_offset;
+    uint32_t chunk_count;
 
     EXRThreadData *thread_data;
 
     const char *layer;
+    int selected_part;
 
     enum AVColorTransferCharacteristic apply_trc_type;
     float gamma;
@@ -1015,6 +1019,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             return AVERROR_INVALIDDATA;
 
         src  = buf + line_offset + 20;
+        if (s->is_multipart)
+            src += 4;
 
         tile_x = AV_RL32(src - 20);
         tile_y = AV_RL32(src - 16);
@@ -1050,6 +1056,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             return AVERROR_INVALIDDATA;
 
         src  = buf + line_offset + 8;
+        if (s->is_multipart)
+            src += 4;
         line = AV_RL32(src - 8);
 
         if (line < s->ymin || line > s->ymax)
@@ -1266,6 +1274,21 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     return 0;
 }
 
+static void skip_header_chunk(EXRContext *s)
+{
+    while (bytestream2_get_bytes_left(&s->gb) > 0) {
+        if (!bytestream2_peek_byte(&s->gb))
+            break;
+
+        // Process unknown variables
+        for (int i = 0; i < 2; i++) // value_name and value_type
+            while (bytestream2_get_byte(&s->gb) != 0);
+
+        // Skip variable length
+        bytestream2_skip(&s->gb, bytestream2_get_le32(&s->gb));
+    }
+}
+
 /**
  * Check if the variable name corresponds to its data type.
  *
@@ -1334,7 +1357,9 @@ static int decode_header(EXRContext *s, AVFrame *frame)
     s->tile_attr.xSize    = -1;
     s->tile_attr.ySize    = -1;
     s->is_tile            = 0;
+    s->is_multipart       = 0;
     s->is_luma            = 0;
+    s->current_part       = 0;
 
     if (bytestream2_get_bytes_left(&s->gb) < 10) {
         av_log(s->avctx, AV_LOG_ERROR, "Header too short to parse.\n");
@@ -1359,18 +1384,50 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 
     if (flags & 0x02)
         s->is_tile = 1;
+    if (flags & 0x10)
+        s->is_multipart = 1;
     if (flags & 0x08) {
         avpriv_report_missing_feature(s->avctx, "deep data");
         return AVERROR_PATCHWELCOME;
     }
-    if (flags & 0x10) {
-        avpriv_report_missing_feature(s->avctx, "multipart");
-        return AVERROR_PATCHWELCOME;
-    }
 
     // Parse the header
-    while (bytestream2_get_bytes_left(&s->gb) > 0 && *s->gb.buffer) {
+    while (bytestream2_get_bytes_left(&s->gb) > 0) {
         int var_size;
+
+        while (s->is_multipart && s->current_part < s->selected_part &&
+               bytestream2_get_bytes_left(&s->gb) > 0) {
+            if (bytestream2_peek_byte(&s->gb)) {
+                skip_header_chunk(s);
+            } else {
+                bytestream2_skip(&s->gb, 1);
+                if (!bytestream2_peek_byte(&s->gb))
+                    break;
+            }
+            bytestream2_skip(&s->gb, 1);
+            s->current_part++;
+        }
+
+        if (!bytestream2_peek_byte(&s->gb)) {
+            if (!s->is_multipart)
+                break;
+            bytestream2_skip(&s->gb, 1);
+            if (s->current_part == s->selected_part) {
+                while (bytestream2_get_bytes_left(&s->gb) > 0) {
+                    if (bytestream2_peek_byte(&s->gb)) {
+                        skip_header_chunk(s);
+                    } else {
+                        bytestream2_skip(&s->gb, 1);
+                        if (!bytestream2_peek_byte(&s->gb))
+                            break;
+                    }
+                }
+            }
+            if (!bytestream2_peek_byte(&s->gb))
+                break;
+            s->current_part++;
+        }
+
         if ((var_size = check_header_variable(s, "channels",
                                               "chlist", 38)) >= 0) {
             GetByteContext ch_gb;
@@ -1593,9 +1650,11 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 
             if (s->compression == EXR_UNKN)
                 s->compression = bytestream2_get_byte(&s->gb);
-            else
+            else {
+                bytestream2_skip(&s->gb, 1);
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Found more than one compression attribute.\n");
+            }
 
             continue;
         } else if ((var_size = check_header_variable(s, "tiles",
@@ -1645,6 +1704,22 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 
             s->avctx->framerate.num = bytestream2_get_le32(&s->gb);
             s->avctx->framerate.den = bytestream2_get_le32(&s->gb);
+
+            continue;
+        } else if ((var_size = check_header_variable(s, "chunkCount",
+                                                     "int", 23)) >= 0) {
+
+            s->chunk_count = bytestream2_get_le32(&s->gb);
+
+            continue;
+        } else if ((var_size = check_header_variable(s, "type",
+                                                     "string", 16)) >= 0) {
+            uint8_t key[256] = { 0 };
+
+            bytestream2_get_buffer(&s->gb, key, FFMIN(sizeof(key) - 1, var_size));
+            if (strncmp("scanlineimage", key, var_size) &&
+                strncmp("tiledimage", key, var_size))
+                return AVERROR_PATCHWELCOME;
 
             continue;
         }
@@ -1941,6 +2016,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "layer", "Set the decoding layer", OFFSET(layer),
         AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, VD },
+    { "part",  "Set the decoding part", OFFSET(selected_part),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VD },
     { "gamma", "Set the float gamma value when decoding", OFFSET(gamma),
         AV_OPT_TYPE_FLOAT, { .dbl = 1.0f }, 0.001, FLT_MAX, VD },
 
