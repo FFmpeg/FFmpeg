@@ -1114,28 +1114,29 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     int res;
 
     if (data) {
-        for (int i = 0; syntax[i].id; i++)
+        for (int i = 0; syntax[i].id; i++) {
+            void *dst = (char *)data + syntax[i].data_offset;
             switch (syntax[i].type) {
             case EBML_UINT:
-                *(uint64_t *) ((char *) data + syntax[i].data_offset) = syntax[i].def.u;
+                *(uint64_t *)dst = syntax[i].def.u;
                 break;
             case EBML_SINT:
-                *(int64_t *) ((char *) data + syntax[i].data_offset) = syntax[i].def.i;
+                *(int64_t *) dst = syntax[i].def.i;
                 break;
             case EBML_FLOAT:
-                *(double *) ((char *) data + syntax[i].data_offset) = syntax[i].def.f;
+                *(double *)  dst = syntax[i].def.f;
                 break;
             case EBML_STR:
             case EBML_UTF8:
                 // the default may be NULL
                 if (syntax[i].def.s) {
-                    uint8_t **dst = (uint8_t **) ((uint8_t *) data + syntax[i].data_offset);
-                    *dst = av_strdup(syntax[i].def.s);
-                    if (!*dst)
+                    *(char**)dst = av_strdup(syntax[i].def.s);
+                    if (!*(char**)dst)
                         return AVERROR(ENOMEM);
                 }
                 break;
             }
+        }
 
         if (!matroska->levels[matroska->num_levels - 1].length) {
             matroska->num_levels--;
