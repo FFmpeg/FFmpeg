@@ -168,7 +168,7 @@ typedef struct MatroskaMasteringMeta {
     double white_x;
     double white_y;
     double max_luminance;
-    double min_luminance;
+    CountedElement min_luminance;
 } MatroskaMasteringMeta;
 
 typedef struct MatroskaTrackVideoColor {
@@ -452,7 +452,7 @@ static EbmlSyntax matroska_mastering_meta[] = {
     { MATROSKA_ID_VIDEOCOLOR_BY, EBML_FLOAT, 0, 0, offsetof(MatroskaMasteringMeta, b_y) },
     { MATROSKA_ID_VIDEOCOLOR_WHITEX, EBML_FLOAT, 0, 0, offsetof(MatroskaMasteringMeta, white_x) },
     { MATROSKA_ID_VIDEOCOLOR_WHITEY, EBML_FLOAT, 0, 0, offsetof(MatroskaMasteringMeta, white_y) },
-    { MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN, EBML_FLOAT, 0, 0, offsetof(MatroskaMasteringMeta, min_luminance), { .f=-1 } },
+    { MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN, EBML_FLOAT, 1, 0, offsetof(MatroskaMasteringMeta, min_luminance) },
     { MATROSKA_ID_VIDEOCOLOR_LUMINANCEMAX, EBML_FLOAT, 0, 0, offsetof(MatroskaMasteringMeta, max_luminance) },
     CHILD_OF(matroska_track_video_color)
 };
@@ -2110,7 +2110,10 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
         mastering_meta->g_x > 0 && mastering_meta->g_y > 0 &&
         mastering_meta->b_x > 0 && mastering_meta->b_y > 0 &&
         mastering_meta->white_x > 0 && mastering_meta->white_y > 0;
-    has_mastering_luminance = mastering_meta->max_luminance > 0;
+    has_mastering_luminance = mastering_meta->max_luminance >
+                                  mastering_meta->min_luminance.el.f  &&
+                              mastering_meta->min_luminance.el.f >= 0 &&
+                              mastering_meta->min_luminance.count;
 
     if (color->matrix_coefficients != AVCOL_SPC_RESERVED)
         st->codecpar->color_space = color->matrix_coefficients;
@@ -2169,7 +2172,7 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
         }
         if (has_mastering_luminance) {
             metadata->max_luminance = av_d2q(mastering_meta->max_luminance, INT_MAX);
-            metadata->min_luminance = av_d2q(mastering_meta->min_luminance, INT_MAX);
+            metadata->min_luminance = av_d2q(mastering_meta->min_luminance.el.f, INT_MAX);
             metadata->has_luminance = 1;
         }
     }
