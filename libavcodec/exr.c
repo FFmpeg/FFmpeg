@@ -1276,16 +1276,18 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
 static void skip_header_chunk(EXRContext *s)
 {
-    while (bytestream2_get_bytes_left(&s->gb) > 0) {
-        if (!bytestream2_peek_byte(&s->gb))
+    GetByteContext *gb = &s->gb;
+
+    while (bytestream2_get_bytes_left(gb) > 0) {
+        if (!bytestream2_peek_byte(gb))
             break;
 
         // Process unknown variables
         for (int i = 0; i < 2; i++) // value_name and value_type
-            while (bytestream2_get_byte(&s->gb) != 0);
+            while (bytestream2_get_byte(gb) != 0);
 
         // Skip variable length
-        bytestream2_skip(&s->gb, bytestream2_get_le32(&s->gb));
+        bytestream2_skip(gb, bytestream2_get_le32(gb));
     }
 }
 
@@ -1306,21 +1308,22 @@ static int check_header_variable(EXRContext *s,
                                  const char *value_type,
                                  unsigned int minimum_length)
 {
+    GetByteContext *gb = &s->gb;
     int var_size = -1;
 
-    if (bytestream2_get_bytes_left(&s->gb) >= minimum_length &&
-        !strcmp(s->gb.buffer, value_name)) {
+    if (bytestream2_get_bytes_left(gb) >= minimum_length &&
+        !strcmp(gb->buffer, value_name)) {
         // found value_name, jump to value_type (null terminated strings)
-        s->gb.buffer += strlen(value_name) + 1;
-        if (!strcmp(s->gb.buffer, value_type)) {
-            s->gb.buffer += strlen(value_type) + 1;
-            var_size = bytestream2_get_le32(&s->gb);
+        gb->buffer += strlen(value_name) + 1;
+        if (!strcmp(gb->buffer, value_type)) {
+            gb->buffer += strlen(value_type) + 1;
+            var_size = bytestream2_get_le32(gb);
             // don't go read past boundaries
-            if (var_size > bytestream2_get_bytes_left(&s->gb))
+            if (var_size > bytestream2_get_bytes_left(gb))
                 var_size = 0;
         } else {
             // value_type not found, reset the buffer
-            s->gb.buffer -= strlen(value_name) + 1;
+            gb->buffer -= strlen(value_name) + 1;
             av_log(s->avctx, AV_LOG_WARNING,
                    "Unknown data type %s for header variable %s.\n",
                    value_type, value_name);
@@ -1333,6 +1336,7 @@ static int check_header_variable(EXRContext *s,
 static int decode_header(EXRContext *s, AVFrame *frame)
 {
     AVDictionary *metadata = NULL;
+    GetByteContext *gb = &s->gb;
     int magic_number, version, i, flags;
     int layer_match = 0;
     int ret;
@@ -1361,12 +1365,12 @@ static int decode_header(EXRContext *s, AVFrame *frame)
     s->is_luma            = 0;
     s->current_part       = 0;
 
-    if (bytestream2_get_bytes_left(&s->gb) < 10) {
+    if (bytestream2_get_bytes_left(gb) < 10) {
         av_log(s->avctx, AV_LOG_ERROR, "Header too short to parse.\n");
         return AVERROR_INVALIDDATA;
     }
 
-    magic_number = bytestream2_get_le32(&s->gb);
+    magic_number = bytestream2_get_le32(gb);
     if (magic_number != 20000630) {
         /* As per documentation of OpenEXR, it is supposed to be
          * int 20000630 little-endian */
@@ -1374,13 +1378,13 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         return AVERROR_INVALIDDATA;
     }
 
-    version = bytestream2_get_byte(&s->gb);
+    version = bytestream2_get_byte(gb);
     if (version != 2) {
         avpriv_report_missing_feature(s->avctx, "Version %d", version);
         return AVERROR_PATCHWELCOME;
     }
 
-    flags = bytestream2_get_le24(&s->gb);
+    flags = bytestream2_get_le24(gb);
 
     if (flags & 0x02)
         s->is_tile = 1;
@@ -1392,38 +1396,38 @@ static int decode_header(EXRContext *s, AVFrame *frame)
     }
 
     // Parse the header
-    while (bytestream2_get_bytes_left(&s->gb) > 0) {
+    while (bytestream2_get_bytes_left(gb) > 0) {
         int var_size;
 
         while (s->is_multipart && s->current_part < s->selected_part &&
-               bytestream2_get_bytes_left(&s->gb) > 0) {
-            if (bytestream2_peek_byte(&s->gb)) {
+               bytestream2_get_bytes_left(gb) > 0) {
+            if (bytestream2_peek_byte(gb)) {
                 skip_header_chunk(s);
             } else {
-                bytestream2_skip(&s->gb, 1);
-                if (!bytestream2_peek_byte(&s->gb))
+                bytestream2_skip(gb, 1);
+                if (!bytestream2_peek_byte(gb))
                     break;
             }
-            bytestream2_skip(&s->gb, 1);
+            bytestream2_skip(gb, 1);
             s->current_part++;
         }
 
-        if (!bytestream2_peek_byte(&s->gb)) {
+        if (!bytestream2_peek_byte(gb)) {
             if (!s->is_multipart)
                 break;
-            bytestream2_skip(&s->gb, 1);
+            bytestream2_skip(gb, 1);
             if (s->current_part == s->selected_part) {
-                while (bytestream2_get_bytes_left(&s->gb) > 0) {
-                    if (bytestream2_peek_byte(&s->gb)) {
+                while (bytestream2_get_bytes_left(gb) > 0) {
+                    if (bytestream2_peek_byte(gb)) {
                         skip_header_chunk(s);
                     } else {
-                        bytestream2_skip(&s->gb, 1);
-                        if (!bytestream2_peek_byte(&s->gb))
+                        bytestream2_skip(gb, 1);
+                        if (!bytestream2_peek_byte(gb))
                             break;
                     }
                 }
             }
-            if (!bytestream2_peek_byte(&s->gb))
+            if (!bytestream2_peek_byte(gb))
                 break;
             s->current_part++;
         }
@@ -1436,7 +1440,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            bytestream2_init(&ch_gb, s->gb.buffer, var_size);
+            bytestream2_init(&ch_gb, gb->buffer, var_size);
 
             while (bytestream2_get_bytes_left(&ch_gb) >= 19) {
                 EXRChannel *channel;
@@ -1573,7 +1577,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             }
 
             // skip one last byte and update main gb
-            s->gb.buffer = ch_gb.buffer + 1;
+            gb->buffer = ch_gb.buffer + 1;
             continue;
         } else if ((var_size = check_header_variable(s, "dataWindow", "box2i",
                                                      31)) >= 0) {
@@ -1583,10 +1587,10 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            xmin   = bytestream2_get_le32(&s->gb);
-            ymin   = bytestream2_get_le32(&s->gb);
-            xmax   = bytestream2_get_le32(&s->gb);
-            ymax   = bytestream2_get_le32(&s->gb);
+            xmin   = bytestream2_get_le32(gb);
+            ymin   = bytestream2_get_le32(gb);
+            xmax   = bytestream2_get_le32(gb);
+            ymax   = bytestream2_get_le32(gb);
 
             if (xmin > xmax || ymin > ymax ||
                 (unsigned)xmax - xmin >= INT_MAX ||
@@ -1611,10 +1615,10 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            sx = bytestream2_get_le32(&s->gb);
-            sy = bytestream2_get_le32(&s->gb);
-            dx = bytestream2_get_le32(&s->gb);
-            dy = bytestream2_get_le32(&s->gb);
+            sx = bytestream2_get_le32(gb);
+            sy = bytestream2_get_le32(gb);
+            dx = bytestream2_get_le32(gb);
+            dy = bytestream2_get_le32(gb);
 
             s->w = dx - sx + 1;
             s->h = dy - sy + 1;
@@ -1628,7 +1632,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            line_order = bytestream2_get_byte(&s->gb);
+            line_order = bytestream2_get_byte(gb);
             av_log(s->avctx, AV_LOG_DEBUG, "line order: %d.\n", line_order);
             if (line_order > 2) {
                 av_log(s->avctx, AV_LOG_ERROR, "Unknown line order.\n");
@@ -1644,7 +1648,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            s->sar = bytestream2_get_le32(&s->gb);
+            s->sar = bytestream2_get_le32(gb);
 
             continue;
         } else if ((var_size = check_header_variable(s, "compression",
@@ -1655,9 +1659,9 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             }
 
             if (s->compression == EXR_UNKN)
-                s->compression = bytestream2_get_byte(&s->gb);
+                s->compression = bytestream2_get_byte(gb);
             else {
-                bytestream2_skip(&s->gb, 1);
+                bytestream2_skip(gb, 1);
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Found more than one compression attribute.\n");
             }
@@ -1671,10 +1675,10 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Found tile attribute and scanline flags. Exr will be interpreted as scanline.\n");
 
-            s->tile_attr.xSize = bytestream2_get_le32(&s->gb);
-            s->tile_attr.ySize = bytestream2_get_le32(&s->gb);
+            s->tile_attr.xSize = bytestream2_get_le32(gb);
+            s->tile_attr.ySize = bytestream2_get_le32(gb);
 
-            tileLevel = bytestream2_get_byte(&s->gb);
+            tileLevel = bytestream2_get_byte(gb);
             s->tile_attr.level_mode = tileLevel & 0x0f;
             s->tile_attr.level_round = (tileLevel >> 4) & 0x0f;
 
@@ -1697,7 +1701,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                                                      "string", 1)) >= 0) {
             uint8_t key[256] = { 0 };
 
-            bytestream2_get_buffer(&s->gb, key, FFMIN(sizeof(key) - 1, var_size));
+            bytestream2_get_buffer(gb, key, FFMIN(sizeof(key) - 1, var_size));
             av_dict_set(&metadata, "writer", key, 0);
 
             continue;
@@ -1708,21 +1712,21 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 goto fail;
             }
 
-            s->avctx->framerate.num = bytestream2_get_le32(&s->gb);
-            s->avctx->framerate.den = bytestream2_get_le32(&s->gb);
+            s->avctx->framerate.num = bytestream2_get_le32(gb);
+            s->avctx->framerate.den = bytestream2_get_le32(gb);
 
             continue;
         } else if ((var_size = check_header_variable(s, "chunkCount",
                                                      "int", 23)) >= 0) {
 
-            s->chunk_count = bytestream2_get_le32(&s->gb);
+            s->chunk_count = bytestream2_get_le32(gb);
 
             continue;
         } else if ((var_size = check_header_variable(s, "type",
                                                      "string", 16)) >= 0) {
             uint8_t key[256] = { 0 };
 
-            bytestream2_get_buffer(&s->gb, key, FFMIN(sizeof(key) - 1, var_size));
+            bytestream2_get_buffer(gb, key, FFMIN(sizeof(key) - 1, var_size));
             if (strncmp("scanlineimage", key, var_size) &&
                 strncmp("tiledimage", key, var_size))
                 return AVERROR_PATCHWELCOME;
@@ -1731,7 +1735,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         }
 
         // Check if there are enough bytes for a header
-        if (bytestream2_get_bytes_left(&s->gb) <= 9) {
+        if (bytestream2_get_bytes_left(gb) <= 9) {
             av_log(s->avctx, AV_LOG_ERROR, "Incomplete header\n");
             ret = AVERROR_INVALIDDATA;
             goto fail;
@@ -1739,10 +1743,10 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 
         // Process unknown variables
         for (i = 0; i < 2; i++) // value_name and value_type
-            while (bytestream2_get_byte(&s->gb) != 0);
+            while (bytestream2_get_byte(gb) != 0);
 
         // Skip variable length
-        bytestream2_skip(&s->gb, bytestream2_get_le32(&s->gb));
+        bytestream2_skip(gb, bytestream2_get_le32(gb));
     }
 
     if (s->compression == EXR_UNKN) {
@@ -1759,7 +1763,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         }
     }
 
-    if (bytestream2_get_bytes_left(&s->gb) <= 0) {
+    if (bytestream2_get_bytes_left(gb) <= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Incomplete frame.\n");
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -1768,7 +1772,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
     frame->metadata = metadata;
 
     // aaand we are done
-    bytestream2_skip(&s->gb, 1);
+    bytestream2_skip(gb, 1);
     return 0;
 fail:
     av_dict_free(&metadata);
@@ -1779,6 +1783,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame, AVPacket *avpkt)
 {
     EXRContext *s = avctx->priv_data;
+    GetByteContext *gb = &s->gb;
     ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     uint8_t *ptr;
@@ -1791,7 +1796,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     uint64_t start_next_scanline;
     PutByteContext offset_table_writer;
 
-    bytestream2_init(&s->gb, avpkt->data, avpkt->size);
+    bytestream2_init(gb, avpkt->data, avpkt->size);
 
     if ((ret = decode_header(s, picture)) < 0)
         return ret;
@@ -1893,14 +1898,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
 
-    if (bytestream2_get_bytes_left(&s->gb)/8 < nb_blocks)
+    if (bytestream2_get_bytes_left(gb)/8 < nb_blocks)
         return AVERROR_INVALIDDATA;
 
     // check offset table and recreate it if need
-    if (!s->is_tile && bytestream2_peek_le64(&s->gb) == 0) {
+    if (!s->is_tile && bytestream2_peek_le64(gb) == 0) {
         av_log(s->avctx, AV_LOG_DEBUG, "recreating invalid scanline offset table\n");
 
-        start_offset_table = bytestream2_tell(&s->gb);
+        start_offset_table = bytestream2_tell(gb);
         start_next_scanline = start_offset_table + nb_blocks * 8;
         bytestream2_init_writer(&offset_table_writer, &avpkt->data[start_offset_table], nb_blocks * 8);
 
@@ -1909,10 +1914,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             bytestream2_put_le64(&offset_table_writer, start_next_scanline);
 
             /* get len of next scanline */
-            bytestream2_seek(&s->gb, start_next_scanline + 4, SEEK_SET);/* skip line number */
-            start_next_scanline += (bytestream2_get_le32(&s->gb) + 8);
+            bytestream2_seek(gb, start_next_scanline + 4, SEEK_SET);/* skip line number */
+            start_next_scanline += (bytestream2_get_le32(gb) + 8);
         }
-        bytestream2_seek(&s->gb, start_offset_table, SEEK_SET);
+        bytestream2_seek(gb, start_offset_table, SEEK_SET);
     }
 
     // save pointer we are going to use in decode_block
