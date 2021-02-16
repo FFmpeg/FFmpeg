@@ -639,11 +639,14 @@ static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
      * As actual intended 7.1(wide) streams are very rare, default to assuming a
      * 7.1 layout was intended.
      */
-    if (channel_config == 7 && avctx->strict_std_compliance < FF_COMPLIANCE_STRICT && (!ac || !ac->warned_71_wide++)) {
-        av_log(avctx, AV_LOG_INFO, "Assuming an incorrectly encoded 7.1 channel layout"
-               " instead of a spec-compliant 7.1(wide) layout, use -strict %d to decode"
-               " according to the specification instead.\n", FF_COMPLIANCE_STRICT);
+    if (channel_config == 7 && avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
         layout_map[2][2] = AAC_CHANNEL_SIDE;
+
+        if (!ac || !ac->warned_71_wide++) {
+            av_log(avctx, AV_LOG_INFO, "Assuming an incorrectly encoded 7.1 channel layout"
+                   " instead of a spec-compliant 7.1(wide) layout, use -strict %d to decode"
+                   " according to the specification instead.\n", FF_COMPLIANCE_STRICT);
+        }
     }
 
     return 0;
