@@ -254,6 +254,7 @@ typedef struct MatroskaTrack {
     uint64_t flag_hearingimpaired;
     uint64_t flag_visualimpaired;
     uint64_t flag_textdescriptions;
+    CountedElement flag_original;
     uint64_t seek_preroll;
     MatroskaTrackVideo video;
     MatroskaTrackAudio audio;
@@ -413,7 +414,7 @@ typedef struct MatroskaDemuxContext {
 // incomplete type (6.7.2 in C90, 6.9.2 in C99).
 // Removing the sizes breaks MSVC.
 static EbmlSyntax ebml_syntax[3], matroska_segment[9], matroska_track_video_color[15], matroska_track_video[19],
-                  matroska_track[31], matroska_track_encoding[6], matroska_track_encodings[2],
+                  matroska_track[32], matroska_track_encoding[6], matroska_track_encodings[2],
                   matroska_track_combine_planes[2], matroska_track_operation[2], matroska_tracks[2],
                   matroska_attachments[2], matroska_chapter_entry[9], matroska_chapter[6], matroska_chapters[2],
                   matroska_index_entry[3], matroska_index[2], matroska_tag[3], matroska_tags[2], matroska_seekhead[2],
@@ -581,6 +582,7 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKFLAGHEARINGIMPAIRED, EBML_UINT, 0, 0, offsetof(MatroskaTrack, flag_hearingimpaired), { .u = 0 } },
     { MATROSKA_ID_TRACKFLAGVISUALIMPAIRED, EBML_UINT, 0, 0, offsetof(MatroskaTrack, flag_visualimpaired), { .u = 0 } },
     { MATROSKA_ID_TRACKFLAGTEXTDESCRIPTIONS, EBML_UINT, 0, 0, offsetof(MatroskaTrack, flag_textdescriptions), { .u = 0 } },
+    { MATROSKA_ID_TRACKFLAGORIGINAL,     EBML_UINT,  1, 0, offsetof(MatroskaTrack, flag_original), {.u = 0 } },
     { MATROSKA_ID_TRACKVIDEO,            EBML_NEST,  0, 0, offsetof(MatroskaTrack, video),        { .n = matroska_track_video } },
     { MATROSKA_ID_TRACKAUDIO,            EBML_NEST,  0, 0, offsetof(MatroskaTrack, audio),        { .n = matroska_track_audio } },
     { MATROSKA_ID_TRACKOPERATION,        EBML_NEST,  0, 0, offsetof(MatroskaTrack, operation),    { .n = matroska_track_operation } },
@@ -2755,6 +2757,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
         if (track->flag_visualimpaired)
             st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+        if (track->flag_original.count > 0)
+            st->disposition |= track->flag_original.el.u ? AV_DISPOSITION_ORIGINAL
+                                                         : AV_DISPOSITION_DUB;
 
         if (!st->codecpar->extradata) {
             if (extradata) {
