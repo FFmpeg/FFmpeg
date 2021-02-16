@@ -929,12 +929,17 @@ static int ebml_read_length(MatroskaDemuxContext *matroska, AVIOContext *pb,
 
 /*
  * Read the next element as an unsigned int.
- * Returns NEEDS_CHECKING.
+ * Returns NEEDS_CHECKING unless size == 0.
  */
-static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
+static int ebml_read_uint(AVIOContext *pb, int size,
+                          uint64_t default_value, uint64_t *num)
 {
     int n = 0;
 
+    if (size == 0) {
+        *num = default_value;
+        return 0;
+    }
     /* big-endian ordering; build up number */
     *num = 0;
     while (n++ < size)
@@ -945,14 +950,16 @@ static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
 
 /*
  * Read the next element as a signed int.
- * Returns NEEDS_CHECKING.
+ * Returns NEEDS_CHECKING unless size == 0.
  */
-static int ebml_read_sint(AVIOContext *pb, int size, int64_t *num)
+static int ebml_read_sint(AVIOContext *pb, int size,
+                          int64_t default_value, int64_t *num)
 {
     int n = 1;
 
     if (size == 0) {
-        *num = 0;
+        *num = default_value;
+        return 0;
     } else {
         *num = sign_extend(avio_r8(pb), 8);
 
@@ -966,17 +973,19 @@ static int ebml_read_sint(AVIOContext *pb, int size, int64_t *num)
 
 /*
  * Read the next element as a float.
- * Returns NEEDS_CHECKING or < 0 on obvious failure.
+ * Returns 0 if size == 0, NEEDS_CHECKING or < 0 on obvious failure.
  */
-static int ebml_read_float(AVIOContext *pb, int size, double *num)
+static int ebml_read_float(AVIOContext *pb, int size,
+                           double default_value, double *num)
 {
-    if (size == 0)
-        *num = 0;
-    else if (size == 4)
+    if (size == 0) {
+        *num = default_value;
+        return 0;
+    } else if (size == 4) {
         *num = av_int2float(avio_rb32(pb));
-    else if (size == 8)
+    } else if (size == 8) {
         *num = av_int2double(avio_rb64(pb));
-    else
+    } else
         return AVERROR_INVALIDDATA;
 
     return NEEDS_CHECKING;
@@ -986,11 +995,17 @@ static int ebml_read_float(AVIOContext *pb, int size, double *num)
  * Read the next element as an ASCII string.
  * 0 is success, < 0 or NEEDS_CHECKING is failure.
  */
-static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
+static int ebml_read_ascii(AVIOContext *pb, int size,
+                           const char *default_value, char **str)
 {
     char *res;
     int ret;
 
+    if (size == 0 && default_value) {
+        res = av_strdup(default_value);
+        if (!res)
+            return AVERROR(ENOMEM);
+    } else {
     /* EBML strings are usually not 0-terminated, so we allocate one
      * byte more, read the string and NULL-terminate it ourselves. */
     if (!(res = av_malloc(size + 1)))
@@ -1000,6 +1015,7 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
         return ret < 0 ? ret : NEEDS_CHECKING;
     }
     (res)[size] = '\0';
+    }
     av_free(*str);
     *str = res;
 
@@ -1396,17 +1412,17 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
 
     switch (syntax->type) {
     case EBML_UINT:
-        res = ebml_read_uint(pb, length, data);
+        res = ebml_read_uint(pb, length, syntax->def.u, data);
         break;
     case EBML_SINT:
-        res = ebml_read_sint(pb, length, data);
+        res = ebml_read_sint(pb, length, syntax->def.i, data);
         break;
     case EBML_FLOAT:
-        res = ebml_read_float(pb, length, data);
+        res = ebml_read_float(pb, length, syntax->def.f, data);
         break;
     case EBML_STR:
     case EBML_UTF8:
-        res = ebml_read_ascii(pb, length, data);
+        res = ebml_read_ascii(pb, length, syntax->def.s, data);
         break;
     case EBML_BIN:
         res = ebml_read_binary(pb, length, pos_alt, data);
