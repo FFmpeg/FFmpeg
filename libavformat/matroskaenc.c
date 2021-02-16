@@ -1191,6 +1191,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         put_ebml_string(pb, MATROSKA_ID_CODECID, codec_id);
     } else {
+        if (st->disposition & AV_DISPOSITION_COMMENT)
+            put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGCOMMENTARY, 1);
         // look for a codec ID string specific to mkv to use,
         // if none are found, use AVI codes
         if (par->codec_id != AV_CODEC_ID_RAWVIDEO || par->codec_tag) {
