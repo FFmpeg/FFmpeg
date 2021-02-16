@@ -66,12 +66,12 @@ static int ircam_read_header(AVFormatContext *s)
     }
 
     if (le == 1) {
-        sample_rate = av_int2float(avio_rl32(s->pb));
+        sample_rate = lrintf(av_int2float(avio_rl32(s->pb)));
         channels    = avio_rl32(s->pb);
         tag         = avio_rl32(s->pb);
         tags        = ff_codec_ircam_le_tags;
     } else if (le == 0) {
-        sample_rate = av_int2float(avio_rb32(s->pb));
+        sample_rate = lrintf(av_int2float(avio_rb32(s->pb)));
         channels    = avio_rb32(s->pb);
         tag         = avio_rb32(s->pb);
         tags        = ff_codec_ircam_be_tags;
