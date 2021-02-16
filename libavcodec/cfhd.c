@@ -811,7 +811,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                             const uint16_t q = s->quantisation;
 
                             for (i = 0; i < run; i++) {
-                                *coeff_data |= coeff << 8;
+                                *coeff_data |= coeff * 256;
                                 *coeff_data++ *= q;
                             }
                         } else {
@@ -842,7 +842,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                             const uint16_t q = s->quantisation;
 
                             for (i = 0; i < run; i++) {
-                                *coeff_data |= coeff << 8;
+                                *coeff_data |= coeff * 256;
                                 *coeff_data++ *= q;
                             }
                         } else {
