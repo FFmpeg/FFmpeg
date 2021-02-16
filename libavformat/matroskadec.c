@@ -330,7 +330,7 @@ typedef struct MatroskaLevel {
 
 typedef struct MatroskaBlock {
     uint64_t duration;
-    int64_t  reference;
+    CountedElement reference;
     uint64_t non_simple;
     EbmlBin  bin;
     uint64_t additional_id;
@@ -736,7 +736,7 @@ static EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_BLOCKADDITIONS, EBML_NEST, 0, 0, 0, { .n = matroska_blockadditions} },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, 0, offsetof(MatroskaBlock, duration) },
     { MATROSKA_ID_DISCARDPADDING, EBML_SINT, 0, 0, offsetof(MatroskaBlock, discard_padding) },
-    { MATROSKA_ID_BLOCKREFERENCE, EBML_SINT, 0, 0, offsetof(MatroskaBlock, reference), { .i = INT64_MIN } },
+    { MATROSKA_ID_BLOCKREFERENCE, EBML_SINT, 1, 0, offsetof(MatroskaBlock, reference) },
     { MATROSKA_ID_CODECSTATE,     EBML_NONE },
     {                          1, EBML_UINT, 0, 0, offsetof(MatroskaBlock, non_simple), { .u = 1 } },
     CHILD_OF(matroska_cluster_parsing)
@@ -3737,7 +3737,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
         res = ebml_parse(matroska, matroska_cluster_parsing, cluster);
 
         if (res >= 0 && block->bin.size > 0) {
-            int is_keyframe = block->non_simple ? block->reference == INT64_MIN : -1;
+            int is_keyframe = block->non_simple ? block->reference.count == 0 : -1;
             uint8_t* additional = block->additional.size > 0 ?
                                     block->additional.data : NULL;
 
