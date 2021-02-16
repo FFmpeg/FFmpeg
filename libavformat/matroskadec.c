@@ -250,6 +250,7 @@ typedef struct MatroskaTrack {
     uint64_t default_duration;
     uint64_t flag_default;
     uint64_t flag_forced;
+    uint64_t flag_comment;
     uint64_t seek_preroll;
     MatroskaTrackVideo video;
     MatroskaTrackAudio audio;
@@ -409,7 +410,7 @@ typedef struct MatroskaDemuxContext {
 // incomplete type (6.7.2 in C90, 6.9.2 in C99).
 // Removing the sizes breaks MSVC.
 static EbmlSyntax ebml_syntax[3], matroska_segment[9], matroska_track_video_color[15], matroska_track_video[19],
-                  matroska_track[27], matroska_track_encoding[6], matroska_track_encodings[2],
+                  matroska_track[28], matroska_track_encoding[6], matroska_track_encodings[2],
                   matroska_track_combine_planes[2], matroska_track_operation[2], matroska_tracks[2],
                   matroska_attachments[2], matroska_chapter_entry[9], matroska_chapter[6], matroska_chapters[2],
                   matroska_index_entry[3], matroska_index[2], matroska_tag[3], matroska_tags[2], matroska_seekhead[2],
@@ -571,6 +572,7 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKLANGUAGE,         EBML_STR,   0, 0, offsetof(MatroskaTrack, language),     { .s = "eng" } },
     { MATROSKA_ID_TRACKDEFAULTDURATION,  EBML_UINT,  0, 0, offsetof(MatroskaTrack, default_duration) },
     { MATROSKA_ID_TRACKTIMECODESCALE,    EBML_FLOAT, 0, 0, offsetof(MatroskaTrack, time_scale),   { .f = 1.0 } },
+    { MATROSKA_ID_TRACKFLAGCOMMENTARY,   EBML_UINT,  0, 0, offsetof(MatroskaTrack, flag_comment), { .u = 0 } },
     { MATROSKA_ID_TRACKFLAGDEFAULT,      EBML_UINT,  0, 0, offsetof(MatroskaTrack, flag_default), { .u = 1 } },
     { MATROSKA_ID_TRACKFLAGFORCED,       EBML_UINT,  0, 0, offsetof(MatroskaTrack, flag_forced),  { .u = 0 } },
     { MATROSKA_ID_TRACKVIDEO,            EBML_NEST,  0, 0, offsetof(MatroskaTrack, video),        { .n = matroska_track_video } },
@@ -2742,6 +2744,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->disposition |= AV_DISPOSITION_DEFAULT;
         if (track->flag_forced)
             st->disposition |= AV_DISPOSITION_FORCED;
+        if (track->flag_comment)
+            st->disposition |= AV_DISPOSITION_COMMENT;
 
         if (!st->codecpar->extradata) {
             if (extradata) {
