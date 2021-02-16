@@ -1337,7 +1337,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 {
     AVDictionary *metadata = NULL;
     GetByteContext *gb = &s->gb;
-    int magic_number, version, i, flags;
+    int magic_number, version, flags;
     int layer_match = 0;
     int ret;
     int dup_channels = 0;
@@ -1732,6 +1732,18 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 return AVERROR_PATCHWELCOME;
 
             continue;
+        } else if ((var_size = check_header_variable(s, "preview",
+                                                     "preview", 16)) >= 0) {
+            uint32_t pw = bytestream2_get_le32(gb);
+            uint32_t ph = bytestream2_get_le32(gb);
+            int64_t psize = 4LL * pw * ph;
+
+            if (psize >= bytestream2_get_bytes_left(gb))
+                return AVERROR_INVALIDDATA;
+
+            bytestream2_skip(gb, psize);
+
+            continue;
         }
 
         // Check if there are enough bytes for a header
@@ -1742,11 +1754,30 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         }
 
         // Process unknown variables
-        for (i = 0; i < 2; i++) // value_name and value_type
-            while (bytestream2_get_byte(gb) != 0);
+        {
+            uint8_t name[256] = { 0 };
+            uint8_t type[256] = { 0 };
+            uint8_t value[256] = { 0 };
+            int i = 0, size;
 
-        // Skip variable length
-        bytestream2_skip(gb, bytestream2_get_le32(gb));
+            while (bytestream2_get_bytes_left(gb) > 0 &&
+                   bytestream2_peek_byte(gb) && i < 255) {
+                name[i++] = bytestream2_get_byte(gb);
+            }
+
+            bytestream2_skip(gb, 1);
+            i = 0;
+            while (bytestream2_get_bytes_left(gb) > 0 &&
+                   bytestream2_peek_byte(gb) && i < 255) {
+                type[i++] = bytestream2_get_byte(gb);
+            }
+            bytestream2_skip(gb, 1);
+            size = bytestream2_get_le32(gb);
+
+            bytestream2_get_buffer(gb, value, FFMIN(sizeof(value) - 1, size));
+            if (!strcmp(type, "string"))
+                av_dict_set(&metadata, name, value, 0);
+        }
     }
 
     if (s->compression == EXR_UNKN) {
