@@ -1,0 +1,52 @@
+4e6253c1f5f96ff64ae855dea426547d *tests/data/fate/matroska-mpegts-remux.matroska
+6509 tests/data/fate/matroska-mpegts-remux.matroska
+#tb 0: 1/1000
+#media_type 0: audio
+#codec_id 0: ac3
+#sample_rate 0: 48000
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+#tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: ac3
+#sample_rate 1: 48000
+#channel_layout 1: 3
+#channel_layout_name 1: stereo
+0,          0,          0,       32,      768, 0xa63778d4
+1,          0,          0,       32,      768, 0xa63778d4
+0,         32,         32,       32,      768, 0x7d577f3f
+1,         32,         32,       32,      768, 0x7d577f3f
+0,         64,         64,       32,      768, 0xd86b7c8f
+1,         64,         64,       32,      768, 0xd86b7c8f
+0,         96,         96,       32,      626, 0x09f4382f
+1,         96,         96,       32,      626, 0x09f4382f
+[STREAM]
+index=0
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=1
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+[/STREAM]
+[STREAM]
+index=1
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=1
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+[/STREAM]
