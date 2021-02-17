@@ -16,6 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <float.h>
 #include <string.h>
 #include "checkasm.h"
 #include "libavfilter/gblur.h"
@@ -48,6 +49,19 @@ static void check_horiz_slice(float *dst_ref, float *dst_new)
     bench_new(dst_new, WIDTH, HEIGHT, 1, nu, bscale);
 }
 
+static void check_postscale_slice(float *dst_ref, float *dst_new)
+{
+    float postscale = 0.0603f;
+
+    declare_func(void, float *dst, int len, float postscale, float min, float max);
+    call_ref(dst_ref, PIXELS, postscale, -FLT_MAX, FLT_MAX);
+    call_new(dst_new, PIXELS, postscale, -FLT_MAX, FLT_MAX);
+    if (!float_near_abs_eps_array(dst_ref, dst_new, FLT_EPSILON, PIXELS)) {
+        fail();
+    }
+    bench_new(dst_new, PIXELS, postscale, -FLT_MAX, FLT_MAX);
+}
+
 void checkasm_check_vf_gblur(void)
 {
     float *dst_ref = av_malloc(BUF_SIZE);
@@ -63,6 +77,14 @@ void checkasm_check_vf_gblur(void)
         check_horiz_slice(dst_ref, dst_new);
     }
     report("horiz_slice");
+
+    randomize_buffers(dst_ref, PIXELS);
+    memcpy(dst_new, dst_ref, BUF_SIZE);
+    if (check_func(s.postscale_slice, "postscale_slice")) {
+        check_postscale_slice(dst_ref, dst_new);
+    }
+    report("postscale_slice");
+
     av_freep(&dst_ref);
     av_freep(&dst_new);
 }
