@@ -48,7 +48,6 @@ OBJS = ac3_parser.o                                                     \
        mediacodec.o                                                     \
        mpeg12framerate.o                                                \
        options.o                                                        \
-       mjpegenc_huffman.o                                               \
        parser.o                                                         \
        parsers.o                                                        \
        profiles.o                                                       \
@@ -1220,7 +1219,6 @@ TESTPROGS = avpacket                                                    \
             jpeg2000dwt                                                 \
             mathops                                                    \
             options                                                     \
-            mjpegenc_huffman                                            \
             utils                                                       \
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
@@ -1229,6 +1227,7 @@ TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed32
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
+TESTPROGS-$(CONFIG_MJPEG_ENCODER)         += mjpegenc_huffman
 TESTPROGS-$(HAVE_MMX)                     += motion
 TESTPROGS-$(CONFIG_MPEGVIDEO)             += mpeg12framerate
 TESTPROGS-$(CONFIG_H264_METADATA_BSF)     += h264_levels
