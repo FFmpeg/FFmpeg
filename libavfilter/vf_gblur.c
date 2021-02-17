@@ -234,7 +234,8 @@ void ff_gblur_init(GBlurContext *s)
 {
     s->horiz_slice = horiz_slice_c;
     s->postscale_slice = postscale_c;
-    ff_gblur_init_x86(s);
+    if (ARCH_X86)
+        ff_gblur_init_x86(s);
 }
 
 static int config_input(AVFilterLink *inlink)
