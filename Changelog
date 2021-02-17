@@ -76,6 +76,7 @@ version <next>:
 - vif video filter
 - OpenEXR image encoder
 - Simbiosis IMX decoder
+- Simbiosis IMX demuxer
 
 
 version 4.3:

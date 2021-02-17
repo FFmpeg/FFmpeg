@@ -403,6 +403,7 @@ extern AVOutputFormat ff_stream_segment_muxer;
 extern AVInputFormat  ff_ser_demuxer;
 extern AVInputFormat  ff_shorten_demuxer;
 extern AVInputFormat  ff_siff_demuxer;
+extern AVInputFormat  ff_simbiosis_imx_demuxer;
 extern AVOutputFormat ff_singlejpeg_muxer;
 extern AVInputFormat  ff_sln_demuxer;
 extern AVInputFormat  ff_smacker_demuxer;
