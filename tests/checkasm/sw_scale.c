@@ -127,8 +127,8 @@ static void check_yuv2yuvX(void)
                             bench_new((const int16_t*)vFilterData, filter_sizes[fsi], src, dst1, dstW - osi, dither, osi);
                     }
                 }
-                free(src);
-                free(vFilterData);
+                av_freep(&src);
+                av_freep(&vFilterData);
             }
         }
     }
