@@ -32,12 +32,14 @@
 
 #include "libavutil/frame.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "jpegtables.h"
+#include "mathops.h"
 #include "mjpegenc_common.h"
 #include "mjpeg.h"
 
