@@ -75,6 +75,7 @@ version <next>:
 - setts bitstream filter
 - vif video filter
 - OpenEXR image encoder
+- Simbiosis IMX decoder
 
 
 version 4.3:

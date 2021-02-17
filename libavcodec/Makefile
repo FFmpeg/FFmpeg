@@ -620,6 +620,7 @@ OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
                                           acelp_filters.o celp_filters.o \
                                           sipr16k.o
 OBJS-$(CONFIG_SIREN_DECODER)           += siren.o
+OBJS-$(CONFIG_SIMBIOSIS_IMX_DECODER)   += imx.o
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o

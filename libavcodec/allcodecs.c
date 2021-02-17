@@ -293,6 +293,7 @@ extern AVCodec ff_sgi_encoder;
 extern AVCodec ff_sgi_decoder;
 extern AVCodec ff_sgirle_decoder;
 extern AVCodec ff_sheervideo_decoder;
+extern AVCodec ff_simbiosis_imx_decoder;
 extern AVCodec ff_smacker_decoder;
 extern AVCodec ff_smc_decoder;
 extern AVCodec ff_smvjpeg_decoder;
