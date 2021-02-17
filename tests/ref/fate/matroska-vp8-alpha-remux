@@ -1,0 +1,33 @@
+d06be833da8e8d9d00bf334e0dfe8a58 *tests/data/fate/matroska-vp8-alpha-remux.matroska
+237192 tests/data/fate/matroska-vp8-alpha-remux.matroska
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: vp8
+#dimensions 0: 320x213
+#sar 0: 1/1
+0,          0,          0,       33,     2108, 0x59b92a34, S=2,     1900, 0x8fb3adc5,       12, 0x00000000
+0,         32,         32,       33,      142, 0x2f2a3fed, F=0x0, S=1,      160, 0xa13346af
+0,         65,         65,       33,      157, 0x17804767, F=0x0, S=1,      209, 0x64115f15
+0,         99,         99,       33,      206, 0x537262ca, F=0x0, S=1,      317, 0x44a09dd0
+0,        132,        132,       33,      259, 0x73ff74b6, F=0x0, S=1,      384, 0x2ee2c588
+0,        165,        165,       33,      320, 0x0fcf8ce4, F=0x0, S=1,      415, 0xff68c953
+0,        199,        199,       33,      377, 0x8fffb5f5, F=0x0, S=1,      475, 0x4166f3eb
+[STREAM]
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=1
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=2D
+inverted=0
+[/SIDE_DATA]
+[/STREAM]

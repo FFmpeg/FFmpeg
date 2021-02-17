@@ -90,6 +90,16 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MXF_DEMUXER        \
                                += fate-matroska-mastering-display-metadata
 fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=dropamount=4" "-map 0 -c copy" "" "-show_entries stream_side_data_list:stream=index,codec_name"
 
+# Tests writing BlockAdditional and BlockGroups with ReferenceBlock elements;
+# it also tests setting a track as suitable for hearing impaired.
+# It also tests the capability of the VP8 parser to set the keyframe flag
+# (the input file lacks ReferenceBlock elements making everything a keyframe).
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MATROSKA_DEMUXER \
+                                            VP8_PARSER MATROSKA_MUXER      \
+                                            FRAMECRC_MUXER PIPE_PROTOCOL)  \
+                               += fate-matroska-vp8-alpha-remux
+fate-matroska-vp8-alpha-remux: CMD = transcode matroska $(TARGET_SAMPLES)/vp8_alpha/vp8_video_with_alpha.webm matroska "-c copy -disposition +hearing_impaired -cluster_size_limit 100000" "-c copy -t 0.2" "" "-show_entries stream_disposition:stream_side_data_list"
+
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
 
