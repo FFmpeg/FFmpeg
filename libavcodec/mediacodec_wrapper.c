@@ -45,6 +45,7 @@ struct JNIAMediaCodecListFields {
     jmethodID get_codec_capabilities_id;
     jmethodID get_supported_types_id;
     jmethodID is_encoder_id;
+    jmethodID is_software_only_id;
 
     jclass codec_capabilities_class;
     jfieldID color_formats_id;
@@ -81,6 +82,7 @@ static const struct FFJniField jni_amediacodeclist_mapping[] = {
         { "android/media/MediaCodecInfo", "getCapabilitiesForType", "(Ljava/lang/String;)Landroid/media/MediaCodecInfo$CodecCapabilities;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_codec_capabilities_id), 1 },
         { "android/media/MediaCodecInfo", "getSupportedTypes", "()[Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_supported_types_id), 1 },
         { "android/media/MediaCodecInfo", "isEncoder", "()Z", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, is_encoder_id), 1 },
+        { "android/media/MediaCodecInfo", "isSoftwareOnly", "()Z", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, is_software_only_id), 0 },
 
     { "android/media/MediaCodecInfo$CodecCapabilities", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, codec_capabilities_class), 1 },
         { "android/media/MediaCodecInfo$CodecCapabilities", "colorFormats", "[I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, color_formats_id), 1 },
@@ -439,6 +441,17 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
 
         if (is_encoder != encoder) {
             goto done_with_info;
+        }
+
+        if (jfields.is_software_only_id) {
+            int is_software_only = (*env)->CallBooleanMethod(env, info, jfields.is_software_only_id);
+            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                goto done;
+            }
+
+            if (is_software_only) {
+                goto done_with_info;
+            }
         }
 
         codec_name = (*env)->CallObjectMethod(env, info, jfields.get_name_id);
