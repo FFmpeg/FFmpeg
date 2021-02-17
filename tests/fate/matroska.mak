@@ -75,6 +75,21 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER MATROSKA_MUXER \
                                += fate-matroska-spherical-mono-remux
 fate-matroska-spherical-mono-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/spherical.mkv matroska "-map 0 -map 0 -c copy -disposition:0 -default+forced -disposition:1 -default -default_mode passthrough -color_primaries:1 bt709 -color_trc:1 smpte170m -colorspace:1 bt2020c -color_range:1 pc"  "-map 0 -c copy -t 0" "" "-show_entries stream_side_data_list:stream_disposition=default,forced:stream=color_range,color_space,color_primaries,color_transfer"
 
+# The input file of the following test contains Content Light Level as well as
+# Mastering Display Metadata and so this test tests correct muxing and demuxing
+# of these. It furthermore also tests that this data is correctly propagated
+# when reencoding (here to ffv1).
+# Both input audio tracks are completely zero, so the noise bsf is used
+# to make this test interesting.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MXF_DEMUXER        \
+                                            PRORES_DECODER PCM_S24LE_DECODER \
+                                            FFV1_ENCODER ARESAMPLE_FILTER    \
+                                            PCM_S16BE_ENCODER NOISE_BSF      \
+                                            MATROSKA_MUXER MATROSKA_DEMUXER  \
+                                            FRAMECRC_MUXER PIPE_PROTOCOL)    \
+                               += fate-matroska-mastering-display-metadata
+fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=dropamount=4" "-map 0 -c copy" "" "-show_entries stream_side_data_list:stream=index,codec_name"
+
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
 

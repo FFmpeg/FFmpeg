@@ -1,0 +1,97 @@
+abdf9fa02f44f48a45ba48074cb1d0fe *tests/data/fate/matroska-mastering-display-metadata.matroska
+1669691 tests/data/fate/matroska-mastering-display-metadata.matroska
+#extradata 0:        4, 0x040901a3
+#extradata 3:      200, 0x506463a8
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: prores
+#dimensions 0: 1280x720
+#sar 0: 1/1
+#tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: pcm_s24le
+#sample_rate 1: 48000
+#channel_layout 1: 4
+#channel_layout_name 1: mono
+#tb 2: 1/1000
+#media_type 2: audio
+#codec_id 2: pcm_s16be
+#sample_rate 2: 48000
+#channel_layout 2: 4
+#channel_layout_name 2: mono
+#tb 3: 1/1000
+#media_type 3: video
+#codec_id 3: ffv1
+#dimensions 3: 1280x720
+#sar 3: 1/1
+0,          0,          0,       16,    57008, 0x43416399, S=2,        8, 0x08e5014f,       88, 0xd65a04db
+1,          0,          0,       16,     2403, 0xaa818522
+3,          0,          0,       16,   274117, 0xc439610f, S=2,        8, 0x08e5014f,       88, 0xd65a04db
+0,         17,         17,       16,    57248, 0xa06cd7b5
+1,         17,         17,       16,     2403, 0xe1a991e5
+2,         17,         17,       16,     1602, 0x5d868171
+3,         17,         17,       16,   273691, 0x5a3b88a5, F=0x0
+0,         33,         33,       16,    57200, 0x5623da10
+1,         33,         33,       16,     2400, 0x6650907f
+2,         33,         33,       16,     1600, 0xa90f0044
+3,         33,         33,       16,   272987, 0x48c443e7, F=0x0
+0,         50,         50,       16,    57152, 0x52d89d3f
+1,         50,         50,       16,     2403, 0x43398a08
+2,         50,         50,       16,     1602, 0x3a350084
+3,         50,         50,       16,   271465, 0x251b9cbe, F=0x0
+0,         67,         67,       16,    56960, 0x431d5189
+1,         67,         67,       16,     2403, 0x61cd96cb
+2,         67,         67,       16,     1602, 0xd74800c6
+3,         67,         67,       16,   270800, 0x8fb2e217, F=0x0
+[STREAM]
+index=0
+codec_name=prores
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=100
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=17/25
+red_y=8/25
+green_x=53/200
+green_y=69/100
+blue_x=3/20
+blue_y=3/50
+white_point_x=3127/10000
+white_point_y=329/1000
+min_luminance=0/1
+max_luminance=1000/1
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+index=1
+codec_name=pcm_s24le
+[/STREAM]
+[STREAM]
+index=2
+codec_name=pcm_s16be
+[/STREAM]
+[STREAM]
+index=3
+codec_name=ffv1
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=100
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=17/25
+red_y=8/25
+green_x=53/200
+green_y=69/100
+blue_x=3/20
+blue_y=3/50
+white_point_x=3127/10000
+white_point_y=329/1000
+min_luminance=0/1
+max_luminance=1000/1
+[/SIDE_DATA]
+[/STREAM]
