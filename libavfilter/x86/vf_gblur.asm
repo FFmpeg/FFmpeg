@@ -202,7 +202,7 @@ cglobal postscale_slice, 2, 2, 4, ptr, length, postscale, min, max
 %else ; UNIX64
     VBROADCASTSS m0, xm0
     VBROADCASTSS m1, xm1
-    VBROADCASTSS m2, xm3
+    VBROADCASTSS m2, xm2
 %endif
 
     .loop:
