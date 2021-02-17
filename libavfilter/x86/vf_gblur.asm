@@ -185,27 +185,24 @@ HORIZ_SLICE
 %endif
 
 %macro POSTSCALE_SLICE 0
-%if UNIX64
-cglobal postscale_slice, 2, 2, 4, ptr, length
-%else
-cglobal postscale_slice, 5, 5, 4, ptr, length, postscale, min, max
-%endif
+cglobal postscale_slice, 2, 2, 4, ptr, length, postscale, min, max
     shl lengthd, 2
     add ptrq, lengthq
     neg lengthq
-%if WIN64
+%if ARCH_X86_32
+    VBROADCASTSS m0, postscalem
+    VBROADCASTSS m1, minm
+    VBROADCASTSS m2, maxm
+%elif WIN64
     SWAP 0, 2
     SWAP 1, 3
-    SWAP 2, 4
-%endif
-%if cpuflag(avx2)
-    vbroadcastss  m0, xm0
-    vbroadcastss  m1, xm1
-    vbroadcastss  m2, xm2
-%else
-    shufps   xm0, xm0, 0
-    shufps   xm1, xm1, 0
-    shufps   xm2, xm2, 0
+    VBROADCASTSS m0, xm0
+    VBROADCASTSS m1, xm1
+    VBROADCASTSS m2, maxm
+%else ; UNIX64
+    VBROADCASTSS m0, xm0
+    VBROADCASTSS m1, xm1
+    VBROADCASTSS m2, xm3
 %endif
 
     .loop:
