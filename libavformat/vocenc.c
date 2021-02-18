@@ -106,6 +106,6 @@ AVOutputFormat ff_voc_muxer = {
     .write_header      = voc_write_header,
     .write_packet      = voc_write_packet,
     .write_trailer     = voc_write_trailer,
-    .codec_tag         = (const AVCodecTag* const []){ ff_voc_codec_tags, 0 },
+    .codec_tag         = ff_voc_codec_tags_list,
     .flags             = AVFMT_NOTIMESTAMPS,
 };

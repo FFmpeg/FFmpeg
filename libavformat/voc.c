@@ -35,3 +35,5 @@ const AVCodecTag ff_voc_codec_tags[] = {
     {AV_CODEC_ID_ADPCM_CT,    0x0200},
     {AV_CODEC_ID_NONE,             0},
 };
+
+const AVCodecTag *const ff_voc_codec_tags_list[] = { ff_voc_codec_tags, NULL };
