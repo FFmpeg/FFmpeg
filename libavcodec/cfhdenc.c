@@ -742,7 +742,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
                 for (int m = 0; m < height; m++) {
                     for (int j = 0; j < stride; j++) {
-                        int16_t index = FFSIGN(data[j]) * lut[FFABS(data[j])];
+                        int16_t index = j >= width ? 0 : FFSIGN(data[j]) * lut[FFABS(data[j])];
 
                         if (index < 0)
                             index += 512;
