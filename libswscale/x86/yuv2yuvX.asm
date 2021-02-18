@@ -40,11 +40,9 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 %else
 %define movr movdqu
 %endif
-%if ARCH_X86_64
-    movsxd               dstWq, dstWd
-    movsxd               offsetq, offsetd
-    movsxd               srcq, srcd
-%endif ; x86-64
+    movsxdifnidn         dstWq, dstWd
+    movsxdifnidn         offsetq, offsetd
+    movsxdifnidn         srcq, srcd
 %if cpuflag(avx2)
     vpbroadcastq         m3, [ditherq]
 %else
