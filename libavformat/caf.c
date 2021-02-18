@@ -78,3 +78,4 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_NONE,            0 },
 };
 
+const AVCodecTag *const ff_caf_codec_tags_list[] = { ff_codec_caf_tags, NULL };

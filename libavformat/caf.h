@@ -30,5 +30,6 @@
 #include "internal.h"
 
 extern const AVCodecTag ff_codec_caf_tags[];
+extern const AVCodecTag *const ff_caf_codec_tags_list[];
 
 #endif /* AVFORMAT_CAF_H */

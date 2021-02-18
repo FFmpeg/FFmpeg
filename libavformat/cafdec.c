@@ -460,5 +460,5 @@ AVInputFormat ff_caf_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_seek      = read_seek,
-    .codec_tag      = (const AVCodecTag* const []){ ff_codec_caf_tags, 0 },
+    .codec_tag      = ff_caf_codec_tags_list,
 };
