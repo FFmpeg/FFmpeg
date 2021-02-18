@@ -77,13 +77,6 @@ void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, co
     c->PFX ## _dirac_pixels_tab[2][IDX] = ff_ ## PFX ## _dirac_pixels32_ ## EXT
 
 #define DIRAC_PIXOP(OPNAME2, OPNAME, EXT)\
-void ff_ ## OPNAME2 ## _dirac_pixels8_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
-{\
-    if (h&3)\
-        ff_ ## OPNAME2 ## _dirac_pixels8_c(dst, src, stride, h);\
-    else\
-        OPNAME ## _pixels8_ ## EXT(dst, src[0], stride, h);\
-}\
 void ff_ ## OPNAME2 ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
 {\
     if (h&3)\
