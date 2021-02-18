@@ -72,6 +72,8 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb, AVCodecParameters *pa
 
 extern const AVCodecTag ff_codec_bmp_tags[]; // exposed through avformat_get_riff_video_tags()
 extern const AVCodecTag ff_codec_wav_tags[];
+/* The following list contains both ff_codec_bmp_tags and ff_codec_wav_tags. */
+extern const AVCodecTag *const ff_riff_codec_tags_list[];
 
 extern const AVCodecTag ff_codec_bmp_tags_unofficial[];
 
