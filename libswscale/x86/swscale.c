@@ -63,16 +63,6 @@ DECLARE_ASM_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
 DECLARE_ASM_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 
 
-#define YUV2YUVX_FUNC_DECL(opt)  \
-static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, const int16_t **src, \
-                           uint8_t *dest, int dstW, \
-                           const uint8_t *dither, int offset); \
-
-YUV2YUVX_FUNC_DECL(mmx)
-YUV2YUVX_FUNC_DECL(mmxext)
-YUV2YUVX_FUNC_DECL(sse3)
-YUV2YUVX_FUNC_DECL(avx2)
-
 //MMX versions
 #if HAVE_MMX_INLINE
 #undef RENAME
@@ -206,8 +196,8 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY)
         }
     }
 }
+#endif /* HAVE_INLINE_ASM */
 
-#if HAVE_MMXEXT
 #define YUV2YUVX_FUNC_MMX(opt, step)  \
 void ff_yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, int srcOffset, \
                            uint8_t *dest, int dstW,  \
@@ -241,16 +231,18 @@ static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
     return; \
 }
 
+#if HAVE_MMX_EXTERNAL
 YUV2YUVX_FUNC_MMX(mmx, 16)
+#endif
+#if HAVE_MMXEXT_EXTERNAL
 YUV2YUVX_FUNC_MMX(mmxext, 16)
+#endif
+#if HAVE_SSE3_EXTERNAL
 YUV2YUVX_FUNC(sse3, 32)
+#endif
 #if HAVE_AVX2_EXTERNAL
 YUV2YUVX_FUNC(avx2, 64)
 #endif
-
-#endif
-
-#endif /* HAVE_INLINE_ASM */
 
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
@@ -379,20 +371,24 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
     if (INLINE_MMXEXT(cpu_flags))
         sws_init_swscale_mmxext(c);
 #endif
-#if HAVE_SSSE3_EXTERNAL
-    if (EXTERNAL_SSSE3(cpu_flags)) {
-        if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)){
+    if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)) {
+#if HAVE_MMX_EXTERNAL
+        if (EXTERNAL_MMX(cpu_flags))
+            c->yuv2planeX = yuv2yuvX_mmx;
+#endif
+#if HAVE_MMXEXT_EXTERNAL
+        if (EXTERNAL_MMXEXT(cpu_flags))
+            c->yuv2planeX = yuv2yuvX_mmxext;
+#endif
+#if HAVE_SSE3_EXTERNAL
+        if (EXTERNAL_SSE3(cpu_flags))
             c->yuv2planeX = yuv2yuvX_sse3;
-        }
-    }
 #endif
 #if HAVE_AVX2_EXTERNAL
-    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-        if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)){
+        if (EXTERNAL_AVX2_FAST(cpu_flags))
             c->yuv2planeX = yuv2yuvX_avx2;
-        }
-    }
 #endif
+    }
 
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
     if (c->srcBpc == 8) { \

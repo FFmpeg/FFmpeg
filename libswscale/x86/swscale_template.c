@@ -1435,7 +1435,6 @@ static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
                 }
             } else {
                 c->use_mmx_vfilter= 1;
-                c->yuv2planeX = RENAME(yuv2yuvX    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
