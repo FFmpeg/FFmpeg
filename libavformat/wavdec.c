@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
@@ -62,6 +63,17 @@ typedef struct WAVDemuxContext {
     int unaligned; // e.g. if an odd number of bytes ID3 tag was prepended
     int rifx; // RIFX: integer byte order for parameters is big endian
 } WAVDemuxContext;
+
+#define OFFSET(x) offsetof(WAVDemuxContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption demux_options[] = {
+#define W64_DEMUXER_OPTIONS_OFFSET (1 * CONFIG_WAV_DEMUXER)
+#if CONFIG_WAV_DEMUXER
+    { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
+#endif
+    { "max_size",      "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
+    { NULL },
+};
 
 static void set_spdif(AVFormatContext *s, WAVDemuxContext *wav)
 {
@@ -798,14 +810,6 @@ static int wav_read_seek(AVFormatContext *s,
     return ff_pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-#define OFFSET(x) offsetof(WAVDemuxContext, x)
-#define DEC AV_OPT_FLAG_DECODING_PARAM
-static const AVOption demux_options[] = {
-    { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
-    { "max_size",      "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
-    { NULL },
-};
-
 static const AVClass wav_demuxer_class = {
     .class_name = "WAV demuxer",
     .item_name  = av_default_item_name,
@@ -955,17 +959,10 @@ static int w64_read_header(AVFormatContext *s)
     return 0;
 }
 
-#define OFFSET(x) offsetof(WAVDemuxContext, x)
-#define DEC AV_OPT_FLAG_DECODING_PARAM
-static const AVOption w64_demux_options[] = {
-    { "max_size", "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
-    { NULL }
-};
-
 static const AVClass w64_demuxer_class = {
     .class_name = "W64 demuxer",
     .item_name  = av_default_item_name,
-    .option     = w64_demux_options,
+    .option     = &demux_options[W64_DEMUXER_OPTIONS_OFFSET],
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
