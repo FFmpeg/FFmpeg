@@ -127,7 +127,6 @@ typedef struct VPxEncoderContext {
     int roi_warned;
 #if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT)
     vpx_svc_ref_frame_config_t ref_frame_config;
-    AVDictionary *vpx_ref_frame_config;
 #endif
 } VPxContext;
 
@@ -561,18 +560,13 @@ static int vpx_ts_param_parse(VPxContext *ctx, struct vpx_codec_enc_cfg *enccfg,
 }
 
 #if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT)
-static int vpx_ref_frame_config_parse(VPxContext *ctx, const struct vpx_codec_enc_cfg *enccfg,
-                                      char *key, char *value, enum AVCodecID codec_id)
+static int vpx_ref_frame_config_set_value(vpx_svc_ref_frame_config_t *ref_frame_config,
+                                          int ss_number_layers, char *key, char *value)
 {
     size_t value_len = strlen(value);
-    int ss_number_layers = enccfg->ss_number_layers;
-    vpx_svc_ref_frame_config_t *ref_frame_config = &ctx->ref_frame_config;
 
     if (!value_len)
-        return -1;
-
-    if (codec_id != AV_CODEC_ID_VP9)
-        return -1;
+        return AVERROR(EINVAL);
 
     if (!strcmp(key, "rfc_update_buffer_slot")) {
         vp8_ts_parse_int_array(ref_frame_config->update_buffer_slot, value, value_len, ss_number_layers);
@@ -599,6 +593,49 @@ static int vpx_ref_frame_config_parse(VPxContext *ctx, const struct vpx_codec_en
     }
 
     return 0;
+}
+
+static int vpx_parse_ref_frame_config_element(vpx_svc_ref_frame_config_t *ref_frame_config,
+                                              int ss_number_layers, const char **buf)
+{
+    const char key_val_sep[] = "=";
+    const char pairs_sep[] = ":";
+    char *key = av_get_token(buf, key_val_sep);
+    char *val = NULL;
+    int ret;
+
+    if (key && *key && strspn(*buf, key_val_sep)) {
+        (*buf)++;
+        val = av_get_token(buf, pairs_sep);
+    }
+
+    if (key && *key && val && *val)
+        ret = vpx_ref_frame_config_set_value(ref_frame_config, ss_number_layers, key, val);
+    else
+        ret = AVERROR(EINVAL);
+
+    av_freep(&key);
+    av_freep(&val);
+
+    return ret;
+}
+
+static int vpx_parse_ref_frame_config(vpx_svc_ref_frame_config_t *ref_frame_config,
+                                      int ss_number_layers, const char *str)
+{
+    int ret = 0;
+
+    while (*str) {
+        ret =
+            vpx_parse_ref_frame_config_element(ref_frame_config, ss_number_layers, &str);
+        if (ret < 0)
+            return ret;
+
+        if (*str)
+            str++;
+    }
+
+    return ret;
 }
 #endif
 
@@ -1594,20 +1631,18 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 
             if (en) {
                 if (avctx->codec_id == AV_CODEC_ID_VP9) {
-                    AVDictionaryEntry* en2 = NULL;
-                    av_dict_parse_string(&ctx->vpx_ref_frame_config, en->value, "=", ":", 0);
-
-                    while ((en2 = av_dict_get(ctx->vpx_ref_frame_config, "", en2, AV_DICT_IGNORE_SUFFIX))) {
-                        if (vpx_ref_frame_config_parse(ctx, enccfg, en2->key, en2->value, avctx->codec_id) < 0)
-                            av_log(avctx, AV_LOG_WARNING,
-                                   "Error parsing option '%s = %s'.\n",
-                                   en2->key, en2->value);
+                    int ret = vpx_parse_ref_frame_config(&ctx->ref_frame_config,
+                                                         enccfg->ss_number_layers, en->value);
+                    if (ret < 0) {
+                        av_log(avctx, AV_LOG_WARNING,
+                               "Error parsing ref_frame_config option %s.\n", en->value);
+                        return ret;
                     }
 
                     codecctl_intp(avctx, VP9E_SET_SVC_REF_FRAME_CONFIG, (int *)&ctx->ref_frame_config);
                 } else {
                     av_log(avctx, AV_LOG_WARNING,
-                           "Error using option ref-frame-config for a non-VP9 codec\n");
+                           "Ignoring ref-frame-config for a non-VP9 codec\n");
                 }
             }
 #endif
