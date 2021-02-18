@@ -121,22 +121,3 @@ int ff_rac_terminate(RangeCoder *c, int version)
 
     return c->bytestream - c->bytestream_start;
 }
-
-int ff_rac_check_termination(RangeCoder *c, int version)
-{
-    if (version == 1) {
-        RangeCoder tmp = *c;
-        get_rac(c, (uint8_t[]) { 129 });
-
-        if (c->bytestream == tmp.bytestream && c->bytestream > c->bytestream_start)
-            tmp.low -= *--tmp.bytestream;
-        tmp.bytestream_end = tmp.bytestream;
-
-        if (get_rac(&tmp, (uint8_t[]) { 129 }))
-            return AVERROR_INVALIDDATA;
-    } else {
-        if (c->bytestream_end != c->bytestream)
-            return AVERROR_INVALIDDATA;
-    }
-    return 0;
-}

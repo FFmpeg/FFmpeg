@@ -26,6 +26,32 @@
 
 #define SIZE 1240
 
+/**
+ * Check if at the current position there is a valid looking termination
+ * @param version version 0 requires the decoder to know the data size in bytes
+ *                version 1 needs about 1 bit more space but does not need to
+ *                          carry the size from encoder to decoder
+ * @returns negative AVERROR code on error or non negative.
+ */
+static int rac_check_termination(RangeCoder *c, int version)
+{
+    if (version == 1) {
+        RangeCoder tmp = *c;
+        get_rac(c, (uint8_t[]) { 129 });
+
+        if (c->bytestream == tmp.bytestream && c->bytestream > c->bytestream_start)
+            tmp.low -= *--tmp.bytestream;
+        tmp.bytestream_end = tmp.bytestream;
+
+        if (get_rac(&tmp, (uint8_t[]) { 129 }))
+            return AVERROR_INVALIDDATA;
+    } else {
+        if (c->bytestream_end != c->bytestream)
+            return AVERROR_INVALIDDATA;
+    }
+    return 0;
+}
+
 int main(void)
 {
     RangeCoder c;
@@ -61,7 +87,7 @@ int main(void)
                     return 1;
                 }
 
-            if (ff_rac_check_termination(&c, version) < 0) {
+            if (rac_check_termination(&c, version) < 0) {
                 av_log(NULL, AV_LOG_ERROR, "rac failure at termination pass %d version %d\n", p, version);
                 return 1;
             }
