@@ -2107,11 +2107,6 @@ static void adpcm_flush(AVCodecContext *avctx)
                 c->status[0].step_index = av_clip(AV_RL32(avctx->extradata + 20), 0, 88);
                 c->status[1].predictor  = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
                 c->status[1].step_index = av_clip(AV_RL32(avctx->extradata + 8), 0, 88);
-            } else if (avctx->extradata_size >= 16) {
-                c->status[0].predictor  = av_clip_intp2(AV_RL32(avctx->extradata +  0), 18);
-                c->status[0].step_index = av_clip(AV_RL32(avctx->extradata +  4), 0, 88);
-                c->status[1].predictor  = av_clip_intp2(AV_RL32(avctx->extradata +  8), 18);
-                c->status[1].step_index = av_clip(AV_RL32(avctx->extradata + 12), 0, 88);
             }
         }
         break;
