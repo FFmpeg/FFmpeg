@@ -305,6 +305,6 @@ AVOutputFormat ff_aiff_muxer = {
     .write_packet      = aiff_write_packet,
     .write_trailer     = aiff_write_trailer,
     .deinit            = aiff_deinit,
-    .codec_tag         = (const AVCodecTag* const []){ ff_codec_aiff_tags, 0 },
+    .codec_tag         = ff_aiff_codec_tags_list,
     .priv_class        = &aiff_muxer_class,
 };

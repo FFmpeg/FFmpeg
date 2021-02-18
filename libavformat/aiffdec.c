@@ -430,5 +430,5 @@ AVInputFormat ff_aiff_demuxer = {
     .read_header    = aiff_read_header,
     .read_packet    = aiff_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .codec_tag      = (const AVCodecTag* const []){ ff_codec_aiff_tags, 0 },
+    .codec_tag      = ff_aiff_codec_tags_list,
 };
