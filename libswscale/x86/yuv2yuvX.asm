@@ -47,10 +47,8 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 %endif ; x86-64
 %if cpuflag(avx2)
     vpbroadcastq         m3, [ditherq]
-%elif cpuflag(sse3)
-    movq                 xmm3, [ditherq]
 %else
-    mova                 m3, [ditherq]
+    movq                 xm3, [ditherq]
 %endif ; avx2
     cmp                  offsetd, 0
     jz                   .offset
