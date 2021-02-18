@@ -28,5 +28,6 @@
 
 /* The libavcodec codecs we support, and the IDs they have in the file */
 extern const AVCodecTag ff_codec_rso_tags[];
+extern const AVCodecTag *const ff_rso_codec_tags_list[];
 
 #endif /* AVFORMAT_RSO_H */

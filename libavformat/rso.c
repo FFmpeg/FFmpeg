@@ -28,3 +28,5 @@ const AVCodecTag ff_codec_rso_tags[] = {
     { AV_CODEC_ID_ADPCM_IMA_WAV,   0x0101 },
     { AV_CODEC_ID_NONE, 0 },
 };
+
+const AVCodecTag *const ff_rso_codec_tags_list[] = { ff_codec_rso_tags, NULL };

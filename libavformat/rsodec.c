@@ -79,5 +79,5 @@ AVInputFormat ff_rso_demuxer = {
     .read_header    =   rso_read_header,
     .read_packet    =   ff_pcm_read_packet,
     .read_seek      =   ff_pcm_read_seek,
-    .codec_tag      =   (const AVCodecTag* const []){ff_codec_rso_tags, 0},
+    .codec_tag      =   ff_rso_codec_tags_list,
 };
