@@ -118,5 +118,5 @@ AVInputFormat ff_ast_demuxer = {
     .read_packet    = ast_read_packet,
     .extensions     = "ast",
     .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = (const AVCodecTag* const []){ff_codec_ast_tags, 0},
+    .codec_tag      = ff_ast_codec_tags_list,
 };

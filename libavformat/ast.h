@@ -26,5 +26,6 @@
 #include "internal.h"
 
 extern const AVCodecTag ff_codec_ast_tags[];
+extern const AVCodecTag *const ff_ast_codec_tags_list[];
 
 #endif /* AVFORMAT_AST_H */

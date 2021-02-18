@@ -19,7 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avformat.h"
+#include <stddef.h>
+#include "libavcodec/codec_id.h"
 #include "internal.h"
 
 const AVCodecTag ff_codec_ast_tags[] = {
@@ -27,3 +28,5 @@ const AVCodecTag ff_codec_ast_tags[] = {
     { AV_CODEC_ID_PCM_S16BE_PLANAR,   1 },
     { AV_CODEC_ID_NONE,               0 },
 };
+
+const AVCodecTag *const ff_ast_codec_tags_list[] = { ff_codec_ast_tags, NULL };
