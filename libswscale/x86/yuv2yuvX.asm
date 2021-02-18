@@ -62,18 +62,8 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 
 .offset:
     add offsetq, srcq
-%if cpuflag(avx2)
-    movd                 xmm1, filterSized
-    vpbroadcastw         m1, xmm1
-%elif cpuflag(sse3)
-    movd                 xmm1, filterSized
-    pshuflw              m1, m1, q0000
-    punpcklqdq           m1, m1
-%else
-    movd m1, filterSized
-    punpcklwd m1, m1
-    punpckldq m1, m1
-%endif ; avx2
+    movd                 xm1, filterSized
+    SPLATW               m1, xm1, 0
     pxor                 m0, m0, m0
     mov                  filterSizeq, filterq
     mov                  srcq, [filterSizeq]
