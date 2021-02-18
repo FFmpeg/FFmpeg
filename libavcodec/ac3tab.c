@@ -245,19 +245,6 @@ const uint16_t ff_ac3_fast_gain_tab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
 };
 
-/**
- * Default channel map for a dependent substream defined by acmod
- */
-const uint16_t ff_eac3_default_chmap[8] = {
-    AC3_CHMAP_L |               AC3_CHMAP_R, // FIXME Ch1+Ch2
-                  AC3_CHMAP_C,
-    AC3_CHMAP_L |               AC3_CHMAP_R,
-    AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R,
-    AC3_CHMAP_L |               AC3_CHMAP_R |                   AC3_CHMAP_C_SUR,
-    AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R |                   AC3_CHMAP_C_SUR,
-    AC3_CHMAP_L |               AC3_CHMAP_R | AC3_CHMAP_L_SUR |                  AC3_CHMAP_R_SUR,
-    AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R | AC3_CHMAP_L_SUR |                  AC3_CHMAP_R_SUR
-};
 const uint64_t ff_eac3_custom_channel_map_locations[16][2] = {
     { 1, AV_CH_FRONT_LEFT },
     { 1, AV_CH_FRONT_CENTER },
