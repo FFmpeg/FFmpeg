@@ -596,6 +596,10 @@ const AVCodecTag *const ff_riff_codec_tags_list[] = {
 };
 #endif
 
+#if CONFIG_WAV_DEMUXER || CONFIG_WAV_MUXER || CONFIG_W64_DEMUXER || CONFIG_W64_MUXER
+const AVCodecTag *const ff_wav_codec_tags_list[] = { ff_codec_wav_tags, NULL };
+#endif
+
 const AVMetadataConv ff_riff_info_conv[] = {
     { "IART", "artist"     },
     { "ICMT", "comment"    },

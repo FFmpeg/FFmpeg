@@ -821,7 +821,7 @@ AVInputFormat ff_wav_demuxer = {
     .read_packet    = wav_read_packet,
     .read_seek      = wav_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = (const AVCodecTag * const []) { ff_codec_wav_tags,  0 },
+    .codec_tag      = ff_wav_codec_tags_list,
     .priv_class     = &wav_demuxer_class,
 };
 #endif /* CONFIG_WAV_DEMUXER */
@@ -978,7 +978,7 @@ AVInputFormat ff_w64_demuxer = {
     .read_packet    = wav_read_packet,
     .read_seek      = wav_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = (const AVCodecTag * const []) { ff_codec_wav_tags, 0 },
+    .codec_tag      = ff_wav_codec_tags_list,
     .priv_class     = &w64_demuxer_class,
 };
 #endif /* CONFIG_W64_DEMUXER */

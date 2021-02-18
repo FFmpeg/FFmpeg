@@ -74,6 +74,8 @@ extern const AVCodecTag ff_codec_bmp_tags[]; // exposed through avformat_get_rif
 extern const AVCodecTag ff_codec_wav_tags[];
 /* The following list contains both ff_codec_bmp_tags and ff_codec_wav_tags. */
 extern const AVCodecTag *const ff_riff_codec_tags_list[];
+/* The following list contains only ff_codec_wav_tags. */
+extern const AVCodecTag *const ff_wav_codec_tags_list[];
 
 extern const AVCodecTag ff_codec_bmp_tags_unofficial[];
 

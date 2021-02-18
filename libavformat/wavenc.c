@@ -514,7 +514,7 @@ AVOutputFormat ff_wav_muxer = {
     .write_trailer     = wav_write_trailer,
     .deinit            = wav_deinit,
     .flags             = AVFMT_TS_NONSTRICT,
-    .codec_tag         = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
+    .codec_tag         = ff_wav_codec_tags_list,
     .priv_class        = &wav_muxer_class,
 };
 #endif /* CONFIG_WAV_MUXER */
@@ -612,6 +612,6 @@ AVOutputFormat ff_w64_muxer = {
     .write_packet      = wav_write_packet,
     .write_trailer     = w64_write_trailer,
     .flags             = AVFMT_TS_NONSTRICT,
-    .codec_tag         = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
+    .codec_tag         = ff_wav_codec_tags_list,
 };
 #endif /* CONFIG_W64_MUXER */
