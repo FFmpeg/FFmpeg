@@ -59,6 +59,20 @@ static const uint64_t leaf_table[] = {
     0x1573cd93da7df623, 0x47f98d79620dd535
 };
 
+/** map ATRAC-X channel id to internal channel layout */
+static const uint64_t oma_chid_to_native_layout[7] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT1_BACK,
+    AV_CH_LAYOUT_6POINT1_BACK,
+    AV_CH_LAYOUT_7POINT1
+};
+
+/** map ATRAC-X channel id to total number of channels */
+static const int oma_chid_to_num_channels[7] = { 1, 2, 3, 4, 6, 7, 8 };
+
 typedef struct OMAContext {
     uint64_t content_start;
     int encrypted;
@@ -492,8 +506,8 @@ static int oma_read_header(AVFormatContext *s)
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
-        st->codecpar->channel_layout = ff_oma_chid_to_native_layout[channel_id - 1];
-        st->codecpar->channels       = ff_oma_chid_to_num_channels[channel_id - 1];
+        st->codecpar->channel_layout = oma_chid_to_native_layout[channel_id - 1];
+        st->codecpar->channels       = oma_chid_to_num_channels[channel_id - 1];
         framesize = ((codec_params & 0x3FF) * 8) + 8;
         samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
         if (!samplerate) {
