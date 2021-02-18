@@ -21,6 +21,7 @@ HEADERS = adler32.h                                                     \
           cpu.h                                                         \
           crc.h                                                         \
           des.h                                                         \
+          detection_bbox.h                                              \
           dict.h                                                        \
           display.h                                                     \
           dovi_meta.h                                                   \
@@ -113,6 +114,7 @@ OBJS = adler32.o                                                        \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
+       detection_bbox.o                                                 \
        dict.o                                                           \
        display.o                                                        \
        dovi_meta.o                                                      \

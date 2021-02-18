@@ -198,6 +198,12 @@ enum AVFrameSideDataType {
      * Must be present for every frame which should have film grain applied.
      */
     AV_FRAME_DATA_FILM_GRAIN_PARAMS,
+
+    /**
+     * Bounding boxes for object detection and classification,
+     * as described by AVDetectionBBoxHeader.
+     */
+    AV_FRAME_DATA_DETECTION_BBOXES,
 };
 
 enum AVActiveFormatDescription {
