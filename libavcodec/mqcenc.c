@@ -102,11 +102,6 @@ void ff_mqc_encode(MqcState *mqc, uint8_t *cxstate, int d)
     }
 }
 
-int ff_mqc_length(MqcState *mqc)
-{
-    return mqc->bp - mqc->bpstart;
-}
-
 int ff_mqc_flush(MqcState *mqc)
 {
     setbits(mqc);
