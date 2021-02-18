@@ -102,7 +102,6 @@ extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
  *
  * Used in G.729 @@6.4k (with gray coding), AMR @@5.9k (without gray coding)
  */
-extern const uint8_t ff_fc_2pulses_9bits_track1[16];
 extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
 
 /**

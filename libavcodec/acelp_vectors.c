@@ -28,17 +28,6 @@
 #include "avcodec.h"
 #include "acelp_vectors.h"
 
-const uint8_t ff_fc_2pulses_9bits_track1[16] =
-{
-    1,  3,
-    6,  8,
-    11, 13,
-    16, 18,
-    21, 23,
-    26, 28,
-    31, 33,
-    36, 38
-};
 const uint8_t ff_fc_2pulses_9bits_track1_gray[16] =
 {
   1,  3,
