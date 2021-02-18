@@ -143,6 +143,12 @@ static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
     0xce, 0x75, 0xf8, 0x7b, 0x8d, 0x46, 0xd1, 0x11, 0x8d, 0x82, 0x00, 0x60, 0x97, 0xc9, 0xa2, 0xb2
 };
 
+static const ff_asf_guid asf_audio_conceal_none = {
+    // 0x40, 0xa4, 0xf1, 0x49, 0x4ece, 0x11d0, 0xa3, 0xac, 0x00, 0xa0, 0xc9, 0x03, 0x48, 0xf6
+    // New value lifted from avifile
+    0x00, 0x57, 0xfb, 0x20, 0x55, 0x5B, 0xCF, 0x11, 0xa8, 0xfd, 0x00, 0x80, 0x5f, 0x5c, 0x44, 0x2b
+};
+
 #define PRINT_IF_GUID(g, cmp) \
     if (!ff_guidcmp(g, &cmp)) \
         av_log(NULL, AV_LOG_TRACE, "(GUID: %s) ", # cmp)
@@ -154,7 +160,7 @@ static void print_guid(ff_asf_guid *g)
     else PRINT_IF_GUID(g, ff_asf_file_header);
     else PRINT_IF_GUID(g, ff_asf_stream_header);
     else PRINT_IF_GUID(g, ff_asf_audio_stream);
-    else PRINT_IF_GUID(g, ff_asf_audio_conceal_none);
+    else PRINT_IF_GUID(g, asf_audio_conceal_none);
     else PRINT_IF_GUID(g, ff_asf_video_stream);
     else PRINT_IF_GUID(g, ff_asf_video_conceal_none);
     else PRINT_IF_GUID(g, ff_asf_command_stream);

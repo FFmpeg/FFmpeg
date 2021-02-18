@@ -74,7 +74,6 @@ extern const ff_asf_guid ff_asf_file_header;
 extern const ff_asf_guid ff_asf_stream_header;
 extern const ff_asf_guid ff_asf_ext_stream_header;
 extern const ff_asf_guid ff_asf_audio_stream;
-extern const ff_asf_guid ff_asf_audio_conceal_none;
 extern const ff_asf_guid ff_asf_audio_conceal_spread;
 extern const ff_asf_guid ff_asf_video_stream;
 extern const ff_asf_guid ff_asf_jfif_media;
