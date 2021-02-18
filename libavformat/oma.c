@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include "internal.h"
 #include "oma.h"
 #include "libavcodec/avcodec.h"
@@ -34,6 +35,8 @@ const AVCodecTag ff_oma_codec_tags[] = {
     { AV_CODEC_ID_ATRAC3AL,    OMA_CODECID_ATRAC3AL  },
     { 0 },
 };
+
+const AVCodecTag *const ff_oma_codec_tags_list[] = { ff_oma_codec_tags, NULL };
 
 /** map ATRAC-X channel id to internal channel layout */
 const uint64_t ff_oma_chid_to_native_layout[7] = {

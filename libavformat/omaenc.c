@@ -102,6 +102,6 @@ AVOutputFormat ff_oma_muxer = {
     .audio_codec       = AV_CODEC_ID_ATRAC3,
     .write_header      = oma_write_header,
     .write_packet      = ff_raw_write_packet,
-    .codec_tag         = (const AVCodecTag* const []){ff_oma_codec_tags, 0},
+    .codec_tag         = ff_oma_codec_tags_list,
     .flags             = AVFMT_NOTIMESTAMPS,
 };

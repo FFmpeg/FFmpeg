@@ -621,5 +621,5 @@ AVInputFormat ff_oma_demuxer = {
     .read_close     = oma_read_close,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "oma,omg,aa3",
-    .codec_tag      = (const AVCodecTag* const []){ff_oma_codec_tags, 0},
+    .codec_tag      = ff_oma_codec_tags_list,
 };
