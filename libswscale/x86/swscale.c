@@ -244,7 +244,9 @@ static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
 YUV2YUVX_FUNC_MMX(mmx, 16)
 YUV2YUVX_FUNC_MMX(mmxext, 16)
 YUV2YUVX_FUNC(sse3, 32)
+#if HAVE_AVX2_EXTERNAL
 YUV2YUVX_FUNC(avx2, 64)
+#endif
 
 #endif
 
@@ -376,13 +378,18 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
 #if HAVE_MMXEXT_INLINE
     if (INLINE_MMXEXT(cpu_flags))
         sws_init_swscale_mmxext(c);
-    if (cpu_flags & AV_CPU_FLAG_AVX2){
-        if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)){
-            c->yuv2planeX = yuv2yuvX_avx2;
-        }
-    } else if (cpu_flags & AV_CPU_FLAG_SSE3){
+#endif
+#if HAVE_SSSE3_EXTERNAL
+    if (EXTERNAL_SSSE3(cpu_flags)) {
         if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)){
             c->yuv2planeX = yuv2yuvX_sse3;
+        }
+    }
+#endif
+#if HAVE_AVX2_EXTERNAL
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)){
+            c->yuv2planeX = yuv2yuvX_avx2;
         }
     }
 #endif
