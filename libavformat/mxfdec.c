@@ -2798,7 +2798,7 @@ static int mxf_read_identification_metadata(void *arg, AVIOContext *pb, int tag,
         SET_TS_METADATA(pb, "modification_date", ts, str);
         break;
     case 0x3C07:
-        SET_VERSION_METADATA(pb, "toolkit_version", major, minor, tertiary, patch, release, str);
+        SET_VERSION_METADATA(pb, "toolkit_version_num", major, minor, tertiary, patch, release, str);
         break;
     case 0x3C08:
         SET_STR_METADATA(pb, "application_platform", str);
