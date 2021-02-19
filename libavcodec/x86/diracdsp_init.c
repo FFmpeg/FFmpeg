@@ -67,29 +67,29 @@ void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, co
     c->PFX ## _dirac_pixels_tab[1][IDX] = PFX ## _dirac_pixels16_ ## EXT; \
     c->PFX ## _dirac_pixels_tab[2][IDX] = PFX ## _dirac_pixels32_ ## EXT
 
-#define DIRAC_PIXOP(OPNAME2, OPNAME, EXT)\
-static void OPNAME2 ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], \
-                                               int stride, int h) \
+#define DIRAC_PIXOP(OPNAME, EXT)\
+static void OPNAME ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], \
+                                              int stride, int h) \
 {\
     if (h&3)\
-        ff_ ## OPNAME2 ## _dirac_pixels16_c(dst, src, stride, h);\
+        ff_ ## OPNAME ## _dirac_pixels16_c(dst, src, stride, h);\
     else\
-        OPNAME ## _pixels16_ ## EXT(dst, src[0], stride, h);\
+        ff_ ## OPNAME ## _pixels16_ ## EXT(dst, src[0], stride, h);\
 }\
-static void OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], \
-                                               int stride, int h) \
+static void OPNAME ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], \
+                                              int stride, int h) \
 {\
     if (h&3) {\
-        ff_ ## OPNAME2 ## _dirac_pixels32_c(dst, src, stride, h);\
+        ff_ ## OPNAME ## _dirac_pixels32_c(dst, src, stride, h);\
     } else {\
-        OPNAME ## _pixels16_ ## EXT(dst   , src[0]   , stride, h);\
-        OPNAME ## _pixels16_ ## EXT(dst+16, src[0]+16, stride, h);\
+        ff_ ## OPNAME ## _pixels16_ ## EXT(dst   , src[0]   , stride, h);\
+        ff_ ## OPNAME ## _pixels16_ ## EXT(dst+16, src[0]+16, stride, h);\
     }\
 }
 
-DIRAC_PIXOP(put, ff_put, mmx)
-DIRAC_PIXOP(avg, ff_avg, mmx)
-DIRAC_PIXOP(avg, ff_avg, mmxext)
+DIRAC_PIXOP(put, mmx)
+DIRAC_PIXOP(avg, mmx)
+DIRAC_PIXOP(avg, mmxext)
 
 static void put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5],
                                     int stride, int h)
