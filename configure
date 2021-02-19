@@ -6591,7 +6591,7 @@ enabled libmfx            && { { check_pkg_config libmfx "libmfx >= 1.28 libmfx 
                                    "multi-frame encode, user plugins and LA_EXT rate control mode are enabled"; }
 
 if enabled libmfx; then
-   check_cc MFX_CODEC_VP9 "mfx/mfxvp9.h mfx/mfxstructures.h" "MFX_CODEC_VP9"
+   check_cc MFX_CODEC_VP9 "mfx/mfxdefs.h mfx/mfxstructures.h" "MFX_CODEC_VP9"
 fi
 
 enabled libmodplug        && require_pkg_config libmodplug libmodplug libmodplug/modplug.h ModPlug_Load
