@@ -42,11 +42,7 @@ SECTION .text
 cextern pb_1
 cextern pb_3
 cextern pw_4
-cextern pw_5
 cextern pw_8
-cextern pw_16
-cextern pw_17
-cextern pw_32
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_vertical_8(uint8_t *src, ptrdiff_t stride)
