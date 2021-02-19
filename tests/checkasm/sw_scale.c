@@ -86,6 +86,7 @@ static void check_yuv2yuvX(void)
         uint16_t coeff[8];
     } *vFilterData;
     uint8_t d_val = rnd();
+    memset(dither, d_val, LARGEST_INPUT_SIZE);
     randomize_buffers((uint8_t*)src_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
     randomize_buffers((uint8_t*)filter_coeff, LARGEST_FILTER * sizeof(int16_t));
     ctx = sws_alloc_context();
@@ -93,9 +94,6 @@ static void check_yuv2yuvX(void)
         fail();
 
     ff_getSwsFunc(ctx);
-    for(i = 0; i < LARGEST_INPUT_SIZE; ++i){
-        dither[i] = d_val;
-    }
     for(isi = 0; isi < INPUT_SIZES; ++isi){
         dstW = input_sizes[isi];
         for(osi = 0; osi < 64; osi += 16){
