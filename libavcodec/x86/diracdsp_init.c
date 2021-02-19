@@ -22,15 +22,6 @@
 #include "libavcodec/diracdsp.h"
 #include "fpel.h"
 
-DECL_DIRAC_PIXOP(put, mmx);
-DECL_DIRAC_PIXOP(avg, mmx);
-DECL_DIRAC_PIXOP(avg, mmxext);
-
-void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-void ff_avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-void ff_put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-
 void ff_add_rect_clamped_mmx(uint8_t *, const uint16_t *, int, const int16_t *, int, int, int);
 void ff_add_rect_clamped_sse2(uint8_t *, const uint16_t *, int, const int16_t *, int, int, int);
 
@@ -72,19 +63,21 @@ void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, co
     }
 
 #define PIXFUNC(PFX, IDX, EXT)                                                   \
-    /*MMXDISABLEDc->PFX ## _dirac_pixels_tab[0][IDX] = ff_ ## PFX ## _dirac_pixels8_ ## EXT;*/  \
-    c->PFX ## _dirac_pixels_tab[1][IDX] = ff_ ## PFX ## _dirac_pixels16_ ## EXT; \
-    c->PFX ## _dirac_pixels_tab[2][IDX] = ff_ ## PFX ## _dirac_pixels32_ ## EXT
+    /*MMXDISABLEDc->PFX ## _dirac_pixels_tab[0][IDX] = PFX ## _dirac_pixels8_ ## EXT;*/  \
+    c->PFX ## _dirac_pixels_tab[1][IDX] = PFX ## _dirac_pixels16_ ## EXT; \
+    c->PFX ## _dirac_pixels_tab[2][IDX] = PFX ## _dirac_pixels32_ ## EXT
 
 #define DIRAC_PIXOP(OPNAME2, OPNAME, EXT)\
-void ff_ ## OPNAME2 ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
+static void OPNAME2 ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], \
+                                               int stride, int h) \
 {\
     if (h&3)\
         ff_ ## OPNAME2 ## _dirac_pixels16_c(dst, src, stride, h);\
     else\
         OPNAME ## _pixels16_ ## EXT(dst, src[0], stride, h);\
 }\
-void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
+static void OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], \
+                                               int stride, int h) \
 {\
     if (h&3) {\
         ff_ ## OPNAME2 ## _dirac_pixels32_c(dst, src, stride, h);\
@@ -98,21 +91,24 @@ DIRAC_PIXOP(put, ff_put, mmx)
 DIRAC_PIXOP(avg, ff_avg, mmx)
 DIRAC_PIXOP(avg, ff_avg, mmxext)
 
-void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+static void put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5],
+                                    int stride, int h)
 {
     if (h&3)
         ff_put_dirac_pixels16_c(dst, src, stride, h);
     else
         ff_put_pixels16_sse2(dst, src[0], stride, h);
 }
-void ff_avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+static void avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5],
+                                    int stride, int h)
 {
     if (h&3)
         ff_avg_dirac_pixels16_c(dst, src, stride, h);
     else
         ff_avg_pixels16_sse2(dst, src[0], stride, h);
 }
-void ff_put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+static void put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5],
+                                    int stride, int h)
 {
     if (h&3) {
         ff_put_dirac_pixels32_c(dst, src, stride, h);
@@ -121,7 +117,8 @@ void ff_put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
         ff_put_pixels16_sse2(dst+16, src[0]+16, stride, h);
     }
 }
-void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+static void avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5],
+                                    int stride, int h)
 {
     if (h&3) {
         ff_avg_dirac_pixels32_c(dst, src, stride, h);
@@ -131,23 +128,16 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
     }
 }
 
-#else // HAVE_X86ASM
-
-#define HPEL_FILTER(MMSIZE, EXT)                                                     \
-    void dirac_hpel_filter_ ## EXT(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,              \
-                                   const uint8_t *src, int stride, int width, int height);
-
-#define PIXFUNC(PFX, IDX, EXT) do {} while (0)
-
-#endif // HAVE_X86ASM
-
 #if !ARCH_X86_64
 HPEL_FILTER(8, mmx)
 #endif
 HPEL_FILTER(16, sse2)
 
+#endif // HAVE_X86ASM
+
 void ff_diracdsp_init_x86(DiracDSPContext* c)
 {
+#if HAVE_X86ASM
     int mm_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(mm_flags)) {
@@ -175,14 +165,15 @@ void ff_diracdsp_init_x86(DiracDSPContext* c)
         c->add_dirac_obmc[1] = ff_add_dirac_obmc16_sse2;
         c->add_dirac_obmc[2] = ff_add_dirac_obmc32_sse2;
 
-        c->put_dirac_pixels_tab[1][0] = ff_put_dirac_pixels16_sse2;
-        c->avg_dirac_pixels_tab[1][0] = ff_avg_dirac_pixels16_sse2;
-        c->put_dirac_pixels_tab[2][0] = ff_put_dirac_pixels32_sse2;
-        c->avg_dirac_pixels_tab[2][0] = ff_avg_dirac_pixels32_sse2;
+        c->put_dirac_pixels_tab[1][0] = put_dirac_pixels16_sse2;
+        c->avg_dirac_pixels_tab[1][0] = avg_dirac_pixels16_sse2;
+        c->put_dirac_pixels_tab[2][0] = put_dirac_pixels32_sse2;
+        c->avg_dirac_pixels_tab[2][0] = avg_dirac_pixels32_sse2;
     }
 
     if (EXTERNAL_SSE4(mm_flags)) {
         c->dequant_subband[1]         = ff_dequant_subband_32_sse4;
         c->put_signed_rect_clamped[1] = ff_put_signed_rect_clamped_10_sse4;
     }
+#endif
 }
