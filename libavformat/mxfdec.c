@@ -2788,6 +2788,9 @@ static int mxf_read_identification_metadata(void *arg, AVIOContext *pb, int tag,
     case 0x3C02:
         SET_STR_METADATA(pb, "product_name", str);
         break;
+    case 0x3C03:
+        SET_VERSION_METADATA(pb, "product_version_num", major, minor, tertiary, patch, release, str);
+        break;
     case 0x3C04:
         SET_STR_METADATA(pb, "product_version", str);
         break;
