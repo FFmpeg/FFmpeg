@@ -105,6 +105,8 @@ static int hap_parse_decode_instructions(HapContext *ctx, int size)
         size_t running_size = 0;
         for (i = 0; i < ctx->chunk_count; i++) {
             ctx->chunks[i].compressed_offset = running_size;
+            if (ctx->chunks[i].compressed_size > UINT32_MAX - running_size)
+                return AVERROR_INVALIDDATA;
             running_size += ctx->chunks[i].compressed_size;
         }
     }
@@ -186,7 +188,7 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
         HapChunk *chunk = &ctx->chunks[i];
 
         /* Check the compressed buffer is valid */
-        if (chunk->compressed_offset + chunk->compressed_size > bytestream2_get_bytes_left(gbc))
+        if (chunk->compressed_offset + (uint64_t)chunk->compressed_size > bytestream2_get_bytes_left(gbc))
             return AVERROR_INVALIDDATA;
 
         /* Chunks are unpacked sequentially, ctx->tex_size is the uncompressed
