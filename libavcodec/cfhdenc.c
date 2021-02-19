@@ -650,7 +650,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_put_be16(pby, avctx->height);
 
     bytestream2_put_be16(pby, -FrameNumber);
-    bytestream2_put_be16(pby, avctx->frame_number);
+    bytestream2_put_be16(pby, frame->pts & 0xFFFF);
 
     bytestream2_put_be16(pby, Precision);
     bytestream2_put_be16(pby, avctx->pix_fmt == AV_PIX_FMT_YUV422P10 ? 10 : 12);
