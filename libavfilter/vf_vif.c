@@ -429,8 +429,8 @@ static void offset_##bits##bit(VIFContext *s,            \
     } \
 }
 
-offset_fn(uint8_t, 8);
-offset_fn(uint16_t, 10);
+offset_fn(uint8_t, 8)
+offset_fn(uint16_t, 10)
 
 static void set_meta(AVDictionary **metadata, const char *key, float d)
 {
