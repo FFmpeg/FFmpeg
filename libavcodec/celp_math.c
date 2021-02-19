@@ -29,6 +29,7 @@
 #include "celp_math.h"
 #include "libavutil/common.h"
 
+#ifdef G729_BITEXACT
 static const uint16_t exp2a[]=
 {
      0,  1435,  2901,  4400,  5931,  7496,  9096, 10730,
@@ -54,6 +55,7 @@ int ff_exp2(uint16_t power)
     result= (result<<3) + ((result*exp2b[(power>>5)&31])>>17);
     return result + ((result*(power&31)*89)>>22);
 }
+#endif
 
 /**
  * Table used to compute log2(x)
