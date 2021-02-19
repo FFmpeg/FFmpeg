@@ -91,42 +91,8 @@ DIRAC_PIXOP(put, mmx)
 DIRAC_PIXOP(avg, mmx)
 DIRAC_PIXOP(avg, mmxext)
 
-static void put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5],
-                                    int stride, int h)
-{
-    if (h&3)
-        ff_put_dirac_pixels16_c(dst, src, stride, h);
-    else
-        ff_put_pixels16_sse2(dst, src[0], stride, h);
-}
-static void avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5],
-                                    int stride, int h)
-{
-    if (h&3)
-        ff_avg_dirac_pixels16_c(dst, src, stride, h);
-    else
-        ff_avg_pixels16_sse2(dst, src[0], stride, h);
-}
-static void put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5],
-                                    int stride, int h)
-{
-    if (h&3) {
-        ff_put_dirac_pixels32_c(dst, src, stride, h);
-    } else {
-        ff_put_pixels16_sse2(dst   , src[0]   , stride, h);
-        ff_put_pixels16_sse2(dst+16, src[0]+16, stride, h);
-    }
-}
-static void avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5],
-                                    int stride, int h)
-{
-    if (h&3) {
-        ff_avg_dirac_pixels32_c(dst, src, stride, h);
-    } else {
-        ff_avg_pixels16_sse2(dst   , src[0]   , stride, h);
-        ff_avg_pixels16_sse2(dst+16, src[0]+16, stride, h);
-    }
-}
+DIRAC_PIXOP(put, sse2)
+DIRAC_PIXOP(avg, sse2)
 
 #if !ARCH_X86_64
 HPEL_FILTER(8, mmx)
