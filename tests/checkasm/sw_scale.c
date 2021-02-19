@@ -86,8 +86,8 @@ static void check_yuv2yuvX(void)
         uint16_t coeff[8];
     } *vFilterData;
     uint8_t d_val = rnd();
-    randomize_buffers(filter_coeff, LARGEST_FILTER);
-    randomize_buffers(src_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE);
+    randomize_buffers((uint8_t*)src_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
+    randomize_buffers((uint8_t*)filter_coeff, LARGEST_FILTER * sizeof(int16_t));
     ctx = sws_alloc_context();
     if (sws_init_context(ctx, NULL, NULL) < 0)
         fail();
