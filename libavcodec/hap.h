@@ -52,7 +52,7 @@ enum HapSectionType {
 
 typedef struct HapChunk {
     enum HapCompressor compressor;
-    int compressed_offset;
+    uint32_t compressed_offset;
     size_t compressed_size;
     int uncompressed_offset;
     size_t uncompressed_size;
