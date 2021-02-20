@@ -45,7 +45,7 @@ typedef struct LUTState {
     uint16_t  state;     /* Expected state for the next byte */
 } LUTState;
 
-const DECLARE_ALIGNED(32, LUTState, ff_dirac_golomb_lut)[1024] = {
+static const DECLARE_ALIGNED(32, LUTState, dirac_golomb_lut)[1024] = {
     { +16,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
     { +17,  0,  0,  0,  0, 5, +1, 0,  0, STATE_FOLLOW },
     {  +8,  0,  0,  0,  0, 4, +1, 1,  0,  STATE_START },
@@ -1089,13 +1089,13 @@ const DECLARE_ALIGNED(32, LUTState, ff_dirac_golomb_lut)[1024] = {
         dst += lut.num;                                \
         if (dst >= last)                               \
             return coeffs;                             \
-        lut = ff_dirac_golomb_lut[lut.state + *buf++]; \
+        lut = dirac_golomb_lut[lut.state + *buf++];    \
     } while (0)
 
 int ff_dirac_golomb_read_16bit(const uint8_t *buf, int bytes,
                                uint8_t *_dst, int coeffs)
 {
-    LUTState lut = ff_dirac_golomb_lut[*buf++];
+    LUTState lut = dirac_golomb_lut[*buf++];
     int16_t *dst = (int16_t *)_dst, *last = dst + coeffs;
     uint16_t val = 0;
 
@@ -1115,7 +1115,7 @@ int ff_dirac_golomb_read_16bit(const uint8_t *buf, int bytes,
 int ff_dirac_golomb_read_32bit(const uint8_t *buf, int bytes,
                                uint8_t *_dst, int coeffs)
 {
-    LUTState lut = ff_dirac_golomb_lut[*buf++];
+    LUTState lut = dirac_golomb_lut[*buf++];
     int32_t *dst = (int32_t *)_dst, *last = dst + coeffs;
     uint32_t val = 0;
 
