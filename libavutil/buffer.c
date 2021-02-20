@@ -279,11 +279,7 @@ AVBufferPool *av_buffer_pool_init(int size, AVBufferRef* (*alloc)(int size))
     return pool;
 }
 
-/*
- * This function gets called when the pool has been uninited and
- * all the buffers returned to it.
- */
-static void buffer_pool_free(AVBufferPool *pool)
+static void buffer_pool_flush(AVBufferPool *pool)
 {
     while (pool->pool) {
         BufferPoolEntry *buf = pool->pool;
@@ -292,6 +288,15 @@ static void buffer_pool_free(AVBufferPool *pool)
         buf->free(buf->opaque, buf->data);
         av_freep(&buf);
     }
+}
+
+/*
+ * This function gets called when the pool has been uninited and
+ * all the buffers returned to it.
+ */
+static void buffer_pool_free(AVBufferPool *pool)
+{
+    buffer_pool_flush(pool);
     ff_mutex_destroy(&pool->mutex);
 
     if (pool->pool_free)
@@ -308,6 +313,10 @@ void av_buffer_pool_uninit(AVBufferPool **ppool)
         return;
     pool   = *ppool;
     *ppool = NULL;
+
+    ff_mutex_lock(&pool->mutex);
+    buffer_pool_flush(pool);
+    ff_mutex_unlock(&pool->mutex);
 
     if (atomic_fetch_sub_explicit(&pool->refcount, 1, memory_order_acq_rel) == 1)
         buffer_pool_free(pool);
