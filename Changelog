@@ -2,6 +2,38 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.3.2:
+ avcodec/hapdec: Change compressed_offset to unsigned 32bit
+ avformat/rmdec: Check codec_length without overflow
+ avformat/mov: Check element count in mov_metadata_hmmt()
+ avcodec/vp8: Move end check into MB loop in vp78_decode_mv_mb_modes()
+ avcodec/fits: Check gcount and pcount being non negative
+ avformat/nutdec: Check timebase count against main header length
+ avformat/electronicarts: Clear partial_packet on error
+ avformat/r3d: Check samples before computing duration
+ avcodec/pnm_parser: Check av_image_get_buffer_size() for failure
+ avformat/wavdec: Consider AV_INPUT_BUFFER_PADDING_SIZE in set_spdif()
+ avformat/rmdec: Check remaining space in debug av_log() loop
+ avformat/flvdec: Treat high ts byte as unsigned
+ avformat/samidec: Sanity check pts
+ avcodec/jpeg2000dec: Check atom_size in jp2_find_codestream()
+ avformat/avidec: Use 64bit in get_duration()
+ avformat/mov: Check for duplicate st3d
+ avformat/mvdec: Check for EOF in read_index()
+ avcodec/jpeglsdec: Fix k=16 in ls_get_code_regular()
+ avformat/id3v2: Check the return from avio_get_str()
+ avcodec/hevc_sei: Check payload size in decode_nal_sei_message()
+ libavutil/eval: Remove CONFIG_TRAPV special handling
+ avformat/wtvdec: Check len in parse_chunks() to avoid overflow
+ avformat/asfdec_f: Add an additional check for the extradata size
+ avformat/3dostr: Check sample_rate
+ avformat/4xm: Make audio_frame_count 64bit
+ avformat/mov: Use av_mul_q() to avoid integer overflows
+ avcodec/vp9dsp_template: Fix integer overflows in itxfm_wrapper
+ avformat/rmdec: Reorder operations to avoid overflow
+ avcodec/mxpegdec: fix SOF counting
+ avcodec/rscc: Check inflated_buf size whan it is used
+ avformat/mvdec: Sanity check SAMPLE_WIDTH
+ avcodec/nvenc: fix timestamp offset ticks logic
  avformat/rmdec: Fix codecdata_length overflow check
  avcodec/simple_idct: Fix undefined integer overflow in idct4row()
  avformat/wavdec: Check block_align vs. channels before combining them
