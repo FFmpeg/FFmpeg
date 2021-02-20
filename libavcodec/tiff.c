@@ -132,8 +132,8 @@ static void free_geotags(TiffContext *const s)
 
 #define RET_GEOKEY(TYPE, array, element)\
     if (key >= TIFF_##TYPE##_KEY_ID_OFFSET &&\
-        key - TIFF_##TYPE##_KEY_ID_OFFSET < FF_ARRAY_ELEMS(ff_tiff_##array##_name_type_map))\
-        return ff_tiff_##array##_name_type_map[key - TIFF_##TYPE##_KEY_ID_OFFSET].element;
+        key - TIFF_##TYPE##_KEY_ID_OFFSET < FF_ARRAY_ELEMS(tiff_##array##_name_type_map))\
+        return tiff_##array##_name_type_map[key - TIFF_##TYPE##_KEY_ID_OFFSET].element;
 
 static const char *get_geokey_name(int key)
 {
@@ -180,8 +180,8 @@ static char *get_geokey_val(int key, int val)
 
 #define RET_GEOKEY_VAL(TYPE, array)\
     if (val >= TIFF_##TYPE##_OFFSET &&\
-        val - TIFF_##TYPE##_OFFSET < FF_ARRAY_ELEMS(ff_tiff_##array##_codes))\
-        return av_strdup(ff_tiff_##array##_codes[val - TIFF_##TYPE##_OFFSET]);
+        val - TIFF_##TYPE##_OFFSET < FF_ARRAY_ELEMS(tiff_##array##_codes))\
+        return av_strdup(tiff_##array##_codes[val - TIFF_##TYPE##_OFFSET]);
 
     switch (key) {
     case TIFF_GT_MODEL_TYPE_GEOKEY:
@@ -214,11 +214,11 @@ static char *get_geokey_val(int key, int val)
         RET_GEOKEY_VAL(PRIME_MERIDIAN, prime_meridian);
         break;
     case TIFF_PROJECTED_CS_TYPE_GEOKEY:
-        ap = av_strdup(search_keyval(ff_tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(ff_tiff_proj_cs_type_codes), val));
+        ap = av_strdup(search_keyval(tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(tiff_proj_cs_type_codes), val));
         if(ap) return ap;
         break;
     case TIFF_PROJECTION_GEOKEY:
-        ap = av_strdup(search_keyval(ff_tiff_projection_codes, FF_ARRAY_ELEMS(ff_tiff_projection_codes), val));
+        ap = av_strdup(search_keyval(tiff_projection_codes, FF_ARRAY_ELEMS(tiff_projection_codes), val));
         if(ap) return ap;
         break;
     case TIFF_PROJ_COORD_TRANS_GEOKEY:
