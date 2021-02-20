@@ -355,7 +355,7 @@ static int mov_text_style_start(MovTextContext *s)
         StyleBox *tmp;
 
         // last style != defaults, end the style entry and start a new one
-        if (s->count + 1 > SIZE_MAX / sizeof(*s->style_attributes) ||
+        if (s->count + 1 > FFMIN(SIZE_MAX / sizeof(*s->style_attributes), UINT16_MAX) ||
             !(tmp = av_fast_realloc(s->style_attributes,
                                     &s->style_attributes_bytes_allocated,
                                     (s->count + 1) * sizeof(*s->style_attributes)))) {
