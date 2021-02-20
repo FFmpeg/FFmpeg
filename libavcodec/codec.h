@@ -43,9 +43,11 @@
  */
 #define AV_CODEC_CAP_DRAW_HORIZ_BAND     (1 <<  0)
 /**
- * Codec uses get_buffer() for allocating buffers and supports custom allocators.
- * If not set, it might not use get_buffer() at all or use operations that
- * assume the buffer was allocated by avcodec_default_get_buffer.
+ * Codec uses get_buffer() or get_encode_buffer() for allocating buffers and
+ * supports custom allocators.
+ * If not set, it might not use get_buffer() or get_encode_buffer() at all, or
+ * use operations that assume the buffer was allocated by
+ * avcodec_default_get_buffer2 or avcodec_default_get_encode_buffer.
  */
 #define AV_CODEC_CAP_DR1                 (1 <<  1)
 #define AV_CODEC_CAP_TRUNCATED           (1 <<  3)

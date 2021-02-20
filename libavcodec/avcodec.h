@@ -513,6 +513,11 @@ typedef struct AVProducerReferenceTime {
  */
 #define AV_GET_BUFFER_FLAG_REF (1 << 0)
 
+/**
+ * The encoder will keep a reference to the packet and may reuse it later.
+ */
+#define AV_GET_ENCODE_BUFFER_FLAG_REF (1 << 0)
+
 struct AVCodecInternal;
 
 /**
@@ -2339,6 +2344,44 @@ typedef struct AVCodecContext {
      * - encoding: set by user
      */
     int export_side_data;
+
+    /**
+     * This callback is called at the beginning of each packet to get a data
+     * buffer for it.
+     *
+     * The following field will be set in the packet before this callback is
+     * called:
+     * - size
+     * This callback must use the above value to calculate the required buffer size,
+     * which must padded by at least AV_INPUT_BUFFER_PADDING_SIZE bytes.
+     *
+     * This callback must fill the following fields in the packet:
+     * - data: alignment requirements for AVPacket apply, if any. Some architectures and
+     *   encoders may benefit from having aligned data.
+     * - buf: must contain a pointer to an AVBufferRef structure. The packet's
+     *   data pointer must be contained in it. See: av_buffer_create(), av_buffer_alloc(),
+     *   and av_buffer_ref().
+     *
+     * If AV_CODEC_CAP_DR1 is not set then get_encode_buffer() must call
+     * avcodec_default_get_encode_buffer() instead of providing a buffer allocated by
+     * some other means.
+     *
+     * The flags field may contain a combination of AV_GET_ENCODE_BUFFER_FLAG_ flags.
+     * They may be used for example to hint what use the buffer may get after being
+     * created.
+     * Implementations of this callback may ignore flags they don't understand.
+     * If AV_GET_ENCODE_BUFFER_FLAG_REF is set in flags then the packet may be reused
+     * (read and/or written to if it is writable) later by libavcodec.
+     *
+     * This callback must be thread-safe, as when frame threading is used, it may
+     * be called from multiple threads simultaneously.
+     *
+     * @see avcodec_default_get_encode_buffer()
+     *
+     * - encoding: Set by libavcodec, user can override.
+     * - decoding: unused
+     */
+    int (*get_encode_buffer)(struct AVCodecContext *s, AVPacket *pkt, int flags);
 } AVCodecContext;
 
 #if FF_API_CODEC_GET_SET
@@ -2897,6 +2940,13 @@ void avsubtitle_free(AVSubtitle *sub);
  * AV_CODEC_CAP_DR1 set.
  */
 int avcodec_default_get_buffer2(AVCodecContext *s, AVFrame *frame, int flags);
+
+/**
+ * The default callback for AVCodecContext.get_encode_buffer(). It is made public so
+ * it can be called by custom get_encode_buffer() implementations for encoders without
+ * AV_CODEC_CAP_DR1 set.
+ */
+int avcodec_default_get_encode_buffer(AVCodecContext *s, AVPacket *pkt, int flags);
 
 /**
  * Modify width and height values so that they will result in a memory

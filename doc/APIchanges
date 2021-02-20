@@ -15,6 +15,13 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-12 - xxxxxxxxxx - lavc 58.131.100 - avcodec.h codec.h
+  Add a get_encode_buffer callback to AVCodecContext, similar to
+  get_buffer2 but for encoders.
+  Add avcodec_default_get_encode_buffer().
+  Add AV_GET_ENCODE_BUFFER_FLAG_REF.
+  Encoders may now be flagged as AV_CODEC_CAP_DR1 capable.
+
 2021-03-10 - xxxxxxxxxx - lavf 58.72.100 - avformat.h
   Change AVBufferRef related AVStream function and struct size
   parameter and fields type to size_t at next major bump.
