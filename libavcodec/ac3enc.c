@@ -161,6 +161,15 @@ const uint64_t ff_ac3_channel_layouts[19] = {
      0
 };
 
+/**
+ * Table to remap channels from SMPTE order to AC-3 order.
+ * [channel_mode][lfe][ch]
+ */
+static const uint8_t ac3_enc_channel_map[8][2][6] = {
+    COMMON_CHANNEL_MAP
+    { { 0, 1, 2, 3,    }, { 0, 1, 3, 4, 2,   } },
+    { { 0, 2, 1, 3, 4, }, { 0, 2, 1, 4, 5, 3 } },
+};
 
 /**
  * LUT to select the bandwidth code based on the bit rate, sample rate, and
@@ -2184,7 +2193,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
     s->has_center   = (s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO;
     s->has_surround =  s->channel_mode & 0x04;
 
-    s->channel_map  = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
+    s->channel_map  = ac3_enc_channel_map[s->channel_mode][s->lfe_on];
     *channel_layout = ch_layout;
     if (s->lfe_on)
         *channel_layout |= AV_CH_LOW_FREQUENCY;

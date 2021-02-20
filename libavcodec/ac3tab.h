@@ -31,7 +31,6 @@
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];
 extern av_export_avcodec const uint16_t avpriv_ac3_channel_layout_tab[8];
-extern const uint8_t  ff_ac3_enc_channel_map[8][2][6];
 extern const uint8_t  ff_ac3_dec_channel_map[8][2][6];
 extern const int      ff_ac3_sample_rate_tab[];
 extern const uint16_t ff_ac3_bitrate_tab[19];
@@ -66,5 +65,13 @@ enum CustomChannelMapLocation{
     AC3_CHMAP_C_SUR=    1<<(15-7),
     AC3_CHMAP_LFE =     1<<(15-15)
 };
+
+#define COMMON_CHANNEL_MAP \
+    { { 0, 1,          }, { 0, 1, 2,         } },\
+    { { 0,             }, { 0, 1,            } },\
+    { { 0, 1,          }, { 0, 1, 2,         } },\
+    { { 0, 2, 1,       }, { 0, 2, 1, 3,      } },\
+    { { 0, 1, 2,       }, { 0, 1, 3, 2,      } },\
+    { { 0, 2, 1, 3,    }, { 0, 2, 1, 4, 3,   } },
 
 #endif /* AVCODEC_AC3TAB_H */
