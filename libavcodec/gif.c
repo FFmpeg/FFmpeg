@@ -51,6 +51,7 @@ typedef struct GIFContext {
     AVFrame *last_frame;
     int flags;
     int image;
+    int use_global_palette;
     uint32_t palette[AVPALETTE_COUNT];  ///< local reference palette for !pal8
     int palette_loaded;
     int transparent_index;
@@ -293,12 +294,14 @@ static int gif_image_write_image(AVCodecContext *avctx,
 
         bcid = get_palette_transparency_index(global_palette);
 
-        bytestream_put_byte(bytestream, 0xf7); /* flags: global clut, 256 entries */
+        bytestream_put_byte(bytestream, ((uint8_t) s->use_global_palette << 7) | 0x70 | (s->use_global_palette ? 7 : 0)); /* flags: global clut, 256 entries */
         bytestream_put_byte(bytestream, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid); /* background color index */
         bytestream_put_byte(bytestream, aspect);
-        for (int i = 0; i < 256; i++) {
-            const uint32_t v = global_palette[i] & 0xffffff;
-            bytestream_put_be24(bytestream, v);
+        if (s->use_global_palette) {
+            for (int i = 0; i < 256; i++) {
+                const uint32_t v = global_palette[i] & 0xffffff;
+                bytestream_put_be24(bytestream, v);
+            }
         }
     }
 
@@ -330,15 +333,16 @@ static int gif_image_write_image(AVCodecContext *avctx,
     bytestream_put_le16(bytestream, width);
     bytestream_put_le16(bytestream, height);
 
-    if (!palette) {
-        bytestream_put_byte(bytestream, 0x00); /* flags */
-    } else {
+    if (palette || !s->use_global_palette) {
+        const uint32_t *pal = palette ? palette : s->palette;
         unsigned i;
         bytestream_put_byte(bytestream, 1<<7 | 0x7); /* flags */
         for (i = 0; i < AVPALETTE_COUNT; i++) {
-            const uint32_t v = palette[i];
+            const uint32_t v = pal[i];
             bytestream_put_be24(bytestream, v);
         }
+    } else {
+        bytestream_put_byte(bytestream, 0x00); /* flags */
     }
 
     bytestream_put_byte(bytestream, 0x08);
@@ -473,6 +477,7 @@ static const AVOption gif_options[] = {
         { "offsetting", "enable picture offsetting", 0, AV_OPT_TYPE_CONST, {.i64=GF_OFFSETTING}, INT_MIN, INT_MAX, FLAGS, "flags" },
         { "transdiff", "enable transparency detection between frames", 0, AV_OPT_TYPE_CONST, {.i64=GF_TRANSDIFF}, INT_MIN, INT_MAX, FLAGS, "flags" },
     { "gifimage", "enable encoding only images per frame", OFFSET(image), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "global_palette", "write a palette to the global gif header where feasible", OFFSET(use_global_palette), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
