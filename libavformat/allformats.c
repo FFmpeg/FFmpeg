@@ -401,6 +401,7 @@ extern AVOutputFormat ff_segafilm_muxer;
 extern AVOutputFormat ff_segment_muxer;
 extern AVOutputFormat ff_stream_segment_muxer;
 extern AVInputFormat  ff_ser_demuxer;
+extern AVInputFormat  ff_sga_demuxer;
 extern AVInputFormat  ff_shorten_demuxer;
 extern AVInputFormat  ff_siff_demuxer;
 extern AVInputFormat  ff_simbiosis_imx_demuxer;

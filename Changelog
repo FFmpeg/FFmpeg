@@ -77,6 +77,7 @@ version <next>:
 - OpenEXR image encoder
 - Simbiosis IMX decoder
 - Simbiosis IMX demuxer
+- Digital Pictures SGA demuxer and decoders
 
 
 version 4.3:
