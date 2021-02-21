@@ -568,6 +568,7 @@ extern AVCodec ff_pcm_s64be_encoder;
 extern AVCodec ff_pcm_s64be_decoder;
 extern AVCodec ff_pcm_s64le_encoder;
 extern AVCodec ff_pcm_s64le_decoder;
+extern AVCodec ff_pcm_sga_decoder;
 extern AVCodec ff_pcm_u8_encoder;
 extern AVCodec ff_pcm_u8_decoder;
 extern AVCodec ff_pcm_u16be_encoder;

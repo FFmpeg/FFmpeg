@@ -830,6 +830,7 @@ OBJS-$(CONFIG_PCM_S64BE_DECODER)          += pcm.o
 OBJS-$(CONFIG_PCM_S64BE_ENCODER)          += pcm.o
 OBJS-$(CONFIG_PCM_S64LE_DECODER)          += pcm.o
 OBJS-$(CONFIG_PCM_S64LE_ENCODER)          += pcm.o
+OBJS-$(CONFIG_PCM_SGA_DECODER)            += pcm.o
 OBJS-$(CONFIG_PCM_U8_DECODER)             += pcm.o
 OBJS-$(CONFIG_PCM_U8_ENCODER)             += pcm.o
 OBJS-$(CONFIG_PCM_U16BE_DECODER)          += pcm.o

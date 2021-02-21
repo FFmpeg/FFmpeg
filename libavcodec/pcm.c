@@ -419,6 +419,14 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         for (; n > 0; n--)
             *samples++ = *src++ + 128;
         break;
+    case AV_CODEC_ID_PCM_SGA:
+        for (; n > 0; n--) {
+            int sign = *src >> 7;
+            int magn = *src & 0x7f;
+            *samples++ = sign ? 128 - magn : 128 + magn;
+            src++;
+        }
+        break;
     case AV_CODEC_ID_PCM_S8_PLANAR:
         n /= avctx->channels;
         for (c = 0; c < avctx->channels; c++) {
@@ -622,3 +630,4 @@ PCM_CODEC  (PCM_U32LE,        AV_SAMPLE_FMT_S32, pcm_u32le,        "PCM unsigned
 PCM_CODEC  (PCM_S64BE,        AV_SAMPLE_FMT_S64, pcm_s64be,        "PCM signed 64-bit big-endian");
 PCM_CODEC  (PCM_S64LE,        AV_SAMPLE_FMT_S64, pcm_s64le,        "PCM signed 64-bit little-endian");
 PCM_CODEC  (PCM_VIDC,         AV_SAMPLE_FMT_S16, pcm_vidc,         "PCM Archimedes VIDC");
+PCM_DECODER(PCM_SGA,          AV_SAMPLE_FMT_U8,  pcm_sga,          "PCM SGA");
