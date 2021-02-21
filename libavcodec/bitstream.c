@@ -104,10 +104,10 @@ void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
         v = *(const uint16_t *)ptr;                         \
         break;                                              \
     case 4:                                                 \
+    default:                                                \
+        av_assert1(size == 4);                              \
         v = *(const uint32_t *)ptr;                         \
         break;                                              \
-    default:                                                \
-        av_assert1(0);                                      \
     }                                                       \
 }
 
