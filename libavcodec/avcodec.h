@@ -1634,7 +1634,7 @@ typedef struct AVCodecContext {
 
     /**
      * Error recognition; may misdetect some more or less valid parts as errors.
-     * - encoding: unused
+     * - encoding: Set by user.
      * - decoding: Set by user.
      */
     int err_recognition;
