@@ -115,14 +115,13 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
         return AVERROR(ENOMEM);
 
     for (int d = 1; d < s->m; d++) {
-        int src = d;
+        int src = d, start_src = src;
         int dst = s->revtab[src];
+        int found = 0;
 
         if (dst <= src)
             continue;
 
-        int found = 0;
-        int start_src = src;
         do {
             src = dst;
             for (int j = 0; j < nb_inplace_idx; j++) {
