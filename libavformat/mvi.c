@@ -119,6 +119,10 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         mvi->video_frame_size = (mvi->get_int)(pb);
         if (mvi->audio_size_left == 0)
             return AVERROR(EIO);
+        if (mvi->audio_size_counter + 512 > UINT64_MAX - mvi->audio_frame_size ||
+            mvi->audio_size_counter + 512 + mvi->audio_frame_size >= ((uint64_t)INT32_MAX) << MVI_FRAC_BITS)
+            return AVERROR_INVALIDDATA;
+
         count = (mvi->audio_size_counter + mvi->audio_frame_size + 512) >> MVI_FRAC_BITS;
         if (count > mvi->audio_size_left)
             count = mvi->audio_size_left;
