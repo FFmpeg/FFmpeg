@@ -6395,13 +6395,15 @@ static int mov_init(AVFormatContext *s)
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
 
-        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
-        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
-        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
-        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
-        else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
-        else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
-        else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
+#define IS_MODE(muxer, config) (CONFIG_ ## config ## _MUXER && !strcmp(#muxer, s->oformat->name))
+    if      (IS_MODE(3gp,   TGP)) mov->mode = MODE_3GP;
+    else if (IS_MODE(3g2,   TG2)) mov->mode = MODE_3GP|MODE_3G2;
+    else if (IS_MODE(mov,   MOV)) mov->mode = MODE_MOV;
+    else if (IS_MODE(psp,   PSP)) mov->mode = MODE_PSP;
+    else if (IS_MODE(ipod, IPOD)) mov->mode = MODE_IPOD;
+    else if (IS_MODE(ismv, ISMV)) mov->mode = MODE_ISM;
+    else if (IS_MODE(f4v,   F4V)) mov->mode = MODE_F4V;
+#undef IS_MODE
 
     if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
         mov->flags |= FF_MOV_FLAG_EMPTY_MOOV;
