@@ -6387,7 +6387,6 @@ static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
 static int mov_init(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
-    AVDictionaryEntry *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
     int i, ret;
 
     mov->fc = s;
@@ -6505,6 +6504,9 @@ static int mov_init(AVFormatContext *s)
 
     if (   mov->write_tmcd == -1 && (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
         || mov->write_tmcd == 1) {
+        AVDictionaryEntry *global_tcr = av_dict_get(s->metadata, "timecode",
+                                                    NULL, 0);
+
         /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
@@ -6725,7 +6727,6 @@ static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
-    AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
     int i, ret, hint_track = 0, tmcd_track = 0, nb_tracks = s->nb_streams;
 
     if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
@@ -6824,6 +6825,8 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     if (mov->nb_meta_tmcd) {
+        const AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata,
+                                                              "timecode", NULL, 0);
         /* Initialize the tmcd tracks */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
