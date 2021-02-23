@@ -251,6 +251,7 @@ static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
         const int scanline_height = FFMIN(s->scanline_height, frame->height - y * s->scanline_height);
         int64_t tmp_size = 4LL * s->planes * frame->width * scanline_height;
         int64_t max_compressed_size = tmp_size * 3 / 2;
+        unsigned long actual_size, source_size;
 
         av_fast_padded_malloc(&scanline->uncompressed_data, &scanline->uncompressed_size, tmp_size);
         if (!scanline->uncompressed_data)
@@ -278,10 +279,12 @@ static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
 
         reorder_pixels(scanline->tmp, scanline->uncompressed_data, tmp_size);
         predictor(scanline->tmp, tmp_size);
-        scanline->actual_size = max_compressed_size;
-        compress(scanline->compressed_data, &scanline->actual_size,
-                 scanline->tmp, tmp_size);
+        source_size = tmp_size;
+        actual_size = max_compressed_size;
+        compress(scanline->compressed_data, &actual_size,
+                 scanline->tmp, source_size);
 
+        scanline->actual_size = actual_size;
         if (scanline->actual_size >= tmp_size) {
             FFSWAP(uint8_t *, scanline->uncompressed_data, scanline->compressed_data);
             FFSWAP(int, scanline->uncompressed_size, scanline->compressed_size);
