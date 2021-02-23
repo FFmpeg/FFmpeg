@@ -6395,7 +6395,6 @@ static int mov_init(AVFormatContext *s)
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
 
-    if (s->oformat) {
         if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
         else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
@@ -6403,7 +6402,6 @@ static int mov_init(AVFormatContext *s)
         else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
         else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
         else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
-    }
 
     if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
         mov->flags |= FF_MOV_FLAG_EMPTY_MOOV;
