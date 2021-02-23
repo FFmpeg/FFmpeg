@@ -40,6 +40,10 @@
 enum { kCMVideoCodecType_HEVC = 'hvc1' };
 #endif
 
+#if !HAVE_KCMVIDEOCODECTYPE_HEVCWITHALPHA
+enum { kCMVideoCodecType_HEVCWithAlpha = 'muxa' };
+#endif
+
 #if !HAVE_KCVPIXELFORMATTYPE_420YPCBCR10BIPLANARVIDEORANGE
 enum { kCVPixelFormatType_420YpCbCr10BiPlanarFullRange = 'xf20' };
 enum { kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange = 'x420' };
@@ -88,6 +92,7 @@ static struct{
     CFStringRef kVTProfileLevel_HEVC_Main10_AutoLevel;
 
     CFStringRef kVTCompressionPropertyKey_RealTime;
+    CFStringRef kVTCompressionPropertyKey_TargetQualityForAlpha;
 
     CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
     CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
@@ -147,6 +152,8 @@ static void loadVTEncSymbols(){
     GET_SYM(kVTProfileLevel_HEVC_Main10_AutoLevel,   "HEVC_Main10_AutoLevel");
 
     GET_SYM(kVTCompressionPropertyKey_RealTime, "RealTime");
+    GET_SYM(kVTCompressionPropertyKey_TargetQualityForAlpha,
+            "TargetQualityForAlpha");
 
     GET_SYM(kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
             "EnableHardwareAcceleratedVideoEncoder");
@@ -222,6 +229,7 @@ typedef struct VTEncContext {
 
     int64_t allow_sw;
     int64_t require_sw;
+    double alpha_quality;
 
     bool flushing;
     int has_b_frames;
@@ -392,11 +400,17 @@ static int count_nalus(size_t length_code_size,
     return 0;
 }
 
-static CMVideoCodecType get_cm_codec_type(enum AVCodecID id)
+static CMVideoCodecType get_cm_codec_type(enum AVCodecID id,
+                                          enum AVPixelFormat fmt,
+                                          double alpha_quality)
 {
     switch (id) {
     case AV_CODEC_ID_H264: return kCMVideoCodecType_H264;
-    case AV_CODEC_ID_HEVC: return kCMVideoCodecType_HEVC;
+    case AV_CODEC_ID_HEVC:
+        if (fmt == AV_PIX_FMT_BGRA && alpha_quality > 0.0) {
+            return kCMVideoCodecType_HEVCWithAlpha;
+        }
+        return kCMVideoCodecType_HEVC;
     default:               return 0;
     }
 }
@@ -786,6 +800,8 @@ static int get_cv_pixel_format(AVCodecContext* avctx,
         *av_pixel_format = range == AVCOL_RANGE_JPEG ?
                                         kCVPixelFormatType_420YpCbCr8PlanarFullRange :
                                         kCVPixelFormatType_420YpCbCr8Planar;
+    } else if (fmt == AV_PIX_FMT_BGRA) {
+        *av_pixel_format = kCVPixelFormatType_32BGRA;
     } else if (fmt == AV_PIX_FMT_P010LE) {
         *av_pixel_format = range == AVCOL_RANGE_JPEG ?
                                         kCVPixelFormatType_420YpCbCr10BiPlanarFullRange :
@@ -1140,6 +1156,20 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         }
     }
 
+    if (vtctx->codec_id == AV_CODEC_ID_HEVC) {
+        if (avctx->pix_fmt == AV_PIX_FMT_BGRA && vtctx->alpha_quality > 0.0) {
+            CFNumberRef alpha_quality_num = CFNumberCreate(kCFAllocatorDefault,
+                                                           kCFNumberDoubleType,
+                                                           &vtctx->alpha_quality);
+            if (!alpha_quality_num) return AVERROR(ENOMEM);
+
+            status = VTSessionSetProperty(vtctx->session,
+                                          compat_keys.kVTCompressionPropertyKey_TargetQualityForAlpha,
+                                          alpha_quality_num);
+            CFRelease(alpha_quality_num);
+        }
+    }
+
     if (profile_level) {
         status = VTSessionSetProperty(vtctx->session,
                                       kVTCompressionPropertyKey_ProfileLevel,
@@ -1352,7 +1382,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
     CFNumberRef            gamma_level = NULL;
     int                    status;
 
-    codec_type = get_cm_codec_type(avctx->codec_id);
+    codec_type = get_cm_codec_type(avctx->codec_id, avctx->pix_fmt, vtctx->alpha_quality);
     if (!codec_type) {
         av_log(avctx, AV_LOG_ERROR, "Error: no mapping for AVCodecID %d\n", avctx->codec_id);
         return AVERROR(EINVAL);
@@ -2066,6 +2096,14 @@ static int get_cv_pixel_info(
         strides[2] = frame ? frame->linesize[2] : (avctx->width + 1) / 2;
         break;
 
+    case AV_PIX_FMT_BGRA:
+        *plane_count = 1;
+
+        widths [0] = avctx->width;
+        heights[0] = avctx->height;
+        strides[0] = frame ? frame->linesize[0] : avctx->width * 4;
+        break;
+
     case AV_PIX_FMT_P010LE:
         *plane_count = 2;
         widths[0] = avctx->width;
@@ -2564,6 +2602,7 @@ static const enum AVPixelFormat hevc_pix_fmts[] = {
     AV_PIX_FMT_VIDEOTOOLBOX,
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_BGRA,
     AV_PIX_FMT_P010LE,
     AV_PIX_FMT_NONE
 };
@@ -2640,6 +2679,8 @@ static const AVOption hevc_options[] = {
     { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = HEVC_PROF_AUTO }, HEVC_PROF_AUTO, HEVC_PROF_COUNT, VE, "profile" },
     { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = HEVC_PROF_MAIN   }, INT_MIN, INT_MAX, VE, "profile" },
     { "main10",   "Main10 Profile",   0, AV_OPT_TYPE_CONST, { .i64 = HEVC_PROF_MAIN10 }, INT_MIN, INT_MAX, VE, "profile" },
+
+    { "alpha_quality", "Compression quality for the alpha channel", OFFSET(alpha_quality), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0.0, 1.0, VE },
 
     COMMON_OPTIONS
     { NULL },
