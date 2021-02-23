@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "voc.h"
 #include "internal.h"
 
-const unsigned char ff_voc_magic[21] = "Creative Voice File\x1A";
 
 const AVCodecTag ff_voc_codec_tags[] = {
     {AV_CODEC_ID_PCM_U8,        0x00},
@@ -36,4 +36,7 @@ const AVCodecTag ff_voc_codec_tags[] = {
     {AV_CODEC_ID_NONE,             0},
 };
 
+#if CONFIG_VOC_DEMUXER || CONFIG_VOC_MUXER
+const unsigned char ff_voc_magic[21] = "Creative Voice File\x1A";
 const AVCodecTag *const ff_voc_codec_tags_list[] = { ff_voc_codec_tags, NULL };
+#endif
