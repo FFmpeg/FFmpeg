@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avstring.h"
 #include "mem.h"
 #include "spherical.h"
 
@@ -70,8 +71,7 @@ int av_spherical_from_name(const char *name)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(spherical_projection_names); i++) {
-        size_t len = strlen(spherical_projection_names[i]);
-        if (!strncmp(spherical_projection_names[i], name, len))
+        if (av_strstart(name, spherical_projection_names[i], NULL))
             return i;
     }
 
