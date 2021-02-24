@@ -19,7 +19,6 @@ OBJS = allfilters.o                                                     \
        framequeue.o                                                     \
        graphdump.o                                                      \
        graphparser.o                                                    \
-       transform.o                                                      \
        video.o                                                          \
 
 OBJS-$(HAVE_THREADS)                         += pthread.o
@@ -237,8 +236,8 @@ OBJS-$(CONFIG_DEJUDDER_FILTER)               += vf_dejudder.o
 OBJS-$(CONFIG_DELOGO_FILTER)                 += vf_delogo.o
 OBJS-$(CONFIG_DENOISE_VAAPI_FILTER)          += vf_misc_vaapi.o vaapi_vpp.o
 OBJS-$(CONFIG_DESHAKE_OPENCL_FILTER)        += vf_deshake_opencl.o opencl.o \
-                                                opencl/deshake.o
-OBJS-$(CONFIG_DESHAKE_FILTER)                += vf_deshake.o
+                                                opencl/deshake.o transform.o
+OBJS-$(CONFIG_DESHAKE_FILTER)                += vf_deshake.o transform.o
 OBJS-$(CONFIG_DESPILL_FILTER)                += vf_despill.o
 OBJS-$(CONFIG_DETELECINE_FILTER)             += vf_detelecine.o
 OBJS-$(CONFIG_DILATION_FILTER)               += vf_neighbor.o
