@@ -22,7 +22,8 @@
 #include "avformat.h"
 #include "rawenc.h"
 
-#define PCMDEF(name_, long_name_, ext, codec)               \
+#define PCMDEF_0(name_, long_name_, ext, codec)
+#define PCMDEF_1(name_, long_name_, ext, codec)             \
 AVOutputFormat ff_pcm_ ## name_ ## _muxer = {               \
     .name         = #name_,                                 \
     .long_name    = NULL_IF_CONFIG_SMALL(long_name_),       \
@@ -32,66 +33,32 @@ AVOutputFormat ff_pcm_ ## name_ ## _muxer = {               \
     .write_packet = ff_raw_write_packet,                    \
     .flags        = AVFMT_NOTIMESTAMPS,                     \
 };
+#define PCMDEF_2(name, long_name, ext, codec, enabled)      \
+    PCMDEF_ ## enabled(name, long_name, ext, codec)
+#define PCMDEF_3(name, long_name, ext, codec, config)       \
+    PCMDEF_2(name, long_name, ext, codec, config)
+#define PCMDEF(name, long_name, ext, uppercase)             \
+    PCMDEF_3(name, long_name, ext, AV_CODEC_ID_PCM_ ## uppercase, \
+             CONFIG_PCM_ ## uppercase ## _MUXER)
 
-PCMDEF(f64be, "PCM 64-bit floating-point big-endian",
-       NULL, AV_CODEC_ID_PCM_F64BE)
-
-PCMDEF(f64le, "PCM 64-bit floating-point little-endian",
-       NULL, AV_CODEC_ID_PCM_F64LE)
-
-PCMDEF(f32be, "PCM 32-bit floating-point big-endian",
-       NULL, AV_CODEC_ID_PCM_F32BE)
-
-PCMDEF(f32le, "PCM 32-bit floating-point little-endian",
-       NULL, AV_CODEC_ID_PCM_F32LE)
-
-PCMDEF(s32be, "PCM signed 32-bit big-endian",
-       NULL, AV_CODEC_ID_PCM_S32BE)
-
-PCMDEF(s32le, "PCM signed 32-bit little-endian",
-       NULL, AV_CODEC_ID_PCM_S32LE)
-
-PCMDEF(s24be, "PCM signed 24-bit big-endian",
-       NULL, AV_CODEC_ID_PCM_S24BE)
-
-PCMDEF(s24le, "PCM signed 24-bit little-endian",
-       NULL, AV_CODEC_ID_PCM_S24LE)
-
-PCMDEF(s16be, "PCM signed 16-bit big-endian",
-       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE)
-
-PCMDEF(s16le, "PCM signed 16-bit little-endian",
-       AV_NE(NULL, "sw"), AV_CODEC_ID_PCM_S16LE)
-
-PCMDEF(s8, "PCM signed 8-bit",
-       "sb", AV_CODEC_ID_PCM_S8)
-
-PCMDEF(u32be, "PCM unsigned 32-bit big-endian",
-       NULL, AV_CODEC_ID_PCM_U32BE)
-
-PCMDEF(u32le, "PCM unsigned 32-bit little-endian",
-       NULL, AV_CODEC_ID_PCM_U32LE)
-
-PCMDEF(u24be, "PCM unsigned 24-bit big-endian",
-       NULL, AV_CODEC_ID_PCM_U24BE)
-
-PCMDEF(u24le, "PCM unsigned 24-bit little-endian",
-       NULL, AV_CODEC_ID_PCM_U24LE)
-
-PCMDEF(u16be, "PCM unsigned 16-bit big-endian",
-       AV_NE("uw", NULL), AV_CODEC_ID_PCM_U16BE)
-
-PCMDEF(u16le, "PCM unsigned 16-bit little-endian",
-       AV_NE(NULL, "uw"), AV_CODEC_ID_PCM_U16LE)
-
-PCMDEF(u8, "PCM unsigned 8-bit",
-       "ub", AV_CODEC_ID_PCM_U8)
-
-PCMDEF(alaw, "PCM A-law",
-       "al", AV_CODEC_ID_PCM_ALAW)
-
-PCMDEF(mulaw, "PCM mu-law",
-       "ul", AV_CODEC_ID_PCM_MULAW)
-
-PCMDEF(vidc, "PCM Archimedes VIDC",
-       NULL, AV_CODEC_ID_PCM_VIDC)
+PCMDEF(f64be, "PCM 64-bit floating-point big-endian",           NULL, F64BE)
+PCMDEF(f64le, "PCM 64-bit floating-point little-endian",        NULL, F64LE)
+PCMDEF(f32be, "PCM 32-bit floating-point big-endian",           NULL, F32BE)
+PCMDEF(f32le, "PCM 32-bit floating-point little-endian",        NULL, F32LE)
+PCMDEF(s32be, "PCM signed 32-bit big-endian",                   NULL, S32BE)
+PCMDEF(s32le, "PCM signed 32-bit little-endian",                NULL, S32LE)
+PCMDEF(s24be, "PCM signed 24-bit big-endian",                   NULL, S24BE)
+PCMDEF(s24le, "PCM signed 24-bit little-endian",                NULL, S24LE)
+PCMDEF(s16be, "PCM signed 16-bit big-endian",      AV_NE("sw", NULL), S16BE)
+PCMDEF(s16le, "PCM signed 16-bit little-endian",   AV_NE(NULL, "sw"), S16LE)
+PCMDEF(s8,    "PCM signed 8-bit",                               "sb",    S8)
+PCMDEF(u32be, "PCM unsigned 32-bit big-endian",                 NULL, U32BE)
+PCMDEF(u32le, "PCM unsigned 32-bit little-endian",              NULL, U32LE)
+PCMDEF(u24be, "PCM unsigned 24-bit big-endian",                 NULL, U24BE)
+PCMDEF(u24le, "PCM unsigned 24-bit little-endian",              NULL, U24LE)
+PCMDEF(u16be, "PCM unsigned 16-bit big-endian",    AV_NE("uw", NULL), U16BE)
+PCMDEF(u16le, "PCM unsigned 16-bit little-endian", AV_NE(NULL, "uw"), U16LE)
+PCMDEF(u8,    "PCM unsigned 8-bit",                             "ub",    U8)
+PCMDEF(alaw,  "PCM A-law",                                      "al",  ALAW)
+PCMDEF(mulaw, "PCM mu-law",                                     "ul", MULAW)
+PCMDEF(vidc,  "PCM Archimedes VIDC",                            NULL,  VIDC)
