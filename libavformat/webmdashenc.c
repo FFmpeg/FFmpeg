@@ -133,7 +133,7 @@ static int subsegment_alignment(AVFormatContext *s, const AdaptationSet *as)
     for (i = 1; i < as->nb_streams; i++) {
         AVDictionaryEntry *ts = av_dict_get(s->streams[as->streams[i]]->metadata,
                                             CUE_TIMESTAMPS, NULL, 0);
-        if (!ts || strncmp(gold->value, ts->value, strlen(gold->value))) return 0;
+        if (!ts || !av_strstart(ts->value, gold->value, NULL)) return 0;
     }
     return 1;
 }
@@ -152,7 +152,7 @@ static int bitstream_switching(AVFormatContext *s, const AdaptationSet *as)
                                                    TRACK_NUMBER, NULL, 0);
         AVCodecParameters *par = st->codecpar;
         if (!track_num ||
-            strncmp(gold_track_num->value, track_num->value, strlen(gold_track_num->value)) ||
+            !av_strstart(track_num->value, gold_track_num->value, NULL) ||
             gold_par->codec_id != par->codec_id ||
             gold_par->extradata_size != par->extradata_size ||
             memcmp(gold_par->extradata, par->extradata, par->extradata_size)) {
