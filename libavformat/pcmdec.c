@@ -57,8 +57,9 @@ static int pcm_read_header(AVFormatContext *s)
             len = strlen(mime_type);
             while (options < mime_type + len) {
                 options = strstr(options, ";");
-                if (!options++)
+                if (!options)
                     break;
+                options++;
                 if (!rate)
                     sscanf(options, " rate=%d",     &rate);
                 if (!channels)
