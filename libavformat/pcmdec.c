@@ -36,18 +36,19 @@ typedef struct PCMAudioDemuxerContext {
 static int pcm_read_header(AVFormatContext *s)
 {
     PCMAudioDemuxerContext *s1 = s->priv_data;
+    AVCodecParameters *par;
     AVStream *st;
     uint8_t *mime_type = NULL;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    par = st->codecpar;
 
-
-    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id    = s->iformat->raw_codec_id;
-    st->codecpar->sample_rate = s1->sample_rate;
-    st->codecpar->channels    = s1->channels;
+    par->codec_type  = AVMEDIA_TYPE_AUDIO;
+    par->codec_id    = s->iformat->raw_codec_id;
+    par->sample_rate = s1->sample_rate;
+    par->channels    = s1->channels;
 
     av_opt_get(s->pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
     if (mime_type && s->iformat->mime_type) {
@@ -61,7 +62,7 @@ static int pcm_read_header(AVFormatContext *s)
                 if (!channels)
                     sscanf(options, " channels=%d", &channels);
                 if (!little_endian) {
-                     char val[14]; /* sizeof("little-endian") == 14 */
+                     char val[sizeof("little-endian")];
                      if (sscanf(options, " endianness=%13s", val) == 1) {
                          little_endian = strcmp(val, "little-endian") == 0;
                      }
@@ -74,24 +75,22 @@ static int pcm_read_header(AVFormatContext *s)
                 av_freep(&mime_type);
                 return AVERROR_INVALIDDATA;
             }
-            st->codecpar->sample_rate = rate;
+            par->sample_rate = rate;
             if (channels > 0)
-                st->codecpar->channels = channels;
+                par->channels = channels;
             if (little_endian)
-                st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+                par->codec_id = AV_CODEC_ID_PCM_S16LE;
         }
     }
     av_freep(&mime_type);
 
-    st->codecpar->bits_per_coded_sample =
-        av_get_bits_per_sample(st->codecpar->codec_id);
+    par->bits_per_coded_sample = av_get_bits_per_sample(par->codec_id);
 
-    av_assert0(st->codecpar->bits_per_coded_sample > 0);
+    av_assert0(par->bits_per_coded_sample > 0);
 
-    st->codecpar->block_align =
-        st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
+    par->block_align = par->bits_per_coded_sample * par->channels / 8;
 
-    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, par->sample_rate);
     return 0;
 }
 
