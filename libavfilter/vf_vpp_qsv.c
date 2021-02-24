@@ -43,8 +43,9 @@
 
 /* number of video enhancement filters */
 #define ENH_FILTERS_COUNT (7)
-#define QSV_HAVE_ROTATION  QSV_VERSION_ATLEAST(1, 17)
-#define QSV_HAVE_MIRRORING QSV_VERSION_ATLEAST(1, 19)
+#define QSV_HAVE_ROTATION       QSV_VERSION_ATLEAST(1, 17)
+#define QSV_HAVE_MIRRORING      QSV_VERSION_ATLEAST(1, 19)
+#define QSV_HAVE_SCALING_CONFIG QSV_VERSION_ATLEAST(1, 19)
 
 typedef struct VPPContext{
     const AVClass *class;
@@ -59,6 +60,9 @@ typedef struct VPPContext{
     mfxExtVPPProcAmp procamp_conf;
     mfxExtVPPRotation rotation_conf;
     mfxExtVPPMirroring mirroring_conf;
+#ifdef QSV_HAVE_SCALING_CONFIG
+    mfxExtVPPScaling scale_conf;
+#endif
 
     int out_width;
     int out_height;
@@ -82,6 +86,8 @@ typedef struct VPPContext{
     int transpose;
     int rotate;                 /* rotate angle : [0, 90, 180, 270] */
     int hflip;                  /* flip mode : 0 = off, 1 = HORIZONTAL flip */
+
+    int scale_mode;             /* scale mode : 0 = auto, 1 = low power, 2 = high quality */
 
     /* param for the procamp */
     int    procamp;            /* enable procamp */
@@ -132,6 +138,7 @@ static const AVOption options[] = {
     { "height", "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
+    { "scale_mode", "scale mode: 0=auto, 1=low power, 2=high quality", OFFSET(scale_mode), AV_OPT_TYPE_INT, { .i64 = MFX_SCALING_MODE_DEFAULT }, MFX_SCALING_MODE_DEFAULT, MFX_SCALING_MODE_QUALITY, .flags = FLAGS, "scale mode" },
 
     { NULL }
 };
@@ -456,6 +463,20 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_WARNING, "The QSV VPP hflip option is "
             "not supported with this MSDK version.\n");
         vpp->hflip = 0;
+#endif
+    }
+
+    if (inlink->w != outlink->w || inlink->h != outlink->h) {
+#ifdef QSV_HAVE_SCALING_CONFIG
+        memset(&vpp->scale_conf, 0, sizeof(mfxExtVPPScaling));
+        vpp->scale_conf.Header.BufferId    = MFX_EXTBUFF_VPP_SCALING;
+        vpp->scale_conf.Header.BufferSz    = sizeof(mfxExtVPPScaling);
+        vpp->scale_conf.ScalingMode        = vpp->scale_mode;
+
+        param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->scale_conf;
+#else
+        av_log(ctx, AV_LOG_WARNING, "The QSV VPP Scale option is "
+            "not supported with this MSDK version.\n");
 #endif
     }
 
