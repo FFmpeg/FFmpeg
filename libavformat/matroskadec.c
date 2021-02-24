@@ -2470,8 +2470,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                  encodings[0].compression.settings.size);
 
         for (j = 0; ff_mkv_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
-            if (!strncmp(ff_mkv_codec_tags[j].str, track->codec_id,
-                         strlen(ff_mkv_codec_tags[j].str))) {
+            if (av_strstart(track->codec_id, ff_mkv_codec_tags[j].str, NULL)) {
                 codec_id = ff_mkv_codec_tags[j].id;
                 break;
             }
@@ -2986,8 +2985,7 @@ static int matroska_read_header(AVFormatContext *s)
             st->codecpar->codec_id   = AV_CODEC_ID_NONE;
 
             for (i = 0; mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
-                if (!strncmp(mkv_image_mime_tags[i].str, attachments[j].mime,
-                             strlen(mkv_image_mime_tags[i].str))) {
+                if (av_strstart(attachments[j].mime, mkv_image_mime_tags[i].str, NULL)) {
                     st->codecpar->codec_id = mkv_image_mime_tags[i].id;
                     break;
                 }
@@ -3016,8 +3014,7 @@ static int matroska_read_header(AVFormatContext *s)
                        attachments[j].bin.size);
 
                 for (i = 0; mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
-                    if (!strncmp(mkv_mime_tags[i].str, attachments[j].mime,
-                                strlen(mkv_mime_tags[i].str))) {
+                    if (av_strstart(attachments[j].mime, mkv_mime_tags[i].str, NULL)) {
                         st->codecpar->codec_id = mkv_mime_tags[i].id;
                         break;
                     }
