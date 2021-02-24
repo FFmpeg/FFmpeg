@@ -84,33 +84,6 @@ void ff_get_matrix(
 );
 
 /**
- * Add two matrices together. result = m1 + m2.
- *
- * @param m1     9-item transformation matrix
- * @param m2     9-item transformation matrix
- * @param result 9-item transformation matrix
- */
-void avfilter_add_matrix(const float *m1, const float *m2, float *result);
-
-/**
- * Subtract one matrix from another. result = m1 - m2.
- *
- * @param m1     9-item transformation matrix
- * @param m2     9-item transformation matrix
- * @param result 9-item transformation matrix
- */
-void avfilter_sub_matrix(const float *m1, const float *m2, float *result);
-
-/**
- * Multiply a matrix by a scalar value. result = m1 * scalar.
- *
- * @param m1     9-item transformation matrix
- * @param scalar a number
- * @param result 9-item transformation matrix
- */
-void avfilter_mul_matrix(const float *m1, float scalar, float *result);
-
-/**
  * Do an affine transformation with the given interpolation method. This
  * multiplies each vector [x,y,1] by the matrix and then interpolates to
  * get the final value.
@@ -126,7 +99,7 @@ void avfilter_mul_matrix(const float *m1, float scalar, float *result);
  * @param fill        edge fill method
  * @return negative on error
  */
-int avfilter_transform(const uint8_t *src, uint8_t *dst,
+int ff_affine_transform(const uint8_t *src, uint8_t *dst,
                         int src_stride, int dst_stride,
                         int width, int height, const float *matrix,
                         enum InterpolateMethod interpolate,

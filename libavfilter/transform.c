@@ -122,28 +122,7 @@ void ff_get_matrix(
     matrix[8] = 1;
 }
 
-void avfilter_add_matrix(const float *m1, const float *m2, float *result)
-{
-    int i;
-    for (i = 0; i < 9; i++)
-        result[i] = m1[i] + m2[i];
-}
-
-void avfilter_sub_matrix(const float *m1, const float *m2, float *result)
-{
-    int i;
-    for (i = 0; i < 9; i++)
-        result[i] = m1[i] - m2[i];
-}
-
-void avfilter_mul_matrix(const float *m1, float scalar, float *result)
-{
-    int i;
-    for (i = 0; i < 9; i++)
-        result[i] = m1[i] * scalar;
-}
-
-int avfilter_transform(const uint8_t *src, uint8_t *dst,
+int ff_affine_transform(const uint8_t *src, uint8_t *dst,
                         int src_stride, int dst_stride,
                         int width, int height, const float *matrix,
                         enum InterpolateMethod interpolate,

@@ -330,8 +330,9 @@ static int deshake_transform_c(AVFilterContext *ctx,
 
     for (i = 0; i < 3; i++) {
         // Transform the luma and chroma planes
-        ret = avfilter_transform(in->data[i], out->data[i], in->linesize[i], out->linesize[i],
-                                 plane_w[i], plane_h[i], matrixs[i], interpolate, fill);
+        ret = ff_affine_transform(in->data[i], out->data[i], in->linesize[i],
+                                  out->linesize[i], plane_w[i], plane_h[i],
+                                  matrixs[i], interpolate, fill);
         if (ret < 0)
             return ret;
     }
