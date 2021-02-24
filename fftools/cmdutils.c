@@ -1163,13 +1163,13 @@ static void print_buildconf(int flags, int level)
     // Change all the ' --' strings to '~--' so that
     // they can be identified as tokens.
     while ((conflist = strstr(str, " --")) != NULL) {
-        strncpy(conflist, "~--", 3);
+        conflist[0] = '~';
     }
 
     // Compensate for the weirdness this would cause
     // when passing 'pkg-config --static'.
     while ((remove_tilde = strstr(str, "pkg-config~")) != NULL) {
-        strncpy(remove_tilde, "pkg-config ", 11);
+        remove_tilde[sizeof("pkg-config~") - 2] = ' ';
     }
 
     splitconf = strtok(str, "~");
