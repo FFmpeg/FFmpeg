@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
 #include <string.h>
 
+#include "avstring.h"
 #include "common.h"
 #include "mem.h"
 #include "stereo3d.h"
@@ -67,8 +67,7 @@ int av_stereo3d_from_name(const char *name)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(stereo3d_type_names); i++) {
-        size_t len = strlen(stereo3d_type_names[i]);
-        if (!strncmp(stereo3d_type_names[i], name, len))
+        if (av_strstart(name, stereo3d_type_names[i], NULL))
             return i;
     }
 
