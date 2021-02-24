@@ -30,6 +30,7 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
+#include "ttmlenc.h"
 #include "libavcodec/ttmlenc.h"
 #include "libavutil/internal.h"
 
@@ -138,13 +139,7 @@ static int ttml_write_header(AVFormatContext *ctx)
                                               0);
         const char *printed_lang = (lang && lang->value) ? lang->value : "";
 
-        // Not perfect, but decide whether the packet is a document or not
-        // by the existence of the lavc ttmlenc extradata.
-        ttml_ctx->input_type = (st->codecpar->extradata &&
-                                st->codecpar->extradata_size >= TTMLENC_EXTRADATA_SIGNATURE_SIZE &&
-                                !memcmp(st->codecpar->extradata,
-                                        TTMLENC_EXTRADATA_SIGNATURE,
-                                        TTMLENC_EXTRADATA_SIGNATURE_SIZE)) ?
+        ttml_ctx->input_type = ff_is_ttml_stream_paragraph_based(st->codecpar) ?
                                PACKET_TYPE_PARAGRAPH :
                                PACKET_TYPE_DOCUMENT;
 
