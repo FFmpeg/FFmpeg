@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
@@ -51,14 +52,9 @@ static int pcm_read_header(AVFormatContext *s)
     av_opt_get(s->pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
     if (mime_type && s->iformat->mime_type) {
         int rate = 0, channels = 0, little_endian = 0;
-        size_t len = strlen(s->iformat->mime_type);
-        if (!av_strncasecmp(s->iformat->mime_type, mime_type, len)) { /* audio/L16 */
-            uint8_t *options = mime_type + len;
-            len = strlen(mime_type);
-            while (options < mime_type + len) {
-                options = strstr(options, ";");
-                if (!options)
-                    break;
+        const char *options;
+        if (av_stristart(mime_type, s->iformat->mime_type, &options)) { /* audio/L16 */
+            while (options = strchr(options, ';')) {
                 options++;
                 if (!rate)
                     sscanf(options, " rate=%d",     &rate);
