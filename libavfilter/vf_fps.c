@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
@@ -42,12 +43,47 @@ enum EOFAction {
     EOF_ACTION_NB
 };
 
+static const char *const var_names[] = {
+  "source_fps",
+  "ntsc",
+  "pal",
+  "qntsc",
+  "qpal",
+  "sntsc",
+  "spal",
+  "film",
+  "ntsc_film",
+  NULL
+};
+
+enum var_name {
+  VAR_SOURCE_FPS,
+  VAR_FPS_NTSC,
+  VAR_FPS_PAL,
+  VAR_FPS_QNTSC,
+  VAR_FPS_QPAL,
+  VAR_FPS_SNTSC,
+  VAR_FPS_SPAL,
+  VAR_FPS_FILM,
+  VAR_FPS_NTSC_FILM,
+  VARS_NB
+};
+
+static const double ntsc_fps = 30000.0 / 1001.0;
+static const double pal_fps = 25.0;
+static const double qntsc_fps = 30000.0 / 1001.0;
+static const double qpal_fps = 25.0;
+static const double sntsc_fps = 30000.0 / 1001.0;
+static const double spal_fps = 25.0;
+static const double film_fps = 24.0;
+static const double ntsc_film_fps = 24000.0 / 1001.0;
+
 typedef struct FPSContext {
     const AVClass *class;
 
     double start_time;      ///< pts, in seconds, of the expected first frame
 
-    AVRational framerate;   ///< target framerate
+    char *framerate;        ///< expression that defines the target framerate
     int rounding;           ///< AVRounding method for timestamps
     int eof_action;         ///< action performed for last frame in FIFO
 
@@ -76,7 +112,7 @@ typedef struct FPSContext {
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption fps_options[] = {
-    { "fps", "A string describing desired output framerate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, 0, INT_MAX, V|F },
+    { "fps", "A string describing desired output framerate", OFFSET(framerate), AV_OPT_TYPE_STRING, { .str = "25" }, 0, 0, V|F },
     { "start_time", "Assume the first PTS should be this value.", OFFSET(start_time), AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX}, -DBL_MAX, DBL_MAX, V|F },
     { "round", "set rounding method for timestamps", OFFSET(rounding), AV_OPT_TYPE_INT, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
         { "zero", "round towards 0",                 0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_ZERO     }, 0, 0, V|F, "round" },
@@ -99,7 +135,6 @@ static av_cold int init(AVFilterContext *ctx)
     s->status_pts   = AV_NOPTS_VALUE;
     s->next_pts     = AV_NOPTS_VALUE;
 
-    av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", s->framerate.num, s->framerate.den);
     return 0;
 }
 
@@ -153,8 +188,26 @@ static int config_props(AVFilterLink* outlink)
     AVFilterLink    *inlink = ctx->inputs[0];
     FPSContext      *s      = ctx->priv;
 
-    outlink->time_base  = av_inv_q(s->framerate);
-    outlink->frame_rate = s->framerate;
+    double var_values[VARS_NB], res;
+    int ret;
+
+    var_values[VAR_SOURCE_FPS]    = av_q2d(inlink->frame_rate);
+    var_values[VAR_FPS_NTSC]      = ntsc_fps;
+    var_values[VAR_FPS_PAL]       = pal_fps;
+    var_values[VAR_FPS_QNTSC]     = qntsc_fps;
+    var_values[VAR_FPS_QPAL]      = qpal_fps;
+    var_values[VAR_FPS_SNTSC]     = sntsc_fps;
+    var_values[VAR_FPS_SPAL]      = spal_fps;
+    var_values[VAR_FPS_FILM]      = film_fps;
+    var_values[VAR_FPS_NTSC_FILM] = ntsc_film_fps;
+    ret = av_expr_parse_and_eval(&res, s->framerate,
+                                 var_names, var_values,
+                                 NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        return ret;
+
+    outlink->frame_rate = av_d2q(res, INT_MAX);
+    outlink->time_base  = av_inv_q(outlink->frame_rate);
 
     /* Calculate the input and output pts offsets for start_time */
     if (s->start_time != DBL_MAX && s->start_time != AV_NOPTS_VALUE) {
@@ -172,6 +225,8 @@ static int config_props(AVFilterLink* outlink)
         av_log(ctx, AV_LOG_VERBOSE, "Set first pts to (in:%"PRId64" out:%"PRId64") from start time %f\n",
                s->in_pts_off, s->out_pts_off, s->start_time);
     }
+
+    av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", outlink->frame_rate.num, outlink->frame_rate.den);
 
     return 0;
 }
