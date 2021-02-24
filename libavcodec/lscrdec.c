@@ -105,7 +105,7 @@ static int decode_frame_lscr(AVCodecContext *avctx,
 {
     LSCRContext *const s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    AVFrame *frame = data;
+    AVFrame *frame = s->last_picture;
     int ret, nb_blocks, offset = 0;
 
     if (avpkt->size < 2)
@@ -115,18 +115,14 @@ static int decode_frame_lscr(AVCodecContext *avctx,
 
     bytestream2_init(gb, avpkt->data, avpkt->size);
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
-        return ret;
-
     nb_blocks = bytestream2_get_le16(gb);
     if (bytestream2_get_bytes_left(gb) < 2 + nb_blocks * (12 + 8))
         return AVERROR_INVALIDDATA;
 
-    if (s->last_picture->data[0]) {
-        ret = av_frame_copy(frame, s->last_picture);
-        if (ret < 0)
-            return ret;
-    }
+    ret = ff_reget_buffer(avctx, frame,
+                          nb_blocks ? 0 : FF_REGET_BUFFER_FLAG_READONLY);
+    if (ret < 0)
+        return ret;
 
     for (int b = 0; b < nb_blocks; b++) {
         int x, y, x2, y2, w, h, left;
@@ -216,8 +212,7 @@ static int decode_frame_lscr(AVCodecContext *avctx,
 
     frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
-    av_frame_unref(s->last_picture);
-    if ((ret = av_frame_ref(s->last_picture, frame)) < 0)
+    if ((ret = av_frame_ref(data, frame)) < 0)
         return ret;
 
     *got_frame = 1;
