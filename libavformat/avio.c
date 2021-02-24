@@ -114,11 +114,10 @@ static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
             goto fail;
         }
         if (up->priv_data_class) {
-            int proto_len= strlen(up->name);
-            char *start = strchr(uc->filename, ',');
+            char *start;
             *(const AVClass **)uc->priv_data = up->priv_data_class;
             av_opt_set_defaults(uc->priv_data);
-            if(!strncmp(up->name, uc->filename, proto_len) && uc->filename + proto_len == start){
+            if (av_strstart(uc->filename, up->name, (const char**)&start) && *start == ',') {
                 int ret= 0;
                 char *p= start;
                 char sep= *++p;
