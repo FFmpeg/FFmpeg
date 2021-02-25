@@ -122,11 +122,6 @@ MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, data_codec)
 MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
 MAKE_ACCESSORS(AVFormatContext, format, void *, opaque)
 MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_message_cb)
-#if FF_API_OLD_OPEN_CALLBACKS
-FF_DISABLE_DEPRECATION_WARNINGS
-MAKE_ACCESSORS(AVFormatContext, format, AVOpenCallback, open_cb)
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 #endif
 
 int64_t av_stream_get_end_pts(const AVStream *st)

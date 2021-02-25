@@ -1743,28 +1743,6 @@ typedef struct AVFormatContext {
      */
     enum AVCodecID data_codec_id;
 
-#if FF_API_OLD_OPEN_CALLBACKS
-    /**
-     * Called to open further IO contexts when needed for demuxing.
-     *
-     * This can be set by the user application to perform security checks on
-     * the URLs before opening them.
-     * The function should behave like avio_open2(), AVFormatContext is provided
-     * as contextual information and to reach AVFormatContext.opaque.
-     *
-     * If NULL then some simple checks are used together with avio_open2().
-     *
-     * Must not be accessed directly from outside avformat.
-     * @See av_format_set_open_cb()
-     *
-     * Demuxing: Set by user.
-     *
-     * @deprecated Use io_open and io_close.
-     */
-    attribute_deprecated
-    int (*open_cb)(struct AVFormatContext *s, AVIOContext **p, const char *url, int flags, const AVIOInterruptCB *int_cb, AVDictionary **options);
-#endif
-
     /**
      * ',' separated list of allowed protocols.
      * - encoding: unused
@@ -1864,10 +1842,6 @@ attribute_deprecated
 av_format_control_message av_format_get_control_message_cb(const AVFormatContext *s);
 attribute_deprecated
 void      av_format_set_control_message_cb(AVFormatContext *s, av_format_control_message callback);
-#if FF_API_OLD_OPEN_CALLBACKS
-attribute_deprecated AVOpenCallback av_format_get_open_cb(const AVFormatContext *s);
-attribute_deprecated void av_format_set_open_cb(AVFormatContext *s, AVOpenCallback callback);
-#endif
 #endif
 
 /**
