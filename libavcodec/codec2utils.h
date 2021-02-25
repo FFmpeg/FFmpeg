@@ -24,8 +24,6 @@
 
 #include <stdint.h>
 
-#include "version.h"
-
 //Highest mode we're willing to use.
 //Don't want to let users accidentally produce files that can't be decoded in the future.
 //CODEC2_MODE_WB (9) is experimental/unstable as of 2017-11-23.
@@ -46,22 +44,6 @@
     { "700",  "700",  0, AV_OPT_TYPE_CONST, {.i64 = 6}, .flags=option_flags, .unit="codec2_mode"},\
     { "700B", "700B", 0, AV_OPT_TYPE_CONST, {.i64 = 7}, .flags=option_flags, .unit="codec2_mode"},\
     { "700C", "700C", 0, AV_OPT_TYPE_CONST, {.i64 = 8}, .flags=option_flags, .unit="codec2_mode"}
-
-#if LIBAVCODEC_VERSION_MAJOR < 59
-//The three following functions are here to avoid needing libavformat/codec2.c to depend on libcodec2
-
-//Computes bitrate from mode, with frames rounded up to the nearest octet.
-//So 700 bit/s (28 bits/frame) becomes 800 bits/s (32 bits/frame).
-//logctx is used for av_log()
-//Returns <0 if mode is invalid
-int avpriv_codec2_mode_bit_rate(void *logctx, int mode);
-
-//Mimics codec2_samples_per_frame()
-int avpriv_codec2_mode_frame_size(void *logctx, int mode);
-
-//Mimics (codec2_bits_per_frame()+7)/8
-int avpriv_codec2_mode_block_align(void *logctx, int mode);
-#endif
 
 #define CODEC2_EXTRADATA_SIZE 4
 
