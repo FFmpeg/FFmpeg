@@ -327,7 +327,6 @@ static const AVOption frame_options[]={
 {NULL},
 };
 
-#if FF_API_COPY_CONTEXT
 static const AVClass av_frame_class = {
     .class_name              = "AVFrame",
     .item_name               = NULL,
@@ -339,7 +338,6 @@ const AVClass *avcodec_get_frame_class(void)
 {
     return &av_frame_class;
 }
-#endif
 
 #define SROFFSET(x) offsetof(AVSubtitleRect,x)
 
@@ -354,7 +352,6 @@ static const AVOption subtitle_rect_options[]={
 {NULL},
 };
 
-#if FF_API_COPY_CONTEXT
 static const AVClass av_subtitle_rect_class = {
     .class_name             = "AVSubtitleRect",
     .item_name              = NULL,
@@ -366,4 +363,3 @@ const AVClass *avcodec_get_subtitle_rect_class(void)
 {
     return &av_subtitle_rect_class;
 }
-#endif
