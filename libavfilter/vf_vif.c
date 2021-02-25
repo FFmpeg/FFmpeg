@@ -167,13 +167,8 @@ static void vif_statistic(const float *mu1_sq, const float *mu2_sq,
             num_val = log2f(1.0f + g * g * sigma1_sq / (sv_sq + sigma_nsq));
             den_val = log2f(1.0f + sigma1_sq / sigma_nsq);
 
-            if (sigma12 < 0.0f)
-                num_val = 0.0f;
-
-            if (sigma1_sq < sigma_nsq) {
-                num_val = 1.0f - sigma2_sq * sigma_max_inv;
-                den_val = 1.0f;
-            }
+            if (isnan(den_val))
+                num_val = den_val = 1.f;
 
             accum_inner_num += num_val;
             accum_inner_den += den_val;
