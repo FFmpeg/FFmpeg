@@ -102,13 +102,6 @@ static void unlock_avcodec(const AVCodec *codec)
         ff_mutex_unlock(&codec_mutex);
 }
 
-#if FF_API_LOCKMGR
-int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
-{
-    return 0;
-}
-#endif
-
 static int64_t get_bit_rate(AVCodecContext *ctx)
 {
     int64_t bit_rate;

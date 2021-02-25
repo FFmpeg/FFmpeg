@@ -3799,49 +3799,6 @@ attribute_deprecated
 AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel);
 #endif
 
-#if FF_API_LOCKMGR
-/**
- * Lock operation used by lockmgr
- *
- * @deprecated Deprecated together with av_lockmgr_register().
- */
-enum AVLockOp {
-  AV_LOCK_CREATE,  ///< Create a mutex
-  AV_LOCK_OBTAIN,  ///< Lock the mutex
-  AV_LOCK_RELEASE, ///< Unlock the mutex
-  AV_LOCK_DESTROY, ///< Free mutex resources
-};
-
-/**
- * Register a user provided lock manager supporting the operations
- * specified by AVLockOp. The "mutex" argument to the function points
- * to a (void *) where the lockmgr should store/get a pointer to a user
- * allocated mutex. It is NULL upon AV_LOCK_CREATE and equal to the
- * value left by the last call for all other ops. If the lock manager is
- * unable to perform the op then it should leave the mutex in the same
- * state as when it was called and return a non-zero value. However,
- * when called with AV_LOCK_DESTROY the mutex will always be assumed to
- * have been successfully destroyed. If av_lockmgr_register succeeds
- * it will return a non-negative value, if it fails it will return a
- * negative value and destroy all mutex and unregister all callbacks.
- * av_lockmgr_register is not thread-safe, it must be called from a
- * single thread before any calls which make use of locking are used.
- *
- * @param cb User defined callback. av_lockmgr_register invokes calls
- *           to this callback and the previously registered callback.
- *           The callback will be used to create more than one mutex
- *           each of which must be backed by its own underlying locking
- *           mechanism (i.e. do not use a single static object to
- *           implement your lock manager). If cb is set to NULL the
- *           lockmgr will be unregistered.
- *
- * @deprecated This function does nothing, and always returns 0. Be sure to
- *             build with thread support to get basic thread safety.
- */
-attribute_deprecated
-int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
-#endif
-
 /**
  * @return a positive value if s is open (i.e. avcodec_open2() was called on it
  * with no corresponding avcodec_close()), 0 otherwise.
