@@ -160,13 +160,6 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     return 0;
 }
 
-#if FF_API_GET_CONTEXT_DEFAULTS
-int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
-{
-    return init_context_defaults(s, codec);
-}
-#endif
-
 AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
 {
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));

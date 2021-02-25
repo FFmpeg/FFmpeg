@@ -2545,15 +2545,6 @@ AVCodecContext *avcodec_alloc_context3(const AVCodec *codec);
  */
 void avcodec_free_context(AVCodecContext **avctx);
 
-#if FF_API_GET_CONTEXT_DEFAULTS
-/**
- * @deprecated This function should not be used, as closing and opening a codec
- * context multiple time is not supported. A new codec context should be
- * allocated for each new use.
- */
-int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec);
-#endif
-
 /**
  * Get the AVClass for AVCodecContext. It can be used in combination with
  * AV_OPT_SEARCH_FAKE_OBJ for examining options.
