@@ -174,108 +174,6 @@ int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size)
     return 0;
 }
 
-#if FF_API_AVPACKET_OLD_API
-FF_DISABLE_DEPRECATION_WARNINGS
-#define ALLOC_MALLOC(data, size) data = av_malloc(size)
-#define ALLOC_BUF(data, size)                \
-do {                                         \
-    av_buffer_realloc(&pkt->buf, size);      \
-    data = pkt->buf ? pkt->buf->data : NULL; \
-} while (0)
-
-#define DUP_DATA(dst, src, size, padding, ALLOC)                        \
-    do {                                                                \
-        void *data;                                                     \
-        if (padding) {                                                  \
-            if ((unsigned)(size) >                                      \
-                (unsigned)(size) + AV_INPUT_BUFFER_PADDING_SIZE)        \
-                goto failed_alloc;                                      \
-            ALLOC(data, size + AV_INPUT_BUFFER_PADDING_SIZE);           \
-        } else {                                                        \
-            ALLOC(data, size);                                          \
-        }                                                               \
-        if (!data)                                                      \
-            goto failed_alloc;                                          \
-        memcpy(data, src, size);                                        \
-        if (padding)                                                    \
-            memset((uint8_t *)data + size, 0,                           \
-                   AV_INPUT_BUFFER_PADDING_SIZE);                       \
-        dst = data;                                                     \
-    } while (0)
-
-/* Makes duplicates of data, side_data, but does not copy any other fields */
-static int copy_packet_data(AVPacket *pkt, const AVPacket *src, int dup)
-{
-    pkt->data      = NULL;
-    pkt->side_data = NULL;
-    pkt->side_data_elems = 0;
-    if (pkt->buf) {
-        AVBufferRef *ref = av_buffer_ref(src->buf);
-        if (!ref)
-            return AVERROR(ENOMEM);
-        pkt->buf  = ref;
-        pkt->data = ref->data;
-    } else {
-        DUP_DATA(pkt->data, src->data, pkt->size, 1, ALLOC_BUF);
-    }
-    if (src->side_data_elems && dup) {
-        pkt->side_data = src->side_data;
-        pkt->side_data_elems = src->side_data_elems;
-    }
-    if (src->side_data_elems && !dup) {
-        return av_copy_packet_side_data(pkt, src);
-    }
-    return 0;
-
-failed_alloc:
-    av_packet_unref(pkt);
-    return AVERROR(ENOMEM);
-}
-
-int av_copy_packet_side_data(AVPacket *pkt, const AVPacket *src)
-{
-    if (src->side_data_elems) {
-        int i;
-        DUP_DATA(pkt->side_data, src->side_data,
-                src->side_data_elems * sizeof(*src->side_data), 0, ALLOC_MALLOC);
-        if (src != pkt) {
-            memset(pkt->side_data, 0,
-                   src->side_data_elems * sizeof(*src->side_data));
-        }
-        for (i = 0; i < src->side_data_elems; i++) {
-            DUP_DATA(pkt->side_data[i].data, src->side_data[i].data,
-                    src->side_data[i].size, 1, ALLOC_MALLOC);
-            pkt->side_data[i].size = src->side_data[i].size;
-            pkt->side_data[i].type = src->side_data[i].type;
-        }
-    }
-    pkt->side_data_elems = src->side_data_elems;
-    return 0;
-
-failed_alloc:
-    av_packet_unref(pkt);
-    return AVERROR(ENOMEM);
-}
-
-int av_dup_packet(AVPacket *pkt)
-{
-    AVPacket tmp_pkt;
-
-    if (!pkt->buf && pkt->data) {
-        tmp_pkt = *pkt;
-        return copy_packet_data(pkt, &tmp_pkt, 1);
-    }
-    return 0;
-}
-
-int av_copy_packet(AVPacket *dst, const AVPacket *src)
-{
-    *dst = *src;
-    return copy_packet_data(dst, src, 0);
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 void av_packet_free_side_data(AVPacket *pkt)
 {
     int i;
@@ -284,22 +182,6 @@ void av_packet_free_side_data(AVPacket *pkt)
     av_freep(&pkt->side_data);
     pkt->side_data_elems = 0;
 }
-
-#if FF_API_AVPACKET_OLD_API
-FF_DISABLE_DEPRECATION_WARNINGS
-void av_free_packet(AVPacket *pkt)
-{
-    if (pkt) {
-        if (pkt->buf)
-            av_buffer_unref(&pkt->buf);
-        pkt->data            = NULL;
-        pkt->size            = 0;
-
-        av_packet_free_side_data(pkt);
-    }
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
                             uint8_t *data, size_t size)

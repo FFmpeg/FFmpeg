@@ -519,45 +519,6 @@ int av_grow_packet(AVPacket *pkt, int grow_by);
  */
 int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size);
 
-#if FF_API_AVPACKET_OLD_API
-/**
- * @warning This is a hack - the packet memory allocation stuff is broken. The
- * packet is allocated if it was not really allocated.
- *
- * @deprecated Use av_packet_ref or av_packet_make_refcounted
- */
-attribute_deprecated
-int av_dup_packet(AVPacket *pkt);
-/**
- * Copy packet, including contents
- *
- * @return 0 on success, negative AVERROR on fail
- *
- * @deprecated Use av_packet_ref
- */
-attribute_deprecated
-int av_copy_packet(AVPacket *dst, const AVPacket *src);
-
-/**
- * Copy packet side data
- *
- * @return 0 on success, negative AVERROR on fail
- *
- * @deprecated Use av_packet_copy_props
- */
-attribute_deprecated
-int av_copy_packet_side_data(AVPacket *dst, const AVPacket *src);
-
-/**
- * Free a packet.
- *
- * @deprecated Use av_packet_unref
- *
- * @param pkt packet to free
- */
-attribute_deprecated
-void av_free_packet(AVPacket *pkt);
-#endif
 /**
  * Allocate new information of a packet.
  *
