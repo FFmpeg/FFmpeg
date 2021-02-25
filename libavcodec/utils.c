@@ -845,17 +845,6 @@ const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index)
     return &codec->hw_configs[index]->public;
 }
 
-#if FF_API_USER_VISIBLE_AVHWACCEL
-AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel)
-{
-    return NULL;
-}
-
-void av_register_hwaccel(AVHWAccel *hwaccel)
-{
-}
-#endif
-
 unsigned int avpriv_toupper4(unsigned int x)
 {
     return av_toupper(x & 0xFF) +

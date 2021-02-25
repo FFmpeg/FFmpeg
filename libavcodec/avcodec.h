@@ -3778,27 +3778,6 @@ void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size);
  */
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
-#if FF_API_USER_VISIBLE_AVHWACCEL
-/**
- * Register the hardware accelerator hwaccel.
- *
- * @deprecated  This function doesn't do anything.
- */
-attribute_deprecated
-void av_register_hwaccel(AVHWAccel *hwaccel);
-
-/**
- * If hwaccel is NULL, returns the first registered hardware accelerator,
- * if hwaccel is non-NULL, returns the next registered hardware accelerator
- * after hwaccel, or NULL if hwaccel is the last one.
- *
- * @deprecated  AVHWaccel structures contain no user-serviceable parts, so
- *              this function should not be used.
- */
-attribute_deprecated
-AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel);
-#endif
-
 /**
  * @return a positive value if s is open (i.e. avcodec_open2() was called on it
  * with no corresponding avcodec_close()), 0 otherwise.
