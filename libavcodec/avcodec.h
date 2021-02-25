@@ -2770,13 +2770,13 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec);
  */
 const AVClass *avcodec_get_class(void);
 
+#if FF_API_GET_FRAME_CLASS
 /**
- * Get the AVClass for AVFrame. It can be used in combination with
- * AV_OPT_SEARCH_FAKE_OBJ for examining options.
- *
- * @see av_opt_find().
+ * @deprecated This function should not be used.
  */
+attribute_deprecated
 const AVClass *avcodec_get_frame_class(void);
+#endif
 
 /**
  * Get the AVClass for AVSubtitleRect. It can be used in combination with

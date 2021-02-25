@@ -312,6 +312,7 @@ const AVClass *avcodec_get_class(void)
     return &av_codec_context_class;
 }
 
+#if FF_API_GET_FRAME_CLASS
 #define FOFFSET(x) offsetof(AVFrame,x)
 
 static const AVOption frame_options[]={
@@ -338,6 +339,7 @@ const AVClass *avcodec_get_frame_class(void)
 {
     return &av_frame_class;
 }
+#endif
 
 #define SROFFSET(x) offsetof(AVSubtitleRect,x)
 
