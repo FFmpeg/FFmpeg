@@ -140,22 +140,6 @@ static av_cold int sunrast_encode_init(AVCodecContext *avctx)
 {
     SUNRASTContext *s = avctx->priv_data;
 
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-    switch (avctx->coder_type) {
-    case FF_CODER_TYPE_RLE:
-        s->type = RT_BYTE_ENCODED;
-        break;
-    case FF_CODER_TYPE_RAW:
-        s->type = RT_STANDARD;
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "invalid coder_type\n");
-        return AVERROR(EINVAL);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-    if (s->type != RT_BYTE_ENCODED && s->type != RT_STANDARD)
-#endif
     // adjust boolean option to RT equivalent
     s->type++;
 
@@ -224,13 +208,6 @@ static const AVClass sunrast_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#if FF_API_CODER_TYPE
-static const AVCodecDefault sunrast_defaults[] = {
-     { "coder", "rle" },
-     { NULL },
-};
-#endif
-
 AVCodec ff_sunrast_encoder = {
     .name           = "sunrast",
     .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
@@ -239,9 +216,6 @@ AVCodec ff_sunrast_encoder = {
     .priv_data_size = sizeof(SUNRASTContext),
     .init           = sunrast_encode_init,
     .encode2        = sunrast_encode_frame,
-#if FF_API_CODER_TYPE
-    .defaults       = sunrast_defaults,
-#endif
     .priv_class     = &sunrast_class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24,
                                                   AV_PIX_FMT_PAL8,

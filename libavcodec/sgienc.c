@@ -107,13 +107,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->coder_type == FF_CODER_TYPE_RAW)
-        s->rle = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     width  = avctx->width;
     height = avctx->height;
     bytes_per_channel = 1;

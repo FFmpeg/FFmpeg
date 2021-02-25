@@ -747,12 +747,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     if (avctx->keyint_min >= 0)
         x4->params.i_keyint_min = avctx->keyint_min;
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->coder_type >= 0)
-        x4->coder = avctx->coder_type == FF_CODER_TYPE_AC;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (avctx->me_cmp >= 0)
         x4->params.analyse.b_chroma_me = avctx->me_cmp & FF_CMP_CHROMA;
 
@@ -1174,9 +1168,6 @@ static const AVCodecDefault x264_defaults[] = {
     { "b_strategy",       "-1" },
 #endif
     { "keyint_min",       "-1" },
-#if FF_API_CODER_TYPE
-    { "coder",            "-1" },
-#endif
     { "cmp",              "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { "thread_type",      "0" },

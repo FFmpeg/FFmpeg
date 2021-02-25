@@ -152,13 +152,6 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bpp = pkt->data[16] >> 3;
 
 
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->coder_type == FF_CODER_TYPE_RAW)
-        s->rle = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     /* try RLE compression */
     if (s->rle)
         datasize = targa_encode_rle(out, picsize, p, bpp, avctx->width, avctx->height);

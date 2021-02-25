@@ -627,20 +627,6 @@ Set limit motion vectors range (1023 for DivX player).
 
 @item global_quality @var{integer} (@emph{encoding,audio,video})
 
-@item coder @var{integer} (@emph{encoding,video})
-
-Possible values:
-@table @samp
-@item vlc
-variable length coder / huffman coder
-@item ac
-arithmetic coder
-@item raw
-raw (no encoding)
-@item rle
-run-length coder
-@end table
-
 @item context @var{integer} (@emph{encoding,video})
 Set context model.
 

@@ -169,9 +169,6 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "bf",        "3"     },
     { "qmin",      "-1"    },
     { "qmax",      "-1"    },
-#if FF_API_CODER_TYPE
-    { "coder",     "-1"    },
-#endif
     { "trellis",   "-1"    },
     { "flags",     "+cgop" },
 #if FF_API_PRIVATE_OPT

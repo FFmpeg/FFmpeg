@@ -554,13 +554,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->coder_type != -1)
-        s->ac = avctx->coder_type > 0 ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE;
-    else
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (s->ac == 1) // Compatbility with common command line usage
         s->ac = AC_RANGE_CUSTOM_TAB;
     else if (s->ac == AC_RANGE_DEFAULT_TAB_FORCE)
@@ -1310,13 +1303,6 @@ static const AVClass ffv1_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#if FF_API_CODER_TYPE
-static const AVCodecDefault ffv1_defaults[] = {
-    { "coder", "-1" },
-    { NULL },
-};
-#endif
-
 AVCodec ff_ffv1_encoder = {
     .name           = "ffv1",
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
@@ -1350,9 +1336,6 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_NONE
 
     },
-#if FF_API_CODER_TYPE
-    .defaults       = ffv1_defaults,
-#endif
     .priv_class     = &ffv1_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

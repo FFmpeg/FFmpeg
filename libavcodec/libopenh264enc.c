@@ -210,16 +210,6 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
             break;
         }
 
-#if FF_API_CODER_TYPE && FF_API_OPENH264_CABAC
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (s->coder < 0 && avctx->coder_type == FF_CODER_TYPE_AC)
-        s->coder = 1;
-
-    if (s->coder < 0)
-        s->coder = s->cabac;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (s->profile == FF_PROFILE_UNKNOWN && s->coder >= 0)
         s->profile = s->coder == 0 ? FF_PROFILE_H264_CONSTRAINED_BASELINE :
 #if OPENH264_VER_AT_LEAST(1, 8)
