@@ -243,9 +243,6 @@ typedef struct AVCodec {
      *****************************************************************
      */
     int priv_data_size;
-#if FF_API_NEXT
-    struct AVCodec *next;
-#endif
     /**
      * @name Frame-level threading support functions
      * @{

@@ -870,45 +870,6 @@ const AVCodec *av_codec_iterate(void **opaque)
     return c;
 }
 
-#if FF_API_NEXT
-FF_DISABLE_DEPRECATION_WARNINGS
-static AVOnce av_codec_next_init = AV_ONCE_INIT;
-
-static void av_codec_init_next(void)
-{
-    AVCodec *prev = NULL, *p;
-    void *i = 0;
-    while ((p = (AVCodec*)av_codec_iterate(&i))) {
-        if (prev)
-            prev->next = p;
-        prev = p;
-    }
-}
-
-
-
-av_cold void avcodec_register(AVCodec *codec)
-{
-    ff_thread_once(&av_codec_next_init, av_codec_init_next);
-}
-
-AVCodec *av_codec_next(const AVCodec *c)
-{
-    ff_thread_once(&av_codec_next_init, av_codec_init_next);
-
-    if (c)
-        return c->next;
-    else
-        return (AVCodec*)codec_list[0];
-}
-
-void avcodec_register_all(void)
-{
-    ff_thread_once(&av_codec_next_init, av_codec_init_next);
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
 {
     switch(id){

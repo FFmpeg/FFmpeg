@@ -75,12 +75,6 @@ const AVBitStreamFilter *av_bsf_iterate(void **opaque)
     return f;
 }
 
-#if FF_API_NEXT
-const AVBitStreamFilter *av_bsf_next(void **opaque) {
-    return av_bsf_iterate(opaque);
-}
-#endif
-
 const AVBitStreamFilter *av_bsf_get_by_name(const char *name)
 {
     const AVBitStreamFilter *f = NULL;

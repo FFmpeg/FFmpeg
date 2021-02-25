@@ -2728,16 +2728,6 @@ typedef struct AVSubtitle {
     int64_t pts;    ///< Same as packet pts, in AV_TIME_BASE
 } AVSubtitle;
 
-#if FF_API_NEXT
-/**
- * If c is NULL, returns the first registered codec,
- * if c is non-NULL, returns the next registered codec after c,
- * or NULL if c is the last one.
- */
-attribute_deprecated
-AVCodec *av_codec_next(const AVCodec *c);
-#endif
-
 /**
  * Return the LIBAVCODEC_VERSION_INT constant.
  */
@@ -2752,20 +2742,6 @@ const char *avcodec_configuration(void);
  * Return the libavcodec license.
  */
 const char *avcodec_license(void);
-
-#if FF_API_NEXT
-/**
- * @deprecated Calling this function is unnecessary.
- */
-attribute_deprecated
-void avcodec_register(AVCodec *codec);
-
-/**
- * @deprecated Calling this function is unnecessary.
- */
-attribute_deprecated
-void avcodec_register_all(void);
-#endif
 
 /**
  * Allocate an AVCodecContext and set its fields to default values. The
@@ -3553,10 +3529,6 @@ typedef struct AVCodecParser {
                         const uint8_t *buf, int buf_size);
     void (*parser_close)(AVCodecParserContext *s);
     int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
-#if FF_API_NEXT
-    attribute_deprecated
-    struct AVCodecParser *next;
-#endif
 } AVCodecParser;
 
 /**
@@ -3570,13 +3542,6 @@ typedef struct AVCodecParser {
  */
 const AVCodecParser *av_parser_iterate(void **opaque);
 
-#if FF_API_NEXT
-attribute_deprecated
-AVCodecParser *av_parser_next(const AVCodecParser *c);
-
-attribute_deprecated
-void av_register_codec_parser(AVCodecParser *parser);
-#endif
 AVCodecParserContext *av_parser_init(int codec_id);
 
 /**
@@ -4063,11 +4028,6 @@ void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
  */
 attribute_deprecated
 const AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
-#endif
-
-#if FF_API_NEXT
-attribute_deprecated
-const AVBitStreamFilter *av_bsf_next(void **opaque);
 #endif
 
 /* memory */
