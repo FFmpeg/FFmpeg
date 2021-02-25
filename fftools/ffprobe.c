@@ -2996,7 +2996,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         InputStream *ist = &ifile->streams[i];
         AVStream *stream = fmt_ctx->streams[i];
-        AVCodec *codec;
+        const AVCodec *codec;
 
         ist->st = stream;
 

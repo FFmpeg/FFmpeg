@@ -414,7 +414,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec);
  * @return a pointer to the created dictionary
  */
 AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
-                                AVFormatContext *s, AVStream *st, AVCodec *codec);
+                                AVFormatContext *s, AVStream *st, const AVCodec *codec);
 
 /**
  * Setup AVCodecContext options for avformat_find_stream_info().

@@ -2101,7 +2101,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
 }
 
 AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
-                                AVFormatContext *s, AVStream *st, AVCodec *codec)
+                                AVFormatContext *s, AVStream *st, const AVCodec *codec)
 {
     AVDictionary    *ret = NULL;
     AVDictionaryEntry *t = NULL;
@@ -2130,6 +2130,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
     }
 
     while (t = av_dict_get(opts, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        const AVClass *priv_class;
         char *p = strchr(t->key, ':');
 
         /* check stream specification in opt name */
@@ -2142,8 +2143,8 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
 
         if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) ||
             !codec ||
-            (codec->priv_class &&
-             av_opt_find(&codec->priv_class, t->key, NULL, flags,
+            ((priv_class = codec->priv_class) &&
+             av_opt_find(&priv_class, t->key, NULL, flags,
                          AV_OPT_SEARCH_FAKE_OBJ)))
             av_dict_set(&ret, t->key, t->value, 0);
         else if (t->key[0] == prefix &&

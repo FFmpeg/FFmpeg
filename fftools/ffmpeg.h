@@ -307,7 +307,7 @@ typedef struct InputStream {
 #define DECODING_FOR_FILTER 2
 
     AVCodecContext *dec_ctx;
-    AVCodec *dec;
+    const AVCodec *dec;
     AVFrame *decoded_frame;
     AVFrame *filter_frame; /* a ref of decoded_frame, to be sent to filters */
 
@@ -470,7 +470,7 @@ typedef struct OutputStream {
 
     AVCodecContext *enc_ctx;
     AVCodecParameters *ref_par; /* associated input codec parameters with encoders options applied */
-    AVCodec *enc;
+    const AVCodec *enc;
     int64_t max_frames;
     AVFrame *filtered_frame;
     AVFrame *last_frame;

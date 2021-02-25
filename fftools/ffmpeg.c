@@ -688,7 +688,7 @@ void assert_avoptions(AVDictionary *m)
     }
 }
 
-static void abort_codec_experimental(AVCodec *c, int encoder)
+static void abort_codec_experimental(const AVCodec *c, int encoder)
 {
     exit_program(1);
 }
@@ -2943,7 +2943,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
     InputStream *ist = input_streams[ist_index];
 
     if (ist->decoding_needed) {
-        AVCodec *codec = ist->dec;
+        const AVCodec *codec = ist->dec;
         if (!codec) {
             snprintf(error, error_len, "Decoder (codec %s) not found for input stream #%d:%d",
                     avcodec_get_name(ist->dec_ctx->codec_id), ist->file_index, ist->st->index);
@@ -3522,7 +3522,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
     int ret = 0;
 
     if (ost->encoding_needed) {
-        AVCodec      *codec = ost->enc;
+        const AVCodec *codec = ost->enc;
         AVCodecContext *dec = NULL;
         InputStream *ist;
 
