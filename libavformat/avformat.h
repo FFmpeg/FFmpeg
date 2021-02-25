@@ -534,9 +534,6 @@ typedef struct AVOutputFormat {
 #else
 #define ff_const59 const
 #endif
-#if FF_API_NEXT
-    ff_const59 struct AVOutputFormat *next;
-#endif
     /**
      * size of private data so that it can be allocated in the wrapper
      */
@@ -683,10 +680,6 @@ typedef struct AVInputFormat {
      * New public fields should be added right above.
      *****************************************************************
      */
-#if FF_API_NEXT
-    ff_const59 struct AVInputFormat *next;
-#endif
-
     /**
      * Raw demuxers store their codec ID here.
      */
@@ -1941,24 +1934,6 @@ const char *avformat_configuration(void);
  */
 const char *avformat_license(void);
 
-#if FF_API_NEXT
-/**
- * Initialize libavformat and register all the muxers, demuxers and
- * protocols. If you do not call this function, then you can select
- * exactly which formats you want to support.
- *
- * @see av_register_input_format()
- * @see av_register_output_format()
- */
-attribute_deprecated
-void av_register_all(void);
-
-attribute_deprecated
-void av_register_input_format(AVInputFormat *format);
-attribute_deprecated
-void av_register_output_format(AVOutputFormat *format);
-#endif
-
 /**
  * Do global initialization of network libraries. This is optional,
  * and not recommended anymore.
@@ -1980,24 +1955,6 @@ int avformat_network_init(void);
  * once for each time you called avformat_network_init.
  */
 int avformat_network_deinit(void);
-
-#if FF_API_NEXT
-/**
- * If f is NULL, returns the first registered input format,
- * if f is non-NULL, returns the next registered input format after f
- * or NULL if f is the last one.
- */
-attribute_deprecated
-AVInputFormat  *av_iformat_next(const AVInputFormat  *f);
-
-/**
- * If f is NULL, returns the first registered output format,
- * if f is non-NULL, returns the next registered output format after f
- * or NULL if f is the last one.
- */
-attribute_deprecated
-AVOutputFormat *av_oformat_next(const AVOutputFormat *f);
-#endif
 
 /**
  * Iterate over all registered muxers.

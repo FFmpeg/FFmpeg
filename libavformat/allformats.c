@@ -22,10 +22,6 @@
 #include "libavutil/thread.h"
 #include "libavformat/internal.h"
 #include "avformat.h"
-#include "rtp.h"
-#include "rdt.h"
-#include "url.h"
-#include "version.h"
 
 /* (de)muxers */
 extern AVOutputFormat ff_a64_muxer;
@@ -574,104 +570,10 @@ const AVInputFormat *av_demuxer_iterate(void **opaque)
 
 static AVMutex avpriv_register_devices_mutex = AV_MUTEX_INITIALIZER;
 
-#if FF_API_NEXT
-FF_DISABLE_DEPRECATION_WARNINGS
-static AVOnce av_format_next_init = AV_ONCE_INIT;
-
-static void av_format_init_next(void)
-{
-    AVOutputFormat *prevout = NULL, *out;
-    AVInputFormat *previn = NULL, *in;
-
-    ff_mutex_lock(&avpriv_register_devices_mutex);
-
-    for (int i = 0; (out = (AVOutputFormat*)muxer_list[i]); i++) {
-        if (prevout)
-            prevout->next = out;
-        prevout = out;
-    }
-
-    if (outdev_list) {
-        for (int i = 0; (out = (AVOutputFormat*)outdev_list[i]); i++) {
-            if (prevout)
-                prevout->next = out;
-            prevout = out;
-        }
-    }
-
-    for (int i = 0; (in = (AVInputFormat*)demuxer_list[i]); i++) {
-        if (previn)
-            previn->next = in;
-        previn = in;
-    }
-
-    if (indev_list) {
-        for (int i = 0; (in = (AVInputFormat*)indev_list[i]); i++) {
-            if (previn)
-                previn->next = in;
-            previn = in;
-        }
-    }
-
-    ff_mutex_unlock(&avpriv_register_devices_mutex);
-}
-
-AVInputFormat *av_iformat_next(const AVInputFormat *f)
-{
-    ff_thread_once(&av_format_next_init, av_format_init_next);
-
-    if (f)
-#if FF_API_AVIOFORMAT
-        return f->next;
-#else
-        return (AVInputFormat *) f->next;
-#endif
-    else {
-        void *opaque = NULL;
-        return (AVInputFormat *)av_demuxer_iterate(&opaque);
-    }
-}
-
-AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
-{
-    ff_thread_once(&av_format_next_init, av_format_init_next);
-
-    if (f)
-#if FF_API_AVIOFORMAT
-        return f->next;
-#else
-        return (AVOutputFormat *) f->next;
-#endif
-    else {
-        void *opaque = NULL;
-        return (AVOutputFormat *)av_muxer_iterate(&opaque);
-    }
-}
-
-void av_register_all(void)
-{
-    ff_thread_once(&av_format_next_init, av_format_init_next);
-}
-
-void av_register_input_format(AVInputFormat *format)
-{
-    ff_thread_once(&av_format_next_init, av_format_init_next);
-}
-
-void av_register_output_format(AVOutputFormat *format)
-{
-    ff_thread_once(&av_format_next_init, av_format_init_next);
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[])
 {
     ff_mutex_lock(&avpriv_register_devices_mutex);
     outdev_list = o;
     indev_list = i;
     ff_mutex_unlock(&avpriv_register_devices_mutex);
-#if FF_API_NEXT
-    av_format_init_next();
-#endif
 }
