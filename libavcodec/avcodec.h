@@ -3636,22 +3636,6 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
  * @}
  */
 
-#if FF_API_TAG_STRING
-/**
- * Put a string representing the codec tag codec_tag in buf.
- *
- * @param buf       buffer to place codec tag in
- * @param buf_size size in bytes of buf
- * @param codec_tag codec tag to assign
- * @return the length of the string that would have been generated if
- * enough space had been available, excluding the trailing null
- *
- * @deprecated see av_fourcc_make_string() and av_fourcc2str().
- */
-attribute_deprecated
-size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_tag);
-#endif
-
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
 /**
