@@ -113,17 +113,6 @@ static int64_t wrap_timestamp(const AVStream *st, int64_t timestamp)
     return timestamp;
 }
 
-#if FF_API_FORMAT_GET_SET
-MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
-MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
-MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, audio_codec)
-MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, subtitle_codec)
-MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, data_codec)
-MAKE_ACCESSORS(AVFormatContext, format, int, metadata_header_padding)
-MAKE_ACCESSORS(AVFormatContext, format, void *, opaque)
-MAKE_ACCESSORS(AVFormatContext, format, av_format_control_message, control_message_cb)
-#endif
-
 int64_t av_stream_get_end_pts(const AVStream *st)
 {
     if (st->internal->priv_pts) {
@@ -220,13 +209,6 @@ static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st,
 
     return codec;
 }
-
-#if FF_API_FORMAT_GET_SET
-int av_format_get_probe_score(const AVFormatContext *s)
-{
-    return s->probe_score;
-}
-#endif
 
 /* an arbitrarily chosen "sane" max packet size -- 50M */
 #define SANE_CHUNK_SIZE (50000000)

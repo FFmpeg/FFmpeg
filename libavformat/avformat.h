@@ -1086,17 +1086,6 @@ typedef struct AVStream {
     AVStreamInternal *internal;
 } AVStream;
 
-#if FF_API_FORMAT_GET_SET
-/**
- * Accessors for some AVStream fields. These used to be provided for ABI
- * compatibility, and do not need to be used anymore.
- */
-attribute_deprecated
-AVRational av_stream_get_r_frame_rate(const AVStream *s);
-attribute_deprecated
-void       av_stream_set_r_frame_rate(AVStream *s, AVRational r);
-#endif
-
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
 
 /**
@@ -1806,43 +1795,6 @@ typedef struct AVFormatContext {
      */
     int max_probe_packets;
 } AVFormatContext;
-
-#if FF_API_FORMAT_GET_SET
-/**
- * Accessors for some AVFormatContext fields. These used to be provided for ABI
- * compatibility, and do not need to be used anymore.
- */
-attribute_deprecated
-int av_format_get_probe_score(const AVFormatContext *s);
-attribute_deprecated
-AVCodec * av_format_get_video_codec(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_video_codec(AVFormatContext *s, AVCodec *c);
-attribute_deprecated
-AVCodec * av_format_get_audio_codec(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_audio_codec(AVFormatContext *s, AVCodec *c);
-attribute_deprecated
-AVCodec * av_format_get_subtitle_codec(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_subtitle_codec(AVFormatContext *s, AVCodec *c);
-attribute_deprecated
-AVCodec * av_format_get_data_codec(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_data_codec(AVFormatContext *s, AVCodec *c);
-attribute_deprecated
-int       av_format_get_metadata_header_padding(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_metadata_header_padding(AVFormatContext *s, int c);
-attribute_deprecated
-void *    av_format_get_opaque(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_opaque(AVFormatContext *s, void *opaque);
-attribute_deprecated
-av_format_control_message av_format_get_control_message_cb(const AVFormatContext *s);
-attribute_deprecated
-void      av_format_set_control_message_cb(AVFormatContext *s, av_format_control_message callback);
-#endif
 
 /**
  * This function will cause global side data to be injected in the next packet
