@@ -655,12 +655,12 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             return AVERROR(EINVAL);
         }
 
-            dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
-            if (!dialog)
-                return AVERROR(ENOMEM);
-            mov_text_dialog(s, dialog);
-            ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
-            ff_ass_free_dialog(&dialog);
+        dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+        if (!dialog)
+            return AVERROR(ENOMEM);
+        mov_text_dialog(s, dialog);
+        ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
+        ff_ass_free_dialog(&dialog);
 
         for (j = 0; j < box_count; j++) {
             box_types[j].encode(s);

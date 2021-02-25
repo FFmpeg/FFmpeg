@@ -171,12 +171,12 @@ static int webvtt_encode_frame(AVCodecContext *avctx,
             return AVERROR(EINVAL);
         }
 
-            dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
-            if (!dialog)
-                return AVERROR(ENOMEM);
-            webvtt_style_apply(s, dialog->style);
-            ff_ass_split_override_codes(&webvtt_callbacks, s, dialog->text);
-            ff_ass_free_dialog(&dialog);
+        dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+        if (!dialog)
+            return AVERROR(ENOMEM);
+        webvtt_style_apply(s, dialog->style);
+        ff_ass_split_override_codes(&webvtt_callbacks, s, dialog->text);
+        ff_ass_free_dialog(&dialog);
     }
 
     if (!av_bprint_is_complete(&s->buffer))

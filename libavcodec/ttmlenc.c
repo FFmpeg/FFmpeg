@@ -88,48 +88,45 @@ static int ttml_encode_frame(AVCodecContext *avctx, uint8_t *buf,
 
     for (i=0; i<sub->num_rects; i++) {
         const char *ass = sub->rects[i]->ass;
+        int ret;
 
         if (sub->rects[i]->type != SUBTITLE_ASS) {
             av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
             return AVERROR(EINVAL);
         }
 
-            dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
-            if (!dialog)
-                return AVERROR(ENOMEM);
+        dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+        if (!dialog)
+            return AVERROR(ENOMEM);
 
-            if (dialog->style) {
-                av_bprintf(&s->buffer, "<span region=\"");
-                av_bprint_escape(&s->buffer, dialog->style, NULL,
-                                 AV_ESCAPE_MODE_XML,
-                                 AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
-                av_bprintf(&s->buffer, "\">");
-            }
+        if (dialog->style) {
+            av_bprintf(&s->buffer, "<span region=\"");
+            av_bprint_escape(&s->buffer, dialog->style, NULL,
+                             AV_ESCAPE_MODE_XML,
+                             AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+            av_bprintf(&s->buffer, "\">");
+        }
 
-            {
-                int ret = ff_ass_split_override_codes(&ttml_callbacks, s,
-                                                      dialog->text);
-                int log_level = (ret != AVERROR_INVALIDDATA ||
-                                 avctx->err_recognition & AV_EF_EXPLODE) ?
-                                AV_LOG_ERROR : AV_LOG_WARNING;
+        ret = ff_ass_split_override_codes(&ttml_callbacks, s, dialog->text);
+        if (ret < 0) {
+            int log_level = (ret != AVERROR_INVALIDDATA ||
+                             avctx->err_recognition & AV_EF_EXPLODE) ?
+                            AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log(avctx, log_level,
+                   "Splitting received ASS dialog text %s failed: %s\n",
+                   dialog->text,
+                   av_err2str(ret));
 
-                if (ret < 0) {
-                    av_log(avctx, log_level,
-                           "Splitting received ASS dialog text %s failed: %s\n",
-                           dialog->text,
-                           av_err2str(ret));
-
-                    if (log_level == AV_LOG_ERROR) {
-                        ff_ass_free_dialog(&dialog);
-                        return ret;
-                    }
-                }
-
-                if (dialog->style)
-                    av_bprintf(&s->buffer, "</span>");
-
+            if (log_level == AV_LOG_ERROR) {
                 ff_ass_free_dialog(&dialog);
+                return ret;
             }
+        }
+
+        if (dialog->style)
+            av_bprintf(&s->buffer, "</span>");
+
+        ff_ass_free_dialog(&dialog);
     }
 
     if (!av_bprint_is_complete(&s->buffer))
