@@ -539,22 +539,22 @@ static int process_frame(FFFrameSync *fs)
     AVFilterContext *ctx = fs->parent;
     VIFContext *s = fs->opaque;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out, *main = NULL, *ref = NULL;
+    AVFrame *out_frame, *main_frame = NULL, *ref_frame = NULL;
     int ret;
 
-    ret = ff_framesync_dualinput_get(fs, &main, &ref);
+    ret = ff_framesync_dualinput_get(fs, &main_frame, &ref_frame);
     if (ret < 0)
         return ret;
 
-    if (ctx->is_disabled || !ref) {
-        out = main;
+    if (ctx->is_disabled || !ref_frame) {
+        out_frame = main_frame;
     } else {
-        out = do_vif(ctx, main, ref);
+        out_frame = do_vif(ctx, main_frame, ref_frame);
     }
 
-    out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
+    out_frame->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
-    return ff_filter_frame(outlink, out);
+    return ff_filter_frame(outlink, out_frame);
 }
 
 
