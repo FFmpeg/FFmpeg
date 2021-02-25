@@ -1727,13 +1727,6 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
         s->compression_rate_enc = 0;
     }
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        s->pred = avctx->prediction_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8 && (s->pred != FF_DWT97_INT || s->format != CODEC_JP2)) {
         av_log(s->avctx, AV_LOG_WARNING, "Forcing lossless jp2 for pal8\n");
         s->pred = FF_DWT97_INT;

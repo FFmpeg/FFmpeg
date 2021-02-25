@@ -696,16 +696,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
             s->ac = AC_RANGE_CUSTOM_TAB;
         }
     }
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->context_model)
-        s->context_model = avctx->context_model;
-    if (avctx->context_model > 1U) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid context model %d, valid values are 0 and 1\n", avctx->context_model);
-        return AVERROR(EINVAL);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (s->ac == AC_RANGE_CUSTOM_TAB) {
         for (i = 1; i < 256; i++)

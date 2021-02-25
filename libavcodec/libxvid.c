@@ -617,13 +617,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     x->intra_matrix =
     x->inter_matrix = NULL;
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->mpeg_quant)
-        x->mpeg_quant = avctx->mpeg_quant;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (x->mpeg_quant)
         x->vol_flags |= XVID_VOL_MPEGQUANT;
     if ((avctx->intra_matrix || avctx->inter_matrix)) {

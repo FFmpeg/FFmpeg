@@ -228,12 +228,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->context_model == 1)
-        s->context = avctx->context_model;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->bps = desc->comp[0].depth;
     s->yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
@@ -309,12 +303,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     avctx->bits_per_coded_sample = s->bitstream_bpp;
     s->decorrelate = s->bitstream_bpp >= 24 && !s->yuv && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        s->predictor = avctx->prediction_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     s->interlaced = avctx->flags & AV_CODEC_FLAG_INTERLACED_ME ? 1 : 0;
     if (s->context) {
         if (s->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
@@ -332,20 +320,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    "vcodec=ffvhuff or format=422p\n");
             return AVERROR(EINVAL);
         }
-#if FF_API_PRIVATE_OPT
-        if (s->context) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Error: per-frame huffman tables are not supported "
-                   "by huffyuv; use vcodec=ffvhuff\n");
-            return AVERROR(EINVAL);
-        }
-        if (s->version > 2) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Error: ver>2 is not supported "
-                   "by huffyuv; use vcodec=ffvhuff\n");
-            return AVERROR(EINVAL);
-        }
-#endif
         if (s->interlaced != ( s->height > 288 ))
             av_log(avctx, AV_LOG_INFO,
                    "using huffyuv 2.2.0 or newer interlacing flag\n");

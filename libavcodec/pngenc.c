@@ -1017,15 +1017,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ff_llvidencdsp_init(&s->llvidencdsp);
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        s->filter_type = av_clip(avctx->prediction_method,
-                                 PNG_FILTER_VALUE_NONE,
-                                 PNG_FILTER_VALUE_MIXED);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (avctx->pix_fmt == AV_PIX_FMT_MONOBLACK)
         s->filter_type = PNG_FILTER_VALUE_NONE;
 

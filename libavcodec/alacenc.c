@@ -557,32 +557,6 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         AV_WB8(alac_extradata+20, s->rc.k_modifier);
     }
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->min_prediction_order >= 0) {
-        if (avctx->min_prediction_order < MIN_LPC_ORDER ||
-           avctx->min_prediction_order > ALAC_MAX_LPC_ORDER) {
-            av_log(avctx, AV_LOG_ERROR, "invalid min prediction order: %d\n",
-                   avctx->min_prediction_order);
-            return AVERROR(EINVAL);
-        }
-
-        s->min_prediction_order = avctx->min_prediction_order;
-    }
-
-    if (avctx->max_prediction_order >= 0) {
-        if (avctx->max_prediction_order < MIN_LPC_ORDER ||
-            avctx->max_prediction_order > ALAC_MAX_LPC_ORDER) {
-            av_log(avctx, AV_LOG_ERROR, "invalid max prediction order: %d\n",
-                   avctx->max_prediction_order);
-            return AVERROR(EINVAL);
-        }
-
-        s->max_prediction_order = avctx->max_prediction_order;
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (s->max_prediction_order < s->min_prediction_order) {
         av_log(avctx, AV_LOG_ERROR,
                "invalid prediction orders: min=%d max=%d\n",

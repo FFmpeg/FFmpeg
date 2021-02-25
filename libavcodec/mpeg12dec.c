@@ -49,7 +49,6 @@
 #include "mpegvideodata.h"
 #include "profiles.h"
 #include "thread.h"
-#include "version.h"
 #include "xvmc_internal.h"
 
 #define A53_MAX_CC_COUNT 2000
@@ -2439,12 +2438,6 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     init_get_bits(&s->gb, buf, buf_size * 8);
 
     tc = s-> timecode_frame_start = get_bits(&s->gb, 25);
-
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->timecode_frame_start = tc;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->closed_gop = get_bits1(&s->gb);
     /* broken_link indicates that after editing the

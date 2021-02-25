@@ -41,13 +41,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int plane_index, ret;
     int i;
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        s->pred = avctx->prediction_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if(s->pred == DWT_97
        && (avctx->flags & AV_CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
@@ -1758,13 +1751,6 @@ redo_frame:
                     }
                 }
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
-
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-            if(s->avctx->scenechange_threshold)
-                s->scenechange_threshold = s->avctx->scenechange_threshold;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
             if(   plane_index==0
                && pic->pict_type == AV_PICTURE_TYPE_P

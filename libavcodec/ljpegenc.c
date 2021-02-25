@@ -72,13 +72,6 @@ static int ljpeg_encode_bgr(AVCodecContext *avctx, PutBitContext *pb,
     int left[4], top[4], topleft[4];
     int x, y, i;
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        s->pred = avctx->prediction_method + 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     for (i = 0; i < 4; i++)
         buffer[0][i] = 1 << (9 - 1);
 
@@ -202,13 +195,6 @@ static int ljpeg_encode_yuv(AVCodecContext *avctx, PutBitContext *pb,
     const int mb_width  = (avctx->width  + s->hsample[0] - 1) / s->hsample[0];
     const int mb_height = (avctx->height + s->vsample[0] - 1) / s->vsample[0];
     int mb_x, mb_y;
-
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        s->pred = avctx->prediction_method + 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     for (mb_y = 0; mb_y < mb_height; mb_y++) {
         if (put_bytes_left(pb, 0) <

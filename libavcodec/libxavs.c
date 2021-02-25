@@ -288,13 +288,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     /* cabac is not included in AVS JiZhun Profile */
     x4->params.b_cabac           = 0;
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->b_frame_strategy)
-        x4->b_frame_strategy = avctx->b_frame_strategy;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     x4->params.i_bframe_adaptive = x4->b_frame_strategy;
 
     avctx->has_b_frames          = !!avctx->max_b_frames;
@@ -304,13 +297,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     x4->params.i_keyint_min      = avctx->keyint_min;
     if (x4->params.i_keyint_min > x4->params.i_keyint_max)
         x4->params.i_keyint_min = x4->params.i_keyint_max;
-
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->scenechange_threshold)
-        x4->scenechange_threshold = avctx->scenechange_threshold;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     x4->params.i_scenecut_threshold = x4->scenechange_threshold;
 
@@ -343,13 +329,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     x4->params.analyse.i_trellis          = avctx->trellis;
 
-#if FF_API_PRIVATE_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->noise_reduction >= 0)
-        x4->noise_reduction = avctx->noise_reduction;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     x4->params.analyse.i_noise_reduction  = x4->noise_reduction;
 
     if (avctx->level > 0)
@@ -370,13 +349,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* what is the RC method we are now using? Default NO */
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
-
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->chromaoffset)
-        x4->chroma_offset = avctx->chromaoffset;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     x4->params.analyse.i_chroma_qp_offset = x4->chroma_offset;
 

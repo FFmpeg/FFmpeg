@@ -282,13 +282,6 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     int i, size, ret;
     int comps;
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->prediction_method)
-        ctx->pred = avctx->prediction_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 ||
         avctx->pix_fmt == AV_PIX_FMT_GRAY16)
         comps = 1;

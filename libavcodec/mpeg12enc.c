@@ -220,13 +220,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->timecode_frame_start)
-        s->timecode_frame_start = avctx->timecode_frame_start;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (s->tc_opt_str) {
         AVRational rate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
         int ret = av_timecode_init_from_string(&s->tc, rate, s->tc_opt_str, s);

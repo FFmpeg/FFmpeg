@@ -921,12 +921,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         }
     }
 
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->frame_skip_threshold)
-        ctx->drop_threshold = avctx->frame_skip_threshold;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     enccfg.rc_dropframe_thresh = ctx->drop_threshold;
 
     //0-100 (0 => CBR, 100 => VBR)
@@ -1066,12 +1060,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         codecctl_int(avctx, VP8E_SET_SHARPNESS, ctx->sharpness);
 
     if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8) {
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (avctx->noise_reduction)
-            ctx->noise_sensitivity = avctx->noise_reduction;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, ctx->noise_sensitivity);
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     }

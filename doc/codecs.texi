@@ -144,12 +144,6 @@ Default value is 0.
 @item b_qfactor @var{float} (@emph{encoding,video})
 Set qp factor between P and B frames.
 
-@item b_strategy @var{integer} (@emph{encoding,video})
-Set strategy to choose between I/P/B-frames.
-
-@item ps @var{integer} (@emph{encoding,video})
-Set RTP payload size in bytes.
-
 @item codec_tag @var{integer}
 @item bug @var{flags} (@emph{decoding,video})
 Workaround not auto detected encoder bugs.
@@ -238,9 +232,6 @@ consider things that a sane encoder should not do as an error
 @item has_b_frames @var{integer}
 
 @item block_align @var{integer}
-
-@item mpeg_quant @var{integer} (@emph{encoding,video})
-Use MPEG quantizers instead of H.263.
 
 @item rc_override_count @var{integer}
 
@@ -346,19 +337,6 @@ favor predicting from the previous frame instead of the current
 @end table
 
 @item bits_per_coded_sample @var{integer}
-
-@item pred @var{integer} (@emph{encoding,video})
-Set prediction method.
-
-Possible values:
-@table @samp
-@item left
-
-@item plane
-
-@item median
-
-@end table
 
 @item aspect @var{rational number} (@emph{encoding,video})
 Set sample aspect ratio.
@@ -576,9 +554,6 @@ sab diamond motion estimation
 @item last_pred @var{integer} (@emph{encoding,video})
 Set amount of motion predictors from the previous frame.
 
-@item preme @var{integer} (@emph{encoding,video})
-Set pre motion estimation.
-
 @item precmp @var{integer} (@emph{encoding,video})
 Set pre motion estimation compare function.
 
@@ -627,9 +602,6 @@ Set limit motion vectors range (1023 for DivX player).
 
 @item global_quality @var{integer} (@emph{encoding,audio,video})
 
-@item context @var{integer} (@emph{encoding,video})
-Set context model.
-
 @item slice_flags @var{integer}
 
 @item mbd @var{integer} (@emph{encoding,video})
@@ -644,12 +616,6 @@ use fewest bits
 @item rd
 use best rate distortion
 @end table
-
-@item sc_threshold @var{integer} (@emph{encoding,video})
-Set scene change threshold.
-
-@item nr @var{integer} (@emph{encoding,video})
-Set noise reduction.
 
 @item rc_init_occupancy @var{integer} (@emph{encoding,video})
 Set number of bits which should be loaded into the rc buffer before
@@ -738,63 +704,11 @@ Possible values:
 @item lowres @var{integer} (@emph{decoding,audio,video})
 Decode at 1= 1/2, 2=1/4, 3=1/8 resolutions.
 
-@item skip_threshold @var{integer} (@emph{encoding,video})
-Set frame skip threshold.
-
-@item skip_factor @var{integer} (@emph{encoding,video})
-Set frame skip factor.
-
-@item skip_exp @var{integer} (@emph{encoding,video})
-Set frame skip exponent.
-Negative values behave identical to the corresponding positive ones, except
-that the score is normalized.
-Positive values exist primarily for compatibility reasons and are not so useful.
-
-@item skipcmp @var{integer} (@emph{encoding,video})
-Set frame skip compare function.
-
-Possible values:
-@table @samp
-@item sad
-sum of absolute differences, fast (default)
-@item sse
-sum of squared errors
-@item satd
-sum of absolute Hadamard transformed differences
-@item dct
-sum of absolute DCT transformed differences
-@item psnr
-sum of squared quantization errors (avoid, low quality)
-@item bit
-number of bits needed for the block
-@item rd
-rate distortion optimal, slow
-@item zero
-0
-@item vsad
-sum of absolute vertical differences
-@item vsse
-sum of squared vertical differences
-@item nsse
-noise preserving sum of squared differences
-@item w53
-5/3 wavelet, only used in snow
-@item w97
-9/7 wavelet, only used in snow
-@item dctmax
-
-@item chroma
-
-@end table
-
 @item mblmin @var{integer} (@emph{encoding,video})
 Set min macroblock lagrange factor (VBR).
 
 @item mblmax @var{integer} (@emph{encoding,video})
 Set max macroblock lagrange factor (VBR).
-
-@item mepc @var{integer} (@emph{encoding,video})
-Set motion estimation bitrate penalty compensation (1.0 = 256).
 
 @item skip_loop_filter @var{integer} (@emph{decoding,video})
 @item skip_idct        @var{integer} (@emph{decoding,video})
@@ -835,31 +749,17 @@ Default value is @samp{default}.
 @item bidir_refine @var{integer} (@emph{encoding,video})
 Refine the two motion vectors used in bidirectional macroblocks.
 
-@item brd_scale @var{integer} (@emph{encoding,video})
-Downscale frames for dynamic B-frame decision.
-
 @item keyint_min @var{integer} (@emph{encoding,video})
 Set minimum interval between IDR-frames.
 
 @item refs @var{integer} (@emph{encoding,video})
 Set reference frames to consider for motion compensation.
 
-@item chromaoffset @var{integer} (@emph{encoding,video})
-Set chroma qp offset from luma.
-
 @item trellis @var{integer} (@emph{encoding,audio,video})
 Set rate-distortion optimal quantization.
 
 @item mv0_threshold @var{integer} (@emph{encoding,video})
-@item b_sensitivity @var{integer} (@emph{encoding,video})
-Adjust sensitivity of b_frame_strategy 1.
-
 @item compression_level @var{integer} (@emph{encoding,audio,video})
-@item min_prediction_order @var{integer} (@emph{encoding,audio})
-@item max_prediction_order @var{integer} (@emph{encoding,audio})
-@item timecode_frame_start @var{integer} (@emph{encoding,video})
-Set GOP timecode frame start number, in non drop frame format.
-
 @item bits_per_raw_sample @var{integer}
 @item channel_layout @var{integer} (@emph{decoding/encoding,audio})
 

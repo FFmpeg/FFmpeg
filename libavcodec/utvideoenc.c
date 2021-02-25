@@ -43,12 +43,6 @@ typedef struct HuffEntry {
     uint32_t code;
 } HuffEntry;
 
-#if FF_API_PRIVATE_OPT
-static const int ut_pred_order[5] = {
-    PRED_LEFT, PRED_MEDIAN, PRED_MEDIAN, PRED_NONE, PRED_GRADIENT
-};
-#endif
-
 /* Compare huffman tree nodes */
 static int ut_huff_cmp_len(const void *a, const void *b)
 {
@@ -139,28 +133,6 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     ff_bswapdsp_init(&c->bdsp);
     ff_llvidencdsp_init(&c->llvidencdsp);
-
-#if FF_API_PRIVATE_OPT
-FF_DISABLE_DEPRECATION_WARNINGS
-    /* Check the prediction method, and error out if unsupported */
-    if (avctx->prediction_method < 0 || avctx->prediction_method > 4) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Prediction method %d is not supported in Ut Video.\n",
-               avctx->prediction_method);
-        return AVERROR_OPTION_NOT_FOUND;
-    }
-
-    if (avctx->prediction_method == FF_PRED_PLANE) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Plane prediction is not supported in Ut Video.\n");
-        return AVERROR_OPTION_NOT_FOUND;
-    }
-
-    /* Convert from libavcodec prediction type to Ut Video's */
-    if (avctx->prediction_method)
-        c->frame_pred = ut_pred_order[avctx->prediction_method];
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (c->frame_pred == PRED_GRADIENT) {
         av_log(avctx, AV_LOG_ERROR, "Gradient prediction is not supported.\n");
