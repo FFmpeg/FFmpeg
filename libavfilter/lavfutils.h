@@ -24,7 +24,8 @@
 #ifndef AVFILTER_LAVFUTILS_H
 #define AVFILTER_LAVFUTILS_H
 
-#include "libavformat/avformat.h"
+#include <stdint.h>
+#include "libavutil/pixfmt.h"
 
 /**
  * Load image from filename and put the resulting image in data.

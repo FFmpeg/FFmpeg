@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavformat/avformat.h"
 #include "lavfutils.h"
 
 int ff_load_image(uint8_t *data[4], int linesize[4],
