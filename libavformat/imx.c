@@ -66,6 +66,7 @@ static int simbiosis_imx_read_header(AVFormatContext *s)
     vst->codecpar->format     = AV_PIX_FMT_PAL8;
     vst->codecpar->codec_id   = AV_CODEC_ID_SIMBIOSIS_IMX;
     vst->start_time = 0;
+    vst->duration =
     vst->nb_frames = avio_rl32(pb);
     rate = avio_rl16(pb);
     avio_skip(pb, 12);
