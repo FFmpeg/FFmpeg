@@ -27,22 +27,11 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
-#include "libavutil/avassert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
-
-#if FF_API_GETCHROMA
-void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    av_assert0(desc);
-    *h_shift = desc->log2_chroma_w;
-    *v_shift = desc->log2_chroma_h;
-}
-#endif
 
 #if FF_API_AVCODEC_PIX_FMT
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
