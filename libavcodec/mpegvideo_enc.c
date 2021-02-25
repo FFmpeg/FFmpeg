@@ -1841,20 +1841,6 @@ vbv_retry:
         if (ret < 0)
             return -1;
 
-#if FF_API_STAT_BITS
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->header_bits = s->header_bits;
-        avctx->mv_bits     = s->mv_bits;
-        avctx->misc_bits   = s->misc_bits;
-        avctx->i_tex_bits  = s->i_tex_bits;
-        avctx->p_tex_bits  = s->p_tex_bits;
-        avctx->i_count     = s->i_count;
-        // FIXME f/b_count in avctx
-        avctx->p_count     = s->mb_num - s->i_count - s->skip_count;
-        avctx->skip_count  = s->skip_count;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         frame_end(s);
 
        if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) && s->out_format == FMT_MJPEG)
@@ -2006,12 +1992,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         }
         s->total_bits     += s->frame_bits;
-#if FF_API_STAT_BITS
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->frame_bits  = s->frame_bits;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 
         pkt->pts = s->current_picture.f->pts;
         if (!s->low_delay && s->pict_type != AV_PICTURE_TYPE_B) {

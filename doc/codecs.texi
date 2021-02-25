@@ -150,15 +150,6 @@ Set strategy to choose between I/P/B-frames.
 @item ps @var{integer} (@emph{encoding,video})
 Set RTP payload size in bytes.
 
-@item mv_bits @var{integer}
-@item header_bits @var{integer}
-@item i_tex_bits @var{integer}
-@item p_tex_bits @var{integer}
-@item i_count @var{integer}
-@item p_count @var{integer}
-@item skip_count @var{integer}
-@item misc_bits @var{integer}
-@item frame_bits @var{integer}
 @item codec_tag @var{integer}
 @item bug @var{flags} (@emph{decoding,video})
 Workaround not auto detected encoder bugs.

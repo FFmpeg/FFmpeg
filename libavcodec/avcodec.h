@@ -1525,30 +1525,6 @@ typedef struct AVCodecContext {
                             /* headers inside the transmitted RTP payload.  */
 #endif
 
-#if FF_API_STAT_BITS
-    /* statistics, used for 2-pass encoding */
-    attribute_deprecated
-    int mv_bits;
-    attribute_deprecated
-    int header_bits;
-    attribute_deprecated
-    int i_tex_bits;
-    attribute_deprecated
-    int p_tex_bits;
-    attribute_deprecated
-    int i_count;
-    attribute_deprecated
-    int p_count;
-    attribute_deprecated
-    int skip_count;
-    attribute_deprecated
-    int misc_bits;
-
-    /** @deprecated this field is unused */
-    attribute_deprecated
-    int frame_bits;
-#endif
-
     /**
      * pass1 encoding statistics output buffer
      * - encoding: Set by libavcodec.
