@@ -24,6 +24,7 @@
 #include "internal.h"
 
 typedef struct SimbiosisIMXContext {
+    AVFrame *frame;
     uint32_t pal[256];
     uint8_t history[32768];
     int pos;
@@ -31,9 +32,16 @@ typedef struct SimbiosisIMXContext {
 
 static av_cold int imx_decode_init(AVCodecContext *avctx)
 {
+    SimbiosisIMXContext *imx = avctx->priv_data;
+
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
     avctx->width   = 320;
     avctx->height  = 160;
+
+    imx->frame = av_frame_alloc();
+    if (!imx->frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -43,15 +51,19 @@ static int imx_decode_frame(AVCodecContext *avctx, void *data,
     SimbiosisIMXContext *imx = avctx->priv_data;
     int ret, x, y, pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
-    AVFrame *frame = data;
+    AVFrame *frame = imx->frame;
     GetByteContext gb;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+    if ((ret = ff_reget_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     if (pal && pal_size == AVPALETTE_SIZE) {
         memcpy(imx->pal, pal, pal_size);
         frame->palette_has_changed = 1;
+        frame->key_frame = 1;
+    } else {
+        frame->key_frame = 0;
+        frame->palette_has_changed = 0;
     }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
@@ -80,6 +92,8 @@ static int imx_decode_frame(AVCodecContext *avctx, void *data,
                 if (y >= 160)
                     break;
             }
+
+            frame->key_frame = 0;
             break;
         case 1:
             if (len == 0) {
@@ -100,6 +114,8 @@ static int imx_decode_frame(AVCodecContext *avctx, void *data,
                     if (y >= 160)
                         break;
                 }
+
+                frame->key_frame = 0;
             } else {
                 while (len > 0) {
                     fill = bytestream2_get_byte(&gb);
@@ -135,9 +151,33 @@ static int imx_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+    frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+
+    if ((ret = av_frame_ref(data, frame)) < 0)
+        return ret;
+
     *got_frame = 1;
 
     return avpkt->size;
+}
+
+static void imx_decode_flush(AVCodecContext *avctx)
+{
+    SimbiosisIMXContext *imx = avctx->priv_data;
+
+    av_frame_unref(imx->frame);
+    imx->pos = 0;
+    memset(imx->pal, 0, sizeof(imx->pal));
+    memset(imx->history, 0, sizeof(imx->history));
+}
+
+static int imx_decode_close(AVCodecContext *avctx)
+{
+    SimbiosisIMXContext *imx = avctx->priv_data;
+
+    av_frame_free(&imx->frame);
+
+    return 0;
 }
 
 AVCodec ff_simbiosis_imx_decoder = {
@@ -148,6 +188,9 @@ AVCodec ff_simbiosis_imx_decoder = {
     .priv_data_size = sizeof(SimbiosisIMXContext),
     .init           = imx_decode_init,
     .decode         = imx_decode_frame,
+    .close          = imx_decode_close,
+    .flush          = imx_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };

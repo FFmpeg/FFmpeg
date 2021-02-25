@@ -31,6 +31,7 @@
 typedef struct SimbiosisIMXDemuxContext {
     uint8_t pal[AVPALETTE_SIZE];
     int pal_changed;
+    int64_t first_video_packet_pos;
 } SimbiosisIMXDemuxContext;
 
 static int simbiosis_imx_probe(const AVProbeData *p)
@@ -107,6 +108,8 @@ retry:
         break;
     case 0xAA97:
         idx = 0;
+        if (!imx->first_video_packet_pos)
+            imx->first_video_packet_pos = pos;
         break;
     case 0xAA98:
         for (int i = 0; i < chunk_size / 3; i++) {
@@ -137,6 +140,9 @@ retry:
             return AVERROR(ENOMEM);
         memcpy(pal, imx->pal, AVPALETTE_SIZE);
         imx->pal_changed = 0;
+        if (pos <= imx->first_video_packet_pos)
+            pkt->flags |= AV_PKT_FLAG_KEY;
+    } else if (idx == 1) {
         pkt->flags |= AV_PKT_FLAG_KEY;
     }
 
