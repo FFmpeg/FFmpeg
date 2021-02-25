@@ -507,9 +507,9 @@ void avdevice_free_list_devices(AVDeviceInfoList **device_list);
  * @return count of autodetected devices, negative on error.
  * @note device argument takes precedence over device_name when both are set.
  */
-int avdevice_list_input_sources(struct AVInputFormat *device, const char *device_name,
+int avdevice_list_input_sources(const AVInputFormat *device, const char *device_name,
                                 AVDictionary *device_options, AVDeviceInfoList **device_list);
-int avdevice_list_output_sinks(struct AVOutputFormat *device, const char *device_name,
+int avdevice_list_output_sinks(const AVOutputFormat *device, const char *device_name,
                                AVDictionary *device_options, AVDeviceInfoList **device_list);
 
 /**

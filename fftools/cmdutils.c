@@ -2205,7 +2205,7 @@ double get_rotation(AVStream *st)
 }
 
 #if CONFIG_AVDEVICE
-static int print_device_sources(AVInputFormat *fmt, AVDictionary *opts)
+static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
 {
     int ret, i;
     AVDeviceInfoList *device_list = NULL;
@@ -2235,7 +2235,7 @@ static int print_device_sources(AVInputFormat *fmt, AVDictionary *opts)
     return ret;
 }
 
-static int print_device_sinks(AVOutputFormat *fmt, AVDictionary *opts)
+static int print_device_sinks(const AVOutputFormat *fmt, AVDictionary *opts)
 {
     int ret, i;
     AVDeviceInfoList *device_list = NULL;
