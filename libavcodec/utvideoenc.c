@@ -649,7 +649,7 @@ static const AVClass utvideo_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_utvideo_encoder = {
+const AVCodec ff_utvideo_encoder = {
     .name           = "utvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Ut Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

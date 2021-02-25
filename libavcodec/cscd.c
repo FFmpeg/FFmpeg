@@ -166,7 +166,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_cscd_decoder = {
+const AVCodec ff_cscd_decoder = {
     .name           = "camstudio",
     .long_name      = NULL_IF_CONFIG_SMALL("CamStudio"),
     .type           = AVMEDIA_TYPE_VIDEO,

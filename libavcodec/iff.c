@@ -1903,7 +1903,7 @@ static int decode_frame(AVCodecContext *avctx,
 }
 
 #if CONFIG_IFF_ILBM_DECODER
-AVCodec ff_iff_ilbm_decoder = {
+const AVCodec ff_iff_ilbm_decoder = {
     .name           = "iff",
     .long_name      = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -712,7 +712,7 @@ static av_cold int lag_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_lagarith_decoder = {
+const AVCodec ff_lagarith_decoder = {
     .name           = "lagarith",
     .long_name      = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
     .type           = AVMEDIA_TYPE_VIDEO,

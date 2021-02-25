@@ -537,7 +537,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_notchlc_decoder = {
+const AVCodec ff_notchlc_decoder = {
     .name             = "notchlc",
     .long_name        = NULL_IF_CONFIG_SMALL("NotchLC"),
     .type             = AVMEDIA_TYPE_VIDEO,

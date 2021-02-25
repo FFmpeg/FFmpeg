@@ -459,7 +459,7 @@ static av_cold int wavesynth_close(AVCodecContext *avc)
     return 0;
 }
 
-AVCodec ff_ffwavesynth_decoder = {
+const AVCodec ff_ffwavesynth_decoder = {
     .name           = "wavesynth",
     .long_name      = NULL_IF_CONFIG_SMALL("Wave synthesis pseudo-codec"),
     .type           = AVMEDIA_TYPE_AUDIO,

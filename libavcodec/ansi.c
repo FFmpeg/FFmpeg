@@ -480,7 +480,7 @@ static const AVCodecDefault ansi_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_ansi_decoder = {
+const AVCodec ff_ansi_decoder = {
     .name           = "ansi",
     .long_name      = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
     .type           = AVMEDIA_TYPE_VIDEO,

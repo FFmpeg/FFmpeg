@@ -1599,7 +1599,7 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_svq3_decoder = {
+const AVCodec ff_svq3_decoder = {
     .name           = "svq3",
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
     .type           = AVMEDIA_TYPE_VIDEO,

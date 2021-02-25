@@ -424,7 +424,7 @@ static av_cold int cri_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_cri_decoder = {
+const AVCodec ff_cri_decoder = {
     .name           = "cri",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CRI,

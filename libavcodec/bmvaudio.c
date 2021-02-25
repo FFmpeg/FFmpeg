@@ -78,7 +78,7 @@ static int bmv_aud_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_bmv_audio_decoder = {
+const AVCodec ff_bmv_audio_decoder = {
     .name           = "bmv_audio",
     .long_name      = NULL_IF_CONFIG_SMALL("Discworld II BMV audio"),
     .type           = AVMEDIA_TYPE_AUDIO,

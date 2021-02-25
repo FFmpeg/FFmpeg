@@ -170,7 +170,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_ws_snd1_decoder = {
+const AVCodec ff_ws_snd1_decoder = {
     .name           = "ws_snd1",
     .long_name      = NULL_IF_CONFIG_SMALL("Westwood Audio (SND1)"),
     .type           = AVMEDIA_TYPE_AUDIO,

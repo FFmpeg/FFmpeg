@@ -285,7 +285,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_bmv_video_decoder = {
+const AVCodec ff_bmv_video_decoder = {
     .name           = "bmv_video",
     .long_name      = NULL_IF_CONFIG_SMALL("Discworld II BMV video"),
     .type           = AVMEDIA_TYPE_VIDEO,

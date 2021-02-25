@@ -554,7 +554,7 @@ static const AVClass decoder_class = {
     .category   = AV_CLASS_CATEGORY_DECODER,
 };
 
-AVCodec ff_gif_decoder = {
+const AVCodec ff_gif_decoder = {
     .name           = "gif",
     .long_name      = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
     .type           = AVMEDIA_TYPE_VIDEO,

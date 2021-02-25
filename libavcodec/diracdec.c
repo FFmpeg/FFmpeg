@@ -2355,7 +2355,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return buf_idx;
 }
 
-AVCodec ff_dirac_decoder = {
+const AVCodec ff_dirac_decoder = {
     .name           = "dirac",
     .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
     .type           = AVMEDIA_TYPE_VIDEO,

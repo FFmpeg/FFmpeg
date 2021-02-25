@@ -417,7 +417,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_nellymoser_encoder = {
+const AVCodec ff_nellymoser_encoder = {
     .name           = "nellymoser",
     .long_name      = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
     .type           = AVMEDIA_TYPE_AUDIO,

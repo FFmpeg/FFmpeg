@@ -1331,7 +1331,7 @@ error:
 }
 
 #if CONFIG_MLP_DECODER
-AVCodec ff_mlp_decoder = {
+const AVCodec ff_mlp_decoder = {
     .name           = "mlp",
     .long_name      = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -1344,7 +1344,7 @@ AVCodec ff_mlp_decoder = {
 };
 #endif
 #if CONFIG_TRUEHD_DECODER
-AVCodec ff_truehd_decoder = {
+const AVCodec ff_truehd_decoder = {
     .name           = "truehd",
     .long_name      = NULL_IF_CONFIG_SMALL("TrueHD"),
     .type           = AVMEDIA_TYPE_AUDIO,

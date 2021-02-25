@@ -66,7 +66,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
 }
 
 #if CONFIG_SSA_ENCODER
-AVCodec ff_ssa_encoder = {
+const AVCodec ff_ssa_encoder = {
     .name         = "ssa",
     .long_name    = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
@@ -77,7 +77,7 @@ AVCodec ff_ssa_encoder = {
 #endif
 
 #if CONFIG_ASS_ENCODER
-AVCodec ff_ass_encoder = {
+const AVCodec ff_ass_encoder = {
     .name         = "ass",
     .long_name    = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,

@@ -205,7 +205,7 @@ static const AVClass h264_nvenc_class = {
     .version = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_h264_nvenc_encoder = {
+const AVCodec ff_h264_nvenc_encoder = {
     .name           = "h264_nvenc",
     .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,

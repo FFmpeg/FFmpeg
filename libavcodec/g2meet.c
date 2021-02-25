@@ -1623,7 +1623,7 @@ static av_cold int g2m_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_g2m_decoder = {
+const AVCodec ff_g2m_decoder = {
     .name           = "g2m",
     .long_name      = NULL_IF_CONFIG_SMALL("Go2Meeting"),
     .type           = AVMEDIA_TYPE_VIDEO,

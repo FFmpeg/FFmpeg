@@ -126,7 +126,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     return FRAME_SIZE;
 }
 
-AVCodec ff_ra_144_decoder = {
+const AVCodec ff_ra_144_decoder = {
     .name           = "real_144",
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
     .type           = AVMEDIA_TYPE_AUDIO,

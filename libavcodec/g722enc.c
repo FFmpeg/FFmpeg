@@ -368,7 +368,7 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_adpcm_g722_encoder = {
+const AVCodec ff_adpcm_g722_encoder = {
     .name            = "g722",
     .long_name       = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
     .type            = AVMEDIA_TYPE_AUDIO,

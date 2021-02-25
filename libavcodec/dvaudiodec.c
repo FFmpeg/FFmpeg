@@ -121,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return s->block_size;
 }
 
-AVCodec ff_dvaudio_decoder = {
+const AVCodec ff_dvaudio_decoder = {
     .name           = "dvaudio",
     .long_name      = NULL_IF_CONFIG_SMALL("Ulead DV Audio"),
     .type           = AVMEDIA_TYPE_AUDIO,

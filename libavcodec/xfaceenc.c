@@ -211,7 +211,7 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-AVCodec ff_xface_encoder = {
+const AVCodec ff_xface_encoder = {
     .name           = "xface",
     .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
     .type           = AVMEDIA_TYPE_VIDEO,

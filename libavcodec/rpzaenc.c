@@ -842,7 +842,7 @@ static const AVClass rpza_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_rpza_encoder = {
+const AVCodec ff_rpza_encoder = {
     .name           = "rpza",
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
     .type           = AVMEDIA_TYPE_VIDEO,

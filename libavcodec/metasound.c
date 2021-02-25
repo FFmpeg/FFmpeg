@@ -370,7 +370,7 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
     return ff_twinvq_decode_init(avctx);
 }
 
-AVCodec ff_metasound_decoder = {
+const AVCodec ff_metasound_decoder = {
     .name           = "metasound",
     .long_name      = NULL_IF_CONFIG_SMALL("Voxware MetaSound"),
     .type           = AVMEDIA_TYPE_AUDIO,

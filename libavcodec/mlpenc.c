@@ -2364,7 +2364,7 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
 }
 
 #if CONFIG_MLP_ENCODER
-AVCodec ff_mlp_encoder = {
+const AVCodec ff_mlp_encoder = {
     .name                   ="mlp",
     .long_name              = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
     .type                   = AVMEDIA_TYPE_AUDIO,
@@ -2381,7 +2381,7 @@ AVCodec ff_mlp_encoder = {
 };
 #endif
 #if CONFIG_TRUEHD_ENCODER
-AVCodec ff_truehd_encoder = {
+const AVCodec ff_truehd_encoder = {
     .name                   ="truehd",
     .long_name              = NULL_IF_CONFIG_SMALL("TrueHD"),
     .type                   = AVMEDIA_TYPE_AUDIO,

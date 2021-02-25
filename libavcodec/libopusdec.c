@@ -225,7 +225,7 @@ static const AVClass libopusdec_class = {
 };
 
 
-AVCodec ff_libopus_decoder = {
+const AVCodec ff_libopus_decoder = {
     .name           = "libopus",
     .long_name      = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .type           = AVMEDIA_TYPE_AUDIO,

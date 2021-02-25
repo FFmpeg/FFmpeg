@@ -1832,7 +1832,7 @@ static const AVClass j2k_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_jpeg2000_encoder = {
+const AVCodec ff_jpeg2000_encoder = {
     .name           = "jpeg2000",
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
     .type           = AVMEDIA_TYPE_VIDEO,

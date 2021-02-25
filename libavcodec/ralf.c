@@ -525,7 +525,7 @@ static void decode_flush(AVCodecContext *avctx)
 }
 
 
-AVCodec ff_ralf_decoder = {
+const AVCodec ff_ralf_decoder = {
     .name           = "ralf",
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio Lossless"),
     .type           = AVMEDIA_TYPE_AUDIO,

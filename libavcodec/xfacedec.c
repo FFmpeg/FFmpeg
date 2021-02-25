@@ -176,7 +176,7 @@ static int xface_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-AVCodec ff_xface_decoder = {
+const AVCodec ff_xface_decoder = {
     .name           = "xface",
     .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
     .type           = AVMEDIA_TYPE_VIDEO,

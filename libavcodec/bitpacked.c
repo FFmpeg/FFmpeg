@@ -137,7 +137,7 @@ static int bitpacked_decode(AVCodecContext *avctx, void *data, int *got_frame,
 
 }
 
-AVCodec ff_bitpacked_decoder = {
+const AVCodec ff_bitpacked_decoder = {
     .name   = "bitpacked",
     .long_name = NULL_IF_CONFIG_SMALL("Bitpacked"),
     .type = AVMEDIA_TYPE_VIDEO,

@@ -1226,7 +1226,7 @@ static const enum AVPixelFormat allowed_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-AVCodec ff_vc2_encoder = {
+const AVCodec ff_vc2_encoder = {
     .name           = "vc2",
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-2"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -421,7 +421,7 @@ static const AVCodecDefault v4l2_m2m_defaults[] = {
 
 #define M2MENC(NAME, LONGNAME, OPTIONS_NAME, CODEC) \
     M2MENC_CLASS(NAME, OPTIONS_NAME) \
-    AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
+    const AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
         .name           = #NAME "_v4l2m2m" , \
         .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"), \
         .type           = AVMEDIA_TYPE_VIDEO, \

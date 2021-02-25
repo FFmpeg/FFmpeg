@@ -120,7 +120,7 @@ static const AVCodecDefault libgsm_defaults[] = {
 };
 
 #if CONFIG_LIBGSM_ENCODER
-AVCodec ff_libgsm_encoder = {
+const AVCodec ff_libgsm_encoder = {
     .name           = "libgsm",
     .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -136,7 +136,7 @@ AVCodec ff_libgsm_encoder = {
 };
 #endif
 #if CONFIG_LIBGSM_MS_ENCODER
-AVCodec ff_libgsm_ms_encoder = {
+const AVCodec ff_libgsm_ms_encoder = {
     .name           = "libgsm_ms",
     .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
     .type           = AVMEDIA_TYPE_AUDIO,

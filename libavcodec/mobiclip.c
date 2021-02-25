@@ -1340,7 +1340,7 @@ static av_cold int mobiclip_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mobiclip_decoder = {
+const AVCodec ff_mobiclip_decoder = {
     .name           = "mobiclip",
     .long_name      = NULL_IF_CONFIG_SMALL("MobiClip Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

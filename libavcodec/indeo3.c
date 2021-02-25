@@ -1131,7 +1131,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_indeo3_decoder = {
+const AVCodec ff_indeo3_decoder = {
     .name           = "indeo3",
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
     .type           = AVMEDIA_TYPE_VIDEO,

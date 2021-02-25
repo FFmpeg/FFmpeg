@@ -619,7 +619,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
     return s->sys->frame_size;
 }
 
-AVCodec ff_dvvideo_decoder = {
+const AVCodec ff_dvvideo_decoder = {
     .name           = "dvvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .type           = AVMEDIA_TYPE_VIDEO,

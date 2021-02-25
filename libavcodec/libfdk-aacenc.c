@@ -458,7 +458,7 @@ static const int aac_sample_rates[] = {
     24000, 22050, 16000, 12000, 11025, 8000, 0
 };
 
-AVCodec ff_libfdk_aac_encoder = {
+const AVCodec ff_libfdk_aac_encoder = {
     .name                  = "libfdk_aac",
     .long_name             = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
     .type                  = AVMEDIA_TYPE_AUDIO,

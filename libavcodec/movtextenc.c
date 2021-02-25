@@ -708,7 +708,7 @@ static const AVClass mov_text_encoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_movtext_encoder = {
+const AVCodec ff_movtext_encoder = {
     .name           = "mov_text",
     .long_name      = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,

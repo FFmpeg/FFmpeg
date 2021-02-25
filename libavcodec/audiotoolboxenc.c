@@ -616,7 +616,7 @@ static const AVOption options[] = {
 
 #define FFAT_ENC(NAME, ID, PROFILES, ...) \
     FFAT_ENC_CLASS(NAME) \
-    AVCodec ff_##NAME##_at_encoder = { \
+    const AVCodec ff_##NAME##_at_encoder = { \
         .name           = #NAME "_at", \
         .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (AudioToolbox)"), \
         .type           = AVMEDIA_TYPE_AUDIO, \

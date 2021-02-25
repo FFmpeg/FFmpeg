@@ -167,7 +167,7 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_s302m_encoder = {
+const AVCodec ff_s302m_encoder = {
     .name                  = "s302m",
     .long_name             = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
     .type                  = AVMEDIA_TYPE_AUDIO,

@@ -3159,7 +3159,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     return vp3_decode_init(avctx);
 }
 
-AVCodec ff_theora_decoder = {
+const AVCodec ff_theora_decoder = {
     .name                  = "theora",
     .long_name             = NULL_IF_CONFIG_SMALL("Theora"),
     .type                  = AVMEDIA_TYPE_VIDEO,
@@ -3177,7 +3177,7 @@ AVCodec ff_theora_decoder = {
 };
 #endif
 
-AVCodec ff_vp3_decoder = {
+const AVCodec ff_vp3_decoder = {
     .name                  = "vp3",
     .long_name             = NULL_IF_CONFIG_SMALL("On2 VP3"),
     .type                  = AVMEDIA_TYPE_VIDEO,
@@ -3194,7 +3194,7 @@ AVCodec ff_vp3_decoder = {
 };
 
 #if CONFIG_VP4_DECODER
-AVCodec ff_vp4_decoder = {
+const AVCodec ff_vp4_decoder = {
     .name                  = "vp4",
     .long_name             = NULL_IF_CONFIG_SMALL("On2 VP4"),
     .type                  = AVMEDIA_TYPE_VIDEO,

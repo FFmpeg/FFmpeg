@@ -128,7 +128,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     return 0;
 }
 
-AVCodec ff_h263i_decoder = {
+const AVCodec ff_h263i_decoder = {
     .name           = "h263i",
     .long_name      = NULL_IF_CONFIG_SMALL("Intel H.263"),
     .type           = AVMEDIA_TYPE_VIDEO,

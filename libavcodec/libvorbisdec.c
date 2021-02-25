@@ -208,7 +208,7 @@ static int oggvorbis_decode_close(AVCodecContext *avccontext) {
 }
 
 
-AVCodec ff_libvorbis_decoder = {
+const AVCodec ff_libvorbis_decoder = {
     .name           = "libvorbis",
     .long_name      = NULL_IF_CONFIG_SMALL("libvorbis"),
     .type           = AVMEDIA_TYPE_AUDIO,

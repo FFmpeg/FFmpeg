@@ -1728,7 +1728,7 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
 }
 
 #if CONFIG_APNG_DECODER
-AVCodec ff_apng_decoder = {
+const AVCodec ff_apng_decoder = {
     .name           = "apng",
     .long_name      = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1745,7 +1745,7 @@ AVCodec ff_apng_decoder = {
 #endif
 
 #if CONFIG_PNG_DECODER
-AVCodec ff_png_decoder = {
+const AVCodec ff_png_decoder = {
     .name           = "png",
     .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
     .type           = AVMEDIA_TYPE_VIDEO,

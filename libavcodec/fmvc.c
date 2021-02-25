@@ -626,7 +626,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_fmvc_decoder = {
+const AVCodec ff_fmvc_decoder = {
     .name             = "fmvc",
     .long_name        = NULL_IF_CONFIG_SMALL("FM Screen Capture Codec"),
     .type             = AVMEDIA_TYPE_VIDEO,

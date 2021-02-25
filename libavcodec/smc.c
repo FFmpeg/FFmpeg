@@ -468,7 +468,7 @@ static av_cold int smc_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_smc_decoder = {
+const AVCodec ff_smc_decoder = {
     .name           = "smc",
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -53,7 +53,7 @@ static const AVClass ac3_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_ac3_decoder = {
+const AVCodec ff_ac3_decoder = {
     .name           = "ac3",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_AC3,
@@ -78,7 +78,7 @@ static const AVClass eac3_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_eac3_decoder = {
+const AVCodec ff_eac3_decoder = {
     .name           = "eac3",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_EAC3,

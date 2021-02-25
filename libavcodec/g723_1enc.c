@@ -1244,7 +1244,7 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-AVCodec ff_g723_1_encoder = {
+const AVCodec ff_g723_1_encoder = {
     .name           = "g723_1",
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
     .type           = AVMEDIA_TYPE_AUDIO,

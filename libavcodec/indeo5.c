@@ -683,7 +683,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_indeo5_decoder = {
+const AVCodec ff_indeo5_decoder = {
     .name           = "indeo5",
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 5"),
     .type           = AVMEDIA_TYPE_VIDEO,

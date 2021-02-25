@@ -289,7 +289,7 @@ static const AVClass speedhq_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_speedhq_encoder = {
+const AVCodec ff_speedhq_encoder = {
     .name           = "speedhq",
     .long_name      = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -855,7 +855,7 @@ void ff_msmpeg4_decode_motion(MpegEncContext *s, int *mx_ptr, int *my_ptr)
     *my_ptr = my;
 }
 
-AVCodec ff_msmpeg4v1_decoder = {
+const AVCodec ff_msmpeg4v1_decoder = {
     .name           = "msmpeg4v1",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -873,7 +873,7 @@ AVCodec ff_msmpeg4v1_decoder = {
     },
 };
 
-AVCodec ff_msmpeg4v2_decoder = {
+const AVCodec ff_msmpeg4v2_decoder = {
     .name           = "msmpeg4v2",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -891,7 +891,7 @@ AVCodec ff_msmpeg4v2_decoder = {
     },
 };
 
-AVCodec ff_msmpeg4v3_decoder = {
+const AVCodec ff_msmpeg4v3_decoder = {
     .name           = "msmpeg4",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -909,7 +909,7 @@ AVCodec ff_msmpeg4v3_decoder = {
     },
 };
 
-AVCodec ff_wmv1_decoder = {
+const AVCodec ff_wmv1_decoder = {
     .name           = "wmv1",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
     .type           = AVMEDIA_TYPE_VIDEO,

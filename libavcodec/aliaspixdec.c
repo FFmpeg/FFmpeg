@@ -121,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-AVCodec ff_alias_pix_decoder = {
+const AVCodec ff_alias_pix_decoder = {
     .name         = "alias_pix",
     .long_name    = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
     .type         = AVMEDIA_TYPE_VIDEO,

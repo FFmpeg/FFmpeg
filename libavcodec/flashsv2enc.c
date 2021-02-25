@@ -897,7 +897,7 @@ static av_cold int flashsv2_encode_end(AVCodecContext * avctx)
     return 0;
 }
 
-AVCodec ff_flashsv2_encoder = {
+const AVCodec ff_flashsv2_encoder = {
     .name           = "flashsv2",
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video Version 2"),
     .type           = AVMEDIA_TYPE_VIDEO,

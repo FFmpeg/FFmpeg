@@ -425,7 +425,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 #if CONFIG_WMAV1_ENCODER
-AVCodec ff_wmav1_encoder = {
+const AVCodec ff_wmav1_encoder = {
     .name           = "wmav1",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -439,7 +439,7 @@ AVCodec ff_wmav1_encoder = {
 };
 #endif
 #if CONFIG_WMAV2_ENCODER
-AVCodec ff_wmav2_encoder = {
+const AVCodec ff_wmav2_encoder = {
     .name           = "wmav2",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
     .type           = AVMEDIA_TYPE_AUDIO,

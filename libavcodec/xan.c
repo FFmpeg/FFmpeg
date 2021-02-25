@@ -635,7 +635,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec ff_xan_wc3_decoder = {
+const AVCodec ff_xan_wc3_decoder = {
     .name           = "xan_wc3",
     .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
     .type           = AVMEDIA_TYPE_VIDEO,

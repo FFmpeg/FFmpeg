@@ -825,7 +825,7 @@ static const AVOption options[]={
 
 #define FFMMAL_DEC(NAME, ID) \
     FFMMAL_DEC_CLASS(NAME) \
-    AVCodec ff_##NAME##_mmal_decoder = { \
+    const AVCodec ff_##NAME##_mmal_decoder = { \
         .name           = #NAME "_mmal", \
         .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (mmal)"), \
         .type           = AVMEDIA_TYPE_VIDEO, \

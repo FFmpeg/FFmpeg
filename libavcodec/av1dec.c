@@ -1121,7 +1121,7 @@ static const AVClass av1_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_av1_decoder = {
+const AVCodec ff_av1_decoder = {
     .name                  = "av1",
     .long_name             = NULL_IF_CONFIG_SMALL("Alliance for Open Media AV1"),
     .type                  = AVMEDIA_TYPE_VIDEO,

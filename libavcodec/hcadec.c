@@ -445,7 +445,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_hca_decoder = {
+const AVCodec ff_hca_decoder = {
     .name           = "hca",
     .long_name      = NULL_IF_CONFIG_SMALL("CRI HCA"),
     .type           = AVMEDIA_TYPE_AUDIO,

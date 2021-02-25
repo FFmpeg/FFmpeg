@@ -724,7 +724,7 @@ static av_cold int speedhq_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_speedhq_decoder = {
+const AVCodec ff_speedhq_decoder = {
     .name           = "speedhq",
     .long_name      = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
     .type           = AVMEDIA_TYPE_VIDEO,

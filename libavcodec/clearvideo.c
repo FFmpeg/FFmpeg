@@ -766,7 +766,7 @@ static av_cold int clv_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_clearvideo_decoder = {
+const AVCodec ff_clearvideo_decoder = {
     .name           = "clearvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
     .type           = AVMEDIA_TYPE_VIDEO,

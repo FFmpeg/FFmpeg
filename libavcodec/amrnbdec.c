@@ -1080,7 +1080,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 
-AVCodec ff_amrnb_decoder = {
+const AVCodec ff_amrnb_decoder = {
     .name           = "amrnb",
     .long_name      = NULL_IF_CONFIG_SMALL("AMR-NB (Adaptive Multi-Rate NarrowBand)"),
     .type           = AVMEDIA_TYPE_AUDIO,

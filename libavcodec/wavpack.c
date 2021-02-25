@@ -1699,7 +1699,7 @@ error:
     return ret;
 }
 
-AVCodec ff_wavpack_decoder = {
+const AVCodec ff_wavpack_decoder = {
     .name           = "wavpack",
     .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
     .type           = AVMEDIA_TYPE_AUDIO,

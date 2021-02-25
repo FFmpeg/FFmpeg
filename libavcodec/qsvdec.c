@@ -829,7 +829,7 @@ static const AVClass x##_qsv_class = { \
     .option     = opt, \
     .version    = LIBAVUTIL_VERSION_INT, \
 }; \
-AVCodec ff_##x##_qsv_decoder = { \
+const AVCodec ff_##x##_qsv_decoder = { \
     .name           = #x "_qsv", \
     .long_name      = NULL_IF_CONFIG_SMALL(#X " video (Intel Quick Sync Video acceleration)"), \
     .priv_data_size = sizeof(QSVDecContext), \

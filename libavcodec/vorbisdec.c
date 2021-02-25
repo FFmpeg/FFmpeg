@@ -1880,7 +1880,7 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avctx)
     vc->first_frame = 0;
 }
 
-AVCodec ff_vorbis_decoder = {
+const AVCodec ff_vorbis_decoder = {
     .name            = "vorbis",
     .long_name       = NULL_IF_CONFIG_SMALL("Vorbis"),
     .type            = AVMEDIA_TYPE_AUDIO,

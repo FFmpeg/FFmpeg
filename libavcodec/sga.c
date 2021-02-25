@@ -520,7 +520,7 @@ static av_cold int sga_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_sga_decoder = {
+const AVCodec ff_sga_decoder = {
     .name           = "sga",
     .long_name      = NULL_IF_CONFIG_SMALL("Digital Pictures SGA Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

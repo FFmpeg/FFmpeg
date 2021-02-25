@@ -1275,7 +1275,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     return expected_fr_size;
 }
 
-AVCodec ff_amrwb_decoder = {
+const AVCodec ff_amrwb_decoder = {
     .name           = "amrwb",
     .long_name      = NULL_IF_CONFIG_SMALL("AMR-WB (Adaptive Multi-Rate WideBand)"),
     .type           = AVMEDIA_TYPE_AUDIO,

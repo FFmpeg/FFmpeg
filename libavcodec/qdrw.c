@@ -514,7 +514,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 }
 
-AVCodec ff_qdraw_decoder = {
+const AVCodec ff_qdraw_decoder = {
     .name           = "qdraw",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
     .type           = AVMEDIA_TYPE_VIDEO,

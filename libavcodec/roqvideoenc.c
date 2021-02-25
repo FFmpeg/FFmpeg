@@ -1119,7 +1119,7 @@ static const AVClass roq_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_roq_encoder = {
+const AVCodec ff_roq_encoder = {
     .name                 = "roqvideo",
     .long_name            = NULL_IF_CONFIG_SMALL("id RoQ video"),
     .type                 = AVMEDIA_TYPE_VIDEO,

@@ -131,7 +131,7 @@ av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
     return ff_ac3_encode_init(avctx);
 }
 
-AVCodec ff_ac3_encoder = {
+const AVCodec ff_ac3_encoder = {
     .name            = "ac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .type            = AVMEDIA_TYPE_AUDIO,

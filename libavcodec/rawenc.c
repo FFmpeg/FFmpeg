@@ -80,7 +80,7 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-AVCodec ff_rawvideo_encoder = {
+const AVCodec ff_rawvideo_encoder = {
     .name           = "rawvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
     .type           = AVMEDIA_TYPE_VIDEO,

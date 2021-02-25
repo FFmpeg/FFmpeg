@@ -100,7 +100,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_comfortnoise_encoder = {
+const AVCodec ff_comfortnoise_encoder = {
     .name           = "comfortnoise",
     .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .type           = AVMEDIA_TYPE_AUDIO,

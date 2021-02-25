@@ -767,7 +767,7 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
     }; \
-    AVCodec ff_##x##_crystalhd_decoder = { \
+    const AVCodec ff_##x##_crystalhd_decoder = { \
         .name           = #x "_crystalhd", \
         .long_name      = NULL_IF_CONFIG_SMALL("CrystalHD " #X " decoder"), \
         .type           = AVMEDIA_TYPE_VIDEO, \

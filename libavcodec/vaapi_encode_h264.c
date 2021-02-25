@@ -1324,7 +1324,7 @@ static const AVClass vaapi_encode_h264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_h264_vaapi_encoder = {
+const AVCodec ff_h264_vaapi_encoder = {
     .name           = "h264_vaapi",
     .long_name      = NULL_IF_CONFIG_SMALL("H.264/AVC (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,

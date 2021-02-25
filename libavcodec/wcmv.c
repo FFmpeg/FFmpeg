@@ -249,7 +249,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_wcmv_decoder = {
+const AVCodec ff_wcmv_decoder = {
     .name             = "wcmv",
     .long_name        = NULL_IF_CONFIG_SMALL("WinCAM Motion Video"),
     .type             = AVMEDIA_TYPE_VIDEO,

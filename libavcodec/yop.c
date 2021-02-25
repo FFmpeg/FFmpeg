@@ -265,7 +265,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-AVCodec ff_yop_decoder = {
+const AVCodec ff_yop_decoder = {
     .name           = "yop",
     .long_name      = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

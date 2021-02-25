@@ -367,7 +367,7 @@ static av_cold int encode_close(AVCodecContext* avc_context)
 }
 
 /** AVCodec struct exposed to libavcodec */
-AVCodec ff_libtheora_encoder = {
+const AVCodec ff_libtheora_encoder = {
     .name           = "libtheora",
     .long_name      = NULL_IF_CONFIG_SMALL("libtheora Theora"),
     .type           = AVMEDIA_TYPE_VIDEO,

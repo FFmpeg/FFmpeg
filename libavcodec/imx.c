@@ -179,7 +179,7 @@ static int imx_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_simbiosis_imx_decoder = {
+const AVCodec ff_simbiosis_imx_decoder = {
     .name           = "simbiosis_imx",
     .long_name      = NULL_IF_CONFIG_SMALL("Simbiosis Interactive IMX Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

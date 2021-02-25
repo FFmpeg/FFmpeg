@@ -1293,7 +1293,7 @@ error:
     return ret;
 }
 
-AVCodec ff_vorbis_encoder = {
+const AVCodec ff_vorbis_encoder = {
     .name           = "vorbis",
     .long_name      = NULL_IF_CONFIG_SMALL("Vorbis"),
     .type           = AVMEDIA_TYPE_AUDIO,

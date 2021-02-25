@@ -88,7 +88,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
 
 #if CONFIG_SRT_DECODER
 /* deprecated decoder */
-AVCodec ff_srt_decoder = {
+const AVCodec ff_srt_decoder = {
     .name         = "srt",
     .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
@@ -101,7 +101,7 @@ AVCodec ff_srt_decoder = {
 #endif
 
 #if CONFIG_SUBRIP_DECODER
-AVCodec ff_subrip_decoder = {
+const AVCodec ff_subrip_decoder = {
     .name         = "subrip",
     .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,

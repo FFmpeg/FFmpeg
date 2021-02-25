@@ -451,7 +451,7 @@ static void apply_independent_coupling_fixed(AACContext *ac,
 
 #include "aacdec_template.c"
 
-AVCodec ff_aac_fixed_decoder = {
+const AVCodec ff_aac_fixed_decoder = {
     .name            = "aac_fixed",
     .long_name       = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
     .type            = AVMEDIA_TYPE_AUDIO,

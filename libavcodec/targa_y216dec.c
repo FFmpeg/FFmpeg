@@ -73,7 +73,7 @@ static int y216_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_targa_y216_decoder = {
+const AVCodec ff_targa_y216_decoder = {
     .name         = "targa_y216",
     .long_name    = NULL_IF_CONFIG_SMALL("Pinnacle TARGA CineWave YUV16"),
     .type         = AVMEDIA_TYPE_VIDEO,

@@ -694,7 +694,7 @@ static av_cold int magy_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_magicyuv_decoder = {
+const AVCodec ff_magicyuv_decoder = {
     .name             = "magicyuv",
     .long_name        = NULL_IF_CONFIG_SMALL("MagicYUV video"),
     .type             = AVMEDIA_TYPE_VIDEO,

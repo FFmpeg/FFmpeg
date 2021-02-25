@@ -136,7 +136,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_xbm_decoder = {
+const AVCodec ff_xbm_decoder = {
     .name         = "xbm",
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
     .type         = AVMEDIA_TYPE_VIDEO,

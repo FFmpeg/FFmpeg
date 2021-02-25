@@ -368,7 +368,7 @@ static int microdvd_init(AVCodecContext *avctx)
                                   alignment);
 }
 
-AVCodec ff_microdvd_decoder = {
+const AVCodec ff_microdvd_decoder = {
     .name         = "microdvd",
     .long_name    = NULL_IF_CONFIG_SMALL("MicroDVD subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,

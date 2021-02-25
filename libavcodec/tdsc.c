@@ -621,7 +621,7 @@ static int tdsc_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_tdsc_decoder = {
+const AVCodec ff_tdsc_decoder = {
     .name           = "tdsc",
     .long_name      = NULL_IF_CONFIG_SMALL("TDSC"),
     .type           = AVMEDIA_TYPE_VIDEO,

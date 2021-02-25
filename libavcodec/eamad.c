@@ -341,7 +341,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_eamad_decoder = {
+const AVCodec ff_eamad_decoder = {
     .name           = "eamad",
     .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Madcow Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

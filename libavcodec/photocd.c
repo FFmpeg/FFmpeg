@@ -458,7 +458,7 @@ static const AVClass photocd_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_photocd_decoder = {
+const AVCodec ff_photocd_decoder = {
     .name           = "photocd",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PHOTOCD,

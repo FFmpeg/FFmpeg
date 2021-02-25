@@ -252,7 +252,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mscc_decoder = {
+const AVCodec ff_mscc_decoder = {
     .name             = "mscc",
     .long_name        = NULL_IF_CONFIG_SMALL("Mandsoft Screen Capture Codec"),
     .type             = AVMEDIA_TYPE_VIDEO,
@@ -265,7 +265,7 @@ AVCodec ff_mscc_decoder = {
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
-AVCodec ff_srgc_decoder = {
+const AVCodec ff_srgc_decoder = {
     .name             = "srgc",
     .long_name        = NULL_IF_CONFIG_SMALL("Screen Recorder Gold Codec"),
     .type             = AVMEDIA_TYPE_VIDEO,

@@ -579,7 +579,7 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
 
 #define FFAT_DEC(NAME, ID, bsf_name) \
     FFAT_DEC_CLASS(NAME) \
-    AVCodec ff_##NAME##_at_decoder = { \
+    const AVCodec ff_##NAME##_at_decoder = { \
         .name           = #NAME "_at", \
         .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (AudioToolbox)"), \
         .type           = AVMEDIA_TYPE_AUDIO, \

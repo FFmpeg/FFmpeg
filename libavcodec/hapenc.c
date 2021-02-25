@@ -349,7 +349,7 @@ static const AVClass hapenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_hap_encoder = {
+const AVCodec ff_hap_encoder = {
     .name           = "hap",
     .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -121,7 +121,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     return bytestream - avpkt->data;
 }
 
-AVCodec ff_vcr1_decoder = {
+const AVCodec ff_vcr1_decoder = {
     .name           = "vcr1",
     .long_name      = NULL_IF_CONFIG_SMALL("ATI VCR1"),
     .type           = AVMEDIA_TYPE_VIDEO,

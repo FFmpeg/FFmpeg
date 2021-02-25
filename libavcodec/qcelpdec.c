@@ -790,7 +790,7 @@ erasure:
     return buf_size;
 }
 
-AVCodec ff_qcelp_decoder = {
+const AVCodec ff_qcelp_decoder = {
     .name           = "qcelp",
     .long_name      = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
     .type           = AVMEDIA_TYPE_AUDIO,

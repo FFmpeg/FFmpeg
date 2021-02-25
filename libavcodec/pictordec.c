@@ -281,7 +281,7 @@ finish:
     return avpkt->size;
 }
 
-AVCodec ff_pictor_decoder = {
+const AVCodec ff_pictor_decoder = {
     .name           = "pictor",
     .long_name      = NULL_IF_CONFIG_SMALL("Pictor/PC Paint"),
     .type           = AVMEDIA_TYPE_VIDEO,

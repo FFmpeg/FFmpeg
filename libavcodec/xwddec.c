@@ -247,7 +247,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_xwd_decoder = {
+const AVCodec ff_xwd_decoder = {
     .name           = "xwd",
     .long_name      = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
     .type           = AVMEDIA_TYPE_VIDEO,

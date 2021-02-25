@@ -79,7 +79,7 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_mjpeg_qsv_encoder = {
+const AVCodec ff_mjpeg_qsv_encoder = {
     .name           = "mjpeg_qsv",
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Intel Quick Sync Video acceleration)"),
     .priv_data_size = sizeof(QSVMJPEGEncContext),

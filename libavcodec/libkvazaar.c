@@ -314,7 +314,7 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libkvazaar_encoder = {
+const AVCodec ff_libkvazaar_encoder = {
     .name             = "libkvazaar",
     .long_name        = NULL_IF_CONFIG_SMALL("libkvazaar H.265 / HEVC"),
     .type             = AVMEDIA_TYPE_VIDEO,

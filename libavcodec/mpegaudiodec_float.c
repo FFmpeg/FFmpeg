@@ -72,7 +72,7 @@ static const float csa_table[8][4] = {
 #include "mpegaudiodec_template.c"
 
 #if CONFIG_MP1FLOAT_DECODER
-AVCodec ff_mp1float_decoder = {
+const AVCodec ff_mp1float_decoder = {
     .name           = "mp1float",
     .long_name      = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -90,7 +90,7 @@ AVCodec ff_mp1float_decoder = {
 };
 #endif
 #if CONFIG_MP2FLOAT_DECODER
-AVCodec ff_mp2float_decoder = {
+const AVCodec ff_mp2float_decoder = {
     .name           = "mp2float",
     .long_name      = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -108,7 +108,7 @@ AVCodec ff_mp2float_decoder = {
 };
 #endif
 #if CONFIG_MP3FLOAT_DECODER
-AVCodec ff_mp3float_decoder = {
+const AVCodec ff_mp3float_decoder = {
     .name           = "mp3float",
     .long_name      = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -126,7 +126,7 @@ AVCodec ff_mp3float_decoder = {
 };
 #endif
 #if CONFIG_MP3ADUFLOAT_DECODER
-AVCodec ff_mp3adufloat_decoder = {
+const AVCodec ff_mp3adufloat_decoder = {
     .name           = "mp3adufloat",
     .long_name      = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -144,7 +144,7 @@ AVCodec ff_mp3adufloat_decoder = {
 };
 #endif
 #if CONFIG_MP3ON4FLOAT_DECODER
-AVCodec ff_mp3on4float_decoder = {
+const AVCodec ff_mp3on4float_decoder = {
     .name           = "mp3on4float",
     .long_name      = NULL_IF_CONFIG_SMALL("MP3onMP4"),
     .type           = AVMEDIA_TYPE_AUDIO,

@@ -207,7 +207,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return pkt->size;
 }
 
-AVCodec ff_adpcm_vima_decoder = {
+const AVCodec ff_adpcm_vima_decoder = {
     .name         = "adpcm_vima",
     .long_name    = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio"),
     .type         = AVMEDIA_TYPE_AUDIO,

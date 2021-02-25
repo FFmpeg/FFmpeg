@@ -693,7 +693,7 @@ static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
     return pktsize;
 }
 
-AVCodec ff_pixlet_decoder = {
+const AVCodec ff_pixlet_decoder = {
     .name             = "pixlet",
     .long_name        = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
     .type             = AVMEDIA_TYPE_VIDEO,

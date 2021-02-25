@@ -355,7 +355,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_truespeech_decoder = {
+const AVCodec ff_truespeech_decoder = {
     .name           = "truespeech",
     .long_name      = NULL_IF_CONFIG_SMALL("DSP Group TrueSpeech"),
     .type           = AVMEDIA_TYPE_AUDIO,

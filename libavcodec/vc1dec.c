@@ -1196,7 +1196,7 @@ static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
-AVCodec ff_vc1_decoder = {
+const AVCodec ff_vc1_decoder = {
     .name           = "vc1",
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1233,7 +1233,7 @@ AVCodec ff_vc1_decoder = {
 };
 
 #if CONFIG_WMV3_DECODER
-AVCodec ff_wmv3_decoder = {
+const AVCodec ff_wmv3_decoder = {
     .name           = "wmv3",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1271,7 +1271,7 @@ AVCodec ff_wmv3_decoder = {
 #endif
 
 #if CONFIG_WMV3IMAGE_DECODER
-AVCodec ff_wmv3image_decoder = {
+const AVCodec ff_wmv3image_decoder = {
     .name           = "wmv3image",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 Image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1290,7 +1290,7 @@ AVCodec ff_wmv3image_decoder = {
 #endif
 
 #if CONFIG_VC1IMAGE_DECODER
-AVCodec ff_vc1image_decoder = {
+const AVCodec ff_vc1image_decoder = {
     .name           = "vc1image",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 Image v2"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -845,7 +845,7 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mss2_decoder = {
+const AVCodec ff_mss2_decoder = {
     .name           = "mss2",
     .long_name      = NULL_IF_CONFIG_SMALL("MS Windows Media Video V9 Screen"),
     .type           = AVMEDIA_TYPE_VIDEO,

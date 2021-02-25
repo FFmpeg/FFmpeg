@@ -153,7 +153,7 @@ read_header:
     return buf_size;
 }
 
-AVCodec ff_mjpegb_decoder = {
+const AVCodec ff_mjpegb_decoder = {
     .name           = "mjpegb",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple MJPEG-B"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -250,7 +250,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mdec_decoder = {
+const AVCodec ff_mdec_decoder = {
     .name             = "mdec",
     .long_name        = NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
     .type             = AVMEDIA_TYPE_VIDEO,

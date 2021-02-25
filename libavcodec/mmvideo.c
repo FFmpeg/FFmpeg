@@ -238,7 +238,7 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mmvideo_decoder = {
+const AVCodec ff_mmvideo_decoder = {
     .name           = "mmvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

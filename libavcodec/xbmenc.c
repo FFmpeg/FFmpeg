@@ -75,7 +75,7 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-AVCodec ff_xbm_encoder = {
+const AVCodec ff_xbm_encoder = {
     .name         = "xbm",
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
     .type         = AVMEDIA_TYPE_VIDEO,

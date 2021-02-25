@@ -127,7 +127,7 @@ static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
 }
 
 
-AVCodec ff_ac3_fixed_encoder = {
+const AVCodec ff_ac3_fixed_encoder = {
     .name            = "ac3_fixed",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .type            = AVMEDIA_TYPE_AUDIO,

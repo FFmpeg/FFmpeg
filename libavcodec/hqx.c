@@ -535,7 +535,7 @@ static av_cold int hqx_decode_init(AVCodecContext *avctx)
     return ff_hqx_init_vlcs(ctx);
 }
 
-AVCodec ff_hqx_decoder = {
+const AVCodec ff_hqx_decoder = {
     .name           = "hqx",
     .long_name      = NULL_IF_CONFIG_SMALL("Canopus HQX"),
     .type           = AVMEDIA_TYPE_VIDEO,

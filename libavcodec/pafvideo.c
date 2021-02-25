@@ -407,7 +407,7 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
     return pkt->size;
 }
 
-AVCodec ff_paf_video_decoder = {
+const AVCodec ff_paf_video_decoder = {
     .name           = "paf_video",
     .long_name      = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -899,7 +899,7 @@ static const AVClass xvid_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_libxvid_encoder = {
+const AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
     .type           = AVMEDIA_TYPE_VIDEO,

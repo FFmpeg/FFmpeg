@@ -240,7 +240,7 @@ static av_cold int aptx_close(AVCodecContext *avctx)
 }
 
 #if CONFIG_APTX_ENCODER
-AVCodec ff_aptx_encoder = {
+const AVCodec ff_aptx_encoder = {
     .name                  = "aptx",
     .long_name             = NULL_IF_CONFIG_SMALL("aptX (Audio Processing Technology for Bluetooth)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
@@ -259,7 +259,7 @@ AVCodec ff_aptx_encoder = {
 #endif
 
 #if CONFIG_APTX_HD_ENCODER
-AVCodec ff_aptx_hd_encoder = {
+const AVCodec ff_aptx_hd_encoder = {
     .name                  = "aptx_hd",
     .long_name             = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
     .type                  = AVMEDIA_TYPE_AUDIO,

@@ -418,7 +418,7 @@ err:
     return AVERROR_INVALIDDATA;
 }
 
-AVCodec ff_ulti_decoder = {
+const AVCodec ff_ulti_decoder = {
     .name           = "ultimotion",
     .long_name      = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
     .type           = AVMEDIA_TYPE_VIDEO,

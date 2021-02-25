@@ -149,7 +149,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 }
 
 #if CONFIG_PGM_ENCODER
-AVCodec ff_pgm_encoder = {
+const AVCodec ff_pgm_encoder = {
     .name           = "pgm",
     .long_name      = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -163,7 +163,7 @@ AVCodec ff_pgm_encoder = {
 #endif
 
 #if CONFIG_PGMYUV_ENCODER
-AVCodec ff_pgmyuv_encoder = {
+const AVCodec ff_pgmyuv_encoder = {
     .name           = "pgmyuv",
     .long_name      = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -177,7 +177,7 @@ AVCodec ff_pgmyuv_encoder = {
 #endif
 
 #if CONFIG_PPM_ENCODER
-AVCodec ff_ppm_encoder = {
+const AVCodec ff_ppm_encoder = {
     .name           = "ppm",
     .long_name      = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -191,7 +191,7 @@ AVCodec ff_ppm_encoder = {
 #endif
 
 #if CONFIG_PBM_ENCODER
-AVCodec ff_pbm_encoder = {
+const AVCodec ff_pbm_encoder = {
     .name           = "pbm",
     .long_name      = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -204,7 +204,7 @@ AVCodec ff_pbm_encoder = {
 #endif
 
 #if CONFIG_PFM_ENCODER
-AVCodec ff_pfm_encoder = {
+const AVCodec ff_pfm_encoder = {
     .name           = "pfm",
     .long_name      = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,

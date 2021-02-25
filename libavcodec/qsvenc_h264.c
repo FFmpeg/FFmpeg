@@ -174,7 +174,7 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_h264_qsv_encoder = {
+const AVCodec ff_h264_qsv_encoder = {
     .name           = "h264_qsv",
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (Intel Quick Sync Video acceleration)"),
     .priv_data_size = sizeof(QSVH264EncContext),

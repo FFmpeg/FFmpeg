@@ -2659,7 +2659,7 @@ static const AVClass h264_videotoolbox_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_h264_videotoolbox_encoder = {
+const AVCodec ff_h264_videotoolbox_encoder = {
     .name             = "h264_videotoolbox",
     .long_name        = NULL_IF_CONFIG_SMALL("VideoToolbox H.264 Encoder"),
     .type             = AVMEDIA_TYPE_VIDEO,
@@ -2693,7 +2693,7 @@ static const AVClass hevc_videotoolbox_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_hevc_videotoolbox_encoder = {
+const AVCodec ff_hevc_videotoolbox_encoder = {
     .name             = "hevc_videotoolbox",
     .long_name        = NULL_IF_CONFIG_SMALL("VideoToolbox H.265 Encoder"),
     .type             = AVMEDIA_TYPE_VIDEO,

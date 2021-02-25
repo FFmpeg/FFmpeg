@@ -341,7 +341,7 @@ static const AVClass sbc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_sbc_encoder = {
+const AVCodec ff_sbc_encoder = {
     .name                  = "sbc",
     .long_name             = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
     .type                  = AVMEDIA_TYPE_AUDIO,

@@ -329,7 +329,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
 
 
 #if CONFIG_PGM_DECODER
-AVCodec ff_pgm_decoder = {
+const AVCodec ff_pgm_decoder = {
     .name           = "pgm",
     .long_name      = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -341,7 +341,7 @@ AVCodec ff_pgm_decoder = {
 #endif
 
 #if CONFIG_PGMYUV_DECODER
-AVCodec ff_pgmyuv_decoder = {
+const AVCodec ff_pgmyuv_decoder = {
     .name           = "pgmyuv",
     .long_name      = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -353,7 +353,7 @@ AVCodec ff_pgmyuv_decoder = {
 #endif
 
 #if CONFIG_PPM_DECODER
-AVCodec ff_ppm_decoder = {
+const AVCodec ff_ppm_decoder = {
     .name           = "ppm",
     .long_name      = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -365,7 +365,7 @@ AVCodec ff_ppm_decoder = {
 #endif
 
 #if CONFIG_PBM_DECODER
-AVCodec ff_pbm_decoder = {
+const AVCodec ff_pbm_decoder = {
     .name           = "pbm",
     .long_name      = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -377,7 +377,7 @@ AVCodec ff_pbm_decoder = {
 #endif
 
 #if CONFIG_PAM_DECODER
-AVCodec ff_pam_decoder = {
+const AVCodec ff_pam_decoder = {
     .name           = "pam",
     .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -389,7 +389,7 @@ AVCodec ff_pam_decoder = {
 #endif
 
 #if CONFIG_PFM_DECODER
-AVCodec ff_pfm_decoder = {
+const AVCodec ff_pfm_decoder = {
     .name           = "pfm",
     .long_name      = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,

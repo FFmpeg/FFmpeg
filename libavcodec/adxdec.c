@@ -190,7 +190,7 @@ static void adx_decode_flush(AVCodecContext *avctx)
     c->eof = 0;
 }
 
-AVCodec ff_adpcm_adx_decoder = {
+const AVCodec ff_adpcm_adx_decoder = {
     .name           = "adpcm_adx",
     .long_name      = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
     .type           = AVMEDIA_TYPE_AUDIO,

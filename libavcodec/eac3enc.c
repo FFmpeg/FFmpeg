@@ -248,7 +248,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 }
 
 
-AVCodec ff_eac3_encoder = {
+const AVCodec ff_eac3_encoder = {
     .name            = "eac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .type            = AVMEDIA_TYPE_AUDIO,

@@ -1323,7 +1323,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_wmalossless_decoder = {
+const AVCodec ff_wmalossless_decoder = {
     .name           = "wmalossless",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio Lossless"),
     .type           = AVMEDIA_TYPE_AUDIO,

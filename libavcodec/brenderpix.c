@@ -285,7 +285,7 @@ static int pix_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-AVCodec ff_brender_pix_decoder = {
+const AVCodec ff_brender_pix_decoder = {
     .name         = "brender_pix",
     .long_name    = NULL_IF_CONFIG_SMALL("BRender PIX image"),
     .type         = AVMEDIA_TYPE_VIDEO,

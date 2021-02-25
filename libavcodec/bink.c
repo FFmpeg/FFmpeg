@@ -1415,7 +1415,7 @@ static void flush(AVCodecContext *avctx)
     c->frame_num = 0;
 }
 
-AVCodec ff_bink_decoder = {
+const AVCodec ff_bink_decoder = {
     .name           = "binkvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Bink video"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -149,7 +149,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_aasc_decoder = {
+const AVCodec ff_aasc_decoder = {
     .name           = "aasc",
     .long_name      = NULL_IF_CONFIG_SMALL("Autodesk RLE"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -244,7 +244,7 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, void *data, int *got_fr
     return buf_ptr - buf;
 }
 
-AVCodec ff_libuavs3d_decoder = {
+const AVCodec ff_libuavs3d_decoder = {
     .name           = "libuavs3d",
     .long_name      = NULL_IF_CONFIG_SMALL("libuavs3d AVS3-P2/IEEE1857.10"),
     .type           = AVMEDIA_TYPE_VIDEO,

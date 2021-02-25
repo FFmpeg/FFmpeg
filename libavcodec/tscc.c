@@ -180,7 +180,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_tscc_decoder = {
+const AVCodec ff_tscc_decoder = {
     .name           = "camtasia",
     .long_name      = NULL_IF_CONFIG_SMALL("TechSmith Screen Capture Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,

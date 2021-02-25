@@ -131,7 +131,7 @@ static int sgirle_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_sgirle_decoder = {
+const AVCodec ff_sgirle_decoder = {
     .name           = "sgirle",
     .long_name      = NULL_IF_CONFIG_SMALL("Silicon Graphics RLE 8-bit video"),
     .type           = AVMEDIA_TYPE_VIDEO,

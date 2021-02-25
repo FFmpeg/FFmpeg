@@ -552,7 +552,7 @@ static const AVClass vaapi_encode_mjpeg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_mjpeg_vaapi_encoder = {
+const AVCodec ff_mjpeg_vaapi_encoder = {
     .name           = "mjpeg_vaapi",
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,

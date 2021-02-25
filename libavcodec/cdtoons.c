@@ -442,7 +442,7 @@ static av_cold int cdtoons_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_cdtoons_decoder = {
+const AVCodec ff_cdtoons_decoder = {
     .name           = "cdtoons",
     .long_name      = NULL_IF_CONFIG_SMALL("CDToons video"),
     .type           = AVMEDIA_TYPE_VIDEO,

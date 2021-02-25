@@ -183,7 +183,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_roq_dpcm_encoder = {
+const AVCodec ff_roq_dpcm_encoder = {
     .name           = "roq_dpcm",
     .long_name      = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
     .type           = AVMEDIA_TYPE_AUDIO,

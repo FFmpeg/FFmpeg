@@ -1825,7 +1825,7 @@ static const AVClass class_vp8 = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_libvpx_vp8_encoder = {
+const AVCodec ff_libvpx_vp8_encoder = {
     .name           = "libvpx",
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .type           = AVMEDIA_TYPE_VIDEO,

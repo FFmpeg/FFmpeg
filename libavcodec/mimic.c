@@ -435,7 +435,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_mimic_decoder = {
+const AVCodec ff_mimic_decoder = {
     .name                  = "mimic",
     .long_name             = NULL_IF_CONFIG_SMALL("Mimic"),
     .type                  = AVMEDIA_TYPE_VIDEO,

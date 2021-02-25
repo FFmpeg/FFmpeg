@@ -556,7 +556,7 @@ static const AVClass magicyuv_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_magicyuv_encoder = {
+const AVCodec ff_magicyuv_encoder = {
     .name             = "magicyuv",
     .long_name        = NULL_IF_CONFIG_SMALL("MagicYUV video"),
     .type             = AVMEDIA_TYPE_VIDEO,

@@ -365,7 +365,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec ff_bmp_decoder = {
+const AVCodec ff_bmp_decoder = {
     .name           = "bmp",
     .long_name      = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
     .type           = AVMEDIA_TYPE_VIDEO,

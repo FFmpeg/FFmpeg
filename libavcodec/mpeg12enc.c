@@ -1199,7 +1199,7 @@ static const AVClass mpeg ## x ## _class = {            \
 mpeg12_class(1)
 mpeg12_class(2)
 
-AVCodec ff_mpeg1video_encoder = {
+const AVCodec ff_mpeg1video_encoder = {
     .name                 = "mpeg1video",
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .type                 = AVMEDIA_TYPE_VIDEO,
@@ -1216,7 +1216,7 @@ AVCodec ff_mpeg1video_encoder = {
     .priv_class           = &mpeg1_class,
 };
 
-AVCodec ff_mpeg2video_encoder = {
+const AVCodec ff_mpeg2video_encoder = {
     .name                 = "mpeg2video",
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
     .type                 = AVMEDIA_TYPE_VIDEO,

@@ -220,7 +220,7 @@ static av_cold int cpia_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_cpia_decoder = {
+const AVCodec ff_cpia_decoder = {
     .name           = "cpia",
     .long_name      = NULL_IF_CONFIG_SMALL("CPiA video format"),
     .type           = AVMEDIA_TYPE_VIDEO,

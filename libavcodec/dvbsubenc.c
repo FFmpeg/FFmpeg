@@ -505,7 +505,7 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
     return q - outbuf;
 }
 
-AVCodec ff_dvbsub_encoder = {
+const AVCodec ff_dvbsub_encoder = {
     .name           = "dvbsub",
     .long_name      = NULL_IF_CONFIG_SMALL("DVB subtitles"),
     .type           = AVMEDIA_TYPE_SUBTITLE,

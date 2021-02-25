@@ -1349,7 +1349,7 @@ static const AVCodecDefault dnxhd_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_dnxhd_encoder = {
+const AVCodec ff_dnxhd_encoder = {
     .name           = "dnxhd",
     .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -139,7 +139,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_libvo_amrwbenc_encoder = {
+const AVCodec ff_libvo_amrwbenc_encoder = {
     .name           = "libvo_amrwbenc",
     .long_name      = NULL_IF_CONFIG_SMALL("Android VisualOn AMR-WB "
                                            "(Adaptive Multi-Rate Wide-Band)"),

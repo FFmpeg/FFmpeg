@@ -121,7 +121,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_dsicinaudio_decoder = {
+const AVCodec ff_dsicinaudio_decoder = {
     .name           = "dsicinaudio",
     .long_name      = NULL_IF_CONFIG_SMALL("Delphine Software International CIN audio"),
     .type           = AVMEDIA_TYPE_AUDIO,

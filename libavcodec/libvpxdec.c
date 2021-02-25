@@ -352,7 +352,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     return vpx_init(avctx, &ctx->decoder, &vpx_codec_vp8_dx_algo);
 }
 
-AVCodec ff_libvpx_vp8_decoder = {
+const AVCodec ff_libvpx_vp8_decoder = {
     .name           = "libvpx",
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .type           = AVMEDIA_TYPE_VIDEO,

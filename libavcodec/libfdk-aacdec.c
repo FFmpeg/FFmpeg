@@ -408,7 +408,7 @@ static av_cold void fdk_aac_decode_flush(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING, "failed to clear buffer when flushing\n");
 }
 
-AVCodec ff_libfdk_aac_decoder = {
+const AVCodec ff_libfdk_aac_decoder = {
     .name           = "libfdk_aac",
     .long_name      = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
     .type           = AVMEDIA_TYPE_AUDIO,

@@ -192,7 +192,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-AVCodec ff_pcx_encoder = {
+const AVCodec ff_pcx_encoder = {
     .name           = "pcx",
     .long_name      = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
     .type           = AVMEDIA_TYPE_VIDEO,

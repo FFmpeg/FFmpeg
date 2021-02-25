@@ -3580,7 +3580,7 @@ static const AVClass mpeg4_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_mpeg4_decoder = {
+const AVCodec ff_mpeg4_decoder = {
     .name                  = "mpeg4",
     .long_name             = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
     .type                  = AVMEDIA_TYPE_VIDEO,

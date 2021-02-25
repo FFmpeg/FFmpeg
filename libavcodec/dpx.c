@@ -762,7 +762,7 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec ff_dpx_decoder = {
+const AVCodec ff_dpx_decoder = {
     .name           = "dpx",
     .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -428,7 +428,7 @@ static const AVCodecDefault svc_enc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libopenh264_encoder = {
+const AVCodec ff_libopenh264_encoder = {
     .name           = "libopenh264",
     .long_name      = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .type           = AVMEDIA_TYPE_VIDEO,

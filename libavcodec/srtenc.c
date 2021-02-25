@@ -290,7 +290,7 @@ static int srt_encode_close(AVCodecContext *avctx)
 
 #if CONFIG_SRT_ENCODER
 /* deprecated encoder */
-AVCodec ff_srt_encoder = {
+const AVCodec ff_srt_encoder = {
     .name           = "srt",
     .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
@@ -303,7 +303,7 @@ AVCodec ff_srt_encoder = {
 #endif
 
 #if CONFIG_SUBRIP_ENCODER
-AVCodec ff_subrip_encoder = {
+const AVCodec ff_subrip_encoder = {
     .name           = "subrip",
     .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
@@ -316,7 +316,7 @@ AVCodec ff_subrip_encoder = {
 #endif
 
 #if CONFIG_TEXT_ENCODER
-AVCodec ff_text_encoder = {
+const AVCodec ff_text_encoder = {
     .name           = "text",
     .long_name      = NULL_IF_CONFIG_SMALL("Raw text subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,

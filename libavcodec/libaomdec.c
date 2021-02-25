@@ -243,7 +243,7 @@ static av_cold int av1_init(AVCodecContext *avctx)
     return aom_init(avctx, &aom_codec_av1_dx_algo);
 }
 
-AVCodec ff_libaom_av1_decoder = {
+const AVCodec ff_libaom_av1_decoder = {
     .name           = "libaom-av1",
     .long_name      = NULL_IF_CONFIG_SMALL("libaom AV1"),
     .type           = AVMEDIA_TYPE_VIDEO,

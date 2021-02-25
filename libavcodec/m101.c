@@ -105,7 +105,7 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-AVCodec ff_m101_decoder = {
+const AVCodec ff_m101_decoder = {
     .name           = "m101",
     .long_name      = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
     .type           = AVMEDIA_TYPE_VIDEO,

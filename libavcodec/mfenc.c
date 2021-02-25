@@ -1152,7 +1152,7 @@ static int mf_close(AVCodecContext *avctx)
         .option     = OPTS,                                                    \
         .version    = LIBAVUTIL_VERSION_INT,                                   \
     };                                                                         \
-    AVCodec ff_ ## NAME ## _mf_encoder = {                                     \
+    const AVCodec ff_ ## NAME ## _mf_encoder = {                               \
         .priv_class     = &ff_ ## NAME ## _mf_encoder_class,                   \
         .name           = #NAME "_mf",                                         \
         .long_name      = NULL_IF_CONFIG_SMALL(#ID " via MediaFoundation"),    \

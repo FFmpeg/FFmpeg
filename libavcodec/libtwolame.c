@@ -206,7 +206,7 @@ static const int twolame_samplerates[] = {
     16000, 22050, 24000, 32000, 44100, 48000, 0
 };
 
-AVCodec ff_libtwolame_encoder = {
+const AVCodec ff_libtwolame_encoder = {
     .name           = "libtwolame",
     .long_name      = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
     .type           = AVMEDIA_TYPE_AUDIO,

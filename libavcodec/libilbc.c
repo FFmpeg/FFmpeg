@@ -116,7 +116,7 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
     return s->decoder.no_of_bytes;
 }
 
-AVCodec ff_libilbc_decoder = {
+const AVCodec ff_libilbc_decoder = {
     .name           = "libilbc",
     .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -198,7 +198,7 @@ static const AVCodecDefault ilbc_encode_defaults[] = {
     { NULL }
 };
 
-AVCodec ff_libilbc_encoder = {
+const AVCodec ff_libilbc_encoder = {
     .name           = "libilbc",
     .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,

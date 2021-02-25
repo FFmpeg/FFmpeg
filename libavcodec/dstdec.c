@@ -379,7 +379,7 @@ dsd:
     return avpkt->size;
 }
 
-AVCodec ff_dst_decoder = {
+const AVCodec ff_dst_decoder = {
     .name           = "dst",
     .long_name      = NULL_IF_CONFIG_SMALL("DST (Digital Stream Transfer)"),
     .type           = AVMEDIA_TYPE_AUDIO,

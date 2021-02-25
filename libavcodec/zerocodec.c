@@ -144,7 +144,7 @@ static void zerocodec_decode_flush(AVCodecContext *avctx)
     av_frame_unref(zc->previous_frame);
 }
 
-AVCodec ff_zerocodec_decoder = {
+const AVCodec ff_zerocodec_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .name           = "zerocodec",
     .long_name      = NULL_IF_CONFIG_SMALL("ZeroCodec Lossless Video"),

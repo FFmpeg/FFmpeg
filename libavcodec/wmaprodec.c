@@ -2005,7 +2005,7 @@ static void xma_flush(AVCodecContext *avctx)
 /**
  *@brief wmapro decoder
  */
-AVCodec ff_wmapro_decoder = {
+const AVCodec ff_wmapro_decoder = {
     .name           = "wmapro",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -2021,7 +2021,7 @@ AVCodec ff_wmapro_decoder = {
                                                       AV_SAMPLE_FMT_NONE },
 };
 
-AVCodec ff_xma1_decoder = {
+const AVCodec ff_xma1_decoder = {
     .name           = "xma1",
     .long_name      = NULL_IF_CONFIG_SMALL("Xbox Media Audio 1"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -2036,7 +2036,7 @@ AVCodec ff_xma1_decoder = {
                                                       AV_SAMPLE_FMT_NONE },
 };
 
-AVCodec ff_xma2_decoder = {
+const AVCodec ff_xma2_decoder = {
     .name           = "xma2",
     .long_name      = NULL_IF_CONFIG_SMALL("Xbox Media Audio 2"),
     .type           = AVMEDIA_TYPE_AUDIO,

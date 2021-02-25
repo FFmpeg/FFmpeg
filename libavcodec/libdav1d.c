@@ -469,7 +469,7 @@ static const AVClass libdav1d_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_libdav1d_decoder = {
+const AVCodec ff_libdav1d_decoder = {
     .name           = "libdav1d",
     .long_name      = NULL_IF_CONFIG_SMALL("dav1d AV1 decoder by VideoLAN"),
     .type           = AVMEDIA_TYPE_VIDEO,

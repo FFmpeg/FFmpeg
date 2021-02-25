@@ -2938,7 +2938,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 #endif /* CONFIG_VP8_DECODER */
 
 #if CONFIG_VP7_DECODER
-AVCodec ff_vp7_decoder = {
+const AVCodec ff_vp7_decoder = {
     .name                  = "vp7",
     .long_name             = NULL_IF_CONFIG_SMALL("On2 VP7"),
     .type                  = AVMEDIA_TYPE_VIDEO,
@@ -2953,7 +2953,7 @@ AVCodec ff_vp7_decoder = {
 #endif /* CONFIG_VP7_DECODER */
 
 #if CONFIG_VP8_DECODER
-AVCodec ff_vp8_decoder = {
+const AVCodec ff_vp8_decoder = {
     .name                  = "vp8",
     .long_name             = NULL_IF_CONFIG_SMALL("On2 VP8"),
     .type                  = AVMEDIA_TYPE_VIDEO,

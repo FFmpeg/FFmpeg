@@ -1025,7 +1025,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_fourxm_decoder = {
+const AVCodec ff_fourxm_decoder = {
     .name           = "4xm",
     .long_name      = NULL_IF_CONFIG_SMALL("4X Movie"),
     .type           = AVMEDIA_TYPE_VIDEO,

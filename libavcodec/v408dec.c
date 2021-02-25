@@ -80,7 +80,7 @@ static int v408_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 #if CONFIG_AYUV_DECODER
-AVCodec ff_ayuv_decoder = {
+const AVCodec ff_ayuv_decoder = {
     .name         = "ayuv",
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
     .type         = AVMEDIA_TYPE_VIDEO,
@@ -92,7 +92,7 @@ AVCodec ff_ayuv_decoder = {
 };
 #endif
 #if CONFIG_V408_DECODER
-AVCodec ff_v408_decoder = {
+const AVCodec ff_v408_decoder = {
     .name         = "v408",
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
     .type         = AVMEDIA_TYPE_VIDEO,

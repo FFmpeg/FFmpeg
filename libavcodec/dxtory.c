@@ -876,7 +876,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-AVCodec ff_dxtory_decoder = {
+const AVCodec ff_dxtory_decoder = {
     .name           = "dxtory",
     .long_name      = NULL_IF_CONFIG_SMALL("Dxtory"),
     .type           = AVMEDIA_TYPE_VIDEO,

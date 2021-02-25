@@ -507,7 +507,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 #if CONFIG_FLASHSV_DECODER
-AVCodec ff_flashsv_decoder = {
+const AVCodec ff_flashsv_decoder = {
     .name           = "flashsv",
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -575,7 +575,7 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_flashsv2_decoder = {
+const AVCodec ff_flashsv2_decoder = {
     .name           = "flashsv2",
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
     .type           = AVMEDIA_TYPE_VIDEO,

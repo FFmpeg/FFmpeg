@@ -759,7 +759,7 @@ static av_cold int siren_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_siren_decoder = {
+const AVCodec ff_siren_decoder = {
     .name           = "siren",
     .long_name      = NULL_IF_CONFIG_SMALL("Siren"),
     .priv_data_size = sizeof(SirenContext),

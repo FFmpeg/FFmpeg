@@ -534,7 +534,7 @@ static const AVClass exr_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_exr_encoder = {
+const AVCodec ff_exr_encoder = {
     .name           = "exr",
     .long_name      = NULL_IF_CONFIG_SMALL("OpenEXR image"),
     .priv_data_size = sizeof(EXRContext),

@@ -759,7 +759,7 @@ const AVCodecHWConfigInternal *const ff_h263_hw_config_list[] = {
     NULL
 };
 
-AVCodec ff_h263_decoder = {
+const AVCodec ff_h263_decoder = {
     .name           = "h263",
     .long_name      = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -777,7 +777,7 @@ AVCodec ff_h263_decoder = {
     .hw_configs     = ff_h263_hw_config_list,
 };
 
-AVCodec ff_h263p_decoder = {
+const AVCodec ff_h263p_decoder = {
     .name           = "h263p",
     .long_name      = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
     .type           = AVMEDIA_TYPE_VIDEO,

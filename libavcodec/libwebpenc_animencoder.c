@@ -131,7 +131,7 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_libwebp_anim_encoder = {
+const AVCodec ff_libwebp_anim_encoder = {
     .name           = "libwebp_anim",
     .long_name      = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
     .type           = AVMEDIA_TYPE_VIDEO,

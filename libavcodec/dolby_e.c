@@ -1256,7 +1256,7 @@ static av_cold int dolby_e_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_dolby_e_decoder = {
+const AVCodec ff_dolby_e_decoder = {
     .name           = "dolby_e",
     .long_name      = NULL_IF_CONFIG_SMALL("Dolby E"),
     .type           = AVMEDIA_TYPE_AUDIO,

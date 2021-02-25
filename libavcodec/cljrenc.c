@@ -109,7 +109,7 @@ static const AVClass cljr_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_cljr_encoder = {
+const AVCodec ff_cljr_encoder = {
     .name           = "cljr",
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
     .type           = AVMEDIA_TYPE_VIDEO,

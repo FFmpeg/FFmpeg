@@ -160,7 +160,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_zlib_encoder = {
+const AVCodec ff_zlib_encoder = {
     .name           = "zlib",
     .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
     .type           = AVMEDIA_TYPE_VIDEO,

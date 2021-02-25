@@ -180,7 +180,7 @@ static int libcodec2_encode(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_libcodec2_decoder = {
+const AVCodec ff_libcodec2_decoder = {
     .name                   = "libcodec2",
     .long_name              = NULL_IF_CONFIG_SMALL("codec2 decoder using libcodec2"),
     .type                   = AVMEDIA_TYPE_AUDIO,
@@ -196,7 +196,7 @@ AVCodec ff_libcodec2_decoder = {
     .priv_class             = &libcodec2_dec_class,
 };
 
-AVCodec ff_libcodec2_encoder = {
+const AVCodec ff_libcodec2_encoder = {
     .name                   = "libcodec2",
     .long_name              = NULL_IF_CONFIG_SMALL("codec2 encoder using libcodec2"),
     .type                   = AVMEDIA_TYPE_AUDIO,

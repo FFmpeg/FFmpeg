@@ -417,7 +417,7 @@ static const AVCodecDefault xavs_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libxavs_encoder = {
+const AVCodec ff_libxavs_encoder = {
     .name           = "libxavs",
     .long_name      = NULL_IF_CONFIG_SMALL("libxavs Chinese AVS (Audio Video Standard)"),
     .type           = AVMEDIA_TYPE_VIDEO,

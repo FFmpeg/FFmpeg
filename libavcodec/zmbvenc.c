@@ -422,7 +422,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_zmbv_encoder = {
+const AVCodec ff_zmbv_encoder = {
     .name           = "zmbv",
     .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

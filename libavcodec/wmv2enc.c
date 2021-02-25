@@ -221,7 +221,7 @@ static const AVClass wmv2_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_wmv2_encoder = {
+const AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
     .type           = AVMEDIA_TYPE_VIDEO,

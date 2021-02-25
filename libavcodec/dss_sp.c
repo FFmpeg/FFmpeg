@@ -774,7 +774,7 @@ static int dss_sp_decode_frame(AVCodecContext *avctx, void *data,
     return DSS_SP_FRAME_SIZE;
 }
 
-AVCodec ff_dss_sp_decoder = {
+const AVCodec ff_dss_sp_decoder = {
     .name           = "dss_sp",
     .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
     .type           = AVMEDIA_TYPE_AUDIO,

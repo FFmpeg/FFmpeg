@@ -309,7 +309,7 @@ static const AVClass hevc_amf_class = {
     .version = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_hevc_amf_encoder = {
+const AVCodec ff_hevc_amf_encoder = {
     .name           = "hevc_amf",
     .long_name      = NULL_IF_CONFIG_SMALL("AMD AMF HEVC encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,

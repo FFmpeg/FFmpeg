@@ -285,7 +285,7 @@ static const AVCodecDefault xavs2_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libxavs2_encoder = {
+const AVCodec ff_libxavs2_encoder = {
     .name           = "libxavs2",
     .long_name      = NULL_IF_CONFIG_SMALL("libxavs2 AVS2-P2/IEEE1857.4"),
     .type           = AVMEDIA_TYPE_VIDEO,

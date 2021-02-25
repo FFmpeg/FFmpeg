@@ -1270,7 +1270,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return (get_bits_count(&s->gb) + 31) / 32 * 4 + table_size;
 }
 
-AVCodec ff_huffyuv_decoder = {
+const AVCodec ff_huffyuv_decoder = {
     .name             = "huffyuv",
     .long_name        = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
     .type             = AVMEDIA_TYPE_VIDEO,
@@ -1284,7 +1284,7 @@ AVCodec ff_huffyuv_decoder = {
 };
 
 #if CONFIG_FFVHUFF_DECODER
-AVCodec ff_ffvhuff_decoder = {
+const AVCodec ff_ffvhuff_decoder = {
     .name             = "ffvhuff",
     .long_name        = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
     .type             = AVMEDIA_TYPE_VIDEO,
@@ -1299,7 +1299,7 @@ AVCodec ff_ffvhuff_decoder = {
 #endif /* CONFIG_FFVHUFF_DECODER */
 
 #if CONFIG_HYMT_DECODER
-AVCodec ff_hymt_decoder = {
+const AVCodec ff_hymt_decoder = {
     .name             = "hymt",
     .long_name        = NULL_IF_CONFIG_SMALL("HuffYUV MT"),
     .type             = AVMEDIA_TYPE_VIDEO,

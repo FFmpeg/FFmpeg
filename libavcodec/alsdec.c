@@ -2173,7 +2173,7 @@ static av_cold void flush(AVCodecContext *avctx)
 }
 
 
-AVCodec ff_als_decoder = {
+const AVCodec ff_als_decoder = {
     .name           = "als",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
     .type           = AVMEDIA_TYPE_AUDIO,

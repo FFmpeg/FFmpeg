@@ -177,7 +177,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mwsc_decoder = {
+const AVCodec ff_mwsc_decoder = {
     .name             = "mwsc",
     .long_name        = NULL_IF_CONFIG_SMALL("MatchWare Screen Capture Codec"),
     .type             = AVMEDIA_TYPE_VIDEO,

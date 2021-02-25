@@ -748,7 +748,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_dds_decoder = {
+const AVCodec ff_dds_decoder = {
     .name           = "dds",
     .long_name      = NULL_IF_CONFIG_SMALL("DirectDraw Surface image decoder"),
     .type           = AVMEDIA_TYPE_VIDEO,

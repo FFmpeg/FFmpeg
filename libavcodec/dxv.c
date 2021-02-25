@@ -1262,7 +1262,7 @@ static int dxv_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_dxv_decoder = {
+const AVCodec ff_dxv_decoder = {
     .name           = "dxv",
     .long_name      = NULL_IF_CONFIG_SMALL("Resolume DXV"),
     .type           = AVMEDIA_TYPE_VIDEO,

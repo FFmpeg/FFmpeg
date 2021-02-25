@@ -170,7 +170,7 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-AVCodec ff_pcm_dvd_encoder = {
+const AVCodec ff_pcm_dvd_encoder = {
     .name           = "pcm_dvd",
     .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for DVD media"),
     .type           = AVMEDIA_TYPE_AUDIO,

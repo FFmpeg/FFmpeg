@@ -360,7 +360,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_dxa_decoder = {
+const AVCodec ff_dxa_decoder = {
     .name           = "dxa",
     .long_name      = NULL_IF_CONFIG_SMALL("Feeble Files/ScummVM DXA"),
     .type           = AVMEDIA_TYPE_VIDEO,

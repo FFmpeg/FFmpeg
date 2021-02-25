@@ -261,7 +261,7 @@ static av_cold int seqvideo_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_tiertexseqvideo_decoder = {
+const AVCodec ff_tiertexseqvideo_decoder = {
     .name           = "tiertexseqvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ video"),
     .type           = AVMEDIA_TYPE_VIDEO,

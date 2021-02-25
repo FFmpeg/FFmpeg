@@ -2878,7 +2878,7 @@ static av_cold int mpeg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mpeg1video_decoder = {
+const AVCodec ff_mpeg1video_decoder = {
     .name                  = "mpeg1video",
     .long_name             = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .type                  = AVMEDIA_TYPE_VIDEO,
@@ -2912,7 +2912,7 @@ AVCodec ff_mpeg1video_decoder = {
                            },
 };
 
-AVCodec ff_mpeg2video_decoder = {
+const AVCodec ff_mpeg2video_decoder = {
     .name           = "mpeg2video",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -2959,7 +2959,7 @@ AVCodec ff_mpeg2video_decoder = {
 };
 
 //legacy decoder
-AVCodec ff_mpegvideo_decoder = {
+const AVCodec ff_mpegvideo_decoder = {
     .name           = "mpegvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -3121,7 +3121,7 @@ static av_cold int ipu_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_ipu_decoder = {
+const AVCodec ff_ipu_decoder = {
     .name           = "ipu",
     .long_name      = NULL_IF_CONFIG_SMALL("IPU Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

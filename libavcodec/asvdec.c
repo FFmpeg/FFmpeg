@@ -327,7 +327,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 #if CONFIG_ASV1_DECODER
-AVCodec ff_asv1_decoder = {
+const AVCodec ff_asv1_decoder = {
     .name           = "asv1",
     .long_name      = NULL_IF_CONFIG_SMALL("ASUS V1"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -342,7 +342,7 @@ AVCodec ff_asv1_decoder = {
 #endif
 
 #if CONFIG_ASV2_DECODER
-AVCodec ff_asv2_decoder = {
+const AVCodec ff_asv2_decoder = {
     .name           = "asv2",
     .long_name      = NULL_IF_CONFIG_SMALL("ASUS V2"),
     .type           = AVMEDIA_TYPE_VIDEO,

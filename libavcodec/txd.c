@@ -155,7 +155,7 @@ unsupported:
     return AVERROR_PATCHWELCOME;
 }
 
-AVCodec ff_txd_decoder = {
+const AVCodec ff_txd_decoder = {
     .name           = "txd",
     .long_name      = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
     .type           = AVMEDIA_TYPE_VIDEO,

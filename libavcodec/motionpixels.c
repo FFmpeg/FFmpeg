@@ -345,7 +345,7 @@ end:
     return buf_size;
 }
 
-AVCodec ff_motionpixels_decoder = {
+const AVCodec ff_motionpixels_decoder = {
     .name           = "motionpixels",
     .long_name      = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
     .type           = AVMEDIA_TYPE_VIDEO,

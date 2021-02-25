@@ -345,7 +345,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_escape130_decoder = {
+const AVCodec ff_escape130_decoder = {
     .name           = "escape130",
     .long_name      = NULL_IF_CONFIG_SMALL("Escape 130"),
     .type           = AVMEDIA_TYPE_VIDEO,

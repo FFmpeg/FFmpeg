@@ -117,7 +117,7 @@ static const AVClass librsvg_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_librsvg_decoder = {
+const AVCodec ff_librsvg_decoder = {
     .name           = "librsvg",
     .long_name      = NULL_IF_CONFIG_SMALL("Librsvg rasterizer"),
     .priv_class     = &librsvg_decoder_class,

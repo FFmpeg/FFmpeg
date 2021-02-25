@@ -133,7 +133,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_wnv1_decoder = {
+const AVCodec ff_wnv1_decoder = {
     .name           = "wnv1",
     .long_name      = NULL_IF_CONFIG_SMALL("Winnov WNV1"),
     .type           = AVMEDIA_TYPE_VIDEO,

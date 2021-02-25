@@ -4598,7 +4598,7 @@ static const AVClass h263_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_h263_encoder = {
+const AVCodec ff_h263_encoder = {
     .name           = "h263",
     .long_name      = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -4633,7 +4633,7 @@ static const AVClass h263p_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_h263p_encoder = {
+const AVCodec ff_h263p_encoder = {
     .name           = "h263p",
     .long_name      = NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -4655,7 +4655,7 @@ static const AVClass msmpeg4v2_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_msmpeg4v2_encoder = {
+const AVCodec ff_msmpeg4v2_encoder = {
     .name           = "msmpeg4v2",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -4676,7 +4676,7 @@ static const AVClass msmpeg4v3_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_msmpeg4v3_encoder = {
+const AVCodec ff_msmpeg4v3_encoder = {
     .name           = "msmpeg4",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -4697,7 +4697,7 @@ static const AVClass wmv1_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_wmv1_encoder = {
+const AVCodec ff_wmv1_encoder = {
     .name           = "wmv1",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
     .type           = AVMEDIA_TYPE_VIDEO,

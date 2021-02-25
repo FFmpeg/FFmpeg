@@ -951,7 +951,7 @@ static const AVClass omx_mpeg4enc_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-AVCodec ff_mpeg4_omx_encoder = {
+const AVCodec ff_mpeg4_omx_encoder = {
     .name             = "mpeg4_omx",
     .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL MPEG-4 video encoder"),
     .type             = AVMEDIA_TYPE_VIDEO,
@@ -972,7 +972,7 @@ static const AVClass omx_h264enc_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-AVCodec ff_h264_omx_encoder = {
+const AVCodec ff_h264_omx_encoder = {
     .name             = "h264_omx",
     .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL H.264 video encoder"),
     .type             = AVMEDIA_TYPE_VIDEO,

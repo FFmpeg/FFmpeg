@@ -561,7 +561,7 @@ static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
 
 #define RKMPP_DEC(NAME, ID, BSFS) \
     RKMPP_DEC_CLASS(NAME) \
-    AVCodec ff_##NAME##_rkmpp_decoder = { \
+    const AVCodec ff_##NAME##_rkmpp_decoder = { \
         .name           = #NAME "_rkmpp", \
         .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (rkmpp)"), \
         .type           = AVMEDIA_TYPE_VIDEO, \

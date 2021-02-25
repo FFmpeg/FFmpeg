@@ -392,7 +392,7 @@ static const AVClass h261_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_h261_encoder = {
+const AVCodec ff_h261_encoder = {
     .name           = "h261",
     .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
     .type           = AVMEDIA_TYPE_VIDEO,

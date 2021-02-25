@@ -22,7 +22,7 @@
 #define USE_FLOATS 1
 #include "mpegaudioenc_template.c"
 
-AVCodec ff_mp2_encoder = {
+const AVCodec ff_mp2_encoder = {
     .name                  = "mp2",
     .long_name             = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .type                  = AVMEDIA_TYPE_AUDIO,

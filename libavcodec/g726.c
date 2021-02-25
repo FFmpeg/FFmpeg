@@ -396,7 +396,7 @@ static const AVClass g726_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_adpcm_g726_encoder = {
+const AVCodec ff_adpcm_g726_encoder = {
     .name           = "g726",
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -420,7 +420,7 @@ static const AVClass g726le_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_adpcm_g726le_encoder = {
+const AVCodec ff_adpcm_g726le_encoder = {
     .name           = "g726le",
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 little endian ADPCM (\"right-justified\")"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -504,7 +504,7 @@ static void g726_decode_flush(AVCodecContext *avctx)
 #endif
 
 #if CONFIG_ADPCM_G726_DECODER
-AVCodec ff_adpcm_g726_decoder = {
+const AVCodec ff_adpcm_g726_decoder = {
     .name           = "g726",
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -518,7 +518,7 @@ AVCodec ff_adpcm_g726_decoder = {
 #endif
 
 #if CONFIG_ADPCM_G726LE_DECODER
-AVCodec ff_adpcm_g726le_decoder = {
+const AVCodec ff_adpcm_g726le_decoder = {
     .name           = "g726le",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ADPCM_G726LE,

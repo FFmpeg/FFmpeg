@@ -297,7 +297,7 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-AVCodec ff_targa_decoder = {
+const AVCodec ff_targa_decoder = {
     .name           = "targa",
     .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
     .type           = AVMEDIA_TYPE_VIDEO,

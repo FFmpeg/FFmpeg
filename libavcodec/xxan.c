@@ -433,7 +433,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-AVCodec ff_xan_wc4_decoder = {
+const AVCodec ff_xan_wc4_decoder = {
     .name           = "xan_wc4",
     .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
     .type           = AVMEDIA_TYPE_VIDEO,

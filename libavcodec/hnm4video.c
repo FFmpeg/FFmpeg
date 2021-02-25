@@ -497,7 +497,7 @@ static av_cold int hnm_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_hnm4_video_decoder = {
+const AVCodec ff_hnm4_video_decoder = {
     .name           = "hnm4video",
     .long_name      = NULL_IF_CONFIG_SMALL("HNM 4 video"),
     .type           = AVMEDIA_TYPE_VIDEO,

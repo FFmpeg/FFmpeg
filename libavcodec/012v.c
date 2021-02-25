@@ -144,7 +144,7 @@ static int zero12v_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_zero12v_decoder = {
+const AVCodec ff_zero12v_decoder = {
     .name           = "012v",
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
     .type           = AVMEDIA_TYPE_VIDEO,

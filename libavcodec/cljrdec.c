@@ -82,7 +82,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_cljr_decoder = {
+const AVCodec ff_cljr_decoder = {
     .name           = "cljr",
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
     .type           = AVMEDIA_TYPE_VIDEO,

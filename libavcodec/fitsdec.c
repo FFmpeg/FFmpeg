@@ -320,7 +320,7 @@ static const AVClass fits_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_fits_decoder = {
+const AVCodec ff_fits_decoder = {
     .name           = "fits",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FITS,

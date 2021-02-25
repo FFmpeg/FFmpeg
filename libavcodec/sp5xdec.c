@@ -90,7 +90,7 @@ int ff_sp5x_process_packet(AVCodecContext *avctx, AVPacket *avpkt)
 }
 
 #if CONFIG_SP5X_DECODER
-AVCodec ff_sp5x_decoder = {
+const AVCodec ff_sp5x_decoder = {
     .name           = "sp5x",
     .long_name      = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -106,7 +106,7 @@ AVCodec ff_sp5x_decoder = {
 };
 #endif
 #if CONFIG_AMV_DECODER
-AVCodec ff_amv_decoder = {
+const AVCodec ff_amv_decoder = {
     .name           = "amv",
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

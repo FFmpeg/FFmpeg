@@ -180,7 +180,7 @@ static void sami_flush(AVCodecContext *avctx)
         sami->readorder = 0;
 }
 
-AVCodec ff_sami_decoder = {
+const AVCodec ff_sami_decoder = {
     .name           = "sami",
     .long_name      = NULL_IF_CONFIG_SMALL("SAMI subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,

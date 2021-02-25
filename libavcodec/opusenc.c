@@ -719,7 +719,7 @@ static const AVCodecDefault opusenc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_opus_encoder = {
+const AVCodec ff_opus_encoder = {
     .name           = "opus",
     .long_name      = NULL_IF_CONFIG_SMALL("Opus"),
     .type           = AVMEDIA_TYPE_AUDIO,

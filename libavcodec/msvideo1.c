@@ -341,7 +341,7 @@ static av_cold int msvideo1_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_msvideo1_decoder = {
+const AVCodec ff_msvideo1_decoder = {
     .name           = "msvideo1",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Video 1"),
     .type           = AVMEDIA_TYPE_VIDEO,

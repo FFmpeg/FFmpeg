@@ -1399,7 +1399,7 @@ static const AVClass proresenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_prores_ks_encoder = {
+const AVCodec ff_prores_ks_encoder = {
     .name           = "prores_ks",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
     .type           = AVMEDIA_TYPE_VIDEO,

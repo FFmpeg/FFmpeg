@@ -551,7 +551,7 @@ static const AVCodecDefault eb_enc_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libsvtav1_encoder = {
+const AVCodec ff_libsvtav1_encoder = {
     .name           = "libsvtav1",
     .long_name      = NULL_IF_CONFIG_SMALL("SVT-AV1(Scalable Video Technology for AV1) encoder"),
     .priv_data_size = sizeof(SvtContext),

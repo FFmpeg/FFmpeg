@@ -621,7 +621,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_interplay_acm_decoder = {
+const AVCodec ff_interplay_acm_decoder = {
     .name           = "interplayacm",
     .long_name      = NULL_IF_CONFIG_SMALL("Interplay ACM"),
     .type           = AVMEDIA_TYPE_AUDIO,

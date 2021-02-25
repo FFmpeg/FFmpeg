@@ -545,7 +545,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_psd_decoder = {
+const AVCodec ff_psd_decoder = {
     .name             = "psd",
     .long_name        = NULL_IF_CONFIG_SMALL("Photoshop PSD file"),
     .type             = AVMEDIA_TYPE_VIDEO,

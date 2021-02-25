@@ -532,7 +532,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_imm4_decoder = {
+const AVCodec ff_imm4_decoder = {
     .name             = "imm4",
     .long_name        = NULL_IF_CONFIG_SMALL("Infinity IMM4"),
     .type             = AVMEDIA_TYPE_VIDEO,

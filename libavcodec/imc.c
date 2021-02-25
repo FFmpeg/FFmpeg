@@ -1084,7 +1084,7 @@ static av_cold void flush(AVCodecContext *avctx)
 }
 
 #if CONFIG_IMC_DECODER
-AVCodec ff_imc_decoder = {
+const AVCodec ff_imc_decoder = {
     .name           = "imc",
     .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -1101,7 +1101,7 @@ AVCodec ff_imc_decoder = {
 };
 #endif
 #if CONFIG_IAC_DECODER
-AVCodec ff_iac_decoder = {
+const AVCodec ff_iac_decoder = {
     .name           = "iac",
     .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
     .type           = AVMEDIA_TYPE_AUDIO,

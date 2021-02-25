@@ -805,7 +805,7 @@ static const AVClass rasc_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_rasc_decoder = {
+const AVCodec ff_rasc_decoder = {
     .name             = "rasc",
     .long_name        = NULL_IF_CONFIG_SMALL("RemotelyAnywhere Screen Capture"),
     .type             = AVMEDIA_TYPE_VIDEO,

@@ -242,7 +242,7 @@ static const AVCodecDefault idcin_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_idcin_decoder = {
+const AVCodec ff_idcin_decoder = {
     .name           = "idcinvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
     .type           = AVMEDIA_TYPE_VIDEO,

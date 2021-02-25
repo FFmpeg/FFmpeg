@@ -702,7 +702,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mv30_decoder = {
+const AVCodec ff_mv30_decoder = {
     .name             = "mv30",
     .long_name        = NULL_IF_CONFIG_SMALL("MidiVid 3.0"),
     .type             = AVMEDIA_TYPE_VIDEO,

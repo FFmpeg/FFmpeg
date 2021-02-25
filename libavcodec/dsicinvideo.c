@@ -321,7 +321,7 @@ static av_cold int cinvideo_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_dsicinvideo_decoder = {
+const AVCodec ff_dsicinvideo_decoder = {
     .name           = "dsicinvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Delphine Software International CIN video"),
     .type           = AVMEDIA_TYPE_VIDEO,

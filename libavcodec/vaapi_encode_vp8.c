@@ -245,7 +245,7 @@ static const AVClass vaapi_encode_vp8_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_vp8_vaapi_encoder = {
+const AVCodec ff_vp8_vaapi_encoder = {
     .name           = "vp8_vaapi",
     .long_name      = NULL_IF_CONFIG_SMALL("VP8 (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,

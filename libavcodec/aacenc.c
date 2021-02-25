@@ -1130,7 +1130,7 @@ static const AVCodecDefault aac_encode_defaults[] = {
     { NULL }
 };
 
-AVCodec ff_aac_encoder = {
+const AVCodec ff_aac_encoder = {
     .name           = "aac",
     .long_name      = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
     .type           = AVMEDIA_TYPE_AUDIO,

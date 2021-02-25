@@ -381,7 +381,7 @@ static av_cold int hq_hqa_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_hq_hqa_decoder = {
+const AVCodec ff_hq_hqa_decoder = {
     .name           = "hq_hqa",
     .long_name      = NULL_IF_CONFIG_SMALL("Canopus HQ/HQA"),
     .type           = AVMEDIA_TYPE_VIDEO,

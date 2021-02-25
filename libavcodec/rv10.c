@@ -681,7 +681,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-AVCodec ff_rv10_decoder = {
+const AVCodec ff_rv10_decoder = {
     .name           = "rv10",
     .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -698,7 +698,7 @@ AVCodec ff_rv10_decoder = {
     },
 };
 
-AVCodec ff_rv20_decoder = {
+const AVCodec ff_rv20_decoder = {
     .name           = "rv20",
     .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
     .type           = AVMEDIA_TYPE_VIDEO,

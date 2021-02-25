@@ -1655,7 +1655,7 @@ static const AVClass ape_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_ape_decoder = {
+const AVCodec ff_ape_decoder = {
     .name           = "ape",
     .long_name      = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
     .type           = AVMEDIA_TYPE_AUDIO,

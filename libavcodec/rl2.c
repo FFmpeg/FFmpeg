@@ -218,7 +218,7 @@ static av_cold int rl2_decode_end(AVCodecContext *avctx)
 }
 
 
-AVCodec ff_rl2_decoder = {
+const AVCodec ff_rl2_decoder = {
     .name           = "rl2",
     .long_name      = NULL_IF_CONFIG_SMALL("RL2 video"),
     .type           = AVMEDIA_TYPE_VIDEO,

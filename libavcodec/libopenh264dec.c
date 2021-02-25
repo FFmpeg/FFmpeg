@@ -155,7 +155,7 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec ff_libopenh264_decoder = {
+const AVCodec ff_libopenh264_decoder = {
     .name           = "libopenh264",
     .long_name      = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .type           = AVMEDIA_TYPE_VIDEO,

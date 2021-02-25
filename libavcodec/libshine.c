@@ -130,7 +130,7 @@ static const int libshine_sample_rates[] = {
     44100, 48000, 32000, 0
 };
 
-AVCodec ff_libshine_encoder = {
+const AVCodec ff_libshine_encoder = {
     .name                  = "libshine",
     .long_name             = NULL_IF_CONFIG_SMALL("libshine MP3 (MPEG audio layer 3)"),
     .type                  = AVMEDIA_TYPE_AUDIO,

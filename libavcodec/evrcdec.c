@@ -928,7 +928,7 @@ static const AVClass evrcdec_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_evrc_decoder = {
+const AVCodec ff_evrc_decoder = {
     .name           = "evrc",
     .long_name      = NULL_IF_CONFIG_SMALL("EVRC (Enhanced Variable Rate Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,

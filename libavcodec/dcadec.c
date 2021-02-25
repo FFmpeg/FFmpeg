@@ -381,7 +381,7 @@ static const AVClass dcadec_class = {
     .category   = AV_CLASS_CATEGORY_DECODER,
 };
 
-AVCodec ff_dca_decoder = {
+const AVCodec ff_dca_decoder = {
     .name           = "dca",
     .long_name      = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .type           = AVMEDIA_TYPE_AUDIO,

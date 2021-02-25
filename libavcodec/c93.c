@@ -257,7 +257,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-AVCodec ff_c93_decoder = {
+const AVCodec ff_c93_decoder = {
     .name           = "c93",
     .long_name      = NULL_IF_CONFIG_SMALL("Interplay C93"),
     .type           = AVMEDIA_TYPE_VIDEO,

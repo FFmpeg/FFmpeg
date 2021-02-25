@@ -113,7 +113,7 @@ static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-AVCodec ff_fits_encoder = {
+const AVCodec ff_fits_encoder = {
     .name           = "fits",
     .long_name      = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
     .type           = AVMEDIA_TYPE_VIDEO,

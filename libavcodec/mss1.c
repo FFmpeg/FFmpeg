@@ -218,7 +218,7 @@ static av_cold int mss1_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_mss1_decoder = {
+const AVCodec ff_mss1_decoder = {
     .name           = "mss1",
     .long_name      = NULL_IF_CONFIG_SMALL("MS Screen 1"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -115,7 +115,7 @@ static const AVClass frwu_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_frwu_decoder = {
+const AVCodec ff_frwu_decoder = {
     .name           = "frwu",
     .long_name      = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
     .type           = AVMEDIA_TYPE_VIDEO,

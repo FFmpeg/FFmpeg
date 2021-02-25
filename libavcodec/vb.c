@@ -278,7 +278,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_vb_decoder = {
+const AVCodec ff_vb_decoder = {
     .name           = "vb",
     .long_name      = NULL_IF_CONFIG_SMALL("Beam Software VB"),
     .type           = AVMEDIA_TYPE_VIDEO,

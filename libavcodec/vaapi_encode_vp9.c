@@ -279,7 +279,7 @@ static const AVClass vaapi_encode_vp9_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_vp9_vaapi_encoder = {
+const AVCodec ff_vp9_vaapi_encoder = {
     .name           = "vp9_vaapi",
     .long_name      = NULL_IF_CONFIG_SMALL("VP9 (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,

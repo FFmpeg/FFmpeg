@@ -160,7 +160,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
     return buf_size;
 }
 
-AVCodec ff_xsub_decoder = {
+const AVCodec ff_xsub_decoder = {
     .name      = "xsub",
     .long_name = NULL_IF_CONFIG_SMALL("XSUB"),
     .type      = AVMEDIA_TYPE_SUBTITLE,

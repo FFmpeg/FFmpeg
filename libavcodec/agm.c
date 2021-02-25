@@ -1285,7 +1285,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_agm_decoder = {
+const AVCodec ff_agm_decoder = {
     .name             = "agm",
     .long_name        = NULL_IF_CONFIG_SMALL("Amuse Graphics Movie"),
     .type             = AVMEDIA_TYPE_VIDEO,

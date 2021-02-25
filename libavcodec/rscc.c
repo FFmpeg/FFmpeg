@@ -362,7 +362,7 @@ end:
     return ret;
 }
 
-AVCodec ff_rscc_decoder = {
+const AVCodec ff_rscc_decoder = {
     .name           = "rscc",
     .long_name      = NULL_IF_CONFIG_SMALL("innoHeim/Rsupport Screen Capture Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,

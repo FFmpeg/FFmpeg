@@ -1238,7 +1238,7 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-AVCodec ff_dca_encoder = {
+const AVCodec ff_dca_encoder = {
     .name                  = "dca",
     .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .type                  = AVMEDIA_TYPE_AUDIO,

@@ -810,7 +810,7 @@ static const AVClass teletext_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_libzvbi_teletext_decoder = {
+const AVCodec ff_libzvbi_teletext_decoder = {
     .name      = "libzvbi_teletextdec",
     .long_name = NULL_IF_CONFIG_SMALL("Libzvbi DVB teletext decoder"),
     .type      = AVMEDIA_TYPE_SUBTITLE,

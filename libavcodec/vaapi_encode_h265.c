@@ -1302,7 +1302,7 @@ static const AVClass vaapi_encode_h265_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_hevc_vaapi_encoder = {
+const AVCodec ff_hevc_vaapi_encoder = {
     .name           = "hevc_vaapi",
     .long_name      = NULL_IF_CONFIG_SMALL("H.265/HEVC (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,

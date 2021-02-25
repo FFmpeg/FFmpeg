@@ -995,7 +995,7 @@ static const AVClass name_ ## _encoder_class = {                           \
     .version    = LIBAVUTIL_VERSION_INT,                                   \
 };                                                                         \
                                                                            \
-AVCodec ff_ ## name_ ## _encoder = {                                       \
+const AVCodec ff_ ## name_ ## _encoder = {                                 \
     .name           = #name_,                                              \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),                    \
     .type           = AVMEDIA_TYPE_AUDIO,                                  \

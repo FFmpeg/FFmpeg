@@ -703,7 +703,7 @@ static av_cold void vp6_decode_free_context(VP56Context *s)
     }
 }
 
-AVCodec ff_vp6_decoder = {
+const AVCodec ff_vp6_decoder = {
     .name           = "vp6",
     .long_name      = NULL_IF_CONFIG_SMALL("On2 VP6"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -716,7 +716,7 @@ AVCodec ff_vp6_decoder = {
 };
 
 /* flash version, not flipped upside-down */
-AVCodec ff_vp6f_decoder = {
+const AVCodec ff_vp6f_decoder = {
     .name           = "vp6f",
     .long_name      = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version)"),
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -729,7 +729,7 @@ AVCodec ff_vp6f_decoder = {
 };
 
 /* flash version, not flipped upside-down, with alpha channel */
-AVCodec ff_vp6a_decoder = {
+const AVCodec ff_vp6a_decoder = {
     .name           = "vp6a",
     .long_name      = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -327,7 +327,7 @@ static const int libmp3lame_sample_rates[] = {
     44100, 48000,  32000, 22050, 24000, 16000, 11025, 12000, 8000, 0
 };
 
-AVCodec ff_libmp3lame_encoder = {
+const AVCodec ff_libmp3lame_encoder = {
     .name                  = "libmp3lame",
     .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .type                  = AVMEDIA_TYPE_AUDIO,

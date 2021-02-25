@@ -560,7 +560,7 @@ static av_cold int gdv_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_gdv_decoder = {
+const AVCodec ff_gdv_decoder = {
     .name           = "gdv",
     .long_name      = NULL_IF_CONFIG_SMALL("Gremlin Digital Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

@@ -725,7 +725,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_argo_decoder = {
+const AVCodec ff_argo_decoder = {
     .name           = "argo",
     .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games Video"),
     .type           = AVMEDIA_TYPE_VIDEO,

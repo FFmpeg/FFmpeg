@@ -542,7 +542,7 @@ end:
     return ret;
 }
 
-AVCodec ff_jpegls_decoder = {
+const AVCodec ff_jpegls_decoder = {
     .name           = "jpegls",
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
     .type           = AVMEDIA_TYPE_VIDEO,

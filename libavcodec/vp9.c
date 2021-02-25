@@ -1873,7 +1873,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 }
 #endif
 
-AVCodec ff_vp9_decoder = {
+const AVCodec ff_vp9_decoder = {
     .name                  = "vp9",
     .long_name             = NULL_IF_CONFIG_SMALL("Google VP9"),
     .type                  = AVMEDIA_TYPE_VIDEO,

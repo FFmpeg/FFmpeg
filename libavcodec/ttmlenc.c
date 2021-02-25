@@ -383,7 +383,7 @@ static av_cold int ttml_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_ttml_encoder = {
+const AVCodec ff_ttml_encoder = {
     .name           = "ttml",
     .long_name      = NULL_IF_CONFIG_SMALL("TTML subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,

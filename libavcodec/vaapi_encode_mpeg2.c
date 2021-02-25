@@ -688,7 +688,7 @@ static const AVClass vaapi_encode_mpeg2_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_mpeg2_vaapi_encoder = {
+const AVCodec ff_mpeg2_vaapi_encoder = {
     .name           = "mpeg2_vaapi",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,

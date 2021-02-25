@@ -3667,7 +3667,7 @@ static const AVClass hevc_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_hevc_decoder = {
+const AVCodec ff_hevc_decoder = {
     .name                  = "hevc",
     .long_name             = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
     .type                  = AVMEDIA_TYPE_VIDEO,

@@ -1002,7 +1002,7 @@ static av_cold int on2avc_decode_close(AVCodecContext *avctx)
 }
 
 
-AVCodec ff_on2avc_decoder = {
+const AVCodec ff_on2avc_decoder = {
     .name           = "on2avc",
     .long_name      = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
     .type           = AVMEDIA_TYPE_AUDIO,

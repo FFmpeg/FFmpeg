@@ -571,7 +571,7 @@ static av_cold int rv40_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_rv40_decoder = {
+const AVCodec ff_rv40_decoder = {
     .name                  = "rv40",
     .long_name             = NULL_IF_CONFIG_SMALL("RealVideo 4.0"),
     .type                  = AVMEDIA_TYPE_VIDEO,

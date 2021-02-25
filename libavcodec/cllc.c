@@ -493,7 +493,7 @@ static av_cold int cllc_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_cllc_decoder = {
+const AVCodec ff_cllc_decoder = {
     .name           = "cllc",
     .long_name      = NULL_IF_CONFIG_SMALL("Canopus Lossless Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,

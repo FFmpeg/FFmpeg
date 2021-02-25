@@ -70,7 +70,7 @@ static const AVClass rv10_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_rv10_encoder = {
+const AVCodec ff_rv10_encoder = {
     .name           = "rv10",
     .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
     .type           = AVMEDIA_TYPE_VIDEO,
