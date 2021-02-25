@@ -59,7 +59,7 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
-extern AVCodec * codec_list[];
+extern const AVCodec * codec_list[];
 
 static void error(const char *err)
 {
@@ -67,10 +67,10 @@ static void error(const char *err)
     exit(1);
 }
 
-static AVCodec *c = NULL;
-static AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
+static const AVCodec *c = NULL;
+static const AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
 {
-    AVCodec *res;
+    const AVCodec *res;
 
     res = avcodec_find_decoder(codec_id);
     if (!res)

@@ -48,7 +48,7 @@ static int generate_raw_frame(uint16_t *frame_data, int i, int sample_rate,
     return 0;
 }
 
-static int init_encoder(AVCodec *enc, AVCodecContext **enc_ctx,
+static int init_encoder(const AVCodec *enc, AVCodecContext **enc_ctx,
                         int64_t ch_layout, int sample_rate)
 {
     AVCodecContext *ctx;
@@ -78,7 +78,7 @@ static int init_encoder(AVCodec *enc, AVCodecContext **enc_ctx,
     return 0;
 }
 
-static int init_decoder(AVCodec *dec, AVCodecContext **dec_ctx,
+static int init_decoder(const AVCodec *dec, AVCodecContext **dec_ctx,
                         int64_t ch_layout)
 {
     AVCodecContext *ctx;
@@ -105,8 +105,8 @@ static int init_decoder(AVCodec *dec, AVCodecContext **dec_ctx,
     return 0;
 }
 
-static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
-                    AVCodecContext *dec_ctx)
+static int run_test(const AVCodec *enc, const AVCodec *dec,
+                    AVCodecContext *enc_ctx, AVCodecContext *dec_ctx)
 {
     AVPacket *enc_pkt;
     AVFrame *in_frame, *out_frame;
@@ -244,7 +244,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
 
 int main(void)
 {
-    AVCodec *enc = NULL, *dec = NULL;
+    const AVCodec *enc = NULL, *dec = NULL;
     AVCodecContext *enc_ctx = NULL, *dec_ctx = NULL;
     uint64_t channel_layouts[] = {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT1_BACK, AV_CH_LAYOUT_SURROUND, AV_CH_LAYOUT_STEREO_DOWNMIX};
     int sample_rates[] = {8000, 44100, 48000, 192000};

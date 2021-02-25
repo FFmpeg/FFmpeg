@@ -142,7 +142,7 @@ end:
     return ret;
 }
 
-static int dec_enc(AVPacket *pkt, AVCodec *enc_codec)
+static int dec_enc(AVPacket *pkt, const AVCodec *enc_codec)
 {
     AVFrame *frame;
     int ret = 0;
@@ -226,9 +226,9 @@ fail:
 
 int main(int argc, char **argv)
 {
+    const AVCodec *enc_codec;
     int ret = 0;
     AVPacket *dec_pkt;
-    AVCodec *enc_codec;
 
     if (argc != 4) {
         fprintf(stderr, "Usage: %s <input file> <encode codec> <output file>\n"

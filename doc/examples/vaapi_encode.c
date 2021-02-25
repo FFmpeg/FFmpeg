@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     FILE *fin = NULL, *fout = NULL;
     AVFrame *sw_frame = NULL, *hw_frame = NULL;
     AVCodecContext *avctx = NULL;
-    AVCodec *codec = NULL;
+    const AVCodec *codec = NULL;
     const char *enc_name = "h264_vaapi";
 
     if (argc < 5) {

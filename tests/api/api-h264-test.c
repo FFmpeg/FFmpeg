@@ -32,7 +32,7 @@
 
 static int video_decode_example(const char *input_filename)
 {
-    AVCodec *codec = NULL;
+    const AVCodec *codec = NULL;
     AVCodecContext *ctx= NULL;
     AVCodecParameters *origin_par = NULL;
     AVFrame *fr = NULL;

@@ -184,7 +184,7 @@ static long int read_seek_range(const char *string_with_number)
 
 static int seek_test(const char *input_filename, const char *start, const char *end)
 {
-    AVCodec *codec = NULL;
+    const AVCodec *codec = NULL;
     AVCodecContext *ctx= NULL;
     AVCodecParameters *origin_par = NULL;
     AVPacket *pkt = NULL;

@@ -873,7 +873,7 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
     }
 }
 
-static AVCodec *find_codec(enum AVCodecID id, int (*x)(const AVCodec *))
+static const AVCodec *find_codec(enum AVCodecID id, int (*x)(const AVCodec *))
 {
     const AVCodec *p, *experimental = NULL;
     void *i = 0;
@@ -887,24 +887,24 @@ static AVCodec *find_codec(enum AVCodecID id, int (*x)(const AVCodec *))
             if (p->capabilities & AV_CODEC_CAP_EXPERIMENTAL && !experimental) {
                 experimental = p;
             } else
-                return (AVCodec*)p;
+                return p;
         }
     }
 
-    return (AVCodec*)experimental;
+    return experimental;
 }
 
-AVCodec *avcodec_find_encoder(enum AVCodecID id)
+const AVCodec *avcodec_find_encoder(enum AVCodecID id)
 {
     return find_codec(id, av_codec_is_encoder);
 }
 
-AVCodec *avcodec_find_decoder(enum AVCodecID id)
+const AVCodec *avcodec_find_decoder(enum AVCodecID id)
 {
     return find_codec(id, av_codec_is_decoder);
 }
 
-static AVCodec *find_codec_by_name(const char *name, int (*x)(const AVCodec *))
+static const AVCodec *find_codec_by_name(const char *name, int (*x)(const AVCodec *))
 {
     void *i = 0;
     const AVCodec *p;
@@ -916,18 +916,18 @@ static AVCodec *find_codec_by_name(const char *name, int (*x)(const AVCodec *))
         if (!x(p))
             continue;
         if (strcmp(name, p->name) == 0)
-            return (AVCodec*)p;
+            return p;
     }
 
     return NULL;
 }
 
-AVCodec *avcodec_find_encoder_by_name(const char *name)
+const AVCodec *avcodec_find_encoder_by_name(const char *name)
 {
     return find_codec_by_name(name, av_codec_is_encoder);
 }
 
-AVCodec *avcodec_find_decoder_by_name(const char *name)
+const AVCodec *avcodec_find_decoder_by_name(const char *name)
 {
     return find_codec_by_name(name, av_codec_is_decoder);
 }
