@@ -763,10 +763,3 @@ const char *ff_convert_lang_to(const char *lang, enum AVLangCodespace target_cod
 
     return NULL;
 }
-
-#if LIBAVFORMAT_VERSION_MAJOR < 58
-const char *av_convert_lang_to(const char *lang, enum AVLangCodespace target_codespace)
-{
-    return ff_convert_lang_to(lang, target_codespace);
-}
-#endif
