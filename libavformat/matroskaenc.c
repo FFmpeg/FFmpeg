@@ -2372,14 +2372,6 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
                                                        mkv_blockgroup_size(pkt->size,
                                                                            track->track_num_size));
 
-#if FF_API_CONVERGENCE_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-            /* For backward compatibility, prefer convergence_duration. */
-            if (pkt->convergence_duration > 0) {
-                duration = pkt->convergence_duration;
-            }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             /* All subtitle blocks are considered to be keyframes. */
             mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 1);
             put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);

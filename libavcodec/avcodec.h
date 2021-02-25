@@ -3386,14 +3386,6 @@ typedef struct AVCodecParserContext {
      */
     int key_frame;
 
-#if FF_API_CONVERGENCE_DURATION
-    /**
-     * @deprecated unused
-     */
-    attribute_deprecated
-    int64_t convergence_duration;
-#endif
-
     // Timestamp generation support:
     /**
      * Synchronization point for start of timestamp generation.

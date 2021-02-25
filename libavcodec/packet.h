@@ -387,16 +387,6 @@ typedef struct AVPacket {
     int64_t duration;
 
     int64_t pos;                            ///< byte position in stream, -1 if unknown
-
-#if FF_API_CONVERGENCE_DURATION
-    /**
-     * @deprecated Same as the duration field, but as int64_t. This was required
-     * for Matroska subtitles, whose duration values could overflow when the
-     * duration field was still an int.
-     */
-    attribute_deprecated
-    int64_t convergence_duration;
-#endif
 } AVPacket;
 
 #if FF_API_INIT_PACKET

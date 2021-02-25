@@ -1439,12 +1439,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* update flags */
     if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA || ff_is_intra_only(st->codecpar->codec_id))
         pkt->flags |= AV_PKT_FLAG_KEY;
-#if FF_API_CONVERGENCE_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (pc)
-        pkt->convergence_duration = pc->convergence_duration;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 }
 
 /**

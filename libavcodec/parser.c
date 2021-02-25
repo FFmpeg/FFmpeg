@@ -67,11 +67,6 @@ found:
             goto err_out;
     }
     s->key_frame            = -1;
-#if FF_API_CONVERGENCE_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->convergence_duration = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     s->dts_sync_point       = INT_MIN;
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;
