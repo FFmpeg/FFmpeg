@@ -949,79 +949,6 @@ static int utf8_check(const uint8_t *str)
     return 1;
 }
 
-#if FF_API_ASS_TIMING
-static void insert_ts(AVBPrint *buf, int ts)
-{
-    if (ts == -1) {
-        av_bprintf(buf, "9:59:59.99,");
-    } else {
-        int h, m, s;
-
-        h = ts/360000;  ts -= 360000*h;
-        m = ts/  6000;  ts -=   6000*m;
-        s = ts/   100;  ts -=    100*s;
-        av_bprintf(buf, "%d:%02d:%02d.%02d,", h, m, s, ts);
-    }
-}
-
-static int convert_sub_to_old_ass_form(AVSubtitle *sub, const AVPacket *pkt, AVRational tb)
-{
-    int i;
-    AVBPrint buf;
-
-    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-
-    for (i = 0; i < sub->num_rects; i++) {
-        char *final_dialog;
-        const char *dialog;
-        AVSubtitleRect *rect = sub->rects[i];
-        int ts_start, ts_duration = -1;
-        long int layer;
-
-        if (rect->type != SUBTITLE_ASS || !strncmp(rect->ass, "Dialogue: ", 10))
-            continue;
-
-        av_bprint_clear(&buf);
-
-        /* skip ReadOrder */
-        dialog = strchr(rect->ass, ',');
-        if (!dialog)
-            continue;
-        dialog++;
-
-        /* extract Layer or Marked */
-        layer = strtol(dialog, (char**)&dialog, 10);
-        if (*dialog != ',')
-            continue;
-        dialog++;
-
-        /* rescale timing to ASS time base (ms) */
-        ts_start = av_rescale_q(pkt->pts, tb, av_make_q(1, 100));
-        if (pkt->duration != -1)
-            ts_duration = av_rescale_q(pkt->duration, tb, av_make_q(1, 100));
-        sub->end_display_time = FFMAX(sub->end_display_time, 10 * ts_duration);
-
-        /* construct ASS (standalone file form with timestamps) string */
-        av_bprintf(&buf, "Dialogue: %ld,", layer);
-        insert_ts(&buf, ts_start);
-        insert_ts(&buf, ts_duration == -1 ? -1 : ts_start + ts_duration);
-        av_bprintf(&buf, "%s\r\n", dialog);
-
-        final_dialog = av_strdup(buf.str);
-        if (!av_bprint_is_complete(&buf) || !final_dialog) {
-            av_freep(&final_dialog);
-            av_bprint_finalize(&buf, NULL);
-            return AVERROR(ENOMEM);
-        }
-        av_freep(&rect->ass);
-        rect->ass = final_dialog;
-    }
-
-    av_bprint_finalize(&buf, NULL);
-    return 0;
-}
-#endif
-
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr,
                              AVPacket *avpkt)
@@ -1056,17 +983,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         ret = avctx->codec->decode(avctx, sub, got_sub_ptr, pkt);
         av_assert1((ret >= 0) >= !!*got_sub_ptr &&
                    !!*got_sub_ptr >= !!sub->num_rects);
-
-#if FF_API_ASS_TIMING
-        if (avctx->sub_text_format == FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS
-            && *got_sub_ptr && sub->num_rects) {
-            const AVRational tb = avctx->pkt_timebase.num ? avctx->pkt_timebase
-                                  : avctx->time_base;
-            int err = convert_sub_to_old_ass_form(sub, avpkt, tb);
-            if (err < 0)
-                ret = err;
-        }
-#endif
 
         if (sub->num_rects && !sub->end_display_time && avpkt->duration &&
             avctx->pkt_timebase.num) {
