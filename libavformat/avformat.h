@@ -1598,7 +1598,7 @@ typedef struct AVFormatContext {
      * the same codec_id.
      * Demuxing: Set by user
      */
-    AVCodec *video_codec;
+    const AVCodec *video_codec;
 
     /**
      * Forced audio codec.
@@ -1606,7 +1606,7 @@ typedef struct AVFormatContext {
      * the same codec_id.
      * Demuxing: Set by user
      */
-    AVCodec *audio_codec;
+    const AVCodec *audio_codec;
 
     /**
      * Forced subtitle codec.
@@ -1614,7 +1614,7 @@ typedef struct AVFormatContext {
      * the same codec_id.
      * Demuxing: Set by user
      */
-    AVCodec *subtitle_codec;
+    const AVCodec *subtitle_codec;
 
     /**
      * Forced data codec.
@@ -1622,7 +1622,7 @@ typedef struct AVFormatContext {
      * the same codec_id.
      * Demuxing: Set by user
      */
-    AVCodec *data_codec;
+    const AVCodec *data_codec;
 
     /**
      * Number of bytes to be written as padding in a metadata header.
