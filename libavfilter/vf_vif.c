@@ -45,6 +45,7 @@ typedef struct VIFContext {
     int width;
     int height;
     int nb_threads;
+    float factor;
     float *data_buf[13];
     float **temp;
     float *ref_data;
@@ -113,8 +114,6 @@ static void vif_statistic(const float *mu1_sq, const float *mu2_sq,
                           float *num, float *den, int w, int h)
 {
     static const float sigma_nsq = 2;
-    static const float sigma_max_inv = 4.0/(255.0*255.0);
-
     float mu1_sq_val, mu2_sq_val, mu1_mu2_val, xx_filt_val, yy_filt_val, xy_filt_val;
     float sigma1_sq, sigma2_sq, sigma12, g, sv_sq, eps = 1.0e-10f;
     float gain_limit = 100.f;
@@ -409,13 +408,15 @@ static void offset_##bits##bit(VIFContext *s,            \
     const type *ref_ptr = (const type *) ref->data[0];   \
     const type *main_ptr = (const type *) main->data[0]; \
                                             \
+    const float factor = s->factor;         \
+                                            \
     float *ref_ptr_data = s->ref_data;      \
     float *main_ptr_data = s->main_data;    \
                                             \
     for (int i = 0; i < h; i++) {           \
         for (int j = 0; j < w; j++) {       \
-            ref_ptr_data[j] = ref_ptr[j] - 128.f;   \
-            main_ptr_data[j] = main_ptr[j] - 128.f; \
+            ref_ptr_data[j] = ref_ptr[j] * factor - 128.f;   \
+            main_ptr_data[j] = main_ptr[j] * factor - 128.f; \
         }                                   \
         ref_ptr += ref_stride / sizeof(type);   \
         ref_ptr_data += w;                      \
@@ -425,7 +426,7 @@ static void offset_##bits##bit(VIFContext *s,            \
 }
 
 offset_fn(uint8_t, 8)
-offset_fn(uint16_t, 10)
+offset_fn(uint16_t, 16)
 
 static void set_meta(AVDictionary **metadata, const char *key, float d)
 {
@@ -440,10 +441,11 @@ static AVFrame *do_vif(AVFilterContext *ctx, AVFrame *main, const AVFrame *ref)
     AVDictionary **metadata = &main->metadata;
     float score[4];
 
+    s->factor = 1.f / (1 << (s->desc->comp[0].depth - 8));
     if (s->desc->comp[0].depth <= 8) {
         offset_8bit(s, ref, main, s->width);
     } else {
-        offset_10bit(s, ref, main, s->width);
+        offset_16bit(s, ref, main, s->width);
     }
 
     ff_compute_vif2(ctx,
@@ -471,8 +473,14 @@ static AVFrame *do_vif(AVFilterContext *ctx, AVFrame *main, const AVFrame *ref)
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUV422P10LE, AV_PIX_FMT_YUV420P10LE,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+#define PF(suf) AV_PIX_FMT_YUV420##suf,  AV_PIX_FMT_YUV422##suf,  AV_PIX_FMT_YUV444##suf
+        PF(P9), PF(P10), PF(P12), PF(P14), PF(P16),
         AV_PIX_FMT_NONE
     };
 
