@@ -68,7 +68,7 @@ void avdevice_register_all(void)
     avpriv_register_devices(outdev_list, indev_list);
 }
 
-static void *next_input(const AVInputFormat *prev, AVClassCategory c2)
+static const void *next_input(const AVInputFormat *prev, AVClassCategory c2)
 {
     const AVClass *pc;
     const AVClassCategory c1 = AV_CLASS_CATEGORY_DEVICE_INPUT;
@@ -91,10 +91,10 @@ static void *next_input(const AVInputFormat *prev, AVClassCategory c2)
             continue;
         category = pc->category;
     } while (category != c1 && category != c2);
-    return (AVInputFormat *)fmt;
+    return fmt;
 }
 
-static void *next_output(const AVOutputFormat *prev, AVClassCategory c2)
+static const void *next_output(const AVOutputFormat *prev, AVClassCategory c2)
 {
     const AVClass *pc;
     const AVClassCategory c1 = AV_CLASS_CATEGORY_DEVICE_OUTPUT;
@@ -117,25 +117,25 @@ static void *next_output(const AVOutputFormat *prev, AVClassCategory c2)
             continue;
         category = pc->category;
     } while (category != c1 && category != c2);
-    return (AVOutputFormat *)fmt;
+    return fmt;
 }
 
-AVInputFormat *av_input_audio_device_next(AVInputFormat  *d)
+const AVInputFormat *av_input_audio_device_next(const AVInputFormat  *d)
 {
     return next_input(d, AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT);
 }
 
-AVInputFormat *av_input_video_device_next(AVInputFormat  *d)
+const AVInputFormat *av_input_video_device_next(const AVInputFormat  *d)
 {
     return next_input(d, AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT);
 }
 
-AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d)
+const AVOutputFormat *av_output_audio_device_next(const AVOutputFormat *d)
 {
     return next_output(d, AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT);
 }
 
-AVOutputFormat *av_output_video_device_next(AVOutputFormat *d)
+const AVOutputFormat *av_output_video_device_next(const AVOutputFormat *d)
 {
     return next_output(d, AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT);
 }

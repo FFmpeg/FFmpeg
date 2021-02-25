@@ -77,7 +77,7 @@ void avdevice_register_all(void);
  * if d is non-NULL, returns the next registered input audio/video device after d
  * or NULL if d is the last one.
  */
-AVInputFormat *av_input_audio_device_next(AVInputFormat  *d);
+const AVInputFormat *av_input_audio_device_next(const AVInputFormat  *d);
 
 /**
  * Video input devices iterator.
@@ -86,7 +86,7 @@ AVInputFormat *av_input_audio_device_next(AVInputFormat  *d);
  * if d is non-NULL, returns the next registered input audio/video device after d
  * or NULL if d is the last one.
  */
-AVInputFormat *av_input_video_device_next(AVInputFormat  *d);
+const AVInputFormat *av_input_video_device_next(const AVInputFormat  *d);
 
 /**
  * Audio output devices iterator.
@@ -95,7 +95,7 @@ AVInputFormat *av_input_video_device_next(AVInputFormat  *d);
  * if d is non-NULL, returns the next registered output audio/video device after d
  * or NULL if d is the last one.
  */
-AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d);
+const AVOutputFormat *av_output_audio_device_next(const AVOutputFormat *d);
 
 /**
  * Video output devices iterator.
@@ -104,7 +104,7 @@ AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d);
  * if d is non-NULL, returns the next registered output audio/video device after d
  * or NULL if d is the last one.
  */
-AVOutputFormat *av_output_video_device_next(AVOutputFormat *d);
+const AVOutputFormat *av_output_video_device_next(const AVOutputFormat *d);
 
 typedef struct AVDeviceRect {
     int x;      /**< x coordinate of top left corner */
