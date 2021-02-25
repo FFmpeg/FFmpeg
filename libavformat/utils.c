@@ -4200,7 +4200,7 @@ AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int
 
 int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
                         int wanted_stream_nb, int related_stream,
-                        AVCodec **decoder_ret, int flags)
+                        const AVCodec **decoder_ret, int flags)
 {
     int i, nb_streams = ic->nb_streams;
     int ret = AVERROR_STREAM_NOT_FOUND;
@@ -4260,7 +4260,7 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
         }
     }
     if (decoder_ret)
-        *decoder_ret = (AVCodec*)best_decoder;
+        *decoder_ret = best_decoder;
     return ret;
 }
 

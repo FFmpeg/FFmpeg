@@ -62,7 +62,7 @@ static enum AVPixelFormat get_vaapi_format(AVCodecContext *ctx,
 static int open_input_file(const char *filename)
 {
     int ret;
-    AVCodec *decoder = NULL;
+    const AVCodec *decoder = NULL;
     AVStream *video = NULL;
 
     if ((ret = avformat_open_input(&ifmt_ctx, filename, NULL, NULL)) < 0) {

@@ -78,7 +78,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
     int ret;
     AVStream *st;
     AVCodecContext *dec_ctx = NULL;
-    AVCodec *dec = NULL;
+    const AVCodec *dec = NULL;
     AVDictionary *opts = NULL;
 
     ret = av_find_best_stream(fmt_ctx, type, -1, -1, &dec, 0);

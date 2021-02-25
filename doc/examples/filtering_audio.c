@@ -48,8 +48,8 @@ static int audio_stream_index = -1;
 
 static int open_input_file(const char *filename)
 {
+    const AVCodec *dec;
     int ret;
-    AVCodec *dec;
 
     if ((ret = avformat_open_input(&fmt_ctx, filename, NULL, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");

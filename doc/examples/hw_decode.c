@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     int video_stream, ret;
     AVStream *video = NULL;
     AVCodecContext *decoder_ctx = NULL;
-    AVCodec *decoder = NULL;
+    const AVCodec *decoder = NULL;
     AVPacket packet;
     enum AVHWDeviceType type;
     int i;
