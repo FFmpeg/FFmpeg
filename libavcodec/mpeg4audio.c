@@ -169,24 +169,6 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
     return specific_config_bitindex - start_bit_index;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 59
-int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
-                                 int bit_size, int sync_extension)
-{
-    GetBitContext gb;
-    int ret;
-
-    if (bit_size <= 0)
-        return AVERROR_INVALIDDATA;
-
-    ret = init_get_bits(&gb, buf, bit_size);
-    if (ret < 0)
-        return ret;
-
-    return ff_mpeg4audio_get_config_gb(c, &gb, sync_extension, NULL);
-}
-#endif
-
 int avpriv_mpeg4audio_get_config2(MPEG4AudioConfig *c, const uint8_t *buf,
                                   int size, int sync_extension, void *logctx)
 {

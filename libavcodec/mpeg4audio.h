@@ -59,19 +59,6 @@ extern const uint8_t ff_mpeg4audio_channels[14];
 int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
                                 int sync_extension, void *logctx);
 
-#if LIBAVCODEC_VERSION_MAJOR < 59
-/**
- * Parse MPEG-4 systems extradata from a raw buffer to retrieve audio configuration.
- * @param[in] c        MPEG4AudioConfig structure to fill.
- * @param[in] buf      Extradata from container.
- * @param[in] bit_size Extradata size in bits.
- * @param[in] sync_extension look for a sync extension after config if true.
- * @return negative AVERROR code on error, on success AudioSpecificConfig bit index in extradata.
- */
-int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
-                                 int bit_size, int sync_extension);
-#endif
-
 /**
  * Parse MPEG-4 systems extradata from a raw buffer to retrieve audio configuration.
  * @param[in] c        MPEG4AudioConfig structure to fill.
