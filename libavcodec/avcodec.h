@@ -3978,58 +3978,6 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
  */
 int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes);
 
-#if FF_API_OLD_BSF
-typedef struct AVBitStreamFilterContext {
-    void *priv_data;
-    const struct AVBitStreamFilter *filter;
-    AVCodecParserContext *parser;
-    struct AVBitStreamFilterContext *next;
-    /**
-     * Internal default arguments, used if NULL is passed to av_bitstream_filter_filter().
-     * Not for access by library users.
-     */
-    char *args;
-} AVBitStreamFilterContext;
-
-/**
- * @deprecated the old bitstream filtering API (using AVBitStreamFilterContext)
- * is deprecated. Use the new bitstream filtering API (using AVBSFContext).
- */
-attribute_deprecated
-void av_register_bitstream_filter(AVBitStreamFilter *bsf);
-/**
- * @deprecated the old bitstream filtering API (using AVBitStreamFilterContext)
- * is deprecated. Use av_bsf_get_by_name(), av_bsf_alloc(), and av_bsf_init()
- * from the new bitstream filtering API (using AVBSFContext).
- */
-attribute_deprecated
-AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
-/**
- * @deprecated the old bitstream filtering API (using AVBitStreamFilterContext)
- * is deprecated. Use av_bsf_send_packet() and av_bsf_receive_packet() from the
- * new bitstream filtering API (using AVBSFContext).
- */
-attribute_deprecated
-int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
-                               AVCodecContext *avctx, const char *args,
-                               uint8_t **poutbuf, int *poutbuf_size,
-                               const uint8_t *buf, int buf_size, int keyframe);
-/**
- * @deprecated the old bitstream filtering API (using AVBitStreamFilterContext)
- * is deprecated. Use av_bsf_free() from the new bitstream filtering API (using
- * AVBSFContext).
- */
-attribute_deprecated
-void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
-/**
- * @deprecated the old bitstream filtering API (using AVBitStreamFilterContext)
- * is deprecated. Use av_bsf_iterate() from the new bitstream filtering API (using
- * AVBSFContext).
- */
-attribute_deprecated
-const AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
-#endif
-
 /* memory */
 
 /**

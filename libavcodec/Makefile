@@ -34,7 +34,6 @@ OBJS = ac3_parser.o                                                     \
        avpacket.o                                                       \
        avpicture.o                                                      \
        bitstream.o                                                      \
-       bitstream_filter.o                                               \
        bitstream_filters.o                                              \
        bsf.o                                                            \
        codec_desc.o                                                     \

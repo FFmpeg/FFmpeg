@@ -5669,64 +5669,6 @@ int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *a
     return 1;
 }
 
-#if FF_API_OLD_BSF
-FF_DISABLE_DEPRECATION_WARNINGS
-int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
-                               AVBitStreamFilterContext *bsfc)
-{
-    int ret = 0;
-    while (bsfc) {
-        AVPacket new_pkt = *pkt;
-        int a = av_bitstream_filter_filter(bsfc, codec, NULL,
-                                           &new_pkt.data, &new_pkt.size,
-                                           pkt->data, pkt->size,
-                                           pkt->flags & AV_PKT_FLAG_KEY);
-        if (a == 0 && new_pkt.size == 0 && new_pkt.side_data_elems == 0) {
-            av_packet_unref(pkt);
-            memset(pkt, 0, sizeof(*pkt));
-            return 0;
-        }
-        if(a == 0 && new_pkt.data != pkt->data) {
-            uint8_t *t = av_malloc(new_pkt.size + AV_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
-            if (t) {
-                memcpy(t, new_pkt.data, new_pkt.size);
-                memset(t + new_pkt.size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-                new_pkt.data = t;
-                new_pkt.buf = NULL;
-                a = 1;
-            } else {
-                a = AVERROR(ENOMEM);
-            }
-        }
-        if (a > 0) {
-            new_pkt.buf = av_buffer_create(new_pkt.data, new_pkt.size,
-                                           av_buffer_default_free, NULL, 0);
-            if (new_pkt.buf) {
-                pkt->side_data = NULL;
-                pkt->side_data_elems = 0;
-                av_packet_unref(pkt);
-            } else {
-                av_freep(&new_pkt.data);
-                a = AVERROR(ENOMEM);
-            }
-        }
-        if (a < 0) {
-            av_log(codec, AV_LOG_ERROR,
-                   "Failed to open bitstream filter %s for stream %d with codec %s",
-                   bsfc->filter->name, pkt->stream_index,
-                   codec->codec ? codec->codec->name : "copy");
-            ret = a;
-            break;
-        }
-        *pkt = new_pkt;
-
-        bsfc = bsfc->next;
-    }
-    return ret;
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options)
 {
     if (!s->oformat)
