@@ -1051,19 +1051,17 @@ static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
 };
 #endif
 
+#if X264_BUILD < 153
 static av_cold void X264_init_static(AVCodec *codec)
 {
-#if X264_BUILD < 153
     if (x264_bit_depth == 8)
         codec->pix_fmts = pix_fmts_8bit;
     else if (x264_bit_depth == 9)
         codec->pix_fmts = pix_fmts_9bit;
     else if (x264_bit_depth == 10)
         codec->pix_fmts = pix_fmts_10bit;
-#else
-    codec->pix_fmts = pix_fmts_all;
-#endif
 }
+#endif
 
 #define OFFSET(x) offsetof(X264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
@@ -1208,7 +1206,11 @@ AVCodec ff_libx264_encoder = {
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &x264_class,
     .defaults         = x264_defaults,
+#if X264_BUILD < 153
     .init_static_data = X264_init_static,
+#else
+    .pix_fmts         = pix_fmts_all,
+#endif
 #if X264_BUILD >= 158
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 #else
