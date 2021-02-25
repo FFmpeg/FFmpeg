@@ -243,8 +243,8 @@ static int ssim_plane_16bit(AVFilterContext *ctx, void *arg,
     const int max = td->max;
 
     for (int c = 0; c < td->nb_components; c++) {
-        const uint8_t *main = td->main_data[c];
-        const uint8_t *ref = td->ref_data[c];
+        const uint8_t *main_data = td->main_data[c];
+        const uint8_t *ref_data = td->ref_data[c];
         const int main_stride = td->main_linesize[c];
         const int ref_stride = td->ref_linesize[c];
         int width = td->planewidth[c];
@@ -263,8 +263,8 @@ static int ssim_plane_16bit(AVFilterContext *ctx, void *arg,
         for (int y = ystart; y < slice_end; y++) {
             for (; z <= y; z++) {
                 FFSWAP(void*, sum0, sum1);
-                ssim_4x4xn_16bit(&main[4 * z * main_stride], main_stride,
-                                 &ref[4 * z * ref_stride], ref_stride,
+                ssim_4x4xn_16bit(&main_data[4 * z * main_stride], main_stride,
+                                 &ref_data[4 * z * ref_stride], ref_stride,
                                  sum0, width);
             }
 
@@ -286,8 +286,8 @@ static int ssim_plane(AVFilterContext *ctx, void *arg,
     SSIMDSPContext *dsp = td->dsp;
 
     for (int c = 0; c < td->nb_components; c++) {
-        const uint8_t *main = td->main_data[c];
-        const uint8_t *ref = td->ref_data[c];
+        const uint8_t *main_data = td->main_data[c];
+        const uint8_t *ref_data = td->ref_data[c];
         const int main_stride = td->main_linesize[c];
         const int ref_stride = td->ref_linesize[c];
         int width = td->planewidth[c];
@@ -306,8 +306,8 @@ static int ssim_plane(AVFilterContext *ctx, void *arg,
         for (int y = ystart; y < slice_end; y++) {
             for (; z <= y; z++) {
                 FFSWAP(void*, sum0, sum1);
-                dsp->ssim_4x4_line(&main[4 * z * main_stride], main_stride,
-                                   &ref[4 * z * ref_stride], ref_stride,
+                dsp->ssim_4x4_line(&main_data[4 * z * main_stride], main_stride,
+                                   &ref_data[4 * z * ref_stride], ref_stride,
                                    sum0, width);
             }
 
