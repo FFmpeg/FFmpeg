@@ -159,9 +159,8 @@ static av_cold int peak_init_writer(AVFormatContext *s)
         par->codec_id != AV_CODEC_ID_PCM_S16LE &&
         par->codec_id != AV_CODEC_ID_PCM_U8 &&
         par->codec_id != AV_CODEC_ID_PCM_U16LE) {
-        AVCodec *codec = avcodec_find_decoder(s->streams[0]->codecpar->codec_id);
-        av_log(s, AV_LOG_ERROR, "%s codec not supported for Peak Chunk\n",
-               codec ? codec->name : "NONE");
+        av_log(s, AV_LOG_ERROR, "Codec %s not supported for Peak Chunk\n",
+               avcodec_get_name(par->codec_id));
         return -1;
     }
 
@@ -325,9 +324,8 @@ static int wav_write_header(AVFormatContext *s)
         /* format header */
         fmt = ff_start_tag(pb, "fmt ");
         if (ff_put_wav_header(s, pb, s->streams[0]->codecpar, 0) < 0) {
-            const AVCodecDescriptor *desc = avcodec_descriptor_get(s->streams[0]->codecpar->codec_id);
-            av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
-                   desc ? desc->name : "unknown");
+            av_log(s, AV_LOG_ERROR, "Codec %s not supported in WAVE format\n",
+                   avcodec_get_name(s->streams[0]->codecpar->codec_id));
             return AVERROR(ENOSYS);
         }
         ff_end_tag(pb, fmt);
@@ -553,9 +551,8 @@ static int w64_write_header(AVFormatContext *s)
     avio_write(pb, ff_w64_guid_wave, sizeof(ff_w64_guid_wave));
     start_guid(pb, ff_w64_guid_fmt, &start);
     if ((ret = ff_put_wav_header(s, pb, s->streams[0]->codecpar, 0)) < 0) {
-        AVCodec *codec = avcodec_find_decoder(s->streams[0]->codecpar->codec_id);
-        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
-               codec ? codec->name : "NONE");
+        av_log(s, AV_LOG_ERROR, "Codec %s not supported\n",
+               avcodec_get_name(s->streams[0]->codecpar->codec_id));
         return ret;
     }
     end_guid(pb, start);
