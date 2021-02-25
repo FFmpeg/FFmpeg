@@ -429,24 +429,6 @@ enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags,
     return AV_PIX_FMT_NONE;
 }
 
-#if FF_API_CODEC_GET_SET
-MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
-MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
-MAKE_ACCESSORS(AVCodecContext, codec, int, lowres)
-MAKE_ACCESSORS(AVCodecContext, codec, int, seek_preroll)
-MAKE_ACCESSORS(AVCodecContext, codec, uint16_t*, chroma_intra_matrix)
-
-unsigned av_codec_get_codec_properties(const AVCodecContext *codec)
-{
-    return codec->properties;
-}
-
-int av_codec_get_max_lowres(const AVCodec *codec)
-{
-    return codec->max_lowres;
-}
-#endif
-
 int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec){
     return !!(codec->caps_internal & FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM);
 }
