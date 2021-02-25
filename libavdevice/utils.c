@@ -20,7 +20,7 @@
 #include "libavutil/opt.h"
 #include "libavformat/avformat.h"
 
-int ff_alloc_input_device_context(AVFormatContext **avctx, AVInputFormat *iformat, const char *format)
+int ff_alloc_input_device_context(AVFormatContext **avctx, const AVInputFormat *iformat, const char *format)
 {
     AVFormatContext *s;
     int ret = 0;

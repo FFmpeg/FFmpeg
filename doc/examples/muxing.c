@@ -536,8 +536,8 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
 int main(int argc, char **argv)
 {
     OutputStream video_st = { 0 }, audio_st = { 0 };
+    const AVOutputFormat *fmt;
     const char *filename;
-    AVOutputFormat *fmt;
     AVFormatContext *oc;
     AVCodec *audio_codec, *video_codec;
     int ret;

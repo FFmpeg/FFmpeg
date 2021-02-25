@@ -31,7 +31,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
 {
     AVFormatContext *rtpctx = NULL;
     int ret;
-    ff_const59 AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
+    const AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     uint8_t *rtpflags;
     AVDictionary *opts = NULL;
 

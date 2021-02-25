@@ -1068,7 +1068,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
 {
     InputFile *f;
     AVFormatContext *ic;
-    AVInputFormat *file_iformat = NULL;
+    const AVInputFormat *file_iformat = NULL;
     int err, i, ret;
     int64_t timestamp;
     AVDictionary *unused_opts = NULL;
@@ -1117,20 +1117,22 @@ static int open_input_file(OptionsContext *o, const char *filename)
         av_dict_set_int(&o->g->format_opts, "sample_rate", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i, 0);
     }
     if (o->nb_audio_channels) {
+        const AVClass *priv_class;
         /* because we set audio_channels based on both the "ac" and
          * "channel_layout" options, we need to check that the specified
          * demuxer actually has the "channels" option before setting it */
-        if (file_iformat && file_iformat->priv_class &&
-            av_opt_find(&file_iformat->priv_class, "channels", NULL, 0,
+        if (file_iformat && (priv_class = file_iformat->priv_class) &&
+            av_opt_find(&priv_class, "channels", NULL, 0,
                         AV_OPT_SEARCH_FAKE_OBJ)) {
             av_dict_set_int(&o->g->format_opts, "channels", o->audio_channels[o->nb_audio_channels - 1].u.i, 0);
         }
     }
     if (o->nb_frame_rates) {
+        const AVClass *priv_class;
         /* set the format-level framerate option;
          * this is important for video grabbers, e.g. x11 */
-        if (file_iformat && file_iformat->priv_class &&
-            av_opt_find(&file_iformat->priv_class, "framerate", NULL, 0,
+        if (file_iformat && (priv_class = file_iformat->priv_class) &&
+            av_opt_find(&priv_class, "framerate", NULL, 0,
                         AV_OPT_SEARCH_FAKE_OBJ)) {
             av_dict_set(&o->g->format_opts, "framerate",
                         o->frame_rates[o->nb_frame_rates - 1].u.str, 0);

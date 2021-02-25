@@ -14,6 +14,17 @@ libavutil:     2017-10-21
 
 
 API changes, most recent first:
+
+2021-04-27 - xxxxxxxxxx - lavf yyyyyyyyy - avformat.h
+  Constified the pointers to AVInputFormats and AVOutputFormats
+  in AVFormatContext, avformat_alloc_output_context2(),
+  av_find_input_format(), av_probe_input_format(),
+  av_probe_input_format2(), av_probe_input_format3(),
+  av_probe_input_buffer2(), av_probe_input_buffer(),
+  avformat_open_input(), av_guess_format() and av_guess_codec().
+  Furthermore, constified the AVProbeData in av_probe_input_format(),
+  av_probe_input_format2() and av_probe_input_format3().
+
 2021-04-19 - xxxxxxxxxx - lavu 56.74.100 - tx.h
   Add AV_TX_FULL_IMDCT and AV_TX_UNALIGNED.
 

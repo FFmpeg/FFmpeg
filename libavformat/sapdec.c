@@ -65,9 +65,9 @@ static int sap_read_header(AVFormatContext *s)
     struct SAPState *sap = s->priv_data;
     char host[1024], path[1024], url[1024];
     uint8_t recvbuf[RTP_MAX_PACKET_LENGTH];
+    const AVInputFormat *infmt;
     int port;
     int ret, i;
-    ff_const59 AVInputFormat* infmt;
 
     if (!ff_network_init())
         return AVERROR(EIO);

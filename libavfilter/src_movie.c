@@ -205,7 +205,7 @@ static int guess_channel_layout(MovieStream *st, int st_index, void *log_ctx)
 static av_cold int movie_common_init(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
-    AVInputFormat *iformat = NULL;
+    const AVInputFormat *iformat = NULL;
     int64_t timestamp;
     int nb_streams = 1, ret, i;
     char default_streams[16], *stream_specs, *spec, *cursor;

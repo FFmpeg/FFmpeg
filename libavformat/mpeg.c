@@ -732,6 +732,7 @@ static int vobsub_read_header(AVFormatContext *s)
 {
     int i, ret = 0, header_parsed = 0, langidx = 0;
     VobSubDemuxContext *vobsub = s->priv_data;
+    const AVInputFormat *iformat;
     size_t fname_len;
     AVBPrint header;
     int64_t delay = 0;
@@ -739,7 +740,6 @@ static int vobsub_read_header(AVFormatContext *s)
     int stream_id = -1;
     char id[64] = {0};
     char alt[MAX_LINE_SIZE] = {0};
-    ff_const59 AVInputFormat *iformat;
 
     if (!vobsub->sub_name) {
         char *ext;
