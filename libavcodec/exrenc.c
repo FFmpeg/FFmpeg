@@ -72,6 +72,7 @@ typedef struct EXRContext {
     const AVClass *class;
 
     int compression;
+    int pixel_type;
     int planes;
     int nb_scanlines;
     int scanline_height;
@@ -81,11 +82,59 @@ typedef struct EXRContext {
     PutByteContext pb;
 
     EXRScanlineData *scanline;
+
+    uint16_t basetable[512];
+    uint8_t shifttable[512];
 } EXRContext;
+
+static void half_tables(EXRContext *s)
+{
+    for (int i = 0; i < 256; i++) {
+        int e = i - 127;
+
+        if (e < -24) { // Very small numbers map to zero
+            s->basetable[i|0x000]  = 0x0000;
+            s->basetable[i|0x100]  = 0x8000;
+            s->shifttable[i|0x000] = 24;
+            s->shifttable[i|0x100] = 24;
+        } else if (e < -14) { // Small numbers map to denorms
+            s->basetable[i|0x000] = (0x0400>>(-e-14));
+            s->basetable[i|0x100] = (0x0400>>(-e-14)) | 0x8000;
+            s->shifttable[i|0x000] = -e-1;
+            s->shifttable[i|0x100] = -e-1;
+        } else if (e <= 15) { // Normal numbers just lose precision
+            s->basetable[i|0x000] = ((e + 15) << 10);
+            s->basetable[i|0x100] = ((e + 15) << 10) | 0x8000;
+            s->shifttable[i|0x000] = 13;
+            s->shifttable[i|0x100] = 13;
+        } else if (e < 128) { // Large numbers map to Infinity
+            s->basetable[i|0x000]  = 0x7C00;
+            s->basetable[i|0x100]  = 0xFC00;
+            s->shifttable[i|0x000] = 24;
+            s->shifttable[i|0x100] = 24;
+        } else{ // Infinity and NaN's stay Infinity and NaN's
+            s->basetable[i|0x000]  = 0x7C00;
+            s->basetable[i|0x100]  = 0xFC00;
+            s->shifttable[i|0x000] = 13;
+            s->shifttable[i|0x100] = 13;
+        }
+    }
+}
+
+static uint16_t float2half(EXRContext *s, uint32_t f)
+{
+    uint16_t h;
+
+    h = s->basetable[(f >> 23) & 0x1ff] + ((f & 0x007fffff) >> s->shifttable[(f >> 23) & 0x1ff]);
+
+    return h;
+}
 
 static int encode_init(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
+
+    half_tables(s);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GBRPF32:
@@ -175,7 +224,8 @@ static int64_t rle_compress(uint8_t *out, int64_t out_size,
             run++;
 
         if (run >= 3) {
-            av_assert1(o + 2 <= out_size);
+            if (o + 2 >= out_size)
+                return -1;
             out[o++] = run - 1;
             out[o++] = in[i];
             i += run;
@@ -185,7 +235,8 @@ static int64_t rle_compress(uint8_t *out, int64_t out_size,
             while (i + copy < in_size && copy < 127 && in[i + copy] != in[i + copy - 1])
                 copy++;
 
-            av_assert1(o + 1 + copy <= out_size);
+            if (o + 1 + copy >= out_size)
+                return -1;
             out[o++] = -copy;
 
             for (int x = 0; x < copy; x++)
@@ -204,9 +255,11 @@ static int64_t rle_compress(uint8_t *out, int64_t out_size,
 
 static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
 {
+    const int64_t element_size = s->pixel_type == EXR_HALF ? 2LL : 4LL;
+
     for (int y = 0; y < frame->height; y++) {
         EXRScanlineData *scanline = &s->scanline[y];
-        int64_t tmp_size = 4LL * s->planes * frame->width;
+        int64_t tmp_size = element_size * s->planes * frame->width;
         int64_t max_compressed_size = tmp_size * 3 / 2;
 
         av_fast_padded_malloc(&scanline->uncompressed_data, &scanline->uncompressed_size, tmp_size);
@@ -221,11 +274,25 @@ static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
         if (!scanline->compressed_data)
             return AVERROR(ENOMEM);
 
-        for (int p = 0; p < s->planes; p++) {
-            int ch = s->ch_order[p];
+        switch (s->pixel_type) {
+        case EXR_FLOAT:
+            for (int p = 0; p < s->planes; p++) {
+                int ch = s->ch_order[p];
 
-            memcpy(scanline->uncompressed_data + frame->width * 4 * p,
-                   frame->data[ch] + y * frame->linesize[ch], frame->width * 4);
+                memcpy(scanline->uncompressed_data + frame->width * 4 * p,
+                       frame->data[ch] + y * frame->linesize[ch], frame->width * 4);
+            }
+            break;
+        case EXR_HALF:
+            for (int p = 0; p < s->planes; p++) {
+                int ch = s->ch_order[p];
+                uint16_t *dst = (uint16_t *)(scanline->uncompressed_data + frame->width * 2 * p);
+                uint32_t *src = (uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
+
+                for (int x = 0; x < frame->width; x++)
+                    dst[x] = float2half(s, src[x]);
+            }
+            break;
         }
 
         reorder_pixels(scanline->tmp, scanline->uncompressed_data, tmp_size);
@@ -234,7 +301,7 @@ static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
                                              max_compressed_size,
                                              scanline->tmp, tmp_size);
 
-        if (scanline->actual_size >= tmp_size) {
+        if (scanline->actual_size <= 0 || scanline->actual_size >= tmp_size) {
             FFSWAP(uint8_t *, scanline->uncompressed_data, scanline->compressed_data);
             FFSWAP(int, scanline->uncompressed_size, scanline->compressed_size);
             scanline->actual_size = tmp_size;
@@ -246,10 +313,12 @@ static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
 
 static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
 {
+    const int64_t element_size = s->pixel_type == EXR_HALF ? 2LL : 4LL;
+
     for (int y = 0; y < s->nb_scanlines; y++) {
         EXRScanlineData *scanline = &s->scanline[y];
         const int scanline_height = FFMIN(s->scanline_height, frame->height - y * s->scanline_height);
-        int64_t tmp_size = 4LL * s->planes * frame->width * scanline_height;
+        int64_t tmp_size = element_size * s->planes * frame->width * scanline_height;
         int64_t max_compressed_size = tmp_size * 3 / 2;
         unsigned long actual_size, source_size;
 
@@ -265,16 +334,34 @@ static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
         if (!scanline->compressed_data)
             return AVERROR(ENOMEM);
 
-        for (int l = 0; l < scanline_height; l++) {
-            const int scanline_size = frame->width * 4 * s->planes;
+        switch (s->pixel_type) {
+        case EXR_FLOAT:
+            for (int l = 0; l < scanline_height; l++) {
+                const int scanline_size = frame->width * 4 * s->planes;
 
-            for (int p = 0; p < s->planes; p++) {
-                int ch = s->ch_order[p];
+                for (int p = 0; p < s->planes; p++) {
+                    int ch = s->ch_order[p];
 
-                memcpy(scanline->uncompressed_data + scanline_size * l + p * frame->width * 4,
-                       frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch],
-                       frame->width * 4);
+                    memcpy(scanline->uncompressed_data + scanline_size * l + p * frame->width * 4,
+                           frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch],
+                           frame->width * 4);
+                }
             }
+            break;
+        case EXR_HALF:
+            for (int l = 0; l < scanline_height; l++) {
+                const int scanline_size = frame->width * 2 * s->planes;
+
+                for (int p = 0; p < s->planes; p++) {
+                    int ch = s->ch_order[p];
+                    uint16_t *dst = (uint16_t *)(scanline->uncompressed_data + scanline_size * l + p * frame->width * 2);
+                    uint32_t *src = (uint32_t *)(frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch]);
+
+                    for (int x = 0; x < frame->width; x++)
+                        dst[x] = float2half(s, src[x]);
+                }
+            }
+            break;
         }
 
         reorder_pixels(scanline->tmp, scanline->uncompressed_data, tmp_size);
@@ -321,7 +408,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for (int p = 0; p < s->planes; p++) {
         bytestream2_put_byte(pb, s->ch_names[p]);
         bytestream2_put_byte(pb, 0);
-        bytestream2_put_le32(pb, EXR_FLOAT);
+        bytestream2_put_le32(pb, s->pixel_type);
         bytestream2_put_le32(pb, 0);
         bytestream2_put_le32(pb, 1);
         bytestream2_put_le32(pb, 1);
@@ -399,18 +486,38 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case EXR_RAW:
         offset = bytestream2_tell_p(pb) + avctx->height * 8LL;
 
-        for (int y = 0; y < avctx->height; y++) {
-            bytestream2_put_le64(pb, offset);
-            offset += avctx->width * s->planes * 4 + 8;
-        }
+        if (s->pixel_type == EXR_FLOAT) {
 
-        for (int y = 0; y < avctx->height; y++) {
-            bytestream2_put_le32(pb, y);
-            bytestream2_put_le32(pb, s->planes * avctx->width * 4);
-            for (int p = 0; p < s->planes; p++) {
-                int ch = s->ch_order[p];
-                bytestream2_put_buffer(pb, frame->data[ch] + y * frame->linesize[ch],
-                                       avctx->width * 4);
+            for (int y = 0; y < avctx->height; y++) {
+                bytestream2_put_le64(pb, offset);
+                offset += avctx->width * s->planes * 4 + 8;
+            }
+
+            for (int y = 0; y < avctx->height; y++) {
+                bytestream2_put_le32(pb, y);
+                bytestream2_put_le32(pb, s->planes * avctx->width * 4);
+                for (int p = 0; p < s->planes; p++) {
+                    int ch = s->ch_order[p];
+                    bytestream2_put_buffer(pb, frame->data[ch] + y * frame->linesize[ch],
+                                           avctx->width * 4);
+                }
+            }
+        } else {
+            for (int y = 0; y < avctx->height; y++) {
+                bytestream2_put_le64(pb, offset);
+                offset += avctx->width * s->planes * 2 + 8;
+            }
+
+            for (int y = 0; y < avctx->height; y++) {
+                bytestream2_put_le32(pb, y);
+                bytestream2_put_le32(pb, s->planes * avctx->width * 2);
+                for (int p = 0; p < s->planes; p++) {
+                    int ch = s->ch_order[p];
+                    uint32_t *src = (uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
+
+                    for (int x = 0; x < frame->width; x++)
+                        bytestream2_put_le16(pb, float2half(s, src[x]));
+                }
             }
         }
         break;
@@ -455,6 +562,9 @@ static const AVOption options[] = {
     { "rle" ,        "RLE",                  0,                   AV_OPT_TYPE_CONST, {.i64=EXR_RLE}, 0, 0, VE, "compr" },
     { "zip1",        "ZIP1",                 0,                   AV_OPT_TYPE_CONST, {.i64=EXR_ZIP1}, 0, 0, VE, "compr" },
     { "zip16",       "ZIP16",                0,                   AV_OPT_TYPE_CONST, {.i64=EXR_ZIP16}, 0, 0, VE, "compr" },
+    { "format", "set pixel type", OFFSET(pixel_type), AV_OPT_TYPE_INT,   {.i64=EXR_FLOAT}, EXR_HALF, EXR_UNKNOWN-1, VE, "pixel" },
+    { "half" ,       NULL,                   0,                   AV_OPT_TYPE_CONST, {.i64=EXR_HALF},  0, 0, VE, "pixel" },
+    { "float",       NULL,                   0,                   AV_OPT_TYPE_CONST, {.i64=EXR_FLOAT}, 0, 0, VE, "pixel" },
     { "gamma", "set gamma", OFFSET(gamma), AV_OPT_TYPE_FLOAT, {.dbl=1.f}, 0.001, FLT_MAX, VE },
     { NULL},
 };
