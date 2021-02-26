@@ -596,20 +596,6 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 
         if (!ctx->forced_subs_only || ctx->presentation.objects[i].composition_flag & 0x40)
         memcpy(sub->rects[i]->data[1], palette->clut, sub->rects[i]->nb_colors * sizeof(uint32_t));
-
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-{
-        AVSubtitleRect *rect;
-        int j;
-        rect = sub->rects[i];
-        for (j = 0; j < 4; j++) {
-            rect->pict.data[j] = rect->data[j];
-            rect->pict.linesize[j] = rect->linesize[j];
-        }
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
     return 1;
 }

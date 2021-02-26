@@ -641,7 +641,6 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *got_sub
     TeletextContext *ctx = avctx->priv_data;
     AVSubtitle      *sub = data;
     int             ret = 0;
-    int j;
 
     if (!ctx->vbi) {
         if (!(ctx->vbi = vbi_decoder_new()))
@@ -701,14 +700,6 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *got_sub
             if (sub->rects) {
                 sub->num_rects = 1;
                 sub->rects[0] = ctx->pages->sub_rect;
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-                for (j = 0; j < 4; j++) {
-                    sub->rects[0]->pict.data[j] = sub->rects[0]->data[j];
-                    sub->rects[0]->pict.linesize[j] = sub->rects[0]->linesize[j];
-                }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             } else {
                 ret = AVERROR(ENOMEM);
             }

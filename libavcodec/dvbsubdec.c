@@ -832,18 +832,6 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
                 memcpy(rect->data[1], region->computed_clut, sizeof(region->computed_clut));
             }
 
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-{
-            int j;
-            for (j = 0; j < 4; j++) {
-                rect->pict.data[j] = rect->data[j];
-                rect->pict.linesize[j] = rect->linesize[j];
-            }
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
             i++;
         }
     }

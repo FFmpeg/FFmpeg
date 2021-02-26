@@ -409,15 +409,6 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 sub_header->rects[0]->type = SUBTITLE_BITMAP;
                 sub_header->rects[0]->linesize[0] = w;
                 sub_header->rects[0]->flags = is_menu ? AV_SUBTITLE_FLAG_FORCED : 0;
-
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-                for (i = 0; i < 4; i++) {
-                    sub_header->rects[0]->pict.data[i] = sub_header->rects[0]->data[i];
-                    sub_header->rects[0]->pict.linesize[i] = sub_header->rects[0]->linesize[i];
-                }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             }
         }
         if (next_cmd_pos < cmd_pos) {
@@ -503,15 +494,6 @@ static int find_smallest_bounding_rectangle(DVDSubContext *ctx, AVSubtitle *s)
     s->rects[0]->h = h;
     s->rects[0]->x += x1;
     s->rects[0]->y += y1;
-
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-    for (i = 0; i < 4; i++) {
-        s->rects[0]->pict.data[i] = s->rects[0]->data[i];
-        s->rects[0]->pict.linesize[i] = s->rects[0]->linesize[i];
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return 1;
 }

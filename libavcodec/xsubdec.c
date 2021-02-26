@@ -134,20 +134,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
             ((uint32_t *)sub->rects[0]->data[1])[i] |= (unsigned)*buf++ << 24;
     }
 
-#if FF_API_AVPICTURE
-FF_DISABLE_DEPRECATION_WARNINGS
-{
-    AVSubtitleRect *rect;
-    int j;
-    rect = sub->rects[0];
-    for (j = 0; j < 4; j++) {
-        rect->pict.data[j] = rect->data[j];
-        rect->pict.linesize[j] = rect->linesize[j];
-    }
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     // process RLE-compressed data
     if ((ret = init_get_bits8(&gb, buf, buf_end - buf)) < 0)
         return ret;
