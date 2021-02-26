@@ -455,35 +455,23 @@ typedef struct AVCPBProperties {
      * Maximum bitrate of the stream, in bits per second.
      * Zero if unknown or unspecified.
      */
-#if FF_API_UNSANITIZED_BITRATES
-    int max_bitrate;
-#else
     int64_t max_bitrate;
-#endif
     /**
      * Minimum bitrate of the stream, in bits per second.
      * Zero if unknown or unspecified.
      */
-#if FF_API_UNSANITIZED_BITRATES
-    int min_bitrate;
-#else
     int64_t min_bitrate;
-#endif
     /**
      * Average bitrate of the stream, in bits per second.
      * Zero if unknown or unspecified.
      */
-#if FF_API_UNSANITIZED_BITRATES
-    int avg_bitrate;
-#else
     int64_t avg_bitrate;
-#endif
 
     /**
      * The size of the buffer to which the ratecontrol is applied, in bits.
      * Zero if unknown or unspecified.
      */
-    int buffer_size;
+    int64_t buffer_size;
 
     /**
      * The delay between the time the packet this structure is associated with

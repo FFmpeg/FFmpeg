@@ -322,11 +322,7 @@ static void dump_cpb(void *ctx, const AVPacketSideData *sd)
     }
 
     av_log(ctx, AV_LOG_INFO,
-#if FF_API_UNSANITIZED_BITRATES
-           "bitrate max/min/avg: %d/%d/%d buffer size: %d ",
-#else
-           "bitrate max/min/avg: %"PRId64"/%"PRId64"/%"PRId64" buffer size: %d ",
-#endif
+           "bitrate max/min/avg: %"PRId64"/%"PRId64"/%"PRId64" buffer size: %"PRId64" ",
            cpb->max_bitrate, cpb->min_bitrate, cpb->avg_bitrate,
            cpb->buffer_size);
     if (cpb->vbv_delay == UINT64_MAX)
