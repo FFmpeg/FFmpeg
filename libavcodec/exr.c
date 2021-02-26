@@ -66,8 +66,8 @@ enum ExrCompr {
     EXR_PXR24,
     EXR_B44,
     EXR_B44A,
-    EXR_DWA,
-    EXR_DWB,
+    EXR_DWAA,
+    EXR_DWAB,
     EXR_UNKN,
 };
 
@@ -118,6 +118,20 @@ typedef struct EXRThreadData {
 
     uint8_t *bitmap;
     uint16_t *lut;
+
+    uint8_t *ac_data;
+    unsigned ac_size;
+
+    uint8_t *dc_data;
+    unsigned dc_size;
+
+    uint8_t *rle_data;
+    unsigned rle_size;
+
+    uint8_t *rle_raw_data;
+    unsigned rle_raw_size;
+
+    float block[3][64];
 
     int ysize, xsize;
 
@@ -256,10 +270,10 @@ static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     return 0;
 }
 
-static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_size,
-                          int uncompressed_size, EXRThreadData *td)
+static int rle(uint8_t *dst, const uint8_t *src,
+               int compressed_size, int uncompressed_size)
 {
-    uint8_t *d      = td->tmp;
+    uint8_t *d      = dst;
     const int8_t *s = src;
     int ssize       = compressed_size;
     int dsize       = uncompressed_size;
@@ -294,6 +308,14 @@ static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_si
 
     if (dend != d)
         return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_size,
+                          int uncompressed_size, EXRThreadData *td)
+{
+    rle(td->tmp, src, compressed_size, uncompressed_size);
 
     av_assert1(uncompressed_size % 2 == 0);
 
@@ -475,18 +497,16 @@ static int huf_uncompress(EXRContext *s,
                           GetByteContext *gb,
                           uint16_t *dst, int dst_size)
 {
-    int32_t src_size, im, iM;
+    int32_t im, iM;
     uint32_t nBits;
     int ret;
 
-    src_size = bytestream2_get_le32(gb);
     im       = bytestream2_get_le32(gb);
     iM       = bytestream2_get_le32(gb);
     bytestream2_skip(gb, 4);
     nBits = bytestream2_get_le32(gb);
     if (im < 0 || im >= HUF_ENCSIZE ||
-        iM < 0 || iM >= HUF_ENCSIZE ||
-        src_size < 0)
+        iM < 0 || iM >= HUF_ENCSIZE)
         return AVERROR_INVALIDDATA;
 
     bytestream2_skip(gb, 4);
@@ -659,6 +679,7 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
 
     maxval = reverse_lut(td->bitmap, td->lut);
 
+    bytestream2_skip(&gb, 4);
     ret = huf_uncompress(s, td, &gb, tmp, dsize / sizeof(uint16_t));
     if (ret)
         return ret;
@@ -917,6 +938,284 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     return 0;
 }
 
+static int ac_uncompress(EXRContext *s, GetByteContext *gb, float *block)
+{
+    int ret = 0, n = 1;
+
+    while (n < 64) {
+        uint16_t val = bytestream2_get_ne16(gb);
+
+        if (val == 0xff00) {
+            n = 64;
+        } else if ((val >> 8) == 0xff) {
+            n += val & 0xff;
+        } else {
+            ret = n;
+            block[ff_zigzag_direct[n]] = exr_half2float(val).f;
+            n++;
+        }
+    }
+
+    return ret;
+}
+
+static void idct_1d(float *blk, int step)
+{
+    const float a = .5f * cosf(    M_PI / 4.f);
+    const float b = .5f * cosf(    M_PI / 16.f);
+    const float c = .5f * cosf(    M_PI / 8.f);
+    const float d = .5f * cosf(3.f*M_PI / 16.f);
+    const float e = .5f * cosf(5.f*M_PI / 16.f);
+    const float f = .5f * cosf(3.f*M_PI / 8.f);
+    const float g = .5f * cosf(7.f*M_PI / 16.f);
+
+    float alpha[4], beta[4], theta[4], gamma[4];
+
+    alpha[0] = c * blk[2 * step];
+    alpha[1] = f * blk[2 * step];
+    alpha[2] = c * blk[6 * step];
+    alpha[3] = f * blk[6 * step];
+
+    beta[0] = b * blk[1 * step] + d * blk[3 * step] + e * blk[5 * step] + g * blk[7 * step];
+    beta[1] = d * blk[1 * step] - g * blk[3 * step] - b * blk[5 * step] - e * blk[7 * step];
+    beta[2] = e * blk[1 * step] - b * blk[3 * step] + g * blk[5 * step] + d * blk[7 * step];
+    beta[3] = g * blk[1 * step] - e * blk[3 * step] + d * blk[5 * step] - b * blk[7 * step];
+
+    theta[0] = a * (blk[0 * step] + blk[4 * step]);
+    theta[3] = a * (blk[0 * step] - blk[4 * step]);
+
+    theta[1] = alpha[0] + alpha[3];
+    theta[2] = alpha[1] - alpha[2];
+
+    gamma[0] = theta[0] + theta[1];
+    gamma[1] = theta[3] + theta[2];
+    gamma[2] = theta[3] - theta[2];
+    gamma[3] = theta[0] - theta[1];
+
+    blk[0 * step] = gamma[0] + beta[0];
+    blk[1 * step] = gamma[1] + beta[1];
+    blk[2 * step] = gamma[2] + beta[2];
+    blk[3 * step] = gamma[3] + beta[3];
+
+    blk[4 * step] = gamma[3] - beta[3];
+    blk[5 * step] = gamma[2] - beta[2];
+    blk[6 * step] = gamma[1] - beta[1];
+    blk[7 * step] = gamma[0] - beta[0];
+}
+
+static void dct_inverse(float *block)
+{
+    for (int i = 0; i < 8; i++)
+        idct_1d(block + i, 8);
+
+    for (int i = 0; i < 8; i++) {
+        idct_1d(block, 1);
+        block += 8;
+    }
+}
+
+static void convert(float y, float u, float v,
+                    float *b, float *g, float *r)
+{
+    *r = y               + 1.5747f * v;
+    *g = y - 0.1873f * u - 0.4682f * v;
+    *b = y + 1.8556f * u;
+}
+
+static float to_linear(float x, float scale)
+{
+    float ax = fabsf(x);
+
+    if (ax <= 1.f) {
+        return FFSIGN(x) * powf(ax, 2.2f * scale);
+    } else {
+        const float log_base = expf(2.2f * scale);
+
+        return FFSIGN(x) * powf(log_base, ax - 1.f);
+    }
+}
+
+static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
+                          int uncompressed_size, EXRThreadData *td)
+{
+    int64_t version, lo_usize, lo_size;
+    int64_t ac_size, dc_size, rle_usize, rle_csize, rle_raw_size;
+    int64_t ac_count, dc_count, ac_compression;
+    const int dc_w = td->xsize >> 3;
+    const int dc_h = td->ysize >> 3;
+    GetByteContext gb, agb;
+    int skip, ret;
+
+    if (compressed_size <= 88)
+        return AVERROR_INVALIDDATA;
+
+    version = AV_RL64(src + 0);
+    if (version != 2)
+        return AVERROR_INVALIDDATA;
+
+    lo_usize = AV_RL64(src + 8);
+    lo_size = AV_RL64(src + 16);
+    ac_size = AV_RL64(src + 24);
+    dc_size = AV_RL64(src + 32);
+    rle_csize = AV_RL64(src + 40);
+    rle_usize = AV_RL64(src + 48);
+    rle_raw_size = AV_RL64(src + 56);
+    ac_count = AV_RL64(src + 64);
+    dc_count = AV_RL64(src + 72);
+    ac_compression = AV_RL64(src + 80);
+
+    if (compressed_size < 88LL + lo_size + ac_size + dc_size + rle_csize)
+        return AVERROR_INVALIDDATA;
+
+    bytestream2_init(&gb, src + 88, compressed_size - 88);
+    skip = bytestream2_get_le16(&gb);
+    if (skip < 2)
+        return AVERROR_INVALIDDATA;
+
+    bytestream2_skip(&gb, skip - 2);
+
+    if (lo_size > 0) {
+        if (lo_usize > uncompressed_size)
+            return AVERROR_INVALIDDATA;
+        bytestream2_skip(&gb, lo_size);
+    }
+
+    if (ac_size > 0) {
+        unsigned long dest_len = ac_count * 2LL;
+        GetByteContext agb = gb;
+
+        if (ac_count > 3LL * td->xsize * s->scan_lines_per_block)
+            return AVERROR_INVALIDDATA;
+
+        av_fast_padded_malloc(&td->ac_data, &td->ac_size, dest_len);
+        if (!td->ac_data)
+            return AVERROR(ENOMEM);
+
+        switch (ac_compression) {
+        case 0:
+            ret = huf_uncompress(s, td, &agb, (int16_t *)td->ac_data, ac_count);
+            if (ret < 0)
+                return ret;
+            break;
+        case 1:
+            if (uncompress(td->ac_data, &dest_len, agb.buffer, ac_size) != Z_OK ||
+                dest_len != ac_count * 2LL)
+                return AVERROR_INVALIDDATA;
+            break;
+        default:
+            return AVERROR_INVALIDDATA;
+        }
+
+        bytestream2_skip(&gb, ac_size);
+    }
+
+    if (dc_size > 0) {
+        unsigned long dest_len = dc_count * 2LL;
+        GetByteContext agb = gb;
+
+        if (dc_count > (6LL * td->xsize * td->ysize + 63) / 64)
+            return AVERROR_INVALIDDATA;
+
+        av_fast_padded_malloc(&td->dc_data, &td->dc_size, FFALIGN(dest_len, 64) * 2);
+        if (!td->dc_data)
+            return AVERROR(ENOMEM);
+
+        if (uncompress(td->dc_data + FFALIGN(dest_len, 64), &dest_len, agb.buffer, dc_size) != Z_OK ||
+            (dest_len != dc_count * 2LL))
+            return AVERROR_INVALIDDATA;
+
+        s->dsp.predictor(td->dc_data + FFALIGN(dest_len, 64), dest_len);
+        s->dsp.reorder_pixels(td->dc_data, td->dc_data + FFALIGN(dest_len, 64), dest_len);
+
+        bytestream2_skip(&gb, dc_size);
+    }
+
+    if (rle_raw_size > 0 && rle_csize > 0 && rle_usize > 0) {
+        unsigned long dest_len = rle_usize;
+
+        av_fast_padded_malloc(&td->rle_data, &td->rle_size, rle_usize);
+        if (!td->rle_data)
+            return AVERROR(ENOMEM);
+
+        av_fast_padded_malloc(&td->rle_raw_data, &td->rle_raw_size, rle_raw_size);
+        if (!td->rle_raw_data)
+            return AVERROR(ENOMEM);
+
+        if (uncompress(td->rle_data, &dest_len, gb.buffer, rle_csize) != Z_OK ||
+            (dest_len != rle_usize))
+            return AVERROR_INVALIDDATA;
+
+        ret = rle(td->rle_raw_data, td->rle_data, rle_usize, rle_raw_size);
+        if (ret < 0)
+            return ret;
+        bytestream2_skip(&gb, rle_csize);
+    }
+
+    bytestream2_init(&agb, td->ac_data, ac_count * 2);
+
+    for (int y = 0; y < td->ysize; y += 8) {
+        for (int x = 0; x < td->xsize; x += 8) {
+            memset(td->block, 0, sizeof(td->block));
+
+            for (int j = 0; j < 3; j++) {
+                float *block = td->block[j];
+                const int idx = (x >> 3) + (y >> 3) * dc_w + dc_w * dc_h * j;
+                uint16_t *dc = (uint16_t *)td->dc_data;
+                float dc_val = dc[idx];
+
+                dc_val = exr_half2float(dc_val).f;
+                block[0] = dc_val;
+                ac_uncompress(s, &agb, block);
+                dct_inverse(block);
+            }
+
+            {
+                const float scale = s->pixel_type == EXR_FLOAT ? 2.f : 1.f;
+                const int o = s->nb_channels == 4;
+                float *bo = ((float *)td->uncompressed_data) +
+                    y * td->xsize * s->nb_channels + td->xsize * (o + 0) + x;
+                float *go = ((float *)td->uncompressed_data) +
+                    y * td->xsize * s->nb_channels + td->xsize * (o + 1) + x;
+                float *ro = ((float *)td->uncompressed_data) +
+                    y * td->xsize * s->nb_channels + td->xsize * (o + 2) + x;
+                float *yb = td->block[0];
+                float *ub = td->block[1];
+                float *vb = td->block[2];
+
+                for (int yy = 0; yy < 8; yy++) {
+                    for (int xx = 0; xx < 8; xx++) {
+                        const int idx = xx + yy * 8;
+
+                        convert(yb[idx], ub[idx], vb[idx], &bo[xx], &go[xx], &ro[xx]);
+
+                        bo[xx] = to_linear(bo[xx], scale);
+                        go[xx] = to_linear(go[xx], scale);
+                        ro[xx] = to_linear(ro[xx], scale);
+                    }
+
+                    bo += td->xsize * s->nb_channels;
+                    go += td->xsize * s->nb_channels;
+                    ro += td->xsize * s->nb_channels;
+                }
+            }
+        }
+    }
+
+    if (s->nb_channels < 4)
+        return 0;
+
+    for (int y = 0; y < td->ysize && td->rle_raw_data; y++) {
+        uint32_t *ao = ((uint32_t *)td->uncompressed_data) + y * td->xsize * s->nb_channels;
+        uint8_t *ai0 = td->rle_raw_data + y * td->xsize;
+        uint8_t *ai1 = td->rle_raw_data + y * td->xsize + rle_raw_size / 2;
+
+        for (int x = 0; x < td->xsize; x++)
+            ao[x] = exr_half2float(ai0[x] | (ai1[x] << 8)).i;
+    }
+
+    return 0;
+}
+
 static int decode_block(AVCodecContext *avctx, void *tdata,
                         int jobnr, int threadnr)
 {
@@ -1072,6 +1371,10 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         case EXR_B44A:
             ret = b44_uncompress(s, src, data_size, uncompressed_size, td);
             break;
+        case EXR_DWAA:
+        case EXR_DWAB:
+            ret = dwa_uncompress(s, src, data_size, uncompressed_size, td);
+            break;
         }
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "decode_block() failed.\n");
@@ -1098,7 +1401,6 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         channel_buffer[3] = src + (td->xsize * s->channel_offsets[3]) + data_window_offset;
 
     if (s->desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
-
         /* todo: change this when a floating point pixel format with luma with alpha is implemented */
         int channel_count = s->channel_offsets[3] >= 0 ? 4 : rgb_channel_count;
         if (s->is_luma) {
@@ -1121,7 +1423,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                 memset(ptr_x, 0, bxmin);
                 ptr_x += window_xoffset;
 
-                if (s->pixel_type == EXR_FLOAT) {
+                if (s->pixel_type == EXR_FLOAT ||
+                    s->compression == EXR_DWAA ||
+                    s->compression == EXR_DWAB) {
                     // 32-bit
                     union av_intfloat32 t;
                     if (trc_func && c < 3) {
@@ -1766,6 +2070,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = decode_header(s, picture)) < 0)
         return ret;
 
+    if ((s->compression == EXR_DWAA || s->compression == EXR_DWAB) &&
+        s->pixel_type == EXR_HALF) {
+        s->current_channel_offset *= 2;
+        for (int i = 0; i < 4; i++)
+            s->channel_offsets[i] *= 2;
+    }
+
     switch (s->pixel_type) {
     case EXR_FLOAT:
     case EXR_HALF:
@@ -1820,7 +2131,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     case EXR_PIZ:
     case EXR_B44:
     case EXR_B44A:
+    case EXR_DWAA:
         s->scan_lines_per_block = 32;
+        break;
+    case EXR_DWAB:
+        s->scan_lines_per_block = 256;
         break;
     default:
         avpriv_report_missing_feature(avctx, "Compression %d", s->compression);
@@ -1981,6 +2296,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
         av_freep(&td->lut);
         av_freep(&td->he);
         av_freep(&td->freq);
+        av_freep(&td->ac_data);
+        av_freep(&td->dc_data);
+        av_freep(&td->rle_data);
+        av_freep(&td->rle_raw_data);
         ff_free_vlc(&td->vlc);
     }
 
