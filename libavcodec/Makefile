@@ -19,7 +19,6 @@ HEADERS = ac3_parser.h                                                  \
           mediacodec.h                                                  \
           packet.h                                                      \
           qsv.h                                                         \
-          vaapi.h                                                       \
           vdpau.h                                                       \
           version.h                                                     \
           videotoolbox.h                                                \
