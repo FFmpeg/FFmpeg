@@ -186,6 +186,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
     return index;
 }
 
+#if FF_API_PARSER_CHANGE
 int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size, int keyframe)
@@ -220,7 +221,7 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
 
     return 0;
 }
-
+#endif
 void av_parser_close(AVCodecParserContext *s)
 {
     if (s) {
