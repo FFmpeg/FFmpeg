@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-03 - xxxxxxxxxx - lavf 58.70.100 - avformat.h
+  Deprecate AVFMT_FLAG_PRIV_OPT. It will do nothing
+  as soon as av_demuxer_open() is removed.
+
 2021-02-27 - xxxxxxxxxx - lavc 58.126.100 - avcodec.h
   Deprecated avcodec_get_frame_class().
 
