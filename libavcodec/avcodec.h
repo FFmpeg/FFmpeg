@@ -1854,19 +1854,6 @@ typedef struct AVCodecContext {
     uint8_t *subtitle_header;
     int subtitle_header_size;
 
-#if FF_API_VBV_DELAY
-    /**
-     * VBV delay coded in the last frame (in periods of a 27 MHz clock).
-     * Used for compliant TS muxing.
-     * - encoding: Set by libavcodec.
-     * - decoding: unused.
-     * @deprecated this value is now exported as a part of
-     * AV_PKT_DATA_CPB_PROPERTIES packet side data
-     */
-    attribute_deprecated
-    uint64_t vbv_delay;
-#endif
-
     /**
      * Audio only. The number of "priming" samples (padding) inserted by the
      * encoder at the beginning of the audio. I.e. this number of leading

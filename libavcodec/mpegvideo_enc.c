@@ -1913,12 +1913,6 @@ vbv_retry:
                 av_freep(&props);
                 return ret;
             }
-
-#if FF_API_VBV_DELAY
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->vbv_delay     = vbv_delay * 300;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         }
         s->total_bits     += s->frame_bits;
 
