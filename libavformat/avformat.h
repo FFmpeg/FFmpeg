@@ -1255,19 +1255,6 @@ typedef struct AVFormatContext {
      */
     AVStream **streams;
 
-#if FF_API_FORMAT_FILENAME
-    /**
-     * input or output filename
-     *
-     * - demuxing: set by avformat_open_input()
-     * - muxing: may be set by the caller before avformat_write_header()
-     *
-     * @deprecated Use url instead.
-     */
-    attribute_deprecated
-    char filename[1024];
-#endif
-
     /**
      * input or output URL. Unlike the old filename field, this field has no
      * length restriction.

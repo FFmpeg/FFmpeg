@@ -547,11 +547,6 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         goto fail;
     }
 
-#if FF_API_FORMAT_FILENAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
     s->probe_score = ret;
@@ -5800,9 +5795,4 @@ void ff_format_set_url(AVFormatContext *s, char *url)
     av_assert0(url);
     av_freep(&s->url);
     s->url = url;
-#if FF_API_FORMAT_FILENAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    av_strlcpy(s->filename, url, sizeof(s->filename));
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 }
