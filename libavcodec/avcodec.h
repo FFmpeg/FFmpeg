@@ -2569,28 +2569,6 @@ const AVClass *avcodec_get_frame_class(void);
  */
 const AVClass *avcodec_get_subtitle_rect_class(void);
 
-#if FF_API_COPY_CONTEXT
-/**
- * Copy the settings of the source AVCodecContext into the destination
- * AVCodecContext. The resulting destination codec context will be
- * unopened, i.e. you are required to call avcodec_open2() before you
- * can use this AVCodecContext to decode/encode video/audio data.
- *
- * @param dest target codec context, should be initialized with
- *             avcodec_alloc_context3(NULL), but otherwise uninitialized
- * @param src source codec context
- * @return AVERROR() on error (e.g. memory allocation error), 0 on success
- *
- * @deprecated The semantics of this function are ill-defined and it should not
- * be used. If you need to transfer the stream parameters from one codec context
- * to another, use an intermediate AVCodecParameters instance and the
- * avcodec_parameters_from_context() / avcodec_parameters_to_context()
- * functions.
- */
-attribute_deprecated
-int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
-#endif
-
 /**
  * Fill the parameters struct based on the values from the supplied codec
  * context. Any allocated fields in par are freed and replaced with duplicates
