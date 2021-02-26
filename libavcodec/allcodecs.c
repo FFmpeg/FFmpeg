@@ -27,7 +27,6 @@
 #include "config.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
-#include "version.h"
 
 extern AVCodec ff_a64multi_encoder;
 extern AVCodec ff_a64multi5_encoder;
@@ -797,11 +796,6 @@ extern AVCodec ff_h264_qsv_encoder;
 extern AVCodec ff_h264_v4l2m2m_encoder;
 extern AVCodec ff_h264_vaapi_encoder;
 extern AVCodec ff_h264_videotoolbox_encoder;
-#if FF_API_NVENC_OLD_NAME
-extern AVCodec ff_nvenc_encoder;
-extern AVCodec ff_nvenc_h264_encoder;
-extern AVCodec ff_nvenc_hevc_encoder;
-#endif
 extern AVCodec ff_hevc_amf_encoder;
 extern AVCodec ff_hevc_cuvid_decoder;
 extern AVCodec ff_hevc_mediacodec_decoder;

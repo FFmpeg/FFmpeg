@@ -179,43 +179,6 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-#if FF_API_NVENC_OLD_NAME
-
-static av_cold int nvenc_old_init(AVCodecContext *avctx)
-{
-    av_log(avctx, AV_LOG_WARNING, "This encoder is deprecated, use 'hevc_nvenc' instead\n");
-    return ff_nvenc_encode_init(avctx);
-}
-
-static const AVClass nvenc_hevc_class = {
-    .class_name = "nvenc_hevc",
-    .item_name = av_default_item_name,
-    .option = options,
-    .version = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_nvenc_hevc_encoder = {
-    .name           = "nvenc_hevc",
-    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC hevc encoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .init           = nvenc_old_init,
-    .receive_packet = ff_nvenc_receive_packet,
-    .close          = ff_nvenc_encode_close,
-    .flush          = ff_nvenc_encode_flush,
-    .priv_data_size = sizeof(NvencContext),
-    .priv_class     = &nvenc_hevc_class,
-    .defaults       = defaults,
-    .pix_fmts       = ff_nvenc_pix_fmts,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
-                      AV_CODEC_CAP_ENCODER_FLUSH,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name   = "nvenc",
-    .hw_configs     = ff_nvenc_hw_configs,
-};
-
-#endif
-
 static const AVClass hevc_nvenc_class = {
     .class_name = "hevc_nvenc",
     .item_name = av_default_item_name,
