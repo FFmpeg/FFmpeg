@@ -578,18 +578,6 @@ typedef struct AVOutputFormat {
      * @see avdevice_list_devices() for more details.
      */
     int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
-#if LIBAVFORMAT_VERSION_MAJOR < 59
-    /**
-     * Initialize device capabilities submodule.
-     * @see avdevice_capabilities_create() for more details.
-     */
-    int (*create_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
-    /**
-     * Free device capabilities submodule.
-     * @see avdevice_capabilities_free() for more details.
-     */
-    int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
-#endif
     enum AVCodecID data_codec; /**< default data codec */
     /**
      * Initialize format. May allocate data here, and set any AVFormatContext or
@@ -755,19 +743,6 @@ typedef struct AVInputFormat {
      */
     int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 59
-    /**
-     * Initialize device capabilities submodule.
-     * @see avdevice_capabilities_create() for more details.
-     */
-    int (*create_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
-
-    /**
-     * Free device capabilities submodule.
-     * @see avdevice_capabilities_free() for more details.
-     */
-    int (*free_device_capabilities)(struct AVFormatContext *s, struct AVDeviceCapabilitiesQuery *caps);
-#endif
 } AVInputFormat;
 /**
  * @}
@@ -1021,11 +996,6 @@ typedef struct AVStream {
      *****************************************************************
      */
 
-#if LIBAVFORMAT_VERSION_MAJOR < 59
-    // kept for ABI compatibility only, do not access in any way
-    void *unused;
-#endif
-
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 
     // Timestamp generation support:
@@ -1055,29 +1025,12 @@ typedef struct AVStream {
     enum AVStreamParseType need_parsing;
     struct AVCodecParserContext *parser;
 
-#if LIBAVFORMAT_VERSION_MAJOR < 59
-    // kept for ABI compatibility only, do not access in any way
-    void        *unused7;
-    AVProbeData  unused6;
-    int64_t      unused5[16+1];
-    void         *unused2;
-    int          unused3;
-    unsigned int unused4;
-#endif
-
     /**
      * Stream Identifier
      * This is the MPEG-TS stream identifier +1
      * 0 means unknown
      */
     int stream_identifier;
-
-#if LIBAVFORMAT_VERSION_MAJOR < 59
-    // kept for ABI compatibility only, do not access in any way
-    int unused8;
-    int unused9;
-    int unused10;
-#endif
 
     /**
      * An opaque field for libavformat internal usage.
