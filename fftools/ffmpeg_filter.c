@@ -74,7 +74,7 @@ static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx
             p = get_compliance_unofficial_pix_fmts(enc_ctx->codec_id, p);
         }
         for (; *p != AV_PIX_FMT_NONE; p++) {
-            best= avcodec_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
+            best = av_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
             if (*p == target)
                 break;
         }
