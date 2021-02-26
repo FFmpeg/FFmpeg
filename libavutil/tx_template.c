@@ -397,7 +397,6 @@ static void monolithic_fft(AVTXContext *s, void *_out, void *_in,
         FFTComplex tmp;
         int src, dst, *inplace_idx = s->inplace_idx;
 
-        out = in;
         src = *inplace_idx++;
 
         do {
