@@ -397,55 +397,6 @@ int ff_vdpau_add_buffer(struct vdpau_picture_context *pic_ctx,
     return 0;
 }
 
-#if FF_API_VDPAU_PROFILE
-int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile)
-{
-#define PROFILE(prof)                      \
-do {                                       \
-    *profile = VDP_DECODER_PROFILE_##prof; \
-    return 0;                              \
-} while (0)
-
-    switch (avctx->codec_id) {
-    case AV_CODEC_ID_MPEG1VIDEO:               PROFILE(MPEG1);
-    case AV_CODEC_ID_MPEG2VIDEO:
-        switch (avctx->profile) {
-        case FF_PROFILE_MPEG2_MAIN:            PROFILE(MPEG2_MAIN);
-        case FF_PROFILE_MPEG2_SIMPLE:          PROFILE(MPEG2_SIMPLE);
-        default:                               return AVERROR(EINVAL);
-        }
-    case AV_CODEC_ID_H263:                     PROFILE(MPEG4_PART2_ASP);
-    case AV_CODEC_ID_MPEG4:
-        switch (avctx->profile) {
-        case FF_PROFILE_MPEG4_SIMPLE:          PROFILE(MPEG4_PART2_SP);
-        case FF_PROFILE_MPEG4_ADVANCED_SIMPLE: PROFILE(MPEG4_PART2_ASP);
-        default:                               return AVERROR(EINVAL);
-        }
-    case AV_CODEC_ID_H264:
-        switch (avctx->profile & ~FF_PROFILE_H264_INTRA) {
-        case FF_PROFILE_H264_BASELINE:         PROFILE(H264_BASELINE);
-        case FF_PROFILE_H264_CONSTRAINED_BASELINE:
-        case FF_PROFILE_H264_MAIN:             PROFILE(H264_MAIN);
-        case FF_PROFILE_H264_HIGH:             PROFILE(H264_HIGH);
-#ifdef VDP_DECODER_PROFILE_H264_EXTENDED
-        case FF_PROFILE_H264_EXTENDED:         PROFILE(H264_EXTENDED);
-#endif
-        default:                               return AVERROR(EINVAL);
-        }
-    case AV_CODEC_ID_WMV3:
-    case AV_CODEC_ID_VC1:
-        switch (avctx->profile) {
-        case FF_PROFILE_VC1_SIMPLE:            PROFILE(VC1_SIMPLE);
-        case FF_PROFILE_VC1_MAIN:              PROFILE(VC1_MAIN);
-        case FF_PROFILE_VC1_ADVANCED:          PROFILE(VC1_ADVANCED);
-        default:                               return AVERROR(EINVAL);
-        }
-    }
-    return AVERROR(EINVAL);
-#undef PROFILE
-}
-#endif /* FF_API_VDPAU_PROFILE */
-
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {
     return av_mallocz(sizeof(VDPAUHWContext));
