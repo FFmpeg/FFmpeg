@@ -3276,18 +3276,6 @@ int av_parser_parse2(AVCodecParserContext *s,
                      int64_t pts, int64_t dts,
                      int64_t pos);
 
-#if FF_API_PARSER_CHANGE
-/**
- * @return 0 if the output buffer is a subset of the input, 1 if it is allocated and must be freed
- * @deprecated Use dump_extradata, remove_extra or extract_extradata
- *             bitstream filters instead.
- */
-attribute_deprecated
-int av_parser_change(AVCodecParserContext *s,
-                     AVCodecContext *avctx,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe);
-#endif
 void av_parser_close(AVCodecParserContext *s);
 
 /**
