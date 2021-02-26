@@ -50,8 +50,6 @@ Use internal 2pass ratecontrol in first pass mode.
 Use internal 2pass ratecontrol in second pass mode.
 @item gray
 Only decode/encode grayscale.
-@item emu_edge
-Do not draw edges.
 @item psnr
 Set error[?] variables during encoding.
 @item truncated
@@ -72,10 +70,6 @@ This ensures that file and data checksums are reproducible and match between
 platforms. Its primary use is for regression testing.
 @item aic
 Apply H263 advanced intra coding / mpeg4 ac prediction.
-@item cbp
-Deprecated, use mpegvideo private options instead.
-@item qprd
-Deprecated, use mpegvideo private options instead.
 @item ilme
 Apply interlaced motion estimation.
 @item cgop
@@ -83,40 +77,6 @@ Use closed gop.
 @item output_corrupt
 Output even potentially corrupted frames.
 @end table
-
-@item me_method @var{integer} (@emph{encoding,video})
-Set motion estimation method.
-
-Possible values:
-@table @samp
-@item zero
-zero motion estimation (fastest)
-@item full
-full motion estimation (slowest)
-@item epzs
-EPZS motion estimation (default)
-@item esa
-esa motion estimation (alias for full)
-@item tesa
-tesa motion estimation
-@item dia
-dia motion estimation (alias for epzs)
-@item log
-log motion estimation
-@item phods
-phods motion estimation
-@item x1
-X1 motion estimation
-@item hex
-hex motion estimation
-@item umh
-umh motion estimation
-@item iter
-iter motion estimation
-@end table
-
-@item extradata_size @var{integer}
-Set extradata size.
 
 @item time_base @var{rational number}
 Set codec time base.
@@ -184,9 +144,6 @@ Default value is 0.
 @item b_qfactor @var{float} (@emph{encoding,video})
 Set qp factor between P and B frames.
 
-@item rc_strategy @var{integer} (@emph{encoding,video})
-Set ratecontrol method.
-
 @item b_strategy @var{integer} (@emph{encoding,video})
 Set strategy to choose between I/P/B-frames.
 
@@ -210,8 +167,6 @@ Possible values:
 @table @samp
 @item autodetect
 
-@item old_msmpeg4
-some old lavc generated msmpeg4v3 files (no autodetection)
 @item xvid_ilace
 Xvid interlacing bug (autodetected if fourcc==XVIX)
 @item ump4
@@ -220,8 +175,6 @@ Xvid interlacing bug (autodetected if fourcc==XVIX)
 padding bug (autodetected)
 @item amv
 
-@item ac_vlc
-illegal vlc bug (autodetected per fourcc)
 @item qpel_chroma
 
 @item std_qpel
@@ -241,14 +194,6 @@ Workaround various bugs in microsoft broken decoders.
 @item trunc
 trancated frames
 @end table
-
-@item lelim @var{integer} (@emph{encoding,video})
-Set single coefficient elimination threshold for luminance (negative
-values also consider DC coefficient).
-
-@item celim @var{integer} (@emph{encoding,video})
-Set single coefficient elimination threshold for chrominance (negative
-values also consider dc coefficient)
 
 @item strict @var{integer} (@emph{decoding/encoding,audio,video})
 Specify how strictly to follow the standards.
@@ -306,25 +251,7 @@ consider things that a sane encoder should not do as an error
 @item mpeg_quant @var{integer} (@emph{encoding,video})
 Use MPEG quantizers instead of H.263.
 
-@item qsquish @var{float} (@emph{encoding,video})
-How to keep quantizer between qmin and qmax (0 = clip, 1 = use
-differentiable function).
-
-@item rc_qmod_amp @var{float} (@emph{encoding,video})
-Set experimental quantizer modulation.
-
-@item rc_qmod_freq @var{integer} (@emph{encoding,video})
-Set experimental quantizer modulation.
-
 @item rc_override_count @var{integer}
-
-@item rc_eq @var{string} (@emph{encoding,video})
-Set rate control equation. When computing the expression, besides the
-standard functions defined in the section 'Expression Evaluation', the
-following functions are available: bits2qp(bits), qp2bits(qp). Also
-the following constants are available: iTex pTex tex mv fCode iCount
-mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex
-avgTex.
 
 @item maxrate @var{integer} (@emph{encoding,audio,video})
 Set max bitrate tolerance (in bits/s). Requires bufsize to be set.
@@ -336,17 +263,11 @@ encode. It is of little use elsewise.
 @item bufsize @var{integer} (@emph{encoding,audio,video})
 Set ratecontrol buffer size (in bits).
 
-@item rc_buf_aggressivity @var{float} (@emph{encoding,video})
-Currently useless.
-
 @item i_qfactor @var{float} (@emph{encoding,video})
 Set QP factor between P and I frames.
 
 @item i_qoffset @var{float} (@emph{encoding,video})
 Set QP offset between P and I frames.
-
-@item rc_init_cplx @var{float} (@emph{encoding,video})
-Set initial complexity for 1-pass encoding.
 
 @item dct @var{integer} (@emph{encoding,video})
 Set DCT algorithm.
@@ -412,11 +333,7 @@ Automatically pick a IDCT compatible with the simple one
 
 @item simpleneon
 
-@item simplealpha
-
-@item ipp
-
-@item xvidmmx
+@item xvid
 
 @item faani
 floating point AAN IDCT
@@ -714,18 +631,8 @@ Set diamond type & size for motion estimation pre-pass.
 @item subq @var{integer} (@emph{encoding,video})
 Set sub pel motion estimation quality.
 
-@item dtg_active_format @var{integer}
-
 @item me_range @var{integer} (@emph{encoding,video})
 Set limit motion vectors range (1023 for DivX player).
-
-@item ibias @var{integer} (@emph{encoding,video})
-Set intra quant bias.
-
-@item pbias @var{integer} (@emph{encoding,video})
-Set inter quant bias.
-
-@item color_table_id @var{integer}
 
 @item global_quality @var{integer} (@emph{encoding,audio,video})
 
@@ -741,8 +648,6 @@ arithmetic coder
 raw (no encoding)
 @item rle
 run-length coder
-@item deflate
-deflate-based coder
 @end table
 
 @item context @var{integer} (@emph{encoding,video})
@@ -763,16 +668,8 @@ use fewest bits
 use best rate distortion
 @end table
 
-@item stream_codec_tag @var{integer}
-
 @item sc_threshold @var{integer} (@emph{encoding,video})
 Set scene change threshold.
-
-@item lmin @var{integer} (@emph{encoding,video})
-Set min lagrange factor (VBR).
-
-@item lmax @var{integer} (@emph{encoding,video})
-Set max lagrange factor (VBR).
 
 @item nr @var{integer} (@emph{encoding,video})
 Set noise reduction.
@@ -824,11 +721,6 @@ Export film grain parameters through frame side data (see @code{AV_FRAME_DATA_FI
 Supported at present by AV1 decoders.
 @end table
 
-@item error @var{integer} (@emph{encoding,video})
-
-@item qns @var{integer} (@emph{encoding,video})
-Deprecated, use mpegvideo private options instead.
-
 @item threads @var{integer} (@emph{decoding/encoding,video})
 Set the number of threads to be used, in case the selected codec
 implementation supports multi-threading.
@@ -840,12 +732,6 @@ automatically select the number of threads to set
 @end table
 
 Default value is @samp{auto}.
-
-@item me_threshold @var{integer} (@emph{encoding,video})
-Set motion estimation threshold.
-
-@item mb_threshold @var{integer} (@emph{encoding,video})
-Set macroblock threshold.
 
 @item dc @var{integer} (@emph{encoding,video})
 Set intra_dc_precision.
@@ -924,9 +810,6 @@ noise preserving sum of squared differences
 
 @end table
 
-@item border_mask @var{float} (@emph{encoding,video})
-Increase the quantizer for macroblocks close to borders.
-
 @item mblmin @var{integer} (@emph{encoding,video})
 Set min macroblock lagrange factor (VBR).
 
@@ -999,9 +882,6 @@ Adjust sensitivity of b_frame_strategy 1.
 @item max_prediction_order @var{integer} (@emph{encoding,audio})
 @item timecode_frame_start @var{integer} (@emph{encoding,video})
 Set GOP timecode frame start number, in non drop frame format.
-
-@item request_channels @var{integer} (@emph{decoding,audio})
-Set desired number of audio channels.
 
 @item bits_per_raw_sample @var{integer}
 @item channel_layout @var{integer} (@emph{decoding/encoding,audio})
