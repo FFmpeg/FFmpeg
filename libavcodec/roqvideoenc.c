@@ -773,7 +773,7 @@ static void reconstruct_and_encode_image(RoqEncContext *enc,
 /**
  * Create a single YUV cell from a 2x2 section of the image
  */
-static inline void frame_block_to_cell(uint8_t *block, uint8_t * const *data,
+static inline void frame_block_to_cell(int *block, uint8_t * const *data,
                                        int top, int left, const int *stride)
 {
     int i, j, u=0, v=0;
@@ -787,14 +787,14 @@ static inline void frame_block_to_cell(uint8_t *block, uint8_t * const *data,
             v       += data[2][x];
         }
 
-    *block++ = (u+2)/4;
-    *block++ = (v+2)/4;
+    *block++ = (u + 2) / 4 * CHROMA_BIAS;
+    *block++ = (v + 2) / 4 * CHROMA_BIAS;
 }
 
 /**
  * Create YUV clusters for the entire image
  */
-static void create_clusters(const AVFrame *frame, int w, int h, uint8_t *yuvClusters)
+static void create_clusters(const AVFrame *frame, int w, int h, int *points)
 {
     int i, j, k, l;
 
@@ -802,9 +802,9 @@ static void create_clusters(const AVFrame *frame, int w, int h, uint8_t *yuvClus
         for (j=0; j<w; j+=4) {
             for (k=0; k < 2; k++)
                 for (l=0; l < 2; l++)
-                    frame_block_to_cell(yuvClusters + (l + 2*k)*6, frame->data,
+                    frame_block_to_cell(points + (l + 2*k)*6, frame->data,
                                         i+2*k, j+2*l, frame->linesize);
-            yuvClusters += 24;
+            points += 24;
         }
 }
 
@@ -853,23 +853,15 @@ static int generate_new_codebooks(RoqEncContext *enc, RoqTempdata *tempData)
     int max = roq->width * roq->height / 16;
     uint8_t mb2[3*4];
     roq_cell *results4 = av_malloc(sizeof(roq_cell)*MAX_CBS_4x4*4);
-    uint8_t *yuvClusters=av_malloc_array(max, sizeof(int)*6*4);
     int *points = enc->points;
-    int bias;
 
-    if (!results4 || !yuvClusters) {
+    if (!results4) {
         ret = AVERROR(ENOMEM);
         goto out;
     }
 
     /* Subsample YUV data */
-    create_clusters(enc->frame_to_enc, roq->width, roq->height, yuvClusters);
-
-    /* Cast to integer and apply chroma bias */
-    for (i=0; i<max*24; i++) {
-        bias = ((i%6)<4) ? 1 : CHROMA_BIAS;
-        points[i] = bias*yuvClusters[i];
-    }
+    create_clusters(enc->frame_to_enc, roq->width, roq->height, points);
 
     /* Create 4x4 codebooks */
     if ((ret = generate_codebook(enc, points, max,
@@ -902,7 +894,6 @@ static int generate_new_codebooks(RoqEncContext *enc, RoqTempdata *tempData)
                         codebooks->unpacked_cb4_enlarged + i*8*8*3);
     }
 out:
-    av_free(yuvClusters);
     av_free(results4);
     return ret;
 }
