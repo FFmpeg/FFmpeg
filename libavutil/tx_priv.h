@@ -123,7 +123,7 @@ struct AVTXContext {
 /* Shared functions */
 int ff_tx_type_is_mdct(enum AVTXType type);
 int ff_tx_gen_compound_mapping(AVTXContext *s);
-int ff_tx_gen_ptwo_revtab(AVTXContext *s);
+int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
 int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
 
 /* Also used by SIMD init */

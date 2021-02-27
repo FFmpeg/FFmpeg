@@ -91,7 +91,7 @@ int ff_tx_gen_compound_mapping(AVTXContext *s)
     return 0;
 }
 
-int ff_tx_gen_ptwo_revtab(AVTXContext *s)
+int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)
 {
     const int m = s->m, inv = s->inv;
 
@@ -101,7 +101,10 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s)
     /* Default */
     for (int i = 0; i < m; i++) {
         int k = -split_radix_permutation(i, m, inv) & (m - 1);
-        s->revtab[k] = i;
+        if (invert_lookup)
+            s->revtab[i] = k;
+        else
+            s->revtab[k] = i;
     }
 
     return 0;
