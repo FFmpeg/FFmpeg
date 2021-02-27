@@ -22,9 +22,7 @@
 #ifndef AVCODEC_ROQVIDEO_H
 #define AVCODEC_ROQVIDEO_H
 
-#include "libavutil/lfg.h"
 #include "avcodec.h"
-#include "bytestream.h"
 
 typedef struct roq_cell {
     unsigned char y[4];
@@ -39,39 +37,15 @@ typedef struct motion_vect {
     int d[2];
 } motion_vect;
 
-struct RoqTempData;
-
 typedef struct RoqContext {
-
     const AVClass *class;
     AVCodecContext *avctx;
     AVFrame *last_frame;
     AVFrame *current_frame;
-    int first_frame;
+    int width, height;
 
     roq_cell cb2x2[256];
     roq_qcell cb4x4[256];
-
-    int width, height;
-
-    /* Encoder only data */
-    AVLFG randctx;
-    uint64_t lambda;
-
-    motion_vect *this_motion4;
-    motion_vect *last_motion4;
-
-    motion_vect *this_motion8;
-    motion_vect *last_motion8;
-
-    unsigned int framesSinceKeyframe;
-
-    const AVFrame *frame_to_enc;
-    uint8_t *out_buf;
-    struct RoqTempData *tmpData;
-
-    int quake3_compat; // Quake 3 compatibility option
-
 } RoqContext;
 
 #define RoQ_INFO              0x1001
