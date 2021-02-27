@@ -97,7 +97,6 @@ AVCodec ff_avrn_decoder = {
     .priv_data_size = sizeof(AVRnContext),
     .init           = init,
     .decode         = decode_frame,
-    .max_lowres     = 3,
     .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
