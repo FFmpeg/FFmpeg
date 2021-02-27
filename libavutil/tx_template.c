@@ -738,7 +738,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
     if (n != 1)
         init_cos_tabs(0);
     if (m != 1) {
-        if ((err = ff_tx_gen_ptwo_revtab(s, n == 1 && !(flags & AV_TX_INPLACE))))
+        if ((err = ff_tx_gen_ptwo_revtab(s, n == 1 && !is_mdct && !(flags & AV_TX_INPLACE))))
             return err;
         if (flags & AV_TX_INPLACE) {
             if (is_mdct) /* In-place MDCTs are not supported yet */
