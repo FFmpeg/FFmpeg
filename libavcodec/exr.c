@@ -420,6 +420,11 @@ static int huf_build_dec_table(EXRContext *s,
             td->run_sym = i;
     }
 
+    if (im > 0)
+        td->run_sym = 0;
+    else if (iM < 65535)
+        td->run_sym = 65535;
+
     if (td->run_sym == -1) {
         avpriv_request_sample(s->avctx, "No place for run symbol");
         return AVERROR_PATCHWELCOME;
