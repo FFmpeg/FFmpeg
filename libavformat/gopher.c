@@ -2,6 +2,7 @@
  * Gopher protocol
  *
  * Copyright (c) 2009 Toshimitsu Kimura
+ * Copyright (c) 2021 parazyd <parazyd@dyne.org>
  *
  * based on libavformat/http.c, Copyright (c) 2000, 2001 Fabrice Bellard
  *
@@ -21,6 +22,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "config.h"
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
@@ -75,19 +78,23 @@ static int gopher_close(URLContext *h)
 static int gopher_open(URLContext *h, const char *uri, int flags)
 {
     GopherContext *s = h->priv_data;
-    char hostname[1024], auth[1024], path[1024], buf[1024];
+    char proto[10], hostname[1024], auth[1024], path[1024], buf[1024];
     int port, err;
+    const char *lower_proto = "tcp";
 
     h->is_streamed = 1;
 
     /* needed in any case to build the host string */
-    av_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-                 path, sizeof(path), uri);
+    av_url_split(proto, sizeof(proto), auth, sizeof(auth),
+                 hostname, sizeof(hostname), &port, path, sizeof(path), uri);
 
     if (port < 0)
         port = 70;
 
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
+    if (!strcmp(proto, "gophers"))
+        lower_proto = "tls";
+
+    ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
 
     s->hd = NULL;
     err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
@@ -110,6 +117,7 @@ static int gopher_read(URLContext *h, uint8_t *buf, int size)
     return len;
 }
 
+#if CONFIG_GOPHER_PROTOCOL
 const URLProtocol ff_gopher_protocol = {
     .name              = "gopher",
     .url_open          = gopher_open,
@@ -120,3 +128,17 @@ const URLProtocol ff_gopher_protocol = {
     .flags             = URL_PROTOCOL_FLAG_NETWORK,
     .default_whitelist = "gopher,tcp"
 };
+#endif /* CONFIG_GOPHER_PROTOCOL */
+
+#if CONFIG_GOPHERS_PROTOCOL
+const URLProtocol ff_gophers_protocol = {
+    .name              = "gophers",
+    .url_open          = gopher_open,
+    .url_read          = gopher_read,
+    .url_write         = gopher_write,
+    .url_close         = gopher_close,
+    .priv_data_size    = sizeof(GopherContext),
+    .flags             = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist = "gopher,gophers,tcp,tls"
+};
+#endif /* CONFIG_GOPHERS_PROTOCOL */

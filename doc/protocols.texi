@@ -341,6 +341,12 @@ operation. ff* tools may produce incomplete content due to server limitations.
 
 Gopher protocol.
 
+@section gophers
+
+Gophers protocol.
+
+The Gopher protocol with TLS encapsulation.
+
 @section hls
 
 Read Apple HTTP Live Streaming compliant segmented stream as

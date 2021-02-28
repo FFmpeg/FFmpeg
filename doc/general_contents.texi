@@ -1371,6 +1371,7 @@ performance on systems without hardware floating point support).
 @item file         @tab X
 @item FTP          @tab X
 @item Gopher       @tab X
+@item Gophers      @tab X
 @item HLS          @tab X
 @item HTTP         @tab X
 @item HTTPS        @tab X

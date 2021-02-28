@@ -81,6 +81,7 @@ version <next>:
 - TTML subtitle encoder and muxer
 - identity video filter
 - msad video filter
+- gophers protocol
 
 
 version 4.3:
