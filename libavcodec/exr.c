@@ -1130,11 +1130,16 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                             t.f = trc_func(t.f);
                             *ptr_x++ = t;
                         }
-                    } else {
+                    } else if (one_gamma != 1.f) {
                         for (x = 0; x < xsize; x++) {
                             t.i = bytestream_get_le32(&src);
                             if (t.f > 0.0f && c < 3)  /* avoid negative values */
                                 t.f = powf(t.f, one_gamma);
+                            *ptr_x++ = t;
+                        }
+                    } else {
+                        for (x = 0; x < xsize; x++) {
+                            t.i = bytestream_get_le32(&src);
                             *ptr_x++ = t;
                         }
                     }
