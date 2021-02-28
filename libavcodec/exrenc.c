@@ -34,6 +34,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "float2half.h"
 
 enum ExrCompr {
     EXR_RAW,
@@ -87,54 +88,11 @@ typedef struct EXRContext {
     uint8_t shifttable[512];
 } EXRContext;
 
-static void half_tables(EXRContext *s)
-{
-    for (int i = 0; i < 256; i++) {
-        int e = i - 127;
-
-        if (e < -24) { // Very small numbers map to zero
-            s->basetable[i|0x000]  = 0x0000;
-            s->basetable[i|0x100]  = 0x8000;
-            s->shifttable[i|0x000] = 24;
-            s->shifttable[i|0x100] = 24;
-        } else if (e < -14) { // Small numbers map to denorms
-            s->basetable[i|0x000] = (0x0400>>(-e-14));
-            s->basetable[i|0x100] = (0x0400>>(-e-14)) | 0x8000;
-            s->shifttable[i|0x000] = -e-1;
-            s->shifttable[i|0x100] = -e-1;
-        } else if (e <= 15) { // Normal numbers just lose precision
-            s->basetable[i|0x000] = ((e + 15) << 10);
-            s->basetable[i|0x100] = ((e + 15) << 10) | 0x8000;
-            s->shifttable[i|0x000] = 13;
-            s->shifttable[i|0x100] = 13;
-        } else if (e < 128) { // Large numbers map to Infinity
-            s->basetable[i|0x000]  = 0x7C00;
-            s->basetable[i|0x100]  = 0xFC00;
-            s->shifttable[i|0x000] = 24;
-            s->shifttable[i|0x100] = 24;
-        } else{ // Infinity and NaN's stay Infinity and NaN's
-            s->basetable[i|0x000]  = 0x7C00;
-            s->basetable[i|0x100]  = 0xFC00;
-            s->shifttable[i|0x000] = 13;
-            s->shifttable[i|0x100] = 13;
-        }
-    }
-}
-
-static uint16_t float2half(EXRContext *s, uint32_t f)
-{
-    uint16_t h;
-
-    h = s->basetable[(f >> 23) & 0x1ff] + ((f & 0x007fffff) >> s->shifttable[(f >> 23) & 0x1ff]);
-
-    return h;
-}
-
 static int encode_init(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
 
-    half_tables(s);
+    float2half_tables(s->basetable, s->shifttable);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GBRPF32:
@@ -290,7 +248,7 @@ static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
                 uint32_t *src = (uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
 
                 for (int x = 0; x < frame->width; x++)
-                    dst[x] = float2half(s, src[x]);
+                    dst[x] = float2half(src[x], s->basetable, s->shifttable);
             }
             break;
         }
@@ -358,7 +316,7 @@ static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
                     uint32_t *src = (uint32_t *)(frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch]);
 
                     for (int x = 0; x < frame->width; x++)
-                        dst[x] = float2half(s, src[x]);
+                        dst[x] = float2half(src[x], s->basetable, s->shifttable);
                 }
             }
             break;
@@ -516,7 +474,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     uint32_t *src = (uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
 
                     for (int x = 0; x < frame->width; x++)
-                        bytestream2_put_le16(pb, float2half(s, src[x]));
+                        bytestream2_put_le16(pb, float2half(src[x], s->basetable, s->shifttable));
                 }
             }
         }
