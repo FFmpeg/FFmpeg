@@ -29,8 +29,6 @@
  *
  * For more information on the OpenEXR format, visit:
  *  http://openexr.com/
- *
- * exr_half2float() is credited to Aaftab Munshi, Dan Ginsburg, Dave Shreiner.
  */
 
 #include <float.h>
@@ -54,6 +52,7 @@
 #include "exrdsp.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "half2float.h"
 #include "mathops.h"
 #include "thread.h"
 
@@ -190,68 +189,11 @@ typedef struct EXRContext {
     enum AVColorTransferCharacteristic apply_trc_type;
     float gamma;
     union av_intfloat32 gamma_table[65536];
+
+    uint32_t mantissatable[2048];
+    uint32_t exponenttable[64];
+    uint16_t offsettable[64];
 } EXRContext;
-
-/* -15 stored using a single precision bias of 127 */
-#define HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP 0x38000000
-
-/* max exponent value in single precision that will be converted
- * to Inf or Nan when stored as a half-float */
-#define HALF_FLOAT_MAX_BIASED_EXP_AS_SINGLE_FP_EXP 0x47800000
-
-/* 255 is the max exponent biased value */
-#define FLOAT_MAX_BIASED_EXP (0xFF << 23)
-
-#define HALF_FLOAT_MAX_BIASED_EXP (0x1F << 10)
-
-/**
- * Convert a half float as a uint16_t into a full float.
- *
- * @param hf half float as uint16_t
- *
- * @return float value
- */
-static union av_intfloat32 exr_half2float(uint16_t hf)
-{
-    unsigned int sign = (unsigned int) (hf >> 15);
-    unsigned int mantissa = (unsigned int) (hf & ((1 << 10) - 1));
-    unsigned int exp = (unsigned int) (hf & HALF_FLOAT_MAX_BIASED_EXP);
-    union av_intfloat32 f;
-
-    if (exp == HALF_FLOAT_MAX_BIASED_EXP) {
-        // we have a half-float NaN or Inf
-        // half-float NaNs will be converted to a single precision NaN
-        // half-float Infs will be converted to a single precision Inf
-        exp = FLOAT_MAX_BIASED_EXP;
-        mantissa <<= 13; // preserve half-float NaN bits if set
-    } else if (exp == 0x0) {
-        // convert half-float zero/denorm to single precision value
-        if (mantissa) {
-            mantissa <<= 1;
-            exp = HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-            // check for leading 1 in denorm mantissa
-            while (!(mantissa & (1 << 10))) {
-                // for every leading 0, decrement single precision exponent by 1
-                // and shift half-float mantissa value to the left
-                mantissa <<= 1;
-                exp -= (1 << 23);
-            }
-            // clamp the mantissa to 10 bits
-            mantissa &= ((1 << 10) - 1);
-            // shift left to generate single-precision mantissa of 23 bits
-            mantissa <<= 13;
-        }
-    } else {
-        // shift left to generate single-precision mantissa of 23 bits
-        mantissa <<= 13;
-        // generate single precision biased exponent value
-        exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
-    }
-
-    f.i = (sign << 31) | exp | mantissa;
-
-    return f;
-}
 
 static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
@@ -951,7 +893,10 @@ static int ac_uncompress(EXRContext *s, GetByteContext *gb, float *block)
             n += val & 0xff;
         } else {
             ret = n;
-            block[ff_zigzag_direct[n]] = exr_half2float(val).f;
+            block[ff_zigzag_direct[n]] = av_int2float(half2float(val,
+                                                      s->mantissatable,
+                                                      s->exponenttable,
+                                                      s->offsettable));
             n++;
         }
     }
@@ -1161,10 +1106,12 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
                 float *block = td->block[j];
                 const int idx = (x >> 3) + (y >> 3) * dc_w + dc_w * dc_h * j;
                 uint16_t *dc = (uint16_t *)td->dc_data;
-                float dc_val = dc[idx];
+                union av_intfloat32 dc_val;
 
-                dc_val = exr_half2float(dc_val).f;
-                block[0] = dc_val;
+                dc_val.i = half2float(dc[idx], s->mantissatable,
+                                      s->exponenttable, s->offsettable);
+
+                block[0] = dc_val.f;
                 ac_uncompress(s, &agb, block);
                 dct_inverse(block);
             }
@@ -1209,8 +1156,11 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
         uint8_t *ai0 = td->rle_raw_data + y * td->xsize;
         uint8_t *ai1 = td->rle_raw_data + y * td->xsize + rle_raw_size / 2;
 
-        for (int x = 0; x < td->xsize; x++)
-            ao[x] = exr_half2float(ai0[x] | (ai1[x] << 8)).i;
+        for (int x = 0; x < td->xsize; x++) {
+            uint16_t ha = ai0[x] | (ai1[x] << 8);
+
+            ao[x] = half2float(ha, s->mantissatable, s->exponenttable, s->offsettable);
+        }
     }
 
     return 0;
@@ -1455,7 +1405,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         }
                     } else {
                         for (x = 0; x < xsize; x++) {
-                            *ptr_x++ = exr_half2float(bytestream_get_le16(&src));
+                            ptr_x[0].i = half2float(bytestream_get_le16(&src),
+                                                    s->mantissatable,
+                                                    s->exponenttable,
+                                                    s->offsettable);
+                            ptr_x++;
                         }
                     }
                 }
@@ -2242,6 +2196,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     float one_gamma = 1.0f / s->gamma;
     avpriv_trc_function trc_func = NULL;
 
+    half2float_table(s->mantissatable, s->exponenttable, s->offsettable);
+
     s->avctx              = avctx;
 
     ff_exrdsp_init(&s->dsp);
@@ -2253,18 +2209,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
     trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
     if (trc_func) {
         for (i = 0; i < 65536; ++i) {
-            t = exr_half2float(i);
+            t.i = half2float(i, s->mantissatable, s->exponenttable, s->offsettable);
             t.f = trc_func(t.f);
             s->gamma_table[i] = t;
         }
     } else {
         if (one_gamma > 0.9999f && one_gamma < 1.0001f) {
             for (i = 0; i < 65536; ++i) {
-                s->gamma_table[i] = exr_half2float(i);
+                s->gamma_table[i].i = half2float(i, s->mantissatable, s->exponenttable, s->offsettable);
             }
         } else {
             for (i = 0; i < 65536; ++i) {
-                t = exr_half2float(i);
+                t.i = half2float(i, s->mantissatable, s->exponenttable, s->offsettable);
                 /* If negative value we reuse half value */
                 if (t.f <= 0.0f) {
                     s->gamma_table[i] = t;
