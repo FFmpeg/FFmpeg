@@ -110,13 +110,13 @@ static int gopher_read(URLContext *h, uint8_t *buf, int size)
     return len;
 }
 
-
 const URLProtocol ff_gopher_protocol = {
-    .name           = "gopher",
-    .url_open       = gopher_open,
-    .url_read       = gopher_read,
-    .url_write      = gopher_write,
-    .url_close      = gopher_close,
-    .priv_data_size = sizeof(GopherContext),
-    .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .name              = "gopher",
+    .url_open          = gopher_open,
+    .url_read          = gopher_read,
+    .url_write         = gopher_write,
+    .url_close         = gopher_close,
+    .priv_data_size    = sizeof(GopherContext),
+    .flags             = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist = "gopher,tcp"
 };
