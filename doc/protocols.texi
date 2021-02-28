@@ -696,6 +696,35 @@ Example usage:
 -f rtp_mpegts -fec prompeg=l=8:d=4 rtp://@var{hostname}:@var{port}
 @end example
 
+@section rist
+
+Reliable Internet Streaming Transport protocol
+
+The accepted options are:
+@table @option
+@item rist_profile
+Supported values:
+@table @samp
+@item simple
+@item main
+This one is default.
+@item advanced
+@end table
+
+@item buffer_size
+Set internal RIST buffer size for retransmission of data.
+
+@item log_level
+Set loglevel for RIST logging messages.
+
+@item secret
+Set override of encryption secret, by default is unset.
+
+@item encryption
+Set encryption type, by default is disabled.
+Acceptable values are 128 and 256.
+@end table
+
 @section rtmp
 
 Real-Time Messaging Protocol.

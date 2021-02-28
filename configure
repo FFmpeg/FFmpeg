@@ -259,6 +259,7 @@ External library support:
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librabbitmq     enable RabbitMQ library [no]
   --enable-librav1e        enable AV1 encoding via rav1e [no]
+  --enable-librist         enable RIST via librist [no]
   --enable-librsvg         enable SVG rasterization via librsvg [no]
   --enable-librubberband   enable rubberband needed for rubberband filter [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
@@ -1797,6 +1798,7 @@ EXTERNAL_LIBRARY_LIST="
     libpulse
     librabbitmq
     librav1e
+    librist
     librsvg
     librtmp
     libshine
@@ -3491,6 +3493,8 @@ unix_protocol_select="network"
 # external library protocols
 libamqp_protocol_deps="librabbitmq"
 libamqp_protocol_select="network"
+librist_protocol_deps="librist"
+librist_protocol_select="network"
 librtmp_protocol_deps="librtmp"
 librtmpe_protocol_deps="librtmp"
 librtmps_protocol_deps="librtmp"
@@ -6410,6 +6414,7 @@ enabled libopus           && {
 enabled libpulse          && require_pkg_config libpulse libpulse pulse/pulseaudio.h pa_context_new
 enabled librabbitmq       && require_pkg_config librabbitmq "librabbitmq >= 0.7.1" amqp.h amqp_new_connection
 enabled librav1e          && require_pkg_config librav1e "rav1e >= 0.4.0" rav1e.h rav1e_context_new
+enabled librist           && require_pkg_config librist "librist >= 0.2" librist/librist.h rist_receiver_create
 enabled librsvg           && require_pkg_config librsvg librsvg-2.0 librsvg-2.0/librsvg/rsvg.h rsvg_handle_render_cairo
 enabled librtmp           && require_pkg_config librtmp librtmp librtmp/rtmp.h RTMP_Socket
 enabled librubberband     && require_pkg_config librubberband "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new -lstdc++ && append librubberband_extralibs "-lstdc++"
