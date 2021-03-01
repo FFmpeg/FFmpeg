@@ -76,7 +76,7 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
                 return AV_PIX_FMT_0RGB32;
         }
     }
-    return avpriv_find_pix_fmt(avpriv_get_raw_pix_fmt_tags(), biCompression); // all others
+    return avpriv_pix_fmt_find(PIX_FMT_LIST_RAW, biCompression); // all others
 }
 
 static enum AVColorRange dshow_color_range(DXVA2_ExtendedFormat *fmt_info)
