@@ -28,6 +28,7 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
@@ -147,8 +148,7 @@ typedef struct AVCodecInternal {
      * for decoding.
      */
     AVPacket *last_pkt_props;
-    AVPacketList *pkt_props;
-    AVPacketList *pkt_props_tail;
+    AVFifoBuffer *pkt_props;
 
     /**
      * temporary buffer used for encoders to store their bitstream

@@ -50,7 +50,6 @@
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
-#include "packet_internal.h"
 #include "put_bits.h"
 #include "raw.h"
 #include "bytestream.h"
@@ -594,9 +593,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     avci->es.in_frame = av_frame_alloc();
     avci->ds.in_pkt = av_packet_alloc();
     avci->last_pkt_props = av_packet_alloc();
+    avci->pkt_props = av_fifo_alloc(sizeof(*avci->last_pkt_props));
     if (!avci->buffer_frame || !avci->buffer_pkt          ||
         !avci->es.in_frame  || !avci->ds.in_pkt           ||
-        !avci->last_pkt_props) {
+        !avci->last_pkt_props || !avci->pkt_props) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
@@ -1077,7 +1077,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     av_frame_free(&avci->buffer_frame);
     av_packet_free(&avci->buffer_pkt);
-    av_packet_free(&avci->last_pkt_props);
+    av_fifo_freep(&avci->pkt_props);
 
     av_packet_free(&avci->ds.in_pkt);
     av_frame_free(&avci->es.in_frame);
@@ -1120,8 +1120,13 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     av_packet_unref(avci->buffer_pkt);
 
     av_packet_unref(avci->last_pkt_props);
-    avpriv_packet_list_free(&avci->pkt_props,
-                            &avci->pkt_props_tail);
+    while (av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props)) {
+        av_fifo_generic_read(avci->pkt_props,
+                             avci->last_pkt_props, sizeof(*avci->last_pkt_props),
+                             NULL);
+        av_packet_unref(avci->last_pkt_props);
+    }
+    av_fifo_reset(avci->pkt_props);
 
     av_frame_unref(avci->es.in_frame);
     av_packet_unref(avci->ds.in_pkt);
@@ -1189,9 +1194,17 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 #endif
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
+        av_packet_unref(avctx->internal->last_pkt_props);
+        while (av_fifo_size(avctx->internal->pkt_props) >=
+               sizeof(*avctx->internal->last_pkt_props)) {
+            av_fifo_generic_read(avctx->internal->pkt_props,
+                                 avctx->internal->last_pkt_props,
+                                 sizeof(*avctx->internal->last_pkt_props),
+                                 NULL);
+            av_packet_unref(avctx->internal->last_pkt_props);
+        }
         av_packet_free(&avctx->internal->last_pkt_props);
-        avpriv_packet_list_free(&avctx->internal->pkt_props,
-                                &avctx->internal->pkt_props_tail);
+        av_fifo_freep(&avctx->internal->pkt_props);
 
         av_packet_free(&avctx->internal->ds.in_pkt);
         av_frame_free(&avctx->internal->es.in_frame);
