@@ -2258,7 +2258,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         AVStereo3D* stereo_3d = (AVStereo3D*) av_stream_get_side_data(track->st, AV_PKT_DATA_STEREO3D, NULL);
         AVSphericalMapping* spherical_mapping = (AVSphericalMapping*)av_stream_get_side_data(track->st, AV_PKT_DATA_SPHERICAL, NULL);
         AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)
-                                                 av_stream_get_side_data(track->st, AV_PKT_DATA_DOVI_CONF, NULL);;
+                                                 av_stream_get_side_data(track->st, AV_PKT_DATA_DOVI_CONF, NULL);
 
         if (stereo_3d)
             mov_write_st3d_tag(s, pb, stereo_3d);

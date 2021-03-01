@@ -187,7 +187,7 @@ static int draw_gradients_slice(AVFilterContext *ctx, void *arg, int job, int nb
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y);
-            dst[x] = lerp_colors(s->color_rgba, s->nb_colors, factor);;
+            dst[x] = lerp_colors(s->color_rgba, s->nb_colors, factor);
         }
 
         dst += linesize;
@@ -210,7 +210,7 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y);
-            dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, factor);;
+            dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, factor);
         }
 
         dst += linesize;

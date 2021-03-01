@@ -966,7 +966,7 @@ static double coef_sf2zf(double *a, int N, int n)
         for (int k = FFMAX(n - N + i, 0); k <= FFMIN(i, n); k++) {
             acc += ((fact(i) * fact(N - i)) /
                     (fact(k) * fact(i - k) * fact(n - k) * fact(N - i - n + k))) *
-                   ((k & 1) ? -1. : 1.);;
+                   ((k & 1) ? -1. : 1.);
         }
 
         z += a[i] * pow(2., i) * acc;

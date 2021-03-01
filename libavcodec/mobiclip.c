@@ -544,7 +544,7 @@ static uint8_t half(int a, int b)
 
 static uint8_t half3(int a, int b, int c)
 {
-    return ((a + b + b + c) * 2 / 4 + 1) / 2;;
+    return ((a + b + b + c) * 2 / 4 + 1) / 2;
 }
 
 static uint8_t pick_above(BlockXY bxy)

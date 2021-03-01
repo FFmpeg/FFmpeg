@@ -1151,7 +1151,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         }
                     } else {
                         for (x = 0; x < xsize; x++) {
-                            *ptr_x++ = exr_half2float(bytestream_get_le16(&src));;
+                            *ptr_x++ = exr_half2float(bytestream_get_le16(&src));
                         }
                     }
                 }

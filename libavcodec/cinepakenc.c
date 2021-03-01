@@ -182,7 +182,7 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     if (!(s->codebook_closest = av_malloc_array((avctx->width * avctx->height) >> 2, sizeof(*s->codebook_closest))))
-        return AVERROR(ENOMEM);;
+        return AVERROR(ENOMEM);
 
     for (x = 0; x < (avctx->pix_fmt == AV_PIX_FMT_RGB24 ? 4 : 3); x++)
         if (!(s->pict_bufs[x] = av_malloc((avctx->pix_fmt == AV_PIX_FMT_RGB24 ? 6 : 4) * (avctx->width * avctx->height) >> 2)))
