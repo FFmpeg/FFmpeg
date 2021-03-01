@@ -1016,6 +1016,10 @@ static int read_block(ALSDecContext *ctx, ALSBlockData *bd)
     ALSSpecificConfig *sconf = &ctx->sconf;
 
     *bd->shift_lsbs = 0;
+
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
+
     // read block type flag and read the samples accordingly
     if (get_bits1(gb)) {
         ret = read_var_block_data(ctx, bd);
