@@ -756,8 +756,8 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     input.data = (float *)TF_TensorData(input_tensor);
 
     if (do_ioproc) {
-        if (tf_model->model->pre_proc != NULL) {
-            tf_model->model->pre_proc(in_frame, &input, tf_model->model->filter_ctx);
+        if (tf_model->model->frame_pre_proc != NULL) {
+            tf_model->model->frame_pre_proc(in_frame, &input, tf_model->model->filter_ctx);
         } else {
             ff_proc_from_frame_to_dnn(in_frame, &input, tf_model->model->func_type, ctx);
         }
@@ -818,8 +818,8 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
         output.dt = TF_TensorType(output_tensors[i]);
 
         if (do_ioproc) {
-            if (tf_model->model->post_proc != NULL) {
-                tf_model->model->post_proc(out_frame, &output, tf_model->model->filter_ctx);
+            if (tf_model->model->frame_post_proc != NULL) {
+                tf_model->model->frame_post_proc(out_frame, &output, tf_model->model->filter_ctx);
             } else {
                 ff_proc_from_dnn_to_frame(out_frame, &output, ctx);
             }

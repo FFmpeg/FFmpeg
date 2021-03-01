@@ -166,8 +166,8 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
     for (int i = 0; i < request->task_count; ++i) {
         task = request->tasks[i];
         if (task->do_ioproc) {
-            if (ov_model->model->pre_proc != NULL) {
-                ov_model->model->pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
+            if (ov_model->model->frame_pre_proc != NULL) {
+                ov_model->model->frame_pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
             } else {
                 ff_proc_from_frame_to_dnn(task->in_frame, &input, ov_model->model->func_type, ctx);
             }
@@ -237,8 +237,8 @@ static void infer_completion_callback(void *args)
     for (int i = 0; i < request->task_count; ++i) {
         task = request->tasks[i];
         if (task->do_ioproc) {
-            if (task->ov_model->model->post_proc != NULL) {
-                task->ov_model->model->post_proc(task->out_frame, &output, task->ov_model->model->filter_ctx);
+            if (task->ov_model->model->frame_post_proc != NULL) {
+                task->ov_model->model->frame_post_proc(task->out_frame, &output, task->ov_model->model->filter_ctx);
             } else {
                 ff_proc_from_dnn_to_frame(task->out_frame, &output, ctx);
             }

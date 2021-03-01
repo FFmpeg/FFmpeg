@@ -310,8 +310,8 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
     input.data = oprd->data;
     input.dt = oprd->data_type;
     if (do_ioproc) {
-        if (native_model->model->pre_proc != NULL) {
-            native_model->model->pre_proc(in_frame, &input, native_model->model->filter_ctx);
+        if (native_model->model->frame_pre_proc != NULL) {
+            native_model->model->frame_pre_proc(in_frame, &input, native_model->model->filter_ctx);
         } else {
             ff_proc_from_frame_to_dnn(in_frame, &input, native_model->model->func_type, ctx);
         }
@@ -358,8 +358,8 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
         output.dt = oprd->data_type;
 
         if (do_ioproc) {
-            if (native_model->model->post_proc != NULL) {
-                native_model->model->post_proc(out_frame, &output, native_model->model->filter_ctx);
+            if (native_model->model->frame_post_proc != NULL) {
+                native_model->model->frame_post_proc(out_frame, &output, native_model->model->filter_ctx);
             } else {
                 ff_proc_from_dnn_to_frame(out_frame, &output, ctx);
             }
