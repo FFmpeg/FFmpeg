@@ -96,8 +96,8 @@ char *av_timecode_make_string(const AVTimecode *tc, char *buf, int framenum)
     }
     ff = framenum % fps;
     ss = framenum / fps        % 60;
-    mm = framenum / (fps*60)   % 60;
-    hh = framenum / (fps*3600);
+    mm = framenum / (fps*60LL) % 60;
+    hh = framenum / (fps*3600LL);
     if (tc->flags & AV_TIMECODE_FLAG_24HOURSMAX)
         hh = hh % 24;
     snprintf(buf, AV_TIMECODE_STR_SIZE, "%s%02d:%02d:%02d%c%02d",
