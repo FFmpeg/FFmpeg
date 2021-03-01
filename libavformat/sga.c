@@ -75,9 +75,11 @@ static int sga_probe(const AVProbeData *p)
         if (last_left < 0)
             return 0;
         if (sectors && header && last_left == 0) {
-            if (left <= 8)
-                return 0;
-            last_left = left;
+            if (header >> 12) {
+                last_left = left;
+            } else {
+                last_left = left = header;
+            }
         } else if (sectors && header) {
             left = header;
             last_left -= left;
