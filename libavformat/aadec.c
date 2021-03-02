@@ -72,8 +72,8 @@ static int get_second_size(char *codec_name)
 static int aa_read_header(AVFormatContext *s)
 {
     int i, j, idx, largest_idx = -1;
-    uint32_t nkey, nval, toc_size, npairs, header_seed = 0, start;
-    char key[128], val[128], codec_name[64] = {0};
+    uint32_t toc_size, npairs, header_seed = 0, start;
+    char codec_name[64] = {0};
     uint8_t output[24], dst[8], src[8];
     int64_t largest_size = -1, current_size = -1, chapter_pos;
     struct toc_entry {
@@ -104,8 +104,9 @@ static int aa_read_header(AVFormatContext *s)
     if (npairs > MAX_DICTIONARY_ENTRIES)
         return AVERROR_INVALIDDATA;
     for (i = 0; i < npairs; i++) {
-        memset(val, 0, sizeof(val));
-        memset(key, 0, sizeof(key));
+        char key[128], val[128];
+        uint32_t nkey, nval;
+
         avio_skip(pb, 1); // unidentified integer
         nkey = avio_rb32(pb); // key string length
         nval = avio_rb32(pb); // value string length
