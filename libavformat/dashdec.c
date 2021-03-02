@@ -1042,7 +1042,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     if (rep->fragment_duration > 0 && !rep->fragment_timescale)
         rep->fragment_timescale = 1;
     rep->bandwidth = rep_bandwidth_val ? atoi(rep_bandwidth_val) : 0;
-    strncpy(rep->id, rep_id_val ? rep_id_val : "", sizeof(rep->id));
+    if (rep_id_val)
+        av_strlcpy(rep->id, rep_id_val, sizeof(rep->id));
     rep->framerate = av_make_q(0, 0);
     if (type == AVMEDIA_TYPE_VIDEO) {
         char *rep_framerate_val = xmlGetProp(representation_node, "frameRate");
