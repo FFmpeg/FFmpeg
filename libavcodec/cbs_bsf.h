@@ -19,7 +19,13 @@
 #ifndef AVCODEC_CBS_BSF_H
 #define AVCODEC_CBS_BSF_H
 
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
+
+#include "bsf.h"
+#include "codec_id.h"
 #include "cbs.h"
+#include "packet.h"
 
 
 typedef struct CBSBSFType {
