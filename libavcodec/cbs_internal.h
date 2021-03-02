@@ -19,8 +19,13 @@
 #ifndef AVCODEC_CBS_INTERNAL_H
 #define AVCODEC_CBS_INTERNAL_H
 
-#include "avcodec.h"
+#include <stdint.h>
+
+#include "libavutil/buffer.h"
+#include "libavutil/log.h"
+
 #include "cbs.h"
+#include "codec_id.h"
 #include "get_bits.h"
 #include "put_bits.h"
 
