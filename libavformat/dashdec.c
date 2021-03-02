@@ -2039,6 +2039,14 @@ static int copy_init_section(struct representation *rep_dest, struct representat
 
 static int dash_close(AVFormatContext *s);
 
+static void move_metadata(AVStream *st, const char *key, char **value)
+{
+    if (*value) {
+        av_dict_set(&st->metadata, key, *value, AV_DICT_DONT_STRDUP_VAL);
+        *value = NULL;
+    }
+}
+
 static int dash_read_header(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
@@ -2137,8 +2145,7 @@ static int dash_read_header(AVFormatContext *s)
         rep->assoc_stream = s->streams[rep->stream_index];
         if (rep->bandwidth > 0)
             av_dict_set_int(&rep->assoc_stream->metadata, "variant_bitrate", rep->bandwidth, 0);
-        if (rep->id)
-            av_dict_set(&rep->assoc_stream->metadata, "id", rep->id, 0);
+        move_metadata(rep->assoc_stream, "id", &rep->id);
     }
     for (i = 0; i < c->n_audios; i++) {
         rep = c->audios[i];
@@ -2146,23 +2153,15 @@ static int dash_read_header(AVFormatContext *s)
         rep->assoc_stream = s->streams[rep->stream_index];
         if (rep->bandwidth > 0)
             av_dict_set_int(&rep->assoc_stream->metadata, "variant_bitrate", rep->bandwidth, 0);
-        if (rep->id)
-            av_dict_set(&rep->assoc_stream->metadata, "id", rep->id, 0);
-        if (rep->lang) {
-            av_dict_set(&rep->assoc_stream->metadata, "language", rep->lang, 0);
-            av_freep(&rep->lang);
-        }
+        move_metadata(rep->assoc_stream, "id", &rep->id);
+        move_metadata(rep->assoc_stream, "language", &rep->lang);
     }
     for (i = 0; i < c->n_subtitles; i++) {
         rep = c->subtitles[i];
         av_program_add_stream_index(s, 0, rep->stream_index);
         rep->assoc_stream = s->streams[rep->stream_index];
-        if (rep->id)
-            av_dict_set(&rep->assoc_stream->metadata, "id", rep->id, 0);
-        if (rep->lang) {
-            av_dict_set(&rep->assoc_stream->metadata, "language", rep->lang, 0);
-            av_freep(&rep->lang);
-        }
+        move_metadata(rep->assoc_stream, "id", &rep->id);
+        move_metadata(rep->assoc_stream, "language", &rep->lang);
     }
 
     return 0;
