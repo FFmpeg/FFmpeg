@@ -25,6 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
+#include "avcodec.h"
 #include "cbs.h"
 #include "cbs_internal.h"
 

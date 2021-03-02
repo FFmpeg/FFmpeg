@@ -24,7 +24,9 @@
 
 #include "libavutil/buffer.h"
 
-#include "avcodec.h"
+#include "codec_id.h"
+#include "codec_par.h"
+#include "packet.h"
 
 
 /*
@@ -40,6 +42,7 @@
  * bitstream.
  */
 
+struct AVCodecContext;
 struct CodedBitstreamType;
 
 /**
@@ -271,7 +274,7 @@ int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
  */
 int ff_cbs_read_extradata_from_codec(CodedBitstreamContext *ctx,
                                      CodedBitstreamFragment *frag,
-                                     const AVCodecContext *avctx);
+                                     const struct AVCodecContext *avctx);
 
 /**
  * Read the data bitstream from a packet into a fragment, then
