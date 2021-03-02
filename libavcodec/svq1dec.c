@@ -65,6 +65,9 @@ typedef struct SVQ1Context {
     uint8_t *pkt_swapped;
     int pkt_swapped_allocated;
 
+    svq1_pmv *pmv;
+    int pmv_allocated;
+
     int width;
     int height;
     int frame_code;
@@ -622,7 +625,6 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame       *cur = data;
     uint8_t *current;
     int result, i, x, y, width, height;
-    svq1_pmv *pmv;
     int ret;
 
     /* initialize bit buffer */
@@ -682,8 +684,8 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     if (result < 0)
         return result;
 
-    pmv = av_malloc_array(FFALIGN(s->width, 16) / 8 + 3, sizeof(*pmv));
-    if (!pmv)
+    av_fast_padded_malloc(&s->pmv, &s->pmv_allocated, (FFALIGN(s->width, 16) / 8 + 3) * sizeof(*s->pmv));
+    if (!s->pmv)
         return AVERROR(ENOMEM);
 
     /* decode y, u and v components */
@@ -711,7 +713,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
                         av_log(avctx, AV_LOG_ERROR,
                                "Error in svq1_decode_block %i (keyframe)\n",
                                result);
-                        goto err;
+                        return result;
                     }
                 }
                 current += 16 * linesize;
@@ -722,28 +724,27 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
             if (!previous ||
                 s->prev->width != s->width || s->prev->height != s->height) {
                 av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
-                result = AVERROR_INVALIDDATA;
-                goto err;
+                return AVERROR_INVALIDDATA;
             }
 
-            memset(pmv, 0, ((width / 8) + 3) * sizeof(svq1_pmv));
+            memset(s->pmv, 0, ((width / 8) + 3) * sizeof(svq1_pmv));
 
             for (y = 0; y < height; y += 16) {
                 for (x = 0; x < width; x += 16) {
                     result = svq1_decode_delta_block(avctx, &s->hdsp,
                                                      &s->gb, &current[x],
                                                      previous, linesize,
-                                                     pmv, x, y, width, height);
+                                                     s->pmv, x, y, width, height);
                     if (result != 0) {
                         ff_dlog(avctx,
                                 "Error in svq1_decode_delta_block %i\n",
                                 result);
-                        goto err;
+                        return result;
                     }
                 }
 
-                pmv[0].x     =
-                    pmv[0].y = 0;
+                s->pmv[0].x =
+                s->pmv[0].y = 0;
 
                 current += 16 * linesize;
             }
@@ -754,14 +755,12 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         av_frame_unref(s->prev);
         result = av_frame_ref(s->prev, cur);
         if (result < 0)
-            goto err;
+            return result;
     }
 
     *got_frame = 1;
     result     = buf_size;
 
-err:
-    av_free(pmv);
     return result;
 }
 
@@ -831,6 +830,8 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
     av_frame_free(&s->prev);
     av_freep(&s->pkt_swapped);
     s->pkt_swapped_allocated = 0;
+    av_freep(&s->pmv);
+    s->pmv_allocated = 0;
 
     return 0;
 }
