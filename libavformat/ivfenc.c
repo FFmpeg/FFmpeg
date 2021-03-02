@@ -23,7 +23,7 @@
 
 typedef struct IVFEncContext {
     unsigned frame_cnt;
-    uint64_t last_pts, sum_delta_pts;
+    uint64_t last_pts, sum_delta_pts, last_pkt_duration;
 } IVFEncContext;
 
 static int ivf_init(AVFormatContext *s)
@@ -86,6 +86,7 @@ static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_write(pb, pkt->data, pkt->size);
     if (ctx->frame_cnt)
         ctx->sum_delta_pts += pkt->pts - ctx->last_pts;
+    ctx->last_pkt_duration = pkt->duration;
     ctx->frame_cnt++;
     ctx->last_pts = pkt->pts;
 
@@ -97,12 +98,15 @@ static int ivf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     IVFEncContext *ctx = s->priv_data;
 
-    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && ctx->frame_cnt > 1) {
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+        (ctx->frame_cnt > 1 || (ctx->frame_cnt == 1 && ctx->last_pkt_duration))) {
         int64_t end = avio_tell(pb);
 
         avio_seek(pb, 24, SEEK_SET);
         // overwrite the "length" field (duration)
-        avio_wl32(pb, ctx->frame_cnt * ctx->sum_delta_pts / (ctx->frame_cnt - 1));
+        avio_wl32(pb, ctx->last_pkt_duration ?
+                  ctx->sum_delta_pts + ctx->last_pkt_duration :
+                  ctx->frame_cnt * ctx->sum_delta_pts / (ctx->frame_cnt - 1));
         avio_wl32(pb, 0); // zero out unused bytes
         avio_seek(pb, end, SEEK_SET);
     }
