@@ -51,14 +51,22 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             return AVERROR_EOF;
         voc->remaining_size = avio_rl24(pb);
         if (!voc->remaining_size) {
+            int64_t filesize;
             if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
                 return AVERROR(EIO);
-            voc->remaining_size = avio_size(pb) - avio_tell(pb);
+            filesize = avio_size(pb);
+            if (filesize - avio_tell(pb) > INT_MAX)
+                return AVERROR_INVALIDDATA;
+            voc->remaining_size = filesize - avio_tell(pb);
         }
         max_size -= 4;
 
         switch (type) {
         case VOC_TYPE_VOICE_DATA:
+            if (voc->remaining_size < 2) {
+                voc->remaining_size = 0;
+                return AVERROR_INVALIDDATA;
+            }
             if (!par->sample_rate) {
                 par->sample_rate = 1000000 / (256 - avio_r8(pb));
                 if (sample_rate)
@@ -87,6 +95,10 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             break;
 
         case VOC_TYPE_NEW_VOICE_DATA:
+            if (voc->remaining_size < 12) {
+                voc->remaining_size = 0;
+                return AVERROR_INVALIDDATA;
+            }
             if (!par->sample_rate) {
                 par->sample_rate = avio_rl32(pb);
                 avpriv_set_pts_info(st, 64, 1, par->sample_rate);
