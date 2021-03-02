@@ -82,7 +82,7 @@ struct representation {
     AVFormatContext *ctx;
     int stream_index;
 
-    char id[20];
+    char id[32];
     char *lang;
     int bandwidth;
     AVRational framerate;
