@@ -114,7 +114,7 @@ static int aa_read_header(AVFormatContext *s)
         avio_get_str(pb, nval, val, sizeof(val));
         if (!strcmp(key, "codec")) {
             av_log(s, AV_LOG_DEBUG, "Codec is <%s>\n", val);
-            strncpy(codec_name, val, sizeof(codec_name) - 1);
+            av_strlcpy(codec_name, val, sizeof(codec_name));
         } else if (!strcmp(key, "HeaderSeed")) {
             av_log(s, AV_LOG_DEBUG, "HeaderSeed is <%s>\n", val);
             header_seed = atoi(val);
