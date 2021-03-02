@@ -1797,7 +1797,11 @@ typedef struct AVCodecContext {
      *
      * @deprecated the custom get_buffer2() callback should always be
      *   thread-safe. Thread-unsafe get_buffer2() implementations will be
-     *   invalid once this field is removed.
+     *   invalid starting with LIBAVCODEC_VERSION_MAJOR=60; in other words,
+     *   libavcodec will behave as if this field was always set to 1.
+     *   Callers that want to be forward compatible with future libavcodec
+     *   versions should wrap access to this field in
+     *     #if LIBAVCODEC_VERSION_MAJOR < 60
      */
     attribute_deprecated
     int thread_safe_callbacks;
