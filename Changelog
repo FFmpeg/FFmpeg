@@ -79,6 +79,7 @@ version <next>:
 - Simbiosis IMX demuxer
 - Digital Pictures SGA demuxer and decoders
 - TTML subtitle encoder and muxer
+- identity video filter
 
 
 version 4.3:
