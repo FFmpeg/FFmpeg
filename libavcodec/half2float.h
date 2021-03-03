@@ -23,16 +23,16 @@
 
 static uint32_t convertmantissa(uint32_t i)
 {
-    uint32_t m = i << 13; // Zero pad mantissa bits
-    uint32_t e = 0; // Zero exponent
+    int32_t m = i << 13; // Zero pad mantissa bits
+    int32_t e = 0; // Zero exponent
 
-    while (!(m & 0x00800000UL)){ // While not normalized
-        e -= 0x00800000UL; // Decrement exponent (1<<23)
+    while (!(m & 0x00800000)) { // While not normalized
+        e -= 0x00800000; // Decrement exponent (1<<23)
         m <<= 1; // Shift mantissa
     }
 
-    m &= ~0x00800000UL; // Clear leading 1 bit
-    e +=  0x38800000UL; // Adjust bias ((127-14)<<23)
+    m &= ~0x00800000; // Clear leading 1 bit
+    e +=  0x38800000; // Adjust bias ((127-14)<<23)
 
     return m | e; // Return combined number
 }
