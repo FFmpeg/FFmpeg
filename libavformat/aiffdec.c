@@ -286,6 +286,8 @@ static int aiff_read_header(AVFormatContext *s)
             get_meta(s, "comment"  , size);
             break;
         case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
+            if (size < 8)
+                return AVERROR_INVALIDDATA;
             aiff->data_end = avio_tell(pb) + size;
             offset = avio_rb32(pb);      /* Offset of sound data */
             avio_rb32(pb);               /* BlockSize... don't care */
