@@ -1151,6 +1151,8 @@ static void video_audio_display(VideoState *s)
         if (realloc_texture(&s->vis_texture, SDL_PIXELFORMAT_ARGB8888, s->width, s->height, SDL_BLENDMODE_NONE, 1) < 0)
             return;
 
+        if (s->xpos >= s->width)
+            s->xpos = 0;
         nb_display_channels= FFMIN(nb_display_channels, 2);
         if (rdft_bits != s->rdft_bits) {
             av_rdft_end(s->rdft);
@@ -1200,8 +1202,6 @@ static void video_audio_display(VideoState *s)
         }
         if (!s->paused)
             s->xpos++;
-        if (s->xpos >= s->width)
-            s->xpos= s->xleft;
     }
 }
 
