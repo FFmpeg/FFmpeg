@@ -46,7 +46,7 @@ static void float2half_tables(uint16_t *basetable, uint8_t *shifttable)
             basetable[i|0x100]  = 0xFC00;
             shifttable[i|0x000] = 24;
             shifttable[i|0x100] = 24;
-        } else{ // Infinity and NaN's stay Infinity and NaN's
+        } else { // Infinity and NaN's stay Infinity and NaN's
             basetable[i|0x000]  = 0x7C00;
             basetable[i|0x100]  = 0xFC00;
             shifttable[i|0x000] = 13;
