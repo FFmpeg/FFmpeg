@@ -32,6 +32,7 @@
 #include "framesync.h"
 #include "internal.h"
 #include "video.h"
+#include "scene_sad.h"
 
 typedef struct IdentityContext {
     const AVClass *class;
@@ -39,7 +40,9 @@ typedef struct IdentityContext {
     double score, min_score, max_score, score_comp[4];
     uint64_t nb_frames;
     int is_rgb;
+    int is_msad;
     uint8_t rgba_map[4];
+    int max[4];
     char comps[4];
     int nb_components;
     int nb_threads;
@@ -47,16 +50,13 @@ typedef struct IdentityContext {
     int planeheight[4];
     uint64_t **scores;
     unsigned (*filter_line)(const uint8_t *buf, const uint8_t *ref, int w);
+    int (*filter_slice)(AVFilterContext *ctx, void *arg,
+                        int jobnr, int nb_jobs);
+    ff_scene_sad_fn sad;
 } IdentityContext;
 
 #define OFFSET(x) offsetof(IdentityContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
-
-static const AVOption identity_options[] = {
-    { NULL }
-};
-
-FRAMESYNC_DEFINE_CLASS(identity, IdentityContext, fs);
 
 static unsigned identity_line_8bit(const uint8_t *main_line,  const uint8_t *ref_line, int outw)
 {
@@ -92,6 +92,34 @@ typedef struct ThreadData {
 } ThreadData;
 
 static
+int compute_images_msad(AVFilterContext *ctx, void *arg,
+                        int jobnr, int nb_jobs)
+{
+    IdentityContext *s = ctx->priv;
+    ThreadData *td = arg;
+    uint64_t *score = td->score[jobnr];
+
+    for (int c = 0; c < td->nb_components; c++) {
+        const int outw = td->planewidth[c];
+        const int outh = td->planeheight[c];
+        const int slice_start = (outh * jobnr) / nb_jobs;
+        const int slice_end = (outh * (jobnr+1)) / nb_jobs;
+        const int ref_linesize = td->ref_linesize[c];
+        const int main_linesize = td->main_linesize[c];
+        const uint8_t *main_line = td->main_data[c] + main_linesize * slice_start;
+        const uint8_t *ref_line = td->ref_data[c] + ref_linesize * slice_start;
+        uint64_t m = 0;
+
+        s->sad(main_line, main_linesize, ref_line, ref_linesize,
+               outw, slice_end - slice_start, &m);
+
+        score[c] = m;
+    }
+
+    return 0;
+}
+
+static
 int compute_images_identity(AVFilterContext *ctx, void *arg,
                             int jobnr, int nb_jobs)
 {
@@ -121,16 +149,21 @@ int compute_images_identity(AVFilterContext *ctx, void *arg,
     return 0;
 }
 
-static void set_meta(AVDictionary **metadata, const char *key, char comp, float d)
+static void set_meta(AVFilterContext *ctx,
+                     AVDictionary **metadata, const char *key, char comp, float d)
 {
     char value[128];
     snprintf(value, sizeof(value), "%f", d);
     if (comp) {
         char key2[128];
-        snprintf(key2, sizeof(key2), "%s%c", key, comp);
+        snprintf(key2, sizeof(key2), "lavfi.%s.%s%s%c",
+                 ctx->filter->name, ctx->filter->name, key, comp);
         av_dict_set(metadata, key2, value, 0);
     } else {
-        av_dict_set(metadata, key, value, 0);
+        char key2[128];
+        snprintf(key2, sizeof(key2), "lavfi.%s.%s%s",
+                 ctx->filter->name, ctx->filter->name, key);
+        av_dict_set(metadata, key2, value, 0);
     }
 }
 
@@ -139,7 +172,7 @@ static int do_identity(FFFrameSync *fs)
     AVFilterContext *ctx = fs->parent;
     IdentityContext *s = ctx->priv;
     AVFrame *master, *ref;
-    double comp_identity[4], score = 0.;
+    double comp_score[4], score = 0.;
     uint64_t comp_sum[4] = { 0 };
     AVDictionary **metadata;
     ThreadData td;
@@ -163,7 +196,7 @@ static int do_identity(FFFrameSync *fs)
         td.planeheight[c] = s->planeheight[c];
     }
 
-    ctx->internal->execute(ctx, compute_images_identity, &td, NULL, FFMIN(s->planeheight[1], s->nb_threads));
+    ctx->internal->execute(ctx, s->filter_slice, &td, NULL, FFMIN(s->planeheight[1], s->nb_threads));
 
     for (int j = 0; j < s->nb_threads; j++) {
         for (int c = 0; c < s->nb_components; c++)
@@ -171,10 +204,13 @@ static int do_identity(FFFrameSync *fs)
     }
 
     for (int c = 0; c < s->nb_components; c++)
-        comp_identity[c] = comp_sum[c] / ((double)s->planewidth[c] * s->planeheight[c]);
+        comp_score[c] = comp_sum[c] / ((double)s->planewidth[c] * s->planeheight[c]);
+
+    for (int c = 0; c < s->nb_components && s->is_msad; c++)
+        comp_score[c] /= (double)s->max[c];
 
     for (int c = 0; c < s->nb_components; c++)
-        score += comp_identity[c];
+        score += comp_score[c];
     score /= s->nb_components;
 
     s->min_score = FFMIN(s->min_score, score);
@@ -183,14 +219,14 @@ static int do_identity(FFFrameSync *fs)
     s->score += score;
 
     for (int j = 0; j < s->nb_components; j++)
-        s->score_comp[j] += comp_identity[j];
+        s->score_comp[j] += comp_score[j];
     s->nb_frames++;
 
     for (int j = 0; j < s->nb_components; j++) {
         int c = s->is_rgb ? s->rgba_map[j] : j;
-        set_meta(metadata, "lavfi.identity.identity.", s->comps[j], comp_identity[c]);
+        set_meta(ctx, metadata, ".", s->comps[j], comp_score[c]);
     }
-    set_meta(metadata, "lavfi.identity.identity_avg", 0, score);
+    set_meta(ctx, metadata, "_avg", 0, score);
 
     return ff_filter_frame(ctx->outputs[0], master);
 }
@@ -269,7 +305,18 @@ static int config_input_ref(AVFilterLink *inlink)
     s->min_score = +INFINITY;
     s->max_score = -INFINITY;
 
+    s->max[0] = (1 << desc->comp[0].depth) - 1;
+    s->max[1] = (1 << desc->comp[1].depth) - 1;
+    s->max[2] = (1 << desc->comp[2].depth) - 1;
+    s->max[3] = (1 << desc->comp[3].depth) - 1;
+
+    s->is_msad = !strcmp(ctx->filter->name, "msad");
+    s->filter_slice = !s->is_msad ? compute_images_identity : compute_images_msad;
     s->filter_line = desc->comp[0].depth > 8 ? identity_line_16bit : identity_line_8bit;
+
+    s->sad = ff_scene_sad_get_fn(desc->comp[0].depth <= 8 ? 8 : 16);
+    if (!s->sad)
+        return AVERROR(EINVAL);
 
     return 0;
 }
@@ -322,7 +369,8 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_strlcatf(buf, sizeof(buf), " %c:%f", s->comps[j], s->score_comp[c] / s->nb_frames);
         }
 
-        av_log(ctx, AV_LOG_INFO, "Identity%s average:%f min:%f max:%f\n",
+        av_log(ctx, AV_LOG_INFO, "%s%s average:%f min:%f max:%f\n",
+               ctx->filter->name,
                buf,
                s->score / s->nb_frames,
                s->min_score,
@@ -356,6 +404,15 @@ static const AVFilterPad identity_outputs[] = {
     { NULL }
 };
 
+static const AVOption options[] = {
+    { NULL }
+};
+
+#if CONFIG_IDENTITY_FILTER
+
+#define identity_options options
+FRAMESYNC_DEFINE_CLASS(identity, IdentityContext, fs);
+
 AVFilter ff_vf_identity = {
     .name          = "identity",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the Identity between two video streams."),
@@ -370,3 +427,27 @@ AVFilter ff_vf_identity = {
     .outputs       = identity_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
+
+#endif /* CONFIG_IDENTITY_FILTER */
+
+#if CONFIG_MSAD_FILTER
+
+#define msad_options options
+FRAMESYNC_DEFINE_CLASS(msad, IdentityContext, fs);
+
+AVFilter ff_vf_msad = {
+    .name          = "msad",
+    .description   = NULL_IF_CONFIG_SMALL("Calculate the MSAD between two video streams."),
+    .preinit       = msad_framesync_preinit,
+    .init          = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .activate      = activate,
+    .priv_size     = sizeof(IdentityContext),
+    .priv_class    = &msad_class,
+    .inputs        = identity_inputs,
+    .outputs       = identity_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+};
+
+#endif /* CONFIG_MSAD_FILTER */
