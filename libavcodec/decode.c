@@ -144,7 +144,7 @@ fail2:
 
 #define IS_EMPTY(pkt) (!(pkt)->data)
 
-static int copy_packet_props(AVPacket *dst, AVPacket *src)
+static int copy_packet_props(AVPacket *dst, const AVPacket *src)
 {
     int ret = av_packet_copy_props(dst, src);
     if (ret < 0)
@@ -156,7 +156,7 @@ static int copy_packet_props(AVPacket *dst, AVPacket *src)
     return 0;
 }
 
-static int extract_packet_props(AVCodecInternal *avci, AVPacket *pkt)
+static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
 {
     AVPacket tmp = { 0 };
     int ret = 0;
