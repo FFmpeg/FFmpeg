@@ -1077,6 +1077,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     av_frame_free(&avci->buffer_frame);
     av_packet_free(&avci->buffer_pkt);
+    av_packet_free(&avci->last_pkt_props);
     av_fifo_freep(&avci->pkt_props);
 
     av_packet_free(&avci->ds.in_pkt);
