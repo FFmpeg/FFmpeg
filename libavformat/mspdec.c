@@ -70,10 +70,11 @@ static int msp_read_header(AVFormatContext *s)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         cntx->packet_size = av_image_get_buffer_size(st->codecpar->format, st->codecpar->width, st->codecpar->height, 1);
-        if (cntx->packet_size < 0)
-            return cntx->packet_size;
     } else
         cntx->packet_size = 2 * st->codecpar->height;
+
+    if (cntx->packet_size <= 0)
+        return cntx->packet_size < 0 ? cntx->packet_size : AVERROR_INVALIDDATA;
 
     return 0;
 }
