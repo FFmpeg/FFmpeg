@@ -1043,9 +1043,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         AVPacket pkt_recoded = *avpkt;
 
         ret = recode_subtitle(avctx, &pkt_recoded, avpkt);
-        if (ret < 0) {
-            *got_sub_ptr = 0;
-        } else {
+        if (ret < 0)
+            return ret;
+
              ret = extract_packet_props(avctx->internal, &pkt_recoded);
              if (ret < 0)
                 return ret;
@@ -1099,7 +1099,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
                 av_packet_unref(&pkt_recoded);
             }
-        }
 
         if (*got_sub_ptr)
             avctx->frame_number++;
