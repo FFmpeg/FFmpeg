@@ -884,17 +884,16 @@ static int recode_subtitle(AVCodecContext *avctx,
         return 0;
 
 #if CONFIG_ICONV
-    cd = iconv_open("UTF-8", avctx->sub_charenc);
-    av_assert0(cd != (iconv_t)-1);
-
     inb = inpkt->data;
     inl = inpkt->size;
 
     if (inl >= INT_MAX / UTF8_MAX_BYTES - AV_INPUT_BUFFER_PADDING_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "Subtitles packet is too big for recoding\n");
-        ret = AVERROR(ENOMEM);
-        goto end;
+        return AVERROR(ERANGE);
     }
+
+    cd = iconv_open("UTF-8", avctx->sub_charenc);
+    av_assert0(cd != (iconv_t)-1);
 
     ret = av_new_packet(&tmp, inl * UTF8_MAX_BYTES);
     if (ret < 0)
