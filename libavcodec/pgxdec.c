@@ -95,7 +95,7 @@ error:
 }
 
 #define WRITE_FRAME(D, PIXEL, suffix)                                                       \
-    static inline void write_frame_ ##D(AVPacket *avpkt, AVFrame *frame, GetByteContext *g, \
+    static inline void write_frame_ ##D(AVFrame *frame, GetByteContext *g, \
                                         int width, int height, int sign, int depth)         \
     {                                                                                       \
         int i, j;                                                                           \
@@ -151,9 +151,9 @@ static int pgx_decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = 1;
     avctx->bits_per_raw_sample = depth;
     if (bpp == 8)
-        write_frame_8(avpkt, p, &g, width, height, sign, depth);
+        write_frame_8(p, &g, width, height, sign, depth);
     else if (bpp == 16)
-        write_frame_16(avpkt, p, &g, width, height, sign, depth);
+        write_frame_16(p, &g, width, height, sign, depth);
     *got_frame = 1;
     return 0;
 }

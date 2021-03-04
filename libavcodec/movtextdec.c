@@ -117,7 +117,7 @@ typedef struct {
 typedef struct {
     uint32_t type;
     size_t base_size;
-    int (*decode)(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt);
+    int (*decode)(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt);
 } Box;
 
 static void mov_text_cleanup(MovTextContext *m)
@@ -240,14 +240,14 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     return 0;
 }
 
-static int decode_twrp(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
+static int decode_twrp(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
 {
     m->box_flags |= TWRP_BOX;
     m->w.wrap_flag = bytestream_get_byte(&tsmb);
     return 0;
 }
 
-static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
+static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
 {
     m->box_flags |= HLIT_BOX;
     m->h.hlit_start = bytestream_get_be16(&tsmb);
@@ -255,14 +255,14 @@ static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
     return 0;
 }
 
-static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
+static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
 {
     m->box_flags |= HCLR_BOX;
     bytestream_get_buffer(&tsmb, m->c.hlit_color, 4);
     return 0;
 }
 
-static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
+static int decode_styl(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
 {
     int i;
     int style_entries = bytestream_get_be16(&tsmb);

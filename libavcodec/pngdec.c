@@ -1179,7 +1179,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 }
 
 static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
-                               AVFrame *p, AVPacket *avpkt)
+                               AVFrame *p, const AVPacket *avpkt)
 {
     const AVCRC *crc_tab = av_crc_get_table(AV_CRC_32_IEEE_LE);
     AVDictionary **metadatap = NULL;

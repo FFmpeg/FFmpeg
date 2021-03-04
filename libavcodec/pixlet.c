@@ -525,7 +525,7 @@ static void postprocess_chroma(AVFrame *frame, int w, int h, int depth)
 }
 
 static int decode_plane(AVCodecContext *avctx, int plane,
-                        AVPacket *avpkt, AVFrame *frame)
+                        const AVPacket *avpkt, AVFrame *frame)
 {
     PixletContext *ctx = avctx->priv_data;
     ptrdiff_t stride   = frame->linesize[plane] / 2;

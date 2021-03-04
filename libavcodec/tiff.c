@@ -964,7 +964,8 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
     return 0;
 }
 
-static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame, AVPacket *avpkt)
+static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
+                            const AVPacket *avpkt)
 {
     TiffContext *s = avctx->priv_data;
     int tile_idx;

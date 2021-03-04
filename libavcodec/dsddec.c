@@ -66,7 +66,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 typedef struct ThreadData {
     AVFrame *frame;
-    AVPacket *avpkt;
+    const AVPacket *avpkt;
 } ThreadData;
 
 static int dsd_channel(AVCodecContext *avctx, void *tdata, int j, int threadnr)
@@ -75,7 +75,7 @@ static int dsd_channel(AVCodecContext *avctx, void *tdata, int j, int threadnr)
     DSDContext *s = avctx->priv_data;
     ThreadData *td = tdata;
     AVFrame *frame = td->frame;
-    AVPacket *avpkt = td->avpkt;
+    const AVPacket *avpkt = td->avpkt;
     int src_next, src_stride;
     float *dst = ((float **)frame->extended_data)[j];
 

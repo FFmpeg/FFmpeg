@@ -112,7 +112,7 @@ static int init_frames(AVCodecContext *avctx)
 }
 
 static int decode_fint(AVCodecContext *avctx,
-                       AVPacket *avpkt, unsigned size)
+                       const AVPacket *avpkt, unsigned size)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -171,7 +171,7 @@ static int decode_fint(AVCodecContext *avctx,
     return 0;
 }
 
-static int decode_zlib(AVCodecContext *avctx, AVPacket *avpkt,
+static int decode_zlib(AVCodecContext *avctx, const AVPacket *avpkt,
                        unsigned size, unsigned uncompressed_size)
 {
     RASCContext *s = avctx->priv_data;
@@ -205,7 +205,7 @@ static int decode_zlib(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 static int decode_move(AVCodecContext *avctx,
-                       AVPacket *avpkt, unsigned size)
+                       const AVPacket *avpkt, unsigned size)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -329,7 +329,7 @@ static int decode_move(AVCodecContext *avctx,
     len--;
 
 static int decode_dlta(AVCodecContext *avctx,
-                       AVPacket *avpkt, unsigned size)
+                       const AVPacket *avpkt, unsigned size)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -471,7 +471,7 @@ static int decode_dlta(AVCodecContext *avctx,
 }
 
 static int decode_kfrm(AVCodecContext *avctx,
-                       AVPacket *avpkt, unsigned size)
+                       const AVPacket *avpkt, unsigned size)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -534,7 +534,7 @@ static int decode_kfrm(AVCodecContext *avctx,
 }
 
 static int decode_mous(AVCodecContext *avctx,
-                       AVPacket *avpkt, unsigned size)
+                       const AVPacket *avpkt, unsigned size)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -574,7 +574,7 @@ static int decode_mous(AVCodecContext *avctx,
 }
 
 static int decode_mpos(AVCodecContext *avctx,
-                       AVPacket *avpkt, unsigned size)
+                       const AVPacket *avpkt, unsigned size)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;

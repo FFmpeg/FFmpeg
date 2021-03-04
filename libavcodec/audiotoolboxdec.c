@@ -296,7 +296,8 @@ static int ffat_set_extradata(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int ffat_create_decoder(AVCodecContext *avctx, AVPacket *pkt)
+static av_cold int ffat_create_decoder(AVCodecContext *avctx,
+                                       const AVPacket *pkt)
 {
     ATDecodeContext *at = avctx->priv_data;
     OSStatus status;

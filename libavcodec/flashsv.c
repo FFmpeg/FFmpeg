@@ -179,7 +179,7 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
     return 0;
 }
 
-static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
+static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
                                 GetBitContext *gb, int block_size,
                                 int width, int height, int x_pos, int y_pos,
                                 int blk_idx)

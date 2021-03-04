@@ -3216,7 +3216,8 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
 }
 
 static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
-                                int *got_frame_ptr, GetBitContext *gb, AVPacket *avpkt)
+                                int *got_frame_ptr, GetBitContext *gb,
+                                const AVPacket *avpkt)
 {
     AACContext *ac = avctx->priv_data;
     ChannelElement *che = NULL, *che_prev = NULL;

@@ -2622,7 +2622,7 @@ static int vp8_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata,
 
 static av_always_inline
 int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                      AVPacket *avpkt, int is_vp7)
+                      const AVPacket *avpkt, int is_vp7)
 {
     VP8Context *s = avctx->priv_data;
     int ret, i, referenced, num_jobs;
