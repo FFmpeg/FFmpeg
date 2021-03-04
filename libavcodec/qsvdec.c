@@ -21,18 +21,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 
 #include <mfx/mfxvideo.h>
 
 #include "libavutil/common.h"
+#include "libavutil/fifo.h"
+#include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/time.h"
 #include "libavutil/imgutils.h"
@@ -40,11 +42,49 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "decode.h"
+#include "hwconfig.h"
 #include "qsv.h"
 #include "qsv_internal.h"
-#include "qsvdec.h"
 
-const AVCodecHWConfigInternal *const ff_qsv_hw_configs[] = {
+typedef struct QSVContext {
+    // the session used for decoding
+    mfxSession session;
+
+    // the session we allocated internally, in case the caller did not provide
+    // one
+    QSVSession internal_qs;
+
+    QSVFramesContext frames_ctx;
+
+    /**
+     * a linked list of frames currently being used by QSV
+     */
+    QSVFrame *work_frames;
+
+    AVFifoBuffer *async_fifo;
+    int zero_consume_run;
+    int buffered_count;
+    int reinit_flag;
+
+    enum AVPixelFormat orig_pix_fmt;
+    uint32_t fourcc;
+    mfxFrameInfo frame_info;
+    AVBufferPool *pool;
+
+    int initialized;
+
+    // options set by the caller
+    int async_depth;
+    int iopattern;
+    int gpu_copy;
+
+    char *load_plugins;
+
+    mfxExtBuffer **ext_buffers;
+    int         nb_ext_buffers;
+} QSVContext;
+
+static const AVCodecHWConfigInternal *const qsv_hw_configs[] = {
     &(const AVCodecHWConfigInternal) {
         .public = {
             .pix_fmt     = AV_PIX_FMT_QSV,
@@ -57,7 +97,8 @@ const AVCodecHWConfigInternal *const ff_qsv_hw_configs[] = {
     NULL
 };
 
-static int ff_qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferPool *pool)
+static int qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame,
+                                     AVBufferPool *pool)
 {
     int ret = 0;
 
@@ -255,7 +296,9 @@ static int qsv_decode_init_context(AVCodecContext *avctx, QSVContext *q, mfxVide
     return 0;
 }
 
-static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt, enum AVPixelFormat pix_fmt, mfxVideoParam *param)
+static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q,
+                             const AVPacket *avpkt, enum AVPixelFormat pix_fmt,
+                             mfxVideoParam *param)
 {
     int ret;
 
@@ -299,7 +342,7 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
     int ret;
 
     if (q->pool)
-        ret = ff_qsv_get_continuous_buffer(avctx, frame->frame, q->pool);
+        ret = qsv_get_continuous_buffer(avctx, frame->frame, q->pool);
     else
         ret = ff_get_buffer(avctx, frame->frame, AV_GET_BUFFER_FLAG_REF);
 
@@ -400,7 +443,7 @@ static QSVFrame *find_frame(QSVContext *q, mfxFrameSurface1 *surf)
 
 static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
                       AVFrame *frame, int *got_frame,
-                      AVPacket *avpkt)
+                      const AVPacket *avpkt)
 {
     QSVFrame *out_frame;
     mfxFrameSurface1 *insurf;
@@ -531,7 +574,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return bs.DataOffset;
 }
 
-int ff_qsv_decode_close(QSVContext *q)
+static void qsv_decode_close_qsvcontext(QSVContext *q)
 {
     QSVFrame *cur = q->work_frames;
 
@@ -563,12 +606,10 @@ int ff_qsv_decode_close(QSVContext *q)
     av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
     av_buffer_unref(&q->frames_ctx.mids_buf);
     av_buffer_pool_uninit(&q->pool);
-
-    return 0;
 }
 
-int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
-                        AVFrame *frame, int *got_frame, AVPacket *pkt)
+static int qsv_process_data(AVCodecContext *avctx, QSVContext *q,
+                            AVFrame *frame, int *got_frame, const AVPacket *pkt)
 {
     int ret;
     mfxVideoParam param = { 0 };
@@ -629,12 +670,6 @@ reinit_fail:
     return ret;
 }
 
-void ff_qsv_decode_flush(AVCodecContext *avctx, QSVContext *q)
-{
-    q->orig_pix_fmt = AV_PIX_FMT_NONE;
-    q->initialized = 0;
-}
-
 enum LoadPlugin {
     LOAD_PLUGIN_NONE,
     LOAD_PLUGIN_HEVC_SW,
@@ -669,7 +704,7 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 
     av_freep(&s->qsv.load_plugins);
 
-    ff_qsv_decode_close(&s->qsv);
+    qsv_decode_close_qsvcontext(&s->qsv);
 
     qsv_clear_buffers(s);
 
@@ -754,7 +789,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
         if (s->buffer_pkt.size <= 0) {
             /* no more data */
             if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
-                return avpkt->size ? avpkt->size : ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
+                return avpkt->size ? avpkt->size : qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
             /* in progress of reinit, no read from fifo and keep the buffer_pkt */
             if (!s->qsv.reinit_flag) {
                 av_packet_unref(&s->buffer_pkt);
@@ -762,7 +797,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
 
-        ret = ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->buffer_pkt);
+        ret = qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->buffer_pkt);
         if (ret < 0){
             /* Drop buffer_pkt when failed to decode the packet. Otherwise,
                the decoder will keep decoding the failure packet. */
@@ -784,7 +819,9 @@ static void qsv_decode_flush(AVCodecContext *avctx)
     QSVDecContext *s = avctx->priv_data;
 
     qsv_clear_buffers(s);
-    ff_qsv_decode_flush(avctx, &s->qsv);
+
+    s->qsv.orig_pix_fmt = AV_PIX_FMT_NONE;
+    s->qsv.initialized = 0;
 }
 
 #define OFFSET(x) offsetof(QSVDecContext, x)
@@ -814,7 +851,7 @@ AVCodec ff_##x##_qsv_decoder = { \
                                                     AV_PIX_FMT_P010, \
                                                     AV_PIX_FMT_QSV, \
                                                     AV_PIX_FMT_NONE }, \
-    .hw_configs     = ff_qsv_hw_configs, \
+    .hw_configs     = qsv_hw_configs, \
     .wrapper_name   = "qsv", \
 }; \
 
