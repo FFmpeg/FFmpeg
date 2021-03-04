@@ -1026,7 +1026,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr,
                              AVPacket *avpkt)
 {
-    int i, ret = 0;
+    int ret = 0;
 
     if (!avpkt->data && avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
@@ -1050,47 +1050,47 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         if (ret < 0)
             return ret;
 
-            if (avctx->pkt_timebase.num && avpkt->pts != AV_NOPTS_VALUE)
-                sub->pts = av_rescale_q(avpkt->pts,
-                                        avctx->pkt_timebase, AV_TIME_BASE_Q);
-            ret = avctx->codec->decode(avctx, sub, got_sub_ptr, pkt);
-            av_assert1((ret >= 0) >= !!*got_sub_ptr &&
-                       !!*got_sub_ptr >= !!sub->num_rects);
+        if (avctx->pkt_timebase.num && avpkt->pts != AV_NOPTS_VALUE)
+            sub->pts = av_rescale_q(avpkt->pts,
+                                    avctx->pkt_timebase, AV_TIME_BASE_Q);
+        ret = avctx->codec->decode(avctx, sub, got_sub_ptr, pkt);
+        av_assert1((ret >= 0) >= !!*got_sub_ptr &&
+                   !!*got_sub_ptr >= !!sub->num_rects);
 
 #if FF_API_ASS_TIMING
-            if (avctx->sub_text_format == FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS
-                && *got_sub_ptr && sub->num_rects) {
-                const AVRational tb = avctx->pkt_timebase.num ? avctx->pkt_timebase
-                                                              : avctx->time_base;
-                int err = convert_sub_to_old_ass_form(sub, avpkt, tb);
-                if (err < 0)
-                    ret = err;
-            }
+        if (avctx->sub_text_format == FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS
+            && *got_sub_ptr && sub->num_rects) {
+            const AVRational tb = avctx->pkt_timebase.num ? avctx->pkt_timebase
+                                  : avctx->time_base;
+            int err = convert_sub_to_old_ass_form(sub, avpkt, tb);
+            if (err < 0)
+                ret = err;
+        }
 #endif
 
-            if (sub->num_rects && !sub->end_display_time && avpkt->duration &&
-                avctx->pkt_timebase.num) {
-                AVRational ms = { 1, 1000 };
-                sub->end_display_time = av_rescale_q(avpkt->duration,
-                                                     avctx->pkt_timebase, ms);
-            }
+        if (sub->num_rects && !sub->end_display_time && avpkt->duration &&
+            avctx->pkt_timebase.num) {
+            AVRational ms = { 1, 1000 };
+            sub->end_display_time = av_rescale_q(avpkt->duration,
+                                                 avctx->pkt_timebase, ms);
+        }
 
-            if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB)
-                sub->format = 0;
-            else if (avctx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB)
-                sub->format = 1;
+        if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB)
+            sub->format = 0;
+        else if (avctx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB)
+            sub->format = 1;
 
-            for (i = 0; i < sub->num_rects; i++) {
-                if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_IGNORE &&
-                    sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Invalid UTF-8 in decoded subtitles text; "
-                           "maybe missing -sub_charenc option\n");
-                    avsubtitle_free(sub);
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
+        for (unsigned i = 0; i < sub->num_rects; i++) {
+            if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_IGNORE &&
+                sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Invalid UTF-8 in decoded subtitles text; "
+                       "maybe missing -sub_charenc option\n");
+                avsubtitle_free(sub);
+                ret = AVERROR_INVALIDDATA;
+                break;
             }
+        }
 
         if (*got_sub_ptr)
             avctx->frame_number++;
