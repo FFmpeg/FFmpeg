@@ -1050,10 +1050,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         if (ret < 0)
             return ret;
 
-        ret = extract_packet_props(avctx->internal, pkt);
-        if (ret < 0)
-            goto cleanup;
-
             if (avctx->pkt_timebase.num && avpkt->pts != AV_NOPTS_VALUE)
                 sub->pts = av_rescale_q(avpkt->pts,
                                         avctx->pkt_timebase, AV_TIME_BASE_Q);
@@ -1099,7 +1095,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         if (*got_sub_ptr)
             avctx->frame_number++;
 
-    cleanup:
         if (pkt == avci->buffer_pkt) // did we recode?
             av_packet_unref(avci->buffer_pkt);
     }
