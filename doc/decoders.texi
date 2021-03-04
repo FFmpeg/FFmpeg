@@ -293,6 +293,8 @@ Enabled by default.
 @table @option
 @item compute_clut
 @table @option
+@item -2
+Compute clut once if no matching CLUT is in the stream.
 @item -1
 Compute clut if no matching CLUT is in the stream.
 @item 0
