@@ -24,7 +24,6 @@
  * @see http://tech.ebu.ch/loudness
  * @see https://www.youtube.com/watch?v=iuEtQqC-Sqo "EBU R128 Introduction - Florian Camerer"
  * @todo implement start/stop/reset through filter command injection
- * @todo support other frequencies to avoid resampling
  */
 
 #include <math.h>
@@ -44,20 +43,6 @@
 #include "internal.h"
 
 #define MAX_CHANNELS 63
-
-/* pre-filter coefficients */
-#define PRE_B0  1.53512485958697
-#define PRE_B1 -2.69169618940638
-#define PRE_B2  1.19839281085285
-#define PRE_A1 -1.69065929318241
-#define PRE_A2  0.73248077421585
-
-/* RLB-filter coefficients */
-#define RLB_B0  1.0
-#define RLB_B1 -2.0
-#define RLB_B2  1.0
-#define RLB_A1 -1.99004745483398
-#define RLB_A2  0.99007225036621
 
 #define ABS_THRES    -70            ///< silence gate: we discard anything below this absolute (LUFS) threshold
 #define ABS_UP_THRES  10            ///< upper loud limit to consider (ABS_THRES being the minimum)
@@ -80,6 +65,7 @@ struct hist_entry {
 struct integrator {
     double *cache[MAX_CHANNELS];    ///< window of filtered samples (N ms)
     int cache_pos;                  ///< focus on the last added bin in the cache array
+    int cache_size;
     double sum[MAX_CHANNELS];       ///< sum of the last N ms filtered samples (cache content)
     int filled;                     ///< 1 if the cache is completely filled, 0 otherwise
     double rel_threshold;           ///< relative threshold
@@ -128,9 +114,11 @@ typedef struct EBUR128Context {
     double x[MAX_CHANNELS * 3];     ///< 3 input samples cache for each channel
     double y[MAX_CHANNELS * 3];     ///< 3 pre-filter samples cache for each channel
     double z[MAX_CHANNELS * 3];     ///< 3 RLB-filter samples cache for each channel
+    double pre_b[3];                ///< pre-filter numerator coefficients
+    double pre_a[3];                ///< pre-filter denominator coefficients
+    double rlb_b[3];                ///< rlb-filter numerator coefficients
+    double rlb_a[3];                ///< rlb-filter denominator coefficients
 
-#define I400_BINS  (48000 * 4 / 10)
-#define I3000_BINS (48000 * 3)
     struct integrator i400;         ///< 400ms integrator, used for Momentary loudness  (M), and Integrated loudness (I)
     struct integrator i3000;        ///<    3s integrator, used for Short term loudness (S), and Loudness Range      (LRA)
 
@@ -388,6 +376,35 @@ static int config_audio_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     EBUR128Context *ebur128 = ctx->priv;
 
+    /* Unofficial reversed parametrization of PRE
+     * and RLB from 48kHz */
+
+    double f0 = 1681.974450955533;
+    double G = 3.999843853973347;
+    double Q = 0.7071752369554196;
+
+    double K = tan(M_PI * f0 / (double)inlink->sample_rate);
+    double Vh = pow(10.0, G / 20.0);
+    double Vb = pow(Vh, 0.4996667741545416);
+
+    double a0 = 1.0 + K / Q + K * K;
+
+    ebur128->pre_b[0] = (Vh + Vb * K / Q + K * K) / a0;
+    ebur128->pre_b[1] = 2.0 * (K * K - Vh) / a0;
+    ebur128->pre_b[2] = (Vh - Vb * K / Q + K * K) / a0;
+    ebur128->pre_a[1] = 2.0 * (K * K - 1.0) / a0;
+    ebur128->pre_a[2] = (1.0 - K / Q + K * K) / a0;
+
+    f0 = 38.13547087602444;
+    Q = 0.5003270373238773;
+    K = tan(M_PI * f0 / (double)inlink->sample_rate);
+
+    ebur128->rlb_b[0] = 1.0;
+    ebur128->rlb_b[1] = -2.0;
+    ebur128->rlb_b[2] = 1.0;
+    ebur128->rlb_a[1] = 2.0 * (K * K - 1.0) / (1.0 + K / Q + K * K);
+    ebur128->rlb_a[2] = (1.0 - K / Q + K * K) / (1.0 + K / Q + K * K);
+
     /* Force 100ms framing in case of metadata injection: the frames must have
      * a granularity of the window overlap to be accurately exploited.
      * As for the true peaks mode, it just simplifies the resampling buffer
@@ -418,6 +435,9 @@ static int config_audio_output(AVFilterLink *outlink)
     if (!ebur128->ch_weighting)
         return AVERROR(ENOMEM);
 
+#define I400_BINS  (outlink->sample_rate * 4 / 10)
+#define I3000_BINS (outlink->sample_rate * 3)
+
     for (i = 0; i < nb_channels; i++) {
         /* channel weighting */
         const uint64_t chl = av_channel_layout_extract_channel(outlink->channel_layout, i);
@@ -433,8 +453,10 @@ static int config_audio_output(AVFilterLink *outlink)
             continue;
 
         /* bins buffer for the two integration window (400ms and 3s) */
-        ebur128->i400.cache[i]  = av_calloc(I400_BINS,  sizeof(*ebur128->i400.cache[0]));
-        ebur128->i3000.cache[i] = av_calloc(I3000_BINS, sizeof(*ebur128->i3000.cache[0]));
+        ebur128->i400.cache_size = I400_BINS;
+        ebur128->i3000.cache_size = I3000_BINS;
+        ebur128->i400.cache[i]  = av_calloc(ebur128->i400.cache_size,  sizeof(*ebur128->i400.cache[0]));
+        ebur128->i3000.cache[i] = av_calloc(ebur128->i3000.cache_size, sizeof(*ebur128->i3000.cache[0]));
         if (!ebur128->i400.cache[i] || !ebur128->i3000.cache[i])
             return AVERROR(ENOMEM);
     }
@@ -613,7 +635,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
 #define MOVE_TO_NEXT_CACHED_ENTRY(time) do {                \
     ebur128->i##time.cache_pos++;                           \
-    if (ebur128->i##time.cache_pos == I##time##_BINS) {     \
+    if (ebur128->i##time.cache_pos ==                       \
+        ebur128->i##time.cache_size) {                      \
         ebur128->i##time.filled    = 1;                     \
         ebur128->i##time.cache_pos = 0;                     \
     }                                                       \
@@ -634,20 +657,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 continue;
 
             /* Y[i] = X[i]*b0 + X[i-1]*b1 + X[i-2]*b2 - Y[i-1]*a1 - Y[i-2]*a2 */
-#define FILTER(Y, X, name) do {                                                 \
+#define FILTER(Y, X, NUM, DEN) do {                                             \
             double *dst = ebur128->Y + ch*3;                                    \
             double *src = ebur128->X + ch*3;                                    \
             dst[2] = dst[1];                                                    \
             dst[1] = dst[0];                                                    \
-            dst[0] = src[0]*name##_B0 + src[1]*name##_B1 + src[2]*name##_B2     \
-                                      - dst[1]*name##_A1 - dst[2]*name##_A2;    \
+            dst[0] = src[0]*NUM[0] + src[1]*NUM[1] + src[2]*NUM[2]              \
+                                   - dst[1]*DEN[1] - dst[2]*DEN[2];             \
 } while (0)
 
             // TODO: merge both filters in one?
-            FILTER(y, x, PRE);  // apply pre-filter
+            FILTER(y, x, ebur128->pre_b, ebur128->pre_a);  // apply pre-filter
             ebur128->x[ch * 3 + 2] = ebur128->x[ch * 3 + 1];
             ebur128->x[ch * 3 + 1] = ebur128->x[ch * 3    ];
-            FILTER(z, y, RLB);  // apply RLB-filter
+            FILTER(z, y, ebur128->rlb_b, ebur128->rlb_a);  // apply RLB-filter
 
             bin = ebur128->z[ch * 3] * ebur128->z[ch * 3];
 
@@ -896,7 +919,6 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_NONE };
-    static const int input_srate[] = {48000, -1}; // ITU-R BS.1770 provides coeff only for 48kHz
     static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
 
     /* set optional output video format */
@@ -920,7 +942,7 @@ static int query_formats(AVFilterContext *ctx)
         (ret = ff_channel_layouts_ref(layouts, &outlink->incfg.channel_layouts)) < 0)
         return ret;
 
-    formats = ff_make_format_list(input_srate);
+    formats = ff_all_samplerates();
     if ((ret = ff_formats_ref(formats, &inlink->outcfg.samplerates)) < 0 ||
         (ret = ff_formats_ref(formats, &outlink->incfg.samplerates)) < 0)
         return ret;
