@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xml:lang="">
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.000">Don't show this text it may be used to insert hidden data</p>
+      <p
+        begin="00:00:01.500"
+        end="00:00:04.500">SubRip subtitles capability tester 1.3o by ale5000<br/>Use VLC 1.1 or higher as reference for most things and MPC Home Cinema for others<br/>This text should be blue<br/>This text should be red<br/>This text should be black<br/>If you see this with the normal font, the player don't (fully) support font face</p>
+      <p
+        begin="00:00:04.500"
+        end="00:00:04.500">Hidden</p>
+      <p
+        begin="00:00:04.501"
+        end="00:00:07.500">This text should be small<br/>This text should be normal<br/>This text should be big</p>
+      <p
+        begin="00:00:07.501"
+        end="00:00:11.500">This should be an E with an accent: È<br/>日本語<br/>This text should be bold, italics and underline<br/>This text should be small and green<br/>This text should be small and red<br/>This text should be big and brown</p>
+      <p
+        begin="00:00:11.501"
+        end="00:00:14.500">This line should be bold<br/>This line should be italics<br/>This line should be underline<br/>This line should be strikethrough<br/>Both lines<br/>should be underline</p>
+      <p
+        begin="00:00:14.501"
+        end="00:00:17.500">&gt;<br/>It would be a good thing to<br/>hide invalid html tags that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>Show not opened tags<br/>&lt;</p>
+      <p
+        begin="00:00:17.501"
+        end="00:00:20.500">and also<br/>hide invalid html tags with parameters that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>This text should be showed underlined without problems also: 2&lt;3,5&gt;1,4&lt;6<br/>This shouldn't be underlined</p>
+      <p
+        begin="00:00:20.501"
+        end="00:00:21.500">This text should be in the normal position...</p>
+      <p
+        begin="00:00:21.501"
+        end="00:00:22.500">This text should NOT be in the normal position</p>
+      <p
+        begin="00:00:22.501"
+        end="00:00:24.500">Implementation is the same of the ASS tag<br/>This text should be at the<br/>top and horizontally centered</p>
+      <p
+        begin="00:00:22.501"
+        end="00:00:24.500">This text should be at the<br/>middle and horizontally centered</p>
+      <p
+        begin="00:00:22.501"
+        end="00:00:24.500">This text should be at the<br/>bottom and horizontally centered</p>
+      <p
+        begin="00:00:24.501"
+        end="00:00:26.500">This text should be at the<br/>top and horizontally at the left</p>
+      <p
+        begin="00:00:24.501"
+        end="00:00:26.500">This text should be at the<br/>middle and horizontally at the left<br/>(The second position must be ignored)</p>
+      <p
+        begin="00:00:24.501"
+        end="00:00:26.500">This text should be at the<br/>bottom and horizontally at the left</p>
+      <p
+        begin="00:00:26.501"
+        end="00:00:28.500">This text should be at the<br/>top and horizontally at the right</p>
+      <p
+        begin="00:00:26.501"
+        end="00:00:28.500">This text should be at the<br/>middle and horizontally at the right</p>
+      <p
+        begin="00:00:26.501"
+        end="00:00:28.500">This text should be at the<br/>bottom and horizontally at the right</p>
+      <p
+        begin="00:00:28.501"
+        end="00:00:31.500">This could be the most difficult thing to implement</p>
+      <p
+        begin="00:00:31.501"
+        end="00:00:50.500">First text</p>
+      <p
+        begin="00:00:33.500"
+        end="00:00:35.500">Second, it shouldn't overlap first</p>
+      <p
+        begin="00:00:35.501"
+        end="00:00:37.500">Third, it should replace second</p>
+      <p
+        begin="00:00:36.501"
+        end="00:00:50.500">Fourth, it shouldn't overlap first and third</p>
+      <p
+        begin="00:00:40.501"
+        end="00:00:45.500">Fifth, it should replace third</p>
+      <p
+        begin="00:00:45.501"
+        end="00:00:50.500">Sixth, it shouldn't be<br/>showed overlapped</p>
+      <p
+        begin="00:00:50.501"
+        end="00:00:52.500">TEXT 1 (bottom)</p>
+      <p
+        begin="00:00:50.501"
+        end="00:00:52.500">text 2</p>
+      <p
+        begin="00:00:52.501"
+        end="00:00:54.500">Hide these tags:<br/>also hide these tags:<br/>but show this: {normal text}</p>
+      <p
+        begin="00:00:54.501"
+        end="00:01:00.500"><br/>\ N is a forced line break<br/>\ h is a hard space<br/>Normal spaces at the start and at the end of the line are trimmed while hard spaces are not trimmed.<br/>The\hline\hwill\hnever\hbreak\hautomatically\hright\hbefore\hor\hafter\ha\hhard\hspace.\h:-D</p>
+      <p
+        begin="00:00:54.501"
+        end="00:00:56.500"><br/>\h\h\h\h\hA (05 hard spaces followed by a letter)<br/>A (Normal  spaces followed by a letter)<br/>A (No hard spaces followed by a letter)</p>
+      <p
+        begin="00:00:56.501"
+        end="00:00:58.500">\h\h\h\h\hA (05 hard spaces followed by a letter)<br/>A (Normal  spaces followed by a letter)<br/>A (No hard spaces followed by a letter)<br/>Show this: \TEST and this: \-)</p>
+      <p
+        begin="00:00:58.501"
+        end="00:01:00.500"><br/>A letter followed by 05 hard spaces: A\h\h\h\h\h<br/>A letter followed by normal  spaces: A<br/>A letter followed by no hard spaces: A<br/>05 hard  spaces between letters: A\h\h\h\h\hA<br/>5 normal spaces between letters: A     A<br/><br/>^--Forced line break</p>
+      <p
+        begin="00:01:00.501"
+        end="00:01:02.500">Both line should be strikethrough,<br/>yes.<br/>Correctly closed tags<br/>should be hidden.</p>
+      <p
+        begin="00:01:02.501"
+        end="00:01:04.500">It shouldn't be strikethrough,<br/>not opened tag showed as text.<br/>Not opened tag showed as text.</p>
+      <p
+        begin="00:01:04.501"
+        end="00:01:06.500">Three lines should be strikethrough,<br/>yes.<br/>Not closed tags showed as text</p>
+      <p
+        begin="00:01:06.501"
+        end="00:01:08.500">Both line should be strikethrough but<br/>the wrong closing tag should be showed</p>
+    </div>
+  </body>
+</tt>

@@ -445,6 +445,7 @@ extern AVInputFormat  ff_truehd_demuxer;
 extern AVOutputFormat ff_truehd_muxer;
 extern AVInputFormat  ff_tta_demuxer;
 extern AVOutputFormat ff_tta_muxer;
+extern AVOutputFormat ff_ttml_muxer;
 extern AVInputFormat  ff_txd_demuxer;
 extern AVInputFormat  ff_tty_demuxer;
 extern AVInputFormat  ff_ty_demuxer;
