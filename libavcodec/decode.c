@@ -869,19 +869,20 @@ static void get_subtitle_defaults(AVSubtitle *sub)
 }
 
 #define UTF8_MAX_BYTES 4 /* 5 and 6 bytes sequences should not be used */
-static int recode_subtitle(AVCodecContext *avctx,
-                           AVPacket *outpkt, const AVPacket *inpkt)
+static int recode_subtitle(AVCodecContext *avctx, AVPacket **outpkt,
+                           AVPacket *inpkt, AVPacket *buf_pkt)
 {
 #if CONFIG_ICONV
     iconv_t cd = (iconv_t)-1;
     int ret = 0;
     char *inb, *outb;
     size_t inl, outl;
-    AVPacket tmp;
 #endif
 
-    if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_PRE_DECODER || inpkt->size == 0)
+    if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_PRE_DECODER || inpkt->size == 0) {
+        *outpkt = inpkt;
         return 0;
+    }
 
 #if CONFIG_ICONV
     inb = inpkt->data;
@@ -895,28 +896,31 @@ static int recode_subtitle(AVCodecContext *avctx,
     cd = iconv_open("UTF-8", avctx->sub_charenc);
     av_assert0(cd != (iconv_t)-1);
 
-    ret = av_new_packet(&tmp, inl * UTF8_MAX_BYTES);
+    ret = av_new_packet(buf_pkt, inl * UTF8_MAX_BYTES);
     if (ret < 0)
         goto end;
-    outpkt->buf  = tmp.buf;
-    outpkt->data = tmp.data;
-    outpkt->size = tmp.size;
-    outb = outpkt->data;
-    outl = outpkt->size;
+    ret = av_packet_copy_props(buf_pkt, inpkt);
+    if (ret < 0)
+        goto end;
+    outb = buf_pkt->data;
+    outl = buf_pkt->size;
 
     if (iconv(cd, &inb, &inl, &outb, &outl) == (size_t)-1 ||
         iconv(cd, NULL, NULL, &outb, &outl) == (size_t)-1 ||
-        outl >= outpkt->size || inl != 0) {
+        outl >= buf_pkt->size || inl != 0) {
         ret = FFMIN(AVERROR(errno), -1);
         av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%s\" "
                "from %s to UTF-8\n", inpkt->data, avctx->sub_charenc);
-        av_packet_unref(&tmp);
         goto end;
     }
-    outpkt->size -= outl;
-    memset(outpkt->data + outpkt->size, 0, outl);
+    buf_pkt->size -= outl;
+    memset(buf_pkt->data + buf_pkt->size, 0, outl);
+    *outpkt = buf_pkt;
 
+    ret = 0;
 end:
+    if (ret < 0)
+        av_packet_unref(buf_pkt);
     if (cd != (iconv_t)-1)
         iconv_close(cd);
     return ret;
@@ -1039,20 +1043,21 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     get_subtitle_defaults(sub);
 
     if ((avctx->codec->capabilities & AV_CODEC_CAP_DELAY) || avpkt->size) {
-        AVPacket pkt_recoded = *avpkt;
+        AVCodecInternal *avci = avctx->internal;
+        AVPacket *pkt;
 
-        ret = recode_subtitle(avctx, &pkt_recoded, avpkt);
+        ret = recode_subtitle(avctx, &pkt, avpkt, avci->buffer_pkt);
         if (ret < 0)
             return ret;
 
-             ret = extract_packet_props(avctx->internal, &pkt_recoded);
-             if (ret < 0)
-                return ret;
+        ret = extract_packet_props(avctx->internal, pkt);
+        if (ret < 0)
+            goto cleanup;
 
             if (avctx->pkt_timebase.num && avpkt->pts != AV_NOPTS_VALUE)
                 sub->pts = av_rescale_q(avpkt->pts,
                                         avctx->pkt_timebase, AV_TIME_BASE_Q);
-            ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &pkt_recoded);
+            ret = avctx->codec->decode(avctx, sub, got_sub_ptr, pkt);
             av_assert1((ret >= 0) >= !!*got_sub_ptr &&
                        !!*got_sub_ptr >= !!sub->num_rects);
 
@@ -1091,16 +1096,12 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 }
             }
 
-            if (avpkt->data != pkt_recoded.data) { // did we recode?
-                /* prevent from destroying side data from original packet */
-                pkt_recoded.side_data = NULL;
-                pkt_recoded.side_data_elems = 0;
-
-                av_packet_unref(&pkt_recoded);
-            }
-
         if (*got_sub_ptr)
             avctx->frame_number++;
+
+    cleanup:
+        if (pkt == avci->buffer_pkt) // did we recode?
+            av_packet_unref(avci->buffer_pkt);
     }
 
     return ret;
