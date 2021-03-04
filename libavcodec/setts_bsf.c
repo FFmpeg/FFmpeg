@@ -152,7 +152,7 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     s->var_values[VAR_PREV_OUTDTS] = s->prev_outdts;
     s->var_values[VAR_STARTPTS]    = s->start_pts;
     s->var_values[VAR_STARTDTS]    = s->start_dts;
-    s->var_values[VAR_TB]          = av_q2d(ctx->time_base_out);
+    s->var_values[VAR_TB]          = ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
     s->var_values[VAR_SR]          = ctx->par_in->sample_rate;
 
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
