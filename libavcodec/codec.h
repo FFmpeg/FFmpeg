@@ -281,6 +281,18 @@ typedef struct AVCodec {
      */
     int (*encode2)(struct AVCodecContext *avctx, struct AVPacket *avpkt,
                    const struct AVFrame *frame, int *got_packet_ptr);
+    /**
+     * Decode picture or subtitle data.
+     *
+     * @param      avctx          codec context
+     * @param      outdata        codec type dependent output struct
+     * @param[out] got_frame_ptr  decoder sets to 0 or 1 to indicate that a
+     *                            non-empty frame or subtitle was returned in
+     *                            outdata.
+     * @param[in]  avpkt          AVPacket containing the data to be decoded
+     * @return amount of bytes read from the packet on success, negative error
+     *         code on failure
+     */
     int (*decode)(struct AVCodecContext *avctx, void *outdata,
                   int *got_frame_ptr, struct AVPacket *avpkt);
     int (*close)(struct AVCodecContext *);
