@@ -273,7 +273,7 @@ typedef struct AVCodec {
      * Encode data to an AVPacket.
      *
      * @param      avctx          codec context
-     * @param      avpkt          output AVPacket (may contain a user-provided buffer)
+     * @param      avpkt          output AVPacket
      * @param[in]  frame          AVFrame containing the raw data to be encoded
      * @param[out] got_packet_ptr encoder sets to 0 or 1 to indicate that a
      *                            non-empty packet was returned in avpkt.
