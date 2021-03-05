@@ -75,7 +75,7 @@ class decklink_output_callback;
 class decklink_input_callback;
 
 typedef struct AVPacketQueue {
-    AVPacketList *first_pkt, *last_pkt;
+    PacketList *first_pkt, *last_pkt;
     int nb_packets;
     unsigned long long size;
     int abort_request;

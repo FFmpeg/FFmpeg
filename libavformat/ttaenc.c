@@ -30,7 +30,7 @@
 
 typedef struct TTAMuxContext {
     AVIOContext *seek_table;
-    AVPacketList *queue, *queue_end;
+    PacketList *queue, *queue_end;
     uint32_t nb_samples;
     int frame_size;
     int last_frame;

@@ -35,6 +35,7 @@ extern "C" {
 
 extern "C" {
 #include "config.h"
+#include "libavcodec/packet_internal.h"
 #include "libavformat/avformat.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
@@ -482,7 +483,7 @@ static void avpacket_queue_init(AVFormatContext *avctx, AVPacketQueue *q)
 
 static void avpacket_queue_flush(AVPacketQueue *q)
 {
-    AVPacketList *pkt, *pkt1;
+    PacketList *pkt, *pkt1;
 
     pthread_mutex_lock(&q->mutex);
     for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
@@ -515,7 +516,7 @@ static unsigned long long avpacket_queue_size(AVPacketQueue *q)
 
 static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 {
-    AVPacketList *pkt1;
+    PacketList *pkt1;
 
     // Drop Packet if queue size is > maximum queue size
     if (avpacket_queue_size(q) > (uint64_t)q->max_q_size) {
@@ -529,7 +530,7 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
         return -1;
     }
 
-    pkt1 = (AVPacketList *)av_malloc(sizeof(AVPacketList));
+    pkt1 = (PacketList *)av_malloc(sizeof(PacketList));
     if (!pkt1) {
         av_packet_unref(pkt);
         return -1;
@@ -557,7 +558,7 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 
 static int avpacket_queue_get(AVPacketQueue *q, AVPacket *pkt, int block)
 {
-    AVPacketList *pkt1;
+    PacketList *pkt1;
     int ret;
 
     pthread_mutex_lock(&q->mutex);

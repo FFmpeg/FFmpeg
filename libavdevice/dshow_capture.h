@@ -34,6 +34,7 @@
 #include <dvdmedia.h>
 
 #include "libavcodec/internal.h"
+#include "libavcodec/packet_internal.h"
 
 /* EC_DEVICE_LOST is not defined in MinGW dshow headers. */
 #ifndef EC_DEVICE_LOST
@@ -320,7 +321,7 @@ struct dshow_ctx {
     HANDLE mutex;
     HANDLE event[2]; /* event[0] is set by DirectShow
                       * event[1] is set by callback() */
-    AVPacketList *pktl;
+    PacketList *pktl;
 
     int eof;
 

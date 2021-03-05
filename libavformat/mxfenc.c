@@ -53,6 +53,7 @@
 #include "libavcodec/h264_ps.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/internal.h"
+#include "libavcodec/packet_internal.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -3104,9 +3105,9 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
         stream_count += !!s->streams[i]->internal->last_in_packet_buffer;
 
     if (stream_count && (s->nb_streams == stream_count || flush)) {
-        AVPacketList *pktl = s->internal->packet_buffer;
+        PacketList *pktl = s->internal->packet_buffer;
         if (s->nb_streams != stream_count) {
-            AVPacketList *last = NULL;
+            PacketList *last = NULL;
             // find last packet in edit unit
             while (pktl) {
                 if (!stream_count || pktl->pkt.stream_index == 0)
@@ -3120,7 +3121,7 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
             }
             // purge packet queue
             while (pktl) {
-                AVPacketList *next = pktl->next;
+                PacketList *next = pktl->next;
                 av_packet_unref(&pktl->pkt);
                 av_freep(&pktl);
                 pktl = next;

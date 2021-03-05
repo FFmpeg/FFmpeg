@@ -58,7 +58,7 @@ static int
 dshow_read_close(AVFormatContext *s)
 {
     struct dshow_ctx *ctx = s->priv_data;
-    AVPacketList *pktl;
+    PacketList *pktl;
 
     if (ctx->control) {
         IMediaControl_Stop(ctx->control);
@@ -118,7 +118,7 @@ dshow_read_close(AVFormatContext *s)
 
     pktl = ctx->pktl;
     while (pktl) {
-        AVPacketList *next = pktl->next;
+        PacketList *next = pktl->next;
         av_packet_unref(&pktl->pkt);
         av_free(pktl);
         pktl = next;
@@ -162,7 +162,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, e
 {
     AVFormatContext *s = priv_data;
     struct dshow_ctx *ctx = s->priv_data;
-    AVPacketList **ppktl, *pktl_next;
+    PacketList **ppktl, *pktl_next;
 
 //    dump_videohdr(s, vdhdr);
 
@@ -171,7 +171,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, e
     if(shall_we_drop(s, index, devtype))
         goto fail;
 
-    pktl_next = av_mallocz(sizeof(AVPacketList));
+    pktl_next = av_mallocz(sizeof(PacketList));
     if(!pktl_next)
         goto fail;
 
@@ -1262,7 +1262,7 @@ static int dshow_check_event_queue(IMediaEvent *media_event)
 static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct dshow_ctx *ctx = s->priv_data;
-    AVPacketList *pktl = NULL;
+    PacketList *pktl = NULL;
 
     while (!ctx->eof && !pktl) {
         WaitForSingleObject(ctx->mutex, INFINITE);

@@ -23,6 +23,10 @@
 
 #include "packet.h"
 
+typedef struct PacketList {
+    AVPacket pkt;
+    struct PacketList *next;
+} PacketList;
 
 /**
  * Append an AVPacket to the list.
@@ -37,7 +41,7 @@
  * @return 0 on success, negative AVERROR value on failure. On failure,
            the packet and the list are unchanged.
  */
-int avpriv_packet_list_put(AVPacketList **head, AVPacketList **tail,
+int avpriv_packet_list_put(PacketList **head, PacketList **tail,
                            AVPacket *pkt,
                            int (*copy)(AVPacket *dst, const AVPacket *src),
                            int flags);
@@ -54,7 +58,7 @@ int avpriv_packet_list_put(AVPacketList **head, AVPacketList **tail,
  * @return 0 on success, and a packet is returned. AVERROR(EAGAIN) if
  *         the list was empty.
  */
-int avpriv_packet_list_get(AVPacketList **head, AVPacketList **tail,
+int avpriv_packet_list_get(PacketList **head, PacketList **tail,
                            AVPacket *pkt);
 
 /**
@@ -63,7 +67,7 @@ int avpriv_packet_list_get(AVPacketList **head, AVPacketList **tail,
  * @param head List head element
  * @param tail List tail element
  */
-void avpriv_packet_list_free(AVPacketList **head, AVPacketList **tail);
+void avpriv_packet_list_free(PacketList **head, PacketList **tail);
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
 

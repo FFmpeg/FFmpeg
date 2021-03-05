@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/internal.h"
+#include "libavcodec/packet_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "libavutil/pixdesc.h"
@@ -830,11 +831,11 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                              int (*compare)(AVFormatContext *, const AVPacket *, const AVPacket *))
 {
     int ret;
-    AVPacketList **next_point, *this_pktl;
+    PacketList **next_point, *this_pktl;
     AVStream *st = s->streams[pkt->stream_index];
     int chunked  = s->max_chunk_size || s->max_chunk_duration;
 
-    this_pktl    = av_malloc(sizeof(AVPacketList));
+    this_pktl    = av_malloc(sizeof(PacketList));
     if (!this_pktl) {
         av_packet_unref(pkt);
         return AVERROR(ENOMEM);
@@ -931,7 +932,7 @@ static int interleave_compare_dts(AVFormatContext *s, const AVPacket *next,
 int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush)
 {
-    AVPacketList *pktl;
+    PacketList *pktl;
     int stream_count = 0;
     int noninterleaved_count = 0;
     int i, ret;
@@ -968,7 +969,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
         for (i = 0; i < s->nb_streams; i++) {
             int64_t last_dts;
-            const AVPacketList *last = s->streams[i]->internal->last_in_packet_buffer;
+            const PacketList *last = s->streams[i]->internal->last_in_packet_buffer;
 
             if (!last)
                 continue;
@@ -1064,7 +1065,7 @@ int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset
 
 const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
 {
-    AVPacketList *pktl = s->internal->packet_buffer;
+    PacketList *pktl = s->internal->packet_buffer;
     while (pktl) {
         if (pktl->pkt.stream_index == stream) {
             return &pktl->pkt;

@@ -382,8 +382,8 @@ typedef struct MatroskaDemuxContext {
     int64_t segment_start;
 
     /* the packet queue */
-    AVPacketList *queue;
-    AVPacketList *queue_end;
+    PacketList *queue;
+    PacketList *queue_end;
 
     int done;
 

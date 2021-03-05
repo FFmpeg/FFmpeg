@@ -39,7 +39,7 @@ typedef struct FlacMuxerContext {
     int audio_stream_idx;
     int waiting_pics;
     /* audio packets are queued here until we get all the attached pictures */
-    AVPacketList *queue, *queue_end;
+    PacketList *queue, *queue_end;
 
     /* updated streaminfo sent by the encoder at the end */
     uint8_t streaminfo[FLAC_STREAMINFO_SIZE];

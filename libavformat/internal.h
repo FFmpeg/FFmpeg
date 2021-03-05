@@ -73,8 +73,8 @@ struct AVFormatInternal {
      * not decoded, for example to get the codec parameters in MPEG
      * streams.
      */
-    struct AVPacketList *packet_buffer;
-    struct AVPacketList *packet_buffer_end;
+    struct PacketList *packet_buffer;
+    struct PacketList *packet_buffer_end;
 
     /* av_seek_frame() support */
     int64_t data_offset; /**< offset of the first packet */
@@ -85,13 +85,13 @@ struct AVFormatInternal {
      * be identified, as parsing cannot be done without knowing the
      * codec.
      */
-    struct AVPacketList *raw_packet_buffer;
-    struct AVPacketList *raw_packet_buffer_end;
+    struct PacketList *raw_packet_buffer;
+    struct PacketList *raw_packet_buffer_end;
     /**
      * Packets split by the parser get queued here.
      */
-    struct AVPacketList *parse_queue;
-    struct AVPacketList *parse_queue_end;
+    struct PacketList *parse_queue;
+    struct PacketList *parse_queue_end;
     /**
      * Remaining size available for raw_packet_buffer, in bytes.
      */
@@ -347,7 +347,7 @@ struct AVStreamInternal {
     /**
      * last packet in packet_buffer for this stream when muxing.
      */
-    struct AVPacketList *last_in_packet_buffer;
+    struct PacketList *last_in_packet_buffer;
 };
 
 #ifdef __GNUC__

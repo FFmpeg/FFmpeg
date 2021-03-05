@@ -132,7 +132,7 @@ typedef struct MP3Context {
     int pics_to_write;
 
     /* audio packets are queued here until we get all the attached pictures */
-    AVPacketList *queue, *queue_end;
+    PacketList *queue, *queue_end;
 } MP3Context;
 
 static const uint8_t xing_offtbl[2][2] = {{32, 17}, {17, 9}};

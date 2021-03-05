@@ -737,13 +737,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 }
 
-int avpriv_packet_list_put(AVPacketList **packet_buffer,
-                           AVPacketList **plast_pktl,
+int avpriv_packet_list_put(PacketList **packet_buffer,
+                           PacketList **plast_pktl,
                            AVPacket      *pkt,
                            int (*copy)(AVPacket *dst, const AVPacket *src),
                            int flags)
 {
-    AVPacketList *pktl = av_mallocz(sizeof(AVPacketList));
+    PacketList *pktl = av_mallocz(sizeof(PacketList));
     int ret;
 
     if (!pktl)
@@ -774,11 +774,11 @@ int avpriv_packet_list_put(AVPacketList **packet_buffer,
     return 0;
 }
 
-int avpriv_packet_list_get(AVPacketList **pkt_buffer,
-                           AVPacketList **pkt_buffer_end,
+int avpriv_packet_list_get(PacketList **pkt_buffer,
+                           PacketList **pkt_buffer_end,
                            AVPacket      *pkt)
 {
-    AVPacketList *pktl;
+    PacketList *pktl;
     if (!*pkt_buffer)
         return AVERROR(EAGAIN);
     pktl        = *pkt_buffer;
@@ -790,12 +790,12 @@ int avpriv_packet_list_get(AVPacketList **pkt_buffer,
     return 0;
 }
 
-void avpriv_packet_list_free(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
+void avpriv_packet_list_free(PacketList **pkt_buf, PacketList **pkt_buf_end)
 {
-    AVPacketList *tmp = *pkt_buf;
+    PacketList *tmp = *pkt_buf;
 
     while (tmp) {
-        AVPacketList *pktl = tmp;
+        PacketList *pktl = tmp;
         tmp = pktl->next;
         av_packet_unref(&pktl->pkt);
         av_freep(&pktl);
