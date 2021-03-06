@@ -714,6 +714,9 @@ This one is default.
 @item buffer_size
 Set internal RIST buffer size for retransmission of data.
 
+@item pkt_size
+Set maximum packet size for sending data. 1316 by default.
+
 @item log_level
 Set loglevel for RIST logging messages.
 

@@ -34,11 +34,15 @@
 
 #include <librist/librist.h>
 
+// RIST_MAX_PACKET_SIZE - 28 minimum protocol overhead
+#define MAX_PAYLOAD_SIZE (10000-28)
+
 typedef struct RISTContext {
     const AVClass *class;
 
     int profile;
     int buffer_size;
+    int packet_size;
     int log_level;
     int encryption;
     char *secret;
@@ -59,6 +63,7 @@ static const AVOption librist_options[] = {
     { "main",        NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_MAIN},     0, 0, .flags = D|E, "profile" },
     { "advanced",    NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_ADVANCED}, 0, 0, .flags = D|E, "profile" },
     { "buffer_size", "set buffer_size", OFFSET(buffer_size), AV_OPT_TYPE_INT,   {.i64=0},                     0, INT_MAX, .flags = D|E },
+    { "pkt_size",    "set packet size", OFFSET(packet_size), AV_OPT_TYPE_INT,   {.i64=1316},                  1, MAX_PAYLOAD_SIZE,    .flags = D|E },
     { "log_level",   "set loglevel",    OFFSET(log_level),   AV_OPT_TYPE_INT,   {.i64=-1},                   -1, INT_MAX, .flags = D|E },
     { "secret", "set encryption secret",OFFSET(secret),      AV_OPT_TYPE_STRING,{.str=NULL},                  0, 0,       .flags = D|E },
     { "encryption","set encryption type",OFFSET(encryption), AV_OPT_TYPE_INT   ,{.i64=0},                     0, INT_MAX, .flags = D|E },
@@ -123,13 +128,17 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     if (ret < 0)
         return risterr2ret(ret);
 
-    if (flags & AVIO_FLAG_WRITE)
+    if (flags & AVIO_FLAG_WRITE) {
+        h->max_packet_size = s->packet_size;
         ret = rist_sender_create(&s->ctx, s->profile, 0, logging_settings);
+    }
     if (ret < 0)
         goto err;
 
-    if (flags & AVIO_FLAG_READ)
+    if (flags & AVIO_FLAG_READ) {
+        h->max_packet_size = MAX_PAYLOAD_SIZE;
         ret = rist_receiver_create(&s->ctx, s->profile, logging_settings);
+    }
     if (ret < 0)
         goto err;
 
@@ -167,8 +176,6 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     if (ret < 0)
         goto err;
 
-    h->max_packet_size = 9968;
-
     return 0;
 
 err:
@@ -190,7 +197,7 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
     if (ret == 0)
         return AVERROR(EAGAIN);
 
-    if (data_block->payload_len > 9968) {
+    if (data_block->payload_len > MAX_PAYLOAD_SIZE) {
         rist_receiver_data_block_free((struct rist_data_block**)&data_block);
         return AVERROR_EXTERNAL;
     }
