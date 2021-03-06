@@ -158,7 +158,7 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     }
 
     if (s->secret && peer_config->secret[0] == 0)
-        av_strlcpy(peer_config->secret, s->secret, FFMIN(RIST_MAX_STRING_SHORT - 1, strlen(s->secret)));
+        av_strlcpy(peer_config->secret, s->secret, RIST_MAX_STRING_SHORT);
 
     if (s->secret && (s->encryption == 128 || s->encryption == 256))
         peer_config->key_size = s->encryption;
