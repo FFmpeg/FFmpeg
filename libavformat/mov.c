@@ -4582,8 +4582,6 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     // save the matrix when it is not the default identity
     if (!IS_MATRIX_IDENT(res_display_matrix)) {
-        double rotate;
-
         av_freep(&sc->display_matrix);
         sc->display_matrix = av_malloc(sizeof(int32_t) * 9);
         if (!sc->display_matrix)
@@ -4592,18 +4590,6 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         for (i = 0; i < 3; i++)
             for (j = 0; j < 3; j++)
                 sc->display_matrix[i * 3 + j] = res_display_matrix[i][j];
-
-#if FF_API_OLD_ROTATE_API
-        rotate = av_display_rotation_get(sc->display_matrix);
-        if (!isnan(rotate)) {
-            char rotate_buf[64];
-            rotate = -rotate;
-            if (rotate < 0) // for backward compatibility
-                rotate += 360;
-            snprintf(rotate_buf, sizeof(rotate_buf), "%g", rotate);
-            av_dict_set(&st->metadata, "rotate", rotate_buf, 0);
-        }
-#endif
     }
 
     // transform the display width/height according to the matrix
