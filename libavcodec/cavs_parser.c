@@ -102,5 +102,4 @@ const AVCodecParser ff_cavsvideo_parser = {
     .priv_data_size = sizeof(ParseContext),
     .parser_parse   = cavsvideo_parse,
     .parser_close   = ff_parse_close,
-    .split          = ff_mpeg4video_split,
 };

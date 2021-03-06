@@ -256,24 +256,6 @@ static int vc1_parse(AVCodecParserContext *s,
     return next;
 }
 
-static int vc1_split(AVCodecContext *avctx,
-                           const uint8_t *buf, int buf_size)
-{
-    uint32_t state = -1;
-    int charged = 0;
-    const uint8_t *ptr = buf, *end = buf + buf_size;
-
-    while (ptr < end) {
-        ptr = avpriv_find_start_code(ptr, end, &state);
-        if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
-            charged = 1;
-        } else if (charged && IS_MARKER(state))
-            return ptr - 4 - buf;
-    }
-
-    return 0;
-}
-
 static av_cold int vc1_parse_init(AVCodecParserContext *s)
 {
     VC1ParseContext *vpc = s->priv_data;
@@ -293,5 +275,4 @@ const AVCodecParser ff_vc1_parser = {
     .parser_init    = vc1_parse_init,
     .parser_parse   = vc1_parse,
     .parser_close   = ff_parse_close,
-    .split          = vc1_split,
 };

@@ -213,23 +213,6 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     return next;
 }
 
-static int mpegvideo_split(AVCodecContext *avctx,
-                           const uint8_t *buf, int buf_size)
-{
-    int i;
-    uint32_t state= -1;
-    int found=0;
-
-    for(i=0; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if(state == 0x1B3){
-            found=1;
-        }else if(found && state != 0x1B5 && state < 0x200 && state >= 0x100)
-            return i-3;
-    }
-    return 0;
-}
-
 static int mpegvideo_parse_init(AVCodecParserContext *s)
 {
     s->pict_type = AV_PICTURE_TYPE_NONE; // first frame might be partial
@@ -242,5 +225,4 @@ const AVCodecParser ff_mpegvideo_parser = {
     .parser_init    = mpegvideo_parse_init,
     .parser_parse   = mpegvideo_parse,
     .parser_close   = ff_parse_close,
-    .split          = mpegvideo_split,
 };

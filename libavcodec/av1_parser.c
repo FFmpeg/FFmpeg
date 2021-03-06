@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "av1_parse.h"
+#include "libavutil/avassert.h"
 #include "cbs.h"
 #include "cbs_av1.h"
 #include "internal.h"
@@ -205,33 +205,10 @@ static void av1_parser_close(AVCodecParserContext *ctx)
     ff_cbs_close(&s->cbc);
 }
 
-static int av1_parser_split(AVCodecContext *avctx,
-                            const uint8_t *buf, int buf_size)
-{
-    AV1OBU obu;
-    const uint8_t *ptr = buf, *end = buf + buf_size;
-
-    while (ptr < end) {
-        int len = ff_av1_extract_obu(&obu, ptr, buf_size, avctx);
-        if (len < 0)
-            break;
-
-        if (obu.type == AV1_OBU_FRAME_HEADER ||
-            obu.type == AV1_OBU_FRAME) {
-            return ptr - buf;
-        }
-        ptr      += len;
-        buf_size -= len;
-    }
-
-    return 0;
-}
-
 const AVCodecParser ff_av1_parser = {
     .codec_ids      = { AV_CODEC_ID_AV1 },
     .priv_data_size = sizeof(AV1ParseContext),
     .parser_init    = av1_parser_init,
     .parser_close   = av1_parser_close,
     .parser_parse   = av1_parser_parse,
-    .split          = av1_parser_split,
 };

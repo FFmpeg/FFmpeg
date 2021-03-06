@@ -159,5 +159,4 @@ const AVCodecParser ff_mpeg4video_parser = {
     .parser_init    = mpeg4video_parse_init,
     .parser_parse   = mpeg4video_parse,
     .parser_close   = ff_parse_close,
-    .split          = ff_mpeg4video_split,
 };

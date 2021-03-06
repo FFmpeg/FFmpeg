@@ -285,17 +285,3 @@ void ff_parse_close(AVCodecParserContext *s)
 
     av_freep(&pc->buffer);
 }
-
-int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
-{
-    uint32_t state = -1;
-    const uint8_t *ptr = buf, *end = buf + buf_size;
-
-    while (ptr < end) {
-        ptr = avpriv_find_start_code(ptr, end, &state);
-        if (state == 0x1B3 || state == 0x1B6)
-            return ptr - 4 - buf;
-    }
-
-    return 0;
-}

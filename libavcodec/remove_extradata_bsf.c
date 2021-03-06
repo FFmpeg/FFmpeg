@@ -21,9 +21,13 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
-#include "avcodec.h"
+#include "av1_parse.h"
 #include "bsf.h"
 #include "bsf_internal.h"
+#include "h264.h"
+#include "hevc.h"
+#include "internal.h"
+#include "vc1_common.h"
 
 enum RemoveFreq {
     REMOVE_FREQ_KEYFRAME,
@@ -31,13 +35,148 @@ enum RemoveFreq {
     REMOVE_FREQ_NONKEYFRAME,
 };
 
+#define START_CODE 0x000001
+
 typedef struct RemoveExtradataContext {
     const AVClass *class;
     int freq;
-
-    AVCodecParserContext *parser;
-    AVCodecContext *avctx;
 } RemoveExtradataContext;
+
+static int av1_split(const uint8_t *buf, int buf_size, void *logctx)
+{
+    AV1OBU obu;
+    const uint8_t *ptr = buf, *end = buf + buf_size;
+
+    while (ptr < end) {
+        int len = ff_av1_extract_obu(&obu, ptr, buf_size, logctx);
+        if (len < 0)
+            break;
+
+        if (obu.type == AV1_OBU_FRAME_HEADER ||
+            obu.type == AV1_OBU_FRAME) {
+            return ptr - buf;
+        }
+        ptr      += len;
+        buf_size -= len;
+    }
+
+    return 0;
+}
+
+static int h264_split(const uint8_t *buf, int buf_size)
+{
+    const uint8_t *ptr = buf, *end = buf + buf_size;
+    uint32_t state = -1;
+    int has_sps    = 0;
+    int has_pps    = 0;
+    int nalu_type;
+
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if ((state & 0xFFFFFF00) != 0x100)
+            break;
+        nalu_type = state & 0x1F;
+        if (nalu_type == H264_NAL_SPS) {
+            has_sps = 1;
+        } else if (nalu_type == H264_NAL_PPS)
+            has_pps = 1;
+        /* else if (nalu_type == 0x01 ||
+         *     nalu_type == 0x02 ||
+         *     nalu_type == 0x05) {
+         *  }
+         */
+        else if ((nalu_type != H264_NAL_SEI || has_pps) &&
+                  nalu_type != H264_NAL_AUD && nalu_type != H264_NAL_SPS_EXT &&
+                  nalu_type != 0x0f) {
+            if (has_sps) {
+                while (ptr - 4 > buf && ptr[-5] == 0)
+                    ptr--;
+                return ptr - 4 - buf;
+            }
+        }
+    }
+
+    return 0;
+}
+
+// Split after the parameter sets at the beginning of the stream if they exist.
+static int hevc_split(const uint8_t *buf, int buf_size)
+{
+    const uint8_t *ptr = buf, *end = buf + buf_size;
+    uint32_t state = -1;
+    int has_vps = 0;
+    int has_sps = 0;
+    int has_pps = 0;
+    int nut;
+
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if ((state >> 8) != START_CODE)
+            break;
+        nut = (state >> 1) & 0x3F;
+        if (nut == HEVC_NAL_VPS)
+            has_vps = 1;
+        else if (nut == HEVC_NAL_SPS)
+            has_sps = 1;
+        else if (nut == HEVC_NAL_PPS)
+            has_pps = 1;
+        else if ((nut != HEVC_NAL_SEI_PREFIX || has_pps) &&
+                  nut != HEVC_NAL_AUD) {
+            if (has_vps && has_sps) {
+                while (ptr - 4 > buf && ptr[-5] == 0)
+                    ptr--;
+                return ptr - 4 - buf;
+            }
+        }
+    }
+    return 0;
+}
+
+static int mpegvideo_split(const uint8_t *buf, int buf_size)
+{
+    uint32_t state = -1;
+    int found = 0;
+
+    for (int i = 0; i < buf_size; i++) {
+        state = (state << 8) | buf[i];
+        if (state == 0x1B3) {
+            found = 1;
+        } else if (found && state != 0x1B5 && state < 0x200 && state >= 0x100)
+            return i - 3;
+    }
+    return 0;
+}
+
+static int mpeg4video_split(const uint8_t *buf, int buf_size)
+{
+    const uint8_t *ptr = buf, *end = buf + buf_size;
+    uint32_t state = -1;
+
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if (state == 0x1B3 || state == 0x1B6)
+            return ptr - 4 - buf;
+    }
+
+    return 0;
+}
+
+static int vc1_split(const uint8_t *buf, int buf_size)
+{
+    const uint8_t *ptr = buf, *end = buf + buf_size;
+    uint32_t state = -1;
+    int charged = 0;
+
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
+            charged = 1;
+        } else if (charged && IS_MARKER(state))
+            return ptr - 4 - buf;
+    }
+
+    return 0;
+}
 
 static int remove_extradata(AVBSFContext *ctx, AVPacket *pkt)
 {
@@ -49,45 +188,43 @@ static int remove_extradata(AVBSFContext *ctx, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-    if (s->parser && s->parser->parser->split) {
-        if (s->freq == REMOVE_FREQ_ALL ||
-            (s->freq == REMOVE_FREQ_NONKEYFRAME && !(pkt->flags & AV_PKT_FLAG_KEY)) ||
-            (s->freq == REMOVE_FREQ_KEYFRAME && pkt->flags & AV_PKT_FLAG_KEY)) {
-            int i = s->parser->parser->split(s->avctx, pkt->data, pkt->size);
-            pkt->data += i;
-            pkt->size -= i;
+    if (s->freq == REMOVE_FREQ_ALL ||
+        (s->freq == REMOVE_FREQ_NONKEYFRAME && !(pkt->flags & AV_PKT_FLAG_KEY)) ||
+        (s->freq == REMOVE_FREQ_KEYFRAME && pkt->flags & AV_PKT_FLAG_KEY)) {
+        int i;
+
+        switch (ctx->par_in->codec_id) {
+        case AV_CODEC_ID_AV1:
+            i = av1_split(pkt->data, pkt->size, ctx);
+            break;
+        case AV_CODEC_ID_AVS2:
+        case AV_CODEC_ID_AVS3:
+        case AV_CODEC_ID_CAVS:
+        case AV_CODEC_ID_MPEG4:
+            i = mpeg4video_split(pkt->data, pkt->size);
+            break;
+        case AV_CODEC_ID_H264:
+            i = h264_split(pkt->data, pkt->size);
+            break;
+        case AV_CODEC_ID_HEVC:
+            i = hevc_split(pkt->data, pkt->size);
+            break;
+        case AV_CODEC_ID_MPEG1VIDEO:
+        case AV_CODEC_ID_MPEG2VIDEO:
+            i = mpegvideo_split(pkt->data, pkt->size);
+            break;
+        case AV_CODEC_ID_VC1:
+            i = vc1_split(pkt->data, pkt->size);
+            break;
+        default:
+            i = 0;
         }
+
+        pkt->data += i;
+        pkt->size -= i;
     }
 
     return 0;
-}
-
-static int remove_extradata_init(AVBSFContext *ctx)
-{
-    RemoveExtradataContext *s = ctx->priv_data;
-    int ret;
-
-    s->parser = av_parser_init(ctx->par_in->codec_id);
-
-    if (s->parser) {
-        s->avctx = avcodec_alloc_context3(NULL);
-        if (!s->avctx)
-            return AVERROR(ENOMEM);
-
-        ret = avcodec_parameters_to_context(s->avctx, ctx->par_in);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
-
-static void remove_extradata_close(AVBSFContext *ctx)
-{
-    RemoveExtradataContext *s = ctx->priv_data;
-
-    avcodec_free_context(&s->avctx);
-    av_parser_close(s->parser);
 }
 
 #define OFFSET(x) offsetof(RemoveExtradataContext, x)
@@ -112,7 +249,5 @@ const AVBitStreamFilter ff_remove_extradata_bsf = {
     .name           = "remove_extra",
     .priv_data_size = sizeof(RemoveExtradataContext),
     .priv_class     = &remove_extradata_class,
-    .init           = remove_extradata_init,
-    .close          = remove_extradata_close,
     .filter         = remove_extradata,
 };
