@@ -157,10 +157,6 @@ AVFilterChannelLayouts *ff_all_channel_counts(void);
 av_warn_unused_result
 AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts);
 
-#if LIBAVFILTER_VERSION_MAJOR < 8
-AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
-#endif
-
 /**
  * A helper for query_formats() which sets all links to the same list of channel
  * layouts/sample rates. If there are no links hooked to this filter, the list

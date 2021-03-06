@@ -304,13 +304,6 @@ AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts)
     return formats;
 }
 
-#if LIBAVFILTER_VERSION_MAJOR < 8
-AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
-{
-    return ff_make_format64_list(fmts);
-}
-#endif
-
 #define ADD_FORMAT(f, fmt, unref_fn, type, list, nb)        \
 do {                                                        \
     type *fmts;                                             \
