@@ -131,9 +131,6 @@ void avfilter_graph_free(AVFilterGraph **graph)
 
     av_freep(&(*graph)->scale_sws_opts);
     av_freep(&(*graph)->aresample_swr_opts);
-#if FF_API_LAVR_OPTS
-    av_freep(&(*graph)->resample_lavr_opts);
-#endif
     av_freep(&(*graph)->filters);
     av_freep(&(*graph)->internal);
     av_freep(graph);
