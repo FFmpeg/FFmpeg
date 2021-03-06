@@ -131,7 +131,7 @@ end:
     return next;
 }
 
-AVCodecParser ff_pnm_parser = {
+const AVCodecParser ff_pnm_parser = {
     .codec_ids      = { AV_CODEC_ID_PGM, AV_CODEC_ID_PGMYUV, AV_CODEC_ID_PPM,
                         AV_CODEC_ID_PBM, AV_CODEC_ID_PAM },
     .priv_data_size = sizeof(PNMParseContext),

@@ -112,7 +112,7 @@ static int sbc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_sbc_parser = {
+const AVCodecParser ff_sbc_parser = {
     .codec_ids      = { AV_CODEC_ID_SBC },
     .priv_data_size = sizeof(SBCParseContext),
     .parser_parse   = sbc_parse,

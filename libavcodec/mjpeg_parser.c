@@ -128,7 +128,7 @@ static int jpeg_parse(AVCodecParserContext *s,
 }
 
 
-AVCodecParser ff_mjpeg_parser = {
+const AVCodecParser ff_mjpeg_parser = {
     .codec_ids      = { AV_CODEC_ID_MJPEG, AV_CODEC_ID_JPEGLS },
     .priv_data_size = sizeof(MJPEGParserContext),
     .parser_parse   = jpeg_parse,

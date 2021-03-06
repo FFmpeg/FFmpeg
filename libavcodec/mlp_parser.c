@@ -208,7 +208,7 @@ lost_sync:
     return 1;
 }
 
-AVCodecParser ff_mlp_parser = {
+const AVCodecParser ff_mlp_parser = {
     .codec_ids      = { AV_CODEC_ID_MLP, AV_CODEC_ID_TRUEHD },
     .priv_data_size = sizeof(MLPParseContext),
     .parser_init    = mlp_init,

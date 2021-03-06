@@ -180,7 +180,7 @@ static int gif_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_gif_parser = {
+const AVCodecParser ff_gif_parser = {
     .codec_ids      = { AV_CODEC_ID_GIF },
     .priv_data_size = sizeof(GIFParseContext),
     .parser_parse   = gif_parse,

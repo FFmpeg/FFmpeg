@@ -97,7 +97,7 @@ static int cri_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_cri_parser = {
+const AVCodecParser ff_cri_parser = {
     .codec_ids      = { AV_CODEC_ID_CRI },
     .priv_data_size = sizeof(CRIParser),
     .parser_parse   = cri_parse,

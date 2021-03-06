@@ -62,7 +62,7 @@ end:
     return buf_size;
 }
 
-AVCodecParser ff_dolby_e_parser = {
+const AVCodecParser ff_dolby_e_parser = {
     .codec_ids      = { AV_CODEC_ID_DOLBY_E },
     .priv_data_size = sizeof(DBEParseContext),
     .parser_parse   = dolby_e_parse,

@@ -138,7 +138,7 @@ static int dnxhd_parse(AVCodecParserContext *s,
     return next;
 }
 
-AVCodecParser ff_dnxhd_parser = {
+const AVCodecParser ff_dnxhd_parser = {
     .codec_ids      = { AV_CODEC_ID_DNXHD },
     .priv_data_size = sizeof(DNXHDParserContext),
     .parser_parse   = dnxhd_parse,

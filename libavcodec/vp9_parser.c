@@ -64,7 +64,7 @@ static int parse(AVCodecParserContext *ctx,
     return size;
 }
 
-AVCodecParser ff_vp9_parser = {
+const AVCodecParser ff_vp9_parser = {
     .codec_ids      = { AV_CODEC_ID_VP9 },
     .parser_parse   = parse,
 };

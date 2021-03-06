@@ -190,7 +190,7 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_opus_parser = {
+const AVCodecParser ff_opus_parser = {
     .codec_ids      = { AV_CODEC_ID_OPUS },
     .priv_data_size = sizeof(OpusParseContext),
     .parser_parse   = opus_parse,

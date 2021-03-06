@@ -170,7 +170,7 @@ static int avs3_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_avs3_parser = {
+const AVCodecParser ff_avs3_parser = {
     .codec_ids      = { AV_CODEC_ID_AVS3 },
     .priv_data_size = sizeof(ParseContext),
     .parser_parse   = avs3_parse,

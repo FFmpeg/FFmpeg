@@ -332,7 +332,7 @@ static void vorbis_parser_close(AVCodecParserContext *ctx)
     av_vorbis_parse_free(&s->vp);
 }
 
-AVCodecParser ff_vorbis_parser = {
+const AVCodecParser ff_vorbis_parser = {
     .codec_ids      = { AV_CODEC_ID_VORBIS },
     .priv_data_size = sizeof(VorbisParseContext),
     .parser_parse   = vorbis_parse,

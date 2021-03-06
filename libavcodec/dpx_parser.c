@@ -108,7 +108,7 @@ flush:
     return next;
 }
 
-AVCodecParser ff_dpx_parser = {
+const AVCodecParser ff_dpx_parser = {
     .codec_ids      = { AV_CODEC_ID_DPX },
     .priv_data_size = sizeof(DPXParseContext),
     .parser_parse   = dpx_parse,

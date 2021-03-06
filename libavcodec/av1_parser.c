@@ -227,7 +227,7 @@ static int av1_parser_split(AVCodecContext *avctx,
     return 0;
 }
 
-AVCodecParser ff_av1_parser = {
+const AVCodecParser ff_av1_parser = {
     .codec_ids      = { AV_CODEC_ID_AV1 },
     .priv_data_size = sizeof(AV1ParseContext),
     .parser_init    = av1_parser_init,

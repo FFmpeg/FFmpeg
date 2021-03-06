@@ -165,7 +165,7 @@ static int dvbsub_parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-AVCodecParser ff_dvbsub_parser = {
+const AVCodecParser ff_dvbsub_parser = {
     .codec_ids      = { AV_CODEC_ID_DVB_SUBTITLE },
     .priv_data_size = sizeof(DVBSubParseContext),
     .parser_parse   = dvbsub_parse,

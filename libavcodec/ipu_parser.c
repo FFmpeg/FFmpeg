@@ -69,7 +69,7 @@ static int ipu_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser ff_ipu_parser = {
+const AVCodecParser ff_ipu_parser = {
     .codec_ids      = { AV_CODEC_ID_IPU },
     .priv_data_size = sizeof(IPUParseContext),
     .parser_parse   = ipu_parse,

@@ -182,7 +182,7 @@ static int jpeg2000_parse(AVCodecParserContext *s,
     return next;
 }
 
-AVCodecParser ff_jpeg2000_parser = {
+const AVCodecParser ff_jpeg2000_parser = {
     .codec_ids      = { AV_CODEC_ID_JPEG2000 },
     .priv_data_size = sizeof(JPEG2000ParserContext),
     .parser_parse   = jpeg2000_parse,

@@ -40,7 +40,7 @@ static int dvaudio_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodecParser ff_dvaudio_parser = {
+const AVCodecParser ff_dvaudio_parser = {
     .codec_ids      = { AV_CODEC_ID_DVAUDIO },
     .parser_parse   = dvaudio_parse,
 };
