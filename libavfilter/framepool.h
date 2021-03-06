@@ -23,6 +23,7 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/frame.h"
+#include "libavutil/internal.h"
 
 /**
  * Frame pool. This structure is opaque and not meant to be accessed
@@ -43,7 +44,7 @@ typedef struct FFFramePool FFFramePool;
  * @param align buffers alignement of each frame in this pool
  * @return newly created video frame pool on success, NULL on error.
  */
-FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
+FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(buffer_size_t size),
                                       int width,
                                       int height,
                                       enum AVPixelFormat format,
@@ -61,7 +62,7 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
  * @param align buffers alignement of each frame in this pool
  * @return newly created audio frame pool on success, NULL on error.
  */
-FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(int size),
+FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(buffer_size_t size),
                                       int channels,
                                       int samples,
                                       enum AVSampleFormat format,

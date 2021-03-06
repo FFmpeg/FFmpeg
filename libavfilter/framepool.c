@@ -48,7 +48,7 @@ struct FFFramePool {
 
 };
 
-FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
+FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(buffer_size_t size),
                                       int width,
                                       int height,
                                       enum AVPixelFormat format,
@@ -116,7 +116,7 @@ fail:
     return NULL;
 }
 
-FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(int size),
+FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(buffer_size_t size),
                                       int channels,
                                       int nb_samples,
                                       enum AVSampleFormat format,
