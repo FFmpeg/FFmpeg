@@ -312,7 +312,8 @@ static void construct_cc(AVFormatContext *avctx, struct decklink_ctx *ctx,
     uint16_t *cdp_words;
     uint16_t len;
     uint8_t cc_count;
-    int size, ret, i;
+    buffer_size_t size;
+    int ret, i;
 
     const uint8_t *data = av_packet_get_side_data(pkt, AV_PKT_DATA_A53_CC, &size);
     if (!data)
