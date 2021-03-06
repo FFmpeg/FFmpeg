@@ -2083,7 +2083,11 @@ int av_stream_add_side_data(AVStream *st, enum AVPacketSideDataType type,
  * @return pointer to fresh allocated data or NULL otherwise
  */
 uint8_t *av_stream_new_side_data(AVStream *stream,
+#if FF_API_BUFFER_SIZE_T
                                  enum AVPacketSideDataType type, int size);
+#else
+                                 enum AVPacketSideDataType type, size_t size);
+#endif
 /**
  * Get side information from stream.
  *
@@ -2094,7 +2098,11 @@ uint8_t *av_stream_new_side_data(AVStream *stream,
  * @return pointer to data if present or NULL otherwise
  */
 uint8_t *av_stream_get_side_data(const AVStream *stream,
+#if FF_API_BUFFER_SIZE_T
                                  enum AVPacketSideDataType type, int *size);
+#else
+                                 enum AVPacketSideDataType type, size_t *size);
+#endif
 
 AVProgram *av_new_program(AVFormatContext *s, int id);
 

@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-10 - xxxxxxxxxx - lavf 58.72.100 - avformat.h
+  Change AVBufferRef related AVStream function and struct size
+  parameter and fields type to size_t at next major bump.
+
 2021-03-10 - xxxxxxxxxx - lavc 58.130.100 - packet.h
   Change AVBufferRef related AVPacket function and struct size
   parameter and fields type to size_t at next major bump.
