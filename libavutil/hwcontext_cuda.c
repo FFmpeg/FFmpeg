@@ -93,7 +93,7 @@ static void cuda_buffer_free(void *opaque, uint8_t *data)
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 }
 
-static AVBufferRef *cuda_pool_alloc(void *opaque, int size)
+static AVBufferRef *cuda_pool_alloc(void *opaque, buffer_size_t size)
 {
     AVHWFramesContext        *ctx = opaque;
     AVHWDeviceContext *device_ctx = ctx->device_ctx;

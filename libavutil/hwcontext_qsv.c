@@ -194,7 +194,7 @@ static void qsv_pool_release_dummy(void *opaque, uint8_t *data)
 {
 }
 
-static AVBufferRef *qsv_pool_alloc(void *opaque, int size)
+static AVBufferRef *qsv_pool_alloc(void *opaque, buffer_size_t size)
 {
     AVHWFramesContext    *ctx = (AVHWFramesContext*)opaque;
     QSVFramesContext       *s = ctx->internal->priv;

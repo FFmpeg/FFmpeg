@@ -202,7 +202,7 @@ static AVBufferRef *d3d11va_alloc_single(AVHWFramesContext *ctx)
     return wrap_texture_buf(tex, 0);
 }
 
-static AVBufferRef *d3d11va_pool_alloc(void *opaque, int size)
+static AVBufferRef *d3d11va_pool_alloc(void *opaque, buffer_size_t size)
 {
     AVHWFramesContext        *ctx = (AVHWFramesContext*)opaque;
     D3D11VAFramesContext       *s = ctx->internal->priv;

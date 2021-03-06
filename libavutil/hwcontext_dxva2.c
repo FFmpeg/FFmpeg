@@ -124,7 +124,7 @@ static void dxva2_pool_release_dummy(void *opaque, uint8_t *data)
     // released in dxva2_frames_uninit()
 }
 
-static AVBufferRef *dxva2_pool_alloc(void *opaque, int size)
+static AVBufferRef *dxva2_pool_alloc(void *opaque, buffer_size_t size)
 {
     AVHWFramesContext      *ctx = (AVHWFramesContext*)opaque;
     DXVA2FramesContext       *s = ctx->internal->priv;
