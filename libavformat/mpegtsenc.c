@@ -1677,7 +1677,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     const int64_t max_audio_delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE) / 2;
     int64_t dts = pkt->dts, pts = pkt->pts;
     int opus_samples = 0;
-    int side_data_size;
+    buffer_size_t side_data_size;
     uint8_t *side_data = NULL;
     int stream_id = -1;
 
@@ -1814,7 +1814,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         /* Add Opus control header */
         if ((AV_RB16(pkt->data) >> 5) != 0x3ff) {
             uint8_t *side_data;
-            int side_data_size;
+            buffer_size_t side_data_size;
             int i, n;
             int ctrl_header_size;
             int trim_start = 0, trim_end = 0;

@@ -6375,7 +6375,8 @@ static int mov_read_pssh(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     uint8_t *side_data, *extra_data, *old_side_data;
     size_t side_data_size;
-    int ret = 0, old_side_data_size;
+    buffer_size_t old_side_data_size;
+    int ret = 0;
     unsigned int version, kid_count, extra_data_size, alloc_size = 0;
 
     if (c->fc->nb_streams < 1)

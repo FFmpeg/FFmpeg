@@ -64,7 +64,7 @@ static int webvtt_write_header(AVFormatContext *ctx)
 static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
     AVIOContext  *pb = ctx->pb;
-    int id_size, settings_size;
+    buffer_size_t id_size, settings_size;
     uint8_t *id, *settings;
 
     avio_printf(pb, "\n");
