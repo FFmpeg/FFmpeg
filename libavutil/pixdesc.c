@@ -1329,33 +1329,12 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_RGB,
     },
-#if FF_API_VAAPI
-    [AV_PIX_FMT_VAAPI_MOCO] = {
-        .name = "vaapi_moco",
-        .log2_chroma_w = 1,
-        .log2_chroma_h = 1,
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
-    },
-    [AV_PIX_FMT_VAAPI_IDCT] = {
-        .name = "vaapi_idct",
-        .log2_chroma_w = 1,
-        .log2_chroma_h = 1,
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
-    },
-    [AV_PIX_FMT_VAAPI_VLD] = {
-        .name = "vaapi_vld",
-        .log2_chroma_w = 1,
-        .log2_chroma_h = 1,
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
-    },
-#else
     [AV_PIX_FMT_VAAPI] = {
         .name = "vaapi",
         .log2_chroma_w = 1,
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
-#endif
     [AV_PIX_FMT_YUV420P9LE] = {
         .name = "yuv420p9le",
         .nb_components = 3,
@@ -2515,10 +2494,6 @@ enum AVPixelFormat av_get_pix_fmt(const char *name)
         pix_fmt = get_pix_fmt_internal(name2);
     }
 
-#if FF_API_VAAPI
-    if (pix_fmt == AV_PIX_FMT_NONE && !strcmp(name, "vaapi"))
-        pix_fmt = AV_PIX_FMT_VAAPI;
-#endif
     return pix_fmt;
 }
 
