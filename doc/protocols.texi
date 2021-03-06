@@ -1161,12 +1161,6 @@ Set minimum local UDP port. Default value is 5000.
 @item max_port
 Set maximum local UDP port. Default value is 65000.
 
-@item timeout
-This option is deprecated. Use @option{listen_timeout} instead. Set maximum timeout (in seconds) to wait for incoming connections.
-
-A value of -1 means infinite (default). This option implies the
-@option{rtsp_flags} set to @samp{listen}.
-
 @item listen_timeout
 Set maximum timeout (in seconds) to establish an initial connection. Setting
 @option{listen_timeout} > 0 sets @option{rtsp_flags} to @samp{listen}. Default is -1
@@ -1175,12 +1169,8 @@ which means an infinite timeout when @samp{listen} mode is set.
 @item reorder_queue_size
 Set number of packets to buffer for handling of reordered packets.
 
-@item stimeout
+@item timeout
 Set socket TCP I/O timeout in microseconds.
-
-@item user-agent
-This option is deprecated. Use @option{user_agent} instead. Override User-Agent header. If not specified, it defaults to the
-libavformat identifier string.
 
 @item user_agent
 Override User-Agent header. If not specified, it defaults to the
