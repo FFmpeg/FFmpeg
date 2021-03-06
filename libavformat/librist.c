@@ -64,7 +64,7 @@ static const AVOption librist_options[] = {
     { "advanced",    NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_ADVANCED}, 0, 0, .flags = D|E, "profile" },
     { "buffer_size", "set buffer_size", OFFSET(buffer_size), AV_OPT_TYPE_INT,   {.i64=0},                     0, INT_MAX, .flags = D|E },
     { "pkt_size",    "set packet size", OFFSET(packet_size), AV_OPT_TYPE_INT,   {.i64=1316},                  1, MAX_PAYLOAD_SIZE,    .flags = D|E },
-    { "log_level",   "set loglevel",    OFFSET(log_level),   AV_OPT_TYPE_INT,   {.i64=-1},                   -1, INT_MAX, .flags = D|E },
+    { "log_level",   "set loglevel",    OFFSET(log_level),   AV_OPT_TYPE_INT,   {.i64=RIST_LOG_INFO},        -1, INT_MAX, .flags = D|E },
     { "secret", "set encryption secret",OFFSET(secret),      AV_OPT_TYPE_STRING,{.str=NULL},                  0, 0,       .flags = D|E },
     { "encryption","set encryption type",OFFSET(encryption), AV_OPT_TYPE_INT   ,{.i64=0},                     0, INT_MAX, .flags = D|E },
     { NULL }
@@ -87,12 +87,11 @@ static int log_cb(void *arg, enum rist_log_level log_level, const char *msg)
     switch (log_level) {
     case RIST_LOG_ERROR:    level = AV_LOG_ERROR;   break;
     case RIST_LOG_WARN:     level = AV_LOG_WARNING; break;
-    case RIST_LOG_NOTICE:   level = AV_LOG_VERBOSE; break;
-    case RIST_LOG_INFO:     level = AV_LOG_INFO;    break;
+    case RIST_LOG_NOTICE:   level = AV_LOG_INFO;    break;
+    case RIST_LOG_INFO:     level = AV_LOG_VERBOSE; break;
     case RIST_LOG_DEBUG:    level = AV_LOG_DEBUG;   break;
     case RIST_LOG_DISABLE:  level = AV_LOG_QUIET;   break;
-    case RIST_LOG_SIMULATE: level = AV_LOG_TRACE;   break;
-    default: level = AV_LOG_PANIC;
+    default: level = AV_LOG_WARNING;
     }
 
     av_log(arg, level, "%s", msg);

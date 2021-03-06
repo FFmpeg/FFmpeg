@@ -718,7 +718,9 @@ Set internal RIST buffer size for retransmission of data.
 Set maximum packet size for sending data. 1316 by default.
 
 @item log_level
-Set loglevel for RIST logging messages.
+Set loglevel for RIST logging messages. You only need to set this if you
+explicitly want to enable debug level messages or packet loss simulation,
+otherwise the regular loglevel is respected.
 
 @item secret
 Set override of encryption secret, by default is unset.
