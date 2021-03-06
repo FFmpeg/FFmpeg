@@ -259,7 +259,7 @@ typedef struct AVCodec {
     const AVCodecDefault *defaults;
 
     /**
-     * Initialize codec static data, called from avcodec_register().
+     * Initialize codec static data, called from av_codec_iterate().
      *
      * This is not intended for time consuming operations as it is
      * run for every codec regardless of that codec being used.
