@@ -293,11 +293,6 @@ static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
     } else {
         frame->pts = info->presentationTimeUs;
     }
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = frame->pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     frame->pkt_dts = AV_NOPTS_VALUE;
     frame->color_range = avctx->color_range;
     frame->color_primaries = avctx->color_primaries;
@@ -386,11 +381,6 @@ static int mediacodec_wrap_sw_buffer(AVCodecContext *avctx,
     } else {
         frame->pts = info->presentationTimeUs;
     }
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = frame->pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     frame->pkt_dts = AV_NOPTS_VALUE;
 
     av_log(avctx, AV_LOG_TRACE,

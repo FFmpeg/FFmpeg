@@ -544,11 +544,6 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
 
         outsurf = &out_frame->surface;
 
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_pts = outsurf->Data.TimeStamp;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         frame->pts = outsurf->Data.TimeStamp;
 
         frame->repeat_pict =

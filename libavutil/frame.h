@@ -399,15 +399,6 @@ typedef struct AVFrame {
      */
     int64_t pts;
 
-#if FF_API_PKT_PTS
-    /**
-     * PTS copied from the AVPacket that was decoded to produce this frame.
-     * @deprecated use the pts field instead
-     */
-    attribute_deprecated
-    int64_t pkt_pts;
-#endif
-
     /**
      * DTS copied from the AVPacket that triggered returning this frame. (if frame threading isn't used)
      * This is also the Presentation time of this AVFrame calculated from

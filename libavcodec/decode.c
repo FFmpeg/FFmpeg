@@ -394,12 +394,6 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
                                                    avctx->pkt_timebase);
                     if(frame->pts!=AV_NOPTS_VALUE)
                         frame->pts += diff_ts;
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-                    if(frame->pkt_pts!=AV_NOPTS_VALUE)
-                        frame->pkt_pts += diff_ts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                     if(frame->pkt_dts!=AV_NOPTS_VALUE)
                         frame->pkt_dts += diff_ts;
                     if (frame->pkt_duration >= diff_ts)
@@ -1504,11 +1498,6 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
                              pkt, sizeof(*pkt), NULL);
 
     frame->pts = pkt->pts;
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = pkt->pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     frame->pkt_pos      = pkt->pos;
     frame->pkt_duration = pkt->duration;
     frame->pkt_size     = pkt->size;

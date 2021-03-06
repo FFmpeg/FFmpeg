@@ -656,11 +656,6 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
     }
 
     frame->pts = buffer->pts == MMAL_TIME_UNKNOWN ? AV_NOPTS_VALUE : buffer->pts;
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = frame->pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     frame->pkt_dts = AV_NOPTS_VALUE;
 
 done:

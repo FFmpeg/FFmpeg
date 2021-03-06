@@ -540,11 +540,6 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
         *got_frame_ptr = 1;
         if (at->last_pts != AV_NOPTS_VALUE) {
             frame->pts = at->last_pts;
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-            frame->pkt_pts = at->last_pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             at->last_pts = avpkt->pts;
         }
     } else if (ret && ret != 1) {
