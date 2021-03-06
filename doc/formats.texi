@@ -49,7 +49,6 @@ Generate missing PTS if DTS is present.
 Ignore DTS if PTS is set. Inert when nofillin is set.
 @item ignidx
 Ignore index.
-@item keepside (@emph{deprecated},@emph{inert})
 @item nobuffer
 Reduce the latency introduced by buffering during initial input streams analysis.
 @item nofillin
