@@ -105,9 +105,6 @@
  * @{
  */
 
-#ifndef FF_API_FRAME_GET_SET
-#define FF_API_FRAME_GET_SET            (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
 #ifndef FF_API_PSEUDOPAL
 #define FF_API_PSEUDOPAL                (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
