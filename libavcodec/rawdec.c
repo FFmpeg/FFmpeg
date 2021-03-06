@@ -367,7 +367,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        int pal_size;
+        buffer_size_t pal_size;
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE,
                                                      &pal_size);
         int ret;

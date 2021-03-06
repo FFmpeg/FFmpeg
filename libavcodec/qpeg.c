@@ -274,7 +274,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const ref = a->ref;
     uint8_t* outdata;
     int delta, intra, ret;
-    int pal_size;
+    buffer_size_t pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
 
     if (avpkt->size < 0x86) {

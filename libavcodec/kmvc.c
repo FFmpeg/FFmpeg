@@ -268,7 +268,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
     int i, ret;
     int header;
     int blocksize;
-    int pal_size;
+    buffer_size_t pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
 
     bytestream2_init(&ctx->g, avpkt->data, avpkt->size);

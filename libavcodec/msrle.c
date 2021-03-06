@@ -97,7 +97,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         return ret;
 
     if (avctx->bits_per_coded_sample > 1 && avctx->bits_per_coded_sample <= 8) {
-        int size;
+        buffer_size_t size;
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
 
         if (pal && size == AVPALETTE_SIZE) {

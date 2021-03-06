@@ -49,7 +49,8 @@ static int imx_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
     SimbiosisIMXContext *imx = avctx->priv_data;
-    int ret, x, y, pal_size;
+    int ret, x, y;
+    buffer_size_t pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
     AVFrame *frame = imx->frame;
     GetByteContext gb;

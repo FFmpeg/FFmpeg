@@ -593,7 +593,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->side_data_elems      = 0;
     for (i = 0; i < src->side_data_elems; i++) {
         enum AVPacketSideDataType type = src->side_data[i].type;
-        int size          = src->side_data[i].size;
+        buffer_size_t size = src->side_data[i].size;
         uint8_t *src_data = src->side_data[i].data;
         uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
 
@@ -800,7 +800,7 @@ void avpriv_packet_list_free(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type)
 {
     uint8_t *side_data;
-    int side_data_size;
+    buffer_size_t side_data_size;
     int i;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS, &side_data_size);
@@ -826,7 +826,7 @@ int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp)
 {
     AVProducerReferenceTime *prft;
     uint8_t *side_data;
-    int side_data_size;
+    buffer_size_t side_data_size;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT, &side_data_size);
     if (!side_data) {

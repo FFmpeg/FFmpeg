@@ -21,6 +21,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/pixdesc.h"
 
@@ -2234,7 +2235,7 @@ static void vaapi_encode_free_output_buffer(void *opaque,
 }
 
 static AVBufferRef *vaapi_encode_alloc_output_buffer(void *opaque,
-                                                     int size)
+                                                     buffer_size_t size)
 {
     AVCodecContext   *avctx = opaque;
     VAAPIEncodeContext *ctx = avctx->priv_data;

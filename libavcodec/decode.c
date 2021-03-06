@@ -66,7 +66,8 @@ typedef struct FramePool {
 
 static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
-    int size, ret;
+    int ret;
+    buffer_size_t size;
     const uint8_t *data;
     uint32_t flags;
     int64_t val;
@@ -349,7 +350,7 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
             got_frame = 0;
     } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
         uint8_t *side;
-        int side_size;
+        buffer_size_t side_size;
         uint32_t discard_padding = 0;
         uint8_t skip_reason = 0;
         uint8_t discard_reason = 0;
@@ -1709,7 +1710,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
 
 static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 {
-    int size;
+    buffer_size_t size;
     const uint8_t *side_metadata;
 
     AVDictionary **frame_md = &frame->metadata;
@@ -1755,7 +1756,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         frame->pkt_size     = pkt->size;
 
         for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
-            int size;
+            buffer_size_t size;
             uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
             if (packet_sd) {
                 AVFrameSideData *frame_sd = av_frame_new_side_data(frame,

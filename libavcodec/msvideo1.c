@@ -314,7 +314,7 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
         return ret;
 
     if (s->mode_8bit) {
-        int size;
+        buffer_size_t size;
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
 
         if (pal && size == AVPALETTE_SIZE) {

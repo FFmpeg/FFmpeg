@@ -221,7 +221,7 @@ static int vpx_decode(AVCodecContext *avctx,
     struct vpx_image *img, *img_alpha;
     int ret;
     uint8_t *side_data = NULL;
-    int side_data_size;
+    buffer_size_t side_data_size;
 
     ret = decode_frame(avctx, &ctx->decoder, avpkt->data, avpkt->size);
     if (ret)

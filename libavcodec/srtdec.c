@@ -58,7 +58,8 @@ static int srt_decode_frame(AVCodecContext *avctx,
     AVSubtitle *sub = data;
     AVBPrint buffer;
     int x1 = -1, y1 = -1, x2 = -1, y2 = -1;
-    int size, ret;
+    int ret;
+    buffer_size_t size;
     const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
     FFASSDecoderContext *s = avctx->priv_data;
 

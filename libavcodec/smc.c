@@ -435,7 +435,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SmcContext *s = avctx->priv_data;
-    int pal_size;
+    buffer_size_t pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
     int ret;
     int total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
