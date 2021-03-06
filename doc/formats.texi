@@ -69,7 +69,6 @@ This ensures that file and data checksums are reproducible and match between
 platforms. Its primary use is for regression testing.
 @item flush_packets
 Write out packets immediately.
-@item latm (@emph{deprecated},@emph{inert})
 @item shortest
 Stop muxing at the end of the shortest stream.
 It may be needed to increase max_interleave_delta to avoid flushing the longer

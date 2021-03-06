@@ -1274,9 +1274,6 @@ typedef struct AVFormatContext {
  * This flag is mainly intended for testing.
  */
 #define AVFMT_FLAG_BITEXACT         0x0400
-#if FF_API_LAVF_MP4A_LATM
-#define AVFMT_FLAG_MP4A_LATM    0x8000 ///< Deprecated, does nothing.
-#endif
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
 #if FF_API_LAVF_PRIV_OPT
 #define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (deprecated, will do nothing once av_demuxer_open() is removed)
