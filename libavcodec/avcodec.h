@@ -2877,7 +2877,7 @@ enum AVPictureStructure {
 
 typedef struct AVCodecParserContext {
     void *priv_data;
-    struct AVCodecParser *parser;
+    const struct AVCodecParser *parser;
     int64_t frame_offset; /* offset of the current frame */
     int64_t cur_offset; /* current offset
                            (incremented by each av_parser_parse()) */

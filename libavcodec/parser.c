@@ -55,7 +55,7 @@ found:
     s = av_mallocz(sizeof(AVCodecParserContext));
     if (!s)
         goto err_out;
-    s->parser = (AVCodecParser*)parser;
+    s->parser = parser;
     s->priv_data = av_mallocz(parser->priv_data_size);
     if (!s->priv_data)
         goto err_out;
