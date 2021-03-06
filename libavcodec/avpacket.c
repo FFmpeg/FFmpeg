@@ -330,12 +330,16 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 
 
 uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-                                 int size)
+                                 buffer_size_t size)
 {
     int ret;
     uint8_t *data;
 
+#if FF_API_BUFFER_SIZE_T
     if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+#else
+    if (size > SIZE_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+#endif
         return NULL;
     data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
@@ -351,7 +355,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 }
 
 uint8_t *av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
-                                 int *size)
+                                 buffer_size_t *size)
 {
     int i;
 
@@ -554,7 +558,7 @@ int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **di
 }
 
 int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-                               int size)
+                               buffer_size_t size)
 {
     int i;
 
