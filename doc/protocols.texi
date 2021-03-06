@@ -406,9 +406,6 @@ Set the Referer header. Include 'Referer: URL' header in HTTP request.
 Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
 
-@item user-agent
-This is a deprecated option, you can use user_agent instead it.
-
 @item reconnect_at_eof
 If set then eof is treated like an error and causes reconnection, this is useful
 for live / endless streams.
