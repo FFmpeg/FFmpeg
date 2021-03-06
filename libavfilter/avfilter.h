@@ -665,15 +665,6 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  */
 void avfilter_link_free(AVFilterLink **link);
 
-#if FF_API_FILTER_LINK_SET_CLOSED
-/**
- * Set the closed field of a link.
- * @deprecated applications are not supposed to mess with links, they should
- * close the sinks.
- */
-attribute_deprecated
-void avfilter_link_set_closed(AVFilterLink *link, int closed);
-#endif
 /**
  * Negotiate the media format, dimensions, etc of all inputs to a filter.
  *
