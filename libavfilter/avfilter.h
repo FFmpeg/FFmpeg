@@ -286,14 +286,6 @@ typedef struct AVFilter {
 
     int flags_internal; ///< Additional flags for avfilter internal use only.
 
-#if FF_API_NEXT
-    /**
-     * Used by the filter registration system. Must not be touched by any other
-     * code.
-     */
-    struct AVFilter *next;
-#endif
-
     /**
      * Make the filter instance process a command.
      *
@@ -709,33 +701,6 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
  *         finished
  */
 const AVFilter *av_filter_iterate(void **opaque);
-
-#if FF_API_NEXT
-/** Initialize the filter system. Register all builtin filters. */
-attribute_deprecated
-void avfilter_register_all(void);
-
-/**
- * Register a filter. This is only needed if you plan to use
- * avfilter_get_by_name later to lookup the AVFilter structure by name. A
- * filter can still by instantiated with avfilter_graph_alloc_filter even if it
- * is not registered.
- *
- * @param filter the filter to register
- * @return 0 if the registration was successful, a negative value
- * otherwise
- */
-attribute_deprecated
-int avfilter_register(AVFilter *filter);
-
-/**
- * Iterate over all registered filters.
- * @return If prev is non-NULL, next registered filter after prev or NULL if
- * prev is the last filter. If prev is NULL, return the first registered filter.
- */
-attribute_deprecated
-const AVFilter *avfilter_next(const AVFilter *prev);
-#endif
 
 /**
  * Get a filter definition matching the given name.
