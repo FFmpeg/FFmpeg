@@ -148,7 +148,7 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
     return get_frame_internal(ctx, frame, 0, nb_samples);
 }
 
-#if FF_API_NEXT
+#if FF_API_BUFFERSINK_ALLOC
 AVBufferSinkParams *av_buffersink_params_alloc(void)
 {
     static const int pixel_fmts[] = { AV_PIX_FMT_NONE };
