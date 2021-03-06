@@ -15,9 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2021-03-10 - xxxxxxxxxx - lavu 56.68.100 - buffer.h
-  Change AVBufferRef related function and struct size parameter and fields
-  type to size_t at next major bump.
+2021-03-10 - xxxxxxxxxx - lavu 56.68.100 - buffer.h frame.h
+  Change AVBufferRef and relevant AVFrame function and struct size
+  parameter and fields type to size_t at next major bump.
 
 2021-03-04 - xxxxxxxxxx - lavc 58.128.101 - avcodec.h
   Enable err_recognition to be set for encoders.
