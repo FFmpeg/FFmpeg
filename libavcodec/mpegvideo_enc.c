@@ -1604,13 +1604,6 @@ static void frame_end(MpegEncContext *s)
     s->last_lambda_for [s->pict_type] = s->current_picture_ptr->f->quality;
     if (s->pict_type!= AV_PICTURE_TYPE_B)
         s->last_non_b_pict_type = s->pict_type;
-
-#if FF_API_ERROR_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    memcpy(s->current_picture.f->error, s->current_picture.encoding_error,
-           sizeof(s->current_picture.encoding_error));
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 }
 
 static void update_noise_reduction(MpegEncContext *s)

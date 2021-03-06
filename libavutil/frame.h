@@ -434,14 +434,6 @@ typedef struct AVFrame {
      */
     void *opaque;
 
-#if FF_API_ERROR_FRAME
-    /**
-     * @deprecated unused
-     */
-    attribute_deprecated
-    uint64_t error[AV_NUM_DATA_POINTERS];
-#endif
-
     /**
      * When decoding, this signals how much the picture must be delayed.
      * extra_delay = repeat_pict / (2*fps)

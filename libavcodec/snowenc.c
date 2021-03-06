@@ -1865,12 +1865,6 @@ redo_frame:
                                    (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
                                    s->current_picture->pict_type);
 
-#if FF_API_ERROR_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    memcpy(s->current_picture->error, s->encoding_error, sizeof(s->encoding_error));
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     pkt->size = ff_rac_terminate(c, 0);
     if (s->current_picture->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;

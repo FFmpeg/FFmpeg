@@ -316,12 +316,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
-#if FF_API_ERROR_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    memcpy(dst->error, src->error, sizeof(dst->error));
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
         AVFrameSideData *sd_dst;

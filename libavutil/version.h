@@ -105,9 +105,6 @@
  * @{
  */
 
-#ifndef FF_API_ERROR_FRAME
-#define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
 #ifndef FF_API_PKT_PTS
 #define FF_API_PKT_PTS                  (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
