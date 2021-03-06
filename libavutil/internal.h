@@ -299,4 +299,11 @@ int avpriv_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t time
 #define FF_PSEUDOPAL 0
 #endif
 
+// Temporary typedef to simplify porting all AVBufferRef users to size_t
+#if FF_API_BUFFER_SIZE_T
+typedef int buffer_size_t;
+#else
+typedef size_t buffer_size_t;
+#endif
+
 #endif /* AVUTIL_INTERNAL_H */
