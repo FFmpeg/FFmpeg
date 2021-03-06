@@ -886,9 +886,6 @@ This example will produce the playlists segment file sets:
 @file{vs0/file_000.ts}, @file{vs0/file_001.ts}, @file{vs0/file_002.ts}, etc. and
 @file{vs1/file_000.ts}, @file{vs1/file_001.ts}, @file{vs1/file_002.ts}, etc.
 
-@item use_localtime
-Same as strftime option, will be deprecated.
-
 @item strftime
 Use strftime() on @var{filename} to expand the segment filename with localtime.
 The segment number is also available in this mode, but to use it, you need to specify second_level_segment_index
@@ -905,9 +902,6 @@ ffmpeg -i in.nut -strftime 1 -hls_flags second_level_segment_index -hls_segment_
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-0001.ts}, @file{file-20160215-0002.ts}, etc.
-
-@item use_localtime_mkdir
-Same as strftime_mkdir option, will be deprecated .
 
 @item strftime_mkdir
 Used together with -strftime_mkdir, it will create all subdirectories which
