@@ -242,6 +242,8 @@ This is a deprecated option to set the segment length in microseconds, use @var{
 @item seg_duration @var{duration}
 Set the segment length in seconds (fractional value can be set). The value is
 treated as average segment duration when @var{use_template} is enabled and
+@var{use_timeline} is disabled and as minimum segment duration for all the other
+use cases.
 @item frag_duration @var{duration}
 Set the length in seconds of fragments within segments (fractional value can be set).
 @item frag_type @var{type}
