@@ -65,5 +65,8 @@
 #ifndef FF_API_NEXT
 #define FF_API_NEXT                         (LIBAVFILTER_VERSION_MAJOR < 8)
 #endif
+#ifndef FF_API_FILTER_LINK_SET_CLOSED
+#define FF_API_FILTER_LINK_SET_CLOSED       (LIBAVFILTER_VERSION_MAJOR < 8)
+#endif
 
 #endif /* AVFILTER_VERSION_H */

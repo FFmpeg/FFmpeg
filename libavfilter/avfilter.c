@@ -232,11 +232,12 @@ void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts
     ff_filter_set_ready(link->src, 200);
 }
 
+#if FF_API_FILTER_LINK_SET_CLOSED
 void avfilter_link_set_closed(AVFilterLink *link, int closed)
 {
     ff_avfilter_link_set_out_status(link, closed ? AVERROR_EOF : 0, AV_NOPTS_VALUE);
 }
-
+#endif
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx)
 {
