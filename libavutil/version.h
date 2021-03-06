@@ -105,9 +105,6 @@
  * @{
  */
 
-#ifndef FF_API_FRAME_QP
-#define FF_API_FRAME_QP                 (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
 #ifndef FF_API_PLUS1_MINUS1
 #define FF_API_PLUS1_MINUS1             (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif

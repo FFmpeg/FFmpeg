@@ -142,23 +142,6 @@ enum AVFrameSideDataType {
      */
     AV_FRAME_DATA_ICC_PROFILE,
 
-#if FF_API_FRAME_QP
-    /**
-     * Implementation-specific description of the format of AV_FRAME_QP_TABLE_DATA.
-     * The contents of this side data are undocumented and internal; use
-     * av_frame_set_qp_table() and av_frame_get_qp_table() to access this in a
-     * meaningful way instead.
-     */
-    AV_FRAME_DATA_QP_TABLE_PROPERTIES,
-
-    /**
-     * Raw QP table data. Its format is described by
-     * AV_FRAME_DATA_QP_TABLE_PROPERTIES. Use av_frame_set_qp_table() and
-     * av_frame_get_qp_table() to access this instead.
-     */
-    AV_FRAME_DATA_QP_TABLE_DATA,
-#endif
-
     /**
      * Timecode which conforms to SMPTE ST 12-1. The data is an array of 4 uint32_t
      * where the first uint32_t describes how many (1-3) of the other timecodes are used.
@@ -638,24 +621,6 @@ typedef struct AVFrame {
      */
     int pkt_size;
 
-#if FF_API_FRAME_QP
-    /**
-     * QP table
-     */
-    attribute_deprecated
-    int8_t *qscale_table;
-    /**
-     * QP store stride
-     */
-    attribute_deprecated
-    int qstride;
-
-    attribute_deprecated
-    int qscale_type;
-
-    attribute_deprecated
-    AVBufferRef *qp_table_buf;
-#endif
     /**
      * For hwaccel-format frames, this should be a reference to the
      * AVHWFramesContext describing the frame.
@@ -744,12 +709,6 @@ attribute_deprecated
 int     av_frame_get_pkt_size(const AVFrame *frame);
 attribute_deprecated
 void    av_frame_set_pkt_size(AVFrame *frame, int val);
-#if FF_API_FRAME_QP
-attribute_deprecated
-int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type);
-attribute_deprecated
-int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int type);
-#endif
 attribute_deprecated
 enum AVColorSpace av_frame_get_colorspace(const AVFrame *frame);
 attribute_deprecated
