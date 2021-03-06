@@ -50,9 +50,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_FILTER_GET_SET
-#define FF_API_FILTER_GET_SET               (LIBAVFILTER_VERSION_MAJOR < 8)
-#endif
 #ifndef FF_API_SWS_PARAM_OPTION
 #define FF_API_SWS_PARAM_OPTION             (LIBAVFILTER_VERSION_MAJOR < 8)
 #endif
