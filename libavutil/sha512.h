@@ -76,11 +76,7 @@ int av_sha512_init(struct AVSHA512* context, int bits);
  * @param data    input data to update hash with
  * @param len     input data length
  */
-#if FF_API_CRYPTO_SIZE_T
-void av_sha512_update(struct AVSHA512* context, const uint8_t* data, unsigned int len);
-#else
 void av_sha512_update(struct AVSHA512* context, const uint8_t* data, size_t len);
-#endif
 
 /**
  * Finish hashing and output digest value.

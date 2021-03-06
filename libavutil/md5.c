@@ -98,14 +98,13 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
         a = b + (a << t | a >> (32 - t));                               \
     } while (0)
 
-static void body(uint32_t ABCD[4], const uint8_t *src, int nblocks)
+static void body(uint32_t ABCD[4], const uint8_t *src, size_t nblocks)
 {
     int i av_unused;
-    int n;
     const uint32_t *X;
     uint32_t a, b, c, d, t;
 
-    for (n = 0; n < nblocks; n++) {
+    for (size_t n = 0; n < nblocks; n++) {
         a = ABCD[3];
         b = ABCD[2];
         c = ABCD[1];
@@ -150,11 +149,7 @@ void av_md5_init(AVMD5 *ctx)
     ctx->ABCD[3] = 0x67452301;
 }
 
-#if FF_API_CRYPTO_SIZE_T
-void av_md5_update(AVMD5 *ctx, const uint8_t *src, int len)
-#else
 void av_md5_update(AVMD5 *ctx, const uint8_t *src, size_t len)
-#endif
 {
     const uint8_t *end;
     int j;
@@ -180,7 +175,7 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, size_t len)
            src += 64;
         }
     } else {
-        int nblocks = len / 64;
+        size_t nblocks = len / 64;
         body(ctx->ABCD, src, nblocks);
         src = end;
     }
@@ -204,11 +199,7 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst)
         AV_WL32(dst + 4 * i, ctx->ABCD[3 - i]);
 }
 
-#if FF_API_CRYPTO_SIZE_T
-void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len)
-#else
 void av_md5_sum(uint8_t *dst, const uint8_t *src, size_t len)
-#endif
 {
     AVMD5 ctx;
 

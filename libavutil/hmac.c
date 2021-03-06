@@ -34,11 +34,7 @@
 #define MAX_BLOCKLEN 128
 
 typedef void (*hmac_final)(void *ctx, uint8_t *dst);
-#if FF_API_CRYPTO_SIZE_T
-typedef void (*hmac_update)(void *ctx, const uint8_t *src, int len);
-#else
 typedef void (*hmac_update)(void *ctx, const uint8_t *src, size_t len);
-#endif
 typedef void (*hmac_init)(void *ctx);
 
 struct AVHMAC {

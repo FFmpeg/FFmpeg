@@ -311,13 +311,10 @@ av_cold int av_sha_init(AVSHA *ctx, int bits)
     return 0;
 }
 
-#if FF_API_CRYPTO_SIZE_T
-void av_sha_update(struct AVSHA *ctx, const uint8_t *data, unsigned int len)
-#else
 void av_sha_update(struct AVSHA *ctx, const uint8_t *data, size_t len)
-#endif
 {
-    unsigned int i, j;
+    unsigned int j;
+    size_t i;
 
     j = ctx->count & 63;
     ctx->count += len;
@@ -330,15 +327,19 @@ void av_sha_update(struct AVSHA *ctx, const uint8_t *data, size_t len)
         }
     }
 #else
-    if ((j + len) > 63) {
+    if (len >= 64 - j) {
+        const uint8_t *end;
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
         ctx->transform(ctx->state, ctx->buffer);
-        for (; i + 63 < len; i += 64)
-            ctx->transform(ctx->state, &data[i]);
+        data += i;
+        len  -= i;
+        end   = data + (len & ~63);
+        len   = len % 64;
+        for (; data < end; data += 64)
+            ctx->transform(ctx->state, data);
         j = 0;
-    } else
-        i = 0;
-    memcpy(&ctx->buffer[j], &data[i], len - i);
+    }
+    memcpy(&ctx->buffer[j], data, len);
 #endif
 }
 

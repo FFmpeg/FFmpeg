@@ -30,7 +30,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "attributes.h"
-#include "version.h"
 
 /**
  * @defgroup lavu_adler32 Adler-32
@@ -40,11 +39,7 @@
  * @{
  */
 
-#if FF_API_CRYPTO_SIZE_T
-typedef unsigned long AVAdler;
-#else
 typedef uint32_t AVAdler;
-#endif
 
 /**
  * Calculate the Adler32 checksum of a buffer.
@@ -59,11 +54,7 @@ typedef uint32_t AVAdler;
  * @return      updated checksum
  */
 AVAdler av_adler32_update(AVAdler adler, const uint8_t *buf,
-#if FF_API_CRYPTO_SIZE_T
-                          unsigned int len) av_pure;
-#else
                           size_t len) av_pure;
-#endif
 
 /**
  * @}
