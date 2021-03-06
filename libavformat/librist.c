@@ -37,7 +37,6 @@
 typedef struct RISTContext {
     const AVClass *class;
 
-    int queue_count;
     int profile;
     int buffer_size;
     int log_level;
@@ -184,16 +183,19 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
     const struct rist_data_block *data_block;
     int ret;
 
-    ret = rist_receiver_data_read(s->ctx, &data_block, s->queue_count <= 0 ? POLLING_TIME : 0);
+    ret = rist_receiver_data_read(s->ctx, &data_block, POLLING_TIME);
     if (ret < 0)
         return risterr2ret(ret);
 
-    if (ret == 0 || data_block->payload_len <= 0)
-        return 0;
+    if (ret == 0)
+        return AVERROR(EAGAIN);
 
-    s->queue_count = ret - 1;
+    if (data_block->payload_len > 9968) {
+        rist_receiver_data_block_free((struct rist_data_block**)&data_block);
+        return AVERROR_EXTERNAL;
+    }
+
     size = data_block->payload_len;
-
     memcpy(buf, data_block->payload, size);
     rist_receiver_data_block_free((struct rist_data_block**)&data_block);
 
