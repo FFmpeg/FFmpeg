@@ -67,7 +67,6 @@
 #include "wmv2.h"
 #include "rv10.h"
 #include "packet_internal.h"
-#include "libxvid.h"
 #include <limits.h>
 #include "sp5x.h"
 

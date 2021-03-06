@@ -40,7 +40,6 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "libxvid.h"
 #include "mpegutils.h"
 #include "packet_internal.h"
 
