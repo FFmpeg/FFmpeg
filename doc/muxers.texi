@@ -264,8 +264,6 @@ ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264 \
 @end example
 
 @table @option
-@item min_seg_duration @var{microseconds}
-This is a deprecated option to set the segment length in microseconds, use @var{seg_duration} instead.
 @item seg_duration @var{duration}
 Set the segment length in seconds (fractional value can be set). The value is
 treated as average segment duration when @var{use_template} is enabled and
