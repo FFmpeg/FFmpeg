@@ -326,15 +326,15 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (int i = 0; i < 4; i++) {
         for (x = 0; x < 256; x++) {
-        unsigned len = get_unary(&gb, 1, 31);
-        uint32_t val = ((1U << len) - 1) + get_bits_long(&gb, len);
+            unsigned len = get_unary(&gb, 1, 31);
+            uint32_t val = ((1U << len) - 1) + get_bits_long(&gb, len);
 
-        s->table[x] = val;
-    }
+            s->table[x] = val;
+        }
 
         ret = build_vlc(avctx, &s->vlc[i], s->table);
-    if (ret < 0)
-        return ret;
+        if (ret < 0)
+            return ret;
     }
 
     memcpy(s->buffer, avpkt->data + boffset, avpkt->size - boffset);
