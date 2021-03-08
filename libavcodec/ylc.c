@@ -38,7 +38,7 @@
 
 typedef struct YLCContext {
     VLC vlc[4];
-    uint32_t table[1024];
+    uint32_t table[256];
     uint8_t *buffer;
     int buffer_size;
     BswapDSPContext bdsp;
@@ -324,25 +324,18 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = init_get_bits8(&gb, s->buffer, boffset - toffset)) < 0)
         return ret;
 
-    for (x = 0; x < 1024; x++) {
+    for (int i = 0; i < 4; i++) {
+        for (x = 0; x < 256; x++) {
         unsigned len = get_unary(&gb, 1, 31);
         uint32_t val = ((1U << len) - 1) + get_bits_long(&gb, len);
 
         s->table[x] = val;
     }
 
-    ret = build_vlc(avctx, &s->vlc[0], &s->table[0  ]);
+        ret = build_vlc(avctx, &s->vlc[i], s->table);
     if (ret < 0)
         return ret;
-    ret = build_vlc(avctx, &s->vlc[1], &s->table[256]);
-    if (ret < 0)
-        return ret;
-    ret = build_vlc(avctx, &s->vlc[2], &s->table[512]);
-    if (ret < 0)
-        return ret;
-    ret = build_vlc(avctx, &s->vlc[3], &s->table[768]);
-    if (ret < 0)
-        return ret;
+    }
 
     memcpy(s->buffer, avpkt->data + boffset, avpkt->size - boffset);
     memset(s->buffer + avpkt->size - boffset, 0, AV_INPUT_BUFFER_PADDING_SIZE);
@@ -451,10 +444,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     YLCContext *s = avctx->priv_data;
 
-    ff_free_vlc(&s->vlc[0]);
-    ff_free_vlc(&s->vlc[1]);
-    ff_free_vlc(&s->vlc[2]);
-    ff_free_vlc(&s->vlc[3]);
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->vlc); i++)
+        ff_free_vlc(&s->vlc[i]);
     av_freep(&s->buffer);
     s->buffer_size = 0;
 
