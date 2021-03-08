@@ -58,7 +58,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 typedef struct Node {
     int16_t  sym;
-    int16_t  n0;
     uint32_t count;
     int16_t  l, r;
 } Node;
@@ -99,7 +98,6 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
     for (i = 0; i < 256; i++) {
         nodes[i].count = table[i];
         nodes[i].sym   = i;
-        nodes[i].n0    = -2;
         nodes[i].l     = i;
         nodes[i].r     = i;
     }
@@ -141,7 +139,6 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             }
             nodes[cur_node].count = nd + st;
             nodes[cur_node].sym = -1;
-            nodes[cur_node].n0 = cur_node;
             nodes[cur_node].l = first_node;
             nodes[cur_node].r = second_node;
             cur_node++;
