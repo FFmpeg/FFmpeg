@@ -262,7 +262,7 @@ static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
         } else {
             int real_limit = tmp ? (INT_MAX >> tmp) + 2 : INT_MAX;
             for (; i < samples; i++) {
-                int v = get_sr_golomb_flac(&gb, tmp, real_limit, 0);
+                int v = get_sr_golomb_flac(&gb, tmp, real_limit, 1);
                 if (v == 0x80000000){
                     av_log(s->avctx, AV_LOG_ERROR, "invalid residual\n");
                     return AVERROR_INVALIDDATA;
