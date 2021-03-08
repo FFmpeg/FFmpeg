@@ -1,5 +1,7 @@
 /*
  * MODS demuxer
+ * Copyright (c) 2015-2016 Florian Nouwt
+ * Copyright (c) 2017 Adib Surani
  * Copyright (c) 2020 Paul B Mahol
  *
  * This file is part of FFmpeg.
