@@ -39,10 +39,8 @@
 typedef struct YLCContext {
     VLC vlc[4];
     uint32_t table[1024];
-    uint8_t *table_bits;
-    uint8_t *bitstream_bits;
-    int table_bits_size;
-    int bitstream_bits_size;
+    uint8_t *buffer;
+    int buffer_size;
     BswapDSPContext bdsp;
 } YLCContext;
 
@@ -312,17 +310,18 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
 
-    av_fast_malloc(&s->table_bits, &s->table_bits_size,
-                   boffset - toffset + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!s->table_bits)
+    av_fast_malloc(&s->buffer, &s->buffer_size,
+                   FFMAX(boffset - toffset, avpkt->size - boffset)
+                       + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!s->buffer)
         return AVERROR(ENOMEM);
 
-    memcpy(s->table_bits, avpkt->data + toffset, boffset - toffset);
-    memset(s->table_bits + boffset - toffset, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    s->bdsp.bswap_buf((uint32_t *) s->table_bits,
-                      (uint32_t *) s->table_bits,
+    memcpy(s->buffer, avpkt->data + toffset, boffset - toffset);
+    memset(s->buffer + boffset - toffset, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    s->bdsp.bswap_buf((uint32_t *) s->buffer,
+                      (uint32_t *) s->buffer,
                       (boffset - toffset + 3) >> 2);
-    if ((ret = init_get_bits8(&gb, s->table_bits, boffset - toffset)) < 0)
+    if ((ret = init_get_bits8(&gb, s->buffer, boffset - toffset)) < 0)
         return ret;
 
     for (x = 0; x < 1024; x++) {
@@ -345,17 +344,12 @@ static int decode_frame(AVCodecContext *avctx,
     if (ret < 0)
         return ret;
 
-    av_fast_malloc(&s->bitstream_bits, &s->bitstream_bits_size,
-                   avpkt->size - boffset + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!s->bitstream_bits)
-        return AVERROR(ENOMEM);
-
-    memcpy(s->bitstream_bits, avpkt->data + boffset, avpkt->size - boffset);
-    memset(s->bitstream_bits + avpkt->size - boffset, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    s->bdsp.bswap_buf((uint32_t *) s->bitstream_bits,
-                      (uint32_t *) s->bitstream_bits,
+    memcpy(s->buffer, avpkt->data + boffset, avpkt->size - boffset);
+    memset(s->buffer + avpkt->size - boffset, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    s->bdsp.bswap_buf((uint32_t *) s->buffer,
+                      (uint32_t *) s->buffer,
                       (avpkt->size - boffset) >> 2);
-    if ((ret = init_get_bits8(&gb, s->bitstream_bits, avpkt->size - boffset)) < 0)
+    if ((ret = init_get_bits8(&gb, s->buffer, avpkt->size - boffset)) < 0)
         return ret;
 
     dst = p->data[0];
@@ -461,10 +455,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     ff_free_vlc(&s->vlc[1]);
     ff_free_vlc(&s->vlc[2]);
     ff_free_vlc(&s->vlc[3]);
-    av_freep(&s->table_bits);
-    s->table_bits_size = 0;
-    av_freep(&s->bitstream_bits);
-    s->bitstream_bits_size = 0;
+    av_freep(&s->buffer);
+    s->buffer_size = 0;
 
     return 0;
 }
