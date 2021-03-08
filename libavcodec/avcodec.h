@@ -245,11 +245,15 @@ typedef struct RcOverride{
  * error[?] variables will be set during encoding.
  */
 #define AV_CODEC_FLAG_PSNR            (1 << 15)
+#if FF_API_FLAG_TRUNCATED
 /**
  * Input bitstream might be truncated at a random location
  * instead of only at frame boundaries.
+ *
+ * @deprecated use codec parsers for packetizing input
  */
 #define AV_CODEC_FLAG_TRUNCATED       (1 << 16)
+#endif
 /**
  * Use interlaced DCT.
  */

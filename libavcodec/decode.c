@@ -455,7 +455,11 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
     if (!got_frame)
         av_frame_unref(frame);
 
+#if FF_API_FLAG_TRUNCATED
     if (ret >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO && !(avctx->flags & AV_CODEC_FLAG_TRUNCATED))
+#else
+    if (ret >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO)
+#endif
         ret = pkt->size;
 
 #if FF_API_AVCTX_TIMEBASE

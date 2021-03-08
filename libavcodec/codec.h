@@ -50,7 +50,12 @@
  * avcodec_default_get_buffer2 or avcodec_default_get_encode_buffer.
  */
 #define AV_CODEC_CAP_DR1                 (1 <<  1)
+#if FF_API_FLAG_TRUNCATED
+/**
+ * @deprecated Use parsers to always send proper frames.
+ */
 #define AV_CODEC_CAP_TRUNCATED           (1 <<  3)
+#endif
 /**
  * Encoder or decoder requires flushing with NULL input at the end in order to
  * give the complete and correct output.

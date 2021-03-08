@@ -1265,10 +1265,14 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         (s1->save_progressive_seq != s->progressive_sequence && FFALIGN(s->height, 16) != FFALIGN(s->height, 32)) ||
         0) {
         if (s1->mpeg_enc_ctx_allocated) {
+#if FF_API_FLAG_TRUNCATED
             ParseContext pc = s->parse_context;
             s->parse_context.buffer = 0;
             ff_mpv_common_end(s);
             s->parse_context = pc;
+#else
+            ff_mpv_common_end(s);
+#endif
             s1->mpeg_enc_ctx_allocated = 0;
         }
 
@@ -2504,7 +2508,11 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
             if (avctx->err_recognition & AV_EF_EXPLODE && s2->er.error_count)
                 return AVERROR_INVALIDDATA;
 
+#if FF_API_FLAG_TRUNCATED
             return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
+#else
+            return FFMAX(0, buf_ptr - buf);
+#endif
         }
 
         input_size = buf_end - buf_ptr;
@@ -2812,6 +2820,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
         return buf_size;
     }
 
+#if FF_API_FLAG_TRUNCATED
     if (s2->avctx->flags & AV_CODEC_FLAG_TRUNCATED) {
         int next = ff_mpeg1_find_frame_end(&s2->parse_context, buf,
                                            buf_size, NULL);
@@ -2820,6 +2829,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
                              (const uint8_t **) &buf, &buf_size) < 0)
             return buf_size;
     }
+#endif
 
     s2->codec_tag = avpriv_toupper4(avctx->codec_tag);
     if (s->mpeg_enc_ctx_allocated == 0 && (   s2->codec_tag == AV_RL32("VCR2")
@@ -2896,8 +2906,10 @@ const AVCodec ff_mpeg1video_decoder = {
     .close                 = mpeg_decode_end,
     .decode                = mpeg_decode_frame,
     .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-                             AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
-                             AV_CODEC_CAP_SLICE_THREADS,
+#if FF_API_FLAG_TRUNCATED
+                             AV_CODEC_CAP_TRUNCATED |
+#endif
+                             AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |
                              FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = flush,
@@ -2930,8 +2942,10 @@ const AVCodec ff_mpeg2video_decoder = {
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-                      AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
-                      AV_CODEC_CAP_SLICE_THREADS,
+#if FF_API_FLAG_TRUNCATED
+                      AV_CODEC_CAP_TRUNCATED |
+#endif
+                      AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = flush,
@@ -2976,7 +2990,11 @@ const AVCodec ff_mpegvideo_decoder = {
     .init           = mpeg_decode_init,
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+#if FF_API_FLAG_TRUNCATED
+                      AV_CODEC_CAP_TRUNCATED |
+#endif
+                      AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = flush,

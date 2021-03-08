@@ -347,7 +347,9 @@ typedef struct MpegEncContext {
     int mb_num_left;                 ///< number of MBs left in this video packet (for partitioned Slices only)
     int next_p_frame_damaged;        ///< set if the next p frame is damaged, to avoid showing trashed B-frames
 
+#if FF_API_FLAG_TRUNCATED
     ParseContext parse_context;
+#endif
 
     /* H.263 specific */
     int gob_index;
