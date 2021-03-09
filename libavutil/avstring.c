@@ -337,7 +337,7 @@ int av_escape(char **dst, const char *src, const char *special_chars,
 {
     AVBPrint dstbuf;
 
-    av_bprint_init(&dstbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&dstbuf, 1, INT_MAX); /* (int)dstbuf.len must be >= 0 */
     av_bprint_escape(&dstbuf, src, special_chars, mode, flags);
 
     if (!av_bprint_is_complete(&dstbuf)) {
