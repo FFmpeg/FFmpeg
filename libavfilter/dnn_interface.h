@@ -64,6 +64,7 @@ typedef struct DNNData{
 } DNNData;
 
 typedef int (*FramePrePostProc)(AVFrame *frame, DNNData *model, AVFilterContext *filter_ctx);
+typedef int (*DetectPostProc)(AVFrame *frame, DNNData *output, uint32_t nb, AVFilterContext *filter_ctx);
 
 typedef struct DNNModel{
     // Stores model that can be different for different backends.
@@ -86,6 +87,8 @@ typedef struct DNNModel{
     // set the post process to transfer data from DNNData to AVFrame
     // the default implementation within DNN is used if it is not provided by the filter
     FramePrePostProc frame_post_proc;
+    // set the post process to interpret detect result from DNNData
+    DetectPostProc detect_post_proc;
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.

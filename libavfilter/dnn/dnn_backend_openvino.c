@@ -236,16 +236,32 @@ static void infer_completion_callback(void *args)
     av_assert0(request->task_count >= 1);
     for (int i = 0; i < request->task_count; ++i) {
         task = request->tasks[i];
-        if (task->do_ioproc) {
-            if (task->ov_model->model->frame_post_proc != NULL) {
-                task->ov_model->model->frame_post_proc(task->out_frame, &output, task->ov_model->model->filter_ctx);
+
+        switch (task->ov_model->model->func_type) {
+        case DFT_PROCESS_FRAME:
+            if (task->do_ioproc) {
+                if (task->ov_model->model->frame_post_proc != NULL) {
+                    task->ov_model->model->frame_post_proc(task->out_frame, &output, task->ov_model->model->filter_ctx);
+                } else {
+                    ff_proc_from_dnn_to_frame(task->out_frame, &output, ctx);
+                }
             } else {
-                ff_proc_from_dnn_to_frame(task->out_frame, &output, ctx);
+                task->out_frame->width = output.width;
+                task->out_frame->height = output.height;
             }
-        } else {
-            task->out_frame->width = output.width;
-            task->out_frame->height = output.height;
+            break;
+        case DFT_ANALYTICS_DETECT:
+            if (!task->ov_model->model->detect_post_proc) {
+                av_log(ctx, AV_LOG_ERROR, "detect filter needs to provide post proc\n");
+                return;
+            }
+            task->ov_model->model->detect_post_proc(task->out_frame, &output, 1, task->ov_model->model->filter_ctx);
+            break;
+        default:
+            av_assert0(!"should not reach here");
+            break;
         }
+
         task->done = 1;
         output.data = (uint8_t *)output.data
                       + output.width * output.height * output.channels * get_datatype_size(output.dt);

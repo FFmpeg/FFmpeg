@@ -71,6 +71,12 @@ int ff_dnn_set_frame_proc(DnnContext *ctx, FramePrePostProc pre_proc, FramePrePo
     return 0;
 }
 
+int ff_dnn_set_detect_post_proc(DnnContext *ctx, DetectPostProc post_proc)
+{
+    ctx->model->detect_post_proc = post_proc;
+    return 0;
+}
+
 DNNReturnType ff_dnn_get_input(DnnContext *ctx, DNNData *input)
 {
     return ctx->model->get_input(ctx->model->model, input, ctx->model_inputname);
