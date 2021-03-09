@@ -159,8 +159,8 @@ static int mp3_write_xing(AVFormatContext *s)
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) || !mp3->write_xing)
         return 0;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
-        const uint16_t base_freq = avpriv_mpa_freq_tab[i];
+    for (i = 0; i < FF_ARRAY_ELEMS(ff_mpa_freq_tab); i++) {
+        const uint16_t base_freq = ff_mpa_freq_tab[i];
 
         if      (par->sample_rate == base_freq)     ver = 0x3; // MPEG 1
         else if (par->sample_rate == base_freq / 2) ver = 0x2; // MPEG 2
@@ -170,7 +170,7 @@ static int mp3_write_xing(AVFormatContext *s)
         srate_idx = i;
         break;
     }
-    if (i == FF_ARRAY_ELEMS(avpriv_mpa_freq_tab)) {
+    if (i == FF_ARRAY_ELEMS(ff_mpa_freq_tab)) {
         av_log(s, AV_LOG_WARNING, "Unsupported sample rate, not writing Xing header.\n");
         return -1;
     }
@@ -190,7 +190,7 @@ static int mp3_write_xing(AVFormatContext *s)
     header |= channels << 6;
 
     for (bitrate_idx = 1; bitrate_idx < 15; bitrate_idx++) {
-        int bit_rate = 1000 * avpriv_mpa_bitrate_tab[ver != 3][3 - 1][bitrate_idx];
+        int bit_rate = 1000 * ff_mpa_bitrate_tab[ver != 3][3 - 1][bitrate_idx];
         int error    = FFABS(bit_rate - par->bit_rate);
 
         if (error < best_bitrate_error) {

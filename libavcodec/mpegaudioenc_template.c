@@ -95,9 +95,9 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     /* encoding freq */
     s->lsf = 0;
     for(i=0;i<3;i++) {
-        if (avpriv_mpa_freq_tab[i] == freq)
+        if (ff_mpa_freq_tab[i] == freq)
             break;
-        if ((avpriv_mpa_freq_tab[i] / 2) == freq) {
+        if ((ff_mpa_freq_tab[i] / 2) == freq) {
             s->lsf = 1;
             break;
         }
@@ -110,12 +110,12 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
 
     /* encoding bitrate & frequency */
     for(i=1;i<15;i++) {
-        if (avpriv_mpa_bitrate_tab[s->lsf][1][i] == bitrate)
+        if (ff_mpa_bitrate_tab[s->lsf][1][i] == bitrate)
             break;
     }
     if (i == 15 && !avctx->bit_rate) {
         i = 14;
-        bitrate = avpriv_mpa_bitrate_tab[s->lsf][1][i];
+        bitrate = ff_mpa_bitrate_tab[s->lsf][1][i];
         avctx->bit_rate = bitrate * 1000;
     }
     if (i == 15){

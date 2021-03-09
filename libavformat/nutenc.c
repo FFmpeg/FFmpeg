@@ -70,11 +70,11 @@ static int find_expected_header(AVCodecParameters *p, int size, int key_frame,
         else if (sample_rate < (44100 + 48000) / 2) sample_rate_index = 0;
         else                                        sample_rate_index = 1;
 
-        sample_rate = avpriv_mpa_freq_tab[sample_rate_index] >> (lsf + mpeg25);
+        sample_rate = ff_mpa_freq_tab[sample_rate_index] >> (lsf + mpeg25);
 
         for (bitrate_index = 2; bitrate_index < 30; bitrate_index++) {
             frame_size =
-                avpriv_mpa_bitrate_tab[lsf][layer - 1][bitrate_index >> 1];
+                ff_mpa_bitrate_tab[lsf][layer - 1][bitrate_index >> 1];
             frame_size = (frame_size * 144000) / (sample_rate << lsf) +
                 (bitrate_index & 1);
 
