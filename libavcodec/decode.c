@@ -185,7 +185,7 @@ static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
     return 0;
 }
 
-int ff_decode_bsfs_init(AVCodecContext *avctx)
+static int decode_bsfs_init(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
     int ret;
@@ -2007,6 +2007,8 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 
 int ff_decode_preinit(AVCodecContext *avctx)
 {
+    int ret = 0;
+
     /* if the decoder init function was already called previously,
      * free the already allocated subtitle_header before overwriting it */
     av_freep(&avctx->subtitle_header);
@@ -2042,6 +2044,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS) {
         avctx->export_side_data |= AV_CODEC_EXPORT_DATA_MVS;
     }
+
+    ret = decode_bsfs_init(avctx);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
