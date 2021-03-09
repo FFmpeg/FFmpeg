@@ -166,7 +166,7 @@ static int cbs_sei_get_unit(CodedBitstreamContext *ctx,
         }
         if (i < 0) {
             // No VCL units; just put it at the end.
-            position = -1;
+            position = au->nb_units;
         } else {
             position = i + 1;
         }
