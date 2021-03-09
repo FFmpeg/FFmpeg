@@ -702,5 +702,6 @@ AVCodec ff_libx265_encoder = {
     .defaults         = x265_defaults,
     .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .caps_internal    = FF_CODEC_CAP_AUTO_THREADS,
     .wrapper_name     = "libx265",
 };

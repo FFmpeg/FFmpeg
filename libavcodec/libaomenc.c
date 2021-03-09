@@ -1346,6 +1346,7 @@ AVCodec ff_libaom_av1_encoder = {
     .encode2        = aom_encode,
     .close          = aom_free,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .priv_class     = &class_aom,
     .defaults       = defaults,

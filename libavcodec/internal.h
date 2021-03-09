@@ -74,6 +74,10 @@
  * uses ff_thread_report/await_progress().
  */
 #define FF_CODEC_CAP_ALLOCATE_PROGRESS      (1 << 6)
+/**
+ * Codec handles avctx->thread_count == 0 (auto) internally.
+ */
+#define FF_CODEC_CAP_AUTO_THREADS           (1 << 7)
 
 /**
  * AVCodec.codec_tags termination value

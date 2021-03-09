@@ -56,7 +56,7 @@ static void validate_thread_parameters(AVCodecContext *avctx)
     } else if (avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS &&
                avctx->thread_type & FF_THREAD_SLICE) {
         avctx->active_thread_type = FF_THREAD_SLICE;
-    } else if (!(avctx->codec->capabilities & AV_CODEC_CAP_AUTO_THREADS)) {
+    } else if (!(avctx->codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS)) {
         avctx->thread_count       = 1;
         avctx->active_thread_type = 0;
     }

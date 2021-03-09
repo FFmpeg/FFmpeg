@@ -254,6 +254,7 @@ AVCodec ff_libuavs3d_decoder = {
     .close          = libuavs3d_end,
     .decode         = libuavs3d_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .flush          = libuavs3d_flush,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_YUV420P10LE,

@@ -761,7 +761,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             goto free_and_end;
         }
     }
-    if (!HAVE_THREADS && !(codec->capabilities & AV_CODEC_CAP_AUTO_THREADS))
+    if (!HAVE_THREADS && !(codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS))
         avctx->thread_count = 1;
 
     if (avctx->codec->max_lowres < avctx->lowres || avctx->lowres < 0) {

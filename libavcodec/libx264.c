@@ -1204,6 +1204,7 @@ AVCodec ff_libx264_encoder = {
     .close            = X264_close,
     .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .caps_internal    = FF_CODEC_CAP_AUTO_THREADS,
     .priv_class       = &x264_class,
     .defaults         = x264_defaults,
 #if X264_BUILD < 153
@@ -1211,11 +1212,11 @@ AVCodec ff_libx264_encoder = {
 #else
     .pix_fmts         = pix_fmts_all,
 #endif
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS
 #if X264_BUILD >= 158
-    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
-#else
-    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
+                      | FF_CODEC_CAP_INIT_THREADSAFE
 #endif
+                      ,
     .wrapper_name     = "libx264",
 };
 #endif
@@ -1242,11 +1243,11 @@ AVCodec ff_libx264rgb_encoder = {
     .priv_class     = &rgbclass,
     .defaults       = x264_defaults,
     .pix_fmts       = pix_fmts_8bit_rgb,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS
 #if X264_BUILD >= 158
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
-#else
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+                      | FF_CODEC_CAP_INIT_THREADSAFE
 #endif
+                      ,
     .wrapper_name   = "libx264",
 };
 #endif
@@ -1273,7 +1274,7 @@ AVCodec ff_libx262_encoder = {
     .priv_class       = &X262_class,
     .defaults         = x264_defaults,
     .pix_fmts         = pix_fmts_8bit,
-    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS,
     .wrapper_name     = "libx264",
 };
 #endif
