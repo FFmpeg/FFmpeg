@@ -325,12 +325,8 @@ static av_cold void init_cavlc_level_tab(void){
 }
 
 av_cold void ff_h264_decode_init_vlc(void){
-    static int done = 0;
-
-    if (!done) {
         int i;
         int offset;
-        done = 1;
 
         chroma_dc_coeff_token_vlc.table = chroma_dc_coeff_token_vlc_table;
         chroma_dc_coeff_token_vlc.table_allocated = chroma_dc_coeff_token_vlc_table_size;
@@ -410,7 +406,6 @@ av_cold void ff_h264_decode_init_vlc(void){
                  INIT_VLC_USE_NEW_STATIC);
 
         init_cavlc_level_tab();
-    }
 }
 
 static inline int get_level_prefix(GetBitContext *gb){
