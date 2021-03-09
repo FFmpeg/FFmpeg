@@ -262,14 +262,6 @@ int ff_cbs_sei_add_message(CodedBitstreamContext *ctx,
     if (!desc)
         return AVERROR(EINVAL);
 
-    if (payload_buf) {
-        payload_ref = av_buffer_ref(payload_buf);
-        if (!payload_ref)
-            return AVERROR(ENOMEM);
-    } else {
-        payload_ref = NULL;
-    }
-
     // Find an existing SEI unit or make a new one to add to.
     err = cbs_sei_get_unit(ctx, au, prefix, &unit);
     if (err < 0)
@@ -284,6 +276,14 @@ int ff_cbs_sei_add_message(CodedBitstreamContext *ctx,
     err = ff_cbs_sei_list_add(list);
     if (err < 0)
         return err;
+
+    if (payload_buf) {
+        payload_ref = av_buffer_ref(payload_buf);
+        if (!payload_ref)
+            return AVERROR(ENOMEM);
+    } else {
+        payload_ref = NULL;
+    }
 
     message = &list->messages[list->nb_messages - 1];
 
