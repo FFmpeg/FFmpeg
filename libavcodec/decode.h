@@ -85,4 +85,10 @@ int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
 
 int ff_attach_decode_data(AVFrame *frame);
 
+/**
+ * Perform decoder initialization and validation.
+ * Called when opening the decoder, before the AVCodec.init() call.
+ */
+int ff_decode_preinit(AVCodecContext *avctx);
+
 #endif /* AVCODEC_DECODE_H */

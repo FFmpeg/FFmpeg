@@ -657,11 +657,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         }
     }
 
-    /* if the decoder init function was already called previously,
-     * free the already allocated subtitle_header before overwriting it */
-    if (av_codec_is_decoder(codec))
-        av_freep(&avctx->subtitle_header);
-
     if (avctx->channels > FF_SANE_NB_CHANNELS || avctx->channels < 0) {
         av_log(avctx, AV_LOG_ERROR, "Too many or invalid channels: %d\n", avctx->channels);
         ret = AVERROR(EINVAL);
@@ -686,19 +681,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
-
-#if FF_API_THREAD_SAFE_CALLBACKS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if ((avctx->thread_type & FF_THREAD_FRAME) &&
-        avctx->get_buffer2 != avcodec_default_get_buffer2 &&
-        !avctx->thread_safe_callbacks) {
-        av_log(avctx, AV_LOG_WARNING, "Requested frame threading with a "
-               "custom get_buffer2() implementation which is not marked as "
-               "thread safe. This is not supported anymore, make your "
-               "callback thread-safe.\n");
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     avctx->codec = codec;
     if ((avctx->codec_type == AVMEDIA_TYPE_UNKNOWN || avctx->codec_type == codec->type) &&
@@ -764,30 +746,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!HAVE_THREADS && !(codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS))
         avctx->thread_count = 1;
 
-    if (avctx->codec->max_lowres < avctx->lowres || avctx->lowres < 0) {
-        av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
-               avctx->codec->max_lowres);
-        avctx->lowres = avctx->codec->max_lowres;
-    }
-
-    if (av_codec_is_encoder(avctx->codec)) {
+    if (av_codec_is_encoder(avctx->codec))
         ret = ff_encode_preinit(avctx);
-        if (ret < 0)
-            goto free_and_end;
-    }
-
-    avctx->pts_correction_num_faulty_pts =
-    avctx->pts_correction_num_faulty_dts = 0;
-    avctx->pts_correction_last_pts =
-    avctx->pts_correction_last_dts = INT64_MIN;
-
-    if (   !CONFIG_GRAY && avctx->flags & AV_CODEC_FLAG_GRAY
-        && avctx->codec_descriptor->type == AVMEDIA_TYPE_VIDEO)
-        av_log(avctx, AV_LOG_WARNING,
-               "gray decoding requested but not enabled at configuration time\n");
-    if (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS) {
-        avctx->export_side_data |= AV_CODEC_EXPORT_DATA_MVS;
-    }
+    else
+        ret = ff_decode_preinit(avctx);
+    if (ret < 0)
+        goto free_and_end;
 
     if (   avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME)
         || avci->frame_thread_encoder)) {
