@@ -298,6 +298,8 @@ static const AVCodecDefault defaults[] = {
     { "b",          "2M"  },
     { "g",          "250" },
     { "slices",     "1"   },
+    { "qmin",       "-1"  },
+    { "qmax",       "-1"  },
     { NULL                },
 };
 static const AVClass hevc_amf_class = {
