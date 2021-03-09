@@ -94,7 +94,7 @@ int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
         return AVERROR(ENOMEM);
 
     ctx->log_ctx = log_ctx;
-    ctx->codec   = type;
+    ctx->codec   = type; /* Must be before any error */
 
     if (type->priv_data_size) {
         ctx->priv_data = av_mallocz(ctx->codec->priv_data_size);
@@ -119,7 +119,7 @@ int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
 
 void ff_cbs_flush(CodedBitstreamContext *ctx)
 {
-    if (ctx->codec && ctx->codec->flush)
+    if (ctx->codec->flush)
         ctx->codec->flush(ctx);
 }
 
@@ -130,7 +130,7 @@ void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
     if (!ctx)
         return;
 
-    if (ctx->codec && ctx->codec->close)
+    if (ctx->codec->close)
         ctx->codec->close(ctx);
 
     av_freep(&ctx->write_buffer);
