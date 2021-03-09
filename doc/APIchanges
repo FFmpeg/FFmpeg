@@ -15,6 +15,11 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-xx - xxxxxxxxxx - lavc 58.132.100 - codec.h
+  Add AV_CODEC_CAP_OTHER_THREADS as a new name for
+  AV_CODEC_CAP_AUTO_THREADS. AV_CODEC_CAP_AUTO_THREADS
+  is now deprecated.
+
 2021-03-12 - xxxxxxxxxx - lavc 58.131.100 - avcodec.h codec.h
   Add a get_encode_buffer callback to AVCodecContext, similar to
   get_buffer2 but for encoders.

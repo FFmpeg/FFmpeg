@@ -700,7 +700,7 @@ AVCodec ff_libx265_encoder = {
     .priv_data_size   = sizeof(libx265Context),
     .priv_class       = &class,
     .defaults         = x265_defaults,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal    = FF_CODEC_CAP_AUTO_THREADS,
     .wrapper_name     = "libx265",

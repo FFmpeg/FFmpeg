@@ -484,7 +484,7 @@ AVCodec ff_libdav1d_decoder = {
     .close          = libdav1d_close,
     .flush          = libdav1d_flush,
     .receive_frame  = libdav1d_receive_frame,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_SETS_PKT_DTS |
                       FF_CODEC_CAP_AUTO_THREADS,
     .priv_class     = &libdav1d_class,

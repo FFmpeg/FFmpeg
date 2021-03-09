@@ -221,7 +221,7 @@ AVCodec ff_libdavs2_decoder = {
     .close          = davs2_end,
     .decode         = davs2_decode_frame,
     .flush          = davs2_flush,
-    .capabilities   =  AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities   =  AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },

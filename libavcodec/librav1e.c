@@ -624,7 +624,7 @@ AVCodec ff_librav1e_encoder = {
     .priv_class     = &class,
     .defaults       = librav1e_defaults,
     .pix_fmts       = librav1e_pix_fmts,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS,
     .wrapper_name   = "librav1e",
 };

@@ -1415,7 +1415,7 @@ static void print_codec(const AVCodec *c)
         printf("variable ");
     if (c->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
                            AV_CODEC_CAP_SLICE_THREADS |
-                           AV_CODEC_CAP_AUTO_THREADS))
+                           AV_CODEC_CAP_OTHER_THREADS))
         printf("threads ");
     if (c->capabilities & AV_CODEC_CAP_AVOID_PROBING)
         printf("avoidprobe ");
@@ -1432,12 +1432,12 @@ static void print_codec(const AVCodec *c)
         printf("    Threading capabilities: ");
         switch (c->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
                                    AV_CODEC_CAP_SLICE_THREADS |
-                                   AV_CODEC_CAP_AUTO_THREADS)) {
+                                   AV_CODEC_CAP_OTHER_THREADS)) {
         case AV_CODEC_CAP_FRAME_THREADS |
              AV_CODEC_CAP_SLICE_THREADS: printf("frame and slice"); break;
         case AV_CODEC_CAP_FRAME_THREADS: printf("frame");           break;
         case AV_CODEC_CAP_SLICE_THREADS: printf("slice");           break;
-        case AV_CODEC_CAP_AUTO_THREADS : printf("auto");            break;
+        case AV_CODEC_CAP_OTHER_THREADS: printf("other");           break;
         default:                         printf("none");            break;
         }
         printf("\n");

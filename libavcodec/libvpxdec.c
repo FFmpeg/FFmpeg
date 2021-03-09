@@ -361,7 +361,7 @@ AVCodec ff_libvpx_vp8_decoder = {
     .init           = vp8_init,
     .close          = vpx_free,
     .decode         = vpx_decode,
-    .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .wrapper_name   = "libvpx",
 };
@@ -383,7 +383,7 @@ AVCodec ff_libvpx_vp9_decoder = {
     .init           = vp9_init,
     .close          = vpx_free,
     .decode         = vpx_decode,
-    .capabilities   = AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities   = AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .init_static_data = ff_vp9_init_static,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
