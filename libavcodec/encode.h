@@ -44,4 +44,10 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame);
  */
 int ff_get_encode_buffer(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int flags);
 
+/*
+ * Perform encoder initialization and validation.
+ * Called when opening the encoder, before the AVCodec.init() call.
+ */
+int ff_encode_preinit(AVCodecContext *avctx);
+
 #endif /* AVCODEC_ENCODE_H */

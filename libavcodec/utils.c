@@ -44,6 +44,7 @@
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "decode.h"
+#include "encode.h"
 #include "hwconfig.h"
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
@@ -546,7 +547,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     int ret = 0;
     int codec_init_ok = 0;
     AVDictionary *tmp = NULL;
-    const AVPixFmtDescriptor *pixdesc;
     AVCodecInternal *avci;
 
     if (avcodec_is_open(avctx))
@@ -771,169 +771,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (av_codec_is_encoder(avctx->codec)) {
-        int i;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame = av_frame_alloc();
-        if (!avctx->coded_frame) {
-            ret = AVERROR(ENOMEM);
+        ret = ff_encode_preinit(avctx);
+        if (ret < 0)
             goto free_and_end;
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-        if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
-            av_log(avctx, AV_LOG_ERROR, "The encoder timebase is not set.\n");
-            ret = AVERROR(EINVAL);
-            goto free_and_end;
-        }
-
-        if (avctx->codec->sample_fmts) {
-            for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
-                if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
-                    break;
-                if (avctx->channels == 1 &&
-                    av_get_planar_sample_fmt(avctx->sample_fmt) ==
-                    av_get_planar_sample_fmt(avctx->codec->sample_fmts[i])) {
-                    avctx->sample_fmt = avctx->codec->sample_fmts[i];
-                    break;
-                }
-            }
-            if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
-                char buf[128];
-                snprintf(buf, sizeof(buf), "%d", avctx->sample_fmt);
-                av_log(avctx, AV_LOG_ERROR, "Specified sample format %s is invalid or not supported\n",
-                       (char *)av_x_if_null(av_get_sample_fmt_name(avctx->sample_fmt), buf));
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-        }
-        if (avctx->codec->pix_fmts) {
-            for (i = 0; avctx->codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++)
-                if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
-                    break;
-            if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE
-                && !((avctx->codec_id == AV_CODEC_ID_MJPEG || avctx->codec_id == AV_CODEC_ID_LJPEG)
-                     && avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL)) {
-                char buf[128];
-                snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
-                av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is invalid or not supported\n",
-                       (char *)av_x_if_null(av_get_pix_fmt_name(avctx->pix_fmt), buf));
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-            if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
-                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ411P ||
-                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ422P ||
-                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ440P ||
-                avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ444P)
-                avctx->color_range = AVCOL_RANGE_JPEG;
-        }
-        if (avctx->codec->supported_samplerates) {
-            for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
-                if (avctx->sample_rate == avctx->codec->supported_samplerates[i])
-                    break;
-            if (avctx->codec->supported_samplerates[i] == 0) {
-                av_log(avctx, AV_LOG_ERROR, "Specified sample rate %d is not supported\n",
-                       avctx->sample_rate);
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-        }
-        if (avctx->sample_rate < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Specified sample rate %d is not supported\n",
-                    avctx->sample_rate);
-            ret = AVERROR(EINVAL);
-            goto free_and_end;
-        }
-        if (avctx->codec->channel_layouts) {
-            if (!avctx->channel_layout) {
-                av_log(avctx, AV_LOG_WARNING, "Channel layout not specified\n");
-            } else {
-                for (i = 0; avctx->codec->channel_layouts[i] != 0; i++)
-                    if (avctx->channel_layout == avctx->codec->channel_layouts[i])
-                        break;
-                if (avctx->codec->channel_layouts[i] == 0) {
-                    char buf[512];
-                    av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
-                    av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n", buf);
-                    ret = AVERROR(EINVAL);
-                    goto free_and_end;
-                }
-            }
-        }
-        if (avctx->channel_layout && avctx->channels) {
-            int channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
-            if (channels != avctx->channels) {
-                char buf[512];
-                av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
-                av_log(avctx, AV_LOG_ERROR,
-                       "Channel layout '%s' with %d channels does not match number of specified channels %d\n",
-                       buf, channels, avctx->channels);
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-        } else if (avctx->channel_layout) {
-            avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
-        }
-        if (avctx->channels < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Specified number of channels %d is not supported\n",
-                    avctx->channels);
-            ret = AVERROR(EINVAL);
-            goto free_and_end;
-        }
-        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-            pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
-            if (    avctx->bits_per_raw_sample < 0
-                || (avctx->bits_per_raw_sample > 8 && pixdesc->comp[0].depth <= 8)) {
-                av_log(avctx, AV_LOG_WARNING, "Specified bit depth %d not possible with the specified pixel formats depth %d\n",
-                    avctx->bits_per_raw_sample, pixdesc->comp[0].depth);
-                avctx->bits_per_raw_sample = pixdesc->comp[0].depth;
-            }
-            if (avctx->width <= 0 || avctx->height <= 0) {
-                av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-        }
-        if (   (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
-            && avctx->bit_rate>0 && avctx->bit_rate<1000) {
-            av_log(avctx, AV_LOG_WARNING, "Bitrate %"PRId64" is extremely low, maybe you mean %"PRId64"k\n", avctx->bit_rate, avctx->bit_rate);
-        }
-
-        if (!avctx->rc_initial_buffer_occupancy)
-            avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3LL / 4;
-
-        if (avctx->ticks_per_frame && avctx->time_base.num &&
-            avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "ticks_per_frame %d too large for the timebase %d/%d.",
-                   avctx->ticks_per_frame,
-                   avctx->time_base.num,
-                   avctx->time_base.den);
-            goto free_and_end;
-        }
-
-        if (avctx->hw_frames_ctx) {
-            AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-            if (frames_ctx->format != avctx->pix_fmt) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Mismatching AVCodecContext.pix_fmt and AVHWFramesContext.format\n");
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-            if (avctx->sw_pix_fmt != AV_PIX_FMT_NONE &&
-                avctx->sw_pix_fmt != frames_ctx->sw_format) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Mismatching AVCodecContext.sw_pix_fmt (%s) "
-                       "and AVHWFramesContext.sw_format (%s)\n",
-                       av_get_pix_fmt_name(avctx->sw_pix_fmt),
-                       av_get_pix_fmt_name(frames_ctx->sw_format));
-                ret = AVERROR(EINVAL);
-                goto free_and_end;
-            }
-            avctx->sw_pix_fmt = frames_ctx->sw_format;
-        }
     }
 
     avctx->pts_correction_num_faulty_pts =
