@@ -2506,12 +2506,15 @@ static int rtp_read_header(AVFormatContext *s)
     RTSPState *rt = s->priv_data;
     const char *p;
     AVBPrint sdp;
+    AVDictionary *opts = NULL;
 
     if (!ff_network_init())
         return AVERROR(EIO);
 
+    opts = map_to_opts(rt);
     ret = ffurl_open_whitelist(&in, s->url, AVIO_FLAG_READ,
-                     &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL);
+                     &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
+    av_dict_free(&opts);
     if (ret)
         goto fail;
 

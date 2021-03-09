@@ -1033,6 +1033,9 @@ Set the local RTCP port to @var{n}.
 @item pkt_size=@var{n}
 Set max packet size (in bytes) to @var{n}.
 
+@item buffer_size=@var{size}
+Set the maximum UDP socket buffer size in bytes.
+
 @item connect=0|1
 Do a @code{connect()} on the UDP socket (if set to 1) or not (if set
 to 0).
