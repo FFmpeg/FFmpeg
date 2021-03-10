@@ -530,13 +530,13 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
 }
 
 
-static void ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
+static void lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 {
     if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
         ff_mutex_lock(&codec_mutex);
 }
 
-static void ff_unlock_avcodec(const AVCodec *codec)
+static void unlock_avcodec(const AVCodec *codec)
 {
     if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
         ff_mutex_unlock(&codec_mutex);
@@ -570,7 +570,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
-    ff_lock_avcodec(avctx, codec);
+    lock_avcodec(avctx, codec);
 
     avci = av_mallocz(sizeof(*avci));
     if (!avci) {
@@ -723,9 +723,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
     if (CONFIG_FRAME_THREAD_ENCODER && av_codec_is_encoder(avctx->codec)) {
-        ff_unlock_avcodec(codec); //we will instantiate a few encoders thus kick the counter to prevent false detection of a problem
+        unlock_avcodec(codec); //we will instantiate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
-        ff_lock_avcodec(avctx, codec);
+        lock_avcodec(avctx, codec);
         if (ret < 0)
             goto free_and_end;
     }
@@ -834,7 +834,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
 
 end:
-    ff_unlock_avcodec(codec);
+    unlock_avcodec(codec);
     if (options) {
         av_dict_free(options);
         *options = tmp;
