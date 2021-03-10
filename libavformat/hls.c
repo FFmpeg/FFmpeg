@@ -677,6 +677,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
                 av_log(s, AV_LOG_WARNING,
                     "keepalive request failed for '%s' with error: '%s' when opening url, retrying with new connection\n",
                     url, av_err2str(ret));
+            av_dict_copy(&tmp, *opts, 0);
+            av_dict_copy(&tmp, opts2, 0);
             ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
         }
     } else {
