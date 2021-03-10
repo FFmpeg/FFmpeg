@@ -100,20 +100,17 @@ static void math_binary_not_commutative(FunType pfun, const DnnLayerMathBinaryPa
 }
 int ff_dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)
 {
-    DnnLayerMathBinaryParams *params;
+    DnnLayerMathBinaryParams params = { 0 };
     int dnn_size = 0;
     int input_index = 0;
-    params = av_malloc(sizeof(*params));
-    if (!params)
-        return 0;
 
-    params->bin_op = (int32_t)avio_rl32(model_file_context);
+    params.bin_op = (int32_t)avio_rl32(model_file_context);
     dnn_size += 4;
 
-    params->input0_broadcast = (int32_t)avio_rl32(model_file_context);
+    params.input0_broadcast = (int32_t)avio_rl32(model_file_context);
     dnn_size += 4;
-    if (params->input0_broadcast) {
-        params->v = av_int2float(avio_rl32(model_file_context));
+    if (params.input0_broadcast) {
+        params.v = av_int2float(avio_rl32(model_file_context));
     } else {
         layer->input_operand_indexes[input_index] = (int32_t)avio_rl32(model_file_context);
         if (layer->input_operand_indexes[input_index] >= operands_num) {
@@ -123,10 +120,10 @@ int ff_dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context,
     }
     dnn_size += 4;
 
-    params->input1_broadcast = (int32_t)avio_rl32(model_file_context);
+    params.input1_broadcast = (int32_t)avio_rl32(model_file_context);
     dnn_size += 4;
-    if (params->input1_broadcast) {
-        params->v = av_int2float(avio_rl32(model_file_context));
+    if (params.input1_broadcast) {
+        params.v = av_int2float(avio_rl32(model_file_context));
     } else {
         layer->input_operand_indexes[input_index] = (int32_t)avio_rl32(model_file_context);
         if (layer->input_operand_indexes[input_index] >= operands_num) {
@@ -138,11 +135,13 @@ int ff_dnn_load_layer_math_binary(Layer *layer, AVIOContext *model_file_context,
 
     layer->output_operand_index = (int32_t)avio_rl32(model_file_context);
     dnn_size += 4;
-    layer->params = params;
 
     if (layer->output_operand_index >= operands_num) {
         return 0;
     }
+    layer->params = av_memdup(&params, sizeof(params));
+    if (!layer->params)
+        return 0;
 
     return dnn_size;
 }
