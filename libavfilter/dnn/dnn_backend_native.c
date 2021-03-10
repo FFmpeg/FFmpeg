@@ -232,6 +232,8 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, DNNFunctionType f
             oprd->dims[dim] = (int32_t)avio_rl32(model_file_context);
             dnn_size += 4;
         }
+        if (oprd->type == DOT_INPUT && oprd->dims[0] != 1)
+            goto fail;
 
         oprd->isNHWC = 1;
     }
