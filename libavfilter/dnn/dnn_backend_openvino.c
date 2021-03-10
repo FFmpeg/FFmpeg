@@ -52,9 +52,6 @@ typedef struct OVModel{
     ie_core_t *core;
     ie_network_t *network;
     ie_executable_network_t *exe_network;
-    ie_infer_request_t *infer_request;
-
-    /* for async execution */
     SafeQueue *request_queue;   // holds RequestItem
     Queue *task_queue;          // holds TaskItem
 } OVModel;
@@ -269,12 +266,9 @@ static void infer_completion_callback(void *args)
     ie_blob_free(&output_blob);
 
     request->task_count = 0;
-
-    if (task->async) {
-        if (ff_safe_queue_push_back(requestq, request) < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to push back request_queue.\n");
-            return;
-        }
+    if (ff_safe_queue_push_back(requestq, request) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to push back request_queue.\n");
+        return;
     }
 }
 
@@ -346,11 +340,6 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
                ctx->options.device_type, all_dev_names);
         goto err;
     }
-
-    // create infer_request for sync execution
-    status = ie_exec_network_create_infer_request(ov_model->exe_network, &ov_model->infer_request);
-    if (status != OK)
-        goto err;
 
     // create infer_requests for async execution
     if (ctx->options.nireq <= 0) {
@@ -502,10 +491,9 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     OVModel *ov_model = model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
-    RequestItem request;
+    RequestItem *request;
     AVFrame *in_frame = NULL;
     AVFrame *out_frame = NULL;
-    TaskItem *ptask = &task;
     IEStatusCode status;
     input_shapes_t input_shapes;
 
@@ -557,11 +545,16 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     task.out_frame = out_frame;
     task.ov_model = ov_model;
 
-    request.infer_request = ov_model->infer_request;
-    request.task_count = 1;
-    request.tasks = &ptask;
+    request = ff_safe_queue_pop_front(ov_model->request_queue);
+    if (!request) {
+        av_frame_free(&out_frame);
+        av_frame_free(&in_frame);
+        av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
+        return DNN_ERROR;
+    }
+    request->tasks[request->task_count++] = &task;
 
-    ret = execute_model_ov(&request);
+    ret = execute_model_ov(request);
     *output_width = out_frame->width;
     *output_height = out_frame->height;
 
@@ -633,8 +626,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
-    RequestItem request;
-    TaskItem *ptask = &task;
+    RequestItem *request;
 
     if (!in_frame) {
         av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
@@ -674,11 +666,14 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     task.out_frame = out_frame;
     task.ov_model = ov_model;
 
-    request.infer_request = ov_model->infer_request;
-    request.task_count = 1;
-    request.tasks = &ptask;
+    request = ff_safe_queue_pop_front(ov_model->request_queue);
+    if (!request) {
+        av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
+        return DNN_ERROR;
+    }
+    request->tasks[request->task_count++] = &task;
 
-    return execute_model_ov(&request);
+    return execute_model_ov(request);
 }
 
 DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
@@ -821,8 +816,6 @@ void ff_dnn_free_model_ov(DNNModel **model)
         }
         ff_queue_destroy(ov_model->task_queue);
 
-        if (ov_model->infer_request)
-            ie_infer_request_free(&ov_model->infer_request);
         if (ov_model->exe_network)
             ie_exec_network_free(&ov_model->exe_network);
         if (ov_model->network)
