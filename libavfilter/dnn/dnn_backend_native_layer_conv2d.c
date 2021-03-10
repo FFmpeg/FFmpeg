@@ -191,7 +191,7 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
     int thread_num = (ctx->options.conv2d_threads <= 0 || ctx->options.conv2d_threads > av_cpu_count())
         ? (av_cpu_count() + 1) : (ctx->options.conv2d_threads);
     int thread_stride;
-    ThreadParam **thread_param = av_malloc_array(thread_num, sizeof(*thread_param));
+    ThreadParam **thread_param;
 #else
     ThreadParam thread_param = { 0 };
 #endif
@@ -227,6 +227,7 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
     thread_common_param.ctx = ctx;
 
 #if HAVE_PTHREAD_CANCEL
+    thread_param = av_malloc_array(thread_num, sizeof(*thread_param));
     thread_stride = (height - pad_size * 2) / thread_num;
     //create threads
     for (int i = 0; i < thread_num; i++){
