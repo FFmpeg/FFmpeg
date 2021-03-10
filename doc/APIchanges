@@ -34,87 +34,87 @@ API changes, most recent first:
   Change AVBufferRef and relevant AVFrame function and struct size
   parameter and fields type to size_t at next major bump.
 
-2021-03-04 - xxxxxxxxxx - lavc 58.128.101 - avcodec.h
+2021-03-04 - a0eec776b6 - lavc 58.128.101 - avcodec.h
   Enable err_recognition to be set for encoders.
 
-2021-03-03 - xxxxxxxxxx - lavf 58.70.100 - avformat.h
+2021-03-03 - 2ff40b98ec - lavf 58.70.100 - avformat.h
   Deprecate AVFMT_FLAG_PRIV_OPT. It will do nothing
   as soon as av_demuxer_open() is removed.
 
-2021-02-27 - xxxxxxxxxx - lavc 58.126.100 - avcodec.h
+2021-02-27 - dd9227e48f - lavc 58.126.100 - avcodec.h
   Deprecated avcodec_get_frame_class().
 
-2021-02-21 - xxxxxxxxxx - lavu 56.66.100 - tx.h
+2021-02-21 - 5ca40d6d94 - lavu 56.66.100 - tx.h
   Add enum AVTXFlags and AVTXFlags.AV_TX_INPLACE
 
-2021-02-14 - xxxxxxxxxx - lavd 58.12.100 - avdevice.h
+2021-02-14 - 4f49ca7bbc - lavd 58.12.100 - avdevice.h
   Deprecated avdevice_capabilities_create() and
   avdevice_capabilities_free().
 
-2021-02-xx - xxxxxxxxxx - lavu 56.xx.100 - common.h
+2021-02-10 - 1bda9bb68a - lavu 56.65.100 - common.h
   Add FFABS64U()
 
-2021-01-26 - xxxxxxxxxx - lavu 56.64.100 - common.h
+2021-01-26 - 5dd9567080 - lavu 56.64.100 - common.h
   Add FFABSU()
 
-2021-01-25 - xxxxxxxxxx - lavc 58.119.100 - avcodec.h
+2021-01-25 - 56709ca8aa - lavc 58.119.100 - avcodec.h
   Deprecate AVCodecContext.debug_mv, FF_DEBUG_VIS_MV_P_FOR, FF_DEBUG_VIS_MV_B_FOR,
   FF_DEBUG_VIS_MV_B_BACK
 
-2021-01-11 - xxxxxxxxxx - lavc 58.116.100 - avcodec.h
+2021-01-11 - ebdd33086a - lavc 58.116.100 - avcodec.h
   Add FF_PROFILE_VVC_MAIN_10 and FF_PROFILE_VVC_MAIN_10_444.
 
-2020-xx-xx - xxxxxxxxxx - lavu 56.63.100 - video_enc_params.h
+2020-01-01 - baecaa16c1 - lavu 56.63.100 - video_enc_params.h
   Add AV_VIDEO_ENC_PARAMS_MPEG2
 
-2020-12-03 - xxxxxxxxxx - lavu 56.62.100 - timecode.h
+2020-12-03 - eca12f4d5a - lavu 56.62.100 - timecode.h
   Add av_timecode_init_from_components.
 
-2020-xx-xx - xxxxxxxxxx - lavc 58.114.100 - avcodec.h
+2020-11-27 - a83098ab03 - lavc 58.114.100 - avcodec.h
   Deprecate AVCodecContext.thread_safe_callbacks. Starting with
   LIBAVCODEC_VERSION_MAJOR=60, user callbacks must always be
   thread-safe when frame threading is used.
 
-2020-11-25 - xxxxxxxxxx - lavc 58.113.100 - avcodec.h
+2020-11-25 - d243dd540a - lavc 58.113.100 - avcodec.h
   Adds a new flag AV_CODEC_EXPORT_DATA_FILM_GRAIN for export_side_data.
 
-2020-11-25 - xxxxxxxxxx - lavu 56.61.100 - film_grain_params.h
+2020-11-25 - 4f9ee87253 - lavu 56.61.100 - film_grain_params.h
   Adds a new API for extracting codec film grain parameters as side data.
   Adds a new AVFrameSideDataType entry AV_FRAME_DATA_FILM_GRAIN_PARAMS for it.
 
-2020-xx-xx - xxxxxxxxxx - lavf 58.64.100 - avformat.h
+2020-10-28 - f95d9510ff - lavf 58.64.100 - avformat.h
   Add AVSTREAM_EVENT_FLAG_NEW_PACKETS.
 
-2020-xx-xx - xxxxxxxxxx - lavu 56.60.100 - buffer.h
+2020-09-28 - 68918d3b7f - lavu 56.60.100 - buffer.h
   Add a av_buffer_replace() convenience function.
 
-2020-09-xx - xxxxxxxxxx - lavu 56.59.100 - timecode.h
+2020-09-13 - 837b6eb90e - lavu 56.59.100 - timecode.h
   Add av_timecode_make_smpte_tc_string2.
 
-2020-08-21 - xxxxxxxxxx - lavu 56.58.100 - avstring.h
+2020-08-21 - 06f2651204 - lavu 56.58.100 - avstring.h
   Deprecate av_d2str(). Use av_asprintf() instead.
 
-2020-08-04 - xxxxxxxxxx - lavu 56.58.100 - channel_layout.h
+2020-08-04 - 34de0abbe7 - lavu 56.58.100 - channel_layout.h
   Add AV_CH_LAYOUT_22POINT2 together with its newly required pieces:
   AV_CH_TOP_SIDE_LEFT, AV_CH_TOP_SIDE_RIGHT, AV_CH_BOTTOM_FRONT_CENTER,
   AV_CH_BOTTOM_FRONT_LEFT, AV_CH_BOTTOM_FRONT_RIGHT.
 
-2020-07-xx - xxxxxxxxxx - lavu 56.57.100 - cpu.h
+2020-07-23 - 84655b7101 - lavu 56.57.100 - cpu.h
   Add AV_CPU_FLAG_MMI and AV_CPU_FLAG_MSA.
 
-2020-07-xx - xxxxxxxxxx - lavu 56.56.100 - imgutils.h
+2020-07-22 - 3a8e927176 - lavu 56.56.100 - imgutils.h
   Add av_image_fill_plane_sizes().
 
-2020-07-xx - xxxxxxxxxx - lavc 58.96.100 - packet.h
+2020-07-15 - 448a9aaa78 - lavc 58.96.100 - packet.h
   Add AV_PKT_DATA_S12M_TIMECODE.
 
 2020-06-12 - b09fb030c1 - lavu 56.55.100 - pixdesc.h
   Add AV_PIX_FMT_X2RGB10.
 
-2020-06-xx - xxxxxxxxxx - lavu 56.54.100 - frame.h
+2020-06-11 - bc8ab084fb - lavu 56.54.100 - frame.h
   Add AV_FRAME_DATA_SEI_UNREGISTERED.
 
-2020-06-xx - xxxxxxxxxx - lavu 56.53.100 - log.h opt.h
+2020-06-10 - 1b4a98b029 - lavu 56.53.100 - log.h opt.h
   Add av_opt_child_class_iterate() and AVClass.child_class_iterate().
   Deprecate av_opt_child_class_next() and AVClass.child_class_next().
 
