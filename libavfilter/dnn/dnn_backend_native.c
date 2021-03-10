@@ -158,12 +158,12 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, DNNFunctionType f
     if (!native_model){
         goto fail;
     }
+    model->model = native_model;
 
     native_model->ctx.class = &dnn_native_class;
     model->options = options;
     if (av_opt_set_from_string(&native_model->ctx, model->options, NULL, "=", "&") < 0)
         goto fail;
-    model->model = (void *)native_model;
     native_model->model = model;
 
 #if !HAVE_PTHREAD_CANCEL
