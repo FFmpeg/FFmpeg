@@ -228,6 +228,8 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
 
 #if HAVE_PTHREAD_CANCEL
     thread_param = av_malloc_array(thread_num, sizeof(*thread_param));
+    if (!thread_param)
+        return DNN_ERROR;
     thread_stride = (height - pad_size * 2) / thread_num;
     //create threads
     for (int i = 0; i < thread_num; i++){
