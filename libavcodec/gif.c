@@ -383,13 +383,12 @@ static int gif_image_write_image(AVCodecContext *avctx,
     bytestream_put_le16(bytestream, height);
 
     if (palette || !s->use_global_palette) {
-        const uint32_t *pal = palette ? palette : s->palette;
         unsigned pow2_count = av_log2(shrunk_palette_count - 1);
         unsigned i;
 
         bytestream_put_byte(bytestream, 1<<7 | pow2_count); /* flags */
         for (i = 0; i < 1 << (pow2_count + 1); i++) {
-            const uint32_t v = pal[i];
+            const uint32_t v = shrunk_palette[i];
             bytestream_put_be24(bytestream, v);
         }
     } else {
