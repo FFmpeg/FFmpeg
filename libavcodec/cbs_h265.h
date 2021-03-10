@@ -26,15 +26,6 @@
 #include "cbs_sei.h"
 #include "hevc.h"
 
-enum {
-    // This limit is arbitrary - it is sufficient for one message of each
-    // type plus some repeats, and will therefore easily cover all sane
-    // streams.  However, it is possible to make technically-valid streams
-    // for which it will fail (for example, by including a large number of
-    // user-data-unregistered messages).
-    H265_MAX_SEI_PAYLOADS = 64,
-};
-
 typedef struct H265RawNALUnitHeader {
     uint8_t nal_unit_type;
     uint8_t nuh_layer_id;

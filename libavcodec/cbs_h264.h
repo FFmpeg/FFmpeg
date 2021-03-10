@@ -28,16 +28,6 @@
 #include "h264.h"
 
 
-enum {
-    // This limit is arbitrary - it is sufficient for one message of each
-    // type plus some repeats, and will therefore easily cover all sane
-    // streams.  However, it is possible to make technically-valid streams
-    // for which it will fail (for example, by including a large number of
-    // user-data-unregistered messages).
-    H264_MAX_SEI_PAYLOADS = 64,
-};
-
-
 typedef struct H264RawNALUnitHeader {
     uint8_t nal_ref_idc;
     uint8_t nal_unit_type;
