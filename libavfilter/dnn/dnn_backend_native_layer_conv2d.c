@@ -197,6 +197,7 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
     int width = operands[input_operand_indexes[0]].dims[2];
     int pad_size = (conv_params->padding_method == VALID) ? (conv_params->kernel_size - 1) / 2 * conv_params->dilation : 0;
     DnnOperand *output_operand = &operands[output_operand_index];
+    void *tmp;
 
     output_operand->dims[0] = operands[input_operand_indexes[0]].dims[0];
     output_operand->dims[1] = height - pad_size * 2;
@@ -208,11 +209,12 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
         return DNN_ERROR;
     }
-    output_operand->data = av_realloc(output_operand->data, output_operand->length);
-    if (!output_operand->data) {
+    tmp = av_realloc(output_operand->data, output_operand->length);
+    if (!tmp) {
         av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
         return DNN_ERROR;
     }
+    output_operand->data = tmp;
     thread_common_param.output_data = output_operand->data;
     thread_common_param.operands = operands;
     thread_common_param.input_operand_indexes = input_operand_indexes;
