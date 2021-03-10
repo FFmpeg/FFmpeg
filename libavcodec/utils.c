@@ -530,7 +530,7 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
 }
 
 
-static void lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
+static void lock_avcodec(const AVCodec *codec)
 {
     if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
         ff_mutex_lock(&codec_mutex);
@@ -570,7 +570,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
-    lock_avcodec(avctx, codec);
+    lock_avcodec(codec);
 
     avci = av_mallocz(sizeof(*avci));
     if (!avci) {
@@ -725,7 +725,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (CONFIG_FRAME_THREAD_ENCODER && av_codec_is_encoder(avctx->codec)) {
         unlock_avcodec(codec); //we will instantiate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
-        lock_avcodec(avctx, codec);
+        lock_avcodec(codec);
         if (ret < 0)
             goto free_and_end;
     }
