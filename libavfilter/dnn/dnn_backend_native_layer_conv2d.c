@@ -180,7 +180,7 @@ static void * dnn_execute_layer_conv2d_thread(void *threadarg)
             output += conv_params->output_num;
         }
     }
-    return (void *)DNN_SUCCESS;
+    return NULL;
 }
 
 
@@ -244,7 +244,6 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
         }
     }
 
-    //join threads, res gets function return
     for (int i = 0; i < thread_num; i++){
         pthread_join(thread_param[i].thread, NULL);
     }
