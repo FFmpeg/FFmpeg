@@ -53,7 +53,7 @@ can trigger a new election of the TC.
 The members of the TC can be elected from outside of the GA.
 Candidates for election can either be suggested or self-nominated.
 
-The conflict resolution process is detailed in the [resolution process] document.
+The conflict resolution process is detailed in the [resolution process](resolution_process.md) document.
 
 ## Community committee
 
