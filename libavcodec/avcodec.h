@@ -3680,7 +3680,9 @@ void av_parser_close(AVCodecParserContext *s);
  *                            not be used.
  * @return          0 on success, negative error code on failure
  *
- * @deprecated use avcodec_send_frame()/avcodec_receive_packet() instead
+ * @deprecated use avcodec_send_frame()/avcodec_receive_packet() instead.
+ *             If allowed and required, set AVCodecContext.get_encode_buffer to
+ *             a custom function to pass user supplied output buffers.
  */
 attribute_deprecated
 int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
@@ -3719,7 +3721,9 @@ int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
  *                            not be used.
  * @return          0 on success, negative error code on failure
  *
- * @deprecated use avcodec_send_frame()/avcodec_receive_packet() instead
+ * @deprecated use avcodec_send_frame()/avcodec_receive_packet() instead.
+ *             If allowed and required, set AVCodecContext.get_encode_buffer to
+ *             a custom function to pass user supplied output buffers.
  */
 attribute_deprecated
 int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
