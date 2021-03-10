@@ -190,7 +190,7 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
 #if HAVE_PTHREAD_CANCEL
     int thread_num = (ctx->options.conv2d_threads <= 0 || ctx->options.conv2d_threads > av_cpu_count())
         ? (av_cpu_count() + 1) : (ctx->options.conv2d_threads);
-    int thread_stride;
+    int ret = DNN_SUCCESS, thread_stride;
     ThreadParam *thread_param;
 #else
     ThreadParam thread_param = { 0 };
@@ -236,7 +236,12 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
         thread_param[i].thread_common_param = &thread_common_param;
         thread_param[i].thread_start = thread_stride * i + pad_size;
         thread_param[i].thread_end = (i == thread_num - 1) ? (height - pad_size) : (thread_param[i].thread_start + thread_stride);
-        pthread_create(&thread_param[i].thread, NULL, dnn_execute_layer_conv2d_thread, &thread_param[i]);
+        if (pthread_create(&thread_param[i].thread, NULL,
+                           dnn_execute_layer_conv2d_thread, &thread_param[i])) {
+            thread_num = i;
+            ret = DNN_ERROR;
+            break;
+        }
     }
 
     //join threads, res gets function return
@@ -246,12 +251,14 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
 
     //release memory
     av_freep(&thread_param);
+
+    return ret;
 #else
     thread_param.thread_common_param = &thread_common_param;
     thread_param.thread_start = pad_size;
     thread_param.thread_end = height - pad_size;
     dnn_execute_layer_conv2d_thread(&thread_param);
-#endif
 
     return DNN_SUCCESS;
+#endif
 }
