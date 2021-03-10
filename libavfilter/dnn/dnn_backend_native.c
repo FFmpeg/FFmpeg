@@ -331,7 +331,7 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
                                             native_model->layers[layer].output_operand_index,
                                             native_model->layers[layer].params,
                                             &native_model->ctx) == DNN_ERROR) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to execuet model\n");
+            av_log(ctx, AV_LOG_ERROR, "Failed to execute model\n");
             return DNN_ERROR;
         }
     }
