@@ -32,6 +32,7 @@ extern "C" {
 
 extern "C" {
 #include "libavformat/avformat.h"
+#include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
 #include "avdevice.h"
 }
