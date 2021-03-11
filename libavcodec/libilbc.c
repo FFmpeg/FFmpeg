@@ -27,6 +27,10 @@
 #include "avcodec.h"
 #include "internal.h"
 
+#ifndef LIBILBC_VERSION_MAJOR
+#define LIBILBC_VERSION_MAJOR 2
+#endif
+
 static int get_mode(AVCodecContext *avctx)
 {
     if (avctx->block_align == 38)
@@ -41,7 +45,11 @@ static int get_mode(AVCodecContext *avctx)
 
 typedef struct ILBCDecContext {
     const AVClass *class;
+#if LIBILBC_VERSION_MAJOR < 3
     iLBC_Dec_Inst_t decoder;
+#else
+    IlbcDecoder decoder;
+#endif
     int enhance;
 } ILBCDecContext;
 
@@ -87,7 +95,12 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
 
     if (s->decoder.no_of_bytes > buf_size) {
+#if LIBILBC_VERSION_MAJOR < 3
         av_log(avctx, AV_LOG_ERROR, "iLBC frame too short (%u, should be %u)\n",
+#else
+        av_log(avctx, AV_LOG_ERROR, "iLBC frame too short (%u, should be "
+                                    "%"SIZE_SPECIFIER")\n",
+#endif
                buf_size, s->decoder.no_of_bytes);
         return AVERROR_INVALIDDATA;
     }
@@ -117,7 +130,11 @@ AVCodec ff_libilbc_decoder = {
 
 typedef struct ILBCEncContext {
     const AVClass *class;
+#if LIBILBC_VERSION_MAJOR < 3
     iLBC_Enc_Inst_t encoder;
+#else
+    IlbcEncoder encoder;
+#endif
     int mode;
 } ILBCEncContext;
 
