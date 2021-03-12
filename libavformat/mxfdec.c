@@ -2909,8 +2909,12 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
         int64_t next = avio_tell(pb);
         UID uid = {0};
-        if (next < 0 || next > INT64_MAX - size)
+        if (next < 0 || next > INT64_MAX - size) {
+            if (meta) {
+                mxf_free_metadataset(&meta, 1);
+            }
             return next < 0 ? next : AVERROR_INVALIDDATA;
+        }
         next += size;
 
         av_log(mxf->fc, AV_LOG_TRACE, "local tag %#04x size %d\n", tag, size);
