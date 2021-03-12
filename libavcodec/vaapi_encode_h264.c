@@ -1334,7 +1334,8 @@ AVCodec ff_h264_vaapi_encoder = {
     .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &vaapi_encode_h264_close,
     .priv_class     = &vaapi_encode_h264_class,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
+                      AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_h264_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
