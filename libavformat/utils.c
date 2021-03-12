@@ -810,7 +810,7 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
 
 int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, err;
+    int err, i;
     AVStream *st;
 
 #if FF_API_INIT_PACKET
@@ -840,17 +840,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
 
-        ret = s->iformat->read_packet(s, pkt);
-        if (ret < 0) {
+        err = s->iformat->read_packet(s, pkt);
+        if (err < 0) {
             av_packet_unref(pkt);
 
             /* Some demuxers return FFERROR_REDO when they consume
                data and discard it (ignored streams, junk, extradata).
                We must re-call the demuxer to get the real packet. */
-            if (ret == FFERROR_REDO)
+            if (err == FFERROR_REDO)
                 continue;
-            if (!pktl || ret == AVERROR(EAGAIN))
-                return ret;
+            if (!pktl || err == AVERROR(EAGAIN))
+                return err;
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->probe_packets || st->internal->request_probe > 0)
@@ -904,7 +904,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
 
         if (!pktl && st->internal->request_probe <= 0)
-            return ret;
+            return 0;
 
         err = avpriv_packet_list_put(&s->internal->raw_packet_buffer,
                                  &s->internal->raw_packet_buffer_end,
