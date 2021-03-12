@@ -2889,13 +2889,20 @@ static int mxf_metadataset_init(MXFMetadataSet *ctx, enum MXFMetadataSetType typ
 static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadFunc *read_child, int ctx_size, enum MXFMetadataSetType type)
 {
     AVIOContext *pb = mxf->fc->pb;
-    MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
     uint64_t klv_end = avio_tell(pb) + klv->length;
+    MXFMetadataSet *meta;
+    void *ctx;
 
-    if (!ctx)
-        return AVERROR(ENOMEM);
-    if (ctx_size)
-        mxf_metadataset_init(ctx, type);
+    if (ctx_size) {
+        meta = av_mallocz(ctx_size);
+        if (!meta)
+            return AVERROR(ENOMEM);
+        ctx  = meta;
+        mxf_metadataset_init(meta, type);
+    } else {
+        meta = NULL;
+        ctx  = mxf;
+    }
     while (avio_tell(pb) + 4 < klv_end && !avio_feof(pb)) {
         int ret;
         int tag = avio_rb16(pb);
@@ -2922,19 +2929,20 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
                 }
             }
         }
-        if (ctx_size && tag == 0x3C0A) {
-            avio_read(pb, ctx->uid, 16);
+        if (meta && tag == 0x3C0A) {
+            avio_read(pb, meta->uid, 16);
         } else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0) {
-            if (ctx_size)
-                mxf_free_metadataset(&ctx, 1);
+            if (meta) {
+                mxf_free_metadataset(&meta, 1);
+            }
             return ret;
         }
 
         /* Accept the 64k local set limit being exceeded (Avid). Don't accept
          * it extending past the end of the KLV though (zzuf5.mxf). */
         if (avio_tell(pb) > klv_end) {
-            if (ctx_size) {
-                mxf_free_metadataset(&ctx, 1);
+            if (meta) {
+                mxf_free_metadataset(&meta, 1);
             }
 
             av_log(mxf->fc, AV_LOG_ERROR,
@@ -2944,7 +2952,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
             avio_seek(pb, next, SEEK_SET);
     }
-    return ctx_size ? mxf_add_metadata_set(mxf, &ctx) : 0;
+    return meta ? mxf_add_metadata_set(mxf, &meta) : 0;
 }
 
 /**
