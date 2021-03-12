@@ -1744,7 +1744,6 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         av_fifo_generic_read(avctx->internal->pkt_props,
                              pkt, sizeof(*pkt), NULL);
 
-    if (pkt) {
         frame->pts = pkt->pts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -1775,7 +1774,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         } else {
             frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
         }
-    }
     frame->reordered_opaque = avctx->reordered_opaque;
 
     if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
