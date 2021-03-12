@@ -1723,7 +1723,6 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     AVPacket *pkt = avctx->internal->last_pkt_props;
-    int i;
     static const struct {
         enum AVPacketSideDataType packet;
         enum AVFrameSideDataType frame;
@@ -1744,36 +1743,36 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         av_fifo_generic_read(avctx->internal->pkt_props,
                              pkt, sizeof(*pkt), NULL);
 
-        frame->pts = pkt->pts;
+    frame->pts = pkt->pts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_pts = pkt->pts;
+    frame->pkt_pts = pkt->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        frame->pkt_pos      = pkt->pos;
-        frame->pkt_duration = pkt->duration;
-        frame->pkt_size     = pkt->size;
+    frame->pkt_pos      = pkt->pos;
+    frame->pkt_duration = pkt->duration;
+    frame->pkt_size     = pkt->size;
 
-        for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
-            buffer_size_t size;
-            uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
-            if (packet_sd) {
-                AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
-                                                                   sd[i].frame,
-                                                                   size);
-                if (!frame_sd)
-                    return AVERROR(ENOMEM);
+    for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
+        buffer_size_t size;
+        uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
+        if (packet_sd) {
+            AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
+                                                               sd[i].frame,
+                                                               size);
+            if (!frame_sd)
+                return AVERROR(ENOMEM);
 
-                memcpy(frame_sd->data, packet_sd, size);
-            }
+            memcpy(frame_sd->data, packet_sd, size);
         }
-        add_metadata_from_side_data(pkt, frame);
+    }
+    add_metadata_from_side_data(pkt, frame);
 
-        if (pkt->flags & AV_PKT_FLAG_DISCARD) {
-            frame->flags |= AV_FRAME_FLAG_DISCARD;
-        } else {
-            frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
-        }
+    if (pkt->flags & AV_PKT_FLAG_DISCARD) {
+        frame->flags |= AV_FRAME_FLAG_DISCARD;
+    } else {
+        frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
+    }
     frame->reordered_opaque = avctx->reordered_opaque;
 
     if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
