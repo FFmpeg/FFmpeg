@@ -79,7 +79,6 @@ static int svs_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret != 32 * 256) {
         if (ret < 0)
             return ret;
-        av_shrink_packet(pkt, ret);
         pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     }
     pkt->stream_index = 0;
