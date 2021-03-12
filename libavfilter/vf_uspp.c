@@ -257,6 +257,7 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
             av_log(p->avctx_enc[i], AV_LOG_ERROR, "Encoding failed\n");
             continue;
         }
+        av_packet_unref(&pkt);
 
         p->frame_dec = p->avctx_enc[i]->coded_frame;
 
