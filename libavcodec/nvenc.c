@@ -1971,7 +1971,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
         goto error;
     }
 
-    res = av_new_packet(pkt, lock_params.bitstreamSizeInBytes);
+    res = ff_get_encode_buffer(avctx, pkt, lock_params.bitstreamSizeInBytes, 0);
 
     if (res < 0) {
         p_nvenc->nvEncUnlockBitstream(ctx->nvencoder, tmpoutsurf->output_surface);
