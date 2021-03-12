@@ -617,6 +617,102 @@ they do not conflict with the standard, as in:
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
+The parameters set for each target are as follows.
+
+@strong{VCD}
+@example
+@var{pal}:
+-f vcd -muxrate 1411200 -muxpreload 0.44 -packetsize 2324
+-s 352x288 -r 25
+-codec:v mpeg1video -g 15 -b:v 1150k -maxrate:v 1150v -minrate:v 1150k -bufsize:v 327680
+-ar 44100 -ac 2
+-codec:a mp2 -b:a 224k
+
+@var{ntsc}:
+-f vcd -muxrate 1411200 -muxpreload 0.44 -packetsize 2324
+-s 352x240 -r 30000/1001
+-codec:v mpeg1video -g 18 -b:v 1150k -maxrate:v 1150v -minrate:v 1150k -bufsize:v 327680
+-ar 44100 -ac 2
+-codec:a mp2 -b:a 224k
+
+@var{film}:
+-f vcd -muxrate 1411200 -muxpreload 0.44 -packetsize 2324
+-s 352x240 -r 24000/1001
+-codec:v mpeg1video -g 18 -b:v 1150k -maxrate:v 1150v -minrate:v 1150k -bufsize:v 327680
+-ar 44100 -ac 2
+-codec:a mp2 -b:a 224k
+@end example
+
+@strong{SVCD}
+@example
+@var{pal}:
+-f svcd -packetsize 2324
+-s 480x576 -pix_fmt yuv420p -r 25
+-codec:v mpeg2video -g 15 -b:v 2040k -maxrate:v 2516k -minrate:v 0 -bufsize:v 1835008 -scan_offset 1
+-ar 44100
+-codec:a mp2 -b:a 224k
+
+@var{ntsc}:
+-f svcd -packetsize 2324
+-s 480x480 -pix_fmt yuv420p -r 30000/1001
+-codec:v mpeg2video -g 18 -b:v 2040k -maxrate:v 2516k -minrate:v 0 -bufsize:v 1835008 -scan_offset 1
+-ar 44100
+-codec:a mp2 -b:a 224k
+
+@var{film}:
+-f svcd -packetsize 2324
+-s 480x480 -pix_fmt yuv420p -r 24000/1001
+-codec:v mpeg2video -g 18 -b:v 2040k -maxrate:v 2516k -minrate:v 0 -bufsize:v 1835008 -scan_offset 1
+-ar 44100
+-codec:a mp2 -b:a 224k
+@end example
+
+@strong{DVD}
+@example
+@var{pal}:
+-f dvd -muxrate 10080k -packetsize 2048
+-s 720x576 -pix_fmt yuv420p -r 25
+-codec:v mpeg2video -g 15 -b:v 6000k -maxrate:v 9000k -minrate:v 0 -bufsize:v 1835008
+-ar 48000
+-codec:a ac3 -b:a 448k
+
+@var{ntsc}:
+-f dvd -muxrate 10080k -packetsize 2048
+-s 720x480 -pix_fmt yuv420p -r 30000/1001
+-codec:v mpeg2video -g 18 -b:v 6000k -maxrate:v 9000k -minrate:v 0 -bufsize:v 1835008
+-ar 48000
+-codec:a ac3 -b:a 448k
+
+@var{film}:
+-f dvd -muxrate 10080k -packetsize 2048
+-s 720x480 -pix_fmt yuv420p -r 24000/1001
+-codec:v mpeg2video -g 18 -b:v 6000k -maxrate:v 9000k -minrate:v 0 -bufsize:v 1835008
+-ar 48000
+-codec:a ac3 -b:a 448k
+@end example
+
+@strong{DV}
+@example
+@var{pal}:
+-f dv
+-s 720x576 -pix_fmt yuv420p -r 25
+-ar 48000 -ac 2
+
+@var{ntsc}:
+-f dv
+-s 720x480 -pix_fmt yuv411p -r 30000/1001
+-ar 48000 -ac 2
+
+@var{film}:
+-f dv
+-s 720x480 -pix_fmt yuv411p -r 24000/1001
+-ar 48000 -ac 2
+@end example
+The @code{dv50} target is identical to the @code{dv} target except that the pixel format set is @code{yuv422p} for all three standards.
+
+Any user-set value for a parameter above will override the target preset value. In that case, the output may
+not comply with the target standard.
+
 @item -dn (@emph{input/output})
 As an input option, blocks all data streams of a file from being filtered or
 being automatically selected or mapped for any output. See @code{-discard}
