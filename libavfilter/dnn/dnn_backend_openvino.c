@@ -353,25 +353,23 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
             goto err;
         }
 
-        status = ie_exec_network_create_infer_request(ov_model->exe_network, &item->infer_request);
-        if (status != OK) {
-            av_freep(&item);
-            goto err;
-        }
-
-        item->tasks = av_malloc_array(ctx->options.batch_size, sizeof(*item->tasks));
-        if (!item->tasks) {
-            av_freep(&item);
-            goto err;
-        }
-        item->task_count = 0;
-
         item->callback.completeCallBackFunc = infer_completion_callback;
         item->callback.args = item;
         if (ff_safe_queue_push_back(ov_model->request_queue, item) < 0) {
             av_freep(&item);
             goto err;
         }
+
+        status = ie_exec_network_create_infer_request(ov_model->exe_network, &item->infer_request);
+        if (status != OK) {
+            goto err;
+        }
+
+        item->tasks = av_malloc_array(ctx->options.batch_size, sizeof(*item->tasks));
+        if (!item->tasks) {
+            goto err;
+        }
+        item->task_count = 0;
     }
 
     ov_model->task_queue = ff_queue_create();
