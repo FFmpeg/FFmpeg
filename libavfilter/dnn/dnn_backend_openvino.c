@@ -141,12 +141,14 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
     status |= ie_blob_get_dims(input_blob, &dims);
     status |= ie_blob_get_precision(input_blob, &precision);
     if (status != OK) {
+        ie_blob_free(&input_blob);
         av_log(ctx, AV_LOG_ERROR, "Failed to get input blob dims/precision\n");
         return DNN_ERROR;
     }
 
     status = ie_blob_get_buffer(input_blob, &blob_buffer);
     if (status != OK) {
+        ie_blob_free(&input_blob);
         av_log(ctx, AV_LOG_ERROR, "Failed to get input blob buffer\n");
         return DNN_ERROR;
     }
@@ -211,6 +213,7 @@ static void infer_completion_callback(void *args)
 
     status = ie_blob_get_buffer(output_blob, &blob_buffer);
     if (status != OK) {
+        ie_blob_free(&output_blob);
         av_log(ctx, AV_LOG_ERROR, "Failed to access output memory\n");
         return;
     }
@@ -218,6 +221,7 @@ static void infer_completion_callback(void *args)
     status |= ie_blob_get_dims(output_blob, &dims);
     status |= ie_blob_get_precision(output_blob, &precision);
     if (status != OK) {
+        ie_blob_free(&output_blob);
         av_log(ctx, AV_LOG_ERROR, "Failed to get dims or precision of output\n");
         return;
     }
