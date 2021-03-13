@@ -41,12 +41,12 @@ typedef struct {
     int readorder;
 } SAMIContext;
 
-static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
+static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src, size_t size)
 {
     SAMIContext *sami = avctx->priv_data;
     int ret = 0;
     char *tag = NULL;
-    char *dupsrc = av_strdup(src);
+    char *dupsrc = av_strndup(src, size);
     char *p = dupsrc;
     AVBPrint *dst_content = &sami->encoded_content;
     AVBPrint *dst_source = &sami->encoded_source;
@@ -137,11 +137,10 @@ end:
 static int sami_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr, const AVPacket *avpkt)
 {
-    const char *ptr = avpkt->data;
     SAMIContext *sami = avctx->priv_data;
 
-    if (ptr && avpkt->size > 0) {
-        int ret = sami_paragraph_to_ass(avctx, ptr);
+    if (avpkt->data && avpkt->size > 0) {
+        int ret = sami_paragraph_to_ass(avctx, avpkt->data, avpkt->size);
         if (ret < 0)
             return ret;
         // TODO: pass escaped sami->encoded_source.str as source
