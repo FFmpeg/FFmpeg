@@ -311,7 +311,7 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
         status = ie_network_set_input_precision(ov_model->network, input_name, U8);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to set input precision as U8 for %s\n", input_name);
-            return DNN_ERROR;
+            goto err;
         }
     }
 
