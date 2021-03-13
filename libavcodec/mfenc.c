@@ -243,7 +243,7 @@ static int mf_sample_to_avpacket(AVCodecContext *avctx, IMFSample *sample, AVPac
     if (FAILED(hr))
         return AVERROR_EXTERNAL;
 
-    if ((ret = av_new_packet(avpkt, len)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, len, 0)) < 0)
         return ret;
 
     IMFSample_ConvertToContiguousBuffer(sample, &buffer);
@@ -1163,7 +1163,8 @@ static int mf_close(AVCodecContext *avctx)
         .close          = mf_close,                                            \
         .receive_packet = mf_receive_packet,                                   \
         EXTRA                                                                  \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID,            \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
+                          AV_CODEC_CAP_DR1,                                    \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |                       \
                           FF_CODEC_CAP_INIT_CLEANUP,                           \
     };
