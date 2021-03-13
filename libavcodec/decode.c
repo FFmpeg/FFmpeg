@@ -299,7 +299,6 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
     AVCodecInternal   *avci = avctx->internal;
     DecodeSimpleContext *ds = &avci->ds;
     AVPacket           *pkt = ds->in_pkt;
-    // copy to ensure we do not change pkt
     int got_frame, actual_got_frame;
     int ret;
 
