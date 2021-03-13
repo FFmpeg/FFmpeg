@@ -485,24 +485,11 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
     RequestItem request;
-    AVFrame *in_frame = av_frame_alloc();
+    AVFrame *in_frame = NULL;
     AVFrame *out_frame = NULL;
     TaskItem *ptask = &task;
     IEStatusCode status;
     input_shapes_t input_shapes;
-
-    if (!in_frame) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for input frame\n");
-        return DNN_ERROR;
-    }
-    out_frame = av_frame_alloc();
-    if (!out_frame) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for output frame\n");
-        av_frame_free(&in_frame);
-        return DNN_ERROR;
-    }
-    in_frame->width = input_width;
-    in_frame->height = input_height;
 
     if (ctx->options.input_resizable) {
         status = ie_network_get_input_shapes(ov_model->network, &input_shapes);
@@ -521,6 +508,21 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
+    }
+
+    in_frame = av_frame_alloc();
+    if (!in_frame) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for input frame\n");
+        return DNN_ERROR;
+    }
+    in_frame->width = input_width;
+    in_frame->height = input_height;
+
+    out_frame = av_frame_alloc();
+    if (!out_frame) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for output frame\n");
+        av_frame_free(&in_frame);
+        return DNN_ERROR;
     }
 
     task.done = 0;
