@@ -678,17 +678,17 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
         return DNN_ERROR;
     }
 
-    task = av_malloc(sizeof(*task));
-    if (!task) {
-        av_log(ctx, AV_LOG_ERROR, "unable to alloc memory for task item.\n");
-        return DNN_ERROR;
-    }
-
     if (!ov_model->exe_network) {
         if (init_model_ov(ov_model, input_name, output_names[0]) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
+    }
+
+    task = av_malloc(sizeof(*task));
+    if (!task) {
+        av_log(ctx, AV_LOG_ERROR, "unable to alloc memory for task item.\n");
+        return DNN_ERROR;
     }
 
     task->done = 0;
