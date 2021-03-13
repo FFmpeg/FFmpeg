@@ -372,7 +372,7 @@ static int config_input_ref(AVFilterLink *inlink)
     if (!s->score)
         return AVERROR(ENOMEM);
 
-    for (int t = 0; t < s->nb_threads && s->score; t++) {
+    for (int t = 0; t < s->nb_threads; t++) {
         s->score[t] = av_calloc(s->nb_components, sizeof(*s->score[0]));
         if (!s->score[t])
             return AVERROR(ENOMEM);
