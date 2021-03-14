@@ -20,7 +20,7 @@
 
 /**
  * @file
- * Caculate the Identity between two input videos.
+ * Calculate the Identity between two input videos.
  */
 
 #include "libavutil/avstring.h"
