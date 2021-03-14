@@ -1851,6 +1851,11 @@ static int xfade_activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
     if (s->xfade_is_over) {
+        if (!s->eof[0]) {
+            ret = ff_inlink_consume_frame(ctx->inputs[0], &in);
+            if (ret > 0)
+                av_frame_free(&in);
+        }
         ret = ff_inlink_consume_frame(ctx->inputs[1], &in);
         if (ret < 0) {
             return ret;
