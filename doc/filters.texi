@@ -22170,7 +22170,7 @@ Set the x and y expression. Default is 0.
 @item d
 Set the duration expression in number of frames.
 This sets for how many number of frames effect will last for
-single input image.
+single input image. Default is 90.
 
 @item s
 Set the output image size, default is 'hd720'.
