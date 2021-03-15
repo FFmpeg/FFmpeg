@@ -1279,6 +1279,10 @@ static int64_t get_frag_time(MOVFragmentIndex *frag_index,
 
     if (track_id >= 0) {
         frag_stream_info = get_frag_stream_info(frag_index, index, track_id);
+        if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE)
+            return frag_stream_info->sidx_pts;
+        if (frag_stream_info->first_tfra_pts != AV_NOPTS_VALUE)
+            return frag_stream_info->first_tfra_pts;
         return frag_stream_info->sidx_pts;
     }
 
