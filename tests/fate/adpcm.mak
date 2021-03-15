@@ -139,5 +139,8 @@ fate-adpcm-ima-cunning-trunc-t2a-track1: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bn
 FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-trunc-h2
 fate-adpcm-ima-cunning-trunc-h2: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/VIDEOMOD-trunc-h2.11c -map 0:a:0 -f s16le -af aresample
 
+FATE_ADPCM-$(call DEMDEC, PP_BNK, ADPCM_IMA_CUNNING) += fate-adpcm-ima-cunning-stereo
+fate-adpcm-ima-cunning-stereo: CMD = md5 -y -i $(TARGET_SAMPLES)/pp_bnk/MOGODON2-cut.44c -f s16le -af aresample
+
 FATE_SAMPLES_AVCONV += $(FATE_ADPCM-yes)
 fate-adpcm: $(FATE_ADPCM-yes)
