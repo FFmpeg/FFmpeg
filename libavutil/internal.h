@@ -102,6 +102,8 @@
 #define FF_ALLOC_TYPED_ARRAY(p, nelem)  (p = av_malloc_array(nelem, sizeof(*p)))
 #define FF_ALLOCZ_TYPED_ARRAY(p, nelem) (p = av_mallocz_array(nelem, sizeof(*p)))
 
+#define FF_PTR_ADD(ptr, off) ((off) ? (ptr) + (off) : (ptr))
+
 #include "libm.h"
 
 /**
