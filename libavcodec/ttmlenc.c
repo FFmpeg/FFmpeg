@@ -173,16 +173,8 @@ static av_cold int ttml_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int ttml_encode_init(AVCodecContext *avctx)
+static int ttml_write_header_content(AVCodecContext *avctx)
 {
-    TTMLContext *s = avctx->priv_data;
-
-    s->avctx   = avctx;
-
-    if (!(s->ass_ctx = ff_ass_split(avctx->subtitle_header))) {
-        return AVERROR_INVALIDDATA;
-    }
-
     if (!(avctx->extradata = av_mallocz(TTMLENC_EXTRADATA_SIGNATURE_SIZE +
                                         1 + AV_INPUT_BUFFER_PADDING_SIZE))) {
         return AVERROR(ENOMEM);
@@ -192,7 +184,24 @@ static av_cold int ttml_encode_init(AVCodecContext *avctx)
     memcpy(avctx->extradata, TTMLENC_EXTRADATA_SIGNATURE,
            TTMLENC_EXTRADATA_SIGNATURE_SIZE);
 
+    return 0;
+}
+
+static av_cold int ttml_encode_init(AVCodecContext *avctx)
+{
+    TTMLContext *s = avctx->priv_data;
+    int ret = AVERROR_BUG;
+    s->avctx   = avctx;
+
     av_bprint_init(&s->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    if (!(s->ass_ctx = ff_ass_split(avctx->subtitle_header))) {
+        return AVERROR_INVALIDDATA;
+    }
+
+    if ((ret = ttml_write_header_content(avctx)) < 0) {
+        return ret;
+    }
 
     return 0;
 }
