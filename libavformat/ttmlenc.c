@@ -37,6 +37,11 @@ enum TTMLPacketType {
     PACKET_TYPE_DOCUMENT,
 };
 
+struct TTMLHeaderParameters {
+    const char *tt_element_params;
+    const char *pre_body_elements;
+};
+
 typedef struct TTMLMuxContext {
     enum TTMLPacketType input_type;
     unsigned int document_written;
@@ -45,10 +50,9 @@ typedef struct TTMLMuxContext {
 static const char ttml_header_text[] =
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 "<tt\n"
-"  xmlns=\"http://www.w3.org/ns/ttml\"\n"
-"  xmlns:ttm=\"http://www.w3.org/ns/ttml#metadata\"\n"
-"  xmlns:tts=\"http://www.w3.org/ns/ttml#styling\"\n"
+"%s"
 "  xml:lang=\"%s\">\n"
+"%s"
 "  <body>\n"
 "    <div>\n";
 
@@ -70,6 +74,48 @@ static void ttml_write_time(AVIOContext *pb, const char tag[],
 
     avio_printf(pb, "%s=\"%02"PRId64":%02"PRId64":%02"PRId64".%03"PRId64"\"",
                 tag, hour, min, sec, millisec);
+}
+
+static int ttml_set_header_values_from_extradata(
+    AVCodecParameters *par, struct TTMLHeaderParameters *header_params)
+{
+    size_t additional_data_size =
+        par->extradata_size - TTMLENC_EXTRADATA_SIGNATURE_SIZE;
+    char *value =
+        (char *)par->extradata + TTMLENC_EXTRADATA_SIGNATURE_SIZE;
+    size_t value_size = av_strnlen(value, additional_data_size);
+    struct TTMLHeaderParameters local_params = { 0 };
+
+    if (!additional_data_size) {
+        // simple case, we don't have to go through local_params and just
+        // set default fall-back values (for old extradata format).
+        header_params->tt_element_params = ttml_default_namespacing;
+        header_params->pre_body_elements = "";
+
+        return 0;
+    }
+
+    if (value_size == additional_data_size ||
+        value[value_size] != '\0')
+        return AVERROR_INVALIDDATA;
+
+    local_params.tt_element_params = value;
+
+    additional_data_size -= value_size + 1;
+    value += value_size + 1;
+    if (!additional_data_size)
+        return AVERROR_INVALIDDATA;
+
+    value_size = av_strnlen(value, additional_data_size);
+    if (value_size == additional_data_size ||
+        value[value_size] != '\0')
+        return AVERROR_INVALIDDATA;
+
+    local_params.pre_body_elements = value;
+
+    *header_params = local_params;
+
+    return 0;
 }
 
 static int ttml_write_header(AVFormatContext *ctx)
@@ -103,8 +149,22 @@ static int ttml_write_header(AVFormatContext *ctx)
 
         avpriv_set_pts_info(st, 64, 1, 1000);
 
-        if (ttml_ctx->input_type == PACKET_TYPE_PARAGRAPH)
-            avio_printf(pb, ttml_header_text, printed_lang);
+        if (ttml_ctx->input_type == PACKET_TYPE_PARAGRAPH) {
+            struct TTMLHeaderParameters header_params;
+            int ret = ttml_set_header_values_from_extradata(
+                st->codecpar, &header_params);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Failed to parse TTML header values from extradata: "
+                       "%s!\n", av_err2str(ret));
+                return ret;
+            }
+
+            avio_printf(pb, ttml_header_text,
+                        header_params.tt_element_params,
+                        printed_lang,
+                        header_params.pre_body_elements);
+        }
     }
 
     return 0;
