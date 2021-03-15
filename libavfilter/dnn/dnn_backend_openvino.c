@@ -493,6 +493,11 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     IEStatusCode status;
     input_shapes_t input_shapes;
 
+    if (ov_model->model->func_type != DFT_PROCESS_FRAME) {
+        av_log(ctx, AV_LOG_ERROR, "Get output dim only when processing frame.\n");
+        return DNN_ERROR;
+    }
+
     if (ctx->options.input_resizable) {
         status = ie_network_get_input_shapes(ov_model->network, &input_shapes);
         input_shapes.shapes->shape.dims[2] = input_height;
