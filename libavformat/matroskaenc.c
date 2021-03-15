@@ -1625,23 +1625,28 @@ static int mkv_write_tags(AVFormatContext *s)
     return 0;
 }
 
+static int mkv_new_chapter_ids_needed(const AVFormatContext *s)
+{
+    for (unsigned i = 0; i < s->nb_chapters; i++) {
+        if (!s->chapters[i]->id)
+            return 1;
+        for (unsigned j = 0; j < i; j++)
+            if (s->chapters[j]->id == s->chapters[i]->id)
+                return 1;
+    }
+    return 0;
+}
+
 static int mkv_write_chapters(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *dyn_cp = NULL, *dyn_tags = NULL, **tags, *pb = s->pb;
     ebml_master editionentry;
-    uint64_t chapter_id_offset = 0;
     AVRational scale = {1, 1E9};
-    int i, ret;
+    int ret, create_new_ids;
 
     if (!s->nb_chapters || mkv->wrote_chapters)
         return 0;
-
-    for (i = 0; i < s->nb_chapters; i++)
-        if (!s->chapters[i]->id) {
-            chapter_id_offset = 1;
-            break;
-        }
 
     ret = start_ebml_master_crc32(&dyn_cp, mkv);
     if (ret < 0)
@@ -1656,12 +1661,15 @@ static int mkv_write_chapters(AVFormatContext *s)
     } else
         tags = NULL;
 
-    for (i = 0; i < s->nb_chapters; i++) {
+    create_new_ids = mkv_new_chapter_ids_needed(s);
+
+    for (unsigned i = 0; i < s->nb_chapters; i++) {
         ebml_master chapteratom, chapterdisplay;
         const AVChapter *c   = s->chapters[i];
         int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         const AVDictionaryEntry *t;
+        uint64_t uid = create_new_ids ? i + 1ULL : (uint32_t)c->id;
         if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
@@ -1671,8 +1679,7 @@ static int mkv_write_chapters(AVFormatContext *s)
         }
 
         chapteratom = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERATOM, 0);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID,
-                      (uint32_t)c->id + chapter_id_offset);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID, uid);
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
@@ -1685,8 +1692,7 @@ static int mkv_write_chapters(AVFormatContext *s)
 
         if (tags && mkv_check_tag(c->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID)) {
             ret = mkv_write_tag(mkv, c->metadata, tags, NULL,
-                                MATROSKA_ID_TAGTARGETS_CHAPTERUID,
-                                (uint32_t)c->id + chapter_id_offset);
+                                MATROSKA_ID_TAGTARGETS_CHAPTERUID, uid);
             if (ret < 0)
                 goto fail;
         }
