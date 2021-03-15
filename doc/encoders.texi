@@ -2305,9 +2305,7 @@ pixel formats as input instead of YUV.
 @subsection Supported Pixel Formats
 
 x264 supports 8- to 10-bit color spaces. The exact bit depth is controlled at
-x264's configure time. FFmpeg only supports one bit depth in one particular
-build. In other words, it is not possible to build one FFmpeg with multiple
-versions of x264 with different bit depths.
+x264's configure time.
 
 @subsection Options
 
