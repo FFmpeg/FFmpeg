@@ -462,7 +462,9 @@ static int compat_encode(AVCodecContext *avctx, AVPacket *avpkt,
                     av_buffer_unref(&avpkt->buf);
                     avpkt->buf  = user_pkt.buf;
                     avpkt->data = user_pkt.data;
+FF_DISABLE_DEPRECATION_WARNINGS
                     av_init_packet(&user_pkt);
+FF_ENABLE_DEPRECATION_WARNINGS
                 } else {
                     av_log(avctx, AV_LOG_ERROR, "Provided packet is too small, needs to be %d\n", avpkt->size);
                     av_packet_unref(avpkt);
