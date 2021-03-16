@@ -315,6 +315,13 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         avctx->time_base.den = avctx->sample_rate;
     }
 
+    if (av_codec_is_encoder(avctx->codec))
+        ret = ff_encode_preinit(avctx);
+    else
+        ret = ff_decode_preinit(avctx);
+    if (ret < 0)
+        goto free_and_end;
+
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
@@ -335,13 +342,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
     if (!HAVE_THREADS && !(codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS))
         avctx->thread_count = 1;
-
-    if (av_codec_is_encoder(avctx->codec))
-        ret = ff_encode_preinit(avctx);
-    else
-        ret = ff_decode_preinit(avctx);
-    if (ret < 0)
-        goto free_and_end;
 
     if (   avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME)
         || avci->frame_thread_encoder)) {
