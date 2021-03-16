@@ -163,6 +163,18 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (!codec)
         codec = avctx->codec;
 
+    if ((avctx->codec_type == AVMEDIA_TYPE_UNKNOWN || avctx->codec_type == codec->type) &&
+        avctx->codec_id == AV_CODEC_ID_NONE) {
+        avctx->codec_type = codec->type;
+        avctx->codec_id   = codec->id;
+    }
+    if (avctx->codec_id != codec->id || (avctx->codec_type != codec->type &&
+                                         avctx->codec_type != AVMEDIA_TYPE_ATTACHMENT)) {
+        av_log(avctx, AV_LOG_ERROR, "Codec type or id mismatches\n");
+        return AVERROR(EINVAL);
+    }
+    avctx->codec = codec;
+
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
@@ -281,18 +293,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         goto free_and_end;
     }
 
-    avctx->codec = codec;
-    if ((avctx->codec_type == AVMEDIA_TYPE_UNKNOWN || avctx->codec_type == codec->type) &&
-        avctx->codec_id == AV_CODEC_ID_NONE) {
-        avctx->codec_type = codec->type;
-        avctx->codec_id   = codec->id;
-    }
-    if (avctx->codec_id != codec->id || (avctx->codec_type != codec->type
-                                         && avctx->codec_type != AVMEDIA_TYPE_ATTACHMENT)) {
-        av_log(avctx, AV_LOG_ERROR, "Codec type or id mismatches\n");
-        ret = AVERROR(EINVAL);
-        goto free_and_end;
-    }
     avctx->frame_number = 0;
     avctx->codec_descriptor = avcodec_descriptor_get(avctx->codec_id);
 
