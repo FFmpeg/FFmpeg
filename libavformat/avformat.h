@@ -1188,7 +1188,11 @@ typedef struct AVProgram {
                                          change dynamically at runtime. */
 
 typedef struct AVChapter {
+#if FF_API_CHAPTER_ID_INT
     int id;                 ///< unique ID to identify the chapter
+#else
+    int64_t id;             ///< unique ID to identify the chapter
+#endif
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
     AVDictionary *metadata;

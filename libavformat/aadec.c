@@ -222,7 +222,7 @@ static int aa_read_header(AVFormatContext *s)
     c->content_end = start + largest_size;
 
     while ((chapter_pos = avio_tell(pb)) >= 0 && chapter_pos < c->content_end) {
-        int chapter_idx = s->nb_chapters;
+        unsigned chapter_idx = s->nb_chapters;
         uint32_t chapter_size = avio_rb32(pb);
         if (chapter_size == 0 || avio_feof(pb))
             break;

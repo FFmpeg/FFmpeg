@@ -560,7 +560,11 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance);
  *
  * @return AVChapter or NULL on error
  */
+#if FF_API_CHAPTER_ID_INT
 AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base,
+#else
+AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_base,
+#endif
                               int64_t start, int64_t end, const char *title);
 
 /**

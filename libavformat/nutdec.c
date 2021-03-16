@@ -489,8 +489,8 @@ static int decode_info_header(NUTContext *nut)
     AVIOContext *bc    = s->pb;
     uint64_t tmp, chapter_start, chapter_len;
     unsigned int stream_id_plus1, count;
-    int chapter_id, i, ret = 0;
-    int64_t value, end;
+    int i, ret = 0;
+    int64_t chapter_id, value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
     int *event_flags        = NULL;
