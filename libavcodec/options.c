@@ -140,10 +140,9 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
 
     s->reordered_opaque    = AV_NOPTS_VALUE;
     if(codec && codec->priv_data_size){
-            s->priv_data= av_mallocz(codec->priv_data_size);
-            if (!s->priv_data) {
-                return AVERROR(ENOMEM);
-            }
+        s->priv_data = av_mallocz(codec->priv_data_size);
+        if (!s->priv_data)
+            return AVERROR(ENOMEM);
         if(codec->priv_class){
             *(const AVClass**)s->priv_data = codec->priv_class;
             av_opt_set_defaults(s->priv_data);
