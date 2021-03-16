@@ -1379,11 +1379,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_IMA_CUNNING:
         for (channel = 0; channel < avctx->channels; channel++) {
             int16_t *smp = samples_p[channel];
-        for (n = 0; n < nb_samples / 2; n++) {
-            int v = bytestream2_get_byteu(&gb);
-            *smp++ = adpcm_ima_cunning_expand_nibble(&c->status[channel], v & 0x0F);
-            *smp++ = adpcm_ima_cunning_expand_nibble(&c->status[channel], v >> 4);
-        }
+            for (n = 0; n < nb_samples / 2; n++) {
+                int v = bytestream2_get_byteu(&gb);
+                *smp++ = adpcm_ima_cunning_expand_nibble(&c->status[channel], v & 0x0F);
+                *smp++ = adpcm_ima_cunning_expand_nibble(&c->status[channel], v >> 4);
+            }
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_OKI:
