@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
+#include "libavutil/detection_bbox.h"
 #include "../internal.h"
 #include "queue.h"
 #include "safe_queue.h"
@@ -74,6 +75,7 @@ typedef struct TaskItem {
 // one task might have multiple inferences
 typedef struct InferenceItem {
     TaskItem *task;
+    uint32_t bbox_index;
 } InferenceItem;
 
 // one request for one call to openvino
@@ -182,12 +184,23 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
         request->inferences[i] = inference;
         request->inference_count = i + 1;
         task = inference->task;
-        if (task->do_ioproc) {
-            if (ov_model->model->frame_pre_proc != NULL) {
-                ov_model->model->frame_pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
-            } else {
-                ff_proc_from_frame_to_dnn(task->in_frame, &input, ov_model->model->func_type, ctx);
+        switch (task->ov_model->model->func_type) {
+        case DFT_PROCESS_FRAME:
+        case DFT_ANALYTICS_DETECT:
+            if (task->do_ioproc) {
+                if (ov_model->model->frame_pre_proc != NULL) {
+                    ov_model->model->frame_pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
+                } else {
+                    ff_proc_from_frame_to_dnn(task->in_frame, &input, ov_model->model->func_type, ctx);
+                }
             }
+            break;
+        case DFT_ANALYTICS_CLASSIFY:
+            ff_frame_to_dnn_classify(task->in_frame, &input, inference->bbox_index, ctx);
+            break;
+        default:
+            av_assert0(!"should not reach here");
+            break;
         }
         input.data = (uint8_t *)input.data
                      + input.width * input.height * input.channels * get_datatype_size(input.dt);
@@ -275,6 +288,13 @@ static void infer_completion_callback(void *args)
                 return;
             }
             task->ov_model->model->detect_post_proc(task->out_frame, &output, 1, task->ov_model->model->filter_ctx);
+            break;
+        case DFT_ANALYTICS_CLASSIFY:
+            if (!task->ov_model->model->classify_post_proc) {
+                av_log(ctx, AV_LOG_ERROR, "classify filter needs to provide post proc\n");
+                return;
+            }
+            task->ov_model->model->classify_post_proc(task->out_frame, &output, request->inferences[i]->bbox_index, task->ov_model->model->filter_ctx);
             break;
         default:
             av_assert0(!"should not reach here");
@@ -513,7 +533,44 @@ static DNNReturnType get_input_ov(void *model, DNNData *input, const char *input
     return DNN_ERROR;
 }
 
-static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, TaskItem *task, Queue *inference_queue)
+static int contain_valid_detection_bbox(AVFrame *frame)
+{
+    AVFrameSideData *sd;
+    const AVDetectionBBoxHeader *header;
+    const AVDetectionBBox *bbox;
+
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+    if (!sd) { // this frame has nothing detected
+        return 0;
+    }
+
+    if (!sd->size) {
+        return 0;
+    }
+
+    header = (const AVDetectionBBoxHeader *)sd->data;
+    if (!header->nb_bboxes) {
+        return 0;
+    }
+
+    for (uint32_t i = 0; i < header->nb_bboxes; i++) {
+        bbox = av_get_detection_bbox(header, i);
+        if (bbox->x < 0 || bbox->w < 0 || bbox->x + bbox->w >= frame->width) {
+            return 0;
+        }
+        if (bbox->y < 0 || bbox->h < 0 || bbox->y + bbox->h >= frame->width) {
+            return 0;
+        }
+
+        if (bbox->classify_count == AV_NUM_DETECTION_BBOX_CLASSIFY) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, TaskItem *task, Queue *inference_queue, DNNExecBaseParams *exec_params)
 {
     switch (func_type) {
     case DFT_PROCESS_FRAME:
@@ -529,6 +586,45 @@ static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, Task
         if (ff_queue_push_back(inference_queue, inference) < 0) {
             av_freep(&inference);
             return DNN_ERROR;
+        }
+        return DNN_SUCCESS;
+    }
+    case DFT_ANALYTICS_CLASSIFY:
+    {
+        const AVDetectionBBoxHeader *header;
+        AVFrame *frame = task->in_frame;
+        AVFrameSideData *sd;
+        DNNExecClassificationParams *params = (DNNExecClassificationParams *)exec_params;
+
+        task->inference_todo = 0;
+        task->inference_done = 0;
+
+        if (!contain_valid_detection_bbox(frame)) {
+            return DNN_SUCCESS;
+        }
+
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+        header = (const AVDetectionBBoxHeader *)sd->data;
+
+        for (uint32_t i = 0; i < header->nb_bboxes; i++) {
+            InferenceItem *inference;
+            const AVDetectionBBox *bbox = av_get_detection_bbox(header, i);
+
+            if (av_strncasecmp(bbox->detect_label, params->target, sizeof(bbox->detect_label)) != 0) {
+                continue;
+            }
+
+            inference = av_malloc(sizeof(*inference));
+            if (!inference) {
+                return DNN_ERROR;
+            }
+            task->inference_todo++;
+            inference->task = task;
+            inference->bbox_index = i;
+            if (ff_queue_push_back(inference_queue, inference) < 0) {
+                av_freep(&inference);
+                return DNN_ERROR;
+            }
         }
         return DNN_SUCCESS;
     }
@@ -598,7 +694,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     task.out_frame = out_frame;
     task.ov_model = ov_model;
 
-    if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue) != DNN_SUCCESS) {
+    if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue, NULL) != DNN_SUCCESS) {
         av_frame_free(&out_frame);
         av_frame_free(&in_frame);
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
@@ -690,6 +786,14 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
         return DNN_ERROR;
     }
 
+    if (model->func_type == DFT_ANALYTICS_CLASSIFY) {
+        // Once we add async support for tensorflow backend and native backend,
+        // we'll combine the two sync/async functions in dnn_interface.h to
+        // simplify the code in filter, and async will be an option within backends.
+        // so, do not support now, and classify filter will not call this function.
+        return DNN_ERROR;
+    }
+
     if (ctx->options.batch_size > 1) {
         avpriv_report_missing_feature(ctx, "batch mode for sync execution");
         return DNN_ERROR;
@@ -710,7 +814,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
     task.out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
     task.ov_model = ov_model;
 
-    if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue) != DNN_SUCCESS) {
+    if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue, exec_params) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         return DNN_ERROR;
     }
@@ -730,6 +834,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
     OVContext *ctx = &ov_model->ctx;
     RequestItem *request;
     TaskItem *task;
+    DNNReturnType ret;
 
     if (ff_check_exec_params(ctx, DNN_OV, model->func_type, exec_params) != 0) {
         return DNN_ERROR;
@@ -761,23 +866,25 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
         return DNN_ERROR;
     }
 
-    if (extract_inference_from_task(ov_model->model->func_type, task, ov_model->inference_queue) != DNN_SUCCESS) {
+    if (extract_inference_from_task(model->func_type, task, ov_model->inference_queue, exec_params) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         return DNN_ERROR;
     }
 
-    if (ff_queue_size(ov_model->inference_queue) < ctx->options.batch_size) {
-        // not enough inference items queued for a batch
-        return DNN_SUCCESS;
+    while (ff_queue_size(ov_model->inference_queue) >= ctx->options.batch_size) {
+        request = ff_safe_queue_pop_front(ov_model->request_queue);
+        if (!request) {
+            av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
+            return DNN_ERROR;
+        }
+
+        ret = execute_model_ov(request, ov_model->inference_queue);
+        if (ret != DNN_SUCCESS) {
+            return ret;
+        }
     }
 
-    request = ff_safe_queue_pop_front(ov_model->request_queue);
-    if (!request) {
-        av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
-        return DNN_ERROR;
-    }
-
-    return execute_model_ov(request, ov_model->inference_queue);
+    return DNN_SUCCESS;
 }
 
 DNNAsyncStatusType ff_dnn_get_async_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out)

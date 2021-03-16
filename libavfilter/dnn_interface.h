@@ -52,7 +52,7 @@ typedef enum {
     DFT_NONE,
     DFT_PROCESS_FRAME,      // process the whole frame
     DFT_ANALYTICS_DETECT,   // detect from the whole frame
-    // we can add more such as detect_from_crop, classify_from_bbox, etc.
+    DFT_ANALYTICS_CLASSIFY, // classify for each bounding box
 }DNNFunctionType;
 
 typedef struct DNNData{
@@ -71,8 +71,14 @@ typedef struct DNNExecBaseParams {
     AVFrame *out_frame;
 } DNNExecBaseParams;
 
+typedef struct DNNExecClassificationParams {
+    DNNExecBaseParams base;
+    const char *target;
+} DNNExecClassificationParams;
+
 typedef int (*FramePrePostProc)(AVFrame *frame, DNNData *model, AVFilterContext *filter_ctx);
 typedef int (*DetectPostProc)(AVFrame *frame, DNNData *output, uint32_t nb, AVFilterContext *filter_ctx);
+typedef int (*ClassifyPostProc)(AVFrame *frame, DNNData *output, uint32_t bbox_index, AVFilterContext *filter_ctx);
 
 typedef struct DNNModel{
     // Stores model that can be different for different backends.
@@ -97,6 +103,8 @@ typedef struct DNNModel{
     FramePrePostProc frame_post_proc;
     // set the post process to interpret detect result from DNNData
     DetectPostProc detect_post_proc;
+    // set the post process to interpret classify result from DNNData
+    ClassifyPostProc classify_post_proc;
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
