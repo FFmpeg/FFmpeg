@@ -432,13 +432,6 @@ static DNNReturnType execute_model_ov(RequestItem *request, Queue *inferenceq)
     ctx = &task->ov_model->ctx;
 
     if (task->async) {
-        if (ff_queue_size(inferenceq) < ctx->options.batch_size) {
-            if (ff_safe_queue_push_front(task->ov_model->request_queue, request) < 0) {
-                av_log(ctx, AV_LOG_ERROR, "Failed to push back request_queue.\n");
-                return DNN_ERROR;
-            }
-            return DNN_SUCCESS;
-        }
         ret = fill_model_input_ov(task->ov_model, request);
         if (ret != DNN_SUCCESS) {
             return ret;
@@ -791,6 +784,11 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
     if (extract_inference_from_task(ov_model->model->func_type, task, ov_model->inference_queue) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         return DNN_ERROR;
+    }
+
+    if (ff_queue_size(ov_model->inference_queue) < ctx->options.batch_size) {
+        // not enough inference items queued for a batch
+        return DNN_SUCCESS;
     }
 
     request = ff_safe_queue_pop_front(ov_model->request_queue);
