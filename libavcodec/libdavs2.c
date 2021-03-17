@@ -23,6 +23,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "davs2.h"
 
 typedef struct DAVS2Context {
