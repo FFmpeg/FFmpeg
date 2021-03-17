@@ -922,7 +922,6 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                     const char *tc = av_timecode_make_string(&tcr, tcstr, 0);
                     if (tc) {
                         AVDictionary* metadata_dict = NULL;
-                        int metadata_len;
                         uint8_t* packed_metadata;
 
                         if (av_cmp_q(ctx->video_st->r_frame_rate, av_make_q(60, 1)) < 1) {
@@ -937,6 +936,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                         }
 
                         if (av_dict_set(&metadata_dict, "timecode", tc, 0) >= 0) {
+                            buffer_size_t metadata_len;
                             packed_metadata = av_packet_pack_dictionary(metadata_dict, &metadata_len);
                             av_dict_free(&metadata_dict);
                             if (packed_metadata) {

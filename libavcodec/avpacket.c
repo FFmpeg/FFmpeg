@@ -507,7 +507,11 @@ int av_packet_split_side_data(AVPacket *pkt){
 }
 #endif
 
+#if FF_API_BUFFER_SIZE_T
 uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
+#else
+uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size)
+#endif
 {
     uint8_t *data = NULL;
     *size = 0;
@@ -526,7 +530,11 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
 
                 if (pass)
                     memcpy(data + total_length, str, len);
+#if FF_API_BUFFER_SIZE_T
                 else if (len > INT_MAX - total_length)
+#else
+                else if (len > SIZE_MAX - total_length)
+#endif
                     return NULL;
                 total_length += len;
             }
@@ -542,7 +550,12 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
     return data;
 }
 
+#if FF_API_BUFFER_SIZE_T
 int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **dict)
+#else
+int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
+                                AVDictionary **dict)
+#endif
 {
     const uint8_t *end;
     int ret;

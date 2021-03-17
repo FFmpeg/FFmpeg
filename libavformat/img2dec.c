@@ -381,9 +381,10 @@ int ff_img_read_header(AVFormatContext *s1)
  * as a dictionary, so it can be used by filters like 'drawtext'.
  */
 static int add_filename_as_pkt_side_data(char *filename, AVPacket *pkt) {
-    int metadata_len, ret;
     AVDictionary *d = NULL;
     char *packed_metadata = NULL;
+    buffer_size_t metadata_len;
+    int ret;
 
     av_dict_set(&d, "lavf.image2dec.source_path", filename, 0);
     av_dict_set(&d, "lavf.image2dec.source_basename", av_basename(filename), 0);
