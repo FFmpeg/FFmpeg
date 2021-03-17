@@ -551,12 +551,13 @@ static int decode_text_chunk(PNGDecContext *s, GetByteContext *gb, int compresse
         text_len = data_end - data;
     }
 
-    kw_utf8  = iso88591_to_utf8(keyword, keyword_end - keyword);
     txt_utf8 = iso88591_to_utf8(text, text_len);
     if (compressed)
         av_bprint_finalize(&bp, NULL);
-    if (!(kw_utf8 && txt_utf8)) {
-        av_free(kw_utf8);
+    if (!txt_utf8)
+        return AVERROR(ENOMEM);
+    kw_utf8  = iso88591_to_utf8(keyword, keyword_end - keyword);
+    if (!kw_utf8) {
         av_free(txt_utf8);
         return AVERROR(ENOMEM);
     }
