@@ -232,7 +232,7 @@ static int lzss_decompress(AVCodecContext *avctx,
 
                 if (offset <= 0)
                     offset = 1;
-                if (oi < offset)
+                if (oi < offset || oi + count * 2 > dst_size)
                     return AVERROR_INVALIDDATA;
                 for (int j = 0; j < count * 2; j++) {
                     dst[oi] = dst[oi - offset];
