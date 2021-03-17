@@ -29,6 +29,7 @@ HEADERS = ac3_parser.h                                                  \
 OBJS = ac3_parser.o                                                     \
        adts_parser.o                                                    \
        allcodecs.o                                                      \
+       avcodec.o                                                        \
        avdct.o                                                          \
        avpacket.o                                                       \
        avpicture.o                                                      \
