@@ -543,10 +543,8 @@ static int decode_text_chunk(PNGDecContext *s, GetByteContext *gb, int compresse
             return AVERROR_INVALIDDATA;
         if ((ret = decode_zbuf(&bp, data, data_end, s->avctx)) < 0)
             return ret;
+        text     = bp.str;
         text_len = bp.len;
-        ret = av_bprint_finalize(&bp, (char **)&text);
-        if (ret < 0)
-            return ret;
     } else {
         text = (uint8_t *)data;
         text_len = data_end - text;
@@ -554,8 +552,8 @@ static int decode_text_chunk(PNGDecContext *s, GetByteContext *gb, int compresse
 
     kw_utf8  = iso88591_to_utf8(keyword, keyword_end - keyword);
     txt_utf8 = iso88591_to_utf8(text, text_len);
-    if (text != data)
-        av_free(text);
+    if (compressed)
+        av_bprint_finalize(&bp, NULL);
     if (!(kw_utf8 && txt_utf8)) {
         av_free(kw_utf8);
         av_free(txt_utf8);
