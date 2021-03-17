@@ -229,6 +229,7 @@ extern const AVFilter ff_vf_detelecine;
 extern const AVFilter ff_vf_dilation;
 extern const AVFilter ff_vf_dilation_opencl;
 extern const AVFilter ff_vf_displace;
+extern const AVFilter ff_vf_dnn_classify;
 extern const AVFilter ff_vf_dnn_detect;
 extern const AVFilter ff_vf_dnn_processing;
 extern const AVFilter ff_vf_doubleweave;
