@@ -367,15 +367,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        buffer_size_t pal_size;
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE,
-                                                     &pal_size);
         int ret;
-
-        if (pal && pal_size != AVPALETTE_SIZE) {
-            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
-            pal = NULL;
-        }
 
         if (!context->palette)
             context->palette = av_buffer_alloc(AVPALETTE_SIZE);
@@ -389,15 +381,14 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             return ret;
         }
 
-        if (pal) {
-            memcpy(context->palette->data, pal, AVPALETTE_SIZE);
+        if (ff_copy_palette(context->palette->data, avpkt, avctx)) {
             frame->palette_has_changed = 1;
         } else if (context->is_nut_pal8) {
             int vid_size = avctx->width * avctx->height;
             int pal_size = avpkt->size - vid_size;
 
             if (avpkt->size > vid_size && pal_size <= AVPALETTE_SIZE) {
-                pal = avpkt->data + vid_size;
+                const uint8_t *pal = avpkt->data + vid_size;
                 memcpy(context->palette->data, pal, pal_size);
                 frame->palette_has_changed = 1;
             }

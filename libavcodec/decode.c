@@ -2091,3 +2091,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     return 0;
 }
+
+int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
+{
+    buffer_size_t size;
+    const void *pal = av_packet_get_side_data(src, AV_PKT_DATA_PALETTE, &size);
+
+    if (pal && size == AVPALETTE_SIZE) {
+        memcpy(dst, pal, AVPALETTE_SIZE);
+        return 1;
+    } else if (pal) {
+        av_log(logctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
+    }
+    return 0;
+}

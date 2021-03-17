@@ -43,6 +43,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "decode.h"
 #include "internal.h"
 
 #define TILE_SIZE 8
@@ -346,17 +347,8 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Palette handling */
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        buffer_size_t size;
-        const uint8_t *palette = av_packet_get_side_data(avpkt,
-                                                         AV_PKT_DATA_PALETTE,
-                                                         &size);
-        if (palette && size == AVPALETTE_SIZE) {
-            frame->palette_has_changed = 1;
-            memcpy(ctx->palette, palette, AVPALETTE_SIZE);
-        } else if (palette) {
-            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
-        }
-        memcpy (frame->data[1], ctx->palette, AVPALETTE_SIZE);
+        frame->palette_has_changed = ff_copy_palette(ctx->palette, avpkt, avctx);
+        memcpy(frame->data[1], ctx->palette, AVPALETTE_SIZE);
     }
     // We only return a picture when enough of it is undamaged, this avoids copying nearly broken frames around
     if (ctx->valid_pixels < ctx->inflated_size)

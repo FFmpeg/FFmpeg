@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "decode.h"
 #include "internal.h"
 
 #define CPAIR 2
@@ -435,8 +436,6 @@ static int smc_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SmcContext *s = avctx->priv_data;
-    buffer_size_t pal_size;
-    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
     int ret;
     int total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
 
@@ -448,12 +447,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
     if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
-    if (pal && pal_size == AVPALETTE_SIZE) {
-        s->frame->palette_has_changed = 1;
-        memcpy(s->pal, pal, AVPALETTE_SIZE);
-    } else if (pal) {
-        av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
-    }
+    s->frame->palette_has_changed = ff_copy_palette(s->pal, avpkt, avctx);
 
     smc_decode_stream(s);
 

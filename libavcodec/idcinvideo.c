@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 #include "libavutil/internal.h"
 
@@ -214,8 +215,6 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IdcinContext *s = avctx->priv_data;
-    buffer_size_t pal_size;
-    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
     AVFrame *frame = data;
     int ret;
 
@@ -228,12 +227,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     if (idcin_decode_vlcs(s, frame))
         return AVERROR_INVALIDDATA;
 
-    if (pal && pal_size == AVPALETTE_SIZE) {
-        frame->palette_has_changed = 1;
-        memcpy(s->pal, pal, AVPALETTE_SIZE);
-    } else if (pal) {
-        av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
-    }
+    frame->palette_has_changed = ff_copy_palette(s->pal, avpkt, avctx);
     /* make the palette available on the way out */
     memcpy(frame->data[1], s->pal, AVPALETTE_SIZE);
 

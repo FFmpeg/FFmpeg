@@ -29,6 +29,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "decode.h"
 #include "internal.h"
 #include "libavutil/common.h"
 
@@ -268,8 +269,6 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
     int i, ret;
     int header;
     int blocksize;
-    buffer_size_t pal_size;
-    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
 
     bytestream2_init(&ctx->g, avpkt->data, avpkt->size);
 
@@ -304,12 +303,8 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
         }
     }
 
-    if (pal && pal_size == AVPALETTE_SIZE) {
+    if (ff_copy_palette(ctx->pal, avpkt, avctx))
         frame->palette_has_changed = 1;
-        memcpy(ctx->pal, pal, AVPALETTE_SIZE);
-    } else if (pal) {
-        av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
-    }
 
     if (ctx->setpal) {
         ctx->setpal = 0;
