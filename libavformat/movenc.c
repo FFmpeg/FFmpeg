@@ -5746,11 +5746,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (trk->entry >= trk->cluster_capacity) {
         unsigned new_capacity = trk->entry + MOV_INDEX_CLUSTER_SIZE;
-        if (av_reallocp_array(&trk->cluster, new_capacity,
-                              sizeof(*trk->cluster))) {
+        void *cluster = av_realloc_array(trk->cluster, new_capacity, sizeof(*trk->cluster));
+        if (!cluster) {
             ret = AVERROR(ENOMEM);
             goto err;
         }
+        trk->cluster          = cluster;
         trk->cluster_capacity = new_capacity;
     }
 
