@@ -272,9 +272,7 @@ static int avi_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    avi->empty_packet = av_packet_alloc();
-    if (!avi->empty_packet)
-        return AVERROR(ENOMEM);
+    avi->empty_packet = ffformatcontext(s)->pkt;
 
     for (n = 0; n < s->nb_streams; n++) {
         s->streams[n]->priv_data = av_mallocz(sizeof(AVIStream));
@@ -972,10 +970,6 @@ static int avi_write_trailer(AVFormatContext *s)
 
 static void avi_deinit(AVFormatContext *s)
 {
-    AVIContext *avi = s->priv_data;
-
-    av_packet_free(&avi->empty_packet);
-
     for (int i = 0; i < s->nb_streams; i++) {
         AVIStream *avist = s->streams[i]->priv_data;
         if (!avist)
