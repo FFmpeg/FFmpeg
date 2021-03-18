@@ -1288,7 +1288,7 @@ start_sync:
                 AVStream *st1   = s->streams[1];
                 AVIStream *ast1 = st1->priv_data;
                 // workaround for broken small-file-bug402.avi
-                if (   d[2] == 'w' && d[3] == 'b'
+                if (ast1 && d[2] == 'w' && d[3] == 'b'
                    && n == 0
                    && st ->codecpar->codec_type == AVMEDIA_TYPE_VIDEO
                    && st1->codecpar->codec_type == AVMEDIA_TYPE_AUDIO
