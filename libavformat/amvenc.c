@@ -62,7 +62,7 @@ typedef struct AMVContext
 
     int32_t aframe_size;  /* Expected audio frame size.      */
     int32_t ablock_align; /* Expected audio block align.     */
-    AVPacket *apad;       /* Dummy audio packet for padding. */
+    AVPacket *apad;       /* Dummy audio packet for padding; not owned by us. */
     AVPacket *vpad;       /* Most recent video frame, for padding. */
 
     /*
@@ -183,9 +183,7 @@ static av_cold int amv_init(AVFormatContext *s)
     }
 
     /* Allocate and fill dummy packet so we can pad the audio. */
-    amv->apad = av_packet_alloc();
-    if (!amv->apad)
-        return AVERROR(ENOMEM);
+    amv->apad = ffformatcontext(s)->pkt;
     if ((ret = av_new_packet(amv->apad, amv->ablock_align)) < 0) {
         return ret;
     }
@@ -207,7 +205,6 @@ static void amv_deinit(AVFormatContext *s)
 {
     AMVContext *amv = s->priv_data;
 
-    av_packet_free(&amv->apad);
     av_packet_free(&amv->vpad);
 }
 
