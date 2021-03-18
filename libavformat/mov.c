@@ -7121,7 +7121,7 @@ static int mov_probe(const AVProbeData *p)
         if ((offset + 8) > (unsigned int)p->buf_size)
             break;
         size = AV_RB32(p->buf + offset);
-        if (size == 1 && offset + 16 > (unsigned int)p->buf_size) {
+        if (size == 1 && offset + 16 <= (unsigned int)p->buf_size) {
             size = AV_RB64(p->buf+offset + 8);
             minsize = 16;
         } else if (size == 0) {
