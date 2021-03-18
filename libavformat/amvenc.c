@@ -187,7 +187,6 @@ static av_cold int amv_init(AVFormatContext *s)
     if (!amv->apad)
         return AVERROR(ENOMEM);
     if ((ret = av_new_packet(amv->apad, amv->ablock_align)) < 0) {
-        av_packet_free(&amv->apad);
         return ret;
     }
 
@@ -197,7 +196,6 @@ static av_cold int amv_init(AVFormatContext *s)
 
     amv->vpad = av_packet_alloc();
     if (!amv->vpad) {
-        av_packet_free(&amv->apad);
         return AVERROR(ENOMEM);
     }
     amv->vpad->stream_index = AMV_STREAM_VIDEO;
