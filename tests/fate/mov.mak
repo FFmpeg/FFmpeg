@@ -29,6 +29,7 @@ FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-guess-delay-2 \
                    fate-mov-guess-delay-3 \
                    fate-mov-mp4-with-mov-in24-ver \
+                   fate-mov-mp4-extended-atom \
 
 FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
 
@@ -124,3 +125,5 @@ fate-mov-faststart-4gb-overflow: CMP = oneline
 fate-mov-faststart-4gb-overflow: REF = bc875921f151871e787c4b4023269b29
 
 fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=codec_name -select_streams 1 $(TARGET_SAMPLES)/mov/mp4-with-mov-in24-ver.mp4
+
+fate-mov-mp4-extended-atom: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact -select_streams v $(TARGET_SAMPLES)/mov/extended_atom_size_probe
