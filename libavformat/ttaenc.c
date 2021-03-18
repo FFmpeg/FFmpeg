@@ -123,12 +123,12 @@ static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
 static void tta_queue_flush(AVFormatContext *s)
 {
     TTAMuxContext *tta = s->priv_data;
-    AVPacket pkt;
+    AVPacket *const pkt = ffformatcontext(s)->pkt;
 
     while (tta->queue) {
-        avpriv_packet_list_get(&tta->queue, &tta->queue_end, &pkt);
-        avio_write(s->pb, pkt.data, pkt.size);
-        av_packet_unref(&pkt);
+        avpriv_packet_list_get(&tta->queue, &tta->queue_end, pkt);
+        avio_write(s->pb, pkt->data, pkt->size);
+        av_packet_unref(pkt);
     }
 }
 
