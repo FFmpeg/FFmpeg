@@ -47,6 +47,7 @@
 #define CHUNK_SHUTDOWN     0x0004
 #define CHUNK_END          0x0005
 /* these last types are used internally */
+#define CHUNK_HAVE_PACKET  0xFFFB
 #define CHUNK_DONE         0xFFFC
 #define CHUNK_NOMEM        0xFFFD
 #define CHUNK_EOF          0xFFFE
@@ -154,7 +155,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
         av_log(s->avf, AV_LOG_TRACE, "sending audio frame with pts %"PRId64" (%d audio frames)\n",
                 pkt->pts, s->audio_frame_count);
 
-        chunk_type = CHUNK_VIDEO;
+        chunk_type = CHUNK_HAVE_PACKET;
 
     } else if (s->frame_format) {
 
@@ -230,7 +231,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
         s->video_pts += s->frame_pts_inc;
 
-        chunk_type = CHUNK_VIDEO;
+        chunk_type = CHUNK_HAVE_PACKET;
 
     } else {
 
@@ -602,10 +603,6 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
     /* make a note of where the stream is sitting */
     s->next_chunk_offset = avio_tell(pb);
 
-    /* dispatch the first of any pending packets */
-    if ((chunk_type == CHUNK_VIDEO) || (chunk_type == CHUNK_AUDIO_ONLY))
-        chunk_type = load_ipmovie_packet(s, pb, pkt);
-
     return chunk_type;
 }
 
@@ -658,8 +655,7 @@ static int ipmovie_read_header(AVFormatContext *s)
         ipmovie->palette[i] = 0xFFU << 24;
 
     /* process the first chunk which should be CHUNK_INIT_VIDEO */
-    if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO) {
-        av_packet_unref(&pkt);
+    if (process_ipmovie_chunk(ipmovie, pb, NULL) != CHUNK_INIT_VIDEO) {
         return AVERROR_INVALIDDATA;
     }
 
@@ -708,6 +704,10 @@ static int ipmovie_read_packet(AVFormatContext *s,
 
     for (;;) {
     ret = process_ipmovie_chunk(ipmovie, pb, pkt);
+        /* dispatch the first of any pending packets */
+        if ((ret == CHUNK_VIDEO) || (ret == CHUNK_AUDIO_ONLY))
+            ret = load_ipmovie_packet(ipmovie, pb, pkt);
+
     if (ret == CHUNK_BAD)
         ret = AVERROR_INVALIDDATA;
     else if (ret == CHUNK_EOF)
@@ -716,7 +716,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
         ret = AVERROR(ENOMEM);
     else if (ret == CHUNK_END || ret == CHUNK_SHUTDOWN)
         ret = AVERROR_EOF;
-    else if (ret == CHUNK_VIDEO)
+    else if (ret == CHUNK_HAVE_PACKET)
         ret = 0;
     else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)
         continue;
