@@ -15,6 +15,13 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-19 - xxxxxxxxxx - lavu 56.69.100 - adler32.h
+  Added a typedef for the type of the Adler-32 checksums
+  used by av_adler32_update(). It will be changed to uint32_t
+  at the next major bump.
+  The type of the parameter for the length of the input buffer
+  will also be changed to size_t at the next major bump.
+
 2021-03-19 - xxxxxxxxxx - lavf 58.75.100  - avformat.h
   AVChapter.id will be changed from int to int64_t
   on the next major version bump.
