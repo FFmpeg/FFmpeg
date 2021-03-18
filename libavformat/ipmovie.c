@@ -608,7 +608,6 @@ static int ipmovie_read_header(AVFormatContext *s)
 {
     IPMVEContext *ipmovie = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVPacket pkt;
     AVStream *st;
     unsigned char chunk_preamble[CHUNK_PREAMBLE_SIZE];
     int chunk_type, i;
@@ -645,8 +644,7 @@ static int ipmovie_read_header(AVFormatContext *s)
 
     if (chunk_type == CHUNK_VIDEO)
         ipmovie->audio_type = AV_CODEC_ID_NONE;  /* no audio */
-    else if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO) {
-        av_packet_unref(&pkt);
+    else if (process_ipmovie_chunk(ipmovie, pb, s->internal->parse_pkt) != CHUNK_INIT_AUDIO) {
         return AVERROR_INVALIDDATA;
     }
 
