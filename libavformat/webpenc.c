@@ -27,7 +27,7 @@
 typedef struct WebpContext{
     AVClass *class;
     int frame_count;
-    AVPacket last_pkt;
+    AVPacket *last_pkt; /* Not owned by us */
     int loop;
     int wrote_webp_header;
     int using_webp_anim_encoder;
@@ -35,7 +35,10 @@ typedef struct WebpContext{
 
 static int webp_init(AVFormatContext *s)
 {
+    WebpContext *const w = s->priv_data;
     AVStream *st;
+
+    w->last_pkt = ffformatcontext(s)->pkt;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Only exactly 1 stream is supported\n");
@@ -77,18 +80,18 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
     WebpContext *w = s->priv_data;
     AVStream *st = s->streams[0];
 
-    if (w->last_pkt.size) {
+    if (w->last_pkt->size) {
         int skip = 0;
         unsigned flags = 0;
         int vp8x = 0;
 
-        if (AV_RL32(w->last_pkt.data) == AV_RL32("RIFF"))
+        if (AV_RL32(w->last_pkt->data) == AV_RL32("RIFF"))
             skip = 12;
 
-        if (AV_RL32(w->last_pkt.data + skip) == AV_RL32("VP8X")) {
-            flags |= w->last_pkt.data[skip + 4 + 4];
+        if (AV_RL32(w->last_pkt->data + skip) == AV_RL32("VP8X")) {
+            flags |= w->last_pkt->data[skip + 4 + 4];
             vp8x = 1;
-            skip += AV_RL32(w->last_pkt.data + skip + 4) + 8;
+            skip += AV_RL32(w->last_pkt->data + skip + 4) + 8;
         }
 
         if (!w->wrote_webp_header) {
@@ -122,19 +125,19 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
 
         if (w->frame_count > trailer) {
             avio_write(s->pb, "ANMF", 4);
-            avio_wl32(s->pb, 16 + w->last_pkt.size - skip);
+            avio_wl32(s->pb, 16 + w->last_pkt->size - skip);
             avio_wl24(s->pb, 0);
             avio_wl24(s->pb, 0);
             avio_wl24(s->pb, st->codecpar->width - 1);
             avio_wl24(s->pb, st->codecpar->height - 1);
-            if (w->last_pkt.pts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE) {
-                avio_wl24(s->pb, pts - w->last_pkt.pts);
+            if (w->last_pkt->pts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE) {
+                avio_wl24(s->pb, pts - w->last_pkt->pts);
             } else
-                avio_wl24(s->pb, w->last_pkt.duration);
+                avio_wl24(s->pb, w->last_pkt->duration);
             avio_w8(s->pb, 0);
         }
-        avio_write(s->pb, w->last_pkt.data + skip, w->last_pkt.size - skip);
-        av_packet_unref(&w->last_pkt);
+        avio_write(s->pb, w->last_pkt->data + skip, w->last_pkt->size - skip);
+        av_packet_unref(w->last_pkt);
     }
 
     return 0;
@@ -159,7 +162,7 @@ static int webp_write_packet(AVFormatContext *s, AVPacket *pkt)
         int ret;
         if ((ret = flush(s, 0, pkt->pts)) < 0)
             return ret;
-        av_packet_ref(&w->last_pkt, pkt);
+        av_packet_ref(w->last_pkt, pkt);
     }
     ++w->frame_count;
 
@@ -191,13 +194,6 @@ static int webp_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static void webp_deinit(AVFormatContext *s)
-{
-    WebpContext *w = s->priv_data;
-
-    av_packet_unref(&w->last_pkt);
-}
-
 #define OFFSET(x) offsetof(WebpContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -221,7 +217,6 @@ const AVOutputFormat ff_webp_muxer = {
     .init           = webp_init,
     .write_packet   = webp_write_packet,
     .write_trailer  = webp_write_trailer,
-    .deinit         = webp_deinit,
     .priv_class     = &webp_muxer_class,
     .flags          = AVFMT_VARIABLE_FPS,
 };
