@@ -686,27 +686,27 @@ static int ipmovie_read_packet(AVFormatContext *s,
     int ret;
 
     for (;;) {
-    ret = process_ipmovie_chunk(ipmovie, pb, pkt);
+        ret = process_ipmovie_chunk(ipmovie, pb, pkt);
         /* dispatch the first of any pending packets */
         if ((ret == CHUNK_VIDEO) || (ret == CHUNK_AUDIO_ONLY))
             ret = load_ipmovie_packet(ipmovie, pb, pkt);
 
-    if (ret == CHUNK_BAD)
-        ret = AVERROR_INVALIDDATA;
-    else if (ret == CHUNK_EOF)
-        ret = AVERROR(EIO);
-    else if (ret == CHUNK_NOMEM)
-        ret = AVERROR(ENOMEM);
-    else if (ret == CHUNK_END || ret == CHUNK_SHUTDOWN)
-        ret = AVERROR_EOF;
-    else if (ret == CHUNK_HAVE_PACKET)
-        ret = 0;
-    else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)
-        continue;
-    else
-        continue;
+        if (ret == CHUNK_BAD)
+            ret = AVERROR_INVALIDDATA;
+        else if (ret == CHUNK_EOF)
+            ret = AVERROR(EIO);
+        else if (ret == CHUNK_NOMEM)
+            ret = AVERROR(ENOMEM);
+        else if (ret == CHUNK_END || ret == CHUNK_SHUTDOWN)
+            ret = AVERROR_EOF;
+        else if (ret == CHUNK_HAVE_PACKET)
+            ret = 0;
+        else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)
+            continue;
+        else
+            continue;
 
-    return ret;
+        return ret;
     }
 }
 
