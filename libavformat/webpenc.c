@@ -53,24 +53,22 @@ static int webp_init(AVFormatContext *s)
 
 static int is_animated_webp_packet(AVPacket *pkt)
 {
-    if (pkt->size) {
         int skip = 0;
         unsigned flags = 0;
 
         if (pkt->size < 4)
-            return 0;
+        return AVERROR_INVALIDDATA;
         if (AV_RL32(pkt->data) == AV_RL32("RIFF"))
             skip = 12;
-
+    // Safe to do this as a valid WebP bitstream is >=30 bytes.
         if (pkt->size < skip + 4)
-            return 0;
+        return AVERROR_INVALIDDATA;
         if (AV_RL32(pkt->data + skip) == AV_RL32("VP8X")) {
             flags |= pkt->data[skip + 4 + 4];
         }
 
         if (flags & 2)  // ANIMATION_FLAG is on
             return 1;
-    }
     return 0;
 }
 
@@ -84,13 +82,9 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
         unsigned flags = 0;
         int vp8x = 0;
 
-        if (w->last_pkt.size < 4)
-            return 0;
         if (AV_RL32(w->last_pkt.data) == AV_RL32("RIFF"))
             skip = 12;
 
-        if (w->last_pkt.size < skip + 4)
-            return 0;  // Safe to do this as a valid WebP bitstream is >=30 bytes.
         if (AV_RL32(w->last_pkt.data + skip) == AV_RL32("VP8X")) {
             flags |= w->last_pkt.data[skip + 4 + 4];
             vp8x = 1;
@@ -149,7 +143,14 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
 static int webp_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     WebpContext *w = s->priv_data;
-    w->using_webp_anim_encoder |= is_animated_webp_packet(pkt);
+    int ret;
+
+    if (!pkt->size)
+        return 0;
+    ret = is_animated_webp_packet(pkt);
+    if (ret < 0)
+        return ret;
+    w->using_webp_anim_encoder |= ret;
 
     if (w->using_webp_anim_encoder) {
         avio_write(s->pb, pkt->data, pkt->size);
