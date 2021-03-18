@@ -623,13 +623,6 @@ static int ipmovie_read_header(AVFormatContext *s)
         if (avio_feof(pb))
             return AVERROR_EOF;
     }
-    /* initialize private context members */
-    ipmovie->video_pts = ipmovie->audio_frame_count = 0;
-    ipmovie->audio_chunk_offset = ipmovie->video_chunk_offset =
-    ipmovie->decode_map_chunk_offset = ipmovie->skip_map_chunk_offset = 0;
-    ipmovie->decode_map_chunk_size = ipmovie->video_chunk_size =
-    ipmovie->skip_map_chunk_size = 0;
-    ipmovie->send_buffer = ipmovie->frame_format = 0;
 
     /* on the first read, this will position the stream at the first chunk */
     ipmovie->next_chunk_offset = avio_tell(pb) + 4;
