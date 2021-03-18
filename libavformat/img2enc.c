@@ -77,7 +77,7 @@ static int write_muxed_file(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
     VideoMuxData *img = s->priv_data;
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     AVStream *st;
-    AVPacket pkt2;
+    AVPacket *const pkt2 = ffformatcontext(s)->pkt;
     AVFormatContext *fmt = NULL;
     int ret;
 
@@ -94,17 +94,17 @@ static int write_muxed_file(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
 
     fmt->pb = pb;
 
-    ret = av_packet_ref(&pkt2, pkt);
+    ret = av_packet_ref(pkt2, pkt);
     if (ret < 0)
         goto out;
-    pkt2.stream_index = 0;
+    pkt2->stream_index = 0;
 
     if ((ret = avcodec_parameters_copy(st->codecpar, par))     < 0 ||
         (ret = avformat_write_header(fmt, NULL))               < 0 ||
-        (ret = av_interleaved_write_frame(fmt, &pkt2))         < 0 ||
+        (ret = av_interleaved_write_frame(fmt, pkt2))         < 0 ||
         (ret = av_write_trailer(fmt))) {}
 
-    av_packet_unref(&pkt2);
+    av_packet_unref(pkt2);
 out:
     avformat_free_context(fmt);
     return ret;
