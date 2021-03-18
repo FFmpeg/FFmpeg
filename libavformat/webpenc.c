@@ -53,22 +53,22 @@ static int webp_init(AVFormatContext *s)
 
 static int is_animated_webp_packet(AVPacket *pkt)
 {
-        int skip = 0;
-        unsigned flags = 0;
+    int skip = 0;
+    unsigned flags = 0;
 
-        if (pkt->size < 4)
+    if (pkt->size < 4)
         return AVERROR_INVALIDDATA;
-        if (AV_RL32(pkt->data) == AV_RL32("RIFF"))
-            skip = 12;
+    if (AV_RL32(pkt->data) == AV_RL32("RIFF"))
+        skip = 12;
     // Safe to do this as a valid WebP bitstream is >=30 bytes.
-        if (pkt->size < skip + 4)
+    if (pkt->size < skip + 4)
         return AVERROR_INVALIDDATA;
-        if (AV_RL32(pkt->data + skip) == AV_RL32("VP8X")) {
-            flags |= pkt->data[skip + 4 + 4];
-        }
+    if (AV_RL32(pkt->data + skip) == AV_RL32("VP8X")) {
+        flags |= pkt->data[skip + 4 + 4];
+    }
 
-        if (flags & 2)  // ANIMATION_FLAG is on
-            return 1;
+    if (flags & 2)  // ANIMATION_FLAG is on
+        return 1;
     return 0;
 }
 
