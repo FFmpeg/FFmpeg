@@ -860,17 +860,17 @@ static int asf_read_header(AVFormatContext *s)
         } else {
             if (!s->keylen) {
                 if (!ff_guidcmp(&g, &ff_asf_content_encryption)) {
+                    AVPacket *pkt = s->internal->parse_pkt;
                     unsigned int len;
-                    AVPacket pkt;
                     av_log(s, AV_LOG_WARNING,
                            "DRM protected stream detected, decoding will likely fail!\n");
                     len= avio_rl32(pb);
                     av_log(s, AV_LOG_DEBUG, "Secret data:\n");
 
-                    if ((ret = av_get_packet(pb, &pkt, len)) < 0)
+                    if ((ret = av_get_packet(pb, pkt, len)) < 0)
                         return ret;
-                    av_hex_dump_log(s, AV_LOG_DEBUG, pkt.data, pkt.size);
-                    av_packet_unref(&pkt);
+                    av_hex_dump_log(s, AV_LOG_DEBUG, pkt->data, pkt->size);
+                    av_packet_unref(pkt);
 
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
