@@ -381,17 +381,17 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 static int mp3_queue_flush(AVFormatContext *s)
 {
     MP3Context *mp3 = s->priv_data;
-    AVPacket pkt;
+    AVPacket *const pkt = ffformatcontext(s)->pkt;
     int ret = 0, write = 1;
 
     ff_id3v2_finish(&mp3->id3, s->pb, s->metadata_header_padding);
     mp3_write_xing(s);
 
     while (mp3->queue) {
-        avpriv_packet_list_get(&mp3->queue, &mp3->queue_end, &pkt);
-        if (write && (ret = mp3_write_audio_packet(s, &pkt)) < 0)
+        avpriv_packet_list_get(&mp3->queue, &mp3->queue_end, pkt);
+        if (write && (ret = mp3_write_audio_packet(s, pkt)) < 0)
             write = 0;
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
     }
     return ret;
 }
