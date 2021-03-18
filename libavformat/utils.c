@@ -3496,13 +3496,9 @@ static int extract_extradata_init(AVStream *st)
     if (!ret)
         goto finish;
 
-    sti->extract_extradata.pkt = av_packet_alloc();
-    if (!sti->extract_extradata.pkt)
-        return AVERROR(ENOMEM);
-
     ret = av_bsf_alloc(f, &sti->extract_extradata.bsf);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     ret = avcodec_parameters_copy(sti->extract_extradata.bsf->par_in,
                                   st->codecpar);
@@ -3521,14 +3517,13 @@ finish:
     return 0;
 fail:
     av_bsf_free(&sti->extract_extradata.bsf);
-    av_packet_free(&sti->extract_extradata.pkt);
     return ret;
 }
 
-static int extract_extradata(AVStream *st, const AVPacket *pkt)
+static int extract_extradata(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
 {
     AVStreamInternal *sti = st->internal;
-    AVPacket *pkt_ref;
+    AVPacket *pkt_ref = s->internal->parse_pkt;
     int ret;
 
     if (!sti->extract_extradata.inited) {
@@ -3540,7 +3535,6 @@ static int extract_extradata(AVStream *st, const AVPacket *pkt)
     if (sti->extract_extradata.inited && !sti->extract_extradata.bsf)
         return 0;
 
-    pkt_ref = sti->extract_extradata.pkt;
     ret = av_packet_ref(pkt_ref, pkt);
     if (ret < 0)
         return ret;
@@ -3921,7 +3915,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 st->internal->info->frame_delay_evidence = 1;
         }
         if (!st->internal->avctx->extradata) {
-            ret = extract_extradata(st, pkt);
+            ret = extract_extradata(ic, st, pkt);
             if (ret < 0)
                 goto unref_then_goto_end;
         }
@@ -4187,7 +4181,6 @@ find_stream_info_err:
         avcodec_close(ic->streams[i]->internal->avctx);
         av_freep(&ic->streams[i]->internal->info);
         av_bsf_free(&ic->streams[i]->internal->extract_extradata.bsf);
-        av_packet_free(&ic->streams[i]->internal->extract_extradata.pkt);
     }
     if (ic->pb)
         av_log(ic, AV_LOG_DEBUG, "After avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d frames:%d\n",
@@ -4389,7 +4382,6 @@ static void free_stream(AVStream **pst)
         av_freep(&st->internal->probe_data.buf);
 
         av_bsf_free(&st->internal->extract_extradata.bsf);
-        av_packet_free(&st->internal->extract_extradata.pkt);
 
         if (st->internal->info)
             av_freep(&st->internal->info->duration_error);

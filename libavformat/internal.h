@@ -90,9 +90,18 @@ struct AVFormatInternal {
     /**
      * Packets split by the parser get queued here.
      */
-    AVPacket *parse_pkt;
     struct PacketList *parse_queue;
     struct PacketList *parse_queue_end;
+    /**
+     * The generic code uses this as a temporary packet
+     * to parse packets; it may also be used for other means
+     * for short periods that are guaranteed not to overlap
+     * with calls to av_read_frame() (or ff_read_packet())
+     * or with each other.
+     * Every user has to ensure that this packet is blank
+     * after using it.
+     */
+    AVPacket *parse_pkt;
 
     /**
      * Used to hold temporary packets.
@@ -190,7 +199,6 @@ struct AVStreamInternal {
      * supported) */
     struct {
         AVBSFContext *bsf;
-        AVPacket     *pkt;
         int inited;
     } extract_extradata;
 
