@@ -261,24 +261,22 @@ const AVDVProfile* ff_dv_frame_profile(AVCodecContext* codec, const AVDVProfile 
                                        const uint8_t *frame, unsigned buf_size)
 {
 #if CONFIG_DVPROFILE
-    int i, dsf, stype;
+    int i, dsf, stype, pal;
 
     if(buf_size < DV_PROFILE_BYTES)
         return NULL;
 
     dsf   = (frame[3] & 0x80) >> 7;
     stype = frame[80 * 5 + 48 + 3] & 0x1f;
+    pal   = !!(frame[80 * 5 + 48 + 3] & 0x20);
 
     /* 576i50 25Mbps 4:1:1 is a special case */
     if ((dsf == 1 && stype == 0 && frame[4] & 0x07 /* the APT field */) ||
         (stype == 31 && codec && codec->codec_tag==AV_RL32("SL25") && codec->coded_width==720 && codec->coded_height==576))
         return &dv_profiles[2];
 
-    if(   stype == 0
-       && codec
-       && (codec->codec_tag==AV_RL32("dvsd") || codec->codec_tag==AV_RL32("CDVC"))
-       && codec->coded_width ==720
-       && codec->coded_height==576)
+    /* hack for trac issues #8333 and #2177, PAL DV files with dsf flag 0 - detect via pal flag and buf_size */
+    if (dsf == 0 && pal == 1 && stype == dv_profiles[1].video_stype && buf_size == dv_profiles[1].frame_size)
         return &dv_profiles[1];
 
     for (i = 0; i < FF_ARRAY_ELEMS(dv_profiles); i++)
