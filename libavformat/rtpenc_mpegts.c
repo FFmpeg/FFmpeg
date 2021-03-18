@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avio_internal.h"
 
@@ -27,6 +28,7 @@ typedef struct MuxChain {
     AVFormatContext *mpegts_ctx;
     AVFormatContext *rtp_ctx;
     AVPacket *pkt;
+    AVDictionary* mpegts_muxer_options;
 } MuxChain;
 
 static int rtp_mpegts_write_close(AVFormatContext *s)
@@ -56,6 +58,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     ff_const59 AVOutputFormat *rtp_format    = av_guess_format("rtp", NULL, NULL);
     int i, ret = AVERROR(ENOMEM);
     AVStream *st;
+    AVDictionary *mpegts_muxer_options = NULL;
 
     if (!mpegts_format || !rtp_format)
         return AVERROR(ENOSYS);
@@ -78,7 +81,10 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     }
     if ((ret = avio_open_dyn_buf(&mpegts_ctx->pb)) < 0)
         goto fail;
-    if ((ret = avformat_write_header(mpegts_ctx, NULL)) < 0)
+
+    av_dict_copy(&mpegts_muxer_options, chain->mpegts_muxer_options, 0);
+
+    if ((ret = avformat_write_header(mpegts_ctx, &mpegts_muxer_options)) < 0)
         goto fail;
     for (i = 0; i < s->nb_streams; i++)
         s->streams[i]->time_base = mpegts_ctx->streams[i]->time_base;
@@ -111,6 +117,7 @@ fail:
     if (mpegts_ctx) {
         ffio_free_dyn_buf(&mpegts_ctx->pb);
         av_dict_free(&mpegts_ctx->metadata);
+        av_dict_free(&mpegts_muxer_options);
         avformat_free_context(mpegts_ctx);
     }
     avformat_free_context(rtp_ctx);
@@ -155,6 +162,20 @@ static int rtp_mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+#define OFFSET(x) offsetof(MuxChain, x)
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "mpegts_muxer_options", "set list of options for the MPEG-TS muxer", OFFSET(mpegts_muxer_options), AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, E },
+    { NULL },
+};
+
+static const AVClass rtp_mpegts_class = {
+    .class_name = "rtp_mpegts muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_rtp_mpegts_muxer = {
     .name              = "rtp_mpegts",
     .long_name         = NULL_IF_CONFIG_SMALL("RTP/mpegts output format"),
@@ -164,4 +185,5 @@ AVOutputFormat ff_rtp_mpegts_muxer = {
     .write_header      = rtp_mpegts_write_header,
     .write_packet      = rtp_mpegts_write_packet,
     .write_trailer     = rtp_mpegts_write_close,
+    .priv_class        = &rtp_mpegts_class,
 };
