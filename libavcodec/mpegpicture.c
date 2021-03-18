@@ -79,8 +79,11 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
     if (!FF_ALLOCZ_TYPED_ARRAY(sc->edge_emu_buffer, alloc_size * EMU_EDGE_HEIGHT) ||
-        !FF_ALLOCZ_TYPED_ARRAY(me->scratchpad,      alloc_size * 4 * 16 * 2))
+        !FF_ALLOCZ_TYPED_ARRAY(me->scratchpad,      alloc_size * 4 * 16 * 2)) {
+        av_freep(&sc->edge_emu_buffer);
         return AVERROR(ENOMEM);
+    }
+
     me->temp            = me->scratchpad;
     sc->rd_scratchpad   = me->scratchpad;
     sc->b_scratchpad    = me->scratchpad;
