@@ -98,6 +98,9 @@ struct AVFormatInternal {
      * for short periods that are guaranteed not to overlap
      * with calls to av_read_frame() (or ff_read_packet())
      * or with each other.
+     * It may be used by demuxers as a replacement for
+     * stack packets (unless they call one of the aforementioned
+     * functions with their own AVFormatContext).
      * Every user has to ensure that this packet is blank
      * after using it.
      */
