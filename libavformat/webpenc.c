@@ -33,7 +33,7 @@ typedef struct WebpContext{
     int using_webp_anim_encoder;
 } WebpContext;
 
-static int webp_write_header(AVFormatContext *s)
+static int webp_init(AVFormatContext *s)
 {
     AVStream *st;
 
@@ -210,7 +210,7 @@ AVOutputFormat ff_webp_muxer = {
     .extensions     = "webp",
     .priv_data_size = sizeof(WebpContext),
     .video_codec    = AV_CODEC_ID_WEBP,
-    .write_header   = webp_write_header,
+    .init           = webp_init,
     .write_packet   = webp_write_packet,
     .write_trailer  = webp_write_trailer,
     .priv_class     = &webp_muxer_class,
