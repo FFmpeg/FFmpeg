@@ -77,6 +77,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
             goto fail;
         st->time_base           = s->streams[i]->time_base;
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+        st->id                  = s->streams[i]->id;
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
     }
     if ((ret = avio_open_dyn_buf(&mpegts_ctx->pb)) < 0)
