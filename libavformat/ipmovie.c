@@ -560,28 +560,11 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             break;
 
         case OPCODE_VIDEO_DATA_06:
-            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x06\n");
-            s->frame_format = 0x06;
-
-            /* log position and move on for now */
-            s->video_chunk_offset = avio_tell(pb);
-            s->video_chunk_size = opcode_size;
-            avio_skip(pb, opcode_size);
-            break;
-
         case OPCODE_VIDEO_DATA_10:
-            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x10\n");
-            s->frame_format = 0x10;
-
-            /* log position and move on for now */
-            s->video_chunk_offset = avio_tell(pb);
-            s->video_chunk_size = opcode_size;
-            avio_skip(pb, opcode_size);
-            break;
-
         case OPCODE_VIDEO_DATA_11:
-            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x11\n");
-            s->frame_format = 0x11;
+            s->frame_format = opcode_type;
+            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x%02X\n",
+                   opcode_type);
 
             /* log position and move on for now */
             s->video_chunk_offset = avio_tell(pb);
