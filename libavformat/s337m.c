@@ -189,6 +189,7 @@ static int s337m_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id   = codec;
+        st->need_parsing         = AVSTREAM_PARSE_HEADERS;
     }
 
     return 0;
