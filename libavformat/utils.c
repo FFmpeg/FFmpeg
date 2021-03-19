@@ -2943,23 +2943,19 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
     }
     update_stream_timings(ic);
 
-    {
-        int i;
-        AVStream av_unused *st;
-        for (i = 0; i < ic->nb_streams; i++) {
-            st = ic->streams[i];
-            if (st->time_base.den)
-                av_log(ic, AV_LOG_TRACE, "stream %d: start_time: %s duration: %s\n", i,
-                       av_ts2timestr(st->start_time, &st->time_base),
-                       av_ts2timestr(st->duration, &st->time_base));
-        }
-        av_log(ic, AV_LOG_TRACE,
-               "format: start_time: %s duration: %s (estimate from %s) bitrate=%"PRId64" kb/s\n",
-               av_ts2timestr(ic->start_time, &AV_TIME_BASE_Q),
-               av_ts2timestr(ic->duration, &AV_TIME_BASE_Q),
-               duration_estimate_name(ic->duration_estimation_method),
-               (int64_t)ic->bit_rate / 1000);
+    for (unsigned i = 0; i < ic->nb_streams; i++) {
+        AVStream *st = ic->streams[i];
+        if (st->time_base.den)
+            av_log(ic, AV_LOG_TRACE, "stream %u: start_time: %s duration: %s\n", i,
+                   av_ts2timestr(st->start_time, &st->time_base),
+                   av_ts2timestr(st->duration, &st->time_base));
     }
+    av_log(ic, AV_LOG_TRACE,
+           "format: start_time: %s duration: %s (estimate from %s) bitrate=%"PRId64" kb/s\n",
+           av_ts2timestr(ic->start_time, &AV_TIME_BASE_Q),
+           av_ts2timestr(ic->duration, &AV_TIME_BASE_Q),
+           duration_estimate_name(ic->duration_estimation_method),
+           (int64_t)ic->bit_rate / 1000);
 }
 
 static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
