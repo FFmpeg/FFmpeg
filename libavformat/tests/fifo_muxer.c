@@ -41,18 +41,15 @@ typedef struct FailingMuxerPacketData {
 
 static int prepare_packet(AVPacket *pkt, const FailingMuxerPacketData *pkt_data, int64_t pts)
 {
-    int ret;
-    FailingMuxerPacketData *data = av_malloc(sizeof(*data));
-    if (!data) {
-        return AVERROR(ENOMEM);
-    }
-    memcpy(data, pkt_data, sizeof(FailingMuxerPacketData));
-    ret = av_packet_from_data(pkt, (uint8_t*) data, sizeof(*data));
+    int ret = av_new_packet(pkt, sizeof(*pkt_data));
+    if (ret < 0)
+        return ret;
+    memcpy(pkt->data, pkt_data, sizeof(*pkt_data));
 
     pkt->pts = pkt->dts = pts;
     pkt->duration = 1;
 
-    return ret;
+    return 0;
 }
 
 static int initialize_fifo_tst_muxer_chain(AVFormatContext **oc, AVPacket **pkt)
