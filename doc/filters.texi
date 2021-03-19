@@ -9818,12 +9818,6 @@ specified.
 Specify the width and height of the logo to clear. They must be
 specified.
 
-@item band, t
-Specify the thickness of the fuzzy edge of the rectangle (added to
-@var{w} and @var{h}). The default value is 1. This option is
-deprecated, setting higher values should no longer be necessary and
-is not recommended.
-
 @item show
 When set to 1, a green rectangle is drawn on the screen to simplify
 finding the right @var{x}, @var{y}, @var{w}, and @var{h} parameters.
@@ -9841,9 +9835,9 @@ compute the interpolated pixel values inside the rectangle.
 @itemize
 @item
 Set a rectangle covering the area with top left corner coordinates 0,0
-and size 100x77, and a band of size 10:
+and size 100x77:
 @example
-delogo=x=0:y=0:w=100:h=77:band=10
+delogo=x=0:y=0:w=100:h=77
 @end example
 
 @end itemize
