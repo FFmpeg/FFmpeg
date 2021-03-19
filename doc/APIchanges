@@ -15,43 +15,43 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2021-03-19 - xxxxxxxxxx - lavu 56.69.100 - adler32.h
+2021-03-19 - e8c0bca6bd - lavu 56.69.100 - adler32.h
   Added a typedef for the type of the Adler-32 checksums
   used by av_adler32_update(). It will be changed to uint32_t
   at the next major bump.
   The type of the parameter for the length of the input buffer
   will also be changed to size_t at the next major bump.
 
-2021-03-19 - xxxxxxxxxx - lavf 58.75.100  - avformat.h
+2021-03-19 - e318438f2f - lavf 58.75.100  - avformat.h
   AVChapter.id will be changed from int to int64_t
   on the next major version bump.
 
-2021-03-xx - xxxxxxxxxx - lavc 58.133.100 - codec.h
+2021-03-17 - f7db77bd87 - lavc 58.133.100 - codec.h
   Deprecated av_init_packet(). Once removed, sizeof(AVPacket) will
   no longer be a part of the public ABI.
   Deprecated AVPacketList.
 
-2021-03-xx - xxxxxxxxxx - lavc 58.132.100 - codec.h
+2021-03-16 - 7d09579190 - lavc 58.132.100 - codec.h
   Add AV_CODEC_CAP_OTHER_THREADS as a new name for
   AV_CODEC_CAP_AUTO_THREADS. AV_CODEC_CAP_AUTO_THREADS
   is now deprecated.
 
-2021-03-12 - xxxxxxxxxx - lavc 58.131.100 - avcodec.h codec.h
+2021-03-12 - 6e7e3a3820 - lavc 58.131.100 - avcodec.h codec.h
   Add a get_encode_buffer callback to AVCodecContext, similar to
   get_buffer2 but for encoders.
   Add avcodec_default_get_encode_buffer().
   Add AV_GET_ENCODE_BUFFER_FLAG_REF.
   Encoders may now be flagged as AV_CODEC_CAP_DR1 capable.
 
-2021-03-10 - xxxxxxxxxx - lavf 58.72.100 - avformat.h
+2021-03-10 - 42e68fe015 - lavf 58.72.100 - avformat.h
   Change AVBufferRef related AVStream function and struct size
   parameter and fields type to size_t at next major bump.
 
-2021-03-10 - xxxxxxxxxx - lavc 58.130.100 - packet.h
+2021-03-10 - d79e0fe65c - lavc 58.130.100 - packet.h
   Change AVBufferRef related AVPacket function and struct size
   parameter and fields type to size_t at next major bump.
 
-2021-03-10 - xxxxxxxxxx - lavu 56.68.100 - buffer.h frame.h
+2021-03-10 - 14040a1d91 - lavu 56.68.100 - buffer.h frame.h
   Change AVBufferRef and relevant AVFrame function and struct size
   parameter and fields type to size_t at next major bump.
 
