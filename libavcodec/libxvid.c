@@ -692,8 +692,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return AVERROR(ENOMEM);
 
         picture = av_frame_alloc();
-        if (!picture)
+        if (!picture) {
+            av_packet_free(&packet);
             return AVERROR(ENOMEM);
+        }
 
         xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
         if( xerr ) {
