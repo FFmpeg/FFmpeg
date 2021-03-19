@@ -1304,6 +1304,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (s->avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         s->avctx->extradata = av_malloc(1024);
+        if (!s->avctx->extradata)
+            return AVERROR(ENOMEM);
         init_put_bits(&s->pb, s->avctx->extradata, 1024);
 
         if (!(s->workaround_bugs & FF_BUG_MS))
