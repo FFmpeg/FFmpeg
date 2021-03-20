@@ -57,6 +57,18 @@ typedef struct PNGDecContext {
     ThreadFrame last_picture;
     ThreadFrame picture;
 
+    AVDictionary *frame_metadata;
+
+    uint8_t  iccp_name[82];
+    uint8_t *iccp_data;
+    size_t   iccp_data_len;
+
+    int stereo_mode;
+
+    int have_chrm;
+    uint32_t white_point[2];
+    uint32_t display_primaries[3][2];
+
     enum PNGHeaderState hdr_state;
     enum PNGImageState pic_state;
     int width, height;
@@ -508,8 +520,7 @@ static uint8_t *iso88591_to_utf8(const uint8_t *in, size_t size_in)
     return out;
 }
 
-static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
-                             AVDictionary **dict)
+static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed)
 {
     int ret, method;
     const uint8_t *data        = s->gb.buffer;
@@ -551,7 +562,7 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
         return AVERROR(ENOMEM);
     }
 
-    av_dict_set(dict, kw_utf8, txt_utf8,
+    av_dict_set(&s->frame_metadata, kw_utf8, txt_utf8,
                 AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
@@ -849,21 +860,21 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
 static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
 {
     int ret, cnt = 0;
-    uint8_t *data, profile_name[82];
     AVBPrint bp;
-    AVFrameSideData *sd;
 
-    while ((profile_name[cnt++] = bytestream2_get_byte(&s->gb)) && cnt < 81);
+    while ((s->iccp_name[cnt++] = bytestream2_get_byte(&s->gb)) && cnt < 81);
     if (cnt > 80) {
         av_log(s->avctx, AV_LOG_ERROR, "iCCP with invalid name!\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     length = FFMAX(length - cnt, 0);
 
     if (bytestream2_get_byte(&s->gb) != 0) {
         av_log(s->avctx, AV_LOG_ERROR, "iCCP with invalid compression!\n");
-        return AVERROR_INVALIDDATA;
+        ret =  AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     length = FFMAX(length - 1, 0);
@@ -871,24 +882,19 @@ static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
     if ((ret = decode_zbuf(&bp, s->gb.buffer, s->gb.buffer + length)) < 0)
         return ret;
 
-    ret = av_bprint_finalize(&bp, (char **)&data);
+    av_freep(&s->iccp_data);
+    ret = av_bprint_finalize(&bp, (char **)&s->iccp_data);
     if (ret < 0)
         return ret;
-
-    sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, bp.len);
-    if (!sd) {
-        av_free(data);
-        return AVERROR(ENOMEM);
-    }
-
-    av_dict_set(&sd->metadata, "name", profile_name, 0);
-    memcpy(sd->data, data, bp.len);
-    av_free(data);
+    s->iccp_data_len = bp.len;
 
     /* ICC compressed data and CRC */
     bytestream2_skip(&s->gb, length + 4);
 
     return 0;
+fail:
+    s->iccp_name[0] = 0;
+    return ret;
 }
 
 static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
@@ -1183,7 +1189,6 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                                AVFrame *p, const AVPacket *avpkt)
 {
     const AVCRC *crc_tab = av_crc_get_table(AV_CRC_32_IEEE_LE);
-    AVDictionary **metadatap = NULL;
     uint32_t tag, length;
     int decode_next_dat = 0;
     int i, ret;
@@ -1251,7 +1256,6 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             }
         }
 
-        metadatap = &p->metadata;
         switch (tag) {
         case MKTAG('I', 'H', 'D', 'R'):
             if ((ret = decode_ihdr_chunk(avctx, s, length)) < 0)
@@ -1293,26 +1297,20 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 goto skip_tag;
             break;
         case MKTAG('t', 'E', 'X', 't'):
-            if (decode_text_chunk(s, length, 0, metadatap) < 0)
+            if (decode_text_chunk(s, length, 0) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken tEXt chunk\n");
             bytestream2_skip(&s->gb, length + 4);
             break;
         case MKTAG('z', 'T', 'X', 't'):
-            if (decode_text_chunk(s, length, 1, metadatap) < 0)
+            if (decode_text_chunk(s, length, 1) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken zTXt chunk\n");
             bytestream2_skip(&s->gb, length + 4);
             break;
         case MKTAG('s', 'T', 'E', 'R'): {
             int mode = bytestream2_get_byte(&s->gb);
-            AVStereo3D *stereo3d = av_stereo3d_create_side_data(p);
-            if (!stereo3d) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
 
             if (mode == 0 || mode == 1) {
-                stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
-                stereo3d->flags = mode ? 0 : AV_STEREO3D_FLAG_INVERT;
+                s->stereo_mode = mode;
             } else {
                  av_log(avctx, AV_LOG_WARNING,
                         "Unknown value in sTER chunk (%d)\n", mode);
@@ -1326,22 +1324,17 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             break;
         }
         case MKTAG('c', 'H', 'R', 'M'): {
-            AVMasteringDisplayMetadata *mdm = av_mastering_display_metadata_create_side_data(p);
-            if (!mdm) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            s->have_chrm = 1;
 
-            mdm->white_point[0] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
-            mdm->white_point[1] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+            s->white_point[0] = bytestream2_get_be32(&s->gb);
+            s->white_point[1] = bytestream2_get_be32(&s->gb);
 
             /* RGB Primaries */
             for (i = 0; i < 3; i++) {
-                mdm->display_primaries[i][0] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
-                mdm->display_primaries[i][1] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+                s->display_primaries[i][0] = bytestream2_get_be32(&s->gb);
+                s->display_primaries[i][1] = bytestream2_get_be32(&s->gb);
             }
 
-            mdm->has_primaries = 1;
             bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
@@ -1356,7 +1349,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             if (ret < 0)
                 return ret;
 
-            av_dict_set(&p->metadata, "gamma", gamma_str, AV_DICT_DONT_STRDUP_VAL);
+            av_dict_set(&s->frame_metadata, "gamma", gamma_str, AV_DICT_DONT_STRDUP_VAL);
 
             bytestream2_skip(&s->gb, 4); /* crc */
             break;
@@ -1459,6 +1452,77 @@ fail:
     return ret;
 }
 
+static void clear_frame_metadata(PNGDecContext *s)
+{
+    av_freep(&s->iccp_data);
+    s->iccp_data_len = 0;
+    s->iccp_name[0]  = 0;
+
+    s->stereo_mode = -1;
+
+    s->have_chrm = 0;
+
+    av_dict_free(&s->frame_metadata);
+}
+
+static int output_frame(PNGDecContext *s, AVFrame *f,
+                        const AVFrame *src)
+{
+    int ret;
+
+    ret = av_frame_ref(f, src);
+    if (ret < 0)
+        return ret;
+
+    if (s->iccp_data) {
+        AVFrameSideData *sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, s->iccp_data_len);
+        if (!sd) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        memcpy(sd->data, s->iccp_data, s->iccp_data_len);
+
+        av_dict_set(&sd->metadata, "name", s->iccp_name, 0);
+    }
+
+    if (s->stereo_mode >= 0) {
+        AVStereo3D *stereo3d = av_stereo3d_create_side_data(f);
+        if (!stereo3d) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
+        stereo3d->flags = s->stereo_mode ? 0 : AV_STEREO3D_FLAG_INVERT;
+    }
+
+    if (s->have_chrm) {
+        AVMasteringDisplayMetadata *mdm = av_mastering_display_metadata_create_side_data(f);
+        if (!mdm) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        mdm->white_point[0] = av_make_q(s->white_point[0], 100000);
+        mdm->white_point[1] = av_make_q(s->white_point[1], 100000);
+
+        /* RGB Primaries */
+        for (int i = 0; i < 3; i++) {
+            mdm->display_primaries[i][0] = av_make_q(s->display_primaries[i][0], 100000);
+            mdm->display_primaries[i][1] = av_make_q(s->display_primaries[i][1], 100000);
+        }
+
+        mdm->has_primaries = 1;
+    }
+
+    FFSWAP(AVDictionary*, f->metadata, s->frame_metadata);
+
+    return 0;
+fail:
+    av_frame_unref(f);
+    return ret;
+}
+
 #if CONFIG_PNG_DECODER
 static int decode_frame_png(AVCodecContext *avctx,
                         void *data, int *got_frame,
@@ -1467,9 +1531,12 @@ static int decode_frame_png(AVCodecContext *avctx,
     PNGDecContext *const s = avctx->priv_data;
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
+    AVFrame     *dst_frame = data;
     AVFrame *p = s->picture.f;
     int64_t sig;
     int ret;
+
+    clear_frame_metadata(s);
 
     bytestream2_init(&s->gb, buf, buf_size);
 
@@ -1504,7 +1571,8 @@ static int decode_frame_png(AVCodecContext *avctx,
         goto the_end;
     }
 
-    if ((ret = av_frame_ref(data, s->picture.f)) < 0)
+    ret = output_frame(s, dst_frame, s->picture.f);
+    if (ret < 0)
         goto the_end;
 
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
@@ -1528,8 +1596,11 @@ static int decode_frame_apng(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     PNGDecContext *const s = avctx->priv_data;
+    AVFrame     *dst_frame = data;
     int ret;
     AVFrame *p = s->picture.f;
+
+    clear_frame_metadata(s);
 
     if (!(s->hdr_state & PNG_IHDR)) {
         if (!avctx->extradata_size)
@@ -1562,7 +1633,9 @@ static int decode_frame_apng(AVCodecContext *avctx,
         ret = AVERROR_INVALIDDATA;
         goto end;
     }
-    if ((ret = av_frame_ref(data, s->picture.f)) < 0)
+
+    ret = output_frame(s, dst_frame, s->picture.f);
+    if (ret < 0)
         goto end;
 
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
@@ -1665,6 +1738,9 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
     s->last_row_size = 0;
     av_freep(&s->tmp_row);
     s->tmp_row_size = 0;
+
+    av_freep(&s->iccp_data);
+    av_dict_free(&s->frame_metadata);
 
     return 0;
 }
