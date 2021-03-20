@@ -654,8 +654,11 @@ static av_cold int aom_init(AVCodecContext *avctx,
 
     if (avctx->qmin >= 0)
         enccfg.rc_min_quantizer = avctx->qmin;
-    if (avctx->qmax >= 0)
+    if (avctx->qmax >= 0) {
         enccfg.rc_max_quantizer = avctx->qmax;
+    } else if (!ctx->crf) {
+        enccfg.rc_max_quantizer = 0;
+    }
 
     if (enccfg.rc_end_usage == AOM_CQ || enccfg.rc_end_usage == AOM_Q) {
         if (ctx->crf < enccfg.rc_min_quantizer || ctx->crf > enccfg.rc_max_quantizer) {
