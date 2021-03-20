@@ -32,6 +32,7 @@
 #include "libavformat/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavutil/wchar_filename.h"
 #include <windows.h>
 
 /**
@@ -245,8 +246,20 @@ gdigrab_read_header(AVFormatContext *s1)
     int ret;
 
     if (!strncmp(filename, "title=", 6)) {
+        wchar_t *name_w = NULL;
         name = filename + 6;
-        hwnd = FindWindow(NULL, name);
+
+        if(utf8towchar(name, &name_w)) {
+            ret = AVERROR(errno);
+            goto error;
+        }
+        if(!name_w) {
+            ret = AVERROR(EINVAL);
+            goto error;
+        }
+
+        hwnd = FindWindowW(NULL, name_w);
+        av_freep(&name_w);
         if (!hwnd) {
             av_log(s1, AV_LOG_ERROR,
                    "Can't find window '%s', aborting.\n", name);
