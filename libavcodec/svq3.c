@@ -92,7 +92,7 @@ typedef struct SVQ3Context {
     GetBitContext gb;
     GetBitContext gb_slice;
     uint8_t *slice_buf;
-    int slice_size;
+    unsigned slice_buf_size;
     int halfpel_flag;
     int thirdpel_flag;
     int has_watermark;
@@ -1035,7 +1035,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
 
         skip_bits(&s->gb, 8);
 
-        av_fast_malloc(&s->slice_buf, &s->slice_size, slice_bytes + AV_INPUT_BUFFER_PADDING_SIZE);
+        av_fast_padded_malloc(&s->slice_buf, &s->slice_buf_size, slice_bytes);
         if (!s->slice_buf)
             return AVERROR(ENOMEM);
 
