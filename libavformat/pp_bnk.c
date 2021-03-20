@@ -265,28 +265,24 @@ static int pp_bnk_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         size = FFMIN(trk->data_size - trk->bytes_read, PP_BNK_MAX_READ_SIZE);
 
-        if (!ctx->is_music)
-            ret = av_new_packet(pkt, size);
-        else if (ctx->current_track == 0)
-            ret = av_new_packet(pkt, size * 2);
-        else
-            ret = 0;
-
+        if (!ctx->is_music) {
+            ret = av_get_packet(s->pb, pkt, size);
+            if (ret == AVERROR_EOF) {
+                /* If we've hit EOF, don't attempt this track again. */
+                trk->data_size = trk->bytes_read;
+                continue;
+            }
+        } else {
+            if (!pkt->data && (ret = av_new_packet(pkt, size * 2)) < 0)
+                return ret;
+            ret = avio_read(s->pb, pkt->data + size * ctx->current_track, size);
+            if (ret >= 0 && ret != size) {
+                /* Only return stereo packets if both tracks could be read. */
+                ret = AVERROR_EOF;
+            }
+        }
         if (ret < 0)
             return ret;
-
-        if (ctx->is_music)
-            ret = avio_read(s->pb, pkt->data + size * ctx->current_track, size);
-        else
-            ret = avio_read(s->pb, pkt->data, size);
-
-        if (ret == AVERROR_EOF) {
-            /* If we've hit EOF, don't attempt this track again. */
-            trk->data_size = trk->bytes_read;
-            continue;
-        } else if (ret < 0) {
-            return ret;
-        }
 
         trk->bytes_read    += ret;
         pkt->flags         &= ~AV_PKT_FLAG_CORRUPT;
@@ -298,8 +294,6 @@ static int pp_bnk_read_packet(AVFormatContext *s, AVPacket *pkt)
                 continue;
 
             pkt->stream_index = 0;
-        } else {
-            pkt->size = ret;
         }
 
         ctx->current_track++;
