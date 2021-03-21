@@ -358,6 +358,14 @@ $(foreach CLSP,$(PNG_COLORSPACES),$(eval $(call FATE_IMGSUITE_PNG,$(CLSP))))
 FATE_PNG += fate-png-int-rgb24
 fate-png-int-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png -sws_flags +accurate_rnd+bitexact
 
+FATE_PNG += fate-png-frame-metadata
+fate-png-frame-metadata: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries frame_tags \
+    -i $(TARGET_SAMPLES)/filter/pixelart0.png
+
+FATE_PNG += fate-png-side-data
+fate-png-side-data: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames \
+    -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png
+
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_IMAGE += $(FATE_PNG-yes)
 fate-png: $(FATE_PNG-yes)
