@@ -754,12 +754,15 @@ attribute_deprecated
 void    av_frame_set_color_range(AVFrame *frame, enum AVColorRange val);
 #endif
 
+#if FF_API_COLORSPACE_NAME
 /**
  * Get the name of a colorspace.
  * @return a static string identifying the colorspace; can be NULL.
+ * @deprecated use av_color_space_name()
  */
+attribute_deprecated
 const char *av_get_colorspace_name(enum AVColorSpace val);
-
+#endif
 /**
  * Allocate an AVFrame and set its fields to default values.  The resulting
  * struct must be freed using av_frame_free().

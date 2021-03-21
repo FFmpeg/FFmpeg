@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-03-21 - xxxxxxxxxx - lavu 56.72.100 - frame.h
+  Deprecated av_get_colorspace_name().
+  Use av_color_space_name() instead.
+
 -------- 8< --------- FFmpeg 4.4 was cut here -------- 8< ---------
 
 2021-03-19 - e8c0bca6bd - lavu 56.69.100 - adler32.h
