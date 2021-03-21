@@ -560,6 +560,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         case 0x12121100:
         case 0x22122100:
         case 0x21211100:
+        case 0x21112100:
         case 0x22211200:
         case 0x22221100:
         case 0x22112200:
