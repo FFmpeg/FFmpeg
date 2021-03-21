@@ -657,15 +657,15 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             if (enc->colorspace != AVCOL_SPC_UNSPECIFIED ||
                 enc->color_primaries != AVCOL_PRI_UNSPECIFIED ||
                 enc->color_trc != AVCOL_TRC_UNSPECIFIED) {
-                if (enc->colorspace != (int)enc->color_primaries ||
-                    enc->colorspace != (int)enc->color_trc) {
+                const char *col = unknown_if_null(av_color_space_name(enc->colorspace));
+                const char *pri = unknown_if_null(av_color_primaries_name(enc->color_primaries));
+                const char *trc = unknown_if_null(av_color_transfer_name(enc->color_trc));
+                if (strcmp(col, pri) || strcmp(col, trc)) {
                     new_line = 1;
                     av_strlcatf(detail, sizeof(detail), "%s/%s/%s, ",
-                                unknown_if_null(av_color_space_name(enc->colorspace)),
-                                unknown_if_null(av_color_primaries_name(enc->color_primaries)),
-                                unknown_if_null(av_color_transfer_name(enc->color_trc)));
-                 } else if (str = av_get_colorspace_name(enc->colorspace))
-                       av_strlcatf(detail, sizeof(detail), "%s, ", str);
+                                col, pri, trc);
+                } else
+                    av_strlcatf(detail, sizeof(detail), "%s, ", col);
             }
 
             if (enc->field_order != AV_FIELD_UNKNOWN) {
