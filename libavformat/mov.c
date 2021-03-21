@@ -3022,7 +3022,7 @@ static int mov_read_sdtp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_freep(&sc->sdtp_data);
     sc->sdtp_count = 0;
 
-    sc->sdtp_data = av_mallocz(entries);
+    sc->sdtp_data = av_malloc(entries);
     if (!sc->sdtp_data)
         return AVERROR(ENOMEM);
 
