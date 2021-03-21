@@ -834,23 +834,22 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     copy->internal = av_memdup(src->internal, sizeof(*src->internal));
     if (!copy->internal)
         return AVERROR(ENOMEM);
-        copy->internal->thread_ctx = p;
+    copy->internal->thread_ctx = p;
 
-        copy->delay = avctx->delay;
+    copy->delay = avctx->delay;
 
-        if (codec->priv_data_size) {
-            copy->priv_data = av_mallocz(codec->priv_data_size);
-            if (!copy->priv_data) {
-                return AVERROR(ENOMEM);
-            }
+    if (codec->priv_data_size) {
+        copy->priv_data = av_mallocz(codec->priv_data_size);
+        if (!copy->priv_data)
+            return AVERROR(ENOMEM);
 
-            if (codec->priv_class) {
-                *(const AVClass **)copy->priv_data = codec->priv_class;
-                err = av_opt_copy(copy->priv_data, src->priv_data);
-                if (err < 0)
-                    return err;
-            }
+        if (codec->priv_class) {
+            *(const AVClass **)copy->priv_data = codec->priv_class;
+            err = av_opt_copy(copy->priv_data, src->priv_data);
+            if (err < 0)
+                return err;
         }
+    }
 
     err = init_pthread(p, per_thread_offsets);
     if (err < 0)
@@ -862,23 +861,24 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     copy->internal->last_pkt_props = p->avpkt;
 
     if (!first)
-            copy->internal->is_copy = 1;
+        copy->internal->is_copy = 1;
 
-        if (codec->init)
-            err = codec->init(copy);
+    if (codec->init) {
+        err = codec->init(copy);
         if (err < 0) {
             if (codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)
                 p->thread_init = NEEDS_CLOSE;
             return err;
         }
+    }
     p->thread_init = NEEDS_CLOSE;
 
     if (first)
-            update_context_from_thread(avctx, copy, 1);
+        update_context_from_thread(avctx, copy, 1);
 
-        atomic_init(&p->debug_threads, (copy->debug & FF_DEBUG_THREADS) != 0);
+    atomic_init(&p->debug_threads, (copy->debug & FF_DEBUG_THREADS) != 0);
 
-        err = AVERROR(pthread_create(&p->thread, NULL, frame_worker_thread, p));
+    err = AVERROR(pthread_create(&p->thread, NULL, frame_worker_thread, p));
     if (err < 0)
         return err;
     p->thread_init = INITIALIZED;
