@@ -35,16 +35,9 @@
 
 #include "version.h"
 
-#if ARCH_X86_64
-// TODO: Benchmark and optionally enable on other 64-bit architectures.
-typedef uint64_t BitBuf;
-#define AV_WBBUF AV_WB64
-#define AV_WLBUF AV_WL64
-#else
 typedef uint32_t BitBuf;
 #define AV_WBBUF AV_WB32
 #define AV_WLBUF AV_WL32
-#endif
 
 static const int BUF_BITS = 8 * sizeof(BitBuf);
 
