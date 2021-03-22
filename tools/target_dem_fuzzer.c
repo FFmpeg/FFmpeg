@@ -186,10 +186,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     ret = avformat_open_input(&avfmt, filename, fmt, NULL);
     if (ret < 0) {
-        av_freep(&fuzzed_pb->buffer);
-        av_freep(&fuzzed_pb);
-        avformat_free_context(avfmt);
-        return 0;
+        goto fail;
     }
 
     ret = avformat_find_stream_info(avfmt, NULL);
@@ -203,10 +200,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         av_packet_unref(pkt);
     }
 
+fail:
     av_packet_free(&pkt);
     av_freep(&fuzzed_pb->buffer);
     avio_context_free(&fuzzed_pb);
     avformat_close_input(&avfmt);
 
     return 0;
+
 }
