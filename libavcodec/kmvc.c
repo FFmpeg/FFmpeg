@@ -275,6 +275,8 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
+    frame->palette_has_changed = ff_copy_palette(ctx->pal, avpkt, avctx);
+
     header = bytestream2_get_byte(&ctx->g);
 
     /* blocksize 127 is really palette change event */
@@ -302,9 +304,6 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
             ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24(&ctx->g);
         }
     }
-
-    if (ff_copy_palette(ctx->pal, avpkt, avctx))
-        frame->palette_has_changed = 1;
 
     if (ctx->setpal) {
         ctx->setpal = 0;
