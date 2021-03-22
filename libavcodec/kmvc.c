@@ -345,13 +345,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
     }
 
     /* flip buffers */
-    if (ctx->cur == ctx->frm0) {
-        ctx->cur = ctx->frm1;
-        ctx->prev = ctx->frm0;
-    } else {
-        ctx->cur = ctx->frm0;
-        ctx->prev = ctx->frm1;
-    }
+    FFSWAP(uint8_t *, ctx->cur, ctx->prev);
 
     *got_frame = 1;
 
