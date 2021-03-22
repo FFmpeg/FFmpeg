@@ -1069,6 +1069,13 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
         (err = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
         return err;
 
+    /* set chroma shifts */
+    err = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                           &s->chroma_x_shift,
+                                           &s->chroma_y_shift);
+    if (err < 0)
+        return err;
+
     if ((err = init_context_frame(s)))
         return err;
 
