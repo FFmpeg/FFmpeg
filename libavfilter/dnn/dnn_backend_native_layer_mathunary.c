@@ -146,6 +146,10 @@ int ff_dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_o
         for (int i = 0; i < dims_count; ++i)
             dst[i] = round(src[i]);
         return 0;
+    case DMUO_EXP:
+        for (int i = 0; i < dims_count; ++i)
+            dst[i] = exp(src[i]);
+        return 0;
     default:
         av_log(ctx, AV_LOG_ERROR, "Unmatch math unary operator\n");
         return DNN_ERROR;

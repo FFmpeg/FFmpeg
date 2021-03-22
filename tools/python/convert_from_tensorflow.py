@@ -78,7 +78,8 @@ class TFConverter:
         self.mathbin2code = {'Sub':0, 'Add':1, 'Mul':2, 'RealDiv':3, 'Minimum':4, 'FloorMod':5}
         self.mathun2code  = {'Abs':0, 'Sin':1, 'Cos':2, 'Tan':3, 'Asin':4,
                 'Acos':5, 'Atan':6, 'Sinh':7, 'Cosh':8, 'Tanh':9, 'Asinh':10,
-                'Acosh':11, 'Atanh':12, 'Ceil':13, 'Floor':14, 'Round':15}
+                'Acosh':11, 'Atanh':12, 'Ceil':13, 'Floor':14, 'Round':15,
+                'Exp':16}
         self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
         self.name_operand_dict = {}
 

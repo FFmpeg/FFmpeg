@@ -46,6 +46,7 @@ typedef enum {
     DMUO_CEIL = 13,
     DMUO_FLOOR = 14,
     DMUO_ROUND = 15,
+    DMUO_EXP = 16,
     DMUO_COUNT
 } DNNMathUnaryOperation;
 
