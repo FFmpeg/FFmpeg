@@ -44,12 +44,12 @@
 typedef struct KmvcContext {
     AVCodecContext *avctx;
 
+    GetByteContext g;
+    uint8_t *cur, *prev;
     int setpal;
     int palsize;
     uint32_t pal[MAX_PALSIZE];
-    uint8_t *cur, *prev;
     uint8_t frm0[320 * 200], frm1[320 * 200];
-    GetByteContext g;
 } KmvcContext;
 
 typedef struct BitBuf {
