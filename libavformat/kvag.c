@@ -110,12 +110,22 @@ static int kvag_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int kvag_seek(AVFormatContext *s, int stream_index,
+                     int64_t pts, int flags)
+{
+    if (pts != 0)
+        return AVERROR(EINVAL);
+
+    return avio_seek(s->pb, KVAG_HEADER_SIZE, SEEK_SET);
+}
+
 AVInputFormat ff_kvag_demuxer = {
     .name           = "kvag",
     .long_name      = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
     .read_probe     = kvag_probe,
     .read_header    = kvag_read_header,
-    .read_packet    = kvag_read_packet
+    .read_packet    = kvag_read_packet,
+    .read_seek      = kvag_seek,
 };
 #endif
 
