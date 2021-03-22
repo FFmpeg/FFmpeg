@@ -1308,7 +1308,7 @@ int av_write_trailer(AVFormatContext *s)
        ret = s->pb ? s->pb->error : 0;
     for (i = 0; i < s->nb_streams; i++) {
         av_freep(&s->streams[i]->priv_data);
-        av_freep(&s->streams[i]->internal->index_entries);
+        av_freep(&s->streams[i]->index_entries);
     }
     if (s->oformat->priv_class)
         av_opt_free(s->priv_data);

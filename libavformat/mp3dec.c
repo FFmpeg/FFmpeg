@@ -431,8 +431,8 @@ static int mp3_read_header(AVFormatContext *s)
     }
 
     // the seek index is relative to the end of the xing vbr headers
-    for (i = 0; i < st->internal->nb_index_entries; i++)
-        st->internal->index_entries[i].pos += avio_tell(s->pb);
+    for (i = 0; i < st->nb_index_entries; i++)
+        st->index_entries[i].pos += avio_tell(s->pb);
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -567,7 +567,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         if (ret < 0)
             return ret;
 
-        ie = &st->internal->index_entries[ret];
+        ie = &st->index_entries[ret];
     } else if (fast_seek && st->duration > 0 && filesize > 0) {
         if (!mp3->is_cbr)
             av_log(s, AV_LOG_WARNING, "Using scaling to seek VBR MP3; may be imprecise.\n");

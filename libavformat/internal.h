@@ -236,11 +236,6 @@ struct AVStreamInternal {
 
     } *info;
 
-    AVIndexEntry *index_entries; /**< Only used if the format does not
-                                    support seeking natively. */
-    int nb_index_entries;
-    unsigned int index_entries_allocated_size;
-
     int64_t interleaver_chunk_size;
     int64_t interleaver_chunk_duration;
 

@@ -288,10 +288,10 @@ static int cine_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     AVIOContext *pb = avctx->pb;
     int n, size, ret;
 
-    if (cine->pts >= st->internal->nb_index_entries)
+    if (cine->pts >= st->nb_index_entries)
         return AVERROR_EOF;
 
-    avio_seek(pb, st->internal->index_entries[cine->pts].pos, SEEK_SET);
+    avio_seek(pb, st->index_entries[cine->pts].pos, SEEK_SET);
     n = avio_rl32(pb);
     if (n < 8)
         return AVERROR_INVALIDDATA;

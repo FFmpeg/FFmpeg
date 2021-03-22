@@ -195,15 +195,15 @@ static int ifv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (ifv->next_video_index < ifv->total_vframes) {
         st = s->streams[ifv->video_stream_index];
-        if (ifv->next_video_index < st->internal->nb_index_entries)
-            e_next = ev = &st->internal->index_entries[ifv->next_video_index];
+        if (ifv->next_video_index < st->nb_index_entries)
+            e_next = ev = &st->index_entries[ifv->next_video_index];
     }
 
     if (ifv->is_audio_present &&
         ifv->next_audio_index < ifv->total_aframes) {
         st = s->streams[ifv->audio_stream_index];
-        if (ifv->next_audio_index < st->internal->nb_index_entries) {
-            ea = &st->internal->index_entries[ifv->next_audio_index];
+        if (ifv->next_audio_index < st->nb_index_entries) {
+            ea = &st->index_entries[ifv->next_audio_index];
             if (!ev || ea->timestamp < ev->timestamp)
                 e_next = ea;
         }

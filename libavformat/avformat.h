@@ -1088,10 +1088,11 @@ typedef struct AVStream {
     void        *unused7;
     AVProbeData  unused6;
     int64_t      unused5[16+1];
-    void         *unused2;
-    int          unused3;
-    unsigned int unused4;
 #endif
+    AVIndexEntry *index_entries; /**< Only used if the format does not
+                                    support seeking natively. */
+    int nb_index_entries;
+    unsigned int index_entries_allocated_size;
 
     /**
      * Stream Identifier

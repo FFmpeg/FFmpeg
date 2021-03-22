@@ -324,7 +324,7 @@ static int film_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     if (ret < 0)
         return ret;
 
-    pos = avio_seek(s->pb, st->internal->index_entries[ret].pos, SEEK_SET);
+    pos = avio_seek(s->pb, st->index_entries[ret].pos, SEEK_SET);
     if (pos < 0)
         return pos;
 

@@ -1690,11 +1690,11 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
             asf->index_read = -1;
     }
 
-    if (asf->index_read > 0 && st->internal->index_entries) {
+    if (asf->index_read > 0 && st->index_entries) {
         int index = av_index_search_timestamp(st, pts, flags);
         if (index >= 0) {
             /* find the position */
-            uint64_t pos = st->internal->index_entries[index].pos;
+            uint64_t pos = st->index_entries[index].pos;
 
             /* do the seek */
             av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
