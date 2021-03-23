@@ -313,6 +313,25 @@ static int pp_bnk_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int pp_bnk_seek(AVFormatContext *s, int stream_index,
+                       int64_t pts, int flags)
+{
+    PPBnkCtx *ctx = s->priv_data;
+
+    if (pts != 0)
+        return AVERROR(EINVAL);
+
+    if (ctx->is_music) {
+        av_assert0(stream_index == 0);
+        ctx->tracks[0].bytes_read = 0;
+        ctx->tracks[1].bytes_read = 0;
+    } else {
+        ctx->tracks[stream_index].bytes_read = 0;
+    }
+
+    return 0;
+}
+
 AVInputFormat ff_pp_bnk_demuxer = {
     .name           = "pp_bnk",
     .long_name      = NULL_IF_CONFIG_SMALL("Pro Pinball Series Soundbank"),
@@ -320,5 +339,6 @@ AVInputFormat ff_pp_bnk_demuxer = {
     .read_probe     = pp_bnk_probe,
     .read_header    = pp_bnk_read_header,
     .read_packet    = pp_bnk_read_packet,
-    .read_close     = pp_bnk_read_close
+    .read_close     = pp_bnk_read_close,
+    .read_seek      = pp_bnk_seek,
 };
