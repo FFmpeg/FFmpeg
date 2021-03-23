@@ -100,7 +100,7 @@ static const int8_t mtf_index_table[16] = {
 typedef struct ADPCMDecodeContext {
     ADPCMChannelStatus status[14];
     int vqa_version;                /**< VQA version. Used for ADPCM_IMA_WS */
-    int has_status;
+    int has_status;                 /**< Status flag. Reset to 0 after a flush. */
 } ADPCMDecodeContext;
 
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
