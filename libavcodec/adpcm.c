@@ -2116,6 +2116,13 @@ static void adpcm_flush(AVCodecContext *avctx)
             c->status[channel].step = 0;
         break;
 
+    case AV_CODEC_ID_ADPCM_ARGO:
+        for (int channel = 0; channel < avctx->channels; channel++) {
+            c->status[channel].sample1 = 0;
+            c->status[channel].sample2 = 0;
+        }
+        break;
+
     case AV_CODEC_ID_ADPCM_ZORK:
         for (int channel = 0; channel < avctx->channels; channel++) {
             c->status[channel].predictor  = 0;
