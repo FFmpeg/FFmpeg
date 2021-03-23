@@ -2123,6 +2123,7 @@ static void adpcm_flush(AVCodecContext *avctx)
         }
         break;
 
+    case AV_CODEC_ID_ADPCM_IMA_SSI:
     case AV_CODEC_ID_ADPCM_ZORK:
         for (int channel = 0; channel < avctx->channels; channel++) {
             c->status[channel].predictor  = 0;
