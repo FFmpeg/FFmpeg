@@ -1811,11 +1811,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_AICA:
-        if (!c->has_status) {
-            for (channel = 0; channel < avctx->channels; channel++)
-                c->status[channel].step = 0;
-            c->has_status = 1;
-        }
         for (channel = 0; channel < avctx->channels; channel++) {
             samples = samples_p[channel];
             for (n = nb_samples >> 1; n > 0; n--) {
@@ -2116,6 +2111,11 @@ static void adpcm_flush(AVCodecContext *avctx)
     ADPCMDecodeContext *c = avctx->priv_data;
 
     switch(avctx->codec_id) {
+    case AV_CODEC_ID_ADPCM_AICA:
+        for (int channel = 0; channel < avctx->channels; channel++)
+            c->status[channel].step = 0;
+        break;
+
     case AV_CODEC_ID_ADPCM_ZORK:
         for (int channel = 0; channel < avctx->channels; channel++) {
             c->status[channel].predictor  = 0;
