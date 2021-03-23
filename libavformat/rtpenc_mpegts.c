@@ -29,6 +29,7 @@ typedef struct MuxChain {
     AVFormatContext *rtp_ctx;
     AVPacket *pkt;
     AVDictionary* mpegts_muxer_options;
+    AVDictionary* rtp_muxer_options;
 } MuxChain;
 
 static int rtp_mpegts_write_close(AVFormatContext *s)
@@ -59,6 +60,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     int i, ret = AVERROR(ENOMEM);
     AVStream *st;
     AVDictionary *mpegts_muxer_options = NULL;
+    AVDictionary *rtp_muxer_options = NULL;
 
     if (!mpegts_format || !rtp_format)
         return AVERROR(ENOSYS);
@@ -108,7 +110,8 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     st->time_base.den   = 90000;
     st->codecpar->codec_id = AV_CODEC_ID_MPEG2TS;
     rtp_ctx->pb = s->pb;
-    if ((ret = avformat_write_header(rtp_ctx, NULL)) < 0)
+    av_dict_copy(&rtp_muxer_options, chain->rtp_muxer_options, 0);
+    if ((ret = avformat_write_header(rtp_ctx, &rtp_muxer_options)) < 0)
         goto fail;
     chain->rtp_ctx = rtp_ctx;
 
@@ -121,6 +124,7 @@ fail:
         av_dict_free(&mpegts_muxer_options);
         avformat_free_context(mpegts_ctx);
     }
+    av_dict_free(&rtp_muxer_options);
     avformat_free_context(rtp_ctx);
     rtp_mpegts_write_close(s);
     return ret;
@@ -167,6 +171,7 @@ static int rtp_mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "mpegts_muxer_options", "set list of options for the MPEG-TS muxer", OFFSET(mpegts_muxer_options), AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, E },
+    { "rtp_muxer_options",    "set list of options for the RTP muxer",     OFFSET(rtp_muxer_options),    AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, E },
     { NULL },
 };
 
