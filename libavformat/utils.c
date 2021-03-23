@@ -4706,6 +4706,15 @@ uint64_t ff_get_formatted_ntp_time(uint64_t ntp_time_us)
     return ntp_ts;
 }
 
+uint64_t ff_parse_ntp_time(uint64_t ntp_ts)
+{
+    uint64_t sec = ntp_ts >> 32;
+    uint64_t frac_part = ntp_ts & 0xFFFFFFFFULL;
+    uint64_t usec = (frac_part * 1000000) / 0xFFFFFFFFULL;
+
+    return (sec * 1000000) + usec;
+}
+
 int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags)
 {
     const char *p;

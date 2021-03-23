@@ -424,6 +424,14 @@ uint64_t ff_ntp_time(void);
 uint64_t ff_get_formatted_ntp_time(uint64_t ntp_time_us);
 
 /**
+ * Parse the NTP time in micro seconds (since NTP epoch).
+ *
+ * @param ntp_ts NTP time stamp formatted as per the RFC-5905.
+ * @return the time in micro seconds (since NTP epoch)
+ */
+uint64_t ff_parse_ntp_time(uint64_t ntp_ts);
+
+/**
  * Append the media-specific SDP fragment for the media stream c
  * to the buffer buff.
  *
