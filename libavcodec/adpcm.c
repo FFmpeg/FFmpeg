@@ -2077,13 +2077,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_ZORK:
-        if (!c->has_status) {
-            for (channel = 0; channel < avctx->channels; channel++) {
-                c->status[channel].predictor  = 0;
-                c->status[channel].step_index = 0;
-            }
-            c->has_status = 1;
-        }
         for (n = 0; n < nb_samples * avctx->channels; n++) {
             int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_zork_expand_nibble(&c->status[n % avctx->channels], v);
@@ -2121,7 +2114,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 static void adpcm_flush(AVCodecContext *avctx)
 {
     ADPCMDecodeContext *c = avctx->priv_data;
-    c->has_status = 0;
+
+    switch(avctx->codec_id) {
+    case AV_CODEC_ID_ADPCM_ZORK:
+        for (int channel = 0; channel < avctx->channels; channel++) {
+            c->status[channel].predictor  = 0;
+            c->status[channel].step_index = 0;
+        }
+        break;
+
+    default:
+        /* Other codecs may want to handle this during decoding. */
+        c->has_status = 0;
+        return;
+    }
+
+    c->has_status = 1;
 }
 
 
