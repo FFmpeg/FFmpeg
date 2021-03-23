@@ -2755,6 +2755,45 @@ int av_find_default_stream_index(AVFormatContext *s);
 int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
 
 /**
+ * Get the index entry count for the given AVStream.
+ *
+ * @param st stream
+ * @return the number of index entries in the stream
+ */
+int avformat_index_get_entries_count(const AVStream *st);
+
+/**
+ * Get the AVIndexEntry corresponding to the given index.
+ *
+ * @param st          Stream containing the requested AVIndexEntry.
+ * @param idx         The desired index.
+ * @return A pointer to the requested AVIndexEntry if it exists, NULL otherwise.
+ *
+ * @note The pointer returned by this function is only guaranteed to be valid
+ *       until any function that could alter the stream or the AVFormatContext
+ *       that contains it is called.
+ */
+const AVIndexEntry *avformat_index_get_entry(const AVStream *st, int idx);
+
+/**
+ * Get the AVIndexEntry corresponding to the given timestamp.
+ *
+ * @param st          Stream containing the requested AVIndexEntry.
+ * @param timestamp   Timestamp to retrieve the index entry for.
+ * @param flags       If AVSEEK_FLAG_BACKWARD then the returned entry will correspond
+ *                    to the timestamp which is <= the requested one, if backward
+ *                    is 0, then it will be >=
+ *                    if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise.
+ * @return A pointer to the requested AVIndexEntry if it exists, NULL otherwise.
+ *
+ * @note The pointer returned by this function is only guaranteed to be valid
+ *       until any function that could alter the stream or the AVFormatContext
+ *       that contains it is called.
+ */
+const AVIndexEntry *avformat_index_get_entry_from_timestamp(const AVStream *st,
+                                                            int64_t wanted_timestamp,
+                                                            int flags);
+/**
  * Add an index entry into a sorted list. Update the entry if the list
  * already contains it.
  *

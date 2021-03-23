@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2021-04-06 - xxxxxxxxxx - lavf 58.78.100 - avformat.h
+  Add avformat_index_get_entries_count(), avformat_index_get_entry(),
+  and avformat_index_get_entry_from_timestamp().
+
 2021-03-21 - xxxxxxxxxx - lavu 56.72.100 - frame.h
   Deprecated av_get_colorspace_name().
   Use av_color_space_name() instead.

@@ -2164,6 +2164,33 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp, int flags)
                                      wanted_timestamp, flags);
 }
 
+int avformat_index_get_entries_count(const AVStream *st)
+{
+    return st->internal->nb_index_entries;
+}
+
+const AVIndexEntry *avformat_index_get_entry(const AVStream *st, int idx)
+{
+    if (idx < 0 || idx >= st->internal->nb_index_entries)
+        return NULL;
+
+    return &st->internal->index_entries[idx];
+}
+
+const AVIndexEntry *avformat_index_get_entry_from_timestamp(const AVStream *st,
+                                                            int64_t wanted_timestamp,
+                                                            int flags)
+{
+    int idx = ff_index_search_timestamp(st->internal->index_entries,
+                                        st->internal->nb_index_entries,
+                                        wanted_timestamp, flags);
+
+    if (idx < 0)
+        return NULL;
+
+    return &st->internal->index_entries[idx];
+}
+
 static int64_t ff_read_timestamp(AVFormatContext *s, int stream_index, int64_t *ppos, int64_t pos_limit,
                                  int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ))
 {
