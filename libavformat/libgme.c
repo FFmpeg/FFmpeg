@@ -142,7 +142,7 @@ static int read_header_gme(AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
     avpriv_set_pts_info(st, 64, 1, 1000);
-    if (st->duration > 0)
+    if (duration > 0)
         st->duration = duration;
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE);
