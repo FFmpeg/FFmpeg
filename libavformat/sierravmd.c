@@ -38,10 +38,9 @@
 
 typedef struct vmd_frame {
   int stream_index;
-  int64_t frame_offset;
   unsigned int frame_size;
+  int64_t frame_offset;
   int64_t pts;
-  int keyframe;
   unsigned char frame_record[BYTES_PER_FRAME_RECORD];
 } vmd_frame;
 
