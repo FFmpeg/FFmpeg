@@ -766,18 +766,21 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     if (nb_output != 1) {
         // currently, the filter does not need multiple outputs,
         // so we just pending the support until we really need it.
+        TF_DeleteTensor(input_tensor);
         avpriv_report_missing_feature(ctx, "multiple outputs");
         return DNN_ERROR;
     }
 
     tf_outputs = av_malloc_array(nb_output, sizeof(*tf_outputs));
     if (tf_outputs == NULL) {
+        TF_DeleteTensor(input_tensor);
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for *tf_outputs\n"); \
         return DNN_ERROR;
     }
 
     output_tensors = av_mallocz_array(nb_output, sizeof(*output_tensors));
     if (!output_tensors) {
+        TF_DeleteTensor(input_tensor);
         av_freep(&tf_outputs);
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for output tensor\n"); \
         return DNN_ERROR;
@@ -786,6 +789,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     for (int i = 0; i < nb_output; ++i) {
         tf_outputs[i].oper = TF_GraphOperationByName(tf_model->graph, output_names[i]);
         if (!tf_outputs[i].oper) {
+            TF_DeleteTensor(input_tensor);
             av_freep(&tf_outputs);
             av_freep(&output_tensors);
             av_log(ctx, AV_LOG_ERROR, "Could not find output \"%s\" in model\n", output_names[i]); \
@@ -799,6 +803,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
                   tf_outputs, output_tensors, nb_output,
                   NULL, 0, NULL, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK) {
+        TF_DeleteTensor(input_tensor);
         av_freep(&tf_outputs);
         av_freep(&output_tensors);
         av_log(ctx, AV_LOG_ERROR, "Failed to run session when executing model\n");
