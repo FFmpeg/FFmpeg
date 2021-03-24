@@ -229,8 +229,11 @@ static int aa_read_header(AVFormatContext *s)
         chapter_pos -= start + CHAPTER_HEADER_SIZE * chapter_idx;
         avio_skip(pb, 4 + chapter_size);
         if (!avpriv_new_chapter(s, chapter_idx, st->time_base,
-            chapter_pos * TIMEPREC, (chapter_pos + chapter_size) * TIMEPREC, NULL))
-                return AVERROR(ENOMEM);
+                                chapter_pos * TIMEPREC,
+                                (chapter_pos + chapter_size) * TIMEPREC, NULL)) {
+            av_freep(&c->tea_ctx);
+            return AVERROR(ENOMEM);
+        }
     }
 
     st->duration = (largest_size - CHAPTER_HEADER_SIZE * s->nb_chapters) * TIMEPREC;
