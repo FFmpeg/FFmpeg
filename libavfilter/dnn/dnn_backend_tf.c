@@ -282,6 +282,9 @@ static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename
         TF_SetConfig(sess_opts, sess_config, sess_config_length,tf_model->status);
         av_freep(&sess_config);
         if (TF_GetCode(tf_model->status) != TF_OK) {
+            TF_DeleteGraph(tf_model->graph);
+            TF_DeleteStatus(tf_model->status);
+            TF_DeleteSessionOptions(sess_opts);
             av_log(ctx, AV_LOG_ERROR, "Failed to set config for sess options with %s\n",
                                       tf_model->ctx.options.sess_config);
             return DNN_ERROR;
@@ -292,6 +295,8 @@ static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename
     TF_DeleteSessionOptions(sess_opts);
     if (TF_GetCode(tf_model->status) != TF_OK)
     {
+        TF_DeleteGraph(tf_model->graph);
+        TF_DeleteStatus(tf_model->status);
         av_log(ctx, AV_LOG_ERROR, "Failed to create new session with model graph\n");
         return DNN_ERROR;
     }
@@ -304,6 +309,9 @@ static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename
                       &init_op, 1, NULL, tf_model->status);
         if (TF_GetCode(tf_model->status) != TF_OK)
         {
+            TF_DeleteSession(tf_model->session, tf_model->status);
+            TF_DeleteGraph(tf_model->graph);
+            TF_DeleteStatus(tf_model->status);
             av_log(ctx, AV_LOG_ERROR, "Failed to run session when initializing\n");
             return DNN_ERROR;
         }
