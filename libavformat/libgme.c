@@ -166,7 +166,6 @@ static int read_packet_gme(AVFormatContext *s, AVPacket *pkt)
 
     if (gme_play(gme->music_emu, n_samples, (short *)pkt->data))
         return AVERROR_EXTERNAL;
-    pkt->size = AUDIO_PKT_SIZE;
 
     return 0;
 }
