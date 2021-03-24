@@ -186,10 +186,6 @@ static int vmd_read_header(AVFormatContext *s)
     vmd->frame_table = NULL;
     sound_buffers = AV_RL16(&vmd->vmd_header[808]);
     raw_frame_table_size = vmd->frame_count * 6;
-    if(vmd->frame_count * vmd->frames_per_block >= UINT_MAX / sizeof(vmd_frame) - sound_buffers){
-        av_log(s, AV_LOG_ERROR, "vmd->frame_count * vmd->frames_per_block too large\n");
-        return -1;
-    }
     raw_frame_table = av_malloc(raw_frame_table_size);
     vmd->frame_table = av_malloc_array(vmd->frame_count * vmd->frames_per_block + sound_buffers, sizeof(vmd_frame));
     if (!raw_frame_table || !vmd->frame_table) {
