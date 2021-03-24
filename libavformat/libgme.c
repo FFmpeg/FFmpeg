@@ -31,7 +31,6 @@
 typedef struct GMEContext {
     const AVClass *class;
     Music_Emu *music_emu;
-    gme_info_t *info;   ///< selected track
 
     /* options */
     int track_index;
@@ -55,12 +54,16 @@ static void add_meta(AVFormatContext *s, const char *name, const char *value)
         av_dict_set(&s->metadata, name, value, 0);
 }
 
-static int load_metadata(AVFormatContext *s)
+static int load_metadata(AVFormatContext *s, int64_t *duration)
 {
     GMEContext *gme = s->priv_data;
-    gme_info_t *info = gme->info;
+    gme_info_t *info  = NULL;
     char buf[30];
 
+    if (gme_track_info(gme->music_emu, &info, gme->track_index))
+        return AVERROR_STREAM_NOT_FOUND;
+
+    *duration = info->length;
     add_meta(s, "system",       info->system);
     add_meta(s, "game",         info->game);
     add_meta(s, "song",         info->song);
@@ -71,11 +74,19 @@ static int load_metadata(AVFormatContext *s)
 
     snprintf(buf, sizeof(buf), "%d", (int)gme_track_count(gme->music_emu));
     add_meta(s, "tracks", buf);
+    gme_free_info(info);
 
     return 0;
 }
 
 #define AUDIO_PKT_SIZE 512
+
+static int read_close_gme(AVFormatContext *s)
+{
+    GMEContext *gme = s->priv_data;
+    gme_delete(gme->music_emu);
+    return 0;
+}
 
 static int read_header_gme(AVFormatContext *s)
 {
@@ -83,8 +94,10 @@ static int read_header_gme(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     GMEContext *gme = s->priv_data;
     int64_t sz = avio_size(pb);
+    int64_t duration;
     char *buf;
     char dummy;
+    int ret;
 
     if (sz < 0) {
         av_log(s, AV_LOG_WARNING, "Could not determine file size\n");
@@ -103,6 +116,7 @@ static int read_header_gme(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "File size is larger than max_size option "
                "value %"PRIi64", consider increasing the max_size option\n",
                gme->max_size);
+        av_freep(&buf);
         return AVERROR_BUFFER_TOO_SMALL;
     }
 
@@ -112,20 +126,24 @@ static int read_header_gme(AVFormatContext *s)
     }
     av_freep(&buf);
 
-    if (gme_track_info(gme->music_emu, &gme->info, gme->track_index))
-        return AVERROR_STREAM_NOT_FOUND;
-
-    if (gme_start_track(gme->music_emu, gme->track_index))
+    ret = load_metadata(s, &duration);
+    if (ret < 0) {
+        read_close_gme(s);
+        return ret;
+    }
+    if (gme_start_track(gme->music_emu, gme->track_index)) {
+        read_close_gme(s);
         return AVERROR_UNKNOWN;
-
-    load_metadata(s);
+    }
 
     st = avformat_new_stream(s, NULL);
-    if (!st)
+    if (!st) {
+        read_close_gme(s);
         return AVERROR(ENOMEM);
+    }
     avpriv_set_pts_info(st, 64, 1, 1000);
     if (st->duration > 0)
-        st->duration = gme->info->length;
+        st->duration = duration;
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE);
     st->codecpar->channels    = 2;
@@ -150,14 +168,6 @@ static int read_packet_gme(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EXTERNAL;
     pkt->size = AUDIO_PKT_SIZE;
 
-    return 0;
-}
-
-static int read_close_gme(AVFormatContext *s)
-{
-    GMEContext *gme = s->priv_data;
-    gme_free_info(gme->info);
-    gme_delete(gme->music_emu);
     return 0;
 }
 
