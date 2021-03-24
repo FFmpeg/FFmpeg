@@ -14795,7 +14795,7 @@ Mix several video input streams into one video stream.
 A description of the accepted options follows.
 
 @table @option
-@item nb_inputs
+@item inputs
 The number of inputs. If unspecified, it defaults to 2.
 
 @item weights
