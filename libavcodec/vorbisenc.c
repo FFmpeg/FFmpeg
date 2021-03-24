@@ -1135,11 +1135,6 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
-    if (pb.size_in_bits - put_bits_count(&pb) < 1 + ilog(venc->nmodes - 1)) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
-    }
-
     put_bits(&pb, 1, 0); // magic bit
 
     put_bits(&pb, ilog(venc->nmodes - 1), 1); // Mode for current frame
