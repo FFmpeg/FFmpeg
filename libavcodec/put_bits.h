@@ -52,7 +52,9 @@ typedef struct PutBitContext {
     BitBuf bit_buf;
     int bit_left;
     uint8_t *buf, *buf_ptr, *buf_end;
+#if LIBAVCODEC_VERSION_MAJOR < 59
     int size_in_bits;
+#endif
 } PutBitContext;
 
 /**
@@ -69,7 +71,6 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
         buffer      = NULL;
     }
 
-    s->size_in_bits = 8 * buffer_size;
     s->buf          = buffer;
     s->buf_end      = s->buf + buffer_size;
     s->buf_ptr      = s->buf;
@@ -120,7 +121,6 @@ static inline void rebase_put_bits(PutBitContext *s, uint8_t *buffer,
     s->buf_end = buffer + buffer_size;
     s->buf_ptr = buffer + (s->buf_ptr - s->buf);
     s->buf     = buffer;
-    s->size_in_bits = 8 * buffer_size;
 }
 
 /**
@@ -414,7 +414,6 @@ static inline void set_put_bits_buffer_size(PutBitContext *s, int size)
 {
     av_assert0(size <= INT_MAX/8 - BUF_BITS);
     s->buf_end = s->buf + size;
-    s->size_in_bits = 8*size;
 }
 
 /**
