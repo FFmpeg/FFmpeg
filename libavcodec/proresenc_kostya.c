@@ -464,23 +464,17 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
     }
 }
 
-static int encode_slice_plane(ProresContext *ctx, PutBitContext *pb,
+static void encode_slice_plane(ProresContext *ctx, PutBitContext *pb,
                               const uint16_t *src, ptrdiff_t linesize,
                               int mbs_per_slice, int16_t *blocks,
                               int blocks_per_mb, int plane_size_factor,
                               const int16_t *qmat)
 {
-    int blocks_per_slice, saved_pos;
-
-    saved_pos = put_bits_count(pb);
-    blocks_per_slice = mbs_per_slice * blocks_per_mb;
+    int blocks_per_slice = mbs_per_slice * blocks_per_mb;
 
     encode_dcs(pb, blocks, blocks_per_slice, qmat[0]);
     encode_acs(pb, blocks, blocks_per_slice, plane_size_factor,
                ctx->scantable, qmat);
-    flush_put_bits(pb);
-
-    return (put_bits_count(pb) - saved_pos) >> 3;
 }
 
 static void put_alpha_diff(PutBitContext *pb, int cur, int prev, int abits)
@@ -516,14 +510,13 @@ static void put_alpha_run(PutBitContext *pb, int run)
 }
 
 // todo alpha quantisation for high quants
-static int encode_alpha_plane(ProresContext *ctx, PutBitContext *pb,
+static void encode_alpha_plane(ProresContext *ctx, PutBitContext *pb,
                               int mbs_per_slice, uint16_t *blocks,
                               int quant)
 {
     const int abits = ctx->alpha_bits;
     const int mask  = (1 << abits) - 1;
     const int num_coeffs = mbs_per_slice * 256;
-    int saved_pos = put_bits_count(pb);
     int prev = mask, cur;
     int idx = 0;
     int run = 0;
@@ -544,8 +537,6 @@ static int encode_alpha_plane(ProresContext *ctx, PutBitContext *pb,
     } while (idx < num_coeffs);
     if (run)
         put_alpha_run(pb, run);
-    flush_put_bits(pb);
-    return (put_bits_count(pb) - saved_pos) >> 3;
 }
 
 static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
@@ -611,24 +602,23 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
                            ctx->blocks[0], ctx->emu_buf,
                            mbs_per_slice, num_cblocks, is_chroma);
             if (!is_chroma) {/* luma quant */
-                sizes[i] = encode_slice_plane(ctx, pb, src, linesize,
-                                              mbs_per_slice, ctx->blocks[0],
-                                              num_cblocks, plane_factor,
-                                              qmat);
+                encode_slice_plane(ctx, pb, src, linesize,
+                                   mbs_per_slice, ctx->blocks[0],
+                                   num_cblocks, plane_factor, qmat);
             } else { /* chroma plane */
-                sizes[i] = encode_slice_plane(ctx, pb, src, linesize,
-                                              mbs_per_slice, ctx->blocks[0],
-                                              num_cblocks, plane_factor,
-                                              qmat_chroma);
+                encode_slice_plane(ctx, pb, src, linesize,
+                                   mbs_per_slice, ctx->blocks[0],
+                                   num_cblocks, plane_factor, qmat_chroma);
             }
         } else {
             get_alpha_data(ctx, src, linesize, xp, yp,
                            pwidth, avctx->height / ctx->pictures_per_frame,
                            ctx->blocks[0], mbs_per_slice, ctx->alpha_bits);
-            sizes[i] = encode_alpha_plane(ctx, pb, mbs_per_slice,
-                                          ctx->blocks[0], quant);
+            encode_alpha_plane(ctx, pb, mbs_per_slice, ctx->blocks[0], quant);
         }
-        total_size += sizes[i];
+        flush_put_bits(pb);
+        sizes[i]   = put_bytes_output(pb) - total_size;
+        total_size = put_bytes_output(pb);
         if (put_bits_left(pb) < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "Underestimated required buffer size.\n");
