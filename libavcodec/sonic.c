@@ -832,8 +832,6 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return ret;
     }
 
-//    av_log(avctx, AV_LOG_DEBUG, "used bytes: %d\n", (put_bits_count(&pb)+7)/8);
-
     avpkt->size = ff_rac_terminate(&c, 0);
     *got_packet_ptr = 1;
     return 0;
