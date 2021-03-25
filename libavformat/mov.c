@@ -7947,6 +7947,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                    sc->ffindex, sample->pos);
             if (should_retry(sc->pb, ret64)) {
                 mov_current_sample_dec(sc);
+            } else if (ret64 < 0) {
+                return (int)ret64;
             }
             return AVERROR_INVALIDDATA;
         }
