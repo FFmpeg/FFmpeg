@@ -705,7 +705,8 @@ static void print_stats(AVFilterContext *ctx)
         if (fabs(p->sigma_x) > fabs(max_sigma_x))
             max_sigma_x = p->sigma_x;
 
-        av_log(ctx, AV_LOG_INFO, "Channel: %d\n", c + 1);
+        if (s->measure_perchannel != MEASURE_NONE)
+            av_log(ctx, AV_LOG_INFO, "Channel: %d\n", c + 1);
         if (s->measure_perchannel & MEASURE_DC_OFFSET)
             av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", p->sigma_x / p->nb_samples);
         if (s->measure_perchannel & MEASURE_MIN_LEVEL)
@@ -757,7 +758,8 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Number of denormals: %"PRId64"\n", p->nb_denormals);
     }
 
-    av_log(ctx, AV_LOG_INFO, "Overall\n");
+    if (s->measure_overall != MEASURE_NONE)
+        av_log(ctx, AV_LOG_INFO, "Overall\n");
     if (s->measure_overall & MEASURE_DC_OFFSET)
         av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", max_sigma_x / (nb_samples / s->nb_channels));
     if (s->measure_overall & MEASURE_MIN_LEVEL)
