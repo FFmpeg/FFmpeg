@@ -398,13 +398,11 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
     if (count)
         put_bits(&pb, 32 - count, 0);
 
-    /* Get the amount of bits written */
-    count = put_bits_count(&pb);
-
     /* Flush the rest with zeroes */
     flush_put_bits(&pb);
 
-    return count;
+    /* Return the amount of bytes written */
+    return put_bytes_output(&pb);
 }
 
 static int encode_plane(AVCodecContext *avctx, uint8_t *src,
@@ -512,11 +510,11 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
 
         /*
          * Write the huffman codes to a buffer,
-         * get the offset in bits and convert to bytes.
+         * get the offset in bytes.
          */
         offset += write_huff_codes(dst + sstart * width, c->slice_bits,
                                    width * height + 4, width,
-                                   send - sstart, he) >> 3;
+                                   send - sstart, he);
 
         slice_len = offset - slice_len;
 
