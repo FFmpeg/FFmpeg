@@ -623,14 +623,19 @@ void ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
 }
 
 static int rtp_set_prft(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp) {
+    int64_t rtcp_time, delta_timestamp, delta_time;
+
     AVProducerReferenceTime *prft =
         (AVProducerReferenceTime *) av_packet_new_side_data(
             pkt, AV_PKT_DATA_PRFT, sizeof(AVProducerReferenceTime));
     if (!prft)
         return AVERROR(ENOMEM);
 
-    prft->wallclock = ff_parse_ntp_time(s->last_rtcp_ntp_time) - NTP_OFFSET_US +
-                      timestamp - s->last_rtcp_timestamp;
+    rtcp_time = ff_parse_ntp_time(s->last_rtcp_ntp_time) - NTP_OFFSET_US;
+    delta_timestamp = (int64_t)timestamp - (int64_t)s->last_rtcp_timestamp;
+    delta_time = av_rescale_q(delta_timestamp, s->st->time_base, AV_TIME_BASE_Q);
+
+    prft->wallclock = rtcp_time + delta_time;
     prft->flags = 24;
     return 0;
 }
