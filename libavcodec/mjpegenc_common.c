@@ -325,7 +325,7 @@ end:
         MpegEncContext *s = avctx->priv_data;
         av_assert0(avctx->codec->priv_data_size == sizeof(MpegEncContext));
 
-        s->esc_pos = put_bits_count(pb) >> 3;
+        s->esc_pos = put_bytes_count(pb, 0);
         for(i=1; i<s->slice_context_count; i++)
             s->thread_context[i]->esc_pos = 0;
     }
@@ -343,10 +343,7 @@ void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
         put_bits(pb, pad, (1<<pad)-1);
 
     flush_put_bits(pb);
-    size = put_bits_count(pb) - start * 8;
-
-    av_assert1((size&7) == 0);
-    size >>= 3;
+    size = put_bytes_output(pb) - start;
 
     ff_count=0;
     for(i=0; i<size && i<align; i++){

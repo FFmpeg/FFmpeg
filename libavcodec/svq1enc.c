@@ -652,7 +652,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     flush_put_bits(&s->pb);
 
-    pkt->size = put_bits_count(&s->pb) / 8;
+    pkt->size = put_bytes_output(&s->pb);
     if (s->pict_type == AV_PICTURE_TYPE_I)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

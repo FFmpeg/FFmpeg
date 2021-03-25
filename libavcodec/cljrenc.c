@@ -89,7 +89,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     flush_put_bits(&pb);
 
-    pkt->size   = put_bits_count(&pb) / 8;
+    pkt->size   = put_bytes_output(&pb);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;

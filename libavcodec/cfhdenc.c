@@ -766,7 +766,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 put_bits(pb, cb[512].size, cb[512].bits);
 
                 flush_put_bits(pb);
-                bytestream2_skip_p(pby, put_bits_count(pb) >> 3);
+                bytestream2_skip_p(pby, put_bytes_output(pb));
                 padd = (4 - (bytestream2_tell_p(pby) & 3)) & 3;
                 while (padd--)
                     bytestream2_put_byte(pby, 0);

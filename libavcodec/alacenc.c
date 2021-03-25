@@ -485,7 +485,7 @@ static int write_frame(AlacEncodeContext *s, AVPacket *avpkt,
     put_bits(pb, 3, TYPE_END);
     flush_put_bits(pb);
 
-    return put_bits_count(pb) >> 3;
+    return put_bytes_output(pb);
 }
 
 static av_always_inline int get_max_frame_size(int frame_size, int ch, int bps)

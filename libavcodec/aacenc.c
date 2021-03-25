@@ -115,7 +115,7 @@ static int put_audio_specific_config(AVCodecContext *avctx)
     put_bits(&pb, 5,  AOT_SBR);
     put_bits(&pb, 1,  0);
     flush_put_bits(&pb);
-    avctx->extradata_size = put_bits_count(&pb) >> 3;
+    avctx->extradata_size = put_bytes_output(&pb);
 
     return 0;
 }
@@ -881,6 +881,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     flush_put_bits(&s->pb);
 
     s->last_frame_pb_count = put_bits_count(&s->pb);
+    avpkt->size            = put_bytes_output(&s->pb);
 
     s->lambda_sum += s->lambda;
     s->lambda_count++;
@@ -888,7 +889,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                        &avpkt->duration);
 
-    avpkt->size = put_bits_count(&s->pb) >> 3;
     *got_packet_ptr = 1;
     return 0;
 }

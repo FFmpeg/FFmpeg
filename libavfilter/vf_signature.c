@@ -561,7 +561,7 @@ static int binary_export(AVFilterContext *ctx, StreamContext *sc, const char* fi
     }
 
     flush_put_bits(&buf);
-    fwrite(buffer, 1, put_bits_count(&buf)/8, f);
+    fwrite(buffer, 1, put_bytes_output(&buf), f);
     fclose(f);
     av_freep(&buffer);
     return 0;

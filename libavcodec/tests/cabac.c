@@ -120,7 +120,7 @@ static int put_cabac_terminate(CABACTestContext *c, int bit)
         flush_put_bits(&c->pb); //FIXME FIXME FIXME XXX wrong
     }
 
-    return (put_bits_count(&c->pb)+7)>>3;
+    return put_bytes_count(&c->pb, 1);
 }
 
 /**

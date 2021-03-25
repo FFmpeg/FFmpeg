@@ -400,11 +400,9 @@ static int encode_slice(uint8_t *src, uint8_t *dst, int dst_size,
     if (count)
         put_bits(&pb, 32 - count, 0);
 
-    count = put_bits_count(&pb);
-
     flush_put_bits(&pb);
 
-    return count >> 3;
+    return put_bytes_output(&pb);
 }
 
 static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
@@ -499,7 +497,7 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                      AV_CEIL_RSHIFT(frame->height, s->vshift[i]),
                      &s->pb, s->he[i]);
     }
-    s->tables_size = (put_bits_count(&s->pb) + 7) >> 3;
+    s->tables_size = put_bytes_count(&s->pb, 1);
     bytestream2_skip_p(&pb, s->tables_size);
 
     for (i = 0; i < s->planes; i++) {

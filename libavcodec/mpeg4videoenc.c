@@ -1314,7 +1314,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
 //            ff_mpeg4_stuffing(&s->pb); ?
         flush_put_bits(&s->pb);
-        s->avctx->extradata_size = (put_bits_count(&s->pb) + 7) >> 3;
+        s->avctx->extradata_size = put_bytes_output(&s->pb);
     }
     return 0;
 }

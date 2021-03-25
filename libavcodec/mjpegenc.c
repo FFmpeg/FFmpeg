@@ -218,7 +218,7 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 
     if ((s->avctx->active_thread_type & FF_THREAD_SLICE) && mb_y < s->mb_height - 1)
         put_marker(pbc, RST0 + (mb_y&7));
-    s->esc_pos = put_bits_count(pbc) >> 3;
+    s->esc_pos = put_bytes_count(pbc, 0);
 
 fail:
     for (int i = 0; i < 3; i++)

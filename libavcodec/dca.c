@@ -82,7 +82,7 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
             put_bits(&pb, 14, tmp);
         }
         flush_put_bits(&pb);
-        return (put_bits_count(&pb) + 7) >> 3;
+        return put_bytes_output(&pb);
     default:
         return AVERROR_INVALIDDATA;
     }

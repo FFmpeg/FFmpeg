@@ -637,7 +637,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     put_bits(&pb,  1, 1); // framing
 
     flush_put_bits(&pb);
-    hlens[0] = put_bits_count(&pb) >> 3;
+    hlens[0] = put_bytes_output(&pb);
     buffer_len -= hlens[0];
     p += hlens[0];
 
@@ -651,7 +651,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     put_bits(&pb,  1, 1); // framing
 
     flush_put_bits(&pb);
-    hlens[1] = put_bits_count(&pb) >> 3;
+    hlens[1] = put_bytes_output(&pb);
     buffer_len -= hlens[1];
     p += hlens[1];
 
@@ -725,7 +725,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     put_bits(&pb, 1, 1); // framing
 
     flush_put_bits(&pb);
-    hlens[2] = put_bits_count(&pb) >> 3;
+    hlens[2] = put_bytes_output(&pb);
 
     len = hlens[0] + hlens[1] + hlens[2];
     p = *out = av_mallocz(64 + len + len/255);
@@ -1180,7 +1180,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     flush_put_bits(&pb);
-    avpkt->size = put_bits_count(&pb) >> 3;
+    avpkt->size = put_bytes_output(&pb);
 
     ff_af_queue_remove(&venc->afq, frame_size, &avpkt->pts, &avpkt->duration);
 

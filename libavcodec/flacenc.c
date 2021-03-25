@@ -1234,7 +1234,7 @@ static void write_frame_header(FlacEncodeContext *s)
 
     flush_put_bits(&s->pb);
     crc = av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, s->pb.buf,
-                 put_bits_count(&s->pb) >> 3);
+                 put_bytes_output(&s->pb));
     put_bits(&s->pb, 8, crc);
 }
 
@@ -1304,7 +1304,7 @@ static void write_frame_footer(FlacEncodeContext *s)
     int crc;
     flush_put_bits(&s->pb);
     crc = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, s->pb.buf,
-                            put_bits_count(&s->pb)>>3));
+                            put_bytes_output(&s->pb)));
     put_bits(&s->pb, 16, crc);
     flush_put_bits(&s->pb);
 }
@@ -1316,7 +1316,7 @@ static int write_frame(FlacEncodeContext *s, AVPacket *avpkt)
     write_frame_header(s);
     write_subframes(s);
     write_frame_footer(s);
-    return put_bits_count(&s->pb) >> 3;
+    return put_bytes_output(&s->pb);
 }
 
 

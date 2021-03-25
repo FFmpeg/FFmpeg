@@ -1239,7 +1239,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             bytes = ff_rac_terminate(&fs->c, 1);
         } else {
             flush_put_bits(&fs->pb); // FIXME: nicer padding
-            bytes = fs->ac_byte_count + (put_bits_count(&fs->pb) + 7) / 8;
+            bytes = fs->ac_byte_count + put_bytes_output(&fs->pb);
         }
         if (i > 0 || f->version > 2) {
             av_assert0(bytes < pkt->size / f->slice_count);

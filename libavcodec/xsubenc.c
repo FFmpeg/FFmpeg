@@ -197,7 +197,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                         h->rects[0]->linesize[0] * 2,
                         h->rects[0]->w, (h->rects[0]->h + 1) >> 1))
         return AVERROR_BUFFER_TOO_SMALL;
-    bytestream_put_le16(&rlelenptr, put_bits_count(&pb) >> 3); // Length of first field
+    bytestream_put_le16(&rlelenptr, put_bytes_count(&pb, 0)); // Length of first field
 
     if (xsub_encode_rle(&pb, h->rects[0]->data[0] + h->rects[0]->linesize[0],
                         h->rects[0]->linesize[0] * 2,
@@ -211,7 +211,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     flush_put_bits(&pb);
 
-    return hdr - buf + put_bits_count(&pb)/8;
+    return hdr - buf + put_bytes_output(&pb);
 }
 
 static av_cold int xsub_encoder_init(AVCodecContext *avctx)

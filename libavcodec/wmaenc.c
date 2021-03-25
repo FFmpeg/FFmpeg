@@ -408,7 +408,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
         return AVERROR(EINVAL);
     }
     av_assert0((put_bits_count(&s->pb) & 7) == 0);
-    i= avctx->block_align - (put_bits_count(&s->pb)+7)/8;
+    i = avctx->block_align - put_bytes_count(&s->pb, 0);
     av_assert0(i>=0);
     while(i--)
         put_bits(&s->pb, 8, 'N');

@@ -225,7 +225,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     flush_put_bits(&bs);
 
-    len = put_bits_count(&bs) >> 3;
+    len = put_bytes_output(&bs);
 
     if (len > 0x1fff)
         goto too_large;

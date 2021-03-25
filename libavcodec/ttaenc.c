@@ -182,7 +182,7 @@ pkt_alloc:
     }
 
     flush_put_bits(&pb);
-    out_bytes = put_bits_count(&pb) >> 3;
+    out_bytes = put_bytes_output(&pb);
     put_bits32(&pb, av_crc(s->crc_table, UINT32_MAX, avpkt->data, out_bytes) ^ UINT32_MAX);
     flush_put_bits(&pb);
 

@@ -346,7 +346,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
 
     flush_put_bits(&pbc);
 
-    ret = ff_cbs_alloc_unit_data(unit, put_bits_count(&pbc) / 8);
+    ret = ff_cbs_alloc_unit_data(unit, put_bytes_output(&pbc));
     if (ret < 0)
         return ret;
 

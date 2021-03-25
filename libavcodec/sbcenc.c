@@ -188,7 +188,7 @@ static size_t sbc_pack_frame(AVPacket *avpkt, struct sbc_frame *frame,
 
     flush_put_bits(&pb);
 
-    return (put_bits_count(&pb) + 7) / 8;
+    return put_bytes_output(&pb);
 }
 
 static int sbc_encode_init(AVCodecContext *avctx)

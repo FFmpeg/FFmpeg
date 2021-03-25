@@ -2889,12 +2889,12 @@ static void update_mb_info(MpegEncContext *s, int startcode)
 {
     if (!s->mb_info)
         return;
-    if (put_bits_count(&s->pb) - s->prev_mb_info*8 >= s->mb_info*8) {
+    if (put_bytes_count(&s->pb, 0) - s->prev_mb_info >= s->mb_info) {
         s->mb_info_size += 12;
         s->prev_mb_info = s->last_mb_info;
     }
     if (startcode) {
-        s->prev_mb_info = put_bits_count(&s->pb)/8;
+        s->prev_mb_info = put_bytes_count(&s->pb, 0);
         /* This might have incremented mb_info_size above, and we return without
          * actually writing any info into that slot yet. But in that case,
          * this will be called again at the start of the after writing the
@@ -2902,7 +2902,7 @@ static void update_mb_info(MpegEncContext *s, int startcode)
         return;
     }
 
-    s->last_mb_info = put_bits_count(&s->pb)/8;
+    s->last_mb_info = put_bytes_count(&s->pb, 0);
     if (!s->mb_info_size)
         s->mb_info_size += 12;
     write_mb_info(s);
@@ -3057,7 +3057,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
             if(s->rtp_mode){
                 int current_packet_size, is_gob_start;
 
-                current_packet_size= ((put_bits_count(&s->pb)+7)>>3) - (s->ptr_lastgob - s->pb.buf);
+                current_packet_size = put_bytes_count(&s->pb, 1)
+                                      - (s->ptr_lastgob - s->pb.buf);
 
                 is_gob_start = s->rtp_payload_size &&
                                current_packet_size >= s->rtp_payload_size &&
@@ -3094,7 +3095,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     current_packet_size= put_bits_ptr(&s->pb) - s->ptr_lastgob;
 
                     if (s->error_rate && s->resync_mb_x + s->resync_mb_y > 0) {
-                        int r= put_bits_count(&s->pb)/8 + s->picture_number + 16 + s->mb_x + s->mb_y;
+                        int r = put_bytes_count(&s->pb, 0) + s->picture_number + 16 + s->mb_x + s->mb_y;
                         int d = 100 / s->error_rate;
                         if(r % d == 0){
                             current_packet_size=0;

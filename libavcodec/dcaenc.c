@@ -1213,8 +1213,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     flush_put_bits(&c->pb);
 
     avpkt->pts      = frame->pts;
+    avpkt->size     = put_bytes_output(&c->pb);
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
-    avpkt->size     = put_bits_count(&c->pb) >> 3;
     *got_packet_ptr = 1;
     return 0;
 }
