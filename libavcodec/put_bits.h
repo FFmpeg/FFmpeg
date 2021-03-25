@@ -86,6 +86,26 @@ static inline int put_bits_count(PutBitContext *s)
 }
 
 /**
+ * @return the number of bytes output so far; may only be called
+ *         when the PutBitContext is freshly initialized or flushed.
+ */
+static inline int put_bytes_output(const PutBitContext *s)
+{
+    av_assert2(s->bit_left == BUF_BITS);
+    return s->buf_ptr - s->buf;
+}
+
+/**
+ * @param  round_up  When set, the number of bits written so far will be
+ *                   rounded up to the next byte.
+ * @return the number of bytes output so far.
+ */
+static inline int put_bytes_count(const PutBitContext *s, int round_up)
+{
+    return s->buf_ptr - s->buf + ((BUF_BITS - s->bit_left + (round_up ? 7 : 0)) >> 3);
+}
+
+/**
  * Rebase the bit writer onto a reallocated buffer.
  *
  * @param buffer the buffer where to put bits
@@ -109,6 +129,16 @@ static inline void rebase_put_bits(PutBitContext *s, uint8_t *buffer,
 static inline int put_bits_left(PutBitContext* s)
 {
     return (s->buf_end - s->buf_ptr) * 8 - BUF_BITS + s->bit_left;
+}
+
+/**
+ * @param  round_up  When set, the number of bits written will be
+ *                   rounded up to the next byte.
+ * @return the number of bytes left.
+ */
+static inline int put_bytes_left(const PutBitContext *s, int round_up)
+{
+    return s->buf_end - s->buf_ptr - ((BUF_BITS - s->bit_left + (round_up ? 7 : 0)) >> 3);
 }
 
 /**
