@@ -1993,8 +1993,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         stuffing_count = ff_vbv_update(s, s->frame_bits);
         s->stuffing_bits = 8*stuffing_count;
         if (stuffing_count) {
-            if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) <
-                    stuffing_count + 50) {
+            if (put_bytes_left(&s->pb, 0) < stuffing_count + 50) {
                 av_log(avctx, AV_LOG_ERROR, "stuffing too large\n");
                 return -1;
             }
@@ -2911,7 +2910,7 @@ static void update_mb_info(MpegEncContext *s, int startcode)
 
 int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t size_increase)
 {
-    if (   s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < threshold
+    if (put_bytes_left(&s->pb, 0) < threshold
         && s->slice_context_count == 1
         && s->pb.buf == s->avctx->internal->byte_buffer) {
         int lastgob_pos = s->ptr_lastgob - s->pb.buf;
@@ -2940,7 +2939,7 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
         s->ptr_lastgob   = s->pb.buf + lastgob_pos;
         s->vbv_delay_ptr = s->pb.buf + vbv_pos;
     }
-    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < threshold)
+    if (put_bytes_left(&s->pb, 0) < threshold)
         return AVERROR(EINVAL);
     return 0;
 }
@@ -3032,13 +3031,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
                                + s->mb_width*MAX_MB_BYTES;
 
             ff_mpv_reallocate_putbitbuffer(s, MAX_MB_BYTES, size_increase);
-            if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < MAX_MB_BYTES){
+            if (put_bytes_left(&s->pb, 0) < MAX_MB_BYTES){
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
             }
             if(s->data_partitioning){
-                if(   s->pb2   .buf_end - s->pb2   .buf - (put_bits_count(&s->    pb2)>>3) < MAX_MB_BYTES
-                   || s->tex_pb.buf_end - s->tex_pb.buf - (put_bits_count(&s->tex_pb )>>3) < MAX_MB_BYTES){
+                if (put_bytes_left(&s->pb2,    0) < MAX_MB_BYTES ||
+                    put_bytes_left(&s->tex_pb, 0) < MAX_MB_BYTES) {
                     av_log(s->avctx, AV_LOG_ERROR, "encoded partitioned frame too large\n");
                     return -1;
                 }

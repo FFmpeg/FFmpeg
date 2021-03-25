@@ -443,7 +443,7 @@ static int encode_422_bitstream(HYuvContext *s, int offset, int count)
     const uint8_t *u = s->temp[1] + offset / 2;
     const uint8_t *v = s->temp[2] + offset / 2;
 
-    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < 2 * 4 * count) {
+    if (put_bytes_left(&s->pb, 0) < 2 * 4 * count) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
     }
@@ -495,7 +495,7 @@ static int encode_plane_bitstream(HYuvContext *s, int width, int plane)
 {
     int i, count = width/2;
 
-    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < count * s->bps / 2) {
+    if (put_bytes_left(&s->pb, 0) < count * s->bps / 2) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
     }
@@ -657,7 +657,7 @@ static int encode_gray_bitstream(HYuvContext *s, int count)
 {
     int i;
 
-    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < 4 * count) {
+    if (put_bytes_left(&s->pb, 0) < 4 * count) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
     }
@@ -702,8 +702,7 @@ static inline int encode_bgra_bitstream(HYuvContext *s, int count, int planes)
 {
     int i;
 
-    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) <
-        4 * planes * count) {
+    if (put_bytes_left(&s->pb, 0) < 4 * planes * count) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
     }

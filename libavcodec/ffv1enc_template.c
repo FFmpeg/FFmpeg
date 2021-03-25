@@ -37,7 +37,7 @@ static av_always_inline int RENAME(encode_line)(FFV1Context *s, int w,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < w * 4) {
+        if (put_bytes_left(&s->pb, 0) < w * 4) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return AVERROR_INVALIDDATA;
         }

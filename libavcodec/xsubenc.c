@@ -63,7 +63,7 @@ static int xsub_encode_rle(PutBitContext *pb, const uint8_t *bitmap,
         x0 = 0;
         while (x0 < w) {
             // Make sure we have enough room for at least one run and padding
-            if (pb->size_in_bits - put_bits_count(pb) < 7*8)
+            if (put_bytes_left(pb, 1) < 7)
                 return AVERROR_BUFFER_TOO_SMALL;
 
             x1 = x0;

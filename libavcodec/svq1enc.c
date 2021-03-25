@@ -372,8 +372,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             int score[4]     = { 0, 0, 0, 0 }, best;
             uint8_t *temp    = s->scratchbuf;
 
-            if (s->pb.buf_end - s->pb.buf -
-                (put_bits_count(&s->pb) >> 3) < 3000) { // FIXME: check size
+            if (put_bytes_left(&s->pb, 0) < 3000) { // FIXME: check size
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
             }

@@ -86,7 +86,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         const int modified_predictor = y ? s->pred : 1;
         uint8_t *ptr = frame->data[0] + (linesize * y);
 
-        if (pb->buf_end - pb->buf - (put_bits_count(pb) >> 3) < width * 4 * 4) {
+        if (put_bytes_left(pb, 0) < width * 4 * 4) {
             av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return -1;
         }
@@ -211,7 +211,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     for (mb_y = 0; mb_y < mb_height; mb_y++) {
-        if (pb->buf_end - pb->buf - (put_bits_count(pb) >> 3) <
+        if (put_bytes_left(pb, 0) <
             mb_width * 4 * 3 * s->hsample[0] * s->vsample[0]) {
             av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return -1;
