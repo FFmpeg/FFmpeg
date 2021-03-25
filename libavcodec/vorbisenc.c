@@ -155,7 +155,7 @@ static inline int put_codeword(PutBitContext *pb, vorbis_enc_codebook *cb,
     av_assert2(entry >= 0);
     av_assert2(entry < cb->nentries);
     av_assert2(cb->lens[entry]);
-    if (pb->size_in_bits - put_bits_count(pb) < cb->lens[entry])
+    if (put_bits_left(pb) < cb->lens[entry])
         return AVERROR(EINVAL);
     put_bits(pb, cb->lens[entry], cb->codewords[entry]);
     return 0;
@@ -798,7 +798,7 @@ static int floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
     int coded[MAX_FLOOR_VALUES]; // first 2 values are unused
     int i, counter;
 
-    if (pb->size_in_bits - put_bits_count(pb) < 1 + 2 * ilog(range - 1))
+    if (put_bits_left(pb) < 1 + 2 * ilog(range - 1))
         return AVERROR(EINVAL);
     put_bits(pb, 1, 1); // non zero
     put_bits(pb, ilog(range - 1), posts[0]);
