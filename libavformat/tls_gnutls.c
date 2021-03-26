@@ -51,6 +51,7 @@ typedef struct TLSContext {
     gnutls_session_t session;
     gnutls_certificate_credentials_t cred;
     int need_shutdown;
+    int io_err;
 } TLSContext;
 
 void ff_gnutls_init(void)
@@ -73,6 +74,7 @@ void ff_gnutls_deinit(void)
 
 static int print_tls_error(URLContext *h, int ret)
 {
+    TLSContext *c = h->priv_data;
     switch (ret) {
     case GNUTLS_E_AGAIN:
         return AVERROR(EAGAIN);
@@ -87,6 +89,12 @@ static int print_tls_error(URLContext *h, int ret)
     default:
         av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
         break;
+    }
+    if (c->io_err) {
+        av_log(h, AV_LOG_ERROR, "IO error: %s\n", av_err2str(c->io_err));
+        ret = c->io_err;
+        c->io_err = 0;
+        return ret;
     }
     return AVERROR(EIO);
 }
@@ -108,32 +116,36 @@ static int tls_close(URLContext *h)
 static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
                                void *buf, size_t len)
 {
-    URLContext *h = (URLContext*) transport;
-    int ret = ffurl_read(h, buf, len);
+    TLSContext *c = (TLSContext*) transport;
+    int ret = ffurl_read(c->tls_shared.tcp, buf, len);
     if (ret >= 0)
         return ret;
     if (ret == AVERROR_EXIT)
         return 0;
-    if (ret == AVERROR(EAGAIN))
+    if (ret == AVERROR(EAGAIN)) {
         errno = EAGAIN;
-    else
+    } else {
         errno = EIO;
+        c->io_err = ret;
+    }
     return -1;
 }
 
 static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
                                const void *buf, size_t len)
 {
-    URLContext *h = (URLContext*) transport;
-    int ret = ffurl_write(h, buf, len);
+    TLSContext *c = (TLSContext*) transport;
+    int ret = ffurl_write(c->tls_shared.tcp, buf, len);
     if (ret >= 0)
         return ret;
     if (ret == AVERROR_EXIT)
         return 0;
-    if (ret == AVERROR(EAGAIN))
+    if (ret == AVERROR(EAGAIN)) {
         errno = EAGAIN;
-    else
+    } else {
         errno = EIO;
+        c->io_err = ret;
+    }
     return -1;
 }
 
@@ -179,7 +191,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_credentials_set(p->session, GNUTLS_CRD_CERTIFICATE, p->cred);
     gnutls_transport_set_pull_function(p->session, gnutls_url_pull);
     gnutls_transport_set_push_function(p->session, gnutls_url_push);
-    gnutls_transport_set_ptr(p->session, c->tcp);
+    gnutls_transport_set_ptr(p->session, p);
     gnutls_priority_set_direct(p->session, "NORMAL", NULL);
     do {
         if (ff_check_interrupt(&h->interrupt_callback)) {
