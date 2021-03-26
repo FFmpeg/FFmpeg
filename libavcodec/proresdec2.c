@@ -623,8 +623,8 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     AVFrame *pic = ctx->frame;
     int i, hdr_size, qscale, log2_chroma_blocks_per_mb;
     int luma_stride, chroma_stride;
-    int y_data_size, u_data_size, v_data_size, a_data_size;
-    uint8_t *dest_y, *dest_u, *dest_v, *dest_a;
+    int y_data_size, u_data_size, v_data_size, a_data_size, offset;
+    uint8_t *dest_y, *dest_u, *dest_v;
     LOCAL_ALIGNED_16(int16_t, qmat_luma_scaled,  [64]);
     LOCAL_ALIGNED_16(int16_t, qmat_chroma_scaled,[64]);
     int mb_x_shift;
@@ -676,16 +676,16 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         log2_chroma_blocks_per_mb = 1;
     }
 
-    dest_y = pic->data[0] + (slice->mb_y << 4) * luma_stride + (slice->mb_x << 5);
+    offset = (slice->mb_y << 4) * luma_stride + (slice->mb_x << 5);
+    dest_y = pic->data[0] + offset;
     dest_u = pic->data[1] + (slice->mb_y << 4) * chroma_stride + (slice->mb_x << mb_x_shift);
     dest_v = pic->data[2] + (slice->mb_y << 4) * chroma_stride + (slice->mb_x << mb_x_shift);
-    dest_a = pic->data[3] + (slice->mb_y << 4) * luma_stride + (slice->mb_x << 5);
 
     if (ctx->frame_type && ctx->first_field ^ ctx->frame->top_field_first) {
         dest_y += pic->linesize[0];
         dest_u += pic->linesize[1];
         dest_v += pic->linesize[2];
-        dest_a += pic->linesize[3];
+        offset += pic->linesize[3];
     }
 
     ret = decode_slice_luma(avctx, slice, (uint16_t*)dest_y, luma_stride,
@@ -722,10 +722,12 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     }
 
     /* decode alpha plane if available */
-    if (ctx->alpha_info && pic->data[3] && a_data_size)
+    if (ctx->alpha_info && pic->data[3] && a_data_size) {
+        uint8_t *dest_a = pic->data[3] + offset;
         decode_slice_alpha(ctx, (uint16_t*)dest_a, luma_stride,
                            buf + y_data_size + u_data_size + v_data_size,
                            a_data_size, slice->mb_count);
+    }
 
     slice->ret = 0;
     return 0;
