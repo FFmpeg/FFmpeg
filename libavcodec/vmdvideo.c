@@ -194,7 +194,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
     unsigned char len;
     int ofs;
 
-    int frame_x, frame_y;
+    int frame_x, frame_y, prev_linesize;
     int frame_width, frame_height;
 
     frame_x = AV_RL16(&s->buf[6]);
@@ -282,7 +282,13 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
     }
 
     dp = &frame->data[0][frame_y * frame->linesize[0] + frame_x];
-    pp = &s->prev_frame->data[0][frame_y * s->prev_frame->linesize[0] + frame_x];
+    if (s->prev_frame->data[0]) {
+        prev_linesize = s->prev_frame->linesize[0];
+        pp = s->prev_frame->data[0] + frame_y * prev_linesize + frame_x;
+    } else {
+        pp = NULL;
+        prev_linesize = 0;
+    }
     switch (meth) {
     case 1:
         for (i = 0; i < frame_height; i++) {
@@ -298,7 +304,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                     ofs += len;
                 } else {
                     /* interframe pixel copy */
-                    if (ofs + len + 1 > frame_width || !s->prev_frame->data[0])
+                    if (ofs + len + 1 > frame_width || !pp)
                         return AVERROR_INVALIDDATA;
                     memcpy(&dp[ofs], &pp[ofs], len + 1);
                     ofs += len + 1;
@@ -311,7 +317,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 return AVERROR_INVALIDDATA;
             }
             dp += frame->linesize[0];
-            pp += s->prev_frame->linesize[0];
+            pp  = FF_PTR_ADD(pp, prev_linesize);
         }
         break;
 
@@ -319,7 +325,6 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         for (i = 0; i < frame_height; i++) {
             bytestream2_get_buffer(&gb, dp, frame_width);
             dp += frame->linesize[0];
-            pp += s->prev_frame->linesize[0];
         }
         break;
 
@@ -347,7 +352,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                     }
                 } else {
                     /* interframe pixel copy */
-                    if (ofs + len + 1 > frame_width || !s->prev_frame->data[0])
+                    if (ofs + len + 1 > frame_width || !pp)
                         return AVERROR_INVALIDDATA;
                     memcpy(&dp[ofs], &pp[ofs], len + 1);
                     ofs += len + 1;
@@ -360,7 +365,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 return AVERROR_INVALIDDATA;
             }
             dp += frame->linesize[0];
-            pp += s->prev_frame->linesize[0];
+            pp  = FF_PTR_ADD(pp, prev_linesize);
         }
         break;
     }
