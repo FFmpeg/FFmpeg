@@ -369,7 +369,8 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(avctx, pkt, s->max_buf_size, 0)) < 0)
         return ret;
 
-    if (avctx->gop_size == 0 || (s->avctx->frame_number % avctx->gop_size) == 0) {
+    if (avctx->gop_size == 0 || !s->previous_frame->data[0] ||
+        (s->avctx->frame_number % avctx->gop_size) == 0) {
         /* I-Frame */
         s->key_frame = 1;
     } else {
