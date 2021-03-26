@@ -925,10 +925,10 @@ static void fill_in_adpcm_bufer(DCAEncContext *c)
              * But there are no proper value in decoder history, so likely result will be no good.
              * Bitstream has "Predictor history flag switch", but this flag disables history for all subbands
              */
-            samples[0] = c->adpcm_history[ch][band][0] << 7;
-            samples[1] = c->adpcm_history[ch][band][1] << 7;
-            samples[2] = c->adpcm_history[ch][band][2] << 7;
-            samples[3] = c->adpcm_history[ch][band][3] << 7;
+            samples[0] = c->adpcm_history[ch][band][0] * (1 << 7);
+            samples[1] = c->adpcm_history[ch][band][1] * (1 << 7);
+            samples[2] = c->adpcm_history[ch][band][2] * (1 << 7);
+            samples[3] = c->adpcm_history[ch][band][3] * (1 << 7);
         }
      }
 }
