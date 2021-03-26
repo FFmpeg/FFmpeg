@@ -46,6 +46,7 @@ typedef struct TLSContext {
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
     BIO_METHOD* url_bio_method;
 #endif
+    int io_err;
 } TLSContext;
 
 #if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -124,13 +125,25 @@ void ff_openssl_deinit(void)
 static int print_tls_error(URLContext *h, int ret)
 {
     TLSContext *c = h->priv_data;
+    int printed = 0, e, averr = AVERROR(EIO);
     if (h->flags & AVIO_FLAG_NONBLOCK) {
         int err = SSL_get_error(c->ssl, ret);
         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
             return AVERROR(EAGAIN);
     }
-    av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
-    return AVERROR(EIO);
+    while ((e = ERR_get_error()) != 0) {
+        av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(e, NULL));
+        printed = 1;
+    }
+    if (c->io_err) {
+        av_log(h, AV_LOG_ERROR, "IO error: %s\n", av_err2str(c->io_err));
+        printed = 1;
+        averr = c->io_err;
+        c->io_err = 0;
+    }
+    if (!printed)
+        av_log(h, AV_LOG_ERROR, "Unknown error\n");
+    return averr;
 }
 
 static int tls_close(URLContext *h)
@@ -178,29 +191,33 @@ static int url_bio_destroy(BIO *b)
 
 static int url_bio_bread(BIO *b, char *buf, int len)
 {
-    URLContext *h = GET_BIO_DATA(b);
-    int ret = ffurl_read(h, buf, len);
+    TLSContext *c = GET_BIO_DATA(b);
+    int ret = ffurl_read(c->tls_shared.tcp, buf, len);
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
-    if (ret == AVERROR(EAGAIN))
-        BIO_set_retry_read(b);
     if (ret == AVERROR_EXIT)
         return 0;
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_read(b);
+    else
+        c->io_err = ret;
     return -1;
 }
 
 static int url_bio_bwrite(BIO *b, const char *buf, int len)
 {
-    URLContext *h = GET_BIO_DATA(b);
-    int ret = ffurl_write(h, buf, len);
+    TLSContext *c = GET_BIO_DATA(b);
+    int ret = ffurl_write(c->tls_shared.tcp, buf, len);
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
-    if (ret == AVERROR(EAGAIN))
-        BIO_set_retry_write(b);
     if (ret == AVERROR_EXIT)
         return 0;
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_write(b);
+    else
+        c->io_err = ret;
     return -1;
 }
 
@@ -291,10 +308,10 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     BIO_meth_set_create(p->url_bio_method, url_bio_create);
     BIO_meth_set_destroy(p->url_bio_method, url_bio_destroy);
     bio = BIO_new(p->url_bio_method);
-    BIO_set_data(bio, c->tcp);
+    BIO_set_data(bio, p);
 #else
     bio = BIO_new(&url_bio_method);
-    bio->ptr = c->tcp;
+    bio->ptr = p;
 #endif
     SSL_set_bio(p->ssl, bio, bio);
     if (!c->listen && !c->numerichost)
