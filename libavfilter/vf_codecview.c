@@ -141,7 +141,7 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
         }
         buf += sx + sy * stride;
         ex  -= sx;
-        f    = ((ey - sy) << 16) / ex;
+        f    = ((ey - sy) * (1 << 16)) / ex;
         for (x = 0; x <= ex; x++) {
             y  = (x * f) >> 16;
             fr = (x * f) & 0xFFFF;
@@ -156,7 +156,7 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
         buf += sx + sy * stride;
         ey  -= sy;
         if (ey)
-            f = ((ex - sx) << 16) / ey;
+            f = ((ex - sx) * (1 << 16)) / ey;
         else
             f = 0;
         for(y= 0; y <= ey; y++){
@@ -199,8 +199,8 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
         int length = sqrt((rx * rx + ry * ry) << 8);
 
         // FIXME subpixel accuracy
-        rx = ROUNDED_DIV(rx * 3 << 4, length);
-        ry = ROUNDED_DIV(ry * 3 << 4, length);
+        rx = ROUNDED_DIV(rx * (3 << 4), length);
+        ry = ROUNDED_DIV(ry * (3 << 4), length);
 
         if (tail) {
             rx = -rx;
