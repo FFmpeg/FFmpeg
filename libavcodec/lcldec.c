@@ -173,7 +173,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int uqvq, ret;
     unsigned int mthread_inlen, mthread_outlen;
     unsigned int len = buf_size;
-    int linesize;
+    int linesize, offset;
 
     if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
         return ret;
@@ -373,8 +373,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     /* Convert colorspace */
     y_out = frame->data[0] + (height - 1) * frame->linesize[0];
-    u_out = frame->data[1] + (height - 1) * frame->linesize[1];
-    v_out = frame->data[2] + (height - 1) * frame->linesize[2];
+    offset = (height - 1) * frame->linesize[1];
+    u_out = FF_PTR_ADD(frame->data[1], offset);
+    offset = (height - 1) * frame->linesize[2];
+    v_out = FF_PTR_ADD(frame->data[2], offset);
     switch (c->imgtype) {
     case IMGTYPE_YUV111:
         for (row = 0; row < height; row++) {
