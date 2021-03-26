@@ -155,10 +155,14 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
     int sec_lowest_bulk_cost;
     int sec_lowest_bulk_cost_index;
 
-    uint8_t *this_line = p->               data[0] + line*p->               linesize[0] +
-        (width - 1)*s->pixel_size;
-    uint8_t *prev_line = s->previous_frame->data[0] + line * s->previous_frame->linesize[0] +
-        (width - 1)*s->pixel_size;
+    const uint8_t *this_line = p->data[0] + line * p->linesize[0] + width * s->pixel_size;
+    /* There might be no earlier frame if the current frame is a keyframe.
+     * So just use a pointer to the current frame to avoid a check
+     * to avoid NULL - s->pixel_size (which is undefined behaviour). */
+    const uint8_t *prev_line = s->key_frame ? this_line
+                                            : s->previous_frame->data[0]
+                                              + line * s->previous_frame->linesize[0]
+                                              + width * s->pixel_size;
 
     s->length_table[width] = 0;
     skipcount = 0;
@@ -174,6 +178,9 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
     for (i = width - 1; i >= 0; i--) {
 
         int prev_bulk_cost;
+
+        this_line -= s->pixel_size;
+        prev_line -= s->pixel_size;
 
         /* If our lowest bulk cost index is too far away, replace it
          * with the next lowest bulk cost */
@@ -259,10 +266,6 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
         /* These bulk costs increase every iteration */
         lowest_bulk_cost += s->pixel_size;
         sec_lowest_bulk_cost += s->pixel_size;
-        if (this_line >= p->data[0] + s->pixel_size)
-            this_line -= s->pixel_size;
-        if (prev_line >= s->previous_frame->data[0] + s->pixel_size)
-            prev_line -= s->pixel_size;
     }
 
     /* Good! Now we have the best sequence for this line, let's output it. */
