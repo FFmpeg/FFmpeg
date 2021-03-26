@@ -1029,7 +1029,7 @@ static int kempf_restore_buf(const uint8_t *src, int len,
     else if (npal <= 16) nb = 4;
     else                 nb = 8;
 
-    for (j = 0; j < height; j++, dst += stride, jpeg_tile += tile_stride) {
+    for (j = 0; j < height; j++, dst += stride, jpeg_tile = FF_PTR_ADD(jpeg_tile, tile_stride)) {
         if (get_bits(&gb, 8))
             continue;
         for (i = 0; i < width; i++) {
