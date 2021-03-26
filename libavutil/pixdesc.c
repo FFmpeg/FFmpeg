@@ -2659,7 +2659,7 @@ void ff_check_pixfmt_descriptors(void){
                 continue;
             av_read_image_line(tmp, (void*)data, linesize, d, 0, 0, j, 2, 0);
             av_assert0(tmp[0] == 0 && tmp[1] == 0);
-            tmp[0] = tmp[1] = (1<<c->depth) - 1;
+            tmp[0] = tmp[1] = (1ULL << c->depth) - 1;
             av_write_image_line(tmp, data, linesize, d, 0, 0, j, 2);
         }
     }
