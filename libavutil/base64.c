@@ -79,12 +79,16 @@ static const uint8_t map2[256] =
 int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
 {
     uint8_t *dst = out;
-    uint8_t *end = out + out_size;
+    uint8_t *end;
     // no sign extension
     const uint8_t *in = in_str;
     unsigned bits = 0xff;
     unsigned v;
 
+    if (!out)
+        goto validity_check;
+
+    end = out + out_size;
     while (end - dst > 3) {
         BASE64_DEC_STEP(0);
         BASE64_DEC_STEP(1);
@@ -108,6 +112,7 @@ int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
             *dst++ = v;
         in += 4;
     }
+validity_check:
     while (1) {
         BASE64_DEC_STEP(0);
         in++;
@@ -126,7 +131,7 @@ out2:
     *dst++ = v >> 4;
 out1:
 out0:
-    return bits & 1 ? AVERROR_INVALIDDATA : dst - out;
+    return bits & 1 ? AVERROR_INVALIDDATA : out ? dst - out : 0;
 }
 
 /*****************************************************************************
