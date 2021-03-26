@@ -159,7 +159,7 @@ static void init_blocks(FlashSV2Context * s, Block * blocks,
             b->enc   = encbuf;
             b->data  = databuf;
             encbuf  += b->width * b->height * 3;
-            databuf += !databuf ? 0 : b->width * b->height * 6;
+            databuf  = databuf ? databuf + b->width * b->height * 6 : NULL;
         }
     }
 }
