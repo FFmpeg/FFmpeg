@@ -158,6 +158,45 @@ static void libdav1d_init_params(AVCodecContext *c, const Dav1dSequenceHeader *s
     }
 }
 
+static av_cold int libdav1d_parse_extradata(AVCodecContext *c)
+{
+    Dav1dSequenceHeader seq;
+    size_t offset = 0;
+    int res;
+
+    if (!c->extradata || c->extradata_size <= 0)
+        return 0;
+
+    if (c->extradata[0] & 0x80) {
+        int version = c->extradata[0] & 0x7F;
+
+        if (version != 1 || c->extradata_size < 4) {
+            int explode = !!(c->err_recognition & AV_EF_EXPLODE);
+            av_log(c, explode ? AV_LOG_ERROR : AV_LOG_WARNING,
+                   "Error decoding extradata\n");
+            return explode ? AVERROR_INVALIDDATA : 0;
+        }
+
+        // Do nothing if there are no configOBUs to parse
+        if (c->extradata_size == 4)
+            return 0;
+
+        offset = 4;
+    }
+
+    res = dav1d_parse_sequence_header(&seq, c->extradata + offset,
+                                      c->extradata_size  - offset);
+    if (res < 0)
+        return 0; // Assume no seqhdr OBUs are present
+
+    libdav1d_init_params(c, &seq);
+    res = ff_set_dimensions(c, seq.max_width, seq.max_height);
+    if (res < 0)
+        return res;
+
+    return 0;
+}
+
 static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -191,6 +230,10 @@ static av_cold int libdav1d_init(AVCodecContext *c)
                       : FFMIN(ceil(threads / s.n_tile_threads), DAV1D_MAX_FRAME_THREADS);
     av_log(c, AV_LOG_DEBUG, "Using %d frame threads, %d tile threads\n",
            s.n_frame_threads, s.n_tile_threads);
+
+    res = libdav1d_parse_extradata(c);
+    if (res < 0)
+        return res;
 
     res = dav1d_open(&dav1d->c, &s);
     if (res < 0)
