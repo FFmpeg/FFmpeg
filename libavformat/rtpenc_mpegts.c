@@ -87,8 +87,11 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
 
     av_dict_copy(&mpegts_muxer_options, chain->mpegts_muxer_options, 0);
 
-    if ((ret = avformat_write_header(mpegts_ctx, &mpegts_muxer_options)) < 0)
+    ret = avformat_write_header(mpegts_ctx, &mpegts_muxer_options);
+    av_dict_free(&mpegts_muxer_options);
+    if (ret < 0)
         goto fail;
+
     for (i = 0; i < s->nb_streams; i++)
         s->streams[i]->time_base = mpegts_ctx->streams[i]->time_base;
 
@@ -111,8 +114,11 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_MPEG2TS;
     rtp_ctx->pb = s->pb;
     av_dict_copy(&rtp_muxer_options, chain->rtp_muxer_options, 0);
-    if ((ret = avformat_write_header(rtp_ctx, &rtp_muxer_options)) < 0)
+    ret = avformat_write_header(rtp_ctx, &rtp_muxer_options);
+    av_dict_free(&rtp_muxer_options);
+    if (ret < 0)
         goto fail;
+
     chain->rtp_ctx = rtp_ctx;
 
     return 0;
@@ -121,10 +127,8 @@ fail:
     if (mpegts_ctx) {
         ffio_free_dyn_buf(&mpegts_ctx->pb);
         av_dict_free(&mpegts_ctx->metadata);
-        av_dict_free(&mpegts_muxer_options);
         avformat_free_context(mpegts_ctx);
     }
-    av_dict_free(&rtp_muxer_options);
     avformat_free_context(rtp_ctx);
     rtp_mpegts_write_close(s);
     return ret;
