@@ -11122,7 +11122,7 @@ will try to use a good random seed on a best effort basis.
 
 @item pal8
 Set pal8 output pixel format. This option does not work with codebook
-length greater than 256.
+length greater than 256. Default is disabled.
 @end table
 
 @section entropy
