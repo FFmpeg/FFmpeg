@@ -474,9 +474,10 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
     return 0;
 }
 
-int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
+int ff_add_attached_pic(AVFormatContext *s, AVStream *st0, AVIOContext *pb,
                         AVBufferRef **buf, int size)
 {
+    AVStream *st = st0;
     AVPacket *pkt;
     int ret;
 
@@ -493,7 +494,7 @@ int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
     } else {
         ret = av_get_packet(pb, pkt, size);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
     st->disposition         |= AV_DISPOSITION_ATTACHED_PIC;
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -502,6 +503,10 @@ int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
     pkt->flags       |= AV_PKT_FLAG_KEY;
 
     return 0;
+fail:
+    if (!st0)
+        ff_free_stream(s, st);
+    return ret;
 }
 
 static int update_stream_avctx(AVFormatContext *s)

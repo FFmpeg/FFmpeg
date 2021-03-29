@@ -678,6 +678,9 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt);
  * @param buf  if set, it contains the data and size information to be used
  *             for the attached pic; if unset, data is read from pb.
  * @param size the size of the data to read if buf is unset.
+ *
+ * @return 0 on success, < 0 on error. On error, this function removes
+ *         the stream it has added (if any).
  */
 int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
                         AVBufferRef **buf, int size);
