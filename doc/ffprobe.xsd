@@ -199,6 +199,11 @@
       <xsd:attribute name="clean_effects"    type="xsd:int" use="required" />
       <xsd:attribute name="attached_pic"     type="xsd:int" use="required" />
       <xsd:attribute name="timed_thumbnails" type="xsd:int" use="required" />
+      <xsd:attribute name="captions"         type="xsd:int" use="required" />
+      <xsd:attribute name="descriptions"     type="xsd:int" use="required" />
+      <xsd:attribute name="metadata"         type="xsd:int" use="required" />
+      <xsd:attribute name="dependent"        type="xsd:int" use="required" />
+      <xsd:attribute name="still_image"      type="xsd:int" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="streamType">
