@@ -28,6 +28,7 @@
 static const char ttml_default_namespacing[] =
 "  xmlns=\"http://www.w3.org/ns/ttml\"\n"
 "  xmlns:ttm=\"http://www.w3.org/ns/ttml#metadata\"\n"
-"  xmlns:tts=\"http://www.w3.org/ns/ttml#styling\"\n";
+"  xmlns:tts=\"http://www.w3.org/ns/ttml#styling\"\n"
+"  xmlns:ttp=\"http://www.w3.org/ns/ttml#parameter\"\n";
 
 #endif /* AVCODEC_TTMLENC_H */

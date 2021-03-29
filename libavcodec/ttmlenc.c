@@ -100,26 +100,47 @@ static int ttml_encode_frame(AVCodecContext *avctx, uint8_t *buf,
             dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
 
             for (; dialog && num--; dialog++) {
-                int ret = ff_ass_split_override_codes(&ttml_callbacks, s,
-                                                      dialog->text);
-                int log_level = (ret != AVERROR_INVALIDDATA ||
-                                 avctx->err_recognition & AV_EF_EXPLODE) ?
-                                AV_LOG_ERROR : AV_LOG_WARNING;
-
-                if (ret < 0) {
-                    av_log(avctx, log_level,
-                           "Splitting received ASS dialog failed: %s\n",
-                           av_err2str(ret));
-
-                    if (log_level == AV_LOG_ERROR)
-                        return ret;
+                if (dialog->style) {
+                    av_bprintf(&s->buffer, "<span region=\"");
+                    av_bprint_escape(&s->buffer, dialog->style, NULL,
+                                     AV_ESCAPE_MODE_XML,
+                                     AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+                    av_bprintf(&s->buffer, "\">");
                 }
+
+                {
+                    int ret = ff_ass_split_override_codes(&ttml_callbacks, s,
+                                                          dialog->text);
+                    int log_level = (ret != AVERROR_INVALIDDATA ||
+                                     avctx->err_recognition & AV_EF_EXPLODE) ?
+                                    AV_LOG_ERROR : AV_LOG_WARNING;
+
+                    if (ret < 0) {
+                        av_log(avctx, log_level,
+                               "Splitting received ASS dialog failed: %s\n",
+                               av_err2str(ret));
+
+                        if (log_level == AV_LOG_ERROR)
+                            return ret;
+                    }
+                }
+
+                if (dialog->style)
+                    av_bprintf(&s->buffer, "</span>");
             }
         } else {
 #endif
             dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
             if (!dialog)
                 return AVERROR(ENOMEM);
+
+            if (dialog->style) {
+                av_bprintf(&s->buffer, "<span region=\"");
+                av_bprint_escape(&s->buffer, dialog->style, NULL,
+                                 AV_ESCAPE_MODE_XML,
+                                 AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+                av_bprintf(&s->buffer, "\">");
+            }
 
             {
                 int ret = ff_ass_split_override_codes(&ttml_callbacks, s,
@@ -139,6 +160,9 @@ static int ttml_encode_frame(AVCodecContext *avctx, uint8_t *buf,
                         return ret;
                     }
                 }
+
+                if (dialog->style)
+                    av_bprintf(&s->buffer, "</span>");
 
                 ff_ass_free_dialog(&dialog);
             }
@@ -173,16 +197,170 @@ static av_cold int ttml_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static const char *ttml_get_display_alignment(int alignment)
+{
+    switch (alignment) {
+    case 1:
+    case 2:
+    case 3:
+        return "after";
+    case 4:
+    case 5:
+    case 6:
+        return "center";
+    case 7:
+    case 8:
+    case 9:
+        return "before";
+    default:
+        return NULL;
+    }
+}
+
+static const char *ttml_get_text_alignment(int alignment)
+{
+    switch (alignment) {
+    case 1:
+    case 4:
+    case 7:
+        return "left";
+    case 2:
+    case 5:
+    case 8:
+        return "center";
+    case 3:
+    case 6:
+    case 9:
+        return "right";
+    default:
+        return NULL;
+    }
+}
+
+static int ttml_write_region(AVCodecContext *avctx, AVBPrint *buf,
+                             ASSStyle style)
+{
+    const char *display_alignment = NULL;
+    const char *text_alignment = NULL;
+
+    if (!style.name) {
+        av_log(avctx, AV_LOG_ERROR, "Subtitle style name not set!\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (style.font_size < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid font size for TTML: %d!\n",
+               style.font_size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    display_alignment = ttml_get_display_alignment(style.alignment);
+    text_alignment = ttml_get_text_alignment(style.alignment);
+    if (!display_alignment || !text_alignment) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to convert ASS style alignment %d of style %s to "
+               "TTML display and text alignment!\n",
+               style.alignment,
+               style.name);
+        return AVERROR_INVALIDDATA;
+    }
+
+    av_bprintf(buf, "      <region xml:id=\"");
+    av_bprint_escape(buf, style.name, NULL, AV_ESCAPE_MODE_XML,
+                     AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+    av_bprintf(buf, "\"\n");
+
+    av_bprintf(buf, "        tts:displayAlign=\"");
+    av_bprint_escape(buf, display_alignment, NULL, AV_ESCAPE_MODE_XML,
+                     AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+    av_bprintf(buf, "\"\n");
+
+    av_bprintf(buf, "        tts:textAlign=\"");
+    av_bprint_escape(buf, text_alignment, NULL, AV_ESCAPE_MODE_XML,
+                     AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+    av_bprintf(buf, "\"\n");
+
+    // if we set cell resolution to our script reference resolution,
+    // then a single line is a single "point" on our canvas. Thus, by setting
+    // our font size to font size in cells, we should gain a similar enough
+    // scale without resorting to explicit pixel based font sizing, which is
+    // frowned upon in the TTML community.
+    av_bprintf(buf, "        tts:fontSize=\"%dc\"\n",
+               style.font_size);
+
+    if (style.font_name) {
+        av_bprintf(buf, "        tts:fontFamily=\"");
+        av_bprint_escape(buf, style.font_name, NULL, AV_ESCAPE_MODE_XML,
+                         AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+        av_bprintf(buf, "\"\n");
+    }
+
+    av_bprintf(buf, "        tts:overflow=\"visible\" />\n");
+
+    return 0;
+}
+
 static int ttml_write_header_content(AVCodecContext *avctx)
 {
-    if (!(avctx->extradata = av_mallocz(TTMLENC_EXTRADATA_SIGNATURE_SIZE +
-                                        1 + AV_INPUT_BUFFER_PADDING_SIZE))) {
+    TTMLContext *s = avctx->priv_data;
+    ASS *ass = (ASS *)s->ass_ctx;
+    ASSScriptInfo script_info = ass->script_info;
+    const size_t base_extradata_size = TTMLENC_EXTRADATA_SIGNATURE_SIZE + 1 +
+                                       AV_INPUT_BUFFER_PADDING_SIZE;
+    size_t additional_extradata_size = 0;
+
+    if (script_info.play_res_x <= 0 || script_info.play_res_y <= 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Invalid subtitle reference resolution %dx%d!\n",
+               script_info.play_res_x, script_info.play_res_y);
+        return AVERROR_INVALIDDATA;
+    }
+
+    // write the first string in extradata, attributes in the base "tt" element.
+    av_bprintf(&s->buffer, ttml_default_namespacing);
+    // the cell resolution is in character cells, so not exactly 1:1 against
+    // a pixel based resolution, but as the tts:extent in the root
+    // "tt" element is frowned upon (and disallowed in the EBU-TT profile),
+    // we mimic the reference resolution by setting it as the cell resolution.
+    av_bprintf(&s->buffer, "  ttp:cellResolution=\"%d %d\"\n",
+               script_info.play_res_x, script_info.play_res_y);
+    av_bprint_chars(&s->buffer, '\0', 1);
+
+    // write the second string in extradata, head element containing the styles
+    av_bprintf(&s->buffer, "  <head>\n");
+    av_bprintf(&s->buffer, "    <layout>\n");
+
+    for (int i = 0; i < ass->styles_count; i++) {
+        int ret = ttml_write_region(avctx, &s->buffer, ass->styles[i]);
+        if (ret < 0)
+            return ret;
+    }
+
+    av_bprintf(&s->buffer, "    </layout>\n");
+    av_bprintf(&s->buffer, "  </head>\n");
+    av_bprint_chars(&s->buffer, '\0', 1);
+
+    if (!av_bprint_is_complete(&s->buffer)) {
         return AVERROR(ENOMEM);
     }
 
-    avctx->extradata_size = TTMLENC_EXTRADATA_SIGNATURE_SIZE;
+    additional_extradata_size = s->buffer.len;
+
+    if (!(avctx->extradata =
+            av_mallocz(base_extradata_size + additional_extradata_size))) {
+        return AVERROR(ENOMEM);
+    }
+
+    avctx->extradata_size =
+        TTMLENC_EXTRADATA_SIGNATURE_SIZE + additional_extradata_size;
     memcpy(avctx->extradata, TTMLENC_EXTRADATA_SIGNATURE,
            TTMLENC_EXTRADATA_SIGNATURE_SIZE);
+
+    if (additional_extradata_size)
+        memcpy(avctx->extradata + TTMLENC_EXTRADATA_SIGNATURE_SIZE,
+               s->buffer.str, additional_extradata_size);
+
+    av_bprint_clear(&s->buffer);
 
     return 0;
 }
