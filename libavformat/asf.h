@@ -104,6 +104,16 @@ extern const ff_asf_guid ff_asf_mutex_language;
 
 extern const AVMetadataConv ff_asf_metadata_conv[];
 
+/**
+ * Handles both attached pictures as well as id3 tags.
+ *
+ * @return Returns < 0 on error, 1 if the type of the byte array
+ *         is unsupported by this function and 0 otherwise.
+ */
+int ff_asf_handle_byte_array(AVFormatContext *s, const char *name,
+                             int val_len);
+
+
 #define ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT 0x80 //1000 0000
 
 
