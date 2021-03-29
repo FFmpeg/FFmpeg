@@ -20,6 +20,7 @@
 
 #include "asf.h"
 #include "id3v2.h"
+#include "internal.h"
 
 const ff_asf_guid ff_asf_header = {
     0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11, 0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C
@@ -176,7 +177,6 @@ const AVMetadataConv ff_asf_metadata_conv[] = {
  * but in reality this is only loosely similar */
 static int asf_read_picture(AVFormatContext *s, int len)
 {
-    AVPacket pkt          = { 0 };
     const CodecMime *mime = ff_id3v2_mime_tags;
     enum  AVCodecID id    = AV_CODEC_ID_NONE;
     char mimetype[64];
@@ -230,22 +230,12 @@ static int asf_read_picture(AVFormatContext *s, int len)
         return AVERROR(ENOMEM);
     len -= avio_get_str16le(s->pb, len - picsize, desc, desc_len);
 
-    ret = av_get_packet(s->pb, &pkt, picsize);
+    ret = ff_add_attached_pic(s, NULL, s->pb, NULL, picsize);
     if (ret < 0)
         goto fail;
+    st = s->streams[s->nb_streams - 1];
 
-    st  = avformat_new_stream(s, NULL);
-    if (!st) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codecpar->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id        = id;
-    st->attached_pic              = pkt;
-    st->attached_pic.stream_index = st->index;
-    st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
     if (*desc) {
         if (av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL) < 0)
@@ -260,7 +250,6 @@ static int asf_read_picture(AVFormatContext *s, int len)
 
 fail:
     av_freep(&desc);
-    av_packet_unref(&pkt);
     return ret;
 }
 
