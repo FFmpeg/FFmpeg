@@ -1729,7 +1729,7 @@ static void ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
 {
     int blk;
 
-    init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
+    init_put_bits(&s->pb, frame, s->frame_size);
 
     s->output_frame_header(s);
 
