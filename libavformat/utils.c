@@ -474,6 +474,36 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
     return 0;
 }
 
+int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
+                        AVBufferRef **buf, int size)
+{
+    AVPacket *pkt;
+    int ret;
+
+    if (!st && !(st = avformat_new_stream(s, NULL)))
+        return AVERROR(ENOMEM);
+    pkt = &st->attached_pic;
+    if (buf) {
+        av_assert1(*buf);
+        av_packet_unref(pkt);
+        pkt->buf  = *buf;
+        pkt->data = (*buf)->data;
+        pkt->size = (*buf)->size - AV_INPUT_BUFFER_PADDING_SIZE;
+        *buf = NULL;
+    } else {
+        ret = av_get_packet(pb, pkt, size);
+        if (ret < 0)
+            return ret;
+    }
+    st->disposition         |= AV_DISPOSITION_ATTACHED_PIC;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+
+    pkt->stream_index = st->index;
+    pkt->flags       |= AV_PKT_FLAG_KEY;
+
+    return 0;
+}
+
 static int update_stream_avctx(AVFormatContext *s)
 {
     int i, ret;

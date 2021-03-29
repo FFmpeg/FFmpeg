@@ -1142,34 +1142,25 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
     for (cur = extra_meta; cur; cur = cur->next) {
         ID3v2ExtraMetaAPIC *apic;
         AVStream *st;
+        int ret;
 
         if (strcmp(cur->tag, "APIC"))
             continue;
         apic = &cur->data.apic;
 
-        if (!(st = avformat_new_stream(s, NULL)))
-            return AVERROR(ENOMEM);
-
-        st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
-        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        ret = ff_add_attached_pic(s, NULL, NULL, &apic->buf, 0);
+        if (ret < 0)
+            return ret;
+        st  = s->streams[s->nb_streams - 1];
         st->codecpar->codec_id   = apic->id;
 
-        if (AV_RB64(apic->buf->data) == PNGSIG)
+        if (AV_RB64(st->attached_pic.data) == PNGSIG)
             st->codecpar->codec_id = AV_CODEC_ID_PNG;
 
         if (apic->description[0])
             av_dict_set(&st->metadata, "title", apic->description, 0);
 
         av_dict_set(&st->metadata, "comment", apic->type, 0);
-
-        av_packet_unref(&st->attached_pic);
-        st->attached_pic.buf          = apic->buf;
-        st->attached_pic.data         = apic->buf->data;
-        st->attached_pic.size         = apic->buf->size - AV_INPUT_BUFFER_PADDING_SIZE;
-        st->attached_pic.stream_index = st->index;
-        st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
-
-        apic->buf = NULL;
     }
 
     return 0;

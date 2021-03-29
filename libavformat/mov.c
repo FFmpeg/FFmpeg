@@ -196,17 +196,16 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
         return 0;
     }
 
-    st = avformat_new_stream(c->fc, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
     sc = av_mallocz(sizeof(*sc));
     if (!sc)
         return AVERROR(ENOMEM);
-    st->priv_data = sc;
-
-    ret = av_get_packet(pb, &st->attached_pic, len);
-    if (ret < 0)
+    ret = ff_add_attached_pic(c->fc, NULL, pb, NULL, len);
+    if (ret < 0) {
+        av_free(sc);
         return ret;
+    }
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    st->priv_data = sc;
 
     if (st->attached_pic.size >= 8 && id != AV_CODEC_ID_BMP) {
         if (AV_RB64(st->attached_pic.data) == 0x89504e470d0a1a0a) {
@@ -215,13 +214,6 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
             id = AV_CODEC_ID_MJPEG;
         }
     }
-
-    st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
-
-    st->attached_pic.stream_index = st->index;
-    st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
-
-    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = id;
 
     return 0;
@@ -7233,11 +7225,8 @@ static void mov_read_chapters(AVFormatContext *s)
                     goto finish;
                 }
 
-                if (av_get_packet(sc->pb, &st->attached_pic, sample->size) < 0)
+                if (ff_add_attached_pic(s, st, sc->pb, NULL, sample->size) < 0)
                     goto finish;
-
-                st->attached_pic.stream_index = st->index;
-                st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
             }
         } else {
             st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
