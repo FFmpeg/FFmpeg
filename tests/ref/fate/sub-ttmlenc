@@ -9,6 +9,8 @@
   <head>
     <layout>
       <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
         tts:displayAlign="after"
         tts:textAlign="center"
         tts:fontSize="16c"
