@@ -1759,7 +1759,8 @@ int ff_ac3_encode_frame_common_end(AVCodecContext *avctx, AVPacket *avpkt,
 
     ac3_quantize_mantissas(s);
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size, 0)) < 0)
+    ret = ff_alloc_packet2(avctx, avpkt, s->frame_size, s->frame_size);
+    if (ret < 0)
         return ret;
     ac3_output_frame(s, avpkt->data);
 
