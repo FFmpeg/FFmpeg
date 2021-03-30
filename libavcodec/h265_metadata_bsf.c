@@ -415,7 +415,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     }
 
     // If an AUD is present, it must be the first NAL unit.
-    if (au->units[0].type == HEVC_NAL_AUD) {
+    if (au->nb_units && au->units[0].type == HEVC_NAL_AUD) {
         if (ctx->aud == REMOVE)
             ff_cbs_delete_unit(ctx->cbc, au, 0);
     } else {
