@@ -193,8 +193,8 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 
     /* frame header */
     if (s->num_blocks == 6) {
-    put_bits(&s->pb, 1, !s->use_frame_exp_strategy);/* exponent strategy syntax */
-    put_bits(&s->pb, 1, 0);                         /* aht enabled = no */
+        put_bits(&s->pb, 1, !s->use_frame_exp_strategy); /* exponent strategy syntax */
+        put_bits(&s->pb, 1, 0);                     /* aht enabled = no */
     }
     put_bits(&s->pb, 2, 0);                         /* snr offset strategy = 1 */
     put_bits(&s->pb, 1, 0);                         /* transient pre-noise processing enabled = no */
@@ -232,12 +232,12 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
     if (s->num_blocks != 6) {
         put_bits(&s->pb, 1, 0);
     } else {
-    for (ch = 1; ch <= s->fbw_channels; ch++) {
-        if (s->use_frame_exp_strategy)
-            put_bits(&s->pb, 5, s->frame_exp_strategy[ch]);
-        else
-            put_bits(&s->pb, 5, 0);
-    }
+        for (ch = 1; ch <= s->fbw_channels; ch++) {
+            if (s->use_frame_exp_strategy)
+                put_bits(&s->pb, 5, s->frame_exp_strategy[ch]);
+            else
+                put_bits(&s->pb, 5, 0);
+        }
     }
     /* snr offsets */
     put_bits(&s->pb, 6, s->coarse_snr_offset);
