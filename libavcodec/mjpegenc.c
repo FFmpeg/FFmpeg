@@ -312,8 +312,10 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
 av_cold void ff_mjpeg_encode_close(MpegEncContext *s)
 {
-    av_freep(&s->mjpeg_ctx->huff_buffer);
-    av_freep(&s->mjpeg_ctx);
+    if (s->mjpeg_ctx) {
+        av_freep(&s->mjpeg_ctx->huff_buffer);
+        av_freep(&s->mjpeg_ctx);
+    }
 }
 
 /**
