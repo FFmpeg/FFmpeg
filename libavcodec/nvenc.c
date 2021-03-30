@@ -52,6 +52,8 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV444P16, // Truncated to 10bits
     AV_PIX_FMT_0RGB32,
     AV_PIX_FMT_0BGR32,
+    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_GBRP16,    // Truncated to 10bits
     AV_PIX_FMT_CUDA,
 #if CONFIG_D3D11VA
     AV_PIX_FMT_D3D11,
@@ -69,12 +71,18 @@ const AVCodecHWConfigInternal *const ff_nvenc_hw_configs[] = {
     NULL,
 };
 
-#define IS_10BIT(pix_fmt)  (pix_fmt == AV_PIX_FMT_P010    || \
-                            pix_fmt == AV_PIX_FMT_P016    || \
-                            pix_fmt == AV_PIX_FMT_YUV444P16)
+#define IS_10BIT(pix_fmt)  (pix_fmt == AV_PIX_FMT_P010      || \
+                            pix_fmt == AV_PIX_FMT_P016      || \
+                            pix_fmt == AV_PIX_FMT_YUV444P16 || \
+                            pix_fmt == AV_PIX_FMT_GBRP16)
 
-#define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P || \
-                            pix_fmt == AV_PIX_FMT_YUV444P16)
+#define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P   || \
+                            pix_fmt == AV_PIX_FMT_YUV444P16 || \
+                            pix_fmt == AV_PIX_FMT_GBRP      || \
+                            pix_fmt == AV_PIX_FMT_GBRP16)
+
+#define IS_GBRP(pix_fmt) (pix_fmt == AV_PIX_FMT_GBRP || \
+                          pix_fmt == AV_PIX_FMT_GBRP16)
 
 static const struct {
     NVENCSTATUS nverr;
@@ -1028,14 +1036,14 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     NV_ENC_CONFIG_H264 *h264               = &cc->encodeCodecConfig.h264Config;
     NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui = &h264->h264VUIParameters;
 
-    vui->colourMatrix = avctx->colorspace;
+    vui->colourMatrix = IS_GBRP(ctx->data_pix_fmt) ? AVCOL_SPC_RGB : avctx->colorspace;
     vui->colourPrimaries = avctx->color_primaries;
     vui->transferCharacteristics = avctx->color_trc;
     vui->videoFullRangeFlag = (avctx->color_range == AVCOL_RANGE_JPEG
         || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ420P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ422P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ444P);
 
     vui->colourDescriptionPresentFlag =
-        (avctx->colorspace != 2 || avctx->color_primaries != 2 || avctx->color_trc != 2);
+        (vui->colourMatrix != 2 || vui->colourPrimaries != 2 || vui->transferCharacteristics != 2);
 
     vui->videoSignalTypePresentFlag =
         (vui->colourDescriptionPresentFlag
@@ -1094,7 +1102,7 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     }
 
     // force setting profile as high444p if input is AV_PIX_FMT_YUV444P
-    if (ctx->data_pix_fmt == AV_PIX_FMT_YUV444P) {
+    if (IS_YUV444(ctx->data_pix_fmt)) {
         cc->profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
         avctx->profile = FF_PROFILE_H264_HIGH_444_PREDICTIVE;
     }
@@ -1125,14 +1133,14 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     NV_ENC_CONFIG_HEVC *hevc               = &cc->encodeCodecConfig.hevcConfig;
     NV_ENC_CONFIG_HEVC_VUI_PARAMETERS *vui = &hevc->hevcVUIParameters;
 
-    vui->colourMatrix = avctx->colorspace;
+    vui->colourMatrix = IS_GBRP(ctx->data_pix_fmt) ? AVCOL_SPC_RGB : avctx->colorspace;
     vui->colourPrimaries = avctx->color_primaries;
     vui->transferCharacteristics = avctx->color_trc;
     vui->videoFullRangeFlag = (avctx->color_range == AVCOL_RANGE_JPEG
         || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ420P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ422P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ444P);
 
     vui->colourDescriptionPresentFlag =
-        (avctx->colorspace != 2 || avctx->color_primaries != 2 || avctx->color_trc != 2);
+        (vui->colourMatrix != 2 || vui->colourPrimaries != 2 || vui->transferCharacteristics != 2);
 
     vui->videoSignalTypePresentFlag =
         (vui->colourDescriptionPresentFlag
@@ -1406,8 +1414,10 @@ static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_P010:
     case AV_PIX_FMT_P016:
         return NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
+    case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_YUV444P:
         return NV_ENC_BUFFER_FORMAT_YUV444_PL;
+    case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_YUV444P16:
         return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
     case AV_PIX_FMT_0RGB32:
