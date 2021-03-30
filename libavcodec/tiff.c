@@ -108,8 +108,6 @@ typedef struct TiffContext {
     int deinvert_buf_size;
     uint8_t *yuv_line;
     unsigned int yuv_line_size;
-    uint8_t *fax_buffer;
-    unsigned int fax_buffer_size;
 
     int geotag_count;
     TiffGeoTag *geotags;
@@ -615,27 +613,15 @@ static int tiff_unpack_lzma(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
 static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
                            const uint8_t *src, int size, int width, int lines)
 {
-    int i, ret = 0;
     int line;
-    uint8_t *src2;
+    int ret;
 
-    av_fast_padded_malloc(&s->fax_buffer, &s->fax_buffer_size, size);
-    src2 = s->fax_buffer;
-
-    if (!src2) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "Error allocating temporary buffer\n");
-        return AVERROR(ENOMEM);
+    if (s->fill_order) {
+        if ((ret = deinvert_buffer(s, src, size)) < 0)
+            return ret;
+        src = s->deinvert_buf;
     }
-
-    if (!s->fill_order) {
-        memcpy(src2, src, size);
-    } else {
-        for (i = 0; i < size; i++)
-            src2[i] = ff_reverse[src[i]];
-    }
-    memset(src2 + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride,
+    ret = ff_ccitt_unpack(s->avctx, src, size, dst, lines, stride,
                           s->compr, s->fax_opts);
     if (s->bpp < 8 && s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
         for (line = 0; line < lines; line++) {
@@ -2188,8 +2174,6 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     s->deinvert_buf_size = 0;
     av_freep(&s->yuv_line);
     s->yuv_line_size = 0;
-    av_freep(&s->fax_buffer);
-    s->fax_buffer_size = 0;
     av_frame_free(&s->jpgframe);
     av_packet_free(&s->jpkt);
     avcodec_free_context(&s->avctx_mjpeg);
