@@ -76,6 +76,10 @@ static int decode_idat(LSCRContext *s, int length)
     int ret;
     s->zstream.avail_in = FFMIN(length, bytestream2_get_bytes_left(&s->gb));
     s->zstream.next_in  = s->gb.buffer;
+
+    if (length <= 0)
+        return AVERROR_INVALIDDATA;
+
     bytestream2_skip(&s->gb, length);
 
     /* decode one line if possible */
