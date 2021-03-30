@@ -113,6 +113,8 @@ retry:
             imx->first_video_packet_pos = pos;
         break;
     case 0xAA98:
+        if (chunk_size > 256 * 3)
+            return AVERROR_INVALIDDATA;
         for (int i = 0; i < chunk_size / 3; i++) {
             unsigned r = avio_r8(pb) << 18;
             unsigned g = avio_r8(pb) << 10;
