@@ -65,6 +65,7 @@ static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256],
     }
 }
 
+#if CONFIG_MJPEG_ENCODER
 /**
  * Encodes and outputs the entire frame in the JPEG format.
  *
@@ -171,6 +172,7 @@ static void mjpeg_build_optimal_huffman(MJpegContext *m)
                                  m->bits_ac_chrominance,
                                  m->val_ac_chrominance);
 }
+#endif
 
 /**
  * Writes the complete JPEG frame when optimal huffman tables are enabled,
@@ -186,11 +188,11 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
     PutBitContext *pbc = &s->pb;
     int mb_y = s->mb_y - !s->mb_x;
     int ret;
-    MJpegContext *m;
 
-    m = s->mjpeg_ctx;
-
+#if CONFIG_MJPEG_ENCODER
     if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        MJpegContext *m = s->mjpeg_ctx;
+
         mjpeg_build_optimal_huffman(m);
 
         // Replace the VLCs with the optimal ones.
@@ -206,6 +208,7 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
                                        s->pred, s->intra_matrix, s->chroma_intra_matrix);
         mjpeg_encode_picture_frame(s);
     }
+#endif
 
     ret = ff_mpv_reallocate_putbitbuffer(s, put_bits_count(&s->pb) / 8 + 100,
                                             put_bits_count(&s->pb) / 4 + 1000);
