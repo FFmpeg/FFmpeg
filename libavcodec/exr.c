@@ -422,7 +422,12 @@ static int huf_decode(VLC *vlc, GetByteContext *gb, int nbits, int run_sym,
 
         if (x == run_sym) {
             int run = get_bits(&gbit, 8);
-            uint16_t fill = out[oe - 1];
+            uint16_t fill;
+
+            if (oe == 0 || oe + run > no)
+                return AVERROR_INVALIDDATA;
+
+            fill = out[oe - 1];
 
             while (run-- > 0)
                 out[oe++] = fill;
