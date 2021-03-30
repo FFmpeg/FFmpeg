@@ -111,7 +111,7 @@ retry:
     } else {
         int ret = av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
         next = pnmctx.bytestream - pnmctx.bytestream_start + skip;
-        if (ret >= 0)
+        if (ret >= 0 && next + (uint64_t)ret <= INT_MAX)
             next += ret;
     }
     if (next != END_NOT_FOUND && pnmctx.bytestream_start != buf + skip)
