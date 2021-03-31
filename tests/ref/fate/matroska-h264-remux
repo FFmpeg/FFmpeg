@@ -1,0 +1,65 @@
+ded6da7e46ce7df1232b116afb0b2f0a *tests/data/fate/matroska-h264-remux.matroska
+2036083 tests/data/fate/matroska-h264-remux.matroska
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 1920x1080
+#sar 0: 3/4
+#tb 1: 1/25
+#media_type 1: video
+#codec_id 1: rawvideo
+#dimensions 1: 1920x1080
+#sar 1: 1/1
+0,         45,         45,        1,  3110400, 0xa426f15d
+1,         45,         45,        1,  3110400, 0xa426f15d
+0,         46,         46,        1,  3110400, 0x7066003b
+1,         46,         46,        1,  3110400, 0x7066003b
+0,         47,         47,        1,  3110400, 0x7691f2c5
+1,         47,         47,        1,  3110400, 0x7691f2c5
+0,         48,         48,        1,  3110400, 0x1bc501d2
+1,         48,         48,        1,  3110400, 0x1bc501d2
+0,         49,         49,        1,  3110400, 0xb616ecf1
+1,         49,         49,        1,  3110400, 0xb616ecf1
+0,         50,         50,        1,  3110400, 0xa334fb27
+1,         50,         50,        1,  3110400, 0xa334fb27
+0,         51,         51,        1,  3110400, 0x1097ea90
+1,         51,         51,        1,  3110400, 0x1097ea90
+0,         52,         52,        1,  3110400, 0xbc25f438
+1,         52,         52,        1,  3110400, 0xbc25f438
+0,         53,         53,        1,  3110400, 0xcab4f0d9
+1,         53,         53,        1,  3110400, 0xcab4f0d9
+0,         54,         54,        1,  3110400, 0xa740f58c
+1,         54,         54,        1,  3110400, 0xa740f58c
+0,         55,         55,        1,  3110400, 0x597de7df
+1,         55,         55,        1,  3110400, 0x597de7df
+0,         56,         56,        1,  3110400, 0x3b79f58d
+1,         56,         56,        1,  3110400, 0x3b79f58d
+0,         57,         57,        1,  3110400, 0x3705eb68
+1,         57,         57,        1,  3110400, 0x3705eb68
+0,         58,         58,        1,  3110400, 0x2292f7de
+1,         58,         58,        1,  3110400, 0x2292f7de
+0,         59,         59,        1,  3110400, 0x2171e805
+1,         59,         59,        1,  3110400, 0x2171e805
+0,         60,         60,        1,  3110400, 0x14a9f258
+0,         61,         61,        1,  3110400, 0xa545ef91
+1,         61,         61,        1,  3110400, 0xa545ef91
+[STREAM]
+index=0
+codec_name=h264
+[/STREAM]
+[STREAM]
+index=1
+codec_name=h264
+[/STREAM]
+[STREAM]
+index=2
+codec_name=pcm_s32le
+TAG:language=swe
+TAG:title=swedish_silence
+[/STREAM]
+[STREAM]
+index=3
+codec_name=pcm_s32be
+TAG:language=nor
+TAG:title=norwegian_silence
+[/STREAM]
