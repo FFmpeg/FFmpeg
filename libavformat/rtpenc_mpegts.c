@@ -25,6 +25,7 @@
 #include "avio_internal.h"
 
 typedef struct MuxChain {
+    const AVClass *class;
     AVFormatContext *mpegts_ctx;
     AVFormatContext *rtp_ctx;
     AVPacket *pkt;
