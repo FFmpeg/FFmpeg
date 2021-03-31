@@ -243,11 +243,12 @@ which streams to actually receive.
 Each stream mirrors the @code{id} and @code{bandwidth} properties from the
 @code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
 
-@section flv, live_flv
+@section flv, live_flv, kux
 
 Adobe Flash Video Format demuxer.
 
 This demuxer is used to demux FLV files and RTMP network streams. In case of live network streams, if you force format, you may use live_flv option instead of flv to survive timestamp discontinuities.
+KUX is a flv variant used on the Youku platform.
 
 @example
 ffmpeg -f flv -i myfile.flv ...
