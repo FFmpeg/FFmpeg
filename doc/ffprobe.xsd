@@ -29,22 +29,18 @@
     </xsd:complexType>
 
     <xsd:complexType name="framesType">
-        <xsd:sequence>
-            <xsd:choice minOccurs="0" maxOccurs="unbounded">
-                <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
-                <xsd:element name="subtitle" type="ffprobe:subtitleType" minOccurs="0" maxOccurs="unbounded"/>
-            </xsd:choice>
-        </xsd:sequence>
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="frame"    type="ffprobe:frameType"/>
+            <xsd:element name="subtitle" type="ffprobe:subtitleType"/>
+        </xsd:choice>
     </xsd:complexType>
 
     <xsd:complexType name="packetsAndFramesType">
-        <xsd:sequence>
-            <xsd:choice minOccurs="0" maxOccurs="unbounded">
-                <xsd:element name="packet" type="ffprobe:packetType" minOccurs="0" maxOccurs="unbounded"/>
-                <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
-                <xsd:element name="subtitle" type="ffprobe:subtitleType" minOccurs="0" maxOccurs="unbounded"/>
-            </xsd:choice>
-        </xsd:sequence>
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="packet"   type="ffprobe:packetType"/>
+            <xsd:element name="frame"    type="ffprobe:frameType"/>
+            <xsd:element name="subtitle" type="ffprobe:subtitleType"/>
+        </xsd:choice>
     </xsd:complexType>
 
     <xsd:complexType name="packetType">
