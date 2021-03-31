@@ -103,6 +103,8 @@ typedef struct ADPCMDecodeContext {
     int has_status;                 /**< Status flag. Reset to 0 after a flush. */
 } ADPCMDecodeContext;
 
+static void adpcm_flush(AVCodecContext *avctx);
+
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 {
     ADPCMDecodeContext *c = avctx->priv_data;
@@ -150,37 +152,9 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     }
 
     switch(avctx->codec->id) {
-    case AV_CODEC_ID_ADPCM_CT:
-        c->status[0].step = c->status[1].step = 511;
-        break;
     case AV_CODEC_ID_ADPCM_IMA_WAV:
         if (avctx->bits_per_coded_sample < 2 || avctx->bits_per_coded_sample > 5)
             return AVERROR_INVALIDDATA;
-        break;
-    case AV_CODEC_ID_ADPCM_IMA_APC:
-        if (avctx->extradata && avctx->extradata_size >= 8) {
-            c->status[0].predictor = av_clip_intp2(AV_RL32(avctx->extradata    ), 18);
-            c->status[1].predictor = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
-        }
-        break;
-    case AV_CODEC_ID_ADPCM_IMA_APM:
-        if (avctx->extradata) {
-            if (avctx->extradata_size >= 28) {
-                c->status[0].predictor  = av_clip_intp2(AV_RL32(avctx->extradata + 16), 18);
-                c->status[0].step_index = av_clip(AV_RL32(avctx->extradata + 20), 0, 88);
-                c->status[1].predictor  = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
-                c->status[1].step_index = av_clip(AV_RL32(avctx->extradata + 8), 0, 88);
-            } else if (avctx->extradata_size >= 16) {
-                c->status[0].predictor  = av_clip_intp2(AV_RL32(avctx->extradata +  0), 18);
-                c->status[0].step_index = av_clip(AV_RL32(avctx->extradata +  4), 0, 88);
-                c->status[1].predictor  = av_clip_intp2(AV_RL32(avctx->extradata +  8), 18);
-                c->status[1].step_index = av_clip(AV_RL32(avctx->extradata + 12), 0, 88);
-            }
-        }
-        break;
-    case AV_CODEC_ID_ADPCM_IMA_WS:
-        if (avctx->extradata && avctx->extradata_size >= 2)
-            c->vqa_version = AV_RL16(avctx->extradata);
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
         if (avctx->bits_per_coded_sample != 4 || avctx->block_align != 17 * avctx->channels)
@@ -228,6 +202,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     }
 
+    adpcm_flush(avctx);
     return 0;
 }
 
@@ -2110,29 +2085,41 @@ static void adpcm_flush(AVCodecContext *avctx)
 {
     ADPCMDecodeContext *c = avctx->priv_data;
 
+    /* Just nuke the entire state and re-init. */
+    memset(c, 0, sizeof(ADPCMDecodeContext));
+
     switch(avctx->codec_id) {
-    case AV_CODEC_ID_ADPCM_AICA:
-        for (int channel = 0; channel < avctx->channels; channel++)
-            c->status[channel].step = 0;
+    case AV_CODEC_ID_ADPCM_CT:
+        c->status[0].step = c->status[1].step = 511;
         break;
 
-    case AV_CODEC_ID_ADPCM_ARGO:
-        for (int channel = 0; channel < avctx->channels; channel++) {
-            c->status[channel].sample1 = 0;
-            c->status[channel].sample2 = 0;
+    case AV_CODEC_ID_ADPCM_IMA_APC:
+        if (avctx->extradata && avctx->extradata_size >= 8) {
+            c->status[0].predictor = av_clip_intp2(AV_RL32(avctx->extradata    ), 18);
+            c->status[1].predictor = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
         }
         break;
 
-    case AV_CODEC_ID_ADPCM_IMA_ALP:
-    case AV_CODEC_ID_ADPCM_IMA_CUNNING:
-    case AV_CODEC_ID_ADPCM_IMA_SSI:
-    case AV_CODEC_ID_ADPCM_ZORK:
-        for (int channel = 0; channel < avctx->channels; channel++) {
-            c->status[channel].predictor  = 0;
-            c->status[channel].step_index = 0;
+    case AV_CODEC_ID_ADPCM_IMA_APM:
+        if (avctx->extradata) {
+            if (avctx->extradata_size >= 28) {
+                c->status[0].predictor  = av_clip_intp2(AV_RL32(avctx->extradata + 16), 18);
+                c->status[0].step_index = av_clip(AV_RL32(avctx->extradata + 20), 0, 88);
+                c->status[1].predictor  = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
+                c->status[1].step_index = av_clip(AV_RL32(avctx->extradata + 8), 0, 88);
+            } else if (avctx->extradata_size >= 16) {
+                c->status[0].predictor  = av_clip_intp2(AV_RL32(avctx->extradata +  0), 18);
+                c->status[0].step_index = av_clip(AV_RL32(avctx->extradata +  4), 0, 88);
+                c->status[1].predictor  = av_clip_intp2(AV_RL32(avctx->extradata +  8), 18);
+                c->status[1].step_index = av_clip(AV_RL32(avctx->extradata + 12), 0, 88);
+            }
         }
         break;
 
+    case AV_CODEC_ID_ADPCM_IMA_WS:
+        if (avctx->extradata && avctx->extradata_size >= 2)
+            c->vqa_version = AV_RL16(avctx->extradata);
+        break;
     default:
         /* Other codecs may want to handle this during decoding. */
         c->has_status = 0;
