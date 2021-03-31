@@ -32,6 +32,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 
@@ -93,6 +94,9 @@ typedef struct VPPContext{
     char *cx, *cy, *cw, *ch;
     char *ow, *oh;
     char *output_format_str;
+
+    int async_depth;
+    int eof;
 } VPPContext;
 
 static const AVOption options[] = {
@@ -128,6 +132,7 @@ static const AVOption options[] = {
     { "h",      "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
     { "height", "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
+    { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
 
     { NULL }
 };
@@ -303,6 +308,7 @@ static int config_output(AVFilterLink *outlink)
     param.filter_frame  = NULL;
     param.num_ext_buf   = 0;
     param.ext_buf       = ext_buf;
+    param.async_depth   = vpp->async_depth;
 
     if (inlink->format == AV_PIX_FMT_QSV) {
          if (!inlink->hw_frames_ctx || !inlink->hw_frames_ctx->data)
@@ -467,23 +473,64 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
+static int activate(AVFilterContext *ctx)
 {
-    int              ret = 0;
-    AVFilterContext  *ctx = inlink->dst;
-    VPPContext       *vpp = inlink->dst->priv;
-    AVFilterLink     *outlink = ctx->outputs[0];
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    VPPContext *s =ctx->priv;
+    QSVVPPContext *qsv = s->qsv;
+    AVFrame *in = NULL;
+    int ret, status;
+    int64_t pts;
 
-    if (vpp->qsv) {
-        ret = ff_qsvvpp_filter_frame(vpp->qsv, inlink, picref);
-        av_frame_free(&picref);
-    } else {
-        if (picref->pts != AV_NOPTS_VALUE)
-            picref->pts = av_rescale_q(picref->pts, inlink->time_base, outlink->time_base);
-        ret = ff_filter_frame(outlink, picref);
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!s->eof) {
+        ret = ff_inlink_consume_frame(inlink, &in);
+        if (ret < 0)
+            return ret;
+
+        if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+            if (status == AVERROR_EOF) {
+                s->eof = 1;
+            }
+        }
     }
 
-    return ret;
+    if (qsv) {
+        if (in || s->eof) {
+            qsv->eof = s->eof;
+            ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
+            av_frame_free(&in);
+
+            if (s->eof) {
+                ff_outlink_set_status(outlink, status, pts);
+                return 0;
+            }
+
+            if (qsv->got_frame) {
+                qsv->got_frame = 0;
+                return ret;
+            }
+        }
+    } else {
+        if (in) {
+            if (in->pts != AV_NOPTS_VALUE)
+                in->pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
+
+            ret = ff_filter_frame(outlink, in);
+            return ret;
+        }
+    }
+
+    if (s->eof) {
+        ff_outlink_set_status(outlink, status, pts);
+        return 0;
+    } else {
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -531,7 +578,6 @@ static const AVFilterPad vpp_inputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_input,
-        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -554,6 +600,7 @@ AVFilter ff_vf_vpp_qsv = {
     .uninit        = vpp_uninit,
     .inputs        = vpp_inputs,
     .outputs       = vpp_outputs,
+    .activate      = activate,
     .priv_class    = &vpp_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

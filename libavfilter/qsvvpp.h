@@ -27,6 +27,7 @@
 #include <mfx/mfxvideo.h>
 
 #include "avfilter.h"
+#include "libavutil/fifo.h"
 
 #define FF_INLINK_IDX(link)  ((int)((link)->dstpad - (link)->dst->input_pads))
 #define FF_OUTLINK_IDX(link) ((int)((link)->srcpad - (link)->src->output_pads))
@@ -39,7 +40,41 @@
     ((MFX_VERSION.Major > (MAJOR)) ||                           \
     (MFX_VERSION.Major == (MAJOR) && MFX_VERSION.Minor >= (MINOR)))
 
-typedef struct QSVVPPContext QSVVPPContext;
+typedef struct QSVFrame {
+    AVFrame          *frame;
+    mfxFrameSurface1 surface;
+    struct QSVFrame  *next;
+    int queued;
+} QSVFrame;
+
+typedef struct QSVVPPContext {
+    mfxSession          session;
+    int (*filter_frame) (AVFilterLink *outlink, AVFrame *frame); /**< callback */
+    enum AVPixelFormat  out_sw_format;   /**< Real output format */
+    mfxVideoParam       vpp_param;
+    mfxFrameInfo       *frame_infos;     /**< frame info for each input */
+
+    /** members related to the input/output surface */
+    int                 in_mem_mode;
+    int                 out_mem_mode;
+    QSVFrame           *in_frame_list;
+    QSVFrame           *out_frame_list;
+    int                 nb_surface_ptrs_in;
+    int                 nb_surface_ptrs_out;
+    mfxFrameSurface1  **surface_ptrs_in;
+    mfxFrameSurface1  **surface_ptrs_out;
+
+    /** MFXVPP extern parameters */
+    mfxExtOpaqueSurfaceAlloc opaque_alloc;
+    mfxExtBuffer      **ext_buffers;
+    int                 nb_ext_buffers;
+
+    int got_frame;
+    int async_depth;
+    int eof;
+    /** order with frame_out, sync */
+    AVFifoBuffer *async_fifo;
+} QSVVPPContext;
 
 typedef struct QSVVPPCrop {
     int in_idx;        ///< Input index
@@ -60,6 +95,8 @@ typedef struct QSVVPPParam {
     /* Crop information for each input, if needed */
     int num_crop;
     QSVVPPCrop *crop;
+
+   int async_depth;
 } QSVVPPParam;
 
 /* create and initialize the QSV session */

@@ -47,14 +47,6 @@ enum {
     QSVDEINT_MORE_INPUT,
 };
 
-typedef struct QSVFrame {
-    AVFrame *frame;
-    mfxFrameSurface1 surface;
-    int used;
-
-    struct QSVFrame *next;
-} QSVFrame;
-
 typedef struct QSVDeintContext {
     const AVClass *class;
 
@@ -376,7 +368,7 @@ static void clear_unused_frames(QSVDeintContext *s)
     while (cur) {
         if (!cur->surface.Data.Locked) {
             av_frame_free(&cur->frame);
-            cur->used = 0;
+            cur->queued = 0;
         }
         cur = cur->next;
     }
@@ -391,7 +383,7 @@ static int get_free_frame(QSVDeintContext *s, QSVFrame **f)
     frame = s->work_frames;
     last  = &s->work_frames;
     while (frame) {
-        if (!frame->used) {
+        if (!frame->queued) {
             *f = frame;
             return 0;
         }
@@ -453,7 +445,7 @@ static int submit_frame(AVFilterContext *ctx, AVFrame *frame,
                                               (AVRational){1, 90000});
 
     *surface = &qf->surface;
-    qf->used = 1;
+    qf->queued = 1;
 
     return 0;
 }
