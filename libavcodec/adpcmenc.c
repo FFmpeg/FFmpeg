@@ -722,6 +722,9 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         n = frame->nb_samples - 1;
 
+        /* NB: This is safe as we don't have AV_CODEC_CAP_SMALL_LAST_FRAME. */
+        av_assert0(n == 4095);
+
         // store AdpcmCodeSize
         put_bits(&pb, 2, 2);    // set 4-bit flash adpcm format
 
@@ -735,8 +738,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         if (avctx->trellis > 0) {
-            if (!(buf = av_malloc(2 * n)))
-                return AVERROR(ENOMEM);
+            uint8_t buf[8190 /* = 2 * n */];
             adpcm_compress_trellis(avctx, samples + avctx->channels, buf,
                                    &c->status[0], n, avctx->channels);
             if (avctx->channels == 2)
@@ -748,7 +750,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 if (avctx->channels == 2)
                     put_bits(&pb, 4, buf[n + i]);
             }
-            av_free(buf);
         } else {
             for (i = 1; i < frame->nb_samples; i++) {
                 put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0],
