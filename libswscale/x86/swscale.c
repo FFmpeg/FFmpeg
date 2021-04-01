@@ -197,7 +197,8 @@ static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
                            const int16_t **src, uint8_t *dest, int dstW, \
                            const uint8_t *dither, int offset) \
 { \
-    ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, dstW + offset, dither, offset); \
+    if(dstW > 0) \
+        ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, dstW + offset, dither, offset); \
     return; \
 }
 
@@ -215,7 +216,8 @@ static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
         yuv2yuvX_mmx(filter, filterSize, src, dest, dstW, dither, offset); \
         return; \
     } \
-    ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, pixelsProcessed + offset, dither, offset); \
+    if(pixelsProcessed > 0) \
+        ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, pixelsProcessed + offset, dither, offset); \
     if(remainder > 0){ \
       ff_yuv2yuvX_mmx(filter, filterSize - 1, pixelsProcessed, dest - offset, pixelsProcessed + remainder + offset, dither, offset); \
     } \
