@@ -37,8 +37,10 @@ SECTION .text
 cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 %if notcpuflag(sse3)
 %define movr mova
+%define unroll 1
 %else
 %define movr movdqu
+%define unroll 2
 %endif
     movsxdifnidn         dstWq, dstWd
     movsxdifnidn         offsetq, offsetd
@@ -70,8 +72,10 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 .outerloop:
     mova                 m4, m7
     mova                 m3, m7
+%if cpuflag(sse3)
     mova                 m6, m7
     mova                 m1, m7
+%endif
 .loop:
 %if cpuflag(avx2)
     vpbroadcastq         m0, [filterSizeq + 8]
@@ -84,28 +88,36 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
     pmulhw               m5, m0, [srcq + offsetq * 2 + mmsize]
     paddw                m3, m3, m2
     paddw                m4, m4, m5
+%if cpuflag(sse3)
     pmulhw               m2, m0, [srcq + offsetq * 2 + 2 * mmsize]
     pmulhw               m5, m0, [srcq + offsetq * 2 + 3 * mmsize]
     paddw                m6, m6, m2
     paddw                m1, m1, m5
+%endif
     add                  filterSizeq, $10
     mov                  srcq, [filterSizeq]
     test                 srcq, srcq
     jnz                  .loop
     psraw                m3, m3, 3
     psraw                m4, m4, 3
+%if cpuflag(sse3)
     psraw                m6, m6, 3
     psraw                m1, m1, 3
+%endif
     packuswb             m3, m3, m4
+%if cpuflag(sse3)
     packuswb             m6, m6, m1
+%endif
     mov                  srcq, [filterq]
 %if cpuflag(avx2)
     vpermq               m3, m3, 216
     vpermq               m6, m6, 216
 %endif
     movr                 [destq + offsetq], m3
+%if cpuflag(sse3)
     movr                 [destq + offsetq + mmsize], m6
-    add                  offsetq, mmsize * 2
+%endif
+    add                  offsetq, mmsize * unroll
     mov                  filterSizeq, filterq
     cmp                  offsetq, dstWq
     jb                  .outerloop
