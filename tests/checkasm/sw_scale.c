@@ -68,8 +68,8 @@ static void check_yuv2yuvX(void)
 #define FILTER_SIZES 4
     static const int filter_sizes[FILTER_SIZES] = {1, 4, 8, 16};
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 4
-    static const int input_sizes[INPUT_SIZES] = {128, 144, 256, 512};
+#define INPUT_SIZES 6
+    static const int input_sizes[INPUT_SIZES] = {8, 24, 128, 144, 256, 512};
 
     declare_func_emms(AV_CPU_FLAG_MMX, void, const int16_t *filter,
                       int filterSize, const int16_t **src, uint8_t *dest,
@@ -107,7 +107,7 @@ static void check_yuv2yuvX(void)
                     for(j = 0; j < 4; ++j)
                         vFilterData[i].coeff[j + 4] = filter_coeff[i];
                 }
-                if (check_func(ctx->yuv2planeX, "yuv2yuvX_%d_%d", filter_sizes[fsi], osi)){
+                if (check_func(ctx->yuv2planeX, "yuv2yuvX_%d_%d_%d", filter_sizes[fsi], osi, dstW)){
                     memset(dst0, 0, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
                     memset(dst1, 0, LARGEST_INPUT_SIZE * sizeof(dst1[0]));
 
