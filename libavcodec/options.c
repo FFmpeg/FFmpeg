@@ -39,7 +39,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static const char* context_to_name(void* ptr) {
     AVCodecContext *avc= ptr;
 
-    if(avc && avc->codec && avc->codec->name)
+    if (avc && avc->codec)
         return avc->codec->name;
     else
         return "NULL";
