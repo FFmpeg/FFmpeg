@@ -209,7 +209,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return ff_filter_frame(ctx->outputs[0], in);
     }
 
-    av_log(ctx, AV_LOG_DEBUG, "Found at %d %d score %f\n", best_x, best_y, best_score);
+    av_log(ctx, AV_LOG_INFO, "Found at n=%lld pts_time=%f x=%d y=%d with score=%f\n",
+           inlink->frame_count_out, TS2D(in->pts) * av_q2d(inlink->time_base),
+           best_x, best_y, best_score);
     foc->last_x = best_x;
     foc->last_y = best_y;
 
