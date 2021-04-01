@@ -187,6 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     float best_score;
     int best_x, best_y;
     int i;
+    char buf[32];
 
     foc->haystack_frame[0] = av_frame_clone(in);
     for (i=1; i<foc->mipmaps; i++) {
@@ -222,12 +223,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     foc->last_x = best_x;
     foc->last_y = best_y;
 
+    snprintf(buf, sizeof(buf), "%f", best_score);
+
     av_frame_make_writable(in);
 
     av_dict_set_int(&in->metadata, "lavfi.rect.w", foc->obj_frame->width, 0);
     av_dict_set_int(&in->metadata, "lavfi.rect.h", foc->obj_frame->height, 0);
     av_dict_set_int(&in->metadata, "lavfi.rect.x", best_x, 0);
     av_dict_set_int(&in->metadata, "lavfi.rect.y", best_y, 0);
+    av_dict_set(&in->metadata, "lavfi.rect.score", buf, 0);
 
     return ff_filter_frame(ctx->outputs[0], in);
 }
