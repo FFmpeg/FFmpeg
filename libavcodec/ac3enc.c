@@ -784,6 +784,10 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
         if (s->eac3)
             frame_bits++;
 
+        /* coupling strategy exists: cplstre */
+        if (!s->eac3)
+            frame_bits++;
+
         if (!s->eac3) {
             /* exponent strategy */
             frame_bits += 2 * s->fbw_channels;
@@ -796,9 +800,8 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
                 frame_bits += 2 + 2 + 2 + 2 + 3;
         }
 
-        /* converter snr offset */
-        if (s->eac3)
-            frame_bits++;
+        /* snroffste for AC-3, convsnroffste for E-AC-3 */
+        frame_bits++;
 
         if (!s->eac3) {
             /* delta bit allocation */
@@ -904,7 +907,7 @@ static void count_frame_bits(AC3EncodeContext *s)
         /* coupling exponent strategy */
         if (s->cpl_on) {
             if (s->use_frame_exp_strategy) {
-                frame_bits += 5 * s->cpl_on;
+                frame_bits += 5;
             } else {
                 for (blk = 0; blk < s->num_blocks; blk++)
                     frame_bits += 2 * s->blocks[blk].cpl_in_use;
@@ -926,8 +929,6 @@ static void count_frame_bits(AC3EncodeContext *s)
         AC3Block *block = &s->blocks[blk];
 
         /* coupling strategy */
-        if (!s->eac3)
-            frame_bits++;
         if (block->new_cpl_strategy) {
             if (!s->eac3)
                 frame_bits++;
@@ -983,7 +984,6 @@ static void count_frame_bits(AC3EncodeContext *s)
 
         /* snr offsets and fast gain codes */
         if (!s->eac3) {
-            frame_bits++;
             if (block->new_snr_offsets)
                 frame_bits += 6 + (s->channels + block->cpl_in_use) * (4 + 3);
         }
