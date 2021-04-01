@@ -40,6 +40,7 @@ typedef struct FOCContext {
     AVFrame *obj_frame;
     AVFrame *needle_frame[MAX_MIPMAPS];
     AVFrame *haystack_frame[MAX_MIPMAPS];
+    int discard;
 } FOCContext;
 
 #define OFFSET(x) offsetof(FOCContext, x)
@@ -52,6 +53,7 @@ static const AVOption find_rect_options[] = {
     { "ymin", "", OFFSET(ymin), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "xmax", "", OFFSET(xmax), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "ymax", "", OFFSET(ymax), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
+    { "discard", "", OFFSET(discard), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -206,7 +208,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     if (best_score > foc->threshold) {
-        return ff_filter_frame(ctx->outputs[0], in);
+        if (foc->discard) {
+            av_frame_free(&in);
+            return 0;
+        } else {
+            return ff_filter_frame(ctx->outputs[0], in);
+        }
     }
 
     av_log(ctx, AV_LOG_INFO, "Found at n=%lld pts_time=%f x=%d y=%d with score=%f\n",

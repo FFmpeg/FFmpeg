@@ -12139,6 +12139,9 @@ Number of mipmaps, default is 3.
 
 @item xmin, ymin, xmax, ymax
 Specifies the rectangle in which to search.
+
+@item discard
+Discard frames where object is not detected. Default is disabled.
 @end table
 
 @subsection Examples
