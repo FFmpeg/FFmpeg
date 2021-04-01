@@ -50,7 +50,6 @@ typedef struct DSSDemuxContext {
     int counter;
     int swap;
     int dss_sp_swap_byte;
-    int8_t dss_sp_buf[DSS_FRAME_SIZE + 1];
 
     int packet_size;
     int dss_header_size;
@@ -182,26 +181,23 @@ static void dss_skip_audio_header(AVFormatContext *s, AVPacket *pkt)
     ctx->counter += DSS_BLOCK_SIZE - DSS_AUDIO_BLOCK_HEADER_SIZE;
 }
 
-static void dss_sp_byte_swap(DSSDemuxContext *ctx,
-                             uint8_t *dst, const uint8_t *src)
+static void dss_sp_byte_swap(DSSDemuxContext *ctx, uint8_t *data)
 {
     int i;
 
     if (ctx->swap) {
-        for (i = 3; i < DSS_FRAME_SIZE; i += 2)
-            dst[i] = src[i];
-
         for (i = 0; i < DSS_FRAME_SIZE - 2; i += 2)
-            dst[i] = src[i + 4];
+            data[i] = data[i + 4];
 
-        dst[1] = ctx->dss_sp_swap_byte;
+        /* Zero the padding. */
+        data[DSS_FRAME_SIZE] = 0;
+        data[1] = ctx->dss_sp_swap_byte;
     } else {
-        memcpy(dst, src, DSS_FRAME_SIZE);
-        ctx->dss_sp_swap_byte = src[DSS_FRAME_SIZE - 2];
+        ctx->dss_sp_swap_byte = data[DSS_FRAME_SIZE - 2];
     }
 
     /* make sure byte 40 is always 0 */
-    dst[DSS_FRAME_SIZE - 2] = 0;
+    data[DSS_FRAME_SIZE - 2] = 0;
     ctx->swap             ^= 1;
 }
 
@@ -229,7 +225,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = 0;
 
     if (ctx->counter < read_size) {
-        ret = avio_read(s->pb, ctx->dss_sp_buf + buff_offset,
+        ret = avio_read(s->pb, pkt->data + buff_offset,
                         ctx->counter);
         if (ret < ctx->counter)
             goto error_eof;
@@ -239,12 +235,13 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     ctx->counter -= read_size;
 
-    ret = avio_read(s->pb, ctx->dss_sp_buf + offset + buff_offset,
+    /* This will write one byte into pkt's padding if buff_offset == 3 */
+    ret = avio_read(s->pb, pkt->data + offset + buff_offset,
                     read_size - offset);
     if (ret < read_size - offset)
         goto error_eof;
 
-    dss_sp_byte_swap(ctx, pkt->data, ctx->dss_sp_buf);
+    dss_sp_byte_swap(ctx, pkt->data);
 
     if (ctx->dss_sp_swap_byte < 0) {
         return AVERROR(EAGAIN);
