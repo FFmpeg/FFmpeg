@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2020
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,22 +18,14 @@
 
 /**
  * @file
- * DNN inference functions interface for OpenVINO backend.
+ * DNN common functions different backends.
  */
 
-
-#ifndef AVFILTER_DNN_DNN_BACKEND_OPENVINO_H
-#define AVFILTER_DNN_DNN_BACKEND_OPENVINO_H
+#ifndef AVFILTER_DNN_DNN_BACKEND_COMMON_H
+#define AVFILTER_DNN_DNN_BACKEND_COMMON_H
 
 #include "../dnn_interface.h"
 
-DNNModel *ff_dnn_load_model_ov(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
-
-DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_params);
-DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBaseParams *exec_params);
-DNNAsyncStatusType ff_dnn_get_async_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out);
-DNNReturnType ff_dnn_flush_ov(const DNNModel *model);
-
-void ff_dnn_free_model_ov(DNNModel **model);
+int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func_type, DNNExecBaseParams *exec_params);
 
 #endif

@@ -90,14 +90,26 @@ DNNReturnType ff_dnn_get_output(DnnContext *ctx, int input_width, int input_heig
 
 DNNReturnType ff_dnn_execute_model(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame)
 {
-    return (ctx->dnn_module->execute_model)(ctx->model, ctx->model_inputname, in_frame,
-                                            (const char **)&ctx->model_outputname, 1, out_frame);
+    DNNExecBaseParams exec_params = {
+        .input_name     = ctx->model_inputname,
+        .output_names   = (const char **)&ctx->model_outputname,
+        .nb_output      = 1,
+        .in_frame       = in_frame,
+        .out_frame      = out_frame,
+    };
+    return (ctx->dnn_module->execute_model)(ctx->model, &exec_params);
 }
 
 DNNReturnType ff_dnn_execute_model_async(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame)
 {
-    return (ctx->dnn_module->execute_model_async)(ctx->model, ctx->model_inputname, in_frame,
-                                                  (const char **)&ctx->model_outputname, 1, out_frame);
+    DNNExecBaseParams exec_params = {
+        .input_name     = ctx->model_inputname,
+        .output_names   = (const char **)&ctx->model_outputname,
+        .nb_output      = 1,
+        .in_frame       = in_frame,
+        .out_frame      = out_frame,
+    };
+    return (ctx->dnn_module->execute_model_async)(ctx->model, &exec_params);
 }
 
 DNNAsyncStatusType ff_dnn_get_async_result(DnnContext *ctx, AVFrame **in_frame, AVFrame **out_frame)

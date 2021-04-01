@@ -2,6 +2,7 @@ OBJS-$(CONFIG_DNN)                           += dnn/dnn_interface.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_io_proc.o
 OBJS-$(CONFIG_DNN)                           += dnn/queue.o
 OBJS-$(CONFIG_DNN)                           += dnn/safe_queue.o
+OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_common.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layers.o
 OBJS-$(CONFIG_DNN)                           += dnn/dnn_backend_native_layer_avgpool.o

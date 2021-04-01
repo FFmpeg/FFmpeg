@@ -33,6 +33,7 @@
 #include "queue.h"
 #include "safe_queue.h"
 #include <c_api/ie_c_api.h>
+#include "dnn_backend_common.h"
 
 typedef struct OVOptions{
     char *device_type;
@@ -678,28 +679,14 @@ err:
     return NULL;
 }
 
-DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
     OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
     RequestItem *request;
 
-    if (!in_frame) {
-        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
-        return DNN_ERROR;
-    }
-
-    if (!out_frame && model->func_type == DFT_PROCESS_FRAME) {
-        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
-        return DNN_ERROR;
-    }
-
-    if (nb_output != 1) {
-        // currently, the filter does not need multiple outputs,
-        // so we just pending the support until we really need it.
-        avpriv_report_missing_feature(ctx, "multiple outputs");
+    if (ff_check_exec_params(ctx, DNN_OV, model->func_type, exec_params) != 0) {
         return DNN_ERROR;
     }
 
@@ -709,7 +696,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     }
 
     if (!ov_model->exe_network) {
-        if (init_model_ov(ov_model, input_name, output_names[0]) != DNN_SUCCESS) {
+        if (init_model_ov(ov_model, exec_params->input_name, exec_params->output_names[0]) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
@@ -717,10 +704,10 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
 
     task.do_ioproc = 1;
     task.async = 0;
-    task.input_name = input_name;
-    task.in_frame = in_frame;
-    task.output_name = output_names[0];
-    task.out_frame = out_frame;
+    task.input_name = exec_params->input_name;
+    task.in_frame = exec_params->in_frame;
+    task.output_name = exec_params->output_names[0];
+    task.out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
     task.ov_model = ov_model;
 
     if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue) != DNN_SUCCESS) {
@@ -737,26 +724,19 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, const char *input_n
     return execute_model_ov(request, ov_model->inference_queue);
 }
 
-DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                            const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
     OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     RequestItem *request;
     TaskItem *task;
 
-    if (!in_frame) {
-        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when async execute model.\n");
-        return DNN_ERROR;
-    }
-
-    if (!out_frame && model->func_type == DFT_PROCESS_FRAME) {
-        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when async execute model.\n");
+    if (ff_check_exec_params(ctx, DNN_OV, model->func_type, exec_params) != 0) {
         return DNN_ERROR;
     }
 
     if (!ov_model->exe_network) {
-        if (init_model_ov(ov_model, input_name, output_names[0]) != DNN_SUCCESS) {
+        if (init_model_ov(ov_model, exec_params->input_name, exec_params->output_names[0]) != DNN_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return DNN_ERROR;
         }
@@ -770,10 +750,10 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, const char *i
 
     task->do_ioproc = 1;
     task->async = 1;
-    task->input_name = input_name;
-    task->in_frame = in_frame;
-    task->output_name = output_names[0];
-    task->out_frame = out_frame;
+    task->input_name = exec_params->input_name;
+    task->in_frame = exec_params->in_frame;
+    task->output_name = exec_params->output_names[0];
+    task->out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
     task->ov_model = ov_model;
     if (ff_queue_push_back(ov_model->task_queue, task) < 0) {
         av_freep(&task);

@@ -28,6 +28,7 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layers.h"
 #include "dnn_io_proc.h"
+#include "dnn_backend_common.h"
 
 #define OFFSET(x) offsetof(NativeContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
@@ -372,23 +373,17 @@ static DNNReturnType execute_model_native(const DNNModel *model, const char *inp
     return DNN_SUCCESS;
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                          const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
     NativeModel *native_model = model->model;
     NativeContext *ctx = &native_model->ctx;
 
-    if (!in_frame) {
-        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
+    if (ff_check_exec_params(ctx, DNN_NATIVE, model->func_type, exec_params) != 0) {
         return DNN_ERROR;
     }
 
-    if (!out_frame) {
-        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
-        return DNN_ERROR;
-    }
-
-    return execute_model_native(model, input_name, in_frame, output_names, nb_output, out_frame, 1);
+    return execute_model_native(model, exec_params->input_name, exec_params->in_frame,
+                                exec_params->output_names, exec_params->nb_output, exec_params->out_frame, 1);
 }
 
 int32_t ff_calculate_operand_dims_count(const DnnOperand *oprd)

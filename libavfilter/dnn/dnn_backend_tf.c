@@ -34,7 +34,7 @@
 #include "dnn_backend_native_layer_pad.h"
 #include "dnn_backend_native_layer_maximum.h"
 #include "dnn_io_proc.h"
-
+#include "dnn_backend_common.h"
 #include <tensorflow/c/c_api.h>
 
 typedef struct TFOptions{
@@ -814,23 +814,17 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     return DNN_SUCCESS;
 }
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, const char *input_name, AVFrame *in_frame,
-                                      const char **output_names, uint32_t nb_output, AVFrame *out_frame)
+DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
     TFModel *tf_model = model->model;
     TFContext *ctx = &tf_model->ctx;
 
-    if (!in_frame) {
-        av_log(ctx, AV_LOG_ERROR, "in frame is NULL when execute model.\n");
-        return DNN_ERROR;
+    if (ff_check_exec_params(ctx, DNN_TF, model->func_type, exec_params) != 0) {
+         return DNN_ERROR;
     }
 
-    if (!out_frame) {
-        av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
-        return DNN_ERROR;
-    }
-
-    return execute_model_tf(model, input_name, in_frame, output_names, nb_output, out_frame, 1);
+    return execute_model_tf(model, exec_params->input_name, exec_params->in_frame,
+                            exec_params->output_names, exec_params->nb_output, exec_params->out_frame, 1);
 }
 
 void ff_dnn_free_model_tf(DNNModel **model)
