@@ -247,7 +247,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EAGAIN);
     }
 
-    return pkt->size;
+    return 0;
 
 error_eof:
     return ret < 0 ? ret : AVERROR_EOF;
@@ -302,7 +302,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < size)
         return ret < 0 ? ret : AVERROR_EOF;
 
-    return pkt->size;
+    return 0;
 }
 
 static int dss_read_packet(AVFormatContext *s, AVPacket *pkt)
