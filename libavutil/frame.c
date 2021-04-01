@@ -469,7 +469,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
         if (ret < 0)
             goto fail;
 
-        return ret;
+        return 0;
     }
 
     /* ref the buffers */
