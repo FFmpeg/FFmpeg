@@ -501,6 +501,14 @@ retry:
                 av_free(str);
                 return AVERROR_INVALIDDATA;
             }
+        } else if (data_type > 1 && data_type != 4) {
+            // data_type can be 0 if not set at all above. data_type 1 means
+            // UTF8 and 4 means "UTF8 sort". For any other type (UTF16 or e.g.
+            // a picture), don't return it blindly in a string that is supposed
+            // to be UTF8 text.
+            av_log(c->fc, AV_LOG_WARNING, "Skipping unhandled metadata %s of type %d\n", key, data_type);
+            av_free(str);
+            return 0;
         } else {
             int ret = ffio_read_size(pb, str, str_size);
             if (ret < 0) {
