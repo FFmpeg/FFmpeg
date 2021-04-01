@@ -1068,8 +1068,12 @@ static void handle_p_frame_png(PNGDecContext *s, AVFrame *p)
 static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                                AVFrame *p)
 {
+    uint8_t       *dst        = p->data[0];
+    ptrdiff_t      dst_stride = p->linesize[0];
+    const uint8_t *src        = s->last_picture.f->data[0];
+    ptrdiff_t      src_stride = s->last_picture.f->linesize[0];
+
     size_t x, y;
-    uint8_t *buffer;
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
         avctx->pix_fmt != AV_PIX_FMT_RGBA &&
@@ -1089,26 +1093,32 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         if (ret < 0)
             return ret;
 
+        src        = s->last_picture.f->data[0];
+        src_stride = s->last_picture.f->linesize[0];
+
         for (y = s->last_y_offset; y < s->last_y_offset + s->last_h; y++) {
-            memset(s->last_picture.f->data[0] + s->image_linesize * y +
+            memset(s->last_picture.f->data[0] + src_stride * y +
                    s->bpp * s->last_x_offset, 0, s->bpp * s->last_w);
         }
     }
 
-    buffer = av_memdup(s->last_picture.f->data[0], s->image_linesize * s->height);
-    if (!buffer)
-        return AVERROR(ENOMEM);
+    // copy unchanged rectangles from the last frame
+    for (y = 0; y < s->y_offset; y++)
+        memcpy(dst + y * dst_stride, src + y * src_stride, p->width * s->bpp);
+    for (y = s->y_offset; y < s->y_offset + s->cur_h; y++) {
+        memcpy(dst + y * dst_stride, src + y * src_stride, s->x_offset * s->bpp);
+        memcpy(dst + y * dst_stride + (s->x_offset + s->cur_w) * s->bpp,
+               src + y * src_stride + (s->x_offset + s->cur_w) * s->bpp,
+               (p->width - s->cur_w - s->x_offset) * s->bpp);
+    }
+    for (y = s->y_offset + s->cur_h; y < p->height; y++)
+        memcpy(dst + y * dst_stride, src + y * src_stride, p->width * s->bpp);
 
-    // Perform blending
-    if (s->blend_op == APNG_BLEND_OP_SOURCE) {
+    if (s->blend_op == APNG_BLEND_OP_OVER) {
+        // Perform blending
         for (y = s->y_offset; y < s->y_offset + s->cur_h; ++y) {
-            size_t row_start = s->image_linesize * y + s->bpp * s->x_offset;
-            memcpy(buffer + row_start, p->data[0] + row_start, s->bpp * s->cur_w);
-        }
-    } else { // APNG_BLEND_OP_OVER
-        for (y = s->y_offset; y < s->y_offset + s->cur_h; ++y) {
-            uint8_t *foreground = p->data[0] + s->image_linesize * y + s->bpp * s->x_offset;
-            uint8_t *background = buffer + s->image_linesize * y + s->bpp * s->x_offset;
+            uint8_t       *foreground = dst + dst_stride * y + s->bpp * s->x_offset;
+            const uint8_t *background = src + src_stride * y + s->bpp * s->x_offset;
             for (x = s->x_offset; x < s->x_offset + s->cur_w; ++x, foreground += s->bpp, background += s->bpp) {
                 size_t b;
                 uint8_t foreground_alpha, background_alpha, output_alpha;
@@ -1135,18 +1145,17 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                     break;
                 }
 
-                if (foreground_alpha == 0)
+                if (foreground_alpha == 255)
                     continue;
 
-                if (foreground_alpha == 255) {
-                    memcpy(background, foreground, s->bpp);
+                if (foreground_alpha == 0) {
+                    memcpy(foreground, background, s->bpp);
                     continue;
                 }
 
                 if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
                     // TODO: Alpha blending with PAL8 will likely need the entire image converted over to RGBA first
                     avpriv_request_sample(avctx, "Alpha blending palette samples");
-                    background[0] = foreground[0];
                     continue;
                 }
 
@@ -1164,14 +1173,10 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                     }
                 }
                 output[b] = output_alpha;
-                memcpy(background, output, s->bpp);
+                memcpy(foreground, output, s->bpp);
             }
         }
     }
-
-    // Copy blended buffer into the frame and free
-    memcpy(p->data[0], buffer, s->image_linesize * s->height);
-    av_free(buffer);
 
     return 0;
 }
