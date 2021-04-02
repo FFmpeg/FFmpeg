@@ -120,7 +120,7 @@ static int av1_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
     }
 
     // If a Temporal Delimiter is present, it must be the first OBU.
-    if (frag->units[0].type == AV1_OBU_TEMPORAL_DELIMITER) {
+    if (frag->nb_units && frag->units[0].type == AV1_OBU_TEMPORAL_DELIMITER) {
         if (ctx->td == BSF_ELEMENT_REMOVE)
             ff_cbs_delete_unit(frag, 0);
     } else if (pkt && ctx->td == BSF_ELEMENT_INSERT) {
