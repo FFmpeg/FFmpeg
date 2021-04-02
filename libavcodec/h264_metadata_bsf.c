@@ -466,7 +466,7 @@ static int h264_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
         if (ctx->aud == BSF_ELEMENT_REMOVE)
             ff_cbs_delete_unit(au, 0);
     } else {
-        if (ctx->aud == BSF_ELEMENT_INSERT) {
+        if (pkt && ctx->aud == BSF_ELEMENT_INSERT) {
             err = h264_metadata_insert_aud(bsf, au);
             if (err < 0)
                 return err;
