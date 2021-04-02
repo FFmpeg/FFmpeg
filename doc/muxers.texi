@@ -19,6 +19,11 @@ enabled demuxers and muxers.
 
 A description of some of the currently available muxers follows.
 
+@anchor{a64}
+@section a64
+
+A64 muxer for Commodore 64 video. Accepts a single @code{a64_multi} or @code{a64_multi5} codec video stream.
+
 @anchor{aiff}
 @section aiff
 
