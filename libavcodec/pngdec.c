@@ -77,8 +77,6 @@ typedef struct PNGDecContext {
     int has_trns;
     uint8_t transparent_color_be[6];
 
-    uint8_t *image_buf;
-    int image_linesize;
     uint32_t palette[256];
     uint8_t *crow_buf;
     uint8_t *last_row;
@@ -330,27 +328,27 @@ static int percent_missing(PNGDecContext *s)
 }
 
 /* process exactly one decompressed row */
-static void png_handle_row(PNGDecContext *s)
+static void png_handle_row(PNGDecContext *s, uint8_t *dst, ptrdiff_t dst_stride)
 {
     uint8_t *ptr, *last_row;
     int got_line;
 
     if (!s->interlace_type) {
-        ptr = s->image_buf + s->image_linesize * (s->y + s->y_offset) + s->x_offset * s->bpp;
+        ptr = dst + dst_stride * (s->y + s->y_offset) + s->x_offset * s->bpp;
         if (s->y == 0)
             last_row = s->last_row;
         else
-            last_row = ptr - s->image_linesize;
+            last_row = ptr - dst_stride;
 
         ff_png_filter_row(&s->dsp, ptr, s->crow_buf[0], s->crow_buf + 1,
                           last_row, s->row_size, s->bpp);
         /* loco lags by 1 row so that it doesn't interfere with top prediction */
         if (s->filter_type == PNG_FILTER_TYPE_LOCO && s->y > 0) {
             if (s->bit_depth == 16) {
-                deloco_rgb16((uint16_t *)(ptr - s->image_linesize), s->row_size / 2,
+                deloco_rgb16((uint16_t *)(ptr - dst_stride), s->row_size / 2,
                              s->color_type == PNG_COLOR_TYPE_RGB_ALPHA);
             } else {
-                deloco_rgb8(ptr - s->image_linesize, s->row_size,
+                deloco_rgb8(ptr - dst_stride, s->row_size,
                             s->color_type == PNG_COLOR_TYPE_RGB_ALPHA);
             }
         }
@@ -370,7 +368,7 @@ static void png_handle_row(PNGDecContext *s)
     } else {
         got_line = 0;
         for (;;) {
-            ptr = s->image_buf + s->image_linesize * (s->y + s->y_offset) + s->x_offset * s->bpp;
+            ptr = dst + dst_stride * (s->y + s->y_offset) + s->x_offset * s->bpp;
             if ((ff_png_pass_ymask[s->pass] << (s->y & 7)) & 0x80) {
                 /* if we already read one row, it is time to stop to
                  * wait for the next one */
@@ -411,7 +409,8 @@ the_end:;
     }
 }
 
-static int png_decode_idat(PNGDecContext *s, int length)
+static int png_decode_idat(PNGDecContext *s, int length,
+                           uint8_t *dst, ptrdiff_t dst_stride)
 {
     int ret;
     s->zstream.avail_in = FFMIN(length, bytestream2_get_bytes_left(&s->gb));
@@ -427,7 +426,7 @@ static int png_decode_idat(PNGDecContext *s, int length)
         }
         if (s->zstream.avail_out == 0) {
             if (!(s->pic_state & PNG_ALLIMAGE)) {
-                png_handle_row(s);
+                png_handle_row(s, dst, dst_stride);
             }
             s->zstream.avail_out = s->crow_size;
             s->zstream.next_out  = s->crow_buf;
@@ -732,8 +731,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
         }
         ff_dlog(avctx, "row_size=%d crow_size =%d\n",
                 s->row_size, s->crow_size);
-        s->image_buf      = p->data[0];
-        s->image_linesize = p->linesize[0];
+
         /* copy the palette if needed */
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
             memcpy(p->data[1], s->palette, 256 * sizeof(uint32_t));
@@ -764,7 +762,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
     if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE)
         s->bpp -= byte_depth;
 
-    ret = png_decode_idat(s, length);
+    ret = png_decode_idat(s, length, p->data[0], p->linesize[0]);
 
     if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE)
         s->bpp += byte_depth;
@@ -913,7 +911,7 @@ static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
                 pd[8*i + 1]= (pd[i]>>6) & 1;
                 pd[8*i + 0]=  pd[i]>>7;
             }
-            pd += s->image_linesize;
+            pd += p->linesize[0];
         }
     } else if (s->bits_per_pixel == 2) {
         int i, j;
@@ -941,7 +939,7 @@ static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
                     pd[4*i + 0]= ( pd[i]>>6     )*0x55;
                 }
             }
-            pd += s->image_linesize;
+            pd += p->linesize[0];
         }
     } else if (s->bits_per_pixel == 4) {
         int i, j;
@@ -961,7 +959,7 @@ static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
                     pd[2*i + 0] = (pd[i] >> 4) * 0x11;
                 }
             }
-            pd += s->image_linesize;
+            pd += p->linesize[0];
         }
     }
 }
@@ -1056,8 +1054,8 @@ static void handle_p_frame_png(PNGDecContext *s, AVFrame *p)
     for (j = 0; j < s->height; j++) {
         for (i = 0; i < ls; i++)
             pd[i] += pd_last[i];
-        pd      += s->image_linesize;
-        pd_last += s->image_linesize;
+        pd      += p->linesize[0];
+        pd_last += s->last_picture.f->linesize[0];
     }
 }
 
@@ -1401,7 +1399,7 @@ exit_loop:
         av_assert0(s->bit_depth > 1);
 
         for (y = 0; y < s->height; ++y) {
-            uint8_t *row = &s->image_buf[s->image_linesize * y];
+            uint8_t *row = &p->data[0][p->linesize[0] * y];
 
             if (s->bpp == 2 && byte_depth == 1) {
                 uint8_t *pixel = &row[2 * s->width - 1];
