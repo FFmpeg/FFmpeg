@@ -45,14 +45,15 @@ void av_bsf_free(AVBSFContext **pctx)
         return;
     ctx = *pctx;
 
-    if (ctx->filter->close)
-        ctx->filter->close(ctx);
+    if (ctx->internal) {
+        if (ctx->filter->close)
+            ctx->filter->close(ctx);
+        av_packet_free(&ctx->internal->buffer_pkt);
+        av_freep(&ctx->internal);
+    }
     if (ctx->filter->priv_class && ctx->priv_data)
         av_opt_free(ctx->priv_data);
 
-    if (ctx->internal)
-        av_packet_free(&ctx->internal->buffer_pkt);
-    av_freep(&ctx->internal);
     av_freep(&ctx->priv_data);
 
     avcodec_parameters_free(&ctx->par_in);
@@ -110,20 +111,6 @@ int av_bsf_alloc(const AVBitStreamFilter *filter, AVBSFContext **pctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-
-    bsfi = av_mallocz(sizeof(*bsfi));
-    if (!bsfi) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    ctx->internal = bsfi;
-
-    bsfi->buffer_pkt = av_packet_alloc();
-    if (!bsfi->buffer_pkt) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     /* allocate priv data and init private options */
     if (filter->priv_data_size) {
         ctx->priv_data = av_mallocz(filter->priv_data_size);
@@ -135,6 +122,20 @@ int av_bsf_alloc(const AVBitStreamFilter *filter, AVBSFContext **pctx)
             *(const AVClass **)ctx->priv_data = filter->priv_class;
             av_opt_set_defaults(ctx->priv_data);
         }
+    }
+    /* Allocate AVBSFInternal; must happen after priv_data has been allocated
+     * so that a filter->close needing priv_data is never called without. */
+    bsfi = av_mallocz(sizeof(*bsfi));
+    if (!bsfi) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    ctx->internal = bsfi;
+
+    bsfi->buffer_pkt = av_packet_alloc();
+    if (!bsfi->buffer_pkt) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     *pctx = ctx;
