@@ -1217,7 +1217,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
         }
 
         length = bytestream2_get_be32(&s->gb);
-        if (length > 0x7fffffff || length > bytestream2_get_bytes_left(&s->gb)) {
+        if (length > 0x7fffffff || length + 8 > bytestream2_get_bytes_left(&s->gb)) {
             av_log(avctx, AV_LOG_ERROR, "chunk too big\n");
             ret = AVERROR_INVALIDDATA;
             goto fail;
