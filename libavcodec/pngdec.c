@@ -421,13 +421,12 @@ the_end:;
     }
 }
 
-static int png_decode_idat(PNGDecContext *s, int length,
+static int png_decode_idat(PNGDecContext *s, GetByteContext *gb,
                            uint8_t *dst, ptrdiff_t dst_stride)
 {
     int ret;
-    s->zstream.avail_in = FFMIN(length, bytestream2_get_bytes_left(&s->gb));
-    s->zstream.next_in  = s->gb.buffer;
-    bytestream2_skip(&s->gb, length);
+    s->zstream.avail_in = bytestream2_get_bytes_left(gb);
+    s->zstream.next_in  = gb->buffer;
 
     /* decode one line if possible */
     while (s->zstream.avail_in > 0) {
@@ -520,11 +519,11 @@ static uint8_t *iso88591_to_utf8(const uint8_t *in, size_t size_in)
     return out;
 }
 
-static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed)
+static int decode_text_chunk(PNGDecContext *s, GetByteContext *gb, int compressed)
 {
     int ret, method;
-    const uint8_t *data        = s->gb.buffer;
-    const uint8_t *data_end    = data + length;
+    const uint8_t *data        = gb->buffer;
+    const uint8_t *data_end    = gb->buffer_end;
     const uint8_t *keyword     = data;
     const uint8_t *keyword_end = memchr(keyword, 0, data_end - keyword);
     uint8_t *kw_utf8 = NULL, *text, *txt_utf8 = NULL;
@@ -568,9 +567,9 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed)
 }
 
 static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
-                             uint32_t length)
+                             GetByteContext *gb)
 {
-    if (length != 13)
+    if (bytestream2_get_bytes_left(gb) != 13)
         return AVERROR_INVALIDDATA;
 
     if (s->pic_state & PNG_IDAT) {
@@ -583,28 +582,27 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    s->width  = s->cur_w = bytestream2_get_be32(&s->gb);
-    s->height = s->cur_h = bytestream2_get_be32(&s->gb);
+    s->width  = s->cur_w = bytestream2_get_be32(gb);
+    s->height = s->cur_h = bytestream2_get_be32(gb);
     if (av_image_check_size(s->width, s->height, 0, avctx)) {
         s->cur_w = s->cur_h = s->width = s->height = 0;
         av_log(avctx, AV_LOG_ERROR, "Invalid image size\n");
         return AVERROR_INVALIDDATA;
     }
-    s->bit_depth        = bytestream2_get_byte(&s->gb);
+    s->bit_depth        = bytestream2_get_byte(gb);
     if (s->bit_depth != 1 && s->bit_depth != 2 && s->bit_depth != 4 &&
         s->bit_depth != 8 && s->bit_depth != 16) {
         av_log(avctx, AV_LOG_ERROR, "Invalid bit depth\n");
         goto error;
     }
-    s->color_type       = bytestream2_get_byte(&s->gb);
-    s->compression_type = bytestream2_get_byte(&s->gb);
+    s->color_type       = bytestream2_get_byte(gb);
+    s->compression_type = bytestream2_get_byte(gb);
     if (s->compression_type) {
         av_log(avctx, AV_LOG_ERROR, "Invalid compression method %d\n", s->compression_type);
         goto error;
     }
-    s->filter_type      = bytestream2_get_byte(&s->gb);
-    s->interlace_type   = bytestream2_get_byte(&s->gb);
-    bytestream2_skip(&s->gb, 4); /* crc */
+    s->filter_type      = bytestream2_get_byte(gb);
+    s->interlace_type   = bytestream2_get_byte(gb);
     s->hdr_state |= PNG_IHDR;
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG, "width=%d height=%d depth=%d color_type=%d "
@@ -619,24 +617,24 @@ error:
     return AVERROR_INVALIDDATA;
 }
 
-static int decode_phys_chunk(AVCodecContext *avctx, PNGDecContext *s)
+static int decode_phys_chunk(AVCodecContext *avctx, PNGDecContext *s,
+                             GetByteContext *gb)
 {
     if (s->pic_state & PNG_IDAT) {
         av_log(avctx, AV_LOG_ERROR, "pHYs after IDAT\n");
         return AVERROR_INVALIDDATA;
     }
-    avctx->sample_aspect_ratio.num = bytestream2_get_be32(&s->gb);
-    avctx->sample_aspect_ratio.den = bytestream2_get_be32(&s->gb);
+    avctx->sample_aspect_ratio.num = bytestream2_get_be32(gb);
+    avctx->sample_aspect_ratio.den = bytestream2_get_be32(gb);
     if (avctx->sample_aspect_ratio.num < 0 || avctx->sample_aspect_ratio.den < 0)
         avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
-    bytestream2_skip(&s->gb, 1); /* unit specifier */
-    bytestream2_skip(&s->gb, 4); /* crc */
+    bytestream2_skip(gb, 1); /* unit specifier */
 
     return 0;
 }
 
 static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
-                             uint32_t length, AVFrame *p)
+                             GetByteContext *gb, AVFrame *p)
 {
     int ret;
     size_t byte_depth = s->bit_depth > 8 ? 2 : 1;
@@ -773,7 +771,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
     if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE)
         s->bpp -= byte_depth;
 
-    ret = png_decode_idat(s, length, p->data[0], p->linesize[0]);
+    ret = png_decode_idat(s, gb, p->data[0], p->linesize[0]);
 
     if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE)
         s->bpp += byte_depth;
@@ -781,14 +779,13 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
     if (ret < 0)
         return ret;
 
-    bytestream2_skip(&s->gb, 4); /* crc */
-
     return 0;
 }
 
 static int decode_plte_chunk(AVCodecContext *avctx, PNGDecContext *s,
-                             uint32_t length)
+                             GetByteContext *gb)
 {
+    int length = bytestream2_get_bytes_left(gb);
     int n, i, r, g, b;
 
     if ((length % 3) != 0 || length > 256 * 3)
@@ -796,22 +793,22 @@ static int decode_plte_chunk(AVCodecContext *avctx, PNGDecContext *s,
     /* read the palette */
     n = length / 3;
     for (i = 0; i < n; i++) {
-        r = bytestream2_get_byte(&s->gb);
-        g = bytestream2_get_byte(&s->gb);
-        b = bytestream2_get_byte(&s->gb);
+        r = bytestream2_get_byte(gb);
+        g = bytestream2_get_byte(gb);
+        b = bytestream2_get_byte(gb);
         s->palette[i] = (0xFFU << 24) | (r << 16) | (g << 8) | b;
     }
     for (; i < 256; i++)
         s->palette[i] = (0xFFU << 24);
     s->hdr_state |= PNG_PLTE;
-    bytestream2_skip(&s->gb, 4);     /* crc */
 
     return 0;
 }
 
 static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
-                             uint32_t length)
+                             GetByteContext *gb)
 {
+    int length = bytestream2_get_bytes_left(gb);
     int v, i;
 
     if (!(s->hdr_state & PNG_IHDR)) {
@@ -829,7 +826,7 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
             return AVERROR_INVALIDDATA;
 
         for (i = 0; i < length; i++) {
-            unsigned v = bytestream2_get_byte(&s->gb);
+            unsigned v = bytestream2_get_byte(gb);
             s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
         }
     } else if (s->color_type == PNG_COLOR_TYPE_GRAY || s->color_type == PNG_COLOR_TYPE_RGB) {
@@ -840,7 +837,7 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
 
         for (i = 0; i < length / 2; i++) {
             /* only use the least significant bits */
-            v = av_mod_uintp2(bytestream2_get_be16(&s->gb), s->bit_depth);
+            v = av_mod_uintp2(bytestream2_get_be16(gb), s->bit_depth);
 
             if (s->bit_depth > 8)
                 AV_WB16(&s->transparent_color_be[2 * i], v);
@@ -851,35 +848,30 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    bytestream2_skip(&s->gb, 4); /* crc */
     s->has_trns = 1;
 
     return 0;
 }
 
-static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
+static int decode_iccp_chunk(PNGDecContext *s, GetByteContext *gb, AVFrame *f)
 {
     int ret, cnt = 0;
     AVBPrint bp;
 
-    while ((s->iccp_name[cnt++] = bytestream2_get_byte(&s->gb)) && cnt < 81);
+    while ((s->iccp_name[cnt++] = bytestream2_get_byte(gb)) && cnt < 81);
     if (cnt > 80) {
         av_log(s->avctx, AV_LOG_ERROR, "iCCP with invalid name!\n");
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
-    length = FFMAX(length - cnt, 0);
-
-    if (bytestream2_get_byte(&s->gb) != 0) {
+    if (bytestream2_get_byte(gb) != 0) {
         av_log(s->avctx, AV_LOG_ERROR, "iCCP with invalid compression!\n");
         ret =  AVERROR_INVALIDDATA;
         goto fail;
     }
 
-    length = FFMAX(length - 1, 0);
-
-    if ((ret = decode_zbuf(&bp, s->gb.buffer, s->gb.buffer + length)) < 0)
+    if ((ret = decode_zbuf(&bp, gb->buffer, gb->buffer_end)) < 0)
         return ret;
 
     av_freep(&s->iccp_data);
@@ -887,9 +879,6 @@ static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
     if (ret < 0)
         return ret;
     s->iccp_data_len = bp.len;
-
-    /* ICC compressed data and CRC */
-    bytestream2_skip(&s->gb, length + 4);
 
     return 0;
 fail:
@@ -971,12 +960,12 @@ static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
 }
 
 static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
-                             uint32_t length)
+                             GetByteContext *gb)
 {
     uint32_t sequence_number;
     int cur_w, cur_h, x_offset, y_offset, dispose_op, blend_op;
 
-    if (length != 26)
+    if (bytestream2_get_bytes_left(gb) != 26)
         return AVERROR_INVALIDDATA;
 
     if (!(s->hdr_state & PNG_IHDR)) {
@@ -995,15 +984,14 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
     s->last_y_offset = s->y_offset;
     s->last_dispose_op = s->dispose_op;
 
-    sequence_number = bytestream2_get_be32(&s->gb);
-    cur_w           = bytestream2_get_be32(&s->gb);
-    cur_h           = bytestream2_get_be32(&s->gb);
-    x_offset        = bytestream2_get_be32(&s->gb);
-    y_offset        = bytestream2_get_be32(&s->gb);
-    bytestream2_skip(&s->gb, 4); /* delay_num (2), delay_den (2) */
-    dispose_op      = bytestream2_get_byte(&s->gb);
-    blend_op        = bytestream2_get_byte(&s->gb);
-    bytestream2_skip(&s->gb, 4); /* crc */
+    sequence_number = bytestream2_get_be32(gb);
+    cur_w           = bytestream2_get_be32(gb);
+    cur_h           = bytestream2_get_be32(gb);
+    x_offset        = bytestream2_get_be32(gb);
+    y_offset        = bytestream2_get_be32(gb);
+    bytestream2_skip(gb, 4); /* delay_num (2), delay_den (2) */
+    dispose_op      = bytestream2_get_byte(gb);
+    blend_op        = bytestream2_get_byte(gb);
 
     if (sequence_number == 0 &&
         (cur_w != s->width ||
@@ -1194,6 +1182,8 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
     int i, ret;
 
     for (;;) {
+        GetByteContext gb_chunk;
+
         length = bytestream2_get_bytes_left(&s->gb);
         if (length <= 0) {
 
@@ -1233,14 +1223,16 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                     goto fail;
                 }
                 av_log(avctx, AV_LOG_ERROR, ", skipping\n");
-                bytestream2_skip(&s->gb, 4); /* tag */
-                goto skip_tag;
+                bytestream2_skip(&s->gb, length + 8); /* tag */
             }
         }
         tag = bytestream2_get_le32(&s->gb);
         if (avctx->debug & FF_DEBUG_STARTCODE)
             av_log(avctx, AV_LOG_DEBUG, "png: tag=%s length=%u\n",
                    av_fourcc2str(tag), length);
+
+        bytestream2_init(&gb_chunk, s->gb.buffer, length);
+        bytestream2_skip(&s->gb, length + 4);
 
         if (avctx->codec_id == AV_CODEC_ID_PNG &&
             avctx->skip_frame == AVDISCARD_ALL) {
@@ -1252,62 +1244,57 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             case MKTAG('t', 'R', 'N', 'S'):
                 break;
             default:
-                goto skip_tag;
+                continue;
             }
         }
 
         switch (tag) {
         case MKTAG('I', 'H', 'D', 'R'):
-            if ((ret = decode_ihdr_chunk(avctx, s, length)) < 0)
+            if ((ret = decode_ihdr_chunk(avctx, s, &gb_chunk)) < 0)
                 goto fail;
             break;
         case MKTAG('p', 'H', 'Y', 's'):
-            if ((ret = decode_phys_chunk(avctx, s)) < 0)
+            if ((ret = decode_phys_chunk(avctx, s, &gb_chunk)) < 0)
                 goto fail;
             break;
         case MKTAG('f', 'c', 'T', 'L'):
             if (!CONFIG_APNG_DECODER || avctx->codec_id != AV_CODEC_ID_APNG)
-                goto skip_tag;
-            if ((ret = decode_fctl_chunk(avctx, s, length)) < 0)
+                continue;
+            if ((ret = decode_fctl_chunk(avctx, s, &gb_chunk)) < 0)
                 goto fail;
             decode_next_dat = 1;
             break;
         case MKTAG('f', 'd', 'A', 'T'):
             if (!CONFIG_APNG_DECODER || avctx->codec_id != AV_CODEC_ID_APNG)
-                goto skip_tag;
-            if (!decode_next_dat || length < 4) {
+                continue;
+            if (!decode_next_dat || bytestream2_get_bytes_left(&gb_chunk) < 4) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            bytestream2_get_be32(&s->gb);
-            length -= 4;
+            bytestream2_get_be32(&gb_chunk);
             /* fallthrough */
         case MKTAG('I', 'D', 'A', 'T'):
             if (CONFIG_APNG_DECODER && avctx->codec_id == AV_CODEC_ID_APNG && !decode_next_dat)
-                goto skip_tag;
-            if ((ret = decode_idat_chunk(avctx, s, length, p)) < 0)
+                continue;
+            if ((ret = decode_idat_chunk(avctx, s, &gb_chunk, p)) < 0)
                 goto fail;
             break;
         case MKTAG('P', 'L', 'T', 'E'):
-            if (decode_plte_chunk(avctx, s, length) < 0)
-                goto skip_tag;
+            decode_plte_chunk(avctx, s, &gb_chunk);
             break;
         case MKTAG('t', 'R', 'N', 'S'):
-            if (decode_trns_chunk(avctx, s, length) < 0)
-                goto skip_tag;
+            decode_trns_chunk(avctx, s, &gb_chunk);
             break;
         case MKTAG('t', 'E', 'X', 't'):
-            if (decode_text_chunk(s, length, 0) < 0)
+            if (decode_text_chunk(s, &gb_chunk, 0) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken tEXt chunk\n");
-            bytestream2_skip(&s->gb, length + 4);
             break;
         case MKTAG('z', 'T', 'X', 't'):
-            if (decode_text_chunk(s, length, 1) < 0)
+            if (decode_text_chunk(s, &gb_chunk, 1) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken zTXt chunk\n");
-            bytestream2_skip(&s->gb, length + 4);
             break;
         case MKTAG('s', 'T', 'E', 'R'): {
-            int mode = bytestream2_get_byte(&s->gb);
+            int mode = bytestream2_get_byte(&gb_chunk);
 
             if (mode == 0 || mode == 1) {
                 s->stereo_mode = mode;
@@ -1315,33 +1302,31 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                  av_log(avctx, AV_LOG_WARNING,
                         "Unknown value in sTER chunk (%d)\n", mode);
             }
-            bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
         case MKTAG('i', 'C', 'C', 'P'): {
-            if ((ret = decode_iccp_chunk(s, length, p)) < 0)
+            if ((ret = decode_iccp_chunk(s, &gb_chunk, p)) < 0)
                 goto fail;
             break;
         }
         case MKTAG('c', 'H', 'R', 'M'): {
             s->have_chrm = 1;
 
-            s->white_point[0] = bytestream2_get_be32(&s->gb);
-            s->white_point[1] = bytestream2_get_be32(&s->gb);
+            s->white_point[0] = bytestream2_get_be32(&gb_chunk);
+            s->white_point[1] = bytestream2_get_be32(&gb_chunk);
 
             /* RGB Primaries */
             for (i = 0; i < 3; i++) {
-                s->display_primaries[i][0] = bytestream2_get_be32(&s->gb);
-                s->display_primaries[i][1] = bytestream2_get_be32(&s->gb);
+                s->display_primaries[i][0] = bytestream2_get_be32(&gb_chunk);
+                s->display_primaries[i][1] = bytestream2_get_be32(&gb_chunk);
             }
 
-            bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
         case MKTAG('g', 'A', 'M', 'A'): {
             AVBPrint bp;
             char *gamma_str;
-            int num = bytestream2_get_be32(&s->gb);
+            int num = bytestream2_get_be32(&gb_chunk);
 
             av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
             av_bprintf(&bp, "%i/%i", num, 100000);
@@ -1351,7 +1336,6 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
 
             av_dict_set(&s->frame_metadata, "gamma", gamma_str, AV_DICT_DONT_STRDUP_VAL);
 
-            bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
         case MKTAG('I', 'E', 'N', 'D'):
@@ -1361,13 +1345,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            bytestream2_skip(&s->gb, 4); /* crc */
             goto exit_loop;
-        default:
-            /* skip tag */
-skip_tag:
-            bytestream2_skip(&s->gb, length + 4);
-            break;
         }
     }
 exit_loop:
