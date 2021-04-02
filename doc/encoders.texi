@@ -1268,6 +1268,10 @@ disabled
 A description of some of the currently available video encoders
 follows.
 
+@section a64_multi, a64_multi5
+
+A64 / Commodore 64 multicolor charset encoder. @code{a64_multi5} is extended with 5th color (colram).
+
 @section GIF
 
 GIF image/animation encoder.
