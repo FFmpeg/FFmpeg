@@ -160,9 +160,9 @@ int av_bsf_init(AVBSFContext *ctx)
                    "bitstream filter '%s'. Supported codecs are: ",
                    desc ? desc->name : "unknown", ctx->par_in->codec_id, ctx->filter->name);
             for (i = 0; ctx->filter->codec_ids[i] != AV_CODEC_ID_NONE; i++) {
-                desc = avcodec_descriptor_get(ctx->filter->codec_ids[i]);
+                enum AVCodecID codec_id = ctx->filter->codec_ids[i];
                 av_log(ctx, AV_LOG_ERROR, "%s (%d) ",
-                       desc ? desc->name : "unknown", ctx->filter->codec_ids[i]);
+                       avcodec_get_name(codec_id), codec_id);
             }
             av_log(ctx, AV_LOG_ERROR, "\n");
             return AVERROR(EINVAL);
