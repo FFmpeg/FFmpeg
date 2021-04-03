@@ -96,7 +96,7 @@ do {                                    \
     atomic_load(object)
 
 #define atomic_exchange(object, desired) \
-    InterlockedExchangePointer(object, desired);
+    InterlockedExchangePointer((PVOID volatile *)object, (PVOID)desired)
 
 #define atomic_exchange_explicit(object, desired, order) \
     atomic_exchange(object, desired)
