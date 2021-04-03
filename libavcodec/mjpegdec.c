@@ -154,7 +154,8 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         if (ff_mjpeg_decode_dht(s)) {
             av_log(avctx, AV_LOG_ERROR,
                    "error using external huffman table, switching back to internal\n");
-            init_default_huffman_tables(s);
+            if ((ret = init_default_huffman_tables(s)) < 0)
+                return ret;
         }
     }
     if (avctx->field_order == AV_FIELD_BB) { /* quicktime icefloe 019 */
