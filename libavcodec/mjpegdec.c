@@ -2088,28 +2088,26 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
         /* Allocate if this is the first APP2 we've seen. */
         if (s->iccnum == 0) {
-            s->iccdata     = av_mallocz(nummarkers * sizeof(*(s->iccdata)));
-            s->iccdatalens = av_mallocz(nummarkers * sizeof(*(s->iccdatalens)));
-            if (!s->iccdata || !s->iccdatalens) {
+            if (!FF_ALLOCZ_TYPED_ARRAY(s->iccentries, nummarkers)) {
                 av_log(s->avctx, AV_LOG_ERROR, "Could not allocate ICC data arrays\n");
                 return AVERROR(ENOMEM);
             }
             s->iccnum = nummarkers;
         }
 
-        if (s->iccdata[seqno - 1]) {
+        if (s->iccentries[seqno - 1].data) {
             av_log(s->avctx, AV_LOG_WARNING, "Duplicate ICC sequence number\n");
             goto out;
         }
 
-        s->iccdatalens[seqno - 1]  = len;
-        s->iccdata[seqno - 1]      = av_malloc(len);
-        if (!s->iccdata[seqno - 1]) {
+        s->iccentries[seqno - 1].length = len;
+        s->iccentries[seqno - 1].data   = av_malloc(len);
+        if (!s->iccentries[seqno - 1].data) {
             av_log(s->avctx, AV_LOG_ERROR, "Could not allocate ICC data buffer\n");
             return AVERROR(ENOMEM);
         }
 
-        memcpy(s->iccdata[seqno - 1], align_get_bits(&s->gb), len);
+        memcpy(s->iccentries[seqno - 1].data, align_get_bits(&s->gb), len);
         skip_bits(&s->gb, len << 3);
         len = 0;
         s->iccread++;
@@ -2318,11 +2316,11 @@ static void reset_icc_profile(MJpegDecodeContext *s)
 {
     int i;
 
-    if (s->iccdata)
+    if (s->iccentries) {
         for (i = 0; i < s->iccnum; i++)
-            av_freep(&s->iccdata[i]);
-    av_freep(&s->iccdata);
-    av_freep(&s->iccdatalens);
+            av_freep(&s->iccentries[i].data);
+        av_freep(&s->iccentries);
+    }
 
     s->iccread = 0;
     s->iccnum  = 0;
@@ -2838,7 +2836,7 @@ the_end:
 
         /* Sum size of all parts. */
         for (i = 0; i < s->iccnum; i++)
-            total_size += s->iccdatalens[i];
+            total_size += s->iccentries[i].length;
 
         sd = av_frame_new_side_data(frame, AV_FRAME_DATA_ICC_PROFILE, total_size);
         if (!sd) {
@@ -2848,8 +2846,8 @@ the_end:
 
         /* Reassemble the parts, which are now in-order. */
         for (i = 0; i < s->iccnum; i++) {
-            memcpy(sd->data + offset, s->iccdata[i], s->iccdatalens[i]);
-            offset += s->iccdatalens[i];
+            memcpy(sd->data + offset, s->iccentries[i].data, s->iccentries[i].length);
+            offset += s->iccentries[i].length;
         }
     }
 
