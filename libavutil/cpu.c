@@ -291,6 +291,12 @@ int av_cpu_count(void)
     DWORD_PTR proc_aff, sys_aff;
     if (GetProcessAffinityMask(GetCurrentProcess(), &proc_aff, &sys_aff))
         nb_cpus = av_popcount64(proc_aff);
+#elif HAVE_SYSCTL && defined(HW_NCPUONLINE)
+    int mib[2] = { CTL_HW, HW_NCPUONLINE };
+    size_t len = sizeof(nb_cpus);
+
+    if (sysctl(mib, 2, &nb_cpus, &len, NULL, 0) == -1)
+        nb_cpus = 0;
 #elif HAVE_SYSCTL && defined(HW_NCPU)
     int mib[2] = { CTL_HW, HW_NCPU };
     size_t len = sizeof(nb_cpus);
