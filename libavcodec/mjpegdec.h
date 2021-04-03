@@ -44,6 +44,11 @@
 
 #define MAX_COMPONENTS 4
 
+typedef struct ICCEntry {
+    uint8_t *data;
+    int    length;
+} ICCEntry;
+
 typedef struct MJpegDecodeContext {
     AVClass *class;
     AVCodecContext *avctx;
@@ -138,8 +143,7 @@ typedef struct MJpegDecodeContext {
 
     const AVPixFmtDescriptor *pix_desc;
 
-    uint8_t **iccdata;
-    int *iccdatalens;
+    ICCEntry *iccentries;
     int iccnum;
     int iccread;
 
