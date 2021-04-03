@@ -701,11 +701,18 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         coeff_data = s->plane[s->channel_num].subband[s->subband_num_actual];
 
         /* Lowpass coefficients */
-        if (tag == BitstreamMarker && data == 0xf0f && s->a_width && s->a_height) {
-            int lowpass_height = s->plane[s->channel_num].band[0][0].height;
-            int lowpass_width  = s->plane[s->channel_num].band[0][0].width;
-            int lowpass_a_height = s->plane[s->channel_num].band[0][0].a_height;
-            int lowpass_a_width  = s->plane[s->channel_num].band[0][0].a_width;
+        if (tag == BitstreamMarker && data == 0xf0f) {
+            int lowpass_height, lowpass_width, lowpass_a_height, lowpass_a_width;
+
+            if (!s->a_width || !s->a_height) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
+
+            lowpass_height = s->plane[s->channel_num].band[0][0].height;
+            lowpass_width  = s->plane[s->channel_num].band[0][0].width;
+            lowpass_a_height = s->plane[s->channel_num].band[0][0].a_height;
+            lowpass_a_width  = s->plane[s->channel_num].band[0][0].a_width;
 
             if (lowpass_width < 3 ||
                 lowpass_width > lowpass_a_width) {
@@ -755,16 +762,24 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "Lowpass coefficients %d\n", lowpass_width * lowpass_height);
         }
 
-        if ((tag == BandHeader || tag == BandSecondPass) && s->subband_num_actual != 255 && s->a_width && s->a_height) {
-            int highpass_height = s->plane[s->channel_num].band[s->level][s->subband_num].height;
-            int highpass_width  = s->plane[s->channel_num].band[s->level][s->subband_num].width;
-            int highpass_a_width = s->plane[s->channel_num].band[s->level][s->subband_num].a_width;
-            int highpass_a_height = s->plane[s->channel_num].band[s->level][s->subband_num].a_height;
-            int highpass_stride = s->plane[s->channel_num].band[s->level][s->subband_num].stride;
+        av_assert0(s->subband_num_actual != 255);
+        if (tag == BandHeader || tag == BandSecondPass) {
+            int highpass_height, highpass_width, highpass_a_width, highpass_a_height, highpass_stride, a_expected;
             int expected;
-            int a_expected = highpass_a_height * highpass_a_width;
             int level, run, coeff;
             int count = 0, bytes;
+
+            if (!s->a_width || !s->a_height) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
+
+            highpass_height = s->plane[s->channel_num].band[s->level][s->subband_num].height;
+            highpass_width  = s->plane[s->channel_num].band[s->level][s->subband_num].width;
+            highpass_a_width = s->plane[s->channel_num].band[s->level][s->subband_num].a_width;
+            highpass_a_height = s->plane[s->channel_num].band[s->level][s->subband_num].a_height;
+            highpass_stride = s->plane[s->channel_num].band[s->level][s->subband_num].stride;
+            a_expected = highpass_a_height * highpass_a_width;
 
             if (!got_buffer) {
                 av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
