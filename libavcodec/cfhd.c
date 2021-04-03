@@ -221,6 +221,7 @@ static void free_buffers(CFHDContext *s)
     int i, j;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->plane); i++) {
+        Plane *p = &s->plane[i];
         av_freep(&s->plane[i].idwt_buf);
         av_freep(&s->plane[i].idwt_tmp);
         s->plane[i].idwt_size = 0;
@@ -230,6 +231,12 @@ static void free_buffers(CFHDContext *s)
 
         for (j = 0; j < 10; j++)
             s->plane[i].l_h[j] = NULL;
+
+        for (j = 0; j < DWT_LEVELS_3D; j++)
+            p->band[j][0].read_ok =
+            p->band[j][1].read_ok =
+            p->band[j][2].read_ok =
+            p->band[j][3].read_ok = 0;
     }
     s->a_height = 0;
     s->a_width  = 0;
@@ -759,6 +766,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                        lowpass_width * sizeof(*coeff_data));
             }
 
+            s->plane[s->channel_num].band[0][0].read_ok = 1;
+
             av_log(avctx, AV_LOG_DEBUG, "Lowpass coefficients %d\n", lowpass_width * lowpass_height);
         }
 
@@ -891,6 +900,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 bytestream2_seek(&gb, bytes, SEEK_CUR);
 
             av_log(avctx, AV_LOG_DEBUG, "End subband coeffs %i extra %i\n", count, count - expected);
+            s->plane[s->channel_num].band[s->level][s->subband_num].read_ok = 1;
 finish:
             if (s->subband_num_actual != 255)
                 s->codebook = 0;
@@ -917,6 +927,22 @@ finish:
         av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
         ret = AVERROR(EINVAL);
         goto end;
+    }
+
+    for (plane = 0; plane < s->planes; plane++) {
+        int o, level;
+
+        for (level = 0; level < (s->transform_type == 0 ? DWT_LEVELS : DWT_LEVELS_3D) ; level++) {
+            if (s->transform_type == 2)
+                if (level == 2 || level == 5)
+                    continue;
+            for (o = !!level; o < 4 ; o++) {
+                if (!s->plane[plane].band[level][o].read_ok) {
+                    ret = AVERROR_INVALIDDATA;
+                    goto end;
+                }
+            }
+        }
     }
 
     if (s->transform_type == 0 && s->sample_type != 1) {

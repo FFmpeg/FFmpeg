@@ -114,6 +114,7 @@ typedef struct SubBand {
     int width;
     int a_height;
     int height;
+    int8_t read_ok;
 } SubBand;
 
 typedef struct Plane {
