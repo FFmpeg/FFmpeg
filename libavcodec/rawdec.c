@@ -484,6 +484,7 @@ static av_cold int raw_close_decoder(AVCodecContext *avctx)
     RawVideoContext *context = avctx->priv_data;
 
     av_buffer_unref(&context->palette);
+    av_freep(&context->bitstream_buf);
     return 0;
 }
 
