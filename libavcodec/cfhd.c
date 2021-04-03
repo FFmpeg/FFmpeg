@@ -233,6 +233,7 @@ static void free_buffers(CFHDContext *s)
     }
     s->a_height = 0;
     s->a_width  = 0;
+    s->a_transform_type = INT_MIN;
 }
 
 static int alloc_buffers(AVCodecContext *avctx)
@@ -356,6 +357,7 @@ static int alloc_buffers(AVCodecContext *avctx)
         }
     }
 
+    s->a_transform_type = s->transform_type;
     s->a_height = s->coded_height;
     s->a_width  = s->coded_width;
     s->a_format = s->coded_format;
@@ -655,7 +657,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 s->coded_height = s->a_height;
 
             if (s->a_width != s->coded_width || s->a_height != s->coded_height ||
-                s->a_format != s->coded_format) {
+                s->a_format != s->coded_format ||
+                s->transform_type != s->a_transform_type) {
                 free_buffers(s);
                 if ((ret = alloc_buffers(avctx)) < 0) {
                     free_buffers(s);
@@ -888,6 +891,7 @@ finish:
     ff_thread_finish_setup(avctx);
 
     if (!s->a_width || !s->a_height || s->a_format == AV_PIX_FMT_NONE ||
+        s->a_transform_type == INT_MIN ||
         s->coded_width || s->coded_height || s->coded_format != AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions\n");
         ret = AVERROR(EINVAL);
@@ -1381,12 +1385,14 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (pdst->plane[0].idwt_size != psrc->plane[0].idwt_size ||
         pdst->a_format != psrc->a_format ||
         pdst->a_width != psrc->a_width ||
-        pdst->a_height != psrc->a_height)
+        pdst->a_height != psrc->a_height ||
+        pdst->a_transform_type != psrc->a_transform_type)
         free_buffers(pdst);
 
     pdst->a_format = psrc->a_format;
     pdst->a_width  = psrc->a_width;
     pdst->a_height = psrc->a_height;
+    pdst->a_transform_type = psrc->a_transform_type;
     pdst->transform_type = psrc->transform_type;
     pdst->progressive = psrc->progressive;
     pdst->planes = psrc->planes;
@@ -1395,6 +1401,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         pdst->coded_width  = pdst->a_width;
         pdst->coded_height = pdst->a_height;
         pdst->coded_format = pdst->a_format;
+        pdst->transform_type = pdst->a_transform_type;
         ret = alloc_buffers(dst);
         if (ret < 0)
             return ret;
