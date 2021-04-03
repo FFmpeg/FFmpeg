@@ -459,6 +459,8 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
+        const char default_language[] = "und";
+        const char *language = lang && strlen(lang->value) >= 3 ? lang->value : default_language;
         enum AVCodecID codec_id = st->codecpar->codec_id;
 
         if (s->nb_programs) {
@@ -598,16 +600,18 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 }
             }
 
-            if (lang) {
-                char *p;
-                char *next = lang->value;
+            if (language != default_language ||
+                st->disposition & (AV_DISPOSITION_CLEAN_EFFECTS    |
+                                   AV_DISPOSITION_HEARING_IMPAIRED |
+                                   AV_DISPOSITION_VISUAL_IMPAIRED)) {
+                const char *p, *next;
                 uint8_t *len_ptr;
 
                 *q++     = ISO_639_LANGUAGE_DESCRIPTOR;
                 len_ptr  = q++;
                 *len_ptr = 0;
 
-                for (p = lang->value; next && *len_ptr < 255 / 4 * 4; p = next + 1) {
+                for (p = next = language; next && *len_ptr < 255 / 4 * 4; p = next + 1) {
                     if (q - data > SECTION_LENGTH - 4) {
                         err = 1;
                         break;
@@ -637,10 +641,6 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
-        {
-           const char default_language[] = "und";
-           const char *language = lang && strlen(lang->value) >= 3 ? lang->value : default_language;
-
            if (codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
                uint8_t *len_ptr;
                int extradata_copied = 0;
@@ -715,7 +715,6 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 
                *len_ptr = q - len_ptr - 1;
             }
-        }
         break;
         case AVMEDIA_TYPE_VIDEO:
             if (stream_type == STREAM_TYPE_VIDEO_DIRAC) {
