@@ -1243,7 +1243,9 @@ by name, or it can create a new device as if
 were called immediately before.
 
 @item -hwaccels
-List all hardware acceleration methods supported in this build of ffmpeg.
+List all hardware acceleration components enabled in this build of ffmpeg.
+Actual runtime availability depends on the hardware and its suitable driver
+being installed.
 
 @end table
 
