@@ -51,9 +51,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
-#ifndef FF_API_AVCTX_TIMEBASE
-#define FF_API_AVCTX_TIMEBASE    (LIBAVCODEC_VERSION_MAJOR < 59)
-#endif
 #ifndef FF_API_CODED_FRAME
 #define FF_API_CODED_FRAME       (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
@@ -167,6 +164,9 @@
 #endif
 #ifndef FF_API_INIT_PACKET
 #define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 60)
+#endif
+#ifndef FF_API_AVCTX_TIMEBASE
+#define FF_API_AVCTX_TIMEBASE    (LIBAVCODEC_VERSION_MAJOR < 60)
 #endif
 
 #endif /* AVCODEC_VERSION_H */
