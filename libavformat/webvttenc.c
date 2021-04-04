@@ -65,6 +65,7 @@ static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
     AVIOContext  *pb = ctx->pb;
     buffer_size_t id_size, settings_size;
+    int id_size_int, settings_size_int;
     uint8_t *id, *settings;
 
     avio_printf(pb, "\n");
@@ -72,8 +73,12 @@ static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     id = av_packet_get_side_data(pkt, AV_PKT_DATA_WEBVTT_IDENTIFIER,
                                  &id_size);
 
-    if (id && id_size > 0)
-        avio_printf(pb, "%.*s\n", id_size, id);
+    if (id_size > INT_MAX)
+        return AVERROR(EINVAL);
+
+    id_size_int = id_size;
+    if (id && id_size_int > 0)
+        avio_printf(pb, "%.*s\n", id_size_int, id);
 
     webvtt_write_time(pb, pkt->pts);
     avio_printf(pb, " --> ");
@@ -82,8 +87,12 @@ static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     settings = av_packet_get_side_data(pkt, AV_PKT_DATA_WEBVTT_SETTINGS,
                                        &settings_size);
 
-    if (settings && settings_size > 0)
-        avio_printf(pb, " %.*s", settings_size, settings);
+    if (settings_size_int > INT_MAX)
+        return AVERROR(EINVAL);
+
+    settings_size_int = settings_size;
+    if (settings && settings_size_int > 0)
+        avio_printf(pb, " %.*s", settings_size_int, settings);
 
     avio_printf(pb, "\n");
 
