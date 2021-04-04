@@ -226,7 +226,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             new_w = rv->orig_width;
             new_h = rv->orig_height;
         }
-        if (new_w != s->width || new_h != s->height) {
+        if (new_w != s->width || new_h != s->height || !s->context_initialized) {
             AVRational old_aspect = s->avctx->sample_aspect_ratio;
             av_log(s->avctx, AV_LOG_DEBUG,
                    "attempting to change resolution to %dx%d\n", new_w, new_h);
