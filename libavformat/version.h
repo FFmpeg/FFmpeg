@@ -55,9 +55,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  *
  */
-#ifndef FF_API_COMPUTE_PKT_FIELDS2
-#define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 59)
-#endif
 #ifndef FF_API_OLD_OPEN_CALLBACKS
 #define FF_API_OLD_OPEN_CALLBACKS       (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
@@ -114,6 +111,9 @@
 #endif
 #ifndef FF_API_LAVF_PRIV_OPT
 #define FF_API_LAVF_PRIV_OPT            (LIBAVFORMAT_VERSION_MAJOR < 60)
+#endif
+#ifndef FF_API_COMPUTE_PKT_FIELDS2
+#define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 60)
 #endif
 
 

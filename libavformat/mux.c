@@ -541,7 +541,7 @@ fail:
 #define AV_PKT_FLAG_UNCODED_FRAME 0x2000
 
 
-#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
+#if FF_API_COMPUTE_PKT_FIELDS2
 FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
@@ -621,7 +621,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
     case AVMEDIA_TYPE_AUDIO:
         frame_size = (pkt->flags & AV_PKT_FLAG_UNCODED_FRAME) ?
                      (*(AVFrame **)pkt->data)->nb_samples :
-                     av_get_audio_frame_duration(st->codec, pkt->size);
+                     av_get_audio_frame_duration2(st->codecpar, pkt->size);
 
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
          * likely equal to the encoder delay, but it would be better if we
@@ -779,7 +779,7 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int prepare_input_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
-#if !FF_API_COMPUTE_PKT_FIELDS2 || !FF_API_LAVF_AVCTX
+#if !FF_API_COMPUTE_PKT_FIELDS2
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
 
@@ -1140,7 +1140,7 @@ static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, 
 
     guess_pkt_duration(s, st, pkt);
 
-#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
+#if FF_API_COMPUTE_PKT_FIELDS2
     if ((ret = compute_muxer_pkt_fields(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
 #endif
