@@ -217,7 +217,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    av_log(ctx, AV_LOG_INFO, "Found at n=%lld pts_time=%f x=%d y=%d with score=%f\n",
+    av_log(ctx, AV_LOG_INFO, "Found at n=%"PRId64" pts_time=%f x=%d y=%d with score=%f\n",
            inlink->frame_count_out, TS2D(in->pts) * av_q2d(inlink->time_base),
            best_x, best_y, best_score);
     foc->last_x = best_x;
