@@ -79,6 +79,26 @@ Testing ff_make_absolute_url:
                              http://server/foo/bar ..doubledotfile      => http://server/foo/..doubledotfile
                              http://server/foo/bar double..dotfile      => http://server/foo/double..dotfile
                              http://server/foo/bar doubledotfile..      => http://server/foo/doubledotfile..
+                                             file1 file2                => file2
+                                         dir/file1 file2                => dir/file2
+                                         dir/file1 ../file2             => dir/../file2
+                                         dir\file1 file2                => file2
+                                         dir\file1 file2               DOS dir\file2
+                                    \\srv\shr\file ..\..\dummy          => ..\..\dummy
+                                    \\srv\shr\file ..\..\dummy         DOS \\srv\shr\..\..\dummy
+                                    \\srv\shr\file dummy                => dummy
+                                    \\srv\shr\file dummy               DOS \\srv\shr\dummy
+                                    \\srv\shr\file \\srv2\shr2\file2    => \\srv2\shr2\file2
+                                    \\srv\shr\file d:/file              => d:/file
+                                          C:\dir\a ..\file              => C:..\file
+                                          C:\dir\a ..\file             DOS C:\dir\..\file
+                                          C:\dir\a \\srv\shr\file       => C:\\srv\shr\file
+                                          C:\dir\a \\srv\shr\file      DOS \\srv\shr\file
+                                          C:\dir\a d:\file              => d:\file
+                                        http://a/b \\srv\shr\file       => http://a/\\srv\shr\file
+                                        http://a/b //srv/shr/file       => http://srv/shr/file
+                                        http://a/b d:\file              => d:\file
+                                        http://a/b C:/file              => C:/file
                                 http://a/b/c/d;p?q g:h                  => g:h
                                 http://a/b/c/d;p?q g                    => http://a/b/c/g
                                 http://a/b/c/d;p?q ./g                  => http://a/b/c/g
