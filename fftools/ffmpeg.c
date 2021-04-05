@@ -3151,8 +3151,12 @@ static int init_output_stream_streamcopy(OutputStream *ost)
         return ret;
 
     // copy timebase while removing common factors
-    if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
-        ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
+    if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0) {
+        if (ost->frame_rate.num)
+            ost->st->time_base = av_inv_q(ost->frame_rate);
+        else
+            ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
+    }
 
     // copy estimated duration as a hint to the muxer
     if (ost->st->duration <= 0 && ist->st->duration > 0)
