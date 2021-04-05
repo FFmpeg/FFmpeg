@@ -555,7 +555,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     }
 
     if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
-        s->context_reinit = 0;
         s->height = s1->height;
         s->width  = s1->width;
         if ((ret = ff_mpv_common_frame_size_change(s)) < 0)
@@ -1099,10 +1098,12 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
         if (err < 0)
             goto fail;
     }
+    s->context_reinit = 0;
 
     return 0;
  fail:
-    ff_mpv_common_end(s);
+    free_context_frame(s);
+    s->context_reinit = 1;
     return err;
 }
 
@@ -1149,6 +1150,7 @@ void ff_mpv_common_end(MpegEncContext *s)
     av_frame_free(&s->new_picture.f);
 
     s->context_initialized      = 0;
+    s->context_reinit           = 0;
     s->last_picture_ptr         =
     s->next_picture_ptr         =
     s->current_picture_ptr      = NULL;
