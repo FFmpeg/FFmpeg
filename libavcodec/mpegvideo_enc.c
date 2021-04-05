@@ -302,16 +302,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     mpv_encode_defaults(s);
 
     switch (avctx->codec_id) {
-    case AV_CODEC_ID_MPEG2VIDEO:
-        if (avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
-            avctx->pix_fmt != AV_PIX_FMT_YUV422P) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "only YUV420 and YUV422 are supported\n");
-            return AVERROR(EINVAL);
-        }
-        break;
     case AV_CODEC_ID_MJPEG:
-    case AV_CODEC_ID_AMV:
         format_supported = 0;
         /* JPEG color space */
         if (avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
@@ -334,20 +325,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
         break;
-    case AV_CODEC_ID_SPEEDHQ:
-        if (avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
-            avctx->pix_fmt != AV_PIX_FMT_YUV422P &&
-            avctx->pix_fmt != AV_PIX_FMT_YUV444P) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "only YUV420/YUV422/YUV444 are supported (no alpha support yet)\n");
-            return AVERROR(EINVAL);
-        }
-        break;
-    default:
-        if (avctx->pix_fmt != AV_PIX_FMT_YUV420P) {
-            av_log(avctx, AV_LOG_ERROR, "only YUV420 is supported\n");
-            return AVERROR(EINVAL);
-        }
     }
 
     switch (avctx->pix_fmt) {
