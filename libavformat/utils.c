@@ -5892,9 +5892,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         enc_ctx->time_base = dec_ctx->time_base;
     }
 
-    if (ost->avg_frame_rate.num)
-        enc_ctx->time_base = av_inv_q(ost->avg_frame_rate);
-
     av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,
               enc_ctx->time_base.num, enc_ctx->time_base.den, INT_MAX);
 
