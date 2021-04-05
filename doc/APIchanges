@@ -2,14 +2,14 @@ Never assume the API of libav* to be stable unless at least 1 month has passed
 since the last major version increase or the API was added.
 
 The last version increases were:
-libavcodec:    2017-10-21
-libavdevice:   2017-10-21
-libavfilter:   2017-10-21
-libavformat:   2017-10-21
-libpostproc:   2017-10-21
-libswresample: 2017-10-21
-libswscale:    2017-10-21
-libavutil:     2017-10-21
+libavcodec:    2021-04-27
+libavdevice:   2021-04-27
+libavfilter:   2021-04-27
+libavformat:   2021-04-27
+libpostproc:   2021-04-27
+libswresample: 2021-04-27
+libswscale:    2021-04-27
+libavutil:     2021-04-27
 
 
 API changes, most recent first:
