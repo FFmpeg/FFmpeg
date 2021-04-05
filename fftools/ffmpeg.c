@@ -3144,7 +3144,11 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
     if (!ost->frame_rate.num)
         ost->frame_rate = ist->framerate;
-    ost->st->avg_frame_rate = ost->frame_rate;
+
+    if (ost->frame_rate.num)
+        ost->st->avg_frame_rate = ost->frame_rate;
+    else
+        ost->st->avg_frame_rate = ist->st->avg_frame_rate;
 
     ret = avformat_transfer_internal_stream_timing_info(of->ctx->oformat, ost->st, ist->st, copy_tb);
     if (ret < 0)
