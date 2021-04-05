@@ -1383,6 +1383,7 @@ static int rv34_decoder_alloc(RV34DecContext *r)
 
     if (!(r->cbp_chroma       && r->cbp_luma && r->deblock_coefs &&
           r->intra_types_hist && r->mb_type)) {
+        r->s.context_reinit = 1;
         rv34_decoder_free(r);
         return AVERROR(ENOMEM);
     }
@@ -1530,7 +1531,7 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
     if (dst == src || !s1->context_initialized)
         return 0;
 
-    if (s->height != s1->height || s->width != s1->width) {
+    if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
         s->height = s1->height;
         s->width  = s1->width;
         if ((err = ff_mpv_common_frame_size_change(s)) < 0)
@@ -1667,11 +1668,12 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         if (s->mb_num_left > 0 && s->current_picture_ptr) {
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
-            ff_er_frame_end(&s->er);
+            if (!s->context_reinit)
+                ff_er_frame_end(&s->er);
             ff_mpv_frame_end(s);
         }
 
-        if (s->width != si.width || s->height != si.height) {
+        if (s->width != si.width || s->height != si.height || s->context_reinit) {
             int err;
 
             av_log(s->avctx, AV_LOG_WARNING, "Changing dimensions to %dx%d\n",
@@ -1689,7 +1691,6 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             err = ff_set_dimensions(s->avctx, s->width, s->height);
             if (err < 0)
                 return err;
-
             if ((err = ff_mpv_common_frame_size_change(s)) < 0)
                 return err;
             if ((err = rv34_decoder_realloc(r)) < 0)
@@ -1744,6 +1745,10 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         }
         s->mb_x = s->mb_y = 0;
         ff_thread_finish_setup(s->avctx);
+    } else if (s->context_reinit) {
+        av_log(s->avctx, AV_LOG_ERROR, "Decoder needs full frames to "
+               "reinitialize (start MB is %d).\n", si.start);
+        return AVERROR_INVALIDDATA;
     } else if (HAVE_THREADS &&
                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
         av_log(s->avctx, AV_LOG_ERROR, "Decoder needs full frames in frame "
