@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavformat/url.h"
 #include "libavformat/avformat.h"
 
@@ -48,19 +49,30 @@ static void test_decompose(const char *url)
 
 static void test(const char *base, const char *rel)
 {
-    char buf[200], buf2[200];
+    char buf[200], buf2[200], buf_dos[200], buf_native[200];
     int ret;
 
-    ret = ff_make_absolute_url(buf, sizeof(buf), base, rel);
+    ret = ff_make_absolute_url2(buf, sizeof(buf), base, rel, 0);
     if (ret < 0) {
         printf("%50s %-20s => error %s\n", base, rel, av_err2str(ret));
         return;
     }
     printf("%50s %-20s => %s\n", base, rel, buf);
+    ret = ff_make_absolute_url2(buf_dos, sizeof(buf_dos), base, rel, 1);
+    if (ret < 0)
+        snprintf(buf_dos, sizeof(buf_dos), "error %s", av_err2str(ret));
+    ret = ff_make_absolute_url(buf_native, sizeof(buf_native), base, rel);
+    if (ret < 0)
+        snprintf(buf_native, sizeof(buf_native), "error %s", av_err2str(ret));
+    if (strcmp(buf, buf_dos))
+        printf("%50s %-20sDOS %s\n", base, rel, buf_dos);
+    if (HAVE_DOS_PATHS && strcmp(buf_dos, buf_native) ||
+        !HAVE_DOS_PATHS && strcmp(buf, buf_native))
+        printf("Native mismatch\n");
     if (base) {
         /* Test in-buffer replacement */
         snprintf(buf2, sizeof(buf2), "%s", base);
-        ff_make_absolute_url(buf2, sizeof(buf2), buf2, rel);
+        ff_make_absolute_url2(buf2, sizeof(buf2), buf2, rel, 0);
         if (strcmp(buf, buf2)) {
             printf("In-place handling of %s + %s failed\n", base, rel);
             exit(1);
@@ -121,6 +133,21 @@ int main(void)
     test("http://server/foo/bar", "..doubledotfile");
     test("http://server/foo/bar", "double..dotfile");
     test("http://server/foo/bar", "doubledotfile..");
+    test("file1", "file2");
+    test("dir/file1", "file2");
+    test("dir/file1", "../file2");
+    test("dir\\file1", "file2");
+    test("\\\\srv\\shr\\file", "..\\..\\dummy");
+    test("\\\\srv\\shr\\file", "dummy");
+    test("\\\\srv\\shr\\file", "\\\\srv2\\shr2\\file2");
+    test("\\\\srv\\shr\\file", "d:/file");
+    test("C:\\dir\\a", "..\\file");
+    test("C:\\dir\\a", "\\\\srv\\shr\\file");
+    test("C:\\dir\\a", "d:\\file");
+    test("http://a/b", "\\\\srv\\shr\\file");
+    test("http://a/b", "//srv/shr/file");
+    test("http://a/b", "d:\\file");
+    test("http://a/b", "C:/file");
 
     /* From https://tools.ietf.org/html/rfc3986#section-5.4 */
     test("http://a/b/c/d;p?q", "g:h");           // g:h

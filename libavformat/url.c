@@ -190,8 +190,8 @@ static int append_path(char *root, char *out_end, char **rout,
     return 0;
 }
 
-int ff_make_absolute_url(char *buf, int size, const char *base,
-                          const char *rel)
+int ff_make_absolute_url2(char *buf, int size, const char *base,
+                          const char *rel, int handle_dos_paths)
 {
     URLComponents ub, uc;
     char *out, *out_end, *path;
@@ -224,7 +224,7 @@ int ff_make_absolute_url(char *buf, int size, const char *base,
 
     if (!base)
         base = "";
-    if (HAVE_DOS_PATHS) {
+    if (handle_dos_paths) {
         if ((ret = ff_url_decompose(&ub, base, NULL)) < 0)
             goto error;
         if (is_fq_dos_path(base) || av_strstart(base, "file:", NULL) || ub.path == ub.url) {
@@ -314,6 +314,12 @@ error:
              ret == AVERROR(ENOMEM) ? "truncated" :
              ret == AVERROR(EINVAL) ? "syntax_error" : "");
     return ret;
+}
+
+int ff_make_absolute_url(char *buf, int size, const char *base,
+                         const char *rel)
+{
+    return ff_make_absolute_url2(buf, size, base, rel, HAVE_DOS_PATHS);
 }
 
 AVIODirEntry *ff_alloc_dir_entry(void)
