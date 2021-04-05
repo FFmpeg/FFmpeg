@@ -565,7 +565,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
                 break;
         if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE
-            && !((avctx->codec_id == AV_CODEC_ID_MJPEG || avctx->codec_id == AV_CODEC_ID_LJPEG)
+            && !(avctx->codec_id == AV_CODEC_ID_MJPEG
                  && avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL)) {
             char buf[128];
             snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
