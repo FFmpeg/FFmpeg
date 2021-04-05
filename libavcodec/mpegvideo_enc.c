@@ -789,17 +789,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         s->rtp_mode   = 1;
         break;
+#if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_AMV:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        if (!CONFIG_MJPEG_ENCODER)
-            return AVERROR_ENCODER_NOT_FOUND;
         if ((ret = ff_mjpeg_encode_init(s)) < 0)
             return ret;
         avctx->delay = 0;
         s->low_delay = 1;
         break;
+#endif
     case AV_CODEC_ID_SPEEDHQ:
         s->out_format = FMT_SPEEDHQ;
         s->intra_only = 1; /* force intra only for SHQ */
@@ -1097,7 +1097,7 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     ff_rate_control_uninit(s);
 
     ff_mpv_common_end(s);
-    if (CONFIG_MJPEG_ENCODER &&
+    if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) &&
         s->out_format == FMT_MJPEG)
         ff_mjpeg_encode_close(s);
 
@@ -1926,7 +1926,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         frame_end(s);
 
-        if (CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
+       if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) && s->out_format == FMT_MJPEG)
             ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);
 
         if (avctx->rc_buffer_size) {
@@ -2596,11 +2596,12 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         if (CONFIG_H263_ENCODER)
             ff_h263_encode_mb(s, s->block, motion_x, motion_y);
         break;
+#if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_AMV:
-        if (CONFIG_MJPEG_ENCODER)
-            ff_mjpeg_encode_mb(s, s->block);
+        ff_mjpeg_encode_mb(s, s->block);
         break;
+#endif
     case AV_CODEC_ID_SPEEDHQ:
         if (CONFIG_SPEEDHQ_ENCODER)
             ff_speedhq_encode_mb(s, s->block);
@@ -2853,7 +2854,8 @@ static void write_slice_end(MpegEncContext *s){
         }
 
         ff_mpeg4_stuffing(&s->pb);
-    }else if(CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG){
+    } else if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) &&
+               s->out_format == FMT_MJPEG) {
         ff_mjpeg_encode_stuffing(s);
     } else if (CONFIG_SPEEDHQ_ENCODER && s->out_format == FMT_SPEEDHQ) {
         ff_speedhq_end_slice(s);
@@ -3921,11 +3923,14 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     s->mb_x = s->mb_y = 0;
     s->last_bits= put_bits_count(&s->pb);
     switch(s->out_format) {
+#if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
     case FMT_MJPEG:
-        if (CONFIG_MJPEG_ENCODER && s->huffman != HUFFMAN_TABLE_OPTIMAL)
+        /* s->huffman == HUFFMAN_TABLE_OPTIMAL can only be true for MJPEG. */
+        if (!CONFIG_MJPEG_ENCODER || s->huffman != HUFFMAN_TABLE_OPTIMAL)
             ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
                                            s->pred, s->intra_matrix, s->chroma_intra_matrix);
         break;
+#endif
     case FMT_SPEEDHQ:
         if (CONFIG_SPEEDHQ_ENCODER)
             ff_speedhq_encode_picture_header(s);
