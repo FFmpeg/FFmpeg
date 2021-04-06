@@ -71,6 +71,7 @@ static int msp2_decode_frame(AVCodecContext *avctx,
         while (bytestream2_get_bytes_left(&gb) && x < width) {
             int size = bytestream2_get_byte(&gb);
             if (size) {
+                size = FFMIN(size, bytestream2_get_bytes_left(&gb));
                 memcpy(p->data[0] + y * p->linesize[0] + x, gb.buffer, FFMIN(size, width - x));
                 bytestream2_skip(&gb, size);
             } else {
