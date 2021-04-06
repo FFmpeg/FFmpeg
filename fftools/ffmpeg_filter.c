@@ -463,8 +463,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 
     if ((pix_fmts = choose_pix_fmts(ofilter))) {
         AVFilterContext *filter;
-        snprintf(name, sizeof(name), "format_out_%d_%d",
-                 ost->file_index, ost->index);
+
         ret = avfilter_graph_create_filter(&filter,
                                            avfilter_get_by_name("format"),
                                            "format", pix_fmts, NULL, fg->graph);
