@@ -1067,7 +1067,6 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx_allocated      = 0;
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field                = 0;
-    s->mpeg_enc_ctx.codec_id       = avctx->codec->id;
     avctx->color_range             = AVCOL_RANGE_MPEG;
     return 0;
 }
