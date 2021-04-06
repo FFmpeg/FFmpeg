@@ -1378,6 +1378,9 @@ static const AVOption options[] = {
     { "mpeg_quant",        "Use MPEG quantizers instead of H.263",
       OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, VE },
     FF_MPV_COMMON_OPTS
+#if FF_API_MPEGVIDEO_OPTS
+    FF_MPV_DEPRECATED_A53_CC_OPT
+#endif
     FF_MPEG4_PROFILE_OPTS
     { NULL },
 };

@@ -88,6 +88,7 @@ const AVOption ff_mpv_generic_options[] = {
     FF_MPV_COMMON_OPTS
 #if FF_API_MPEGVIDEO_OPTS
     FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+    FF_MPV_DEPRECATED_A53_CC_OPT
 #endif
     { NULL },
 };
@@ -4712,6 +4713,7 @@ static const AVOption h263_options[] = {
     FF_MPV_COMMON_OPTS
 #if FF_API_MPEGVIDEO_OPTS
     FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+    FF_MPV_DEPRECATED_A53_CC_OPT
 #endif
     { NULL },
 };
@@ -4745,6 +4747,7 @@ static const AVOption h263p_options[] = {
     FF_MPV_COMMON_OPTS
 #if FF_API_MPEGVIDEO_OPTS
     FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+    FF_MPV_DEPRECATED_A53_CC_OPT
 #endif
     { NULL },
 };
