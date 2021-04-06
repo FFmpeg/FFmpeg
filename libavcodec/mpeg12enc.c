@@ -1155,6 +1155,7 @@ static const AVOption mpeg1_options[] = {
 #if FF_API_MPEGVIDEO_OPTS
     FF_MPV_DEPRECATED_MPEG_QUANT_OPT
     FF_MPV_DEPRECATED_A53_CC_OPT
+    FF_MPV_DEPRECATED_MATRIX_OPT
 #endif
     { NULL },
 };
@@ -1187,6 +1188,7 @@ static const AVOption mpeg2_options[] = {
 #if FF_API_MPEGVIDEO_OPTS
     { "mpeg_quant",       "Deprecated, does nothing", OFFSET(mpeg_quant),
       AV_OPT_TYPE_INT, {.i64 = 1 }, 0, 1, VE | AV_OPT_FLAG_DEPRECATED },
+    FF_MPV_DEPRECATED_MATRIX_OPT
 #endif
     FF_MPEG2_PROFILE_OPTS
     { NULL },
