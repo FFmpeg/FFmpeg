@@ -436,3 +436,19 @@ void ff_mjpeg_encode_dc(PutBitContext *pb, int val,
         put_sbits(pb, nbits, mant);
     }
 }
+
+int ff_mjpeg_encode_check_pix_fmt(AVCodecContext *avctx)
+{
+    if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
+        avctx->color_range != AVCOL_RANGE_JPEG &&
+        (avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
+         avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
+         avctx->pix_fmt == AV_PIX_FMT_YUV444P ||
+         avctx->color_range == AVCOL_RANGE_MPEG)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Non full-range YUV is non-standard, set strict_std_compliance "
+               "to at most unofficial to use it.\n");
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}

@@ -41,4 +41,6 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4
 void ff_mjpeg_encode_dc(PutBitContext *pb, int val,
                         uint8_t *huff_size, uint16_t *huff_code);
 
+int ff_mjpeg_encode_check_pix_fmt(AVCodecContext *avctx);
+
 #endif /* AVCODEC_MJPEGENC_COMMON_H */

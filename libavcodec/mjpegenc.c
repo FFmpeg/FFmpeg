@@ -261,8 +261,15 @@ static int alloc_huffman(MpegEncContext *s)
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
+    int ret;
 
     av_assert0(s->slice_context_count == 1);
+
+    /* The following check is automatically true for AMV,
+     * but it doesn't hurt either. */
+    ret = ff_mjpeg_encode_check_pix_fmt(s->avctx);
+    if (ret < 0)
+        return ret;
 
     if (s->width > 65500 || s->height > 65500) {
         av_log(s, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
@@ -609,7 +616,9 @@ AVCodec ff_mjpeg_encoder = {
     .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_NONE
     },
     .priv_class     = &mjpeg_class,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),

@@ -564,9 +564,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         for (i = 0; avctx->codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++)
             if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
                 break;
-        if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE
-            && !(avctx->codec_id == AV_CODEC_ID_MJPEG
-                 && avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL)) {
+        if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE) {
             char buf[128];
             snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
             av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is invalid or not supported\n",

@@ -39,22 +39,16 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 
-static const enum AVPixelFormat *get_compliance_unofficial_pix_fmts(enum AVCodecID codec_id, const enum AVPixelFormat default_formats[])
+// FIXME: YUV420P etc. are actually supported with full color range,
+// yet the latter information isn't available here.
+static const enum AVPixelFormat *get_compliance_normal_pix_fmts(enum AVCodecID codec_id, const enum AVPixelFormat default_formats[])
 {
     static const enum AVPixelFormat mjpeg_formats[] =
         { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
-          AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
           AV_PIX_FMT_NONE };
-    static const enum AVPixelFormat ljpeg_formats[] =
-        { AV_PIX_FMT_BGR24   , AV_PIX_FMT_BGRA    , AV_PIX_FMT_BGR0,
-          AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
-          AV_PIX_FMT_YUV420P , AV_PIX_FMT_YUV444P , AV_PIX_FMT_YUV422P,
-          AV_PIX_FMT_NONE};
 
     if (codec_id == AV_CODEC_ID_MJPEG) {
         return mjpeg_formats;
-    } else if (codec_id == AV_CODEC_ID_LJPEG) {
-        return ljpeg_formats;
     } else {
         return default_formats;
     }
@@ -70,8 +64,8 @@ static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx
         int has_alpha = desc ? desc->nb_components % 2 == 0 : 0;
         enum AVPixelFormat best= AV_PIX_FMT_NONE;
 
-        if (enc_ctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_unofficial_pix_fmts(enc_ctx->codec_id, p);
+        if (enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+            p = get_compliance_normal_pix_fmts(enc_ctx->codec_id, p);
         }
         for (; *p != AV_PIX_FMT_NONE; p++) {
             best = av_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
@@ -118,8 +112,8 @@ static char *choose_pix_fmts(OutputFilter *ofilter)
             exit_program(1);
 
         p = ost->enc->pix_fmts;
-        if (ost->enc_ctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_unofficial_pix_fmts(ost->enc_ctx->codec_id, p);
+        if (ost->enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+            p = get_compliance_normal_pix_fmts(ost->enc_ctx->codec_id, p);
         }
 
         for (; *p != AV_PIX_FMT_NONE; p++) {

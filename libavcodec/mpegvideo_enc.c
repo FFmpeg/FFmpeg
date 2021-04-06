@@ -297,35 +297,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     AVCPBProperties *cpb_props;
-    int i, ret, format_supported;
+    int i, ret;
 
     mpv_encode_defaults(s);
-
-    switch (avctx->codec_id) {
-    case AV_CODEC_ID_MJPEG:
-        format_supported = 0;
-        /* JPEG color space */
-        if (avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
-            avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
-            avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
-            (avctx->color_range == AVCOL_RANGE_JPEG &&
-             (avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
-              avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
-              avctx->pix_fmt == AV_PIX_FMT_YUV444P)))
-            format_supported = 1;
-        /* MPEG color space */
-        else if (avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL &&
-                 (avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
-                  avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
-                  avctx->pix_fmt == AV_PIX_FMT_YUV444P))
-            format_supported = 1;
-
-        if (!format_supported) {
-            av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
-            return AVERROR(EINVAL);
-        }
-        break;
-    }
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUVJ444P:
