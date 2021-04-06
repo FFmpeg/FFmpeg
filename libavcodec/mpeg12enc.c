@@ -152,19 +152,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
                max_size, max_size);
         return AVERROR(EINVAL);
     }
+    if ((avctx->width & 0xFFF) == 0 && (avctx->height & 0xFFF) == 1) {
+        av_log(avctx, AV_LOG_ERROR, "Width / Height is invalid for MPEG2\n");
+        return AVERROR(EINVAL);
+    }
 
-    if ((ret = ff_mpv_encode_init(avctx)) < 0)
-        return ret;
-
-    if (find_frame_rate_index(s) < 0) {
-        if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
-                   avctx->time_base.den, avctx->time_base.num);
+    if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+        if ((avctx->width & 0xFFF) == 0 || (avctx->height & 0xFFF) == 0) {
+            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiples of 4096\n"
+                                        "add '-strict %d' if you want to use them anyway.\n", FF_COMPLIANCE_UNOFFICIAL);
             return AVERROR(EINVAL);
-        } else {
-            av_log(avctx, AV_LOG_INFO,
-                   "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
-                   avctx->time_base.den, avctx->time_base.num);
         }
     }
 
@@ -174,9 +171,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
         /* Main or 4:2:2 */
-        avctx->profile = s->chroma_format == CHROMA_420 ? FF_PROFILE_MPEG2_MAIN : FF_PROFILE_MPEG2_422;
+        avctx->profile = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? FF_PROFILE_MPEG2_MAIN
+                                                              : FF_PROFILE_MPEG2_422;
     }
-
     if (avctx->level == FF_LEVEL_UNKNOWN) {
         if (avctx->profile == FF_PROFILE_MPEG2_422) {   /* 4:2:2 */
             if (avctx->width <= 720 && avctx->height <= 608)
@@ -184,7 +181,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
             else
                 avctx->level = 2;                   /* High */
         } else {
-            if (avctx->profile != FF_PROFILE_MPEG2_HIGH && s->chroma_format != CHROMA_420) {
+            if (avctx->profile != FF_PROFILE_MPEG2_HIGH &&
+                avctx->pix_fmt != AV_PIX_FMT_YUV420P) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
                 return AVERROR(EINVAL);
@@ -198,16 +196,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    if ((avctx->width & 0xFFF) == 0 && (avctx->height & 0xFFF) == 1) {
-        av_log(avctx, AV_LOG_ERROR, "Width / Height is invalid for MPEG2\n");
-        return AVERROR(EINVAL);
-    }
+    if ((ret = ff_mpv_encode_init(avctx)) < 0)
+        return ret;
 
-    if (s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-        if ((avctx->width & 0xFFF) == 0 || (avctx->height & 0xFFF) == 0) {
-            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiples of 4096\n"
-                                        "add '-strict %d' if you want to use them anyway.\n", FF_COMPLIANCE_UNOFFICIAL);
+    if (find_frame_rate_index(s) < 0) {
+        if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
+                   avctx->time_base.den, avctx->time_base.num);
             return AVERROR(EINVAL);
+        } else {
+            av_log(avctx, AV_LOG_INFO,
+                   "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
+                   avctx->time_base.den, avctx->time_base.num);
         }
     }
 
