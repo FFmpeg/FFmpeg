@@ -534,20 +534,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-    if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO &&
-        (avctx->width  > 4095 ||
-         avctx->height > 4095 )) {
-        av_log(avctx, AV_LOG_ERROR, "MPEG-1 does not support resolutions above 4095x4095\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO &&
-        (avctx->width  > 16383 ||
-         avctx->height > 16383 )) {
-        av_log(avctx, AV_LOG_ERROR, "MPEG-2 does not support resolutions above 16383x16383\n");
-        return AVERROR(EINVAL);
-    }
-
     if (s->codec_id == AV_CODEC_ID_RV10 &&
         (avctx->width &15 ||
          avctx->height&15 )) {
