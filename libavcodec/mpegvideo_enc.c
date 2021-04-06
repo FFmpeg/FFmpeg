@@ -527,10 +527,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
     if ((s->codec_id == AV_CODEC_ID_H263  ||
-         s->codec_id == AV_CODEC_ID_H263P) &&
+         s->codec_id == AV_CODEC_ID_H263P ||
+         s->codec_id == AV_CODEC_ID_RV20) &&
         ((avctx->width &3) ||
          (avctx->height&3) )) {
-        av_log(avctx, AV_LOG_ERROR, "w/h must be a multiple of 4\n");
+        av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 4\n");
         return AVERROR(EINVAL);
     }
 
@@ -538,13 +539,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         (avctx->width &15 ||
          avctx->height&15 )) {
         av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 16\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (s->codec_id == AV_CODEC_ID_RV20 &&
-        (avctx->width &3 ||
-         avctx->height&3 )) {
-        av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 4\n");
         return AVERROR(EINVAL);
     }
 
