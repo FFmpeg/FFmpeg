@@ -672,11 +672,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR_PATCHWELCOME;
     }
 
-    if (!avctx->time_base.den || !avctx->time_base.num) {
-        av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
-        return AVERROR(EINVAL);
-    }
-
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->b_frame_strategy)
