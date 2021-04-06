@@ -1148,6 +1148,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
       OFFSET(scan_offset),         AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "timecode_frame_start", "GOP timecode frame start number, in non-drop-frame format", \
       OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.i64 = -1 }, -1, INT64_MAX, VE}, \
+    FF_MPV_COMMON_BFRAME_OPTS
 
 static const AVOption mpeg1_options[] = {
     COMMON_OPTS
