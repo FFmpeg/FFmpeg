@@ -593,7 +593,6 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     }
 
     if (ost->apad && of->shortest) {
-        char args[256];
         int i;
 
         for (i=0; i<of->ctx->nb_streams; i++)
@@ -601,8 +600,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
                 break;
 
         if (i<of->ctx->nb_streams) {
-            snprintf(args, sizeof(args), "%s", ost->apad);
-            AUTO_INSERT_FILTER("-apad", "apad", args);
+            AUTO_INSERT_FILTER("-apad", "apad", ost->apad);
         }
     }
 
