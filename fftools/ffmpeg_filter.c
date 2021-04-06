@@ -127,45 +127,39 @@ static char *choose_pix_fmts(OutputFilter *ofilter)
         return NULL;
 }
 
-/* Define a function for building a string containing a list of
- * allowed formats. */
-#define DEF_CHOOSE_FORMAT(suffix, type, var, supported_list, none, get_name)   \
-static char *choose_ ## suffix (OutputFilter *ofilter)                         \
+/* Define a function for appending a list of allowed formats
+ * to an AVBPrint. If nonempty, the list will have a header. */
+#define DEF_CHOOSE_FORMAT(name, type, var, supported_list, none, printf_format, get_name) \
+static void choose_ ## name (OutputFilter *ofilter, AVBPrint *bprint)          \
 {                                                                              \
+    if (ofilter->var == none && !ofilter->supported_list)                      \
+        return;                                                                \
+    av_bprintf(bprint, #name "=");                                             \
     if (ofilter->var != none) {                                                \
-        get_name(ofilter->var);                                                \
-        return av_strdup(name);                                                \
-    } else if (ofilter->supported_list) {                                      \
+        av_bprintf(bprint, printf_format, get_name(ofilter->var));             \
+    } else {                                                                   \
         const type *p;                                                         \
-        AVIOContext *s = NULL;                                                 \
-        uint8_t *ret;                                                          \
-        int len;                                                               \
-                                                                               \
-        if (avio_open_dyn_buf(&s) < 0)                                         \
-            exit_program(1);                                                           \
                                                                                \
         for (p = ofilter->supported_list; *p != none; p++) {                   \
-            get_name(*p);                                                      \
-            avio_printf(s, "%s|", name);                                       \
+            av_bprintf(bprint, printf_format "|", get_name(*p));               \
         }                                                                      \
-        len = avio_close_dyn_buf(s, &ret);                                     \
-        ret[len - 1] = 0;                                                      \
-        return ret;                                                            \
-    } else                                                                     \
-        return NULL;                                                           \
+        if (bprint->len > 0)                                                   \
+            bprint->str[--bprint->len] = '\0';                                 \
+    }                                                                          \
+    av_bprint_chars(bprint, ':', 1);                                           \
 }
 
 //DEF_CHOOSE_FORMAT(pix_fmts, enum AVPixelFormat, format, formats, AV_PIX_FMT_NONE,
 //                  GET_PIX_FMT_NAME)
 
 DEF_CHOOSE_FORMAT(sample_fmts, enum AVSampleFormat, format, formats,
-                  AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME)
+                  AV_SAMPLE_FMT_NONE, "%s", av_get_sample_fmt_name)
 
 DEF_CHOOSE_FORMAT(sample_rates, int, sample_rate, sample_rates, 0,
-                  GET_SAMPLE_RATE_NAME)
+                  "%d", )
 
 DEF_CHOOSE_FORMAT(channel_layouts, uint64_t, channel_layout, channel_layouts, 0,
-                  GET_CH_LAYOUT_NAME)
+                  "0x%"PRIx64, )
 
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
@@ -525,7 +519,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     AVCodecContext *codec  = ost->enc_ctx;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
-    char *sample_fmts, *sample_rates, *channel_layouts;
+    AVBPrint args;
     char name[255];
     int ret;
 
@@ -548,65 +542,52 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
                                        avfilter_get_by_name(filter_name),   \
                                        filter_name, arg, NULL, fg->graph);  \
     if (ret < 0)                                                            \
-        return ret;                                                         \
+        goto fail;                                                          \
                                                                             \
     ret = avfilter_link(last_filter, pad_idx, filt_ctx, 0);                 \
     if (ret < 0)                                                            \
-        return ret;                                                         \
+        goto fail;                                                          \
                                                                             \
     last_filter = filt_ctx;                                                 \
     pad_idx = 0;                                                            \
 } while (0)
+    av_bprint_init(&args, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ost->audio_channels_mapped) {
         int i;
-        AVBPrint pan_buf;
-        av_bprint_init(&pan_buf, 256, 8192);
-        av_bprintf(&pan_buf, "0x%"PRIx64,
+        av_bprintf(&args, "0x%"PRIx64,
                    av_get_default_channel_layout(ost->audio_channels_mapped));
         for (i = 0; i < ost->audio_channels_mapped; i++)
             if (ost->audio_channels_map[i] != -1)
-                av_bprintf(&pan_buf, "|c%d=c%d", i, ost->audio_channels_map[i]);
+                av_bprintf(&args, "|c%d=c%d", i, ost->audio_channels_map[i]);
 
-        AUTO_INSERT_FILTER("-map_channel", "pan", pan_buf.str);
-        av_bprint_finalize(&pan_buf, NULL);
+        AUTO_INSERT_FILTER("-map_channel", "pan", args.str);
+        av_bprint_clear(&args);
     }
 
     if (codec->channels && !codec->channel_layout)
         codec->channel_layout = av_get_default_channel_layout(codec->channels);
 
-    sample_fmts     = choose_sample_fmts(ofilter);
-    sample_rates    = choose_sample_rates(ofilter);
-    channel_layouts = choose_channel_layouts(ofilter);
-    if (sample_fmts || sample_rates || channel_layouts) {
+    choose_sample_fmts(ofilter,     &args);
+    choose_sample_rates(ofilter,    &args);
+    choose_channel_layouts(ofilter, &args);
+    if (!av_bprint_is_complete(&args)) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    if (args.len) {
         AVFilterContext *format;
-        char args[256];
-        args[0] = 0;
-
-        if (sample_fmts)
-            av_strlcatf(args, sizeof(args), "sample_fmts=%s:",
-                            sample_fmts);
-        if (sample_rates)
-            av_strlcatf(args, sizeof(args), "sample_rates=%s:",
-                            sample_rates);
-        if (channel_layouts)
-            av_strlcatf(args, sizeof(args), "channel_layouts=%s:",
-                            channel_layouts);
-
-        av_freep(&sample_fmts);
-        av_freep(&sample_rates);
-        av_freep(&channel_layouts);
 
         snprintf(name, sizeof(name), "format_out_%d_%d",
                  ost->file_index, ost->index);
         ret = avfilter_graph_create_filter(&format,
                                            avfilter_get_by_name("aformat"),
-                                           name, args, NULL, fg->graph);
+                                           name, args.str, NULL, fg->graph);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         ret = avfilter_link(last_filter, pad_idx, format, 0);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         last_filter = format;
         pad_idx = 0;
@@ -631,12 +612,14 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     ret = insert_trim(of->start_time, of->recording_time,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
-        return ret;
+        goto fail;
+fail:
+    av_bprint_finalize(&args, NULL);
 
-    return 0;
+    return ret;
 }
 
 static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter,
