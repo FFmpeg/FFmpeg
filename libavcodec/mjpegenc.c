@@ -593,6 +593,9 @@ FF_MPV_COMMON_OPTS
 { "huffman", "Huffman table strategy", OFFSET(huffman), AV_OPT_TYPE_INT, { .i64 = HUFFMAN_TABLE_OPTIMAL }, 0, NB_HUFFMAN_TABLE_OPTION - 1, VE, "huffman" },
     { "default", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = HUFFMAN_TABLE_DEFAULT }, INT_MIN, INT_MAX, VE, "huffman" },
     { "optimal", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = HUFFMAN_TABLE_OPTIMAL }, INT_MIN, INT_MAX, VE, "huffman" },
+#if FF_API_MPEGVIDEO_OPTS
+FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+#endif
 { NULL},
 };
 

@@ -86,6 +86,9 @@ static uint8_t default_fcode_tab[MAX_MV * 2 + 1];
 
 const AVOption ff_mpv_generic_options[] = {
     FF_MPV_COMMON_OPTS
+#if FF_API_MPEGVIDEO_OPTS
+    FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+#endif
     { NULL },
 };
 
@@ -560,15 +563,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->mpeg_quant)
         s->mpeg_quant = 1;
     FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
-    // FIXME mpeg2 uses that too
     if (s->mpeg_quant && (   s->codec_id != AV_CODEC_ID_MPEG4
                           && s->codec_id != AV_CODEC_ID_MPEG2VIDEO)) {
         av_log(avctx, AV_LOG_ERROR,
                "mpeg2 style quantization not supported by codec\n");
         return AVERROR(EINVAL);
     }
+#endif
 
     if ((s->mpv_flags & FF_MPV_FLAG_CBP_RD) && !avctx->trellis) {
         av_log(avctx, AV_LOG_ERROR, "CBP RD needs trellis quant\n");
@@ -4708,6 +4710,9 @@ static const AVOption h263_options[] = {
     { "obmc",         "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "mb_info",      "emit macroblock info for RFC 2190 packetization, the parameter value is the maximum payload size", OFFSET(mb_info), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     FF_MPV_COMMON_OPTS
+#if FF_API_MPEGVIDEO_OPTS
+    FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+#endif
     { NULL },
 };
 
@@ -4738,6 +4743,9 @@ static const AVOption h263p_options[] = {
     { "obmc",       "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "structured_slices", "Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE},
     FF_MPV_COMMON_OPTS
+#if FF_API_MPEGVIDEO_OPTS
+    FF_MPV_DEPRECATED_MPEG_QUANT_OPT
+#endif
     { NULL },
 };
 static const AVClass h263p_class = {
