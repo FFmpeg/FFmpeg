@@ -285,6 +285,7 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     r->loop_filter        = rv30_loop_filter;
     r->luma_dc_quant_i = rv30_luma_dc_quant;
     r->luma_dc_quant_p = rv30_luma_dc_quant;
+    ff_rv30dsp_init(&r->rdsp);
     return 0;
 }
 
