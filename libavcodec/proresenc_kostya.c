@@ -619,11 +619,6 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
         flush_put_bits(pb);
         sizes[i]   = put_bytes_output(pb) - total_size;
         total_size = put_bytes_output(pb);
-        if (put_bits_left(pb) < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Underestimated required buffer size.\n");
-            return AVERROR_BUG;
-        }
     }
     return total_size;
 }
