@@ -178,37 +178,6 @@ and the input video converted to MPEG-2 video, use the command:
 ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f crc -
 @end example
 
-@section flv
-
-Adobe Flash Video Format muxer.
-
-This muxer accepts the following options:
-
-@table @option
-
-@item flvflags @var{flags}
-Possible values:
-
-@table @samp
-
-@item aac_seq_header_detect
-Place AAC sequence header based on audio stream data.
-
-@item no_sequence_end
-Disable sequence end tag.
-
-@item no_metadata
-Disable metadata tag.
-
-@item no_duration_filesize
-Disable duration and filesize in metadata when they are equal to zero
-at the end of stream. (Be used to non-seekable living stream).
-
-@item add_keyframe_index
-Used to facilitate seeking; particularly for HTTP pseudo streaming.
-@end table
-@end table
-
 @anchor{dash}
 @section dash
 
@@ -383,6 +352,137 @@ adjusting playback latency and buffer occupancy during normal playback by client
  Set the mpd update period ,for dynamic content.
  The unit is second.
 
+@end table
+
+@anchor{fifo}
+@section fifo
+
+The fifo pseudo-muxer allows the separation of encoding and muxing by using
+first-in-first-out queue and running the actual muxer in a separate thread. This
+is especially useful in combination with the @ref{tee} muxer and can be used to
+send data to several destinations with different reliability/writing speed/latency.
+
+API users should be aware that callback functions (interrupt_callback,
+io_open and io_close) used within its AVFormatContext must be thread-safe.
+
+The behavior of the fifo muxer if the queue fills up or if the output fails is
+selectable,
+
+@itemize @bullet
+
+@item
+output can be transparently restarted with configurable delay between retries
+based on real time or time of the processed stream.
+
+@item
+encoding can be blocked during temporary failure, or continue transparently
+dropping packets in case fifo queue fills up.
+
+@end itemize
+
+@table @option
+
+@item fifo_format
+Specify the format name. Useful if it cannot be guessed from the
+output name suffix.
+
+@item queue_size
+Specify size of the queue (number of packets). Default value is 60.
+
+@item format_opts
+Specify format options for the underlying muxer. Muxer options can be specified
+as a list of @var{key}=@var{value} pairs separated by ':'.
+
+@item drop_pkts_on_overflow @var{bool}
+If set to 1 (true), in case the fifo queue fills up, packets will be dropped
+rather than blocking the encoder. This makes it possible to continue streaming without
+delaying the input, at the cost of omitting part of the stream. By default
+this option is set to 0 (false), so in such cases the encoder will be blocked
+until the muxer processes some of the packets and none of them is lost.
+
+@item attempt_recovery @var{bool}
+If failure occurs, attempt to recover the output. This is especially useful
+when used with network output, since it makes it possible to restart streaming transparently.
+By default this option is set to 0 (false).
+
+@item max_recovery_attempts
+Sets maximum number of successive unsuccessful recovery attempts after which
+the output fails permanently. By default this option is set to 0 (unlimited).
+
+@item recovery_wait_time @var{duration}
+Waiting time before the next recovery attempt after previous unsuccessful
+recovery attempt. Default value is 5 seconds.
+
+@item recovery_wait_streamtime @var{bool}
+If set to 0 (false), the real time is used when waiting for the recovery
+attempt (i.e. the recovery will be attempted after at least
+recovery_wait_time seconds).
+If set to 1 (true), the time of the processed stream is taken into account
+instead (i.e. the recovery will be attempted after at least @var{recovery_wait_time}
+seconds of the stream is omitted).
+By default, this option is set to 0 (false).
+
+@item recover_any_error @var{bool}
+If set to 1 (true), recovery will be attempted regardless of type of the error
+causing the failure. By default this option is set to 0 (false) and in case of
+certain (usually permanent) errors the recovery is not attempted even when
+@var{attempt_recovery} is set to 1.
+
+@item restart_with_keyframe @var{bool}
+Specify whether to wait for the keyframe after recovering from
+queue overflow or failure. This option is set to 0 (false) by default.
+
+@item timeshift @var{duration}
+Buffer the specified amount of packets and delay writing the output. Note that
+@var{queue_size} must be big enough to store the packets for timeshift. At the
+end of the input the fifo buffer is flushed at realtime speed.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Stream something to rtmp server, continue processing the stream at real-time
+rate even in case of temporary failure (network outage) and attempt to recover
+streaming every second indefinitely.
+@example
+ffmpeg -re -i ... -c:v libx264 -c:a aac -f fifo -fifo_format flv -map 0:v -map 0:a
+  -drop_pkts_on_overflow 1 -attempt_recovery 1 -recovery_wait_time 1 rtmp://example.com/live/stream_name
+@end example
+
+@end itemize
+
+@section flv
+
+Adobe Flash Video Format muxer.
+
+This muxer accepts the following options:
+
+@table @option
+
+@item flvflags @var{flags}
+Possible values:
+
+@table @samp
+
+@item aac_seq_header_detect
+Place AAC sequence header based on audio stream data.
+
+@item no_sequence_end
+Disable sequence end tag.
+
+@item no_metadata
+Disable metadata tag.
+
+@item no_duration_filesize
+Disable duration and filesize in metadata when they are equal to zero
+at the end of stream. (Be used to non-seekable living stream).
+
+@item add_keyframe_index
+Used to facilitate seeking; particularly for HTTP pseudo streaming.
+@end table
 @end table
 
 @anchor{framecrc}
@@ -2237,106 +2337,6 @@ ffmpeg -i INPUT -f streamhash -hash md5 -
 
 See also the @ref{hash} and @ref{framehash} muxers.
 
-@anchor{fifo}
-@section fifo
-
-The fifo pseudo-muxer allows the separation of encoding and muxing by using
-first-in-first-out queue and running the actual muxer in a separate thread. This
-is especially useful in combination with the @ref{tee} muxer and can be used to
-send data to several destinations with different reliability/writing speed/latency.
-
-API users should be aware that callback functions (interrupt_callback,
-io_open and io_close) used within its AVFormatContext must be thread-safe.
-
-The behavior of the fifo muxer if the queue fills up or if the output fails is
-selectable,
-
-@itemize @bullet
-
-@item
-output can be transparently restarted with configurable delay between retries
-based on real time or time of the processed stream.
-
-@item
-encoding can be blocked during temporary failure, or continue transparently
-dropping packets in case fifo queue fills up.
-
-@end itemize
-
-@table @option
-
-@item fifo_format
-Specify the format name. Useful if it cannot be guessed from the
-output name suffix.
-
-@item queue_size
-Specify size of the queue (number of packets). Default value is 60.
-
-@item format_opts
-Specify format options for the underlying muxer. Muxer options can be specified
-as a list of @var{key}=@var{value} pairs separated by ':'.
-
-@item drop_pkts_on_overflow @var{bool}
-If set to 1 (true), in case the fifo queue fills up, packets will be dropped
-rather than blocking the encoder. This makes it possible to continue streaming without
-delaying the input, at the cost of omitting part of the stream. By default
-this option is set to 0 (false), so in such cases the encoder will be blocked
-until the muxer processes some of the packets and none of them is lost.
-
-@item attempt_recovery @var{bool}
-If failure occurs, attempt to recover the output. This is especially useful
-when used with network output, since it makes it possible to restart streaming transparently.
-By default this option is set to 0 (false).
-
-@item max_recovery_attempts
-Sets maximum number of successive unsuccessful recovery attempts after which
-the output fails permanently. By default this option is set to 0 (unlimited).
-
-@item recovery_wait_time @var{duration}
-Waiting time before the next recovery attempt after previous unsuccessful
-recovery attempt. Default value is 5 seconds.
-
-@item recovery_wait_streamtime @var{bool}
-If set to 0 (false), the real time is used when waiting for the recovery
-attempt (i.e. the recovery will be attempted after at least
-recovery_wait_time seconds).
-If set to 1 (true), the time of the processed stream is taken into account
-instead (i.e. the recovery will be attempted after at least @var{recovery_wait_time}
-seconds of the stream is omitted).
-By default, this option is set to 0 (false).
-
-@item recover_any_error @var{bool}
-If set to 1 (true), recovery will be attempted regardless of type of the error
-causing the failure. By default this option is set to 0 (false) and in case of
-certain (usually permanent) errors the recovery is not attempted even when
-@var{attempt_recovery} is set to 1.
-
-@item restart_with_keyframe @var{bool}
-Specify whether to wait for the keyframe after recovering from
-queue overflow or failure. This option is set to 0 (false) by default.
-
-@item timeshift @var{duration}
-Buffer the specified amount of packets and delay writing the output. Note that
-@var{queue_size} must be big enough to store the packets for timeshift. At the
-end of the input the fifo buffer is flushed at realtime speed.
-
-@end table
-
-@subsection Examples
-
-@itemize
-
-@item
-Stream something to rtmp server, continue processing the stream at real-time
-rate even in case of temporary failure (network outage) and attempt to recover
-streaming every second indefinitely.
-@example
-ffmpeg -re -i ... -c:v libx264 -c:a aac -f fifo -fifo_format flv -map 0:v -map 0:a
-  -drop_pkts_on_overflow 1 -attempt_recovery 1 -recovery_wait_time 1 rtmp://example.com/live/stream_name
-@end example
-
-@end itemize
-
 @anchor{tee}
 @section tee
 
@@ -2469,6 +2469,49 @@ ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac
 @end example
 @end itemize
 
+@section webm_chunk
+
+WebM Live Chunk Muxer.
+
+This muxer writes out WebM headers and chunks as separate files which can be
+consumed by clients that support WebM Live streams via DASH.
+
+@subsection Options
+
+This muxer supports the following options:
+
+@table @option
+@item chunk_start_index
+Index of the first chunk (defaults to 0).
+
+@item header
+Filename of the header where the initialization data will be written.
+
+@item audio_chunk_duration
+Duration of each audio chunk in milliseconds (defaults to 5000).
+@end table
+
+@subsection Example
+@example
+ffmpeg -f v4l2 -i /dev/video0 \
+       -f alsa -i hw:0 \
+       -map 0:0 \
+       -c:v libvpx-vp9 \
+       -s 640x360 -keyint_min 30 -g 30 \
+       -f webm_chunk \
+       -header webm_live_video_360.hdr \
+       -chunk_start_index 1 \
+       webm_live_video_360_%d.chk \
+       -map 1:0 \
+       -c:a libvorbis \
+       -b:a 128k \
+       -f webm_chunk \
+       -header webm_live_audio_128.hdr \
+       -chunk_start_index 1 \
+       -audio_chunk_duration 1000 \
+       webm_live_audio_128_%d.chk
+@end example
+
 @section webm_dash_manifest
 
 WebM DASH Manifest muxer.
@@ -2533,49 +2576,6 @@ ffmpeg -f webm_dash_manifest -i video1.webm \
        -f webm_dash_manifest \
        -adaptation_sets "id=0,streams=0,1 id=1,streams=2,3" \
        manifest.xml
-@end example
-
-@section webm_chunk
-
-WebM Live Chunk Muxer.
-
-This muxer writes out WebM headers and chunks as separate files which can be
-consumed by clients that support WebM Live streams via DASH.
-
-@subsection Options
-
-This muxer supports the following options:
-
-@table @option
-@item chunk_start_index
-Index of the first chunk (defaults to 0).
-
-@item header
-Filename of the header where the initialization data will be written.
-
-@item audio_chunk_duration
-Duration of each audio chunk in milliseconds (defaults to 5000).
-@end table
-
-@subsection Example
-@example
-ffmpeg -f v4l2 -i /dev/video0 \
-       -f alsa -i hw:0 \
-       -map 0:0 \
-       -c:v libvpx-vp9 \
-       -s 640x360 -keyint_min 30 -g 30 \
-       -f webm_chunk \
-       -header webm_live_video_360.hdr \
-       -chunk_start_index 1 \
-       webm_live_video_360_%d.chk \
-       -map 1:0 \
-       -c:a libvorbis \
-       -b:a 128k \
-       -f webm_chunk \
-       -header webm_live_audio_128.hdr \
-       -chunk_start_index 1 \
-       -audio_chunk_duration 1000 \
-       webm_live_audio_128_%d.chk
 @end example
 
 @c man end MUXERS
