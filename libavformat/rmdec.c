@@ -1312,7 +1312,7 @@ static int ivr_read_header(AVFormatContext *s)
     if (avio_r8(pb) != 6)
         goto invalid_data;
     avio_skip(pb, 12);
-    avio_skip(pb, avio_rb64(pb) + pos - avio_tell(s->pb));
+    avio_seek(pb, avio_rb64(pb) + pos, SEEK_SET);
     if (avio_r8(pb) != 8)
         goto invalid_data;
     avio_skip(pb, 8);
