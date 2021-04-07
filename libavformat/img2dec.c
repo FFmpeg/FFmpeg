@@ -222,7 +222,7 @@ int ff_img_read_header(AVFormatContext *s1)
         avpriv_set_pts_info(st, 64, 1, 1);
     else {
         avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
-        st->avg_frame_rate = s->framerate;
+        st->avg_frame_rate = st->r_frame_rate = s->framerate;
     }
 
     if (s->width && s->height) {
