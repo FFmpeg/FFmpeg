@@ -87,7 +87,7 @@ static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     settings = av_packet_get_side_data(pkt, AV_PKT_DATA_WEBVTT_SETTINGS,
                                        &settings_size);
 
-    if (settings_size_int > INT_MAX)
+    if (settings_size > INT_MAX)
         return AVERROR(EINVAL);
 
     settings_size_int = settings_size;
