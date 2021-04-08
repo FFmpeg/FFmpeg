@@ -89,6 +89,8 @@ typedef struct PNGDecContext {
     int has_trns;
     uint8_t transparent_color_be[6];
 
+    uint8_t *background_buf;
+    unsigned background_buf_allocated;
     uint32_t palette[256];
     uint8_t *crow_buf;
     uint8_t *last_row;
@@ -1079,19 +1081,20 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
     ff_thread_await_progress(&s->last_picture, INT_MAX, 0);
 
     // need to reset a rectangle to background:
-    // create a new writable copy
     if (s->last_dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
-        int ret = av_frame_make_writable(s->last_picture.f);
-        if (ret < 0)
-            return ret;
+        av_fast_malloc(&s->background_buf, &s->background_buf_allocated,
+                       src_stride * p->height);
+        if (!s->background_buf)
+            return AVERROR(ENOMEM);
 
-        src        = s->last_picture.f->data[0];
-        src_stride = s->last_picture.f->linesize[0];
+        memcpy(s->background_buf, src, src_stride * p->height);
 
         for (y = s->last_y_offset; y < s->last_y_offset + s->last_h; y++) {
-            memset(s->last_picture.f->data[0] + src_stride * y +
+            memset(s->background_buf + src_stride * y +
                    s->bpp * s->last_x_offset, 0, s->bpp * s->last_w);
         }
+
+        src = s->background_buf;
     }
 
     // copy unchanged rectangles from the last frame
@@ -1716,6 +1719,7 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
     s->last_row_size = 0;
     av_freep(&s->tmp_row);
     s->tmp_row_size = 0;
+    av_freep(&s->background_buf);
 
     av_freep(&s->iccp_data);
     av_dict_free(&s->frame_metadata);
