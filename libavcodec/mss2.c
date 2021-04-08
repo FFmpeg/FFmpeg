@@ -752,7 +752,6 @@ static av_cold int wmv9_init(AVCodecContext *avctx)
     v->s.avctx    = avctx;
 
     ff_vc1_init_common(v);
-    ff_vc1dsp_init(&v->vc1dsp);
 
     v->profile = PROFILE_MAIN;
 
