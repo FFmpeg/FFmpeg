@@ -356,18 +356,16 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
                  &ff_v2_mb_type[0][1], 2, 1,
                  &ff_v2_mb_type[0][0], 2, 1, 128);
 
-        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[0], MB_NON_INTRA_VLC_BITS, 128,
-                     &ff_wmv2_inter_table[0][0][1], 8, 4,
-                     &ff_wmv2_inter_table[0][0][0], 8, 4, 1636);
-        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[1], MB_NON_INTRA_VLC_BITS, 128,
-                     &ff_wmv2_inter_table[1][0][1], 8, 4,
-                     &ff_wmv2_inter_table[1][0][0], 8, 4, 2648);
-        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[2], MB_NON_INTRA_VLC_BITS, 128,
-                     &ff_wmv2_inter_table[2][0][1], 8, 4,
-                     &ff_wmv2_inter_table[2][0][0], 8, 4, 1532);
-        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[3], MB_NON_INTRA_VLC_BITS, 128,
-                     &ff_wmv2_inter_table[3][0][1], 8, 4,
-                     &ff_wmv2_inter_table[3][0][0], 8, 4, 2488);
+        for (unsigned i = 0, offset = 0; i < 4; i++) {
+            static VLC_TYPE vlc_buf[1636 + 2648 + 1532 + 2488][2];
+            ff_mb_non_intra_vlc[i].table           = &vlc_buf[offset];
+            ff_mb_non_intra_vlc[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
+            init_vlc(&ff_mb_non_intra_vlc[i], MB_NON_INTRA_VLC_BITS, 128,
+                     &ff_wmv2_inter_table[i][0][1], 8, 4,
+                     &ff_wmv2_inter_table[i][0][0], 8, 4,
+                     INIT_VLC_STATIC_OVERLONG);
+            offset += ff_mb_non_intra_vlc[i].table_size;
+        }
 
         INIT_VLC_STATIC(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
                  &ff_msmp4_mb_i_table[0][1], 4, 2,
