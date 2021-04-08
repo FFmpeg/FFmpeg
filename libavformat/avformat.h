@@ -2535,10 +2535,10 @@ int avformat_index_get_entries_count(const AVStream *st);
  * @return A pointer to the requested AVIndexEntry if it exists, NULL otherwise.
  *
  * @note The pointer returned by this function is only guaranteed to be valid
- *       until any function that could alter the stream or the AVFormatContext
- *       that contains it is called.
+ *       until any function that takes the stream or the parent AVFormatContext
+ *       as input argument is called.
  */
-const AVIndexEntry *avformat_index_get_entry(const AVStream *st, int idx);
+const AVIndexEntry *avformat_index_get_entry(AVStream *st, int idx);
 
 /**
  * Get the AVIndexEntry corresponding to the given timestamp.
@@ -2552,10 +2552,10 @@ const AVIndexEntry *avformat_index_get_entry(const AVStream *st, int idx);
  * @return A pointer to the requested AVIndexEntry if it exists, NULL otherwise.
  *
  * @note The pointer returned by this function is only guaranteed to be valid
- *       until any function that could alter the stream or the AVFormatContext
- *       that contains it is called.
+ *       until any function that takes the stream or the parent AVFormatContext
+ *       as input argument is called.
  */
-const AVIndexEntry *avformat_index_get_entry_from_timestamp(const AVStream *st,
+const AVIndexEntry *avformat_index_get_entry_from_timestamp(AVStream *st,
                                                             int64_t wanted_timestamp,
                                                             int flags);
 /**

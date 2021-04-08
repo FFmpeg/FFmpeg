@@ -2057,7 +2057,7 @@ int avformat_index_get_entries_count(const AVStream *st)
     return st->internal->nb_index_entries;
 }
 
-const AVIndexEntry *avformat_index_get_entry(const AVStream *st, int idx)
+const AVIndexEntry *avformat_index_get_entry(AVStream *st, int idx)
 {
     if (idx < 0 || idx >= st->internal->nb_index_entries)
         return NULL;
@@ -2065,7 +2065,7 @@ const AVIndexEntry *avformat_index_get_entry(const AVStream *st, int idx)
     return &st->internal->index_entries[idx];
 }
 
-const AVIndexEntry *avformat_index_get_entry_from_timestamp(const AVStream *st,
+const AVIndexEntry *avformat_index_get_entry_from_timestamp(AVStream *st,
                                                             int64_t wanted_timestamp,
                                                             int flags)
 {
