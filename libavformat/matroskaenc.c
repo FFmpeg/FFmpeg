@@ -2188,7 +2188,7 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, const AVPac
     put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, pkt->duration);
     end_ebml_master(pb, blockgroup);
 
-    return pkt->duration;
+    return 0;
 }
 
 static int mkv_end_cluster(AVFormatContext *s)
@@ -2359,9 +2359,9 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
         }
     } else {
         if (par->codec_id == AV_CODEC_ID_WEBVTT) {
-            duration = mkv_write_vtt_blocks(s, pb, pkt);
-            if (duration < 0)
-                return duration;
+            ret = mkv_write_vtt_blocks(s, pb, pkt);
+            if (ret < 0)
+                return ret;
         } else {
             ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
                                                        mkv_blockgroup_size(pkt->size,
