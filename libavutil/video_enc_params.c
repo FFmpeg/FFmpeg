@@ -29,10 +29,14 @@
 AVVideoEncParams *av_video_enc_params_alloc(enum AVVideoEncParamsType type,
                                             unsigned int nb_blocks, size_t *out_size)
 {
+    const size_t blocks_offset = offsetof(
+        struct {
+            AVVideoEncParams   p;
+            AVVideoBlockParams b;
+        }, b);
+    size_t size = blocks_offset;
     AVVideoEncParams *par;
-    size_t size;
 
-    size = sizeof(*par);
     if (nb_blocks > (SIZE_MAX - size) / sizeof(AVVideoBlockParams))
         return NULL;
     size += sizeof(AVVideoBlockParams) * nb_blocks;
@@ -44,7 +48,7 @@ AVVideoEncParams *av_video_enc_params_alloc(enum AVVideoEncParamsType type,
     par->type          = type;
     par->nb_blocks     = nb_blocks;
     par->block_size    = sizeof(AVVideoBlockParams);
-    par->blocks_offset = sizeof(*par);
+    par->blocks_offset = blocks_offset;
 
     if (out_size)
         *out_size = size;
