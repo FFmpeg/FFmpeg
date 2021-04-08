@@ -1699,8 +1699,6 @@ av_cold void ff_vc1_init_common(VC1Context *v)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
-    v->hrd_rate = v->hrd_buffer = NULL;
-
     /* defaults */
     v->pq      = -1;
     v->mvrange = 0; /* 7.1.1.18, p80 */

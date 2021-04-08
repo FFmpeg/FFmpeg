@@ -322,8 +322,6 @@ typedef struct VC1Context{
     uint8_t* over_flags_plane;   ///< Overflags bitplane
     int overflg_is_raw;
     uint8_t condover;
-    uint16_t *hrd_rate, *hrd_buffer;
-    uint8_t *hrd_fullness;
     uint8_t range_mapy_flag;
     uint8_t range_mapuv_flag;
     uint8_t range_mapy;
