@@ -79,7 +79,7 @@ static int read_desc_chunk(AVFormatContext *s)
     st->codecpar->channels    = avio_rb32(pb);
     st->codecpar->bits_per_coded_sample = avio_rb32(pb);
 
-    if (caf->bytes_per_packet < 0 || caf->frames_per_packet < 0)
+    if (caf->bytes_per_packet < 0 || caf->frames_per_packet < 0 || st->codecpar->channels < 0)
         return AVERROR_INVALIDDATA;
 
     /* calculate bit rate for constant size packets */
