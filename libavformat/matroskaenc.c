@@ -1768,6 +1768,7 @@ static int mkv_write_attachments(AVFormatContext *s)
             put_ebml_string(dyn_cp, MATROSKA_ID_FILEDESC, t->value);
         if (!(t = av_dict_get(st->metadata, "filename", NULL, 0))) {
             av_log(s, AV_LOG_ERROR, "Attachment stream %d has no filename tag.\n", i);
+            ffio_free_dyn_buf(&dyn_cp);
             return AVERROR(EINVAL);
         }
         put_ebml_string(dyn_cp, MATROSKA_ID_FILENAME, t->value);
