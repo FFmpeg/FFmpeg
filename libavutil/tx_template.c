@@ -593,7 +593,7 @@ static void compound_fft_##N##xM(AVTXContext *s, void *_out,                   \
     for (int i = 0; i < m; i++) {                                              \
         for (int j = 0; j < N; j++)                                            \
             fft##N##in[j] = in[in_map[i*N + j]];                               \
-        fft##N(s->tmp + s->revtab[i], fft##N##in, m);                          \
+        fft##N(s->tmp + s->revtab_c[i], fft##N##in, m);                        \
     }                                                                          \
                                                                                \
     for (int i = 0; i < N; i++)                                                \
@@ -624,16 +624,16 @@ static void split_radix_fft(AVTXContext *s, void *_out, void *_in,
 
         do {
             tmp = out[src];
-            dst = s->revtab[src];
+            dst = s->revtab_c[src];
             do {
                 FFSWAP(FFTComplex, tmp, out[dst]);
-                dst = s->revtab[dst];
+                dst = s->revtab_c[dst];
             } while (dst != src); /* Can be > as well, but is less predictable */
             out[dst] = tmp;
         } while ((src = *inplace_idx++));
     } else {
         for (int i = 0; i < m; i++)
-            out[i] = in[s->revtab[i]];
+            out[i] = in[s->revtab_c[i]];
     }
 
     fft_dispatch[mb](out);
@@ -685,7 +685,7 @@ static void compound_imdct_##N##xM(AVTXContext *s, void *_dst, void *_src,     \
             FFTComplex tmp = { in2[-k*stride], in1[k*stride] };                \
             CMUL3(fft##N##in[j], tmp, exp[k >> 1]);                            \
         }                                                                      \
-        fft##N(s->tmp + s->revtab[i], fft##N##in, m);                          \
+        fft##N(s->tmp + s->revtab_c[i], fft##N##in, m);                        \
     }                                                                          \
                                                                                \
     for (int i = 0; i < N; i++)                                                \
@@ -733,7 +733,7 @@ static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
             CMUL(fft##N##in[j].im, fft##N##in[j].re, tmp.re, tmp.im,           \
                  exp[k >> 1].re, exp[k >> 1].im);                              \
         }                                                                      \
-        fft##N(s->tmp + s->revtab[i], fft##N##in, m);                          \
+        fft##N(s->tmp + s->revtab_c[i], fft##N##in, m);                        \
     }                                                                          \
                                                                                \
     for (int i = 0; i < N; i++)                                                \
@@ -772,7 +772,7 @@ static void monolithic_imdct(AVTXContext *s, void *_dst, void *_src,
 
     for (int i = 0; i < m; i++) {
         FFTComplex tmp = { in2[-2*i*stride], in1[2*i*stride] };
-        CMUL3(z[s->revtab[i]], tmp, exp[i]);
+        CMUL3(z[s->revtab_c[i]], tmp, exp[i]);
     }
 
     fftp(z);
@@ -806,7 +806,7 @@ static void monolithic_mdct(AVTXContext *s, void *_dst, void *_src,
             tmp.re = FOLD(-src[ len4 + k], -src[5*len4 - 1 - k]);
             tmp.im = FOLD( src[-len4 + k], -src[1*len3 - 1 - k]);
         }
-        CMUL(z[s->revtab[i]].im, z[s->revtab[i]].re, tmp.re, tmp.im,
+        CMUL(z[s->revtab_c[i]].im, z[s->revtab_c[i]].re, tmp.re, tmp.im,
              exp[i].re, exp[i].im);
     }
 
@@ -1005,7 +1005,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
         if (flags & AV_TX_INPLACE) {
             if (is_mdct) /* In-place MDCTs are not supported yet */
                 return AVERROR(ENOSYS);
-            if ((err = ff_tx_gen_ptwo_inplace_revtab_idx(s)))
+            if ((err = ff_tx_gen_ptwo_inplace_revtab_idx(s, s->revtab_c)))
                 return err;
         }
         for (int i = 4; i <= av_log2(m); i++)

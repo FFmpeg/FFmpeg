@@ -50,6 +50,7 @@ SWSCALEOBJS                             += sw_rgb.o sw_scale.o
 CHECKASMOBJS-$(CONFIG_SWSCALE)  += $(SWSCALEOBJS)
 
 # libavutil tests
+AVUTILOBJS                              += av_tx.o
 AVUTILOBJS                              += fixed_dsp.o
 AVUTILOBJS                              += float_dsp.o
 

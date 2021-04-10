@@ -106,22 +106,24 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)
 {
     const int m = s->m, inv = s->inv;
 
-    if (!(s->revtab = av_malloc(m*sizeof(*s->revtab))))
+    if (!(s->revtab = av_malloc(s->m*sizeof(*s->revtab))))
+        return AVERROR(ENOMEM);
+    if (!(s->revtab_c = av_malloc(m*sizeof(*s->revtab_c))))
         return AVERROR(ENOMEM);
 
     /* Default */
     for (int i = 0; i < m; i++) {
         int k = -split_radix_permutation(i, m, inv) & (m - 1);
         if (invert_lookup)
-            s->revtab[i] = k;
+            s->revtab[i] = s->revtab_c[i] = k;
         else
-            s->revtab[k] = i;
+            s->revtab[i] = s->revtab_c[k] = i;
     }
 
     return 0;
 }
 
-int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
+int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s, int *revtab)
 {
     int nb_inplace_idx = 0;
 
@@ -130,7 +132,7 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
 
     /* The first coefficient is always already in-place */
     for (int src = 1; src < s->m; src++) {
-        int dst = s->revtab[src];
+        int dst = revtab[src];
         int found = 0;
 
         if (dst <= src)
@@ -146,7 +148,7 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
                     break;
                 }
             }
-            dst = s->revtab[dst];
+            dst = revtab[dst];
         } while (dst != src && !found);
 
         if (!found)
@@ -215,6 +217,7 @@ av_cold void av_tx_uninit(AVTXContext **ctx)
     av_free((*ctx)->pfatab);
     av_free((*ctx)->exptab);
     av_free((*ctx)->revtab);
+    av_free((*ctx)->revtab_c);
     av_free((*ctx)->inplace_idx);
     av_free((*ctx)->tmp);
 

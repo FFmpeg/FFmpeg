@@ -122,6 +122,9 @@ struct AVTXContext {
     int        *revtab; /* Input mapping for power of two transforms */
     int   *inplace_idx; /* Required indices to revtab for in-place transforms */
 
+    int      *revtab_c; /* Revtab for only the C transforms, needed because
+                         * checkasm makes us reuse the same context. */
+
     av_tx_fn    top_tx; /* Used for computing transforms derived from other
                          * transforms, like full-length iMDCTs and RDFTs.
                          * NOTE: Do NOT use this to mix assembly with C code. */
@@ -147,7 +150,7 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
  * specific order,  allows the revtab to be done in-place. AVTXContext->revtab
  * must already exist.
  */
-int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
+int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s, int *revtab);
 
 /*
  * This generates a parity-based revtab of length len and direction inv.

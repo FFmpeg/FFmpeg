@@ -198,6 +198,7 @@ static const struct {
 #if CONFIG_AVUTIL
         { "fixed_dsp", checkasm_check_fixed_dsp },
         { "float_dsp", checkasm_check_float_dsp },
+        { "av_tx",     checkasm_check_av_tx },
 #endif
     { NULL }
 };
