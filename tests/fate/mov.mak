@@ -37,8 +37,6 @@ FATE_SAMPLES_AVCONV += $(FATE_MOV)
 FATE_SAMPLES_FFPROBE += $(FATE_MOV_FFPROBE)
 FATE_SAMPLES_FASTSTART += $(FATE_MOV_FASTSTART)
 
-fate-mov: $(FATE_MOV) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART)
-
 # Make sure we handle edit lists correctly in normal cases.
 fate-mov-1elist-noctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1elist-noctts.mov
 fate-mov-1elist-1ctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1elist-1ctts.mov
@@ -127,3 +125,13 @@ fate-mov-faststart-4gb-overflow: REF = bc875921f151871e787c4b4023269b29
 fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=codec_name -select_streams 1 $(TARGET_SAMPLES)/mov/mp4-with-mov-in24-ver.mp4
 
 fate-mov-mp4-extended-atom: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact -select_streams v $(TARGET_SAMPLES)/mov/extended_atom_size_probe
+
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER MJPEG_DECODER \
+                                       SCALE_FILTER PNG_ENCODER PNG_DECODER    \
+                                       MP4_MUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
+                          += fate-mov-cover-image
+fate-mov-cover-image: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a mp4 "-map 0 -map 0:v -c:a copy -c:v:0 copy -filter:v:1 scale -c:v:1 png" "-map 0 -t 0.1 -c copy" "" "-show_entries stream_disposition=attached_pic:stream=index,codec_name"
+
+FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
+
+fate-mov: $(FATE_MOV) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_FFPROBE-yes)

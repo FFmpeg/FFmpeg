@@ -1,0 +1,43 @@
+4e92f776010bd7a727c11bf8c34cde1e *tests/data/fate/mov-cover-image.mp4
+1011919 tests/data/fate/mov-cover-image.mp4
+#extradata 0:        2, 0x00340022
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: aac
+#sample_rate 0: 44100
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+#tb 1: 1/90000
+#media_type 1: video
+#codec_id 1: mjpeg
+#dimensions 1: 600x600
+#sar 1: 96/96
+#tb 2: 1/90000
+#media_type 2: video
+#codec_id 2: png
+#dimensions 2: 600x600
+#sar 2: 1/1
+0,      -2112,      -2112,     1024,        6, 0x027e00e8, F=0x5, S=1,       10, 0x02c80048
+0,      -1088,      -1088,     1024,        6, 0x027e00e8, F=0x5
+0,        -64,        -64,     1024,        6, 0x027e00e8
+1,          0,          0,        0,    25441, 0xe82503b0
+2,          0,          0,        0,    32657, 0x080255d2
+0,        960,        960,     1024,        6, 0x027e00e8
+0,       1984,       1984,     1024,        6, 0x027e00e8
+0,       3008,       3008,     1024,        6, 0x027e00e8
+0,       4032,       4032,     1024,        6, 0x027e00e8
+[STREAM]
+index=0
+codec_name=aac
+DISPOSITION:attached_pic=0
+[/STREAM]
+[STREAM]
+index=1
+codec_name=mjpeg
+DISPOSITION:attached_pic=1
+[/STREAM]
+[STREAM]
+index=2
+codec_name=png
+DISPOSITION:attached_pic=1
+[/STREAM]
