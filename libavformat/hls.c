@@ -842,6 +842,10 @@ static int parse_playlist(HLSContext *c, const char *url,
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_init_section_args,
                                &info);
             cur_init_section = new_init_section(pls, &info, url);
+            if (!cur_init_section) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             cur_init_section->key_type = key_type;
             if (has_iv) {
                 memcpy(cur_init_section->iv, iv, sizeof(iv));
