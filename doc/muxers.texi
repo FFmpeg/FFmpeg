@@ -1969,6 +1969,178 @@ ogg files can be safely chained.
 
 @end table
 
+@anchor{raw muxers}
+@section raw muxers
+
+Raw muxers accept a single stream matching the designated codec. They do not store timestamps or metadata.
+The recognized extension is the same as the muxer name unless indicated otherwise.
+
+@subsection ac3
+
+Dolby Digital, also known as AC-3, audio.
+
+@subsection adx
+
+CRI Middleware ADX audio.
+
+This muxer will write out the total sample count near the start of the first packet
+when the output is seekable and the count can be stored in 32 bits.
+
+@subsection aptx
+
+aptX (Audio Processing Technology for Bluetooth) audio.
+
+@subsection aptx_hd
+
+aptX HD (Audio Processing Technology for Bluetooth) audio.
+
+Extensions: aptxhd
+
+@subsection avs2
+
+AVS2-P2/IEEE1857.4 video.
+
+Extensions: avs, avs2
+
+@subsection cavsvideo
+
+Chinese AVS (Audio Video Standard) video.
+
+Extensions: cavs
+
+@subsection codec2raw
+
+Codec 2 audio.
+
+No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f codec2raw}.
+
+@subsection data
+
+Data muxer accepts a single stream with any codec of any type.
+The input stream has to be selected using the @code {-map} option with the ffmpeg CLI tool.
+
+No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f data}.
+
+@subsection dirac
+
+BBC Dirac video. The Dirac Pro codec is a subset and is standardized as SMPTE VC-2.
+
+Extensions: drc, vc2
+
+@subsection dnxhd
+
+Avid DNxHD video. It is standardized as SMPTE VC-3. Accepts DNxHR streams.
+
+Extensions: dnxhd, dnxhr
+
+@subsection dts
+
+DTS Coherent Acoustics (DCA) audio.
+
+@subsection eac3
+
+Dolby Digital Plus, also known as Enhanced AC-3, audio.
+
+@subsection g722
+
+ITU-T G.722 audio.
+
+@subsection g723_1
+
+ITU-T G.723.1 audio.
+
+Extensions: tco, rco
+
+@subsection g726
+
+ITU-T G.726 big-endian ("left-justified") audio.
+
+No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f g726}.
+
+@subsection g726le
+
+ITU-T G.726 little-endian ("right-justified") audio.
+
+No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f g726le}.
+
+@subsection gsm
+
+Global System for Mobile Communications audio.
+
+@subsection h261
+
+ITU-T H.261 video.
+
+@subsection h263
+
+ITU-T H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2 video.
+
+@subsection h264
+
+ITU-T H.264 / MPEG-4 Part 10 AVC video. Bitstream shall be converted to Annex B syntax if it's in length-prefixed mode.
+
+Extensions: h264, 264
+
+@subsection hevc
+
+ITU-T H.265 / MPEG-H Part 2 HEVC video. Bitstream shall be converted to Annex B syntax if it's in length-prefixed mode.
+
+Extensions: hevc, h265, 265
+
+@subsection m4v
+
+MPEG-4 Part 2 video.
+
+@subsection mjpeg
+
+Motion JPEG video.
+
+Extensions: mjpg, mjpeg
+
+@subsection mlp
+
+Meridian Lossless Packing, also known as Packed PCM, audio.
+
+@subsection mp2
+
+MPEG-1 Audio Layer II audio.
+
+Extensions: mp2, m2a, mpa
+
+@subsection mpeg1video
+
+MPEG-1 Part 2 video.
+
+Extensions: mpg, mpeg, m1v
+
+@subsection mpeg2video
+
+ITU-T H.262 / MPEG-2 Part 2 video.
+
+Extensions: m2v
+
+@subsection rawvideo
+
+Raw uncompressed video.
+
+Extensions: yuv, rgb
+
+@subsection sbc
+
+Bluetooth SIG low-complexity subband codec audio.
+
+Extensions: sbc, msbc
+
+@subsection truehd
+
+Dolby TrueHD audio.
+
+Extensions: thd
+
+@subsection vc1
+
+SMPTE 421M / VC-1 video.
+
 @anchor{segment}
 @section segment, stream_segment, ssegment
 
