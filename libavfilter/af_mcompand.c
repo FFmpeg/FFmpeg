@@ -384,6 +384,9 @@ static int config_output(AVFilterLink *outlink)
         s->bands[i].attack_rate = av_calloc(outlink->channels, sizeof(double));
         s->bands[i].decay_rate = av_calloc(outlink->channels, sizeof(double));
         s->bands[i].volume = av_calloc(outlink->channels, sizeof(double));
+        if (!s->bands[i].attack_rate || !s->bands[i].decay_rate || !s->bands[i].volume)
+            return AVERROR(ENOMEM);
+
         for (k = 0; k < FFMIN(nb_attacks / 2, outlink->channels); k++) {
             char *tstr3 = av_strtok(p3, ",", &saveptr3);
 
