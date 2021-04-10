@@ -149,6 +149,37 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
  */
 int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
 
+/*
+ * This generates a parity-based revtab of length len and direction inv.
+ *
+ * Parity means even and odd complex numbers will be split, e.g. the even
+ * coefficients will come first, after which the odd coefficients will be
+ * placed. For example, a 4-point transform's coefficients after reordering:
+ * z[0].re, z[0].im, z[2].re, z[2].im, z[1].re, z[1].im, z[3].re, z[3].im
+ *
+ * The basis argument is the length of the largest non-composite transform
+ * supported, and also implies that the basis/2 transform is supported as well,
+ * as the split-radix algorithm requires it to be.
+ *
+ * The dual_stride argument indicates that both the basis, as well as the
+ * basis/2 transforms support doing two transforms at once, and the coefficients
+ * will be interleaved between each pair in a split-radix like so (stride == 2):
+ * tx1[0], tx1[2], tx2[0], tx2[2], tx1[1], tx1[3], tx2[1], tx2[3]
+ * A non-zero number switches this on, with the value indicating the stride
+ * (how many values of 1 transform to put first before switching to the other).
+ * Must be a power of two or 0. Must be less than the basis.
+ * Value will be clipped to the transform size, so for a basis of 16 and a
+ * dual_stride of 8, dual 8-point transforms will be laid out as if dual_stride
+ * was set to 4.
+ * Usually you'll set this to half the complex numbers that fit in a single
+ * register or 0. This allows to reuse SSE functions as dual-transform
+ * functions in AVX mode.
+ *
+ * If length is smaller than basis/2 this function will not do anything.
+ */
+void ff_tx_gen_split_radix_parity_revtab(int *revtab, int len, int inv,
+                                         int basis, int dual_stride);
+
 /* Templated init functions */
 int ff_tx_init_mdct_fft_float(AVTXContext *s, av_tx_fn *tx,
                               enum AVTXType type, int inv, int len,

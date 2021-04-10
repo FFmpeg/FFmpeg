@@ -158,6 +158,55 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
     return 0;
 }
 
+static void parity_revtab_generator(int *revtab, int n, int inv, int offset,
+                                    int is_dual, int dual_high, int len,
+                                    int basis, int dual_stride)
+{
+    len >>= 1;
+
+    if (len <= basis) {
+        int k1, k2, *even, *odd, stride;
+
+        is_dual = is_dual && dual_stride;
+        dual_high = is_dual & dual_high;
+        stride = is_dual ? FFMIN(dual_stride, len) : 0;
+
+        even = &revtab[offset + dual_high*(stride - 2*len)];
+        odd  = &even[len + (is_dual && !dual_high)*len + dual_high*len];
+
+        for (int i = 0; i < len; i++) {
+            k1 = -split_radix_permutation(offset + i*2 + 0, n, inv) & (n - 1);
+            k2 = -split_radix_permutation(offset + i*2 + 1, n, inv) & (n - 1);
+            *even++ = k1;
+            *odd++  = k2;
+            if (stride && !((i + 1) % stride)) {
+                even += stride;
+                odd  += stride;
+            }
+        }
+
+        return;
+    }
+
+    parity_revtab_generator(revtab, n, inv, offset,
+                            0, 0, len >> 0, basis, dual_stride);
+    parity_revtab_generator(revtab, n, inv, offset + (len >> 0),
+                            1, 0, len >> 1, basis, dual_stride);
+    parity_revtab_generator(revtab, n, inv, offset + (len >> 0) + (len >> 1),
+                            1, 1, len >> 1, basis, dual_stride);
+}
+
+void ff_tx_gen_split_radix_parity_revtab(int *revtab, int len, int inv,
+                                         int basis, int dual_stride)
+{
+    basis >>= 1;
+    if (len < basis)
+        return;
+    av_assert0(!dual_stride || !(dual_stride & (dual_stride - 1)));
+    av_assert0(dual_stride <= basis);
+    parity_revtab_generator(revtab, len, inv, 0, 0, 0, len, basis, dual_stride);
+}
+
 av_cold void av_tx_uninit(AVTXContext **ctx)
 {
     if (!(*ctx))
