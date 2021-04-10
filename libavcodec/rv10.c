@@ -154,7 +154,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     return mb_count;
 }
 
-static int rv20_decode_picture_header(RVDecContext *rv)
+static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
 {
     MpegEncContext *s = &rv->m;
     int seq, mb_pos, i, ret;
@@ -232,6 +232,10 @@ static int rv20_decode_picture_header(RVDecContext *rv)
                    "attempting to change resolution to %dx%d\n", new_w, new_h);
             if (av_image_check_size(new_w, new_h, 0, s->avctx) < 0)
                 return AVERROR_INVALIDDATA;
+
+            if (whole_size < (new_w + 15)/16 * ((new_h + 15)/16) / 8)
+                return AVERROR_INVALIDDATA;
+
             ff_mpv_common_end(s);
 
             // attempt to keep aspect during typical resolution switches
@@ -447,7 +451,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     if (s->codec_id == AV_CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(s);
     else
-        mb_count = rv20_decode_picture_header(rv);
+        mb_count = rv20_decode_picture_header(rv, whole_size);
     if (mb_count < 0) {
         if (mb_count != ERROR_SKIP_FRAME)
             av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
