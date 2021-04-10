@@ -148,8 +148,8 @@ static const AVOption v360_options[] = {
     {     "pitch", "pitch rotation",                 OFFSET(pitch), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f,TFLAGS, "pitch"},
     {      "roll", "roll rotation",                   OFFSET(roll), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f,TFLAGS, "roll"},
     {    "rorder", "rotation order",                OFFSET(rorder), AV_OPT_TYPE_STRING, {.str="ypr"},           0,                   0,TFLAGS, "rorder"},
-    {     "h_fov", "output horizontal field of view",OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},     0.00001f,               360.f,TFLAGS, "h_fov"},
-    {     "v_fov", "output vertical field of view",  OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl=45.f},     0.00001f,               360.f,TFLAGS, "v_fov"},
+    {     "h_fov", "output horizontal field of view",OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "h_fov"},
+    {     "v_fov", "output vertical field of view",  OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "v_fov"},
     {     "d_fov", "output diagonal field of view",  OFFSET(d_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "d_fov"},
     {    "h_flip", "flip out video horizontally",   OFFSET(h_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1,TFLAGS, "h_flip"},
     {    "v_flip", "flip out video vertically",     OFFSET(v_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1,TFLAGS, "v_flip"},
@@ -158,8 +158,8 @@ static const AVOption v360_options[] = {
     {   "iv_flip", "flip in video vertically",     OFFSET(iv_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1,TFLAGS, "iv_flip"},
     {  "in_trans", "transpose video input",   OFFSET(in_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "in_transpose"},
     { "out_trans", "transpose video output", OFFSET(out_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "out_transpose"},
-    {    "ih_fov", "input horizontal field of view",OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},     0.00001f,               360.f,TFLAGS, "ih_fov"},
-    {    "iv_fov", "input vertical field of view",  OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl=45.f},     0.00001f,               360.f,TFLAGS, "iv_fov"},
+    {    "ih_fov", "input horizontal field of view",OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "ih_fov"},
+    {    "iv_fov", "input vertical field of view",  OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "iv_fov"},
     {    "id_fov", "input diagonal field of view",  OFFSET(id_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "id_fov"},
     {"alpha_mask", "build mask in alpha plane",      OFFSET(alpha), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "alpha"},
     { NULL }
@@ -1729,6 +1729,23 @@ static int xyz_to_cube6x1(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing equirectangular output format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_equirect_out(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->flat_range[0] = s->h_fov * M_PI / 360.f;
+    s->flat_range[1] = s->v_fov * M_PI / 360.f;
+
+    return 0;
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in equirectangular format.
  *
  * @param s filter private context
@@ -1742,8 +1759,8 @@ static int equirect_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * M_PI;
-    const float theta = ((2.f * j + 0.5f) / height - 1.f) * M_PI_2;
+    const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * s->flat_range[0];
+    const float theta = ((2.f * j + 0.5f) / height - 1.f) * s->flat_range[1];
 
     const float sin_phi   = sinf(phi);
     const float cos_phi   = cosf(phi);
@@ -2104,6 +2121,23 @@ static int xyz_to_orthographic(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing equirectangular input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_equirect_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = s->ih_fov * M_PI / 360.f;
+    s->iflat_range[1] = s->iv_fov * M_PI / 360.f;
+
+    return 0;
+}
+
+/**
  * Calculate frame position in equirectangular format for corresponding 3D coordinates on sphere.
  *
  * @param s filter private context
@@ -2122,14 +2156,17 @@ static int xyz_to_equirect(const V360Context *s,
     const float phi   = atan2f(vec[0], vec[2]);
     const float theta = asinf(vec[1]);
 
-    const float uf = (phi   / M_PI   + 1.f) * width  / 2.f;
-    const float vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+    const float uf = (phi   / s->iflat_range[0] + 1.f) * width  / 2.f;
+    const float vf = (theta / s->iflat_range[1] + 1.f) * height / 2.f;
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
+    int visible;
 
     *du = uf - ui;
     *dv = vf - vi;
+
+    visible = vi >= 0 && vi < height && ui >= 0 && ui < width;
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -2138,7 +2175,7 @@ static int xyz_to_equirect(const V360Context *s,
         }
     }
 
-    return 1;
+    return visible;
 }
 
 /**
@@ -4003,6 +4040,10 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int siz
 static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fov, float *v_fov)
 {
     switch (format) {
+    case EQUIRECTANGULAR:
+        *h_fov = d_fov;
+        *v_fov = d_fov * 0.5f;
+        break;
     case ORTHOGRAPHIC:
         {
             const float d = 0.5f * hypotf(w, h);
@@ -4145,6 +4186,10 @@ static int config_output(AVFilterLink *outlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int depth = desc->comp[0].depth;
     const int sizeof_mask = s->mask_size = (depth + 7) >> 3;
+    float default_h_fov = 360.f;
+    float default_v_fov = 180.f;
+    float default_ih_fov = 360.f;
+    float default_iv_fov = 180.f;
     int sizeof_uv;
     int sizeof_ker;
     int err;
@@ -4274,6 +4319,29 @@ static int config_output(AVFilterLink *outlink)
     s->in_width = s->inplanewidth[0];
     s->in_height = s->inplaneheight[0];
 
+    switch (s->in) {
+    case CYLINDRICAL:
+    case FLAT:
+        default_ih_fov = 90.f;
+        default_iv_fov = 45.f;
+        break;
+    case EQUISOLID:
+    case ORTHOGRAPHIC:
+    case STEREOGRAPHIC:
+    case DUAL_FISHEYE:
+    case FISHEYE:
+        default_ih_fov = 180.f;
+        default_iv_fov = 180.f;
+    default:
+        break;
+    }
+
+    if (s->ih_fov == 0.f)
+        s->ih_fov = default_ih_fov;
+
+    if (s->iv_fov == 0.f)
+        s->iv_fov = default_iv_fov;
+
     if (s->id_fov > 0.f)
         fov_from_dfov(s->in, s->id_fov, w, h, &s->ih_fov, &s->iv_fov);
 
@@ -4283,7 +4351,7 @@ static int config_output(AVFilterLink *outlink)
     switch (s->in) {
     case EQUIRECTANGULAR:
         s->in_transform = xyz_to_equirect;
-        err = 0;
+        err = prepare_equirect_in(ctx);
         wf = w;
         hf = h;
         break;
@@ -4434,7 +4502,7 @@ static int config_output(AVFilterLink *outlink)
     switch (s->out) {
     case EQUIRECTANGULAR:
         s->out_transform = equirect_to_xyz;
-        prepare_out = NULL;
+        prepare_out = prepare_equirect_out;
         w = lrintf(wf);
         h = lrintf(hf);
         break;
@@ -4606,6 +4674,30 @@ static int config_output(AVFilterLink *outlink)
 
     s->width  = w;
     s->height = h;
+
+    switch (s->out) {
+    case CYLINDRICAL:
+    case FLAT:
+        default_h_fov = 90.f;
+        default_v_fov = 45.f;
+        break;
+    case EQUISOLID:
+    case ORTHOGRAPHIC:
+    case STEREOGRAPHIC:
+    case DUAL_FISHEYE:
+    case FISHEYE:
+        default_h_fov = 180.f;
+        default_v_fov = 180.f;
+        break;
+    default:
+        break;
+    }
+
+    if (s->h_fov == 0.f)
+        s->h_fov = default_h_fov;
+
+    if (s->v_fov == 0.f)
+        s->v_fov = default_v_fov;
 
     if (s->d_fov > 0.f)
         fov_from_dfov(s->out, s->d_fov, w, h, &s->h_fov, &s->v_fov);
